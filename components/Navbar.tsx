@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Sprout, LogIn, User, LogOut } from 'lucide-react';
+import { Sprout, LogIn, User, LogOut, PlusCircle } from 'lucide-react';
 
 interface NavbarProps {
   activeTab: string;
@@ -11,6 +11,7 @@ interface NavbarProps {
   setIsLoggedIn: (status: boolean) => void;
   onOpenLogin?: () => void;
   onOpenLogout?: () => void;
+  onOpenCreateEvent?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -20,6 +21,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   setIsLoggedIn,
   onOpenLogin,
   onOpenLogout,
+  onOpenCreateEvent,
 }) => {
   return (
     <header className="sticky top-0 z-40 bg-[#FAF7F2]/90 backdrop-blur-md border-b border-[#E8E2D8] transition-all">
@@ -75,9 +77,22 @@ export const Navbar: React.FC<NavbarProps> = ({
           })}
         </nav>
 
-        {/* Right: User Profile & Login Toggle */}
-        <div className="flex items-center gap-3">
+        {/* Right: Create Event CTA & User Profile / Login Toggle */}
+        <div className="flex items-center gap-2.5">
           
+          {/* Create Event Host CTA */}
+          {onOpenCreateEvent && (
+            <button
+              onClick={onOpenCreateEvent}
+              className="bg-[#4A7C59] hover:bg-[#3B6347] text-white px-3.5 sm:px-4 py-2 rounded-full text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95 cursor-pointer"
+              title="คลิกเพื่อสร้างกิจกรรม / เปิดวงฮีลใจ"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span className="hidden sm:inline">จัดกิจกรรม</span>
+              <span className="sm:hidden">สร้าง +</span>
+            </button>
+          )}
+
           {isLoggedIn ? (
             <div className="flex items-center gap-2">
               <div className="w-9 h-9 rounded-full bg-[#EBF3ED] border-2 border-[#4A7C59] overflow-hidden flex items-center justify-center shadow-sm">
@@ -90,22 +105,22 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               <button 
                 onClick={() => onOpenLogout ? onOpenLogout() : setIsLoggedIn(false)}
-                className="rounded-full bg-[#1E293B] hover:bg-[#0F172A] text-white px-4 py-2 text-xs font-semibold transition-all shadow-sm flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                className="rounded-full bg-[#1E293B] hover:bg-[#0F172A] text-white px-3.5 sm:px-4 py-2 text-xs font-semibold transition-all shadow-sm flex items-center gap-1.5 active:scale-95 cursor-pointer"
                 title="คลิกเพื่อออกจากระบบ"
               >
                 <User className="w-3.5 h-3.5 text-emerald-400" />
-                <span>คุณส้ม (Member)</span>
-                <LogOut className="w-3 h-3 text-slate-400 ml-1" />
+                <span className="hidden sm:inline">คุณส้ม</span>
+                <LogOut className="w-3 h-3 text-slate-400 ml-0.5" />
               </button>
             </div>
           ) : (
             <button 
               onClick={() => onOpenLogin ? onOpenLogin() : setIsLoggedIn(true)}
-              className="rounded-full bg-[#1E293B] hover:bg-[#0F172A] text-white px-5 py-2 text-sm font-medium transition-all shadow-sm flex items-center gap-2 active:scale-95 cursor-pointer"
+              className="rounded-full bg-[#1E293B] hover:bg-[#0F172A] text-white px-4 sm:px-5 py-2 text-xs sm:text-sm font-medium transition-all shadow-sm flex items-center gap-2 active:scale-95 cursor-pointer"
               title="คลิกเพื่อเข้าสู่ระบบ / สมัครสมาชิก"
             >
               <LogIn className="w-4 h-4 text-emerald-400" />
-              <span>เข้าสู่ระบบ / สมัครสมาชิก</span>
+              <span>เข้าสู่ระบบ</span>
             </button>
           )}
 

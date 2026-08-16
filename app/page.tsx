@@ -11,6 +11,7 @@ import { MobileNav } from '@/components/MobileNav';
 import { MOCK_EVENTS, MOCK_POSTS, EventItem } from '@/data/mockData';
 import { CustomDatePickerModal } from '@/components/CustomDatePickerModal';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
+import { CreateEventModal } from '@/components/CreateEventModal';
 import {
   Heart,
   Sprout,
@@ -47,6 +48,7 @@ export default function Home() {
   const [isDatePickerOpen, setIsDatePickerOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState<boolean>(false);
+  const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<'newest' | 'popular' | 'favorites'>('newest');
   const [searchQuery, setSearchQuery] = useState('');
   const [eventsList, setEventsList] = useState<EventItem[]>(MOCK_EVENTS);
@@ -205,6 +207,7 @@ export default function Home() {
         }}
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}
+        onOpenCreateEvent={() => setIsCreateEventModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -220,7 +223,7 @@ export default function Home() {
           }}
         />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 py-4 relative z-10">
           
           {/* SECTION 1: 🌿 คลังกิจกรรมยามว่างทั้งหมด (Full Catalog Explorer - Placed First!) */}
           <section id="catalog-section" className="space-y-3.5">
@@ -235,21 +238,24 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Mode Switcher Tabs (Order: กิจกรรมทั่วไป/อีเวนต์ | กิจกรรมชุมชน | ทั้งหมด -> Default: ทั้งหมด) */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-slate-200/60 p-1 rounded-2xl border border-slate-300/80">
-              <div className="grid grid-cols-3 gap-1 w-full sm:w-auto">
+            {/* Mode Switcher Tabs with Embedded Subtext Descriptions */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-slate-200/60 p-1.5 rounded-2xl border border-slate-300/80">
+              <div className="grid grid-cols-3 gap-1.5 w-full sm:w-auto">
                 <button
                   onClick={() => {
                     setEventTypeTab('public_venue');
                     setVisibleCount(6);
                   }}
-                  className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex flex-col items-center justify-center ${
                     eventTypeTab === 'public_venue'
                       ? 'bg-[#F26430] text-white shadow-md scale-102 font-extrabold'
                       : 'text-slate-700 hover:text-[#F26430] hover:bg-white/50'
                   }`}
                 >
                   <span className="truncate">🏛️ กิจกรรมทั่วไป/อีเวนต์</span>
+                  <span className={`text-[10px] font-medium leading-tight mt-0.5 ${eventTypeTab === 'public_venue' ? 'text-orange-100' : 'text-slate-500'}`}>
+                    งานใหญ่ เดินชิลล์ตามสบาย
+                  </span>
                 </button>
 
                 <button
@@ -257,13 +263,16 @@ export default function Home() {
                     setEventTypeTab('community');
                     setVisibleCount(6);
                   }}
-                  className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex flex-col items-center justify-center ${
                     eventTypeTab === 'community'
                       ? 'bg-[#4A7C59] text-white shadow-md scale-102 font-extrabold'
                       : 'text-slate-700 hover:text-[#4A7C59] hover:bg-white/50'
                   }`}
                 >
                   <span className="truncate">🌱 กิจกรรมชุมชน</span>
+                  <span className={`text-[10px] font-medium leading-tight mt-0.5 ${eventTypeTab === 'community' ? 'text-emerald-100' : 'text-slate-500'}`}>
+                    กลุ่มย่อย 4-8 คน มีโฮสต์ดูแล
+                  </span>
                 </button>
 
                 <button
@@ -271,13 +280,16 @@ export default function Home() {
                     setEventTypeTab('all');
                     setVisibleCount(6);
                   }}
-                  className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex flex-col items-center justify-center ${
                     eventTypeTab === 'all'
                       ? 'bg-white text-[#1E293B] shadow-md scale-102 font-extrabold'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                   }`}
                 >
                   <span>✨ ทั้งหมด</span>
+                  <span className={`text-[10px] font-medium leading-tight mt-0.5 ${eventTypeTab === 'all' ? 'text-slate-500' : 'text-slate-400'}`}>
+                    รวมกิจกรรมทุกประเภท
+                  </span>
                 </button>
               </div>
 
@@ -327,10 +339,16 @@ export default function Home() {
                     }}
                     className={`px-3.5 py-1 rounded-full text-xs font-bold transition-all border flex items-center gap-1.5 ${
                       timeFilter === 'custom' && (startDate || endDate)
-                        ? 'bg-[#F26430] text-white border-[#F26430] shadow-xs font-extrabold'
+                        ? 'bg-[#F26430] text-white border-[#F26430] ring-2 ring-[#F26430]/30 shadow-md font-extrabold scale-102'
                         : 'bg-white text-slate-600 border-slate-300 hover:border-[#F26430]'
                     }`}
                   >
+                    {timeFilter === 'custom' && (startDate || endDate) && (
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                      </span>
+                    )}
                     <span>
                       {timeFilter === 'custom' && startDate
                         ? startDate === endDate
@@ -713,6 +731,16 @@ export default function Home() {
           setEndDate('');
           setTimeFilter('all');
           showToast('ล้างการกรองช่วงเวลาเรียบร้อย');
+        }}
+      />
+
+      {/* Create Custom Event Modal */}
+      <CreateEventModal
+        isOpen={isCreateEventModalOpen}
+        onClose={() => setIsCreateEventModalOpen(false)}
+        onCreateSuccess={(newEvent: EventItem) => {
+          setEventsList([newEvent, ...eventsList]);
+          showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จเรียบร้อย! 🎉`);
         }}
       />
 

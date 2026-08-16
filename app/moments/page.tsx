@@ -199,6 +199,7 @@ export default function MomentsPage() {
         setIsLoggedIn={setIsLoggedIn}
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}
+        onOpenCreateEvent={() => setIsCreateModalOpen(true)}
       />
 
       {/* Main Container */}
@@ -357,10 +358,23 @@ export default function MomentsPage() {
                         {post.caption}
                       </p>
 
-                      {/* Location */}
-                      <div className="flex items-center gap-1.5 text-xs text-[#64748B] font-semibold">
-                        <MapPin className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
-                        <span>{post.location}</span>
+                      {/* Location & Event Conversion CTA (จุดที่ 2) */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
+                        <div className="flex items-center gap-1.5 text-xs text-[#64748B] font-semibold">
+                          <MapPin className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
+                          <span>{post.location}</span>
+                        </div>
+
+                        <button
+                          onClick={() => {
+                            const matched = MOCK_EVENTS.find((ev) => ev.id === post.eventId) || MOCK_EVENTS[0];
+                            setSelectedEvent(matched);
+                          }}
+                          className="bg-[#EBF3ED] hover:bg-[#4A7C59] text-[#4A7C59] hover:text-white border border-[#4A7C59]/30 px-3 py-1 rounded-full text-xs font-bold transition-all shrink-0 flex items-center justify-center gap-1 shadow-2xs"
+                        >
+                          <Tag className="w-3 h-3 text-[#4A7C59] group-hover:text-white" />
+                          <span>📌 อยากไปบ้าง / ดูงานนี้ ➔</span>
+                        </button>
                       </div>
 
                       {/* Interactive Comments Drawer */}

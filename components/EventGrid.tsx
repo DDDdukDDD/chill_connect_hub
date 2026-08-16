@@ -95,7 +95,8 @@ export const EventGrid: React.FC<EventGridProps> = ({
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: idx * 0.05 }}
-                className="group bg-white rounded-2xl border border-[#E8E2D8] shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden transform hover:-translate-y-1"
+                onClick={() => onSelectEvent(event)}
+                className="group bg-white rounded-2xl border border-[#E8E2D8] shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden transform hover:-translate-y-1 cursor-pointer"
               >
                 {/* Image Container */}
                 <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
@@ -105,6 +106,13 @@ export const EventGrid: React.FC<EventGridProps> = ({
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-70" />
+
+                  {/* Hover Hint Overlay for Beginners */}
+                  <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none z-10">
+                    <span className="bg-white/95 text-[#1E293B] text-xs font-extrabold px-3 py-1.5 rounded-full shadow-lg border border-white/50 flex items-center gap-1">
+                      🔍 คลิกดูรายละเอียด
+                    </span>
+                  </div>
 
                   {/* Top-Left Status Badge */}
                   {event.badgeText && (
