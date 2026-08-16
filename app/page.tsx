@@ -33,6 +33,7 @@ export default function Home() {
   const [activeNavTab, setActiveNavTab] = useState('explore');
   const [selectedCategory, setSelectedCategory] = useState<'heal' | 'move' | 'chill' | 'learn' | null>(null);
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
+  const [selectedVenueFilter, setSelectedVenueFilter] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'newest' | 'popular'>('newest');
   const [searchQuery, setSearchQuery] = useState('');
   const [eventsList, setEventsList] = useState<EventItem[]>(MOCK_EVENTS);
@@ -95,6 +96,7 @@ export default function Home() {
   const filteredEvents = useMemo(() => {
     let result = eventsList.filter((event) => {
       const matchesCategory = selectedCategory ? event.category === selectedCategory : true;
+      const matchesVenue = selectedVenueFilter ? event.venueTag === selectedVenueFilter : true;
 
       let matchesSubCategory = true;
       if (selectedCategory && selectedSubCategory) {
@@ -117,7 +119,7 @@ export default function Home() {
         event.tag.toLowerCase().includes(q) ||
         event.description.toLowerCase().includes(q);
 
-      return matchesCategory && matchesSubCategory && matchesSearch;
+      return matchesCategory && matchesVenue && matchesSubCategory && matchesSearch;
     });
 
     if (sortBy === 'popular') {
@@ -127,7 +129,7 @@ export default function Home() {
     }
 
     return result;
-  }, [eventsList, selectedCategory, selectedSubCategory, searchQuery, sortBy]);
+  }, [eventsList, selectedCategory, selectedSubCategory, selectedVenueFilter, searchQuery, sortBy]);
 
   const displayedEvents = useMemo(() => {
     return filteredEvents.slice(0, visibleCount);
@@ -380,17 +382,23 @@ export default function Home() {
               </p>
             </div>
 
-            {/* 2-Level Mood Filter Chips */}
+            {/* 2-Level Mood Filter Chips & Public Venue Filters */}
             <MoodFilterChips
               selectedCategory={selectedCategory}
               setSelectedCategory={(cat) => {
                 setSelectedCategory(cat);
                 setSelectedSubCategory(null);
+                setSelectedVenueFilter(null);
                 setVisibleCount(6);
               }}
               selectedSubCategory={selectedSubCategory}
               setSelectedSubCategory={(subCat) => {
                 setSelectedSubCategory(subCat);
+                setVisibleCount(6);
+              }}
+              selectedVenueFilter={selectedVenueFilter}
+              setSelectedVenueFilter={(venueId) => {
+                setSelectedVenueFilter(venueId);
                 setVisibleCount(6);
               }}
             />

@@ -182,28 +182,42 @@ export const EventGrid: React.FC<EventGridProps> = ({
                     </div>
                   </div>
 
-                  {/* Seat Capacity Progress Bar */}
-                  <div className="space-y-1.5 pt-1">
-                    <div className="flex items-center justify-between text-xs font-medium text-[#64748B]">
-                      <span className="flex items-center gap-1">
-                        <Users className="w-3.5 h-3.5 text-[#4A7C59]" />
-                        <span>ที่นั่ง {event.participantsCount}/{event.maxParticipants}</span>
-                      </span>
-                      {isAlmostFull && (
-                        <span className="text-amber-600 font-semibold text-[11px] animate-pulse">
-                          ใกล้เต็มแล้ว!
+                  {/* Seat Capacity Progress Bar OR Public Venue Buddy Status */}
+                  {event.eventType === 'public_venue' ? (
+                    <div className="pt-1">
+                      <div className="flex items-center justify-between text-xs font-bold text-[#F26430] bg-orange-50 px-3 py-1.5 rounded-xl border border-orange-200/80">
+                        <span className="flex items-center gap-1">
+                          <Users className="w-3.5 h-3.5" />
+                          <span>มีเพื่อนหาคู่ไปงาน {event.buddyCount || 12} คน</span>
                         </span>
-                      )}
+                        <span className="text-[10px] text-emerald-700 font-extrabold bg-emerald-100 px-1.5 py-0.5 rounded-md">
+                          เปิดรับเพื่อน
+                        </span>
+                      </div>
                     </div>
-                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          isAlmostFull ? 'bg-gradient-to-r from-amber-400 to-[#F26430]' : 'bg-[#4A7C59]'
-                        }`}
-                        style={{ width: `${Math.min(fillRatio * 100, 100)}%` }}
-                      />
+                  ) : (
+                    <div className="space-y-1.5 pt-1">
+                      <div className="flex items-center justify-between text-xs font-medium text-[#64748B]">
+                        <span className="flex items-center gap-1">
+                          <Users className="w-3.5 h-3.5 text-[#4A7C59]" />
+                          <span>ที่นั่ง {event.participantsCount}/{event.maxParticipants}</span>
+                        </span>
+                        {isAlmostFull && (
+                          <span className="text-amber-600 font-semibold text-[11px] animate-pulse">
+                            ใกล้เต็มแล้ว!
+                          </span>
+                        )}
+                      </div>
+                      <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            isAlmostFull ? 'bg-gradient-to-r from-amber-400 to-[#F26430]' : 'bg-[#4A7C59]'
+                          }`}
+                          style={{ width: `${Math.min(fillRatio * 100, 100)}%` }}
+                        />
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Bottom Action Area */}
                   <div className="pt-3 flex items-center justify-between gap-3 border-t border-slate-100">
@@ -218,9 +232,13 @@ export const EventGrid: React.FC<EventGridProps> = ({
 
                     <button
                       onClick={() => onSelectEvent(event)}
-                      className="bg-[#F26430] hover:bg-[#D95322] text-white px-5 py-2 rounded-full font-bold text-xs sm:text-sm transition-all shadow-sm hover:shadow-md shadow-[#F26430]/20 active:scale-95 flex items-center justify-center gap-1"
+                      className={`px-5 py-2 rounded-full font-bold text-xs sm:text-sm transition-all shadow-sm hover:shadow-md active:scale-95 flex items-center justify-center gap-1 text-white ${
+                        event.eventType === 'public_venue'
+                          ? 'bg-[#4A7C59] hover:bg-[#3B6347] shadow-[#4A7C59]/20'
+                          : 'bg-[#F26430] hover:bg-[#D95322] shadow-[#F26430]/20'
+                      }`}
                     >
-                      <span>เข้าร่วม</span>
+                      <span>{event.eventType === 'public_venue' ? '🤝 หาเพื่อนไปด้วย' : 'เข้าร่วม'}</span>
                     </button>
                   </div>
                 </div>
