@@ -221,7 +221,12 @@ export const EventGrid: React.FC<EventGridProps> = ({
 
                   {/* Bottom Action Area */}
                   <div className="pt-3 flex items-center justify-between gap-3 border-t border-slate-100">
-                    {event.rating ? (
+                    {event.eventType === 'public_venue' ? (
+                      <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1">
+                        <Tag className="w-3 h-3 text-[#F26430]" />
+                        <span>อีเวนต์สาธารณะ</span>
+                      </span>
+                    ) : event.rating ? (
                       <span className="flex items-center gap-1 text-amber-500 font-bold text-xs">
                         <Star className="w-3.5 h-3.5 fill-amber-400" />
                         <span>{event.rating}</span>

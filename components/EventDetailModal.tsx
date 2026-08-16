@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { EventItem } from '@/data/mockData';
-import { X, Calendar, MapPin, Users, Heart, Share2, CheckCircle2, ShieldCheck, Clock, ExternalLink, UserPlus, Sparkles, MessageCircle } from 'lucide-react';
+import { X, Calendar, MapPin, Users, Heart, Share2, CheckCircle2, ShieldCheck, Clock, ExternalLink } from 'lucide-react';
 
 interface EventDetailModalProps {
   event: EventItem | null;
@@ -21,7 +21,6 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 }) => {
   const [joined, setJoined] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [buddyRequested, setBuddyRequested] = useState(false);
 
   if (!event) return null;
 
@@ -39,10 +38,6 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   const handleShare = () => {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleRequestBuddy = () => {
-    setBuddyRequested(true);
   };
 
   return (
@@ -179,62 +174,6 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               {event.description}
             </p>
           </div>
-
-          {/* Special Event Buddy Finder (สำหรับงานสาธารณะ) */}
-          {isPublicVenue && (
-            <div className="bg-gradient-to-br from-emerald-50 to-orange-50/60 p-4 rounded-2xl border border-[#C5DCCB] space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-[#F26430]" />
-                  <h4 className="font-extrabold text-xs sm:text-sm text-[#1E293B]">
-                    🤝 หาเพื่อนไปเดินงานนี้ด้วยกัน (Event Buddy)
-                  </h4>
-                </div>
-                <span className="text-[11px] font-bold text-[#4A7C59] bg-white px-2.5 py-0.5 rounded-full border border-emerald-200">
-                  มีเพื่อนหาคู่ไปงาน {event.buddyCount || 12} คน
-                </span>
-              </div>
-
-              {/* Sample Buddy Posts */}
-              <div className="space-y-2">
-                <div className="bg-white p-2.5 rounded-xl border border-slate-200/80 text-xs flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <img
-                      src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80"
-                      alt=""
-                      className="w-7 h-7 rounded-full object-cover border border-emerald-500"
-                    />
-                    <div className="min-w-0">
-                      <p className="font-bold text-[#1E293B]">คุณส้ม (Som_Chill)</p>
-                      <p className="text-[#475569] truncate">อยากไปเดินงานวันเสาร์นี้ หาเพื่อนจิบกาแฟก่อนเข้างานค่ะ ☕</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setBuddyRequested(true)}
-                    className="text-[11px] font-bold text-[#F26430] hover:underline shrink-0"
-                  >
-                    ทักทาย
-                  </button>
-                </div>
-              </div>
-
-              {/* Post Buddy Request Action */}
-              {!buddyRequested ? (
-                <button
-                  onClick={handleRequestBuddy}
-                  className="w-full bg-[#4A7C59] hover:bg-[#3B6347] text-white py-2 rounded-xl font-bold text-xs transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-95"
-                >
-                  <UserPlus className="w-3.5 h-3.5" />
-                  <span>ประกาศหาเพื่อนไปงานนี้ด้วย (+1)</span>
-                </button>
-              ) : (
-                <div className="bg-emerald-600 text-white text-xs font-bold p-2 rounded-xl text-center flex items-center justify-center gap-1.5 animate-fade-in">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>ประกาศหาเพื่อนไปงานเรียบร้อย! เพื่อนๆ ในฮับจะเห็นคำขอของคุณ</span>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Non-Public Participants Progress Bar */}
           {!isPublicVenue && (
