@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { EventItem } from '@/data/mockData';
-import { Heart, Calendar, MapPin, Users, Star, CheckCircle2, LayoutGrid, List, Sparkles, Tag } from 'lucide-react';
+import { Heart, Calendar, MapPin, Users, Star, CheckCircle2, LayoutGrid, List, Sparkles, Tag, Building2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface EventGridProps {
@@ -182,16 +182,16 @@ export const EventGrid: React.FC<EventGridProps> = ({
                     </div>
                   </div>
 
-                  {/* Seat Capacity Progress Bar OR Public Venue Buddy Status */}
+                  {/* Seat Capacity Progress Bar OR Public Venue Status Bar */}
                   {event.eventType === 'public_venue' ? (
                     <div className="pt-1">
-                      <div className="flex items-center justify-between text-xs font-bold text-[#F26430] bg-orange-50 px-3 py-1.5 rounded-xl border border-orange-200/80">
-                        <span className="flex items-center gap-1">
-                          <Users className="w-3.5 h-3.5" />
-                          <span>มีเพื่อนหาคู่ไปงาน {event.buddyCount || 12} คน</span>
+                      <div className="flex items-center justify-between text-xs font-bold text-[#F26430] bg-orange-50/90 px-3 py-1.5 rounded-xl border border-orange-200/80">
+                        <span className="flex items-center gap-1.5">
+                          <Building2 className="w-3.5 h-3.5" />
+                          <span>งานแสดงสินค้า / มหกรรมใหญ่</span>
                         </span>
-                        <span className="text-[10px] text-emerald-700 font-extrabold bg-emerald-100 px-1.5 py-0.5 rounded-md">
-                          เปิดรับเพื่อน
+                        <span className="text-[10px] text-[#F26430] font-extrabold bg-white px-2 py-0.5 rounded-md border border-orange-200 shadow-2xs">
+                          {event.price || 'เข้าชมฟรี'}
                         </span>
                       </div>
                     </div>
@@ -232,13 +232,13 @@ export const EventGrid: React.FC<EventGridProps> = ({
 
                     <button
                       onClick={() => onSelectEvent(event)}
-                      className={`px-5 py-2 rounded-full font-bold text-xs sm:text-sm transition-all shadow-sm hover:shadow-md active:scale-95 flex items-center justify-center gap-1 text-white ${
+                      className={`px-5 py-2 rounded-full font-bold text-xs sm:text-sm transition-all shadow-sm hover:shadow-md active:scale-95 flex items-center justify-center gap-1.5 text-white ${
                         event.eventType === 'public_venue'
-                          ? 'bg-[#4A7C59] hover:bg-[#3B6347] shadow-[#4A7C59]/20'
-                          : 'bg-[#F26430] hover:bg-[#D95322] shadow-[#F26430]/20'
+                          ? 'bg-[#F26430] hover:bg-[#D95322] shadow-[#F26430]/20'
+                          : 'bg-[#4A7C59] hover:bg-[#3B6347] shadow-[#4A7C59]/20'
                       }`}
                     >
-                      <span>{event.eventType === 'public_venue' ? '🤝 หาเพื่อนไปด้วย' : 'เข้าร่วม'}</span>
+                      <span>{event.eventType === 'public_venue' ? '📌 สนใจ / ดูงาน' : 'เข้าร่วม'}</span>
                     </button>
                   </div>
                 </div>

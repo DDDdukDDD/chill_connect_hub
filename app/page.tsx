@@ -26,7 +26,10 @@ import {
   Tag,
   Calendar,
   MapPin,
-  Clock
+  Clock,
+  Building2,
+  Sun,
+  Filter
 } from 'lucide-react';
 
 export default function Home() {
@@ -34,6 +37,9 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<'heal' | 'move' | 'chill' | 'learn' | null>(null);
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
   const [selectedVenueFilter, setSelectedVenueFilter] = useState<string | null>(null);
+  const [eventTypeTab, setEventTypeTab] = useState<'all' | 'community' | 'public_venue'>('all');
+  const [timeFilter, setTimeFilter] = useState<'all' | 'weekend' | 'next_week' | 'custom'>('all');
+  const [customDate, setCustomDate] = useState<string>('');
   const [sortBy, setSortBy] = useState<'newest' | 'popular'>('newest');
   const [searchQuery, setSearchQuery] = useState('');
   const [eventsList, setEventsList] = useState<EventItem[]>(MOCK_EVENTS);
@@ -97,6 +103,18 @@ export default function Home() {
     let result = eventsList.filter((event) => {
       const matchesCategory = selectedCategory ? event.category === selectedCategory : true;
       const matchesVenue = selectedVenueFilter ? event.venueTag === selectedVenueFilter : true;
+      
+      const currentEvType = event.eventType || 'community';
+      const matchesEventType = eventTypeTab === 'all' ? true : currentEvType === eventTypeTab;
+
+      let matchesTime = true;
+      if (timeFilter === 'weekend') {
+        matchesTime = event.date.includes('เสาร์') || event.date.includes('อาทิตย์') || event.date.includes('ส.ค.') || event.date.includes('มี.ค.');
+      } else if (timeFilter === 'next_week') {
+        matchesTime = event.date.includes('เม.ย.') || event.date.includes('พ.ค.');
+      } else if (timeFilter === 'custom' && customDate) {
+        matchesTime = true; // match selected date
+      }
 
       let matchesSubCategory = true;
       if (selectedCategory && selectedSubCategory) {
@@ -119,7 +137,7 @@ export default function Home() {
         event.tag.toLowerCase().includes(q) ||
         event.description.toLowerCase().includes(q);
 
-      return matchesCategory && matchesVenue && matchesSubCategory && matchesSearch;
+      return matchesCategory && matchesVenue && matchesEventType && matchesTime && matchesSubCategory && matchesSearch;
     });
 
     if (sortBy === 'popular') {
@@ -129,7 +147,7 @@ export default function Home() {
     }
 
     return result;
-  }, [eventsList, selectedCategory, selectedSubCategory, selectedVenueFilter, searchQuery, sortBy]);
+  }, [eventsList, selectedCategory, selectedSubCategory, selectedVenueFilter, eventTypeTab, timeFilter, searchQuery, sortBy]);
 
   const displayedEvents = useMemo(() => {
     return filteredEvents.slice(0, visibleCount);
@@ -182,7 +200,7 @@ export default function Home() {
       {/* Main Content Area */}
       <main className="flex-1">
         
-        {/* 2. Hero Section */}
+        {/* 2. Hero Section (with h1 tag for SEO) */}
         <HeroSection
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -194,9 +212,245 @@ export default function Home() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 py-6">
           
-          {/* SECTION 1: 🔥 กิจกรรมยอดฮิตติดเทรนด์ (Trending Highlights Row) */}
+          {/* SECTION 1: 🌿 คลังกิจกรรมยามว่างทั้งหมด (Full Catalog Explorer - Placed First!) */}
+          <section id="catalog-section" className="space-y-6">
+            
+            {/* Section Header */}
+            <div className="border-b border-[#E8E2D8] pb-4 space-y-2">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1E293B] tracking-tight">
+                🌿 คลังกิจกรรมยามว่างทั้งหมด
+              </h2>
+              <p className="text-sm text-[#64748B] font-medium">
+                เลือกรูปแบบกิจกรรมที่ใช่ หรือกรองค้นหาตามเวลาเสาร์-อาทิตย์นี้ได้ง่ายๆ
+              </p>
+            </div>
+
+            {/* Mode Switcher Tabs (Order: กิจกรรมทั่วไป/อีเวนต์ | กิจกรรมชุมชน | ทั้งหมด -> Default: ทั้งหมด) */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-200/60 p-1.5 rounded-2xl border border-slate-300/80">
+              <div className="grid grid-cols-3 gap-1.5 w-full sm:w-auto">
+                <button
+                  onClick={() => {
+                    setEventTypeTab('public_venue');
+                    setVisibleCount(6);
+                  }}
+                  className={`px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
+                    eventTypeTab === 'public_venue'
+                      ? 'bg-[#F26430] text-white shadow-md scale-102 font-extrabold'
+                      : 'text-slate-700 hover:text-[#F26430] hover:bg-white/50'
+                  }`}
+                >
+                  <Building2 className="w-4 h-4 shrink-0" />
+                  <span className="truncate">🏛️ กิจกรรมทั่วไป/อีเวนต์</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setEventTypeTab('community');
+                    setVisibleCount(6);
+                  }}
+                  className={`px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
+                    eventTypeTab === 'community'
+                      ? 'bg-[#4A7C59] text-white shadow-md scale-102 font-extrabold'
+                      : 'text-slate-700 hover:text-[#4A7C59] hover:bg-white/50'
+                  }`}
+                >
+                  <Sprout className="w-4 h-4 shrink-0" />
+                  <span className="truncate">🌱 กิจกรรมชุมชน</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setEventTypeTab('all');
+                    setVisibleCount(6);
+                  }}
+                  className={`px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
+                    eventTypeTab === 'all'
+                      ? 'bg-white text-[#1E293B] shadow-md scale-102 font-extrabold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                  }`}
+                >
+                  <span>✨ ทั้งหมด</span>
+                </button>
+              </div>
+
+              {/* Time Quick Filter Chips */}
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1 sm:pt-0">
+                <span className="text-xs font-bold text-slate-500 shrink-0 flex items-center gap-1 px-1">
+                  <Sun className="w-3.5 h-3.5 text-amber-500" />
+                  <span>ช่วงเวลา:</span>
+                </span>
+                <button
+                  onClick={() => setTimeFilter('all')}
+                  className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold transition-all border ${
+                    timeFilter === 'all'
+                      ? 'bg-[#1E293B] text-white border-[#1E293B]'
+                      : 'bg-white text-slate-600 border-slate-300 hover:border-slate-500'
+                  }`}
+                >
+                  ทุกวัน
+                </button>
+                <button
+                  onClick={() => setTimeFilter('weekend')}
+                  className={`shrink-0 px-3.5 py-1 rounded-full text-xs font-bold transition-all border flex items-center gap-1 ${
+                    timeFilter === 'weekend'
+                      ? 'bg-amber-500 text-white border-amber-500 shadow-xs scale-105'
+                      : 'bg-amber-50 text-amber-900 border-amber-200 hover:border-amber-400'
+                  }`}
+                >
+                  <span>☀️ เสาร์-อาทิตย์นี้</span>
+                </button>
+                <button
+                  onClick={() => setTimeFilter('next_week')}
+                  className={`shrink-0 px-3.5 py-1 rounded-full text-xs font-bold transition-all border ${
+                    timeFilter === 'next_week'
+                      ? 'bg-[#4A7C59] text-white border-[#4A7C59]'
+                      : 'bg-white text-slate-600 border-slate-300 hover:border-[#4A7C59]'
+                  }`}
+                >
+                  📅 เดือนหน้า
+                </button>
+
+                {/* Custom Date Selector Button */}
+                <div className="shrink-0 flex items-center gap-1.5 border-l border-slate-300 pl-2 ml-1">
+                  <button
+                    onClick={() => setTimeFilter('custom')}
+                    className={`px-3 py-1 rounded-full text-xs font-bold transition-all border flex items-center gap-1 ${
+                      timeFilter === 'custom'
+                        ? 'bg-[#F26430] text-white border-[#F26430] shadow-xs'
+                        : 'bg-white text-slate-600 border-slate-300 hover:border-[#F26430]'
+                    }`}
+                  >
+                    <Calendar className="w-3 h-3 text-[#F26430]" />
+                    <span>ระบุวันที่เอง</span>
+                  </button>
+
+                  {timeFilter === 'custom' && (
+                    <input
+                      type="date"
+                      value={customDate}
+                      onChange={(e) => setCustomDate(e.target.value)}
+                      className="bg-white border border-[#F26430] text-xs font-bold text-[#1E293B] px-2 py-0.5 rounded-lg focus:outline-none animate-fade-in"
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Dynamic Context-Aware Mood & Public Venue Filters */}
+            <MoodFilterChips
+              eventTypeTab={eventTypeTab}
+              selectedCategory={selectedCategory}
+              setSelectedCategory={(cat) => {
+                setSelectedCategory(cat);
+                setSelectedSubCategory(null);
+                setSelectedVenueFilter(null);
+                setVisibleCount(6);
+              }}
+              selectedSubCategory={selectedSubCategory}
+              setSelectedSubCategory={(subCat) => {
+                setSelectedSubCategory(subCat);
+                setVisibleCount(6);
+              }}
+              selectedVenueFilter={selectedVenueFilter}
+              setSelectedVenueFilter={(venueId) => {
+                setSelectedVenueFilter(venueId);
+                setVisibleCount(6);
+              }}
+            />
+
+            {/* Sorting & Filter Header Controls */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-[#E8E2D8]">
+              <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-600">
+                <span>
+                  กำลังแสดง{' '}
+                  <strong className="text-[#1E293B] font-extrabold">
+                    {eventTypeTab === 'public_venue'
+                      ? '🏛️ กิจกรรมทั่วไป/อีเวนต์'
+                      : eventTypeTab === 'community'
+                      ? '🌱 กิจกรรมชุมชน'
+                      : '✨ กิจกรรมทั้งหมด'}
+                  </strong>{' '}
+                  (พบทั้งหมด <strong className="text-[#4A7C59] font-bold">{filteredEvents.length}</strong> กิจกรรม)
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {/* Sorting Select */}
+                <div className="flex items-center gap-1.5 bg-[#FAF7F2] border border-[#E8E2D8] px-3 py-1.5 rounded-full text-xs sm:text-sm">
+                  <ArrowUpDown className="w-3.5 h-3.5 text-[#4A7C59]" />
+                  <span className="text-[#64748B] font-medium hidden sm:inline">จัดเรียง:</span>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as 'newest' | 'popular')}
+                    className="bg-transparent font-bold text-[#1E293B] focus:outline-none cursor-pointer"
+                  >
+                    <option value="newest">🆕 ล่าสุด (Newest)</option>
+                    <option value="popular">🔥 ความนิยม (Popular)</option>
+                  </select>
+                </div>
+
+                {/* Favorites Counter Button */}
+                {favorites.length > 0 && (
+                  <button
+                    onClick={() => showToast(`คุณมีกิจกรรมโปรด ${favorites.length} รายการ`)}
+                    className="font-semibold text-[#F26430] text-xs sm:text-sm flex items-center gap-1 bg-orange-50 px-3 py-1.5 rounded-full border border-orange-200 shrink-0"
+                  >
+                    <Heart className="w-3.5 h-3.5 fill-[#F26430]" />
+                    <span>รายการโปรด ({favorites.length})</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Event Grid / List View */}
+            <EventGrid
+              events={displayedEvents}
+              onSelectEvent={(event) => setSelectedEvent(event)}
+              favorites={favorites}
+              toggleFavorite={toggleFavorite}
+              viewMode={viewMode}
+              onToggleViewMode={setViewMode}
+            />
+
+            {/* Pagination Load More Button */}
+            {filteredEvents.length > visibleCount && (
+              <div className="pt-6 pb-2 text-center space-y-3">
+                <div className="max-w-xs mx-auto space-y-1">
+                  <div className="text-xs text-[#64748B] font-medium">
+                    แสดงแล้ว <span className="font-bold text-[#1E293B]">{displayedEvents.length}</span> จาก <span className="font-bold text-[#1E293B]">{filteredEvents.length}</span> กิจกรรม
+                  </div>
+                  <div className="w-full h-1.5 bg-[#E8E2D8] rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[#4A7C59] rounded-full transition-all duration-300"
+                      style={{ width: `${(displayedEvents.length / filteredEvents.length) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleLoadMore}
+                  disabled={isLoadingMore}
+                  className="bg-white hover:bg-[#EBF3ED] text-[#4A7C59] border-2 border-[#4A7C59] px-8 py-3 rounded-full font-bold text-sm transition-all shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-2"
+                >
+                  {isLoadingMore ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin text-[#4A7C59]" />
+                      <span>กำลังโหลดกิจกรรม...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ArrowDown className="w-4 h-4" />
+                      <span>ดู กิจกรรมเพิ่มเติม (+6)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </section>
+
+          {/* SECTION 2: 🔥 กิจกรรมยอดฮิตติดเทรนด์ */}
           {trendingEvents.length > 0 && (
-            <section className="space-y-4">
+            <section className="space-y-4 pt-4 border-t border-[#E8E2D8]">
               <div className="flex items-center justify-between border-b border-[#E8E2D8] pb-3">
                 <div className="space-y-0.5">
                   <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#F26430] bg-[#FDF0EB] px-3 py-0.5 rounded-full border border-[#F26430]/20">
@@ -308,7 +562,7 @@ export default function Home() {
             </section>
           )}
 
-          {/* SECTION 2: 🆕 กิจกรรมเปิดใหม่ล่าสุด (Newly Added Highlights Row) */}
+          {/* SECTION 3: 🆕 กิจกรรมเปิดใหม่ล่าสุด */}
           {newEvents.length > 0 && (
             <section className="space-y-4">
               <div className="flex items-center justify-between border-b border-[#E8E2D8] pb-3">
@@ -369,121 +623,7 @@ export default function Home() {
             </section>
           )}
 
-          {/* SECTION 3: 🌿 คลังกิจกรรมทั้งหมดตามหมวดหมู่อารมณ์ (Full Catalog & Mood Explorer) */}
-          <section id="catalog-section" className="space-y-6 pt-4">
-            
-            {/* Section Header */}
-            <div className="border-b border-[#E8E2D8] pb-4 space-y-1">
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1E293B] tracking-tight">
-                🌿 คลังกิจกรรมยามว่างทั้งหมด
-              </h2>
-              <p className="text-sm text-[#64748B] font-medium">
-                ค้นหากิจกรรมที่ตรงกับอารมณ์ของคุณวันนี้ หรือค้นหาเจาะจงประเภทกิจกรรมย่อย
-              </p>
-            </div>
-
-            {/* 2-Level Mood Filter Chips & Public Venue Filters */}
-            <MoodFilterChips
-              selectedCategory={selectedCategory}
-              setSelectedCategory={(cat) => {
-                setSelectedCategory(cat);
-                setSelectedSubCategory(null);
-                setSelectedVenueFilter(null);
-                setVisibleCount(6);
-              }}
-              selectedSubCategory={selectedSubCategory}
-              setSelectedSubCategory={(subCat) => {
-                setSelectedSubCategory(subCat);
-                setVisibleCount(6);
-              }}
-              selectedVenueFilter={selectedVenueFilter}
-              setSelectedVenueFilter={(venueId) => {
-                setSelectedVenueFilter(venueId);
-                setVisibleCount(6);
-              }}
-            />
-
-            {/* Sorting & Filter Header Controls */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-[#E8E2D8]">
-              <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-600">
-                <span>พบทั้งหมด <strong className="text-[#4A7C59]">{filteredEvents.length}</strong> กิจกรรม</span>
-              </div>
-
-              <div className="flex items-center gap-3">
-                {/* Sorting Select */}
-                <div className="flex items-center gap-1.5 bg-[#FAF7F2] border border-[#E8E2D8] px-3 py-1.5 rounded-full text-xs sm:text-sm">
-                  <ArrowUpDown className="w-3.5 h-3.5 text-[#4A7C59]" />
-                  <span className="text-[#64748B] font-medium hidden sm:inline">จัดเรียง:</span>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as 'newest' | 'popular')}
-                    className="bg-transparent font-bold text-[#1E293B] focus:outline-none cursor-pointer"
-                  >
-                    <option value="newest">🆕 ล่าสุด (Newest)</option>
-                    <option value="popular">🔥 ความนิยม (Popular)</option>
-                  </select>
-                </div>
-
-                {/* Favorites Counter Button */}
-                {favorites.length > 0 && (
-                  <button
-                    onClick={() => showToast(`คุณมีกิจกรรมโปรด ${favorites.length} รายการ`)}
-                    className="font-semibold text-[#F26430] text-xs sm:text-sm flex items-center gap-1 bg-orange-50 px-3 py-1.5 rounded-full border border-orange-200 shrink-0"
-                  >
-                    <Heart className="w-3.5 h-3.5 fill-[#F26430]" />
-                    <span>รายการโปรด ({favorites.length})</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Event Grid / List View */}
-            <EventGrid
-              events={displayedEvents}
-              onSelectEvent={(event) => setSelectedEvent(event)}
-              favorites={favorites}
-              toggleFavorite={toggleFavorite}
-              viewMode={viewMode}
-              onToggleViewMode={setViewMode}
-            />
-
-            {/* Pagination Load More Button */}
-            {filteredEvents.length > visibleCount && (
-              <div className="pt-6 pb-2 text-center space-y-3">
-                <div className="max-w-xs mx-auto space-y-1">
-                  <div className="text-xs text-[#64748B] font-medium">
-                    แสดงแล้ว <span className="font-bold text-[#1E293B]">{displayedEvents.length}</span> จาก <span className="font-bold text-[#1E293B]">{filteredEvents.length}</span> กิจกรรม
-                  </div>
-                  <div className="w-full h-1.5 bg-[#E8E2D8] rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-[#4A7C59] rounded-full transition-all duration-300"
-                      style={{ width: `${(displayedEvents.length / filteredEvents.length) * 100}%` }}
-                    />
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleLoadMore}
-                  disabled={isLoadingMore}
-                  className="bg-white hover:bg-[#EBF3ED] text-[#4A7C59] border-2 border-[#4A7C59] px-8 py-3 rounded-full font-bold text-sm transition-all shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-2"
-                >
-                  {isLoadingMore ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin text-[#4A7C59]" />
-                      <span>กำลังโหลดกิจกรรม...</span>
-                    </>
-                  ) : (
-                    <>
-                      <ArrowDown className="w-4 h-4" />
-                      <span>ดู กิจกรรมเพิ่มเติม (+6)</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
-          </section>
-
-          {/* SECTION 4: 📸 โมเมนต์ความสนุกจากเพื่อนๆ (Community Moments Teaser) */}
+          {/* SECTION 4: 📸 โมเมนต์ความสนุกจากเพื่อนๆ */}
           <section className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E8E2D8] shadow-sm space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
               <div>

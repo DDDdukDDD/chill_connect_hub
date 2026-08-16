@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { MOOD_CATEGORIES, MoodCategory } from '@/data/mockData';
-import { Sparkles, MapPin, Layers, Building2, Flame } from 'lucide-react';
+import { Sparkles, MapPin, Layers, Building2, Flame, Sprout } from 'lucide-react';
 
 export interface SubCategoryItem {
   id: string;
@@ -43,6 +43,7 @@ export const PUBLIC_VENUES = [
 ];
 
 interface MoodFilterChipsProps {
+  eventTypeTab: 'all' | 'community' | 'public_venue';
   selectedCategory: 'heal' | 'move' | 'chill' | 'learn' | null;
   setSelectedCategory: (categoryId: 'heal' | 'move' | 'chill' | 'learn' | null) => void;
   selectedSubCategory: string | null;
@@ -52,6 +53,7 @@ interface MoodFilterChipsProps {
 }
 
 export const MoodFilterChips: React.FC<MoodFilterChipsProps> = ({
+  eventTypeTab,
   selectedCategory,
   setSelectedCategory,
   selectedSubCategory,
@@ -60,149 +62,177 @@ export const MoodFilterChips: React.FC<MoodFilterChipsProps> = ({
   setSelectedVenueFilter,
 }) => {
   const currentSubList = selectedCategory ? SUB_CATEGORIES_MAP[selectedCategory] : [];
+  const hasActiveFilter = selectedCategory || selectedSubCategory || selectedVenueFilter;
+
+  const resetAllFilters = () => {
+    setSelectedCategory(null);
+    setSelectedSubCategory(null);
+    if (setSelectedVenueFilter) setSelectedVenueFilter(null);
+  };
 
   return (
-    <div className="space-y-3.5">
+    <div className="space-y-3 pt-1">
       
-      {/* Section Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl sm:text-2xl font-bold text-[#1E293B] tracking-tight flex items-center gap-2">
-          <span>หมวดหมู่กิจกรรมยามว่าง</span>
-        </h2>
-        {(selectedCategory || selectedSubCategory || selectedVenueFilter) && (
-          <button
-            onClick={() => {
-              setSelectedCategory(null);
-              setSelectedSubCategory(null);
-              if (setSelectedVenueFilter) setSelectedVenueFilter(null);
-            }}
-            className="text-xs font-semibold text-[#4A7C59] hover:underline flex items-center gap-1"
-          >
-            <span>ล้างฟิลเตอร์ทั้งหมด</span>
-          </button>
-        )}
-      </div>
-
-      {/* Level 1: Main Mood Category Chips */}
-      <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-1 pt-1 scroll-smooth">
-        
-        {/* All option chip */}
-        <button
-          onClick={() => {
-            setSelectedCategory(null);
-            setSelectedSubCategory(null);
-            if (setSelectedVenueFilter) setSelectedVenueFilter(null);
-          }}
-          className={`shrink-0 rounded-full px-5 py-2.5 text-xs sm:text-sm font-bold transition-all duration-200 flex items-center gap-2 border shadow-xs ${
-            selectedCategory === null && selectedVenueFilter === null
-              ? 'bg-[#4A7C59] text-white border-[#4A7C59] shadow-[#4A7C59]/20 scale-102'
-              : 'bg-white text-[#475569] border-[#E2DCD2] hover:border-[#4A7C59] hover:bg-[#EBF3ED]'
-          }`}
-        >
-          <span>✨ ทั้งหมด</span>
-        </button>
-
-        {MOOD_CATEGORIES.map((cat: MoodCategory) => {
-          const isSelected = selectedCategory === cat.id;
-          return (
-            <button
-              key={cat.id}
-              onClick={() => {
-                if (isSelected) {
-                  setSelectedCategory(null);
-                  setSelectedSubCategory(null);
-                } else {
-                  setSelectedCategory(cat.id);
-                  setSelectedSubCategory(null);
-                  if (setSelectedVenueFilter) setSelectedVenueFilter(null);
-                }
-              }}
-              className={`shrink-0 rounded-full px-5 py-2.5 text-xs sm:text-sm font-bold transition-all duration-200 flex items-center gap-2 border shadow-xs ${
-                isSelected
-                  ? 'bg-[#4A7C59] text-white border-[#4A7C59] shadow-[#4A7C59]/20 scale-102'
-                  : 'bg-white text-[#334155] border-[#E2DCD2] hover:border-[#4A7C59] hover:bg-[#EBF3ED]'
-              }`}
-            >
-              <span className="text-sm sm:text-base">{cat.icon}</span>
-              <span>{cat.label}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Public Venue Quick Filters Row */}
-      {setSelectedVenueFilter && (
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-1 pb-1">
-          <span className="text-xs font-bold text-slate-500 shrink-0 flex items-center gap-1">
-            <Building2 className="w-3.5 h-3.5 text-[#F26430]" />
-            <span>สถานที่/งานอีเวนต์ใหญ่:</span>
-          </span>
-          {PUBLIC_VENUES.map((venue) => {
-            const isVenueSelected = selectedVenueFilter === venue.id;
-            return (
-              <button
-                key={venue.id}
-                onClick={() => {
-                  if (isVenueSelected) {
-                    setSelectedVenueFilter(null);
-                  } else {
-                    setSelectedVenueFilter(venue.id);
-                    setSelectedCategory(null);
-                    setSelectedSubCategory(null);
-                  }
-                }}
-                className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all border ${
-                  isVenueSelected
-                    ? 'bg-[#F26430] text-white border-[#F26430] shadow-xs scale-105'
-                    : 'bg-white text-[#475569] border-[#E2DCD2] hover:border-[#F26430] hover:text-[#F26430]'
-                }`}
-              >
-                <span>{venue.label}</span>
+      {/* 🏛️ MODE 1: PUBLIC VENUE / GENERAL EVENTS */}
+      {eventTypeTab === 'public_venue' && (
+        <div className="space-y-2.5 bg-white p-4 rounded-2xl border border-[#E8E2D8] shadow-2xs animate-fade-in">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold text-[#F26430] uppercase tracking-wider flex items-center gap-1.5">
+              <Building2 className="w-4 h-4" />
+              <span>เลือกกรองตามสถานที่ / งานมหกรรมใหญ่</span>
+            </h3>
+            {hasActiveFilter && (
+              <button onClick={resetAllFilters} className="text-xs text-[#4A7C59] font-bold hover:underline">
+                ล้างฟิลเตอร์
               </button>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Level 2: Dynamic Sub-category Chips */}
-      {selectedCategory && currentSubList.length > 0 && (
-        <div className="bg-[#EBF3ED]/70 rounded-2xl p-3 border border-[#C5DCCB] space-y-2 animate-fade-in">
-          <div className="flex items-center gap-2 text-xs font-bold text-[#4A7C59] px-1">
-            <Layers className="w-3.5 h-3.5" />
-            <span>เจาะจงประเภทกิจกรรมย่อย (Level 2):</span>
+            )}
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 pt-0.5">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
             <button
-              onClick={() => setSelectedSubCategory(null)}
-              className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-bold transition-all border ${
-                selectedSubCategory === null
-                  ? 'bg-[#1E293B] text-white border-[#1E293B] shadow-xs'
-                  : 'bg-white text-[#475569] border-[#C5DCCB] hover:border-[#1E293B]'
+              onClick={() => setSelectedVenueFilter && setSelectedVenueFilter(null)}
+              className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold transition-all border ${
+                selectedVenueFilter === null
+                  ? 'bg-[#F26430] text-white border-[#F26430] shadow-xs'
+                  : 'bg-white text-[#475569] border-[#E2DCD2] hover:border-[#F26430]'
               }`}
             >
-              <span>ทั้งหมดในหมวดนี้</span>
+              ✨ ทุกสถานที่
             </button>
 
-            {currentSubList.map((subItem) => {
-              const isSubSelected = selectedSubCategory === subItem.id;
+            {PUBLIC_VENUES.map((venue) => {
+              const isVenueSelected = selectedVenueFilter === venue.id;
               return (
                 <button
-                  key={subItem.id}
-                  onClick={() =>
-                    setSelectedSubCategory(isSubSelected ? null : subItem.id)
-                  }
-                  className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-bold transition-all border ${
-                    isSubSelected
-                      ? 'bg-[#F26430] text-white border-[#F26430] shadow-xs scale-105'
-                      : 'bg-white text-[#334155] border-[#C5DCCB] hover:border-[#F26430] hover:text-[#F26430]'
+                  key={venue.id}
+                  onClick={() => {
+                    if (setSelectedVenueFilter) {
+                      setSelectedVenueFilter(isVenueSelected ? null : venue.id);
+                    }
+                  }}
+                  className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold transition-all border ${
+                    isVenueSelected
+                      ? 'bg-[#F26430] text-white border-[#F26430] shadow-xs scale-102 font-extrabold'
+                      : 'bg-[#FAF7F2] text-[#334155] border-[#E2DCD2] hover:border-[#F26430] hover:bg-white'
                   }`}
                 >
-                  <span>{subItem.label}</span>
+                  <span>{venue.label}</span>
                 </button>
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* 🌱 MODE 2: COMMUNITY MEETUPS & WORKSHOPS */}
+      {eventTypeTab === 'community' && (
+        <div className="space-y-3 bg-white p-4 rounded-2xl border border-[#E8E2D8] shadow-2xs animate-fade-in">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold text-[#4A7C59] uppercase tracking-wider flex items-center gap-1.5">
+              <Sprout className="w-4 h-4" />
+              <span>เลือกหมวดหมู่อารมณ์กิจกรรมยามว่าง</span>
+            </h3>
+            {hasActiveFilter && (
+              <button onClick={resetAllFilters} className="text-xs text-[#4A7C59] font-bold hover:underline">
+                ล้างฟิลเตอร์
+              </button>
+            )}
+          </div>
+
+          {/* Level 1 Mood Chips */}
+          <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar pb-1">
+            <button
+              onClick={() => {
+                setSelectedCategory(null);
+                setSelectedSubCategory(null);
+              }}
+              className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold transition-all border ${
+                selectedCategory === null
+                  ? 'bg-[#4A7C59] text-white border-[#4A7C59] shadow-xs'
+                  : 'bg-white text-[#475569] border-[#E2DCD2] hover:border-[#4A7C59]'
+              }`}
+            >
+              ✨ ทุกหมวดกิจกรรม
+            </button>
+
+            {MOOD_CATEGORIES.map((cat: MoodCategory) => {
+              const isSelected = selectedCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => {
+                    if (isSelected) {
+                      setSelectedCategory(null);
+                      setSelectedSubCategory(null);
+                    } else {
+                      setSelectedCategory(cat.id);
+                      setSelectedSubCategory(null);
+                    }
+                  }}
+                  className={`shrink-0 rounded-full px-4.5 py-2 text-xs font-bold transition-all border flex items-center gap-1.5 ${
+                    isSelected
+                      ? 'bg-[#4A7C59] text-white border-[#4A7C59] shadow-xs scale-102 font-extrabold'
+                      : 'bg-[#FAF7F2] text-[#334155] border-[#E2DCD2] hover:border-[#4A7C59] hover:bg-white'
+                  }`}
+                >
+                  <span className="text-sm">{cat.icon}</span>
+                  <span>{cat.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Level 2 Sub-category Chips */}
+          {selectedCategory && currentSubList.length > 0 && (
+            <div className="bg-[#EBF3ED]/80 rounded-xl p-2.5 border border-[#C5DCCB] space-y-1.5 animate-fade-in mt-2">
+              <div className="flex items-center gap-2 text-[11px] font-bold text-[#4A7C59] px-1">
+                <Layers className="w-3.5 h-3.5" />
+                <span>กิจกรรมย่อยเฉพาะทาง:</span>
+              </div>
+
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5">
+                <button
+                  onClick={() => setSelectedSubCategory(null)}
+                  className={`shrink-0 rounded-full px-3.5 py-1 text-xs font-bold transition-all border ${
+                    selectedSubCategory === null
+                      ? 'bg-[#1E293B] text-white border-[#1E293B]'
+                      : 'bg-white text-[#475569] border-[#C5DCCB] hover:border-[#1E293B]'
+                  }`}
+                >
+                  ทั้งหมดในหมวดนี้
+                </button>
+
+                {currentSubList.map((subItem) => {
+                  const isSubSelected = selectedSubCategory === subItem.id;
+                  return (
+                    <button
+                      key={subItem.id}
+                      onClick={() =>
+                        setSelectedSubCategory(isSubSelected ? null : subItem.id)
+                      }
+                      className={`shrink-0 rounded-full px-3.5 py-1 text-xs font-bold transition-all border ${
+                        isSubSelected
+                          ? 'bg-[#F26430] text-white border-[#F26430] font-extrabold'
+                          : 'bg-white text-[#334155] border-[#C5DCCB] hover:border-[#F26430] hover:text-[#F26430]'
+                      }`}
+                    >
+                      <span>{subItem.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ✨ MODE 3: ALL EVENTS (ONLY SHOW IF ACTIVE FILTER TO RESET) */}
+      {eventTypeTab === 'all' && hasActiveFilter && (
+        <div className="flex items-center justify-between bg-white p-2.5 px-4 rounded-2xl border border-[#E8E2D8] text-xs font-semibold text-[#64748B]">
+          <span>เปิดใช้งานตัวกรองแบบรวม</span>
+          <button onClick={resetAllFilters} className="text-[#4A7C59] font-bold hover:underline">
+            ล้างฟิลเตอร์ทั้งหมด
+          </button>
         </div>
       )}
 
