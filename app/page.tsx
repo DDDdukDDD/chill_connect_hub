@@ -7,14 +7,32 @@ import { HeroSection } from '@/components/HeroSection';
 import { MoodFilterChips, SUB_CATEGORIES_MAP } from '@/components/MoodFilterChips';
 import { EventGrid } from '@/components/EventGrid';
 import { EventDetailModal } from '@/components/EventDetailModal';
+import { MobileNav } from '@/components/MobileNav';
 import { MOCK_EVENTS, MOCK_POSTS, EventItem } from '@/data/mockData';
-import { Heart, Sprout, Flame, Sparkles, CheckCircle2, Lock, ArrowRight, ArrowDown, ArrowUpDown, RefreshCw, Trophy, Zap, Award } from 'lucide-react';
+import {
+  Heart,
+  Sprout,
+  Flame,
+  Sparkles,
+  CheckCircle2,
+  ArrowRight,
+  ArrowDown,
+  ArrowUpDown,
+  RefreshCw,
+  Trophy,
+  Users,
+  Compass,
+  Star,
+  Tag,
+  Calendar,
+  MapPin,
+  Clock
+} from 'lucide-react';
 
 export default function Home() {
   const [activeNavTab, setActiveNavTab] = useState('explore');
   const [selectedCategory, setSelectedCategory] = useState<'heal' | 'move' | 'chill' | 'learn' | null>(null);
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
-  const [catalogFilterTab, setCatalogFilterTab] = useState<'all' | 'trending' | 'new'>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'popular'>('newest');
   const [searchQuery, setSearchQuery] = useState('');
   const [eventsList, setEventsList] = useState<EventItem[]>(MOCK_EVENTS);
@@ -24,6 +42,7 @@ export default function Home() {
   const [visibleCount, setVisibleCount] = useState<number>(6);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -62,13 +81,21 @@ export default function Home() {
     }, 400);
   };
 
-  // Filtered and Sorted Events (Level 1 Category + Level 2 Sub-category + Catalog Sub-Tab + Search)
+  // Trending Events (isTrending = true)
+  const trendingEvents = useMemo(() => {
+    return eventsList.filter((e) => e.isTrending);
+  }, [eventsList]);
+
+  // Newly Added Events (isNew = true)
+  const newEvents = useMemo(() => {
+    return eventsList.filter((e) => e.isNew);
+  }, [eventsList]);
+
+  // Filtered and Sorted Events for Full Catalog
   const filteredEvents = useMemo(() => {
     let result = eventsList.filter((event) => {
-      // 1. Level 1 Mood Category filter
       const matchesCategory = selectedCategory ? event.category === selectedCategory : true;
 
-      // 2. Level 2 Sub-category filter
       let matchesSubCategory = true;
       if (selectedCategory && selectedSubCategory) {
         const subList = SUB_CATEGORIES_MAP[selectedCategory];
@@ -82,15 +109,6 @@ export default function Home() {
         }
       }
 
-      // 3. Catalog Sub-Tab filter (All | Trending | New)
-      let matchesCatalogTab = true;
-      if (catalogFilterTab === 'trending') {
-        matchesCatalogTab = !!event.isTrending;
-      } else if (catalogFilterTab === 'new') {
-        matchesCatalogTab = !!event.isNew;
-      }
-
-      // 4. Search query filter
       const q = searchQuery.toLowerCase().trim();
       const matchesSearch =
         q === '' ||
@@ -99,10 +117,9 @@ export default function Home() {
         event.tag.toLowerCase().includes(q) ||
         event.description.toLowerCase().includes(q);
 
-      return matchesCategory && matchesSubCategory && matchesCatalogTab && matchesSearch;
+      return matchesCategory && matchesSubCategory && matchesSearch;
     });
 
-    // Sort result
     if (sortBy === 'popular') {
       result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     } else {
@@ -110,14 +127,12 @@ export default function Home() {
     }
 
     return result;
-  }, [eventsList, selectedCategory, selectedSubCategory, catalogFilterTab, searchQuery, sortBy]);
+  }, [eventsList, selectedCategory, selectedSubCategory, searchQuery, sortBy]);
 
-  // Paginated Sliced Events
   const displayedEvents = useMemo(() => {
     return filteredEvents.slice(0, visibleCount);
   }, [filteredEvents, visibleCount]);
 
-  // Schema.org Event ItemList for Google SEO & Google AI/Gemini Overviews
   const eventListSchema = {
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -175,137 +190,293 @@ export default function Home() {
           }}
         />
 
-        <div id="catalog-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5 py-2 md:py-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 py-6">
           
-          {/* 3. 2-Level Mood-Based & Sub-category Dynamic Filter Chips */}
-          <MoodFilterChips
-            selectedCategory={selectedCategory}
-            setSelectedCategory={(cat) => {
-              setSelectedCategory(cat);
-              setSelectedSubCategory(null);
-              setVisibleCount(6);
-            }}
-            selectedSubCategory={selectedSubCategory}
-            setSelectedSubCategory={(subCat) => {
-              setSelectedSubCategory(subCat);
-              setVisibleCount(6);
-            }}
-          />
-
-          {/* Sub-Header Bar: Tab Controls (ทั้งหมด | 🔥 ยอดฮิต | 🆕 มาใหม่), Sorting & Counter */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#E8E2D8] pb-4">
-            
-            {/* Catalog Filter Tabs */}
-            <div className="flex items-center gap-2 bg-[#EBE5DB]/70 p-1.5 rounded-full w-fit">
-              {[
-                { id: 'all', label: '✨ กิจกรรมทั้งหมด' },
-                { id: 'trending', label: '🔥 ยอดฮิต' },
-                { id: 'new', label: '🆕 มาใหม่' },
-              ].map((tab) => {
-                const isActive = catalogFilterTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => {
-                      setCatalogFilterTab(tab.id as 'all' | 'trending' | 'new');
-                      setVisibleCount(6);
-                    }}
-                    className={`px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all ${
-                      isActive
-                        ? 'bg-white text-[#1E293B] shadow-sm scale-105'
-                        : 'text-[#64748B] hover:text-[#1E293B]'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Sorting Dropdown & Favorites Counter */}
-            <div className="flex items-center justify-between md:justify-end gap-3 text-xs sm:text-sm">
-              
-              {/* Smart Sorting Dropdown */}
-              <div className="flex items-center gap-1.5 bg-[#FAF7F2] border border-[#E8E2D8] px-3 py-1.5 rounded-full shadow-xs">
-                <ArrowUpDown className="w-3.5 h-3.5 text-[#4A7C59]" />
-                <span className="text-[#64748B] font-medium hidden sm:inline">จัดเรียง:</span>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as 'newest' | 'popular')}
-                  className="bg-transparent font-bold text-[#1E293B] focus:outline-none cursor-pointer"
-                >
-                  <option value="newest">🆕 ล่าสุด (Newest)</option>
-                  <option value="popular">🔥 ความนิยม (Popular)</option>
-                </select>
-              </div>
-
-              {/* Favorites Counter Shortcut */}
-              {favorites.length > 0 && (
+          {/* SECTION 1: 🔥 กิจกรรมยอดฮิตติดเทรนด์ (Trending Highlights Row) */}
+          {trendingEvents.length > 0 && (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between border-b border-[#E8E2D8] pb-3">
+                <div className="space-y-0.5">
+                  <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#F26430] bg-[#FDF0EB] px-3 py-0.5 rounded-full border border-[#F26430]/20">
+                    <Flame className="w-3.5 h-3.5 fill-[#F26430]" />
+                    <span>Popular Right Now</span>
+                  </div>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1E293B] tracking-tight">
+                    🔥 กิจกรรมยอดฮิตติดเทรนด์
+                  </h2>
+                </div>
                 <button
                   onClick={() => {
-                    showToast(`คุณมีกิจกรรมโปรด ${favorites.length} รายการ`);
+                    const el = document.getElementById('catalog-section');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  className="font-semibold text-[#F26430] hover:underline flex items-center gap-1 bg-white px-3 py-1.5 rounded-full border border-[#E8E2D8] shadow-xs shrink-0"
+                  className="text-xs sm:text-sm font-bold text-[#4A7C59] hover:underline flex items-center gap-1 shrink-0"
                 >
-                  <Heart className="w-3.5 h-3.5 fill-[#F26430]" />
-                  <span>รายการโปรด ({favorites.length})</span>
+                  <span>ดูทั้งหมด ({trendingEvents.length})</span>
+                  <ArrowRight className="w-4 h-4" />
                 </button>
-              )}
-            </div>
+              </div>
 
-          </div>
+              {/* Trending Events Cards Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {trendingEvents.map((event) => {
+                  const isFav = favorites.includes(event.id);
+                  const fillRatio = event.participantsCount / event.maxParticipants;
+                  const isAlmostFull = fillRatio >= 0.8;
 
-          {/* 4. Event Grid Catalog (Sliced Array for Performance & Scalability) */}
-          <EventGrid
-            events={displayedEvents}
-            onSelectEvent={(event) => setSelectedEvent(event)}
-            favorites={favorites}
-            toggleFavorite={toggleFavorite}
-          />
+                  return (
+                    <div
+                      key={event.id}
+                      onClick={() => setSelectedEvent(event)}
+                      className="group bg-white rounded-3xl border border-[#E8E2D8] shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden transform hover:-translate-y-1 cursor-pointer"
+                    >
+                      <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
+                        <img
+                          src={event.image}
+                          alt={event.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-70" />
 
-          {/* 5. Scalable Load More Pagination Control */}
-          {filteredEvents.length > visibleCount && (
-            <div className="pt-6 pb-2 text-center space-y-3">
-              
-              {/* Progress bar indicator */}
-              <div className="max-w-xs mx-auto space-y-1">
-                <div className="text-xs text-[#64748B] font-medium">
-                  แสดงแล้ว <span className="font-bold text-[#1E293B]">{displayedEvents.length}</span> จาก <span className="font-bold text-[#1E293B]">{filteredEvents.length}</span> กิจกรรม
-                </div>
-                <div className="w-full h-1.5 bg-[#E8E2D8] rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-[#4A7C59] rounded-full transition-all duration-300"
-                    style={{ width: `${(displayedEvents.length / filteredEvents.length) * 100}%` }}
-                  />
+                        <div className="absolute top-3 left-3 bg-[#F26430] text-white px-3 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-1">
+                          <Flame className="w-3.5 h-3.5 fill-white" />
+                          <span>{event.badgeText || '🔥 ฮิตแรง'}</span>
+                        </div>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite(event.id);
+                          }}
+                          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-[#F26430] hover:scale-110 active:scale-95 transition-all"
+                        >
+                          <Heart className={`w-5 h-5 ${isFav ? 'fill-[#F26430] text-[#F26430]' : 'text-slate-500'}`} />
+                        </button>
+
+                        {event.price && (
+                          <div className="absolute bottom-3 left-3 bg-slate-900/85 backdrop-blur-md text-emerald-400 font-bold px-3 py-1 rounded-full text-xs shadow-sm">
+                            {event.price}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-5 flex flex-col flex-1 justify-between space-y-3">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <img
+                              src={event.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
+                              alt=""
+                              className="w-5 h-5 rounded-full object-cover border border-slate-200"
+                            />
+                            <span className="text-xs font-medium text-slate-600 truncate">{event.hostName}</span>
+                          </div>
+                          <h3 className="font-bold text-base text-[#1E293B] group-hover:text-[#4A7C59] transition-colors line-clamp-1">
+                            {event.title}
+                          </h3>
+                          <div className="flex items-center gap-3 text-xs text-slate-500">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3.5 h-3.5 text-[#4A7C59]" />
+                              {event.date}
+                            </span>
+                            <span className="flex items-center gap-1 truncate">
+                              <MapPin className="w-3.5 h-3.5 text-[#F26430]" />
+                              {event.location}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="space-y-1 pt-1 border-t border-slate-100">
+                          <div className="flex justify-between text-xs text-slate-600 font-semibold">
+                            <span>ที่นั่ง {event.participantsCount}/{event.maxParticipants}</span>
+                            {isAlmostFull && <span className="text-amber-600 animate-pulse">ใกล้เต็มแล้ว!</span>}
+                          </div>
+                          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${isAlmostFull ? 'bg-gradient-to-r from-amber-400 to-[#F26430]' : 'bg-[#4A7C59]'}`}
+                              style={{ width: `${(event.participantsCount / event.maxParticipants) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          {/* SECTION 2: 🆕 กิจกรรมเปิดใหม่ล่าสุด (Newly Added Highlights Row) */}
+          {newEvents.length > 0 && (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between border-b border-[#E8E2D8] pb-3">
+                <div className="space-y-0.5">
+                  <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#4A7C59] bg-[#EBF3ED] px-3 py-0.5 rounded-full border border-[#4A7C59]/20">
+                    <Sparkles className="w-3.5 h-3.5 text-[#4A7C59]" />
+                    <span>Just Added</span>
+                  </div>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1E293B] tracking-tight">
+                    🆕 กิจกรรมเปิดใหม่ล่าสุด
+                  </h2>
                 </div>
               </div>
 
-              {/* Load More Button */}
-              <button
-                onClick={handleLoadMore}
-                disabled={isLoadingMore}
-                className="bg-white hover:bg-[#EBF3ED] text-[#4A7C59] border-2 border-[#4A7C59] px-8 py-3 rounded-full font-bold text-sm transition-all shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-2"
-              >
-                {isLoadingMore ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin text-[#4A7C59]" />
-                    <span>กำลังโหลดกิจกรรม...</span>
-                  </>
-                ) : (
-                  <>
-                    <ArrowDown className="w-4 h-4" />
-                    <span>ดู กิจกรรมเพิ่มเติม (+6)</span>
-                  </>
-                )}
-              </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {newEvents.map((event) => {
+                  const isFav = favorites.includes(event.id);
 
-            </div>
+                  return (
+                    <div
+                      key={event.id}
+                      onClick={() => setSelectedEvent(event)}
+                      className="group bg-white rounded-3xl border border-[#E8E2D8] shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden transform hover:-translate-y-1 cursor-pointer"
+                    >
+                      <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
+                        <img
+                          src={event.image}
+                          alt={event.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute top-3 left-3 bg-[#4A7C59] text-white px-3 py-1 rounded-full text-xs font-bold shadow-md">
+                          🆕 มาใหม่
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite(event.id);
+                          }}
+                          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-[#F26430] hover:scale-110 active:scale-95 transition-all"
+                        >
+                          <Heart className={`w-5 h-5 ${isFav ? 'fill-[#F26430] text-[#F26430]' : 'text-slate-500'}`} />
+                        </button>
+                      </div>
+
+                      <div className="p-5 space-y-3">
+                        <span className="text-xs font-bold text-[#4A7C59] bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                          {event.tag}
+                        </span>
+                        <h3 className="font-bold text-base text-[#1E293B] group-hover:text-[#4A7C59] transition-colors line-clamp-1">
+                          {event.title}
+                        </h3>
+                        <p className="text-xs text-slate-500 line-clamp-2">{event.description}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
           )}
 
-          {/* 6. Social Community Moments Teaser Section (Cross-linking to /moments) */}
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E8E2D8] shadow-sm my-10 space-y-6">
+          {/* SECTION 3: 🌿 คลังกิจกรรมทั้งหมดตามหมวดหมู่อารมณ์ (Full Catalog & Mood Explorer) */}
+          <section id="catalog-section" className="space-y-6 pt-4">
             
-            {/* Teaser Header */}
+            {/* Section Header */}
+            <div className="border-b border-[#E8E2D8] pb-4 space-y-1">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1E293B] tracking-tight">
+                🌿 คลังกิจกรรมยามว่างทั้งหมด
+              </h2>
+              <p className="text-sm text-[#64748B] font-medium">
+                ค้นหากิจกรรมที่ตรงกับอารมณ์ของคุณวันนี้ หรือค้นหาเจาะจงประเภทกิจกรรมย่อย
+              </p>
+            </div>
+
+            {/* 2-Level Mood Filter Chips */}
+            <MoodFilterChips
+              selectedCategory={selectedCategory}
+              setSelectedCategory={(cat) => {
+                setSelectedCategory(cat);
+                setSelectedSubCategory(null);
+                setVisibleCount(6);
+              }}
+              selectedSubCategory={selectedSubCategory}
+              setSelectedSubCategory={(subCat) => {
+                setSelectedSubCategory(subCat);
+                setVisibleCount(6);
+              }}
+            />
+
+            {/* Sorting & Filter Header Controls */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-[#E8E2D8]">
+              <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-600">
+                <span>พบทั้งหมด <strong className="text-[#4A7C59]">{filteredEvents.length}</strong> กิจกรรม</span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {/* Sorting Select */}
+                <div className="flex items-center gap-1.5 bg-[#FAF7F2] border border-[#E8E2D8] px-3 py-1.5 rounded-full text-xs sm:text-sm">
+                  <ArrowUpDown className="w-3.5 h-3.5 text-[#4A7C59]" />
+                  <span className="text-[#64748B] font-medium hidden sm:inline">จัดเรียง:</span>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as 'newest' | 'popular')}
+                    className="bg-transparent font-bold text-[#1E293B] focus:outline-none cursor-pointer"
+                  >
+                    <option value="newest">🆕 ล่าสุด (Newest)</option>
+                    <option value="popular">🔥 ความนิยม (Popular)</option>
+                  </select>
+                </div>
+
+                {/* Favorites Counter Button */}
+                {favorites.length > 0 && (
+                  <button
+                    onClick={() => showToast(`คุณมีกิจกรรมโปรด ${favorites.length} รายการ`)}
+                    className="font-semibold text-[#F26430] text-xs sm:text-sm flex items-center gap-1 bg-orange-50 px-3 py-1.5 rounded-full border border-orange-200 shrink-0"
+                  >
+                    <Heart className="w-3.5 h-3.5 fill-[#F26430]" />
+                    <span>รายการโปรด ({favorites.length})</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Event Grid / List View */}
+            <EventGrid
+              events={displayedEvents}
+              onSelectEvent={(event) => setSelectedEvent(event)}
+              favorites={favorites}
+              toggleFavorite={toggleFavorite}
+              viewMode={viewMode}
+              onToggleViewMode={setViewMode}
+            />
+
+            {/* Pagination Load More Button */}
+            {filteredEvents.length > visibleCount && (
+              <div className="pt-6 pb-2 text-center space-y-3">
+                <div className="max-w-xs mx-auto space-y-1">
+                  <div className="text-xs text-[#64748B] font-medium">
+                    แสดงแล้ว <span className="font-bold text-[#1E293B]">{displayedEvents.length}</span> จาก <span className="font-bold text-[#1E293B]">{filteredEvents.length}</span> กิจกรรม
+                  </div>
+                  <div className="w-full h-1.5 bg-[#E8E2D8] rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[#4A7C59] rounded-full transition-all duration-300"
+                      style={{ width: `${(displayedEvents.length / filteredEvents.length) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleLoadMore}
+                  disabled={isLoadingMore}
+                  className="bg-white hover:bg-[#EBF3ED] text-[#4A7C59] border-2 border-[#4A7C59] px-8 py-3 rounded-full font-bold text-sm transition-all shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-2"
+                >
+                  {isLoadingMore ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin text-[#4A7C59]" />
+                      <span>กำลังโหลดกิจกรรม...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ArrowDown className="w-4 h-4" />
+                      <span>ดู กิจกรรมเพิ่มเติม (+6)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </section>
+
+          {/* SECTION 4: 📸 โมเมนต์ความสนุกจากเพื่อนๆ (Community Moments Teaser) */}
+          <section className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E8E2D8] shadow-sm space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
               <div>
                 <h3 className="text-xl font-extrabold text-[#1E293B] flex items-center gap-2">
@@ -326,16 +497,15 @@ export default function Home() {
               </Link>
             </div>
 
-            {/* Teaser Cards Grid (3 Recent Posts) */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {MOCK_POSTS.slice(0, 3).map((post) => (
-                <div
+                <Link
                   key={post.id}
-                  className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-slate-100 border border-slate-200 cursor-pointer"
+                  href="/moments"
+                  className="group relative rounded-2xl overflow-hidden aspect-[16/10] bg-slate-100 border border-slate-200 cursor-pointer"
                 >
                   <img src={post.images[0]} alt="Moment" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                  
                   <div className="absolute bottom-3 left-3 right-3 space-y-1 text-white">
                     <div className="flex items-center gap-2">
                       <img src={post.userAvatar} alt="" className="w-6 h-6 rounded-full border border-white" />
@@ -343,18 +513,17 @@ export default function Home() {
                     </div>
                     <p className="text-xs text-slate-200 line-clamp-1 font-medium">{post.caption}</p>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
-
-          </div>
+          </section>
 
         </div>
 
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-[#E8E2D8] py-8 text-center text-xs text-[#64748B] space-y-2 mt-12">
+      <footer className="bg-white border-t border-[#E8E2D8] py-8 text-center text-xs text-[#64748B] space-y-2 mt-12 mb-16 sm:mb-0">
         <div className="flex items-center justify-center gap-2 text-sm font-bold text-[#1E293B]">
           <Sprout className="w-5 h-5 text-[#4A7C59]" />
           <span>Chill & Connect Hub</span>
@@ -369,6 +538,13 @@ export default function Home() {
         isFavorite={selectedEvent ? favorites.includes(selectedEvent.id) : false}
         onToggleFavorite={toggleFavorite}
         onJoinSuccess={handleJoinSuccess}
+      />
+
+      {/* Mobile Nav */}
+      <MobileNav
+        activeTab={activeNavTab}
+        setActiveTab={setActiveNavTab}
+        favoritesCount={favorites.length}
       />
 
       {/* Toast Notification */}

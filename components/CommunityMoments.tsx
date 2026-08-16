@@ -153,7 +153,7 @@ export const CommunityMoments: React.FC<CommunityMomentsProps> = ({
               </div>
 
               {/* Post Image Banner */}
-              <div className="relative aspect-[4/3] w-full bg-slate-100 overflow-hidden">
+              <div className="relative aspect-[16/9] max-h-[340px] w-full bg-slate-100 overflow-hidden">
                 <img
                   src={post.images[0]}
                   alt="Moment photo"

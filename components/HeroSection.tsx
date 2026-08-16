@@ -93,8 +93,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 {['#Hyrox', '#Introvert-friendly', '#Beginner', '#BoardGame', '#SoundBath'].map((tag) => (
                   <button
                     key={tag}
-                    onClick={() => setSearchQuery(tag.replace('#', ''))}
-                    className="hover:text-[#F26430] transition-colors underline decoration-dotted bg-white/70 px-2.5 py-0.5 rounded-full border border-[#E2DCD2]"
+                    onClick={() => {
+                      setSearchQuery(tag.replace('#', ''));
+                      if (onSearchSubmit) onSearchSubmit();
+                    }}
+                    className="hover:text-[#F26430] hover:border-[#F26430] hover:bg-orange-50 transition-all underline decoration-dotted bg-white/80 px-2.5 py-0.5 rounded-full border border-[#E2DCD2] shadow-2xs"
                   >
                     {tag}
                   </button>
