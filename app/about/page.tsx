@@ -27,6 +27,24 @@ export default function AboutPage() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('isLoggedIn');
+      if (saved === 'false') {
+        setIsLoggedIn(false);
+      } else {
+        localStorage.setItem('isLoggedIn', 'true');
+      }
+    }
+  }, []);
+
+  const handleSetIsLoggedIn = (status: boolean) => {
+    setIsLoggedIn(status);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('isLoggedIn', status ? 'true' : 'false');
+    }
+  };
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
@@ -40,7 +58,7 @@ export default function AboutPage() {
         activeTab={activeNavTab}
         setActiveTab={setActiveNavTab}
         isLoggedIn={isLoggedIn}
-        setIsLoggedIn={setIsLoggedIn}
+        setIsLoggedIn={handleSetIsLoggedIn}
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}
       />

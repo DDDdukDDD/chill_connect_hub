@@ -60,6 +60,24 @@ export default function Home() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('isLoggedIn');
+      if (saved === 'false') {
+        setIsLoggedIn(false);
+      } else {
+        localStorage.setItem('isLoggedIn', 'true');
+      }
+    }
+  }, []);
+
+  const handleSetIsLoggedIn = (status: boolean) => {
+    setIsLoggedIn(status);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('isLoggedIn', status ? 'true' : 'false');
+    }
+  };
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
@@ -204,7 +222,7 @@ export default function Home() {
         setActiveTab={setActiveNavTab}
         isLoggedIn={isLoggedIn}
         setIsLoggedIn={(status) => {
-          setIsLoggedIn(status);
+          handleSetIsLoggedIn(status);
         }}
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}
@@ -713,6 +731,11 @@ export default function Home() {
         isFavorite={selectedEvent ? favorites.includes(selectedEvent.id) : false}
         onToggleFavorite={toggleFavorite}
         onJoinSuccess={handleJoinSuccess}
+        isLoggedIn={isLoggedIn}
+        onRequireLogin={() => {
+          setIsAuthModalOpen(true);
+          showToast('🔒 กรุณาเข้าสู่ระบบก่อนบันทึกหรือเข้าร่วมกิจกรรม');
+        }}
       />
 
       {/* Custom Date Picker Popup Modal */}

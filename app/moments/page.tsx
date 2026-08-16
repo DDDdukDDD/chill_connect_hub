@@ -34,11 +34,30 @@ export default function MomentsPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('isLoggedIn');
+      if (saved === 'false') {
+        setIsLoggedIn(false);
+      } else {
+        localStorage.setItem('isLoggedIn', 'true');
+      }
+    }
+  }, []);
+
+  const handleSetIsLoggedIn = (status: boolean) => {
+    setIsLoggedIn(status);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('isLoggedIn', status ? 'true' : 'false');
+    }
+  };
   const [posts, setPosts] = useState<CommunityPost[]>(MOCK_POSTS);
   const [activeTabFilter, setActiveTabFilter] = useState<'all' | 'popular' | 'mine'>('all');
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
   const [newCommentInput, setNewCommentInput] = useState<string>('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+  const [uploadedPostImage, setUploadedPostImage] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const [favorites, setFavorites] = useState<string[]>(['1', '7']);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -157,7 +176,7 @@ export default function MomentsPage() {
       eventId: matchedEvent.id,
       eventTitle: matchedEvent.title,
       category: matchedEvent.category,
-      images: [matchedEvent.image],
+      images: [uploadedPostImage || matchedEvent.image],
       caption: captionInput.trim(),
       location: matchedEvent.location,
       likesCount: 1,
@@ -169,6 +188,7 @@ export default function MomentsPage() {
 
     setPosts([createdPost, ...posts]);
     setCaptionInput('');
+    setUploadedPostImage(null);
     setIsCreateModalOpen(false);
     showToast('แชร์โมเมนต์กิจกรรมของคุณสำเร็จแล้ว! 🎉');
   };
@@ -196,7 +216,7 @@ export default function MomentsPage() {
         activeTab={activeNavTab}
         setActiveTab={setActiveNavTab}
         isLoggedIn={isLoggedIn}
-        setIsLoggedIn={setIsLoggedIn}
+        setIsLoggedIn={handleSetIsLoggedIn}
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}
         onOpenCreateEvent={() => setIsCreateModalOpen(true)}
@@ -632,10 +652,54 @@ export default function MomentsPage() {
                 />
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-50 border border-dashed border-[#C5DCCB] text-center space-y-1">
-                <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-[#4A7C59]">
-                  <ImageIcon className="w-4 h-4" />
-                  <span>ภาพถ่ายบรรยากาศแนบเรียบร้อย</span>
+              <div className="space-y-1.5 pt-1 border-t border-slate-100">
+                <label className="text-xs font-bold text-[#1E293B] flex items-center justify-between">
+                  <span>🖼️ อัปโหลดภาพบรรยากาศ:</span>
+                  <span className="text-[10px] text-[#4A7C59] font-semibold">อัปโหลดจากเครื่อง</span>
+                </label>
+
+                <div className="p-3 rounded-2xl bg-[#FAF7F2] border-2 border-dashed border-[#C5DCCB] hover:border-[#4A7C59] transition-colors text-center relative">
+                  {uploadedPostImage ? (
+                    <div className="relative aspect-video w-full rounded-xl overflow-hidden shadow-sm group">
+                      <img src={uploadedPostImage} alt="Uploaded moment" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          type="button"
+                          onClick={() => setUploadedPostImage(null)}
+                          className="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md hover:bg-red-600 transition-colors"
+                        >
+                          🗑️ เปลี่ยนรูปภาพ
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <label className="cursor-pointer flex flex-col items-center justify-center py-2 space-y-1">
+                      <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-[#4A7C59] shadow-2xs border border-[#E8E2D8]">
+                        <ImageIcon className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-[#1E293B]">📁 คลิกเพื่ออัปโหลดรูปภาพบรรยากาศจากเครื่อง</p>
+                        <p className="text-[10px] text-[#64748B]">รองรับไฟล์ภาพ JPG, PNG, WEBP (พรีวิวทันที)</p>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              if (typeof reader.result === 'string') {
+                                setUploadedPostImage(reader.result);
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
                 </div>
               </div>
 
@@ -664,7 +728,7 @@ export default function MomentsPage() {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         onLoginSuccess={(userName) => {
-          setIsLoggedIn(true);
+          handleSetIsLoggedIn(true);
           showToast(`ยินดีต้อนรับ ${userName}! เข้าสู่ระบบเรียบร้อย 🎉`);
         }}
       />
@@ -674,7 +738,7 @@ export default function MomentsPage() {
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
         onConfirmLogout={() => {
-          setIsLoggedIn(false);
+          handleSetIsLoggedIn(false);
           showToast('ออกจากระบบเรียบร้อยแล้ว (Guest View)');
         }}
       />

@@ -81,12 +81,31 @@ const RECOMMENDED_CHALLENGES: RecommendedChallenge[] = [
 
 export default function ChallengePage() {
   const [activeNavTab, setActiveNavTab] = useState('challenge');
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // Default false for guest protection demo
+  const [isLoggedIn, setIsLoggedIn] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [myChallenges, setMyChallenges] = useState<ChallengeQuest[]>(MOCK_CHALLENGES);
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'move' | 'heal' | 'chill' | 'learn'>('all');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Sync login status across pages with localStorage
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedLoginState = localStorage.getItem('isLoggedIn');
+      if (savedLoginState === 'false') {
+        setIsLoggedIn(false);
+      } else {
+        localStorage.setItem('isLoggedIn', 'true');
+      }
+    }
+  }, []);
+
+  const handleSetIsLoggedIn = (status: boolean) => {
+    setIsLoggedIn(status);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('isLoggedIn', status ? 'true' : 'false');
+    }
+  };
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -98,9 +117,9 @@ export default function ChallengePage() {
       case 'Coffee':
         return <Coffee className="w-5 h-5 text-[#F26430]" />;
       case 'Footprints':
-        return <Footprints className="w-5 h-5 text-emerald-400" />;
+        return <Footprints className="w-5 h-5 text-[#4A7C59]" />;
       case 'Users':
-        return <Users className="w-5 h-5 text-amber-300" />;
+        return <Users className="w-5 h-5 text-amber-500" />;
       case 'Flame':
         return <Flame className="w-5 h-5 text-rose-400" />;
       case 'Sparkles':
@@ -116,9 +135,16 @@ export default function ChallengePage() {
 
   const handleJoinRecommended = (recItem: RecommendedChallenge) => {
     if (!isLoggedIn) {
-      showToast('🔒 กรุณาเข้าสู่ระบบก่อนเข้าร่วมชาเลนจ์');
+      setIsAuthModalOpen(true);
       return;
     }
+
+    const isAlreadyIn = myChallenges.some((q) => q.title === recItem.title);
+    if (isAlreadyIn) {
+      showToast(`คุณทำชาเลนจ์ "${recItem.title}" อยู่แล้ว!`);
+      return;
+    }
+
     const newQuest: ChallengeQuest = {
       id: `joined-${Date.now()}`,
       title: recItem.title,
@@ -147,9 +173,11 @@ export default function ChallengePage() {
         setActiveTab={setActiveNavTab}
         isLoggedIn={isLoggedIn}
         setIsLoggedIn={(status) => {
-          setIsLoggedIn(status);
+          handleSetIsLoggedIn(status);
           showToast(status ? 'เข้าสู่ระบบสำเร็จ! ยินดีต้อนรับสู่ระบบชาเลนจ์ 🏆' : 'ออกจากระบบแล้ว');
         }}
+        onOpenLogin={() => setIsAuthModalOpen(true)}
+        onOpenLogout={() => setIsLogoutModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -172,7 +200,7 @@ export default function ChallengePage() {
             </div>
 
             {/* User Stats Card */}
-            {isLoggedIn ? (
+            {isLoggedIn && (
               <div className="bg-slate-800/90 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-slate-700/80 shrink-0 space-y-2 text-center md:text-right">
                 <p className="text-xs text-slate-400">ตราเกียรติยศที่คุณสะสมแล้ว</p>
                 <div className="flex items-center justify-center md:justify-end gap-2 text-amber-300 font-bold text-lg">
@@ -180,14 +208,6 @@ export default function ChallengePage() {
                   <span>4 Badges (Level 3 Explorer)</span>
                 </div>
               </div>
-            ) : (
-              <button
-                onClick={() => setIsAuthModalOpen(true)}
-                className="bg-[#F26430] hover:bg-[#D95322] text-white px-6 py-3 rounded-full font-bold text-xs sm:text-sm shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-all shrink-0"
-              >
-                <LogIn className="w-4 h-4" />
-                <span>เข้าสู่ระบบเพื่อสะสมแต้ม</span>
-              </button>
             )}
           </div>
         </section>
@@ -198,17 +218,14 @@ export default function ChallengePage() {
           {/* REQUIRE LOGIN GUARD FOR CHALLENGE DATA */}
           {!isLoggedIn ? (
             /* Locked Guest Screen */
-            <div className="bg-white rounded-3xl p-8 sm:p-12 shadow-xl border border-[#E8E2D8] text-center max-w-3xl mx-auto space-y-6 my-6">
+            <div className="bg-white rounded-3xl p-8 sm:p-12 shadow-xl border border-[#E8E2D8] text-center max-w-2xl mx-auto space-y-6 my-6">
               <div className="w-20 h-20 bg-amber-50 border-2 border-amber-200 rounded-full flex items-center justify-center mx-auto text-amber-600 shadow-inner">
                 <Lock className="w-10 h-10" />
               </div>
 
               <div className="space-y-2">
-                <span className="text-xs font-bold text-[#F26430] uppercase tracking-wider bg-orange-50 px-3 py-1 rounded-full border border-orange-200">
-                  Members Only Access
-                </span>
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1E293B]">
-                  🔒 หน้านี้สำหรับสมาชิกเท่านั้น!
+                  🔒 หน้านี้สำหรับสมาชิกเท่านั้น
                 </h2>
                 <p className="text-sm sm:text-base text-[#64748B] max-w-lg mx-auto leading-relaxed">
                   กรุณาเข้าสู่ระบบเพื่อเริ่มทำภารกิจชาเลนจ์ยามว่าง สะสมเลเวล Badges เกียรติยศ และติดตามสถิติส่วนบุคคลของคุณ

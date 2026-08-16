@@ -10,6 +10,8 @@ interface EventDetailModalProps {
   isFavorite: boolean;
   onToggleFavorite: (id: string) => void;
   onJoinSuccess: (eventId: string) => void;
+  isLoggedIn?: boolean;
+  onRequireLogin?: () => void;
 }
 
 export const EventDetailModal: React.FC<EventDetailModalProps> = ({
@@ -18,6 +20,8 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   isFavorite,
   onToggleFavorite,
   onJoinSuccess,
+  isLoggedIn = true,
+  onRequireLogin,
 }) => {
   const [joined, setJoined] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -27,6 +31,11 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   const isPublicVenue = event.eventType === 'public_venue';
 
   const handleJoin = () => {
+    if (!isLoggedIn && onRequireLogin) {
+      onClose();
+      onRequireLogin();
+      return;
+    }
     setJoined(true);
     onJoinSuccess(event.id);
     setTimeout(() => {
