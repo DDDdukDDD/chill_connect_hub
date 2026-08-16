@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
+import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import {
   Sprout,
   Heart,
@@ -22,6 +23,14 @@ import {
 export default function AboutPage() {
   const [activeNavTab, setActiveNavTab] = useState('about');
   const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-[#1E293B] flex flex-col font-sans selection:bg-[#F26430] selection:text-white">
@@ -32,6 +41,8 @@ export default function AboutPage() {
         setActiveTab={setActiveNavTab}
         isLoggedIn={isLoggedIn}
         setIsLoggedIn={setIsLoggedIn}
+        onOpenLogin={() => setIsAuthModalOpen(true)}
+        onOpenLogout={() => setIsLogoutModalOpen(true)}
       />
 
       {/* Main Content */}
@@ -215,6 +226,34 @@ export default function AboutPage() {
         </div>
         <p>© 2026 Chill & Connect Hub - ฮีลใจ & เชื่อมต่อ ฮับ. All rights reserved.</p>
       </footer>
+
+      {/* Auth Login / Signup Popup Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onLoginSuccess={(userName) => {
+          setIsLoggedIn(true);
+          showToast(`ยินดีต้อนรับ ${userName}! เข้าสู่ระบบเรียบร้อย 🎉`);
+        }}
+      />
+
+      {/* Logout Confirmation Popup Modal */}
+      <LogoutConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirmLogout={() => {
+          setIsLoggedIn(false);
+          showToast('ออกจากระบบเรียบร้อยแล้ว (Guest View)');
+        }}
+      />
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 bg-[#1E293B] text-white px-5 py-3 rounded-2xl shadow-xl border border-slate-700 text-sm font-medium flex items-center gap-2.5 animate-slide-up">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
 
     </div>
   );

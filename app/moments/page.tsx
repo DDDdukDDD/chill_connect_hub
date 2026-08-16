@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { EventDetailModal } from '@/components/EventDetailModal';
+import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { MOCK_EVENTS, MOCK_POSTS, EventItem, CommunityPost, PostComment } from '@/data/mockData';
 import {
   Sparkles,
@@ -31,6 +32,8 @@ import {
 export default function MomentsPage() {
   const [activeNavTab, setActiveNavTab] = useState('moments');
   const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [posts, setPosts] = useState<CommunityPost[]>(MOCK_POSTS);
   const [activeTabFilter, setActiveTabFilter] = useState<'all' | 'popular' | 'mine'>('all');
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
@@ -194,6 +197,8 @@ export default function MomentsPage() {
         setActiveTab={setActiveNavTab}
         isLoggedIn={isLoggedIn}
         setIsLoggedIn={setIsLoggedIn}
+        onOpenLogin={() => setIsAuthModalOpen(true)}
+        onOpenLogout={() => setIsLogoutModalOpen(true)}
       />
 
       {/* Main Container */}
@@ -431,8 +436,8 @@ export default function MomentsPage() {
             )}
           </div>
 
-          {/* Right Column (4-cols): Sticky Right Sidebar (Facebook Pattern) */}
-          <aside className="lg:col-span-4 space-y-5 sticky top-24 self-start hidden lg:block">
+          {/* Right Column (4-cols): Scrollable Sticky Right Sidebar */}
+          <aside className="lg:col-span-4 space-y-5 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto no-scrollbar pb-6 shrink-0">
             
             {/* Widget 1: Create Moment CTA */}
             <div className="bg-gradient-to-br from-[#4A7C59] to-[#3B6347] rounded-3xl p-5 text-white shadow-md space-y-3">
@@ -452,27 +457,29 @@ export default function MomentsPage() {
               </button>
             </div>
 
-            {/* Widget 2: Weekly Challenge Widget */}
-            <div className="bg-white rounded-3xl p-5 border border-[#E8E2D8] shadow-sm space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="font-bold text-sm text-[#1E293B] flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-amber-500" />
-                  <span>ชาเลนจ์ประจำสัปดาห์</span>
-                </h3>
-                <span className="text-[11px] font-bold text-[#F26430] bg-orange-50 px-2 py-0.5 rounded-full">
-                  Level 2 🌿
-                </span>
-              </div>
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-xs text-slate-600 font-medium">
-                  <span>เข้าร่วมกิจกรรมยามว่างครบ 3 งาน</span>
-                  <span className="font-bold text-[#4A7C59]">2/3</span>
+            {/* Widget 2: ชาเลนจ์ของคุณ (แสดงเมื่อ login และมีชาเลนจ์เท่านั้น) */}
+            {isLoggedIn && (
+              <div className="bg-white rounded-3xl p-5 border border-[#E8E2D8] shadow-sm space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-sm text-[#1E293B] flex items-center gap-2">
+                    <Trophy className="w-4 h-4 text-amber-500" />
+                    <span>ชาเลนจ์ของคุณ</span>
+                  </h3>
+                  <span className="text-[11px] font-bold text-[#F26430] bg-orange-50 px-2 py-0.5 rounded-full">
+                    Level 2 🌿
+                  </span>
                 </div>
-                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-[#4A7C59] rounded-full w-[66%]" />
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs text-slate-600 font-medium">
+                    <span>เข้าร่วมกิจกรรมยามว่างครบ 3 งาน</span>
+                    <span className="font-bold text-[#4A7C59]">2/3</span>
+                  </div>
+                  <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-[#4A7C59] rounded-full w-[66%]" />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Widget 3: Active Members Community */}
             <div className="bg-white rounded-3xl p-5 border border-[#E8E2D8] shadow-sm space-y-3">
@@ -637,6 +644,26 @@ export default function MomentsPage() {
           </div>
         </div>
       )}
+
+      {/* Auth Login / Signup Popup Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onLoginSuccess={(userName) => {
+          setIsLoggedIn(true);
+          showToast(`ยินดีต้อนรับ ${userName}! เข้าสู่ระบบเรียบร้อย 🎉`);
+        }}
+      />
+
+      {/* Logout Confirmation Popup Modal */}
+      <LogoutConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirmLogout={() => {
+          setIsLoggedIn(false);
+          showToast('ออกจากระบบเรียบร้อยแล้ว (Guest View)');
+        }}
+      />
 
       {/* Toast Notification */}
       {toastMessage && (

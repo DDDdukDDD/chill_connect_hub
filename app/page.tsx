@@ -9,6 +9,8 @@ import { EventGrid } from '@/components/EventGrid';
 import { EventDetailModal } from '@/components/EventDetailModal';
 import { MobileNav } from '@/components/MobileNav';
 import { MOCK_EVENTS, MOCK_POSTS, EventItem } from '@/data/mockData';
+import { CustomDatePickerModal } from '@/components/CustomDatePickerModal';
+import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import {
   Heart,
   Sprout,
@@ -29,7 +31,8 @@ import {
   Clock,
   Building2,
   Sun,
-  Filter
+  Filter,
+  X
 } from 'lucide-react';
 
 export default function Home() {
@@ -39,8 +42,12 @@ export default function Home() {
   const [selectedVenueFilter, setSelectedVenueFilter] = useState<string | null>(null);
   const [eventTypeTab, setEventTypeTab] = useState<'all' | 'community' | 'public_venue'>('all');
   const [timeFilter, setTimeFilter] = useState<'all' | 'weekend' | 'next_week' | 'custom'>('all');
-  const [customDate, setCustomDate] = useState<string>('');
-  const [sortBy, setSortBy] = useState<'newest' | 'popular'>('newest');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState<boolean>(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState<boolean>(false);
+  const [sortBy, setSortBy] = useState<'newest' | 'popular' | 'favorites'>('newest');
   const [searchQuery, setSearchQuery] = useState('');
   const [eventsList, setEventsList] = useState<EventItem[]>(MOCK_EVENTS);
   const [favorites, setFavorites] = useState<string[]>(['1', '7']);
@@ -112,8 +119,8 @@ export default function Home() {
         matchesTime = event.date.includes('เสาร์') || event.date.includes('อาทิตย์') || event.date.includes('ส.ค.') || event.date.includes('มี.ค.');
       } else if (timeFilter === 'next_week') {
         matchesTime = event.date.includes('เม.ย.') || event.date.includes('พ.ค.');
-      } else if (timeFilter === 'custom' && customDate) {
-        matchesTime = true; // match selected date
+      } else if (timeFilter === 'custom' && (startDate || endDate)) {
+        matchesTime = true; // match selected date range
       }
 
       let matchesSubCategory = true;
@@ -140,14 +147,16 @@ export default function Home() {
       return matchesCategory && matchesVenue && matchesEventType && matchesTime && matchesSubCategory && matchesSearch;
     });
 
-    if (sortBy === 'popular') {
+    if (sortBy === 'favorites') {
+      result = result.filter((event) => favorites.includes(event.id));
+    } else if (sortBy === 'popular') {
       result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     } else {
       result.sort((a, b) => b.createdAtTimestamp - a.createdAtTimestamp);
     }
 
     return result;
-  }, [eventsList, selectedCategory, selectedSubCategory, selectedVenueFilter, eventTypeTab, timeFilter, searchQuery, sortBy]);
+  }, [eventsList, selectedCategory, selectedSubCategory, selectedVenueFilter, eventTypeTab, timeFilter, searchQuery, sortBy, favorites]);
 
   const displayedEvents = useMemo(() => {
     return filteredEvents.slice(0, visibleCount);
@@ -193,8 +202,9 @@ export default function Home() {
         isLoggedIn={isLoggedIn}
         setIsLoggedIn={(status) => {
           setIsLoggedIn(status);
-          showToast(status ? 'เข้าสู่ระบบสำเร็จ (Member View)' : 'ออกจากระบบแล้ว (Guest View)');
         }}
+        onOpenLogin={() => setIsAuthModalOpen(true)}
+        onOpenLogout={() => setIsLogoutModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -210,36 +220,35 @@ export default function Home() {
           }}
         />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 py-4">
           
           {/* SECTION 1: 🌿 คลังกิจกรรมยามว่างทั้งหมด (Full Catalog Explorer - Placed First!) */}
-          <section id="catalog-section" className="space-y-6">
+          <section id="catalog-section" className="space-y-3.5">
             
             {/* Section Header */}
-            <div className="border-b border-[#E8E2D8] pb-4 space-y-2">
+            <div className="border-b border-[#E8E2D8] pb-2 space-y-1">
               <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1E293B] tracking-tight">
                 🌿 คลังกิจกรรมยามว่างทั้งหมด
               </h2>
-              <p className="text-sm text-[#64748B] font-medium">
+              <p className="text-xs sm:text-sm text-[#64748B] font-medium">
                 เลือกรูปแบบกิจกรรมที่ใช่ หรือกรองค้นหาตามเวลาเสาร์-อาทิตย์นี้ได้ง่ายๆ
               </p>
             </div>
 
             {/* Mode Switcher Tabs (Order: กิจกรรมทั่วไป/อีเวนต์ | กิจกรรมชุมชน | ทั้งหมด -> Default: ทั้งหมด) */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-200/60 p-1.5 rounded-2xl border border-slate-300/80">
-              <div className="grid grid-cols-3 gap-1.5 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-slate-200/60 p-1 rounded-2xl border border-slate-300/80">
+              <div className="grid grid-cols-3 gap-1 w-full sm:w-auto">
                 <button
                   onClick={() => {
                     setEventTypeTab('public_venue');
                     setVisibleCount(6);
                   }}
-                  className={`px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
                     eventTypeTab === 'public_venue'
                       ? 'bg-[#F26430] text-white shadow-md scale-102 font-extrabold'
                       : 'text-slate-700 hover:text-[#F26430] hover:bg-white/50'
                   }`}
                 >
-                  <Building2 className="w-4 h-4 shrink-0" />
                   <span className="truncate">🏛️ กิจกรรมทั่วไป/อีเวนต์</span>
                 </button>
 
@@ -248,13 +257,12 @@ export default function Home() {
                     setEventTypeTab('community');
                     setVisibleCount(6);
                   }}
-                  className={`px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
                     eventTypeTab === 'community'
                       ? 'bg-[#4A7C59] text-white shadow-md scale-102 font-extrabold'
                       : 'text-slate-700 hover:text-[#4A7C59] hover:bg-white/50'
                   }`}
                 >
-                  <Sprout className="w-4 h-4 shrink-0" />
                   <span className="truncate">🌱 กิจกรรมชุมชน</span>
                 </button>
 
@@ -263,7 +271,7 @@ export default function Home() {
                     setEventTypeTab('all');
                     setVisibleCount(6);
                   }}
-                  className={`px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
                     eventTypeTab === 'all'
                       ? 'bg-white text-[#1E293B] shadow-md scale-102 font-extrabold'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
@@ -310,27 +318,40 @@ export default function Home() {
                   📅 เดือนหน้า
                 </button>
 
-                {/* Custom Date Selector Button */}
+                {/* Custom Date Selector Trigger Button */}
                 <div className="shrink-0 flex items-center gap-1.5 border-l border-slate-300 pl-2 ml-1">
                   <button
-                    onClick={() => setTimeFilter('custom')}
-                    className={`px-3 py-1 rounded-full text-xs font-bold transition-all border flex items-center gap-1 ${
-                      timeFilter === 'custom'
-                        ? 'bg-[#F26430] text-white border-[#F26430] shadow-xs'
+                    onClick={() => {
+                      setTimeFilter('custom');
+                      setIsDatePickerOpen(true);
+                    }}
+                    className={`px-3.5 py-1 rounded-full text-xs font-bold transition-all border flex items-center gap-1.5 ${
+                      timeFilter === 'custom' && (startDate || endDate)
+                        ? 'bg-[#F26430] text-white border-[#F26430] shadow-xs font-extrabold'
                         : 'bg-white text-slate-600 border-slate-300 hover:border-[#F26430]'
                     }`}
                   >
-                    <Calendar className="w-3 h-3 text-[#F26430]" />
-                    <span>ระบุวันที่เอง</span>
+                    <span>
+                      {timeFilter === 'custom' && startDate
+                        ? startDate === endDate
+                          ? `📅 ${startDate}`
+                          : `🗓️ ${startDate} ถึง ${endDate}`
+                        : '📅 ระบุวันที่เอง'}
+                    </span>
                   </button>
 
-                  {timeFilter === 'custom' && (
-                    <input
-                      type="date"
-                      value={customDate}
-                      onChange={(e) => setCustomDate(e.target.value)}
-                      className="bg-white border border-[#F26430] text-xs font-bold text-[#1E293B] px-2 py-0.5 rounded-lg focus:outline-none animate-fade-in"
-                    />
+                  {timeFilter === 'custom' && (startDate || endDate) && (
+                    <button
+                      onClick={() => {
+                        setTimeFilter('all');
+                        setStartDate('');
+                        setEndDate('');
+                      }}
+                      className="p-1 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-600 transition-colors"
+                      title="ล้างช่วงเวลาที่เลือก"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
                   )}
                 </div>
               </div>
@@ -358,47 +379,34 @@ export default function Home() {
               }}
             />
 
-            {/* Sorting & Filter Header Controls */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-[#E8E2D8]">
-              <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-600">
-                <span>
-                  กำลังแสดง{' '}
-                  <strong className="text-[#1E293B] font-extrabold">
-                    {eventTypeTab === 'public_venue'
-                      ? '🏛️ กิจกรรมทั่วไป/อีเวนต์'
-                      : eventTypeTab === 'community'
-                      ? '🌱 กิจกรรมชุมชน'
-                      : '✨ กิจกรรมทั้งหมด'}
-                  </strong>{' '}
-                  (พบทั้งหมด <strong className="text-[#4A7C59] font-bold">{filteredEvents.length}</strong> กิจกรรม)
-                </span>
-              </div>
+            {/* Sorting & Filter Header Controls (Matching Top Tab Height) */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-2 bg-[#FAF7F2] p-2 px-3.5 rounded-xl border border-[#E8E2D8] text-xs font-semibold text-slate-600">
+              <span>
+                <strong className="text-[#1E293B] font-extrabold">
+                  {eventTypeTab === 'public_venue'
+                    ? '🏛️ กิจกรรมทั่วไป/อีเวนต์'
+                    : eventTypeTab === 'community'
+                    ? '🌱 กิจกรรมชุมชน'
+                    : '✨ กิจกรรมทั้งหมด'}
+                </strong>{' '}
+                ({filteredEvents.length} กิจกรรม)
+              </span>
 
-              <div className="flex items-center gap-3">
-                {/* Sorting Select */}
-                <div className="flex items-center gap-1.5 bg-[#FAF7F2] border border-[#E8E2D8] px-3 py-1.5 rounded-full text-xs sm:text-sm">
-                  <ArrowUpDown className="w-3.5 h-3.5 text-[#4A7C59]" />
+              <div className="flex items-center gap-2">
+                {/* Sorting Select (with Favorites option) */}
+                <div className="flex items-center gap-1 bg-white border border-[#E8E2D8] px-2.5 py-1 rounded-lg text-xs">
+                  <ArrowUpDown className="w-3 h-3 text-[#4A7C59]" />
                   <span className="text-[#64748B] font-medium hidden sm:inline">จัดเรียง:</span>
                   <select
                     value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as 'newest' | 'popular')}
+                    onChange={(e) => setSortBy(e.target.value as 'newest' | 'popular' | 'favorites')}
                     className="bg-transparent font-bold text-[#1E293B] focus:outline-none cursor-pointer"
                   >
-                    <option value="newest">🆕 ล่าสุด (Newest)</option>
-                    <option value="popular">🔥 ความนิยม (Popular)</option>
+                    <option value="newest">🆕 ล่าสุด</option>
+                    <option value="popular">🔥 ความนิยม</option>
+                    <option value="favorites">❤️ รายการโปรด ({favorites.length})</option>
                   </select>
                 </div>
-
-                {/* Favorites Counter Button */}
-                {favorites.length > 0 && (
-                  <button
-                    onClick={() => showToast(`คุณมีกิจกรรมโปรด ${favorites.length} รายการ`)}
-                    className="font-semibold text-[#F26430] text-xs sm:text-sm flex items-center gap-1 bg-orange-50 px-3 py-1.5 rounded-full border border-orange-200 shrink-0"
-                  >
-                    <Heart className="w-3.5 h-3.5 fill-[#F26430]" />
-                    <span>รายการโปรด ({favorites.length})</span>
-                  </button>
-                )}
               </div>
             </div>
 
@@ -686,6 +694,46 @@ export default function Home() {
         isFavorite={selectedEvent ? favorites.includes(selectedEvent.id) : false}
         onToggleFavorite={toggleFavorite}
         onJoinSuccess={handleJoinSuccess}
+      />
+
+      {/* Custom Date Picker Popup Modal */}
+      <CustomDatePickerModal
+        isOpen={isDatePickerOpen}
+        onClose={() => setIsDatePickerOpen(false)}
+        startDate={startDate}
+        endDate={endDate}
+        onApply={(start, end) => {
+          setStartDate(start);
+          setEndDate(end);
+          setTimeFilter('custom');
+          showToast(`เลือกช่วงเวลา: ${start} ${start !== end ? `ถึง ${end}` : ''}`);
+        }}
+        onReset={() => {
+          setStartDate('');
+          setEndDate('');
+          setTimeFilter('all');
+          showToast('ล้างการกรองช่วงเวลาเรียบร้อย');
+        }}
+      />
+
+      {/* Auth Login / Signup Popup Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onLoginSuccess={(userName) => {
+          setIsLoggedIn(true);
+          showToast(`ยินดีต้อนรับ ${userName}! เข้าสู่ระบบเรียบร้อย 🎉`);
+        }}
+      />
+
+      {/* Logout Confirmation Popup Modal */}
+      <LogoutConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirmLogout={() => {
+          setIsLoggedIn(false);
+          showToast('ออกจากระบบเรียบร้อยแล้ว (Guest View)');
+        }}
       />
 
       {/* Mobile Nav */}

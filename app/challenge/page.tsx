@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
+import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { MOCK_CHALLENGES, ChallengeQuest } from '@/data/mockData';
 import {
   Award,
@@ -81,6 +82,8 @@ const RECOMMENDED_CHALLENGES: RecommendedChallenge[] = [
 export default function ChallengePage() {
   const [activeNavTab, setActiveNavTab] = useState('challenge');
   const [isLoggedIn, setIsLoggedIn] = useState(false); // Default false for guest protection demo
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [myChallenges, setMyChallenges] = useState<ChallengeQuest[]>(MOCK_CHALLENGES);
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'move' | 'heal' | 'chill' | 'learn'>('all');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -179,7 +182,7 @@ export default function ChallengePage() {
               </div>
             ) : (
               <button
-                onClick={() => setIsLoggedIn(true)}
+                onClick={() => setIsAuthModalOpen(true)}
                 className="bg-[#F26430] hover:bg-[#D95322] text-white px-6 py-3 rounded-full font-bold text-xs sm:text-sm shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-all shrink-0"
               >
                 <LogIn className="w-4 h-4" />
@@ -233,7 +236,7 @@ export default function ChallengePage() {
 
               <div className="pt-2">
                 <button
-                  onClick={() => setIsLoggedIn(true)}
+                  onClick={() => setIsAuthModalOpen(true)}
                   className="bg-[#F26430] hover:bg-[#D95322] text-white px-8 py-3.5 rounded-full font-extrabold text-sm sm:text-base transition-all shadow-lg shadow-[#F26430]/30 inline-flex items-center gap-2 active:scale-95"
                 >
                   <KeyRound className="w-5 h-5" />
@@ -427,6 +430,26 @@ export default function ChallengePage() {
         </div>
         <p>© 2026 Chill & Connect Hub - ฮีลใจ & เชื่อมต่อ ฮับ. All rights reserved.</p>
       </footer>
+
+      {/* Auth Login / Signup Popup Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onLoginSuccess={(userName) => {
+          setIsLoggedIn(true);
+          showToast(`ยินดีต้อนรับ ${userName}! เข้าสู่ระบบเรียบร้อย 🎉`);
+        }}
+      />
+
+      {/* Logout Confirmation Popup Modal */}
+      <LogoutConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirmLogout={() => {
+          setIsLoggedIn(false);
+          showToast('ออกจากระบบเรียบร้อยแล้ว (Guest View)');
+        }}
+      />
 
       {/* Mobile Navigation */}
       <MobileNav

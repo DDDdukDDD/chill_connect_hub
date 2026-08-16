@@ -109,7 +109,6 @@ export const EventGrid: React.FC<EventGridProps> = ({
                   {/* Top-Left Status Badge */}
                   {event.badgeText && (
                     <div className="absolute top-3 left-3 bg-[#F26430] text-white px-3 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-1">
-                      <Sparkles className="w-3 h-3" />
                       <span>{event.badgeText}</span>
                     </div>
                   )}
@@ -145,70 +144,58 @@ export const EventGrid: React.FC<EventGridProps> = ({
                 </div>
 
                 {/* Card Content Body */}
-                <div className="p-5 flex flex-col flex-1 justify-between space-y-4">
-                  <div className="space-y-3">
+                <div className="p-3.5 sm:p-4 flex flex-col flex-1 justify-between space-y-2.5">
+                  <div className="space-y-2">
                     {/* Host Info */}
                     <div className="flex items-center gap-2">
                       <img
                         src={event.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
                         alt={event.hostName}
-                        className="w-6 h-6 rounded-full object-cover border border-slate-200"
+                        className="w-5 h-5 rounded-full object-cover border border-slate-200"
                       />
-                      <span className="text-xs font-medium text-slate-600 truncate flex items-center gap-1">
+                      <span className="text-[11px] font-medium text-slate-500 truncate flex items-center gap-1">
                         {event.hostName}
-                        <CheckCircle2 className="w-3.5 h-3.5 text-blue-500 fill-blue-50" />
+                        <CheckCircle2 className="w-3 h-3 text-blue-500 fill-blue-50" />
                       </span>
                     </div>
 
                     {/* Title */}
                     <h3
                       onClick={() => onSelectEvent(event)}
-                      className="font-bold text-base sm:text-lg text-[#1E293B] line-clamp-2 leading-snug group-hover:text-[#4A7C59] cursor-pointer transition-colors"
+                      className="font-bold text-sm sm:text-base text-[#1E293B] line-clamp-1 group-hover:text-[#4A7C59] cursor-pointer transition-colors"
                     >
                       {event.title}
                     </h3>
 
-                    {/* Meta Information */}
-                    <div className="space-y-1.5 text-xs sm:text-sm text-[#64748B]">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-[#4A7C59] shrink-0" />
-                        <span>{event.date} • {event.time}</span>
+                    {/* Meta Information (Compact 2 Rows) */}
+                    <div className="space-y-1 text-xs text-[#64748B]">
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
+                        <span className="truncate">{event.date} • {event.time}</span>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-[#F26430] shrink-0" />
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
                         <span className="truncate">{event.location}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Seat Capacity Progress Bar OR Public Venue Status Bar */}
-                  {event.eventType === 'public_venue' ? (
-                    <div className="pt-1">
-                      <div className="flex items-center justify-between text-xs font-bold text-[#F26430] bg-orange-50/90 px-3 py-1.5 rounded-xl border border-orange-200/80">
-                        <span className="flex items-center gap-1.5">
-                          <Building2 className="w-3.5 h-3.5" />
-                          <span>งานแสดงสินค้า / มหกรรมใหญ่</span>
-                        </span>
-                        <span className="text-[10px] text-[#F26430] font-extrabold bg-white px-2 py-0.5 rounded-md border border-orange-200 shadow-2xs">
-                          {event.price || 'เข้าชมฟรี'}
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-1.5 pt-1">
-                      <div className="flex items-center justify-between text-xs font-medium text-[#64748B]">
+                  {/* Seat Capacity Progress Bar (Only for Community Events) */}
+                  {event.eventType !== 'public_venue' && (
+                    <div className="space-y-1 pt-0.5">
+                      <div className="flex items-center justify-between text-[11px] font-medium text-[#64748B]">
                         <span className="flex items-center gap-1">
-                          <Users className="w-3.5 h-3.5 text-[#4A7C59]" />
+                          <Users className="w-3 h-3 text-[#4A7C59]" />
                           <span>ที่นั่ง {event.participantsCount}/{event.maxParticipants}</span>
                         </span>
                         {isAlmostFull && (
-                          <span className="text-amber-600 font-semibold text-[11px] animate-pulse">
+                          <span className="text-amber-600 font-semibold text-[10px] animate-pulse">
                             ใกล้เต็มแล้ว!
                           </span>
                         )}
                       </div>
-                      <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
+                      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
                         <div
                           className={`h-full rounded-full transition-all duration-500 ${
                             isAlmostFull ? 'bg-gradient-to-r from-amber-400 to-[#F26430]' : 'bg-[#4A7C59]'
@@ -220,7 +207,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                   )}
 
                   {/* Bottom Action Area */}
-                  <div className="pt-3 flex items-center justify-between gap-3 border-t border-slate-100">
+                  <div className="pt-2 flex items-center justify-between gap-2 border-t border-slate-100">
                     {event.eventType === 'public_venue' ? (
                       <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1">
                         <Tag className="w-3 h-3 text-[#F26430]" />
@@ -237,7 +224,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
 
                     <button
                       onClick={() => onSelectEvent(event)}
-                      className={`px-5 py-2 rounded-full font-bold text-xs sm:text-sm transition-all shadow-sm hover:shadow-md active:scale-95 flex items-center justify-center gap-1.5 text-white ${
+                      className={`px-4 py-1.5 rounded-full font-bold text-xs transition-all shadow-xs hover:shadow active:scale-95 flex items-center justify-center gap-1 text-white ${
                         event.eventType === 'public_venue'
                           ? 'bg-[#F26430] hover:bg-[#D95322] shadow-[#F26430]/20'
                           : 'bg-[#4A7C59] hover:bg-[#3B6347] shadow-[#4A7C59]/20'

@@ -9,6 +9,8 @@ interface NavbarProps {
   setActiveTab: (tab: string) => void;
   isLoggedIn: boolean;
   setIsLoggedIn: (status: boolean) => void;
+  onOpenLogin?: () => void;
+  onOpenLogout?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -16,6 +18,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   setActiveTab,
   isLoggedIn,
   setIsLoggedIn,
+  onOpenLogin,
+  onOpenLogout,
 }) => {
   return (
     <header className="sticky top-0 z-40 bg-[#FAF7F2]/90 backdrop-blur-md border-b border-[#E8E2D8] transition-all">
@@ -85,9 +89,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
 
               <button 
-                onClick={() => setIsLoggedIn(false)}
-                className="rounded-full bg-[#1E293B] hover:bg-[#0F172A] text-white px-4 py-2 text-xs font-semibold transition-all shadow-sm flex items-center gap-1.5 active:scale-95"
-                title="คลิกเพื่อจำลองการออกจากระบบ"
+                onClick={() => onOpenLogout ? onOpenLogout() : setIsLoggedIn(false)}
+                className="rounded-full bg-[#1E293B] hover:bg-[#0F172A] text-white px-4 py-2 text-xs font-semibold transition-all shadow-sm flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                title="คลิกเพื่อออกจากระบบ"
               >
                 <User className="w-3.5 h-3.5 text-emerald-400" />
                 <span>คุณส้ม (Member)</span>
@@ -96,12 +100,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           ) : (
             <button 
-              onClick={() => setIsLoggedIn(true)}
-              className="rounded-full bg-[#1E293B] hover:bg-[#0F172A] text-white px-5 py-2 text-sm font-medium transition-all shadow-sm flex items-center gap-2 active:scale-95"
-              title="คลิกเพื่อจำลองการเข้าสู่ระบบ"
+              onClick={() => onOpenLogin ? onOpenLogin() : setIsLoggedIn(true)}
+              className="rounded-full bg-[#1E293B] hover:bg-[#0F172A] text-white px-5 py-2 text-sm font-medium transition-all shadow-sm flex items-center gap-2 active:scale-95 cursor-pointer"
+              title="คลิกเพื่อเข้าสู่ระบบ / สมัครสมาชิก"
             >
               <LogIn className="w-4 h-4 text-emerald-400" />
-              <span>login</span>
+              <span>เข้าสู่ระบบ / สมัครสมาชิก</span>
             </button>
           )}
 
