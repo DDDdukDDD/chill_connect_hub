@@ -12,6 +12,7 @@ import { MOCK_EVENTS, MOCK_POSTS, EventItem } from '@/data/mockData';
 import { CustomDatePickerModal } from '@/components/CustomDatePickerModal';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
+import { FilterDrawer } from '@/components/FilterDrawer';
 import {
   Heart,
   Sprout,
@@ -33,6 +34,7 @@ import {
   Building2,
   Sun,
   Filter,
+  SlidersHorizontal,
   X
 } from 'lucide-react';
 
@@ -43,9 +45,11 @@ export default function Home() {
   const [selectedVenueFilter, setSelectedVenueFilter] = useState<string | null>(null);
   const [eventTypeTab, setEventTypeTab] = useState<'all' | 'community' | 'public_venue'>('all');
   const [timeFilter, setTimeFilter] = useState<'all' | 'weekend' | 'next_week' | 'custom'>('all');
+  const [priceFilter, setPriceFilter] = useState<'all' | 'free' | 'under500'>('all');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [isDatePickerOpen, setIsDatePickerOpen] = useState<boolean>(false);
+  const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState<boolean>(false);
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState<boolean>(false);
@@ -164,7 +168,15 @@ export default function Home() {
         event.tag.toLowerCase().includes(q) ||
         event.description.toLowerCase().includes(q);
 
-      return matchesCategory && matchesVenue && matchesEventType && matchesTime && matchesSubCategory && matchesSearch;
+      let matchesPrice = true;
+      const priceStr = event.price || '';
+      if (priceFilter === 'free') {
+        matchesPrice = priceStr === 'ฟรี!' || priceStr === 'ฟรี';
+      } else if (priceFilter === 'under500') {
+        matchesPrice = priceStr === 'ฟรี!' || priceStr === 'ฟรี' || priceStr.includes('150') || priceStr.includes('200') || priceStr.includes('350');
+      }
+
+      return matchesCategory && matchesVenue && matchesEventType && matchesTime && matchesSubCategory && matchesSearch && matchesPrice;
     });
 
     if (sortBy === 'favorites') {
@@ -176,7 +188,36 @@ export default function Home() {
     }
 
     return result;
-  }, [eventsList, selectedCategory, selectedSubCategory, selectedVenueFilter, eventTypeTab, timeFilter, searchQuery, sortBy, favorites]);
+  }, [
+    eventsList,
+    selectedCategory,
+    selectedSubCategory,
+    selectedVenueFilter,
+    eventTypeTab,
+    timeFilter,
+    priceFilter,
+    startDate,
+    endDate,
+    searchQuery,
+    sortBy,
+    favorites,
+  ]);
+
+  const handleResetAllFilters = () => {
+    setSelectedCategory(null);
+    setSelectedSubCategory(null);
+    setSelectedVenueFilter(null);
+    setEventTypeTab('all');
+    setTimeFilter('all');
+    setPriceFilter('all');
+    setStartDate('');
+    setEndDate('');
+    setSearchQuery('');
+    setSortBy('newest');
+    showToast('ล้างตัวกรองทั้งหมดแล้ว ✨');
+  };
+
+
 
   const displayedEvents = useMemo(() => {
     return filteredEvents.slice(0, visibleCount);
@@ -430,6 +471,16 @@ export default function Home() {
               </span>
 
               <div className="flex items-center gap-2">
+                {/* Advanced Filter Drawer Trigger Button */}
+                <button
+                  type="button"
+                  onClick={() => setIsFilterDrawerOpen(true)}
+                  className="flex items-center gap-1.5 bg-[#F26430] hover:bg-[#D95322] text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all active:scale-95 cursor-pointer"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                  <span>🎛️ ตัวกรองละเอียด</span>
+                </button>
+
                 {/* Sorting Select (with Favorites option) */}
                 <div className="flex items-center gap-1 bg-white border border-[#E8E2D8] px-2.5 py-1 rounded-lg text-xs">
                   <ArrowUpDown className="w-3 h-3 text-[#4A7C59]" />
@@ -736,6 +787,22 @@ export default function Home() {
           setIsAuthModalOpen(true);
           showToast('🔒 กรุณาเข้าสู่ระบบก่อนบันทึกหรือเข้าร่วมกิจกรรม');
         }}
+      />
+
+      {/* Advanced Filter Drawer */}
+      <FilterDrawer
+        isOpen={isFilterDrawerOpen}
+        onClose={() => setIsFilterDrawerOpen(false)}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        selectedVenueFilter={selectedVenueFilter}
+        setSelectedVenueFilter={setSelectedVenueFilter}
+        selectedGroupSize={eventTypeTab}
+        setSelectedGroupSize={setEventTypeTab}
+        priceFilter={priceFilter}
+        setPriceFilter={setPriceFilter}
+        onResetAll={handleResetAllFilters}
+        totalResultsCount={filteredEvents.length}
       />
 
       {/* Custom Date Picker Popup Modal */}
