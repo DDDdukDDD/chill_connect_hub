@@ -11,8 +11,8 @@ interface FilterDrawerProps {
   setSelectedCategory: (cat: 'heal' | 'move' | 'chill' | 'learn' | null) => void;
   selectedVenueFilter: string | null;
   setSelectedVenueFilter: (venue: string | null) => void;
-  selectedGroupSize: 'all' | 'community' | 'public_venue';
-  setSelectedGroupSize: (size: 'all' | 'community' | 'public_venue') => void;
+  selectedGroupSize: 'all' | 'community' | 'public_venue' | 'joined';
+  setSelectedGroupSize: (size: 'all' | 'community' | 'public_venue' | 'joined') => void;
   priceFilter: 'all' | 'free' | 'under500';
   setPriceFilter: (price: 'all' | 'free' | 'under500') => void;
   onResetAll: () => void;

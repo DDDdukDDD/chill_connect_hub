@@ -25,6 +25,24 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 }) => {
   const [joined, setJoined] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showSubForm, setShowSubForm] = useState(false);
+  const [subTitleInput, setSubTitleInput] = useState('');
+  const [subActivities, setSubActivities] = useState([
+    {
+      id: 'sub-1',
+      title: 'ชวนเดินดูโซนนิยายแปล & หนังสือประวัติศาสตร์ 14:00 น.',
+      creatorName: 'คุณมายด์',
+      time: '14:00 น.',
+      membersCount: '2/4 คน',
+    },
+    {
+      id: 'sub-2',
+      title: 'หาเพื่อนแวะจิบกาแฟโซน Craft Drip ชิลล์ๆ',
+      creatorName: 'คุณน็อต',
+      time: '15:30 น.',
+      membersCount: '3/5 คน',
+    },
+  ]);
 
   if (!event) return null;
 
@@ -184,24 +202,93 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             </p>
           </div>
 
-          {/* Non-Public Participants Progress Bar */}
-          {!isPublicVenue && (
-            <div className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-100 space-y-1.5">
-              <div className="flex items-center justify-between text-xs font-semibold text-[#1E293B]">
-                <span className="flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-[#4A7C59]" />
-                  ผู้เข้าร่วมแล้ว ({event.participantsCount}/{event.maxParticipants} คน)
-                </span>
-                <span className="text-[#4A7C59] font-bold">
-                  เหลืออีก {event.maxParticipants - event.participantsCount} ที่นั่ง!
-                </span>
+          {/* Public Venue Sub-Activities & Buddy Matcher */}
+          {isPublicVenue && (
+            <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <h4 className="font-extrabold text-xs sm:text-sm text-[#1E293B] flex items-center gap-1.5">
+                    <Users className="w-4 h-4 text-[#F26430]" />
+                    <span>ชวนเพื่อนทำกิจกรรมในงานนี้</span>
+                  </h4>
+                  <p className="text-[11px] text-[#64748B]">
+                    มี 2 กิจกรรมย่อยที่เพื่อนๆ ตั้งหาคนไปทำด้วยกันในงาน
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowSubForm(!showSubForm)}
+                  className="bg-[#4A7C59] hover:bg-[#3B6447] text-white text-xs font-bold px-3.5 py-1.5 rounded-full shadow-xs transition-all active:scale-95 shrink-0"
+                >
+                  {showSubForm ? 'ยกเลิก' : '➕ สร้างกิจกรรม'}
+                </button>
               </div>
-              
-              <div className="w-full h-2 bg-emerald-200/70 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-[#4A7C59] rounded-full transition-all duration-500"
-                  style={{ width: `${(event.participantsCount / event.maxParticipants) * 100}%` }}
-                />
+
+              {/* Form to create sub-activity */}
+              {showSubForm && (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!subTitleInput.trim()) return;
+                    setSubActivities([
+                      {
+                        id: `sub-${Date.now()}`,
+                        title: subTitleInput.trim(),
+                        creatorName: 'คุณส้ม (Som_Chill)',
+                        time: '14:00 น.',
+                        membersCount: '1/4 คน',
+                      },
+                      ...subActivities,
+                    ]);
+                    setSubTitleInput('');
+                    setShowSubForm(false);
+                  }}
+                  className="p-3 bg-white rounded-xl border border-amber-200 space-y-2 animate-fade-in"
+                >
+                  <label className="text-[11px] font-bold text-[#1E293B]">ตั้งชวนกิจกรรมย่อยภายในงาน:</label>
+                  <input
+                    type="text"
+                    value={subTitleInput}
+                    onChange={(e) => setSubTitleInput(e.target.value)}
+                    placeholder="เช่น ชวนเดินดูโซนนิยายแปล 14:00 น. หรือ จิบกาแฟโซนดริป"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-[#1E293B] focus:outline-none focus:border-[#F26430]"
+                    required
+                  />
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      className="bg-[#F26430] text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-xs"
+                    >
+                      ยืนยันสร้างกิจกรรมย่อย
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* List of sub-activities */}
+              <div className="space-y-2 pt-1">
+                {subActivities.map((sub) => (
+                  <div
+                    key={sub.id}
+                    className="bg-white p-2.5 rounded-xl border border-amber-200/60 flex items-center justify-between gap-2 shadow-2xs"
+                  >
+                    <div className="space-y-0.5 min-w-0">
+                      <p className="text-xs font-bold text-[#1E293B] truncate">🎯 {sub.title}</p>
+                      <p className="text-[10px] text-[#64748B]">
+                        จัดโดย {sub.creatorName} • เวลา {sub.time} ({sub.membersCount})
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => alert(`ส่งคำขอเข้าร่วม "${sub.title}" สำเร็จแล้ว!`)}
+                      className="text-[11px] font-bold text-[#F26430] bg-orange-50 hover:bg-orange-100 px-3 py-1 rounded-full border border-orange-200 shrink-0 transition-colors"
+                    >
+                      ขอไปด้วย ➔
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
           )}

@@ -12,6 +12,8 @@ interface EventGridProps {
   toggleFavorite: (eventId: string) => void;
   viewMode?: 'grid' | 'list';
   onToggleViewMode?: (mode: 'grid' | 'list') => void;
+  showCountText?: boolean;
+  joinedEventIds?: string[];
 }
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string; badgeBg: string }> = {
@@ -28,15 +30,17 @@ export const EventGrid: React.FC<EventGridProps> = ({
   toggleFavorite,
   viewMode = 'grid',
   onToggleViewMode,
+  showCountText = false,
+  joinedEventIds = [],
 }) => {
   if (events.length === 0) {
     return (
-      <div className="bg-white rounded-3xl p-12 text-center border border-[#E8E2D8] shadow-sm my-6">
-        <div className="w-16 h-16 bg-[#EBF3ED] text-[#4A7C59] rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
-          🔍
+      <div className="bg-white rounded-3xl p-12 text-center border border-[#E8E2D8] shadow-sm space-y-3">
+        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400">
+          <Sparkles className="w-8 h-8" />
         </div>
-        <h3 className="text-xl font-bold text-[#1E293B]">ไม่พบกิจกรรมที่คุณกำลังค้นหา</h3>
-        <p className="text-[#64748B] text-sm mt-1">
+        <h3 className="font-extrabold text-lg text-[#1E293B]">ไม่พบกิจกรรมที่ค้นหา</h3>
+        <p className="text-xs text-[#64748B] max-w-sm mx-auto">
           ลองค้นหาด้วยคำอื่น หรือเลือกหมวดหมู่อื่นดูนะครับ
         </p>
       </div>
@@ -48,10 +52,14 @@ export const EventGrid: React.FC<EventGridProps> = ({
       {/* View Switcher Header Bar if handler exists */}
       {onToggleViewMode && (
         <div className="flex items-center justify-between px-1 py-1">
-          <p className="text-xs sm:text-sm font-semibold text-slate-600">
-            พบทั้งหมด <span className="text-[#4A7C59] font-bold">{events.length}</span> กิจกรรม
-          </p>
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+          <div>
+            {showCountText && (
+              <p className="text-xs sm:text-sm font-semibold text-slate-600">
+                พบทั้งหมด <span className="text-[#4A7C59] font-bold">{events.length}</span> กิจกรรม
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 ml-auto">
             <button
               onClick={() => onToggleViewMode('grid')}
               className={`p-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1 ${
@@ -80,11 +88,12 @@ export const EventGrid: React.FC<EventGridProps> = ({
         </div>
       )}
 
-      {/* GRID VIEW */}
+      {/* GRID VIEW: Sleek 4-Column Compact Grid Layout */}
       {viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4.5">
           {events.map((event, idx) => {
             const isFav = favorites.includes(event.id);
+            const isJoined = joinedEventIds.includes(event.id);
             const fillRatio = event.participantsCount / event.maxParticipants;
             const isAlmostFull = fillRatio >= 0.8;
             const catStyle = CATEGORY_COLORS[event.category] || CATEGORY_COLORS.heal;
@@ -96,7 +105,11 @@ export const EventGrid: React.FC<EventGridProps> = ({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: idx * 0.05 }}
                 onClick={() => onSelectEvent(event)}
-                className="group bg-white rounded-2xl border border-[#E8E2D8] shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden transform hover:-translate-y-1 cursor-pointer"
+                className={`group bg-white rounded-2xl transition-all duration-300 flex flex-col overflow-hidden transform hover:-translate-y-1 cursor-pointer relative ${
+                  isJoined
+                    ? 'border-2 border-[#4A7C59] ring-2 ring-[#4A7C59]/15 shadow-md'
+                    : 'border border-[#E8E2D8] shadow-sm hover:shadow-xl'
+                }`}
               >
                 {/* Image Container */}
                 <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
@@ -109,17 +122,29 @@ export const EventGrid: React.FC<EventGridProps> = ({
 
                   {/* Hover Hint Overlay for Beginners */}
                   <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none z-10">
-                    <span className="bg-white/95 text-[#1E293B] text-xs font-extrabold px-3 py-1.5 rounded-full shadow-lg border border-white/50 flex items-center gap-1">
-                      🔍 คลิกดูรายละเอียด
+                    <span className={`text-xs font-extrabold px-3 py-1.5 rounded-full shadow-lg border flex items-center gap-1 ${
+                      isJoined ? 'bg-[#4A7C59] text-white border-white/40' : 'bg-white/95 text-[#1E293B] border-white/50'
+                    }`}>
+                      {isJoined ? '🎟️ คุณเข้าร่วมแล้ว (ดูตั๋ว)' : '🔍 คลิกดูรายละเอียด'}
                     </span>
                   </div>
 
                   {/* Top-Left Status Badge */}
-                  {event.badgeText && (
+                  {isJoined ? (
+                    <div className="absolute top-3 left-3 bg-[#4A7C59] text-white px-3 py-1 rounded-full text-xs font-extrabold shadow-md flex items-center gap-1 z-10">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200 fill-emerald-800" />
+                      <span>🟢 เข้าร่วมแล้ว</span>
+                    </div>
+                  ) : event.isNew || idx < 2 ? (
+                    <div className="absolute top-3 left-3 bg-[#4A7C59] text-white px-3 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-emerald-200" />
+                      <span>🆕 มาใหม่</span>
+                    </div>
+                  ) : event.badgeText ? (
                     <div className="absolute top-3 left-3 bg-[#F26430] text-white px-3 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-1">
                       <span>{event.badgeText}</span>
                     </div>
-                  )}
+                  ) : null}
 
                   {/* Floating Favorite Heart Icon */}
                   <button
