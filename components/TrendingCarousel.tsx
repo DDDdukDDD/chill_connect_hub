@@ -43,20 +43,15 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
 
   return (
     <section className="space-y-2.5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600 font-bold shadow-2xs">
-            <Flame className="w-4 h-4 text-orange-500 fill-orange-500" />
-          </div>
-          <div>
-            <h2 className="text-base sm:text-lg font-extrabold text-[#1E293B] flex items-center gap-1.5">
-              <span>กิจกรรมไฮไลต์ยอดฮิตสัปดาห์นี้</span>
-              <span className="text-[10px] font-extrabold bg-rose-500 text-white px-2 py-0.5 rounded-full shadow-xs">
-                HOT 🔥
-              </span>
-            </h2>
-          </div>
+      {/* Header (100% Responsive on Mobile) */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0 flex-1 flex items-center gap-1.5 truncate">
+          <h2 className="text-xs sm:text-base font-extrabold text-[#1E293B] truncate">
+            กิจกรรมไฮไลต์ยอดฮิตสัปดาห์นี้
+          </h2>
+          <span className="text-[9px] sm:text-[10px] font-extrabold bg-rose-500 text-white px-1.5 py-0.5 rounded-full shadow-2xs shrink-0">
+            HOT
+          </span>
         </div>
 
         <button
@@ -64,7 +59,7 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
             const el = document.getElementById('catalog-section');
             if (el) el.scrollIntoView({ behavior: 'smooth' });
           }}
-          className="text-xs font-bold text-[#4A7C59] hover:underline flex items-center gap-1 cursor-pointer transition-colors"
+          className="text-[11px] sm:text-xs font-bold text-[#4A7C59] hover:underline flex items-center gap-1 cursor-pointer transition-colors shrink-0 whitespace-nowrap"
         >
           <span>ดูกิจกรรมทั้งหมด ➔</span>
         </button>
@@ -98,51 +93,82 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
 
-                {/* Urgency Badge */}
-                <div className="absolute top-2 left-2 flex items-center gap-1 bg-[#F26430] text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-md">
-                  <span>⚡ เหลืออีก {Math.floor(Math.random() * 3) + 1} วัน</span>
-                </div>
-
                 {/* Favorite Heart Button */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     toggleFavorite(event.id);
                   }}
-                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center text-slate-600 hover:text-red-500 transition-colors shadow-sm"
+                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center text-slate-600 hover:text-red-500 transition-colors shadow-sm z-10"
                 >
                   <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-red-500 text-red-500' : ''}`} />
                 </button>
-
-                {/* Bottom Tag Badge inside Image */}
-                <div className="absolute bottom-2 left-2 text-[10px] font-bold text-white bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-md">
-                  {event.tag}
-                </div>
               </div>
 
               {/* Card Content */}
-              <div className="p-3.5 flex-1 flex flex-col justify-between space-y-2">
-                <h3 className="font-extrabold text-xs sm:text-sm text-[#1E293B] line-clamp-1 group-hover:text-[#F26430] transition-colors">
-                  {event.title}
-                </h3>
-
-                <div className="space-y-1 text-[11px] text-[#64748B]">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <Calendar className="w-3 h-3 text-[#4A7C59] shrink-0" />
-                    <span className="truncate">{event.date} • {event.time}</span>
+              <div className="p-3.5 flex-1 flex flex-col justify-between space-y-2.5">
+                <div className="space-y-2">
+                  
+                  {/* Host & Price Row */}
+                  <div className="flex items-center justify-between gap-1.5">
+                    <span className="text-[11px] font-semibold text-slate-700 truncate">
+                      {event.hostName}
+                    </span>
+                    {event.price && (
+                      <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border shrink-0 ${
+                        event.price.includes('ฟรี')
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          : 'bg-orange-50 text-[#F26430] border-orange-200'
+                      }`}>
+                        {event.price.includes('ฟรี') ? 'ฟรี' : event.price.replace(/\s*\([^)]*\)/g, '').trim()}
+                      </span>
+                    )}
                   </div>
-                  <div className="flex items-center gap-1.5 truncate">
-                    <MapPin className="w-3 h-3 text-[#F26430] shrink-0" />
-                    <span className="truncate">{event.location}</span>
+
+                  <h3 className="font-extrabold text-xs sm:text-sm text-[#1E293B] line-clamp-1 group-hover:text-[#F26430] transition-colors">
+                    {event.title}
+                  </h3>
+
+                  <div className="space-y-1 text-[11px] text-[#64748B]">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <Calendar className="w-3 h-3 text-[#4A7C59] shrink-0" />
+                      <span className="truncate">{event.date} • {event.time}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 truncate">
+                      <MapPin className="w-3 h-3 text-[#F26430] shrink-0" />
+                      <span className="truncate">{event.location}</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Footer Action */}
+                {/* Footer Action: Event Type (Left) + View Detail (Right) */}
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <span className="font-extrabold text-[#F26430] text-xs">
-                    {event.price}
-                  </span>
-                  <span className="text-[11px] font-bold text-[#4A7C59] group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
+                  <div className="relative group/tooltip">
+                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border shrink-0 cursor-help transition-all ${
+                      isPublicVenue
+                        ? 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100'
+                        : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                    }`}>
+                      {isPublicVenue ? '🏛️ อีเวนต์สาธารณะ' : '🏡 กิจกรรมชุมชน'}
+                    </span>
+
+                    {/* Tooltip Popup */}
+                    <div className="absolute bottom-full left-0 mb-2 w-52 p-2.5 bg-slate-900/95 text-white text-[10px] font-medium rounded-xl shadow-xl border border-white/10 opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 pointer-events-none z-30 leading-relaxed backdrop-blur-md">
+                      {isPublicVenue ? (
+                        <>
+                          <strong className="block text-sky-300 font-bold mb-0.5">🏛️ อีเวนต์สาธารณะ:</strong>
+                          งานนิทรรศการ / มหกรรมสเกลใหญ่ หาเพื่อนร่วมเดินงานด้วยกันได้
+                        </>
+                      ) : (
+                        <>
+                          <strong className="block text-emerald-300 font-bold mb-0.5">🏡 กิจกรรมชุมชน:</strong>
+                          กลุ่มย่อยอบอุ่น จัดโดยสมาชิก มีโฮสต์คอยต้อนรับ ไปคนเดียวไม่เกร็ง
+                        </>
+                      )}
+                      <div className="absolute top-full left-4 -mt-1 border-4 border-transparent border-t-slate-900/95" />
+                    </div>
+                  </div>
+                  <span className="text-[#4A7C59] font-bold text-xs group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
                     <span>ดูรายละเอียด</span>
                     <ArrowRight className="w-3 h-3" />
                   </span>

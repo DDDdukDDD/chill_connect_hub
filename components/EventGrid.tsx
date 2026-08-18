@@ -41,8 +41,8 @@ export const EventGrid: React.FC<EventGridProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* GRID VIEW: Sleek 4-Column Compact Grid Layout */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4.5">
+      {/* GRID VIEW: Responsive 4 to 5-Column Grid Layout for Large/Wide Screens */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-4.5">
           {events.map((event, idx) => {
             const isFav = favorites.includes(event.id);
             const isJoined = joinedEventIds.includes(event.id);
@@ -63,17 +63,17 @@ export const EventGrid: React.FC<EventGridProps> = ({
                     : 'border border-[#E8E2D8] shadow-sm hover:shadow-xl'
                 }`}
               >
-                {/* Image Container */}
+                {/* Image Container (Ultra-Clean 100% Photo Visibility) */}
                 <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
                   <img
                     src={event.image}
                     alt={event.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-70" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
 
-                  {/* Hover Hint Overlay for Beginners */}
-                  <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none z-10">
+                  {/* Hover Hint Overlay */}
+                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none z-10">
                     <span className={`text-xs font-extrabold px-3 py-1.5 rounded-full shadow-lg border flex items-center gap-1 ${
                       isJoined ? 'bg-[#4A7C59] text-white border-white/40' : 'bg-white/95 text-[#1E293B] border-white/50'
                     }`}>
@@ -81,30 +81,13 @@ export const EventGrid: React.FC<EventGridProps> = ({
                     </span>
                   </div>
 
-                  {/* Top-Left Status Badge */}
-                  {isJoined ? (
-                    <div className="absolute top-3 left-3 bg-[#4A7C59] text-white px-3 py-1 rounded-full text-xs font-extrabold shadow-md flex items-center gap-1.5 z-10">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200" />
-                      <span>เข้าร่วมแล้ว</span>
-                    </div>
-                  ) : event.isNew || idx < 2 ? (
-                    <div className="absolute top-3 left-3 bg-sky-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-1.5 z-10">
-                      <Sparkles className="w-3.5 h-3.5 text-sky-200" />
-                      <span>มาใหม่</span>
-                    </div>
-                  ) : event.badgeText ? (
-                    <div className="absolute top-3 left-3 bg-[#F26430] text-white px-3 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-1">
-                      <span>{event.badgeText}</span>
-                    </div>
-                  ) : null}
-
-                  {/* Floating Favorite Heart Icon (Compact Size) */}
+                  {/* Floating Favorite Heart Icon */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       toggleFavorite(event.id);
                     }}
-                    className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-[#F26430] hover:scale-110 active:scale-95 transition-all z-10"
+                    className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-[#F26430] hover:scale-110 active:scale-95 transition-all z-10"
                     title={isFav ? 'ยกเลิกถูกใจ' : 'บันทึกกิจกรรม'}
                   >
                     <Heart
@@ -113,35 +96,35 @@ export const EventGrid: React.FC<EventGridProps> = ({
                       }`}
                     />
                   </button>
-
-                  {/* Price Tag Badge */}
-                  {event.price && (
-                    <div className="absolute bottom-3 left-3 bg-slate-900/80 backdrop-blur-md text-white px-3 py-1 rounded-full text-xs font-semibold border border-white/20 shadow-sm flex items-center gap-1">
-                      <Tag className="w-3 h-3 text-emerald-400" />
-                      <span>{event.price}</span>
-                    </div>
-                  )}
-
-                  {/* Category Tag */}
-                  <div className={`absolute bottom-3 right-3 ${catStyle.bg} ${catStyle.text} ${catStyle.border} border px-3 py-1 rounded-full text-xs font-semibold shadow-sm backdrop-blur-md`}>
-                    {event.tag}
-                  </div>
                 </div>
 
                 {/* Card Content Body */}
                 <div className="p-3.5 sm:p-4 flex flex-col flex-1 justify-between space-y-2.5">
                   <div className="space-y-2">
-                    {/* Host Info */}
-                    <div className="flex items-center gap-2">
-                      <img
-                        src={event.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
-                        alt={event.hostName}
-                        className="w-5 h-5 rounded-full object-cover border border-slate-200"
-                      />
-                      <span className="text-[11px] font-medium text-slate-500 truncate flex items-center gap-1">
-                        {event.hostName}
-                        <CheckCircle2 className="w-3 h-3 text-blue-500 fill-blue-50" />
-                      </span>
+                    
+                    {/* Top Row: Host Info (Left) + Clean Price Chip (Right) */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <img
+                          src={event.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
+                          alt={event.hostName}
+                          className="w-5 h-5 rounded-full object-cover border border-slate-200 shrink-0"
+                        />
+                        <span className="text-[11px] font-semibold text-slate-700 truncate">
+                          {event.hostName}
+                        </span>
+                      </div>
+
+                      {/* Clean Price Chip */}
+                      {event.price && (
+                        <span className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border shrink-0 ${
+                          event.price.includes('ฟรี')
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : 'bg-orange-50 text-[#F26430] border-orange-200'
+                        }`}>
+                          {event.price.includes('ฟรี') ? 'ฟรี' : event.price.replace(/\s*\([^)]*\)/g, '').trim()}
+                        </span>
+                      )}
                     </div>
 
                     {/* Title */}
@@ -191,29 +174,41 @@ export const EventGrid: React.FC<EventGridProps> = ({
                     </div>
                   )}
 
-                  {/* Bottom Action Area */}
+                  {/* Bottom Action Area: Event Type (Left) + CTA Button (Right) */}
                   <div className="pt-2 flex items-center justify-between gap-2 border-t border-slate-100">
-                    {event.eventType === 'public_venue' ? (
-                      <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1">
-                        <Tag className="w-3 h-3 text-[#F26430]" />
-                        <span>อีเวนต์สาธารณะ</span>
+                    {/* Event Type Badge with Floating Hover Tooltip */}
+                    <div className="relative group/tooltip">
+                      <span className={`text-[10px] sm:text-[11px] font-extrabold px-2.5 py-1 rounded-full border shrink-0 flex items-center gap-1 cursor-help transition-all ${
+                        event.eventType === 'public_venue'
+                          ? 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100'
+                          : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                      }`}>
+                        <span>{event.eventType === 'public_venue' ? '🏛️ อีเวนต์สาธารณะ' : '🏡 กิจกรรมชุมชน'}</span>
                       </span>
-                    ) : event.rating ? (
-                      <span className="flex items-center gap-1 text-amber-500 font-bold text-xs">
-                        <Star className="w-3.5 h-3.5 fill-amber-400" />
-                        <span>{event.rating}</span>
-                      </span>
-                    ) : (
-                      <span className="text-xs text-slate-400">ใหม่</span>
-                    )}
+
+                      {/* Tooltip Popup */}
+                      <div className="absolute bottom-full left-0 mb-2 w-56 p-2.5 bg-slate-900/95 text-white text-[11px] font-medium rounded-xl shadow-xl border border-white/10 opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 pointer-events-none z-30 leading-relaxed backdrop-blur-md">
+                        {event.eventType === 'public_venue' ? (
+                          <>
+                            <strong className="block text-sky-300 font-extrabold mb-0.5">🏛️ อีเวนต์สาธารณะ:</strong>
+                            งานนิทรรศการ / มหกรรมสเกลใหญ่ สามารถหาหรือจับคู่ Buddy ไปเดินงานด้วยกันได้
+                          </>
+                        ) : (
+                          <>
+                            <strong className="block text-emerald-300 font-extrabold mb-0.5">🏡 กิจกรรมชุมชน:</strong>
+                            กลุ่มย่อยอบอุ่น จัดโดยสมาชิก มีโฮสต์คอยต้อนรับ เหมาะกับคนอยากหาเพื่อนใหม่และคนไปคนเดียว
+                          </>
+                        )}
+                        {/* Downward Arrow */}
+                        <div className="absolute top-full left-4 -mt-1 border-4 border-transparent border-t-slate-900/95" />
+                      </div>
+                    </div>
 
                     <button
                       onClick={() => onSelectEvent(event)}
-                      className={`px-4 py-1.5 rounded-full font-bold text-xs transition-all shadow-xs hover:shadow active:scale-95 flex items-center justify-center gap-1 cursor-pointer ${
+                      className={`px-4 py-1.5 rounded-full font-bold text-xs transition-all shadow-xs hover:shadow active:scale-95 flex items-center justify-center gap-1 cursor-pointer shrink-0 ${
                         isJoined
                           ? 'bg-[#4A7C59] text-white shadow-[#4A7C59]/20'
-                          : event.eventType === 'public_venue'
-                          ? 'bg-[#F26430] hover:bg-[#D95322] text-white shadow-[#F26430]/20'
                           : 'bg-[#F26430] hover:bg-[#D95322] text-white shadow-[#F26430]/20'
                       }`}
                     >

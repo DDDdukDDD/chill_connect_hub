@@ -13,7 +13,7 @@ export const StoryBar: React.FC<StoryBarProps> = ({ onSelectEventId }) => {
 
   return (
     <div className="w-full bg-[#FAF7F2] py-2 border-b border-[#E8E2D8]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
         <div className="flex items-center justify-between mb-2">

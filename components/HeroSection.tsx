@@ -38,7 +38,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
   return (
     <section className="relative z-30 pt-1 pb-1 md:pt-2 md:pb-2 bg-[#FAF7F2]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+      <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 relative">
         
         {/* Full Hero Banner Container with 70% Center Space - Compact Height */}
         <div className="relative rounded-3xl bg-[#FAF7F2] border border-[#E8E2D8]/60 shadow-sm min-h-[250px] sm:min-h-[280px] flex items-center justify-center">
@@ -48,65 +48,68 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <img
               src="/hero-bg-70.png"
               alt="Chill & Connect Hero Background with 70% Safe Zone"
-              className="w-full h-full object-cover object-center"
+              className="w-full h-full object-cover object-center opacity-40 sm:opacity-100 transition-opacity duration-300"
             />
           </div>
 
-          {/* Centered Safe Zone for Text & Search Bar - Compact Padding */}
-          <div className="relative z-10 text-center space-y-2.5 sm:space-y-3 max-w-xl mx-auto px-4 py-4 sm:py-6 w-full">
-            
-            {/* Dynamic Headline */}
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#1E293B] tracking-tight leading-tight drop-shadow-xs">
-              วันหยุดนี้... <span className="text-[#F26430] inline-block hover:scale-105 transition-transform cursor-default">ทำอะไรดี?</span>
-            </h1>
+          {/* Centered Safe Zone for Text & Search Bar - Compact & Clean on Mobile */}
+          <div className="relative z-10 text-center space-y-2.5 sm:space-y-3 max-w-xl mx-auto px-3 sm:px-4 py-4 sm:py-6 w-full">
+            <div className="bg-white/80 sm:bg-transparent backdrop-blur-xs sm:backdrop-blur-none rounded-3xl p-4 sm:p-0 shadow-xs sm:shadow-none border border-white/60 sm:border-none space-y-2 sm:space-y-3">
+              
+              {/* Dynamic Headline */}
+              <h1 className="text-xl sm:text-3xl md:text-4xl font-extrabold text-[#1E293B] tracking-tight leading-tight drop-shadow-xs">
+                วันหยุดนี้... <span className="text-[#F26430] inline-block hover:scale-105 transition-transform cursor-default">ทำอะไรดี?</span>
+              </h1>
 
-            {/* Subtitle */}
-            <p className="text-xs sm:text-sm text-[#334155] font-semibold max-w-xl mx-auto drop-shadow-xs">
-              ค้นหากิจกรรมฮีลใจ หาเพื่อนใหม่ และความสนุก!
-            </p>
+              {/* Subtitle */}
+              <p className="text-xs sm:text-sm text-[#334155] font-semibold max-w-xl mx-auto drop-shadow-xs">
+                ค้นหากิจกรรมฮีลใจ หาเพื่อนใหม่ และความสนุก!
+              </p>
 
-            {/* Compact Pill Search Bar with Auto-Suggest */}
-            <div className="pt-1 max-w-lg mx-auto relative z-30">
-              <div className="relative flex items-center bg-white/95 backdrop-blur-md rounded-full p-1.5 shadow-lg shadow-black/5 border border-[#E2DCD2] focus-within:border-[#F26430] focus-within:ring-4 focus-within:ring-[#F26430]/10 transition-all z-20">
-                
-                {/* Search Icon */}
-                <div className="pl-3.5 pr-2 text-[#94A3B8]">
-                  <Search className="w-4 h-4" />
-                </div>
+              {/* Compact Pill Search Bar with Auto-Suggest */}
+              <div className="pt-1 max-w-lg mx-auto relative z-30">
+                <div className="relative flex items-center bg-white/95 backdrop-blur-md rounded-full p-1 sm:p-1.5 shadow-lg shadow-black/5 border border-[#E2DCD2] focus-within:border-[#F26430] focus-within:ring-4 focus-within:ring-[#F26430]/10 transition-all z-20">
+                  
+                  {/* Search Icon */}
+                  <div className="pl-3 sm:pl-3.5 pr-1.5 sm:pr-2 text-[#94A3B8]">
+                    <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </div>
 
-                {/* Input Field */}
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onFocus={() => setIsFocused(true)}
-                  onBlur={() => setTimeout(() => setIsFocused(false), 200)}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="ค้นหากิจกรรม, สถานที่ หรือแท็กที่สนใจ..."
-                  className="w-full bg-transparent text-xs sm:text-sm text-[#1E293B] placeholder-[#94A3B8] focus:outline-none pr-2 font-medium"
-                />
+                  {/* Input Field */}
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setTimeout(() => setIsFocused(false), 200)}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="ค้นหากิจกรรม, สถานที่..."
+                    className="w-full bg-transparent text-xs sm:text-sm text-[#1E293B] placeholder-[#94A3B8] focus:outline-none pr-1 sm:pr-2 font-medium"
+                  />
 
-                {/* Clear Query Button */}
-                {searchQuery && (
+                  {/* Clear Query Button */}
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="p-1 text-[#94A3B8] hover:text-[#475569] mr-1 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+
+                  {/* Coral CTA Button (Compact on Mobile) */}
                   <button
-                    onClick={() => setSearchQuery('')}
-                    className="p-1 text-[#94A3B8] hover:text-[#475569] mr-1 rounded-full hover:bg-slate-100 transition-colors"
+                    onClick={() => {
+                      setIsFocused(false);
+                      if (onSearchSubmit) onSearchSubmit();
+                    }}
+                    className="bg-[#F26430] hover:bg-[#D95322] text-white px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all shadow-md shadow-[#F26430]/25 flex items-center justify-center gap-1 shrink-0 active:scale-95 cursor-pointer"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <Search className="w-3 h-3 sm:hidden" />
+                    <span className="hidden sm:inline">ค้นหาเลย</span>
+                    <span className="sm:hidden text-xs">ค้นหา</span>
                   </button>
-                )}
-
-                {/* Coral CTA Button */}
-                <button
-                  onClick={() => {
-                    setIsFocused(false);
-                    if (onSearchSubmit) onSearchSubmit();
-                  }}
-                  className="bg-[#F26430] hover:bg-[#D95322] text-white px-5 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all shadow-md shadow-[#F26430]/25 flex items-center gap-1.5 shrink-0 active:scale-95 cursor-pointer"
-                >
-                  <span>ค้นหาเลย</span>
-                </button>
-              </div>
+                </div>
 
               {/* Auto-Suggest Dropdown Menu */}
               {isFocused && (
@@ -162,7 +165,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                             setIsFocused(false);
                             if (onSearchSubmit) onSearchSubmit();
                           }}
-                          className="hover:bg-[#F26430] hover:text-white hover:border-[#F26430] text-[#475569] transition-all bg-slate-100 px-3 py-1 rounded-full text-xs font-bold border border-slate-200/80 shadow-2xs"
+                          className="hover:bg-[#F26430] hover:text-white hover:border-[#F26430] text-[#475569] transition-all bg-slate-100 px-3 py-1 rounded-full text-xs font-bold border border-slate-200/80 shadow-2xs cursor-pointer"
                         >
                           {item.tag}
                         </button>
@@ -175,6 +178,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             </div>
 
           </div>
+        </div>
 
         </div>
 

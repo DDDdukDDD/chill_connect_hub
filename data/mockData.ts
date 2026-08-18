@@ -1,3 +1,13 @@
+export interface EventReview {
+  id: string;
+  userName: string;
+  userAvatar: string;
+  rating: number;
+  date: string;
+  comment: string;
+  tags?: string[];
+}
+
 export interface EventItem {
   id: string;
   title: string;
@@ -17,6 +27,11 @@ export interface EventItem {
   isNew?: boolean;
   rating?: number;
   reviewsCount?: number;
+  hostHostedCount?: number;
+  hostRating?: number;
+  hostReviewsCount?: number;
+  hostBadgeTier?: 'new' | 'verified' | 'superhost';
+  reviews?: EventReview[];
   badgeText?: string;
   createdAtTimestamp: number;
   eventType?: 'community' | 'public_venue';
@@ -89,7 +104,7 @@ export const MOCK_EVENTS: EventItem[] = [
     maxParticipants: 1000,
     hostName: 'สมาคมผู้จัดพิมพ์ฯ (PUBAT)',
     hostAvatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=100&q=80',
-    price: 'เข้าชมฟรี',
+    price: 'ฟรี',
     description: 'มหกรรมหนังสือที่ใหญ่ที่สุดในประเทศ! รวบรวมสำนักพิมพ์กว่า 350 แห่ง หนังสือเล่มโปรด โซนนิยาย การ์ตูน สารคดี พร้อมเวทีเสวนาจากนักเขียนชื่อดัง',
     isTrending: true,
     rating: 4.9,
@@ -161,7 +176,7 @@ export const MOCK_EVENTS: EventItem[] = [
     maxParticipants: 400,
     hostName: 'IMPACT Exhibition',
     hostAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80',
-    price: 'เข้าชมฟรี',
+    price: 'ฟรี',
     description: 'มหกรรมสินค้าของแต่งบ้าน งานไม้แฮนด์เมด ต้นไม้ฟอกอากาศ และเวิร์กช็อปตกแต่งคอนโดสำหรับคนรุ่นใหม่',
     isNew: true,
     rating: 4.6,
@@ -190,6 +205,30 @@ export const MOCK_EVENTS: EventItem[] = [
     isTrending: true,
     isNew: true,
     rating: 4.9,
+    hostHostedCount: 24,
+    hostRating: 4.9,
+    hostReviewsCount: 22,
+    hostBadgeTier: 'superhost',
+    reviews: [
+      {
+        id: 'rev-1',
+        userName: 'แพรว พลอยไพลิน',
+        userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80',
+        rating: 5,
+        date: '10 ส.ค. 2026',
+        comment: 'โค้ชดูแลดีมาก ไม่เคยกังวลเลย สนุกและได้เหงื่อสะใจ มีจัดอีกแน่นอน!',
+        tags: ['🔥 สนุกมาก', '☕ โฮสต์ดูแลดีมาก', '🎯 ตรงต่อเวลา'],
+      },
+      {
+        id: 'rev-2',
+        userName: 'บอย ปกรณ์',
+        userAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80',
+        rating: 5,
+        date: '03 ส.ค. 2026',
+        comment: 'ไปคนเดียวครั้งแรก เพื่อนๆ ในกลุ่มและโค้ชน่ารักมาก ไม่เกร็งเลย แนะนำครับ',
+        tags: ['🤝 ไปคนเดียวไม่เกร็ง', '✨ อยากให้จัดอีก'],
+      },
+    ],
     badgeText: '🔥 ฮิตแรง เหลือ 3 ที่',
     createdAtTimestamp: 1722816000000,
     eventType: 'community',
@@ -211,6 +250,21 @@ export const MOCK_EVENTS: EventItem[] = [
     description: 'ผ่อนคลายความเครียด เติมพลังบวกและความสงบทางจิตใจด้วยคลื่นเสียงสัจจะสะท้อนจาก Tibetan Singing Bowls ในบรรยากาศสงบ อบอุ่น และเป็นกันเอง เหมาะสำหรับผู้ที่ต้องการฮีลใจและพักผ่อนสมอง',
     isTrending: true,
     rating: 4.8,
+    hostHostedCount: 28,
+    hostRating: 4.9,
+    hostReviewsCount: 25,
+    hostBadgeTier: 'superhost',
+    reviews: [
+      {
+        id: 'rev-3',
+        userName: 'หมิว นิษฐา',
+        userAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=100&q=80',
+        rating: 5,
+        date: '12 ส.ค. 2026',
+        comment: 'ฮีลใจสุดๆ หลับสบายมาก บรรยากาศเงียบสงบ เหมาะกับคน Introvert มากๆ ค่ะ',
+        tags: ['🌿 บรรยากาศฮีลใจ', '🤝 ไปคนเดียวไม่เกร็ง'],
+      },
+    ],
     badgeText: '⭐ ยอดนิยม',
     createdAtTimestamp: 1722729600000,
     eventType: 'community',
@@ -232,6 +286,10 @@ export const MOCK_EVENTS: EventItem[] = [
     description: 'วิ่งออกกำลังกายยามเช้า จังหวะสบายๆ สำหรับมือใหม่และผู้ที่อยากเริ่มต้นขยับตัว จบกิจกรรมพร้อมทานอาหารเช้าสดชื่นและพูดคุยต้อนรับวันใหม่ด้วยพลังงานสดใส',
     isTrending: true,
     rating: 4.7,
+    hostHostedCount: 32,
+    hostRating: 4.8,
+    hostReviewsCount: 30,
+    hostBadgeTier: 'superhost',
     badgeText: '🔥 ยอดฮิต',
     createdAtTimestamp: 1722643200000,
   },
@@ -252,6 +310,21 @@ export const MOCK_EVENTS: EventItem[] = [
     description: 'ค่ายบอร์ดเกมมิ่งสำหรับทุกระดับ สนุกสนานกับเกมวางแผนและโซเชียลเกม พร้อมเพื่อนใหม่ร่วมโต๊ะในบรรยากาศเป็นกันเอง มี Game Master คอยแนะนำตลอดการเล่น',
     isNew: true,
     rating: 4.9,
+    hostHostedCount: 8,
+    hostRating: 4.7,
+    hostReviewsCount: 6,
+    hostBadgeTier: 'verified',
+    reviews: [
+      {
+        id: 'rev-4',
+        userName: 'ต้น สุรชัย',
+        userAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80',
+        rating: 5,
+        date: '14 ส.ค. 2026',
+        comment: 'Game Master อธิบายเข้าใจง่าย บอร์ดเกมสนุกมาก ได้เพื่อนใหม่เพียบเลยครับ',
+        tags: ['☕ โฮสต์ดูแลดีมาก', '🔥 สนุกมาก'],
+      },
+    ],
     badgeText: '🆕 มาใหม่',
     createdAtTimestamp: 1722800000000,
   },
@@ -271,7 +344,9 @@ export const MOCK_EVENTS: EventItem[] = [
     price: '฿450',
     description: 'เรียนรู้เทคนิคการปั้นแก้วและจานเซรามิคด้วยมือ ปลดปล่อยจินตนาการและงานฝีมือสุดพิเศษ สามารถนำชิ้นงานกลับบ้านหลังจากลงสีและอบเสร็จสิ้น',
     isNew: true,
-    rating: 4.9,
+    rating: 5.0,
+    hostHostedCount: 1,
+    hostBadgeTier: 'new',
     badgeText: '🆕 มาใหม่',
     createdAtTimestamp: 1722780000000,
   },
@@ -288,10 +363,12 @@ export const MOCK_EVENTS: EventItem[] = [
     maxParticipants: 20,
     hostName: 'Bean & Melody',
     hostAvatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=100&q=80',
-    price: 'ฟรี (จ่ายค่าเครื่องดื่มตามจริง)',
+    price: 'ฟรี',
     description: 'จิบกาแฟดริปหอมๆ ฟังเสียงดนตรีอะคูสติกสดใส และแลกเปลี่ยนความประทับใจกับเพื่อนคอกาแฟและดนตรีฟินๆ',
     isTrending: false,
-    rating: 4.6,
+    rating: 5.0,
+    hostHostedCount: 1,
+    hostBadgeTier: 'new',
     createdAtTimestamp: 1722500000000,
   },
   {
@@ -310,7 +387,11 @@ export const MOCK_EVENTS: EventItem[] = [
     price: 'ฟรี',
     description: 'ยืดสายยืดเส้นท่ามกลางบรรยากาศร่มรื่นยามเย็น ชมพระอาทิตย์ตกดินในสวนสาธารณะ สูดอากาศบริสุทธิ์และผ่อนคลายร่างกาย',
     isTrending: false,
-    rating: 4.7,
+    rating: 4.8,
+    hostHostedCount: 15,
+    hostRating: 4.8,
+    hostReviewsCount: 12,
+    hostBadgeTier: 'verified',
     createdAtTimestamp: 1722400000000,
   },
   {
@@ -329,7 +410,11 @@ export const MOCK_EVENTS: EventItem[] = [
     price: '฿490',
     description: 'เรียนรู้วัฒนธรรมการชงมัทฉะแบบดั้งเดิมของเกียวโต ทดลองตีฟองชา ชิมมัทฉะ 4 เกรด และทำขนมวากาชิโฮมเมด',
     isNew: true,
-    rating: 4.9,
+    rating: 5.0,
+    hostHostedCount: 21,
+    hostRating: 5.0,
+    hostReviewsCount: 19,
+    hostBadgeTier: 'superhost',
     badgeText: '🍵 ชาเขียวพรีเมียม',
     createdAtTimestamp: 1722820000000,
     eventType: 'community',

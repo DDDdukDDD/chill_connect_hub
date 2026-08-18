@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Calendar, ArrowRight, Check, RotateCcw } from 'lucide-react';
+import { X, Calendar, Check } from 'lucide-react';
 
 interface CustomDatePickerModalProps {
   isOpen: boolean;
@@ -12,24 +12,44 @@ interface CustomDatePickerModalProps {
   onReset: () => void;
 }
 
+// Convert YYYY-MM-DD to DD/MM/YYYY
+const formatToDMY = (dateStr: string): string => {
+  if (!dateStr) return '';
+  if (dateStr.includes('/')) return dateStr;
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    return `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`;
+  }
+  return dateStr;
+};
+
+// Convert DD/MM/YYYY to YYYY-MM-DD for native input
+const formatToYMD = (dateStr: string): string => {
+  if (!dateStr) return new Date().toISOString().split('T')[0];
+  if (dateStr.includes('-') && dateStr.split('-')[0].length === 4) return dateStr;
+  const parts = dateStr.split('/');
+  if (parts.length === 3) {
+    return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+  }
+  return new Date().toISOString().split('T')[0];
+};
+
 export const CustomDatePickerModal: React.FC<CustomDatePickerModalProps> = ({
   isOpen,
   onClose,
   startDate,
   endDate,
   onApply,
-  onReset,
 }) => {
   const [mode, setMode] = useState<'single' | 'range'>(endDate && endDate !== startDate ? 'range' : 'single');
-  const [tempStart, setTempStart] = useState<string>(startDate || new Date().toISOString().split('T')[0]);
-  const [tempEnd, setTempEnd] = useState<string>(endDate || startDate || new Date().toISOString().split('T')[0]);
+  const [tempStart, setTempStart] = useState<string>(formatToYMD(startDate));
+  const [tempEnd, setTempEnd] = useState<string>(formatToYMD(endDate || startDate));
 
   if (!isOpen) return null;
 
   const handleQuickPreset = (preset: 'this_weekend' | 'next_week' | 'next_month') => {
     const today = new Date();
     if (preset === 'this_weekend') {
-      // Calculate next Saturday
       const day = today.getDay();
       const distToSat = (6 - day + 7) % 7;
       const sat = new Date(today);
@@ -61,16 +81,20 @@ export const CustomDatePickerModal: React.FC<CustomDatePickerModalProps> = ({
 
   const handleApply = () => {
     if (mode === 'single') {
-      onApply(tempStart, tempStart);
+      const dmy = formatToDMY(tempStart);
+      onApply(dmy, dmy);
     } else {
       if (tempEnd && tempEnd < tempStart) {
-        onApply(tempEnd, tempStart);
+        onApply(formatToDMY(tempEnd), formatToDMY(tempStart));
       } else {
-        onApply(tempStart, tempEnd || tempStart);
+        onApply(formatToDMY(tempStart), formatToDMY(tempEnd || tempStart));
       }
     }
     onClose();
   };
+
+  const displayStartDMY = formatToDMY(tempStart);
+  const displayEndDMY = formatToDMY(tempEnd);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
@@ -89,14 +113,14 @@ export const CustomDatePickerModal: React.FC<CustomDatePickerModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-slate-200/60 text-slate-400 hover:text-slate-700 transition-colors"
+            className="p-1.5 rounded-full hover:bg-slate-200/60 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Content Body */}
-        <div className="p-5 space-y-5">
+        <div className="p-5 space-y-4">
           
           {/* Mode Switcher Tabs */}
           <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl border border-slate-200/80">
@@ -105,7 +129,7 @@ export const CustomDatePickerModal: React.FC<CustomDatePickerModalProps> = ({
                 setMode('single');
                 setTempEnd(tempStart);
               }}
-              className={`py-2 rounded-xl text-xs font-bold transition-all ${
+              className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 mode === 'single'
                   ? 'bg-white text-[#1E293B] shadow-xs font-extrabold'
                   : 'text-slate-600 hover:text-slate-900'
@@ -115,13 +139,13 @@ export const CustomDatePickerModal: React.FC<CustomDatePickerModalProps> = ({
             </button>
             <button
               onClick={() => setMode('range')}
-              className={`py-2 rounded-xl text-xs font-bold transition-all ${
+              className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 mode === 'range'
                   ? 'bg-[#F26430] text-white shadow-xs font-extrabold'
                   : 'text-slate-600 hover:text-[#F26430]'
               }`}
             >
-              🗓️ เลือกช่วงวันที่ (Range)
+              🗓️ เลือกช่วงวันที่
             </button>
           </div>
 
@@ -130,67 +154,94 @@ export const CustomDatePickerModal: React.FC<CustomDatePickerModalProps> = ({
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">ทางลัดด่วน:</p>
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
               <button
+                type="button"
                 onClick={() => handleQuickPreset('this_weekend')}
-                className="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200 hover:border-amber-400"
+                className="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200 hover:border-amber-400 cursor-pointer"
               >
                 ☀️ เสาร์-อาทิตย์นี้
               </button>
               <button
+                type="button"
                 onClick={() => handleQuickPreset('next_week')}
-                className="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-900 border border-emerald-200 hover:border-emerald-400"
+                className="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-900 border border-emerald-200 hover:border-emerald-400 cursor-pointer"
               >
                 📅 สัปดาห์หน้า
               </button>
               <button
+                type="button"
                 onClick={() => handleQuickPreset('next_month')}
-                className="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold bg-sky-50 text-sky-900 border border-sky-200 hover:border-sky-400"
+                className="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold bg-sky-50 text-sky-900 border border-sky-200 hover:border-sky-400 cursor-pointer"
               >
                 🗓️ เดือนหน้าทั้งเดือน
               </button>
             </div>
           </div>
 
-          {/* Date Picker Form Inputs */}
+          {/* Date Picker Form Inputs (Always formatted as DD/MM/YYYY inside the box) */}
           {mode === 'single' ? (
             <div className="space-y-2 bg-[#FAF7F2] p-4 rounded-2xl border border-[#E8E2D8]">
               <label className="block text-xs font-bold text-[#1E293B]">
                 ระบุวันที่ต้องการไป:
               </label>
-              <input
-                type="date"
-                value={tempStart}
-                onChange={(e) => {
-                  setTempStart(e.target.value);
-                  setTempEnd(e.target.value);
-                }}
-                className="w-full bg-white border border-[#E8E2D8] focus:border-[#F26430] text-sm font-bold text-[#1E293B] p-3 rounded-xl focus:outline-none shadow-2xs"
-              />
+              <div className="relative bg-white border border-[#E8E2D8] hover:border-[#F26430] focus-within:border-[#F26430] rounded-xl p-3 flex items-center justify-between shadow-2xs transition-colors cursor-pointer group">
+                <span className="text-sm font-extrabold text-[#1E293B] tracking-wide">
+                  {displayStartDMY}
+                </span>
+                <Calendar className="w-4 h-4 text-[#F26430] group-hover:scale-110 transition-transform shrink-0" />
+                <input
+                  type="date"
+                  value={tempStart}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      setTempStart(e.target.value);
+                      setTempEnd(e.target.value);
+                    }
+                  }}
+                  className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+                />
+              </div>
             </div>
           ) : (
             <div className="space-y-3 bg-[#FAF7F2] p-4 rounded-2xl border border-[#E8E2D8]">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   <label className="block text-xs font-bold text-[#1E293B]">
-                    วันที่เริ่มต้น (From):
+                    วันที่เริ่มต้น:
                   </label>
-                  <input
-                    type="date"
-                    value={tempStart}
-                    onChange={(e) => setTempStart(e.target.value)}
-                    className="w-full bg-white border border-[#E8E2D8] focus:border-[#F26430] text-xs font-bold text-[#1E293B] p-2.5 rounded-xl focus:outline-none shadow-2xs"
-                  />
+                  <div className="relative bg-white border border-[#E8E2D8] hover:border-[#F26430] focus-within:border-[#F26430] rounded-xl p-2.5 flex items-center justify-between shadow-2xs transition-colors cursor-pointer group">
+                    <span className="text-xs sm:text-sm font-extrabold text-[#1E293B] tracking-wide">
+                      {displayStartDMY}
+                    </span>
+                    <Calendar className="w-3.5 h-3.5 text-[#4A7C59] group-hover:scale-110 transition-transform shrink-0" />
+                    <input
+                      type="date"
+                      value={tempStart}
+                      onChange={(e) => {
+                        if (e.target.value) setTempStart(e.target.value);
+                      }}
+                      className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   <label className="block text-xs font-bold text-[#1E293B]">
-                    ถึงวันที่ (To):
+                    ถึงวันที่:
                   </label>
-                  <input
-                    type="date"
-                    value={tempEnd}
-                    onChange={(e) => setTempEnd(e.target.value)}
-                    className="w-full bg-white border border-[#E8E2D8] focus:border-[#F26430] text-xs font-bold text-[#1E293B] p-2.5 rounded-xl focus:outline-none shadow-2xs"
-                  />
+                  <div className="relative bg-white border border-[#E8E2D8] hover:border-[#F26430] focus-within:border-[#F26430] rounded-xl p-2.5 flex items-center justify-between shadow-2xs transition-colors cursor-pointer group">
+                    <span className="text-xs sm:text-sm font-extrabold text-[#1E293B] tracking-wide">
+                      {displayEndDMY}
+                    </span>
+                    <Calendar className="w-3.5 h-3.5 text-[#4A7C59] group-hover:scale-110 transition-transform shrink-0" />
+                    <input
+                      type="date"
+                      value={tempEnd}
+                      onChange={(e) => {
+                        if (e.target.value) setTempEnd(e.target.value);
+                      }}
+                      className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -201,41 +252,23 @@ export const CustomDatePickerModal: React.FC<CustomDatePickerModalProps> = ({
             <Calendar className="w-3.5 h-3.5" />
             <span>
               {mode === 'single'
-                ? `เลือกวัน: ${tempStart}`
-                : `เลือกช่วงเวลา: ${tempStart} ถึง ${tempEnd}`}
+                ? `เลือกวัน: ${displayStartDMY}`
+                : `เลือกช่วงเวลา: ${displayStartDMY} ถึง ${displayEndDMY}`}
             </span>
           </div>
 
         </div>
 
-        {/* Modal Footer Actions */}
-        <div className="flex items-center justify-between p-4 bg-[#FAF7F2] border-t border-[#E8E2D8]">
+        {/* Modal Footer (Single Prominent Apply Button - No cancel or reset button) */}
+        <div className="p-4 bg-[#FAF7F2] border-t border-[#E8E2D8]">
           <button
-            onClick={() => {
-              onReset();
-              onClose();
-            }}
-            className="text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1 px-3 py-2 rounded-xl hover:bg-slate-200/50 transition-colors"
+            type="button"
+            onClick={handleApply}
+            className="w-full py-3 text-xs sm:text-sm font-bold text-white bg-[#F26430] hover:bg-[#D95322] rounded-xl shadow-md shadow-[#F26430]/20 hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>ล้างวันที่</span>
+            <Check className="w-4 h-4" />
+            <span>นำไปใช้</span>
           </button>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200/50 rounded-xl transition-colors"
-            >
-              ยกเลิก
-            </button>
-            <button
-              onClick={handleApply}
-              className="px-5 py-2 text-xs font-bold text-white bg-[#F26430] hover:bg-[#D95322] rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-1.5"
-            >
-              <Check className="w-4 h-4" />
-              <span>นำไปใช้ (Apply)</span>
-            </button>
-          </div>
         </div>
 
       </div>

@@ -117,6 +117,18 @@ export default function Home() {
     showToast('ยินดีด้วย! คุณลงทะเบียนเข้าร่วมกิจกรรมเรียบร้อย 🎉');
   };
 
+  const handleLeaveSuccess = (eventId: string) => {
+    setEventsList((prev) =>
+      prev.map((item) =>
+        item.id === eventId
+          ? { ...item, participantsCount: Math.max(item.participantsCount - 1, 0) }
+          : item
+      )
+    );
+    setJoinedEventIds((prev) => prev.filter((id) => id !== eventId));
+    showToast('ยกเลิกการเข้าร่วมกิจกรรมเรียบร้อยแล้ว');
+  };
+
   // Trending Events (isTrending = true)
   const trendingEvents = useMemo(() => {
     return eventsList.filter((e) => e.isTrending);
@@ -354,7 +366,7 @@ export default function Home() {
           }}
         />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 py-2 relative z-10">
+        <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8 py-2 relative z-10">
           
           {/* 4. Auto-Sliding Trending Events Carousel (Idea 2) */}
           <TrendingCarousel
@@ -368,7 +380,7 @@ export default function Home() {
           <section id="catalog-section" className="space-y-3 pt-1">
             
             {/* Search/Filter Results Notice (Only when explicitly searching or filtering) */}
-            {searchQuery.trim() !== '' || selectedCategory !== null || selectedVenueFilter !== null || priceFilter !== 'all' ? (
+            {searchQuery.trim() !== '' || selectedCategory !== null || selectedVenueFilter !== null || priceFilter !== 'all' || (timeFilter === 'custom' && startDate) ? (
               <div className="flex items-center justify-between bg-amber-50 p-2.5 px-4 rounded-xl border border-amber-200/80 text-xs font-semibold text-[#1E293B] animate-fade-in">
                 <span className="flex items-center gap-1.5 font-bold">
                   <span>🔍 ผลการค้นหา: พบทั้งหมด {filteredEvents.length} กิจกรรม</span>
@@ -409,6 +421,8 @@ export default function Home() {
                         key={tab.id}
                         onClick={() => {
                           setTimeFilter(tab.id as any);
+                          setStartDate('');
+                          setEndDate('');
                           setCurrentPage(1);
                         }}
                         className={`px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap cursor-pointer ${
@@ -421,6 +435,33 @@ export default function Home() {
                       </button>
                     );
                   })}
+
+                  {/* Custom Date Picker Tab */}
+                  {timeFilter === 'custom' && startDate ? (
+                    <button
+                      onClick={() => {
+                        setTimeFilter('all');
+                        setStartDate('');
+                        setEndDate('');
+                        setCurrentPage(1);
+                      }}
+                      className="px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl text-xs font-bold bg-[#F26430] text-white shadow-xs flex items-center gap-1 shrink-0 whitespace-nowrap cursor-pointer animate-fade-in"
+                      title="คลิกเพื่อล้างวันที่เลือก"
+                    >
+                      <Calendar className="w-3 h-3 text-white" />
+                      <span>{startDate}{endDate && endDate !== startDate ? ` - ${endDate}` : ''}</span>
+                      <X className="w-3 h-3 ml-0.5" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setIsDatePickerOpen(true)}
+                      className="px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 flex items-center gap-1 shrink-0 whitespace-nowrap cursor-pointer transition-all border border-dashed border-slate-300 hover:border-slate-400"
+                      title="เลือกวันที่ต้องการระบุเอง"
+                    >
+                      <Calendar className="w-3 h-3 text-[#4A7C59]" />
+                      <span>ระบุวันที่เอง</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -497,6 +538,8 @@ export default function Home() {
         isFavorite={selectedEvent ? favorites.includes(selectedEvent.id) : false}
         onToggleFavorite={toggleFavorite}
         onJoinSuccess={handleJoinSuccess}
+        onLeaveSuccess={handleLeaveSuccess}
+        isJoined={selectedEvent ? joinedEventIds.includes(selectedEvent.id) : false}
         isLoggedIn={isLoggedIn}
         onRequireLogin={() => {
           setIsAuthModalOpen(true);

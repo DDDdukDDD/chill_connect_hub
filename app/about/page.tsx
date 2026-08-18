@@ -68,7 +68,7 @@ export default function AboutPage() {
         
         {/* SECTION 1: HERO STORY BANNER */}
         <section className="bg-gradient-to-b from-white via-[#FAF7F2] to-[#FAF7F2] py-12 sm:py-20 border-b border-[#E8E2D8] relative overflow-hidden">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6 relative z-10">
+          <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6 relative z-10">
             
             <div className="inline-flex items-center gap-2 text-xs font-bold text-[#4A7C59] bg-[#EBF3ED] px-4 py-1.5 rounded-full border border-[#4A7C59]/20 shadow-xs">
               <Sprout className="w-4 h-4 text-[#4A7C59]" />
@@ -107,7 +107,7 @@ export default function AboutPage() {
         </section>
 
         {/* SECTION 2: OUR 3 CORE PILLARS (เสาหลักของเรา) */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-12">
+        <section className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-12">
           
           <div className="text-center space-y-2 max-w-2xl mx-auto">
             <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1E293B] tracking-tight">
@@ -174,7 +174,7 @@ export default function AboutPage() {
 
         {/* SECTION 3: INTROVERT-FRIENDLY GUARANTEE */}
         <section className="bg-[#1E293B] text-white py-16 border-y border-slate-700">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+          <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             
             <div className="max-w-3xl mx-auto text-center space-y-3">
               <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-400 bg-emerald-950/80 px-3.5 py-1 rounded-full border border-emerald-500/30">
@@ -209,7 +209,7 @@ export default function AboutPage() {
         </section>
 
         {/* SECTION 4: CALL TO ACTION (CTA BANNER) */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <section className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="bg-gradient-to-r from-[#4A7C59] to-[#3B6347] rounded-3xl p-8 sm:p-12 text-white text-center space-y-6 shadow-xl relative overflow-hidden">
             
             <div className="space-y-3 relative z-10 max-w-2xl mx-auto">

@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { EventItem } from '@/data/mockData';
-import { X, Calendar, MapPin, Users, Heart, Share2, CheckCircle2, ShieldCheck, Clock, ExternalLink } from 'lucide-react';
+import { X, Calendar, MapPin, Users, Heart, Share2, CheckCircle2, ShieldCheck, Clock, ExternalLink, Ticket, AlertCircle } from 'lucide-react';
 
 interface EventDetailModalProps {
   event: EventItem | null;
@@ -10,6 +11,8 @@ interface EventDetailModalProps {
   isFavorite: boolean;
   onToggleFavorite: (id: string) => void;
   onJoinSuccess: (eventId: string) => void;
+  onLeaveSuccess?: (eventId: string) => void;
+  isJoined?: boolean;
   isLoggedIn?: boolean;
   onRequireLogin?: () => void;
 }
@@ -20,15 +23,21 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   isFavorite,
   onToggleFavorite,
   onJoinSuccess,
+  onLeaveSuccess,
+  isJoined = false,
   isLoggedIn = true,
   onRequireLogin,
 }) => {
-  const [joined, setJoined] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showSubForm, setShowSubForm] = useState(false);
   const [subTitleInput, setSubTitleInput] = useState('');
   const [expandedSubId, setExpandedSubId] = useState<string | null>(null);
   const [joinedSubIds, setJoinedSubIds] = useState<string[]>([]);
+  
+  // Confirmation Modals State
+  const [showConfirmJoinModal, setShowConfirmJoinModal] = useState(false);
+  const [showConfirmCancelModal, setShowConfirmCancelModal] = useState(false);
+
   const [subActivities, setSubActivities] = useState([
     {
       id: 'sub-1',
@@ -56,18 +65,25 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
   const isPublicVenue = event.eventType === 'public_venue';
 
-  const handleJoin = () => {
+  const handleOpenJoinConfirm = () => {
     if (!isLoggedIn && onRequireLogin) {
       onClose();
       onRequireLogin();
       return;
     }
-    setJoined(true);
+    setShowConfirmJoinModal(true);
+  };
+
+  const handleExecuteJoin = () => {
+    setShowConfirmJoinModal(false);
     onJoinSuccess(event.id);
-    setTimeout(() => {
-      setJoined(false);
-      onClose();
-    }, 1800);
+  };
+
+  const handleExecuteLeave = () => {
+    setShowConfirmCancelModal(false);
+    if (onLeaveSuccess) {
+      onLeaveSuccess(event.id);
+    }
   };
 
   const handleJoinSubActivity = (subId: string) => {
@@ -89,16 +105,16 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
       
-      {/* Modal Card */}
+      {/* Modal Card (Responsive Bottom-Sheet on Mobile, Centered Modal on Desktop) */}
       <div 
-        className="bg-white rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl border border-[#E8E2D8] flex flex-col max-h-[90vh] relative animate-scale-up"
+        className="bg-white rounded-t-3xl sm:rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl border border-[#E8E2D8] flex flex-col max-h-[88dvh] sm:max-h-[90vh] relative animate-scale-up"
         onClick={(e) => e.stopPropagation()}
       >
         
-        {/* Top Image Banner (Compact 130px) */}
-        <div className="relative h-32 sm:h-36 w-full bg-slate-100 shrink-0 overflow-hidden">
+        {/* Top Image Banner (Compact 115px mobile / 140px desktop) */}
+        <div className="relative h-28 sm:h-36 w-full bg-slate-100 shrink-0 overflow-hidden">
           <img
             src={event.image}
             alt={event.title}
@@ -146,12 +162,33 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
         </div>
 
         {/* Content Body (Scrollable) */}
-        <div className="p-4 sm:p-5 space-y-3.5 overflow-y-auto">
+        <div className="p-3.5 sm:p-5 space-y-3 overflow-y-auto">
           
+          {/* Joined Status Badge (If already registered) */}
+          {isJoined && (
+            <div className="bg-emerald-50 border border-emerald-200 p-2.5 rounded-2xl flex items-center justify-between gap-2 text-xs text-emerald-800 font-bold animate-fade-in">
+              <span className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>คุณลงทะเบียนเข้าร่วมกิจกรรมนี้เรียบร้อยแล้ว 🎟️</span>
+              </span>
+              <Link
+                href="/challenge"
+                onClick={onClose}
+                className="text-[11px] text-emerald-700 bg-emerald-100/80 hover:bg-emerald-200 px-2.5 py-1 rounded-full border border-emerald-300 font-extrabold shrink-0"
+              >
+                ดูตั๋ว ➔
+              </Link>
+            </div>
+          )}
+
           {/* Header Title */}
           <div>
-            <span className="text-xs font-bold text-[#4A7C59] tracking-wider uppercase">
-              {isPublicVenue ? 'VENUE SPOTLIGHT & PUBLIC EVENT' : `กิจกรรม ${event.category.toUpperCase()}`}
+            <span className={`text-[11px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full border inline-block mb-1 ${
+              isPublicVenue
+                ? 'bg-sky-50 text-sky-700 border-sky-200'
+                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+            }`}>
+              {isPublicVenue ? '🏛️ อีเวนต์สาธารณะ (Public Event)' : '🏡 กิจกรรมชุมชน (Community Event)'}
             </span>
             <h2 className="text-base sm:text-lg font-extrabold text-[#1E293B] mt-0.5 leading-snug">
               {event.title}
@@ -182,6 +219,99 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             <p className="text-xs sm:text-sm text-[#475569] leading-relaxed">
               {event.description}
             </p>
+          </div>
+
+          {/* Host Info Box */}
+          <div className="p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#E8E2D8] space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <img
+                  src={event.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
+                  alt={event.hostName}
+                  className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-xs shrink-0"
+                />
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-extrabold text-xs sm:text-sm text-[#1E293B]">
+                      {event.hostName}
+                    </span>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-blue-500 fill-blue-50" />
+                  </div>
+                  <p className="text-[11px] text-[#64748B]">
+                    {isPublicVenue
+                      ? '🏛️ ผู้จัดงานนิทรรศการสาธารณะ'
+                      : '🏡 ผู้จัดกิจกรรมชุมชน (ชวนเพื่อนๆ ร่วมทำกิจกรรม)'}
+                  </p>
+                </div>
+              </div>
+
+              <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full border shadow-2xs shrink-0 ${
+                isPublicVenue
+                  ? 'bg-sky-50 text-sky-800 border-sky-300'
+                  : 'bg-emerald-50 text-emerald-800 border-emerald-300'
+              }`}>
+                {isPublicVenue ? '🏛️ อีเวนต์สาธารณะ' : '🏡 กิจกรรมชุมชน'}
+              </span>
+            </div>
+          </div>
+
+          {/* Community Feedback & Reviews Section (Clean & Authentic) */}
+          <div className="space-y-2.5 pt-1">
+            <div className="flex items-center justify-between">
+              <h4 className="font-extrabold text-xs sm:text-sm text-[#1E293B] flex items-center gap-1.5">
+                <span>💬 ความประทับใจจากเพื่อนๆ</span>
+                <span className="text-xs text-slate-500 font-semibold">
+                  ({event.reviews?.length || 0})
+                </span>
+              </h4>
+            </div>
+
+            {event.reviews && event.reviews.length > 0 ? (
+              <div className="space-y-2">
+                {event.reviews.map((rev) => (
+                  <div
+                    key={rev.id}
+                    className="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1.5 text-xs"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={rev.userAvatar}
+                          alt={rev.userName}
+                          className="w-6 h-6 rounded-full object-cover border border-slate-300"
+                        />
+                        <span className="font-bold text-[#1E293B]">{rev.userName}</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-mono">{rev.date}</span>
+                    </div>
+
+                    <p className="text-slate-700 leading-relaxed pl-8">
+                      {rev.comment}
+                    </p>
+
+                    {rev.tags && rev.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 pl-8 pt-0.5">
+                        {rev.tags.map((t) => (
+                          <span
+                            key={t}
+                            className="text-[10px] font-bold text-[#4A7C59] bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md"
+                          >
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-4 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-center space-y-1">
+                <p className="text-xs font-bold text-slate-600">🌱 ยังไม่มีความเห็นก่อนหน้า</p>
+                <p className="text-[11px] text-slate-400">
+                  กิจกรรมนี้เป็นโอกาสดีที่คุณจะได้ร่วมงานและบอกเล่าความประทับใจให้เพื่อนๆ ฟัง!
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Public Venue Sub-Activities & Buddy Matcher (Below Description) */}
@@ -334,52 +464,136 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
         </div>
 
         {/* Modal Bottom Action Footer (Single Calendar Icon & Clean Text) */}
-        <div className="p-3.5 sm:p-4 bg-slate-50 border-t border-[#E8E2D8] flex items-center justify-end shrink-0">
-          {isPublicVenue ? (
+        <div className="p-3.5 sm:p-4 bg-slate-50 border-t border-[#E8E2D8] flex items-center justify-between sm:justify-end gap-2.5 shrink-0">
+          
+          {isJoined ? (
+            /* When Already Joined: Provide direct Ticket Hub button + Cancel option */
+            <div className="flex items-center justify-between sm:justify-end gap-2 w-full">
+              <button
+                type="button"
+                onClick={() => setShowConfirmCancelModal(true)}
+                className="text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-4 py-2.5 rounded-full border border-rose-200 transition-all cursor-pointer"
+              >
+                ✕ ยกเลิกการเข้าร่วม
+              </button>
+
+              <Link
+                href="/challenge"
+                onClick={onClose}
+                className="bg-[#4A7C59] hover:bg-[#3B6447] text-white px-6 py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all shadow-md shadow-[#4A7C59]/20 flex items-center gap-1.5 active:scale-95"
+              >
+                <Ticket className="w-4 h-4" />
+                <span>ดูตั๋วกิจกรรมของฉัน</span>
+              </Link>
+            </div>
+          ) : (
+            /* When Not Joined: Confirm to Register */
             <button
-              onClick={handleJoin}
-              disabled={joined}
-              className={`w-full sm:w-auto px-7 py-2.5 rounded-full font-bold text-xs sm:text-sm text-white transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer ${
-                joined
-                  ? 'bg-emerald-600 shadow-emerald-600/20'
-                  : 'bg-[#F26430] hover:bg-[#D95322] shadow-[#F26430]/25 active:scale-95'
-              }`}
+              onClick={handleOpenJoinConfirm}
+              className="w-full sm:w-auto px-7 py-2.5 rounded-full font-bold text-xs sm:text-sm text-white transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer bg-[#F26430] hover:bg-[#D95322] shadow-[#F26430]/25 active:scale-95"
             >
-              {joined ? (
-                <>
-                  <CheckCircle2 className="w-4 h-4 text-white" />
-                  <span>บันทึกลงตารางนัดแล้ว!</span>
-                </>
-              ) : (
+              {isPublicVenue ? (
                 <>
                   <Calendar className="w-4 h-4 text-white" />
                   <span>บันทึกลงตารางนัด</span>
                 </>
-              )}
-            </button>
-          ) : (
-            <button
-              onClick={handleJoin}
-              disabled={joined}
-              className={`w-full sm:w-auto px-7 py-2.5 rounded-full font-bold text-xs sm:text-sm text-white transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer ${
-                joined
-                  ? 'bg-emerald-600 shadow-emerald-600/20'
-                  : 'bg-[#F26430] hover:bg-[#D95322] shadow-[#F26430]/25 active:scale-95'
-              }`}
-            >
-              {joined ? (
+              ) : (
                 <>
                   <CheckCircle2 className="w-4 h-4 text-white" />
-                  <span>เข้าร่วมสำเร็จ!</span>
+                  <span>ยืนยันเข้าร่วมกิจกรรม</span>
                 </>
-              ) : (
-                <span>ยืนยันเข้าร่วมกิจกรรม</span>
               )}
             </button>
           )}
+
         </div>
 
       </div>
+
+      {/* POPUP 1: Double Confirm Join Modal (ป้องกันการกดผิด) */}
+      {showConfirmJoinModal && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fade-in">
+          <div 
+            className="bg-white rounded-3xl p-5 sm:p-6 max-w-sm w-full shadow-2xl border border-[#E8E2D8] text-center space-y-4 animate-scale-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-12 rounded-full bg-orange-100 text-[#F26430] flex items-center justify-center mx-auto">
+              <Calendar className="w-6 h-6" />
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="font-extrabold text-base sm:text-lg text-[#1E293B]">
+                {isPublicVenue ? 'ยืนยันบันทึกลงตารางนัด?' : 'ยืนยันการเข้าร่วมกิจกรรม?'}
+              </h3>
+              <p className="text-xs text-slate-600 font-medium">
+                คุณกำลังจะลงทะเบียนเข้าร่วม: <br />
+                <strong className="text-[#1E293B]">{event.title}</strong>
+              </p>
+              <p className="text-[11px] text-slate-500 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                📅 {event.date} • ⏰ {event.time}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowConfirmJoinModal(false)}
+                className="w-full py-2.5 rounded-full border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+              >
+                ย้อนกลับ
+              </button>
+              <button
+                type="button"
+                onClick={handleExecuteJoin}
+                className="w-full py-2.5 rounded-full bg-[#F26430] hover:bg-[#D95322] text-white text-xs font-bold shadow-md shadow-[#F26430]/25 active:scale-95 cursor-pointer"
+              >
+                ยืนยันเข้าร่วม 🎉
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* POPUP 2: Double Confirm Cancel Join Modal (กรณีกดยกเลิก) */}
+      {showConfirmCancelModal && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fade-in">
+          <div 
+            className="bg-white rounded-3xl p-5 sm:p-6 max-w-sm w-full shadow-2xl border border-rose-200 text-center space-y-4 animate-scale-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="font-extrabold text-base sm:text-lg text-[#1E293B]">
+                ยืนยันยกเลิกการเข้าร่วม?
+              </h3>
+              <p className="text-xs text-slate-600 font-medium">
+                คุณต้องการยกเลิกการลงทะเบียนกิจกรรม <strong className="text-[#1E293B]">"{event.title}"</strong> ใช่หรือไม่?
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowConfirmCancelModal(false)}
+                className="w-full py-2.5 rounded-full border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+              >
+                ไม่ยกเลิก
+              </button>
+              <button
+                type="button"
+                onClick={handleExecuteLeave}
+                className="w-full py-2.5 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md shadow-rose-600/25 active:scale-95 cursor-pointer"
+              >
+                ยืนยันยกเลิก
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

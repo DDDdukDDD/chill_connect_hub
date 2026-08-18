@@ -6,6 +6,7 @@ import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { MOCK_CHALLENGES, MOCK_EVENTS, ChallengeQuest, EventItem } from '@/data/mockData';
+import ReviewModal, { ReviewSubmitData } from '@/components/ReviewModal';
 import {
   Award,
   Coffee,
@@ -30,7 +31,8 @@ import {
   MessageCircle,
   ExternalLink,
   Clock,
-  ArrowRight
+  ArrowRight,
+  Star
 } from 'lucide-react';
 
 interface RecommendedChallenge {
@@ -97,11 +99,27 @@ export default function ChallengePage() {
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'move' | 'heal' | 'chill' | 'learn'>('all');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Sub-filter for Events (Upcoming vs Past)
+  const [eventViewMode, setEventViewMode] = useState<'upcoming' | 'past'>('upcoming');
+  const [userXp, setUserXp] = useState<number>(450);
+  const [isReviewerBadgeUnlocked, setIsReviewerBadgeUnlocked] = useState<boolean>(false);
+
+  // Review Modal State
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState<boolean>(false);
+  const [reviewTargetEvent, setReviewTargetEvent] = useState<EventItem | null>(null);
+  const [reviewedEventIds, setReviewedEventIds] = useState<string[]>(['1']);
+
   // Mock joined events list for current logged-in user
   const [joinedEvents, setJoinedEvents] = useState<EventItem[]>([
     MOCK_EVENTS[0], // สัปดาห์หนังสือแห่งชาติ
     MOCK_EVENTS[2], // BITEC Pop Culture & Anime Expo
-    MOCK_EVENTS[4], // นัดเล่นบอร์ดเกม & กาแฟชิลล์
+    MOCK_EVENTS[3] || MOCK_EVENTS[0], // IMPACT Home Crafts
+  ]);
+
+  // Mock past completed events
+  const [pastEvents, setPastEvents] = useState<EventItem[]>([
+    MOCK_EVENTS[4] || MOCK_EVENTS[1], // HYROX Bootcamp
+    MOCK_EVENTS[5] || MOCK_EVENTS[2], // Sound Bath Meditation
   ]);
 
   // Sync login status across pages with localStorage
@@ -176,6 +194,18 @@ export default function ChallengePage() {
     showToast(`เข้าร่วมชาเลนจ์ "${recItem.title}" เรียบร้อยแล้ว! 🎯`);
   };
 
+  const handleOpenReviewModal = (event: EventItem) => {
+    setReviewTargetEvent(event);
+    setIsReviewModalOpen(true);
+  };
+
+  const handleReviewSubmitSuccess = (data: ReviewSubmitData) => {
+    setReviewedEventIds((prev) => [...prev, data.eventId]);
+    setUserXp((prev) => prev + 50);
+    setIsReviewerBadgeUnlocked(true);
+    showToast('รีวิวสำเร็จ! ได้รับ +50 XP และปลดล็อกเหรียญนักรีวิวฮีลใจ 🌟');
+  };
+
   const filteredRecommended = selectedCategory === 'all'
     ? RECOMMENDED_CHALLENGES
     : RECOMMENDED_CHALLENGES.filter((item) => item.category === selectedCategory);
@@ -215,7 +245,7 @@ export default function ChallengePage() {
         
         {/* Dedicated Hero Header Banner */}
         <section className="bg-[#1E293B] text-white py-10 sm:py-14 relative overflow-hidden border-b border-slate-700/60">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-3 max-w-2xl">
               <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-300 bg-emerald-950/80 px-3.5 py-1 rounded-full border border-emerald-500/30">
                 <Ticket className="w-3.5 h-3.5 text-emerald-400" />
@@ -250,7 +280,7 @@ export default function ChallengePage() {
         </section>
 
         {/* Content Section */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
           
           {/* REQUIRE LOGIN GUARD */}
           {!isLoggedIn ? (
@@ -331,94 +361,190 @@ export default function ChallengePage() {
               {/* VIEW 1: 🎟️ กิจกรรมที่เข้าร่วม (My Joined Events & Tickets) */}
               {activeSubTab === 'joined_events' && (
                 <section className="space-y-6 animate-fade-in">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E8E2D8] pb-3">
+                  
+                  {/* Header & Sub-filter Switcher */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E8E2D8] pb-4">
                     <div>
                       <h2 className="text-xl sm:text-2xl font-extrabold text-[#1E293B] flex items-center gap-2">
                         <CheckCircle2 className="w-6 h-6 text-[#4A7C59]" />
-                        <span>กิจกรรมที่คุณลงทะเบียนไว้แล้ว ({joinedEvents.length} รายการ)</span>
+                        <span>กิจกรรมของคุณ</span>
                       </h2>
                       <p className="text-xs text-[#64748B] font-medium mt-0.5">
-                        ตรวจสอบกำหนดการ จุดนัดพบ และติดต่อโฮสต์ผู้จัดงาน
+                        ตรวจสอบกำหนดการ ตั๋วเข้างาน และรีวิวให้คะแนนความประทับใจหลังจบกิจกรรม
                       </p>
                     </div>
 
-                    <Link
-                      href="/"
-                      className="text-xs font-bold text-[#4A7C59] hover:underline flex items-center gap-1 shrink-0"
-                    >
-                      <span>+ สำรวจกิจกรรมอื่นเพิ่มเติม</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
-                  </div>
-
-                  {/* Joined Events List Cards */}
-                  <div className="space-y-4">
-                    {joinedEvents.map((event, idx) => (
-                      <div
-                        key={event.id}
-                        className="bg-white rounded-3xl p-5 sm:p-6 border-2 border-[#4A7C59] ring-2 ring-[#4A7C59]/10 shadow-sm hover:shadow-md transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-6"
+                    {/* Upcoming vs Past Toggle */}
+                    <div className="flex items-center p-1 bg-white border border-[#E8E2D8] rounded-2xl shadow-2xs shrink-0">
+                      <button
+                        onClick={() => setEventViewMode('upcoming')}
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          eventViewMode === 'upcoming'
+                            ? 'bg-[#4A7C59] text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
                       >
-                        {/* Left: Event Thumbnail & Details */}
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
-                          <div className="relative aspect-video sm:aspect-square w-full sm:w-28 rounded-2xl overflow-hidden bg-slate-100 shrink-0">
-                            <img
-                              src={event.image}
-                              alt={event.title}
-                              className="w-full h-full object-cover"
-                            />
-                            <span className="absolute top-2 left-2 bg-[#4A7C59] text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-md">
-                              🟢 ยืนยันแล้ว
-                            </span>
-                          </div>
-
-                          <div className="space-y-2 flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[11px] font-extrabold text-[#4A7C59] bg-[#EBF3ED] px-2.5 py-0.5 rounded-full border border-[#4A7C59]/20">
-                                #{event.tag}
-                              </span>
-                              <span className="text-xs text-slate-400 font-mono">
-                                Ticket #CCH-2026{idx + 1}
-                              </span>
-                            </div>
-
-                            <h3 className="font-extrabold text-base sm:text-lg text-[#1E293B] hover:text-[#4A7C59] transition-colors">
-                              {event.title}
-                            </h3>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-[#64748B]">
-                              <div className="flex items-center gap-1.5">
-                                <Calendar className="w-4 h-4 text-[#4A7C59] shrink-0" />
-                                <span>{event.date} • {event.time}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <MapPin className="w-4 h-4 text-[#F26430] shrink-0" />
-                                <span className="truncate">{event.location}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Right: Actions (View Ticket, Group Chat) */}
-                        <div className="flex sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-2 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100">
-                          <button
-                            onClick={() => showToast(`เปิดแชตกลุ่ม "${event.title}" สำเร็จ 💬`)}
-                            className="flex-1 sm:flex-none bg-[#EBF3ED] hover:bg-[#D6E8DC] text-[#4A7C59] px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                          >
-                            <MessageCircle className="w-4 h-4" />
-                            <span>แชตกลุ่มกิจกรรม</span>
-                          </button>
-
-                          <button
-                            onClick={() => showToast(`ตั๋วกิจกรรม #CCH-2026${idx + 1} พร้อมใช้งาน ✔️`)}
-                            className="flex-1 sm:flex-none bg-[#1E293B] hover:bg-[#0F172A] text-white px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
-                          >
-                            <Ticket className="w-4 h-4 text-emerald-400" />
-                            <span>ดู E-Ticket QR</span>
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                        🎟️ กำลังจะถึง ({joinedEvents.length})
+                      </button>
+                      <button
+                        onClick={() => setEventViewMode('past')}
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          eventViewMode === 'past'
+                            ? 'bg-[#F26430] text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        ⭐ กิจกรรมที่ผ่านมา & รีวิว ({pastEvents.length})
+                      </button>
+                    </div>
                   </div>
+
+                  {/* 1. UPCOMING EVENTS */}
+                  {eventViewMode === 'upcoming' && (
+                    <div className="space-y-4">
+                      {joinedEvents.map((event, idx) => (
+                        <div
+                          key={event.id}
+                          className="bg-white rounded-3xl p-5 sm:p-6 border-2 border-[#4A7C59] ring-2 ring-[#4A7C59]/10 shadow-sm hover:shadow-md transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-6"
+                        >
+                          {/* Left: Event Thumbnail & Details */}
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
+                            <div className="relative aspect-video sm:aspect-square w-full sm:w-28 rounded-2xl overflow-hidden bg-slate-100 shrink-0">
+                              <img
+                                src={event.image}
+                                alt={event.title}
+                                className="w-full h-full object-cover"
+                              />
+                              <span className="absolute top-2 left-2 bg-[#4A7C59] text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-md">
+                                🟢 ยืนยันแล้ว
+                              </span>
+                            </div>
+
+                            <div className="space-y-2 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] font-extrabold text-[#4A7C59] bg-[#EBF3ED] px-2.5 py-0.5 rounded-full border border-[#4A7C59]/20">
+                                  #{event.tag}
+                                </span>
+                                <span className="text-xs text-slate-400 font-mono">
+                                  Ticket #CCH-2026{idx + 1}
+                                </span>
+                              </div>
+
+                              <h3 className="font-extrabold text-base sm:text-lg text-[#1E293B] hover:text-[#4A7C59] transition-colors">
+                                {event.title}
+                              </h3>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-[#64748B]">
+                                <div className="flex items-center gap-1.5">
+                                  <Calendar className="w-4 h-4 text-[#4A7C59] shrink-0" />
+                                  <span>{event.date} • {event.time}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <MapPin className="w-4 h-4 text-[#F26430] shrink-0" />
+                                  <span className="truncate">{event.location}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Right: Actions (View Ticket, Group Chat) */}
+                          <div className="flex sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-2 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100">
+                            <button
+                              onClick={() => showToast(`เปิดแชตกลุ่ม "${event.title}" สำเร็จ 💬`)}
+                              className="flex-1 sm:flex-none bg-[#EBF3ED] hover:bg-[#D6E8DC] text-[#4A7C59] px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                              <MessageCircle className="w-4 h-4" />
+                              <span>แชตกลุ่มกิจกรรม</span>
+                            </button>
+
+                            <button
+                              onClick={() => showToast(`ตั๋วกิจกรรม #CCH-2026${idx + 1} พร้อมใช้งาน ✔️`)}
+                              className="flex-1 sm:flex-none bg-[#1E293B] hover:bg-[#0F172A] text-white px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                              <Ticket className="w-4 h-4 text-emerald-400" />
+                              <span>ดู E-Ticket QR</span>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* 2. PAST COMPLETED EVENTS (With 15s Quick Review Button) */}
+                  {eventViewMode === 'past' && (
+                    <div className="space-y-4">
+                      {pastEvents.map((event) => {
+                        const isReviewed = reviewedEventIds.includes(event.id);
+
+                        return (
+                          <div
+                            key={`past-${event.id}`}
+                            className="bg-white rounded-3xl p-5 sm:p-6 border border-[#E8E2D8] shadow-xs hover:shadow-md transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-6"
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
+                              <div className="relative aspect-video sm:aspect-square w-full sm:w-28 rounded-2xl overflow-hidden bg-slate-100 shrink-0">
+                                <img
+                                  src={event.image}
+                                  alt={event.title}
+                                  className="w-full h-full object-cover grayscale-[20%]"
+                                />
+                                <span className="absolute top-2 left-2 bg-slate-800/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-xs">
+                                  ✓ จัดเสร็จสิ้นแล้ว
+                                </span>
+                              </div>
+
+                              <div className="space-y-2 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full">
+                                    ผู้จัด: {event.hostName}
+                                  </span>
+                                  {event.hostHostedCount && event.hostHostedCount >= 20 && (
+                                    <span className="text-[10px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                                      👑 โฮสต์ยอดเยี่ยม ({event.hostHostedCount}+ กิจกรรม)
+                                    </span>
+                                  )}
+                                </div>
+
+                                <h3 className="font-extrabold text-base sm:text-lg text-[#1E293B]">
+                                  {event.title}
+                                </h3>
+
+                                <div className="flex items-center gap-3 text-xs text-[#64748B]">
+                                  <div className="flex items-center gap-1.5">
+                                    <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                    <span>{event.date}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                    <span className="truncate">{event.location}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Review Action Area */}
+                            <div className="flex items-center justify-end shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100">
+                              {isReviewed ? (
+                                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                  <span>คุณรีวิวแล้ว (รับ +50 XP แล้ว ⭐)</span>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => handleOpenReviewModal(event)}
+                                  className="w-full sm:w-auto bg-[#F26430] hover:bg-[#E05320] text-white px-5 py-2.5 rounded-2xl text-xs font-black shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 animate-pulse"
+                                >
+                                  <Star className="w-4 h-4 fill-white" />
+                                  <span>ให้คะแนนความประทับใจ (+50 XP)</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
                 </section>
               )}
 
@@ -597,6 +723,22 @@ export default function ChallengePage() {
           showToast('ออกจากระบบเรียบร้อยแล้ว (Guest View)');
         }}
       />
+
+      {/* Review Modal */}
+      {reviewTargetEvent && (
+        <ReviewModal
+          isOpen={isReviewModalOpen}
+          onClose={() => {
+            setIsReviewModalOpen(false);
+            setReviewTargetEvent(null);
+          }}
+          eventId={reviewTargetEvent.id}
+          eventTitle={reviewTargetEvent.title}
+          hostName={reviewTargetEvent.hostName}
+          hostAvatar={reviewTargetEvent.hostAvatar}
+          onSubmitSuccess={handleReviewSubmitSuccess}
+        />
+      )}
 
       {/* Toast Notification */}
       {toastMessage && (
