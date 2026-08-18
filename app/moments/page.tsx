@@ -208,9 +208,29 @@ export default function MomentsPage() {
     return filteredPosts.slice(0, visibleCount);
   }, [filteredPosts, visibleCount]);
 
+  // Schema.org Structured Data for AI Engines & Community Social Feed
+  const momentsSchema = useMemo(() => {
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'DiscussionForumPosting',
+      headline: 'โมเมนต์โซเชียล & รีวิวกิจกรรมจริงจากสมาชิก Chill & Connect Hub',
+      description: 'ภาพบรรยากาศจริง มิตรภาพ และความประทับใจจากการเข้าร่วมกิจกรรมยามว่าง',
+      author: {
+        '@type': 'Organization',
+        name: 'Chill & Connect Community',
+      },
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-[#1E293B] flex flex-col font-sans selection:bg-[#F26430] selection:text-white">
       
+      {/* Schema.org Structured Data for AI Engine Parsing */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(momentsSchema) }}
+      />
+
       {/* Sticky Top Navbar */}
       <Navbar
         activeTab={activeNavTab}

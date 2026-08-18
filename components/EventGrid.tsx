@@ -1,8 +1,6 @@
-'use client';
-
 import React from 'react';
 import { EventItem } from '@/data/mockData';
-import { Heart, Calendar, MapPin, Users, Star, CheckCircle2, LayoutGrid, List, Sparkles, Tag, Building2 } from 'lucide-react';
+import { Heart, Calendar, MapPin, Users, Star, CheckCircle2, Sparkles, Building2, Tag } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface EventGridProps {
@@ -10,9 +8,6 @@ interface EventGridProps {
   onSelectEvent: (event: EventItem) => void;
   favorites: string[];
   toggleFavorite: (eventId: string) => void;
-  viewMode?: 'grid' | 'list';
-  onToggleViewMode?: (mode: 'grid' | 'list') => void;
-  showCountText?: boolean;
   joinedEventIds?: string[];
 }
 
@@ -28,9 +23,6 @@ export const EventGrid: React.FC<EventGridProps> = ({
   onSelectEvent,
   favorites,
   toggleFavorite,
-  viewMode = 'grid',
-  onToggleViewMode,
-  showCountText = false,
   joinedEventIds = [],
 }) => {
   if (events.length === 0) {
@@ -49,48 +41,8 @@ export const EventGrid: React.FC<EventGridProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* View Switcher Header Bar if handler exists */}
-      {onToggleViewMode && (
-        <div className="flex items-center justify-between px-1 py-1">
-          <div>
-            {showCountText && (
-              <p className="text-xs sm:text-sm font-semibold text-slate-600">
-                พบทั้งหมด <span className="text-[#4A7C59] font-bold">{events.length}</span> กิจกรรม
-              </p>
-            )}
-          </div>
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 ml-auto">
-            <button
-              onClick={() => onToggleViewMode('grid')}
-              className={`p-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1 ${
-                viewMode === 'grid'
-                  ? 'bg-white text-[#4A7C59] shadow-sm font-bold'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-              title="ตาราง (Grid View)"
-            >
-              <LayoutGrid className="w-4 h-4" />
-              <span className="hidden sm:inline">การ์ด</span>
-            </button>
-            <button
-              onClick={() => onToggleViewMode('list')}
-              className={`p-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1 ${
-                viewMode === 'list'
-                  ? 'bg-white text-[#4A7C59] shadow-sm font-bold'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-              title="รายการ (List View)"
-            >
-              <List className="w-4 h-4" />
-              <span className="hidden sm:inline">รายการ</span>
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* GRID VIEW: Sleek 4-Column Compact Grid Layout */}
-      {viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4.5">
           {events.map((event, idx) => {
             const isFav = favorites.includes(event.id);
             const isJoined = joinedEventIds.includes(event.id);
@@ -131,14 +83,14 @@ export const EventGrid: React.FC<EventGridProps> = ({
 
                   {/* Top-Left Status Badge */}
                   {isJoined ? (
-                    <div className="absolute top-3 left-3 bg-[#4A7C59] text-white px-3 py-1 rounded-full text-xs font-extrabold shadow-md flex items-center gap-1 z-10">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200 fill-emerald-800" />
-                      <span>🟢 เข้าร่วมแล้ว</span>
+                    <div className="absolute top-3 left-3 bg-[#4A7C59] text-white px-3 py-1 rounded-full text-xs font-extrabold shadow-md flex items-center gap-1.5 z-10">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200" />
+                      <span>เข้าร่วมแล้ว</span>
                     </div>
                   ) : event.isNew || idx < 2 ? (
-                    <div className="absolute top-3 left-3 bg-[#4A7C59] text-white px-3 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-1">
-                      <Sparkles className="w-3 h-3 text-emerald-200" />
-                      <span>🆕 มาใหม่</span>
+                    <div className="absolute top-3 left-3 bg-sky-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-1.5 z-10">
+                      <Sparkles className="w-3.5 h-3.5 text-sky-200" />
+                      <span>มาใหม่</span>
                     </div>
                   ) : event.badgeText ? (
                     <div className="absolute top-3 left-3 bg-[#F26430] text-white px-3 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-1">
@@ -146,17 +98,17 @@ export const EventGrid: React.FC<EventGridProps> = ({
                     </div>
                   ) : null}
 
-                  {/* Floating Favorite Heart Icon */}
+                  {/* Floating Favorite Heart Icon (Compact Size) */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       toggleFavorite(event.id);
                     }}
-                    className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-[#F26430] hover:scale-110 active:scale-95 transition-all z-10"
+                    className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-[#F26430] hover:scale-110 active:scale-95 transition-all z-10"
                     title={isFav ? 'ยกเลิกถูกใจ' : 'บันทึกกิจกรรม'}
                   >
                     <Heart
-                      className={`w-5 h-5 transition-colors ${
+                      className={`w-3.5 h-3.5 transition-colors ${
                         isFav ? 'fill-[#F26430] text-[#F26430]' : 'text-[#64748B]'
                       }`}
                     />
@@ -257,13 +209,21 @@ export const EventGrid: React.FC<EventGridProps> = ({
 
                     <button
                       onClick={() => onSelectEvent(event)}
-                      className={`px-4 py-1.5 rounded-full font-bold text-xs transition-all shadow-xs hover:shadow active:scale-95 flex items-center justify-center gap-1 text-white ${
-                        event.eventType === 'public_venue'
-                          ? 'bg-[#F26430] hover:bg-[#D95322] shadow-[#F26430]/20'
-                          : 'bg-[#4A7C59] hover:bg-[#3B6347] shadow-[#4A7C59]/20'
+                      className={`px-4 py-1.5 rounded-full font-bold text-xs transition-all shadow-xs hover:shadow active:scale-95 flex items-center justify-center gap-1 cursor-pointer ${
+                        isJoined
+                          ? 'bg-[#4A7C59] text-white shadow-[#4A7C59]/20'
+                          : event.eventType === 'public_venue'
+                          ? 'bg-[#F26430] hover:bg-[#D95322] text-white shadow-[#F26430]/20'
+                          : 'bg-[#F26430] hover:bg-[#D95322] text-white shadow-[#F26430]/20'
                       }`}
                     >
-                      <span>{event.eventType === 'public_venue' ? '📌 สนใจ / ดูงาน' : 'เข้าร่วม'}</span>
+                      <span>
+                        {isJoined
+                          ? '✔️ เข้าร่วมแล้ว'
+                          : event.eventType === 'public_venue'
+                          ? 'ดูรายละเอียด'
+                          : 'เข้าร่วม'}
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -271,95 +231,6 @@ export const EventGrid: React.FC<EventGridProps> = ({
             );
           })}
         </div>
-      ) : (
-        /* COMPACT LIST VIEW */
-        <div className="space-y-3">
-          {events.map((event, idx) => {
-            const isFav = favorites.includes(event.id);
-            const fillRatio = event.participantsCount / event.maxParticipants;
-            const catStyle = CATEGORY_COLORS[event.category] || CATEGORY_COLORS.heal;
-
-            return (
-              <motion.div
-                key={event.id}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.25, delay: idx * 0.04 }}
-                onClick={() => onSelectEvent(event)}
-                className="group bg-white rounded-2xl border border-[#E8E2D8] p-3 sm:p-4 hover:shadow-lg transition-all flex flex-col sm:flex-row items-start sm:items-center gap-4 cursor-pointer"
-              >
-                {/* Thumbnail Image */}
-                <div className="relative w-full sm:w-44 aspect-video sm:aspect-square rounded-xl overflow-hidden bg-slate-100 shrink-0">
-                  <img
-                    src={event.image}
-                    alt={event.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className={`absolute top-2 left-2 ${catStyle.bg} ${catStyle.text} text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm border ${catStyle.border}`}>
-                    {event.tag}
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 space-y-2 w-full">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-                      <span>{event.hostName}</span>
-                      <CheckCircle2 className="w-3.5 h-3.5 text-blue-500" />
-                    </div>
-                    {event.price && (
-                      <span className="text-xs font-bold text-[#4A7C59] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                        {event.price}
-                      </span>
-                    )}
-                  </div>
-
-                  <h3 className="font-bold text-base text-[#1E293B] group-hover:text-[#4A7C59] transition-colors line-clamp-1">
-                    {event.title}
-                  </h3>
-
-                  <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5 text-[#4A7C59]" />
-                      {event.date}
-                    </span>
-                    <span className="flex items-center gap-1 truncate max-w-[200px]">
-                      <MapPin className="w-3.5 h-3.5 text-[#F26430]" />
-                      {event.location}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Users className="w-3.5 h-3.5 text-slate-400" />
-                      {event.participantsCount}/{event.maxParticipants} คน
-                    </span>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex sm:flex-col items-center justify-between sm:justify-center gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleFavorite(event.id);
-                    }}
-                    className="p-2 rounded-full hover:bg-slate-100 text-[#F26430] transition-colors"
-                  >
-                    <Heart className={`w-5 h-5 ${isFav ? 'fill-[#F26430]' : 'text-slate-400'}`} />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSelectEvent(event);
-                    }}
-                    className="bg-[#F26430] hover:bg-[#D95322] text-white px-4 py-1.5 rounded-full font-bold text-xs transition-all shadow-sm active:scale-95"
-                  >
-                    รายละเอียด
-                  </button>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 };

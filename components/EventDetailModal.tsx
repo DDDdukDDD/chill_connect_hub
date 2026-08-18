@@ -27,20 +27,28 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   const [copied, setCopied] = useState(false);
   const [showSubForm, setShowSubForm] = useState(false);
   const [subTitleInput, setSubTitleInput] = useState('');
+  const [expandedSubId, setExpandedSubId] = useState<string | null>(null);
+  const [joinedSubIds, setJoinedSubIds] = useState<string[]>([]);
   const [subActivities, setSubActivities] = useState([
     {
       id: 'sub-1',
-      title: 'ชวนเดินดูโซนนิยายแปล & หนังสือประวัติศาสตร์ 14:00 น.',
+      title: 'ชวนเดินดูโซนนิยายแปล & หนังสือประวัติศาสตร์',
       creatorName: 'คุณมายด์',
+      date: '28 มี.ค. 2026',
       time: '14:00 น.',
       membersCount: '2/4 คน',
+      meetupPoint: 'หน้าบูธ B02 โซนสำนักพิมพ์มติชน',
+      note: 'มาเดินชิลล์ๆ แลกเปลี่ยนหนังสือน่าอ่านกันครับ ไม่เกร็ง มีแวะพักจิบเครื่องดื่มระหว่างทาง',
     },
     {
       id: 'sub-2',
       title: 'หาเพื่อนแวะจิบกาแฟโซน Craft Drip ชิลล์ๆ',
       creatorName: 'คุณน็อต',
+      date: '29 มี.ค. 2026',
       time: '15:30 น.',
       membersCount: '3/5 คน',
+      meetupPoint: 'หน้าร้านกาแฟ Slow Bar ชั้น 1',
+      note: 'นั่งคุยสบายๆ หลังเดินดูงานเสร็จ ใครชอบกาแฟดริปมาแลกเปลี่ยนเมล็ดกาแฟกันได้ครับ',
     },
   ]);
 
@@ -62,6 +70,19 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
     }, 1800);
   };
 
+  const handleJoinSubActivity = (subId: string) => {
+    if (!isLoggedIn && onRequireLogin) {
+      onClose();
+      onRequireLogin();
+      return;
+    }
+    if (joinedSubIds.includes(subId)) {
+      setJoinedSubIds((prev) => prev.filter((id) => id !== subId));
+    } else {
+      setJoinedSubIds((prev) => [...prev, subId]);
+    }
+  };
+
   const handleShare = () => {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -76,8 +97,8 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         
-        {/* Top Image Banner */}
-        <div className="relative h-40 sm:h-48 w-full bg-slate-100 shrink-0 overflow-hidden">
+        {/* Top Image Banner (Compact 130px) */}
+        <div className="relative h-32 sm:h-36 w-full bg-slate-100 shrink-0 overflow-hidden">
           <img
             src={event.image}
             alt={event.title}
@@ -88,7 +109,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
           {/* Close Button */}
           <button
             onClick={onClose}
-            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-[#1E293B] hover:bg-white transition-all z-10"
+            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-[#1E293B] hover:bg-white transition-all z-10 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -106,14 +127,14 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
           <div className="absolute bottom-3 right-3 flex items-center gap-2">
             <button
               onClick={handleShare}
-              className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-[#1E293B] hover:scale-105 transition-all"
+              className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-[#1E293B] hover:scale-105 transition-all cursor-pointer"
               title="แชร์กิจกรรม"
             >
               <Share2 className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => onToggleFavorite(event.id)}
-              className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-[#F26430] hover:scale-105 transition-all"
+              className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-[#F26430] hover:scale-105 transition-all cursor-pointer"
             >
               <Heart
                 className={`w-3.5 h-3.5 ${
@@ -125,103 +146,64 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
         </div>
 
         {/* Content Body (Scrollable) */}
-        <div className="p-5 sm:p-6 space-y-4 overflow-y-auto">
+        <div className="p-4 sm:p-5 space-y-3.5 overflow-y-auto">
           
           {/* Header Title */}
           <div>
             <span className="text-xs font-bold text-[#4A7C59] tracking-wider uppercase">
-              {isPublicVenue ? 'VENUE spotlight & PUBLIC EVENT' : `กิจกรรม ${event.category.toUpperCase()}`}
+              {isPublicVenue ? 'VENUE SPOTLIGHT & PUBLIC EVENT' : `กิจกรรม ${event.category.toUpperCase()}`}
             </span>
-            <h2 className="text-lg sm:text-xl font-extrabold text-[#1E293B] mt-0.5 leading-snug">
+            <h2 className="text-base sm:text-lg font-extrabold text-[#1E293B] mt-0.5 leading-snug">
               {event.title}
             </h2>
           </div>
 
-          {/* Host / Organizer Info */}
-          <div className="flex items-center justify-between p-3 rounded-2xl bg-[#FAF7F2] border border-[#E8E2D8]">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-full bg-[#4A7C59] text-white flex items-center justify-center font-bold text-xs shrink-0">
-                {event.hostName.charAt(0)}
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] text-[#64748B] font-medium">
-                  {isPublicVenue ? 'ผู้จัดงาน / สถานที่' : 'จัดโดย Host'}
-                </p>
-                <p className="text-xs sm:text-sm font-bold text-[#1E293B] flex items-center gap-1 truncate">
-                  <span>{event.hostName}</span>
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
-                </p>
-              </div>
+          {/* Details & Host Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs bg-slate-50/90 p-3 rounded-2xl border border-slate-100">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
+              <span className="font-semibold text-[#1E293B] truncate">{event.date}</span>
             </div>
 
-            {event.externalUrl && (
-              <a
-                href={event.externalUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs font-bold text-[#F26430] bg-white border border-orange-200 hover:bg-orange-50 px-3 py-1.5 rounded-full flex items-center gap-1 shrink-0 transition-colors"
-              >
-                <span>เว็บหลักผู้จัด</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            )}
-          </div>
-
-          {/* Details Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm bg-slate-50/80 p-3.5 rounded-2xl border border-slate-100">
-            <div className="flex items-start gap-2.5">
-              <Calendar className="w-4 h-4 text-[#4A7C59] shrink-0 mt-0.5" />
-              <div>
-                <p className="text-[11px] text-[#64748B] font-medium">วันที่จัดงาน</p>
-                <p className="font-semibold text-[#1E293B]">{event.date}</p>
-              </div>
+            <div className="flex items-center gap-2">
+              <Clock className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
+              <span className="font-semibold text-[#1E293B] truncate">{event.time}</span>
             </div>
 
-            <div className="flex items-start gap-2.5">
-              <Clock className="w-4 h-4 text-[#4A7C59] shrink-0 mt-0.5" />
-              <div>
-                <p className="text-[11px] text-[#64748B] font-medium">เวลาเปิดงาน</p>
-                <p className="font-semibold text-[#1E293B]">{event.time}</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-2.5 sm:col-span-2">
-              <MapPin className="w-4 h-4 text-[#F26430] shrink-0 mt-0.5" />
-              <div>
-                <p className="text-[11px] text-[#64748B] font-medium">สถานที่จัดงาน</p>
-                <p className="font-semibold text-[#1E293B]">{event.location}</p>
-              </div>
+            <div className="flex items-center gap-2 sm:col-span-3 pt-1 border-t border-slate-200/60">
+              <MapPin className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
+              <span className="font-semibold text-[#1E293B] truncate">{event.location}</span>
             </div>
           </div>
 
           {/* Description */}
-          <div className="space-y-1">
+          <div className="space-y-1 pt-1">
             <h4 className="font-bold text-xs sm:text-sm text-[#1E293B]">รายละเอียดกิจกรรม</h4>
             <p className="text-xs sm:text-sm text-[#475569] leading-relaxed">
               {event.description}
             </p>
           </div>
 
-          {/* Public Venue Sub-Activities & Buddy Matcher */}
+          {/* Public Venue Sub-Activities & Buddy Matcher (Below Description) */}
           {isPublicVenue && (
-            <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <h4 className="font-extrabold text-xs sm:text-sm text-[#1E293B] flex items-center gap-1.5">
-                    <Users className="w-4 h-4 text-[#F26430]" />
-                    <span>ชวนเพื่อนทำกิจกรรมในงานนี้</span>
+            <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200 space-y-2.5 shadow-2xs">
+              <div className="flex items-center justify-between gap-2">
+                <div className="space-y-0.5 min-w-0">
+                  <h4 className="font-extrabold text-xs sm:text-sm text-[#1E293B] flex items-center gap-1.5 truncate">
+                    <Users className="w-4 h-4 text-[#F26430] shrink-0" />
+                    <span>ชวนเพื่อนทำกิจกรรม ({subActivities.length})</span>
                   </h4>
-                  <p className="text-[11px] text-[#64748B]">
-                    มี 2 กิจกรรมย่อยที่เพื่อนๆ ตั้งหาคนไปทำด้วยกันในงาน
+                  <p className="text-[10px] sm:text-[11px] text-[#64748B] truncate">
+                    หาเพื่อนร่วมเดินดูงาน หรือสร้างนัดหมายกลุ่มย่อยของคุณ
                   </p>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setShowSubForm(!showSubForm)}
-                  className="bg-[#4A7C59] hover:bg-[#3B6447] text-white text-xs font-bold px-3.5 py-1.5 rounded-full shadow-xs transition-all active:scale-95 shrink-0"
+                  className="bg-[#4A7C59] hover:bg-[#3B6447] text-white text-xs font-bold px-3.5 py-1.5 rounded-full shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer flex items-center gap-1"
                 >
-                  {showSubForm ? 'ยกเลิก' : '➕ สร้างกิจกรรม'}
+                  <span>{showSubForm ? '✕ ปิด' : '➕ สร้างกิจกรรม'}</span>
                 </button>
               </div>
 
@@ -236,8 +218,11 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                         id: `sub-${Date.now()}`,
                         title: subTitleInput.trim(),
                         creatorName: 'คุณส้ม (Som_Chill)',
+                        date: event.date,
                         time: '14:00 น.',
                         membersCount: '1/4 คน',
+                        meetupPoint: 'จุดนัดพบ: ล็อบบี้ทางเข้าหน้างาน',
+                        note: 'ชวนเดินชิลล์ๆ พูดคุยและทำความรู้จักเพื่อนใหม่ครับ',
                       },
                       ...subActivities,
                     ]);
@@ -258,7 +243,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                   <div className="flex justify-end">
                     <button
                       type="submit"
-                      className="bg-[#F26430] text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-xs"
+                      className="bg-[#F26430] hover:bg-[#D95322] text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-xs cursor-pointer"
                     >
                       ยืนยันสร้างกิจกรรมย่อย
                     </button>
@@ -266,29 +251,76 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                 </form>
               )}
 
-              {/* List of sub-activities */}
-              <div className="space-y-2 pt-1">
-                {subActivities.map((sub) => (
-                  <div
-                    key={sub.id}
-                    className="bg-white p-2.5 rounded-xl border border-amber-200/60 flex items-center justify-between gap-2 shadow-2xs"
-                  >
-                    <div className="space-y-0.5 min-w-0">
-                      <p className="text-xs font-bold text-[#1E293B] truncate">🎯 {sub.title}</p>
-                      <p className="text-[10px] text-[#64748B]">
-                        จัดโดย {sub.creatorName} • เวลา {sub.time} ({sub.membersCount})
-                      </p>
-                    </div>
+              {/* List of sub-activities with expandable details */}
+              <div className="space-y-1.5 pt-0.5">
+                {subActivities.map((sub: any) => {
+                  const isSubJoined = joinedSubIds.includes(sub.id);
+                  const isExpanded = expandedSubId === sub.id;
 
-                    <button
-                      type="button"
-                      onClick={() => alert(`ส่งคำขอเข้าร่วม "${sub.title}" สำเร็จแล้ว!`)}
-                      className="text-[11px] font-bold text-[#F26430] bg-orange-50 hover:bg-orange-100 px-3 py-1 rounded-full border border-orange-200 shrink-0 transition-colors"
+                  return (
+                    <div
+                      key={sub.id}
+                      className="bg-white rounded-xl border border-amber-200/80 overflow-hidden shadow-2xs transition-all"
                     >
-                      ขอไปด้วย ➔
-                    </button>
-                  </div>
-                ))}
+                      {/* Sub-activity Header Bar with Date before Time */}
+                      <div 
+                        onClick={() => setExpandedSubId(isExpanded ? null : sub.id)}
+                        className="p-2.5 sm:p-3 flex items-center justify-between gap-2 cursor-pointer hover:bg-amber-50/40 transition-colors"
+                      >
+                        <div className="space-y-0.5 min-w-0 flex-1">
+                          <p className="text-xs font-bold text-[#1E293B] truncate flex items-center gap-1">
+                            <span>🎯 {sub.title}</span>
+                          </p>
+                          <p className="text-[10px] sm:text-[11px] text-[#64748B] flex items-center gap-1.5 flex-wrap">
+                            <span>จัดโดย <strong className="text-[#1E293B]">{sub.creatorName}</strong></span>
+                            <span>•</span>
+                            <span className="text-[#4A7C59] font-medium">📅 {sub.date || event.date}</span>
+                            <span>•</span>
+                            <span className="text-slate-600 font-medium">⏰ {sub.time}</span>
+                            <span>•</span>
+                            <span className="text-amber-700 font-bold">({sub.membersCount})</span>
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleJoinSubActivity(sub.id);
+                            }}
+                            className={`text-[10px] sm:text-[11px] font-bold px-3 py-1 rounded-full border transition-all active:scale-95 cursor-pointer ${
+                              isSubJoined
+                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                                : 'bg-[#4A7C59] hover:bg-[#3B6447] text-white border-[#4A7C59] shadow-xs'
+                            }`}
+                          >
+                            {isSubJoined ? '🟢 เข้าร่วมแล้ว' : 'เข้าร่วม'}
+                          </button>
+
+                          <span className="text-xs text-slate-400">
+                            {isExpanded ? '▲' : '▼'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Expandable Details Body */}
+                      {isExpanded && (
+                        <div className="p-3 bg-amber-50/40 border-t border-amber-100 space-y-2 text-xs text-[#475569] animate-fade-in">
+                          <div className="space-y-1">
+                            <p className="font-bold text-[#1E293B] flex items-center gap-1">
+                              <MapPin className="w-3.5 h-3.5 text-[#F26430]" />
+                              <span>{sub.meetupPoint || 'จุดนัดพบ: ล็อบบี้ทางเข้าหน้างาน'}</span>
+                            </p>
+                            <p className="text-[11px] text-slate-600 bg-white p-2 rounded-lg border border-amber-200/50">
+                              💬 โน้ตจากโฮสต์: {sub.note || 'ยินดีต้อนรับทุกคนครับ มาเดินทำกิจกรรมด้วยกันสบายๆ'}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -301,20 +333,13 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
         </div>
 
-        {/* Modal Bottom Action Footer */}
-        <div className="p-4 bg-slate-50 border-t border-[#E8E2D8] flex items-center justify-end gap-3 shrink-0">
-          <button
-            onClick={onClose}
-            className="px-5 py-2 rounded-full text-xs sm:text-sm font-semibold text-[#475569] hover:bg-slate-200 transition-colors"
-          >
-            ปิดหน้าต่าง
-          </button>
-
+        {/* Modal Bottom Action Footer (Single Calendar Icon & Clean Text) */}
+        <div className="p-3.5 sm:p-4 bg-slate-50 border-t border-[#E8E2D8] flex items-center justify-end shrink-0">
           {isPublicVenue ? (
             <button
               onClick={handleJoin}
               disabled={joined}
-              className={`px-7 py-2.5 rounded-full font-bold text-xs sm:text-sm text-white transition-all shadow-md flex items-center gap-2 ${
+              className={`w-full sm:w-auto px-7 py-2.5 rounded-full font-bold text-xs sm:text-sm text-white transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer ${
                 joined
                   ? 'bg-emerald-600 shadow-emerald-600/20'
                   : 'bg-[#F26430] hover:bg-[#D95322] shadow-[#F26430]/25 active:scale-95'
@@ -323,12 +348,12 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               {joined ? (
                 <>
                   <CheckCircle2 className="w-4 h-4 text-white" />
-                  <span>บันทึกเข้าตารางนัดแล้ว!</span>
+                  <span>บันทึกลงตารางนัดแล้ว!</span>
                 </>
               ) : (
                 <>
                   <Calendar className="w-4 h-4 text-white" />
-                  <span>📌 บันทึกใส่ตารางนัด / ไปด้วย</span>
+                  <span>บันทึกลงตารางนัด</span>
                 </>
               )}
             </button>
@@ -336,7 +361,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             <button
               onClick={handleJoin}
               disabled={joined}
-              className={`px-7 py-2.5 rounded-full font-bold text-xs sm:text-sm text-white transition-all shadow-md flex items-center gap-2 ${
+              className={`w-full sm:w-auto px-7 py-2.5 rounded-full font-bold text-xs sm:text-sm text-white transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer ${
                 joined
                   ? 'bg-emerald-600 shadow-emerald-600/20'
                   : 'bg-[#F26430] hover:bg-[#D95322] shadow-[#F26430]/25 active:scale-95'

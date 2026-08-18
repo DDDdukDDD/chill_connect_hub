@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
-import { MOCK_CHALLENGES, ChallengeQuest } from '@/data/mockData';
+import { MOCK_CHALLENGES, MOCK_EVENTS, ChallengeQuest, EventItem } from '@/data/mockData';
 import {
   Award,
   Coffee,
@@ -22,7 +23,14 @@ import {
   Sprout,
   ShieldCheck,
   KeyRound,
-  LogIn
+  LogIn,
+  Ticket,
+  Calendar,
+  MapPin,
+  MessageCircle,
+  ExternalLink,
+  Clock,
+  ArrowRight
 } from 'lucide-react';
 
 interface RecommendedChallenge {
@@ -81,12 +89,20 @@ const RECOMMENDED_CHALLENGES: RecommendedChallenge[] = [
 
 export default function ChallengePage() {
   const [activeNavTab, setActiveNavTab] = useState('challenge');
+  const [activeSubTab, setActiveSubTab] = useState<'joined_events' | 'quests'>('joined_events');
   const [isLoggedIn, setIsLoggedIn] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [myChallenges, setMyChallenges] = useState<ChallengeQuest[]>(MOCK_CHALLENGES);
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'move' | 'heal' | 'chill' | 'learn'>('all');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Mock joined events list for current logged-in user
+  const [joinedEvents, setJoinedEvents] = useState<EventItem[]>([
+    MOCK_EVENTS[0], // สัปดาห์หนังสือแห่งชาติ
+    MOCK_EVENTS[2], // BITEC Pop Culture & Anime Expo
+    MOCK_EVENTS[4], // นัดเล่นบอร์ดเกม & กาแฟชิลล์
+  ]);
 
   // Sync login status across pages with localStorage
   React.useEffect(() => {
@@ -164,9 +180,23 @@ export default function ChallengePage() {
     ? RECOMMENDED_CHALLENGES
     : RECOMMENDED_CHALLENGES.filter((item) => item.category === selectedCategory);
 
+  // Schema.org Structured Data for Personal Activities Hub
+  const challengeSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: 'กิจกรรมที่เข้าร่วม & ชาเลนจ์สะสมเหรียญรางวัล | Chill & Connect Hub',
+    description: 'จัดการตั๋วกิจกรรมยามว่างที่คุณลงทะเบียนไว้ พร้อมสะสมเหรียญรางวัล Badges และภารกิจฮีลใจ',
+  };
+
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-[#1E293B] flex flex-col font-sans selection:bg-[#F26430] selection:text-white">
       
+      {/* Schema.org Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(challengeSchema) }}
+      />
+
       {/* Navbar */}
       <Navbar
         activeTab={activeNavTab}
@@ -174,7 +204,7 @@ export default function ChallengePage() {
         isLoggedIn={isLoggedIn}
         setIsLoggedIn={(status) => {
           handleSetIsLoggedIn(status);
-          showToast(status ? 'เข้าสู่ระบบสำเร็จ! ยินดีต้อนรับสู่ระบบชาเลนจ์ 🏆' : 'ออกจากระบบแล้ว');
+          showToast(status ? 'เข้าสู่ระบบสำเร็จ! ยินดีต้อนรับ 🎉' : 'ออกจากระบบแล้ว');
         }}
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}
@@ -187,25 +217,32 @@ export default function ChallengePage() {
         <section className="bg-[#1E293B] text-white py-10 sm:py-14 relative overflow-hidden border-b border-slate-700/60">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-3 max-w-2xl">
-              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-950/80 px-3.5 py-1 rounded-full border border-amber-500/30">
-                <Trophy className="w-3.5 h-3.5" />
-                <span>Gamification & Rewards Hub</span>
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-300 bg-emerald-950/80 px-3.5 py-1 rounded-full border border-emerald-500/30">
+                <Ticket className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Personal Activities & Rewards Hub</span>
               </div>
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white">
-                ชาเลนจ์ & สะสม Badges 🏆
+                กิจกรรมที่เข้าร่วม & ชาเลนจ์
               </h1>
               <p className="text-sm sm:text-base text-slate-300 font-medium">
-                ร่วมทำภารกิจยามว่าง เพิ่มความสนุกในการทำกิจกรรม พร้อมรับตราเกียรติยศและสิทธิประโยชน์พิเศษ
+                จัดการตั๋วกิจกรรมยามว่างที่คุณลงทะเบียนไว้ พร้อมสะสมเหรียญรางวัล Badges และภารกิจฮีลใจ
               </p>
             </div>
 
             {/* User Stats Card */}
             {isLoggedIn && (
               <div className="bg-slate-800/90 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-slate-700/80 shrink-0 space-y-2 text-center md:text-right">
-                <p className="text-xs text-slate-400">ตราเกียรติยศที่คุณสะสมแล้ว</p>
-                <div className="flex items-center justify-center md:justify-end gap-2 text-amber-300 font-bold text-lg">
-                  <Award className="w-6 h-6 text-amber-400" />
-                  <span>4 Badges (Level 3 Explorer)</span>
+                <p className="text-xs text-slate-400">สถานะกิจกรรมส่วนบุคคล</p>
+                <div className="flex items-center justify-center md:justify-end gap-3 text-white font-bold text-sm">
+                  <span className="flex items-center gap-1 text-emerald-300">
+                    <Ticket className="w-4 h-4" />
+                    <span>{joinedEvents.length} กิจกรรม</span>
+                  </span>
+                  <span className="text-slate-600">•</span>
+                  <span className="flex items-center gap-1 text-amber-300">
+                    <Trophy className="w-4 h-4" />
+                    <span>4 Badges</span>
+                  </span>
                 </div>
               </div>
             )}
@@ -213,225 +250,321 @@ export default function ChallengePage() {
         </section>
 
         {/* Content Section */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
           
-          {/* REQUIRE LOGIN GUARD FOR CHALLENGE DATA */}
+          {/* REQUIRE LOGIN GUARD */}
           {!isLoggedIn ? (
             /* Locked Guest Screen */
             <div className="bg-white rounded-3xl p-8 sm:p-12 shadow-xl border border-[#E8E2D8] text-center max-w-2xl mx-auto space-y-6 my-6">
-              <div className="w-20 h-20 bg-amber-50 border-2 border-amber-200 rounded-full flex items-center justify-center mx-auto text-amber-600 shadow-inner">
+              <div className="w-20 h-20 bg-emerald-50 border-2 border-emerald-200 rounded-full flex items-center justify-center mx-auto text-[#4A7C59] shadow-inner">
                 <Lock className="w-10 h-10" />
               </div>
 
               <div className="space-y-2">
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1E293B]">
-                  🔒 หน้านี้สำหรับสมาชิกเท่านั้น
+                  🔒 เข้าสู่ระบบเพื่อดูกิจกรรมของคุณ
                 </h2>
                 <p className="text-sm sm:text-base text-[#64748B] max-w-lg mx-auto leading-relaxed">
-                  กรุณาเข้าสู่ระบบเพื่อเริ่มทำภารกิจชาเลนจ์ยามว่าง สะสมเลเวล Badges เกียรติยศ และติดตามสถิติส่วนบุคคลของคุณ
+                  เข้าสู่ระบบเพื่อจัดการตั๋วกิจกรรมที่เข้าร่วม ดูแชตกลุ่มเพื่อนๆ และสะสมความสำเร็จ Badges เกียรติยศ
                 </p>
               </div>
 
               {/* Benefits Preview List */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left pt-2 pb-2">
                 <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E2DCD2] space-y-1">
+                  <div className="text-xl">🎟️</div>
+                  <h4 className="font-bold text-xs text-[#1E293B]">จัดการตั๋วกิจกรรม</h4>
+                  <p className="text-[11px] text-[#64748B]">ดูวันเวลา สถานที่ และ QR Code ตั๋ว</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E2DCD2] space-y-1">
+                  <div className="text-xl">💬</div>
+                  <h4 className="font-bold text-xs text-[#1E293B]">แชตกลุ่มเพื่อนร่วมงาน</h4>
+                  <p className="text-[11px] text-[#64748B]">นัดแนะจุดนัดพบกับเพื่อนในกลุ่ม</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E2DCD2] space-y-1">
                   <div className="text-xl">🏆</div>
                   <h4 className="font-bold text-xs text-[#1E293B]">สะสม Badges</h4>
-                  <p className="text-[11px] text-[#64748B]">ปลดล็อกตราเกียรติยศมากกว่า 12 รูปแบบ</p>
-                </div>
-                <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E2DCD2] space-y-1">
-                  <div className="text-xl">⚡</div>
-                  <h4 className="font-bold text-xs text-[#1E293B]">ติดตามความคืบหน้า</h4>
-                  <p className="text-[11px] text-[#64748B]">บันทึกสถิติการวิ่ง โยคะ และกิจกรรม</p>
-                </div>
-                <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E2DCD2] space-y-1">
-                  <div className="text-xl">🎁</div>
-                  <h4 className="font-bold text-xs text-[#1E293B]">รับส่วนลดพิเศษ</h4>
-                  <p className="text-[11px] text-[#64748B]">ใช้คะแนนสะสมแลกตั๋วเวิร์กช็อป</p>
+                  <p className="text-[11px] text-[#64748B]">ปลดล็อกตราเกียรติยศภารกิจยามว่าง</p>
                 </div>
               </div>
 
               <div className="pt-2">
                 <button
                   onClick={() => setIsAuthModalOpen(true)}
-                  className="bg-[#F26430] hover:bg-[#D95322] text-white px-8 py-3.5 rounded-full font-extrabold text-sm sm:text-base transition-all shadow-lg shadow-[#F26430]/30 inline-flex items-center gap-2 active:scale-95"
+                  className="bg-[#4A7C59] hover:bg-[#3B6347] text-white px-8 py-3.5 rounded-full font-extrabold text-sm sm:text-base transition-all shadow-lg shadow-[#4A7C59]/30 inline-flex items-center gap-2 active:scale-95 cursor-pointer"
                 >
                   <KeyRound className="w-5 h-5" />
-                  <span>เข้าสู่ระบบเพื่อเริ่มเล่นชาเลนจ์ ➔</span>
+                  <span>เข้าสู่ระบบเพื่อดูกิจกรรมของฉัน ➔</span>
                 </button>
               </div>
             </div>
           ) : (
-            /* Logged-In User Challenge Content */
+            /* Logged-In User Dashboard */
             <>
-              {/* SECTION 1: 🔥 ชาเลนจ์ที่คุณกำลังเข้าร่วม */}
-              <section className="space-y-6">
-                <div className="flex items-center justify-between border-b border-[#E8E2D8] pb-3">
-                  <h2 className="text-xl sm:text-2xl font-extrabold text-[#1E293B] tracking-tight flex items-center gap-2">
-                    <Zap className="w-6 h-6 text-[#F26430]" />
-                    <span>ชาเลนจ์ที่คุณกำลังเข้าร่วม ({myChallenges.length} รายการ)</span>
-                  </h2>
-                  <span className="text-xs text-[#64748B] font-semibold">อัปเดตอัตโนมัติ</span>
-                </div>
+              {/* Top Sub-Tab Switcher */}
+              <div className="flex items-center gap-2 border-b border-[#E8E2D8] pb-4">
+                <button
+                  onClick={() => setActiveSubTab('joined_events')}
+                  className={`px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
+                    activeSubTab === 'joined_events'
+                      ? 'bg-[#4A7C59] text-white shadow-sm'
+                      : 'bg-white text-[#475569] hover:bg-slate-100 border border-[#E8E2D8]'
+                  }`}
+                >
+                  <Ticket className="w-4 h-4" />
+                  <span>กิจกรรมที่เข้าร่วม ({joinedEvents.length})</span>
+                </button>
 
-                <div className="space-y-4">
-                  {myChallenges.map((quest, idx) => (
-                    <div
-                      key={quest.id}
-                      className="bg-white rounded-2xl p-5 border border-[#E8E2D8] shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
-                    >
-                      <div className="flex items-center gap-4 min-w-[280px]">
-                        <span className="text-base font-bold text-[#94A3B8] w-5 text-center shrink-0">
-                          {idx + 1}
-                        </span>
+                <button
+                  onClick={() => setActiveSubTab('quests')}
+                  className={`px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
+                    activeSubTab === 'quests'
+                      ? 'bg-[#1E293B] text-white shadow-sm'
+                      : 'bg-white text-[#475569] hover:bg-slate-100 border border-[#E8E2D8]'
+                  }`}
+                >
+                  <Trophy className="w-4 h-4 text-amber-400" />
+                  <span>ชาเลนจ์ & เหรียญสะสม ({myChallenges.length})</span>
+                </button>
+              </div>
 
-                        <div className="w-11 h-11 bg-[#FAF7F2] border border-[#E2DCD2] rounded-xl flex items-center justify-center shrink-0 shadow-xs">
-                          {getIcon(quest.iconName)}
-                        </div>
-
-                        <div>
-                          <h4 className="font-bold text-base text-[#1E293B]">
-                            {quest.title}
-                          </h4>
-                          <span className="text-xs text-[#F26430] font-semibold">
-                            🏅 {quest.badgeLabel}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex-1 max-w-md w-full space-y-1.5">
-                        <div className="flex items-center justify-between text-xs text-[#64748B] font-bold">
-                          <span>ความคืบหน้า</span>
-                          <span>{quest.progressPercent}%</span>
-                        </div>
-                        <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200">
-                          <div
-                            className="h-full bg-gradient-to-r from-[#4A7C59] to-emerald-400 rounded-full transition-all duration-500"
-                            style={{ width: `${quest.progressPercent}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="shrink-0 flex items-center justify-between md:justify-end gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
-                        <div className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3.5 py-1.5 rounded-full flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                          <span>{quest.completedCountInfo}</span>
-                        </div>
-                      </div>
+              {/* VIEW 1: 🎟️ กิจกรรมที่เข้าร่วม (My Joined Events & Tickets) */}
+              {activeSubTab === 'joined_events' && (
+                <section className="space-y-6 animate-fade-in">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E8E2D8] pb-3">
+                    <div>
+                      <h2 className="text-xl sm:text-2xl font-extrabold text-[#1E293B] flex items-center gap-2">
+                        <CheckCircle2 className="w-6 h-6 text-[#4A7C59]" />
+                        <span>กิจกรรมที่คุณลงทะเบียนไว้แล้ว ({joinedEvents.length} รายการ)</span>
+                      </h2>
+                      <p className="text-xs text-[#64748B] font-medium mt-0.5">
+                        ตรวจสอบกำหนดการ จุดนัดพบ และติดต่อโฮสต์ผู้จัดงาน
+                      </p>
                     </div>
-                  ))}
-                </div>
-              </section>
 
-              {/* SECTION 2: 🎯 ชาเลนจ์แนะนำตามหมวดหมู่ที่คุณสนใจ */}
-              <section className="space-y-6 pt-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E8E2D8] pb-4">
-                  <div>
-                    <h2 className="text-xl sm:text-2xl font-extrabold text-[#1E293B] tracking-tight flex items-center gap-2">
-                      <Target className="w-6 h-6 text-[#4A7C59]" />
-                      <span>ชาเลนจ์แนะนำตามหมวดหมู่ที่คุณสนใจ</span>
-                    </h2>
-                    <p className="text-xs sm:text-sm text-[#64748B] font-medium mt-0.5">
-                      เลือกเข้าร่วมภารกิจใหม่ๆ เพื่อรับแต้มรางวัลและ Badges เกียรติยศ
-                    </p>
+                    <Link
+                      href="/"
+                      className="text-xs font-bold text-[#4A7C59] hover:underline flex items-center gap-1 shrink-0"
+                    >
+                      <span>+ สำรวจกิจกรรมอื่นเพิ่มเติม</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
                   </div>
 
-                  <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-                    {[
-                      { id: 'all', label: '✨ ทั้งหมด' },
-                      { id: 'move', label: '🏃 สายออกกำลัง' },
-                      { id: 'heal', label: '🌱 สายฮีลใจ' },
-                      { id: 'chill', label: '☕ สายชิลล์' },
-                      { id: 'learn', label: '🎨 สายคราฟต์' },
-                    ].map((cat) => (
-                      <button
-                        key={cat.id}
-                        onClick={() => setSelectedCategory(cat.id as any)}
-                        className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-bold transition-all border ${
-                          selectedCategory === cat.id
-                            ? 'bg-[#4A7C59] text-white border-[#4A7C59]'
-                            : 'bg-white text-[#475569] border-[#E2DCD2] hover:border-[#4A7C59]'
-                        }`}
+                  {/* Joined Events List Cards */}
+                  <div className="space-y-4">
+                    {joinedEvents.map((event, idx) => (
+                      <div
+                        key={event.id}
+                        className="bg-white rounded-3xl p-5 sm:p-6 border-2 border-[#4A7C59] ring-2 ring-[#4A7C59]/10 shadow-sm hover:shadow-md transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-6"
                       >
-                        {cat.label}
-                      </button>
+                        {/* Left: Event Thumbnail & Details */}
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
+                          <div className="relative aspect-video sm:aspect-square w-full sm:w-28 rounded-2xl overflow-hidden bg-slate-100 shrink-0">
+                            <img
+                              src={event.image}
+                              alt={event.title}
+                              className="w-full h-full object-cover"
+                            />
+                            <span className="absolute top-2 left-2 bg-[#4A7C59] text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-md">
+                              🟢 ยืนยันแล้ว
+                            </span>
+                          </div>
+
+                          <div className="space-y-2 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] font-extrabold text-[#4A7C59] bg-[#EBF3ED] px-2.5 py-0.5 rounded-full border border-[#4A7C59]/20">
+                                #{event.tag}
+                              </span>
+                              <span className="text-xs text-slate-400 font-mono">
+                                Ticket #CCH-2026{idx + 1}
+                              </span>
+                            </div>
+
+                            <h3 className="font-extrabold text-base sm:text-lg text-[#1E293B] hover:text-[#4A7C59] transition-colors">
+                              {event.title}
+                            </h3>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-[#64748B]">
+                              <div className="flex items-center gap-1.5">
+                                <Calendar className="w-4 h-4 text-[#4A7C59] shrink-0" />
+                                <span>{event.date} • {event.time}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <MapPin className="w-4 h-4 text-[#F26430] shrink-0" />
+                                <span className="truncate">{event.location}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right: Actions (View Ticket, Group Chat) */}
+                        <div className="flex sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-2 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100">
+                          <button
+                            onClick={() => showToast(`เปิดแชตกลุ่ม "${event.title}" สำเร็จ 💬`)}
+                            className="flex-1 sm:flex-none bg-[#EBF3ED] hover:bg-[#D6E8DC] text-[#4A7C59] px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                            <span>แชตกลุ่มกิจกรรม</span>
+                          </button>
+
+                          <button
+                            onClick={() => showToast(`ตั๋วกิจกรรม #CCH-2026${idx + 1} พร้อมใช้งาน ✔️`)}
+                            className="flex-1 sm:flex-none bg-[#1E293B] hover:bg-[#0F172A] text-white px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <Ticket className="w-4 h-4 text-emerald-400" />
+                            <span>ดู E-Ticket QR</span>
+                          </button>
+                        </div>
+                      </div>
                     ))}
                   </div>
-                </div>
+                </section>
+              )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {filteredRecommended.map((rec) => (
-                    <div
-                      key={rec.id}
-                      className="bg-white rounded-3xl p-6 border border-[#E8E2D8] shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4"
-                    >
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="w-12 h-12 bg-[#FAF7F2] border border-[#E2DCD2] rounded-2xl flex items-center justify-center shadow-xs">
-                            {getIcon(rec.iconName)}
-                          </div>
-                          <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
-                            +{rec.rewardPoints} Points
-                          </span>
-                        </div>
+              {/* VIEW 2: 🏆 ชาเลนจ์ & เหรียญสะสม (Gamification Quests & Badges) */}
+              {activeSubTab === 'quests' && (
+                <div className="space-y-12 animate-fade-in">
+                  
+                  {/* Active Quests */}
+                  <section className="space-y-6">
+                    <div className="flex items-center justify-between border-b border-[#E8E2D8] pb-3">
+                      <h2 className="text-xl sm:text-2xl font-extrabold text-[#1E293B] tracking-tight flex items-center gap-2">
+                        <Zap className="w-6 h-6 text-[#F26430]" />
+                        <span>ชาเลนจ์ที่คุณกำลังทำอยู่ ({myChallenges.length} รายการ)</span>
+                      </h2>
+                      <span className="text-xs text-[#64748B] font-semibold">อัปเดตอัตโนมัติ</span>
+                    </div>
 
-                        <div>
-                          <h4 className="font-bold text-base text-[#1E293B] leading-snug">
-                            {rec.title}
-                          </h4>
-                          <p className="text-xs text-[#64748B] mt-1 line-clamp-2">
-                            {rec.targetGoal}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="pt-3 border-t border-slate-100 space-y-3">
-                        <div className="flex items-center justify-between text-xs text-[#64748B] font-medium">
-                          <span>รางวัล: 🏅 {rec.badgeLabel}</span>
-                          <span>{rec.participantsCount} คนทำอยู่</span>
-                        </div>
-
-                        <button
-                          onClick={() => handleJoinRecommended(rec)}
-                          className="w-full bg-[#4A7C59] hover:bg-[#3B6347] text-white py-2.5 rounded-full font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"
+                    <div className="space-y-4">
+                      {myChallenges.map((quest, idx) => (
+                        <div
+                          key={quest.id}
+                          className="bg-white rounded-2xl p-5 border border-[#E8E2D8] shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
                         >
-                          <PlusCircle className="w-4 h-4" />
-                          <span>เข้าร่วมชาเลนจ์นี้</span>
-                        </button>
+                          <div className="flex items-center gap-4 min-w-[280px]">
+                            <span className="text-base font-bold text-[#94A3B8] w-5 text-center shrink-0">
+                              {idx + 1}
+                            </span>
+
+                            <div className="w-11 h-11 bg-[#FAF7F2] border border-[#E2DCD2] rounded-xl flex items-center justify-center shrink-0 shadow-xs">
+                              {getIcon(quest.iconName)}
+                            </div>
+
+                            <div>
+                              <h4 className="font-bold text-base text-[#1E293B]">
+                                {quest.title}
+                              </h4>
+                              <span className="text-xs text-[#F26430] font-semibold">
+                                🏅 {quest.badgeLabel}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Progress bar */}
+                          <div className="flex-1 max-w-md space-y-1.5">
+                            <div className="flex justify-between text-xs text-[#64748B]">
+                              <span>ความคืบหน้า</span>
+                              <span className="font-bold text-[#1E293B]">
+                                {quest.completedCountInfo} ({quest.progressPercent}%)
+                              </span>
+                            </div>
+                            <div className="w-full bg-[#E8E2D8] h-2.5 rounded-full overflow-hidden">
+                              <div
+                                className="bg-[#4A7C59] h-full rounded-full transition-all duration-500"
+                                style={{ width: `${quest.progressPercent}%` }}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-end">
+                            <span className="bg-[#EBF3ED] text-[#4A7C59] px-3 py-1 rounded-full text-xs font-bold border border-[#4A7C59]/20">
+                              กำลังทำอยู่ 🏃
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+
+                  {/* Recommended Quests */}
+                  <section className="space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E8E2D8] pb-3">
+                      <div>
+                        <h2 className="text-xl sm:text-2xl font-extrabold text-[#1E293B] flex items-center gap-2">
+                          <Sparkles className="w-6 h-6 text-amber-500" />
+                          <span>ชาเลนจ์แนะนำประจำสัปดาห์</span>
+                        </h2>
+                        <p className="text-xs sm:text-sm text-[#64748B] mt-0.5">
+                          เลือกทำภารกิจเพื่อเริ่มสะสมแต้มและเหรียญรางวัลพิเศษ
+                        </p>
+                      </div>
+
+                      {/* Category Filter Pills */}
+                      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
+                        {[
+                          { id: 'all', label: 'ทั้งหมด' },
+                          { id: 'move', label: '🏃 ขยับกาย' },
+                          { id: 'heal', label: '🌿 ฮีลใจ' },
+                          { id: 'chill', label: '☕ ชิลล์' },
+                          { id: 'learn', label: '🎨 สร้างสรรค์' },
+                        ].map((cat) => (
+                          <button
+                            key={cat.id}
+                            onClick={() => setSelectedCategory(cat.id as any)}
+                            className={`px-3 py-1 rounded-full text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                              selectedCategory === cat.id
+                                ? 'bg-[#1E293B] text-white shadow-xs'
+                                : 'bg-white text-[#475569] border border-[#E8E2D8] hover:bg-slate-100'
+                            }`}
+                          >
+                            {cat.label}
+                          </button>
+                        ))}
                       </div>
                     </div>
-                  ))}
-                </div>
-              </section>
 
-              {/* SECTION 3: 🏆 ตู้สะสม Badges & เกียรติยศ */}
-              <section className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E8E2D8] shadow-sm space-y-6">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <h3 className="text-lg font-bold text-[#1E293B] flex items-center gap-2">
-                    <Award className="w-5 h-5 text-amber-500" />
-                    <span>คลัง Badges ที่คุณปลดล็อกแล้ว</span>
-                  </h3>
-                  <span className="text-xs text-[#4A7C59] font-bold">4 / 12 Badges</span>
-                </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {filteredRecommended.map((rec) => (
+                        <div
+                          key={rec.id}
+                          className="bg-white rounded-2xl p-5 border border-[#E8E2D8] shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-start gap-3">
+                              <div className="w-10 h-10 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-center shrink-0">
+                                {getIcon(rec.iconName)}
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-base text-[#1E293B]">{rec.title}</h4>
+                                <p className="text-xs text-[#64748B] mt-0.5">{rec.targetGoal}</p>
+                              </div>
+                            </div>
+                            <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full shrink-0">
+                              +{rec.rewardPoints} Pts
+                            </span>
+                          </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {[
-                    { title: 'HYROX Warrior', desc: 'ผ่านกิจกรรม Hyrox 4 สถานี', icon: '🔥', unlocked: true },
-                    { title: 'Cafe Explorer', desc: 'เช็กอินคาเฟ่ครบ 5 แห่ง', icon: '☕', unlocked: true },
-                    { title: 'Active Walker', desc: 'เดินครบ 30 วัน', icon: '👟', unlocked: true },
-                    { title: 'Digital Detox', desc: 'พักหน้าจอครบ 3 ชม.', icon: '🧘', unlocked: true },
-                  ].map((badge, idx) => (
-                    <div key={idx} className="bg-[#FAF7F2] p-4 rounded-2xl border border-[#E2DCD2] text-center space-y-1.5">
-                      <div className="text-3xl">{badge.icon}</div>
-                      <h4 className="font-bold text-xs sm:text-sm text-[#1E293B]">{badge.title}</h4>
-                      <p className="text-[10px] text-[#64748B]">{badge.desc}</p>
-                      <span className="inline-block text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                        ✓ Unlocked
-                      </span>
+                          <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                            <span className="text-xs text-slate-500 font-medium">
+                              👥 มีผู้เข้าร่วมแล้ว {rec.participantsCount} คน
+                            </span>
+                            <button
+                              onClick={() => handleJoinRecommended(rec)}
+                              className="bg-[#4A7C59] hover:bg-[#3B6347] text-white px-4 py-1.5 rounded-full text-xs font-bold transition-all shadow-xs flex items-center gap-1 active:scale-95 cursor-pointer"
+                            >
+                              <PlusCircle className="w-3.5 h-3.5" />
+                              <span>รับชาเลนจ์</span>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </section>
+
                 </div>
-              </section>
+              )}
+
             </>
           )}
 
@@ -439,16 +572,13 @@ export default function ChallengePage() {
 
       </main>
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-[#E8E2D8] py-8 text-center text-xs text-[#64748B] space-y-2 mt-12 mb-16 sm:mb-0">
-        <div className="flex items-center justify-center gap-2 text-sm font-bold text-[#1E293B]">
-          <Sprout className="w-5 h-5 text-[#4A7C59]" />
-          <span>Chill & Connect Hub</span>
-        </div>
-        <p>© 2026 Chill & Connect Hub - ฮีลใจ & เชื่อมต่อ ฮับ. All rights reserved.</p>
-      </footer>
+      {/* Mobile Nav */}
+      <MobileNav
+        activeTab={activeNavTab}
+        setActiveTab={setActiveNavTab}
+      />
 
-      {/* Auth Login / Signup Popup Modal */}
+      {/* Auth Modal */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
@@ -458,7 +588,7 @@ export default function ChallengePage() {
         }}
       />
 
-      {/* Logout Confirmation Popup Modal */}
+      {/* Logout Confirmation Modal */}
       <LogoutConfirmModal
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
@@ -466,13 +596,6 @@ export default function ChallengePage() {
           setIsLoggedIn(false);
           showToast('ออกจากระบบเรียบร้อยแล้ว (Guest View)');
         }}
-      />
-
-      {/* Mobile Navigation */}
-      <MobileNav
-        activeTab={activeNavTab}
-        setActiveTab={setActiveNavTab}
-        favoritesCount={0}
       />
 
       {/* Toast Notification */}
