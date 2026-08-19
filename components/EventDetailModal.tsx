@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { EventItem } from '@/data/mockData';
-import { X, Calendar, MapPin, Users, Heart, Share2, CheckCircle2, ShieldCheck, Clock, ExternalLink, Ticket, AlertCircle } from 'lucide-react';
+import { X, Calendar, MapPin, Users, Heart, Share2, CheckCircle2, ShieldCheck, Clock, ExternalLink, Ticket, AlertCircle, Bell } from 'lucide-react';
 
 interface EventDetailModalProps {
   event: EventItem | null;
@@ -29,14 +29,13 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   onRequireLogin,
 }) => {
   const [copied, setCopied] = useState(false);
+  const [isFollowingHost, setIsFollowingHost] = useState(false);
+  const [showConfirmJoinModal, setShowConfirmJoinModal] = useState(false);
+  const [showConfirmCancelModal, setShowConfirmCancelModal] = useState(false);
   const [showSubForm, setShowSubForm] = useState(false);
   const [subTitleInput, setSubTitleInput] = useState('');
   const [expandedSubId, setExpandedSubId] = useState<string | null>(null);
   const [joinedSubIds, setJoinedSubIds] = useState<string[]>([]);
-  
-  // Confirmation Modals State
-  const [showConfirmJoinModal, setShowConfirmJoinModal] = useState(false);
-  const [showConfirmCancelModal, setShowConfirmCancelModal] = useState(false);
 
   const [subActivities, setSubActivities] = useState([
     {
@@ -105,11 +104,11 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-3 sm:pt-6 px-2.5 sm:px-4 pb-24 sm:pb-6 bg-black/60 backdrop-blur-sm overflow-y-auto animate-fade-in">
       
-      {/* Modal Card (Responsive Bottom-Sheet on Mobile, Centered Modal on Desktop) */}
+      {/* Modal Card (Floats comfortably above mobile navigation) */}
       <div 
-        className="bg-white rounded-t-3xl sm:rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl border border-[#E8E2D8] flex flex-col max-h-[88dvh] sm:max-h-[90vh] relative animate-scale-up"
+        className="bg-white rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl border border-[#E8E2D8] flex flex-col max-h-[82vh] sm:max-h-[88vh] relative animate-scale-up my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         
@@ -133,9 +132,13 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
           {/* Event Type & Tag Pill */}
           <div className="absolute bottom-3 left-3 flex items-center gap-2">
             <div className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm backdrop-blur-md ${
-              isPublicVenue ? 'bg-[#F26430] text-white' : 'bg-white/90 text-[#1E293B]'
+              event.status === 'ended' 
+                ? 'bg-slate-800/90 text-slate-200'
+                : isPublicVenue 
+                ? 'bg-[#F26430] text-white' 
+                : 'bg-white/90 text-[#1E293B]'
             }`}>
-              {isPublicVenue ? '📍 งานอีเวนต์สาธารณะ / ศูนย์จัดแสดง' : event.tag}
+              {event.status === 'ended' ? '🏁 สิ้นสุดแล้ว' : isPublicVenue ? '📍 งานอีเวนต์สาธารณะ / ศูนย์จัดแสดง' : event.tag}
             </div>
           </div>
 
@@ -164,6 +167,19 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
         {/* Content Body (Scrollable) */}
         <div className="p-3.5 sm:p-5 space-y-3 overflow-y-auto">
           
+          {/* Ended Status Banner */}
+          {event.status === 'ended' && (
+            <div className="bg-slate-100 border border-slate-200 p-2.5 rounded-2xl flex items-center justify-between gap-2 text-xs text-slate-700 font-bold animate-fade-in">
+              <span className="flex items-center gap-1.5">
+                <span className="text-base">🏁</span>
+                <span>กิจกรรมนี้จัดเสร็จสิ้นไปแล้ว (เมื่อวันที่ {event.date})</span>
+              </span>
+              <span className="text-[10px] text-slate-500 bg-slate-200 px-2 py-0.5 rounded-md font-semibold">
+                ปิดรับสมัคร
+              </span>
+            </div>
+          )}
+
           {/* Joined Status Badge (If already registered) */}
           {isJoined && (
             <div className="bg-emerald-50 border border-emerald-200 p-2.5 rounded-2xl flex items-center justify-between gap-2 text-xs text-emerald-800 font-bold animate-fade-in">
@@ -184,11 +200,17 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
           {/* Header Title */}
           <div>
             <span className={`text-[11px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full border inline-block mb-1 ${
-              isPublicVenue
+              event.status === 'ended'
+                ? 'bg-slate-100 text-slate-600 border-slate-300'
+                : isPublicVenue
                 ? 'bg-sky-50 text-sky-700 border-sky-200'
                 : 'bg-emerald-50 text-emerald-700 border-emerald-200'
             }`}>
-              {isPublicVenue ? '🏛️ อีเวนต์สาธารณะ (Public Event)' : '🏡 กิจกรรมชุมชน (Community Event)'}
+              {event.status === 'ended'
+                ? '🏁 กิจกรรมที่ผ่านมา (Past Event)'
+                : isPublicVenue
+                ? '🏛️ อีเวนต์สาธารณะ (Public Event)'
+                : '🏡 กิจกรรมชุมชน (Community Event)'}
             </span>
             <h2 className="text-base sm:text-lg font-extrabold text-[#1E293B] mt-0.5 leading-snug">
               {event.title}
@@ -463,10 +485,34 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
         </div>
 
-        {/* Modal Bottom Action Footer (Single Calendar Icon & Clean Text) */}
+        {/* Modal Bottom Action Footer */}
         <div className="p-3.5 sm:p-4 bg-slate-50 border-t border-[#E8E2D8] flex items-center justify-between sm:justify-end gap-2.5 shrink-0">
           
-          {isJoined ? (
+          {event.status === 'ended' ? (
+            /* When Event Has Ended: Disabled State + Follow Host CTA */
+            <div className="flex items-center justify-between sm:justify-end gap-2 w-full">
+              <button
+                type="button"
+                disabled
+                className="px-4 py-2 rounded-full font-bold text-xs sm:text-sm bg-slate-200 text-slate-500 cursor-not-allowed flex items-center gap-1.5 shrink-0"
+              >
+                <span>🏁 สิ้นสุดแล้ว</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsFollowingHost(!isFollowingHost)}
+                className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all shadow-md flex items-center gap-1.5 active:scale-95 cursor-pointer ${
+                  isFollowingHost
+                    ? 'bg-emerald-600 text-white shadow-emerald-600/20'
+                    : 'bg-[#4A7C59] hover:bg-[#3B6447] text-white shadow-[#4A7C59]/20'
+                }`}
+              >
+                <Bell className="w-3.5 h-3.5" />
+                <span>{isFollowingHost ? '✓ ติดตามแล้ว (แจ้งเตือนรอบหน้า)' : '🔔 ติดตามโฮสต์รอบหน้า'}</span>
+              </button>
+            </div>
+          ) : isJoined ? (
             /* When Already Joined: Provide direct Ticket Hub button + Cancel option */
             <div className="flex items-center justify-between sm:justify-end gap-2 w-full">
               <button

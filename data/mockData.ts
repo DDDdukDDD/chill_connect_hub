@@ -38,6 +38,7 @@ export interface EventItem {
   venueTag?: 'qsncc' | 'bitec' | 'impact' | 'marathon' | 'park';
   externalUrl?: string;
   buddyCount?: number;
+  status?: 'active' | 'ended';
 }
 
 export interface MoodCategory {
@@ -481,6 +482,7 @@ export const MOCK_EVENTS: EventItem[] = [
     badgeText: '🎞️ สายกล้องฟิล์ม',
     createdAtTimestamp: 1722850000000,
     eventType: 'community',
+    status: 'ended',
   },
   {
     id: '12',
@@ -565,6 +567,7 @@ export const MOCK_EVENTS: EventItem[] = [
     badgeText: '🥖 ขนมปังโฮมเมด',
     createdAtTimestamp: 1722890000000,
     eventType: 'community',
+    status: 'ended',
   },
   {
     id: '16',

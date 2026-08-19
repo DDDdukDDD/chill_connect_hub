@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { EventItem } from '@/data/mockData';
 import { Heart, Calendar, MapPin, Users, Star, CheckCircle2, Sparkles, Building2, Tag } from 'lucide-react';
@@ -155,18 +157,30 @@ export const EventGrid: React.FC<EventGridProps> = ({
                       <div className="flex items-center justify-between text-[11px] font-medium text-[#64748B]">
                         <span className="flex items-center gap-1">
                           <Users className="w-3 h-3 text-[#4A7C59]" />
-                          <span>ที่นั่ง {event.participantsCount}/{event.maxParticipants}</span>
+                          <span>
+                            {event.status === 'ended'
+                              ? `ผู้เข้าร่วมทั้งหมด ${event.participantsCount} คน`
+                              : `ที่นั่ง ${event.participantsCount}/${event.maxParticipants}`}
+                          </span>
                         </span>
-                        {isAlmostFull && (
+                        {event.status === 'ended' ? (
+                          <span className="text-slate-500 font-semibold text-[10px]">
+                            จัดเสร็จสิ้นแล้ว
+                          </span>
+                        ) : isAlmostFull ? (
                           <span className="text-amber-600 font-semibold text-[10px] animate-pulse">
                             ใกล้เต็มแล้ว!
                           </span>
-                        )}
+                        ) : null}
                       </div>
                       <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
                         <div
                           className={`h-full rounded-full transition-all duration-500 ${
-                            isAlmostFull ? 'bg-gradient-to-r from-amber-400 to-[#F26430]' : 'bg-[#4A7C59]'
+                            event.status === 'ended'
+                              ? 'bg-slate-400'
+                              : isAlmostFull
+                              ? 'bg-gradient-to-r from-amber-400 to-[#F26430]'
+                              : 'bg-[#4A7C59]'
                           }`}
                           style={{ width: `${Math.min(fillRatio * 100, 100)}%` }}
                         />
@@ -176,14 +190,18 @@ export const EventGrid: React.FC<EventGridProps> = ({
 
                   {/* Bottom Action Area: Event Type (Left) + CTA Button (Right) */}
                   <div className="pt-2 flex items-center justify-between gap-2 border-t border-slate-100">
-                    {/* Event Type Badge with Floating Hover Tooltip */}
+                    {/* Event Type Badge with Floating Hover Tooltip (Always Community / Public Venue) */}
                     <div className="relative group/tooltip">
                       <span className={`text-[10px] sm:text-[11px] font-extrabold px-2.5 py-1 rounded-full border shrink-0 flex items-center gap-1 cursor-help transition-all ${
                         event.eventType === 'public_venue'
                           ? 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100'
                           : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
                       }`}>
-                        <span>{event.eventType === 'public_venue' ? '🏛️ อีเวนต์สาธารณะ' : '🏡 กิจกรรมชุมชน'}</span>
+                        <span>
+                          {event.eventType === 'public_venue'
+                            ? '🏛️ อีเวนต์สาธารณะ'
+                            : '🏡 กิจกรรมชุมชน'}
+                        </span>
                       </span>
 
                       {/* Tooltip Popup */}
@@ -204,22 +222,33 @@ export const EventGrid: React.FC<EventGridProps> = ({
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => onSelectEvent(event)}
-                      className={`px-4 py-1.5 rounded-full font-bold text-xs transition-all shadow-xs hover:shadow active:scale-95 flex items-center justify-center gap-1 cursor-pointer shrink-0 ${
-                        isJoined
-                          ? 'bg-[#4A7C59] text-white shadow-[#4A7C59]/20'
-                          : 'bg-[#F26430] hover:bg-[#D95322] text-white shadow-[#F26430]/20'
-                      }`}
-                    >
-                      <span>
-                        {isJoined
-                          ? '✔️ เข้าร่วมแล้ว'
-                          : event.eventType === 'public_venue'
-                          ? 'ดูรายละเอียด'
-                          : 'เข้าร่วม'}
+                    {/* Right Action Button or Ended Status Badge */}
+                    {event.status === 'ended' ? (
+                      <span 
+                        onClick={() => onSelectEvent(event)}
+                        className="px-3 sm:px-3.5 py-1.5 rounded-full font-bold text-[11px] sm:text-xs bg-slate-100 hover:bg-slate-200 text-slate-500 border border-slate-200/80 flex items-center justify-center gap-1 shrink-0 cursor-pointer transition-colors"
+                        title="คลิกเพื่อดูรายละเอียดและรีวิวกิจกรรม"
+                      >
+                        <span>🏁 สิ้นสุดแล้ว</span>
                       </span>
-                    </button>
+                    ) : (
+                      <button
+                        onClick={() => onSelectEvent(event)}
+                        className={`px-4 py-1.5 rounded-full font-bold text-xs transition-all shadow-xs hover:shadow active:scale-95 flex items-center justify-center gap-1 cursor-pointer shrink-0 ${
+                          isJoined
+                            ? 'bg-[#4A7C59] text-white shadow-[#4A7C59]/20'
+                            : 'bg-[#F26430] hover:bg-[#D95322] text-white shadow-[#F26430]/20'
+                        }`}
+                      >
+                        <span>
+                          {isJoined
+                            ? '✔️ เข้าร่วมแล้ว'
+                            : event.eventType === 'public_venue'
+                            ? 'ดูรายละเอียด'
+                            : 'เข้าร่วม'}
+                        </span>
+                      </button>
+                    )}
                   </div>
                 </div>
               </motion.div>

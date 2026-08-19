@@ -141,7 +141,7 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
                   </div>
                 </div>
 
-                {/* Footer Action: Event Type (Left) + View Detail (Right) */}
+                {/* Footer Action: Event Type (Left) + View Detail / Ended (Right) */}
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
                   <div className="relative group/tooltip">
                     <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border shrink-0 cursor-help transition-all ${
@@ -168,10 +168,17 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
                       <div className="absolute top-full left-4 -mt-1 border-4 border-transparent border-t-slate-900/95" />
                     </div>
                   </div>
-                  <span className="text-[#4A7C59] font-bold text-xs group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
-                    <span>ดูรายละเอียด</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </span>
+
+                  {event.status === 'ended' ? (
+                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
+                      🏁 สิ้นสุดแล้ว
+                    </span>
+                  ) : (
+                    <span className="text-[#4A7C59] font-bold text-xs group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
+                      <span>ดูรายละเอียด</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

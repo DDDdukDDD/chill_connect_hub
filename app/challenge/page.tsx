@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
+import { CreateEventModal } from '@/components/CreateEventModal';
 import { MOCK_CHALLENGES, MOCK_EVENTS, ChallengeQuest, EventItem } from '@/data/mockData';
 import ReviewModal, { ReviewSubmitData } from '@/components/ReviewModal';
 import {
@@ -106,6 +107,7 @@ export default function ChallengePage() {
 
   // Review Modal State
   const [isReviewModalOpen, setIsReviewModalOpen] = useState<boolean>(false);
+  const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState<boolean>(false);
   const [reviewTargetEvent, setReviewTargetEvent] = useState<EventItem | null>(null);
   const [reviewedEventIds, setReviewedEventIds] = useState<string[]>(['1']);
 
@@ -238,6 +240,7 @@ export default function ChallengePage() {
         }}
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}
+        onOpenCreateEvent={() => setIsCreateEventModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -739,6 +742,22 @@ export default function ChallengePage() {
           onSubmitSuccess={handleReviewSubmitSuccess}
         />
       )}
+
+      {/* Create Event Modal */}
+      <CreateEventModal
+        isOpen={isCreateEventModalOpen}
+        onClose={() => setIsCreateEventModalOpen(false)}
+        onCreateSuccess={(newEvent: EventItem) => {
+          setJoinedEvents((prev) => [newEvent, ...prev]);
+          showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จเรียบร้อย! 🎉`);
+        }}
+      />
+
+      {/* Mobile Bottom Navigation Bar */}
+      <MobileNav
+        activeTab={activeNavTab}
+        setActiveTab={setActiveNavTab}
+      />
 
       {/* Toast Notification */}
       {toastMessage && (

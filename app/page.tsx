@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 import { HeroSection } from '@/components/HeroSection';
 import { MoodFilterChips, SUB_CATEGORIES_MAP } from '@/components/MoodFilterChips';
+import { SurpriseModal } from '@/components/SurpriseModal';
 import { EventGrid } from '@/components/EventGrid';
 import { EventDetailModal } from '@/components/EventDetailModal';
 import { MobileNav } from '@/components/MobileNav';
@@ -39,6 +40,7 @@ import {
   Sun,
   Filter,
   SlidersHorizontal,
+  Dices,
   X
 } from 'lucide-react';
 
@@ -60,6 +62,7 @@ export default function Home() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState<boolean>(false);
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState<boolean>(false);
+  const [isSurpriseModalOpen, setIsSurpriseModalOpen] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<'newest' | 'popular' | 'favorites'>('newest');
   const [searchQuery, setSearchQuery] = useState('');
   const [eventsList, setEventsList] = useState<EventItem[]>(MOCK_EVENTS);
@@ -356,7 +359,7 @@ export default function Home() {
       {/* Main Content Area */}
       <main className="flex-1 space-y-6">
         
-        {/* 2. Hero Section (with h1 tag for SEO) */}
+        {/* 2. Hero Section (with h1 tag for SEO & Clean Instant Surprise Me) */}
         <HeroSection
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -364,11 +367,12 @@ export default function Home() {
             const el = document.getElementById('catalog-section');
             if (el) el.scrollIntoView({ behavior: 'smooth' });
           }}
+          onOpenSurpriseModal={() => setIsSurpriseModalOpen(true)}
         />
 
         <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8 py-2 relative z-10">
           
-          {/* 4. Auto-Sliding Trending Events Carousel (Idea 2) */}
+          {/* 3. Auto-Sliding Trending Events Carousel */}
           <TrendingCarousel
             events={eventsList}
             onSelectEvent={(event) => setSelectedEvent(event)}
@@ -611,6 +615,14 @@ export default function Home() {
           setIsLoggedIn(false);
           showToast('ออกจากระบบเรียบร้อยแล้ว (Guest View)');
         }}
+      />
+
+      {/* Surprise Me! Interactive Random Event Modal */}
+      <SurpriseModal
+        isOpen={isSurpriseModalOpen}
+        onClose={() => setIsSurpriseModalOpen(false)}
+        events={eventsList}
+        onSelectEvent={(event) => setSelectedEvent(event)}
       />
 
       {/* Mobile Nav */}

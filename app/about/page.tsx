@@ -3,7 +3,10 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
+import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
+import { CreateEventModal } from '@/components/CreateEventModal';
+import { EventItem } from '@/data/mockData';
 import {
   Sprout,
   Heart,
@@ -25,6 +28,7 @@ export default function AboutPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   React.useEffect(() => {
@@ -61,6 +65,7 @@ export default function AboutPage() {
         setIsLoggedIn={handleSetIsLoggedIn}
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}
+        onOpenCreateEvent={() => setIsCreateEventModalOpen(true)}
       />
 
       {/* Main Content */}
@@ -263,6 +268,21 @@ export default function AboutPage() {
           setIsLoggedIn(false);
           showToast('ออกจากระบบเรียบร้อยแล้ว (Guest View)');
         }}
+      />
+
+      {/* Create Event Modal */}
+      <CreateEventModal
+        isOpen={isCreateEventModalOpen}
+        onClose={() => setIsCreateEventModalOpen(false)}
+        onCreateSuccess={(newEvent: EventItem) => {
+          showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จเรียบร้อย! 🎉`);
+        }}
+      />
+
+      {/* Mobile Nav Bar */}
+      <MobileNav
+        activeTab={activeNavTab}
+        setActiveTab={setActiveNavTab}
       />
 
       {/* Toast Notification */}
