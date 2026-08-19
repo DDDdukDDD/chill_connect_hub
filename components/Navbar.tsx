@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Sprout, 
@@ -15,7 +15,10 @@ import {
   Ticket, 
   Info,
   ChevronRight,
-  ShieldCheck
+  ChevronDown,
+  ShieldCheck,
+  Sparkles,
+  Heart
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -26,6 +29,7 @@ interface NavbarProps {
   onOpenLogin?: () => void;
   onOpenLogout?: () => void;
   onOpenCreateEvent?: () => void;
+  userName?: string;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -36,8 +40,22 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenLogin,
   onOpenLogout,
   onOpenCreateEvent,
+  userName = 'Jirathitigorn Maneekord',
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close profile dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsProfileDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const navItems = [
     { id: 'explore', label: 'ค้นหากิจกรรม', href: '/', icon: Compass },
@@ -99,38 +117,118 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Right: Actions */}
           <div className="flex items-center gap-2 sm:gap-3">
             
-            {/* Desktop Create Event Host CTA */}
-            {onOpenCreateEvent && (
-              <button
-                onClick={onOpenCreateEvent}
-                className="hidden lg:flex bg-[#4A7C59] hover:bg-[#3B6347] text-white px-4 py-2 rounded-full text-xs font-bold transition-all shadow-sm items-center gap-1.5 active:scale-95 cursor-pointer"
-                title="คลิกเพื่อสร้างกิจกรรม / เปิดวงฮีลใจ"
-              >
-                <PlusCircle className="w-4 h-4" />
-                <span>จัดกิจกรรม</span>
-              </button>
-            )}
-
-            {/* Desktop User Avatar & Auth */}
+            {/* Desktop User Avatar & Profile Dropdown (Facebook/Google Style) */}
             {isLoggedIn ? (
-              <div className="hidden lg:flex items-center gap-2">
-                <div className="w-9 h-9 rounded-full bg-[#EBF3ED] border-2 border-[#4A7C59] overflow-hidden flex items-center justify-center shadow-sm">
+              <div className="relative" ref={dropdownRef}>
+                {/* Profile Trigger Button (Clean Avatar Only - No Text) */}
+                <button
+                  type="button"
+                  onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                  className={`relative w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden border-2 transition-all cursor-pointer shadow-xs active:scale-95 flex items-center justify-center shrink-0 ${
+                    isProfileDropdownOpen
+                      ? 'border-[#4A7C59] ring-2 ring-[#4A7C59]/20 scale-105'
+                      : 'border-[#4A7C59]/80 hover:border-[#4A7C59] hover:ring-2 hover:ring-[#4A7C59]/10'
+                  }`}
+                  title="คลิกเพื่อเปิดเมนูโปรไฟล์"
+                >
                   <img 
                     src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" 
-                    alt="User Avatar"
+                    alt={userName}
                     className="w-full h-full object-cover"
                   />
-                </div>
-
-                <button 
-                  onClick={() => onOpenLogout ? onOpenLogout() : setIsLoggedIn(false)}
-                  className="rounded-full bg-[#1E293B] hover:bg-[#0F172A] text-white px-4 py-2 text-xs font-semibold transition-all shadow-sm flex items-center gap-1.5 active:scale-95 cursor-pointer"
-                  title="คลิกเพื่อออกจากระบบ"
-                >
-                  <User className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>คุณส้ม</span>
-                  <LogOut className="w-3 h-3 text-slate-400 ml-0.5" />
+                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-1.5 ring-white" />
                 </button>
+
+                {/* Profile Dropdown Menu (Floating Card) */}
+                {isProfileDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-[#E8E2D8] py-2.5 z-50 animate-scale-up origin-top-right">
+                    
+                    {/* User Profile Header Card */}
+                    <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-3 bg-slate-50/70 mx-2 rounded-xl">
+                      <div className="relative w-11 h-11 rounded-full overflow-hidden bg-[#EBF3ED] border-2 border-[#4A7C59] shrink-0 shadow-xs">
+                        <img 
+                          src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" 
+                          alt={userName}
+                          className="w-full h-full object-cover"
+                        />
+                        <span className="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-extrabold text-sm text-[#1E293B] truncate" title={userName}>
+                          {userName}
+                        </h4>
+                        <div className="flex items-center gap-1 text-[11px] text-[#4A7C59] font-bold">
+                          <Sparkles className="w-3 h-3" />
+                          <span>สมาชิก Chill & Connect</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Quick Menu Links */}
+                    <div className="py-1.5 px-2 space-y-0.5 text-xs font-semibold text-[#334155]">
+                      <Link
+                        href="/challenge"
+                        onClick={() => {
+                          setActiveTab('challenge');
+                          setIsProfileDropdownOpen(false);
+                        }}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 hover:text-[#1E293B] transition-colors"
+                      >
+                        <Ticket className="w-4 h-4 text-[#4A7C59]" />
+                        <span>กิจกรรมและตั๋วของฉัน</span>
+                      </Link>
+
+                      <Link
+                        href="/moments?tab=mine"
+                        onClick={() => {
+                          setActiveTab('moments');
+                          setIsProfileDropdownOpen(false);
+                        }}
+                        className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-100 hover:text-[#1E293B] transition-colors"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Camera className="w-4 h-4 text-[#F26430]" />
+                          <span>โมเมนต์ของฉัน (ความทรงจำ)</span>
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">ส่วนตัว</span>
+                      </Link>
+
+                      {onOpenCreateEvent && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileDropdownOpen(false);
+                            onOpenCreateEvent();
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-emerald-50 hover:text-[#4A7C59] transition-colors text-left"
+                        >
+                          <PlusCircle className="w-4 h-4 text-[#4A7C59]" />
+                          <span>สร้างกิจกรรม / เปิดตี้ใหม่</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Divider & Logout Button */}
+                    <div className="pt-1.5 mt-1 border-t border-slate-100 px-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProfileDropdownOpen(false);
+                          if (onOpenLogout) {
+                            onOpenLogout();
+                          } else {
+                            setIsLoggedIn(false);
+                          }
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-rose-600 hover:bg-rose-50 font-bold text-xs transition-colors cursor-pointer"
+                      >
+                        <LogOut className="w-4 h-4 text-rose-500" />
+                        <span>ออกจากระบบ (Log out)</span>
+                      </button>
+                    </div>
+
+                  </div>
+                )}
               </div>
             ) : (
               <button 
@@ -141,17 +239,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <LogIn className="w-4 h-4 text-emerald-400" />
                 <span>เข้าสู่ระบบ</span>
               </button>
-            )}
-
-            {/* Mobile / iPad: User Avatar Quick Preview */}
-            {isLoggedIn && (
-              <div className="lg:hidden w-8 h-8 rounded-full bg-[#EBF3ED] border-2 border-[#4A7C59] overflow-hidden flex items-center justify-center shadow-2xs shrink-0">
-                <img 
-                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" 
-                  alt="User Avatar"
-                  className="w-full h-full object-cover"
-                />
-              </div>
             )}
 
             {/* Mobile / iPad: Hamburger Menu Button (ปุ่ม 3 ขีด ☰) */}
@@ -206,16 +293,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <div className="w-11 h-11 rounded-full bg-[#EBF3ED] border-2 border-[#4A7C59] overflow-hidden shrink-0">
                     <img 
                       src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" 
-                      alt="User Avatar"
+                      alt={userName}
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1">
-                      <p className="text-sm font-extrabold text-[#1E293B] truncate">คุณส้ม (Som_Chill)</p>
+                      <p className="text-sm font-extrabold text-[#1E293B] truncate" title={userName}>{userName}</p>
                       <ShieldCheck className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
                     </div>
-                    <p className="text-xs text-[#4A7C59] font-semibold">● เข้าสู่ระบบแล้ว</p>
+                    <p className="text-xs text-[#4A7C59] font-semibold">● สมาชิก Chill & Connect</p>
                   </div>
                 </div>
               ) : (

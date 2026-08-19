@@ -39,6 +39,33 @@ export interface EventItem {
   externalUrl?: string;
   buddyCount?: number;
   status?: 'active' | 'ended';
+  latitude?: number;
+  longitude?: number;
+  zone?: string;
+  distanceKm?: number;
+}
+
+export const BANGKOK_ZONES = [
+  { id: 'siam', label: 'สยาม / จุฬา / สามย่าน' },
+  { id: 'sukhumvit', label: 'สุขุมวิท / อโศก / พร้อมพงษ์' },
+  { id: 'thonglor', label: 'ทองหล่อ / เอกมัย' },
+  { id: 'ari', label: 'อารีย์ / สะพานควาย / จตุจักร' },
+  { id: 'silom', label: 'สีลม / สาทร / พระราม 4' },
+  { id: 'bangna', label: 'บางนา / ศรีนครินทร์' },
+  { id: 'ladprao', label: 'ลาดพร้าว / รัชดา / พระราม 9' },
+  { id: 'nonthaburi', label: 'นนทบุรี / เมืองทองธานี' },
+];
+
+export function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Earth radius in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 10) / 10;
 }
 
 export interface MoodCategory {
@@ -115,6 +142,10 @@ export const MOCK_EVENTS: EventItem[] = [
     venueTag: 'qsncc',
     externalUrl: 'https://www.qsncc.com',
     buddyCount: 18,
+    status: 'active',
+    latitude: 13.7238,
+    longitude: 100.5599,
+    zone: 'sukhumvit',
   },
   {
     id: 'pub-2',
@@ -139,6 +170,10 @@ export const MOCK_EVENTS: EventItem[] = [
     venueTag: 'marathon',
     externalUrl: 'https://www.runningthailand.com',
     buddyCount: 24,
+    status: 'active',
+    latitude: 13.7314,
+    longitude: 100.5414,
+    zone: 'silom',
   },
   {
     id: 'pub-3',
@@ -163,6 +198,10 @@ export const MOCK_EVENTS: EventItem[] = [
     venueTag: 'bitec',
     externalUrl: 'https://www.bitec.co.th',
     buddyCount: 15,
+    status: 'active',
+    latitude: 13.6698,
+    longitude: 100.6053,
+    zone: 'bangna',
   },
   {
     id: 'pub-4',
@@ -187,11 +226,15 @@ export const MOCK_EVENTS: EventItem[] = [
     venueTag: 'impact',
     externalUrl: 'https://www.impact.co.th',
     buddyCount: 9,
+    status: 'active',
+    latitude: 13.9113,
+    longitude: 100.5484,
+    zone: 'nonthaburi',
   },
   {
     id: '7',
     title: 'HYROX Physical Fitness Bootcamp 🏃‍♂️🏋️‍♀️',
-    date: '05 ส.ค. 2024',
+    date: '05 ส.ค. 2026',
     time: '08:00 - 11:00 น.',
     location: 'HYROX Gym Studio, สุขุมวิท 39',
     tag: '#Hyrox',
@@ -233,11 +276,15 @@ export const MOCK_EVENTS: EventItem[] = [
     badgeText: '🔥 ฮิตแรง เหลือ 3 ที่',
     createdAtTimestamp: 1722816000000,
     eventType: 'community',
+    status: 'active',
+    latitude: 13.7372,
+    longitude: 100.5735,
+    zone: 'sukhumvit',
   },
   {
     id: '1',
     title: 'Sound Bath Meditation Rama 9 สมาธิเสียงคลื่น พระราม 9',
-    date: '25 min. 2023',
+    date: '25 ส.ค. 2026',
     time: '14:00 - 16:00 น.',
     location: 'Introvert-friendly, พระราม 9',
     tag: '#Introvert-friendly',
@@ -269,13 +316,17 @@ export const MOCK_EVENTS: EventItem[] = [
     badgeText: '⭐ ยอดนิยม',
     createdAtTimestamp: 1722729600000,
     eventType: 'community',
+    status: 'active',
+    latitude: 13.7578,
+    longitude: 100.5658,
+    zone: 'ladprao',
   },
   {
     id: '2',
     title: 'City Run Morning วิ่งเช้าในเมือง',
-    date: '13 min. 2023',
+    date: '13 ส.ค. 2026',
     time: '06:00 - 08:00 น.',
-    location: 'สวนเบญจกิตติ, พระราม 9',
+    location: 'สวนเบญจกิตติ, อโศก',
     tag: '#Beginner',
     category: 'move',
     image: '/event-city-run.png',
@@ -293,11 +344,15 @@ export const MOCK_EVENTS: EventItem[] = [
     hostBadgeTier: 'superhost',
     badgeText: '🔥 ยอดฮิต',
     createdAtTimestamp: 1722643200000,
+    status: 'active',
+    latitude: 13.7297,
+    longitude: 100.5573,
+    zone: 'sukhumvit',
   },
   {
     id: '3',
     title: 'Board Game Night Asoke คืนบอร์ดเกม อโศก',
-    date: '23 min. 2023',
+    date: '23 ส.ค. 2026',
     time: '18:30 - 21:30 น.',
     location: 'คืนบอร์ดเกม อโศก',
     tag: '#BoardGame',
@@ -328,11 +383,15 @@ export const MOCK_EVENTS: EventItem[] = [
     ],
     badgeText: '🆕 มาใหม่',
     createdAtTimestamp: 1722800000000,
+    status: 'active',
+    latitude: 13.7368,
+    longitude: 100.5604,
+    zone: 'sukhumvit',
   },
   {
     id: '4',
     title: 'Pottery & Ceramic Workshop สตูดิโอปั้นดิน',
-    date: '28 min. 2023',
+    date: '28 ส.ค. 2026',
     time: '10:00 - 13:00 น.',
     location: 'อารีย์ สตูดิโอ',
     tag: '#Handmade',
@@ -350,11 +409,15 @@ export const MOCK_EVENTS: EventItem[] = [
     hostBadgeTier: 'new',
     badgeText: '🆕 มาใหม่',
     createdAtTimestamp: 1722780000000,
+    status: 'active',
+    latitude: 13.7797,
+    longitude: 100.5448,
+    zone: 'ari',
   },
   {
     id: '5',
     title: 'Acoustic Coffee Session กาแฟ & ดนตรีสด',
-    date: '30 min. 2023',
+    date: '30 ส.ค. 2026',
     time: '15:00 - 17:30 น.',
     location: 'ทองหล่อ Soi 10',
     tag: '#CoffeeLover',
@@ -371,11 +434,15 @@ export const MOCK_EVENTS: EventItem[] = [
     hostHostedCount: 1,
     hostBadgeTier: 'new',
     createdAtTimestamp: 1722500000000,
+    status: 'active',
+    latitude: 13.7335,
+    longitude: 100.5843,
+    zone: 'thonglor',
   },
   {
     id: '6',
     title: 'Sunset Park Yoga สวนลุมพินี',
-    date: '02 min. 2024',
+    date: '02 ก.ย. 2026',
     time: '17:00 - 18:30 น.',
     location: 'สวนลุมพินี ปทุมวัน',
     tag: '#Mindfulness',
@@ -394,6 +461,10 @@ export const MOCK_EVENTS: EventItem[] = [
     hostReviewsCount: 12,
     hostBadgeTier: 'verified',
     createdAtTimestamp: 1722400000000,
+    status: 'active',
+    latitude: 13.7299,
+    longitude: 100.5398,
+    zone: 'silom',
   },
   {
     id: '8',
@@ -419,6 +490,10 @@ export const MOCK_EVENTS: EventItem[] = [
     badgeText: '🍵 ชาเขียวพรีเมียม',
     createdAtTimestamp: 1722820000000,
     eventType: 'community',
+    status: 'active',
+    latitude: 13.7229,
+    longitude: 100.5855,
+    zone: 'thonglor',
   },
   {
     id: '9',
@@ -440,6 +515,10 @@ export const MOCK_EVENTS: EventItem[] = [
     badgeText: '🌊 วิวพระอาทิตย์ตก',
     createdAtTimestamp: 1722830000000,
     eventType: 'community',
+    status: 'active',
+    latitude: 13.8055,
+    longitude: 100.5218,
+    zone: 'ari',
   },
   {
     id: '10',
@@ -461,6 +540,10 @@ export const MOCK_EVENTS: EventItem[] = [
     badgeText: '🌸 ฮีลใจด้วยกลิ่นหอม',
     createdAtTimestamp: 1722840000000,
     eventType: 'community',
+    status: 'active',
+    latitude: 13.7443,
+    longitude: 100.5317,
+    zone: 'siam',
   },
   {
     id: '11',
@@ -483,6 +566,9 @@ export const MOCK_EVENTS: EventItem[] = [
     createdAtTimestamp: 1722850000000,
     eventType: 'community',
     status: 'ended',
+    latitude: 13.7348,
+    longitude: 100.5135,
+    zone: 'silom',
   },
   {
     id: '12',
@@ -504,6 +590,10 @@ export const MOCK_EVENTS: EventItem[] = [
     badgeText: '🎨 ศิลปะบำบัด',
     createdAtTimestamp: 1722860000000,
     eventType: 'community',
+    status: 'active',
+    latitude: 13.7795,
+    longitude: 100.5442,
+    zone: 'ari',
   },
   {
     id: '13',
@@ -525,6 +615,10 @@ export const MOCK_EVENTS: EventItem[] = [
     badgeText: '🧗 ฝึกพลังใจ',
     createdAtTimestamp: 1722870000000,
     eventType: 'community',
+    status: 'active',
+    latitude: 13.7302,
+    longitude: 100.5694,
+    zone: 'sukhumvit',
   },
   {
     id: '14',
@@ -546,6 +640,10 @@ export const MOCK_EVENTS: EventItem[] = [
     badgeText: '🎶 วินเทจ & กาแฟ',
     createdAtTimestamp: 1722880000000,
     eventType: 'community',
+    status: 'active',
+    latitude: 13.7265,
+    longitude: 100.5112,
+    zone: 'silom',
   },
   {
     id: '15',
@@ -568,6 +666,9 @@ export const MOCK_EVENTS: EventItem[] = [
     createdAtTimestamp: 1722890000000,
     eventType: 'community',
     status: 'ended',
+    latitude: 13.7214,
+    longitude: 100.5298,
+    zone: 'silom',
   },
   {
     id: '16',
@@ -589,6 +690,10 @@ export const MOCK_EVENTS: EventItem[] = [
     badgeText: '🏸 สนุกหลังเลิกงาน',
     createdAtTimestamp: 1722900000000,
     eventType: 'community',
+    status: 'active',
+    latitude: 13.6934,
+    longitude: 100.5287,
+    zone: 'silom',
   },
   {
     id: '17',
@@ -610,6 +715,10 @@ export const MOCK_EVENTS: EventItem[] = [
     badgeText: '🌱 ธรรมชาติจิ๋ว',
     createdAtTimestamp: 1722910000000,
     eventType: 'community',
+    status: 'active',
+    latitude: 13.8124,
+    longitude: 100.5621,
+    zone: 'ladprao',
   },
   {
     id: '18',
@@ -631,6 +740,10 @@ export const MOCK_EVENTS: EventItem[] = [
     badgeText: '🏆 ชิงรางวัลสนุกๆ',
     createdAtTimestamp: 1722920000000,
     eventType: 'community',
+    status: 'active',
+    latitude: 13.7431,
+    longitude: 100.5562,
+    zone: 'sukhumvit',
   },
   {
     id: '19',
@@ -652,6 +765,10 @@ export const MOCK_EVENTS: EventItem[] = [
     badgeText: '✂️ งานหนังฝีมือ',
     createdAtTimestamp: 1722930000000,
     eventType: 'community',
+    status: 'active',
+    latitude: 13.7258,
+    longitude: 100.5184,
+    zone: 'silom',
   },
   {
     id: '20',
@@ -666,13 +783,17 @@ export const MOCK_EVENTS: EventItem[] = [
     maxParticipants: 6,
     hostName: 'Core Balance Studio',
     hostAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=100&q=80',
-    price: '฿500',
-    description: 'จัดระเบียบสรีระและเพิ่มความแข็งแรงของแกนกลางลำตัวด้วยเครื่องรีฟอร์เมอร์ คลาสกลุ่มเล็กดูแลอย่างทั่วถึงโดยครูผู้เชี่ยวชาญ',
-    isTrending: true,
+    price: '฿480',
+    description: 'ปรับสรีระ เสริมสร้างกล้ามเนื้อแกนกลางลำตัว (Core) ด้วยเครื่อง Reformer ภายใต้คำแนะนำของครูผู้เชี่ยวชาญ',
+    isTrending: false,
     rating: 5.0,
-    badgeText: '⭐ คะแนนเต็ม 5.0',
+    badgeText: '🧘‍♀️ พิลาทิสพรีเมียม',
     createdAtTimestamp: 1722940000000,
     eventType: 'community',
+    status: 'active',
+    latitude: 13.7329,
+    longitude: 100.5821,
+    zone: 'thonglor',
   },
 ];
 

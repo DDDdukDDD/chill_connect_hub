@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
-import { X, Filter, RotateCcw, Check, MapPin, Users, Tag, Building2, SlidersHorizontal } from 'lucide-react';
+import { X, Filter, RotateCcw, Check, MapPin, Users, Tag, Building2, SlidersHorizontal, Navigation } from 'lucide-react';
 import { PUBLIC_VENUES } from '@/components/MoodFilterChips';
+import { BANGKOK_ZONES } from '@/data/mockData';
 
 interface FilterDrawerProps {
   isOpen: boolean;
@@ -11,6 +11,8 @@ interface FilterDrawerProps {
   setSelectedCategory: (cat: 'heal' | 'move' | 'chill' | 'learn' | null) => void;
   selectedVenueFilter: string | null;
   setSelectedVenueFilter: (venue: string | null) => void;
+  selectedZone: string | null;
+  setSelectedZone: (zone: string | null) => void;
   selectedGroupSize: 'all' | 'community' | 'public_venue' | 'joined';
   setSelectedGroupSize: (size: 'all' | 'community' | 'public_venue' | 'joined') => void;
   priceFilter: 'all' | 'free' | 'under500';
@@ -26,6 +28,8 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
   setSelectedCategory,
   selectedVenueFilter,
   setSelectedVenueFilter,
+  selectedZone,
+  setSelectedZone,
   selectedGroupSize,
   setSelectedGroupSize,
   priceFilter,
@@ -173,7 +177,49 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
             </div>
           </div>
 
-          {/* Section 4: ค่าใช้จ่าย */}
+          {/* Section 4: โซน / ย่านในกรุงเทพฯ */}
+          <div className="space-y-2.5 pt-4 border-t border-slate-100">
+            <label className="font-extrabold text-xs text-[#1E293B] flex items-center gap-1.5 uppercase tracking-wider">
+              <MapPin className="w-4 h-4 text-emerald-600" />
+              <span>โซน / ย่านในกรุงเทพฯ (เลือกตามทำเล):</span>
+            </label>
+
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                onClick={() => setSelectedZone(null)}
+                className={`p-2 rounded-xl font-bold border transition-all text-xs text-left flex items-center justify-between ${
+                  selectedZone === null
+                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-emerald-300'
+                }`}
+              >
+                <span>📍 ทุกย่านในกรุงเทพฯ</span>
+                {selectedZone === null && <Check className="w-3.5 h-3.5 text-white shrink-0" />}
+              </button>
+
+              {BANGKOK_ZONES.map((z) => {
+                const isSelected = selectedZone === z.id;
+                return (
+                  <button
+                    key={z.id}
+                    type="button"
+                    onClick={() => setSelectedZone(isSelected ? null : z.id)}
+                    className={`p-2 rounded-xl font-bold border transition-all text-xs text-left flex items-center justify-between ${
+                      isSelected
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-emerald-300'
+                    }`}
+                  >
+                    <span className="truncate">{z.label}</span>
+                    {isSelected && <Check className="w-3.5 h-3.5 text-white shrink-0" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Section 5: ค่าใช้จ่าย */}
           <div className="space-y-2.5 pt-4 border-t border-slate-100">
             <label className="font-extrabold text-xs text-[#1E293B] flex items-center gap-1.5 uppercase tracking-wider">
               <span>💰 งบประมาณ / ค่าใช้จ่าย:</span>

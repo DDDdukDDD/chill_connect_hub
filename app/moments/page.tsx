@@ -5,6 +5,7 @@ import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { EventDetailModal } from '@/components/EventDetailModal';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
+import { CreateEventModal } from '@/components/CreateEventModal';
 import { MOCK_EVENTS, MOCK_POSTS, EventItem, CommunityPost, PostComment } from '@/data/mockData';
 import {
   Sparkles,
@@ -43,6 +44,12 @@ export default function MomentsPage() {
       } else {
         localStorage.setItem('isLoggedIn', 'true');
       }
+
+      // Check query param for personal moments tab
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('tab') === 'mine') {
+        setActiveTabFilter('mine');
+      }
     }
   }, []);
 
@@ -57,6 +64,7 @@ export default function MomentsPage() {
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
   const [newCommentInput, setNewCommentInput] = useState<string>('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+  const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState<boolean>(false);
   const [uploadedPostImage, setUploadedPostImage] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const [favorites, setFavorites] = useState<string[]>(['1', '7']);
@@ -239,7 +247,7 @@ export default function MomentsPage() {
         setIsLoggedIn={handleSetIsLoggedIn}
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}
-        onOpenCreateEvent={() => setIsCreateModalOpen(true)}
+        onOpenCreateEvent={() => setIsCreateEventModalOpen(true)}
       />
 
       {/* Main Container */}
@@ -742,6 +750,15 @@ export default function MomentsPage() {
           </div>
         </div>
       )}
+
+      {/* Create Custom Event Modal */}
+      <CreateEventModal
+        isOpen={isCreateEventModalOpen}
+        onClose={() => setIsCreateEventModalOpen(false)}
+        onCreateSuccess={(newEvent) => {
+          showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จเรียบร้อย! 🎉`);
+        }}
+      />
 
       {/* Auth Login / Signup Popup Modal */}
       <AuthModal

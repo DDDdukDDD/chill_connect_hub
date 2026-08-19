@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { EventItem } from '@/data/mockData';
-import { Heart, Calendar, MapPin, Users, Star, CheckCircle2, Sparkles, Building2, Tag } from 'lucide-react';
+import { Heart, Calendar, MapPin, Users, Star, CheckCircle2, Sparkles, Building2, Tag, RotateCcw, ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface EventGridProps {
@@ -11,6 +11,7 @@ interface EventGridProps {
   favorites: string[];
   toggleFavorite: (eventId: string) => void;
   joinedEventIds?: string[];
+  onResetFilters?: () => void;
 }
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string; badgeBg: string }> = {
@@ -26,17 +27,30 @@ export const EventGrid: React.FC<EventGridProps> = ({
   favorites,
   toggleFavorite,
   joinedEventIds = [],
+  onResetFilters,
 }) => {
   if (events.length === 0) {
     return (
-      <div className="bg-white rounded-3xl p-12 text-center border border-[#E8E2D8] shadow-sm space-y-3">
+      <div className="bg-white rounded-3xl p-12 text-center border border-[#E8E2D8] shadow-sm space-y-4">
         <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400">
           <Sparkles className="w-8 h-8" />
         </div>
-        <h3 className="font-extrabold text-lg text-[#1E293B]">ไม่พบกิจกรรมที่ค้นหา</h3>
-        <p className="text-xs text-[#64748B] max-w-sm mx-auto">
-          ลองค้นหาด้วยคำอื่น หรือเลือกหมวดหมู่อื่นดูนะครับ
-        </p>
+        <div className="space-y-1">
+          <h3 className="font-extrabold text-lg text-[#1E293B]">ไม่พบกิจกรรมที่ค้นหา</h3>
+          <p className="text-xs text-[#64748B] max-w-sm mx-auto">
+            ลองค้นหาด้วยคำอื่น หรือกดปุ่มด้านล่างเพื่อดูกิจกรรมทั้งหมด
+          </p>
+        </div>
+        {onResetFilters && (
+          <button
+            type="button"
+            onClick={onResetFilters}
+            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#1E293B] hover:bg-[#F26430] text-white text-xs font-bold shadow-md transition-all active:scale-95 cursor-pointer"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>ดูกิจกรรมทั้งหมด</span>
+          </button>
+        )}
       </div>
     );
   }
@@ -101,8 +115,8 @@ export const EventGrid: React.FC<EventGridProps> = ({
                 </div>
 
                 {/* Card Content Body */}
-                <div className="p-3.5 sm:p-4 flex flex-col flex-1 justify-between space-y-2.5">
-                  <div className="space-y-2">
+                <div className="p-3.5 sm:p-4 flex flex-col justify-between flex-1 gap-2.5">
+                  <div className="space-y-1.5">
                     
                     {/* Top Row: Host Info (Left) + Clean Price Chip (Right) */}
                     <div className="flex items-center justify-between gap-2">
@@ -144,41 +158,45 @@ export const EventGrid: React.FC<EventGridProps> = ({
                         <span className="truncate">{event.date} • {event.time}</span>
                       </div>
 
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 min-w-0">
                         <MapPin className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
-                        <span className="truncate">{event.location}</span>
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="truncate hover:text-[#F26430] hover:underline transition-colors cursor-pointer group/loc flex items-center gap-1"
+                          title="คลิกเพื่อดูแผนที่บน Google Maps"
+                        >
+                          <span className="truncate">{event.location}</span>
+                          <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover/loc:opacity-100 text-[#F26430] shrink-0 transition-opacity" />
+                        </a>
                       </div>
                     </div>
                   </div>
 
-                  {/* Seat Capacity Progress Bar (Only for Community Events) */}
-                  {event.eventType !== 'public_venue' && (
+                  {/* Seat Capacity Progress Bar (Only for Active Community Events) */}
+                  {event.eventType !== 'public_venue' && event.status !== 'ended' && (
                     <div className="space-y-1 pt-0.5">
                       <div className="flex items-center justify-between text-[11px] font-medium text-[#64748B]">
                         <span className="flex items-center gap-1">
                           <Users className="w-3 h-3 text-[#4A7C59]" />
-                          <span>
-                            {event.status === 'ended'
-                              ? `ผู้เข้าร่วมทั้งหมด ${event.participantsCount} คน`
-                              : `ที่นั่ง ${event.participantsCount}/${event.maxParticipants}`}
-                          </span>
+                          <span>ที่นั่ง {event.participantsCount}/{event.maxParticipants}</span>
                         </span>
-                        {event.status === 'ended' ? (
-                          <span className="text-slate-500 font-semibold text-[10px]">
-                            จัดเสร็จสิ้นแล้ว
-                          </span>
-                        ) : isAlmostFull ? (
+                        {isAlmostFull ? (
                           <span className="text-amber-600 font-semibold text-[10px] animate-pulse">
                             ใกล้เต็มแล้ว!
                           </span>
-                        ) : null}
+                        ) : (
+                          <span className="text-[#4A7C59] font-medium text-[10px]">
+                            เปิดรับสมัคร
+                          </span>
+                        )}
                       </div>
                       <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
                         <div
                           className={`h-full rounded-full transition-all duration-500 ${
-                            event.status === 'ended'
-                              ? 'bg-slate-400'
-                              : isAlmostFull
+                            isAlmostFull
                               ? 'bg-gradient-to-r from-amber-400 to-[#F26430]'
                               : 'bg-[#4A7C59]'
                           }`}
@@ -189,7 +207,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                   )}
 
                   {/* Bottom Action Area: Event Type (Left) + CTA Button (Right) */}
-                  <div className="pt-2 flex items-center justify-between gap-2 border-t border-slate-100">
+                  <div className="pt-2.5 flex items-center justify-between gap-2 border-t border-slate-100 mt-auto">
                     {/* Event Type Badge with Floating Hover Tooltip (Always Community / Public Venue) */}
                     <div className="relative group/tooltip">
                       <span className={`text-[10px] sm:text-[11px] font-extrabold px-2.5 py-1 rounded-full border shrink-0 flex items-center gap-1 cursor-help transition-all ${

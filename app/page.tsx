@@ -9,7 +9,7 @@ import { SurpriseModal } from '@/components/SurpriseModal';
 import { EventGrid } from '@/components/EventGrid';
 import { EventDetailModal } from '@/components/EventDetailModal';
 import { MobileNav } from '@/components/MobileNav';
-import { MOCK_EVENTS, MOCK_POSTS, EventItem } from '@/data/mockData';
+import { MOCK_EVENTS, MOCK_POSTS, EventItem, calculateDistanceKm, BANGKOK_ZONES } from '@/data/mockData';
 import { CustomDatePickerModal } from '@/components/CustomDatePickerModal';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
@@ -41,6 +41,9 @@ import {
   Filter,
   SlidersHorizontal,
   Dices,
+  Navigation,
+  LocateFixed,
+  Loader2,
   X
 } from 'lucide-react';
 
@@ -51,6 +54,7 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<'heal' | 'move' | 'chill' | 'learn' | null>(null);
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
   const [selectedVenueFilter, setSelectedVenueFilter] = useState<string | null>(null);
+  const [selectedZone, setSelectedZone] = useState<string | null>(null);
   const [eventTypeTab, setEventTypeTab] = useState<'all' | 'public_venue' | 'community' | 'joined'>('all');
   const [joinedEventIds, setJoinedEventIds] = useState<string[]>(['1', '3']);
   const [timeFilter, setTimeFilter] = useState<'all' | 'tomorrow' | 'weekend' | 'next_month' | 'custom'>('all');
@@ -64,6 +68,9 @@ export default function Home() {
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState<boolean>(false);
   const [isSurpriseModalOpen, setIsSurpriseModalOpen] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<'newest' | 'popular' | 'favorites'>('newest');
+  const [sortByNearMe, setSortByNearMe] = useState<boolean>(false);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [isLocating, setIsLocating] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [eventsList, setEventsList] = useState<EventItem[]>(MOCK_EVENTS);
   const [favorites, setFavorites] = useState<string[]>(['1', '7']);
@@ -203,10 +210,28 @@ export default function Home() {
         matchesPrice = priceStr === 'ฟรี!' || priceStr === 'ฟรี' || priceStr.includes('150') || priceStr.includes('200') || priceStr.includes('350');
       }
 
-      return matchesCategory && matchesVenue && matchesEventType && matchesTime && matchesSubCategory && matchesSearch && matchesPrice;
+      let matchesZone = true;
+      if (selectedZone) {
+        matchesZone = event.zone === selectedZone;
+      }
+
+      return matchesCategory && matchesVenue && matchesEventType && matchesTime && matchesSubCategory && matchesSearch && matchesPrice && matchesZone;
     });
 
-    if (sortBy === 'favorites') {
+    // Calculate distance for all events if userLocation is available
+    result = result.map((ev) => {
+      if (userLocation && ev.latitude && ev.longitude) {
+        return {
+          ...ev,
+          distanceKm: calculateDistanceKm(userLocation.lat, userLocation.lng, ev.latitude, ev.longitude),
+        };
+      }
+      return ev;
+    });
+
+    if (sortByNearMe) {
+      result.sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999));
+    } else if (sortBy === 'favorites') {
       result = result.filter((event) => favorites.includes(event.id));
     } else if (sortBy === 'popular') {
       result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
@@ -220,6 +245,7 @@ export default function Home() {
     selectedCategory,
     selectedSubCategory,
     selectedVenueFilter,
+    selectedZone,
     eventTypeTab,
     joinedEventIds,
     timeFilter,
@@ -228,6 +254,8 @@ export default function Home() {
     endDate,
     searchQuery,
     sortBy,
+    sortByNearMe,
+    userLocation,
     favorites,
   ]);
 
@@ -282,6 +310,7 @@ export default function Home() {
     setSelectedCategory(null);
     setSelectedSubCategory(null);
     setSelectedVenueFilter(null);
+    setSelectedZone(null);
     setEventTypeTab('all');
     setTimeFilter('all');
     setPriceFilter('all');
@@ -289,8 +318,45 @@ export default function Home() {
     setEndDate('');
     setSearchQuery('');
     setSortBy('newest');
+    setSortByNearMe(false);
     setCurrentPage(1);
     showToast('ล้างตัวกรองทั้งหมดแล้ว ✨');
+  };
+
+  const handleToggleNearMe = () => {
+    if (sortByNearMe) {
+      setSortByNearMe(false);
+      showToast('ปิดการเรียงตามระยะทางใกล้ฉันแล้ว');
+      return;
+    }
+
+    setIsLocating(true);
+    if (typeof window !== 'undefined' && 'geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          setSortByNearMe(true);
+          setIsLocating(false);
+          setCurrentPage(1);
+          showToast('📍 ค้นหากิจกรรมใกล้คุณ เรียงจากใกล้ไปไกลเรียบร้อย ✨');
+        },
+        (err) => {
+          console.warn('Geolocation denied or timeout, fallback to Siam default:', err);
+          setUserLocation({ lat: 13.7466, lng: 100.5349 });
+          setSortByNearMe(true);
+          setIsLocating(false);
+          setCurrentPage(1);
+          showToast('📍 เรียงกิจกรรมจากใกล้โซนสยาม / ใจกลางเมืองให้เรียบร้อย ✨');
+        },
+        { timeout: 8000, enableHighAccuracy: true }
+      );
+    } else {
+      setUserLocation({ lat: 13.7466, lng: 100.5349 });
+      setSortByNearMe(true);
+      setIsLocating(false);
+      setCurrentPage(1);
+      showToast('📍 เรียงกิจกรรมจากใกล้โซนสยาม / ใจกลางเมืองให้เรียบร้อย ✨');
+    }
   };
 
   const totalPages = Math.ceil(filteredEvents.length / ITEMS_PER_PAGE) || 1;
@@ -384,10 +450,10 @@ export default function Home() {
           <section id="catalog-section" className="space-y-3 pt-1">
             
             {/* Search/Filter Results Notice (Only when explicitly searching or filtering) */}
-            {searchQuery.trim() !== '' || selectedCategory !== null || selectedVenueFilter !== null || priceFilter !== 'all' || (timeFilter === 'custom' && startDate) ? (
+            {searchQuery.trim() !== '' || selectedCategory !== null || selectedVenueFilter !== null || selectedZone !== null || sortByNearMe || priceFilter !== 'all' || (timeFilter === 'custom' && startDate) ? (
               <div className="flex items-center justify-between bg-amber-50 p-2.5 px-4 rounded-xl border border-amber-200/80 text-xs font-semibold text-[#1E293B] animate-fade-in">
                 <span className="flex items-center gap-1.5 font-bold">
-                  <span>🔍 ผลการค้นหา: พบทั้งหมด {filteredEvents.length} กิจกรรม</span>
+                  <span>🔍 ผลการค้นหา: พบทั้งหมด {filteredEvents.length} กิจกรรม {sortByNearMe ? '(📍 เรียงจากใกล้ไปไกล)' : ''} {selectedZone ? `• โซน: ${BANGKOK_ZONES.find(z => z.id === selectedZone)?.label}` : ''}</span>
                 </span>
                 <button
                   type="button"
@@ -469,18 +535,40 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Right: Minimalist Filter Drawer & Sorting */}
+              {/* Right: Near Me Button + Minimalist Filter Drawer & Sorting */}
               <div className="flex items-center justify-end gap-2 pt-1 lg:pt-0 border-t lg:border-t-0 border-slate-100 shrink-0">
                 
+                {/* 🎯 Near Me Button with Single Modern Radar/GPS Icon */}
+                <button
+                  type="button"
+                  onClick={handleToggleNearMe}
+                  disabled={isLocating}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 border ${
+                    sortByNearMe
+                      ? 'bg-gradient-to-r from-orange-500 to-[#F26430] text-white border-[#F26430] shadow-sm ring-2 ring-orange-500/20'
+                      : 'bg-white hover:bg-orange-50/80 text-[#1E293B] hover:text-[#F26430] border-[#E8E2D8] hover:border-orange-300'
+                  }`}
+                  title="ค้นหากิจกรรมใกล้ตำแหน่งของคุณ เรียงจากใกล้ที่สุด"
+                >
+                  {isLocating ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[#F26430]" />
+                  ) : (
+                    <LocateFixed className={`w-3.5 h-3.5 ${sortByNearMe ? 'text-white animate-pulse' : 'text-[#F26430]'}`} />
+                  )}
+                  <span>{isLocating ? 'กำลังหาพิกัด...' : sortByNearMe ? 'ใกล้ฉัน (เปิดอยู่)' : 'ใกล้ฉัน'}</span>
+                </button>
+
                 {/* Minimalist Filter Drawer Trigger */}
                 <button
                   type="button"
                   onClick={() => setIsFilterDrawerOpen(true)}
-                  className="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-[#334155] border border-[#E8E2D8] px-3 py-1.5 rounded-xl text-xs font-bold shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0"
-                  title="เปิดตัวกรองสถานที่และราคา"
+                  className={`flex items-center gap-1.5 bg-white hover:bg-slate-50 text-[#334155] border px-3 py-1.5 rounded-xl text-xs font-bold shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 ${
+                    selectedZone || selectedVenueFilter || priceFilter !== 'all' || selectedCategory ? 'border-[#4A7C59] ring-2 ring-[#4A7C59]/10 text-[#4A7C59]' : 'border-[#E8E2D8]'
+                  }`}
+                  title="เปิดตัวกรองสถานที่ ย่าน และราคา"
                 >
                   <SlidersHorizontal className="w-3.5 h-3.5 text-[#4A7C59]" />
-                  <span>ตัวกรอง</span>
+                  <span>ตัวกรอง {selectedZone ? '(1)' : ''}</span>
                 </button>
 
                 {/* Sorting Select */}
@@ -488,7 +576,10 @@ export default function Home() {
                   <ArrowUpDown className="w-3 h-3 text-[#4A7C59]" />
                   <select
                     value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as 'newest' | 'popular' | 'favorites')}
+                    onChange={(e) => {
+                      setSortBy(e.target.value as 'newest' | 'popular' | 'favorites');
+                      setSortByNearMe(false);
+                    }}
                     className="bg-transparent font-bold text-[#1E293B] focus:outline-none cursor-pointer text-xs"
                   >
                     <option value="newest">ล่าสุด</option>
@@ -507,6 +598,7 @@ export default function Home() {
               favorites={favorites}
               toggleFavorite={toggleFavorite}
               joinedEventIds={joinedEventIds}
+              onResetFilters={handleResetAllFilters}
             />
 
             {/* Google-Style Pagination Bar */}
@@ -559,6 +651,8 @@ export default function Home() {
         setSelectedCategory={setSelectedCategory}
         selectedVenueFilter={selectedVenueFilter}
         setSelectedVenueFilter={setSelectedVenueFilter}
+        selectedZone={selectedZone}
+        setSelectedZone={setSelectedZone}
         selectedGroupSize={eventTypeTab}
         setSelectedGroupSize={setEventTypeTab}
         priceFilter={priceFilter}

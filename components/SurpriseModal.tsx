@@ -17,7 +17,11 @@ export const SurpriseModal: React.FC<SurpriseModalProps> = ({
   events,
   onSelectEvent,
 }) => {
-  const activeEvents = events.filter((e) => e.status !== 'ended');
+  const activeEvents = events.filter((e) => {
+    if (e.status === 'ended') return false;
+    if (e.badgeText?.includes('สิ้นสุด') || e.badgeText?.includes('จบแล้ว')) return false;
+    return true;
+  });
   const [isSpinning, setIsSpinning] = useState(true);
   const [pickedEvent, setPickedEvent] = useState<EventItem | null>(null);
 

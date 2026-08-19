@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { EventItem } from '@/data/mockData';
-import { X, Calendar, MapPin, Users, Heart, Share2, CheckCircle2, ShieldCheck, Clock, ExternalLink, Ticket, AlertCircle, Bell } from 'lucide-react';
+import { X, Calendar, MapPin, Users, Heart, Share2, CheckCircle2, ShieldCheck, Clock, ExternalLink, Ticket, AlertCircle, Bell, Navigation2, MessageCircle, Check, Copy } from 'lucide-react';
 
 interface EventDetailModalProps {
   event: EventItem | null;
@@ -98,9 +98,30 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
     }
   };
 
-  const handleShare = () => {
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleShare = async () => {
+    const shareData = {
+      title: event.title,
+      text: `ไปกิจกรรมนี้กันมั้ย! "${event.title}" 📍 ${event.location} (${event.date})`,
+      url: typeof window !== 'undefined' ? window.location.href : '',
+    };
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err) {
+        // user cancelled
+      }
+    }
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
+  };
+
+  const handleShareLine = () => {
+    const text = encodeURIComponent(`ไปกิจกรรมนี้กันมั้ย! "${event.title}" 📍 ${event.location} (${event.date})\n${typeof window !== 'undefined' ? window.location.href : ''}`);
+    window.open(`https://line.me/R/msg/text/?${text}`, '_blank');
   };
 
   return (
@@ -165,7 +186,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
         </div>
 
         {/* Content Body (Scrollable) */}
-        <div className="p-3.5 sm:p-5 space-y-3 overflow-y-auto">
+        <div className="p-3.5 sm:p-5 space-y-3.5 overflow-y-auto">
           
           {/* Ended Status Banner */}
           {event.status === 'ended' && (
@@ -197,28 +218,51 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             </div>
           )}
 
-          {/* Header Title */}
+          {/* Header Title & Quick Share Row */}
           <div>
-            <span className={`text-[11px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full border inline-block mb-1 ${
-              event.status === 'ended'
-                ? 'bg-slate-100 text-slate-600 border-slate-300'
-                : isPublicVenue
-                ? 'bg-sky-50 text-sky-700 border-sky-200'
-                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-            }`}>
-              {event.status === 'ended'
-                ? '🏁 กิจกรรมที่ผ่านมา (Past Event)'
-                : isPublicVenue
-                ? '🏛️ อีเวนต์สาธารณะ (Public Event)'
-                : '🏡 กิจกรรมชุมชน (Community Event)'}
-            </span>
-            <h2 className="text-base sm:text-lg font-extrabold text-[#1E293B] mt-0.5 leading-snug">
+            <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
+              <span className={`text-[11px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full border inline-block ${
+                event.status === 'ended'
+                  ? 'bg-slate-100 text-slate-600 border-slate-300'
+                  : isPublicVenue
+                  ? 'bg-sky-50 text-sky-700 border-sky-200'
+                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+              }`}>
+                {event.status === 'ended'
+                  ? '🏁 กิจกรรมที่ผ่านมา'
+                  : isPublicVenue
+                  ? '🏛️ อีเวนต์สาธารณะ'
+                  : '🏡 กิจกรรมชุมชน'}
+              </span>
+
+              {/* Universal Global Share Button */}
+              <button
+                type="button"
+                onClick={handleShare}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition-all cursor-pointer active:scale-95"
+                title="แชร์กิจกรรม"
+              >
+                {copied ? (
+                  <>
+                    <Check className="w-3 h-3 text-emerald-600" />
+                    <span className="text-emerald-600 font-extrabold">คัดลอกลิงก์แล้ว!</span>
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="w-3 h-3 text-slate-500" />
+                    <span>แชร์กิจกรรม</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            <h2 className="text-base sm:text-lg font-extrabold text-[#1E293B] mt-1 leading-snug">
               {event.title}
             </h2>
           </div>
 
-          {/* Details & Host Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs bg-slate-50/90 p-3 rounded-2xl border border-slate-100">
+          {/* Details & Host Row with Clean Google Maps Link */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs bg-slate-50/90 p-3.5 rounded-2xl border border-slate-200/80">
             <div className="flex items-center gap-2">
               <Calendar className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
               <span className="font-semibold text-[#1E293B] truncate">{event.date}</span>
@@ -229,9 +273,22 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               <span className="font-semibold text-[#1E293B] truncate">{event.time}</span>
             </div>
 
-            <div className="flex items-center gap-2 sm:col-span-3 pt-1 border-t border-slate-200/60">
-              <MapPin className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
-              <span className="font-semibold text-[#1E293B] truncate">{event.location}</span>
+            {/* Location with Clean Google Maps Link (No Front Icon) */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:col-span-3 pt-2.5 border-t border-slate-200/60">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <MapPin className="w-4 h-4 text-[#F26430] shrink-0" />
+                <span className="font-bold text-[#1E293B] truncate text-xs sm:text-sm">{event.location}</span>
+              </div>
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-xl bg-white hover:bg-orange-50 text-[#1E293B] hover:text-[#F26430] border border-slate-200 hover:border-orange-300 text-xs font-bold shadow-2xs transition-all shrink-0 active:scale-95 cursor-pointer"
+                title="เปิดดูตำแหน่งและเส้นทางบน Google Maps"
+              >
+                <span>เปิด Google Maps</span>
+                <ExternalLink className="w-3 h-3 text-slate-400" />
+              </a>
             </div>
           </div>
 
