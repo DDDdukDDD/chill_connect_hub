@@ -10,8 +10,9 @@ import { CreateChallengeModal } from '@/components/CreateChallengeModal';
 import { ETicketModal } from '@/components/ETicketModal';
 import { CancelTicketModal } from '@/components/CancelTicketModal';
 import { GroupChatModal } from '@/components/GroupChatModal';
+import { TipHostModal } from '@/components/TipHostModal';
+import { HostGuestScannerModal } from '@/components/HostGuestScannerModal';
 import { MOCK_CHALLENGES, MOCK_EVENTS, ChallengeQuest, EventItem } from '@/data/mockData';
-import ReviewModal, { ReviewSubmitData } from '@/components/ReviewModal';
 import {
   Award,
   Coffee,
@@ -43,6 +44,15 @@ import {
   ShoppingBag,
   Trash2,
   Crown,
+  Wallet,
+  DollarSign,
+  Heart,
+  TrendingUp,
+  UserCheck,
+  Bot,
+  SlidersHorizontal,
+  CreditCard,
+  Building,
 } from 'lucide-react';
 
 interface RecommendedChallenge {
@@ -179,7 +189,11 @@ const REWARD_SHOP_ITEMS: RewardShopItem[] = [
 
 export default function ChallengePage() {
   const [activeNavTab, setActiveNavTab] = useState('challenge');
-  const [activeSubTab, setActiveSubTab] = useState<'joined_events' | 'quests' | 'rewards'>('joined_events');
+  const [activeSubTab, setActiveSubTab] = useState<'joined_events' | 'host_studio' | 'quests' | 'rewards'>('joined_events');
+  
+  // Quick Persona / Role Switcher for Testing
+  const [currentRole, setCurrentRole] = useState<'member' | 'host' | 'admin'>('member');
+
   const [isLoggedIn, setIsLoggedIn] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -192,6 +206,11 @@ export default function ChallengePage() {
   const [userXp, setUserXp] = useState<number>(450);
   const [isReviewerBadgeUnlocked, setIsReviewerBadgeUnlocked] = useState<boolean>(false);
   const [isVipBadgeUnlocked, setIsVipBadgeUnlocked] = useState<boolean>(false);
+
+  // Host Revenue & Wallet State
+  const [hostTicketRevenue, setHostTicketRevenue] = useState<number>(4350);
+  const [hostTipsRevenue, setHostTipsRevenue] = useState<number>(520);
+  const [isHostBountyClaimed, setIsHostBountyClaimed] = useState<boolean>(false);
 
   // E-Ticket Modal State
   const [isETicketModalOpen, setIsETicketModalOpen] = useState(false);
@@ -211,12 +230,16 @@ export default function ChallengePage() {
 
   // Create Custom Challenge Modal State
   const [isCreateChallengeModalOpen, setIsCreateChallengeModalOpen] = useState(false);
+  const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
 
-  // Review Modal State
-  const [isReviewModalOpen, setIsReviewModalOpen] = useState<boolean>(false);
-  const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState<boolean>(false);
-  const [reviewTargetEvent, setReviewTargetEvent] = useState<EventItem | null>(null);
+  // Tip Host & Review Modal State
+  const [isTipHostModalOpen, setIsTipHostModalOpen] = useState<boolean>(false);
+  const [tipTargetEvent, setTipTargetEvent] = useState<EventItem | null>(null);
   const [reviewedEventIds, setReviewedEventIds] = useState<string[]>(['1']);
+
+  // Host Door Scanner Modal State
+  const [isHostScannerOpen, setIsHostScannerOpen] = useState<boolean>(false);
+  const [scannerTargetEvent, setScannerTargetEvent] = useState<EventItem | null>(null);
 
   // Mock joined events list for current logged-in user
   const [joinedEvents, setJoinedEvents] = useState<EventItem[]>([
@@ -229,6 +252,46 @@ export default function ChallengePage() {
   const [pastEvents, setPastEvents] = useState<EventItem[]>([
     MOCK_EVENTS[4] || MOCK_EVENTS[1], // HYROX Bootcamp
     MOCK_EVENTS[5] || MOCK_EVENTS[2], // Sound Bath Meditation
+  ]);
+
+  // Mock events hosted by current user (Host view)
+  const [myHostedEvents, setMyHostedEvents] = useState<EventItem[]>([
+    {
+      id: 'host-event-1',
+      title: '🎲 Board Game Night & Specialty Drip Coffee (นัดเล่นบอร์ดเกม & กาแฟดริป)',
+      category: 'chill',
+      tag: 'บอร์ดเกม',
+      date: 'เสาร์ 23 ส.ค. 2026',
+      time: '14:00 - 18:00 น.',
+      location: 'Siam Board Game Lounge, ปทุมวัน',
+      image: 'https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?auto=format&fit=crop&w=600&q=80',
+      price: '฿250',
+      description: 'นัดเล่นบอร์ดเกมสนุกๆ ผ่อนคลายพร้อมชิมกาแฟดริป',
+      hostName: 'คุณ (Superhost)',
+      hostAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
+      eventType: 'community',
+      participantsCount: 8,
+      maxParticipants: 10,
+      createdAtTimestamp: Date.now(),
+    },
+    {
+      id: 'host-event-2',
+      title: '🧘 Sunset Yoga & Sound Bath in the Park (โยคะยามเย็น สวนลุมพินี)',
+      category: 'heal',
+      tag: 'โยคะฮีลใจ',
+      date: 'อาทิตย์ 24 ส.ค. 2026',
+      time: '17:00 - 18:30 น.',
+      location: 'ศาลาแปดเหลี่ยม สวนลุมพินี',
+      image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=600&q=80',
+      price: '฿150',
+      description: 'โยคะผ่อนคลายกล้ามเนื้อยามเย็นรับลมสบายๆ',
+      hostName: 'คุณ (Superhost)',
+      hostAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
+      eventType: 'community',
+      participantsCount: 10,
+      maxParticipants: 10,
+      createdAtTimestamp: Date.now(),
+    },
   ]);
 
   // Sync login status across pages with localStorage
@@ -341,6 +404,55 @@ export default function ChallengePage() {
     }
   };
 
+  // Open Tip Host Modal
+  const handleOpenTipHostModal = (event: EventItem) => {
+    setTipTargetEvent(event);
+    setIsTipHostModalOpen(true);
+  };
+
+  // Handle Tip Submit
+  const handleTipSubmit = (rating: number, reviewText: string, tipAmount: number) => {
+    if (tipTargetEvent) {
+      setReviewedEventIds((prev) => [...prev, tipTargetEvent.id]);
+      setUserXp((prev) => prev + 50);
+      setIsReviewerBadgeUnlocked(true);
+
+      if (tipAmount > 0) {
+        setHostTipsRevenue((prev) => prev + tipAmount);
+        showToast(`💖 ส่งรีวิว ${rating} ดาว และมอบทิป ฿${tipAmount} ให้โฮสต์ ${tipTargetEvent.hostName} เรียบร้อย! (+50 XP)`);
+      } else {
+        showToast(`⭐ ส่งรีวิว ${rating} ดาวสำเร็จ! ได้รับ +50 XP สะสม`);
+      }
+    }
+  };
+
+  // Claim Host Bounty
+  const handleClaimHostBounty = () => {
+    if (!isHostBountyClaimed) {
+      setIsHostBountyClaimed(true);
+      setHostTicketRevenue((prev) => prev + 500);
+      showToast('🎉 ยินดีด้วย! รับเงินสนับสนุนโฮสต์ ฿500 เข้ากระเป๋าเรียบร้อยแล้ว');
+    }
+  };
+
+  // Simulate Withdrawal
+  const handleWithdrawEarnings = () => {
+    const total = hostTicketRevenue + hostTipsRevenue;
+    if (total <= 0) {
+      showToast('ไม่มียอดเงินคงเหลือสำหรับถอน');
+      return;
+    }
+    showToast(`💳 โอนเงินรายได้ ฿${total.toLocaleString()} เข้าบัญชีธนาคารพร้อมเพย์ของคุณเรียบร้อย!`);
+    setHostTicketRevenue(0);
+    setHostTipsRevenue(0);
+  };
+
+  // Open Door Scanner
+  const handleOpenDoorScanner = (event: EventItem) => {
+    setScannerTargetEvent(event);
+    setIsHostScannerOpen(true);
+  };
+
   // Redeem Reward
   const handleRedeemReward = (item: RewardShopItem) => {
     if (userXp < item.costXp) {
@@ -354,18 +466,6 @@ export default function ChallengePage() {
     showToast(`🎉 แลก "${item.title}" สำเร็จ! ได้รับเหรียญ 🏆 VIP Collector เพิ่ม และรหัสคูปอง: ${item.voucherCode}`);
   };
 
-  const handleOpenReviewModal = (event: EventItem) => {
-    setReviewTargetEvent(event);
-    setIsReviewModalOpen(true);
-  };
-
-  const handleReviewSubmitSuccess = (data: ReviewSubmitData) => {
-    setReviewedEventIds((prev) => [...prev, data.eventId]);
-    setUserXp((prev) => prev + 50);
-    setIsReviewerBadgeUnlocked(true);
-    showToast('รีวิวสำเร็จ! ได้รับ +50 XP และปลดล็อกเหรียญนักรีวิวฮีลใจ 🌟');
-  };
-
   const handleCreateQuestSuccess = (newQuest: ChallengeQuest) => {
     setMyChallenges([newQuest, ...myChallenges]);
     setUserXp((prev) => prev + 25);
@@ -376,23 +476,23 @@ export default function ChallengePage() {
     ? RECOMMENDED_CHALLENGES
     : RECOMMENDED_CHALLENGES.filter((item) => item.category === selectedCategory);
 
-  // Schema.org Structured Data for Personal Activities Hub
-  const challengeSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'WebPage',
-    name: 'กิจกรรมที่เข้าร่วม & ตั๋ว E-Ticket | Chill & Connect Hub',
-    description: 'เปลี่ยนวันว่างให้มีความหมาย ออกมาแชร์รอยยิ้มกับสังคมที่เป็นมิตร ไม่ต้องกลัวเหงาแม้มาคนเดียว พร้อมรับสิทธิ์เข้าร่วมกิจกรรมและของขวัญสุดพิเศษ',
+  // Switch role handler
+  const handleSelectRole = (role: 'member' | 'host' | 'admin') => {
+    setCurrentRole(role);
+    if (role === 'host') {
+      setActiveSubTab('host_studio');
+      showToast('👑 สลับเป็นมุมมอง "โฮสต์ / ครีเอเตอร์ผู้จัดกิจกรรม"');
+    } else if (role === 'member') {
+      setActiveSubTab('joined_events');
+      showToast('👤 สลับเป็นมุมมอง "ผู้ใช้งานทั่วไป / สมาชิกเข้าร่วมกิจกรรม"');
+    } else if (role === 'admin') {
+      showToast('🛡️ สลับเป็นมุมมอง "ผู้ดูแลระบบ (Admin Mode)"');
+    }
   };
 
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-[#1E293B] flex flex-col font-sans selection:bg-[#F26430] selection:text-white">
       
-      {/* Schema.org Structured Data */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(challengeSchema) }}
-      />
-
       {/* Navbar */}
       <Navbar
         activeTab={activeNavTab}
@@ -410,49 +510,79 @@ export default function ChallengePage() {
       {/* Main Content Area */}
       <main className="flex-1">
         
-        {/* Ultra-Slim & Clean Header Banner */}
+        {/* Slim Header Banner + Interactive Role Switcher */}
         <section className="bg-[#1E293B] text-white py-4 sm:py-5 border-b border-slate-700/60">
-          <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-3">
             
-            {/* Left: Clean Title & Subtitle */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <h1 className="text-base sm:text-xl font-extrabold text-white tracking-tight">
-                  กิจกรรมที่เข้าร่วม & ตั๋ว E-Ticket
-                </h1>
-                <span className="text-[10px] font-extrabold text-emerald-300 bg-emerald-950/80 px-2 py-0.5 rounded-full border border-emerald-500/30 shrink-0">
-                  My Hub
-                </span>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              {/* Left: Title & Subtitle */}
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <h1 className="text-base sm:text-xl font-extrabold text-white tracking-tight">
+                    {currentRole === 'host' ? '👑 สตูดิโอโฮสต์สร้างรายได้ (Creator & Host Hub)' : 'กิจกรรมที่เข้าร่วม & ตั๋ว E-Ticket'}
+                  </h1>
+                  <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border shrink-0 ${
+                    currentRole === 'host'
+                      ? 'bg-amber-950/80 text-amber-300 border-amber-500/40'
+                      : currentRole === 'admin'
+                      ? 'bg-purple-950/80 text-purple-300 border-purple-500/40'
+                      : 'bg-emerald-950/80 text-emerald-300 border-emerald-500/30'
+                  }`}>
+                    {currentRole === 'host' ? '👑 Host Mode' : currentRole === 'admin' ? '🛡️ Admin Mode' : '👤 Member Mode'}
+                  </span>
+                </div>
+                <p className="text-[11px] sm:text-xs text-slate-300 font-normal leading-relaxed max-w-2xl">
+                  {currentRole === 'host'
+                    ? 'จัดการกิจกรรมของคุณ ตรวจตั๋วหน้างาน รับเงินค่าตั๋วและทิป พร้อมปลดล็อกภารกิจเงินสนับสนุนจากระบบ'
+                    : 'เปลี่ยนวันว่างให้มีความหมาย ออกมาแชร์รอยยิ้มกับสังคมที่เป็นมิตร ไม่ต้องกลัวเหงาแม้มาคนเดียว พร้อมรับสิทธิ์และของขวัญ'}
+                </p>
               </div>
-              <p className="text-[11px] sm:text-xs text-slate-300 font-normal leading-relaxed max-w-2xl">
-                เปลี่ยนวันว่างให้มีความหมาย ออกมาแชร์รอยยิ้มกับสังคมที่เป็นมิตร ไม่ต้องกลัวเหงาแม้มาคนเดียว พร้อมรับสิทธิ์เข้าร่วมกิจกรรมและของขวัญสุดพิเศษ
-              </p>
+
+              {/* Right: Quick Role Switcher Bar */}
+              <div className="flex items-center gap-1 p-1 bg-slate-900/90 border border-slate-700/90 rounded-2xl shrink-0">
+                <span className="text-[10px] font-bold text-slate-400 px-2 hidden sm:inline">สลับบทบาท:</span>
+                
+                <button
+                  onClick={() => handleSelectRole('member')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                    currentRole === 'member'
+                      ? 'bg-[#4A7C59] text-white shadow-xs'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <span>👤 สมาชิกทั่วไป</span>
+                </button>
+
+                <button
+                  onClick={() => handleSelectRole('host')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                    currentRole === 'host'
+                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-xs'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Crown className="w-3.5 h-3.5" />
+                  <span>👑 โฮสต์ผู้จัด</span>
+                </button>
+
+                <button
+                  onClick={() => handleSelectRole('admin')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                    currentRole === 'admin'
+                      ? 'bg-purple-600 text-white shadow-xs'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <span>🛡️ แอดมิน</span>
+                </button>
+              </div>
             </div>
 
-            {/* Right: Compact Gamification Stats Pill */}
-            {isLoggedIn && (
-              <div className="flex items-center gap-3 bg-slate-800/90 border border-slate-700/80 px-3.5 py-1.5 rounded-2xl shrink-0 text-xs text-white">
-                <span className="flex items-center gap-1 text-amber-300 font-bold text-[11px]">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Lv.3 ({userXp}/600 XP)</span>
-                </span>
-                <span className="text-slate-600">•</span>
-                <span className="flex items-center gap-1 text-emerald-300 font-bold text-[11px]">
-                  <Ticket className="w-3.5 h-3.5" />
-                  <span>{joinedEvents.length} ตั๋ว</span>
-                </span>
-                <span className="text-slate-600">•</span>
-                <span className="flex items-center gap-1 text-amber-300 font-bold text-[11px]">
-                  <Trophy className="w-3.5 h-3.5" />
-                  <span>{3 + (isReviewerBadgeUnlocked ? 1 : 0) + (isVipBadgeUnlocked ? 1 : 0)} Badges</span>
-                </span>
-              </div>
-            )}
           </div>
         </section>
 
         {/* Content Section */}
-        <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
           
           {/* REQUIRE LOGIN GUARD */}
           {!isLoggedIn ? (
@@ -467,27 +597,8 @@ export default function ChallengePage() {
                   🔒 เข้าสู่ระบบเพื่อดูกิจกรรม & ตั๋วของคุณ
                 </h2>
                 <p className="text-sm sm:text-base text-[#64748B] max-w-lg mx-auto leading-relaxed">
-                  เข้าสู่ระบบเพื่อจัดการตั๋ว E-Ticket QR Code ที่เข้าร่วม ดูแชตกลุ่มเพื่อนๆ และสะสมความสำเร็จ Badges แลกของรางวัล
+                  เข้าสู่ระบบเพื่อจัดการตั๋ว E-Ticket QR Code ดูแชตกลุ่ม และสร้างรายได้จากการเป็นโฮสต์
                 </p>
-              </div>
-
-              {/* Benefits Preview List */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left pt-2 pb-2">
-                <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E2DCD2] space-y-1">
-                  <div className="text-xl">🎟️</div>
-                  <h4 className="font-bold text-xs text-[#1E293B]">จัดการตั๋ว E-Ticket</h4>
-                  <p className="text-[11px] text-[#64748B]">ดูวันเวลา สถานที่ และ QR Code สแกนเข้างาน</p>
-                </div>
-                <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E2DCD2] space-y-1">
-                  <div className="text-xl">💬</div>
-                  <h4 className="font-bold text-xs text-[#1E293B]">แชตกลุ่มเพื่อนร่วมงาน</h4>
-                  <p className="text-[11px] text-[#64748B]">นัดแนะจุดนัดพบกับเพื่อนในกลุ่ม</p>
-                </div>
-                <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E2DCD2] space-y-1">
-                  <div className="text-xl">🏆</div>
-                  <h4 className="font-bold text-xs text-[#1E293B]">สะสม Badges & แลกของ</h4>
-                  <p className="text-[11px] text-[#64748B]">ปลดล็อกตราเกียรติยศและคูปองส่วนลดคาเฟ่</p>
-                </div>
               </div>
 
               <div className="pt-2">
@@ -496,65 +607,144 @@ export default function ChallengePage() {
                   className="bg-[#4A7C59] hover:bg-[#3B6347] text-white px-8 py-3.5 rounded-full font-extrabold text-sm sm:text-base transition-all shadow-lg shadow-[#4A7C59]/30 inline-flex items-center gap-2 active:scale-95 cursor-pointer"
                 >
                   <KeyRound className="w-5 h-5" />
-                  <span>เข้าสู่ระบบเพื่อดูกิจกรรมของฉัน ➔</span>
+                  <span>เข้าสู่ระบบทันที ➔</span>
                 </button>
               </div>
             </div>
           ) : (
             /* Logged-In User Dashboard */
             <>
-              {/* Top Sub-Tab Switcher */}
-              <div className="flex items-center gap-2 border-b border-[#E8E2D8] pb-4 overflow-x-auto no-scrollbar">
+              {/* ADMIN MODE QUICK BANNER */}
+              {currentRole === 'admin' && (
+                <div className="bg-gradient-to-r from-purple-950 via-slate-900 to-[#1E293B] text-white p-5 rounded-3xl border border-purple-500/30 shadow-lg flex flex-col md:flex-row items-center justify-between gap-4 animate-fade-in">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-purple-300 shrink-0">
+                      <Bot className="w-6 h-6 animate-pulse" />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-base text-white flex items-center gap-2">
+                        <span>🛡️ แดชบอร์ดผู้ดูแลระบบ (Admin Mode)</span>
+                        <span className="text-[10px] bg-purple-500/30 text-purple-200 px-2 py-0.5 rounded-md">Live Control</span>
+                      </h3>
+                      <p className="text-xs text-slate-300 mt-0.5">
+                        ระบบจัดการอีเวนต์ 55+ รายการ, ปัญญาประดิษฐ์ AI Tagger, ระบบ Deduplication และจัดการ Official Quests
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    <Link
+                      href="/admin"
+                      className="bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs px-5 py-2.5 rounded-2xl shadow-md transition-all flex items-center gap-1.5 active:scale-95"
+                    >
+                      <SlidersHorizontal className="w-3.5 h-3.5" />
+                      <span>เปิดแผงควบคุมระบบ (Admin Panel) ➔</span>
+                    </Link>
+                  </div>
+                </div>
+              )}
+
+              {/* Sub-Tab Navigation Bar */}
+              <div className="flex items-center gap-2 border-b border-[#E8E2D8] pb-3 overflow-x-auto no-scrollbar">
+                
+                {/* 1. Attendee Sub-Tab */}
                 <button
                   onClick={() => setActiveSubTab('joined_events')}
-                  className={`px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
+                  className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
                     activeSubTab === 'joined_events'
                       ? 'bg-[#4A7C59] text-white shadow-sm'
                       : 'bg-white text-[#475569] hover:bg-slate-100 border border-[#E8E2D8]'
                   }`}
                 >
                   <Ticket className="w-4 h-4" />
-                  <span>ตั๋วของฉัน & กิจกรรมที่เข้าร่วม ({joinedEvents.length})</span>
+                  <span>ตั๋วของฉัน ({joinedEvents.length})</span>
                 </button>
 
+                {/* 2. Host Studio Sub-Tab */}
+                <button
+                  onClick={() => setActiveSubTab('host_studio')}
+                  className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
+                    activeSubTab === 'host_studio'
+                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-sm'
+                      : 'bg-white text-[#475569] hover:bg-slate-100 border border-[#E8E2D8]'
+                  }`}
+                >
+                  <Crown className="w-4 h-4 text-amber-300" />
+                  <span>👑 สตูดิโอโฮสต์สร้างรายได้</span>
+                </button>
+
+                {/* 3. Quests Sub-Tab */}
                 <button
                   onClick={() => setActiveSubTab('quests')}
-                  className={`px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
+                  className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
                     activeSubTab === 'quests'
                       ? 'bg-[#1E293B] text-white shadow-sm'
                       : 'bg-white text-[#475569] hover:bg-slate-100 border border-[#E8E2D8]'
                   }`}
                 >
                   <Trophy className="w-4 h-4 text-amber-400" />
-                  <span>ชาเลนจ์ & เหรียญสะสม Badges</span>
+                  <span>ชาเลนจ์ & Badges</span>
                 </button>
 
+                {/* 4. Rewards Store Sub-Tab */}
                 <button
                   onClick={() => setActiveSubTab('rewards')}
-                  className={`px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
+                  className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
                     activeSubTab === 'rewards'
                       ? 'bg-[#F26430] text-white shadow-sm'
                       : 'bg-white text-[#475569] hover:bg-slate-100 border border-[#E8E2D8]'
                   }`}
                 >
                   <Gift className="w-4 h-4 text-white" />
-                  <span>ร้านค้าแลกของรางวัล ({userXp} XP)</span>
+                  <span>ร้านค้าแลกรางวัล ({userXp} XP)</span>
                 </button>
               </div>
 
-              {/* VIEW 1: 🎟️ กิจกรรมที่เข้าร่วม (My Joined Events & Tickets) */}
+              {/* ========================================================================= */}
+              {/* TAB 1: 🎟️ ตั๋วของฉัน & ผู้เข้าร่วม (Attendee Journey) */}
+              {/* ========================================================================= */}
               {activeSubTab === 'joined_events' && (
                 <section className="space-y-6 animate-fade-in">
                   
+                  {/* Active Streak Tracker Banner */}
+                  <div className="bg-gradient-to-r from-[#1E293B] to-slate-800 text-white rounded-3xl p-5 border border-slate-700/80 shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5 text-center sm:text-left">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-[#F26430] flex items-center justify-center text-white text-2xl shadow-lg shrink-0">
+                        🔥
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-center sm:justify-start gap-2">
+                          <h3 className="font-black text-base text-white">
+                            Active Lifestyle Streak: 3 สัปดาห์ต่อเนื่อง!
+                          </h3>
+                          <span className="text-[10px] font-black bg-amber-400 text-slate-950 px-2 py-0.2 rounded-full">
+                            XP Boost x2
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-300 mt-0.5">
+                          คุณออกมาร่วมกิจกรรมสม่ำเสมอ รับโบนัสแต้ม XP คูณสองเมื่อเช็คอินสัปดาห์นี้
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 bg-slate-900/80 px-3.5 py-2 rounded-2xl border border-slate-700 text-xs text-white shrink-0 font-bold">
+                      <span>🟢 สัปดาห์ 1</span>
+                      <span className="text-slate-500">➔</span>
+                      <span>🟢 สัปดาห์ 2</span>
+                      <span className="text-slate-500">➔</span>
+                      <span className="text-amber-400">🔥 สัปดาห์ 3 (Active)</span>
+                    </div>
+                  </div>
+
                   {/* Header & Sub-filter Switcher */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E8E2D8] pb-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E8E2D8] pb-3">
                     <div>
-                      <h2 className="text-xl sm:text-2xl font-extrabold text-[#1E293B] flex items-center gap-2">
-                        <CheckCircle2 className="w-6 h-6 text-[#4A7C59]" />
+                      <h2 className="text-lg sm:text-xl font-extrabold text-[#1E293B] flex items-center gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-[#4A7C59]" />
                         <span>ตั๋วกิจกรรมของคุณ</span>
                       </h2>
                       <p className="text-xs text-[#64748B] font-medium mt-0.5">
-                        คลิกที่การ์ดหรือปุ่ม เพื่อเปิดดูตั๋ว E-Ticket QR Code แชตคุยกับเพื่อนในตี้ หรือยกเลิกเพื่อคืนที่นั่ง
+                        ดูตั๋ว QR Code แชตกลุ่มเพื่อนร่วมงาน หรือเขียนรีวิวพร้อมให้ทิปโฮสต์
                       </p>
                     </div>
 
@@ -578,12 +768,12 @@ export default function ChallengePage() {
                             : 'text-slate-600 hover:text-slate-900'
                         }`}
                       >
-                        ⭐ ประวัติกิจกรรม & รีวิว ({pastEvents.length})
+                        ⭐ ประวัติ & ทิปโฮสต์ ({pastEvents.length})
                       </button>
                     </div>
                   </div>
 
-                  {/* 1. UPCOMING EVENTS WITH E-TICKET QR CODE, GROUP CHAT & CANCEL BUTTON */}
+                  {/* 1. UPCOMING EVENTS */}
                   {eventViewMode === 'upcoming' && (
                     <div className="space-y-4">
                       {joinedEvents.length === 0 ? (
@@ -608,7 +798,6 @@ export default function ChallengePage() {
                               key={event.id}
                               className="bg-white rounded-3xl p-5 sm:p-6 border-2 border-[#4A7C59]/80 ring-2 ring-[#4A7C59]/10 shadow-sm hover:shadow-xl transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative overflow-hidden group"
                             >
-                              {/* Left: Event Thumbnail & Details */}
                               <div
                                 onClick={() => handleOpenTicket(event, idx)}
                                 className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1 cursor-pointer"
@@ -656,7 +845,7 @@ export default function ChallengePage() {
                                 </div>
                               </div>
 
-                              {/* Right: Actions (View Ticket QR, Group Chat, Cancel) */}
+                              {/* Right: Actions */}
                               <div className="flex sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-2 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100">
                                 <button
                                   onClick={() => handleOpenTicket(event, idx)}
@@ -692,7 +881,7 @@ export default function ChallengePage() {
                     </div>
                   )}
 
-                  {/* 2. PAST COMPLETED EVENTS (With 15s Quick Review Button) */}
+                  {/* 2. PAST EVENTS (With Tip Host & Review Button) */}
                   {eventViewMode === 'past' && (
                     <div className="space-y-4">
                       {pastEvents.map((event) => {
@@ -720,11 +909,9 @@ export default function ChallengePage() {
                                   <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full">
                                     ผู้จัด: {event.hostName}
                                   </span>
-                                  {event.hostHostedCount && event.hostHostedCount >= 20 && (
-                                    <span className="text-[10px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
-                                      👑 โฮสต์ยอดเยี่ยม ({event.hostHostedCount}+ กิจกรรม)
-                                    </span>
-                                  )}
+                                  <span className="text-[10px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                                    👑 โฮสต์ยอดเยี่ยม
+                                  </span>
                                 </div>
 
                                 <h3 className="font-extrabold text-base sm:text-lg text-[#1E293B]">
@@ -744,20 +931,20 @@ export default function ChallengePage() {
                               </div>
                             </div>
 
-                            {/* Review Action Area */}
+                            {/* Tip Host & Review Action */}
                             <div className="flex items-center justify-end shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100">
                               {isReviewed ? (
                                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
                                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                                  <span>คุณรีวิวแล้ว (รับ +50 XP แล้ว ⭐)</span>
+                                  <span>รีวิวและส่งกำลังใจให้โฮสต์แล้ว (รับ +50 XP) ⭐</span>
                                 </div>
                               ) : (
                                 <button
-                                  onClick={() => handleOpenReviewModal(event)}
-                                  className="w-full sm:w-auto bg-[#F26430] hover:bg-[#E05320] text-white px-5 py-2.5 rounded-2xl text-xs font-black shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 animate-pulse"
+                                  onClick={() => handleOpenTipHostModal(event)}
+                                  className="w-full sm:w-auto bg-gradient-to-r from-[#F26430] to-orange-500 hover:from-[#E05320] hover:to-orange-600 text-white px-5 py-2.5 rounded-2xl text-xs font-black shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                                 >
-                                  <Star className="w-4 h-4 fill-white" />
-                                  <span>ให้คะแนนความประทับใจ (+50 XP)</span>
+                                  <Heart className="w-4 h-4 fill-white" />
+                                  <span>💖 ให้คะแนน & ทิปโฮสต์ (+50 XP)</span>
                                 </button>
                               )}
                             </div>
@@ -770,20 +957,259 @@ export default function ChallengePage() {
                 </section>
               )}
 
-              {/* VIEW 2: 🏆 ชาเลนจ์ & เหรียญสะสม (Gamification Quests & Badges) */}
+              {/* ========================================================================= */}
+              {/* TAB 2: 👑 สตูดิโอโฮสต์สร้างรายได้ (Host & Creator Studio) */}
+              {/* ========================================================================= */}
+              {activeSubTab === 'host_studio' && (
+                <section className="space-y-6 animate-fade-in">
+                  
+                  {/* Host Wallet & Revenue Overview Card */}
+                  <div className="bg-gradient-to-br from-[#1E293B] via-slate-900 to-[#0F172A] text-white rounded-3xl p-6 sm:p-8 border border-amber-500/30 shadow-xl space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-700/80 pb-6">
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center text-slate-950 font-black text-2xl shadow-lg">
+                          👑
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h2 className="font-extrabold text-xl sm:text-2xl text-white">
+                              กระเป๋าเงินโฮสต์ (Creator Wallet)
+                            </h2>
+                            <span className="text-[10px] font-black bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded-full">
+                              ⭐ Superhost Gold
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-300 mt-0.5">
+                            รายได้จากการขายตั๋วกิจกรรม และเงินทิปสนับสนุนจากผู้เข้าร่วม
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Withdraw Button */}
+                      <button
+                        onClick={handleWithdrawEarnings}
+                        className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-black text-xs sm:text-sm px-6 py-3 rounded-2xl shadow-lg shadow-emerald-900/30 flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer shrink-0"
+                      >
+                        <CreditCard className="w-4 h-4" />
+                        <span>ถอนเงินเข้าบัญชี (Withdraw)</span>
+                      </button>
+                    </div>
+
+                    {/* Financial Stats Grid */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/80 space-y-1">
+                        <span className="text-[11px] text-slate-400 font-bold block">รายได้รวมสุทธิ</span>
+                        <div className="text-2xl sm:text-3xl font-black text-amber-400 font-mono">
+                          ฿{(hostTicketRevenue + hostTipsRevenue).toLocaleString()}
+                        </div>
+                        <span className="text-[10px] text-emerald-400 font-bold block">พร้อมโอนเข้าบัญชีทันที</span>
+                      </div>
+
+                      <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/80 space-y-1">
+                        <span className="text-[11px] text-slate-400 font-bold block">ยอดขายตั๋วกิจกรรม</span>
+                        <div className="text-xl sm:text-2xl font-extrabold text-white font-mono">
+                          ฿{hostTicketRevenue.toLocaleString()}
+                        </div>
+                        <span className="text-[10px] text-slate-400 block">จาก 18 ที่นั่งที่ขายได้</span>
+                      </div>
+
+                      <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/80 space-y-1">
+                        <span className="text-[11px] text-slate-400 font-bold block">เงินทิปจากสมาชิก (Tips)</span>
+                        <div className="text-xl sm:text-2xl font-extrabold text-rose-400 font-mono">
+                          ฿{hostTipsRevenue.toLocaleString()}
+                        </div>
+                        <span className="text-[10px] text-rose-300 block">💖 12 คนให้กำลังใจ</span>
+                      </div>
+
+                      <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/80 space-y-1">
+                        <span className="text-[11px] text-slate-400 font-bold block">คะแนนรีวิวโฮสต์</span>
+                        <div className="text-xl sm:text-2xl font-extrabold text-amber-300 flex items-center gap-1.5">
+                          <Star className="w-5 h-5 fill-amber-300" />
+                          <span>4.95 / 5.0</span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 block">จาก 48 รีวิวผู้ร่วมงานจริง</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Host Bounties & Subsidy Campaign (Platform Grants) */}
+                  <div className="bg-white rounded-3xl p-6 border border-[#E8E2D8] shadow-sm space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                      <div>
+                        <h3 className="font-extrabold text-base sm:text-lg text-[#1E293B] flex items-center gap-2">
+                          <Gift className="w-5 h-5 text-[#F26430]" />
+                          <span>ภารกิจสนับสนุนเงินโฮสต์ (Host Bounties & Grants)</span>
+                        </h3>
+                        <p className="text-xs text-[#64748B]">
+                          งบประมาณอุดหนุนจาก Chill & Connect Hub เพื่อช่วยค่าสถานที่และอุปกรณ์ให้ผู้จัด
+                        </p>
+                      </div>
+                      <span className="text-xs font-black text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">
+                        แคมเปญเดือนนี้
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Bounty 1: Host 3 Meetups */}
+                      <div className="p-4 rounded-2xl border border-amber-300 bg-gradient-to-br from-amber-50/50 to-orange-50/50 flex flex-col justify-between space-y-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-black text-amber-900 bg-amber-100 px-2 py-0.5 rounded-md">
+                              💰 งบสนับสนุน ฿500
+                            </span>
+                            <span className="text-xs font-bold text-emerald-700">ความคืบหน้า: 2/2 ครั้ง (ครบแล้ว!)</span>
+                          </div>
+                          <h4 className="font-extrabold text-sm text-slate-800">
+                            จัดกิจกรรมชุมชนครบ 2 ครั้งในเดือนนี้
+                          </h4>
+                          <p className="text-xs text-slate-500">
+                            ช่วยอุดหนุนค่าสถานที่ ค่าสนาม หรือค่ากาแฟต้อนรับลูกตี้
+                          </p>
+                        </div>
+
+                        <div>
+                          {isHostBountyClaimed ? (
+                            <div className="w-full bg-emerald-100 text-emerald-800 text-xs font-bold py-2 rounded-xl text-center border border-emerald-200">
+                              ✓ รับเงินสนับสนุน ฿500 เรียบร้อยแล้ว
+                            </div>
+                          ) : (
+                            <button
+                              onClick={handleClaimHostBounty}
+                              className="w-full bg-gradient-to-r from-amber-500 to-[#F26430] hover:from-amber-600 hover:to-[#E05320] text-white font-extrabold text-xs py-2.5 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer"
+                            >
+                              🎉 กดรับเงินสนับสนุน ฿500 เข้ากระเป๋า!
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Bounty 2: 5-Star Reviews */}
+                      <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50 flex flex-col justify-between space-y-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-black text-slate-700 bg-slate-200 px-2 py-0.5 rounded-md">
+                              ⭐ สิทธิพิเศษ Superhost
+                            </span>
+                            <span className="text-xs font-bold text-slate-500">48/10 รีวิว (สำเร็จแล้ว)</span>
+                          </div>
+                          <h4 className="font-extrabold text-sm text-slate-800">
+                            ได้รับรีวิว 5 ดาวครบ 10 คนขึ้นไป
+                          </h4>
+                          <p className="text-xs text-slate-500">
+                            ปลดล็อกเหรียญตรา Superhost และได้รับการปักหมุดโปรโมทหน้าแรกฟรี
+                          </p>
+                        </div>
+
+                        <div className="w-full bg-slate-200 text-slate-700 text-xs font-bold py-2 rounded-xl text-center">
+                          ✓ ปลดล็อกสิทธิพิเศษ Superhost แล้ว
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* My Hosted Events List */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-extrabold text-lg text-[#1E293B] flex items-center gap-2">
+                          <Users className="w-5 h-5 text-[#4A7C59]" />
+                          <span>กิจกรรมที่คุณเป็นผู้จัด ({myHostedEvents.length} รายการ)</span>
+                        </h3>
+                        <p className="text-xs text-[#64748B]">
+                          สแกนตรวจตั๋วผู้เข้าร่วมหน้างาน หรือส่งข้อความแจ้งเตือนลูกตี้
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => setIsCreateEventModalOpen(true)}
+                        className="bg-[#4A7C59] hover:bg-[#3B6347] text-white font-extrabold text-xs px-4 py-2 rounded-2xl shadow-md flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
+                      >
+                        <PlusCircle className="w-4 h-4" />
+                        <span>➕ สร้างกิจกรรมใหม่</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {myHostedEvents.map((event) => (
+                        <div
+                          key={event.id}
+                          className="bg-white rounded-3xl p-5 border border-[#E8E2D8] shadow-sm hover:shadow-md transition-all space-y-4 flex flex-col justify-between"
+                        >
+                          <div className="flex gap-4">
+                            <img
+                              src={event.image}
+                              alt={event.title}
+                              className="w-24 h-24 rounded-2xl object-cover shrink-0"
+                            />
+                            <div className="space-y-1 min-w-0">
+                              <span className="text-[10px] font-black text-[#4A7C59] bg-[#EBF3ED] px-2 py-0.5 rounded-md">
+                                #{event.tag}
+                              </span>
+                              <h4 className="font-extrabold text-sm text-[#1E293B] line-clamp-2">
+                                {event.title}
+                              </h4>
+                              <p className="text-xs text-slate-500 flex items-center gap-1">
+                                <Calendar className="w-3 h-3 text-[#4A7C59]" />
+                                <span>{event.date}</span>
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Attendance & Revenue Mini Strip */}
+                          <div className="bg-[#FAF7F2] p-3 rounded-2xl border border-[#E8E2D8] flex items-center justify-between text-xs font-bold">
+                            <div>
+                              <span className="text-[10px] text-slate-400 block font-normal">ยอดลงทะเบียน</span>
+                              <span className="text-slate-800 font-extrabold">{event.participantsCount}/{event.maxParticipants} คน</span>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-[10px] text-slate-400 block font-normal">ราคาตั๋ว</span>
+                              <span className="text-[#F26430] font-extrabold">{event.price}/คน</span>
+                            </div>
+                          </div>
+
+                          {/* Host Action Buttons */}
+                          <div className="flex items-center gap-2 pt-1">
+                            <button
+                              onClick={() => handleOpenDoorScanner(event)}
+                              className="flex-1 bg-[#1E293B] hover:bg-black text-white font-extrabold text-xs py-2.5 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                              <QrCode className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>📋 ตรวจตั๋วหน้างาน</span>
+                            </button>
+
+                            <button
+                              onClick={() => handleOpenGroupChat(event)}
+                              className="bg-[#EBF3ED] hover:bg-[#D6E8DC] text-[#4A7C59] font-extrabold text-xs px-3.5 py-2.5 rounded-xl transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                              title="เปิดแชตกลุ่มลูกตี้"
+                            >
+                              <MessageCircle className="w-3.5 h-3.5" />
+                              <span>แชต</span>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                </section>
+              )}
+
+              {/* ========================================================================= */}
+              {/* TAB 3: 🏆 ชาเลนจ์ & เหรียญสะสม (Gamification Quests & Badges) */}
+              {/* ========================================================================= */}
               {activeSubTab === 'quests' && (
-                <div className="space-y-12 animate-fade-in">
+                <div className="space-y-10 animate-fade-in">
                   
                   {/* Badges Collection Showcase */}
                   <section className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E8E2D8] shadow-sm space-y-6">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                       <div>
-                        <h2 className="text-xl sm:text-2xl font-extrabold text-[#1E293B] flex items-center gap-2">
-                          <Trophy className="w-6 h-6 text-amber-500" />
+                        <h2 className="text-lg sm:text-xl font-extrabold text-[#1E293B] flex items-center gap-2">
+                          <Trophy className="w-5 h-5 text-amber-500" />
                           <span>คลังเหรียญเกียรติยศ Badges ของคุณ</span>
                         </h2>
                         <p className="text-xs text-[#64748B] mt-0.5 font-medium">
-                          ปลดล็อกเหรียญจากการเข้าร่วมกิจกรรมจริง เช็คอินหน้างาน เขียนรีวิว และแลกของรางวัล
+                          ปลดล็อกเหรียญจากการเข้าร่วมกิจกรรม เช็คอินหน้างาน เขียนรีวิว และแลกของรางวัล
                         </p>
                       </div>
                       <span className="text-xs font-black text-amber-600 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">
@@ -792,72 +1218,69 @@ export default function ChallengePage() {
                     </div>
 
                     {/* Badges Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                      <div className="bg-[#FAF7F2] p-4 rounded-2xl border border-amber-300 text-center space-y-2 relative shadow-xs">
-                        <span className="text-3xl">🏃</span>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
+                      <div className="bg-[#FAF7F2] p-3.5 rounded-2xl border border-amber-300 text-center space-y-1.5 relative shadow-xs">
+                        <span className="text-2xl">🏃</span>
                         <h4 className="font-extrabold text-xs text-slate-800">HYROX Runner</h4>
-                        <p className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full inline-block">
+                        <p className="text-[9px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.2 rounded-full inline-block">
                           ✓ ปลดล็อกแล้ว
                         </p>
                       </div>
 
-                      <div className="bg-[#FAF7F2] p-4 rounded-2xl border border-amber-300 text-center space-y-2 relative shadow-xs">
-                        <span className="text-3xl">🧘</span>
+                      <div className="bg-[#FAF7F2] p-3.5 rounded-2xl border border-amber-300 text-center space-y-1.5 relative shadow-xs">
+                        <span className="text-2xl">🧘</span>
                         <h4 className="font-extrabold text-xs text-slate-800">Zen Master</h4>
-                        <p className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full inline-block">
+                        <p className="text-[9px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.2 rounded-full inline-block">
                           ✓ ปลดล็อกแล้ว
                         </p>
                       </div>
 
-                      <div className="bg-[#FAF7F2] p-4 rounded-2xl border border-amber-300 text-center space-y-2 relative shadow-xs">
-                        <span className="text-3xl">☕</span>
+                      <div className="bg-[#FAF7F2] p-3.5 rounded-2xl border border-amber-300 text-center space-y-1.5 relative shadow-xs">
+                        <span className="text-2xl">☕</span>
                         <h4 className="font-extrabold text-xs text-slate-800">Coffee Explorer</h4>
-                        <p className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full inline-block">
+                        <p className="text-[9px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.2 rounded-full inline-block">
                           ✓ ปลดล็อกแล้ว
                         </p>
                       </div>
 
-                      <div className={`p-4 rounded-2xl border text-center space-y-2 relative shadow-xs ${
+                      <div className={`p-3.5 rounded-2xl border text-center space-y-1.5 relative shadow-xs ${
                         isReviewerBadgeUnlocked
                           ? 'bg-[#FAF7F2] border-amber-300'
                           : 'bg-slate-50 border-slate-200 opacity-60'
                       }`}>
-                        <span className="text-3xl">⭐</span>
+                        <span className="text-2xl">⭐</span>
                         <h4 className="font-extrabold text-xs text-slate-800">Community Reviewer</h4>
-                        <p className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-block ${
+                        <p className={`text-[9px] font-bold px-2 py-0.2 rounded-full inline-block ${
                           isReviewerBadgeUnlocked ? 'text-emerald-700 bg-emerald-50' : 'text-slate-500 bg-slate-100'
                         }`}>
-                          {isReviewerBadgeUnlocked ? '✓ ปลดล็อกแล้ว' : '🔒 ล็อกอยู่ (เขียนรีวิว)'}
+                          {isReviewerBadgeUnlocked ? '✓ ปลดล็อกแล้ว' : '🔒 ล็อกอยู่'}
                         </p>
                       </div>
 
-                      <div className={`p-4 rounded-2xl border text-center space-y-2 relative shadow-xs ${
+                      <div className={`p-3.5 rounded-2xl border text-center space-y-1.5 relative shadow-xs ${
                         isVipBadgeUnlocked
                           ? 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-400 ring-2 ring-amber-400/20'
                           : 'bg-slate-50 border-slate-200 opacity-60'
                       }`}>
-                        <span className="text-3xl">👑</span>
+                        <span className="text-2xl">👑</span>
                         <h4 className="font-extrabold text-xs text-slate-800">VIP Collector</h4>
-                        <p className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-block ${
+                        <p className={`text-[9px] font-bold px-2 py-0.2 rounded-full inline-block ${
                           isVipBadgeUnlocked ? 'text-amber-800 bg-amber-100' : 'text-slate-500 bg-slate-100'
                         }`}>
-                          {isVipBadgeUnlocked ? '✓ ปลดล็อกแล้ว' : '🔒 ล็อกอยู่ (แลกของรางวัล)'}
+                          {isVipBadgeUnlocked ? '✓ ปลดล็อกแล้ว' : '🔒 ล็อกอยู่'}
                         </p>
                       </div>
                     </div>
                   </section>
 
-                  {/* Active Quests (With Create Custom Quest Button) */}
-                  <section className="space-y-6">
+                  {/* Active Quests */}
+                  <section className="space-y-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E8E2D8] pb-3">
                       <div>
-                        <h2 className="text-xl sm:text-2xl font-extrabold text-[#1E293B] tracking-tight flex items-center gap-2">
-                          <Zap className="w-6 h-6 text-[#F26430]" />
+                        <h2 className="text-lg sm:text-xl font-extrabold text-[#1E293B] tracking-tight flex items-center gap-2">
+                          <Zap className="w-5 h-5 text-[#F26430]" />
                           <span>ชาเลนจ์ที่คุณกำลังทำอยู่ ({myChallenges.length} รายการ)</span>
                         </h2>
-                        <p className="text-xs text-[#64748B] font-medium mt-0.5">
-                          ทำภารกิจให้ครบเพื่อปลดล็อก Badge และรับแต้ม XP สะสม
-                        </p>
                       </div>
 
                       <button
@@ -869,23 +1292,23 @@ export default function ChallengePage() {
                       </button>
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {myChallenges.map((quest, idx) => (
                         <div
                           key={quest.id}
-                          className="bg-white rounded-2xl p-5 border border-[#E8E2D8] shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
+                          className="bg-white rounded-2xl p-4 sm:p-5 border border-[#E8E2D8] shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
                         >
                           <div className="flex items-center gap-4 min-w-[280px]">
                             <span className="text-base font-bold text-[#94A3B8] w-5 text-center shrink-0">
                               {idx + 1}
                             </span>
 
-                            <div className="w-11 h-11 bg-[#FAF7F2] border border-[#E2DCD2] rounded-xl flex items-center justify-center shrink-0 shadow-xs">
+                            <div className="w-10 h-10 bg-[#FAF7F2] border border-[#E2DCD2] rounded-xl flex items-center justify-center shrink-0 shadow-xs">
                               {getIcon(quest.iconName)}
                             </div>
 
                             <div>
-                              <h4 className="font-bold text-base text-[#1E293B]">
+                              <h4 className="font-bold text-sm sm:text-base text-[#1E293B]">
                                 {quest.title}
                               </h4>
                               <span className="text-xs text-[#F26430] font-semibold">
@@ -894,7 +1317,6 @@ export default function ChallengePage() {
                             </div>
                           </div>
 
-                          {/* Progress bar */}
                           <div className="flex-1 max-w-md space-y-1.5">
                             <div className="flex justify-between text-xs text-[#64748B]">
                               <span>ความคืบหน้า</span>
@@ -902,7 +1324,7 @@ export default function ChallengePage() {
                                 {quest.completedCountInfo} ({quest.progressPercent}%)
                               </span>
                             </div>
-                            <div className="w-full bg-[#E8E2D8] h-2.5 rounded-full overflow-hidden">
+                            <div className="w-full bg-[#E8E2D8] h-2 rounded-full overflow-hidden">
                               <div
                                 className="bg-[#4A7C59] h-full rounded-full transition-all duration-500"
                                 style={{ width: `${quest.progressPercent}%` }}
@@ -920,20 +1342,16 @@ export default function ChallengePage() {
                     </div>
                   </section>
 
-                  {/* Recommended Quests (Featuring Official Hub Quests) */}
-                  <section className="space-y-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E8E2D8] pb-3">
+                  {/* Recommended & Official Quests */}
+                  <section className="space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E8E2D8] pb-3">
                       <div>
-                        <h2 className="text-xl sm:text-2xl font-extrabold text-[#1E293B] flex items-center gap-2">
-                          <Sparkles className="w-6 h-6 text-amber-500" />
+                        <h2 className="text-lg sm:text-xl font-extrabold text-[#1E293B] flex items-center gap-2">
+                          <Sparkles className="w-5 h-5 text-amber-500" />
                           <span>ชาเลนจ์แนะนำ & ภารกิจ Official ประจำสัปดาห์</span>
                         </h2>
-                        <p className="text-xs sm:text-sm text-[#64748B] mt-0.5">
-                          เลือกทำภารกิจเพื่อเริ่มสะสมแต้มและเหรียญรางวัลพิเศษ
-                        </p>
                       </div>
 
-                      {/* Category Filter Pills */}
                       <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
                         {[
                           { id: 'all', label: 'ทั้งหมด' },
@@ -1013,14 +1431,16 @@ export default function ChallengePage() {
                 </div>
               )}
 
-              {/* VIEW 3: 🎁 ร้านค้าแลกของรางวัล (XP Reward Store) */}
+              {/* ========================================================================= */}
+              {/* TAB 4: 🎁 ร้านค้าแลกของรางวัล & พาร์ทเนอร์ (Rewards Store) */}
+              {/* ========================================================================= */}
               {activeSubTab === 'rewards' && (
                 <section className="space-y-6 animate-fade-in">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E8E2D8] pb-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E8E2D8] pb-3">
                     <div>
-                      <h2 className="text-xl sm:text-2xl font-extrabold text-[#1E293B] flex items-center gap-2">
-                        <ShoppingBag className="w-6 h-6 text-[#F26430]" />
-                        <span>ร้านค้าแลกของรางวัล (Rewards Store)</span>
+                      <h2 className="text-lg sm:text-xl font-extrabold text-[#1E293B] flex items-center gap-2">
+                        <ShoppingBag className="w-5 h-5 text-[#F26430]" />
+                        <span>ร้านค้าแลกของรางวัล & คูปองพาร์ทเนอร์</span>
                       </h2>
                       <p className="text-xs text-[#64748B] font-medium mt-0.5">
                         นำแต้ม XP จากการเข้าร่วมกิจกรรมและเขียนรีวิว มาแลกคูปองส่วนลดและของที่ระลึก
@@ -1136,6 +1556,21 @@ export default function ChallengePage() {
         onConfirmCancel={handleConfirmCancel}
       />
 
+      {/* Tip Host Modal */}
+      <TipHostModal
+        isOpen={isTipHostModalOpen}
+        onClose={() => setIsTipHostModalOpen(false)}
+        event={tipTargetEvent}
+        onTipSubmit={handleTipSubmit}
+      />
+
+      {/* Host Guest Door Scanner Modal */}
+      <HostGuestScannerModal
+        isOpen={isHostScannerOpen}
+        onClose={() => setIsHostScannerOpen(false)}
+        event={scannerTargetEvent}
+      />
+
       {/* Create Custom Challenge Modal */}
       <CreateChallengeModal
         isOpen={isCreateChallengeModalOpen}
@@ -1169,29 +1604,13 @@ export default function ChallengePage() {
         }}
       />
 
-      {/* Review Modal */}
-      {reviewTargetEvent && (
-        <ReviewModal
-          isOpen={isReviewModalOpen}
-          onClose={() => {
-            setIsReviewModalOpen(false);
-            setReviewTargetEvent(null);
-          }}
-          eventId={reviewTargetEvent.id}
-          eventTitle={reviewTargetEvent.title}
-          hostName={reviewTargetEvent.hostName}
-          hostAvatar={reviewTargetEvent.hostAvatar}
-          onSubmitSuccess={handleReviewSubmitSuccess}
-        />
-      )}
-
       {/* Create Event Modal */}
       <CreateEventModal
         isOpen={isCreateEventModalOpen}
         onClose={() => setIsCreateEventModalOpen(false)}
         onCreateSuccess={(newEvent: EventItem) => {
-          setJoinedEvents((prev) => [newEvent, ...prev]);
-          showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จเรียบร้อย! 🎉`);
+          setMyHostedEvents((prev) => [newEvent, ...prev]);
+          showToast(`สร้างกิจกรรม "${newEvent.title}" ในฐานะโฮสต์สำเร็จเรียบร้อย! 🎉`);
         }}
       />
 

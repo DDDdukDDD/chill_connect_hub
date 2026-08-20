@@ -1,7 +1,7 @@
 import { EventItem, BANGKOK_ZONES } from '@/data/mockData';
 
 export interface ScrapedRawEvent {
-  source: 'Zipevent' | 'Eventpop' | 'QSNCC' | 'BITEC' | 'BMA_Bangkok' | 'ThaiRun' | 'SET_Thailand' | 'Facebook';
+  source: 'Zipevent' | 'Eventpop' | 'QSNCC' | 'QSNCC Events' | 'BITEC' | 'BITEC Events' | 'BMA_Bangkok' | 'BMA Events' | 'ThaiRun' | 'SET_Thailand' | 'The Concert' | 'Ticketmelon' | 'Money Expo' | 'Facebook' | string;
   sourceUrl?: string;
   rawTitle: string;
   rawDate: string;
@@ -217,7 +217,7 @@ export function classifyEventCategoryAndTags(title: string, description: string 
     };
   }
 
-  // 4. LEARN (เวิร์กช็อป, งานคราฟต์, ปั้นเซรามิก, วาดรูป, อบขนม, ถ่ายภาพ, เทคโนโลยี)
+  // 4. LEARN & CREATIVE (เวิร์กช็อป, งานคราฟต์, ปั้นเซรามิก, วาดรูป, อบขนม, ถ่ายภาพ, เทคโนโลยี)
   if (
     text.includes('workshop') ||
     text.includes('เวิร์กช็อป') ||
@@ -242,7 +242,7 @@ export function classifyEventCategoryAndTags(title: string, description: string 
     if (text.includes('ceramic') || text.includes('เซรามิก')) tag = '🏺 ปั้นเซรามิก';
     if (text.includes('paint') || text.includes('วาดรูป')) tag = '🎨 วาดรูปสีน้ำ';
     if (text.includes('ขนม') || text.includes('baking')) tag = '🍞 อบขนมปัง & ทำอาหาร';
-    if (text.includes('photo') || text.includes('ถ่ายภาพ')) tag = '📸 เวิร์กช็อปถ่ายภาพ';
+    if (text.includes('photo') || text.includes('ถ่ายภาพ') || text.includes('darkroom')) tag = '📸 เวิร์กช็อปถ่ายภาพ';
 
     return {
       category: 'learn',
@@ -251,20 +251,22 @@ export function classifyEventCategoryAndTags(title: string, description: string 
     };
   }
 
-  // 5. CHILL (คาเฟ่, บอร์ดเกม, ดนตรีในสวน, เดินตลาด, ดูหนัง, หนังสือ, นั่งคุย)
+  // 5. CHILL & ENTERTAINMENT (คอนเสิร์ต, เทศกาลดนตรี, คาเฟ่, บอร์ดเกม, ดนตรีในสวน, เดินตลาด, หนังสือ)
   let tag = '☕ นัดชิลล์';
   if (text.includes('boardgame') || text.includes('บอร์ดเกม')) tag = '🎲 บอร์ดเกมไนท์';
-  if (text.includes('music') || text.includes('ดนตรี') || text.includes('concert')) tag = '🎵 ดนตรีในสวน';
-  if (text.includes('coffee') || text.includes('cafe') || text.includes('กาแฟ')) tag = '☕ คาเฟ่ & คุยสบายๆ';
-  if (text.includes('book') || text.includes('หนังสือ')) tag = '📚 ชมรมคนรักหนังสือ';
-  if (text.includes('expo') || text.includes('anime') || text.includes('fair') || text.includes('market') || text.includes('ตลาด')) tag = '🏛️ นิทรรศการ & เดินเล่น';
+  if (text.includes('concert') || text.includes('คอนเสิร์ต') || text.includes('cat expo') || text.includes('maho rasop') || text.includes('orchestra') || text.includes('t-pop')) tag = '🎸 คอนเสิร์ต & ดนตรีสด';
+  else if (text.includes('music') || text.includes('ดนตรี') || text.includes('jazz') || text.includes('folk')) tag = '🎵 ดนตรีในสวน & Acoustic';
+  else if (text.includes('photowalk') || text.includes('photo walk') || text.includes('สตรีท') || text.includes('biennale')) tag = '📷 เดินถ่ายภาพ Photo Walk';
+  else if (text.includes('coffee') || text.includes('cafe') || text.includes('กาแฟ')) tag = '☕ คาเฟ่ & คุยสบายๆ';
+  else if (text.includes('book') || text.includes('หนังสือ')) tag = '📚 ชมรมคนรักหนังสือ';
+  else if (text.includes('expo') || text.includes('anime') || text.includes('fair') || text.includes('market') || text.includes('ตลาด')) tag = '🏛️ นิทรรศการ & เดินเล่น';
 
   const isBigExpo = text.includes('expo') || text.includes('fair') || text.includes('festival') || text.includes('bitec') || text.includes('qsncc') || text.includes('hall');
 
   return {
     category: 'chill',
     tag,
-    badgeText: isBigExpo ? '🎟️ เข้าฟรี' : '☕ บรรยากาศเป็นกันเอง',
+    badgeText: isBigExpo ? '🎟️ เทศกาล & นิทรรศการ' : '☕ บรรยากาศเป็นกันเอง',
   };
 }
 

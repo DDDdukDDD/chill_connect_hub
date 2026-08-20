@@ -2,6 +2,7 @@ import { EventItem, MOCK_EVENTS } from '@/data/mockData';
 import { processRawEventWithAI } from './aiTagger';
 import { fetchLiveRawEvents, REAL_BANGKOK_EVENT_SEEDS } from './eventScraper';
 import { isDuplicateEvent } from './deduplication';
+import { readDatabase, writeDatabase } from './db';
 
 export interface AdminEventItem extends EventItem {
   approvalStatus: 'pending' | 'approved' | 'rejected';
@@ -9,28 +10,42 @@ export interface AdminEventItem extends EventItem {
   sourceUrl?: string;
 }
 
-// In-memory persistent singleton store for the session
-let GLOBAL_EVENTS: AdminEventItem[] = [
-  // Initialize existing mock events as approved
-  ...MOCK_EVENTS.map((ev) => ({
+// In-memory cache synced with disk database
+let MEMORY_CACHE: AdminEventItem[] | null = null;
+let AUTO_PUBLISH_ENABLED: boolean = false;
+
+// Ensure database is loaded into cache
+export async function loadCache(): Promise<AdminEventItem[]> {
+  if (MEMORY_CACHE !== null && MEMORY_CACHE.length > 0) {
+    return MEMORY_CACHE;
+  }
+  const db = await readDatabase();
+  AUTO_PUBLISH_ENABLED = db.autoPublish;
+  MEMORY_CACHE = db.events;
+  return MEMORY_CACHE;
+}
+
+export function getAllAdminEvents(): AdminEventItem[] {
+  if (MEMORY_CACHE && MEMORY_CACHE.length > 0) {
+    return MEMORY_CACHE;
+  }
+  return MOCK_EVENTS.map((ev) => ({
     ...ev,
     approvalStatus: 'approved' as const,
     source: 'Chill & Connect Official',
-  })),
-];
-
-let AUTO_PUBLISH_ENABLED: boolean = false;
-
-export function getAllAdminEvents(): AdminEventItem[] {
-  return GLOBAL_EVENTS;
+  }));
 }
 
 export function getApprovedPublicEvents(): EventItem[] {
-  return GLOBAL_EVENTS.filter((ev) => ev.approvalStatus === 'approved');
+  const all = getAllAdminEvents();
+  return all.filter((ev) => ev.approvalStatus === 'approved');
 }
 
-export function setAutoPublish(enabled: boolean) {
+export async function setAutoPublish(enabled: boolean) {
   AUTO_PUBLISH_ENABLED = enabled;
+  const db = await readDatabase();
+  db.autoPublish = enabled;
+  await writeDatabase(db);
 }
 
 export function isAutoPublishEnabled(): boolean {
@@ -43,13 +58,13 @@ export async function runScraperAndAIEngine(): Promise<{
   events: AdminEventItem[];
   duplicateDetails: { rawTitle: string; reason: string }[];
 }> {
+  const currentEvents = await loadCache();
   const rawEvents = await fetchLiveRawEvents();
   const newItems: AdminEventItem[] = [];
   const duplicateDetails: { rawTitle: string; reason: string }[] = [];
 
   rawEvents.forEach((raw, idx) => {
-    // Check against existing database AND newly parsed items in current batch
-    const currentCombined = [...newItems, ...GLOBAL_EVENTS];
+    const currentCombined = [...newItems, ...currentEvents];
     const dupCheck = isDuplicateEvent(raw, currentCombined);
 
     if (dupCheck.isDuplicate) {
@@ -69,13 +84,19 @@ export async function runScraperAndAIEngine(): Promise<{
     }
   });
 
-  // Prepend new scraped events to top of store
-  GLOBAL_EVENTS = [...newItems, ...GLOBAL_EVENTS];
+  // Prepend new items to database
+  const updatedEvents = [...newItems, ...currentEvents];
+  MEMORY_CACHE = updatedEvents;
+
+  // Persist to disk database
+  const db = await readDatabase();
+  db.events = updatedEvents;
+  await writeDatabase(db);
 
   return {
     newCount: newItems.length,
     duplicateCount: duplicateDetails.length,
-    events: GLOBAL_EVENTS,
+    events: updatedEvents,
     duplicateDetails,
   };
 }
@@ -94,44 +115,66 @@ export async function resetAndSeedAllEvents(): Promise<{ totalCount: number; eve
     });
   });
 
-  GLOBAL_EVENTS = allFresh;
+  MEMORY_CACHE = allFresh;
+
+  // Persist fresh master database to disk
+  const db = await readDatabase();
+  db.events = allFresh;
+  await writeDatabase(db);
+
   return {
-    totalCount: GLOBAL_EVENTS.length,
-    events: GLOBAL_EVENTS,
+    totalCount: allFresh.length,
+    events: allFresh,
   };
 }
 
-export function updateEventApproval(id: string, status: 'approved' | 'rejected' | 'pending') {
-  GLOBAL_EVENTS = GLOBAL_EVENTS.map((ev) => {
-    if (ev.id === id) {
-      return { ...ev, approvalStatus: status };
-    }
-    return ev;
-  });
-  return GLOBAL_EVENTS;
+export async function updateEventApproval(id: string, status: 'approved' | 'rejected' | 'pending'): Promise<AdminEventItem[]> {
+  const currentEvents = await loadCache();
+  const updated = currentEvents.map((ev) => (ev.id === id ? { ...ev, approvalStatus: status } : ev));
+  MEMORY_CACHE = updated;
+
+  const db = await readDatabase();
+  db.events = updated;
+  await writeDatabase(db);
+
+  return updated;
 }
 
-export function approveAllPendingEvents() {
-  GLOBAL_EVENTS = GLOBAL_EVENTS.map((ev) => {
-    if (ev.approvalStatus === 'pending') {
-      return { ...ev, approvalStatus: 'approved' };
-    }
-    return ev;
-  });
-  return GLOBAL_EVENTS;
+export async function approveAllPendingEvents(): Promise<AdminEventItem[]> {
+  const currentEvents = await loadCache();
+  const updated = currentEvents.map((ev) => (ev.approvalStatus === 'pending' ? { ...ev, approvalStatus: 'approved' as const } : ev));
+  MEMORY_CACHE = updated;
+
+  const db = await readDatabase();
+  db.events = updated;
+  await writeDatabase(db);
+
+  return updated;
 }
 
-export function deleteAdminEvent(id: string) {
-  GLOBAL_EVENTS = GLOBAL_EVENTS.filter((ev) => ev.id !== id);
-  return GLOBAL_EVENTS;
+export async function deleteEvent(id: string): Promise<AdminEventItem[]> {
+  const currentEvents = await loadCache();
+  const updated = currentEvents.filter((ev) => ev.id !== id);
+  MEMORY_CACHE = updated;
+
+  const db = await readDatabase();
+  db.events = updated;
+  await writeDatabase(db);
+
+  return updated;
 }
 
-export function updateAdminEvent(id: string, updatedFields: Partial<AdminEventItem>) {
-  GLOBAL_EVENTS = GLOBAL_EVENTS.map((ev) => {
-    if (ev.id === id) {
-      return { ...ev, ...updatedFields };
-    }
-    return ev;
-  });
-  return GLOBAL_EVENTS;
+export const deleteAdminEvent = deleteEvent;
+
+export async function updateAdminEvent(id: string, updatedFields: Partial<AdminEventItem>): Promise<AdminEventItem[]> {
+  const currentEvents = await loadCache();
+  const updated = currentEvents.map((ev) => (ev.id === id ? { ...ev, ...updatedFields } : ev));
+  MEMORY_CACHE = updated;
+
+  const db = await readDatabase();
+  db.events = updated;
+  await writeDatabase(db);
+
+  return updated;
 }
+

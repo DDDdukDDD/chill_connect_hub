@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import {
   getAllAdminEvents,
+  loadCache,
   updateEventApproval,
   approveAllPendingEvents,
-  deleteAdminEvent,
+  deleteEvent,
   updateAdminEvent,
   setAutoPublish,
   isAutoPublishEnabled,
@@ -11,7 +12,7 @@ import {
 } from '@/lib/eventsStore';
 
 export async function GET() {
-  const events = getAllAdminEvents();
+  const events = await loadCache();
   const autoPublish = isAutoPublishEnabled();
   return NextResponse.json({
     success: true,
@@ -36,32 +37,33 @@ export async function POST(req: Request) {
     }
 
     if (action === 'update_status' && id && status) {
-      const updated = updateEventApproval(id, status);
+      const updated = await updateEventApproval(id, status);
       return NextResponse.json({ success: true, events: updated });
     }
 
     if (action === 'approve_all') {
-      const updated = approveAllPendingEvents();
+      const updated = await approveAllPendingEvents();
       return NextResponse.json({ success: true, events: updated });
     }
 
     if (action === 'delete' && id) {
-      const updated = deleteAdminEvent(id);
+      const updated = await deleteEvent(id);
       return NextResponse.json({ success: true, events: updated });
     }
 
     if (action === 'update_fields' && id && updatedFields) {
-      const updated = updateAdminEvent(id, updatedFields);
+      const updated = await updateAdminEvent(id, updatedFields);
       return NextResponse.json({ success: true, events: updated });
     }
 
     if (action === 'toggle_auto_publish' && typeof autoPublish === 'boolean') {
-      setAutoPublish(autoPublish);
+      await setAutoPublish(autoPublish);
       return NextResponse.json({ success: true, autoPublish });
     }
 
     return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
   } catch (error) {
-    return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
+    console.error('ADMIN EVENTS API ERROR:', error);
+    return NextResponse.json({ success: false, error: (error as Error).message, stack: (error as Error).stack }, { status: 500 });
   }
 }
