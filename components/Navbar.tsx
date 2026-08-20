@@ -18,7 +18,8 @@ import {
   ChevronDown,
   ShieldCheck,
   Sparkles,
-  Heart
+  Heart,
+  Bot
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -206,6 +207,19 @@ export const Navbar: React.FC<NavbarProps> = ({
                           <span>สร้างกิจกรรม / เปิดตี้ใหม่</span>
                         </button>
                       )}
+
+                      <Link
+                        href="/admin"
+                        target="_blank"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                        className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-100 text-slate-700 transition-colors text-left"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Bot className="w-4 h-4 text-emerald-600" />
+                          <span>Event Bot & AI Panel</span>
+                        </div>
+                        <span className="text-[9px] font-extrabold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-md">Admin</span>
+                      </Link>
                     </div>
 
                     {/* Divider & Logout Button */}

@@ -79,6 +79,22 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Fetch live approved events from server
+  React.useEffect(() => {
+    const loadLiveEvents = async () => {
+      try {
+        const res = await fetch('/api/events');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.events) && data.events.length > 0) {
+          setEventsList(data.events);
+        }
+      } catch (err) {
+        console.log('Using default mock events fallback:', err);
+      }
+    };
+    loadLiveEvents();
+  }, []);
+
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('isLoggedIn');

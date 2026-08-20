@@ -20,10 +20,28 @@ export const Pagination: React.FC<PaginationProps> = ({
 }) => {
   if (totalPages <= 1) return null;
 
+  // Handle smooth scroll up to the filter bar & first card of the new page
+  const handlePageSelect = (page: number) => {
+    if (page < 1 || page > totalPages || page === currentPage) return;
+    onPageChange(page);
+
+    // Smooth scroll up to the catalog section and filter bar
+    if (typeof window !== 'undefined') {
+      const el = document.getElementById('catalog-section');
+      if (el) {
+        const yOffset = -75; // Leave comfortable space for sticky navbar
+        const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      } else {
+        window.scrollTo({ top: 380, behavior: 'smooth' });
+      }
+    }
+  };
+
   // Generate page numbers with ellipses
   const getPageNumbers = () => {
     const pages: (number | string)[] = [];
-    
+
     if (totalPages <= 7) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
@@ -37,7 +55,7 @@ export const Pagination: React.FC<PaginationProps> = ({
         pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
       }
     }
-    
+
     return pages;
   };
 
@@ -57,7 +75,7 @@ export const Pagination: React.FC<PaginationProps> = ({
       <div className="flex items-center gap-1.5 sm:gap-2">
         {/* Previous Button */}
         <button
-          onClick={() => onPageChange(currentPage - 1)}
+          onClick={() => handlePageSelect(currentPage - 1)}
           disabled={currentPage === 1}
           className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1 transition-all ${
             currentPage === 1
@@ -90,7 +108,7 @@ export const Pagination: React.FC<PaginationProps> = ({
             return (
               <button
                 key={pageNum}
-                onClick={() => onPageChange(pageNum)}
+                onClick={() => handlePageSelect(pageNum)}
                 className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center cursor-pointer ${
                   isActive
                     ? 'bg-[#4A7C59] text-white shadow-sm ring-2 ring-[#4A7C59]/20'
@@ -106,7 +124,7 @@ export const Pagination: React.FC<PaginationProps> = ({
 
         {/* Next Button */}
         <button
-          onClick={() => onPageChange(currentPage + 1)}
+          onClick={() => handlePageSelect(currentPage + 1)}
           disabled={currentPage === totalPages}
           className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1 transition-all ${
             currentPage === totalPages

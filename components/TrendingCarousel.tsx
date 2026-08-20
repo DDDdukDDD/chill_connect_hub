@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Flame, Calendar, MapPin, Users, Heart, ArrowRight } from 'lucide-react';
+import { Sparkles, Flame, Calendar, MapPin, Users, Heart, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { EventItem } from '@/data/mockData';
 
 interface TrendingCarouselProps {
@@ -18,11 +18,15 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
   toggleFavorite,
 }) => {
   const [isPaused, setIsPaused] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeftState, setScrollLeftState] = useState(0);
+  const [hasMoved, setHasMoved] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Auto Scroll Effect
   useEffect(() => {
-    if (isPaused) return;
+    if (isPaused || isDragging) return;
 
     const interval = setInterval(() => {
       if (scrollRef.current) {
@@ -30,20 +34,56 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
         if (scrollLeft + clientWidth >= scrollWidth - 10) {
           scrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
         } else {
-          scrollRef.current.scrollBy({ left: 280, behavior: 'smooth' });
+          scrollRef.current.scrollBy({ left: 300, behavior: 'smooth' });
         }
       }
-    }, 3500);
+    }, 4000);
 
     return () => clearInterval(interval);
-  }, [isPaused]);
+  }, [isPaused, isDragging]);
 
-  // Select top 6 trending events
-  const trendingEvents = events.slice(0, 6);
+  // Arrow Navigation
+  const handlePrev = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: -310, behavior: 'smooth' });
+    }
+  };
+
+  const handleNext = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: 310, behavior: 'smooth' });
+    }
+  };
+
+  // Mouse Drag to Scroll (Desktop)
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollRef.current) return;
+    setIsDragging(true);
+    setHasMoved(false);
+    setStartX(e.pageX - scrollRef.current.offsetLeft);
+    setScrollLeftState(scrollRef.current.scrollLeft);
+    setIsPaused(true);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollRef.current) return;
+    e.preventDefault();
+    setHasMoved(true);
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    scrollRef.current.scrollLeft = scrollLeftState - walk;
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  // Select top 10 trending events
+  const trendingEvents = events.slice(0, 10);
 
   return (
     <section className="space-y-2.5">
-      {/* Header (100% Responsive on Mobile) */}
+      {/* Header (Clean & Minimal) */}
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1 flex items-center gap-1.5 truncate">
           <h2 className="text-xs sm:text-base font-extrabold text-[#1E293B] truncate">
@@ -65,15 +105,46 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
         </button>
       </div>
 
-      {/* Auto-Slide Carousel Bar */}
-      <div
-        ref={scrollRef}
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
-        onTouchStart={() => setIsPaused(true)}
-        onTouchEnd={() => setIsPaused(false)}
-        className="flex gap-4 overflow-x-auto no-scrollbar py-2 px-1 scroll-smooth"
-      >
+      {/* Carousel Container with Floating Left & Right Arrow Buttons */}
+      <div className="relative group/carousel">
+        
+        {/* Floating Left Arrow Button (Vertically Centered) */}
+        <button
+          type="button"
+          onClick={handlePrev}
+          className="hidden md:flex absolute -left-4 sm:-left-5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/95 backdrop-blur-md hover:bg-white text-slate-700 hover:text-[#4A7C59] border border-slate-200/90 shadow-xl items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 z-20 cursor-pointer opacity-90 hover:opacity-100"
+          title="เลื่อนซ้าย"
+        >
+          <ChevronLeft className="w-5 h-5 text-slate-700 hover:text-[#4A7C59]" />
+        </button>
+
+        {/* Floating Right Arrow Button (Vertically Centered) */}
+        <button
+          type="button"
+          onClick={handleNext}
+          className="hidden md:flex absolute -right-4 sm:-right-5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/95 backdrop-blur-md hover:bg-white text-slate-700 hover:text-[#4A7C59] border border-slate-200/90 shadow-xl items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 z-20 cursor-pointer opacity-90 hover:opacity-100"
+          title="เลื่อนขวา"
+        >
+          <ChevronRight className="w-5 h-5 text-slate-700 hover:text-[#4A7C59]" />
+        </button>
+
+        {/* Auto-Slide & Drag-to-Scroll Carousel Bar */}
+        <div
+          ref={scrollRef}
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => {
+            setIsPaused(false);
+            setIsDragging(false);
+          }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onTouchStart={() => setIsPaused(true)}
+          onTouchEnd={() => setIsPaused(false)}
+          className={`flex gap-4 overflow-x-auto no-scrollbar py-2 px-1 scroll-smooth select-none ${
+            isDragging ? 'cursor-grabbing' : 'cursor-grab'
+          }`}
+        >
         {trendingEvents.map((event) => {
           const isFav = favorites.includes(event.id);
           const isPublicVenue = event.eventType === 'public_venue';
@@ -81,7 +152,11 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
           return (
             <div
               key={`trending-${event.id}`}
-              onClick={() => onSelectEvent(event)}
+              onClick={() => {
+                if (!hasMoved) {
+                  onSelectEvent(event);
+                }
+              }}
               className="min-w-[260px] sm:min-w-[290px] max-w-[290px] bg-white rounded-2xl overflow-hidden border border-[#E8E2D8] shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer group flex flex-col shrink-0 relative"
             >
               {/* Image Banner */}
@@ -184,6 +259,7 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
             </div>
           );
         })}
+        </div>
       </div>
     </section>
   );
