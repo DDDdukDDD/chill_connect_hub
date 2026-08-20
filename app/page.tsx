@@ -17,6 +17,8 @@ import { FilterDrawer } from '@/components/FilterDrawer';
 import { StoryBar } from '@/components/StoryBar';
 import { TrendingCarousel } from '@/components/TrendingCarousel';
 import { ReviewCarousel } from '@/components/ReviewCarousel';
+import { CommunityChallengeBar } from '@/components/CommunityChallengeBar';
+import { CreateChallengeModal } from '@/components/CreateChallengeModal';
 import { Pagination } from '@/components/Pagination';
 import {
   Heart,
@@ -78,6 +80,15 @@ export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(true);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isCreateChallengeModalOpen, setIsCreateChallengeModalOpen] = useState<boolean>(false);
+  const [joinedQuestTitles, setJoinedQuestTitles] = useState<string[]>(['Cafe Hunter 5', 'Step Count 30Days']);
+
+  const handleJoinQuestFromHome = (questTitle: string) => {
+    if (!joinedQuestTitles.includes(questTitle)) {
+      setJoinedQuestTitles((prev) => [...prev, questTitle]);
+      showToast(`🎉 คุณได้รับภารกิจ "${questTitle}" เข้าสู่หน้ารายการของคุณเรียบร้อย! (+XP Bonus)`);
+    }
+  };
 
   // Fetch live approved events from server
   React.useEffect(() => {
@@ -210,13 +221,47 @@ export default function Home() {
         }
       }
 
-      const q = searchQuery.toLowerCase().trim();
-      const matchesSearch =
-        q === '' ||
-        event.title.toLowerCase().includes(q) ||
-        event.location.toLowerCase().includes(q) ||
-        event.tag.toLowerCase().includes(q) ||
-        event.description.toLowerCase().includes(q);
+      // Smart Search Query Matcher (Supports 10 Preset Category Titles and Multi-token Fuzzy Match)
+      let matchesSearch = true;
+      const rawQ = searchQuery.toLowerCase().trim();
+      if (rawQ !== '') {
+        const eventText = `${event.title} ${event.description} ${event.tag} ${event.badgeText || ''} ${event.location} ${event.hostName || ''} ${event.category} ${event.zone || ''}`.toLowerCase();
+
+        // 1. Direct or partial full phrase match
+        if (eventText.includes(rawQ)) {
+          matchesSearch = true;
+        }
+        // 2. Preset category keyword maps
+        else if (rawQ.includes('วิ่ง') || rawQ.includes('มาราธอน') || rawQ.includes('marathon')) {
+          matchesSearch = eventText.includes('วิ่ง') || eventText.includes('มาราธอน') || eventText.includes('marathon') || eventText.includes('trail') || eventText.includes('fun run') || eventText.includes('10k') || eventText.includes('21k');
+        } else if (rawQ.includes('มหกรรม') || rawQ.includes('งานใหญ่') || rawQ.includes('งานอีเวนต์') || rawQ.includes('expo')) {
+          matchesSearch = eventText.includes('expo') || eventText.includes('มหกรรม') || eventText.includes('fair') || eventText.includes('festival') || eventText.includes('qsncc') || eventText.includes('bitec') || eventText.includes('impact') || eventText.includes('สิริกิติ์') || eventText.includes('หนังสือ') || eventText.includes('game show') || eventText.includes('comic con') || eventText.includes('biennale');
+        } else if (rawQ.includes('ฟิตเนส') || rawQ.includes('hyrox') || rawQ.includes('ไฮร็อกซ์') || rawQ.includes('bootcamp')) {
+          matchesSearch = eventText.includes('hyrox') || eventText.includes('fitness') || eventText.includes('ฟิตเนส') || eventText.includes('bootcamp') || eventText.includes('workout') || eventText.includes('functional') || eventText.includes('ยืดเหยียด');
+        } else if (rawQ.includes('โยคะ') || rawQ.includes('sound bath') || rawQ.includes('สมาธิ') || rawQ.includes('เสียงคลื่น') || rawQ.includes('ฮีลใจ')) {
+          matchesSearch = eventText.includes('โยคะ') || eventText.includes('yoga') || eventText.includes('sound bath') || eventText.includes('soundbath') || eventText.includes('สมาธิ') || eventText.includes('บำบัด') || eventText.includes('ขันธิเบต') || eventText.includes('ฮีลใจ') || eventText.includes('พักใจ');
+        } else if (rawQ.includes('คาเฟ่') || rawQ.includes('กาแฟ') || rawQ.includes('ดนตรี') || rawQ.includes('อะคูสติก') || rawQ.includes('คอนเสิร์ต') || rawQ.includes('แจ๊ส')) {
+          matchesSearch = eventText.includes('คาเฟ่') || eventText.includes('cafe') || eventText.includes('กาแฟ') || eventText.includes('coffee') || eventText.includes('ดนตรี') || eventText.includes('music') || eventText.includes('acoustic') || eventText.includes('jazz') || eventText.includes('folk') || eventText.includes('concert') || eventText.includes('คอนเสิร์ต') || eventText.includes('orchestra') || eventText.includes('cat expo') || eventText.includes('maho rasop') || eventText.includes('ไวนิล') || eventText.includes('vinyl');
+        } else if (rawQ.includes('บอร์ดเกม') || rawQ.includes('เพื่อนใหม่') || rawQ.includes('boardgame')) {
+          matchesSearch = eventText.includes('บอร์ดเกม') || eventText.includes('board game') || eventText.includes('boardgame') || eventText.includes('catan') || eventText.includes('quiz') || eventText.includes('social') || eventText.includes('เพื่อนใหม่');
+        } else if (rawQ.includes('ศิลปะ') || rawQ.includes('คราฟต์') || rawQ.includes('เวิร์กช็อป') || rawQ.includes('workshop')) {
+          matchesSearch = eventText.includes('workshop') || eventText.includes('เวิร์กช็อป') || eventText.includes('ศิลปะ') || eventText.includes('art') || eventText.includes('คราฟต์') || eventText.includes('craft') || eventText.includes('เซรามิก') || eventText.includes('pottery') || eventText.includes('สีน้ำ') || eventText.includes('painting') || eventText.includes('เทียนหอม') || eventText.includes('candle') || eventText.includes('แหวน') || eventText.includes('silver') || eventText.includes('tufting') || eventText.includes('พรม') || eventText.includes('หนัง') || eventText.includes('leather');
+        } else if (rawQ.includes('ชงชา') || rawQ.includes('อาหาร') || rawQ.includes('ทำอาหาร') || rawQ.includes('ขนม') || rawQ.includes('มัทฉะ')) {
+          matchesSearch = eventText.includes('ชงชา') || eventText.includes('ชา') || eventText.includes('tea') || eventText.includes('มัทฉะ') || eventText.includes('matcha') || eventText.includes('อาหาร') || eventText.includes('อบขนม') || eventText.includes('baking') || eventText.includes('sourdough') || eventText.includes('ขนมปัง') || eventText.includes('เบเกอรี่');
+        } else if (rawQ.includes('ถ่ายรูป') || rawQ.includes('ถ่ายภาพ') || rawQ.includes('สำรวจเมือง') || rawQ.includes('photo')) {
+          matchesSearch = eventText.includes('ถ่ายรูป') || eventText.includes('ถ่ายภาพ') || eventText.includes('photo') || eventText.includes('photowalk') || eventText.includes('photo walk') || eventText.includes('กล้อง') || eventText.includes('ฟิล์ม') || eventText.includes('darkroom') || eventText.includes('สตรีท') || eventText.includes('street') || eventText.includes('biennale') || eventText.includes('portrait');
+        } else if (rawQ.includes('กีฬา') || rawQ.includes('เอาต์ดอร์') || rawQ.includes('outdoor')) {
+          matchesSearch = eventText.includes('กีฬา') || eventText.includes('sport') || eventText.includes('เอาต์ดอร์') || eventText.includes('outdoor') || eventText.includes('ปีน') || eventText.includes('climbing') || eventText.includes('แบดมินตัน') || eventText.includes('badminton') || eventText.includes('จักรยาน') || eventText.includes('bike') || eventText.includes('cycling') || eventText.includes('pickleball') || eventText.includes('พิกเคิลบอล') || eventText.includes('มวยไทย') || eventText.includes('boxing');
+        } else {
+          // 3. Multi-token fallback (e.g. "สวนรถไฟ", "อารีย์", "ฟรี", "เยาวราช")
+          const tokens = rawQ
+            .split(/[\s,&/()+_-]+/)
+            .map((t) => t.trim())
+            .filter((t) => t.length >= 2);
+
+          matchesSearch = tokens.length === 0 || tokens.some((token) => eventText.includes(token));
+        }
+      }
 
       let matchesPrice = true;
       const priceStr = event.price || '';
@@ -627,7 +672,14 @@ export default function Home() {
             />
           </section>
 
-          {/* SECTION 4: 💬 เสียงตอบรับจากเพื่อนๆ (Auto-Slide Carousel) */}
+          {/* SECTION 4: ⚡ ชาเลนจ์ & ภารกิจท้าทายจากคอมมูนิตี้ (Community Quests) */}
+          <CommunityChallengeBar
+            onJoinQuest={handleJoinQuestFromHome}
+            joinedQuestTitles={joinedQuestTitles}
+            onOpenCreateModal={() => setIsCreateChallengeModalOpen(true)}
+          />
+
+          {/* SECTION 5: 💬 เสียงตอบรับจากเพื่อนๆ (Auto-Slide Carousel) */}
           <ReviewCarousel />
 
         </div>
@@ -704,6 +756,16 @@ export default function Home() {
         onCreateSuccess={(newEvent: EventItem) => {
           setEventsList([newEvent, ...eventsList]);
           showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จเรียบร้อย! 🎉`);
+        }}
+      />
+
+      {/* Create Custom Challenge Modal */}
+      <CreateChallengeModal
+        isOpen={isCreateChallengeModalOpen}
+        onClose={() => setIsCreateChallengeModalOpen(false)}
+        onCreateSuccess={(newQuest) => {
+          setJoinedQuestTitles((prev) => [...prev, newQuest.title]);
+          showToast(`🎉 สร้างชาเลนจ์ "${newQuest.title}" (${newQuest.visibility === 'public' ? 'สาธารณะ 🌐' : 'ส่วนตัว 🔒'}) สำเร็จแล้ว!`);
         }}
       />
 

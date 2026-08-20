@@ -334,64 +334,67 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             </div>
           </div>
 
-          {/* Community Feedback & Reviews Section (Clean & Authentic) */}
-          <div className="space-y-2.5 pt-1">
-            <div className="flex items-center justify-between">
-              <h4 className="font-extrabold text-xs sm:text-sm text-[#1E293B] flex items-center gap-1.5">
-                <span>💬 ความประทับใจจากเพื่อนๆ</span>
-                <span className="text-xs text-slate-500 font-semibold">
-                  ({event.reviews?.length || 0})
-                </span>
-              </h4>
-            </div>
+          {/* Community Feedback & Reviews Section (Only for Community Events) */}
+          {!isPublicVenue && (
+            <div className="space-y-2.5 pt-1">
+              <div className="flex items-center justify-between">
+                <h4 className="font-extrabold text-xs sm:text-sm text-[#1E293B] flex items-center gap-1.5">
+                  <MessageCircle className="w-4 h-4 text-[#4A7C59]" />
+                  <span>ความประทับใจจากเพื่อนๆ</span>
+                  <span className="text-xs text-slate-500 font-semibold">
+                    ({event.reviews?.length || 0})
+                  </span>
+                </h4>
+              </div>
 
-            {event.reviews && event.reviews.length > 0 ? (
-              <div className="space-y-2">
-                {event.reviews.map((rev) => (
-                  <div
-                    key={rev.id}
-                    className="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1.5 text-xs"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <img
-                          src={rev.userAvatar}
-                          alt={rev.userName}
-                          className="w-6 h-6 rounded-full object-cover border border-slate-300"
-                        />
-                        <span className="font-bold text-[#1E293B]">{rev.userName}</span>
+              {event.reviews && event.reviews.length > 0 ? (
+                <div className="space-y-2">
+                  {event.reviews.map((rev) => (
+                    <div
+                      key={rev.id}
+                      className="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1.5 text-xs"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={rev.userAvatar}
+                            alt={rev.userName}
+                            className="w-6 h-6 rounded-full object-cover border border-slate-300"
+                          />
+                          <span className="font-bold text-[#1E293B]">{rev.userName}</span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-mono">{rev.date}</span>
                       </div>
-                      <span className="text-[10px] text-slate-400 font-mono">{rev.date}</span>
+
+                      <p className="text-slate-700 leading-relaxed pl-8">
+                        {rev.comment}
+                      </p>
+
+                      {rev.tags && rev.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 pl-8 pt-0.5">
+                          {rev.tags.map((t) => (
+                            <span
+                              key={t}
+                              className="text-[10px] font-bold text-[#4A7C59] bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md"
+                            >
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
-
-                    <p className="text-slate-700 leading-relaxed pl-8">
-                      {rev.comment}
-                    </p>
-
-                    {rev.tags && rev.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 pl-8 pt-0.5">
-                        {rev.tags.map((t) => (
-                          <span
-                            key={t}
-                            className="text-[10px] font-bold text-[#4A7C59] bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md"
-                          >
-                            {t}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="p-4 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-center space-y-1">
-                <p className="text-xs font-bold text-slate-600">🌱 ยังไม่มีความเห็นก่อนหน้า</p>
-                <p className="text-[11px] text-slate-400">
-                  กิจกรรมนี้เป็นโอกาสดีที่คุณจะได้ร่วมงานและบอกเล่าความประทับใจให้เพื่อนๆ ฟัง!
-                </p>
-              </div>
-            )}
-          </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-4 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-center space-y-1">
+                  <p className="text-xs font-bold text-slate-600">🌱 ยังไม่มีความเห็นก่อนหน้า</p>
+                  <p className="text-[11px] text-slate-400">
+                    กิจกรรมนี้เป็นโอกาสดีที่คุณจะได้ร่วมงานและบอกเล่าความประทับใจให้เพื่อนๆ ฟัง!
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Public Venue Sub-Activities & Buddy Matcher (Below Description) */}
           {isPublicVenue && (

@@ -218,7 +218,7 @@ export const ETicketModal: React.FC<ETicketModalProps> = ({
                 className="w-full bg-gradient-to-r from-[#4A7C59] to-emerald-600 hover:from-[#3B6347] hover:to-emerald-500 text-white font-extrabold text-xs sm:text-sm py-3 rounded-2xl shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2 active:scale-98 transition-all cursor-pointer"
               >
                 <Zap className="w-4 h-4 text-amber-300" />
-                <span>⚡ จำลองการสแกนเช็คอินหน้างาน (+50 XP)</span>
+                <span>จำลองการสแกนเช็คอินหน้างาน (+50 XP)</span>
               </button>
             ) : (
               <div className="w-full bg-emerald-100 text-emerald-800 font-bold text-xs py-2.5 rounded-2xl flex items-center justify-center gap-1.5 border border-emerald-300">

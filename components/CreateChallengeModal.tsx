@@ -26,6 +26,7 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
   onClose,
   onCreateSuccess,
 }) => {
+  const [visibility, setVisibility] = useState<'public' | 'private'>('public');
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<'move' | 'heal' | 'chill' | 'learn'>('chill');
   const [targetGoal, setTargetGoal] = useState('');
@@ -50,6 +51,13 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
       total: totalCount.toString(),
       completedCountInfo: `0/${totalCount} ครั้ง`,
       progressPercent: 0,
+      category: category,
+      visibility: visibility,
+      creatorName: 'คุณ (Member)',
+      participantsCount: 1,
+      rewardPoints: rewardPoints,
+      targetGoal: targetGoal.trim() || `ทำเป้าหมาย "${title.trim()}" ให้สำเร็จครบ ${totalCount} ครั้ง`,
+      isOfficial: isOfficial,
     };
 
     onCreateSuccess(newQuest);
@@ -72,20 +80,15 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
 
         {/* Header Title */}
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-500 shrink-0">
+          <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-500 shrink-0">
             <Trophy className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-extrabold text-base sm:text-lg text-[#1E293B] flex items-center gap-2">
-              <span>สร้างชาเลนจ์ & ภารกิจใหม่</span>
-              {isOfficial && (
-                <span className="text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.5 rounded-full">
-                  👑 Official Quest
-                </span>
-              )}
+            <h3 className="font-extrabold text-base sm:text-lg text-[#1E293B]">
+              สร้างชาเลนจ์ & ภารกิจใหม่
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              ตั้งเป้าหมายกิจกรรมยามว่างของคุณ หรือเปิดแคมเปญให้เพื่อนๆ ใน Hub ร่วมสนุก
+              ตั้งเป้าหมายกิจกรรมยามว่างของคุณ หรือเปิดภารกิจให้เพื่อนๆ ใน Hub ร่วมสนุก
             </p>
           </div>
         </div>
@@ -93,25 +96,60 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="space-y-4">
           
-          {/* Quest Type Toggle (User vs Official) */}
-          <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-2xl">
-            <div className="space-y-0.5">
-              <p className="font-bold text-xs text-slate-800">ประเภทชาเลนจ์</p>
-              <p className="text-[11px] text-slate-500">
-                {isOfficial ? '👑 แคมเปญทางการ Chill & Connect (ปักหมุดบนสุด)' : '👤 ชาเลนจ์ส่วนตัว / คอมมูนิตี้'}
-              </p>
+          {/* Public vs Private Visibility Selector */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-700 block">
+              ระดับการเผยแพร่ (Visibility) <span className="text-rose-500">*</span>
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setVisibility('public')}
+                className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                  visibility === 'public'
+                    ? 'bg-emerald-50/80 border-[#4A7C59] ring-2 ring-[#4A7C59]/20 text-slate-900 shadow-2xs'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-xs text-[#4A7C59] flex items-center gap-1.5">
+                    <span>🌐 สาธารณะ (Public)</span>
+                  </span>
+                  <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
+                    visibility === 'public' ? 'border-[#4A7C59] bg-[#4A7C59]' : 'border-slate-300'
+                  }`}>
+                    {visibility === 'public' && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
+                  ชวนเพื่อนๆ ร่วมทำได้ และแสดงในแถบชาเลนจ์หน้าแรก
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setVisibility('private')}
+                className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                  visibility === 'private'
+                    ? 'bg-slate-100 border-slate-600 ring-2 ring-slate-400/20 text-slate-900 shadow-2xs'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-xs text-slate-800 flex items-center gap-1.5">
+                    <span>🔒 ส่วนตัว (Private)</span>
+                  </span>
+                  <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
+                    visibility === 'private' ? 'border-slate-700 bg-slate-700' : 'border-slate-300'
+                  }`}>
+                    {visibility === 'private' && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
+                  เป้าหมายส่วนตัว แสดงเฉพาะในหน้ากิจกรรมของคุณ
+                </p>
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsOfficial(!isOfficial)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                isOfficial
-                  ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-xs'
-                  : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              {isOfficial ? '👑 แคมเปญ Official' : '👤 สมาชิกทั่วไป'}
-            </button>
           </div>
 
           {/* Title */}

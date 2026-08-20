@@ -7,6 +7,8 @@ import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { CreateChallengeModal } from '@/components/CreateChallengeModal';
+import { JoinChallengeModal } from '@/components/JoinChallengeModal';
+import { VerifyQuestModal } from '@/components/VerifyQuestModal';
 import { ETicketModal } from '@/components/ETicketModal';
 import { CancelTicketModal } from '@/components/CancelTicketModal';
 import { GroupChatModal } from '@/components/GroupChatModal';
@@ -18,6 +20,7 @@ import {
   Coffee,
   Footprints,
   Users,
+  User,
   Flame,
   CheckCircle2,
   Lock,
@@ -191,8 +194,8 @@ export default function ChallengePage() {
   const [activeNavTab, setActiveNavTab] = useState('challenge');
   const [activeSubTab, setActiveSubTab] = useState<'joined_events' | 'host_studio' | 'quests' | 'rewards'>('joined_events');
   
-  // Quick Persona / Role Switcher for Testing
-  const [currentRole, setCurrentRole] = useState<'member' | 'host' | 'admin'>('member');
+  // Quick Persona / Role Switcher (Member vs Host)
+  const [currentRole, setCurrentRole] = useState<'member' | 'host'>('member');
 
   const [isLoggedIn, setIsLoggedIn] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -339,6 +342,9 @@ export default function ChallengePage() {
     }
   };
 
+  // Selected quest for join confirmation modal
+  const [selectedQuestForJoinModal, setSelectedQuestForJoinModal] = useState<ChallengeQuest | null>(null);
+
   const handleJoinRecommended = (recItem: RecommendedChallenge) => {
     if (!isLoggedIn) {
       setIsAuthModalOpen(true);
@@ -351,19 +357,54 @@ export default function ChallengePage() {
       return;
     }
 
-    const newQuest: ChallengeQuest = {
+    const targetQuest: ChallengeQuest = {
       id: `quest-${Date.now()}`,
       title: recItem.title,
       badgeLabel: recItem.badgeLabel,
       iconName: recItem.iconName,
       current: '0',
-      total: '1',
-      completedCountInfo: '0/1 ครั้ง',
-      progressPercent: 10,
+      total: '3',
+      completedCountInfo: '0/3 ครั้ง',
+      progressPercent: 0,
+      category: recItem.category,
+      participantsCount: recItem.participantsCount,
+      rewardPoints: recItem.rewardPoints,
+      targetGoal: recItem.targetGoal,
+      isOfficial: recItem.isOfficial,
     };
 
-    setMyChallenges([newQuest, ...myChallenges]);
-    showToast(`รับชาเลนจ์ "${recItem.title}" สำเร็จ! ลุยเลย 🔥`);
+    setSelectedQuestForJoinModal(targetQuest);
+  };
+
+  // Quest Verification Modal State
+  const [selectedQuestForVerifyModal, setSelectedQuestForVerifyModal] = useState<ChallengeQuest | null>(null);
+
+  const handleConfirmJoinQuest = (quest: ChallengeQuest) => {
+    setMyChallenges([quest, ...myChallenges]);
+    setUserXp((prev) => prev + 15);
+    showToast(`🎉 รับภารกิจ "${quest.title}" สำเร็จ! เริ่มต้นสะสมความคืบหน้าได้เลย 🔥`);
+  };
+
+  const handleVerifySuccess = (questId: string, proofData: any) => {
+    setMyChallenges((prev) =>
+      prev.map((q) => {
+        if (q.id === questId) {
+          const currentCount = parseInt(q.current || '0') + 1;
+          const totalCount = parseInt(q.total || '3') || 3;
+          const newPercent = Math.min(100, Math.round((currentCount / totalCount) * 100));
+          return {
+            ...q,
+            current: currentCount.toString(),
+            completedCountInfo: `${currentCount}/${totalCount} ${q.completedCountInfo.includes('คาเฟ่') ? 'คาเฟ่' : q.completedCountInfo.includes('วัน') ? 'วัน' : q.completedCountInfo.includes('สวน') ? 'สวน' : 'ครั้ง'}`,
+            progressPercent: newPercent,
+          };
+        }
+        return q;
+      })
+    );
+
+    setUserXp((prev) => prev + 50);
+    showToast(`✅ ยืนยันหลักฐานสำเร็จ! ความคืบหน้าเพิ่มขึ้น +50 XP (${proofData.type === 'photo' ? 'รูปถ่าย 📸' : proofData.type === 'gps' ? 'พิกัด GPS 📍' : 'ตั๋ว QR 🎟️'})`);
   };
 
   // Open E-Ticket Modal
@@ -476,17 +517,15 @@ export default function ChallengePage() {
     ? RECOMMENDED_CHALLENGES
     : RECOMMENDED_CHALLENGES.filter((item) => item.category === selectedCategory);
 
-  // Switch role handler
-  const handleSelectRole = (role: 'member' | 'host' | 'admin') => {
+  // Switch role handler (Member vs Host)
+  const handleSelectRole = (role: 'member' | 'host') => {
     setCurrentRole(role);
     if (role === 'host') {
       setActiveSubTab('host_studio');
       showToast('👑 สลับเป็นมุมมอง "โฮสต์ / ครีเอเตอร์ผู้จัดกิจกรรม"');
-    } else if (role === 'member') {
+    } else {
       setActiveSubTab('joined_events');
-      showToast('👤 สลับเป็นมุมมอง "ผู้ใช้งานทั่วไป / สมาชิกเข้าร่วมกิจกรรม"');
-    } else if (role === 'admin') {
-      showToast('🛡️ สลับเป็นมุมมอง "ผู้ดูแลระบบ (Admin Mode)"');
+      showToast('👤 สลับเป็นมุมมอง "สมาชิกทั่วไป"');
     }
   };
 
@@ -524,11 +563,9 @@ export default function ChallengePage() {
                   <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border shrink-0 ${
                     currentRole === 'host'
                       ? 'bg-amber-950/80 text-amber-300 border-amber-500/40'
-                      : currentRole === 'admin'
-                      ? 'bg-purple-950/80 text-purple-300 border-purple-500/40'
                       : 'bg-emerald-950/80 text-emerald-300 border-emerald-500/30'
                   }`}>
-                    {currentRole === 'host' ? '👑 Host Mode' : currentRole === 'admin' ? '🛡️ Admin Mode' : '👤 Member Mode'}
+                    {currentRole === 'host' ? '👑 Host Mode' : '👤 Member Mode'}
                   </span>
                 </div>
                 <p className="text-[11px] sm:text-xs text-slate-300 font-normal leading-relaxed max-w-2xl">
@@ -538,42 +575,32 @@ export default function ChallengePage() {
                 </p>
               </div>
 
-              {/* Right: Quick Role Switcher Bar */}
+              {/* Right: Quick Role Switcher Bar (Member vs Host) */}
               <div className="flex items-center gap-1 p-1 bg-slate-900/90 border border-slate-700/90 rounded-2xl shrink-0">
                 <span className="text-[10px] font-bold text-slate-400 px-2 hidden sm:inline">สลับบทบาท:</span>
                 
                 <button
                   onClick={() => handleSelectRole('member')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                     currentRole === 'member'
                       ? 'bg-[#4A7C59] text-white shadow-xs'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  <span>👤 สมาชิกทั่วไป</span>
+                  <User className="w-3.5 h-3.5" />
+                  <span>สมาชิกทั่วไป</span>
                 </button>
 
                 <button
                   onClick={() => handleSelectRole('host')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                     currentRole === 'host'
                       ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-xs'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  <Crown className="w-3.5 h-3.5" />
-                  <span>👑 โฮสต์ผู้จัด</span>
-                </button>
-
-                <button
-                  onClick={() => handleSelectRole('admin')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                    currentRole === 'admin'
-                      ? 'bg-purple-600 text-white shadow-xs'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <span>🛡️ แอดมิน</span>
+                  <Crown className="w-3.5 h-3.5 text-amber-300" />
+                  <span>โฮสต์ผู้จัด</span>
                 </button>
               </div>
             </div>
@@ -614,36 +641,6 @@ export default function ChallengePage() {
           ) : (
             /* Logged-In User Dashboard */
             <>
-              {/* ADMIN MODE QUICK BANNER */}
-              {currentRole === 'admin' && (
-                <div className="bg-gradient-to-r from-purple-950 via-slate-900 to-[#1E293B] text-white p-5 rounded-3xl border border-purple-500/30 shadow-lg flex flex-col md:flex-row items-center justify-between gap-4 animate-fade-in">
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-2xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-purple-300 shrink-0">
-                      <Bot className="w-6 h-6 animate-pulse" />
-                    </div>
-                    <div>
-                      <h3 className="font-extrabold text-base text-white flex items-center gap-2">
-                        <span>🛡️ แดชบอร์ดผู้ดูแลระบบ (Admin Mode)</span>
-                        <span className="text-[10px] bg-purple-500/30 text-purple-200 px-2 py-0.5 rounded-md">Live Control</span>
-                      </h3>
-                      <p className="text-xs text-slate-300 mt-0.5">
-                        ระบบจัดการอีเวนต์ 55+ รายการ, ปัญญาประดิษฐ์ AI Tagger, ระบบ Deduplication และจัดการ Official Quests
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2.5 shrink-0">
-                    <Link
-                      href="/admin"
-                      className="bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs px-5 py-2.5 rounded-2xl shadow-md transition-all flex items-center gap-1.5 active:scale-95"
-                    >
-                      <SlidersHorizontal className="w-3.5 h-3.5" />
-                      <span>เปิดแผงควบคุมระบบ (Admin Panel) ➔</span>
-                    </Link>
-                  </div>
-                </div>
-              )}
-
               {/* Sub-Tab Navigation Bar */}
               <div className="flex items-center gap-2 border-b border-[#E8E2D8] pb-3 overflow-x-auto no-scrollbar">
                 
@@ -660,18 +657,20 @@ export default function ChallengePage() {
                   <span>ตั๋วของฉัน ({joinedEvents.length})</span>
                 </button>
 
-                {/* 2. Host Studio Sub-Tab */}
-                <button
-                  onClick={() => setActiveSubTab('host_studio')}
-                  className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
-                    activeSubTab === 'host_studio'
-                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-sm'
-                      : 'bg-white text-[#475569] hover:bg-slate-100 border border-[#E8E2D8]'
-                  }`}
-                >
-                  <Crown className="w-4 h-4 text-amber-300" />
-                  <span>👑 สตูดิโอโฮสต์สร้างรายได้</span>
-                </button>
+                {/* 2. Host Studio Sub-Tab (Visible ONLY when currentRole === 'host') */}
+                {currentRole === 'host' && (
+                  <button
+                    onClick={() => setActiveSubTab('host_studio')}
+                    className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
+                      activeSubTab === 'host_studio'
+                        ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-sm'
+                        : 'bg-white text-[#475569] hover:bg-slate-100 border border-[#E8E2D8]'
+                    }`}
+                  >
+                    <Crown className="w-4 h-4 text-amber-300" />
+                    <span>สตูดิโอโฮสต์สร้างรายได้</span>
+                  </button>
+                )}
 
                 {/* 3. Quests Sub-Tab */}
                 <button
@@ -701,7 +700,7 @@ export default function ChallengePage() {
               </div>
 
               {/* ========================================================================= */}
-              {/* TAB 1: 🎟️ ตั๋วของฉัน & ผู้เข้าร่วม (Attendee Journey) */}
+              {/* TAB 1: ตั๋วของฉัน & ผู้เข้าร่วม (Attendee Journey) */}
               {/* ========================================================================= */}
               {activeSubTab === 'joined_events' && (
                 <section className="space-y-6 animate-fade-in">
@@ -752,23 +751,25 @@ export default function ChallengePage() {
                     <div className="flex items-center p-1 bg-white border border-[#E8E2D8] rounded-2xl shadow-2xs shrink-0">
                       <button
                         onClick={() => setEventViewMode('upcoming')}
-                        className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                           eventViewMode === 'upcoming'
                             ? 'bg-[#4A7C59] text-white shadow-xs'
                             : 'text-slate-600 hover:text-slate-900'
                         }`}
                       >
-                        🎟️ ตั๋วที่กำลังจะถึง ({joinedEvents.length})
+                        <Ticket className="w-3.5 h-3.5" />
+                        <span>ตั๋วที่กำลังจะถึง ({joinedEvents.length})</span>
                       </button>
                       <button
                         onClick={() => setEventViewMode('past')}
-                        className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                           eventViewMode === 'past'
                             ? 'bg-[#F26430] text-white shadow-xs'
                             : 'text-slate-600 hover:text-slate-900'
                         }`}
                       >
-                        ⭐ ประวัติ & ทิปโฮสต์ ({pastEvents.length})
+                        <Star className="w-3.5 h-3.5" />
+                        <span>ประวัติ & ทิปโฮสต์ ({pastEvents.length})</span>
                       </button>
                     </div>
                   </div>
@@ -845,20 +846,20 @@ export default function ChallengePage() {
                                 </div>
                               </div>
 
-                              {/* Right: Actions */}
-                              <div className="flex sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-2 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100">
+                              {/* Right: Actions (Mobile Responsive Stack: Prominent Full-Width Ticket Button + Balanced Sub-Row) */}
+                              <div className="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-2 w-full lg:w-auto shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100">
                                 <button
                                   onClick={() => handleOpenTicket(event, idx)}
-                                  className="flex-1 sm:flex-none bg-gradient-to-r from-[#1E293B] to-slate-800 hover:from-black hover:to-slate-900 text-white px-5 py-2.5 rounded-2xl text-xs font-black transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                                  className="w-full sm:w-auto bg-gradient-to-r from-[#1E293B] to-slate-800 hover:from-black hover:to-slate-900 text-white px-5 py-2.5 rounded-2xl text-xs font-black transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-95 shrink-0"
                                 >
                                   <QrCode className="w-4 h-4 text-emerald-400" />
-                                  <span>ดูตั๋ว E-Ticket (QR)</span>
+                                  <span>ดูตั๋ว E-Ticket (QR Code)</span>
                                 </button>
 
-                                <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                                <div className="flex items-center gap-2 w-full sm:w-auto">
                                   <button
                                     onClick={() => handleOpenGroupChat(event)}
-                                    className="flex-1 sm:flex-none bg-[#EBF3ED] hover:bg-[#D6E8DC] text-[#4A7C59] px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                    className="flex-1 sm:flex-none bg-[#EBF3ED] hover:bg-[#D6E8DC] text-[#4A7C59] px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                                   >
                                     <MessageCircle className="w-3.5 h-3.5" />
                                     <span>แชตกลุ่ม</span>
@@ -866,7 +867,7 @@ export default function ChallengePage() {
 
                                   <button
                                     onClick={() => handleOpenCancelTicket(event, ticketId)}
-                                    className="bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200 hover:border-rose-200 px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                                    className="bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200 hover:border-rose-200 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
                                     title="ยกเลิกตั๋ว / คืนที่นั่ง"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
@@ -944,7 +945,7 @@ export default function ChallengePage() {
                                   className="w-full sm:w-auto bg-gradient-to-r from-[#F26430] to-orange-500 hover:from-[#E05320] hover:to-orange-600 text-white px-5 py-2.5 rounded-2xl text-xs font-black shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                                 >
                                   <Heart className="w-4 h-4 fill-white" />
-                                  <span>💖 ให้คะแนน & ทิปโฮสต์ (+50 XP)</span>
+                                  <span>ให้คะแนน & ทิปโฮสต์ (+50 XP)</span>
                                 </button>
                               )}
                             </div>
@@ -1075,9 +1076,10 @@ export default function ChallengePage() {
                           ) : (
                             <button
                               onClick={handleClaimHostBounty}
-                              className="w-full bg-gradient-to-r from-amber-500 to-[#F26430] hover:from-amber-600 hover:to-[#E05320] text-white font-extrabold text-xs py-2.5 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer"
+                              className="w-full bg-gradient-to-r from-amber-500 to-[#F26430] hover:from-amber-600 hover:to-[#E05320] text-white font-extrabold text-xs py-2.5 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
                             >
-                              🎉 กดรับเงินสนับสนุน ฿500 เข้ากระเป๋า!
+                              <Gift className="w-4 h-4" />
+                              <span>กดรับเงินสนับสนุน ฿500 เข้ากระเป๋า</span>
                             </button>
                           )}
                         </div>
@@ -1125,7 +1127,7 @@ export default function ChallengePage() {
                         className="bg-[#4A7C59] hover:bg-[#3B6347] text-white font-extrabold text-xs px-4 py-2 rounded-2xl shadow-md flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
                       >
                         <PlusCircle className="w-4 h-4" />
-                        <span>➕ สร้างกิจกรรมใหม่</span>
+                        <span>สร้างกิจกรรมใหม่</span>
                       </button>
                     </div>
 
@@ -1174,7 +1176,7 @@ export default function ChallengePage() {
                               className="flex-1 bg-[#1E293B] hover:bg-black text-white font-extrabold text-xs py-2.5 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                             >
                               <QrCode className="w-3.5 h-3.5 text-emerald-400" />
-                              <span>📋 ตรวจตั๋วหน้างาน</span>
+                              <span>ตรวจตั๋วหน้างาน</span>
                             </button>
 
                             <button
@@ -1195,7 +1197,7 @@ export default function ChallengePage() {
               )}
 
               {/* ========================================================================= */}
-              {/* TAB 3: 🏆 ชาเลนจ์ & เหรียญสะสม (Gamification Quests & Badges) */}
+              {/* TAB 3: ชาเลนจ์ & เหรียญสะสม (Gamification Quests & Badges) */}
               {/* ========================================================================= */}
               {activeSubTab === 'quests' && (
                 <div className="space-y-10 animate-fade-in">
@@ -1288,7 +1290,7 @@ export default function ChallengePage() {
                         className="bg-gradient-to-r from-[#4A7C59] to-emerald-600 hover:from-[#3B6347] hover:to-emerald-500 text-white font-extrabold text-xs px-4 py-2 rounded-2xl shadow-md flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer shrink-0"
                       >
                         <PlusCircle className="w-4 h-4" />
-                        <span>➕ สร้างชาเลนจ์ของคุณเอง</span>
+                        <span>สร้างชาเลนจ์ของคุณเอง</span>
                       </button>
                     </div>
 
@@ -1296,10 +1298,11 @@ export default function ChallengePage() {
                       {myChallenges.map((quest, idx) => (
                         <div
                           key={quest.id}
-                          className="bg-white rounded-2xl p-4 sm:p-5 border border-[#E8E2D8] shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
+                          className="bg-white rounded-2xl p-4 sm:p-5 border border-[#E8E2D8] shadow-sm hover:shadow-md transition-all grid grid-cols-1 md:grid-cols-12 gap-4 items-center"
                         >
-                          <div className="flex items-center gap-4 min-w-[280px]">
-                            <span className="text-base font-bold text-[#94A3B8] w-5 text-center shrink-0">
+                          {/* Left Column: Index, Icon, Title & Badge (Fixed 5 columns on desktop) */}
+                          <div className="md:col-span-5 flex items-center gap-3.5 min-w-0">
+                            <span className="text-sm font-bold text-[#94A3B8] w-5 text-center shrink-0">
                               {idx + 1}
                             </span>
 
@@ -1307,19 +1310,21 @@ export default function ChallengePage() {
                               {getIcon(quest.iconName)}
                             </div>
 
-                            <div>
-                              <h4 className="font-bold text-sm sm:text-base text-[#1E293B]">
+                            <div className="min-w-0 flex-1">
+                              <h4 className="font-bold text-sm sm:text-base text-[#1E293B] truncate" title={quest.title}>
                                 {quest.title}
                               </h4>
-                              <span className="text-xs text-[#F26430] font-semibold">
-                                🏅 {quest.badgeLabel}
-                              </span>
+                              <div className="flex items-center gap-1 text-xs text-[#F26430] font-semibold mt-0.5">
+                                <Award className="w-3.5 h-3.5 shrink-0" />
+                                <span className="truncate">{quest.badgeLabel}</span>
+                              </div>
                             </div>
                           </div>
 
-                          <div className="flex-1 max-w-md space-y-1.5">
+                          {/* Center Column: Progress Bar (Fixed 4 columns on desktop - 100% Perfectly Aligned) */}
+                          <div className="md:col-span-4 space-y-1.5 min-w-0">
                             <div className="flex justify-between text-xs text-[#64748B]">
-                              <span>ความคืบหน้า</span>
+                              <span className="font-medium">ความคืบหน้า</span>
                               <span className="font-bold text-[#1E293B]">
                                 {quest.completedCountInfo} ({quest.progressPercent}%)
                               </span>
@@ -1332,10 +1337,23 @@ export default function ChallengePage() {
                             </div>
                           </div>
 
-                          <div className="flex items-center justify-end">
-                            <span className="bg-[#EBF3ED] text-[#4A7C59] px-3 py-1 rounded-full text-xs font-bold border border-[#4A7C59]/20">
-                              กำลังทำอยู่ 🏃
-                            </span>
+                          {/* Right Column: Verify Proof & Check-in Action Button (Fixed 3 columns on desktop) */}
+                          <div className="md:col-span-3 flex items-center justify-start md:justify-end gap-2 shrink-0">
+                            {quest.progressPercent >= 100 ? (
+                              <span className="bg-emerald-50 text-emerald-800 border border-emerald-300 px-3.5 py-1.5 rounded-xl text-xs font-black inline-flex items-center gap-1 shadow-2xs">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>สำเร็จแล้ว 🏆</span>
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => setSelectedQuestForVerifyModal(quest)}
+                                className="w-full md:w-auto bg-gradient-to-r from-emerald-600 to-[#4A7C59] hover:from-emerald-500 hover:to-[#3B6347] text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                                title="ส่งภาพถ่าย หรือเช็คอินพิกัด GPS เพื่อยืนยันความคืบหน้า"
+                              >
+                                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                                <span>ส่งหลักฐานยืนยัน</span>
+                              </button>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -1576,6 +1594,22 @@ export default function ChallengePage() {
         isOpen={isCreateChallengeModalOpen}
         onClose={() => setIsCreateChallengeModalOpen(false)}
         onCreateSuccess={handleCreateQuestSuccess}
+      />
+
+      {/* Join Challenge Confirmation Modal */}
+      <JoinChallengeModal
+        isOpen={Boolean(selectedQuestForJoinModal)}
+        onClose={() => setSelectedQuestForJoinModal(null)}
+        quest={selectedQuestForJoinModal}
+        onConfirmJoin={handleConfirmJoinQuest}
+      />
+
+      {/* Verify Quest Proof Modal */}
+      <VerifyQuestModal
+        isOpen={Boolean(selectedQuestForVerifyModal)}
+        onClose={() => setSelectedQuestForVerifyModal(null)}
+        quest={selectedQuestForVerifyModal}
+        onVerificationSuccess={handleVerifySuccess}
       />
 
       {/* Mobile Nav */}

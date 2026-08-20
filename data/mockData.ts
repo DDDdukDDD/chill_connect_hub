@@ -83,6 +83,14 @@ export interface ChallengeQuest {
   total: string;
   badgeLabel: string;
   completedCountInfo: string;
+  category?: 'heal' | 'move' | 'chill' | 'learn';
+  visibility?: 'public' | 'private';
+  creatorName?: string;
+  creatorAvatar?: string;
+  participantsCount?: number;
+  rewardPoints?: number;
+  targetGoal?: string;
+  isOfficial?: boolean;
 }
 
 export interface PostComment {
