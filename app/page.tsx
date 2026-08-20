@@ -56,7 +56,7 @@ export default function Home() {
   const [selectedVenueFilter, setSelectedVenueFilter] = useState<string | null>(null);
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
   const [eventTypeTab, setEventTypeTab] = useState<'all' | 'public_venue' | 'community' | 'joined'>('all');
-  const [joinedEventIds, setJoinedEventIds] = useState<string[]>(['1', '3']);
+  const [joinedEventIds, setJoinedEventIds] = useState<string[]>(['1', '3', 'live-agg-1', 'live-agg-3', 'live-agg-9']);
   const [timeFilter, setTimeFilter] = useState<'all' | 'tomorrow' | 'weekend' | 'next_month' | 'custom'>('all');
   const [priceFilter, setPriceFilter] = useState<'all' | 'free' | 'under500'>('all');
   const [startDate, setStartDate] = useState<string>('');

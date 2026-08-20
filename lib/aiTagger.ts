@@ -276,17 +276,53 @@ export function processRawEventWithAI(raw: ScrapedRawEvent, idSuffix: number): E
 
   const priceClean = raw.rawPrice ? raw.rawPrice.trim() : 'ฟรี!';
 
-  // ALL Scraped / Aggregated Events from external sources are strictly PUBLIC_VENUE events!
-  // Community events are reserved solely for user-created / official Chill & Connect meetups.
-  const eventType: 'public_venue' | 'community' = 'public_venue';
+  // Smart Classification: Community Meetup vs Public Scale Venue
+  const titleLower = raw.rawTitle.toLowerCase();
+  const descLower = (raw.rawDescription || '').toLowerCase();
+  const textComb = `${titleLower} ${descLower}`;
+
+  const isCommunity =
+    textComb.includes('workshop') ||
+    textComb.includes('เวิร์กช็อป') ||
+    textComb.includes('boardgame') ||
+    textComb.includes('บอร์ดเกม') ||
+    textComb.includes('pottery') ||
+    textComb.includes('เซรามิก') ||
+    textComb.includes('baking') ||
+    textComb.includes('sound bath') ||
+    textComb.includes('photo walk') ||
+    textComb.includes('photowalk') ||
+    textComb.includes('ถ่ายภาพ') ||
+    textComb.includes('badminton') ||
+    textComb.includes('ตีแบด') ||
+    textComb.includes('book club') ||
+    textComb.includes('cupping') ||
+    textComb.includes('ยิงพรม') ||
+    textComb.includes('tufting') ||
+    textComb.includes('candle') ||
+    textComb.includes('เทียนหอม') ||
+    textComb.includes('silver') ||
+    textComb.includes('แหวน') ||
+    textComb.includes('yoga') ||
+    textComb.includes('โยคะ') ||
+    textComb.includes('comedy') ||
+    textComb.includes('matcha') ||
+    textComb.includes('มัทฉะ') ||
+    textComb.includes('open mic');
+
+  const eventType: 'public_venue' | 'community' = isCommunity ? 'community' : 'public_venue';
+  const isEnded = titleLower.includes('งานที่ผ่านมา') || descLower.includes('จัดเสร็จสิ้นแล้ว');
+
+  const maxParticipants = isCommunity ? 10 : 500;
+  const participantsCount = isCommunity ? Math.floor(Math.random() * 4) + 6 : Math.floor(Math.random() * 80) + 40;
 
   return {
-    id: `live-agg-${Date.now()}-${idSuffix}`,
+    id: `live-agg-${idSuffix}`,
     title: raw.rawTitle.trim(),
     category: classification.category,
     eventType: eventType,
     image: raw.rawImage || 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80',
-    badgeText: classification.badgeText,
+    badgeText: isEnded ? '🏁 สิ้นสุดแล้ว' : classification.badgeText,
     tag: classification.tag,
     date: raw.rawDate.trim(),
     time: raw.rawTime?.trim() || '10:00 - 18:00 น.',
@@ -303,25 +339,27 @@ export function processRawEventWithAI(raw: ScrapedRawEvent, idSuffix: number): E
     latitude: locationInfo.lat,
     longitude: locationInfo.lng,
     zone: locationInfo.zone,
-    hostName: 
-      raw.source === 'ThaiRun' ? 'ThaiRun ฮับคนรักการวิ่ง' :
-      raw.source === 'SET_Thailand' ? 'ตลาดหลักทรัพย์แห่งประเทศไทย (SET)' :
-      raw.source === 'Zipevent' ? 'Zipevent Hub' :
-      raw.source === 'Eventpop' ? 'Eventpop Community' :
-      raw.source === 'QSNCC' ? 'QSNCC Bangkok' :
-      raw.source === 'BITEC' ? 'BITEC Bangkok' : 'BMA Event กทม.',
-    hostAvatar: 
-      raw.source === 'SET_Thailand' ? 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=150&q=80' :
-      raw.source === 'ThaiRun' ? 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=150&q=80' :
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80',
-    participantsCount: Math.floor(Math.random() * 80) + 40,
-    maxParticipants: 500,
+    hostName: isCommunity
+      ? (raw.source === 'Eventpop' ? 'กวินท์ & ทีมงานโฮสต์' : 'โฮสต์คอมมูนิตี้กรุงเทพฯ')
+      : (raw.source === 'ThaiRun' ? 'ThaiRun ฮับคนรักการวิ่ง' :
+         raw.source === 'SET_Thailand' ? 'ตลาดหลักทรัพย์แห่งประเทศไทย (SET)' :
+         raw.source === 'The Concert' ? 'The Concert Live' :
+         raw.source === 'Ticketmelon' ? 'Ticketmelon Hub' :
+         raw.source === 'QSNCC Events' || raw.source === 'QSNCC' ? 'QSNCC Bangkok' :
+         raw.source === 'BITEC Events' || raw.source === 'BITEC' ? 'BITEC Bangkok' : 'BMA Event กทม.'),
+    hostAvatar: isCommunity
+      ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'
+      : (raw.source === 'SET_Thailand' ? 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=150&q=80' :
+         raw.source === 'ThaiRun' ? 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=150&q=80' :
+         'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'),
+    participantsCount: isEnded ? maxParticipants : participantsCount,
+    maxParticipants: maxParticipants,
     description: raw.rawDescription?.trim() || `งานกิจกรรมน่าสนใจจัดที่ ${raw.rawLocation} มาผ่อนคลายและเชื่อมต่อกับเพื่อนใหม่ในวันหยุดสุดสัปดาห์นี้`,
     price: priceClean,
     rating: 4.8 + Math.round(Math.random() * 2) / 10,
     reviewsCount: Math.floor(Math.random() * 50) + 10,
-    status: 'active',
-    isNew: true,
+    status: isEnded ? 'ended' : 'active',
+    isNew: !isEnded,
     createdAtTimestamp: Date.now(),
   };
 }
