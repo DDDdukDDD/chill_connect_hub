@@ -160,17 +160,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
 
                       <div className="flex items-center gap-1.5 min-w-0">
                         <MapPin className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
-                        <a
-                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="truncate hover:text-[#F26430] hover:underline transition-colors cursor-pointer group/loc flex items-center gap-1"
-                          title="คลิกเพื่อดูแผนที่บน Google Maps"
-                        >
-                          <span className="truncate">{event.location}</span>
-                          <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover/loc:opacity-100 text-[#F26430] shrink-0 transition-opacity" />
-                        </a>
+                        <span className="truncate" title={event.location}>{event.location}</span>
                       </div>
                     </div>
                   </div>

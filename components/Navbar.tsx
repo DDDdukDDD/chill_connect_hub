@@ -61,7 +61,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const navItems = [
     { id: 'explore', label: 'ค้นหากิจกรรม', href: '/', icon: Compass },
     { id: 'moments', label: 'โมเมนต์โซเชียล', href: '/moments', icon: Camera },
-    { id: 'challenge', label: 'กิจกรรมที่เข้าร่วม', href: '/challenge', icon: Ticket },
+    { id: 'challenge', label: 'ฮับของฉัน', href: '/challenge', icon: Ticket },
     { id: 'about', label: 'เกี่ยวกับเรา', href: '/about', icon: Info },
   ];
 

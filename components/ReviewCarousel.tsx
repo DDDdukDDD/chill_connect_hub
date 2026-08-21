@@ -75,9 +75,9 @@ export const ReviewCarousel: React.FC = () => {
   }, [isPaused]);
 
   return (
-    <section className="bg-gradient-to-br from-amber-50/60 via-white to-[#FAF7F2] rounded-3xl p-6 sm:p-8 border border-amber-200/70 shadow-xs space-y-5">
+    <section className="mt-3 sm:mt-4 bg-gradient-to-br from-amber-50/60 via-white to-[#FAF7F2] rounded-3xl p-4 sm:p-6 border border-amber-200/70 shadow-xs space-y-4">
       {/* Section Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-amber-200/50 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-amber-200/50 pb-3.5">
         <div className="space-y-0.5">
           <div className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-100 px-3 py-0.5 rounded-full border border-amber-300/60">
             <Star className="w-3 h-3 fill-amber-500 text-amber-500" />

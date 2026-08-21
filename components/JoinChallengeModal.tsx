@@ -113,24 +113,6 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
           </div>
         </div>
 
-        {/* Verification Rule Notice (ตรวจสอบความจริง) */}
-        <div className="bg-emerald-50/70 p-3.5 rounded-2xl border border-emerald-200 text-xs space-y-2">
-          <p className="font-black text-emerald-900 flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>วิธีสะสมความคืบหน้า & ตรวจสอบความจริง:</span>
-          </p>
-          <ul className="space-y-1 text-[11px] text-emerald-800 leading-relaxed pl-1">
-            <li className="flex items-start gap-1.5">
-              <QrCode className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-              <span><strong>1. สแกนตั๋วหน้างาน:</strong> เมื่อเข้าร่วมอีเวนต์ที่เกี่ยวข้อง ระบบจะอัปเดตความคืบหน้าให้อัตโนมัติ</span>
-            </li>
-            <li className="flex items-start gap-1.5">
-              <Camera className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-              <span><strong>2. โพสต์รูปเช็คอิน:</strong> ถ่ายรูปบรรยากาศลงในหน้า <i>โมเมนต์โซเชียล</i> เพื่อยืนยันภารกิจ</span>
-            </li>
-          </ul>
-        </div>
-
         {/* Action Buttons */}
         <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
           <button

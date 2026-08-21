@@ -78,8 +78,42 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
     setIsDragging(false);
   };
 
-  // Select top 10 trending events
-  const trendingEvents = events.slice(0, 10);
+  // Smart Trending Algorithm (คำนวณคะแนนความฮิตอัตโนมัติจาก คนเข้าร่วม + ที่นั่งใกล้เต็ม + ความนิยม + รายการโปรด)
+  const trendingEvents = React.useMemo(() => {
+    const activeEvents = events.filter((e) => e.status !== 'ended');
+    const pool = activeEvents.length >= 6 ? activeEvents : events;
+
+    const scored = pool.map((event) => {
+      let score = 0;
+
+      // 1. อัตราส่วนที่นั่ง (ใกล้เต็ม = คนกำลังแย่งกันจอง)
+      const fillRatio = event.maxParticipants > 0 ? event.participantsCount / event.maxParticipants : 0.5;
+      if (fillRatio >= 0.8) score += 45;
+      else if (fillRatio >= 0.5) score += 25;
+
+      // 2. จำนวนผู้เข้าร่วมจริง (ยิ่งคนเยอะ ยิ่งมี Social Proof สูง)
+      score += Math.min(event.participantsCount, 50) * 0.8;
+
+      // 3. งานอีเวนต์ใหญ่ / มหกรรมสาธารณะ (คนสนใจในวงกว้าง)
+      if (event.eventType === 'public_venue') {
+        score += 35;
+      }
+
+      // 4. ได้รับการบันทึกเป็นรายการโปรด
+      if (favorites.includes(event.id)) {
+        score += 30;
+      }
+
+      // 5. คะแนนรีวิวความน่าเชื่อถือ
+      score += (event.rating || 4.8) * 5;
+
+      return { event, score };
+    });
+
+    // เรียงลำดับจากคะแนนสูงสุดลงมา แล้วเลือก 10 อันดับแรก
+    scored.sort((a, b) => b.score - a.score);
+    return scored.slice(0, 10).map((item) => item.event);
+  }, [events, favorites]);
 
   return (
     <section className="space-y-2.5">

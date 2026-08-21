@@ -17,7 +17,8 @@ import {
   PlusCircle,
   ShieldCheck,
   Crown,
-  Eye
+  Eye,
+  Medal
 } from 'lucide-react';
 import { ChallengeQuest } from '@/data/mockData';
 import { JoinChallengeModal } from '@/components/JoinChallengeModal';
@@ -169,11 +170,11 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
   };
 
   return (
-    <section className="my-8 space-y-3 relative group">
+    <section className="my-0 bg-gradient-to-br from-[#FAF7F2] via-white to-amber-50/25 rounded-3xl p-4 sm:p-6 border border-[#E8E2D8] shadow-xs space-y-4 relative group">
       
       {/* Header Strip */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0 flex items-center gap-2">
+      <div className="flex items-center justify-between gap-3 border-b border-[#E8E2D8]/60 pb-3.5">
+        <div className="min-w-0 flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 to-[#F26430] flex items-center justify-center text-white shadow-2xs shrink-0">
             <Zap className="w-4 h-4 fill-white" />
           </div>
@@ -184,48 +185,41 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                 Quests
               </span>
             </h2>
+            <p className="text-[11px] text-[#64748B] font-medium hidden sm:block">
+              ร่วมทำภารกิจสนุกๆ อัปเลเวล และสะสมเหรียญรางวัลพิเศษ
+            </p>
           </div>
         </div>
 
-        {/* Right Actions: Create Challenge & View All */}
+        {/* Right Actions: View All */}
         <div className="flex items-center gap-1.5 shrink-0">
-          {onOpenCreateModal && (
-            <button
-              onClick={onOpenCreateModal}
-              className="bg-white hover:bg-slate-50 text-[#4A7C59] border border-[#4A7C59]/30 text-[11px] font-bold px-3 py-1.5 rounded-xl transition-all shadow-2xs flex items-center gap-1 cursor-pointer active:scale-95"
-            >
-              <PlusCircle className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">สร้างชาเลนจ์</span>
-            </button>
-          )}
-
           <Link
             href="/challenge"
-            className="bg-[#1E293B] hover:bg-black text-white text-[11px] font-bold px-3 py-1.5 rounded-xl transition-all shadow-2xs flex items-center gap-1 cursor-pointer active:scale-95"
+            className="bg-[#1E293B] hover:bg-[#F26430] text-white text-[11px] font-bold px-3 py-1.5 rounded-xl transition-all shadow-2xs flex items-center gap-1 cursor-pointer active:scale-95"
           >
-            <span>ทั้งหมด</span>
+            <span>ดูทั้งหมด</span>
             <ChevronRight className="w-3.5 h-3.5" />
           </Link>
         </div>
       </div>
 
-      {/* Carousel Container with Floating Center Left/Right Buttons */}
+      {/* Carousel Container with Floating Center Left/Right Buttons (Hidden on Mobile/Tablet, Desktop Only) */}
       <div className="relative">
         
-        {/* Floating Left Button */}
+        {/* Floating Left Button (Desktop only: hidden lg:flex) */}
         <button
           onClick={handlePrev}
-          className="absolute -left-3.5 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 hover:bg-white text-slate-800 border border-slate-200/90 shadow-md hover:shadow-lg flex items-center justify-center transition-all cursor-pointer opacity-90 hover:opacity-100 active:scale-90"
+          className="hidden lg:flex absolute -left-4 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 hover:bg-white text-slate-800 border border-slate-200/90 shadow-md hover:shadow-lg items-center justify-center transition-all cursor-pointer opacity-90 hover:opacity-100 active:scale-90"
           aria-label="เลื่อนซ้าย"
           title="เลื่อนซ้าย"
         >
           <ChevronLeft className="w-5 h-5 text-slate-700" />
         </button>
 
-        {/* Floating Right Button */}
+        {/* Floating Right Button (Desktop only: hidden lg:flex) */}
         <button
           onClick={handleNext}
-          className="absolute -right-3.5 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 hover:bg-white text-slate-800 border border-slate-200/90 shadow-md hover:shadow-lg flex items-center justify-center transition-all cursor-pointer opacity-90 hover:opacity-100 active:scale-90"
+          className="hidden lg:flex absolute -right-4 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 hover:bg-white text-slate-800 border border-slate-200/90 shadow-md hover:shadow-lg items-center justify-center transition-all cursor-pointer opacity-90 hover:opacity-100 active:scale-90"
           aria-label="เลื่อนขวา"
           title="เลื่อนขวา"
         >
@@ -244,7 +238,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
               <div
                 key={quest.id}
                 onClick={() => handleOpenDetailModal(quest)}
-                className={`w-[280px] sm:w-[310px] md:w-[320px] shrink-0 bg-white rounded-2xl p-4 sm:p-4.5 border transition-all duration-200 flex flex-col justify-between space-y-3.5 shadow-2xs hover:shadow-md relative overflow-hidden group cursor-pointer ${
+                className={`w-[280px] sm:w-[310px] md:w-[320px] shrink-0 bg-white rounded-2xl p-4 sm:p-4.5 border transition-all duration-300 flex flex-col justify-between space-y-3.5 shadow-2xs hover:shadow-xl hover:-translate-y-1 relative overflow-hidden group/card cursor-pointer ${
                   quest.isOfficial
                     ? 'border-amber-300/80 ring-1 ring-amber-400/20 bg-gradient-to-b from-amber-50/20 via-white to-white'
                     : 'border-[#E8E2D8]'
@@ -272,71 +266,61 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                   </span>
                 </div>
 
-                {/* Title & Goal Content */}
-                <div className="space-y-1.5">
+                {/* Title & Goal Content (Multi-line Wrap, Title Turns Orange on Hover) */}
+                <div className="space-y-2 flex-1">
                   <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-[#FAF7F2] border border-[#E8E2D8] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform mt-0.5">
+                    <div className="w-9 h-9 rounded-xl bg-[#FAF7F2] border border-[#E8E2D8] flex items-center justify-center shrink-0 shadow-2xs group-hover/card:scale-105 transition-transform mt-0.5">
                       {getIcon(quest.iconName)}
                     </div>
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-0 flex-1 space-y-1.5">
                       <h3
                         title={quest.title}
-                        className="font-extrabold text-sm sm:text-base text-[#1E293B] group-hover:text-[#F26430] transition-colors line-clamp-1 leading-snug"
+                        className="font-extrabold text-sm sm:text-base text-[#1E293B] group-hover/card:text-[#F26430] transition-colors leading-snug break-words"
                       >
                         {quest.title}
                       </h3>
                       <p
                         title={quest.targetGoal}
-                        className="text-xs text-[#64748B] line-clamp-2 mt-1 leading-relaxed"
+                        className="text-xs text-[#64748B] line-clamp-2 leading-relaxed"
                       >
                         {quest.targetGoal}
                       </p>
-                    </div>
-                  </div>
 
-                  <div className="flex items-center gap-1.5 text-xs text-[#F26430] font-bold pt-1">
-                    <Award className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate">{quest.badgeLabel}</span>
+                      {/* Minimal Reward Badge: Perfectly Aligned in the Same Column */}
+                      <div className="pt-0.5">
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-amber-900 bg-amber-50/90 border border-amber-200/70 px-2 py-0.5 rounded-md shadow-2xs">
+                          <Award className="w-3 h-3 text-amber-600 shrink-0 stroke-[2.2]" />
+                          <span className="truncate">{quest.badgeLabel}</span>
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Bottom Strip: Creator + Action Button */}
-                <div className="pt-2.5 border-t border-slate-100 space-y-2.5">
-                  <div className="flex items-center justify-between text-[11px] text-slate-500">
-                    <div className="flex items-center gap-1.5 truncate max-w-[150px]">
-                      <img
-                        src={quest.creatorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80'}
-                        alt={quest.creatorName || ''}
-                        className="w-4 h-4 rounded-full object-cover border border-slate-200 shrink-0"
-                      />
-                      <span className="truncate text-slate-700 font-medium">{quest.creatorName}</span>
-                    </div>
-
-                    <span className="font-bold text-slate-600 flex items-center gap-1 shrink-0">
-                      <Users className="w-3 h-3 text-[#4A7C59]" />
-                      <span>{quest.participantsCount} คน</span>
-                    </span>
+                {/* Clean Bottom Strip: Creator + Participants Count & Status */}
+                <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                  <div className="flex items-center gap-1.5 truncate max-w-[150px]">
+                    <img
+                      src={quest.creatorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80'}
+                      alt={quest.creatorName || ''}
+                      className="w-4 h-4 rounded-full object-cover border border-slate-200 shrink-0"
+                    />
+                    <span className="truncate text-slate-700 font-medium">{quest.creatorName}</span>
                   </div>
 
-                  {/* Clean Action Button (Coral Orange #F26430) */}
-                  {isJoined ? (
-                    <div className="w-full bg-emerald-50 text-[#4A7C59] border border-emerald-200/80 py-2 rounded-xl text-center text-xs font-extrabold flex items-center justify-center gap-1 shadow-2xs">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>กำลังทำภารกิจ</span>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenDetailModal(quest);
-                      }}
-                      className="w-full bg-[#F26430] hover:bg-[#d95322] text-white font-extrabold text-xs py-2 rounded-xl shadow-2xs transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
-                    >
-                      <Eye className="w-3.5 h-3.5 text-orange-200" />
-                      <span>ดูรายละเอียด</span>
-                    </button>
-                  )}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {isJoined ? (
+                      <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        <span>กำลังทำ</span>
+                      </span>
+                    ) : (
+                      <span className="font-bold text-slate-600 flex items-center gap-1">
+                        <Users className="w-3 h-3 text-[#4A7C59]" />
+                        <span>{quest.participantsCount} คน</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             );

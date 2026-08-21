@@ -42,23 +42,25 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     <section className="relative z-30 pt-1 pb-1 md:pt-2 md:pb-2 bg-[#FAF7F2]">
       <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 relative">
         
-        {/* Full Hero Banner Container with 70% Center Space - Compact Height */}
-        <div className="relative rounded-3xl bg-[#FAF7F2] border border-[#E8E2D8]/60 shadow-sm min-h-[250px] sm:min-h-[280px] flex items-center justify-center">
+        {/* Full Hero Banner Container with 70% Center Space - Responsive & Clean */}
+        <div className="relative rounded-3xl bg-gradient-to-b from-[#FAF7F2] via-white/90 to-[#FAF7F2] border border-[#E8E2D8]/80 shadow-xs min-h-[230px] sm:min-h-[280px] flex items-center justify-center overflow-hidden">
           
-          {/* Full-bleed Background Image with 70% Empty Center */}
+          {/* Full-bleed Background Image with Responsive Opacity & Position */}
           <div className="absolute inset-0 z-0 pointer-events-none rounded-3xl overflow-hidden">
             <img
               src="/hero-bg-70.png"
-              alt="Chill & Connect Hero Background with 70% Safe Zone"
-              className="w-full h-full object-cover object-center"
+              alt="Chill & Connect Hero Background"
+              className="w-full h-full object-cover object-top sm:object-center opacity-30 sm:opacity-90 transition-opacity"
             />
+            {/* Subtle Gradient Veil on Mobile to Prevent Visual Clash */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#FAF7F2]/80 via-white/60 to-[#FAF7F2]/90 sm:hidden" />
           </div>
 
           {/* Centered Safe Zone for Text & Search Bar - Clean & Natural */}
-          <div className="relative z-10 text-center space-y-2.5 sm:space-y-3 max-w-xl mx-auto px-4 py-5 sm:py-6 w-full">
+          <div className="relative z-10 text-center space-y-2.5 sm:space-y-3 max-w-xl mx-auto px-4 py-6 sm:py-7 w-full">
             
             {/* Dynamic Headline */}
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#1E293B] tracking-tight leading-tight drop-shadow-xs">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#1E293B] tracking-tight leading-tight">
               วันหยุดนี้... <span className="text-[#F26430] inline-block hover:scale-105 transition-transform cursor-default">ทำอะไรดี?</span>
             </h1>
 

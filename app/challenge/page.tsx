@@ -558,7 +558,7 @@ export default function ChallengePage() {
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
                   <h1 className="text-base sm:text-xl font-extrabold text-white tracking-tight">
-                    {currentRole === 'host' ? '👑 สตูดิโอโฮสต์สร้างรายได้ (Creator & Host Hub)' : 'กิจกรรมที่เข้าร่วม & ตั๋ว E-Ticket'}
+                    {currentRole === 'host' ? '👑 สตูดิโอโฮสต์สร้างรายได้ (Creator & Host Hub)' : 'ฮับของฉัน: ตั๋ว & ชาเลนจ์ (My Hub)'}
                   </h1>
                   <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border shrink-0 ${
                     currentRole === 'host'
@@ -1340,15 +1340,15 @@ export default function ChallengePage() {
                           {/* Right Column: Verify Proof & Check-in Action Button (Fixed 3 columns on desktop) */}
                           <div className="md:col-span-3 flex items-center justify-start md:justify-end gap-2 shrink-0">
                             {quest.progressPercent >= 100 ? (
-                              <span className="bg-emerald-50 text-emerald-800 border border-emerald-300 px-3.5 py-1.5 rounded-xl text-xs font-black inline-flex items-center gap-1 shadow-2xs">
+                              <span className="bg-emerald-50 text-emerald-800 border border-emerald-300 px-3.5 py-1.5 rounded-xl text-xs font-black inline-flex items-center gap-1.5 shadow-2xs">
                                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                <span>สำเร็จแล้ว 🏆</span>
+                                <span>สำเร็จแล้ว</span>
                               </span>
                             ) : (
                               <button
                                 onClick={() => setSelectedQuestForVerifyModal(quest)}
                                 className="w-full md:w-auto bg-gradient-to-r from-emerald-600 to-[#4A7C59] hover:from-emerald-500 hover:to-[#3B6347] text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
-                                title="ส่งภาพถ่าย หรือเช็คอินพิกัด GPS เพื่อยืนยันความคืบหน้า"
+                                title="ถ่ายภาพเช็คอิน หรือสแกน GPS พิกัดจริงเพื่อสะสมความคืบหน้า"
                               >
                                 <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                                 <span>ส่งหลักฐานยืนยัน</span>

@@ -497,7 +497,7 @@ export default function Home() {
           onOpenSurpriseModal={() => setIsSurpriseModalOpen(true)}
         />
 
-        <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8 py-2 relative z-10">
+        <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-7 py-2 relative z-10">
           
           {/* 3. Auto-Sliding Trending Events Carousel */}
           <TrendingCarousel
