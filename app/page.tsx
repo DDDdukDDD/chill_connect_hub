@@ -82,6 +82,7 @@ export default function Home() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isCreateChallengeModalOpen, setIsCreateChallengeModalOpen] = useState<boolean>(false);
   const [joinedQuestTitles, setJoinedQuestTitles] = useState<string[]>(['Cafe Hunter 5', 'Step Count 30Days']);
+  const [hideEndedEvents, setHideEndedEvents] = useState<boolean>(true);
 
   const handleJoinQuestFromHome = (questTitle: string) => {
     if (!joinedQuestTitles.includes(questTitle)) {
@@ -89,6 +90,22 @@ export default function Home() {
       showToast(`🎉 คุณได้รับภารกิจ "${questTitle}" เข้าสู่หน้ารายการของคุณเรียบร้อย! (+XP Bonus)`);
     }
   };
+
+  // Deep Linking Effect: Detect ?event=id in URL and open Event Detail Modal automatically
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && eventsList.length > 0) {
+      const params = new URLSearchParams(window.location.search);
+      const eventParamId = params.get('event');
+      if (eventParamId) {
+        const found = eventsList.find((e) => e.id === eventParamId);
+        if (found) {
+          setSelectedEvent(found);
+          const el = document.getElementById('catalog-section');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
+    }
+  }, [eventsList]);
 
   // Fetch live approved events from server
   React.useEffect(() => {
@@ -276,7 +293,13 @@ export default function Home() {
         matchesZone = event.zone === selectedZone;
       }
 
-      return matchesCategory && matchesVenue && matchesEventType && matchesTime && matchesSubCategory && matchesSearch && matchesPrice && matchesZone;
+      // Hide Ended Events filter
+      let matchesEnded = true;
+      if (hideEndedEvents) {
+        matchesEnded = event.status !== 'ended';
+      }
+
+      return matchesCategory && matchesVenue && matchesEventType && matchesTime && matchesSubCategory && matchesSearch && matchesPrice && matchesZone && matchesEnded;
     });
 
     // Calculate distance for all events if userLocation is available
@@ -318,7 +341,24 @@ export default function Home() {
     sortByNearMe,
     userLocation,
     favorites,
+    hideEndedEvents,
   ]);
+
+  const handleSearchSubmit = () => {
+    // Smart Search Auto-Clear: reset conflicting sub-filters so the search result is not blocked
+    setSelectedCategory(null);
+    setSelectedSubCategory(null);
+    setSelectedVenueFilter(null);
+    setSelectedZone(null);
+    setPriceFilter('all');
+    setTimeFilter('all');
+    setStartDate('');
+    setEndDate('');
+    setSortByNearMe(false);
+    setCurrentPage(1);
+    const el = document.getElementById('catalog-section');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  };
 
   // AI Search & Google Events Rich Results Schema (GEO / Generative Engine Optimization)
   const itemListSchema = useMemo(() => {
@@ -490,10 +530,7 @@ export default function Home() {
         <HeroSection
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
-          onSearchSubmit={() => {
-            const el = document.getElementById('catalog-section');
-            if (el) el.scrollIntoView({ behavior: 'smooth' });
-          }}
+          onSearchSubmit={handleSearchSubmit}
           onOpenSurpriseModal={() => setIsSurpriseModalOpen(true)}
         />
 
@@ -529,8 +566,8 @@ export default function Home() {
             {/* Unified 1-Row Header & Filter Bar */}
             <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2.5 bg-white p-2 sm:p-2.5 rounded-2xl border border-[#E8E2D8] shadow-xs">
               
-              {/* Left: Title + Time Filter Tabs */}
-              <div className="flex items-center gap-2.5 sm:gap-3 overflow-x-auto no-scrollbar py-0.5">
+              {/* Left: Title + Time Filter Tabs + Hide Ended Checkbox */}
+              <div className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto no-scrollbar py-0.5">
                 <h2 className="text-sm sm:text-base font-extrabold text-[#1E293B] flex items-center gap-1.5 shrink-0 pl-1">
                   <Sprout className="w-4 h-4 sm:w-5 sm:h-5 text-[#4A7C59]" />
                   <span>กิจกรรมน่าสนใจ</span>
@@ -544,7 +581,6 @@ export default function Home() {
                     { id: 'all', label: 'ทั้งหมด' },
                     { id: 'tomorrow', label: 'พรุ่งนี้' },
                     { id: 'weekend', label: 'เสาร์-อาทิตย์นี้' },
-                    { id: 'next_month', label: 'เดือนหน้า' },
                   ].map((tab) => {
                     const isActive = timeFilter === tab.id;
                     return (
@@ -594,6 +630,22 @@ export default function Home() {
                     </button>
                   )}
                 </div>
+
+                <div className="h-4 w-px bg-slate-200 shrink-0 hidden sm:block" />
+
+                {/* Checkbox: Hide Ended Events */}
+                <label className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer select-none bg-slate-50 hover:bg-slate-100/80 px-2.5 py-1 rounded-xl border border-slate-200/80 transition-all shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={hideEndedEvents}
+                    onChange={(e) => {
+                      setHideEndedEvents(e.target.checked);
+                      setCurrentPage(1);
+                    }}
+                    className="w-3.5 h-3.5 accent-[#4A7C59] rounded cursor-pointer"
+                  />
+                  <span>เฉพาะที่ยังไม่จบ</span>
+                </label>
               </div>
 
               {/* Right: Near Me Button + Minimalist Filter Drawer & Sorting */}

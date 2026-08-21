@@ -19,7 +19,8 @@ import {
   ShieldCheck,
   Sparkles,
   Heart,
-  Bot
+  Bot,
+  Zap
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -60,6 +61,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const navItems = [
     { id: 'explore', label: 'ค้นหากิจกรรม', href: '/', icon: Compass },
+    { id: 'challenges', label: 'ชาเลนจ์ & ภารกิจ', href: '/challenges', icon: Zap },
     { id: 'moments', label: 'โมเมนต์โซเชียล', href: '/moments', icon: Camera },
     { id: 'challenge', label: 'ฮับของฉัน', href: '/challenge', icon: Ticket },
     { id: 'about', label: 'เกี่ยวกับเรา', href: '/about', icon: Info },

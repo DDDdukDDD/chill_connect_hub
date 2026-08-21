@@ -43,7 +43,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 relative">
         
         {/* Full Hero Banner Container with 70% Center Space - Responsive & Clean */}
-        <div className="relative rounded-3xl bg-gradient-to-b from-[#FAF7F2] via-white/90 to-[#FAF7F2] border border-[#E8E2D8]/80 shadow-xs min-h-[230px] sm:min-h-[280px] flex items-center justify-center overflow-hidden">
+        <div className="relative rounded-3xl bg-gradient-to-b from-[#FAF7F2] via-white/90 to-[#FAF7F2] border border-[#E8E2D8]/80 shadow-xs min-h-[230px] sm:min-h-[280px] flex items-center justify-center">
           
           {/* Full-bleed Background Image with Responsive Opacity & Position */}
           <div className="absolute inset-0 z-0 pointer-events-none rounded-3xl overflow-hidden">

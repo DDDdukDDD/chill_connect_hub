@@ -194,7 +194,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
         {/* Right Actions: View All */}
         <div className="flex items-center gap-1.5 shrink-0">
           <Link
-            href="/challenge"
+            href="/challenges"
             className="bg-[#1E293B] hover:bg-[#F26430] text-white text-[11px] font-bold px-3 py-1.5 rounded-xl transition-all shadow-2xs flex items-center gap-1 cursor-pointer active:scale-95"
           >
             <span>ดูทั้งหมด</span>

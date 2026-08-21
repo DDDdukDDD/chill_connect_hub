@@ -99,10 +99,11 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   };
 
   const handleShare = async () => {
+    const deepLinkUrl = typeof window !== 'undefined' ? `${window.location.origin}/?event=${event.id}` : '';
     const shareData = {
       title: event.title,
       text: `ไปกิจกรรมนี้กันมั้ย! "${event.title}" 📍 ${event.location} (${event.date})`,
-      url: typeof window !== 'undefined' ? window.location.href : '',
+      url: deepLinkUrl,
     };
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
@@ -125,53 +126,34 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-3 sm:pt-6 px-2.5 sm:px-4 pb-24 sm:pb-6 bg-black/60 backdrop-blur-sm overflow-y-auto animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
       
       {/* Modal Card (Floats comfortably above mobile navigation) */}
       <div 
-        className="bg-white rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl border border-[#E8E2D8] flex flex-col max-h-[82vh] sm:max-h-[88vh] relative animate-scale-up my-auto"
+        className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-[#E8E2D8] relative"
         onClick={(e) => e.stopPropagation()}
       >
         
         {/* Top Image Banner (Compact 115px mobile / 140px desktop) */}
-        <div className="relative h-28 sm:h-36 w-full bg-slate-100 shrink-0 overflow-hidden">
+        <div className="relative aspect-21/9 sm:aspect-16/7 w-full overflow-hidden bg-slate-100 shrink-0">
           <img
             src={event.image}
             alt={event.title}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
 
           {/* Close Button */}
           <button
             onClick={onClose}
             className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-[#1E293B] hover:bg-white transition-all z-10 cursor-pointer"
+            title="ปิดหน้าต่าง"
           >
             <X className="w-4 h-4" />
           </button>
 
-          {/* Event Type & Tag Pill */}
-          <div className="absolute bottom-3 left-3 flex items-center gap-2">
-            <div className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm backdrop-blur-md ${
-              event.status === 'ended' 
-                ? 'bg-slate-800/90 text-slate-200'
-                : isPublicVenue 
-                ? 'bg-[#F26430] text-white' 
-                : 'bg-white/90 text-[#1E293B]'
-            }`}>
-              {event.status === 'ended' ? '🏁 สิ้นสุดแล้ว' : isPublicVenue ? '📍 งานอีเวนต์สาธารณะ / ศูนย์จัดแสดง' : event.tag}
-            </div>
-          </div>
-
-          {/* Action Icons */}
-          <div className="absolute bottom-3 right-3 flex items-center gap-2">
-            <button
-              onClick={handleShare}
-              className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-[#1E293B] hover:scale-105 transition-all cursor-pointer"
-              title="แชร์กิจกรรม"
-            >
-              <Share2 className="w-3.5 h-3.5" />
-            </button>
+          {/* Floating Favorite Heart Icon on Photo */}
+          <div className="absolute bottom-3 right-3">
             <button
               onClick={() => onToggleFavorite(event.id)}
               className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-[#F26430] hover:scale-105 transition-all cursor-pointer"
@@ -593,23 +575,35 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               </Link>
             </div>
           ) : (
-            /* When Not Joined: Confirm to Register */
-            <button
-              onClick={handleOpenJoinConfirm}
-              className="w-full sm:w-auto px-7 py-2.5 rounded-full font-bold text-xs sm:text-sm text-white transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer bg-[#F26430] hover:bg-[#D95322] shadow-[#F26430]/25 active:scale-95"
-            >
-              {isPublicVenue ? (
-                <>
-                  <Calendar className="w-4 h-4 text-white" />
-                  <span>บันทึกลงตารางนัด</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="w-4 h-4 text-white" />
-                  <span>ยืนยันเข้าร่วมกิจกรรม</span>
-                </>
-              )}
-            </button>
+            /* When Not Joined: Share + Confirm to Register */
+            <div className="flex items-center justify-between sm:justify-end gap-2 w-full">
+              <button
+                type="button"
+                onClick={handleShare}
+                className="px-4 py-2.5 rounded-full border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-2xs active:scale-95"
+                title="แชร์กิจกรรมนี้ให้เพื่อน"
+              >
+                <Share2 className="w-3.5 h-3.5 text-[#F26430]" />
+                <span>{copied ? '✓ คัดลอกแล้ว' : 'แชร์กิจกรรม'}</span>
+              </button>
+
+              <button
+                onClick={handleOpenJoinConfirm}
+                className="flex-1 sm:flex-initial px-6 sm:px-7 py-2.5 rounded-full font-bold text-xs sm:text-sm text-white transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer bg-[#F26430] hover:bg-[#D95322] shadow-[#F26430]/25 active:scale-95"
+              >
+                {isPublicVenue ? (
+                  <>
+                    <Calendar className="w-4 h-4 text-white" />
+                    <span>บันทึกลงตารางนัด</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-white" />
+                    <span>ยืนยันเข้าร่วมกิจกรรม</span>
+                  </>
+                )}
+              </button>
+            </div>
           )}
 
         </div>

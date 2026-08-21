@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Compass, Camera, Ticket, Info } from 'lucide-react';
+import { Compass, Camera, Ticket, Info, Zap } from 'lucide-react';
 
 interface MobileNavProps {
   activeTab: string;
@@ -17,6 +17,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
 }) => {
   const navItems = [
     { id: 'explore', label: 'ค้นหา', href: '/', icon: Compass },
+    { id: 'challenges', label: 'ชาเลนจ์', href: '/challenges', icon: Zap },
     { id: 'moments', label: 'โมเมนต์', href: '/moments', icon: Camera },
     { id: 'challenge', label: 'ฮับของฉัน', href: '/challenge', icon: Ticket },
     { id: 'about', label: 'เกี่ยวกับ', href: '/about', icon: Info },

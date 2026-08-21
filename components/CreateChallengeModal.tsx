@@ -35,6 +35,8 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
   const [totalCount, setTotalCount] = useState<number>(3);
   const [rewardPoints, setRewardPoints] = useState<number>(150);
   const [isOfficial, setIsOfficial] = useState(false);
+  const [verificationMethod, setVerificationMethod] = useState<'photo' | 'gps' | 'ticket'>('gps');
+  const [targetLocations, setTargetLocations] = useState<string>('สวนลุมพินี, สวนเบญจกิติ, สวนรถไฟ');
 
   if (!isOpen) return null;
 
@@ -56,7 +58,9 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
       creatorName: 'คุณ (Member)',
       participantsCount: 1,
       rewardPoints: rewardPoints,
-      targetGoal: targetGoal.trim() || `ทำเป้าหมาย "${title.trim()}" ให้สำเร็จครบ ${totalCount} ครั้ง`,
+      targetGoal: targetGoal.trim() 
+        ? `${targetGoal.trim()}${verificationMethod === 'gps' && targetLocations ? ` (เป้าหมาย: ${targetLocations})` : ''}`
+        : `ทำเป้าหมาย "${title.trim()}" ให้สำเร็จครบ ${totalCount} ครั้ง${verificationMethod === 'gps' && targetLocations ? ` (เป้าหมาย: ${targetLocations})` : ''}`,
       isOfficial: isOfficial,
     };
 
@@ -236,10 +240,56 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
             <textarea
               value={targetGoal}
               onChange={(e) => setTargetGoal(e.target.value)}
-              placeholder="ระบุสิ่งที่ต้องทำ เช่น เข้าร่วมเวิร์กช็อป 2 ครั้งภายใน 30 วัน..."
+              placeholder="ระบุสิ่งที่ต้องทำ เช่น วิ่งสะสมครบ 3 สวนสาธารณะในกทม. หรือเข้าร่วมเวิร์กช็อป..."
               rows={2}
               className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#4A7C59] outline-none"
             />
+          </div>
+
+          {/* Verification Method Selector (GPS, Photo Proof, Ticket) */}
+          <div className="space-y-1.5 pt-1">
+            <label className="text-xs font-bold text-slate-700 block">
+              🛡️ รูปแบบการตรวจสอบความคืบหน้า (Verification Method)
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { id: 'gps', label: '📍 พิกัด GPS จริง', desc: 'เช็คอินสถานที่จริง' },
+                { id: 'photo', label: '📸 ภาพถ่ายโมเมนต์', desc: 'อัปโหลดรูปลง Hub' },
+                { id: 'ticket', label: '🎟️ สแกนตั๋วงาน', desc: 'เชื่อมตั๋วในระบบ' },
+              ].map((method) => {
+                const isSelected = verificationMethod === method.id;
+                return (
+                  <button
+                    key={method.id}
+                    type="button"
+                    onClick={() => setVerificationMethod(method.id as any)}
+                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500/20 text-emerald-900 shadow-2xs'
+                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span className="font-extrabold text-[11px] block">{method.label}</span>
+                    <span className="text-[9px] text-slate-500 block mt-0.5">{method.desc}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {verificationMethod === 'gps' && (
+              <div className="pt-1 animate-fade-in">
+                <label className="text-[11px] font-bold text-slate-600 block">
+                  พิกัด/สถานที่เป้าหมายสำหรับเช็คอิน:
+                </label>
+                <input
+                  type="text"
+                  value={targetLocations}
+                  onChange={(e) => setTargetLocations(e.target.value)}
+                  placeholder="เช่น สวนลุมพินี, สวนเบญจกิติ, สวนวชิรเบญจทัศ (สวนรถไฟ)"
+                  className="w-full text-xs p-2.5 rounded-xl border border-slate-200 mt-1 focus:ring-2 focus:ring-[#4A7C59] outline-none"
+                />
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}
