@@ -66,7 +66,7 @@ export const DEFAULT_DATA_SOURCES: EventDataSource[] = [
   {
     id: 'qsncc',
     name: 'ศูนย์การประชุมแห่งชาติสิริกิติ์ (QSNCC)',
-    url: 'https://www.qsncc.com/en/whats-on/events/',
+    url: 'https://www.qsncc.com/en/whats-on/event-calendar',
     category: 'exhibition',
     categoryLabel: '🏛️ มหกรรมเอ็กซ์โป & สัปดาห์หนังสือ',
     icon: '🏛️',

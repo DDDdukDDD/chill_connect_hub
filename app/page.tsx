@@ -565,6 +565,7 @@ export default function Home() {
                   setSelectedCategory(null);
                   setSelectedSubCategory(null);
                 }}
+                title="🏛️ อีเวนต์ & งานแฟร์: มหกรรม แฟร์ลดราคา คอนเสิร์ต มาราธอน และนิทรรศการใหญ่จัดโดยทางการ"
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 sm:py-3 px-3 rounded-xl font-black text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-98 ${
                   eventTypeTab === 'public_venue'
                     ? 'bg-[#1E293B] text-white shadow-md'
@@ -587,6 +588,7 @@ export default function Home() {
                   setEventTypeTab('community');
                   setSelectedVenueFilter(null);
                 }}
+                title="🏡 กิจกรรมชุมชน: กลุ่มย่อย 4-8 คน ชวนเพื่อนใหม่ บอร์ดเกม วิ่ง คาเฟ่ เวิร์กช็อป มีโฮสต์ต้อนรับ"
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 sm:py-3 px-3 rounded-xl font-black text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-98 ${
                   eventTypeTab === 'community'
                     ? 'bg-[#4A7C59] text-white shadow-md'
@@ -623,14 +625,14 @@ export default function Home() {
             {/* Unified 1-Row Control Bar */}
             <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2.5 bg-white p-2 sm:p-2.5 rounded-2xl border border-[#E8E2D8] shadow-xs">
               
-              {/* Left: Time Filter Tabs + Free Filter + Hide Ended Checkbox */}
+              {/* Left: Time Filter Tabs + Free Filter + Upcoming Events Checkbox */}
               <div className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto no-scrollbar py-0.5">
                 {/* Time Filter Tabs */}
                 <div className="flex items-center gap-1 shrink-0">
                   {[
-                    { id: 'all', label: 'ทั้งหมด' },
-                    { id: 'tomorrow', label: 'พรุ่งนี้' },
-                    { id: 'weekend', label: 'เสาร์-อาทิตย์นี้' },
+                    { id: 'all', label: 'ทั้งหมด', desc: 'แสดงกิจกรรมและงานทุกช่วงเวลา' },
+                    { id: 'tomorrow', label: 'พรุ่งนี้', desc: 'เฉพาะกิจกรรมที่จัดขึ้นในวันพรุ่งนี้' },
+                    { id: 'weekend', label: 'เสาร์-อาทิตย์นี้', desc: 'เฉพาะกิจกรรมวันหยุดเสาร์-อาทิตย์นี้' },
                   ].map((tab) => {
                     const isActive = timeFilter === tab.id;
                     return (
@@ -640,8 +642,8 @@ export default function Home() {
                           setTimeFilter(tab.id as any);
                           setStartDate('');
                           setEndDate('');
-                          setCurrentPage(1);
                         }}
+                        title={tab.desc}
                         className={`px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap cursor-pointer ${
                           isActive
                             ? 'bg-[#1E293B] text-white shadow-xs'
@@ -660,7 +662,6 @@ export default function Home() {
                         setTimeFilter('all');
                         setStartDate('');
                         setEndDate('');
-                        setCurrentPage(1);
                       }}
                       className="px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl text-xs font-bold bg-[#F26430] text-white shadow-xs flex items-center gap-1 shrink-0 whitespace-nowrap cursor-pointer animate-fade-in"
                       title="คลิกเพื่อล้างวันที่เลือก"
@@ -673,7 +674,7 @@ export default function Home() {
                     <button
                       onClick={() => setIsDatePickerOpen(true)}
                       className="px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 flex items-center gap-1 shrink-0 whitespace-nowrap cursor-pointer transition-all border border-dashed border-slate-300 hover:border-slate-400"
-                      title="เลือกวันที่ต้องการระบุเอง"
+                      title="ระบุช่วงวันที่ต้องการค้นหาด้วยตนเอง"
                     >
                       <Calendar className="w-3 h-3 text-[#4A7C59]" />
                       <span>ระบุวันที่เอง</span>
@@ -694,7 +695,7 @@ export default function Home() {
                       ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
                       : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100/80'
                   }`}
-                  title="กรองเฉพาะกิจกรรมที่เข้าร่วมฟรี"
+                  title="🎉 เข้าชมฟรี: กรองเฉพาะกิจกรรมและงานที่เข้าร่วมได้ฟรี 100% ไม่เสียค่าใช้จ่าย"
                 >
                   <span>🎉 เข้าร่วมฟรี</span>
                 </button>
@@ -702,7 +703,7 @@ export default function Home() {
                 <div className="h-4 w-px bg-slate-200 shrink-0 hidden sm:block" />
 
                 {/* Checkbox: Upcoming Events */}
-                <label className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer select-none bg-slate-50 hover:bg-slate-100/80 px-2.5 py-1 rounded-xl border border-slate-200/80 transition-all shrink-0" title="แสดงเฉพาะงานและกิจกรรมที่กำลังจะมาถึง">
+                <label className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer select-none bg-slate-50 hover:bg-slate-100/80 px-2.5 py-1 rounded-xl border border-slate-200/80 transition-all shrink-0" title="งานที่กำลังมาถึง: แสดงเฉพาะกิจกรรมที่ยังจัดอยู่และงานที่กำลังจะมาถึงในอนาคต">
                   <input
                     type="checkbox"
                     checked={hideEndedEvents}
@@ -715,7 +716,7 @@ export default function Home() {
                 </label>
               </div>
 
-              {/* Right: Favorites Quick Tab + Near Me Button + Filter Drawer & Sorting */}
+              {/* Right: Favorites Quick Tab + Near Me Button + Filter Drawer */}
               <div className="flex items-center justify-end gap-2 pt-1 lg:pt-0 border-t lg:border-t-0 border-slate-100 shrink-0">
                 
                 {/* 💖 Prominent Favorites / Saved Events Tab (ข้อ 5) */}
@@ -734,7 +735,7 @@ export default function Home() {
                       ? 'bg-gradient-to-r from-rose-500 to-[#F26430] text-white border-[#F26430] shadow-sm ring-2 ring-rose-500/20'
                       : 'bg-white hover:bg-rose-50/80 text-[#1E293B] hover:text-[#F26430] border-[#E8E2D8] hover:border-rose-300'
                   }`}
-                  title="ดูกิจกรรมที่คุณกดหัวใจ / บันทึกไว้"
+                  title="❤️ ที่บันทึกไว้: ดูกิจกรรมที่คุณกดหัวใจหรือบันทึกไว้ในแผนเที่ยวของคุณ"
                 >
                   <Heart className={`w-3.5 h-3.5 ${sortBy === 'favorites' ? 'fill-white text-white' : 'fill-rose-500/20 text-rose-500'}`} />
                   <span>ที่บันทึกไว้ ({favorites.length})</span>
@@ -750,7 +751,7 @@ export default function Home() {
                       ? 'bg-gradient-to-r from-orange-500 to-[#F26430] text-white border-[#F26430] shadow-sm ring-2 ring-orange-500/20'
                       : 'bg-white hover:bg-orange-50/80 text-[#1E293B] hover:text-[#F26430] border-[#E8E2D8] hover:border-orange-300'
                   }`}
-                  title="ค้นหากิจกรรมใกล้ตำแหน่งของคุณ เรียงจากใกล้ที่สุด"
+                  title="🎯 ใกล้ฉัน: ค้นหาและเรียงลำดับกิจกรรมตามระยะทางจากพิกัดของคุณ (ใกล้ไปไกล)"
                 >
                   {isLocating ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin text-[#F26430]" />
@@ -764,31 +765,14 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => setIsFilterDrawerOpen(true)}
-                  className={`flex items-center gap-1.5 bg-white hover:bg-slate-50 text-[#334155] border px-3 py-1.5 rounded-xl text-xs font-bold shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 ${
+                  className={`flex items-center gap-1.5 bg-white hover:bg-slate-50 text-[#334155] border px-3.5 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 ${
                     selectedZone || selectedVenueFilter || priceFilter !== 'all' || selectedCategory ? 'border-[#4A7C59] ring-2 ring-[#4A7C59]/10 text-[#4A7C59]' : 'border-[#E8E2D8]'
                   }`}
-                  title="เปิดตัวกรองสถานที่ ย่าน และราคา"
+                  title="⚙️ ตัวกรองขั้นสูง: เลือกศูนย์แสดงสินค้า (อิมแพ็ค/ไบเทค/สิริกิติ์), ทำเลย่าน BTS/MRT, หมวดหมู่ และงบประมาณ"
                 >
                   <SlidersHorizontal className="w-3.5 h-3.5 text-[#4A7C59]" />
                   <span>ตัวกรอง {selectedZone ? '(1)' : ''}</span>
                 </button>
-
-                {/* Sorting Select */}
-                <div className="flex items-center gap-1 bg-white border border-[#E8E2D8] px-2.5 py-1.5 rounded-xl text-xs shrink-0 shadow-2xs">
-                  <ArrowUpDown className="w-3 h-3 text-[#4A7C59]" />
-                  <select
-                    value={sortBy}
-                    onChange={(e) => {
-                      setSortBy(e.target.value as 'newest' | 'popular' | 'favorites');
-                      setSortByNearMe(false);
-                    }}
-                    className="bg-transparent font-bold text-[#1E293B] focus:outline-none cursor-pointer text-xs"
-                  >
-                    <option value="newest">ล่าสุด</option>
-                    <option value="popular">ยอดนิยม</option>
-                    <option value="favorites">รายการโปรด ({favorites.length})</option>
-                  </select>
-                </div>
               </div>
 
             </div>

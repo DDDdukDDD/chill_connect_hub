@@ -595,7 +595,7 @@ export const REAL_BANGKOK_EVENT_SEEDS: ScrapedRawEvent[] = [
     rawPrice: 'ฟรี!',
     rawDescription: 'งานเทศกาลหนังสือที่ยิ่งใหญ่ที่สุดแห่งปี รวบรวมสำนักพิมพ์กว่า 300 แห่งทั่วประเทศ พร้อมเวทีเสวนานักเขียนชื่อดังและนิทรรศการพิเศษ',
     rawImage: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=800&q=80',
-    sourceUrl: 'https://www.qsncc.com/th/event-calendar/book-expo-2026',
+    sourceUrl: 'https://www.qsncc.com/en/whats-on/event-calendar',
   },
   {
     source: 'QSNCC Events',
@@ -606,7 +606,7 @@ export const REAL_BANGKOK_EVENT_SEEDS: ScrapedRawEvent[] = [
     rawPrice: '฿150',
     rawDescription: 'มหกรรมเกมและเทคโนโลยีความบันเทิงที่ยิ่งใหญ่ที่สุด แข่งขันอีสปอร์ตระดับนานาชาติ คอสเพลย์คอนเทสต์ และเปิดตัวเกมใหม่จากค่ายเกมชั้นนำทั่วโลก',
     rawImage: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=800&q=80',
-    sourceUrl: 'https://www.qsncc.com/th/event-calendar/tgs2026',
+    sourceUrl: 'https://www.qsncc.com/en/whats-on/event-calendar',
   },
   {
     source: 'BITEC Events',
@@ -661,7 +661,7 @@ export const REAL_BANGKOK_EVENT_SEEDS: ScrapedRawEvent[] = [
     rawPrice: 'ฟรี!',
     rawDescription: 'งานรวมพลคนรักน้องหมาน้องแมวและสัตว์เลี้ยงแปลก สินค้าลดราคา แข่งขันความสามารถพิเศษ และบริการตรวจสุขภาพสัตว์เลี้ยงฟรี',
     rawImage: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=800&q=80',
-    sourceUrl: 'https://www.qsncc.com/th/event-calendar/pet-expo-2026',
+    sourceUrl: 'https://www.qsncc.com/en/whats-on/event-calendar',
   },
   {
     source: 'QSNCC Events',
@@ -672,7 +672,7 @@ export const REAL_BANGKOK_EVENT_SEEDS: ScrapedRawEvent[] = [
     rawPrice: 'ฟรี!',
     rawDescription: 'งานจัดแสดงเทคโนโลยีสถาปัตยกรรม นวัตกรรมวัสดุก่อสร้างสีเขียว และงานออกแบบระดับสากล',
     rawImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80',
-    sourceUrl: 'https://www.qsncc.com/th/event-calendar/architect-2027',
+    sourceUrl: 'https://www.qsncc.com/en/whats-on/event-calendar',
   },
 
   // ==========================================

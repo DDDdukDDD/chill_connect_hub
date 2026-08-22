@@ -33,7 +33,6 @@ export async function loadCache(): Promise<AdminEventItem[]> {
       seed.sourceUrl &&
       (!ev.externalUrl ||
         ev.externalUrl !== seed.sourceUrl ||
-        ev.externalUrl.includes('event-calendar') ||
         ev.externalUrl.includes('thailandnstfair') ||
         ev.externalUrl.includes('event-detail'))
     ) {
@@ -44,6 +43,17 @@ export async function loadCache(): Promise<AdminEventItem[]> {
         link: seed.sourceUrl,
         sourceUrl: seed.sourceUrl,
       };
+    }
+    if (ev.source === 'QSNCC Events' || ev.source === 'QSNCC' || ev.venueTag === 'qsncc' || (ev.location && ev.location.includes('สิริกิติ์'))) {
+      if (ev.externalUrl !== 'https://www.qsncc.com/en/whats-on/event-calendar') {
+        hasUpdated = true;
+        return {
+          ...ev,
+          externalUrl: 'https://www.qsncc.com/en/whats-on/event-calendar',
+          link: 'https://www.qsncc.com/en/whats-on/event-calendar',
+          sourceUrl: 'https://www.qsncc.com/en/whats-on/event-calendar',
+        };
+      }
     }
     return ev;
   });
