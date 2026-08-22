@@ -55,7 +55,16 @@ export async function loadCache(): Promise<AdminEventItem[]> {
         };
       }
     }
-    if (ev.source && ev.source !== 'Chill & Connect Official' && !ev.id?.startsWith('custom-ev-')) {
+    if (ev.id?.startsWith('comm-') || ev.source === 'Chill & Connect Official' || ev.source === 'Chill & Connect Community') {
+      if (ev.eventType !== 'community') {
+        hasUpdated = true;
+        ev = {
+          ...ev,
+          eventType: 'community',
+          source: 'Chill & Connect Community',
+        };
+      }
+    } else if (ev.source && !ev.id?.startsWith('custom-ev-')) {
       if (ev.eventType !== 'public_venue') {
         hasUpdated = true;
         ev = {
@@ -67,9 +76,27 @@ export async function loadCache(): Promise<AdminEventItem[]> {
     return ev;
   });
 
-  MEMORY_CACHE = enriched;
+  // Ensure all 20 community mock events exist in database
+  const communitySeeds = MOCK_EVENTS.filter((m) => m.eventType === 'community' || m.id?.startsWith('comm-'));
+  const existingIds = new Set(enriched.map((e) => e.id));
+  const missingCommunityEvents: AdminEventItem[] = [];
+
+  for (const cSeed of communitySeeds) {
+    if (!existingIds.has(cSeed.id)) {
+      missingCommunityEvents.push({
+        ...cSeed,
+        eventType: 'community',
+        approvalStatus: 'approved',
+        source: 'Chill & Connect Community',
+      });
+      hasUpdated = true;
+    }
+  }
+
+  const finalEvents = [...missingCommunityEvents, ...enriched];
+  MEMORY_CACHE = finalEvents;
   if (hasUpdated) {
-    db.events = enriched;
+    db.events = finalEvents;
     await writeDatabase(db);
   }
 
