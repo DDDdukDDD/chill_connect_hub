@@ -4,6 +4,7 @@ import React from 'react';
 import { EventItem } from '@/data/mockData';
 import { Heart, Calendar, MapPin, Users, Star, CheckCircle2, Sparkles, Building2, Tag, RotateCcw, ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { isEventEnded } from '@/lib/dateUtils';
 
 interface EventGridProps {
   events: EventItem[];
@@ -33,30 +34,28 @@ export const EventGrid: React.FC<EventGridProps> = ({
 }) => {
   if (events.length === 0) {
     return (
-      <div className="bg-white rounded-3xl p-12 text-center border border-[#E8E2D8] shadow-sm space-y-4 animate-fade-in">
-        <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto ${
-          isFavoritesOnly ? 'bg-orange-50 text-[#F26430]' : 'bg-slate-100 text-slate-400'
-        }`}>
-          {isFavoritesOnly ? <Heart className="w-8 h-8 fill-[#F26430] text-[#F26430]" /> : <Sparkles className="w-8 h-8" />}
+      <div className="bg-white rounded-3xl p-8 sm:p-12 text-center border border-[#E8E2D8] shadow-sm max-w-xl mx-auto space-y-4">
+        <div className="w-16 h-16 bg-amber-50 text-[#F26430] rounded-2xl flex items-center justify-center mx-auto text-2xl shadow-inner">
+          🔍
         </div>
-        <div className="space-y-1">
-          <h3 className="font-extrabold text-lg text-[#1E293B]">
-            {isFavoritesOnly ? 'ยังไม่มีกิจกรรมที่บันทึกไว้' : 'ไม่พบกิจกรรมที่ค้นหา'}
+        <div className="space-y-1.5">
+          <h3 className="font-extrabold text-base sm:text-lg text-[#1E293B]">
+            {isFavoritesOnly ? 'ยังไม่มีรายการโปรดที่บันทึกไว้' : 'ไม่พบกิจกรรมที่ตรงกับเงื่อนไข'}
           </h3>
-          <p className="text-xs text-[#64748B] max-w-sm mx-auto">
+          <p className="text-xs sm:text-sm text-[#64748B] max-w-md mx-auto">
             {isFavoritesOnly
-              ? 'ลองกดไอคอนรูปหัวใจบนการ์ดกิจกรรมที่สนใจ เพื่อรวมไว้ดูในหน้านี้ได้เลย'
-              : 'ลองค้นหาด้วยคำอื่น หรือกดปุ่มด้านล่างเพื่อดูกิจกรรมทั้งหมด'}
+              ? 'กดรูปหัวใจ ❤️ ที่การ์ดกิจกรรม เพื่อบันทึกงานที่คุณสนใจไว้อ่านหรือกลับมาดูภายหลังได้ง่ายๆ'
+              : 'ลองเปลี่ยนคำค้นหา หรือกดล้างตัวกรองเพื่อดูกิจกรรมทั้งหมดในระบบ'}
           </p>
         </div>
         {onResetFilters && (
           <button
             type="button"
             onClick={onResetFilters}
-            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#1E293B] hover:bg-[#F26430] text-white text-xs font-bold shadow-md transition-all active:scale-95 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#4A7C59] hover:bg-[#3B6447] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#4A7C59]/20 transition-all cursor-pointer active:scale-95"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>{isFavoritesOnly ? 'สำรวจกิจกรรมทั้งหมด' : 'ดูกิจกรรมทั้งหมด'}</span>
+            <span>ล้างตัวกรองและดูทั้งหมด</span>
           </button>
         )}
       </div>
@@ -65,11 +64,12 @@ export const EventGrid: React.FC<EventGridProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* GRID VIEW: Responsive 4 to 5-Column Grid Layout for Large/Wide Screens */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-4.5">
+      {/* GRID VIEW: Responsive Grid Layout (Clean and Compact on Desktop) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4 gap-3.5 sm:gap-4">
           {events.map((event, idx) => {
             const isFav = favorites.includes(event.id);
             const isJoined = joinedEventIds.includes(event.id);
+            const isEnded = isEventEnded(event);
             const fillRatio = event.participantsCount / event.maxParticipants;
             const isAlmostFull = fillRatio >= 0.8;
             const catStyle = CATEGORY_COLORS[event.category] || CATEGORY_COLORS.heal;
@@ -84,11 +84,11 @@ export const EventGrid: React.FC<EventGridProps> = ({
                 className={`group bg-white rounded-2xl transition-all duration-300 flex flex-col overflow-hidden transform hover:-translate-y-1 cursor-pointer relative ${
                   isJoined
                     ? 'border-2 border-[#4A7C59] ring-2 ring-[#4A7C59]/15 shadow-md'
-                    : 'border border-[#E8E2D8] shadow-sm hover:shadow-xl'
+                    : 'border border-[#E8E2D8] shadow-xs hover:shadow-lg'
                 }`}
               >
-                {/* Image Container (Ultra-Clean 100% Photo Visibility) */}
-                <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
+                {/* Image Container (Compact on Desktop, Balanced on Tablet & Mobile) */}
+                <div className="relative aspect-video sm:aspect-video lg:h-32 xl:h-34 2xl:h-36 w-full overflow-hidden bg-slate-100 shrink-0">
                   <img
                     src={event.image}
                     alt={event.title}
@@ -98,32 +98,34 @@ export const EventGrid: React.FC<EventGridProps> = ({
 
                   {/* Hover Hint Overlay */}
                   <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none z-10">
-                    <span className={`text-xs font-extrabold px-3 py-1.5 rounded-full shadow-lg border flex items-center gap-1 ${
+                    <span className={`text-[11px] font-extrabold px-2.5 py-1 rounded-full shadow-lg border flex items-center gap-1 ${
                       isJoined ? 'bg-[#4A7C59] text-white border-white/40' : 'bg-white/95 text-[#1E293B] border-white/50'
                     }`}>
                       {isJoined ? '🎟️ คุณเข้าร่วมแล้ว (ดูตั๋ว)' : '🔍 คลิกดูรายละเอียด'}
                     </span>
                   </div>
 
-                  {/* Floating Favorite Heart Icon */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleFavorite(event.id);
-                    }}
-                    className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-[#F26430] hover:scale-110 active:scale-95 transition-all z-10"
-                    title={isFav ? 'ยกเลิกถูกใจ' : 'บันทึกกิจกรรม'}
-                  >
-                    <Heart
-                      className={`w-3.5 h-3.5 transition-colors ${
-                        isFav ? 'fill-[#F26430] text-[#F26430]' : 'text-[#64748B]'
-                      }`}
-                    />
-                  </button>
+                  {/* Floating Favorite Heart Icon (Only for active events) */}
+                  {!isEnded && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(event.id);
+                      }}
+                      className="absolute top-2 right-2 w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-[#F26430] hover:scale-110 active:scale-95 transition-all z-10"
+                      title={isFav ? 'ยกเลิกถูกใจ' : 'บันทึกกิจกรรม'}
+                    >
+                      <Heart
+                        className={`w-3.5 h-3.5 transition-colors ${
+                          isFav ? 'fill-[#F26430] text-[#F26430]' : 'text-[#64748B]'
+                        }`}
+                      />
+                    </button>
+                  )}
                 </div>
 
                 {/* Card Content Body */}
-                <div className="p-3.5 sm:p-4 flex flex-col justify-between flex-1 gap-2.5">
+                <div className="p-3 sm:p-3.5 flex flex-col justify-between flex-1 gap-2">
                   <div className="space-y-1.5">
                     
                     {/* Top Row: Host Info (Left) + Clean Price Chip (Right) */}
@@ -132,7 +134,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                         <img
                           src={event.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
                           alt={event.hostName}
-                          className="w-5 h-5 rounded-full object-cover border border-slate-200 shrink-0"
+                          className="w-4.5 h-4.5 rounded-full object-cover border border-slate-200 shrink-0"
                         />
                         <span className="text-[11px] font-semibold text-slate-700 truncate">
                           {event.hostName}
@@ -141,7 +143,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
 
                       {/* Clean Price Chip */}
                       {event.price && (
-                        <span className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border shrink-0 ${
+                        <span className={`text-[10px] sm:text-[11px] font-extrabold px-2 sm:px-2.5 py-0.5 rounded-full border shrink-0 ${
                           event.price.includes('ฟรี')
                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                             : 'bg-orange-50 text-[#F26430] border-orange-200'
@@ -154,7 +156,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                     {/* Title */}
                     <h3
                       onClick={() => onSelectEvent(event)}
-                      className="font-bold text-sm sm:text-base text-[#1E293B] line-clamp-1 group-hover:text-[#4A7C59] cursor-pointer transition-colors"
+                      className="font-bold text-xs sm:text-sm lg:text-[13px] xl:text-sm text-[#1E293B] line-clamp-1 group-hover:text-[#4A7C59] cursor-pointer transition-colors"
                     >
                       {event.title}
                     </h3>
@@ -174,7 +176,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                   </div>
 
                   {/* Seat Capacity Progress Bar (Only for Active Community Events) */}
-                  {event.eventType !== 'public_venue' && event.status !== 'ended' && (
+                  {event.eventType !== 'public_venue' && !isEnded && (
                     <div className="space-y-1 pt-0.5">
                       <div className="flex items-center justify-between text-[11px] font-medium text-[#64748B]">
                         <span className="flex items-center gap-1">
@@ -239,7 +241,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                     </div>
 
                     {/* Right Action Button or Ended Status Badge */}
-                    {event.status === 'ended' ? (
+                    {isEnded ? (
                       <span 
                         onClick={() => onSelectEvent(event)}
                         className="px-3 sm:px-3.5 py-1.5 rounded-full font-bold text-[11px] sm:text-xs bg-slate-100 hover:bg-slate-200 text-slate-500 border border-slate-200/80 flex items-center justify-center gap-1 shrink-0 cursor-pointer transition-colors"

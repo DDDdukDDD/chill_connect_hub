@@ -548,12 +548,12 @@ export default function ChallengesDiscoveryPage() {
                             /* State when quest is already active */
                             <div className="flex items-center gap-1.5 shrink-0">
                               <Link
-                                href="/challenge"
+                                href="/myhub"
                                 className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-extrabold px-3 py-1.5 rounded-full transition-all shadow-xs flex items-center gap-1 cursor-pointer"
-                                title="ไปที่ฮับเพื่อส่งหลักฐานเช็คอิน"
+                                title="ไปที่มายฮับเพื่อส่งหลักฐานเช็คอิน"
                               >
                                 <CheckCircle2 className="w-3.5 h-3.5" />
-                                <span>กำลังทำ (ดูฮับ)</span>
+                                <span>กำลังทำ (ดูมายฮับ)</span>
                               </Link>
                               
                               <button

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { EventItem } from '@/data/mockData';
 import { X, Calendar, MapPin, Users, Heart, Share2, CheckCircle2, ShieldCheck, Clock, ExternalLink, Ticket, AlertCircle, Bell, Navigation2, MessageCircle, Check, Copy } from 'lucide-react';
+import { isEventEnded } from '@/lib/dateUtils';
 
 interface EventDetailModalProps {
   event: EventItem | null;
@@ -63,6 +64,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   if (!event) return null;
 
   const isPublicVenue = event.eventType === 'public_venue';
+  const isEnded = isEventEnded(event);
 
   const handleOpenJoinConfirm = () => {
     if (!isLoggedIn && onRequireLogin) {
@@ -92,71 +94,58 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
       return;
     }
     if (joinedSubIds.includes(subId)) {
-      setJoinedSubIds((prev) => prev.filter((id) => id !== subId));
+      setJoinedSubIds(joinedSubIds.filter((id) => id !== subId));
     } else {
-      setJoinedSubIds((prev) => [...prev, subId]);
+      setJoinedSubIds([...joinedSubIds, subId]);
     }
   };
 
-  const handleShare = async () => {
-    const deepLinkUrl = typeof window !== 'undefined' ? `${window.location.origin}/?event=${event.id}` : '';
-    const shareData = {
-      title: event.title,
-      text: `ไปกิจกรรมนี้กันมั้ย! "${event.title}" 📍 ${event.location} (${event.date})`,
-      url: deepLinkUrl,
-    };
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      try {
-        await navigator.share(shareData);
-        return;
-      } catch (err) {
-        // user cancelled
+  const handleShare = () => {
+    if (typeof window !== 'undefined') {
+      const shareUrl = `${window.location.origin}/?event=${event.id}`;
+      if (navigator.share) {
+        navigator
+          .share({
+            title: event.title,
+            text: event.description,
+            url: shareUrl,
+          })
+          .catch(() => {});
+      } else {
+        navigator.clipboard.writeText(shareUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
       }
     }
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    }
-  };
-
-  const handleShareLine = () => {
-    const text = encodeURIComponent(`ไปกิจกรรมนี้กันมั้ย! "${event.title}" 📍 ${event.location} (${event.date})\n${typeof window !== 'undefined' ? window.location.href : ''}`);
-    window.open(`https://line.me/R/msg/text/?${text}`, '_blank');
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
-      
-      {/* Modal Card (Floats comfortably above mobile navigation) */}
-      <div 
-        className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-[#E8E2D8] relative"
-        onClick={(e) => e.stopPropagation()}
-      >
-        
-        {/* Top Image Banner (Compact 115px mobile / 140px desktop) */}
-        <div className="relative aspect-21/9 sm:aspect-16/7 w-full overflow-hidden bg-slate-100 shrink-0">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 z-50 animate-fade-in">
+      <div className="bg-white rounded-3xl max-w-xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-scale-up border border-[#E8E2D8]">
+        {/* Modal Top Header Image & Controls (Compact Cinematic Banner) */}
+        <div className="relative h-36 sm:h-38 md:h-40 w-full bg-slate-900 shrink-0 overflow-hidden">
           <img
             src={event.image}
             alt={event.title}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/40" />
 
-          {/* Close Button */}
+          {/* Top-Right: Close Button (Universal standard position) */}
           <button
             onClick={onClose}
-            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-[#1E293B] hover:bg-white transition-all z-10 cursor-pointer"
+            className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 hover:bg-white text-slate-700 hover:text-slate-950 flex items-center justify-center shadow-md transition-all active:scale-95 cursor-pointer backdrop-blur-xs z-10"
             title="ปิดหน้าต่าง"
           >
             <X className="w-4 h-4" />
           </button>
 
-          {/* Floating Favorite Heart Icon on Photo */}
-          <div className="absolute bottom-3 right-3">
+          {/* Bottom-Right: Favorite Button (Only for active / ongoing events) */}
+          {!isEnded && (
             <button
               onClick={() => onToggleFavorite(event.id)}
-              className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-[#F26430] hover:scale-105 transition-all cursor-pointer"
+              className="absolute bottom-2.5 right-2.5 sm:bottom-3 sm:right-3 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-md transition-all active:scale-95 cursor-pointer backdrop-blur-xs z-10"
+              title={isFavorite ? 'ลบออกจากรายการโปรด' : 'บันทึกเป็นรายการโปรด'}
             >
               <Heart
                 className={`w-3.5 h-3.5 ${
@@ -164,21 +153,21 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                 }`}
               />
             </button>
-          </div>
+          )}
         </div>
 
         {/* Content Body (Scrollable) */}
         <div className="p-3.5 sm:p-5 space-y-3.5 overflow-y-auto">
           
           {/* Ended Status Banner */}
-          {event.status === 'ended' && (
+          {isEnded && (
             <div className="bg-slate-100 border border-slate-200 p-2.5 rounded-2xl flex items-center justify-between gap-2 text-xs text-slate-700 font-bold animate-fade-in">
               <span className="flex items-center gap-1.5">
                 <span className="text-base">🏁</span>
-                <span>กิจกรรมนี้จัดเสร็จสิ้นไปแล้ว (เมื่อวันที่ {event.date})</span>
+                <span>{isPublicVenue ? 'งานนี้จัดเสร็จสิ้นไปแล้ว' : 'กิจกรรมนี้จัดเสร็จสิ้นไปแล้ว'} (เมื่อวันที่ {event.date})</span>
               </span>
               <span className="text-[10px] text-slate-500 bg-slate-200 px-2 py-0.5 rounded-md font-semibold">
-                ปิดรับสมัคร
+                สิ้นสุดแล้ว
               </span>
             </div>
           )}
@@ -191,7 +180,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                 <span>คุณลงทะเบียนเข้าร่วมกิจกรรมนี้เรียบร้อยแล้ว 🎟️</span>
               </span>
               <Link
-                href="/challenge"
+                href="/myhub"
                 onClick={onClose}
                 className="text-[11px] text-emerald-700 bg-emerald-100/80 hover:bg-emerald-200 px-2.5 py-1 rounded-full border border-emerald-300 font-extrabold shrink-0"
               >
@@ -205,15 +194,11 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className={`text-[11px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full border inline-block ${
-                  event.status === 'ended'
-                    ? 'bg-slate-100 text-slate-600 border-slate-300'
-                    : isPublicVenue
+                  isPublicVenue
                     ? 'bg-sky-50 text-sky-700 border-sky-200'
                     : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                 }`}>
-                  {event.status === 'ended'
-                    ? '🏁 กิจกรรมที่ผ่านมา'
-                    : isPublicVenue
+                  {isPublicVenue
                     ? '🏛️ อีเวนต์ & งานแฟร์'
                     : '🏡 กิจกรรมชุมชน'}
                 </span>
@@ -319,18 +304,30 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                 </div>
               </div>
 
-              {/* Official Source Link (Replaces static Public Venue badge) */}
+              {/* Official Source Link (Direct Search Query / Verified Venue Link) */}
               {isPublicVenue ? (
-                <a
-                  href={event.externalUrl || event.link || `https://www.google.com/search?q=${encodeURIComponent(event.title)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[11px] font-extrabold px-3 py-1.5 rounded-full bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 flex items-center gap-1.5 shrink-0 transition-colors shadow-2xs cursor-pointer active:scale-95"
-                  title="เปิดดูข้อมูลเพิ่มเติมจากแหล่งข้อมูลต้นทาง"
-                >
-                  <span>ดูข้อมูลเพิ่มเติม</span>
-                  <ExternalLink className="w-3 h-3 text-sky-600" />
-                </a>
+                (() => {
+                  const googleSearchQuery = `https://www.google.com/search?q=${encodeURIComponent(`${event.title} ${event.location || ''}`.trim())}`;
+                  const isVerifiedDomain = event.externalUrl && (
+                    event.externalUrl.includes('qsncc.com') ||
+                    event.externalUrl.includes('bitec.co.th') ||
+                    event.externalUrl.includes('impact.co.th')
+                  );
+                  const finalUrl = isVerifiedDomain ? event.externalUrl : googleSearchQuery;
+
+                  return (
+                    <a
+                      href={finalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] font-extrabold px-3.5 py-1.5 rounded-full bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 flex items-center gap-1.5 shrink-0 transition-colors shadow-2xs cursor-pointer active:scale-95"
+                      title="เปิดค้นหาข้อมูลทางการ แผนผังงาน และช่องทางซื้อบัตร"
+                    >
+                      <span>ดูข้อมูลเพิ่มเติม</span>
+                      <ExternalLink className="w-3 h-3 text-sky-600" />
+                    </a>
+                  );
+                })()
               ) : (
                 <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full border shadow-2xs shrink-0 bg-emerald-50 text-emerald-800 border-emerald-300">
                   🏡 กิจกรรมชุมชน
@@ -401,8 +398,8 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             </div>
           )}
 
-          {/* Public Venue Sub-Activities & Buddy Matcher (Below Description) */}
-          {isPublicVenue && (
+          {/* Public Venue Sub-Activities & Buddy Matcher (Below Description - Hide if Event has Ended) */}
+          {isPublicVenue && !isEnded && (
             <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200 space-y-2.5 shadow-2xs">
               <div className="flex items-center justify-between gap-2">
                 <div className="space-y-0.5 min-w-0">
@@ -542,6 +539,51 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             </div>
           )}
 
+          {/* Public Venue Sub-Activities: Read-only Summary for Ended Events */}
+          {isPublicVenue && isEnded && subActivities.length > 0 && (
+            <div className="p-3.5 rounded-2xl bg-slate-100/80 border border-slate-200 space-y-2 text-xs">
+              <div className="flex items-center justify-between gap-2">
+                <div className="space-y-0.5 min-w-0">
+                  <h4 className="font-extrabold text-xs sm:text-sm text-slate-700 flex items-center gap-1.5 truncate">
+                    <Users className="w-4 h-4 text-slate-500 shrink-0" />
+                    <span>กลุ่มชวนเพื่อนที่เคยนัดหมาย ({subActivities.length} กิจกรรม)</span>
+                  </h4>
+                  <p className="text-[10px] sm:text-[11px] text-slate-500 truncate">
+                    สรุปนัดหมายกลุ่มย่อยที่เพื่อนๆ ได้ร่วมทำกิจกรรมในงานนี้
+                  </p>
+                </div>
+                <span className="text-[10px] font-bold text-slate-500 bg-slate-200/90 px-2 py-0.5 rounded-md shrink-0 border border-slate-300/60">
+                  🔒 ปิดรับสมัครแล้ว
+                </span>
+              </div>
+
+              <div className="space-y-1.5 pt-1">
+                {subActivities.map((sub: any) => (
+                  <div
+                    key={sub.id}
+                    className="p-2.5 bg-white/90 rounded-xl border border-slate-200 flex items-center justify-between gap-2 text-slate-700 shadow-2xs"
+                  >
+                    <div className="space-y-0.5 min-w-0 flex-1">
+                      <p className="text-xs font-bold text-slate-800 truncate flex items-center gap-1">
+                        <span>🎯 {sub.title}</span>
+                      </p>
+                      <p className="text-[10px] text-slate-500 flex items-center gap-1.5 flex-wrap">
+                        <span>โดย <strong className="text-slate-700">{sub.creatorName}</strong></span>
+                        <span>•</span>
+                        <span>⏰ {sub.time}</span>
+                        <span>•</span>
+                        <span className="font-semibold text-slate-600">({sub.membersCount})</span>
+                      </p>
+                    </div>
+                    <span className="text-[10px] text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200 font-semibold shrink-0">
+                      ✓ เสร็จสิ้น
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {copied && (
             <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 p-2 rounded-lg text-center border border-emerald-200">
               คัดลอกลิงก์กิจกรรมเรียบร้อยแล้ว!
@@ -553,29 +595,27 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
         {/* Modal Bottom Action Footer */}
         <div className="p-3.5 sm:p-4 bg-slate-50 border-t border-[#E8E2D8] flex items-center justify-between sm:justify-end gap-2.5 shrink-0">
           
-          {event.status === 'ended' ? (
-            /* When Event Has Ended: Disabled State + Follow Host CTA */
+          {isEnded ? (
+            /* When Event Has Ended: Display Ended Badge and hide Follow Host if Public Venue */
             <div className="flex items-center justify-between sm:justify-end gap-2 w-full">
-              <button
-                type="button"
-                disabled
-                className="px-4 py-2 rounded-full font-bold text-xs sm:text-sm bg-slate-200 text-slate-500 cursor-not-allowed flex items-center gap-1.5 shrink-0"
-              >
-                <span>🏁 สิ้นสุดแล้ว</span>
-              </button>
+              <span className="px-4 py-2 rounded-full font-bold text-xs sm:text-sm bg-slate-200 text-slate-600 border border-slate-300/80 flex items-center gap-1.5 shrink-0">
+                <span>🏁 งานนี้จัดเสร็จสิ้นแล้ว</span>
+              </span>
 
-              <button
-                type="button"
-                onClick={() => setIsFollowingHost(!isFollowingHost)}
-                className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all shadow-md flex items-center gap-1.5 active:scale-95 cursor-pointer ${
-                  isFollowingHost
-                    ? 'bg-emerald-600 text-white shadow-emerald-600/20'
-                    : 'bg-[#4A7C59] hover:bg-[#3B6447] text-white shadow-[#4A7C59]/20'
-                }`}
-              >
-                <Bell className="w-3.5 h-3.5" />
-                <span>{isFollowingHost ? '✓ ติดตามแล้ว (แจ้งเตือนรอบหน้า)' : '🔔 ติดตามโฮสต์รอบหน้า'}</span>
-              </button>
+              {!isPublicVenue && (
+                <button
+                  type="button"
+                  onClick={() => setIsFollowingHost(!isFollowingHost)}
+                  className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all shadow-md flex items-center gap-1.5 active:scale-95 cursor-pointer ${
+                    isFollowingHost
+                      ? 'bg-emerald-600 text-white shadow-emerald-600/20'
+                      : 'bg-[#4A7C59] hover:bg-[#3B6447] text-white shadow-[#4A7C59]/20'
+                  }`}
+                >
+                  <Bell className="w-3.5 h-3.5" />
+                  <span>{isFollowingHost ? '✓ ติดตามแล้ว (แจ้งเตือนรอบหน้า)' : '🔔 ติดตามโฮสต์รอบหน้า'}</span>
+                </button>
+              )}
             </div>
           ) : isJoined ? (
             /* When Already Joined: Provide direct Ticket Hub button + Cancel option */
@@ -589,7 +629,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               </button>
 
               <Link
-                href="/challenge"
+                href="/myhub"
                 onClick={onClose}
                 className="bg-[#4A7C59] hover:bg-[#3B6447] text-white px-6 py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all shadow-md shadow-[#4A7C59]/20 flex items-center gap-1.5 active:scale-95"
               >

@@ -425,7 +425,7 @@ export default function AdminPage() {
         {/* Header Right Actions */}
         <div className="flex items-center gap-2 sm:gap-3">
           <Link
-            href="/challenge"
+            href="/myhub"
             target="_blank"
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 transition-all cursor-pointer shadow-xs active:scale-95"
             title="เปิดจัดการชาเลนจ์ & เผยแพร่แคมเปญ Official Quests"

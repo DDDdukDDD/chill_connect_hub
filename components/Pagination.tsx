@@ -16,7 +16,7 @@ export const Pagination: React.FC<PaginationProps> = ({
   totalPages,
   onPageChange,
   totalItems,
-  itemsPerPage = 20,
+  itemsPerPage = 24,
 }) => {
   if (totalPages <= 1) return null;
 

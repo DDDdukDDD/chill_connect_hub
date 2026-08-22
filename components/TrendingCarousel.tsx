@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, Flame, Calendar, MapPin, Users, Heart, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { EventItem } from '@/data/mockData';
+import { isEventEnded } from '@/lib/dateUtils';
 
 interface TrendingCarouselProps {
   events: EventItem[];
@@ -78,30 +79,36 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
     setIsDragging(false);
   };
 
-  // Smart Trending Algorithm (คำนวณคะแนนความฮิตอัตโนมัติจาก คนเข้าร่วม + ที่นั่งใกล้เต็ม + ความนิยม + รายการโปรด)
+  // Smart Trending Algorithm (คัดเฉพาะ 8 กิจกรรมระดับท็อปที่ยังไม่จบ: มหกรรมใหญ่ + กิจกรรมกระแสแรง)
   const trendingEvents = React.useMemo(() => {
-    const activeEvents = events.filter((e) => e.status !== 'ended');
+    // 1. กรองเฉพาะงานที่ยังไม่จบ 100%
+    const activeEvents = events.filter((e) => !isEventEnded(e));
     const pool = activeEvents.length >= 6 ? activeEvents : events;
 
     const scored = pool.map((event) => {
       let score = 0;
 
-      // 1. อัตราส่วนที่นั่ง (ใกล้เต็ม = คนกำลังแย่งกันจอง)
-      const fillRatio = event.maxParticipants > 0 ? event.participantsCount / event.maxParticipants : 0.5;
-      if (fillRatio >= 0.8) score += 45;
-      else if (fillRatio >= 0.5) score += 25;
-
-      // 2. จำนวนผู้เข้าร่วมจริง (ยิ่งคนเยอะ ยิ่งมี Social Proof สูง)
-      score += Math.min(event.participantsCount, 50) * 0.8;
-
-      // 3. งานอีเวนต์ใหญ่ / มหกรรมสาธารณะ (คนสนใจในวงกว้าง)
+      // 1. งานอีเวนต์ใหญ่ / มหกรรมสาธารณะระดับชาติ (QSNCC, BITEC, IMPACT, Stadium)
       if (event.eventType === 'public_venue') {
-        score += 35;
+        score += 60;
       }
+
+      // 2. ความใกล้ของวันจัดงาน (งานในเดือน ส.ค. - ก.ย. ได้คะแนนพิเศษ)
+      const d = event.date || '';
+      if (d.includes('ส.ค.') || d.includes('22') || d.includes('23') || d.includes('25')) {
+        score += 40;
+      } else if (d.includes('ก.ย.') || d.includes('ต.ค.')) {
+        score += 25;
+      }
+
+      // 3. อัตราส่วนที่นั่ง / ความจุคน
+      const fillRatio = event.maxParticipants > 0 ? event.participantsCount / event.maxParticipants : 0.5;
+      if (fillRatio >= 0.8) score += 30;
+      else if (fillRatio >= 0.5) score += 15;
 
       // 4. ได้รับการบันทึกเป็นรายการโปรด
       if (favorites.includes(event.id)) {
-        score += 30;
+        score += 35;
       }
 
       // 5. คะแนนรีวิวความน่าเชื่อถือ
@@ -110,9 +117,9 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
       return { event, score };
     });
 
-    // เรียงลำดับจากคะแนนสูงสุดลงมา แล้วเลือก 10 อันดับแรก
+    // เรียงลำดับจากคะแนนสูงสุดลงมา แล้วเลือก 8 อันดับแรก
     scored.sort((a, b) => b.score - a.score);
-    return scored.slice(0, 10).map((item) => item.event);
+    return scored.slice(0, 8).map((item) => item.event);
   }, [events, favorites]);
 
   return (

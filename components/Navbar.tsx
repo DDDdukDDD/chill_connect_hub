@@ -63,7 +63,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'explore', label: 'ค้นหากิจกรรม', href: '/', icon: Compass },
     { id: 'challenges', label: 'ชาเลนจ์ & ภารกิจ', href: '/challenges', icon: Zap },
     { id: 'moments', label: 'โมเมนต์โซเชียล', href: '/moments', icon: Camera },
-    { id: 'challenge', label: 'ฮับของฉัน', href: '/challenge', icon: Ticket },
+    { id: 'myhub', label: 'มายฮับ', href: '/myhub', icon: Ticket },
     { id: 'about', label: 'เกี่ยวกับเรา', href: '/about', icon: Info },
   ];
 
@@ -88,7 +88,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </span>
               </div>
               <p className="text-[11px] sm:text-xs text-[#64748B] font-medium tracking-wide">
-                ฮีลใจ & เชื่อมต่อ ฮับ
+                แชร์โมเมนต์ • พบเพื่อนใหม่ • ชิลล์ได้ทุกวัน
               </p>
             </div>
           </Link>
@@ -170,15 +170,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                     {/* Quick Menu Links */}
                     <div className="py-1.5 px-2 space-y-0.5 text-xs font-semibold text-[#334155]">
                       <Link
-                        href="/challenge"
+                        href="/myhub"
                         onClick={() => {
-                          setActiveTab('challenge');
+                          setActiveTab('myhub');
                           setIsProfileDropdownOpen(false);
                         }}
                         className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 hover:text-[#1E293B] transition-colors"
                       >
                         <Ticket className="w-4 h-4 text-[#4A7C59]" />
-                        <span>กิจกรรมและตั๋วของฉัน</span>
+                        <span>มายฮับ & ตั๋วของฉัน</span>
                       </Link>
 
                       <Link

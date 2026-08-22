@@ -148,34 +148,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     ))}
                   </div>
 
-                  {/* Section 2: Popular Hashtags embedded inside dropdown */}
-                  <div className="pt-2.5 border-t border-slate-100 space-y-2 px-2 pb-1">
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                      🔥 แท็กค้นหายอดฮิต
-                    </p>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {[
-                        { tag: '#Hyrox', query: 'Hyrox' },
-                        { tag: '#Introvert-friendly', query: 'Introvert-friendly' },
-                        { tag: '#Beginner', query: 'Beginner' },
-                        { tag: '#BoardGame', query: 'บอร์ดเกม' },
-                        { tag: '#SoundBath', query: 'Sound Bath' },
-                      ].map((item) => (
-                        <button
-                          key={item.tag}
-                          onMouseDown={() => {
-                            setSearchQuery(item.query);
-                            setIsFocused(false);
-                            if (onSearchSubmit) onSearchSubmit();
-                          }}
-                          className="hover:bg-[#F26430] hover:text-white hover:border-[#F26430] text-[#475569] transition-all bg-slate-100 px-3 py-1 rounded-full text-xs font-bold border border-slate-200/80 shadow-2xs cursor-pointer"
-                        >
-                          {item.tag}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
                 </div>
               )}
             </div>

@@ -20,6 +20,7 @@ import { ReviewCarousel } from '@/components/ReviewCarousel';
 import { CommunityChallengeBar } from '@/components/CommunityChallengeBar';
 import { CreateChallengeModal } from '@/components/CreateChallengeModal';
 import { Pagination } from '@/components/Pagination';
+import { isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp, isEventEndedByDate } from '@/lib/dateUtils';
 import {
   Heart,
   Sprout,
@@ -43,13 +44,15 @@ import {
   Filter,
   SlidersHorizontal,
   Dices,
+  Info,
+  PartyPopper,
   Navigation,
   LocateFixed,
   Loader2,
   X
 } from 'lucide-react';
 
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 24;
 
 export default function Home() {
   const [activeNavTab, setActiveNavTab] = useState('explore');
@@ -59,7 +62,7 @@ export default function Home() {
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
   const [eventTypeTab, setEventTypeTab] = useState<'public_venue' | 'community'>('public_venue');
   const [joinedEventIds, setJoinedEventIds] = useState<string[]>(['1', '3', 'live-agg-1', 'live-agg-3', 'live-agg-9']);
-  const [timeFilter, setTimeFilter] = useState<'all' | 'tomorrow' | 'weekend' | 'next_month' | 'custom'>('all');
+  const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'tomorrow' | 'weekend' | 'next_month' | 'custom'>('all');
   const [priceFilter, setPriceFilter] = useState<'all' | 'free' | 'under500'>('all');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
@@ -215,10 +218,24 @@ export default function Home() {
       }
 
       let matchesTime = true;
-      if (timeFilter === 'tomorrow') {
-        matchesTime = event.date.includes('มี.ค.') || event.date.includes('ส.ค.') || event.id === '1' || event.id === '7' || event.id === '8';
+      if (timeFilter === 'today') {
+        const startT = parseEventDateToTimestamp(event.date);
+        const endT = parseEventEndDateToTimestamp(event.date);
+        const todayStart = new Date(2026, 7, 22, 0, 0, 0).getTime();
+        const todayEnd = new Date(2026, 7, 22, 23, 59, 59).getTime();
+        matchesTime = (startT <= todayEnd && endT >= todayStart) || event.date.includes('22 ส.ค.');
+      } else if (timeFilter === 'tomorrow') {
+        const startT = parseEventDateToTimestamp(event.date);
+        const endT = parseEventEndDateToTimestamp(event.date);
+        const tomStart = new Date(2026, 7, 23, 0, 0, 0).getTime();
+        const tomEnd = new Date(2026, 7, 23, 23, 59, 59).getTime();
+        matchesTime = (startT <= tomEnd && endT >= tomStart) || event.date.includes('23 ส.ค.');
       } else if (timeFilter === 'weekend') {
-        matchesTime = event.date.includes('เสาร์') || event.date.includes('อาทิตย์') || event.date.includes('ส.ค.') || event.date.includes('15') || event.date.includes('16') || event.date.includes('22') || event.date.includes('29');
+        const startT = parseEventDateToTimestamp(event.date);
+        const endT = parseEventEndDateToTimestamp(event.date);
+        const wkndStart = new Date(2026, 7, 22, 0, 0, 0).getTime();
+        const wkndEnd = new Date(2026, 7, 23, 23, 59, 59).getTime();
+        matchesTime = (startT <= wkndEnd && endT >= wkndStart) || event.date.includes('เสาร์') || event.date.includes('อาทิตย์') || event.date.includes('22') || event.date.includes('23');
       } else if (timeFilter === 'next_month') {
         matchesTime = event.date.includes('ก.ย.') || event.date.includes('เม.ย.') || event.date.includes('พ.ค.');
       } else if (timeFilter === 'custom' && (startDate || endDate)) {
@@ -296,7 +313,7 @@ export default function Home() {
       // Hide Ended Events filter
       let matchesEnded = true;
       if (hideEndedEvents) {
-        matchesEnded = event.status !== 'ended';
+        matchesEnded = !isEventEnded(event);
       }
 
       return matchesCategory && matchesVenue && matchesEventType && matchesTime && matchesSubCategory && matchesSearch && matchesPrice && matchesZone && matchesEnded;
@@ -320,7 +337,13 @@ export default function Home() {
     } else if (sortBy === 'popular') {
       result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     } else {
-      result.sort((a, b) => b.createdAtTimestamp - a.createdAtTimestamp);
+      // Option A: Chronological Event Date Sorting (closest upcoming event date first)
+      result.sort((a, b) => {
+        const timeA = parseEventDateToTimestamp(a.date);
+        const timeB = parseEventDateToTimestamp(b.date);
+        if (timeA !== timeB) return timeA - timeB;
+        return (b.createdAtTimestamp || 0) - (a.createdAtTimestamp || 0);
+      });
     }
 
     return result;
@@ -645,6 +668,7 @@ export default function Home() {
                 <div className="flex items-center gap-1 shrink-0">
                   {[
                     { id: 'all', label: 'ทั้งหมด', desc: 'แสดงกิจกรรมและงานทุกช่วงเวลา' },
+                    { id: 'today', label: '🔥 วันนี้', desc: 'เฉพาะกิจกรรมและงานที่จัดขึ้นในวันนี้' },
                     { id: 'tomorrow', label: 'พรุ่งนี้', desc: 'เฉพาะกิจกรรมที่จัดขึ้นในวันพรุ่งนี้' },
                     { id: 'weekend', label: 'เสาร์-อาทิตย์นี้', desc: 'เฉพาะกิจกรรมวันหยุดเสาร์-อาทิตย์นี้' },
                   ].map((tab) => {
@@ -738,7 +762,7 @@ export default function Home() {
 
                 <div className="h-4 w-px bg-slate-200 shrink-0 hidden sm:block" />
 
-                {/* Checkbox: Upcoming Events */}
+                {/* Checkbox: Hide Ended Events */}
                 <div className="relative group/tip shrink-0">
                   <label className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer select-none bg-slate-50 hover:bg-slate-100/80 px-2.5 py-1 rounded-xl border border-slate-200/80 transition-all">
                     <input
@@ -749,10 +773,10 @@ export default function Home() {
                       }}
                       className="w-3.5 h-3.5 accent-[#4A7C59] rounded cursor-pointer"
                     />
-                    <span>งานที่กำลังมาถึง</span>
+                    <span>ซ่อนงานที่จบไปแล้ว</span>
                   </label>
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-900/95 text-white text-[10px] font-medium rounded-xl shadow-xl border border-white/10 opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-150 pointer-events-none z-50 leading-tight text-center">
-                    🗓️ แสดงเฉพาะกิจกรรมที่ยังจัดอยู่และงานในอนาคต
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2 bg-slate-900/95 text-white text-[10px] font-medium rounded-xl shadow-xl border border-white/10 opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-150 pointer-events-none z-50 leading-tight text-center">
+                    🗓️ ซ่อนกิจกรรมและงานที่จัดเสร็จสิ้นไปแล้ว
                     <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95" />
                   </div>
                 </div>
@@ -875,7 +899,7 @@ export default function Home() {
           <Sprout className="w-5 h-5 text-[#4A7C59]" />
           <span>Chill & Connect Hub</span>
         </div>
-        <p>© 2026 Chill & Connect Hub - ฮีลใจ & เชื่อมต่อ ฮับ. All rights reserved.</p>
+        <p>© 2026 Chill & Connect Hub - แชร์โมเมนต์ • พบเพื่อนใหม่ • ชิลล์ได้ทุกวัน. All rights reserved.</p>
       </footer>
 
       {/* Event Detail Popup Modal */}
