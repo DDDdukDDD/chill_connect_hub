@@ -558,51 +558,65 @@ export default function Home() {
             <div className="bg-slate-200/80 p-1.5 rounded-2xl border border-slate-300/80 shadow-inner flex items-center justify-between gap-1.5">
               
               {/* Tab 1: 🏛️ อีเวนต์ & งานแฟร์ */}
-              <button
-                type="button"
-                onClick={() => {
-                  setEventTypeTab('public_venue');
-                  setSelectedCategory(null);
-                  setSelectedSubCategory(null);
-                }}
-                title="🏛️ อีเวนต์ & งานแฟร์: มหกรรม แฟร์ลดราคา คอนเสิร์ต มาราธอน และนิทรรศการใหญ่จัดโดยทางการ"
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 sm:py-3 px-3 rounded-xl font-black text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-98 ${
-                  eventTypeTab === 'public_venue'
-                    ? 'bg-[#1E293B] text-white shadow-md'
-                    : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'
-                }`}
-              >
-                <Building2 className={`w-4 h-4 shrink-0 ${eventTypeTab === 'public_venue' ? 'text-amber-400' : 'text-slate-500'}`} />
-                <span className="truncate">อีเวนต์ & งานแฟร์</span>
-                <span className={`text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-bold ${
-                  eventTypeTab === 'public_venue' ? 'bg-amber-400/20 text-amber-300' : 'bg-slate-300/70 text-slate-700'
-                }`}>
-                  {eventsList.filter(e => e.eventType === 'public_venue').length}
-                </span>
-              </button>
+              <div className="relative flex-1 group/tip">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEventTypeTab('public_venue');
+                    setSelectedCategory(null);
+                    setSelectedSubCategory(null);
+                  }}
+                  className={`w-full flex items-center justify-center gap-2 py-2.5 sm:py-3 px-3 rounded-xl font-black text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-98 ${
+                    eventTypeTab === 'public_venue'
+                      ? 'bg-[#1E293B] text-white shadow-md'
+                      : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'
+                  }`}
+                >
+                  <Building2 className={`w-4 h-4 shrink-0 ${eventTypeTab === 'public_venue' ? 'text-amber-400' : 'text-slate-500'}`} />
+                  <span className="truncate">อีเวนต์ & งานแฟร์</span>
+                  <span className={`text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-bold ${
+                    eventTypeTab === 'public_venue' ? 'bg-amber-400/20 text-amber-300' : 'bg-slate-300/70 text-slate-700'
+                  }`}>
+                    {eventsList.filter(e => e.eventType === 'public_venue').length}
+                  </span>
+                </button>
+                {/* Instant Floating Tooltip */}
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-60 p-2.5 bg-slate-900/95 text-white text-[11px] font-medium rounded-xl shadow-xl border border-white/10 opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-150 pointer-events-none z-50 leading-relaxed backdrop-blur-md text-center">
+                  <strong className="block text-amber-300 font-extrabold mb-0.5">🏛️ อีเวนต์ & งานแฟร์:</strong>
+                  งานคอนเสิร์ต มหกรรม นิทรรศการ หรือแมตช์กีฬาจัดโดยผู้จัดทางการ
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95" />
+                </div>
+              </div>
 
               {/* Tab 2: 🏡 กิจกรรมชุมชน */}
-              <button
-                type="button"
-                onClick={() => {
-                  setEventTypeTab('community');
-                  setSelectedVenueFilter(null);
-                }}
-                title="🏡 กิจกรรมชุมชน: กลุ่มย่อย 4-8 คน ชวนเพื่อนใหม่ บอร์ดเกม วิ่ง คาเฟ่ เวิร์กช็อป มีโฮสต์ต้อนรับ"
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 sm:py-3 px-3 rounded-xl font-black text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-98 ${
-                  eventTypeTab === 'community'
-                    ? 'bg-[#4A7C59] text-white shadow-md'
-                    : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'
-                }`}
-              >
-                <Users className={`w-4 h-4 shrink-0 ${eventTypeTab === 'community' ? 'text-emerald-200' : 'text-slate-500'}`} />
-                <span className="truncate">กิจกรรมชุมชน</span>
-                <span className={`text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-bold ${
-                  eventTypeTab === 'community' ? 'bg-emerald-400/20 text-emerald-200' : 'bg-slate-300/70 text-slate-700'
-                }`}>
-                  {eventsList.filter(e => (e.eventType || 'community') === 'community').length}
-                </span>
-              </button>
+              <div className="relative flex-1 group/tip">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEventTypeTab('community');
+                    setSelectedVenueFilter(null);
+                  }}
+                  className={`w-full flex items-center justify-center gap-2 py-2.5 sm:py-3 px-3 rounded-xl font-black text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-98 ${
+                    eventTypeTab === 'community'
+                      ? 'bg-[#4A7C59] text-white shadow-md'
+                      : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'
+                  }`}
+                >
+                  <Users className={`w-4 h-4 shrink-0 ${eventTypeTab === 'community' ? 'text-emerald-200' : 'text-slate-500'}`} />
+                  <span className="truncate">กิจกรรมชุมชน</span>
+                  <span className={`text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-bold ${
+                    eventTypeTab === 'community' ? 'bg-emerald-400/20 text-emerald-200' : 'bg-slate-300/70 text-slate-700'
+                  }`}>
+                    {eventsList.filter(e => (e.eventType || 'community') === 'community').length}
+                  </span>
+                </button>
+                {/* Instant Floating Tooltip */}
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-64 p-2.5 bg-slate-900/95 text-white text-[11px] font-medium rounded-xl shadow-xl border border-white/10 opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-150 pointer-events-none z-50 leading-relaxed backdrop-blur-md text-center">
+                  <strong className="block text-emerald-300 font-extrabold mb-0.5">🏡 กิจกรรมชุมชน:</strong>
+                  กิจกรรมจากเพื่อนๆ ใน Chill & Connect Hub ให้ทุกคนได้ทำกิจกรรมสนุกๆ ร่วมกัน
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95" />
+                </div>
+              </div>
 
             </div>
 
@@ -636,143 +650,186 @@ export default function Home() {
                   ].map((tab) => {
                     const isActive = timeFilter === tab.id;
                     return (
-                      <button
-                        key={tab.id}
-                        onClick={() => {
-                          setTimeFilter(tab.id as any);
-                          setStartDate('');
-                          setEndDate('');
-                        }}
-                        title={tab.desc}
-                        className={`px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap cursor-pointer ${
-                          isActive
-                            ? 'bg-[#1E293B] text-white shadow-xs'
-                            : 'text-slate-600 hover:bg-slate-100'
-                        }`}
-                      >
-                        {tab.label}
-                      </button>
+                      <div key={tab.id} className="relative group/tip">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTimeFilter(tab.id as any);
+                            setStartDate('');
+                            setEndDate('');
+                          }}
+                          className={`px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap cursor-pointer ${
+                            isActive
+                              ? 'bg-[#1E293B] text-white shadow-xs'
+                              : 'text-slate-600 hover:bg-slate-100'
+                          }`}
+                        >
+                          {tab.label}
+                        </button>
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-40 p-2 bg-slate-900/95 text-white text-[10px] font-medium rounded-xl shadow-xl border border-white/10 opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-150 pointer-events-none z-50 leading-tight text-center">
+                          {tab.desc}
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95" />
+                        </div>
+                      </div>
                     );
                   })}
 
                   {/* Custom Date Picker Tab */}
                   {timeFilter === 'custom' && startDate ? (
-                    <button
-                      onClick={() => {
-                        setTimeFilter('all');
-                        setStartDate('');
-                        setEndDate('');
-                      }}
-                      className="px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl text-xs font-bold bg-[#F26430] text-white shadow-xs flex items-center gap-1 shrink-0 whitespace-nowrap cursor-pointer animate-fade-in"
-                      title="คลิกเพื่อล้างวันที่เลือก"
-                    >
-                      <Calendar className="w-3 h-3 text-white" />
-                      <span>{startDate}{endDate && endDate !== startDate ? ` - ${endDate}` : ''}</span>
-                      <X className="w-3 h-3 ml-0.5" />
-                    </button>
+                    <div className="relative group/tip">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTimeFilter('all');
+                          setStartDate('');
+                          setEndDate('');
+                        }}
+                        className="px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl text-xs font-bold bg-[#F26430] text-white shadow-xs flex items-center gap-1 shrink-0 whitespace-nowrap cursor-pointer animate-fade-in"
+                      >
+                        <Calendar className="w-3 h-3 text-white" />
+                        <span>{startDate}{endDate && endDate !== startDate ? ` - ${endDate}` : ''}</span>
+                        <X className="w-3 h-3 ml-0.5" />
+                      </button>
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-36 p-1.5 bg-slate-900/95 text-white text-[10px] font-medium rounded-xl shadow-xl border border-white/10 opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-150 pointer-events-none z-50 text-center">
+                        คลิกเพื่อล้างวันที่เลือก
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95" />
+                      </div>
+                    </div>
                   ) : (
-                    <button
-                      onClick={() => setIsDatePickerOpen(true)}
-                      className="px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 flex items-center gap-1 shrink-0 whitespace-nowrap cursor-pointer transition-all border border-dashed border-slate-300 hover:border-slate-400"
-                      title="ระบุช่วงวันที่ต้องการค้นหาด้วยตนเอง"
-                    >
-                      <Calendar className="w-3 h-3 text-[#4A7C59]" />
-                      <span>ระบุวันที่เอง</span>
-                    </button>
+                    <div className="relative group/tip">
+                      <button
+                        type="button"
+                        onClick={() => setIsDatePickerOpen(true)}
+                        className="px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 flex items-center gap-1 shrink-0 whitespace-nowrap cursor-pointer transition-all border border-dashed border-slate-300 hover:border-slate-400"
+                      >
+                        <Calendar className="w-3 h-3 text-[#4A7C59]" />
+                        <span>ระบุวันที่เอง</span>
+                      </button>
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-44 p-2 bg-slate-900/95 text-white text-[10px] font-medium rounded-xl shadow-xl border border-white/10 opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-150 pointer-events-none z-50 text-center">
+                        ระบุช่วงวันที่ต้องการค้นหาเอง
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95" />
+                      </div>
+                    </div>
                   )}
                 </div>
 
                 <div className="h-4 w-px bg-slate-200 shrink-0 hidden sm:block" />
 
                 {/* 🆓 Quick Filter: Free Events (ข้อ 2) */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPriceFilter(priceFilter === 'free' ? 'all' : 'free');
-                  }}
-                  className={`px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap cursor-pointer border ${
-                    priceFilter === 'free'
-                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                      : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100/80'
-                  }`}
-                  title="🎉 เข้าชมฟรี: กรองเฉพาะกิจกรรมและงานที่เข้าร่วมได้ฟรี 100% ไม่เสียค่าใช้จ่าย"
-                >
-                  <span>🎉 เข้าร่วมฟรี</span>
-                </button>
+                <div className="relative group/tip shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPriceFilter(priceFilter === 'free' ? 'all' : 'free');
+                    }}
+                    className={`px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap cursor-pointer border ${
+                      priceFilter === 'free'
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                        : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100/80'
+                    }`}
+                  >
+                    <span>🎉 เข้าร่วมฟรี</span>
+                  </button>
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2 bg-slate-900/95 text-white text-[10px] font-medium rounded-xl shadow-xl border border-white/10 opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-150 pointer-events-none z-50 leading-tight text-center">
+                    🎉 กรองเฉพาะกิจกรรมและงานที่เข้าร่วมได้ฟรี 100%
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95" />
+                  </div>
+                </div>
 
                 <div className="h-4 w-px bg-slate-200 shrink-0 hidden sm:block" />
 
                 {/* Checkbox: Upcoming Events */}
-                <label className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer select-none bg-slate-50 hover:bg-slate-100/80 px-2.5 py-1 rounded-xl border border-slate-200/80 transition-all shrink-0" title="งานที่กำลังมาถึง: แสดงเฉพาะกิจกรรมที่ยังจัดอยู่และงานที่กำลังจะมาถึงในอนาคต">
-                  <input
-                    type="checkbox"
-                    checked={hideEndedEvents}
-                    onChange={(e) => {
-                      setHideEndedEvents(e.target.checked);
-                    }}
-                    className="w-3.5 h-3.5 accent-[#4A7C59] rounded cursor-pointer"
-                  />
-                  <span>งานที่กำลังมาถึง</span>
-                </label>
+                <div className="relative group/tip shrink-0">
+                  <label className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer select-none bg-slate-50 hover:bg-slate-100/80 px-2.5 py-1 rounded-xl border border-slate-200/80 transition-all">
+                    <input
+                      type="checkbox"
+                      checked={hideEndedEvents}
+                      onChange={(e) => {
+                        setHideEndedEvents(e.target.checked);
+                      }}
+                      className="w-3.5 h-3.5 accent-[#4A7C59] rounded cursor-pointer"
+                    />
+                    <span>งานที่กำลังมาถึง</span>
+                  </label>
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-900/95 text-white text-[10px] font-medium rounded-xl shadow-xl border border-white/10 opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-150 pointer-events-none z-50 leading-tight text-center">
+                    🗓️ แสดงเฉพาะกิจกรรมที่ยังจัดอยู่และงานในอนาคต
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95" />
+                  </div>
+                </div>
               </div>
 
               {/* Right: Favorites Quick Tab + Near Me Button + Filter Drawer */}
               <div className="flex items-center justify-end gap-2 pt-1 lg:pt-0 border-t lg:border-t-0 border-slate-100 shrink-0">
                 
                 {/* 💖 Prominent Favorites / Saved Events Tab (ข้อ 5) */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (sortBy === 'favorites') {
-                      setSortBy('newest');
-                    } else {
-                      setSortBy('favorites');
-                      setSortByNearMe(false);
-                    }
-                  }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 border ${
-                    sortBy === 'favorites'
-                      ? 'bg-gradient-to-r from-rose-500 to-[#F26430] text-white border-[#F26430] shadow-sm ring-2 ring-rose-500/20'
-                      : 'bg-white hover:bg-rose-50/80 text-[#1E293B] hover:text-[#F26430] border-[#E8E2D8] hover:border-rose-300'
-                  }`}
-                  title="❤️ ที่บันทึกไว้: ดูกิจกรรมที่คุณกดหัวใจหรือบันทึกไว้ในแผนเที่ยวของคุณ"
-                >
-                  <Heart className={`w-3.5 h-3.5 ${sortBy === 'favorites' ? 'fill-white text-white' : 'fill-rose-500/20 text-rose-500'}`} />
-                  <span>ที่บันทึกไว้ ({favorites.length})</span>
-                </button>
+                <div className="relative group/tip shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (sortBy === 'favorites') {
+                        setSortBy('newest');
+                      } else {
+                        setSortBy('favorites');
+                        setSortByNearMe(false);
+                      }
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 border ${
+                      sortBy === 'favorites'
+                        ? 'bg-gradient-to-r from-rose-500 to-[#F26430] text-white border-[#F26430] shadow-sm ring-2 ring-rose-500/20'
+                        : 'bg-white hover:bg-rose-50/80 text-[#1E293B] hover:text-[#F26430] border-[#E8E2D8] hover:border-rose-300'
+                    }`}
+                  >
+                    <Heart className={`w-3.5 h-3.5 ${sortBy === 'favorites' ? 'fill-white text-white' : 'fill-rose-500/20 text-rose-500'}`} />
+                    <span>ที่บันทึกไว้ ({favorites.length})</span>
+                  </button>
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-44 p-2 bg-slate-900/95 text-white text-[10px] font-medium rounded-xl shadow-xl border border-white/10 opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-150 pointer-events-none z-50 leading-tight text-center">
+                    💖 ดูกิจกรรมที่คุณกดหัวใจหรือบันทึกไว้
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95" />
+                  </div>
+                </div>
 
                 {/* 🎯 Near Me Button with Single Modern Radar/GPS Icon */}
-                <button
-                  type="button"
-                  onClick={handleToggleNearMe}
-                  disabled={isLocating}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 border ${
-                    sortByNearMe
-                      ? 'bg-gradient-to-r from-orange-500 to-[#F26430] text-white border-[#F26430] shadow-sm ring-2 ring-orange-500/20'
-                      : 'bg-white hover:bg-orange-50/80 text-[#1E293B] hover:text-[#F26430] border-[#E8E2D8] hover:border-orange-300'
-                  }`}
-                  title="🎯 ใกล้ฉัน: ค้นหาและเรียงลำดับกิจกรรมตามระยะทางจากพิกัดของคุณ (ใกล้ไปไกล)"
-                >
-                  {isLocating ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[#F26430]" />
-                  ) : (
-                    <LocateFixed className={`w-3.5 h-3.5 ${sortByNearMe ? 'text-white animate-pulse' : 'text-[#F26430]'}`} />
-                  )}
-                  <span>{isLocating ? 'กำลังหาพิกัด...' : sortByNearMe ? 'ใกล้ฉัน (เปิดอยู่)' : 'ใกล้ฉัน'}</span>
-                </button>
+                <div className="relative group/tip shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleToggleNearMe}
+                    disabled={isLocating}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 border ${
+                      sortByNearMe
+                        ? 'bg-gradient-to-r from-orange-500 to-[#F26430] text-white border-[#F26430] shadow-sm ring-2 ring-orange-500/20'
+                        : 'bg-white hover:bg-orange-50/80 text-[#1E293B] hover:text-[#F26430] border-[#E8E2D8] hover:border-orange-300'
+                    }`}
+                  >
+                    {isLocating ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-[#F26430]" />
+                    ) : (
+                      <LocateFixed className={`w-3.5 h-3.5 ${sortByNearMe ? 'text-white animate-pulse' : 'text-[#F26430]'}`} />
+                    )}
+                    <span>{isLocating ? 'กำลังหาพิกัด...' : sortByNearMe ? 'ใกล้ฉัน (เปิดอยู่)' : 'ใกล้ฉัน'}</span>
+                  </button>
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2 bg-slate-900/95 text-white text-[10px] font-medium rounded-xl shadow-xl border border-white/10 opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-150 pointer-events-none z-50 leading-tight text-center">
+                    📍 ค้นหาและเรียงลำดับกิจกรรมตามระยะทางจากพิกัดของคุณ
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95" />
+                  </div>
+                </div>
 
                 {/* Minimalist Filter Drawer Trigger */}
-                <button
-                  type="button"
-                  onClick={() => setIsFilterDrawerOpen(true)}
-                  className={`flex items-center gap-1.5 bg-white hover:bg-slate-50 text-[#334155] border px-3.5 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 ${
-                    selectedZone || selectedVenueFilter || priceFilter !== 'all' || selectedCategory ? 'border-[#4A7C59] ring-2 ring-[#4A7C59]/10 text-[#4A7C59]' : 'border-[#E8E2D8]'
-                  }`}
-                  title="⚙️ ตัวกรองขั้นสูง: เลือกศูนย์แสดงสินค้า (อิมแพ็ค/ไบเทค/สิริกิติ์), ทำเลย่าน BTS/MRT, หมวดหมู่ และงบประมาณ"
-                >
-                  <SlidersHorizontal className="w-3.5 h-3.5 text-[#4A7C59]" />
-                  <span>ตัวกรอง {selectedZone ? '(1)' : ''}</span>
-                </button>
+                <div className="relative group/tip shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsFilterDrawerOpen(true)}
+                    className={`flex items-center gap-1.5 bg-white hover:bg-slate-50 text-[#334155] border px-3.5 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 ${
+                      selectedZone || selectedVenueFilter || priceFilter !== 'all' || selectedCategory ? 'border-[#4A7C59] ring-2 ring-[#4A7C59]/10 text-[#4A7C59]' : 'border-[#E8E2D8]'
+                    }`}
+                  >
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-[#4A7C59]" />
+                    <span>ตัวกรอง {selectedZone ? '(1)' : ''}</span>
+                  </button>
+                  <div className="absolute bottom-full right-0 mb-2 w-56 p-2 bg-slate-900/95 text-white text-[10px] font-medium rounded-xl shadow-xl border border-white/10 opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-150 pointer-events-none z-50 leading-tight text-center">
+                    ⚙️ ตัวกรองขั้นสูง: เลือกศูนย์แสดงสินค้า, ทำเลย่าน, และราคา
+                    <div className="absolute top-full right-4 -mt-1 border-4 border-transparent border-t-slate-900/95" />
+                  </div>
+                </div>
               </div>
 
             </div>

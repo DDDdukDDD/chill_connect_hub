@@ -71,9 +71,9 @@ export const DEFAULT_DATA_SOURCES: EventDataSource[] = [
     categoryLabel: '🏛️ มหกรรมเอ็กซ์โป & สัปดาห์หนังสือ',
     icon: '🏛️',
     status: 'active',
-    eventsCount: 6,
-    lastScraped: 'วันนี้ 08:00 น.',
-    description: 'งานแสดงสินค้าขนาดใหญ่ สัปดาห์หนังสือแห่งชาติ Pet Expo และ Tech Conference',
+    eventsCount: 20,
+    lastScraped: 'วันนี้ 11:30 น.',
+    description: 'งานแสดงสินค้าขนาดใหญ่ สัปดาห์หนังสือแห่งชาติ Sustainability Expo, Thailand Coffee Fest, Pet Expo และ Tech Summit',
   },
   {
     id: 'bitec',
@@ -141,16 +141,43 @@ export const DEFAULT_DATA_SOURCES: EventDataSource[] = [
 let SOURCES_CACHE: EventDataSource[] | null = null;
 
 export async function getAllDataSources(): Promise<EventDataSource[]> {
-  if (SOURCES_CACHE !== null && SOURCES_CACHE.length > 0) {
-    return SOURCES_CACHE;
+  const db = await readDatabase();
+  let hasChanges = false;
+
+  let merged: EventDataSource[] = [];
+  if (db.sources && db.sources.length > 0) {
+    merged = db.sources.map((storedSrc) => {
+      const def = DEFAULT_DATA_SOURCES.find((d) => d.id === storedSrc.id);
+      if (def) {
+        if (storedSrc.url !== def.url || storedSrc.category !== def.category || storedSrc.categoryLabel !== def.categoryLabel) {
+          hasChanges = true;
+          return {
+            ...storedSrc,
+            url: def.url,
+            category: def.category,
+            categoryLabel: def.categoryLabel,
+            name: def.name,
+            description: def.description,
+          };
+        }
+      }
+      return storedSrc;
+    });
+
+    for (const def of DEFAULT_DATA_SOURCES) {
+      if (!merged.some((s) => s.id === def.id)) {
+        merged.push(def);
+        hasChanges = true;
+      }
+    }
+  } else {
+    merged = DEFAULT_DATA_SOURCES;
+    hasChanges = true;
   }
 
-  const db = await readDatabase();
-  if (db.sources && db.sources.length > 0) {
-    SOURCES_CACHE = db.sources;
-  } else {
-    SOURCES_CACHE = DEFAULT_DATA_SOURCES;
-    db.sources = DEFAULT_DATA_SOURCES;
+  SOURCES_CACHE = merged;
+  if (hasChanges) {
+    db.sources = merged;
     await writeDatabase(db);
   }
 

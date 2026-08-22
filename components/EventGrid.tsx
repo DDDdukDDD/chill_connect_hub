@@ -230,7 +230,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                         ) : (
                           <>
                             <strong className="block text-emerald-300 font-extrabold mb-0.5">🏡 กิจกรรมชุมชน:</strong>
-                            กลุ่มย่อยอบอุ่น จัดโดยสมาชิก มีโฮสต์คอยต้อนรับ เหมาะกับคนอยากหาเพื่อนใหม่และคนไปคนเดียว
+                            กิจกรรมจากเพื่อนๆ ใน Chill & Connect Hub ให้ทุกคนได้ทำกิจกรรมสนุกๆ ร่วมกัน
                           </>
                         )}
                         {/* Downward Arrow */}

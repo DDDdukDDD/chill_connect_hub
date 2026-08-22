@@ -55,6 +55,15 @@ export async function loadCache(): Promise<AdminEventItem[]> {
         };
       }
     }
+    if (ev.source && ev.source !== 'Chill & Connect Official' && !ev.id?.startsWith('custom-ev-')) {
+      if (ev.eventType !== 'public_venue') {
+        hasUpdated = true;
+        ev = {
+          ...ev,
+          eventType: 'public_venue',
+        };
+      }
+    }
     return ev;
   });
 

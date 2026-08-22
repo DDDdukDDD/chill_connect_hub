@@ -271,7 +271,7 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
                       ) : (
                         <>
                           <strong className="block text-emerald-300 font-bold mb-0.5">🏡 กิจกรรมชุมชน:</strong>
-                          กลุ่มย่อยอบอุ่น จัดโดยสมาชิก มีโฮสต์คอยต้อนรับ ไปคนเดียวไม่เกร็ง
+                          กิจกรรมจากเพื่อนๆ ใน Chill & Connect Hub ให้ทุกคนได้ทำกิจกรรมสนุกๆ ร่วมกัน
                         </>
                       )}
                       <div className="absolute top-full left-4 -mt-1 border-4 border-transparent border-t-slate-900/95" />
