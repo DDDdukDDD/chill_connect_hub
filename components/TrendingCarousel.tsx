@@ -258,15 +258,15 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
                         ? 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100'
                         : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
                     }`}>
-                      {isPublicVenue ? '🏛️ อีเวนต์สาธารณะ' : '🏡 กิจกรรมชุมชน'}
+                      {isPublicVenue ? '🏛️ อีเวนต์ & งานแฟร์' : '🏡 กิจกรรมชุมชน'}
                     </span>
 
                     {/* Tooltip Popup */}
                     <div className="absolute bottom-full left-0 mb-2 w-52 p-2.5 bg-slate-900/95 text-white text-[10px] font-medium rounded-xl shadow-xl border border-white/10 opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 pointer-events-none z-30 leading-relaxed backdrop-blur-md">
                       {isPublicVenue ? (
                         <>
-                          <strong className="block text-sky-300 font-bold mb-0.5">🏛️ อีเวนต์สาธารณะ:</strong>
-                          งานนิทรรศการ / มหกรรมสเกลใหญ่ หาเพื่อนร่วมเดินงานด้วยกันได้
+                          <strong className="block text-sky-300 font-bold mb-0.5">🏛️ อีเวนต์ & งานแฟร์:</strong>
+                          งานคอนเสิร์ต มหกรรม นิทรรศการ หรือแมตช์กีฬาจัดโดยผู้จัดทางการ
                         </>
                       ) : (
                         <>

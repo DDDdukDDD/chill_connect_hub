@@ -57,7 +57,7 @@ export default function Home() {
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
   const [selectedVenueFilter, setSelectedVenueFilter] = useState<string | null>(null);
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
-  const [eventTypeTab, setEventTypeTab] = useState<'all' | 'public_venue' | 'community' | 'joined'>('all');
+  const [eventTypeTab, setEventTypeTab] = useState<'public_venue' | 'community'>('public_venue');
   const [joinedEventIds, setJoinedEventIds] = useState<string[]>(['1', '3', 'live-agg-1', 'live-agg-3', 'live-agg-9']);
   const [timeFilter, setTimeFilter] = useState<'all' | 'tomorrow' | 'weekend' | 'next_month' | 'custom'>('all');
   const [priceFilter, setPriceFilter] = useState<'all' | 'free' | 'under500'>('all');
@@ -412,7 +412,7 @@ export default function Home() {
     setSelectedSubCategory(null);
     setSelectedVenueFilter(null);
     setSelectedZone(null);
-    setEventTypeTab('all');
+    setEventTypeTab('public_venue');
     setTimeFilter('all');
     setPriceFilter('all');
     setStartDate('');
@@ -461,6 +461,13 @@ export default function Home() {
   };
 
   const totalPages = Math.ceil(filteredEvents.length / ITEMS_PER_PAGE) || 1;
+
+  // Auto-adjust currentPage within bounds without abruptly resetting to page 1
+  React.useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(Math.max(1, totalPages));
+    }
+  }, [totalPages, currentPage]);
 
   const displayedEvents = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -544,14 +551,64 @@ export default function Home() {
             toggleFavorite={toggleFavorite}
           />
 
-          {/* 5. 🌿 คลังกิจกรรมยามว่างทั้งหมด (Ultra-Slim 1-Row Unified Header & Control Bar) */}
-          <section id="catalog-section" className="space-y-3 pt-1">
+          {/* 5. 🌿 คลังกิจกรรม (Mobile-First 2-Tab Mode Switcher) */}
+          <section id="catalog-section" className="space-y-4 pt-1">
             
+            {/* 📱 2-Tab Segmented Mode Switcher (50% / 50% Mobile-Friendly Segmented Pill) */}
+            <div className="bg-slate-200/80 p-1.5 rounded-2xl border border-slate-300/80 shadow-inner flex items-center justify-between gap-1.5">
+              
+              {/* Tab 1: 🏛️ อีเวนต์ & งานแฟร์ */}
+              <button
+                type="button"
+                onClick={() => {
+                  setEventTypeTab('public_venue');
+                  setSelectedCategory(null);
+                  setSelectedSubCategory(null);
+                }}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 sm:py-3 px-3 rounded-xl font-black text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-98 ${
+                  eventTypeTab === 'public_venue'
+                    ? 'bg-[#1E293B] text-white shadow-md'
+                    : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'
+                }`}
+              >
+                <Building2 className={`w-4 h-4 shrink-0 ${eventTypeTab === 'public_venue' ? 'text-amber-400' : 'text-slate-500'}`} />
+                <span className="truncate">อีเวนต์ & งานแฟร์</span>
+                <span className={`text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-bold ${
+                  eventTypeTab === 'public_venue' ? 'bg-amber-400/20 text-amber-300' : 'bg-slate-300/70 text-slate-700'
+                }`}>
+                  {eventsList.filter(e => e.eventType === 'public_venue').length}
+                </span>
+              </button>
+
+              {/* Tab 2: 🏡 กิจกรรมชุมชน */}
+              <button
+                type="button"
+                onClick={() => {
+                  setEventTypeTab('community');
+                  setSelectedVenueFilter(null);
+                }}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 sm:py-3 px-3 rounded-xl font-black text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-98 ${
+                  eventTypeTab === 'community'
+                    ? 'bg-[#4A7C59] text-white shadow-md'
+                    : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'
+                }`}
+              >
+                <Users className={`w-4 h-4 shrink-0 ${eventTypeTab === 'community' ? 'text-emerald-200' : 'text-slate-500'}`} />
+                <span className="truncate">กิจกรรมชุมชน</span>
+                <span className={`text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-bold ${
+                  eventTypeTab === 'community' ? 'bg-emerald-400/20 text-emerald-200' : 'bg-slate-300/70 text-slate-700'
+                }`}>
+                  {eventsList.filter(e => (e.eventType || 'community') === 'community').length}
+                </span>
+              </button>
+
+            </div>
+
             {/* Search/Filter Results Notice (Only when explicitly searching or filtering) */}
             {searchQuery.trim() !== '' || selectedCategory !== null || selectedVenueFilter !== null || selectedZone !== null || sortByNearMe || priceFilter !== 'all' || (timeFilter === 'custom' && startDate) ? (
               <div className="flex items-center justify-between bg-amber-50 p-2.5 px-4 rounded-xl border border-amber-200/80 text-xs font-semibold text-[#1E293B] animate-fade-in">
                 <span className="flex items-center gap-1.5 font-bold">
-                  <span>🔍 ผลการค้นหา: พบทั้งหมด {filteredEvents.length} กิจกรรม {sortByNearMe ? '(📍 เรียงจากใกล้ไปไกล)' : ''} {selectedZone ? `• โซน: ${BANGKOK_ZONES.find(z => z.id === selectedZone)?.label}` : ''}</span>
+                  <span>🔍 ผลการค้นหา: พบทั้งหมด {filteredEvents.length} รายการ {sortByNearMe ? '(📍 เรียงจากใกล้ไปไกล)' : ''} {selectedZone ? `• โซน: ${BANGKOK_ZONES.find(z => z.id === selectedZone)?.label}` : ''}</span>
                 </span>
                 <button
                   type="button"
@@ -563,18 +620,11 @@ export default function Home() {
               </div>
             ) : null}
 
-            {/* Unified 1-Row Header & Filter Bar */}
+            {/* Unified 1-Row Control Bar */}
             <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2.5 bg-white p-2 sm:p-2.5 rounded-2xl border border-[#E8E2D8] shadow-xs">
               
-              {/* Left: Title + Time Filter Tabs + Hide Ended Checkbox */}
+              {/* Left: Time Filter Tabs + Free Filter + Hide Ended Checkbox */}
               <div className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto no-scrollbar py-0.5">
-                <h2 className="text-sm sm:text-base font-extrabold text-[#1E293B] flex items-center gap-1.5 shrink-0 pl-1">
-                  <Sprout className="w-4 h-4 sm:w-5 sm:h-5 text-[#4A7C59]" />
-                  <span>กิจกรรมน่าสนใจ</span>
-                </h2>
-
-                <div className="h-4 w-px bg-slate-200 shrink-0 hidden sm:block" />
-
                 {/* Time Filter Tabs */}
                 <div className="flex items-center gap-1 shrink-0">
                   {[
@@ -633,24 +683,63 @@ export default function Home() {
 
                 <div className="h-4 w-px bg-slate-200 shrink-0 hidden sm:block" />
 
-                {/* Checkbox: Hide Ended Events */}
-                <label className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer select-none bg-slate-50 hover:bg-slate-100/80 px-2.5 py-1 rounded-xl border border-slate-200/80 transition-all shrink-0">
+                {/* 🆓 Quick Filter: Free Events (ข้อ 2) */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPriceFilter(priceFilter === 'free' ? 'all' : 'free');
+                  }}
+                  className={`px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap cursor-pointer border ${
+                    priceFilter === 'free'
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                      : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100/80'
+                  }`}
+                  title="กรองเฉพาะกิจกรรมที่เข้าร่วมฟรี"
+                >
+                  <span>🎉 เข้าร่วมฟรี</span>
+                </button>
+
+                <div className="h-4 w-px bg-slate-200 shrink-0 hidden sm:block" />
+
+                {/* Checkbox: Upcoming Events */}
+                <label className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer select-none bg-slate-50 hover:bg-slate-100/80 px-2.5 py-1 rounded-xl border border-slate-200/80 transition-all shrink-0" title="แสดงเฉพาะงานและกิจกรรมที่กำลังจะมาถึง">
                   <input
                     type="checkbox"
                     checked={hideEndedEvents}
                     onChange={(e) => {
                       setHideEndedEvents(e.target.checked);
-                      setCurrentPage(1);
                     }}
                     className="w-3.5 h-3.5 accent-[#4A7C59] rounded cursor-pointer"
                   />
-                  <span>เฉพาะที่ยังไม่จบ</span>
+                  <span>งานที่กำลังมาถึง</span>
                 </label>
               </div>
 
-              {/* Right: Near Me Button + Minimalist Filter Drawer & Sorting */}
+              {/* Right: Favorites Quick Tab + Near Me Button + Filter Drawer & Sorting */}
               <div className="flex items-center justify-end gap-2 pt-1 lg:pt-0 border-t lg:border-t-0 border-slate-100 shrink-0">
                 
+                {/* 💖 Prominent Favorites / Saved Events Tab (ข้อ 5) */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (sortBy === 'favorites') {
+                      setSortBy('newest');
+                    } else {
+                      setSortBy('favorites');
+                      setSortByNearMe(false);
+                    }
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 border ${
+                    sortBy === 'favorites'
+                      ? 'bg-gradient-to-r from-rose-500 to-[#F26430] text-white border-[#F26430] shadow-sm ring-2 ring-rose-500/20'
+                      : 'bg-white hover:bg-rose-50/80 text-[#1E293B] hover:text-[#F26430] border-[#E8E2D8] hover:border-rose-300'
+                  }`}
+                  title="ดูกิจกรรมที่คุณกดหัวใจ / บันทึกไว้"
+                >
+                  <Heart className={`w-3.5 h-3.5 ${sortBy === 'favorites' ? 'fill-white text-white' : 'fill-rose-500/20 text-rose-500'}`} />
+                  <span>ที่บันทึกไว้ ({favorites.length})</span>
+                </button>
+
                 {/* 🎯 Near Me Button with Single Modern Radar/GPS Icon */}
                 <button
                   type="button"
@@ -712,6 +801,7 @@ export default function Home() {
               toggleFavorite={toggleFavorite}
               joinedEventIds={joinedEventIds}
               onResetFilters={handleResetAllFilters}
+              isFavoritesOnly={sortBy === 'favorites'}
             />
 
             {/* Google-Style Pagination Bar */}

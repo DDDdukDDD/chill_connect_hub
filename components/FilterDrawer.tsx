@@ -1,6 +1,7 @@
 'use client';
 
-import { X, Filter, RotateCcw, Check, MapPin, Users, Tag, Building2, SlidersHorizontal, Navigation } from 'lucide-react';
+import React from 'react';
+import { X, RotateCcw, Check, MapPin, Users, Tag, Building2, SlidersHorizontal, Sparkles } from 'lucide-react';
 import { PUBLIC_VENUES } from '@/components/MoodFilterChips';
 import { BANGKOK_ZONES } from '@/data/mockData';
 
@@ -13,8 +14,8 @@ interface FilterDrawerProps {
   setSelectedVenueFilter: (venue: string | null) => void;
   selectedZone: string | null;
   setSelectedZone: (zone: string | null) => void;
-  selectedGroupSize: 'all' | 'community' | 'public_venue' | 'joined';
-  setSelectedGroupSize: (size: 'all' | 'community' | 'public_venue' | 'joined') => void;
+  selectedGroupSize: 'community' | 'public_venue';
+  setSelectedGroupSize: (size: 'community' | 'public_venue') => void;
   priceFilter: 'all' | 'free' | 'under500';
   setPriceFilter: (price: 'all' | 'free' | 'under500') => void;
   onResetAll: () => void;
@@ -39,8 +40,16 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
 }) => {
   if (!isOpen) return null;
 
+  // Calculate total active filters count
+  const activeCount = [
+    selectedCategory !== null,
+    selectedVenueFilter !== null,
+    selectedZone !== null,
+    priceFilter !== 'all',
+  ].filter(Boolean).length;
+
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-sm animate-fade-in flex justify-end">
+    <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-xs animate-fade-in flex justify-end">
       {/* Backdrop Click */}
       <div className="absolute inset-0" onClick={onClose} />
 
@@ -49,110 +58,65 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
         
         {/* Header */}
         <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-[#FAF7F2]">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-[#F26430] flex items-center justify-center text-white shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-[#4A7C59] flex items-center justify-center text-white shadow-xs">
               <SlidersHorizontal className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-base text-[#1E293B]">
-                ตัวกรองค้นหาละเอียด (Advanced Filter)
-              </h3>
-              <p className="text-[11px] text-[#64748B] font-medium">
-                ค้นหากิจกรรมที่ตรงใจคุณมากที่สุด
+              <div className="flex items-center gap-2">
+                <h3 className="font-extrabold text-base text-[#1E293B]">
+                  ตัวกรองค้นหาขั้นสูง
+                </h3>
+                {activeCount > 0 && (
+                  <span className="text-[10px] font-black bg-[#F26430] text-white px-2 py-0.5 rounded-full">
+                    ใช้งาน {activeCount}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-[#64748B]">
+                ปรับแต่งเงื่อนไขเพื่อค้นหากิจกรรมที่ตรงใจคุณ
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors"
+            className="w-8 h-8 rounded-full bg-white hover:bg-slate-200/80 border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
+            title="ปิดหน้าต่าง"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 text-xs text-[#1E293B]">
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6 text-xs text-[#1E293B]">
           
-          {/* Section 1: รูปแบบกิจกรรม & ขนาดกลุ่ม */}
+          {/* Section 1: สถานที่ & ศูนย์จัดงานหลัก */}
           <div className="space-y-2.5">
-            <label className="font-extrabold text-xs text-[#1E293B] flex items-center gap-1.5 uppercase tracking-wider">
-              <Users className="w-4 h-4 text-[#4A7C59]" />
-              <span>รูปแบบการจัดงาน & ขนาดกลุ่ม:</span>
-            </label>
-
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { id: 'all', label: '✨ ทั้งหมด' },
-                { id: 'community', label: '🌱 กลุ่มย่อย 4-8 คน' },
-                { id: 'public_venue', label: '🏛️ งานใหญ่ Hall' },
-              ].map((item) => (
+            <div className="flex items-center justify-between">
+              <label className="font-extrabold text-xs text-[#1E293B] flex items-center gap-1.5">
+                <Building2 className="w-4 h-4 text-amber-600" />
+                <span>สถานที่ & ศูนย์แสดงสินค้าหลัก:</span>
+              </label>
+              {selectedVenueFilter && (
                 <button
-                  key={item.id}
                   type="button"
-                  onClick={() => setSelectedGroupSize(item.id as any)}
-                  className={`p-2.5 rounded-xl font-bold border transition-all text-center flex flex-col items-center justify-center gap-1 ${
-                    selectedGroupSize === item.id
-                      ? 'bg-[#4A7C59] text-white border-[#4A7C59] shadow-xs'
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300'
-                  }`}
+                  onClick={() => setSelectedVenueFilter(null)}
+                  className="text-[11px] text-[#F26430] hover:underline font-bold cursor-pointer"
                 >
-                  <span className="text-xs">{item.label}</span>
+                  ล้าง
                 </button>
-              ))}
+              )}
             </div>
-          </div>
-
-          {/* Section 2: หมวดหมู่อารมณ์กิจกรรม */}
-          <div className="space-y-2.5 pt-4 border-t border-slate-100">
-            <label className="font-extrabold text-xs text-[#1E293B] flex items-center gap-1.5 uppercase tracking-wider">
-              <Tag className="w-4 h-4 text-[#F26430]" />
-              <span>หมวดหมู่อารมณ์กิจกรรม:</span>
-            </label>
-
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { id: null, label: '✨ รวมทุกอารมณ์' },
-                { id: 'chill', label: '☕ นัดชิลล์ / จิบกาแฟ' },
-                { id: 'move', label: '🏃 ออกกำลังกาย / สปอร์ต' },
-                { id: 'heal', label: '🌿 ฮีลใจ / ธรรมชาติ' },
-                { id: 'learn', label: '🎨 เวิร์กช็อป / งานคราฟต์' },
-              ].map((cat) => {
-                const isSelected = selectedCategory === cat.id;
-                return (
-                  <button
-                    key={cat.id || 'all-cat'}
-                    type="button"
-                    onClick={() => setSelectedCategory(cat.id as any)}
-                    className={`p-2.5 rounded-xl font-bold border transition-all text-left flex items-center justify-between ${
-                      isSelected
-                        ? 'bg-[#F26430] text-white border-[#F26430] shadow-xs'
-                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300'
-                    }`}
-                  >
-                    <span>{cat.label}</span>
-                    {isSelected && <Check className="w-4 h-4 text-white shrink-0" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Section 3: สถานที่ / ย่านจัดงาน */}
-          <div className="space-y-2.5 pt-4 border-t border-slate-100">
-            <label className="font-extrabold text-xs text-[#1E293B] flex items-center gap-1.5 uppercase tracking-wider">
-              <Building2 className="w-4 h-4 text-amber-600" />
-              <span>สถานที่ / ศูนย์การแสดงสินค้า:</span>
-            </label>
 
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() => setSelectedVenueFilter(null)}
-                className={`px-3 py-1.5 rounded-full font-bold border transition-all ${
+                className={`px-3 py-1.5 rounded-xl font-bold border transition-all cursor-pointer ${
                   selectedVenueFilter === null
-                    ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
-                    : 'bg-slate-50 text-slate-700 border-slate-200'
+                    ? 'bg-[#1E293B] text-white border-[#1E293B] shadow-xs'
+                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300'
                 }`}
               >
                 ทุกสถานที่
@@ -164,7 +128,7 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
                     key={venue.id}
                     type="button"
                     onClick={() => setSelectedVenueFilter(isSelected ? null : venue.id)}
-                    className={`px-3 py-1.5 rounded-full font-bold border transition-all ${
+                    className={`px-3 py-1.5 rounded-xl font-bold border transition-all cursor-pointer ${
                       isSelected
                         ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-amber-400'
@@ -177,24 +141,35 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
             </div>
           </div>
 
-          {/* Section 4: โซน / ย่านในกรุงเทพฯ */}
+          {/* Section 2: ทำเล / ย่านในกรุงเทพฯ */}
           <div className="space-y-2.5 pt-4 border-t border-slate-100">
-            <label className="font-extrabold text-xs text-[#1E293B] flex items-center gap-1.5 uppercase tracking-wider">
-              <MapPin className="w-4 h-4 text-emerald-600" />
-              <span>โซน / ย่านในกรุงเทพฯ (เลือกตามทำเล):</span>
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="font-extrabold text-xs text-[#1E293B] flex items-center gap-1.5">
+                <MapPin className="w-4 h-4 text-emerald-600" />
+                <span>ทำเล / ย่านในกรุงเทพฯ:</span>
+              </label>
+              {selectedZone && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedZone(null)}
+                  className="text-[11px] text-[#F26430] hover:underline font-bold cursor-pointer"
+                >
+                  ล้าง
+                </button>
+              )}
+            </div>
 
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setSelectedZone(null)}
-                className={`p-2 rounded-xl font-bold border transition-all text-xs text-left flex items-center justify-between ${
+                className={`p-2.5 rounded-xl font-bold border transition-all text-xs text-left flex items-center justify-between cursor-pointer ${
                   selectedZone === null
-                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-emerald-300'
+                    ? 'bg-[#1E293B] text-white border-[#1E293B] shadow-xs'
+                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300'
                 }`}
               >
-                <span>📍 ทุกย่านในกรุงเทพฯ</span>
+                <span>ทุกย่านทั่วกรุงเทพฯ</span>
                 {selectedZone === null && <Check className="w-3.5 h-3.5 text-white shrink-0" />}
               </button>
 
@@ -205,7 +180,7 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
                     key={z.id}
                     type="button"
                     onClick={() => setSelectedZone(isSelected ? null : z.id)}
-                    className={`p-2 rounded-xl font-bold border transition-all text-xs text-left flex items-center justify-between ${
+                    className={`p-2.5 rounded-xl font-bold border transition-all text-xs text-left flex items-center justify-between cursor-pointer ${
                       isSelected
                         ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-emerald-300'
@@ -219,26 +194,83 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
             </div>
           </div>
 
-          {/* Section 5: ค่าใช้จ่าย */}
+          {/* Section 3: หมวดหมู่อารมณ์กิจกรรม */}
           <div className="space-y-2.5 pt-4 border-t border-slate-100">
-            <label className="font-extrabold text-xs text-[#1E293B] flex items-center gap-1.5 uppercase tracking-wider">
-              <span>💰 งบประมาณ / ค่าใช้จ่าย:</span>
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="font-extrabold text-xs text-[#1E293B] flex items-center gap-1.5">
+                <Tag className="w-4 h-4 text-[#F26430]" />
+                <span>หมวดหมู่อารมณ์ & สไตล์กิจกรรม:</span>
+              </label>
+              {selectedCategory && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategory(null)}
+                  className="text-[11px] text-[#F26430] hover:underline font-bold cursor-pointer"
+                >
+                  ล้าง
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { id: null, label: 'รวมทุกหมวดหมู่' },
+                { id: 'heal', label: 'ฮีลใจ & พักผ่อน (Heal)' },
+                { id: 'move', label: 'กีฬา & ออกกำลังกาย (Move)' },
+                { id: 'chill', label: 'คาเฟ่ & นัดชิลล์ (Chill)' },
+                { id: 'learn', label: 'ศิลปะ & เวิร์กช็อป (Learn)' },
+              ].map((cat) => {
+                const isSelected = selectedCategory === cat.id;
+                return (
+                  <button
+                    key={cat.id || 'all-cat'}
+                    type="button"
+                    onClick={() => setSelectedCategory(cat.id as any)}
+                    className={`p-2.5 rounded-xl font-bold border transition-all text-left flex items-center justify-between cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#F26430] text-white border-[#F26430] shadow-xs'
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <span>{cat.label}</span>
+                    {isSelected && <Check className="w-3.5 h-3.5 text-white shrink-0" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Section 4: งบประมาณ / ค่าใช้จ่าย */}
+          <div className="space-y-2.5 pt-4 border-t border-slate-100">
+            <div className="flex items-center justify-between">
+              <label className="font-extrabold text-xs text-[#1E293B] flex items-center gap-1.5">
+                <span>งบประมาณ / ค่าใช้จ่าย:</span>
+              </label>
+              {priceFilter !== 'all' && (
+                <button
+                  type="button"
+                  onClick={() => setPriceFilter('all')}
+                  className="text-[11px] text-[#F26430] hover:underline font-bold cursor-pointer"
+                >
+                  ล้าง
+                </button>
+              )}
+            </div>
 
             <div className="grid grid-cols-3 gap-2">
               {[
                 { id: 'all', label: 'ทุกระดับราคา' },
-                { id: 'free', label: '🎁 เข้าร่วมฟรี!' },
-                { id: 'under500', label: '💵 ไม่เกิน 500 บาท' },
+                { id: 'free', label: '🎉 เข้าร่วมฟรี!' },
+                { id: 'under500', label: '💵 ไม่เกิน ฿500' },
               ].map((p) => (
                 <button
                   key={p.id}
                   type="button"
                   onClick={() => setPriceFilter(p.id as any)}
-                  className={`p-2 rounded-xl font-bold border transition-all text-center text-xs ${
+                  className={`p-2.5 rounded-xl font-bold border transition-all text-center text-xs cursor-pointer ${
                     priceFilter === p.id
                       ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                      : 'bg-slate-50 text-slate-700 border-slate-200'
+                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300'
                   }`}
                 >
                   {p.label}
@@ -247,23 +279,53 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
             </div>
           </div>
 
+          {/* Section 5: รูปแบบกิจกรรม & ขนาดกลุ่ม */}
+          <div className="space-y-2.5 pt-4 border-t border-slate-100">
+            <label className="font-extrabold text-xs text-[#1E293B] flex items-center gap-1.5">
+              <Users className="w-4 h-4 text-[#4A7C59]" />
+              <span>รูปแบบงาน:</span>
+            </label>
+
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { id: 'public_venue', label: '🏛️ อีเวนต์ & งานแฟร์' },
+                { id: 'community', label: '🏡 กิจกรรมชุมชน' },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setSelectedGroupSize(item.id as any)}
+                  className={`p-3 rounded-xl font-bold border transition-all text-center flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                    selectedGroupSize === item.id
+                      ? item.id === 'public_venue'
+                        ? 'bg-[#1E293B] text-white border-[#1E293B] shadow-xs'
+                        : 'bg-[#4A7C59] text-white border-[#4A7C59] shadow-xs'
+                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <span className="text-xs">{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
+        <div className="p-4 bg-[#FAF7F2] border-t border-[#E8E2D8] flex items-center justify-between gap-3 shrink-0">
           <button
             type="button"
             onClick={onResetAll}
-            className="px-4 py-2 rounded-full text-xs font-bold text-slate-600 hover:bg-slate-200 transition-colors flex items-center gap-1.5"
+            className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200/80 transition-colors flex items-center gap-1.5 cursor-pointer"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>ล้างฟิลเตอร์ทั้งหมด</span>
+            <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+            <span>ล้างทั้งหมด</span>
           </button>
 
           <button
             type="button"
             onClick={onClose}
-            className="bg-[#F26430] hover:bg-[#D95322] text-white px-6 py-2.5 rounded-full font-bold text-xs shadow-md transition-all active:scale-95"
+            className="bg-[#4A7C59] hover:bg-[#3B6447] text-white px-6 py-2.5 rounded-xl font-black text-xs sm:text-sm shadow-md transition-all active:scale-95 cursor-pointer"
           >
             แสดง {totalResultsCount} กิจกรรม
           </button>

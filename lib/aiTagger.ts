@@ -361,5 +361,7 @@ export function processRawEventWithAI(raw: ScrapedRawEvent, idSuffix: number): E
     status: isEnded ? 'ended' : 'active',
     isNew: !isEnded,
     createdAtTimestamp: Date.now(),
+    externalUrl: raw.sourceUrl,
+    link: raw.sourceUrl,
   };
 }

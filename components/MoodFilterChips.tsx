@@ -43,7 +43,7 @@ export const PUBLIC_VENUES = [
 ];
 
 interface MoodFilterChipsProps {
-  eventTypeTab: 'all' | 'community' | 'public_venue';
+  eventTypeTab: 'public_venue' | 'community';
   selectedCategory: 'heal' | 'move' | 'chill' | 'learn' | null;
   setSelectedCategory: (categoryId: 'heal' | 'move' | 'chill' | 'learn' | null) => void;
   selectedSubCategory: string | null;
@@ -71,18 +71,18 @@ export const MoodFilterChips: React.FC<MoodFilterChipsProps> = ({
   };
 
   return (
-    <div className="space-y-3 pt-1">
+    <div className="space-y-3">
       
       {/* 🏛️ MODE 1: PUBLIC VENUE / GENERAL EVENTS */}
       {eventTypeTab === 'public_venue' && (
-        <div className="space-y-2.5 bg-white p-4 rounded-2xl border border-[#E8E2D8] shadow-2xs animate-fade-in">
+        <div className="space-y-2.5 bg-white p-3 sm:p-4 rounded-2xl border border-[#E8E2D8] shadow-2xs animate-fade-in">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold text-[#F26430] uppercase tracking-wider flex items-center gap-1.5">
-              <Building2 className="w-4 h-4" />
-              <span>เลือกกรองตามสถานที่ / งานมหกรรมใหญ่</span>
+            <h3 className="text-xs font-bold text-[#1E293B] flex items-center gap-1.5">
+              <Building2 className="w-4 h-4 text-amber-600" />
+              <span>ศูนย์แสดงสินค้า & สถานที่จัดงาน:</span>
             </h3>
-            {hasActiveFilter && (
-              <button onClick={resetAllFilters} className="text-xs text-[#4A7C59] font-bold hover:underline">
+            {selectedVenueFilter && (
+              <button onClick={resetAllFilters} className="text-xs text-[#F26430] font-bold hover:underline cursor-pointer">
                 ล้างฟิลเตอร์
               </button>
             )}
@@ -91,13 +91,13 @@ export const MoodFilterChips: React.FC<MoodFilterChipsProps> = ({
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
             <button
               onClick={() => setSelectedVenueFilter && setSelectedVenueFilter(null)}
-              className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold transition-all border ${
+              className={`shrink-0 rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all border cursor-pointer ${
                 selectedVenueFilter === null
-                  ? 'bg-[#F26430] text-white border-[#F26430] shadow-xs'
-                  : 'bg-white text-[#475569] border-[#E2DCD2] hover:border-[#F26430]'
+                  ? 'bg-[#1E293B] text-white border-[#1E293B] shadow-xs'
+                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300'
               }`}
             >
-              ✨ ทุกสถานที่
+              ทุกสถานที่
             </button>
 
             {PUBLIC_VENUES.map((venue) => {
@@ -110,10 +110,10 @@ export const MoodFilterChips: React.FC<MoodFilterChipsProps> = ({
                       setSelectedVenueFilter(isVenueSelected ? null : venue.id);
                     }
                   }}
-                  className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold transition-all border ${
+                  className={`shrink-0 rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all border cursor-pointer ${
                     isVenueSelected
-                      ? 'bg-[#F26430] text-white border-[#F26430] shadow-xs scale-102 font-extrabold'
-                      : 'bg-[#FAF7F2] text-[#334155] border-[#E2DCD2] hover:border-[#F26430] hover:bg-white'
+                      ? 'bg-amber-600 text-white border-amber-600 shadow-xs scale-102 font-extrabold'
+                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-amber-400 hover:bg-white'
                   }`}
                 >
                   <span>{venue.label}</span>
@@ -126,14 +126,14 @@ export const MoodFilterChips: React.FC<MoodFilterChipsProps> = ({
 
       {/* 🌱 MODE 2: COMMUNITY MEETUPS & WORKSHOPS */}
       {eventTypeTab === 'community' && (
-        <div className="space-y-3 bg-white p-4 rounded-2xl border border-[#E8E2D8] shadow-2xs animate-fade-in">
+        <div className="space-y-3 bg-white p-3 sm:p-4 rounded-2xl border border-[#E8E2D8] shadow-2xs animate-fade-in">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold text-[#4A7C59] uppercase tracking-wider flex items-center gap-1.5">
-              <Sprout className="w-4 h-4" />
-              <span>เลือกหมวดหมู่อารมณ์กิจกรรมยามว่าง</span>
+            <h3 className="text-xs font-bold text-[#1E293B] flex items-center gap-1.5">
+              <Sprout className="w-4 h-4 text-[#4A7C59]" />
+              <span>หมวดหมู่อารมณ์ & กิจกรรมชุมชน:</span>
             </h3>
             {hasActiveFilter && (
-              <button onClick={resetAllFilters} className="text-xs text-[#4A7C59] font-bold hover:underline">
+              <button onClick={resetAllFilters} className="text-xs text-[#F26430] font-bold hover:underline cursor-pointer">
                 ล้างฟิลเตอร์
               </button>
             )}
@@ -223,16 +223,6 @@ export const MoodFilterChips: React.FC<MoodFilterChipsProps> = ({
               </div>
             </div>
           )}
-        </div>
-      )}
-
-      {/* ✨ MODE 3: ALL EVENTS (ONLY SHOW IF ACTIVE FILTER TO RESET) */}
-      {eventTypeTab === 'all' && hasActiveFilter && (
-        <div className="flex items-center justify-between bg-white p-2.5 px-4 rounded-2xl border border-[#E8E2D8] text-xs font-semibold text-[#64748B]">
-          <span>เปิดใช้งานตัวกรองแบบรวม</span>
-          <button onClick={resetAllFilters} className="text-[#4A7C59] font-bold hover:underline">
-            ล้างฟิลเตอร์ทั้งหมด
-          </button>
         </div>
       )}
 

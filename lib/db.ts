@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { EventItem, MOCK_EVENTS } from '@/data/mockData';
 import { AdminEventItem } from './eventsStore';
+import { EventDataSource, DEFAULT_DATA_SOURCES } from './sourcesStore';
 
 const DB_DIR = path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DB_DIR, 'chill_database.json');
@@ -11,6 +12,7 @@ export interface DatabaseSchema {
   lastUpdated: string;
   autoPublish: boolean;
   events: AdminEventItem[];
+  sources?: EventDataSource[];
   tickets: Array<{
     ticketId: string;
     eventId: string;

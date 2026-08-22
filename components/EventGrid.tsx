@@ -12,6 +12,7 @@ interface EventGridProps {
   toggleFavorite: (eventId: string) => void;
   joinedEventIds?: string[];
   onResetFilters?: () => void;
+  isFavoritesOnly?: boolean;
 }
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string; badgeBg: string }> = {
@@ -28,17 +29,24 @@ export const EventGrid: React.FC<EventGridProps> = ({
   toggleFavorite,
   joinedEventIds = [],
   onResetFilters,
+  isFavoritesOnly = false,
 }) => {
   if (events.length === 0) {
     return (
-      <div className="bg-white rounded-3xl p-12 text-center border border-[#E8E2D8] shadow-sm space-y-4">
-        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400">
-          <Sparkles className="w-8 h-8" />
+      <div className="bg-white rounded-3xl p-12 text-center border border-[#E8E2D8] shadow-sm space-y-4 animate-fade-in">
+        <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto ${
+          isFavoritesOnly ? 'bg-orange-50 text-[#F26430]' : 'bg-slate-100 text-slate-400'
+        }`}>
+          {isFavoritesOnly ? <Heart className="w-8 h-8 fill-[#F26430] text-[#F26430]" /> : <Sparkles className="w-8 h-8" />}
         </div>
         <div className="space-y-1">
-          <h3 className="font-extrabold text-lg text-[#1E293B]">ไม่พบกิจกรรมที่ค้นหา</h3>
+          <h3 className="font-extrabold text-lg text-[#1E293B]">
+            {isFavoritesOnly ? 'ยังไม่มีกิจกรรมที่บันทึกไว้' : 'ไม่พบกิจกรรมที่ค้นหา'}
+          </h3>
           <p className="text-xs text-[#64748B] max-w-sm mx-auto">
-            ลองค้นหาด้วยคำอื่น หรือกดปุ่มด้านล่างเพื่อดูกิจกรรมทั้งหมด
+            {isFavoritesOnly
+              ? 'ลองกดไอคอนรูปหัวใจบนการ์ดกิจกรรมที่สนใจ เพื่อรวมไว้ดูในหน้านี้ได้เลย'
+              : 'ลองค้นหาด้วยคำอื่น หรือกดปุ่มด้านล่างเพื่อดูกิจกรรมทั้งหมด'}
           </p>
         </div>
         {onResetFilters && (
@@ -48,7 +56,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
             className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#1E293B] hover:bg-[#F26430] text-white text-xs font-bold shadow-md transition-all active:scale-95 cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>ดูกิจกรรมทั้งหมด</span>
+            <span>{isFavoritesOnly ? 'สำรวจกิจกรรมทั้งหมด' : 'ดูกิจกรรมทั้งหมด'}</span>
           </button>
         )}
       </div>
@@ -207,7 +215,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                       }`}>
                         <span>
                           {event.eventType === 'public_venue'
-                            ? '🏛️ อีเวนต์สาธารณะ'
+                            ? '🏛️ อีเวนต์ & งานแฟร์'
                             : '🏡 กิจกรรมชุมชน'}
                         </span>
                       </span>
@@ -216,8 +224,8 @@ export const EventGrid: React.FC<EventGridProps> = ({
                       <div className="absolute bottom-full left-0 mb-2 w-56 p-2.5 bg-slate-900/95 text-white text-[11px] font-medium rounded-xl shadow-xl border border-white/10 opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 pointer-events-none z-30 leading-relaxed backdrop-blur-md">
                         {event.eventType === 'public_venue' ? (
                           <>
-                            <strong className="block text-sky-300 font-extrabold mb-0.5">🏛️ อีเวนต์สาธารณะ:</strong>
-                            งานนิทรรศการ / มหกรรมสเกลใหญ่ สามารถหาหรือจับคู่ Buddy ไปเดินงานด้วยกันได้
+                            <strong className="block text-sky-300 font-extrabold mb-0.5">🏛️ อีเวนต์ & งานแฟร์:</strong>
+                            งานคอนเสิร์ต มหกรรม นิทรรศการ หรือแมตช์กีฬาจัดโดยผู้จัดทางการ
                           </>
                         ) : (
                           <>

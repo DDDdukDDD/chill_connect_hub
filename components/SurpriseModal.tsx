@@ -112,7 +112,7 @@ export const SurpriseModal: React.FC<SurpriseModalProps> = ({
                 />
                 <div className="absolute top-2.5 left-2.5">
                   <span className="text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white border border-white/20">
-                    {pickedEvent.eventType === 'public_venue' ? '🏛️ อีเวนต์สาธารณะ' : '🏡 กิจกรรมชุมชน'}
+                    {pickedEvent.eventType === 'public_venue' ? '🏛️ อีเวนต์ & งานแฟร์' : '🏡 กิจกรรมชุมชน'}
                   </span>
                 </div>
                 {pickedEvent.price && (

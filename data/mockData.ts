@@ -37,6 +37,7 @@ export interface EventItem {
   eventType?: 'community' | 'public_venue';
   venueTag?: 'qsncc' | 'bitec' | 'impact' | 'marathon' | 'park';
   externalUrl?: string;
+  link?: string;
   buddyCount?: number;
   status?: 'active' | 'ended';
   latitude?: number;
@@ -128,6 +129,35 @@ export const MOOD_CATEGORIES: MoodCategory[] = [
 
 export const MOCK_EVENTS: EventItem[] = [
   {
+    id: 'pub-football-rajamangala',
+    title: 'ศึกฟุตบอลทีมชาติไทย (ช้างศึก) ฟุตบอลกระชับมิตรนานาชาติ FIFA International Match ⚽🇹🇭',
+    date: '22 ส.ค. 2026',
+    time: '19:30 - 22:00 น.',
+    location: 'ราชมังคลากีฬาสถาน (Rajamangala National Stadium, หัวหมาก)',
+    tag: '#บอลไทย #ช้างศึก',
+    category: 'move',
+    image: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80',
+    participantsCount: 850,
+    maxParticipants: 2500,
+    hostName: 'สมาคมกีฬาฟุตบอลแห่งประเทศไทยฯ (FA Thailand)',
+    hostAvatar: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=100&q=80',
+    price: '฿200 - ฿750',
+    description: 'ร่วมส่งพลังเสียงเชียร์ทัพช้างศึก ทีมชาติไทย ฟาดแข้งแมตช์กระชับมิตรระดับนานาชาติ FIFA Match Day ณ สังเวียนประวัติศาสตร์ ราชมังคลากีฬาสถาน สัมผัสบรรยากาศกองเชียร์สุดมันส์',
+    isTrending: true,
+    isNew: true,
+    rating: 5.0,
+    badgeText: '⚽ ศึกช้างศึกราชมังฯ',
+    createdAtTimestamp: Date.now(),
+    eventType: 'public_venue',
+    externalUrl: 'https://fathailand.org/fixtures-results/',
+    link: 'https://fathailand.org/fixtures-results/',
+    buddyCount: 42,
+    status: 'active',
+    latitude: 13.7553,
+    longitude: 100.6223,
+    zone: 'ladprao',
+  },
+  {
     id: 'pub-1',
     title: 'งานสัปดาห์หนังสือแห่งชาติ ครั้งที่ 52 (National Book Fair) 📚✨',
     date: '28 มี.ค. - 07 เม.ย. 2026',
@@ -148,7 +178,7 @@ export const MOCK_EVENTS: EventItem[] = [
     createdAtTimestamp: 1722900000000,
     eventType: 'public_venue',
     venueTag: 'qsncc',
-    externalUrl: 'https://www.qsncc.com',
+    externalUrl: 'https://www.thailandbookfair.com',
     buddyCount: 18,
     status: 'active',
     latitude: 13.7238,
@@ -176,7 +206,7 @@ export const MOCK_EVENTS: EventItem[] = [
     createdAtTimestamp: 1722890000000,
     eventType: 'public_venue',
     venueTag: 'marathon',
-    externalUrl: 'https://www.runningthailand.com',
+    externalUrl: 'https://www.bangkokmarathon.org',
     buddyCount: 24,
     status: 'active',
     latitude: 13.7314,

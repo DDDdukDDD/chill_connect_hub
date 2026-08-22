@@ -81,7 +81,7 @@ export const ETicketModal: React.FC<ETicketModalProps> = ({
                 #{event.tag}
               </span>
               <span className="text-[10px] font-bold text-slate-300">
-                {event.eventType === 'public_venue' ? '🏛️ อีเวนต์สาธารณะ' : '🏡 กิจกรรมชุมชน'}
+                {event.eventType === 'public_venue' ? '🏛️ อีเวนต์ & งานแฟร์' : '🏡 กิจกรรมชุมชน'}
               </span>
             </div>
             <h3 className="font-extrabold text-sm sm:text-base line-clamp-1 text-white">

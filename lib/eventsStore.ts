@@ -14,14 +14,46 @@ export interface AdminEventItem extends EventItem {
 let MEMORY_CACHE: AdminEventItem[] | null = null;
 let AUTO_PUBLISH_ENABLED: boolean = false;
 
-// Ensure database is loaded into cache
+// Ensure database is loaded into cache and auto-enrich direct event URLs
 export async function loadCache(): Promise<AdminEventItem[]> {
   if (MEMORY_CACHE !== null && MEMORY_CACHE.length > 0) {
     return MEMORY_CACHE;
   }
   const db = await readDatabase();
   AUTO_PUBLISH_ENABLED = db.autoPublish;
-  MEMORY_CACHE = db.events;
+
+  // Auto-enrich any existing events with updated direct official event URLs
+  let hasUpdated = false;
+  const enriched = db.events.map((ev) => {
+    const seed = REAL_BANGKOK_EVENT_SEEDS.find(
+      (s) => s.rawTitle === ev.title || ev.title.includes(s.rawTitle) || s.rawTitle.includes(ev.title)
+    );
+    if (
+      seed &&
+      seed.sourceUrl &&
+      (!ev.externalUrl ||
+        ev.externalUrl !== seed.sourceUrl ||
+        ev.externalUrl.includes('event-calendar') ||
+        ev.externalUrl.includes('thailandnstfair') ||
+        ev.externalUrl.includes('event-detail'))
+    ) {
+      hasUpdated = true;
+      return {
+        ...ev,
+        externalUrl: seed.sourceUrl,
+        link: seed.sourceUrl,
+        sourceUrl: seed.sourceUrl,
+      };
+    }
+    return ev;
+  });
+
+  MEMORY_CACHE = enriched;
+  if (hasUpdated) {
+    db.events = enriched;
+    await writeDatabase(db);
+  }
+
   return MEMORY_CACHE;
 }
 
@@ -52,14 +84,42 @@ export function isAutoPublishEnabled(): boolean {
   return AUTO_PUBLISH_ENABLED;
 }
 
-export async function runScraperAndAIEngine(): Promise<{
+import { updateSourceScrapedTime } from './sourcesStore';
+
+export async function runScraperAndAIEngine(targetSource?: string): Promise<{
   newCount: number;
   duplicateCount: number;
+  totalScanned: number;
   events: AdminEventItem[];
   duplicateDetails: { rawTitle: string; reason: string }[];
 }> {
   const currentEvents = await loadCache();
-  const rawEvents = await fetchLiveRawEvents();
+  let rawEvents = await fetchLiveRawEvents();
+
+  if (targetSource) {
+    const term = targetSource.toLowerCase();
+    rawEvents = rawEvents.filter((r) => {
+      const srcLower = (r.source || '').toLowerCase();
+      const locLower = (r.rawLocation || '').toLowerCase();
+      const urlLower = (r.sourceUrl || '').toLowerCase();
+      return (
+        srcLower.includes(term) ||
+        term.includes(srcLower) ||
+        urlLower.includes(term) ||
+        (term.includes('impact') && (locLower.includes('impact') || locLower.includes('อิมแพ็ค') || srcLower.includes('impact'))) ||
+        (term.includes('qsncc') && (locLower.includes('qsncc') || locLower.includes('สิริกิติ์') || srcLower.includes('qsncc'))) ||
+        (term.includes('bitec') && (locLower.includes('bitec') || locLower.includes('ไบเทค') || srcLower.includes('bitec'))) ||
+        (term.includes('thaiticket') && (srcLower.includes('thaiticket') || urlLower.includes('thaiticket'))) ||
+        (term.includes('thairun') && (srcLower.includes('thairun') || locLower.includes('วิ่ง') || urlLower.includes('thai.run'))) ||
+        (term.includes('concert') && (srcLower.includes('concert') || urlLower.includes('theconcert'))) ||
+        (term.includes('melon') && (srcLower.includes('melon') || urlLower.includes('ticketmelon'))) ||
+        (term.includes('eventpop') && (srcLower.includes('eventpop') || urlLower.includes('eventpop'))) ||
+        (term.includes('set') && (srcLower.includes('set') || locLower.includes('ตลาดหลักทรัพย์') || urlLower.includes('set.or.th'))) ||
+        (term.includes('bma') && (srcLower.includes('bma') || locLower.includes('กทม') || locLower.includes('สวน')))
+      );
+    });
+  }
+
   const newItems: AdminEventItem[] = [];
   const duplicateDetails: { rawTitle: string; reason: string }[] = [];
 
@@ -70,7 +130,7 @@ export async function runScraperAndAIEngine(): Promise<{
     if (dupCheck.isDuplicate) {
       duplicateDetails.push({
         rawTitle: raw.rawTitle,
-        reason: dupCheck.reason || 'ตรวจพบข้อมูลที่ซ้ำซ้อน',
+        reason: dupCheck.reason || 'ตรวจพบข้อมูลที่ซ้ำซ้อนกับในฐานข้อมูล',
       });
     } else {
       const processed = processRawEventWithAI(raw, idx + 1);
@@ -84,7 +144,7 @@ export async function runScraperAndAIEngine(): Promise<{
     }
   });
 
-  // Prepend new items to database
+  // Prepend new items to database only if any new non-duplicate items found
   const updatedEvents = [...newItems, ...currentEvents];
   MEMORY_CACHE = updatedEvents;
 
@@ -93,9 +153,22 @@ export async function runScraperAndAIEngine(): Promise<{
   db.events = updatedEvents;
   await writeDatabase(db);
 
+  // Update source timestamps
+  if (targetSource) {
+    await updateSourceScrapedTime(targetSource, newItems.length);
+  } else {
+    // Update all active sources
+    const uniqueSources = Array.from(new Set(rawEvents.map((r) => r.source)));
+    for (const src of uniqueSources) {
+      const addedForSrc = newItems.filter((n) => n.source === src).length;
+      await updateSourceScrapedTime(src, addedForSrc);
+    }
+  }
+
   return {
     newCount: newItems.length,
     duplicateCount: duplicateDetails.length,
+    totalScanned: rawEvents.length,
     events: updatedEvents,
     duplicateDetails,
   };
