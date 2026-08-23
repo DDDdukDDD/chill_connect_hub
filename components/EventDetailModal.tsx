@@ -4,6 +4,8 @@ import { EventItem } from '@/data/mockData';
 import { X, Calendar, MapPin, Users, Heart, Share2, CheckCircle2, ShieldCheck, Clock, ExternalLink, Ticket, AlertCircle, Bell, Navigation2, MessageCircle, Check, Copy, Sparkles, Flag, ShieldAlert, Lock, AlertTriangle } from 'lucide-react';
 import { isEventEnded } from '@/lib/dateUtils';
 import { ReportSafetyModal } from './ReportSafetyModal';
+import { ProfileModal } from './ProfileModal';
+import { getConnectedUserIds, toggleUserConnect } from '@/data/profilesData';
 
 interface EventDetailModalProps {
   event: EventItem | null;
@@ -59,6 +61,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   const [reportModalTarget, setReportModalTarget] = useState<{ title: string; hostName?: string } | null>(null);
   const [expandedSubId, setExpandedSubId] = useState<string | null>(null);
   const [joinedSubIds, setJoinedSubIds] = useState<string[]>([]);
+  const [selectedProfileQuery, setSelectedProfileQuery] = useState<string | null>(null);
 
   const [subActivities, setSubActivities] = useState<SubActivityItem[]>([
     {
@@ -398,15 +401,19 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
           {/* Host Info Box with Official Source Link */}
           <div className="p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#E8E2D8] space-y-2">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div className="flex items-center gap-2.5 min-w-0">
+              <div 
+                onClick={() => !isPublicVenue && setSelectedProfileQuery(event.hostName)}
+                className={`flex items-center gap-2.5 min-w-0 ${!isPublicVenue ? 'cursor-pointer group' : ''}`}
+                title={!isPublicVenue ? 'คลิกเพื่อดูโปรไฟล์โฮสต์' : undefined}
+              >
                 <img
                   src={event.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
                   alt={event.hostName}
-                  className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-xs shrink-0"
+                  className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-xs shrink-0 group-hover:scale-105 transition-transform"
                 />
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-extrabold text-xs sm:text-sm text-[#1E293B] truncate">
+                    <span className="font-extrabold text-xs sm:text-sm text-[#1E293B] group-hover:text-[#4A7C59] transition-colors truncate">
                       {event.hostName}
                     </span>
                     <CheckCircle2 className="w-3.5 h-3.5 text-blue-500 fill-blue-50 shrink-0" />
@@ -414,12 +421,12 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                   <p className="text-[11px] text-[#64748B] truncate">
                     {isPublicVenue
                       ? '🏛️ ผู้จัดงานทางการ / ศูนย์จัดแสดง'
-                      : '🏡 ผู้จัดกิจกรรมชุมชน (ชวนเพื่อนๆ ร่วมทำกิจกรรม)'}
+                      : '🏡 ผู้จัดกิจกรรมชุมชน • คลิกดูโปรไฟล์ ➔'}
                   </p>
                 </div>
               </div>
 
-              {/* Official Source Link (Direct Search Query / Verified Venue Link) */}
+              {/* Official Source Link (Direct Search Query / Verified Venue Link) or Connect Button */}
               {isPublicVenue ? (
                 (() => {
                   const googleSearchQuery = `https://www.google.com/search?q=${encodeURIComponent(`${event.title} ${event.location || ''}`.trim())}`;
@@ -444,9 +451,29 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                   );
                 })()
               ) : (
-                <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full border shadow-2xs shrink-0 bg-emerald-50 text-emerald-800 border-emerald-300">
-                  🏡 กิจกรรมชุมชน
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedProfileQuery(event.hostName)}
+                    className="text-[11px] font-bold px-3 py-1 rounded-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-2xs cursor-pointer transition-colors"
+                  >
+                    ดูโปรไฟล์
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const res = toggleUserConnect(event.hostName);
+                      setIsFollowingHost(res.isConnected);
+                    }}
+                    className={`text-[11px] font-extrabold px-3.5 py-1 rounded-full border shadow-2xs shrink-0 cursor-pointer transition-all active:scale-95 ${
+                      isFollowingHost
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                        : 'bg-[#4A7C59] text-white hover:bg-[#3d6849] border-[#4A7C59]'
+                    }`}
+                  >
+                    {isFollowingHost ? '🟢 Connected แล้ว' : '🤝 Connect'}
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -1138,6 +1165,15 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
           onClose={() => setReportModalTarget(null)}
           targetTitle={reportModalTarget.title}
           targetHostName={reportModalTarget.hostName}
+        />
+      )}
+
+      {/* Quick Profile Modal */}
+      {selectedProfileQuery && (
+        <ProfileModal
+          isOpen={!!selectedProfileQuery}
+          onClose={() => setSelectedProfileQuery(null)}
+          targetProfileIdOrName={selectedProfileQuery}
         />
       )}
 

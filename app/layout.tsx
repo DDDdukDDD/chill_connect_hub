@@ -108,6 +108,37 @@ export default function RootLayout({
     },
   };
 
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: "Chill & Connect Hub คืออะไร?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Chill & Connect Hub (chillconnecthub.com) คือแพลตฟอร์มศูนย์รวมกิจกรรม อีเวนต์ งานแฟร์ และคอมมูนิตี้ในกรุงเทพฯ ที่เชื่อมต่อคนที่อยากออกไปใช้ชีวิต หาเพื่อนใหม่ และทำกิจกรรมร่วมกันอย่างปลอดภัยและเป็นกันเอง",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "มาคนเดียวสามารถเข้าร่วมกิจกรรมได้ไหม?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "ได้แน่นอน สมาชิกมากกว่า 80% เข้าร่วมคนเดียวเพื่อทำกิจกรรมที่ชอบและพบปะเพื่อนใหม่ที่มีไลฟ์สไตล์ตรงกัน พร้อมมีกลุ่มชวนเพื่อนย่อยในงานและระบบความปลอดภัยคัดกรองโฮสต์",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "มีกิจกรรมประเภทไหนบ้างใน Chill & Connect Hub?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "มีกิจกรรมครบทั้ง 4 มู้ด: 🌿 สายฮีลใจ (Sound Bath, คลาสโยคะ, บอร์ดเกม), 🏃 สายแอคทีฟ (วิ่งสวนเบญจกิติ, แบดมินตัน, ปีนผา, HYROX), ☕ สายชิลล์ (Specialty Coffee, ทัวร์คาเฟ่, มหกรรมงานแฟร์ QSNCC/BITEC), และ 🎨 สายเรียนรู้ (เวิร์กช็อปปั้นดิน, วาดรูป, ภาษาอังกฤษ)",
+        },
+      },
+    ],
+  };
+
   return (
     <html lang="th" className={`${prompt.variable} ${inter.variable} antialiased`}>
       <head>
@@ -118,6 +149,10 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
         />
       </head>
       <body className="min-h-screen bg-[#FAF7F2] text-[#1E293B] flex flex-col font-sans">

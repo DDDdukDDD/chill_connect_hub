@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Users, ShieldCheck, Sparkles, MessageCircle, MapPin, Calendar, Smile, Flag, ShieldAlert, Lock, AlertTriangle } from 'lucide-react';
 import { EventItem } from '@/data/mockData';
 import { ReportSafetyModal } from './ReportSafetyModal';
+import { ProfileModal } from './ProfileModal';
 
 interface ChatMessage {
   id: string;
@@ -30,6 +31,7 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reportToast, setReportToast] = useState<string | null>(null);
+  const [selectedProfileQuery, setSelectedProfileQuery] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Initialize realistic mock messages when opening chat
@@ -211,13 +213,20 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({
                 <img
                   src={msg.senderAvatar}
                   alt={msg.senderName}
-                  className="w-8 h-8 rounded-full object-cover shrink-0 border border-slate-200 mt-1"
+                  onClick={() => setSelectedProfileQuery(msg.senderName)}
+                  className="w-8 h-8 rounded-full object-cover shrink-0 border border-slate-200 mt-1 cursor-pointer hover:scale-105 transition-transform"
+                  title={`คลิกเพื่อดูโปรไฟล์ ${msg.senderName}`}
                 />
               )}
 
               <div className={`space-y-1 max-w-[80%] ${msg.isMe ? 'items-end' : 'items-start'}`}>
                 <div className={`flex items-center gap-1.5 text-[10px] ${msg.isMe ? 'justify-end' : 'justify-start'}`}>
-                  <span className="font-bold text-slate-700">{msg.senderName}</span>
+                  <span
+                    onClick={() => !msg.isMe && setSelectedProfileQuery(msg.senderName)}
+                    className={`font-bold text-slate-700 ${!msg.isMe ? 'cursor-pointer hover:text-[#4A7C59] transition-colors' : ''}`}
+                  >
+                    {msg.senderName}
+                  </span>
                   {msg.isHost && (
                     <span className="bg-emerald-100 text-emerald-800 text-[9px] font-extrabold px-1.5 py-0.2 rounded-md flex items-center gap-0.5">
                       <ShieldCheck className="w-2.5 h-2.5 text-emerald-700" />
@@ -291,6 +300,15 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({
         targetTitle={event.title}
         targetHostName={event.hostName}
       />
+
+      {/* Quick Profile Modal */}
+      {selectedProfileQuery && (
+        <ProfileModal
+          isOpen={!!selectedProfileQuery}
+          onClose={() => setSelectedProfileQuery(null)}
+          targetProfileIdOrName={selectedProfileQuery}
+        />
+      )}
     </div>
   );
 };
