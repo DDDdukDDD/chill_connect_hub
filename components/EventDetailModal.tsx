@@ -17,6 +17,20 @@ interface EventDetailModalProps {
   onRequireLogin?: () => void;
 }
 
+export interface SubActivityItem {
+  id: string;
+  title: string;
+  creatorName: string;
+  isCreator?: boolean;
+  date: string;
+  time: string;
+  membersCount: string;
+  meetupPoint: string;
+  targetGender: string;
+  targetAge: string;
+  note: string;
+}
+
 export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   event,
   onClose,
@@ -46,11 +60,12 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   const [expandedSubId, setExpandedSubId] = useState<string | null>(null);
   const [joinedSubIds, setJoinedSubIds] = useState<string[]>([]);
 
-  const [subActivities, setSubActivities] = useState([
+  const [subActivities, setSubActivities] = useState<SubActivityItem[]>([
     {
       id: 'sub-1',
       title: 'ชวนเดินดูโซนนิยายแปล & หนังสือประวัติศาสตร์',
       creatorName: 'คุณมายด์',
+      isCreator: false,
       date: '28 มี.ค. 2026',
       time: '14:00 น.',
       membersCount: '2/4 คน',
@@ -63,6 +78,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
       id: 'sub-2',
       title: 'หาเพื่อนแวะจิบกาแฟโซน Craft Drip ชิลล์ๆ',
       creatorName: 'คุณน็อต',
+      isCreator: false,
       date: '29 มี.ค. 2026',
       time: '15:30 น.',
       membersCount: '3/5 คน',

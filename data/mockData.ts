@@ -44,6 +44,9 @@ export interface EventItem {
   longitude?: number;
   zone?: string;
   distanceKm?: number;
+  status?: 'upcoming' | 'ongoing' | 'ended' | string;
+  buddyCount?: number;
+  link?: string;
 }
 
 export const BANGKOK_ZONES = [
