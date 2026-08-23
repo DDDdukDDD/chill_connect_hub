@@ -81,13 +81,13 @@ export default function AboutPage() {
             </div>
 
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-[#1E293B] tracking-tight leading-tight max-w-4xl mx-auto">
-              เปลี่ยนวันว่างให้เป็นวันพิเศษ <br className="hidden sm:inline" />
-              <span className="text-[#F26430]">เติมพลังใจ</span> & <span className="text-[#4A7C59]">เชื่อมต่อมิตรภาพ</span>
+              Hub กิจกรรม & คอมมูนิตี้ <br className="hidden sm:inline" />
+              <span className="text-[#F26430]">สำหรับคนชอบออกไปใช้ชีวิต</span>
             </h1>
 
             <p className="text-base sm:text-xl text-[#475569] max-w-3xl mx-auto leading-relaxed font-medium">
-              เพราะเราเชื่อว่า "วันหยุดที่ดี" ไม่จำเป็นต้องนอนเหงาอยู่บ้าน หรือออกไปเจอความวุ่นวายเพียงลำพัง <br />
-              <strong>Chill & Connect Hub</strong> จึงเกิดขึ้นเพื่อเป็นพื้นที่ปลอดภัย (Safe Space) ที่รวมกิจกรรมน่ารักๆ ให้ทุกคนได้มาพักผ่อน ชาร์จพลังชีวิต และเจอเพื่อนใหม่ที่มีไลฟ์สไตล์ตรงกัน
+              "เปลี่ยนทุกการไปเที่ยวให้เป็นเรื่องสนุก และต่อยอดมิตรภาพได้อย่างเป็นธรรมชาติ" <br />
+              <strong>Chill & Connect Hub</strong> เกิดขึ้นเพื่อเป็น Safe Space ที่เชื่อมโยงผู้คนผ่านกิจกรรมดีๆ ช่วยให้วันหยุดของคุณมีความหมายและได้พลังบวกกลับไปเต็มเปี่ยม
             </p>
 
             {/* Impact Stats Banner */}
@@ -247,7 +247,8 @@ export default function AboutPage() {
           <Sprout className="w-5 h-5 text-[#4A7C59]" />
           <span>Chill & Connect Hub</span>
         </div>
-        <p>© 2026 Chill & Connect Hub - แชร์โมเมนต์ • พบเพื่อนใหม่ • ชิลล์ได้ทุกวัน. All rights reserved.</p>
+        <p className="font-medium text-slate-600">Hub กิจกรรมและคอมมูนิตี้สำหรับคนชอบออกไปใช้ชีวิต ที่เปลี่ยนทุกการไปเที่ยวให้เป็นเรื่องสนุกและต่อยอดมิตรภาพ</p>
+        <p className="text-[11px] text-slate-400">© 2026 Chill & Connect Hub. All rights reserved.</p>
       </footer>
 
       {/* Auth Login / Signup Popup Modal */}

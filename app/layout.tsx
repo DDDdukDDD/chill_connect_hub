@@ -24,10 +24,10 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL("https://chillconnecthub.com"),
   title: {
-    default: "Chill & Connect Hub | ฮับรวมกิจกรรมยามว่าง ฮีลใจ & ชาเลนจ์สนุกๆ",
+    default: "Chill & Connect Hub | Hub กิจกรรมและคอมมูนิตี้สำหรับคนชอบออกไปใช้ชีวิต",
     template: "%s | Chill & Connect Hub",
   },
-  description: "ค้นหากิจกรรมยามว่าง ฮีลใจ ออกกำลังกาย HYROX คืนบอร์ดเกม และเวิร์กช็อป ปล่อยใจพักผ่อน เติมพลังบวก และเจอเพื่อนใหม่ที่มีไลฟ์สไตล์ตรงกัน",
+  description: "Chill & Connect Hub - Hub กิจกรรมและคอมมูนิตี้สำหรับคนชอบออกไปใช้ชีวิต ที่เปลี่ยนทุกการไปเที่ยวให้เป็นเรื่องสนุกและต่อยอดมิตรภาพ รวมงานแฟร์ เวิร์กช็อป วิ่ง บอร์ดเกม และเพื่อนใหม่",
   keywords: [
     "กิจกรรมยามว่าง",
     "หากิจกรรมทำวันหยุด",
@@ -38,6 +38,7 @@ export const metadata: Metadata = {
     "บอร์ดเกม อโศก",
     "เวิร์กช็อปปั้นดิน",
     "Chill and Connect Hub",
+    "คอมมูนิตี้คนชอบทำกิจกรรม",
   ],
   authors: [{ name: "Chill & Connect Hub Team" }],
   creator: "Chill & Connect Hub",
@@ -46,8 +47,8 @@ export const metadata: Metadata = {
     locale: "th_TH",
     url: "https://chillconnecthub.com",
     siteName: "Chill & Connect Hub",
-    title: "Chill & Connect Hub | ฮับรวมกิจกรรมยามว่าง ฮีลใจ & ชาเลนจ์สนุกๆ",
-    description: "ค้นหากิจกรรมยามว่าง ฮีลใจ ออกกำลังกาย HYROX คืนบอร์ดเกม และเวิร์กช็อป ปล่อยใจพักผ่อน เติมพลังบวก และเจอเพื่อนใหม่ที่มีไลฟ์สไตล์ตรงกัน",
+    title: "Chill & Connect Hub | Hub กิจกรรมและคอมมูนิตี้สำหรับคนชอบออกไปใช้ชีวิต",
+    description: "Hub กิจกรรมและคอมมูนิตี้สำหรับคนชอบออกไปใช้ชีวิต ที่เปลี่ยนทุกการไปเที่ยวให้เป็นเรื่องสนุกและต่อยอดมิตรภาพ",
     images: [
       {
         url: "/hero-bg-70.png",
@@ -59,8 +60,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Chill & Connect Hub | ฮับรวมกิจกรรมยามว่าง ฮีลใจ & ชาเลนจ์สนุกๆ",
-    description: "ค้นหากิจกรรมยามว่าง ฮีลใจ ออกกำลังกาย HYROX คืนบอร์ดเกม และเวิร์กช็อป",
+    title: "Chill & Connect Hub | Hub กิจกรรมและคอมมูนิตี้สำหรับคนชอบออกไปใช้ชีวิต",
+    description: "Hub กิจกรรมและคอมมูนิตี้สำหรับคนชอบออกไปใช้ชีวิต ที่เปลี่ยนทุกการไปเที่ยวให้เป็นเรื่องสนุกและต่อยอดมิตรภาพ",
     images: ["/hero-bg-70.png"],
   },
   robots: {

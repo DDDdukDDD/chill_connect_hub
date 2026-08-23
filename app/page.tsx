@@ -591,21 +591,16 @@ export default function Home() {
                   }}
                   className={`w-full flex items-center justify-center gap-2 py-2.5 sm:py-3 px-3 rounded-xl font-black text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-98 ${
                     eventTypeTab === 'public_venue'
-                      ? 'bg-[#1E293B] text-white shadow-md'
+                      ? 'bg-[#2B527A] text-white shadow-md'
                       : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'
                   }`}
                 >
-                  <Building2 className={`w-4 h-4 shrink-0 ${eventTypeTab === 'public_venue' ? 'text-amber-400' : 'text-slate-500'}`} />
+                  <Building2 className={`w-4 h-4 shrink-0 ${eventTypeTab === 'public_venue' ? 'text-sky-300' : 'text-slate-500'}`} />
                   <span className="truncate">อีเวนต์ & งานแฟร์</span>
-                  <span className={`text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-bold ${
-                    eventTypeTab === 'public_venue' ? 'bg-amber-400/20 text-amber-300' : 'bg-slate-300/70 text-slate-700'
-                  }`}>
-                    {eventsList.filter(e => e.eventType === 'public_venue').length}
-                  </span>
                 </button>
                 {/* Instant Floating Tooltip */}
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-60 p-2.5 bg-slate-900/95 text-white text-[11px] font-medium rounded-xl shadow-xl border border-white/10 opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-150 pointer-events-none z-50 leading-relaxed backdrop-blur-md text-center">
-                  <strong className="block text-amber-300 font-extrabold mb-0.5">🏛️ อีเวนต์ & งานแฟร์:</strong>
+                  <strong className="block text-sky-300 font-extrabold mb-0.5">🏛️ อีเวนต์ & งานแฟร์:</strong>
                   งานคอนเสิร์ต มหกรรม นิทรรศการ หรือแมตช์กีฬาจัดโดยผู้จัดทางการ
                   <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95" />
                 </div>
@@ -627,11 +622,6 @@ export default function Home() {
                 >
                   <Users className={`w-4 h-4 shrink-0 ${eventTypeTab === 'community' ? 'text-emerald-200' : 'text-slate-500'}`} />
                   <span className="truncate">กิจกรรมชุมชน</span>
-                  <span className={`text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-bold ${
-                    eventTypeTab === 'community' ? 'bg-emerald-400/20 text-emerald-200' : 'bg-slate-300/70 text-slate-700'
-                  }`}>
-                    {eventsList.filter(e => (e.eventType || 'community') === 'community').length}
-                  </span>
                 </button>
                 {/* Instant Floating Tooltip */}
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-64 p-2.5 bg-slate-900/95 text-white text-[11px] font-medium rounded-xl shadow-xl border border-white/10 opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-150 pointer-events-none z-50 leading-relaxed backdrop-blur-md text-center">
@@ -899,7 +889,8 @@ export default function Home() {
           <Sprout className="w-5 h-5 text-[#4A7C59]" />
           <span>Chill & Connect Hub</span>
         </div>
-        <p>© 2026 Chill & Connect Hub - แชร์โมเมนต์ • พบเพื่อนใหม่ • ชิลล์ได้ทุกวัน. All rights reserved.</p>
+        <p className="font-medium text-slate-600">Hub กิจกรรมและคอมมูนิตี้สำหรับคนชอบออกไปใช้ชีวิต ที่เปลี่ยนทุกการไปเที่ยวให้เป็นเรื่องสนุกและต่อยอดมิตรภาพ</p>
+        <p className="text-[11px] text-slate-400">© 2026 Chill & Connect Hub. All rights reserved.</p>
       </footer>
 
       {/* Event Detail Popup Modal */}

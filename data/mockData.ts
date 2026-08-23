@@ -37,9 +37,9 @@ export interface EventItem {
   eventType?: 'community' | 'public_venue';
   venueTag?: 'qsncc' | 'bitec' | 'impact' | 'marathon' | 'park';
   externalUrl?: string;
-  link?: string;
-  buddyCount?: number;
-  status?: 'active' | 'ended';
+  targetGender?: 'all' | 'female_only' | 'male_only' | string;
+  targetAge?: string;
+  energyLevel?: 'chill' | 'active' | string;
   latitude?: number;
   longitude?: number;
   zone?: string;

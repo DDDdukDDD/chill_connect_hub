@@ -50,10 +50,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <img
               src="/hero-bg-70.png"
               alt="Chill & Connect Hero Background"
-              className="w-full h-full object-cover object-top sm:object-center opacity-30 sm:opacity-90 transition-opacity"
+              className="w-full h-full object-cover object-top sm:object-center opacity-30 md:opacity-40 lg:opacity-85 xl:opacity-90 transition-opacity"
             />
-            {/* Subtle Gradient Veil on Mobile to Prevent Visual Clash */}
-            <div className="absolute inset-0 bg-gradient-to-b from-[#FAF7F2]/80 via-white/60 to-[#FAF7F2]/90 sm:hidden" />
+            {/* Subtle Gradient Veil on Mobile & iPad to Prevent Visual Clash */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#FAF7F2]/85 via-white/75 to-[#FAF7F2]/90 lg:hidden" />
           </div>
 
           {/* Centered Safe Zone for Text & Search Bar - Clean & Natural */}

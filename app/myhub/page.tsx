@@ -243,6 +243,9 @@ export default function MyHubPage() {
   // Selected quest for verify
   const [selectedQuestForVerifyModal, setSelectedQuestForVerifyModal] = useState<ChallengeQuest | null>(null);
 
+  // Sub-activities synced from localStorage
+  const [joinedSubActivities, setJoinedSubActivities] = useState<Record<string, any>>({});
+
   // Seed Joined Events (Expos + Community)
   const [joinedEvents, setJoinedEvents] = useState<EventItem[]>([
     {
@@ -303,7 +306,7 @@ export default function MyHubPage() {
     },
   ]);
 
-  // Sync login status across pages
+  // Sync login status and joined sub-activities across pages
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedLoginState = localStorage.getItem('isLoggedIn');
@@ -311,6 +314,61 @@ export default function MyHubPage() {
         setIsLoggedIn(false);
       } else {
         localStorage.setItem('isLoggedIn', 'true');
+      }
+
+      try {
+        const storedSubs = JSON.parse(localStorage.getItem('joinedSubActivities') || '{}');
+        setJoinedSubActivities(storedSubs);
+
+        const subList = Object.values(storedSubs) as any[];
+        if (subList.length > 0) {
+          setJoinedEvents((prev) => {
+            const existingIds = prev.map((e) => e.id);
+            const newEventsToAdd: EventItem[] = [];
+            for (const sub of subList) {
+              if (!existingIds.includes(sub.eventId)) {
+                newEventsToAdd.push({
+                  id: sub.eventId,
+                  title: sub.eventTitle,
+                  category: 'chill',
+                  tag: 'งานมหกรรม & ชวนเพื่อน',
+                  date: sub.eventDate || '28 มี.ค. 2026',
+                  time: sub.eventTime || '10:00 - 20:00 น.',
+                  location: sub.eventLocation || 'ศูนย์การประชุมแห่งชาติสิริกิติ์',
+                  image: sub.eventImage || 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80',
+                  price: sub.eventPrice || 'เข้าชมฟรี!',
+                  description: `กิจกรรมและกลุ่มชวนเพื่อนที่คุณลงทะเบียนเข้าร่วม: ${sub.subTitle}`,
+                  hostName: sub.creatorName || 'ศูนย์การประชุมแห่งชาติสิริกิติ์',
+                  hostAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
+                  eventType: sub.eventType || 'public_venue',
+                  participantsCount: 4,
+                  maxParticipants: 10,
+                  createdAtTimestamp: Date.now(),
+                });
+              }
+            }
+            return newEventsToAdd.length > 0 ? [...prev, ...newEventsToAdd] : prev;
+          });
+        }
+
+        // Deep-linking: auto open chat if ?chatSubId in URL
+        const params = new URLSearchParams(window.location.search);
+        const chatSubId = params.get('chatSubId');
+        const eventId = params.get('eventId');
+        if (chatSubId && eventId) {
+          setTimeout(() => {
+            setJoinedEvents((currentEvents) => {
+              const matched = currentEvents.find((e) => e.id === eventId);
+              if (matched) {
+                setChatTargetEvent(matched);
+                setIsChatModalOpen(true);
+              }
+              return currentEvents;
+            });
+          }, 350);
+        }
+      } catch (e) {
+        console.log('Error reading joinedSubActivities in MyHub:', e);
       }
     }
   }, []);
@@ -461,6 +519,16 @@ export default function MyHubPage() {
   const handleConfirmCancel = (ticketId: string, reason: string) => {
     if (cancelTargetEvent) {
       setJoinedEvents((prev) => prev.filter((ev) => ev.id !== cancelTargetEvent.id));
+      if (typeof window !== 'undefined') {
+        try {
+          const stored = JSON.parse(localStorage.getItem('joinedSubActivities') || '{}');
+          delete stored[cancelTargetEvent.id];
+          localStorage.setItem('joinedSubActivities', JSON.stringify(stored));
+          setJoinedSubActivities(stored);
+        } catch (e) {
+          console.log(e);
+        }
+      }
       showToast(`✔️ ยกเลิกตั๋ว ${ticketId} สำเร็จ (เหตุผล: ${reason}) ระบบได้คืนที่นั่งให้เพื่อนสมาชิกแล้ว`);
     }
   };
@@ -501,6 +569,7 @@ export default function MyHubPage() {
   const renderEventCard = (event: EventItem, idx: number) => {
     const isPublic = event.eventType === 'public_venue';
     const ticketId = `CCH-2026-${(idx + 89).toString().padStart(4, '0')}`;
+    const subInfo = joinedSubActivities[event.id];
 
     return (
       <div
@@ -576,6 +645,27 @@ export default function MyHubPage() {
                 <span className="truncate" title={event.location}>{event.location}</span>
               </div>
             </div>
+
+            {/* Joined Sub-Activity Group Details in MyHub */}
+            {subInfo && (
+              <div className="bg-amber-50/90 border border-amber-200/90 rounded-xl p-2.5 text-xs text-[#1E293B] space-y-1 mt-1 text-left">
+                <p className="font-bold text-[#4A7C59] flex items-center gap-1.5 min-w-0">
+                  <span>🎯</span>
+                  <span className="truncate">กลุ่มที่คุณเข้าร่วม: <strong>"{subInfo.subTitle}"</strong></span>
+                </p>
+                <div className="text-[11px] text-slate-600 flex items-center gap-1.5 flex-wrap">
+                  <span>จัดโดย <strong className="text-[#1E293B]">{subInfo.creatorName}</strong></span>
+                  <span>•</span>
+                  <span>⏰ {subInfo.subTime}</span>
+                  {subInfo.meetupPoint && (
+                    <>
+                      <span>•</span>
+                      <span className="text-amber-800 font-medium">📍 {subInfo.meetupPoint}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Bottom Action Area: Type Badge (Left) + Actions (Right) */}
@@ -588,30 +678,28 @@ export default function MyHubPage() {
               <span>{isPublic ? '🏛️ อีเวนต์ & งานแฟร์' : '🏡 กิจกรรมชุมชน'}</span>
             </span>
 
-            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 flex-wrap justify-end" onClick={(e) => e.stopPropagation()}>
               {!isPublic && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => handleOpenTicket(event, idx + 89)}
-                    className="bg-[#4A7C59] hover:bg-[#3B6447] text-white px-2.5 py-1 rounded-full text-[11px] font-bold shadow-2xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
-                    title="โชว์ตั๋ว QR Code สำหรับเช็คอิน"
-                  >
-                    <QrCode className="w-3 h-3" />
-                    <span>ตั๋ว QR</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleOpenGroupChat(event)}
-                    className="bg-white hover:bg-slate-50 text-[#1E293B] border border-emerald-300 px-2.5 py-1 rounded-full text-[11px] font-bold shadow-2xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
-                    title="เปิดห้องแชตกลุ่มคุยกับเพื่อนๆ"
-                  >
-                    <MessageCircle className="w-3 h-3 text-emerald-600" />
-                    <span>แชต</span>
-                  </button>
-                </>
+                <button
+                  type="button"
+                  onClick={() => handleOpenTicket(event, idx + 89)}
+                  className="bg-[#4A7C59] hover:bg-[#3B6447] text-white px-2.5 py-1 rounded-full text-[11px] font-bold shadow-2xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
+                  title="โชว์ตั๋ว QR Code สำหรับเช็คอิน"
+                >
+                  <QrCode className="w-3 h-3" />
+                  <span>ตั๋ว QR</span>
+                </button>
               )}
+
+              <button
+                type="button"
+                onClick={() => handleOpenGroupChat(event)}
+                className="bg-white hover:bg-slate-50 text-[#1E293B] border border-emerald-300 px-3 py-1 rounded-full text-[11px] font-bold shadow-2xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
+                title="เปิดห้องแชตคุยกับโฮสต์และเพื่อนๆ ในกลุ่ม"
+              >
+                <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                <span>💬 คุยกับโฮสต์ ({subInfo?.creatorName || event.hostName})</span>
+              </button>
 
               <button
                 type="button"
@@ -1429,7 +1517,8 @@ export default function MyHubPage() {
           <Sprout className="w-5 h-5 text-[#4A7C59]" />
           <span>Chill & Connect Hub</span>
         </div>
-        <p>© 2026 Chill & Connect Hub - แชร์โมเมนต์ • พบเพื่อนใหม่ • ชิลล์ได้ทุกวัน. All rights reserved.</p>
+        <p className="font-medium text-slate-600">Hub กิจกรรมและคอมมูนิตี้สำหรับคนชอบออกไปใช้ชีวิต ที่เปลี่ยนทุกการไปเที่ยวให้เป็นเรื่องสนุกและต่อยอดมิตรภาพ</p>
+        <p className="text-[11px] text-slate-400">© 2026 Chill & Connect Hub. All rights reserved.</p>
       </footer>
 
       {/* Mobile Floating Nav Bar */}

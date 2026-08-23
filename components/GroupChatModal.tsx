@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Send, Users, ShieldCheck, Sparkles, MessageCircle, MapPin, Calendar, Smile } from 'lucide-react';
+import { X, Send, Users, ShieldCheck, Sparkles, MessageCircle, MapPin, Calendar, Smile, Flag, ShieldAlert, Lock, AlertTriangle } from 'lucide-react';
 import { EventItem } from '@/data/mockData';
+import { ReportSafetyModal } from './ReportSafetyModal';
 
 interface ChatMessage {
   id: string;
@@ -27,19 +28,38 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({
 }) => {
   const [inputText, setInputText] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportToast, setReportToast] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Initialize realistic mock messages when opening chat
   useEffect(() => {
     if (event) {
+      let subInfo: any = null;
+      if (typeof window !== 'undefined') {
+        try {
+          const stored = JSON.parse(localStorage.getItem('joinedSubActivities') || '{}');
+          if (stored[event.id]) {
+            subInfo = stored[event.id];
+          }
+        } catch (e) {
+          console.log(e);
+        }
+      }
+
+      const hostDisplayName = subInfo?.creatorName || event.hostName || 'โฮสต์ประจำกิจกรรม';
+      const welcomeText = subInfo
+        ? `ยินดีต้อนรับสู่กลุ่ม "${subInfo.subTitle}" ครับ! 🌿 จุดนัดพบ: ${subInfo.meetupPoint || 'ล็อบบี้หน้างาน'} เวลา ${subInfo.subTime} ใครมาถึงแล้วทักแชทบอกได้เลยครับ 😊`
+        : `ยินดีต้อนรับทุกคนสู่ "${event.title}" ครับ! 🌿 กิจกรรมนี้เป็นกันเองมาก ใครมาคนเดียวไม่ต้องเกร็งน้า มีจุดนัดพบชัดเจนครับ`;
+
       setMessages([
         {
           id: 'msg-1',
-          senderName: event.hostName || 'โฮสต์ประจำกิจกรรม',
+          senderName: hostDisplayName,
           senderAvatar: event.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80',
           isHost: true,
           time: '14:20 น.',
-          text: `ยินดีต้อนรับทุกคนสู่ "${event.title}" ครับ! 🌿 กิจกรรมนี้เป็นกันเองมาก ใครมาคนเดียวไม่ต้องเกร็งน้า มีจุดนัดพบชัดเจนครับ`,
+          text: welcomeText,
         },
         {
           id: 'msg-2',
@@ -116,12 +136,25 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-2"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsReportModalOpen(true)}
+              className="text-[11px] font-bold text-rose-300 hover:text-white bg-rose-950/50 hover:bg-rose-900 border border-rose-700/60 px-2.5 py-1 rounded-full flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+              title="รายงานความไม่ปลอดภัย / พฤติกรรมที่ไม่เหมาะสม"
+            >
+              <Flag className="w-3 h-3" />
+              <span className="hidden sm:inline">รายงาน</span>
+            </button>
+
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+              title="ปิดหน้าต่างแชต"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Member Avatars Strip */}
@@ -148,13 +181,27 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({
             </div>
           </div>
 
-          <span className="text-[10px] font-extrabold bg-[#EBF3ED] text-[#4A7C59] px-2 py-0.5 rounded-full border border-[#4A7C59]/20">
-            🛡️ คอมมูนิตี้ปลอดภัย
+          <span className="text-[10px] font-extrabold bg-[#EBF3ED] text-[#4A7C59] px-2.5 py-0.5 rounded-full border border-[#4A7C59]/20 flex items-center gap-1">
+            <ShieldCheck className="w-3 h-3 text-[#4A7C59]" />
+            <span>คอมมูนิตี้ปลอดภัย</span>
           </span>
         </div>
 
         {/* Message Thread Scroll Area */}
         <div className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-slate-50/50">
+          {/* Pinned Safety Banner */}
+          <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-amber-50 border border-emerald-200/80 rounded-2xl p-2.5 text-[11px] text-slate-700 flex items-start gap-2 shadow-2xs">
+            <ShieldAlert className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+            <div className="min-w-0 space-y-0.5 text-left">
+              <p className="font-bold text-[#1E293B] text-[11px] flex items-center gap-1">
+                <span>🛡️ มาตรการความปลอดภัย (Trust & Safety):</span>
+              </p>
+              <p className="text-[10.5px] text-slate-600 leading-relaxed">
+                โปรดนัดพบในพื้นที่เปิดของงานเสมอ ห้ามโอนเงินหรือให้ข้อมูลส่วนตัวทางการเงินนอกระบบ หากพบพฤติกรรมน่าสงสัยสามารถกด <strong>"รายงาน"</strong> ได้ทันที
+              </p>
+            </div>
+          </div>
+
           {messages.map((msg) => (
             <div
               key={msg.id}
@@ -172,8 +219,9 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({
                 <div className={`flex items-center gap-1.5 text-[10px] ${msg.isMe ? 'justify-end' : 'justify-start'}`}>
                   <span className="font-bold text-slate-700">{msg.senderName}</span>
                   {msg.isHost && (
-                    <span className="bg-emerald-100 text-emerald-800 text-[9px] font-extrabold px-1.5 py-0.2 rounded-md">
-                      โฮสต์
+                    <span className="bg-emerald-100 text-emerald-800 text-[9px] font-extrabold px-1.5 py-0.2 rounded-md flex items-center gap-0.5">
+                      <ShieldCheck className="w-2.5 h-2.5 text-emerald-700" />
+                      <span>โฮสต์ยืนยันตัวตน</span>
                     </span>
                   )}
                   <span className="text-slate-400">{msg.time}</span>
@@ -235,6 +283,14 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({
           </button>
         </form>
       </div>
+
+      {/* Safety Report Modal */}
+      <ReportSafetyModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        targetTitle={event.title}
+        targetHostName={event.hostName}
+      />
     </div>
   );
 };

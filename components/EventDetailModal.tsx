@@ -1,10 +1,9 @@
-'use client';
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { EventItem } from '@/data/mockData';
-import { X, Calendar, MapPin, Users, Heart, Share2, CheckCircle2, ShieldCheck, Clock, ExternalLink, Ticket, AlertCircle, Bell, Navigation2, MessageCircle, Check, Copy } from 'lucide-react';
+import { X, Calendar, MapPin, Users, Heart, Share2, CheckCircle2, ShieldCheck, Clock, ExternalLink, Ticket, AlertCircle, Bell, Navigation2, MessageCircle, Check, Copy, Sparkles, Flag, ShieldAlert, Lock, AlertTriangle } from 'lucide-react';
 import { isEventEnded } from '@/lib/dateUtils';
+import { ReportSafetyModal } from './ReportSafetyModal';
 
 interface EventDetailModalProps {
   event: EventItem | null;
@@ -35,6 +34,15 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   const [showConfirmCancelModal, setShowConfirmCancelModal] = useState(false);
   const [showSubForm, setShowSubForm] = useState(false);
   const [subTitleInput, setSubTitleInput] = useState('');
+  const [subTimeInput, setSubTimeInput] = useState('14:00 น.');
+  const [subMeetupPointInput, setSubMeetupPointInput] = useState('');
+  const [subMaxMembers, setSubMaxMembers] = useState(4);
+  const [subTargetGender, setSubTargetGender] = useState<'all' | 'female_only' | 'male_only'>('all');
+  const [subTargetAge, setSubTargetAge] = useState('ไม่จำกัดอายุ');
+  const [subNoteInput, setSubNoteInput] = useState('');
+  const [hasAcceptedSafetyPledge, setHasAcceptedSafetyPledge] = useState(false);
+  const [safetyError, setSafetyError] = useState<string | null>(null);
+  const [reportModalTarget, setReportModalTarget] = useState<{ title: string; hostName?: string } | null>(null);
   const [expandedSubId, setExpandedSubId] = useState<string | null>(null);
   const [joinedSubIds, setJoinedSubIds] = useState<string[]>([]);
 
@@ -47,6 +55,8 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
       time: '14:00 น.',
       membersCount: '2/4 คน',
       meetupPoint: 'หน้าบูธ B02 โซนสำนักพิมพ์มติชน',
+      targetGender: 'all',
+      targetAge: 'ไม่จำกัดอายุ',
       note: 'มาเดินชิลล์ๆ แลกเปลี่ยนหนังสือน่าอ่านกันครับ ไม่เกร็ง มีแวะพักจิบเครื่องดื่มระหว่างทาง',
     },
     {
@@ -57,9 +67,24 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
       time: '15:30 น.',
       membersCount: '3/5 คน',
       meetupPoint: 'หน้าร้านกาแฟ Slow Bar ชั้น 1',
+      targetGender: 'all',
+      targetAge: '20-35 ปี',
       note: 'นั่งคุยสบายๆ หลังเดินดูงานเสร็จ ใครชอบกาแฟดริปมาแลกเปลี่ยนเมล็ดกาแฟกันได้ครับ',
     },
   ]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && event) {
+      try {
+        const stored = JSON.parse(localStorage.getItem('joinedSubActivities') || '{}');
+        if (stored[event.id]?.subId) {
+          setJoinedSubIds([stored[event.id].subId]);
+        }
+      } catch (e) {
+        console.log('Error reading joinedSubActivities:', e);
+      }
+    }
+  }, [event]);
 
   if (!event) return null;
 
@@ -93,10 +118,54 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
       onRequireLogin();
       return;
     }
+    const target = subActivities.find((s: any) => s.id === subId);
+    if (target && (target.isCreator || target.creatorName?.includes('คุณส้ม'))) {
+      return;
+    }
     if (joinedSubIds.includes(subId)) {
-      setJoinedSubIds(joinedSubIds.filter((id) => id !== subId));
-    } else {
-      setJoinedSubIds([...joinedSubIds, subId]);
+      // 1-Click In-place Cancel
+      const newJoined = joinedSubIds.filter((id) => id !== subId);
+      setJoinedSubIds(newJoined);
+      if (typeof window !== 'undefined') {
+        try {
+          const stored = JSON.parse(localStorage.getItem('joinedSubActivities') || '{}');
+          delete stored[event.id];
+          localStorage.setItem('joinedSubActivities', JSON.stringify(stored));
+        } catch (e) {
+          console.log(e);
+        }
+      }
+    } else if (target) {
+      // Enforce 1-group limit: cannot join another group until previous group is cancelled
+      if (joinedSubIds.length > 0) {
+        return;
+      }
+      setJoinedSubIds([subId]);
+      if (typeof window !== 'undefined') {
+        try {
+          const stored = JSON.parse(localStorage.getItem('joinedSubActivities') || '{}');
+          stored[event.id] = {
+            eventId: event.id,
+            eventTitle: event.title,
+            eventImage: event.image,
+            eventLocation: event.location,
+            eventDate: event.date,
+            eventTime: event.time,
+            eventPrice: event.price || 'เข้าชมฟรี!',
+            eventType: event.eventType || 'public_venue',
+            subId: target.id,
+            subTitle: target.title,
+            creatorName: target.creatorName,
+            subTime: target.time,
+            subDate: target.date || event.date,
+            meetupPoint: target.meetupPoint,
+            note: target.note,
+          };
+          localStorage.setItem('joinedSubActivities', JSON.stringify(stored));
+        } catch (e) {
+          console.log(e);
+        }
+      }
     }
   };
 
@@ -241,7 +310,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             </h2>
           </div>
 
-          {/* Details & Host Row with Clean Google Maps Link */}
+          {/* Location with Clean Google Maps Link */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs bg-slate-50/90 p-3.5 rounded-2xl border border-slate-200/80">
             <div className="flex items-center gap-2">
               <Calendar className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
@@ -271,6 +340,36 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               </a>
             </div>
           </div>
+
+          {/* Participant Criteria & Vibe Badges */}
+          {(event.targetGender || event.targetAge || event.energyLevel || (event.maxParticipants && event.eventType !== 'public_venue')) && (
+            <div className="flex items-center gap-2 flex-wrap text-xs pt-0.5">
+              {event.targetGender && (
+                <span className="px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold border border-slate-200/80 flex items-center gap-1">
+                  <span>{event.targetGender === 'female_only' ? '👩 เฉพาะผู้หญิง' : event.targetGender === 'male_only' ? '👨 เฉพาะผู้ชาย' : '👥 เปิดรับทุกเพศ'}</span>
+                </span>
+              )}
+              {event.targetAge && (
+                <span className="px-3 py-1 rounded-xl bg-amber-50 text-amber-800 font-bold border border-amber-200/80 flex items-center gap-1">
+                  <span>🎂 {event.targetAge}</span>
+                </span>
+              )}
+              {event.energyLevel && (
+                <span className={`px-3 py-1 rounded-xl font-bold border flex items-center gap-1 ${
+                  event.energyLevel === 'active'
+                    ? 'bg-orange-50 text-orange-800 border-orange-200'
+                    : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                }`}>
+                  <span>{event.energyLevel === 'active' ? '🔥 สายลุย / Active' : '🌿 ชิลล์ / สโลว์ไลฟ์'}</span>
+                </span>
+              )}
+              {event.maxParticipants > 0 && event.eventType !== 'public_venue' && (
+                <span className="px-3 py-1 rounded-xl bg-sky-50 text-sky-800 font-bold border border-sky-200 flex items-center gap-1">
+                  <span>👥 รับสูงสุด {event.maxParticipants} คน</span>
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Description */}
           <div className="space-y-1 pt-1">
@@ -400,12 +499,12 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
           {/* Public Venue Sub-Activities & Buddy Matcher (Below Description - Hide if Event has Ended) */}
           {isPublicVenue && !isEnded && (
-            <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200 space-y-2.5 shadow-2xs">
+            <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200 space-y-3 shadow-2xs">
               <div className="flex items-center justify-between gap-2">
                 <div className="space-y-0.5 min-w-0">
                   <h4 className="font-extrabold text-xs sm:text-sm text-[#1E293B] flex items-center gap-1.5 truncate">
                     <Users className="w-4 h-4 text-[#F26430] shrink-0" />
-                    <span>ชวนเพื่อนทำกิจกรรม ({subActivities.length})</span>
+                    <span>ชวนเพื่อนทำกิจกรรมในงาน ({subActivities.length})</span>
                   </h4>
                   <p className="text-[10px] sm:text-[11px] text-[#64748B] truncate">
                     หาเพื่อนร่วมเดินดูงาน หรือสร้างนัดหมายกลุ่มย่อยของคุณ
@@ -415,118 +514,388 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowSubForm(!showSubForm)}
-                  className="bg-[#4A7C59] hover:bg-[#3B6447] text-white text-xs font-bold px-3.5 py-1.5 rounded-full shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer flex items-center gap-1"
+                  className={`text-xs font-bold px-3.5 py-1.5 rounded-full shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer flex items-center gap-1 ${
+                    showSubForm
+                      ? 'bg-slate-200 hover:bg-slate-300 text-slate-700'
+                      : 'bg-[#4A7C59] hover:bg-[#3B6447] text-white'
+                  }`}
                 >
-                  <span>{showSubForm ? '✕ ปิด' : '➕ สร้างกิจกรรม'}</span>
+                  <span>{showSubForm ? '✕ ปิดฟอร์ม' : '➕ ชวนเพื่อนในงาน'}</span>
                 </button>
               </div>
 
-              {/* Form to create sub-activity */}
+              {/* 🏆 Option 1: Inline Expandable Sub-Activity Creation Form (No Nested Popups!) */}
               {showSubForm && (
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
+                    setSafetyError(null);
                     if (!subTitleInput.trim()) return;
+
+                    // Safety Moderation Filter: Check for forbidden words
+                    const SENSITIVE_KEYWORDS = [
+                      'ลงทุน', 'forex', 'crypto', 'คริปโต', 'ลูกโซ่', 'ขายตรง', 'mlm', 'งานออนไลน์',
+                      'รายได้เสริม', 'การพนัน', 'คาสิโน', 'ยืมเงิน', 'กู้เงิน', '18+', 'เสียว', 'นวดแฝง'
+                    ];
+                    const allText = `${subTitleInput} ${subMeetupPointInput} ${subNoteInput}`.toLowerCase();
+                    const violated = SENSITIVE_KEYWORDS.find((kw) => allText.includes(kw));
+
+                    if (violated) {
+                      setSafetyError(`⚠️ ระบบตรวจพบคำว่า "${violated}" ซึ่งขัดต่อแนวทางความปลอดภัยของคอมมูนิตี้ (ห้ามชวนลงทุน/ขายตรง/การพนัน/คุกคาม) กรุณาแก้ไขข้อความครับ`);
+                      return;
+                    }
+
+                    if (!hasAcceptedSafetyPledge) {
+                      setSafetyError('⚠️ กรุณากดติ๊กยอมรับข้อตกลงความปลอดภัยของคอมมูนิตี้ก่อนสร้างกลุ่มครับ');
+                      return;
+                    }
+
                     setSubActivities([
                       {
                         id: `sub-${Date.now()}`,
                         title: subTitleInput.trim(),
                         creatorName: 'คุณส้ม (Som_Chill)',
+                        isCreator: true,
                         date: event.date,
-                        time: '14:00 น.',
-                        membersCount: '1/4 คน',
-                        meetupPoint: 'จุดนัดพบ: ล็อบบี้ทางเข้าหน้างาน',
-                        note: 'ชวนเดินชิลล์ๆ พูดคุยและทำความรู้จักเพื่อนใหม่ครับ',
+                        time: subTimeInput.trim() || '14:00 น.',
+                        membersCount: `1/${subMaxMembers} คน`,
+                        meetupPoint: subMeetupPointInput.trim() || 'จุดนัดพบ: ล็อบบี้ทางเข้าหน้างาน',
+                        targetGender: subTargetGender,
+                        targetAge: subTargetAge.trim() || 'ไม่จำกัดอายุ',
+                        note: subNoteInput.trim() || 'ชวนเดินชิลล์ๆ พูดคุยและทำความรู้จักเพื่อนใหม่ครับ',
                       },
                       ...subActivities,
                     ]);
                     setSubTitleInput('');
+                    setSubMeetupPointInput('');
+                    setSubNoteInput('');
+                    setHasAcceptedSafetyPledge(false);
                     setShowSubForm(false);
                   }}
-                  className="p-3 bg-white rounded-xl border border-amber-200 space-y-2 animate-fade-in"
+                  className="p-3.5 sm:p-4 bg-white rounded-2xl border border-amber-300/80 shadow-md space-y-3 animate-scale-up text-left"
                 >
-                  <label className="text-[11px] font-bold text-[#1E293B]">ตั้งชวนกิจกรรมย่อยภายในงาน:</label>
-                  <input
-                    type="text"
-                    value={subTitleInput}
-                    onChange={(e) => setSubTitleInput(e.target.value)}
-                    placeholder="เช่น ชวนเดินดูโซนนิยายแปล 14:00 น. หรือ จิบกาแฟโซนดริป"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-[#1E293B] focus:outline-none focus:border-[#F26430]"
-                    required
-                  />
-                  <div className="flex justify-end">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <h5 className="text-xs font-extrabold text-[#1E293B] flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-[#F26430]" />
+                      <span>ตั้งกลุ่มชวนเพื่อนเดินงานนี้</span>
+                    </h5>
+                    <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                      นัดกลุ่มย่อย
+                    </span>
+                  </div>
+
+                  {/* Public Meetup Safety Notice Box */}
+                  <div className="bg-amber-50/90 border border-amber-200/90 rounded-xl p-2.5 text-[11px] text-amber-900 flex items-start gap-2">
+                    <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                    <span className="leading-relaxed">
+                      <strong>มาตรการความปลอดภัย:</strong> จุดนัดพบต้องอยู่ในพื้นที่เปิดของงานที่มีผู้คนสัญจร (เช่น หน้าบูธประชาสัมพันธ์, หน้าร้านกาแฟ) ไม่อนุญาตให้นัดพบในสถานที่ลับตาคน
+                    </span>
+                  </div>
+
+                  {/* Safety Error Alert */}
+                  {safetyError && (
+                    <div className="bg-rose-50 border border-rose-200 text-rose-700 p-2.5 rounded-xl text-xs flex items-start gap-1.5 animate-shake leading-relaxed font-semibold">
+                      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
+                      <span>{safetyError}</span>
+                    </div>
+                  )}
+
+                  {/* Field 1: Title */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-[#1E293B] flex items-center gap-1">
+                      <span>หัวข้อชวนเพื่อน / กิจกรรมที่จะทำ:</span>
+                      <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={subTitleInput}
+                      onChange={(e) => {
+                        setSubTitleInput(e.target.value);
+                        if (safetyError) setSafetyError(null);
+                      }}
+                      placeholder="เช่น ชวนเดินดูโซนนิยายแปล 14:00 น., แวะจิบกาแฟดริปพูดคุย"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-[#1E293B] focus:outline-none focus:border-[#4A7C59]"
+                      required
+                    />
+                  </div>
+
+                  {/* Field 2: Time & Meetup Spot */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-[#1E293B]">เวลานัดพบ:</label>
+                      <input
+                        type="text"
+                        value={subTimeInput}
+                        onChange={(e) => setSubTimeInput(e.target.value)}
+                        placeholder="เช่น 14:00 น. หรือ 15:30 น."
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-[#1E293B] focus:outline-none focus:border-[#4A7C59]"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-[#1E293B]">จุดนัดพบในงาน (พื้นที่เปิด):</label>
+                      <input
+                        type="text"
+                        value={subMeetupPointInput}
+                        onChange={(e) => setSubMeetupPointInput(e.target.value)}
+                        placeholder="เช่น หน้าร้านกาแฟ Slow Bar ชั้น 1"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-[#1E293B] focus:outline-none focus:border-[#4A7C59]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Field 3: Participants & Gender Preference */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-0.5">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-[#1E293B]">จำนวนรับ (คน):</label>
+                      <select
+                        value={subMaxMembers}
+                        onChange={(e) => setSubMaxMembers(Number(e.target.value))}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-[#1E293B] focus:outline-none focus:border-[#4A7C59]"
+                      >
+                        <option value={2}>👥 2 คน (เดินคู่สบายๆ)</option>
+                        <option value={3}>👥 3 คน</option>
+                        <option value={4}>👥 4 คน (แนะนำกลุ่มเล็ก)</option>
+                        <option value={6}>👥 6 คน</option>
+                        <option value={8}>👥 8 คน</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-[#1E293B]">เพศที่เปิดรับ:</label>
+                      <select
+                        value={subTargetGender}
+                        onChange={(e) => setSubTargetGender(e.target.value as any)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-[#1E293B] focus:outline-none focus:border-[#4A7C59]"
+                      >
+                        <option value="all">👥 ทุกเพศ (All Genders)</option>
+                        <option value="female_only">👩 เฉพาะผู้หญิง (Women Only Safe Zone)</option>
+                        <option value="male_only">👨 เฉพาะผู้ชาย (Men Only)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Field 4: Custom Age Range & Quick Chips */}
+                  <div className="space-y-1 pt-0.5">
+                    <label className="text-[11px] font-bold text-[#1E293B] flex items-center justify-between">
+                      <span>ช่วงอายุ (กำหนดเองได้อิสระ):</span>
+                      <span className="text-[10px] text-slate-500 font-normal">พิมพ์ระบุเองได้</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={subTargetAge}
+                      onChange={(e) => setSubTargetAge(e.target.value)}
+                      placeholder="เช่น 20-35 ปี, วัยทำงาน, ไม่จำกัดอายุ"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-[#1E293B] focus:outline-none focus:border-[#4A7C59]"
+                    />
+                    <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                      {['ไม่จำกัดอายุ', '18 - 25 ปี', '20 - 35 ปี', '25 - 40 ปี'].map((sug) => (
+                        <button
+                          key={sug}
+                          type="button"
+                          onClick={() => setSubTargetAge(sug)}
+                          className={`text-[9px] px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
+                            subTargetAge === sug
+                              ? 'bg-[#4A7C59] text-white border-[#4A7C59] font-bold'
+                              : 'bg-slate-100 text-slate-600 border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          {sug}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Field 5: Note / Message */}
+                  <div className="space-y-1 pt-0.5">
+                    <label className="text-[11px] font-bold text-[#1E293B]">ข้อความชวนเพื่อนสั้นๆ:</label>
+                    <input
+                      type="text"
+                      value={subNoteInput}
+                      onChange={(e) => {
+                        setSubNoteInput(e.target.value);
+                        if (safetyError) setSafetyError(null);
+                      }}
+                      placeholder="เช่น ชวนเดินชิลล์ๆ ไม่ต้องเกร็งนะ แวะพักกินของอร่อยกัน"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-[#1E293B] focus:outline-none focus:border-[#4A7C59]"
+                    />
+                  </div>
+
+                  {/* Safety Pledge Checkbox */}
+                  <label className="flex items-start gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-700 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={hasAcceptedSafetyPledge}
+                      onChange={(e) => {
+                        setHasAcceptedSafetyPledge(e.target.checked);
+                        if (safetyError) setSafetyError(null);
+                      }}
+                      className="mt-0.5 rounded text-[#4A7C59] focus:ring-[#4A7C59] cursor-pointer"
+                      required
+                    />
+                    <span className="leading-tight">
+                      ข้าพเจ้ายืนยันว่าจะไม่ใช้กลุ่มนี้ในการชักชวนลงทุน/ขายตรง/การพนัน หรือแสวงหาประโยชน์ส่วนตัวอันไม่เหมาะสม และจะนัดพบในพื้นที่เปิดของงานเท่านั้น 🛡️
+                    </span>
+                  </label>
+
+                  {/* Submit & Cancel Buttons */}
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setShowSubForm(false)}
+                      className="px-3.5 py-1.5 rounded-full text-xs font-bold text-[#64748B] hover:bg-slate-100 transition-colors cursor-pointer"
+                    >
+                      ยกเลิก
+                    </button>
                     <button
                       type="submit"
-                      className="bg-[#F26430] hover:bg-[#D95322] text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-xs cursor-pointer"
+                      className="bg-[#4A7C59] hover:bg-[#3B6447] text-white text-xs font-bold px-5 py-2 rounded-full shadow-md transition-all active:scale-95 cursor-pointer"
                     >
-                      ยืนยันสร้างกิจกรรมย่อย
+                      <span>ยืนยันสร้างกลุ่มชวนเพื่อน</span>
                     </button>
                   </div>
                 </form>
               )}
 
-              {/* List of sub-activities with expandable details */}
-              <div className="space-y-1.5 pt-0.5">
+              {/* List of sub-activities with expandable details & badges */}
+              <div className="space-y-2 pt-0.5">
                 {subActivities.map((sub: any) => {
                   const isSubJoined = joinedSubIds.includes(sub.id);
                   const isExpanded = expandedSubId === sub.id;
+                  const isCreator = sub.isCreator || sub.creatorName === 'คุณส้ม (Som_Chill)' || sub.creatorName?.includes('คุณส้ม');
 
                   return (
                     <div
                       key={sub.id}
-                      className="bg-white rounded-xl border border-amber-200/80 overflow-hidden shadow-2xs transition-all"
+                      className={`bg-white rounded-xl overflow-hidden shadow-2xs transition-all border ${
+                        isSubJoined
+                          ? 'border-emerald-400 ring-2 ring-emerald-400/20'
+                          : 'border-amber-200/80 hover:border-amber-300'
+                      }`}
                     >
                       {/* Sub-activity Header Bar with Date before Time */}
                       <div 
                         onClick={() => setExpandedSubId(isExpanded ? null : sub.id)}
-                        className="p-2.5 sm:p-3 flex items-center justify-between gap-2 cursor-pointer hover:bg-amber-50/40 transition-colors"
+                        className="p-2.5 sm:p-3 space-y-2 cursor-pointer hover:bg-amber-50/40 transition-colors"
                       >
-                        <div className="space-y-0.5 min-w-0 flex-1">
-                          <p className="text-xs font-bold text-[#1E293B] truncate flex items-center gap-1">
+                        {/* Row 1: Full-width Title + Expand Icon & Report Button */}
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-xs sm:text-sm font-bold text-[#1E293B] leading-snug flex items-center gap-1 flex-1">
                             <span>🎯 {sub.title}</span>
                           </p>
-                          <p className="text-[10px] sm:text-[11px] text-[#64748B] flex items-center gap-1.5 flex-wrap">
-                            <span>จัดโดย <strong className="text-[#1E293B]">{sub.creatorName}</strong></span>
-                            <span>•</span>
-                            <span className="text-[#4A7C59] font-medium">📅 {sub.date || event.date}</span>
-                            <span>•</span>
-                            <span className="text-slate-600 font-medium">⏰ {sub.time}</span>
-                            <span>•</span>
-                            <span className="text-amber-700 font-bold">({sub.membersCount})</span>
-                          </p>
+                          <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setReportModalTarget({ title: sub.title, hostName: sub.creatorName });
+                              }}
+                              className="text-[10px] text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1 rounded-md transition-colors cursor-pointer"
+                              title="รายงานความไม่ปลอดภัยของกลุ่มนี้"
+                            >
+                              <Flag className="w-3 h-3" />
+                            </button>
+                            <span className="text-xs text-slate-400 select-none">
+                              {isExpanded ? '▲' : '▼'}
+                            </span>
+                          </div>
                         </div>
 
-                        <div className="flex items-center gap-2 shrink-0">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleJoinSubActivity(sub.id);
-                            }}
-                            className={`text-[10px] sm:text-[11px] font-bold px-3 py-1 rounded-full border transition-all active:scale-95 cursor-pointer ${
-                              isSubJoined
-                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                                : 'bg-[#4A7C59] hover:bg-[#3B6447] text-white border-[#4A7C59] shadow-xs'
-                            }`}
-                          >
-                            {isSubJoined ? '🟢 เข้าร่วมแล้ว' : 'เข้าร่วม'}
-                          </button>
-
-                          <span className="text-xs text-slate-400">
-                            {isExpanded ? '▲' : '▼'}
+                        {/* Row 2: Host, Date, Time & Members Count */}
+                        <div className="flex items-center gap-1.5 flex-wrap text-[10px] sm:text-[11px] text-[#64748B]">
+                          <span className="flex items-center gap-1">
+                            <span>จัดโดย <strong className="text-[#1E293B]">{sub.creatorName}</strong></span>
+                            <span className="inline-flex items-center gap-0.5 text-[9px] font-extrabold px-1.5 py-0.2 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <ShieldCheck className="w-2.5 h-2.5 text-emerald-600" />
+                              <span>ยืนยันตัวตน</span>
+                            </span>
                           </span>
+                          <span>•</span>
+                          <span className="text-[#4A7C59] font-medium">📅 {sub.date || event.date}</span>
+                          <span>•</span>
+                          <span className="text-slate-600 font-medium">⏰ {sub.time}</span>
+                          <span>•</span>
+                          <span className="text-amber-700 font-bold">({sub.membersCount})</span>
+                        </div>
+
+                        {/* Row 3: Criteria Badges (Left) & Action Buttons (Right) */}
+                        <div className="flex items-center justify-between gap-2 pt-1 border-t border-amber-100/60 flex-wrap">
+                          {/* Left: Criteria Badges */}
+                          <div className="flex items-center gap-1 flex-wrap">
+                            {sub.targetGender && (
+                              <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                                {sub.targetGender === 'female_only' ? '👩 เฉพาะผู้หญิง' : sub.targetGender === 'male_only' ? '👨 เฉพาะผู้ชาย' : '👥 ทุกเพศ'}
+                              </span>
+                            )}
+                            {sub.targetAge && sub.targetAge !== 'ไม่จำกัดอายุ' && (
+                              <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
+                                🎂 {sub.targetAge}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Right: Action Buttons */}
+                          <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+                            {isCreator ? (
+                              <span className="text-[10px] sm:text-[11px] font-bold px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs select-none">
+                                คุณเป็นผู้สร้าง
+                              </span>
+                            ) : isSubJoined ? (
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleJoinSubActivity(sub.id);
+                                  }}
+                                  className="text-[10px] sm:text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-600 hover:bg-rose-600 text-white transition-all shadow-xs cursor-pointer active:scale-95 group/btn"
+                                  title="คลิกอีกครั้งเพื่อยกเลิกการเข้าร่วม"
+                                >
+                                  <span className="group-hover/btn:hidden">🟢 เข้าร่วมแล้ว</span>
+                                  <span className="hidden group-hover/btn:inline">✕ กดยกเลิก</span>
+                                </button>
+                                <Link
+                                  href={`/myhub?chatSubId=${sub.id}&eventId=${event.id}`}
+                                  onClick={onClose}
+                                  className="text-[10px] sm:text-[11px] font-extrabold px-3 py-1 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 transition-all shrink-0 flex items-center gap-1 shadow-2xs"
+                                  title="เปิดห้องแชตคุยกับโฮสต์และเพื่อนๆ ที่หน้ามายฮับ"
+                                >
+                                  <span>💬 คุยกับโฮสต์ ➔</span>
+                                </Link>
+                              </div>
+                            ) : joinedSubIds.length > 0 ? (
+                              <button
+                                type="button"
+                                disabled
+                                className="text-[10px] sm:text-[11px] font-bold px-3 py-1 rounded-full border bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60 flex items-center gap-1 select-none"
+                                title="คุณเข้าร่วมกลุ่มอื่นในงานนี้อยู่แล้ว กรุณายกเลิกกลุ่มเดิมก่อนเข้าร่วมกลุ่มใหม่"
+                              >
+                                เข้าร่วม
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleJoinSubActivity(sub.id);
+                                }}
+                                className="text-[10px] sm:text-[11px] font-bold px-3.5 py-1 rounded-full border bg-[#4A7C59] hover:bg-[#3B6447] text-white border-[#4A7C59] shadow-xs transition-all active:scale-95 cursor-pointer"
+                              >
+                                เข้าร่วม
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
 
                       {/* Expandable Details Body */}
                       {isExpanded && (
-                        <div className="p-3 bg-amber-50/40 border-t border-amber-100 space-y-2 text-xs text-[#475569] animate-fade-in">
-                          <div className="space-y-1">
-                            <p className="font-bold text-[#1E293B] flex items-center gap-1">
-                              <MapPin className="w-3.5 h-3.5 text-[#F26430]" />
+                        <div className="p-3 bg-amber-50/40 border-t border-amber-100 space-y-2 text-xs text-[#475569] animate-fade-in text-left">
+                          <div className="space-y-1.5">
+                            <p className="font-bold text-[#1E293B] flex items-center gap-1.5">
+                              <MapPin className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
                               <span>{sub.meetupPoint || 'จุดนัดพบ: ล็อบบี้ทางเข้าหน้างาน'}</span>
                             </p>
-                            <p className="text-[11px] text-slate-600 bg-white p-2 rounded-lg border border-amber-200/50">
+                            <p className="text-[11px] text-slate-600 bg-white p-2.5 rounded-xl border border-amber-200/50 leading-relaxed">
                               💬 โน้ตจากโฮสต์: {sub.note || 'ยินดีต้อนรับทุกคนครับ มาเดินทำกิจกรรมด้วยกันสบายๆ'}
                             </p>
                           </div>
@@ -663,28 +1032,31 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
       </div>
 
-      {/* POPUP 1: Double Confirm Join Modal (ป้องกันการกดผิด) */}
+      {/* POPUP 1: Double Confirm Join Modal (สำหรับกิจกรรมหลัก) */}
       {showConfirmJoinModal && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fade-in">
           <div 
             className="bg-white rounded-3xl p-5 sm:p-6 max-w-sm w-full shadow-2xl border border-[#E8E2D8] text-center space-y-4 animate-scale-up"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="w-12 h-12 rounded-full bg-orange-100 text-[#F26430] flex items-center justify-center mx-auto">
-              <Calendar className="w-6 h-6" />
-            </div>
-
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <h3 className="font-extrabold text-base sm:text-lg text-[#1E293B]">
                 {isPublicVenue ? 'ยืนยันบันทึกลงตารางนัด?' : 'ยืนยันการเข้าร่วมกิจกรรม?'}
               </h3>
-              <p className="text-xs text-slate-600 font-medium">
-                คุณกำลังจะลงทะเบียนเข้าร่วม: <br />
-                <strong className="text-[#1E293B]">{event.title}</strong>
+              <p className="text-xs sm:text-sm font-extrabold text-[#1E293B] leading-snug px-1">
+                {event.title}
               </p>
-              <p className="text-[11px] text-slate-500 bg-slate-50 p-2 rounded-xl border border-slate-100">
-                📅 {event.date} • ⏰ {event.time}
-              </p>
+              <div className="text-[11px] text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-left space-y-0.5">
+                <p>📅 วันที่: <strong>{event.date}</strong></p>
+                <p>⏰ เวลา: <strong>{event.time}</strong></p>
+                <p>📍 สถานที่: <strong>{event.location}</strong></p>
+              </div>
+
+              {/* Notice that item will be saved in MyHub */}
+              <div className="bg-emerald-50 p-2.5 rounded-xl border border-emerald-200/80 text-[11px] text-emerald-800 font-semibold text-left flex items-start gap-1.5 leading-relaxed">
+                <span className="shrink-0">📌</span>
+                <span>รายการที่เข้าร่วมจะถูกบันทึกไปยังหน้า <strong>มายฮับ (MyHub)</strong> โดยอัตโนมัติ</span>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-2 pt-1">
@@ -700,7 +1072,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                 onClick={handleExecuteJoin}
                 className="w-full py-2.5 rounded-full bg-[#F26430] hover:bg-[#D95322] text-white text-xs font-bold shadow-md shadow-[#F26430]/25 active:scale-95 cursor-pointer"
               >
-                ยืนยันเข้าร่วม 🎉
+                ยืนยันเข้าร่วม
               </button>
             </div>
           </div>
@@ -714,10 +1086,6 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             className="bg-white rounded-3xl p-5 sm:p-6 max-w-sm w-full shadow-2xl border border-rose-200 text-center space-y-4 animate-scale-up"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
-              <AlertCircle className="w-6 h-6" />
-            </div>
-
             <div className="space-y-1.5">
               <h3 className="font-extrabold text-base sm:text-lg text-[#1E293B]">
                 ยืนยันยกเลิกการเข้าร่วม?
@@ -747,6 +1115,18 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
         </div>
       )}
 
+      {/* Safety Report Modal */}
+      {reportModalTarget && (
+        <ReportSafetyModal
+          isOpen={!!reportModalTarget}
+          onClose={() => setReportModalTarget(null)}
+          targetTitle={reportModalTarget.title}
+          targetHostName={reportModalTarget.hostName}
+        />
+      )}
+
     </div>
   );
 };
+
+export default EventDetailModal;
