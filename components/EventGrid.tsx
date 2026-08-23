@@ -87,8 +87,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                     : 'border border-[#E8E2D8] shadow-xs hover:shadow-lg'
                 }`}
               >
-                {/* Image Container (Compact on Desktop, Balanced on Tablet & Mobile) */}
-                <div className="relative aspect-video sm:aspect-video lg:h-32 xl:h-34 2xl:h-36 w-full overflow-hidden bg-slate-100 shrink-0">
+                <div className="relative aspect-video w-full overflow-hidden bg-slate-100 shrink-0">
                   <img
                     src={event.image}
                     alt={event.title}
@@ -96,27 +95,25 @@ export const EventGrid: React.FC<EventGridProps> = ({
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
 
-                  {/* Hover Hint Overlay */}
                   <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none z-10">
                     <span className={`text-[11px] font-extrabold px-2.5 py-1 rounded-full shadow-lg border flex items-center gap-1 ${
                       isJoined ? 'bg-[#4A7C59] text-white border-white/40' : 'bg-white/95 text-[#1E293B] border-white/50'
                     }`}>
-                      {isJoined ? '🎟️ คุณเข้าร่วมแล้ว (ดูตั๋ว)' : '🔍 คลิกดูรายละเอียด'}
+                      {isJoined ? (event.eventType === 'public_venue' ? 'บันทึกนัดแล้ว' : 'เข้าร่วมแล้ว') : 'ดูรายละเอียด'}
                     </span>
                   </div>
 
-                  {/* Floating Favorite Heart Icon (Only for active events) */}
                   {!isEnded && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleFavorite(event.id);
                       }}
-                      className="absolute top-2 right-2 w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-[#F26430] hover:scale-110 active:scale-95 transition-all z-10"
+                      className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-[#F26430] hover:scale-110 active:scale-95 transition-all z-10"
                       title={isFav ? 'ยกเลิกถูกใจ' : 'บันทึกกิจกรรม'}
                     >
                       <Heart
-                        className={`w-3.5 h-3.5 transition-colors ${
+                        className={`w-4 h-4 transition-colors ${
                           isFav ? 'fill-[#F26430] text-[#F26430]' : 'text-[#64748B]'
                         }`}
                       />
@@ -124,10 +121,8 @@ export const EventGrid: React.FC<EventGridProps> = ({
                   )}
                 </div>
 
-                {/* Card Content Body */}
                 <div className="p-3 sm:p-3.5 flex flex-col justify-between flex-1 gap-2">
                   <div className="space-y-1.5">
-                    
                     {/* Top Row: Host Info (Left) + Clean Price Chip (Right) */}
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5 min-w-0">
@@ -247,7 +242,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                         className="px-3 sm:px-3.5 py-1.5 rounded-full font-bold text-[11px] sm:text-xs bg-slate-100 hover:bg-slate-200 text-slate-500 border border-slate-200/80 flex items-center justify-center gap-1 shrink-0 cursor-pointer transition-colors"
                         title="คลิกเพื่อดูรายละเอียดและรีวิวกิจกรรม"
                       >
-                        <span>🏁 สิ้นสุดแล้ว</span>
+                        <span>สิ้นสุดแล้ว</span>
                       </span>
                     ) : (
                       <button
@@ -260,7 +255,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                       >
                         <span>
                           {isJoined
-                            ? '✔️ เข้าร่วมแล้ว'
+                            ? (event.eventType === 'public_venue' ? 'บันทึกนัดแล้ว' : 'เข้าร่วมแล้ว')
                             : event.eventType === 'public_venue'
                             ? 'ดูรายละเอียด'
                             : 'เข้าร่วม'}

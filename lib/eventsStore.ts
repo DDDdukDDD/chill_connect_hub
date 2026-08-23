@@ -3,6 +3,7 @@ import { processRawEventWithAI } from './aiTagger';
 import { fetchLiveRawEvents, REAL_BANGKOK_EVENT_SEEDS } from './eventScraper';
 import { isDuplicateEvent } from './deduplication';
 import { readDatabase, writeDatabase } from './db';
+import { updateSourceScrapedTime } from './sourcesStore';
 
 export interface AdminEventItem extends EventItem {
   approvalStatus: 'pending' | 'approved' | 'rejected';
@@ -14,17 +15,28 @@ export interface AdminEventItem extends EventItem {
 let MEMORY_CACHE: AdminEventItem[] | null = null;
 let AUTO_PUBLISH_ENABLED: boolean = false;
 
-// Ensure database is loaded into cache and auto-enrich direct event URLs
+// Helper: Get all protected core community events from mockData
+export function getCoreCommunityEvents(): AdminEventItem[] {
+  return MOCK_EVENTS.map((ev) => ({
+    ...ev,
+    eventType: ev.eventType || (ev.id.startsWith('comm-') ? 'community' : 'public_venue'),
+    approvalStatus: 'approved' as const,
+    source: ev.id.startsWith('comm-') ? 'Chill & Connect Community' : 'Chill & Connect Official',
+  }));
+}
+
+// Ensure database is loaded into cache and auto-enrich direct event URLs & community events
 export async function loadCache(): Promise<AdminEventItem[]> {
-  if (MEMORY_CACHE !== null && MEMORY_CACHE.length > 0) {
-    return MEMORY_CACHE;
-  }
   const db = await readDatabase();
   AUTO_PUBLISH_ENABLED = db.autoPublish;
 
-  // Auto-enrich any existing events with updated direct official event URLs
+  const coreCommunityEvents = getCoreCommunityEvents();
+  const dbEvents = Array.isArray(db.events) ? db.events : [];
+  const existingIds = new Set(dbEvents.map((e) => e.id));
+
+  // 1. Auto-enrich any existing events with updated direct official event URLs
   let hasUpdated = false;
-  const enriched = db.events.map((ev) => {
+  const enriched = dbEvents.map((ev) => {
     const seed = REAL_BANGKOK_EVENT_SEEDS.find(
       (s) => s.rawTitle === ev.title || ev.title.includes(s.rawTitle) || s.rawTitle.includes(ev.title)
     );
@@ -56,46 +68,32 @@ export async function loadCache(): Promise<AdminEventItem[]> {
       }
     }
     if (ev.id?.startsWith('comm-') || ev.source === 'Chill & Connect Official' || ev.source === 'Chill & Connect Community') {
-      if (ev.eventType !== 'community') {
+      if (ev.eventType !== 'community' || ev.approvalStatus !== 'approved') {
         hasUpdated = true;
         ev = {
           ...ev,
           eventType: 'community',
+          approvalStatus: 'approved',
           source: 'Chill & Connect Community',
-        };
-      }
-    } else if (ev.source && !ev.id?.startsWith('custom-ev-')) {
-      if (ev.eventType !== 'public_venue') {
-        hasUpdated = true;
-        ev = {
-          ...ev,
-          eventType: 'public_venue',
         };
       }
     }
     return ev;
   });
 
-  // Ensure all 20 community mock events exist in database
-  const communitySeeds = MOCK_EVENTS.filter((m) => m.eventType === 'community' || m.id?.startsWith('comm-'));
-  const existingIds = new Set(enriched.map((e) => e.id));
+  // 2. Ensure ALL core community events ALWAYS exist in database and are approved
   const missingCommunityEvents: AdminEventItem[] = [];
-
-  for (const cSeed of communitySeeds) {
-    if (!existingIds.has(cSeed.id)) {
-      missingCommunityEvents.push({
-        ...cSeed,
-        eventType: 'community',
-        approvalStatus: 'approved',
-        source: 'Chill & Connect Community',
-      });
+  for (const cEvent of coreCommunityEvents) {
+    if (!existingIds.has(cEvent.id)) {
+      missingCommunityEvents.push(cEvent);
       hasUpdated = true;
     }
   }
 
   const finalEvents = [...missingCommunityEvents, ...enriched];
   MEMORY_CACHE = finalEvents;
-  if (hasUpdated) {
+
+  if (hasUpdated || dbEvents.length === 0) {
     db.events = finalEvents;
     await writeDatabase(db);
   }
@@ -107,11 +105,7 @@ export function getAllAdminEvents(): AdminEventItem[] {
   if (MEMORY_CACHE && MEMORY_CACHE.length > 0) {
     return MEMORY_CACHE;
   }
-  return MOCK_EVENTS.map((ev) => ({
-    ...ev,
-    approvalStatus: 'approved' as const,
-    source: 'Chill & Connect Official',
-  }));
+  return getCoreCommunityEvents();
 }
 
 export function getApprovedPublicEvents(): EventItem[] {
@@ -129,8 +123,6 @@ export async function setAutoPublish(enabled: boolean) {
 export function isAutoPublishEnabled(): boolean {
   return AUTO_PUBLISH_ENABLED;
 }
-
-import { updateSourceScrapedTime } from './sourcesStore';
 
 export async function runScraperAndAIEngine(targetSource?: string): Promise<{
   newCount: number;
@@ -220,20 +212,24 @@ export async function runScraperAndAIEngine(targetSource?: string): Promise<{
   };
 }
 
+// Reset and seed database with BOTH Core Community Events AND Fresh Scraped Bangkok Events
 export async function resetAndSeedAllEvents(): Promise<{ totalCount: number; events: AdminEventItem[] }> {
+  const coreCommunityEvents = getCoreCommunityEvents();
   const rawEvents = await fetchLiveRawEvents();
-  const allFresh: AdminEventItem[] = [];
+  const allScrapedFresh: AdminEventItem[] = [];
 
   rawEvents.forEach((raw, idx) => {
     const processed = processRawEventWithAI(raw, idx + 1);
-    allFresh.push({
+    allScrapedFresh.push({
       ...processed,
-      approvalStatus: 'pending',
+      approvalStatus: 'approved',
       source: raw.source,
       sourceUrl: raw.sourceUrl,
     });
   });
 
+  // Always combine core community events with fresh scraped events
+  const allFresh = [...coreCommunityEvents, ...allScrapedFresh];
   MEMORY_CACHE = allFresh;
 
   // Persist fresh master database to disk
@@ -296,4 +292,3 @@ export async function updateAdminEvent(id: string, updatedFields: Partial<AdminE
 
   return updated;
 }
-

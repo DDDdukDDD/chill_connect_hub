@@ -42,36 +42,38 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     <section className="relative z-30 pt-1 pb-1 md:pt-2 md:pb-2 bg-[#FAF7F2]">
       <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 relative">
         
-        {/* Full Hero Banner Container with 70% Center Space - Responsive & Clean */}
-        <div className="relative rounded-3xl bg-gradient-to-b from-[#FAF7F2] via-white/90 to-[#FAF7F2] border border-[#E8E2D8]/80 shadow-xs min-h-[230px] sm:min-h-[280px] flex items-center justify-center">
+        {/* Full Hero Banner Container with Modern Lifestyle Photography - Responsive & Clean */}
+        <div className="relative rounded-3xl overflow-hidden border border-slate-200/90 shadow-md min-h-[270px] sm:min-h-[310px] flex items-center justify-center">
           
-          {/* Full-bleed Background Image with Responsive Opacity & Position */}
-          <div className="absolute inset-0 z-0 pointer-events-none rounded-3xl overflow-hidden">
+          {/* Full-bleed Background Image with Cinematic Golden Hour Vibe */}
+          <div className="absolute inset-0 z-0 pointer-events-none">
             <img
-              src="/hero-bg-70.png"
-              alt="Chill & Connect Hero Background"
-              className="w-full h-full object-cover object-top sm:object-center opacity-30 md:opacity-40 lg:opacity-85 xl:opacity-90 transition-opacity"
+              src="/hero-bg-lifestyle.jpg"
+              alt="Chill & Connect Bangkok Lifestyle Community"
+              className="w-full h-full object-cover object-center"
             />
-            {/* Subtle Gradient Veil on Mobile & iPad to Prevent Visual Clash */}
-            <div className="absolute inset-0 bg-gradient-to-b from-[#FAF7F2]/85 via-white/75 to-[#FAF7F2]/90 lg:hidden" />
+            {/* Cinematic Gradient Overlays to ensure center text & search bar pop prominently */}
+            <div className="absolute inset-0 bg-slate-900/35" />
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-900/40 via-slate-900/20 to-slate-900/40" />
+            <div className="absolute inset-0 bg-gradient-to-b from-slate-900/30 via-transparent to-slate-900/40" />
           </div>
 
-          {/* Centered Safe Zone for Text & Search Bar - Clean & Natural */}
-          <div className="relative z-10 text-center space-y-2.5 sm:space-y-3 max-w-xl mx-auto px-4 py-6 sm:py-7 w-full">
+          {/* Centered Safe Zone for Text & Search Bar */}
+          <div className="relative z-10 text-center space-y-3 max-w-xl mx-auto px-4 py-6 sm:py-8 w-full">
             
-            {/* Dynamic Headline */}
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#1E293B] tracking-tight leading-tight">
-              วันหยุดนี้... <span className="text-[#F26430] inline-block hover:scale-105 transition-transform cursor-default">ทำอะไรดี?</span>
+            {/* Dynamic Headline (Pure White with Coral Highlight & Strong Contrast) */}
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight leading-tight drop-shadow-[0_2px_6px_rgba(0,0,0,0.7)]">
+              วันหยุดนี้... <span className="text-[#FFA07A] inline-block hover:scale-105 transition-transform cursor-default">ทำอะไรดี?</span>
             </h1>
 
             {/* Subtitle */}
-            <p className="text-xs sm:text-sm text-[#334155] font-semibold max-w-xl mx-auto drop-shadow-xs">
-              ค้นหากิจกรรมฮีลใจ หาเพื่อนใหม่ และความสนุก!
+            <p className="text-xs sm:text-sm text-white font-bold max-w-xl mx-auto drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">
+              ค้นหากิจกรรมฮีลใจ หาเพื่อนใหม่ และความสนุกในกรุงเทพฯ ✨
             </p>
 
-            {/* Compact Pill Search Bar with Auto-Suggest */}
+            {/* High-Contrast Floating Pill Search Bar */}
             <div className="pt-1 max-w-lg mx-auto relative z-30">
-              <div className="relative flex items-center bg-white/95 backdrop-blur-md rounded-full p-1 sm:p-1.5 shadow-lg shadow-black/5 border border-[#E2DCD2] focus-within:border-[#F26430] focus-within:ring-4 focus-within:ring-[#F26430]/10 transition-all z-20">
+              <div className="relative flex items-center bg-white rounded-full p-1 sm:p-1.5 shadow-2xl shadow-black/30 border-2 border-white/90 focus-within:border-[#F26430] focus-within:ring-4 focus-within:ring-[#F26430]/25 transition-all z-20">
                 
                 {/* Search Icon */}
                 <div className="pl-3 sm:pl-3.5 pr-1.5 sm:pr-2 text-[#94A3B8]">

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { EventItem } from '@/data/mockData';
-import { X, Calendar, MapPin, Users, Heart, Share2, CheckCircle2, ShieldCheck, Clock, ExternalLink, Ticket, AlertCircle, Bell, Navigation2, MessageCircle, Check, Copy, Sparkles, Flag, ShieldAlert, Lock, AlertTriangle } from 'lucide-react';
+import { X, Calendar, MapPin, Users, Heart, Share2, CheckCircle2, ShieldCheck, Clock, ExternalLink, Ticket, AlertCircle, Bell, Navigation2, MessageCircle, Check, Copy, Sparkles, Flag, ShieldAlert, Lock, AlertTriangle, Plus } from 'lucide-react';
 import { isEventEnded } from '@/lib/dateUtils';
 import { ReportSafetyModal } from './ReportSafetyModal';
 import { ProfileModal } from './ProfileModal';
@@ -265,15 +265,21 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             <div className="bg-emerald-50 border border-emerald-200 p-2.5 rounded-2xl flex items-center justify-between gap-2 text-xs text-emerald-800 font-bold animate-fade-in">
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>คุณลงทะเบียนเข้าร่วมกิจกรรมนี้เรียบร้อยแล้ว 🎟️</span>
+                <span>
+                  {isPublicVenue
+                    ? 'คุณบันทึกงานนี้ลงในตารางนัดหมายแล้ว'
+                    : 'คุณลงทะเบียนเข้าร่วมกิจกรรมนี้เรียบร้อยแล้ว'}
+                </span>
               </span>
-              <Link
-                href="/myhub"
-                onClick={onClose}
-                className="text-[11px] text-emerald-700 bg-emerald-100/80 hover:bg-emerald-200 px-2.5 py-1 rounded-full border border-emerald-300 font-extrabold shrink-0"
-              >
-                ดูตั๋ว ➔
-              </Link>
+              {!isPublicVenue && (
+                <Link
+                  href="/myhub"
+                  onClick={onClose}
+                  className="text-[11px] text-emerald-700 bg-emerald-100/80 hover:bg-emerald-200 px-2.5 py-1 rounded-full border border-emerald-300 font-extrabold shrink-0"
+                >
+                  ดูตั๋ว ➔
+                </Link>
+              )}
             </div>
           )}
 
@@ -451,29 +457,14 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                   );
                 })()
               ) : (
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedProfileQuery(event.hostName)}
-                    className="text-[11px] font-bold px-3 py-1 rounded-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-2xs cursor-pointer transition-colors"
-                  >
-                    ดูโปรไฟล์
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const res = toggleUserConnect(event.hostName);
-                      setIsFollowingHost(res.isConnected);
-                    }}
-                    className={`text-[11px] font-extrabold px-3.5 py-1 rounded-full border shadow-2xs shrink-0 cursor-pointer transition-all active:scale-95 ${
-                      isFollowingHost
-                        ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                        : 'bg-[#4A7C59] text-white hover:bg-[#3d6849] border-[#4A7C59]'
-                    }`}
-                  >
-                    {isFollowingHost ? '🟢 Connected แล้ว' : '🤝 Connect'}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedProfileQuery(event.hostName)}
+                  className="text-[11px] font-bold px-3.5 py-1.5 rounded-full bg-white hover:bg-slate-50 text-slate-700 hover:text-[#4A7C59] border border-slate-200 shadow-2xs cursor-pointer transition-colors flex items-center gap-1 shrink-0 active:scale-95"
+                >
+                  <span>ดูโปรไฟล์</span>
+                  <ExternalLink className="w-3 h-3 text-slate-400" />
+                </button>
               )}
             </div>
           </div>
@@ -557,13 +548,14 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowSubForm(!showSubForm)}
-                  className={`text-xs font-bold px-3.5 py-1.5 rounded-full shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer flex items-center gap-1 ${
+                  className={`text-xs font-bold px-3.5 py-1.5 rounded-full shadow-2xs transition-all active:scale-95 shrink-0 cursor-pointer flex items-center gap-1.5 ${
                     showSubForm
                       ? 'bg-slate-200 hover:bg-slate-300 text-slate-700'
-                      : 'bg-[#4A7C59] hover:bg-[#3B6447] text-white'
+                      : 'bg-[#F26430] hover:bg-[#D95322] text-white shadow-[#F26430]/20'
                   }`}
                 >
-                  <span>{showSubForm ? '✕ ปิดฟอร์ม' : '➕ ชวนเพื่อนในงาน'}</span>
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>{showSubForm ? 'ปิดฟอร์ม' : 'ชวนเพื่อนในงาน'}</span>
                 </button>
               </div>
 
@@ -893,8 +885,8 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                                   className="text-[10px] sm:text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-600 hover:bg-rose-600 text-white transition-all shadow-xs cursor-pointer active:scale-95 group/btn"
                                   title="คลิกอีกครั้งเพื่อยกเลิกการเข้าร่วม"
                                 >
-                                  <span className="group-hover/btn:hidden">🟢 เข้าร่วมแล้ว</span>
-                                  <span className="hidden group-hover/btn:inline">✕ กดยกเลิก</span>
+                                  <span className="group-hover/btn:hidden">เข้าร่วมแล้ว</span>
+                                  <span className="hidden group-hover/btn:inline">กดยกเลิก</span>
                                 </button>
                                 <Link
                                   href={`/myhub?chatSubId=${sub.id}&eventId=${event.id}`}
@@ -1030,23 +1022,34 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               )}
             </div>
           ) : isJoined ? (
-            /* When Already Joined: Provide direct Ticket Hub button + Cancel option */
+            /* When Already Joined: If Public Venue, display only "ดูตารางนัดหมาย"; If Community, display Cancel + "ดูตั๋วกิจกรรมของฉัน" */
             <div className="flex items-center justify-between sm:justify-end gap-2 w-full">
-              <button
-                type="button"
-                onClick={() => setShowConfirmCancelModal(true)}
-                className="text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-4 py-2.5 rounded-full border border-rose-200 transition-all cursor-pointer"
-              >
-                ✕ ยกเลิกการเข้าร่วม
-              </button>
+              {!isPublicVenue && (
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmCancelModal(true)}
+                  className="text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-4 py-2.5 rounded-full border border-rose-200 transition-all cursor-pointer"
+                >
+                  ยกเลิกการเข้าร่วม
+                </button>
+              )}
 
               <Link
                 href="/myhub"
                 onClick={onClose}
-                className="bg-[#4A7C59] hover:bg-[#3B6447] text-white px-6 py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all shadow-md shadow-[#4A7C59]/20 flex items-center gap-1.5 active:scale-95"
+                className="bg-[#4A7C59] hover:bg-[#3B6447] text-white px-4 sm:px-5 py-2 rounded-full font-bold text-xs sm:text-sm transition-all shadow-xs flex items-center gap-1.5 active:scale-95 ml-auto cursor-pointer"
               >
-                <Ticket className="w-4 h-4" />
-                <span>ดูตั๋วกิจกรรมของฉัน</span>
+                {isPublicVenue ? (
+                  <>
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>ดูตารางนัดหมาย</span>
+                  </>
+                ) : (
+                  <>
+                    <Ticket className="w-3.5 h-3.5" />
+                    <span>ดูตั๋วกิจกรรมของฉัน</span>
+                  </>
+                )}
               </Link>
             </div>
           ) : (

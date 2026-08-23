@@ -596,8 +596,7 @@ export default function MyHubPage() {
           {/* Status Badge on Image */}
           <div className="absolute top-2 left-2 flex items-center gap-1 z-10">
             <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-600 text-white shadow-sm flex items-center gap-1">
-              <Check className="w-3 h-3" />
-              <span>ลงทะเบียนแล้ว</span>
+              <span>{isPublic ? 'บันทึกนัดแล้ว' : 'เข้าร่วมแล้ว'}</span>
             </span>
           </div>
         </div>

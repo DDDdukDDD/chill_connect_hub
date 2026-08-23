@@ -5,8 +5,6 @@ import Link from 'next/link';
 import {
   UserProfile,
   findProfileByIdOrName,
-  getConnectedUserIds,
-  toggleUserConnect,
 } from '@/data/profilesData';
 import {
   X,
@@ -35,29 +33,15 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const [profile, setProfile] = useState<UserProfile>(() =>
     findProfileByIdOrName(targetProfileIdOrName)
   );
-  const [isConnected, setIsConnected] = useState(false);
-  const [connectsCount, setConnectsCount] = useState(profile.connectsCount);
 
   useEffect(() => {
     if (isOpen) {
       const p = findProfileByIdOrName(targetProfileIdOrName);
       setProfile(p);
-      setConnectsCount(p.connectsCount);
-
-      if (typeof window !== 'undefined') {
-        const list = getConnectedUserIds();
-        setIsConnected(list.includes(p.id));
-      }
     }
   }, [isOpen, targetProfileIdOrName]);
 
   if (!isOpen) return null;
-
-  const handleToggleConnect = () => {
-    const res = toggleUserConnect(profile.id);
-    setIsConnected(res.isConnected);
-    setConnectsCount((prev) => prev + res.countDelta);
-  };
 
   return (
     <div
@@ -99,19 +83,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 </div>
               )}
             </div>
-
-            {/* 🤝 Connect Button */}
-            <button
-              type="button"
-              onClick={handleToggleConnect}
-              className={`px-4 py-2 rounded-full text-xs font-extrabold shadow-sm transition-all active:scale-95 cursor-pointer ${
-                isConnected
-                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-300'
-                  : 'bg-[#4A7C59] text-white hover:bg-[#3d6849]'
-              }`}
-            >
-              {isConnected ? '🟢 Connected แล้ว' : '🤝 Connect'}
-            </button>
           </div>
 
           <div>
@@ -130,34 +101,31 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             {profile.bio}
           </p>
 
-          {/* Quick Background Highlights */}
-          <div className="space-y-1 text-[11px] text-slate-700 bg-[#FAF7F2] p-3 rounded-2xl border border-[#E8E2D8]">
+          {/* Quick Background Highlights (Uniform Color & Font Weight) */}
+          <div className="space-y-1.5 text-xs text-slate-700 font-medium bg-slate-50/90 p-3.5 rounded-2xl border border-slate-200/80">
             {profile.workplace && (
               <div className="flex items-center gap-1.5 truncate">
-                <span className="text-slate-400">💼 ที่ทำงาน:</span>
-                <span className="font-bold text-[#1E293B] truncate">{profile.workplace}</span>
+                <span>💼 ที่ทำงาน: {profile.workplace}</span>
               </div>
             )}
             {profile.education && (
               <div className="flex items-center gap-1.5 truncate">
-                <span className="text-slate-400">🎓 การศึกษา:</span>
-                <span className="font-semibold text-slate-800 truncate">{profile.education}</span>
+                <span>🎓 การศึกษา: {profile.education}</span>
               </div>
             )}
-            <div className="flex items-center gap-3 pt-0.5 text-slate-600 font-medium">
+            <div className="flex items-center gap-2 truncate">
               {profile.gender && <span>🚻 {profile.gender}</span>}
+              {profile.gender && profile.birthday && <span className="text-slate-300">•</span>}
               {profile.birthday && <span>🎂 {profile.birthday}</span>}
             </div>
             {profile.relationshipStatus && (
-              <div className="flex items-center gap-1.5 pt-0.5 truncate text-[10.5px]">
-                <span className="text-slate-400">💬 สถานะ:</span>
-                <span className="font-bold text-pink-600 truncate">{profile.relationshipStatus}</span>
+              <div className="flex items-center gap-1.5 truncate">
+                <span>💬 สถานะ: {profile.relationshipStatus}</span>
               </div>
             )}
             {profile.connectGoal && (
-              <div className="flex items-center gap-1.5 truncate text-[10.5px]">
-                <span className="text-slate-400">🎯 เป้าหมาย:</span>
-                <span className="font-bold text-[#1E293B] truncate">{profile.connectGoal}</span>
+              <div className="flex items-center gap-1.5 truncate">
+                <span>🎯 เป้าหมาย: {profile.connectGoal}</span>
               </div>
             )}
           </div>
@@ -166,7 +134,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           <div className="grid grid-cols-3 gap-2 py-2 border-y border-slate-100 text-center">
             <div>
               <span className="text-[10px] text-slate-400 font-bold block">Connects</span>
-              <span className="text-sm font-black text-[#1E293B]">{connectsCount}</span>
+              <span className="text-sm font-black text-[#1E293B]">{profile.connectsCount.toLocaleString()}</span>
             </div>
             <div>
               <span className="text-[10px] text-slate-400 font-bold block">จัดกิจกรรม</span>
@@ -185,7 +153,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           <Link
             href={`/profile?id=${profile.id}`}
             onClick={onClose}
-            className="w-full py-2.5 rounded-full bg-[#FAF7F2] hover:bg-orange-50 text-slate-700 hover:text-[#F26430] border border-[#E8E2D8] text-xs font-extrabold flex items-center justify-center gap-1.5 transition-colors"
+            className="w-full py-2.5 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-[#4A7C59] border border-slate-200/90 text-xs font-extrabold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
           >
             <span>ดูโปรไฟล์แบบเต็ม</span>
             <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
