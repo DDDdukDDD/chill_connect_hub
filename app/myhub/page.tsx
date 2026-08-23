@@ -7,24 +7,21 @@ import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { CreateChallengeModal } from '@/components/CreateChallengeModal';
-import { JoinChallengeModal } from '@/components/JoinChallengeModal';
 import { VerifyQuestModal } from '@/components/VerifyQuestModal';
 import { ETicketModal } from '@/components/ETicketModal';
 import { CancelTicketModal } from '@/components/CancelTicketModal';
 import { GroupChatModal } from '@/components/GroupChatModal';
 import { TipHostModal } from '@/components/TipHostModal';
 import { EventDetailModal } from '@/components/EventDetailModal';
-import { MOCK_CHALLENGES, MOCK_EVENTS, ChallengeQuest, EventItem } from '@/data/mockData';
+import { MOCK_CHALLENGES, ChallengeQuest, EventItem } from '@/data/mockData';
 import { isEventEnded } from '@/lib/dateUtils';
 import {
   Award,
   Coffee,
   Footprints,
   Users,
-  User,
   Flame,
   CheckCircle2,
-  Lock,
   Sparkles,
   ChevronRight,
   ChevronLeft,
@@ -33,36 +30,31 @@ import {
   Target,
   Zap,
   Sprout,
-  ShieldCheck,
-  KeyRound,
-  LogIn,
   Ticket,
   Calendar,
   MapPin,
   MessageCircle,
-  ExternalLink,
   Clock,
   ArrowRight,
-  Star,
   Gift,
   QrCode,
-  ShoppingBag,
-  Trash2,
   Crown,
-  Wallet,
-  DollarSign,
-  Heart,
-  TrendingUp,
-  UserCheck,
-  Bot,
-  SlidersHorizontal,
-  CreditCard,
-  Building,
-  Navigation2,
   CalendarDays,
   ListFilter,
   Check,
+  Tag,
+  ChevronUp,
 } from 'lucide-react';
+
+const THAI_MONTH_NAMES = [
+  'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+  'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+];
+
+const THAI_MONTH_SHORT = [
+  'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+  'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
+];
 
 interface RecommendedChallenge {
   id: string;
@@ -141,6 +133,7 @@ interface RewardShopItem {
   description: string;
   partner: string;
   voucherCode: string;
+  stockCount: number;
 }
 
 const REWARD_SHOP_ITEMS: RewardShopItem[] = [
@@ -153,6 +146,7 @@ const REWARD_SHOP_ITEMS: RewardShopItem[] = [
     description: 'ใช้เป็นส่วนลดเครื่องดื่มทุกเมนูที่คาเฟ่พาร์ทเนอร์ย่านอารีย์และทองหล่อ',
     partner: 'Ari & Thonglor Specialty Cafes',
     voucherCode: 'CHILL50-ARI-889',
+    stockCount: 18,
   },
   {
     id: 'reward-2',
@@ -163,6 +157,7 @@ const REWARD_SHOP_ITEMS: RewardShopItem[] = [
     description: 'เข้าเล่นบอร์ดเกมไม่อั้นตลอดวัน ที่ร้านบอร์ดเกมพาร์ทเนอร์สยามสแควร์',
     partner: 'Siam Board Game Lounge',
     voucherCode: 'BG-FREEPASS-2026',
+    stockCount: 12,
   },
   {
     id: 'reward-3',
@@ -173,6 +168,18 @@ const REWARD_SHOP_ITEMS: RewardShopItem[] = [
     description: 'เสื้อยืดผ้าคอตตอนพรีเมียม 100% สกรีนลายพิเศษสำหรับสมาชิก Hub',
     partner: 'Chill & Connect Official Store',
     voucherCode: 'TSHIRT-VIP-GOLD',
+    stockCount: 5,
+  },
+  {
+    id: 'reward-4',
+    title: 'คูปองส่วนลด ฿100 บัตรวิ่งมาราธอน & City Run',
+    category: 'วิ่ง & สุขภาพ',
+    costXp: 300,
+    icon: '🏃',
+    description: 'ส่วนลดค่าสมัครกิจกรรมวิ่งและงานมินิมาราธอนที่ร่วมรายการ',
+    partner: 'Bangkok Active Marathon',
+    voucherCode: 'RUN100-ACTIVE',
+    stockCount: 20,
   },
 ];
 
@@ -193,7 +200,10 @@ export default function MyHubPage() {
   const [hubViewMode, setHubViewMode] = useState<'list' | 'calendar'>('list');
   // Event Type Filter in MyHub: all | public_venue | community
   const [joinedTypeFilter, setJoinedTypeFilter] = useState<'all' | 'public_venue' | 'community'>('all');
-  // Selected Calendar Date Filter
+  
+  // Calendar Navigation State
+  const [calYear, setCalYear] = useState<number>(2026);
+  const [calMonth, setCalMonth] = useState<number>(7); // 0 = Jan, 7 = Aug
   const [selectedCalDay, setSelectedCalDay] = useState<number | null>(null);
 
   // Sub-filter for Events (Upcoming vs Past)
@@ -323,7 +333,87 @@ export default function MyHubPage() {
     );
   };
 
-  // Filtered Events based on View Mode & Category
+  // Calendar Month Navigation Handlers
+  const handlePrevMonth = () => {
+    if (calMonth === 0) {
+      setCalMonth(11);
+      setCalYear((prev) => prev - 1);
+    } else {
+      setCalMonth((prev) => prev - 1);
+    }
+    setSelectedCalDay(null);
+  };
+
+  const handleNextMonth = () => {
+    if (calMonth === 11) {
+      setCalMonth(0);
+      setCalYear((prev) => prev + 1);
+    } else {
+      setCalMonth((prev) => prev + 1);
+    }
+    setSelectedCalDay(null);
+  };
+
+  const handleTodayMonth = () => {
+    setCalYear(2026);
+    setCalMonth(7); // Aug 2026
+    setSelectedCalDay(22);
+  };
+
+  // Dynamic Days in Month Calculation
+  const daysInMonth = useMemo(() => {
+    return new Date(calYear, calMonth + 1, 0).getDate();
+  }, [calYear, calMonth]);
+
+  // Monday-first Starting Day Offset (0: Mon, 1: Tue, ..., 6: Sun)
+  const startDayOffset = useMemo(() => {
+    const day = new Date(calYear, calMonth, 1).getDay(); // 0 = Sun
+    return (day + 6) % 7;
+  }, [calYear, calMonth]);
+
+  // Dynamic Total Calendar Cells (35 or 42)
+  const totalGridCells = useMemo(() => {
+    const total = startDayOffset + daysInMonth;
+    return total > 35 ? 42 : 35;
+  }, [startDayOffset, daysInMonth]);
+
+  const endDayOffset = useMemo(() => {
+    return totalGridCells - (startDayOffset + daysInMonth);
+  }, [totalGridCells, startDayOffset, daysInMonth]);
+
+  // Check if an event matches a specific calendar month & year
+  const isEventInCalMonth = (ev: EventItem, monthIdx: number, year: number) => {
+    const monthShort = THAI_MONTH_SHORT[monthIdx];
+    const monthFull = THAI_MONTH_NAMES[monthIdx];
+    const dateStr = ev.date || '';
+    if (dateStr.includes(monthShort) || dateStr.includes(monthFull)) {
+      return true;
+    }
+    if (ev.createdAtTimestamp) {
+      const d = new Date(ev.createdAtTimestamp);
+      if (d.getFullYear() === year && d.getMonth() === monthIdx) return true;
+    }
+    // Default mock check for Aug 2026
+    return monthIdx === 7 && year === 2026 && dateStr.includes('ส.ค.');
+  };
+
+  // Find Days with Bookings in the selected month
+  const bookedDaysInCurrentMonth = useMemo(() => {
+    const bookedSet = new Set<number>();
+    joinedEvents.forEach((ev) => {
+      if (isEventInCalMonth(ev, calMonth, calYear)) {
+        const dStr = ev.date || '';
+        for (let day = 1; day <= daysInMonth; day++) {
+          if (dStr.includes(day.toString())) {
+            bookedSet.add(day);
+          }
+        }
+      }
+    });
+    return Array.from(bookedSet);
+  }, [joinedEvents, calMonth, calYear, daysInMonth]);
+
+  // Filtered Events based on View Mode & Category & Date
   const filteredEvents = useMemo(() => {
     return joinedEvents.filter((ev) => {
       const isEnded = isEventEnded(ev);
@@ -345,9 +435,6 @@ export default function MyHubPage() {
   // Separate Expos vs Community
   const expoEvents = useMemo(() => filteredEvents.filter((e) => e.eventType === 'public_venue'), [filteredEvents]);
   const communityEvents = useMemo(() => filteredEvents.filter((e) => e.eventType !== 'public_venue'), [filteredEvents]);
-
-  // Days with bookings in August 2026
-  const bookedDaysInAugust = [22, 23, 24, 25];
 
   // Open E-Ticket Modal
   const handleOpenTicket = (event: EventItem, idx: number) => {
@@ -410,13 +497,9 @@ export default function MyHubPage() {
     showToast(`✅ ยืนยันหลักฐานสำเร็จ! ความคืบหน้าเพิ่มขึ้น +50 XP (${proofData.type === 'photo' ? 'รูปถ่าย 📸' : proofData.type === 'gps' ? 'พิกัด GPS 📍' : 'ตั๋ว QR 🎟️'})`);
   };
 
-  // Helper to render Event Card using Home Page layout
+  // Helper to render Event Card
   const renderEventCard = (event: EventItem, idx: number) => {
     const isPublic = event.eventType === 'public_venue';
-    const isFav = favorites.includes(event.id);
-    const isEnded = isEventEnded(event);
-    const fillRatio = event.maxParticipants > 0 ? event.participantsCount / event.maxParticipants : 0.5;
-    const isAlmostFull = fillRatio >= 0.8;
     const ticketId = `CCH-2026-${(idx + 89).toString().padStart(4, '0')}`;
 
     return (
@@ -425,7 +508,7 @@ export default function MyHubPage() {
         onClick={() => setDetailModalEvent(event)}
         className="group bg-white rounded-2xl border border-[#E8E2D8] hover:border-[#4A7C59]/40 shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden transform hover:-translate-y-1 cursor-pointer relative"
       >
-        {/* Image Container (Same compact height on Desktop, 16:9 on Mobile) */}
+        {/* Image Container */}
         <div className="relative aspect-video sm:aspect-video lg:h-32 xl:h-34 2xl:h-36 w-full overflow-hidden bg-slate-100 shrink-0">
           <img
             src={event.image}
@@ -497,7 +580,6 @@ export default function MyHubPage() {
 
           {/* Bottom Action Area: Type Badge (Left) + Actions (Right) */}
           <div className="pt-2.5 flex items-center justify-between gap-2 border-t border-slate-100 mt-auto">
-            {/* Left: Event Type Badge */}
             <span className={`text-[10px] sm:text-[11px] font-extrabold px-2.5 py-1 rounded-full border shrink-0 flex items-center gap-1 ${
               isPublic
                 ? 'bg-sky-50 text-sky-700 border-sky-200'
@@ -506,7 +588,6 @@ export default function MyHubPage() {
               <span>{isPublic ? '🏛️ อีเวนต์ & งานแฟร์' : '🏡 กิจกรรมชุมชน'}</span>
             </span>
 
-            {/* Right: Actions */}
             <div className="flex items-center gap-1 sm:gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
               {!isPublic && (
                 <>
@@ -547,6 +628,162 @@ export default function MyHubPage() {
     );
   };
 
+  // Helper to render Challenge & Quest Card (Unified Proportions)
+  const renderQuestCard = (quest: ChallengeQuest) => {
+    const isCompleted = quest.progressPercent >= 100;
+    const categoryColors = {
+      move: 'from-orange-500/10 to-amber-500/10 text-orange-600 border-orange-200',
+      heal: 'from-purple-500/10 to-pink-500/10 text-purple-600 border-purple-200',
+      chill: 'from-emerald-500/10 to-teal-500/10 text-emerald-600 border-emerald-200',
+      learn: 'from-blue-500/10 to-indigo-500/10 text-blue-600 border-blue-200',
+    };
+    const colorStyle = categoryColors[quest.category as keyof typeof categoryColors] || categoryColors.chill;
+
+    return (
+      <div
+        key={quest.id}
+        className="group bg-white rounded-2xl border border-[#E8E2D8] hover:border-[#4A7C59]/40 shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden transform hover:-translate-y-1 relative justify-between"
+      >
+        {/* Top Header Banner */}
+        <div className={`p-3.5 bg-gradient-to-r ${colorStyle} border-b flex items-center justify-between gap-2`}>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="w-6 h-6 rounded-full bg-white shadow-2xs flex items-center justify-center text-xs shrink-0 font-bold">
+              🏅
+            </span>
+            <span className="text-xs font-extrabold truncate text-slate-800">
+              {quest.badgeLabel}
+            </span>
+          </div>
+
+          <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-white/90 text-[#F26430] shadow-2xs border border-orange-200 shrink-0">
+            +{quest.rewardPoints} XP
+          </span>
+        </div>
+
+        {/* Content Body */}
+        <div className="p-3.5 sm:p-4 flex flex-col justify-between flex-1 gap-3">
+          <div className="space-y-1.5">
+            <h4 className="font-bold text-xs sm:text-sm text-[#1E293B] line-clamp-1 group-hover:text-[#4A7C59] transition-colors">
+              {quest.title}
+            </h4>
+            <p className="text-xs text-[#64748B] line-clamp-2 leading-relaxed">
+              {quest.targetGoal}
+            </p>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="space-y-1.5 pt-1">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+              <span className="text-[11px] text-slate-500">ความคืบหน้า</span>
+              <span className="text-[11px] font-black text-emerald-700">
+                {quest.completedCountInfo} ({quest.progressPercent}%)
+              </span>
+            </div>
+            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${
+                  isCompleted ? 'bg-emerald-500' : 'bg-gradient-to-r from-emerald-400 to-[#4A7C59]'
+                }`}
+                style={{ width: `${quest.progressPercent}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Action Button */}
+          <div className="pt-2 border-t border-slate-100 mt-auto">
+            {isCompleted ? (
+              <div className="w-full bg-emerald-50 text-emerald-700 text-xs font-extrabold py-2 rounded-xl border border-emerald-200 flex items-center justify-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <span>สำเร็จภารกิจแล้ว (รับตราแล้ว)</span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setSelectedQuestForVerifyModal(quest)}
+                className="w-full bg-[#1E293B] hover:bg-slate-800 text-white text-xs font-bold py-2 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs active:scale-98"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                <span>ส่งหลักฐานเช็คอิน</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Helper to render Reward Shop Card (Unified Proportions)
+  const renderRewardCard = (item: RewardShopItem) => {
+    const isRedeemed = redeemedRewardIds.includes(item.id);
+    const canAfford = userXp >= item.costXp;
+
+    return (
+      <div
+        key={item.id}
+        className="group bg-white rounded-2xl border border-[#E8E2D8] hover:border-amber-400/50 shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden transform hover:-translate-y-1 relative justify-between"
+      >
+        {/* Top Header Pattern */}
+        <div className="p-3.5 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 border-b border-amber-200/50 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">{item.icon}</span>
+            <span className="text-[11px] font-bold text-slate-700 px-2 py-0.5 bg-white/80 rounded-md border border-amber-200/60">
+              {item.category}
+            </span>
+          </div>
+
+          <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-[#F26430] text-white shadow-2xs">
+            {item.costXp} XP
+          </span>
+        </div>
+
+        {/* Content Body */}
+        <div className="p-3.5 sm:p-4 flex flex-col justify-between flex-1 gap-3">
+          <div className="space-y-1.5">
+            <h4 className="font-bold text-xs sm:text-sm text-[#1E293B] line-clamp-1 group-hover:text-[#F26430] transition-colors">
+              {item.title}
+            </h4>
+            <p className="text-xs text-[#64748B] line-clamp-2 leading-relaxed">
+              {item.description}
+            </p>
+            <div className="flex items-center gap-1 text-[11px] font-semibold text-[#4A7C59]">
+              <Tag className="w-3 h-3 text-[#4A7C59]" />
+              <span className="truncate">{item.partner}</span>
+            </div>
+          </div>
+
+          {/* Action Bottom */}
+          <div className="pt-2 border-t border-slate-100 mt-auto">
+            {isRedeemed ? (
+              <div className="w-full bg-emerald-50 text-emerald-800 text-[11px] font-bold py-2 px-2.5 rounded-xl border border-emerald-200 text-center truncate">
+                ✓ รหัส: <strong>{item.voucherCode}</strong>
+              </div>
+            ) : (
+              <button
+                type="button"
+                disabled={!canAfford}
+                onClick={() => {
+                  if (canAfford) {
+                    setUserXp((prev) => prev - item.costXp);
+                    setRedeemedRewardIds((prev) => [...prev, item.id]);
+                    showToast(`🎉 แลกรางวัล "${item.title}" สำเร็จ! รหัสคูปอง: ${item.voucherCode}`);
+                  }
+                }}
+                className={`w-full py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  canAfford
+                    ? 'bg-[#F26430] hover:bg-[#D95322] text-white shadow-2xs active:scale-98 cursor-pointer'
+                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                }`}
+              >
+                <Gift className="w-3.5 h-3.5" />
+                <span>{canAfford ? 'แลกรับรางวัล' : `ต้องการอีก ${item.costXp - userXp} XP`}</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-[#1E293B] font-sans pb-24 md:pb-16 flex flex-col justify-between">
       <div>
@@ -569,28 +806,6 @@ export default function MyHubPage() {
           </div>
         )}
 
-        {/* 🌟 A/B COMPARISON TOP SWITCHER BAR */}
-        <div className="bg-slate-900 text-white py-2.5 px-4 text-xs font-semibold shadow-inner">
-          <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-2">
-              <span className="bg-amber-500 text-slate-950 px-2 py-0.5 rounded-md text-[10px] font-black uppercase">
-                หน้าเปรียบเทียบ A/B Test
-              </span>
-              <span>🏛️ คุณกำลังดูแบบ: <strong>ฟีเจอร์ครบวงจร (Full Super-App)</strong></span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Link
-                href="/myhub-minimal"
-                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-3 py-1 rounded-full text-xs font-bold transition-all shadow-xs flex items-center gap-1"
-              >
-                <span>✨ สลับไปดูแบบมินิมอล (Clean & Zen)</span>
-                <span>➔</span>
-              </Link>
-            </div>
-          </div>
-        </div>
-
         {/* Hero Banner Header of MyHub */}
         <div className="bg-gradient-to-b from-white to-[#FAF7F2] border-b border-[#E8E2D8] pt-6 pb-6 sm:pt-8 sm:pb-8">
           <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -612,8 +827,10 @@ export default function MyHubPage() {
                     <h1 className="text-xl sm:text-2xl font-black text-[#1E293B] tracking-tight truncate">
                       มายฮับส่วนตัว (My Hub)
                     </h1>
-                    <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
-                      ⚡ Level 4 Explorer
+                    <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                      <span>⚡ Level 4 Explorer</span>
+                      <span>•</span>
+                      <span className="text-[#F26430] font-black">💎 {userXp} XP</span>
                     </span>
                   </div>
                   <p className="text-xs sm:text-sm text-[#64748B] truncate">
@@ -691,7 +908,7 @@ export default function MyHubPage() {
                 }`}
               >
                 <Gift className="w-4 h-4 text-rose-400" />
-                <span>ร้านแลกรางวัล ({userXp} XP)</span>
+                <span>ร้านแลกรางวัล</span>
               </button>
             </div>
 
@@ -705,19 +922,44 @@ export default function MyHubPage() {
           {activeSubTab === 'joined_events' && (
             <div className="space-y-6">
 
-              {/* 📅 Top Control Bar: Mode Switcher + View Toggles */}
+              {/* 📅 Top Control Bar: Month Navigation + Mode Switcher */}
               <div className="bg-white rounded-3xl p-4 sm:p-5 border border-[#E8E2D8] shadow-xs space-y-4">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="space-y-0.5">
-                    <h3 className="font-extrabold text-sm sm:text-base text-[#1E293B] flex items-center gap-2">
-                      <CalendarDays className="w-4 h-4 text-[#4A7C59]" />
-                      <span>ตารางกิจกรรมเดือนสิงหาคม 2026 (August Schedule)</span>
-                    </h3>
-                    <p className="text-xs text-[#64748B]">
-                      {hubViewMode === 'calendar'
-                        ? 'มุมมองปฏิทินรายเดือนเต็มรูปแบบ คลิกที่แถบกิจกรรมเพื่อดูรายละเอียด'
-                        : 'คลิกวันที่เพื่อกรอง หรือเลือกดูแบบการ์ดแยกหมวดหมู่อย่างเป็นระเบียบ'}
-                    </p>
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  
+                  {/* Month Navigation Title with Prev / Next */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl border border-slate-200">
+                      <button
+                        type="button"
+                        onClick={handlePrevMonth}
+                        className="p-1.5 rounded-xl hover:bg-white text-slate-700 hover:text-slate-900 transition-colors cursor-pointer"
+                        title="เดือนก่อนหน้า"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+
+                      <div className="px-3 py-1 text-xs sm:text-sm font-black text-[#1E293B] flex items-center gap-1.5">
+                        <CalendarDays className="w-4 h-4 text-[#4A7C59]" />
+                        <span>{THAI_MONTH_NAMES[calMonth]} {calYear}</span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleNextMonth}
+                        className="p-1.5 rounded-xl hover:bg-white text-slate-700 hover:text-slate-900 transition-colors cursor-pointer"
+                        title="เดือนถัดไป"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleTodayMonth}
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 transition-colors cursor-pointer"
+                    >
+                      เดือนปัจจุบัน
+                    </button>
                   </div>
 
                   {/* View Mode Toggle: Calendar vs List */}
@@ -751,8 +993,8 @@ export default function MyHubPage() {
                 {/* ------------------------------------------------------------- */}
                 {hubViewMode === 'calendar' ? (
                   <div className="pt-2 space-y-3 animate-fade-in">
-                    <div className="flex items-center justify-between text-xs font-bold text-slate-700 bg-slate-50 p-2 rounded-xl border border-slate-200">
-                      <span>สิงหาคม 2026 (August 2026)</span>
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-700 bg-slate-50 p-2.5 rounded-xl border border-slate-200 flex-wrap gap-2">
+                      <span>ตารางปฏิทิน: {THAI_MONTH_NAMES[calMonth]} {calYear}</span>
                       <div className="flex items-center gap-3">
                         <span className="flex items-center gap-1 text-sky-800">
                           <span className="w-2.5 h-2.5 rounded-sm bg-sky-500 inline-block" />
@@ -778,21 +1020,24 @@ export default function MyHubPage() {
                         <span className="text-rose-700">อาทิตย์</span>
                       </div>
 
-                      {/* Day Cells Grid (Aug 2026 starts on Saturday = 5 empty cells) */}
+                      {/* Day Cells Grid */}
                       <div className="grid grid-cols-7 bg-slate-100 gap-px">
-                        {/* 5 Empty days for Mon-Fri before Aug 1 */}
-                        {[...Array(5)].map((_, i) => (
-                          <div key={`empty-${i}`} className="bg-slate-50 min-h-[70px] sm:min-h-[90px] p-1 opacity-40" />
+                        {/* Empty days before 1st of the month */}
+                        {[...Array(startDayOffset)].map((_, i) => (
+                          <div key={`empty-start-${i}`} className="bg-slate-50 min-h-[70px] sm:min-h-[90px] p-1 opacity-40" />
                         ))}
 
-                        {/* Days 1 to 31 */}
-                        {[...Array(31)].map((_, idx) => {
+                        {/* Days 1 to daysInMonth */}
+                        {[...Array(daysInMonth)].map((_, idx) => {
                           const day = idx + 1;
-                          const isToday = day === 22;
-                          const hasBookings = bookedDaysInAugust.includes(day);
+                          const isToday = calMonth === 7 && calYear === 2026 && day === 22;
+                          const hasBookings = bookedDaysInCurrentMonth.includes(day);
 
                           // Find events occurring on this day
-                          const dayEvents = joinedEvents.filter((ev) => (ev.date || '').includes(day.toString()));
+                          const dayEvents = joinedEvents.filter((ev) => {
+                            if (!isEventInCalMonth(ev, calMonth, calYear)) return false;
+                            return (ev.date || '').includes(day.toString());
+                          });
 
                           return (
                             <div
@@ -842,8 +1087,8 @@ export default function MyHubPage() {
                           );
                         })}
 
-                        {/* 6 Empty days to complete calendar grid to 42 cells */}
-                        {[...Array(6)].map((_, i) => (
+                        {/* Empty days to complete calendar grid */}
+                        {[...Array(endDayOffset)].map((_, i) => (
                           <div key={`empty-end-${i}`} className="bg-slate-50 min-h-[70px] sm:min-h-[90px] p-1 opacity-40" />
                         ))}
                       </div>
@@ -852,14 +1097,17 @@ export default function MyHubPage() {
                 ) : (
                   /* Horizontal Date Picker Slider (For Quick Date Filtering) */
                   <div className="grid grid-cols-6 sm:grid-cols-12 gap-1.5 sm:gap-2 pt-1">
-                    {[20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31].map((day) => {
-                      const isBooked = bookedDaysInAugust.includes(day);
-                      const isToday = day === 22;
+                    {[...Array(Math.min(12, daysInMonth))].map((_, i) => {
+                      const day = (calMonth === 7 && calYear === 2026) ? i + 20 : i + 1;
+                      if (day > daysInMonth) return null;
+
+                      const isBooked = bookedDaysInCurrentMonth.includes(day);
+                      const isToday = calMonth === 7 && calYear === 2026 && day === 22;
                       const isSelected = selectedCalDay === day;
 
                       return (
                         <button
-                          key={day}
+                          key={`date-chip-${day}`}
                           type="button"
                           onClick={() => setSelectedCalDay(isSelected ? null : day)}
                           className={`p-2 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center relative ${
@@ -872,7 +1120,7 @@ export default function MyHubPage() {
                               : 'bg-slate-50/50 border-slate-100 text-slate-400 hover:bg-slate-100'
                           }`}
                         >
-                          <span className="text-[10px] font-medium opacity-80">ส.ค.</span>
+                          <span className="text-[10px] font-medium opacity-80">{THAI_MONTH_SHORT[calMonth]}</span>
                           <span className="text-sm sm:text-base font-black">{day}</span>
                           {isToday && (
                             <span className={`text-[8px] font-bold px-1 rounded-sm mt-0.5 ${isSelected ? 'bg-amber-400 text-slate-900' : 'bg-amber-500 text-white'}`}>
@@ -891,12 +1139,12 @@ export default function MyHubPage() {
                 {selectedCalDay && (
                   <div className="flex items-center justify-between text-xs bg-slate-50 p-2.5 rounded-xl border border-slate-200">
                     <span className="font-bold text-slate-700">
-                      กรองเฉพาะวันที่: <strong>{selectedCalDay} สิงหาคม 2026</strong>
+                      กรองเฉพาะวันที่: <strong>{selectedCalDay} {THAI_MONTH_NAMES[calMonth]} {calYear}</strong>
                     </span>
                     <button
                       type="button"
                       onClick={() => setSelectedCalDay(null)}
-                      className="text-[#F26430] font-bold hover:underline"
+                      className="text-[#F26430] font-bold hover:underline cursor-pointer"
                     >
                       ล้างตัวกรองวันที่
                     </button>
@@ -962,7 +1210,7 @@ export default function MyHubPage() {
               </div>
 
               {/* ------------------------------------------------------------- */}
-              {/* ZONE 1: 🏛️ PUBLIC VENUE EXPOS & FAIRS (Consistent Home Card Layout) */}
+              {/* ZONE 1: 🏛️ PUBLIC VENUE EXPOS & FAIRS */}
               {/* ------------------------------------------------------------- */}
               {(joinedTypeFilter === 'all' || joinedTypeFilter === 'public_venue') && expoEvents.length > 0 && (
                 <div className="space-y-3 pt-2">
@@ -983,7 +1231,7 @@ export default function MyHubPage() {
               )}
 
               {/* ------------------------------------------------------------- */}
-              {/* ZONE 2: 🏡 COMMUNITY MEETUPS (Consistent Home Card Layout) */}
+              {/* ZONE 2: 🏡 COMMUNITY MEETUPS */}
               {/* ------------------------------------------------------------- */}
               {(joinedTypeFilter === 'all' || joinedTypeFilter === 'community') && communityEvents.length > 0 && (
                 <div className="space-y-3 pt-4">
@@ -1027,7 +1275,7 @@ export default function MyHubPage() {
             </div>
           )}
 
-          {/* TAB 2: QUESTS & CHALLENGES */}
+          {/* TAB 2: QUESTS & CHALLENGES (Unified Proportions & Rich Layout) */}
           {activeSubTab === 'quests' && (
             <div className="space-y-6">
               <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -1044,129 +1292,130 @@ export default function MyHubPage() {
                 <button
                   type="button"
                   onClick={() => setIsCreateChallengeModalOpen(true)}
-                  className="bg-[#4A7C59] hover:bg-[#3B6447] text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
+                  className="bg-[#4A7C59] hover:bg-[#3B6447] text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer transition-all active:scale-95"
                 >
                   <PlusCircle className="w-3.5 h-3.5" />
                   <span>สร้างชาเลนจ์ใหม่</span>
                 </button>
               </div>
 
-              {/* Quest List */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {myChallenges.map((quest) => (
-                  <div
-                    key={quest.id}
-                    className="bg-white rounded-3xl p-5 border border-[#E8E2D8] shadow-xs space-y-3 flex flex-col justify-between"
+              {/* Active User Quests (Same responsive 4-column grid as events) */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 border-b border-amber-200/80 pb-2">
+                  <span className="w-3 h-3 rounded-full bg-amber-500" />
+                  <h4 className="font-black text-sm sm:text-base text-[#1E293B]">
+                    ภารกิจที่คุณกำลังทำอยู่ (Active Quests)
+                  </h4>
+                  <span className="text-xs text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full font-bold">
+                    {myChallenges.length} ภารกิจ
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+                  {myChallenges.map((quest) => renderQuestCard(quest))}
+                </div>
+              </div>
+
+              {/* Recommended Community Challenges Section */}
+              <div className="space-y-3 pt-6 border-t border-[#E8E2D8]">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-emerald-600" />
+                    <h4 className="font-black text-sm sm:text-base text-[#1E293B]">
+                      ชาเลนจ์แนะนำยอดนิยมประจำสัปดาห์
+                    </h4>
+                  </div>
+                  <Link
+                    href="/challenges"
+                    className="text-xs font-bold text-[#4A7C59] hover:underline flex items-center gap-1"
                   >
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
-                          🏅 {quest.badgeLabel}
+                    <span>ดูชาเลนจ์ทั้งหมด</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+                  {RECOMMENDED_CHALLENGES.map((rec) => (
+                    <div
+                      key={rec.id}
+                      className="group bg-white rounded-2xl border border-[#E8E2D8] hover:border-emerald-400 shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-hidden transform hover:-translate-y-1 relative"
+                    >
+                      <div className="p-3.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between gap-2">
+                        <span className="text-xs font-extrabold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">
+                          {rec.isOfficial ? '👑 Official' : '👥 Community'}
                         </span>
                         <span className="text-xs font-black text-[#F26430]">
-                          +{quest.rewardPoints} XP
+                          +{rec.rewardPoints} XP
                         </span>
                       </div>
 
-                      <h4 className="font-bold text-sm sm:text-base text-[#1E293B]">
-                        {quest.title}
-                      </h4>
-                      <p className="text-xs text-slate-600">
-                        {quest.targetGoal}
-                      </p>
-
-                      {/* Progress Bar */}
-                      <div className="space-y-1 pt-1">
-                        <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
-                          <span>ความคืบหน้า</span>
-                          <span>{quest.completedCountInfo} ({quest.progressPercent}%)</span>
+                      <div className="p-3.5 sm:p-4 flex flex-col justify-between flex-1 gap-2.5">
+                        <div className="space-y-1">
+                          <h5 className="font-bold text-xs sm:text-sm text-[#1E293B] line-clamp-1 group-hover:text-[#4A7C59]">
+                            {rec.title}
+                          </h5>
+                          <p className="text-xs text-[#64748B] line-clamp-2">
+                            {rec.targetGoal}
+                          </p>
                         </div>
-                        <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
-                          <div
-                            className="bg-emerald-500 h-full rounded-full transition-all duration-500"
-                            style={{ width: `${quest.progressPercent}%` }}
-                          />
+
+                        <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
+                          <span>🏅 {rec.badgeLabel}</span>
+                          <span>👥 {rec.participantsCount} คนเข้าร่วม</span>
+                        </div>
+
+                        <div className="pt-2 border-t border-slate-100 mt-auto">
+                          <Link
+                            href="/challenges"
+                            className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold py-2 rounded-xl border border-emerald-200 flex items-center justify-center gap-1 transition-colors"
+                          >
+                            <span>เข้าร่วมชาเลนจ์</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </Link>
                         </div>
                       </div>
                     </div>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedQuestForVerifyModal(quest);
-                      }}
-                      className="w-full bg-[#1E293B] hover:bg-slate-800 text-white text-xs font-bold py-2 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>ส่งหลักฐานเช็คอินภารกิจ</span>
-                    </button>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           )}
 
-          {/* TAB 3: REWARDS SHOP */}
+          {/* TAB 3: REWARDS SHOP (Unified Proportions & Clean Header) */}
           {activeSubTab === 'rewards' && (
             <div className="space-y-6">
-              <div className="bg-gradient-to-r from-amber-500 to-[#F26430] rounded-3xl p-5 sm:p-6 text-white shadow-md flex items-center justify-between gap-4 flex-wrap">
+              {/* Points Wallet Banner */}
+              <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-[#F26430] rounded-3xl p-5 sm:p-6 text-white shadow-md flex items-center justify-between gap-4 flex-wrap">
                 <div className="space-y-1">
-                  <p className="text-xs font-bold uppercase tracking-wider text-amber-100">กระเป๋าแต้มสะสม</p>
-                  <h3 className="text-2xl sm:text-3xl font-black">{userXp} XP</h3>
-                  <p className="text-xs text-amber-100">ทำภารกิจหรือเช็คอินกิจกรรมเพื่อสะสมแต้มแลกของรางวัล</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-amber-100">กระเป๋าแต้มสะสมของคุณ</p>
+                  <h3 className="text-2xl sm:text-3xl font-black flex items-center gap-2">
+                    <span>{userXp} XP</span>
+                    <span className="text-xs font-bold bg-white/20 px-2.5 py-1 rounded-full backdrop-blur-xs">
+                      ⚡ Level 4 Explorer
+                    </span>
+                  </h3>
+                  <p className="text-xs text-amber-100">ทำภารกิจหรือเช็คอินกิจกรรมเพื่อสะสมแต้มแลกของรางวัลสุดพิเศษ</p>
                 </div>
-                <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center">
-                  <Gift className="w-6 h-6 text-white" />
+                <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-inner">
+                  <Gift className="w-7 h-7 text-white" />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {REWARD_SHOP_ITEMS.map((item) => {
-                  const isRedeemed = redeemedRewardIds.includes(item.id);
-                  const canAfford = userXp >= item.costXp;
+              {/* Reward Items Grid (Same responsive 4-column grid as events) */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 border-b border-orange-200/80 pb-2">
+                  <span className="w-3 h-3 rounded-full bg-[#F26430]" />
+                  <h4 className="font-black text-sm sm:text-base text-[#1E293B]">
+                    ของรางวัลและส่วนลดพิเศษ (Rewards Catalog)
+                  </h4>
+                  <span className="text-xs text-orange-800 bg-orange-100 px-2 py-0.5 rounded-full font-bold">
+                    {REWARD_SHOP_ITEMS.length} รายการ
+                  </span>
+                </div>
 
-                  return (
-                    <div
-                      key={item.id}
-                      className="bg-white rounded-3xl p-5 border border-[#E8E2D8] shadow-xs flex flex-col justify-between space-y-4"
-                    >
-                      <div className="space-y-2">
-                        <div className="text-3xl">{item.icon}</div>
-                        <h4 className="font-extrabold text-sm text-[#1E293B]">{item.title}</h4>
-                        <p className="text-xs text-slate-500">{item.description}</p>
-                        <p className="text-[11px] font-semibold text-[#4A7C59]">พาร์ทเนอร์: {item.partner}</p>
-                      </div>
-
-                      <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-                        <span className="font-black text-sm text-[#F26430]">{item.costXp} XP</span>
-                        {isRedeemed ? (
-                          <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                            ✓ แลกแล้ว ({item.voucherCode})
-                          </span>
-                        ) : (
-                          <button
-                            type="button"
-                            disabled={!canAfford}
-                            onClick={() => {
-                              if (canAfford) {
-                                setUserXp((prev) => prev - item.costXp);
-                                setRedeemedRewardIds((prev) => [...prev, item.id]);
-                                showToast(`🎉 แลกรางวัล "${item.title}" สำเร็จ! รหัสคูปอง: ${item.voucherCode}`);
-                              }
-                            }}
-                            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                              canAfford
-                                ? 'bg-[#F26430] hover:bg-[#D95322] text-white shadow-xs'
-                                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                            }`}
-                          >
-                            {canAfford ? 'แลกรับรางวัล' : 'XP ไม่พอ'}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+                  {REWARD_SHOP_ITEMS.map((item) => renderRewardCard(item))}
+                </div>
               </div>
             </div>
           )}
@@ -1191,7 +1440,7 @@ export default function MyHubPage() {
       />
 
       {/* MODALS */}
-      {/* 0. Event Detail Modal (Clicking card or calendar chip opens modal) */}
+      {/* 0. Event Detail Modal */}
       <EventDetailModal
         event={detailModalEvent}
         onClose={() => setDetailModalEvent(null)}
