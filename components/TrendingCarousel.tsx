@@ -265,7 +265,14 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
                         ? 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100'
                         : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
                     }`}>
-                      {isPublicVenue ? '🏛️ อีเวนต์ & งานแฟร์' : '🏡 กิจกรรมชุมชน'}
+                      {isPublicVenue ? (
+                        '🏛️ อีเวนต์ & งานแฟร์'
+                      ) : (
+                        <>
+                          <span className="inline sm:hidden">🌿 Chill & Connect</span>
+                          <span className="hidden sm:inline">🌿 Chill & Connect Community</span>
+                        </>
+                      )}
                     </span>
 
                     {/* Tooltip Popup */}
@@ -277,8 +284,8 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
                         </>
                       ) : (
                         <>
-                          <strong className="block text-emerald-300 font-bold mb-0.5">🏡 กิจกรรมชุมชน:</strong>
-                          กิจกรรมจากเพื่อนๆ ใน Chill & Connect Hub ให้ทุกคนได้ทำกิจกรรมสนุกๆ ร่วมกัน
+                          <strong className="block text-emerald-300 font-bold mb-0.5">🌿 Chill & Connect Community:</strong>
+                          กิจกรรมนัดพบกลุ่มย่อยจากเพื่อนๆ และโฮสต์บนแพลตฟอร์ม ชวนทำกิจกรรมสนุกๆ ไปด้วยกัน
                         </>
                       )}
                       <div className="absolute top-full left-4 -mt-1 border-4 border-transparent border-t-slate-900/95" />

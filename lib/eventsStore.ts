@@ -67,6 +67,17 @@ export async function loadCache(): Promise<AdminEventItem[]> {
         };
       }
     }
+    if (ev.source === 'BITEC Events' || ev.source === 'BITEC Bangna' || ev.venueTag === 'bitec' || (ev.location && ev.location.includes('ไบเทค'))) {
+      if (ev.externalUrl !== 'https://www.bitec.co.th/gallery') {
+        hasUpdated = true;
+        return {
+          ...ev,
+          externalUrl: 'https://www.bitec.co.th/gallery',
+          link: 'https://www.bitec.co.th/gallery',
+          sourceUrl: 'https://www.bitec.co.th/gallery',
+        };
+      }
+    }
     if (ev.id?.startsWith('comm-') || ev.source === 'Chill & Connect Official' || ev.source === 'Chill & Connect Community') {
       if (ev.eventType !== 'community' || ev.approvalStatus !== 'approved') {
         hasUpdated = true;

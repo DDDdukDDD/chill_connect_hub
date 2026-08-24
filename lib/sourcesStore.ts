@@ -78,7 +78,7 @@ export const DEFAULT_DATA_SOURCES: EventDataSource[] = [
   {
     id: 'bitec',
     name: 'ไบเทค บางนา (BITEC)',
-    url: 'https://www.bitec.co.th/events/',
+    url: 'https://www.bitec.co.th/gallery',
     category: 'exhibition',
     categoryLabel: '🏢 งานแสดงสินค้า & เทรดแฟร์',
     icon: '🏢',

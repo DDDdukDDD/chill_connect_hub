@@ -211,9 +211,14 @@ export const EventGrid: React.FC<EventGridProps> = ({
                           : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
                       }`}>
                         <span>
-                          {event.eventType === 'public_venue'
-                            ? '🏛️ อีเวนต์ & งานแฟร์'
-                            : '🏡 กิจกรรมชุมชน'}
+                          {event.eventType === 'public_venue' ? (
+                            '🏛️ อีเวนต์ & งานแฟร์'
+                          ) : (
+                            <>
+                              <span className="inline sm:hidden">🌿 Chill & Connect</span>
+                              <span className="hidden sm:inline">🌿 Chill & Connect Community</span>
+                            </>
+                          )}
                         </span>
                       </span>
 
@@ -226,8 +231,8 @@ export const EventGrid: React.FC<EventGridProps> = ({
                           </>
                         ) : (
                           <>
-                            <strong className="block text-emerald-300 font-extrabold mb-0.5">🏡 กิจกรรมชุมชน:</strong>
-                            กิจกรรมจากเพื่อนๆ ใน Chill & Connect Hub ให้ทุกคนได้ทำกิจกรรมสนุกๆ ร่วมกัน
+                            <strong className="block text-emerald-300 font-extrabold mb-0.5">🌿 Chill & Connect Community:</strong>
+                            กิจกรรมนัดพบกลุ่มย่อยจากเพื่อนๆ และโฮสต์บนแพลตฟอร์ม ชวนทำกิจกรรมสนุกๆ ไปด้วยกัน
                           </>
                         )}
                         {/* Downward Arrow */}

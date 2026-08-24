@@ -289,7 +289,7 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
             <div className="grid grid-cols-2 gap-2">
               {[
                 { id: 'public_venue', label: '🏛️ อีเวนต์ & งานแฟร์' },
-                { id: 'community', label: '🏡 กิจกรรมชุมชน' },
+                { id: 'community', label: '🌿 Chill & Connect Community' },
               ].map((item) => (
                 <button
                   key={item.id}

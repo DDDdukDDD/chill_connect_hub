@@ -674,7 +674,7 @@ export default function MyHubPage() {
                 ? 'bg-sky-50 text-sky-700 border-sky-200'
                 : 'bg-emerald-50 text-emerald-700 border-emerald-200'
             }`}>
-              <span>{isPublic ? '🏛️ อีเวนต์ & งานแฟร์' : '🏡 กิจกรรมชุมชน'}</span>
+              <span>{isPublic ? '🏛️ อีเวนต์ & งานแฟร์' : '🌿 Chill & Connect Community'}</span>
             </span>
 
             <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 flex-wrap justify-end" onClick={(e) => e.stopPropagation()}>
@@ -1269,7 +1269,7 @@ export default function MyHubPage() {
                       joinedTypeFilter === 'community' ? 'bg-emerald-700 text-white shadow-2xs' : 'text-emerald-700 hover:bg-emerald-50'
                     }`}
                   >
-                    <span>🏡 กิจกรรมชุมชน ({joinedEvents.filter((e) => e.eventType !== 'public_venue').length})</span>
+                    <span>🌿 Chill & Connect Community ({joinedEvents.filter((e) => e.eventType !== 'public_venue').length})</span>
                   </button>
                 </div>
 
@@ -1302,7 +1302,7 @@ export default function MyHubPage() {
               {(joinedTypeFilter === 'all' || joinedTypeFilter === 'public_venue') && expoEvents.length > 0 && (
                 <div className="space-y-3 pt-2">
                   <div className="flex items-center gap-2 border-b border-sky-200/80 pb-2">
-                    <span className="w-3 h-3 rounded-full bg-sky-500" />
+                    <span className="w-3.5 h-3.5 rounded-full bg-sky-500" />
                     <h3 className="font-black text-sm sm:text-base text-sky-950">
                       🏛️ อีเวนต์ & งานแฟร์ที่บันทึกไว้ (Expos & Public Fairs)
                     </h3>
@@ -1318,14 +1318,14 @@ export default function MyHubPage() {
               )}
 
               {/* ------------------------------------------------------------- */}
-              {/* ZONE 2: 🏡 COMMUNITY MEETUPS */}
+              {/* ZONE 2: 🌿 CHILL & CONNECT COMMUNITY */}
               {/* ------------------------------------------------------------- */}
               {(joinedTypeFilter === 'all' || joinedTypeFilter === 'community') && communityEvents.length > 0 && (
                 <div className="space-y-3 pt-4">
                   <div className="flex items-center gap-2 border-b border-emerald-200/80 pb-2">
-                    <span className="w-3 h-3 rounded-full bg-emerald-500" />
+                    <span className="w-3.5 h-3.5 rounded-full bg-emerald-500" />
                     <h3 className="font-black text-sm sm:text-base text-emerald-950">
-                      🏡 กิจกรรมชุมชน & ตั๋วเข้าร่วม (Community E-Tickets)
+                      🌿 Chill & Connect Community & ตั๋วเข้าร่วม (E-Tickets)
                     </h3>
                     <span className="text-xs text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full font-bold">
                       {communityEvents.length} ตั๋ว

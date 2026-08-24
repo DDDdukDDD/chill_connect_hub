@@ -47,6 +47,10 @@ export interface EventItem {
   status?: 'upcoming' | 'ongoing' | 'ended' | string;
   buddyCount?: number;
   link?: string;
+  galleryImages?: string[];
+  rules?: string[];
+  whatToBring?: string[];
+  instructions?: string[];
 }
 
 export const BANGKOK_ZONES = [
@@ -174,8 +178,7 @@ export const MOCK_EVENTS: EventItem[] = [
     hostName: 'สมาคมผู้จัดพิมพ์ฯ (PUBAT)',
     hostAvatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=100&q=80',
     price: 'ฟรี',
-    description: 'มหกรรมหนังสือที่ใหญ่ที่สุดในประเทศ! รวบรวมสำนักพิมพ์กว่า 350 แห่ง หนังสือเล่มโปรด โซนนิยาย การ์ตูน สารคดี พร้อมเวทีเสวนาจากนักเขียนชื่อดัง',
-    isTrending: true,
+    description: 'มหกรรมหนังสือที่ใหญ่ที่สุดในประเทศ! รวบรวมสำนักพิมพ์ชั้นนำกว่า 350 แห่ง หนังสือออกใหม่ นิยายแปล วรรณกรรมเยาวชน การ์ตูนมังงะ และสารคดีประวัติศาสตร์\n\n📚 ไฮไลต์พิเศษของงาน:\n• โซน Book Wonderland & การ์ตูนคอมมิคสตรีท\n• เวทีเสวนา & แจกลายเซ็นนักเขียนชื่อดังทั้งไทยและต่างประเทศ\n• นิทรรศการผลงานภาพวาดและของสะสม Limited Edition\n• โซนบอร์ดเกมและของเล่นฝึกทักษะการเรียนรู้\n\nมีจุดบริการรับฝากของและจัดส่งพัสดุด่วนภายในงาน สะดวกสบายตลอดทั้งวันครับ!',
     rating: 4.9,
     badgeText: '🏛️ งานใหญ่สิริกิติ์',
     createdAtTimestamp: 1722900000000,
@@ -237,7 +240,7 @@ export const MOCK_EVENTS: EventItem[] = [
     createdAtTimestamp: 1722880000000,
     eventType: 'public_venue',
     venueTag: 'bitec',
-    externalUrl: 'https://www.bitec.co.th',
+    externalUrl: 'https://www.bitec.co.th/gallery',
     buddyCount: 15,
     status: 'active',
     latitude: 13.6698,
@@ -292,8 +295,7 @@ export const MOCK_EVENTS: EventItem[] = [
     hostRating: 4.9,
     hostBadgeTier: 'superhost',
     price: '฿150 (รวมเครื่องดื่ม)',
-    description: 'ตี้บอร์ดเกมนัดรวมพลสายชิลล์และสายวางแผน เล่นง่าย สอนกติกาให้ตั้งแต่เริ่ม มีเกมทั้ง Werewolf, Avalon, Catan และ Splendor ไปคนเดียวไม่เกร็งแน่นอน!',
-    isTrending: true,
+    description: 'ตี้บอร์ดเกมนัดรวมพลสายชิลล์และสายบลัฟฟ์ เล่นง่าย บรรยากาศเป็นกันเองสุดๆ สอนกติกาให้ตั้งแต่เริ่มไม่ต้องกลัวเล่นไม่เป็นครับ!\n\n🎲 ไลน์อัปเกมประจำสัปดาห์นี้:\n• Party & Bluffing: Ultimate Werewolf, Avalon, Secret Hitler\n• Strategy & Fun: Catan, Splendor, Ticket to Ride, Wingspan\n• Co-op Teamwork: The Crew, Just One, Codenames\n\nใครมาคนเดียวไม่ต้องเกร็งนะครับ โฮสต์จะคอยต้อนรับ แนะนำกลุ่ม และช่วยจับคู่ให้เข้าขาอย่างอบอุ่น ราคานี้รวมเครื่องดื่ม Welcome Drink 1 แก้วแล้วครับ!',
     isNew: true,
     rating: 4.9,
     reviewsCount: 14,
@@ -322,7 +324,7 @@ export const MOCK_EVENTS: EventItem[] = [
     hostRating: 5.0,
     hostBadgeTier: 'superhost',
     price: '฿250 (รวมเมล็ดกาแฟ 3 ตัว)',
-    description: 'ชวนคอกาแฟมาลองดริปกาแฟ Single Origin จากแม่จันใต้และเอธิโอเปีย พร้อมทำ Blind Tasting Cupping ร่วมพูดคุยแลกเปลี่ยนเทคนิคการชงในบรรยากาศสบายๆ',
+    description: 'ชวนคอกาแฟและผู้ที่สนใจมาเปิดโลกกาแฟพิเศษด้วยกัน! เราจะมาร่วมดริปกาแฟ Single Origin ชั้นยอดจากแหล่งปลูกแม่จันใต้ (เชียงราย), Ethiopia Yirgacheffe, และ Colombia Geisha\n\n☕ สิ่งที่คุณจะได้สัมผัสในเวิร์กช็อปนี้:\n• Blind Tasting Cupping ฝึกแยกแยะ Flavor Notes (Floral, Fruity, Chocolatey)\n• เคล็ดลับการควบคุมอุณหภูมิน้ำ, อัตราส่วน Ratio, และเบอร์บดกาแฟ\n• แลกเปลี่ยนเมล็ดกาแฟตัวโปรดที่คุณนำมาแบ่งปันกับเพื่อนๆ\n\nไม่จำเป็นต้องมีพื้นฐานมาก่อน บาริสต้าจะดูแลและแนะนำแบบใกล้ชิด สบายๆ เป็นกันเองมากครับ!',
     isTrending: true,
     isNew: true,
     rating: 5.0,

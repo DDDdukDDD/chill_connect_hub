@@ -606,7 +606,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Tab 2: 🏡 กิจกรรมชุมชน */}
+              {/* Tab 2: 🌿 Chill & Connect Community */}
               <div className="relative flex-1 group/tip">
                 <button
                   type="button"
@@ -621,12 +621,13 @@ export default function Home() {
                   }`}
                 >
                   <Users className={`w-4 h-4 shrink-0 ${eventTypeTab === 'community' ? 'text-emerald-200' : 'text-slate-500'}`} />
-                  <span className="truncate">กิจกรรมชุมชน</span>
+                  <span className="inline sm:hidden">Chill & Connect</span>
+                  <span className="hidden sm:inline">Chill & Connect Community</span>
                 </button>
                 {/* Instant Floating Tooltip */}
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-64 p-2.5 bg-slate-900/95 text-white text-[11px] font-medium rounded-xl shadow-xl border border-white/10 opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-150 pointer-events-none z-50 leading-relaxed backdrop-blur-md text-center">
-                  <strong className="block text-emerald-300 font-extrabold mb-0.5">🏡 กิจกรรมชุมชน:</strong>
-                  กิจกรรมจากเพื่อนๆ ใน Chill & Connect Hub ให้ทุกคนได้ทำกิจกรรมสนุกๆ ร่วมกัน
+                  <strong className="block text-emerald-300 font-extrabold mb-0.5">🌿 Chill & Connect Community:</strong>
+                  กิจกรรมนัดพบกลุ่มย่อยจากเพื่อนๆ และโฮสต์บนแพลตฟอร์ม ชวนทำกิจกรรมสนุกๆ ไปด้วยกัน
                   <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95" />
                 </div>
               </div>

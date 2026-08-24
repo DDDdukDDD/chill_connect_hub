@@ -43,10 +43,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 relative">
         
         {/* Full Hero Banner Container with Modern Lifestyle Photography - Responsive & Clean */}
-        <div className="relative rounded-3xl overflow-hidden border border-slate-200/90 shadow-md min-h-[270px] sm:min-h-[310px] flex items-center justify-center">
+        <div className="relative rounded-3xl border border-slate-200/90 shadow-md min-h-[270px] sm:min-h-[310px] flex items-center justify-center">
           
-          {/* Full-bleed Background Image with Cinematic Golden Hour Vibe */}
-          <div className="absolute inset-0 z-0 pointer-events-none">
+          {/* Full-bleed Background Image with Cinematic Golden Hour Vibe (Clipped to Rounded Corners) */}
+          <div className="absolute inset-0 z-0 pointer-events-none rounded-3xl overflow-hidden">
             <img
               src="/hero-bg-lifestyle.jpg"
               alt="Chill & Connect Bangkok Lifestyle Community"

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { EventItem } from '@/data/mockData';
-import { X, Calendar, MapPin, Users, Heart, Share2, CheckCircle2, ShieldCheck, Clock, ExternalLink, Ticket, AlertCircle, Bell, Navigation2, MessageCircle, Check, Copy, Sparkles, Flag, ShieldAlert, Lock, AlertTriangle, Plus } from 'lucide-react';
 import { isEventEnded } from '@/lib/dateUtils';
+import { X, Calendar, MapPin, Users, Heart, Share2, CheckCircle2, ShieldCheck, Clock, ExternalLink, Ticket, AlertCircle, Bell, Navigation2, MessageCircle, Check, Copy, Sparkles, Flag, ShieldAlert, Lock, AlertTriangle, Plus, ChevronDown, ChevronUp, Image as ImageIcon, HelpCircle, CheckSquare } from 'lucide-react';
 import { ReportSafetyModal } from './ReportSafetyModal';
 import { ProfileModal } from './ProfileModal';
 import { getConnectedUserIds, toggleUserConnect } from '@/data/profilesData';
@@ -62,6 +62,9 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   const [expandedSubId, setExpandedSubId] = useState<string | null>(null);
   const [joinedSubIds, setJoinedSubIds] = useState<string[]>([]);
   const [selectedProfileQuery, setSelectedProfileQuery] = useState<string | null>(null);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [isBuddyBoxOpen, setIsBuddyBoxOpen] = useState(false);
+  const [selectedGalleryImg, setSelectedGalleryImg] = useState<string | null>(null);
 
   const [subActivities, setSubActivities] = useState<SubActivityItem[]>([
     {
@@ -202,9 +205,125 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
       } else {
         navigator.clipboard.writeText(shareUrl);
         setCopied(true);
-        setTimeout(() => setCopied(false), 2500);
       }
     }
+  };
+
+  // Curated photo gallery calculation for rich visuals
+  const galleryList = (() => {
+    if (event.galleryImages && event.galleryImages.length > 0) return event.galleryImages;
+    if (!isPublicVenue) {
+      if (event.tag?.includes('กาแฟ') || event.title?.includes('Coffee') || event.title?.includes('กาแฟ')) {
+        return [
+          event.image,
+          'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80',
+          'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80',
+          'https://images.unsplash.com/photo-1498804103079-a6351b050096?auto=format&fit=crop&w=600&q=80',
+          'https://images.unsplash.com/photo-1442512595331-e89e73853f31?auto=format&fit=crop&w=600&q=80',
+        ];
+      }
+      if (event.tag?.includes('บอร์ดเกม') || event.title?.includes('บอร์ดเกม')) {
+        return [
+          event.image,
+          'https://images.unsplash.com/photo-1632516643720-e7f5d7d6ecc9?auto=format&fit=crop&w=600&q=80',
+          'https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?auto=format&fit=crop&w=600&q=80',
+          'https://images.unsplash.com/photo-1563941402622-4e7a488bcc57?auto=format&fit=crop&w=600&q=80',
+          'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=600&q=80',
+        ];
+      }
+      if (event.tag?.includes('วิ่ง') || event.title?.includes('Run') || event.title?.includes('วิ่ง') || event.tag?.includes('HYROX')) {
+        return [
+          event.image,
+          'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=600&q=80',
+          'https://images.unsplash.com/photo-1486218119243-13883505764c?auto=format&fit=crop&w=600&q=80',
+          'https://images.unsplash.com/photo-1513593771513-7b58b6c4af38?auto=format&fit=crop&w=600&q=80',
+          'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=600&q=80',
+        ];
+      }
+      if (event.tag?.includes('Sound Bath') || event.tag?.includes('โยคะ') || event.title?.includes('โยคะ')) {
+        return [
+          event.image,
+          'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=600&q=80',
+          'https://images.unsplash.com/photo-1545205597-3d9d02c29597?auto=format&fit=crop&w=600&q=80',
+          'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=600&q=80',
+          'https://images.unsplash.com/photo-1508672019048-805b876b67e2?auto=format&fit=crop&w=600&q=80',
+        ];
+      }
+      return [
+        event.image,
+        'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=600&q=80',
+        'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=600&q=80',
+        'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=600&q=80',
+        'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=600&q=80',
+      ];
+    }
+    return null;
+  })();
+
+  // 📝 Smart Formatted Description Renderer (Paragraphs, Headings, and Custom Bullet Lists)
+  const renderFormattedDescription = (text?: string, isExpanded: boolean = false) => {
+    if (!text) return null;
+
+    if (!isExpanded && text.length > 120) {
+      return (
+        <p className="text-xs sm:text-sm text-[#475569] leading-relaxed line-clamp-3 whitespace-pre-line">
+          {text}
+        </p>
+      );
+    }
+
+    // Split by double line breaks into paragraphs
+    const paragraphs = text.split('\n\n');
+
+    return (
+      <div className="space-y-2.5 text-xs sm:text-sm text-[#475569] leading-relaxed">
+        {paragraphs.map((para, pIdx) => {
+          const lines = para.split('\n');
+          const hasBullets = lines.some((l) => /^\s*([•\-*▪]|\d+\.)\s+/.test(l));
+
+          if (hasBullets) {
+            return (
+              <div key={pIdx} className="space-y-1.5">
+                {lines.map((line, lIdx) => {
+                  const isBullet = /^\s*([•\-*▪]|\d+\.)\s+/.test(line);
+                  const isHeader = line.endsWith(':') || /^[✨📚☕🎲🏃🎯🎒📌💡]/.test(line);
+
+                  if (isHeader) {
+                    return (
+                      <p key={lIdx} className="font-bold text-[#1E293B] pt-1">
+                        {line}
+                      </p>
+                    );
+                  }
+
+                  if (isBullet) {
+                    const cleanedText = line.replace(/^\s*([•\-*▪]|\d+\.)\s+/, '');
+                    return (
+                      <div key={lIdx} className="flex items-start gap-2 pl-2 sm:pl-3 text-slate-700">
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-700 shrink-0 mt-2" />
+                        <span className="flex-1 leading-relaxed">{cleanedText}</span>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <p key={lIdx} className="leading-relaxed">
+                      {line}
+                    </p>
+                  );
+                })}
+              </div>
+            );
+          }
+
+          return (
+            <p key={pIdx} className="whitespace-pre-line leading-relaxed">
+              {para}
+            </p>
+          );
+        })}
+      </div>
+    );
   };
 
   return (
@@ -283,18 +402,23 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             </div>
           )}
 
-          {/* Header Title & Quick Share Row */}
-          <div>
-            <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
+          {/* Main Title & Tags (Clean Optical Spacing) */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between gap-2 flex-wrap pb-0.5">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className={`text-[11px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full border inline-block ${
                   isPublicVenue
                     ? 'bg-sky-50 text-sky-700 border-sky-200'
                     : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                 }`}>
-                  {isPublicVenue
-                    ? '🏛️ อีเวนต์ & งานแฟร์'
-                    : '🏡 กิจกรรมชุมชน'}
+                  {isPublicVenue ? (
+                    '🏛️ อีเวนต์ & งานแฟร์'
+                  ) : (
+                    <>
+                      <span className="inline sm:hidden">🌿 Chill & Connect</span>
+                      <span className="hidden sm:inline">🌿 Chill & Connect Community</span>
+                    </>
+                  )}
                 </span>
 
                 {/* 🏷️ Prominent Price Pill (Free vs Paid) */}
@@ -347,17 +471,17 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               <span className="font-semibold text-[#1E293B] truncate">{event.time}</span>
             </div>
 
-            {/* Location with Clean Google Maps Link (No Front Icon) */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:col-span-3 pt-2.5 border-t border-slate-200/60">
-              <div className="flex items-center gap-2 min-w-0 flex-1">
-                <MapPin className="w-4 h-4 text-[#F26430] shrink-0" />
-                <span className="font-bold text-[#1E293B] truncate text-xs sm:text-sm">{event.location}</span>
+            {/* Location with Clean Google Maps Link (Wrapped & size matches date/time) */}
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:col-span-3 pt-2.5 border-t border-slate-200/60">
+              <div className="flex items-start gap-2 min-w-0 flex-1">
+                <MapPin className="w-3.5 h-3.5 text-[#F26430] shrink-0 mt-0.5" />
+                <span className="font-bold text-[#1E293B] text-xs leading-relaxed break-words">{event.location}</span>
               </div>
               <a
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-xl bg-white hover:bg-orange-50 text-[#1E293B] hover:text-[#F26430] border border-slate-200 hover:border-orange-300 text-xs font-bold shadow-2xs transition-all shrink-0 active:scale-95 cursor-pointer"
+                className="inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-xl bg-white hover:bg-orange-50 text-[#1E293B] hover:text-[#F26430] border border-slate-200 hover:border-orange-300 text-xs font-bold shadow-2xs transition-all shrink-0 active:scale-95 cursor-pointer self-start sm:self-auto"
                 title="เปิดดูตำแหน่งและเส้นทางบน Google Maps"
               >
                 <span>เปิด Google Maps</span>
@@ -396,13 +520,84 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             </div>
           )}
 
-          {/* Description */}
-          <div className="space-y-1 pt-1">
-            <h4 className="font-bold text-xs sm:text-sm text-[#1E293B]">รายละเอียดกิจกรรม</h4>
-            <p className="text-xs sm:text-sm text-[#475569] leading-relaxed">
-              {event.description}
-            </p>
+          {/* Description with See more / See less */}
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center justify-between">
+              <h4 className="font-bold text-xs sm:text-sm text-[#1E293B]">รายละเอียดกิจกรรม</h4>
+              {event.description && event.description.length > 120 && (
+                <button
+                  type="button"
+                  onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                  className="text-xs font-bold text-slate-700 hover:text-slate-900 flex items-center gap-0.5 cursor-pointer transition-colors"
+                >
+                  <span>{isDescriptionExpanded ? 'ย่อเนื้อหา' : 'อ่านต่อ'}</span>
+                  {isDescriptionExpanded ? <ChevronUp className="w-3.5 h-3.5 text-slate-600" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-600" />}
+                </button>
+              )}
+            </div>
+            
+            {renderFormattedDescription(event.description, isDescriptionExpanded)}
           </div>
+
+          {/* 📸 Event Photo Gallery (4-5 Photos) */}
+          {galleryList && galleryList.length > 0 && (
+            <div className="space-y-2 pt-1">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-xs sm:text-sm text-[#1E293B] flex items-center gap-1.5">
+                  <ImageIcon className="w-3.5 h-3.5 text-[#4A7C59]" />
+                  <span>ภาพบรรยากาศกิจกรรม</span>
+                  <span className="text-slate-400 text-xs font-normal">({galleryList.length} รูป)</span>
+                </h4>
+                <span className="text-[10px] text-slate-400 font-medium">คลิกที่รูปเพื่อดูภาพใหญ่</span>
+              </div>
+              <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                {galleryList.slice(0, 5).map((imgUrl: string, idx: number) => (
+                  <div
+                    key={idx}
+                    onClick={() => setSelectedGalleryImg(imgUrl)}
+                    className="relative aspect-4/3 rounded-xl overflow-hidden border border-slate-200 shadow-2xs hover:border-[#F26430] cursor-pointer group transition-all"
+                  >
+                    <img
+                      src={imgUrl}
+                      alt={`บรรยากาศ ${event.title} รูปที่ ${idx + 1}`}
+                      className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 📋 Guidelines, Rules & What to Bring (Exclusively for Community Meetups) */}
+          {!isPublicVenue && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+              {/* What to Bring */}
+              <div className="p-3 bg-emerald-50/60 rounded-2xl border border-emerald-200/80 space-y-1.5 text-xs text-slate-700">
+                <h5 className="font-extrabold text-[#1E293B] flex items-center gap-1.5 text-xs">
+                  <span>🎒 สิ่งที่ควรเตรียมมา</span>
+                </h5>
+                <ul className="space-y-1 text-[11px] text-[#334155] list-disc list-inside leading-relaxed">
+                  <li>แต่งกายตามสะดวก สบายๆ ตามสไตล์กิจกรรม</li>
+                  <li>เตรียมกระบอกน้ำหรือของใช้ส่วนตัว</li>
+                  <li>เปิดใจ พร้อมร่วมสนุกและทำความรู้จักเพื่อนใหม่</li>
+                </ul>
+              </div>
+
+              {/* Community Rules & Safety */}
+              <div className="p-3 bg-slate-50/90 rounded-2xl border border-slate-200/80 space-y-1.5 text-xs text-slate-700">
+                <h5 className="font-extrabold text-[#1E293B] flex items-center gap-1.5 text-xs">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>กฎระเบียบ & ความปลอดภัย</span>
+                </h5>
+                <ul className="space-y-1 text-[11px] text-[#334155] list-disc list-inside leading-relaxed">
+                  <li>ตรงต่อเวลา (ควรถึงก่อนเวลานัด 10-15 นาที)</li>
+                  <li>ให้เกียรติและเคารพความเป็นส่วนตัวของทุกคน</li>
+                  <li>ห้ามขายตรง / ชวนลงทุน / คุกคาม 100%</li>
+                </ul>
+              </div>
+            </div>
+          )}
 
           {/* Host Info Box with Official Source Link */}
           <div className="p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#E8E2D8] space-y-2">
@@ -427,7 +622,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                   <p className="text-[11px] text-[#64748B] truncate">
                     {isPublicVenue
                       ? '🏛️ ผู้จัดงานทางการ / ศูนย์จัดแสดง'
-                      : '🏡 ผู้จัดกิจกรรมชุมชน • คลิกดูโปรไฟล์ ➔'}
+                      : '🌿 โฮสต์ Chill & Connect • คลิกดูโปรไฟล์ ➔'}
                   </p>
                 </div>
               </div>
@@ -531,47 +726,67 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             </div>
           )}
 
-          {/* Public Venue Sub-Activities & Buddy Matcher (Below Description - Hide if Event has Ended) */}
+          {/* Public Venue Sub-Activities & Buddy Matcher (Collapsible - Hide if Event has Ended) */}
           {isPublicVenue && !isEnded && (
-            <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200 space-y-3 shadow-2xs">
-              <div className="flex items-center justify-between gap-2">
-                <div className="space-y-0.5 min-w-0">
+            <div className="rounded-2xl bg-amber-50/80 border border-amber-200 shadow-2xs overflow-hidden transition-all">
+              {/* Collapsible Header */}
+              <div
+                onClick={() => setIsBuddyBoxOpen(!isBuddyBoxOpen)}
+                className="p-3.5 sm:p-4 flex items-center justify-between gap-2 cursor-pointer hover:bg-amber-100/50 transition-colors select-none"
+              >
+                <div className="space-y-0.5 min-w-0 flex-1">
                   <h4 className="font-extrabold text-xs sm:text-sm text-[#1E293B] flex items-center gap-1.5 truncate">
                     <Users className="w-4 h-4 text-[#F26430] shrink-0" />
                     <span>ชวนเพื่อนทำกิจกรรมในงาน ({subActivities.length})</span>
+                    <span className="text-[10px] font-bold text-amber-800 bg-amber-200/80 px-2 py-0.5 rounded-full">
+                      {isBuddyBoxOpen ? 'แตะเพื่อย่อ' : 'แตะเพื่อเปิดดู'}
+                    </span>
                   </h4>
                   <p className="text-[10px] sm:text-[11px] text-[#64748B] truncate">
-                    หาเพื่อนร่วมเดินดูงาน หรือสร้างนัดหมายกลุ่มย่อยของคุณ
+                    {isBuddyBoxOpen
+                      ? 'หาเพื่อนร่วมเดินดูงาน หรือสร้างนัดหมายกลุ่มย่อยของคุณ'
+                      : `มี ${subActivities.length} นัดหมายกลุ่มย่อยกำลังรอเพื่อนร่วมเดินงาน • คลิกเพื่อเปิดดูกลุ่ม`}
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setShowSubForm(!showSubForm)}
-                  className={`text-xs font-bold px-3.5 py-1.5 rounded-full shadow-2xs transition-all active:scale-95 shrink-0 cursor-pointer flex items-center gap-1.5 ${
-                    showSubForm
-                      ? 'bg-slate-200 hover:bg-slate-300 text-slate-700'
-                      : 'bg-[#F26430] hover:bg-[#D95322] text-white shadow-[#F26430]/20'
-                  }`}
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>{showSubForm ? 'ปิดฟอร์ม' : 'ชวนเพื่อนในงาน'}</span>
-                </button>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsBuddyBoxOpen(true);
+                      setShowSubForm(!showSubForm);
+                    }}
+                    className={`text-[11px] font-bold px-3 py-1.5 rounded-full shadow-2xs transition-all active:scale-95 shrink-0 cursor-pointer flex items-center gap-1 ${
+                      showSubForm
+                        ? 'bg-slate-200 hover:bg-slate-300 text-slate-700'
+                        : 'bg-[#4A7C59] hover:bg-[#3d6849] text-white shadow-[#4A7C59]/20'
+                    }`}
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{showSubForm ? 'ปิดฟอร์ม' : 'ชวนเพื่อน'}</span>
+                  </button>
+                  <div className="p-1 text-slate-400 hover:text-slate-600">
+                    {isBuddyBoxOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </div>
+                </div>
               </div>
 
-              {/* 🏆 Option 1: Inline Expandable Sub-Activity Creation Form (No Nested Popups!) */}
-              {showSubForm && (
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    setSafetyError(null);
-                    if (!subTitleInput.trim()) return;
+              {isBuddyBoxOpen && (
+                <div className="p-3.5 sm:p-4 pt-0 space-y-3 border-t border-amber-200/60 mt-0">
+                  {/* 🏆 Option 1: Inline Expandable Sub-Activity Creation Form (No Nested Popups!) */}
+                  {showSubForm && (
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        setSafetyError(null);
+                        if (!subTitleInput.trim()) return;
 
-                    // Safety Moderation Filter: Check for forbidden words
-                    const SENSITIVE_KEYWORDS = [
-                      'ลงทุน', 'forex', 'crypto', 'คริปโต', 'ลูกโซ่', 'ขายตรง', 'mlm', 'งานออนไลน์',
-                      'รายได้เสริม', 'การพนัน', 'คาสิโน', 'ยืมเงิน', 'กู้เงิน', '18+', 'เสียว', 'นวดแฝง'
-                    ];
+                        // Safety Moderation Filter: Check for forbidden words
+                        const SENSITIVE_KEYWORDS = [
+                          'ลงทุน', 'forex', 'crypto', 'คริปโต', 'ลูกโซ่', 'ขายตรง', 'mlm', 'งานออนไลน์',
+                          'รายได้เสริม', 'การพนัน', 'คาสิโน', 'ยืมเงิน', 'กู้เงิน', '18+', 'เสียว', 'นวดแฝง'
+                        ];
                     const allText = `${subTitleInput} ${subMeetupPointInput} ${subNoteInput}`.toLowerCase();
                     const violated = SENSITIVE_KEYWORDS.find((kw) => allText.includes(kw));
 
@@ -876,25 +1091,28 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                               </span>
                             ) : isSubJoined ? (
                               <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 select-none">
+                                  เข้าร่วมแล้ว
+                                </span>
                                 <button
                                   type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleJoinSubActivity(sub.id);
                                   }}
-                                  className="text-[10px] sm:text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-600 hover:bg-rose-600 text-white transition-all shadow-xs cursor-pointer active:scale-95 group/btn"
-                                  title="คลิกอีกครั้งเพื่อยกเลิกการเข้าร่วม"
+                                  className="text-[10px] sm:text-[11px] font-bold px-2.5 py-1 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 transition-all shadow-2xs cursor-pointer active:scale-95 flex items-center gap-1"
+                                  title="กดยกเลิกการเข้าร่วมกลุ่มนี้"
                                 >
-                                  <span className="group-hover/btn:hidden">เข้าร่วมแล้ว</span>
-                                  <span className="hidden group-hover/btn:inline">กดยกเลิก</span>
+                                  <X className="w-3 h-3" />
+                                  <span>ยกเลิก</span>
                                 </button>
                                 <Link
                                   href={`/myhub?chatSubId=${sub.id}&eventId=${event.id}`}
                                   onClick={onClose}
-                                  className="text-[10px] sm:text-[11px] font-extrabold px-3 py-1 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 transition-all shrink-0 flex items-center gap-1 shadow-2xs"
+                                  className="text-[10px] sm:text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 transition-all shrink-0 flex items-center gap-1 shadow-2xs"
                                   title="เปิดห้องแชตคุยกับโฮสต์และเพื่อนๆ ที่หน้ามายฮับ"
                                 >
-                                  <span>💬 คุยกับโฮสต์ ➔</span>
+                                  <span>💬 คุยในแชต ➔</span>
                                 </Link>
                               </div>
                             ) : joinedSubIds.length > 0 ? (
@@ -942,6 +1160,8 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               </div>
             </div>
           )}
+        </div>
+      )}
 
           {/* Public Venue Sub-Activities: Read-only Summary for Ended Events */}
           {isPublicVenue && isEnded && subActivities.length > 0 && (
@@ -1178,6 +1398,33 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
           onClose={() => setSelectedProfileQuery(null)}
           targetProfileIdOrName={selectedProfileQuery}
         />
+      )}
+
+      {/* 🖼️ Photo Gallery Lightbox Modal */}
+      {selectedGalleryImg && (
+        <div
+          className="fixed inset-0 z-70 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-xs animate-fade-in cursor-pointer"
+          onClick={() => setSelectedGalleryImg(null)}
+        >
+          <div
+            className="relative max-w-4xl max-h-[85vh] w-full rounded-3xl overflow-hidden shadow-2xl bg-black/90 flex items-center justify-center p-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setSelectedGalleryImg(null)}
+              className="absolute top-3 right-3 p-2 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-xs cursor-pointer z-10 transition-all border border-white/20"
+              title="ปิดรูปภาพ"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <img
+              src={selectedGalleryImg}
+              alt="ภาพบรรยากาศขนาดใหญ่"
+              className="w-full h-auto max-h-[80vh] object-contain rounded-2xl mx-auto shadow-lg"
+            />
+          </div>
+        </div>
       )}
 
     </div>

@@ -93,6 +93,10 @@ export default function AdminPage() {
       if (data.success) {
         setEvents(data.events);
         setAutoPublishState(data.autoPublish);
+        const hasPending = data.events.some((e: any) => e.approvalStatus === 'pending');
+        if (!hasPending) {
+          setSelectedTab('all');
+        }
       }
     } catch (err) {
       console.error('Failed to fetch admin events:', err);
@@ -266,9 +270,9 @@ export default function AdminPage() {
     }
   };
 
-  // Reset & Fresh Seed All 50+ Events
+  // Reset & Fresh Seed All Events
   const handleResetAndSeed = async () => {
-    if (!confirm('ต้องการรีเซ็ตและดึงข้อมูลอีเวนต์สดชุดใหญ่ (60+ รายการ) ใหม่ทั้งหมดใช่หรือไม่?')) return;
+    if (!confirm('ต้องการรีเซ็ตและดึงข้อมูลอีเวนต์สดชุดใหญ่ (80+ รายการ) ใหม่ทั้งหมดใช่หรือไม่?')) return;
     try {
       setIsScraping(true);
       const res = await fetch('/api/admin/events', {
@@ -279,7 +283,7 @@ export default function AdminPage() {
       const data = await res.json();
       if (data.success) {
         setEvents(data.events);
-        setSelectedTab('pending');
+        setSelectedTab('all'); // Show all 80+ loaded events immediately
         fetchSources();
         showToast(`🎉 ${data.message}`);
       }
@@ -620,11 +624,11 @@ export default function AdminPage() {
                 <button
                   onClick={handleResetAndSeed}
                   disabled={isScraping}
-                  className="bg-indigo-900/60 hover:bg-indigo-800 text-indigo-200 border border-indigo-500/40 font-bold text-xs px-4 py-2.5 rounded-full transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                  title="รีเซ็ตและโหลดข้อมูลอีเวนต์สดชุดใหญ่ 60+ รายการ"
+                  className="bg-indigo-600/80 hover:bg-indigo-600 text-white border border-indigo-400/50 font-bold text-xs px-4 py-2.5 rounded-full transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-md shadow-indigo-900/30"
+                  title="รีเซ็ตและโหลดข้อมูลอีเวนต์สดชุดใหญ่ 80+ รายการ"
                 >
-                  <Zap className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>โหลดชุดใหญ่ 60+ รายการ</span>
+                  <Zap className="w-3.5 h-3.5 text-amber-300" />
+                  <span>โหลดชุดใหญ่ 80+ รายการ</span>
                 </button>
 
                 <button
