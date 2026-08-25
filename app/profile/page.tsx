@@ -4,6 +4,8 @@ import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
+import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
+import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import {
   MOCK_PROFILES,
   UserProfile,
@@ -50,10 +52,29 @@ function ProfileContent() {
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [connectsCount, setConnectsCount] = useState<number>(profile.connectsCount);
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
-
-  // Edit Profile Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editForm, setEditForm] = useState<Partial<UserProfile>>({});
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('isLoggedIn');
+      if (saved === 'true') {
+        setIsLoggedIn(true);
+      } else {
+        setIsLoggedIn(false);
+      }
+    }
+  }, []);
+
+  const handleSetIsLoggedIn = (status: boolean) => {
+    setIsLoggedIn(status);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('isLoggedIn', status ? 'true' : 'false');
+    }
+  };
 
   // Sync profile when query param changes or loaded from local storage
   useEffect(() => {
@@ -131,8 +152,10 @@ function ProfileContent() {
       <Navbar
         activeTab="profile"
         setActiveTab={() => {}}
-        isLoggedIn={true}
-        setIsLoggedIn={() => {}}
+        isLoggedIn={isLoggedIn}
+        setIsLoggedIn={handleSetIsLoggedIn}
+        onOpenLogin={() => setIsAuthModalOpen(true)}
+        onOpenLogout={() => setIsLogoutModalOpen(true)}
       />
 
       <main className="flex-1 pb-20">
@@ -856,6 +879,27 @@ function ProfileContent() {
           onLeaveSuccess={() => {}}
         />
       )}
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onLoginSuccess={() => {
+          handleSetIsLoggedIn(true);
+          showToast('เข้าสู่ระบบสำเร็จ! 🎉');
+        }}
+      />
+
+      {/* Logout Confirmation Modal */}
+      <LogoutConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirmLogout={() => {
+          handleSetIsLoggedIn(false);
+          setIsLogoutModalOpen(false);
+          showToast('ออกจากระบบเรียบร้อยแล้ว (Guest View)');
+        }}
+      />
 
       {/* Footer */}
       <footer className="bg-white border-t border-[#E8E2D8] py-8 text-center text-xs text-[#64748B] space-y-2 mt-auto">

@@ -74,9 +74,9 @@ export function parseEventEndDateToTimestamp(dateStr: string): number {
 
 export function isEventEndedByDate(dateStr: string): boolean {
   if (!dateStr) return false;
-  // Current app reference date: 22 August 2026
+  // Current app reference date: 25 August 2026
   const endTimestamp = parseEventEndDateToTimestamp(dateStr);
-  const now = new Date(2026, 7, 22, 0, 0, 0).getTime();
+  const now = new Date(2026, 7, 25, 0, 0, 0).getTime();
   return endTimestamp < now;
 }
 

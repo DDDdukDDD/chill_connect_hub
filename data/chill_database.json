@@ -1,6 +1,6 @@
 {
   "version": "2.0.0",
-  "lastUpdated": "2026-08-25T03:33:52.795Z",
+  "lastUpdated": "2026-08-25T10:30:31.678Z",
   "autoPublish": false,
   "events": [
     {
@@ -56,7 +56,7 @@
       "venueTag": "qsncc",
       "externalUrl": "https://www.qsncc.com/en/whats-on/event-calendar",
       "buddyCount": 18,
-      "status": "active",
+      "status": "ended",
       "latitude": 13.7238,
       "longitude": 100.5599,
       "zone": "sukhumvit",
@@ -88,7 +88,7 @@
       "venueTag": "marathon",
       "externalUrl": "https://www.bangkokmarathon.org",
       "buddyCount": 24,
-      "status": "active",
+      "status": "ended",
       "latitude": 13.7314,
       "longitude": 100.5414,
       "zone": "silom",
@@ -118,7 +118,7 @@
       "venueTag": "bitec",
       "externalUrl": "https://www.bitec.co.th/gallery",
       "buddyCount": 15,
-      "status": "active",
+      "status": "ended",
       "latitude": 13.6698,
       "longitude": 100.6053,
       "zone": "bangna",
@@ -148,7 +148,7 @@
       "venueTag": "impact",
       "externalUrl": "https://www.impact.co.th",
       "buddyCount": 9,
-      "status": "active",
+      "status": "ended",
       "latitude": 13.9113,
       "longitude": 100.5484,
       "zone": "nonthaburi",
@@ -1072,7 +1072,7 @@
       "badgeText": "🎞️ สายกล้องฟิล์ม",
       "createdAtTimestamp": 1722850000000,
       "eventType": "community",
-      "status": "ended",
+      "status": "active",
       "latitude": 13.7348,
       "longitude": 100.5135,
       "zone": "silom",
@@ -1180,7 +1180,7 @@
       "badgeText": "🥖 ขนมปังโฮมเมด",
       "createdAtTimestamp": 1722890000000,
       "eventType": "community",
-      "status": "ended",
+      "status": "active",
       "latitude": 13.7214,
       "longitude": 100.5298,
       "zone": "silom",
@@ -1348,11 +1348,11 @@
       "status": "active",
       "isNew": true,
       "createdAtTimestamp": 1787582328651,
-      "externalUrl": "https://www.theconcert.com/concert/cat-expo-2026",
-      "link": "https://www.theconcert.com/concert/cat-expo-2026",
+      "externalUrl": "https://www.bitec.co.th/gallery",
+      "link": "https://www.bitec.co.th/gallery",
       "approvalStatus": "approved",
       "source": "The Concert",
-      "sourceUrl": "https://www.theconcert.com/concert/cat-expo-2026"
+      "sourceUrl": "https://www.bitec.co.th/gallery"
     },
     {
       "id": "live-agg-2",
@@ -1847,11 +1847,11 @@
       "status": "active",
       "isNew": true,
       "createdAtTimestamp": 1787582328651,
-      "externalUrl": "https://www.bitec.co.th/events/photo-fair-2026",
-      "link": "https://www.bitec.co.th/events/photo-fair-2026",
+      "externalUrl": "https://www.bitec.co.th/gallery",
+      "link": "https://www.bitec.co.th/gallery",
       "approvalStatus": "approved",
       "source": "BITEC Events",
-      "sourceUrl": "https://www.bitec.co.th/events/photo-fair-2026"
+      "sourceUrl": "https://www.bitec.co.th/gallery"
     },
     {
       "id": "live-agg-18",
@@ -3033,11 +3033,11 @@
       "status": "active",
       "isNew": true,
       "createdAtTimestamp": 1787582328652,
-      "externalUrl": "https://www.bitec.co.th/events/bangkok-comic-con-2026",
-      "link": "https://www.bitec.co.th/events/bangkok-comic-con-2026",
+      "externalUrl": "https://www.bitec.co.th/gallery",
+      "link": "https://www.bitec.co.th/gallery",
       "approvalStatus": "approved",
       "source": "BITEC Events",
-      "sourceUrl": "https://www.bitec.co.th/events/bangkok-comic-con-2026"
+      "sourceUrl": "https://www.bitec.co.th/gallery"
     },
     {
       "id": "live-agg-56",
@@ -3065,11 +3065,11 @@
       "status": "active",
       "isNew": true,
       "createdAtTimestamp": 1787582328652,
-      "externalUrl": "https://moneyexpo.net/bangkok-year-end-2026",
-      "link": "https://moneyexpo.net/bangkok-year-end-2026",
+      "externalUrl": "https://www.qsncc.com/en/whats-on/event-calendar",
+      "link": "https://www.qsncc.com/en/whats-on/event-calendar",
       "approvalStatus": "approved",
       "source": "Money Expo",
-      "sourceUrl": "https://moneyexpo.net/bangkok-year-end-2026"
+      "sourceUrl": "https://www.qsncc.com/en/whats-on/event-calendar"
     },
     {
       "id": "live-agg-57",
@@ -3097,11 +3097,11 @@
       "status": "active",
       "isNew": true,
       "createdAtTimestamp": 1787582328652,
-      "externalUrl": "https://www.bitec.co.th/events/coffee-expo-2027",
-      "link": "https://www.bitec.co.th/events/coffee-expo-2027",
+      "externalUrl": "https://www.bitec.co.th/gallery",
+      "link": "https://www.bitec.co.th/gallery",
       "approvalStatus": "approved",
       "source": "BITEC Events",
-      "sourceUrl": "https://www.bitec.co.th/events/coffee-expo-2027"
+      "sourceUrl": "https://www.bitec.co.th/gallery"
     },
     {
       "id": "live-agg-58",
@@ -3129,11 +3129,11 @@
       "status": "active",
       "isNew": true,
       "createdAtTimestamp": 1787582328652,
-      "externalUrl": "https://www.bitec.co.th/events/motor-sale-2027",
-      "link": "https://www.bitec.co.th/events/motor-sale-2027",
+      "externalUrl": "https://www.bitec.co.th/gallery",
+      "link": "https://www.bitec.co.th/gallery",
       "approvalStatus": "approved",
       "source": "BITEC Events",
-      "sourceUrl": "https://www.bitec.co.th/events/motor-sale-2027"
+      "sourceUrl": "https://www.bitec.co.th/gallery"
     },
     {
       "id": "live-agg-59",
@@ -3254,7 +3254,7 @@
       "price": "ฟรี!",
       "rating": 4.8,
       "reviewsCount": 31,
-      "status": "active",
+      "status": "ended",
       "isNew": true,
       "createdAtTimestamp": 1787582328653,
       "externalUrl": "https://www.qsncc.com/en/whats-on/event-calendar",
@@ -4150,7 +4150,7 @@
       "price": "ฟรี!",
       "rating": 4.8999999999999995,
       "reviewsCount": 18,
-      "status": "active",
+      "status": "ended",
       "isNew": true,
       "createdAtTimestamp": 1787582328653,
       "externalUrl": "https://www.thailandfranchising.com",
@@ -4182,7 +4182,7 @@
       "price": "ฟรี!",
       "rating": 4.8999999999999995,
       "reviewsCount": 52,
-      "status": "active",
+      "status": "ended",
       "isNew": true,
       "createdAtTimestamp": 1787582328653,
       "externalUrl": "https://www.trafs.net",

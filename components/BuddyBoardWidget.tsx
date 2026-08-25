@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Users, Plus, MessageCircle, Sparkles, MapPin, Calendar, Clock, CheckCircle2, Heart, Send } from 'lucide-react';
+import Link from 'next/link';
+import { Users, Plus, MessageCircle, Sparkles, MapPin, Calendar, Clock, CheckCircle2, Heart, Send, Lock } from 'lucide-react';
 
 export interface BuddyPost {
   id: string;
@@ -63,7 +64,15 @@ const INITIAL_BUDDY_POSTS: BuddyPost[] = [
   },
 ];
 
-export const BuddyBoardWidget: React.FC = () => {
+interface BuddyBoardWidgetProps {
+  isLoggedIn?: boolean;
+  onRequireLogin?: () => void;
+}
+
+export const BuddyBoardWidget: React.FC<BuddyBoardWidgetProps> = ({
+  isLoggedIn = false,
+  onRequireLogin,
+}) => {
   const [buddyPosts, setBuddyPosts] = useState<BuddyPost[]>(INITIAL_BUDDY_POSTS);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -81,8 +90,20 @@ export const BuddyBoardWidget: React.FC = () => {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  const handleOpenCreatePost = () => {
+    if (!isLoggedIn && onRequireLogin) {
+      onRequireLogin();
+      return;
+    }
+    setIsModalOpen(true);
+  };
+
   const handleCreateBuddyPost = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isLoggedIn && onRequireLogin) {
+      onRequireLogin();
+      return;
+    }
     if (!titleInput.trim() || !placeInput.trim()) return;
 
     const newPost: BuddyPost = {
@@ -108,6 +129,10 @@ export const BuddyBoardWidget: React.FC = () => {
   };
 
   const handleJoinBuddy = (postId: string) => {
+    if (!isLoggedIn && onRequireLogin) {
+      onRequireLogin();
+      return;
+    }
     setBuddyPosts((prev) =>
       prev.map((post) => {
         if (post.id === postId && post.joinedPeople < post.neededPeople) {
@@ -137,17 +162,61 @@ export const BuddyBoardWidget: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="bg-[#F26430] hover:bg-[#D95322] text-white px-6 py-3 rounded-full font-bold text-xs sm:text-sm transition-all shadow-lg hover:shadow-orange-500/20 active:scale-95 flex items-center justify-center gap-2 shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          <span>+ ตั้งโพสต์ชวนเพื่อนเที่ยว</span>
-        </button>
+        {isLoggedIn ? (
+          <button
+            onClick={handleOpenCreatePost}
+            className="bg-[#F26430] hover:bg-[#D95322] text-white px-6 py-3 rounded-full font-bold text-xs sm:text-sm transition-all shadow-lg hover:shadow-orange-500/20 active:scale-95 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>+ ตั้งโพสต์ชวนเพื่อนเที่ยว</span>
+          </button>
+        ) : (
+          <Link
+            href="/onboarding"
+            className="bg-[#4A7C59] hover:bg-[#3B6347] text-white px-5 py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>สมัครสมาชิกฟรีเพื่อปลดล็อก</span>
+          </Link>
+        )}
       </div>
 
-      {/* Buddy Posts Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      {!isLoggedIn ? (
+        /* Guest Safe Space & Locked Board Banner */
+        <div className="relative overflow-hidden rounded-2xl bg-slate-800/80 border border-slate-700/80 p-6 sm:p-10 text-center space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 flex items-center justify-center mx-auto shadow-md">
+            <Lock className="w-7 h-7" />
+          </div>
+
+          <div className="max-w-md mx-auto space-y-1.5">
+            <h3 className="text-lg sm:text-xl font-black text-white">
+              🔒 พื้นที่พิเศษเฉพาะสมาชิก Chill & Connect
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-medium">
+              กระดานหาเพื่อนชวนเที่ยว เปิดให้เข้าถึงเฉพาะสมาชิกที่สมัครและยืนยันตัวตนแล้วเท่านั้น เพื่อสร้างพื้นที่ปลอดภัย (Safe Space) และป้องกันการขายตรง 100%
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 max-w-sm mx-auto">
+            <Link
+              href="/onboarding"
+              className="w-full sm:w-auto bg-[#4A7C59] hover:bg-[#3B6347] text-white px-6 py-2.5 rounded-full font-black text-xs sm:text-sm shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <span>✨ สมัครสมาชิกใหม่ฟรี (ปลดล็อกบอร์ด)</span>
+            </Link>
+
+            <button
+              type="button"
+              onClick={onRequireLogin}
+              className="w-full sm:w-auto bg-slate-700/80 hover:bg-slate-700 text-slate-200 px-5 py-2.5 rounded-full font-bold text-xs sm:text-sm border border-slate-600 transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <span>เข้าสู่ระบบ</span>
+            </button>
+          </div>
+        </div>
+      ) : (
+        /* Buddy Posts Grid (Visible only to authenticated members) */
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {buddyPosts.map((post) => {
           const isFull = post.joinedPeople >= post.neededPeople;
 
@@ -218,10 +287,11 @@ export const BuddyBoardWidget: React.FC = () => {
                   <span>{isFull ? 'ครบจำนวนแล้ว' : '+ ไปด้วยคน'}</span>
                 </button>
               </div>
-            </div>
-          );
-        })}
-      </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Modal for Creating New Buddy Post */}
       {isModalOpen && (

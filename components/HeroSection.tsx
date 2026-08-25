@@ -59,7 +59,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </div>
 
           {/* Centered Safe Zone for Text & Search Bar */}
-          <div className="relative z-10 text-center space-y-3 max-w-xl mx-auto px-4 py-6 sm:py-8 w-full">
+          <div className="relative z-10 text-center space-y-3.5 max-w-3xl mx-auto px-4 py-7 sm:py-9 w-full">
             
             {/* Dynamic Headline (Pure White with Coral Highlight & Strong Contrast) */}
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight leading-tight drop-shadow-[0_2px_6px_rgba(0,0,0,0.7)]">
@@ -67,17 +67,17 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             </h1>
 
             {/* Subtitle */}
-            <p className="text-xs sm:text-sm text-white font-bold max-w-xl mx-auto drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">
+            <p className="text-xs sm:text-sm md:text-base text-white font-bold max-w-2xl mx-auto drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">
               ค้นหากิจกรรมฮีลใจ หาเพื่อนใหม่ และความสนุกในกรุงเทพฯ ✨
             </p>
 
-            {/* High-Contrast Floating Pill Search Bar */}
-            <div className="pt-1 max-w-lg mx-auto relative z-30">
-              <div className="relative flex items-center bg-white rounded-full p-1 sm:p-1.5 shadow-2xl shadow-black/30 border-2 border-white/90 focus-within:border-[#F26430] focus-within:ring-4 focus-within:ring-[#F26430]/25 transition-all z-20">
+            {/* High-Contrast Floating Pill Search Bar (Expanded & Spacious) */}
+            <div className="pt-1.5 max-w-2xl mx-auto relative z-30">
+              <div className="relative flex items-center bg-white rounded-full p-1.5 sm:p-2 shadow-2xl shadow-black/35 border-2 border-white/95 focus-within:border-[#F26430] focus-within:ring-4 focus-within:ring-[#F26430]/25 transition-all z-20">
                 
                 {/* Search Icon */}
-                <div className="pl-3 sm:pl-3.5 pr-1.5 sm:pr-2 text-[#94A3B8]">
-                  <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <div className="pl-3.5 sm:pl-4 pr-2 sm:pr-2.5 text-[#94A3B8]">
+                  <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />
                 </div>
 
                 {/* Input Field */}
@@ -89,28 +89,28 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="ค้นหากิจกรรม, สถานที่ หรือแท็ก..."
-                  className="w-full bg-transparent text-xs sm:text-sm text-[#1E293B] placeholder-[#94A3B8] focus:outline-none pr-1 sm:pr-2 font-medium"
+                  className="w-full bg-transparent text-sm sm:text-base text-[#1E293B] placeholder-[#94A3B8] focus:outline-none pr-2 font-medium"
                 />
 
                 {/* Clear Query Button */}
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="p-1 text-[#94A3B8] hover:text-[#475569] mr-1 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+                    className="p-1 text-[#94A3B8] hover:text-[#475569] mr-1.5 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <X className="w-4 h-4" />
                   </button>
                 )}
 
-                {/* Coral CTA Button (Compact on Mobile) */}
+                {/* Coral CTA Button (Prominent & Easy to Click) */}
                 <button
                   onClick={() => {
                     setIsFocused(false);
                     if (onSearchSubmit) onSearchSubmit();
                   }}
-                  className="bg-[#F26430] hover:bg-[#D95322] text-white px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all shadow-md shadow-[#F26430]/25 flex items-center justify-center gap-1 shrink-0 active:scale-95 cursor-pointer"
+                  className="bg-[#F26430] hover:bg-[#D95322] text-white px-4 sm:px-7 py-2.5 sm:py-3 rounded-full font-black text-xs sm:text-sm md:text-base transition-all shadow-md shadow-[#F26430]/25 flex items-center justify-center gap-1.5 shrink-0 active:scale-95 cursor-pointer"
                 >
-                  <Search className="w-3 h-3 sm:hidden" />
+                  <Search className="w-3.5 h-3.5 sm:hidden" />
                   <span className="hidden sm:inline">ค้นหาเลย</span>
                   <span className="sm:hidden text-xs">ค้นหา</span>
                 </button>

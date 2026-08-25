@@ -44,6 +44,7 @@ import {
   Check,
   Tag,
   ChevronUp,
+  Lock,
 } from 'lucide-react';
 
 const THAI_MONTH_NAMES = [
@@ -190,7 +191,7 @@ export default function MyHubPage() {
   // Member vs Host Persona
   const [currentRole, setCurrentRole] = useState<'member' | 'host'>('member');
 
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [myChallenges, setMyChallenges] = useState<ChallengeQuest[]>(MOCK_CHALLENGES);
@@ -310,10 +311,10 @@ export default function MyHubPage() {
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedLoginState = localStorage.getItem('isLoggedIn');
-      if (savedLoginState === 'false') {
-        setIsLoggedIn(false);
+      if (savedLoginState === 'true') {
+        setIsLoggedIn(true);
       } else {
-        localStorage.setItem('isLoggedIn', 'true');
+        setIsLoggedIn(false);
       }
 
       try {
@@ -882,7 +883,14 @@ export default function MyHubPage() {
           setIsLoggedIn={handleSetIsLoggedIn}
           onOpenLogin={() => setIsAuthModalOpen(true)}
           onOpenLogout={() => setIsLogoutModalOpen(true)}
-          onOpenCreateEvent={() => setIsCreateEventModalOpen(true)}
+          onOpenCreateEvent={() => {
+            if (!isLoggedIn) {
+              setIsAuthModalOpen(true);
+              showToast('🔒 กรุณาเข้าสู่ระบบก่อนสร้างกิจกรรมหรือเปิดตี้ใหม่');
+            } else {
+              setIsCreateEventModalOpen(true);
+            }
+          }}
         />
 
         {/* Toast Notification */}
@@ -893,8 +901,47 @@ export default function MyHubPage() {
           </div>
         )}
 
-        {/* Hero Banner Header of MyHub */}
-        <div className="bg-gradient-to-b from-white to-[#FAF7F2] border-b border-[#E8E2D8] pt-6 pb-6 sm:pt-8 sm:pb-8">
+        {!isLoggedIn ? (
+          <div className="max-w-md mx-auto px-4 py-20 text-center space-y-6 animate-fade-in flex flex-col justify-center items-center">
+            <div className="w-20 h-20 rounded-3xl bg-emerald-100 text-[#4A7C59] flex items-center justify-center shadow-lg border border-emerald-200">
+              <Lock className="w-10 h-10 text-[#4A7C59]" />
+            </div>
+            <div className="space-y-2">
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                เข้าสู่ระบบเพื่อเปิดกระเป๋า MyHub
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-sm mx-auto">
+                จัดการตั๋ว E-Ticket กิจกรรมที่คุณเข้าร่วม, เข้าห้องแชตนัดพบเพื่อนร่วมตี้, และสะสมแต้มแลกของรางวัลสุดพิเศษ
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full max-w-sm pt-2">
+              <button
+                type="button"
+                onClick={() => setIsAuthModalOpen(true)}
+                className="w-full bg-[#4A7C59] hover:bg-[#3B6347] text-white py-3 px-6 rounded-2xl font-black text-xs sm:text-sm shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>🔑 เข้าสู่ระบบสมาชิก</span>
+              </button>
+              <Link
+                href="/onboarding"
+                className="w-full bg-white hover:bg-slate-50 text-[#4A7C59] border-2 border-[#4A7C59] py-3 px-6 rounded-2xl font-black text-xs sm:text-sm transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>✨ สมัครสมาชิกใหม่</span>
+              </Link>
+            </div>
+
+            <Link
+              href="/"
+              className="text-xs font-bold text-slate-400 hover:text-slate-700 transition-colors pt-2"
+            >
+              ← กลับไปสำรวจกิจกรรมในหน้าแรก
+            </Link>
+          </div>
+        ) : (
+          <>
+            {/* Hero Banner Header of MyHub */}
+            <div className="bg-gradient-to-b from-white to-[#FAF7F2] border-b border-[#E8E2D8] pt-6 pb-6 sm:pt-8 sm:pb-8">
           <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               
@@ -1508,6 +1555,8 @@ export default function MyHubPage() {
           )}
 
         </main>
+        </>
+        )}
       </div>
 
       {/* Footer */}

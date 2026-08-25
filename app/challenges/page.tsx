@@ -30,6 +30,9 @@ import {
 } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
+import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
+import { RequireMembershipModal } from '@/components/RequireMembershipModal';
+import { JoinChallengeModal } from '@/components/JoinChallengeModal';
 import { ChallengeQuest, MOCK_CHALLENGES } from '@/data/mockData';
 
 // Extended Quest Interface with Date & Duration
@@ -39,7 +42,7 @@ export interface QuestWithDuration extends ChallengeQuest {
   daysRemaining: number;
 }
 
-// Extended Catalog of Official & Community Quests
+// Extended Catalog of Official & Community Quests with rich gamification metadata
 const ALL_QUESTS: QuestWithDuration[] = [
   {
     ...MOCK_CHALLENGES[0],
@@ -54,12 +57,24 @@ const ALL_QUESTS: QuestWithDuration[] = [
     daysRemaining: 25,
   },
   {
+    ...MOCK_CHALLENGES[2],
+    startDate: '5 มี.ค. 2026',
+    endDate: '25 มี.ค. 2026',
+    daysRemaining: 4,
+  },
+  {
+    ...MOCK_CHALLENGES[3],
+    startDate: '1 มี.ค. 2026',
+    endDate: '31 มี.ค. 2026',
+    daysRemaining: 10,
+  },
+  {
     id: 'quest-off-1',
-    title: '3 Parks Bangkok Runner: วิ่ง 3 สวนสาธารณะกรุงเทพฯ',
+    title: '3 Parks Bangkok Runner: วิ่ง 3 สวนสาธารณะกรุงเทพฯ 🏃‍♂️🌳',
     iconName: 'Flame',
     category: 'move',
-    targetGoal: 'วิ่งสะสมระยะทาง ณ สวนลุมพินี, สวนเบญจกิติ, และสวนรถไฟ (เช็คอินพิกัด GPS จริง)',
     badgeLabel: 'City Runner Master',
+    badgeIcon: '🏃‍♂️',
     completedCountInfo: '0/3 สวน',
     progressPercent: 0,
     current: '0',
@@ -70,38 +85,26 @@ const ALL_QUESTS: QuestWithDuration[] = [
     participantsCount: 342,
     rewardPoints: 350,
     isOfficial: true,
+    targetGoal: 'วิ่งสะสมระยะทาง ณ สวนลุมพินี, สวนเบญจกิติ, และสวนรถไฟ (เช็คอินพิกัด GPS จริง)',
+    objective: 'ส่งเสริมการออกกำลังกายกลางแจ้ง สูดอากาศบริสุทธิ์ในปอดสีเขียวของกรุงเทพฯ และสร้างคอมมูนิตี้นักวิ่งใจกลางเมือง',
+    steps: [
+      'ไปวิ่งออกกำลังกาย ณ สวนลุมพินี, สวนเบญจกิติ, หรือสวนวชิรเบญจทัศ (สวนรถไฟ)',
+      'กดเช็คอินพิกัด GPS ผ่านแอปเมื่อเริ่มหรือจบการวิ่ง',
+      'วิ่งครบทั้ง 3 สวนภายในช่วงเวลากิจกรรมเพื่อรับเหรียญ'
+    ],
+    verificationMethod: '📍 ระบบตรวจสอบพิกัด GPS อัตโนมัติเมื่ออยู่ในรัศมีสวนสาธารณะที่กำหนด',
+    rewardsText: '🏅 เหรียญเกียรติยศ "City Runner Master" สีทอง + ⚡ 350 XP + 🎁 สิทธิ์ร่วมงาน Bangkok Running Meetup',
     startDate: '1 มี.ค. 2026',
     endDate: '31 มี.ค. 2026',
     daysRemaining: 10,
   },
   {
-    id: 'quest-off-2',
-    title: 'Ari Specialty Coffee Hop: แวะ 5 คาเฟ่คราฟต์ย่านอารีย์',
-    iconName: 'Sparkles',
-    category: 'chill',
-    targetGoal: 'ลิ้มลองกาแฟ Specialty หรือ Matcha 5 ร้านพาร์ทเนอร์ พร้อมถ่ายภาพเช็คอินโมเมนต์',
-    badgeLabel: 'Coffee Connoisseur',
-    completedCountInfo: '0/5 ร้าน',
-    progressPercent: 0,
-    current: '0',
-    total: '5',
-    visibility: 'public',
-    creatorName: 'Chill & Connect Official',
-    creatorAvatar: '/favicon.ico',
-    participantsCount: 289,
-    rewardPoints: 300,
-    isOfficial: true,
-    startDate: '1 มี.ค. 2026',
-    endDate: '25 มี.ค. 2026',
-    daysRemaining: 4,
-  },
-  {
     id: 'quest-off-3',
-    title: 'Bookworm Expo 2026: ตะลุยงานสัปดาห์หนังสือแห่งชาติ',
+    title: 'Bookworm Expo 2026: ตะลุยงานสัปดาห์หนังสือแห่งชาติ 📚📖',
     iconName: 'Sparkles',
     category: 'learn',
-    targetGoal: 'เข้าร่วมงานสัปดาห์หนังสือ ณ ศูนย์ฯ สิริกิติ์ และอ่านหนังสือจบอย่างน้อย 1 เล่ม',
     badgeLabel: 'Master Reader',
+    badgeIcon: '📚',
     completedCountInfo: '0/1 งาน',
     progressPercent: 0,
     current: '0',
@@ -112,17 +115,26 @@ const ALL_QUESTS: QuestWithDuration[] = [
     participantsCount: 412,
     rewardPoints: 200,
     isOfficial: true,
+    targetGoal: 'เข้าร่วมงานสัปดาห์หนังสือ ณ ศูนย์ฯ สิริกิติ์ และแบ่งปันหนังสือเล่มโปรดลงคอมมูนิตี้',
+    objective: 'สนับสนุนวัฒนธรรมการอ่านหนังสือ พบปะนักเขียน และแลกเปลี่ยนมุมมองความคิดสร้างสรรค์กับเพื่อนหนอนหนังสือ',
+    steps: [
+      'เดินทางไปร่วมงานสัปดาห์หนังสือแห่งชาติ ณ ศูนย์การประชุมแห่งชาติสิริกิติ์',
+      'ถ่ายภาพหนังสือเล่มโปรดที่คุณได้จากงาน แล้วโพสต์ลง Moments',
+      'รับเหรียญ Master Reader ทันทีเมื่อโพสต์ได้รับการยืนยัน'
+    ],
+    verificationMethod: '📸 ถ่ายภาพหนังสือเล่มใหม่พร้อมเช็คอินพิกัด QSNCC',
+    rewardsText: '🏅 เหรียญตรา "Master Reader" + ⚡ 200 XP + 🎁 ส่วนลดร้านหนังสือพาร์ทเนอร์ 10%',
     startDate: '26 มี.ค. 2026',
     endDate: '6 เม.ย. 2026',
     daysRemaining: 16,
   },
   {
     id: 'quest-off-4',
-    title: 'Sound Bath & Zen Healing: สัมผัสความสงบ 3 สัปดาห์',
+    title: 'Sound Bath & Zen Healing: สัมผัสความสงบผ่อนคลาย 🧘✨',
     iconName: 'Sparkles',
     category: 'heal',
-    targetGoal: 'เข้าร่วมกิจกรรมบำบัดด้วยคลื่นเสียงหรือฝึกสมาธิกลุ่มครบ 3 ครั้ง',
     badgeLabel: 'Zen Inner Peace',
+    badgeIcon: '🧘',
     completedCountInfo: '0/3 ครั้ง',
     progressPercent: 0,
     current: '0',
@@ -133,51 +145,18 @@ const ALL_QUESTS: QuestWithDuration[] = [
     participantsCount: 198,
     rewardPoints: 280,
     isOfficial: true,
+    targetGoal: 'เข้าร่วมกิจกรรมบำบัดด้วยคลื่นเสียงหรือฝึกสมาธิกลุ่มครบ 3 ครั้ง',
+    objective: 'ผ่อนคลายสมองจากความเหนื่อยล้า บำบัดความเครียดด้วยคลื่นเสียง Tibetan Bowls และปรับสมดุลจิตใจ',
+    steps: [
+      'ลงทะเบียนกิจกรรม Sound Bath หรือ Yoga Therapy ผ่านระบบ',
+      'เข้าร่วมกิจกรรมและปล่อยวางความกังวลเต็มเวลา',
+      'สะสมการเข้าร่วมครบ 3 ครั้ง'
+    ],
+    verificationMethod: '🎟️ การสแกน E-Ticket หรือการยืนยันการเข้าร่วมจากผู้จัดกิจกรรม',
+    rewardsText: '🏅 เหรียญตรา "Zen Inner Peace" + ⚡ 280 XP + 🎁 เซ็ตชาสมุนไพรออร์แกนิก',
     startDate: '10 มี.ค. 2026',
     endDate: '10 เม.ย. 2026',
     daysRemaining: 20,
-  },
-  {
-    id: 'comm-quest-3',
-    title: 'HYROX 10K Workout Prep: เทรนนิ่งกลุ่ม 4 ครั้ง',
-    iconName: 'Flame',
-    category: 'move',
-    targetGoal: 'วิ่งและออกกำลังกายกลุ่มเตรียมแข่ง HYROX ครบ 4 ครั้ง',
-    badgeLabel: 'HYROX Warrior',
-    completedCountInfo: '0/4 ครั้ง',
-    progressPercent: 0,
-    current: '0',
-    total: '4',
-    visibility: 'public',
-    creatorName: 'Coach Mark',
-    creatorAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80',
-    participantsCount: 142,
-    rewardPoints: 250,
-    isOfficial: false,
-    startDate: '5 มี.ค. 2026',
-    endDate: '28 มี.ค. 2026',
-    daysRemaining: 7,
-  },
-  {
-    id: 'comm-quest-4',
-    title: 'Morning Yoga 7 Days: ฮีลใจรับอรุณ',
-    iconName: 'Sparkles',
-    category: 'heal',
-    targetGoal: 'เล่นโยคะยามเช้าหรือฝึกสมาธิต่อเนื่อง 7 วัน',
-    badgeLabel: 'Yoga Spirit',
-    completedCountInfo: '0/7 วัน',
-    progressPercent: 0,
-    current: '0',
-    total: '7',
-    visibility: 'public',
-    creatorName: 'K. Mindy',
-    creatorAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80',
-    participantsCount: 189,
-    rewardPoints: 200,
-    isOfficial: false,
-    startDate: '1 มี.ค. 2026',
-    endDate: '31 มี.ค. 2026',
-    daysRemaining: 10,
   },
 ];
 
@@ -236,6 +215,30 @@ export default function ChallengesDiscoveryPage() {
   const [selectedType, setSelectedType] = useState<'all' | 'official' | 'community'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   
+  // Auth state
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('isLoggedIn');
+      if (saved === 'true') {
+        setIsLoggedIn(true);
+      } else {
+        setIsLoggedIn(false);
+      }
+    }
+  }, []);
+
+  const handleSetIsLoggedIn = (status: boolean) => {
+    setIsLoggedIn(status);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('isLoggedIn', status ? 'true' : 'false');
+    }
+  };
+
   // Joined Quest state
   const [joinedQuestIds, setJoinedQuestIds] = useState<string[]>(['comm-quest-1', 'comm-quest-2']);
   
@@ -296,8 +299,10 @@ export default function ChallengesDiscoveryPage() {
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        isLoggedIn={true}
-        setIsLoggedIn={() => {}}
+        isLoggedIn={isLoggedIn}
+        setIsLoggedIn={handleSetIsLoggedIn}
+        onOpenLogin={() => setIsAuthModalOpen(true)}
+        onOpenLogout={() => setIsLogoutModalOpen(true)}
       />
 
       {/* Toast Notification */}
@@ -450,7 +455,7 @@ export default function ChallengesDiscoveryPage() {
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {filteredQuests.map((quest) => {
                     const isJoined = joinedQuestIds.includes(quest.id);
                     const isUrgent = quest.daysRemaining <= 5;
@@ -458,71 +463,64 @@ export default function ChallengesDiscoveryPage() {
                     return (
                       <div
                         key={quest.id}
-                        className={`group/card bg-white rounded-3xl p-4 sm:p-4.5 border transition-all duration-300 flex flex-col justify-between space-y-3 relative overflow-hidden shadow-xs hover:shadow-md ${
+                        onClick={() => setQuestToJoin(quest)}
+                        className={`group/card bg-white rounded-3xl p-4.5 sm:p-5 border transition-all duration-300 flex flex-col justify-between space-y-3.5 relative overflow-hidden shadow-xs hover:shadow-lg hover:-translate-y-1 cursor-pointer ${
                           isJoined 
-                            ? 'border-emerald-300 ring-2 ring-emerald-500/10 bg-emerald-50/15' 
-                            : 'border-[#E8E2D8] hover:border-orange-300'
+                            ? 'border-emerald-300 ring-2 ring-emerald-500/15 bg-emerald-50/20' 
+                            : 'border-[#E8E2D8] hover:border-amber-300'
                         }`}
                       >
                         {/* Top Accent Stripe for Official Quests */}
                         {quest.isOfficial && (
-                          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500" />
+                          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500" />
                         )}
 
-                        {/* Top Row: Category Icon + Badge Label + Official Pill */}
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center text-white shrink-0 shadow-2xs ${
-                              quest.category === 'move'
-                                ? 'bg-gradient-to-br from-rose-500 to-orange-500'
-                                : quest.category === 'heal'
-                                ? 'bg-gradient-to-br from-emerald-500 to-teal-600'
-                                : quest.category === 'chill'
-                                ? 'bg-gradient-to-br from-amber-500 to-orange-500'
-                                : 'bg-gradient-to-br from-indigo-500 to-purple-600'
-                            }`}>
-                              {quest.iconName === 'Flame' ? (
-                                <Flame className="w-4 h-4" />
-                              ) : (
-                                <Sparkles className="w-4 h-4" />
-                              )}
-                            </span>
-
-                            <div>
-                              <span className="text-[10px] font-black uppercase tracking-wider text-[#4A7C59] block">
-                                {quest.category === 'move' ? 'Move' : quest.category === 'heal' ? 'Heal' : quest.category === 'chill' ? 'Chill' : 'Learn'}
-                              </span>
-                              <span className="text-xs font-black text-slate-800 flex items-center gap-1">
-                                <Award className="w-3 h-3 text-amber-500 shrink-0" />
-                                <span>{quest.badgeLabel}</span>
-                              </span>
-                            </div>
+                        {/* Top Row: 3D Badge Avatar + Title & Badges */}
+                        <div className="flex items-start gap-3">
+                          <div className="w-12 h-12 rounded-2xl bg-amber-50 border-2 border-amber-200/80 shadow-inner flex items-center justify-center text-2xl shrink-0 group-hover/card:scale-110 transition-transform">
+                            {quest.badgeIcon || (quest.iconName === 'Flame' ? '🔥' : quest.iconName === 'Coffee' ? '☕' : quest.iconName === 'Footprints' ? '👟' : '🏅')}
                           </div>
 
-                          {quest.isOfficial ? (
-                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-300 shrink-0 flex items-center gap-1">
-                              <Crown className="w-3 h-3 text-amber-600" />
-                              <span>ทางการ</span>
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 shrink-0">
-                              👥 ชุมชน
-                            </span>
-                          )}
+                          <div className="min-w-0 flex-1 space-y-0.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[10px] font-black uppercase tracking-wider text-[#4A7C59] bg-[#EBF3ED] px-2 py-0.5 rounded-md">
+                                {quest.category === 'move' ? '🏃 Move' : quest.category === 'heal' ? '🌱 Heal' : quest.category === 'chill' ? '☕ Chill' : '🎨 Learn'}
+                              </span>
+                              {quest.isOfficial ? (
+                                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 shrink-0 flex items-center gap-1">
+                                  <Crown className="w-3 h-3 text-amber-600 fill-amber-500" />
+                                  <span>Official</span>
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 shrink-0">
+                                  👥 ชุมชน
+                                </span>
+                              )}
+                              <span className="text-[10px] font-black text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md flex items-center gap-0.5 ml-auto">
+                                <Zap className="w-3 h-3 text-amber-600 fill-amber-500" />
+                                <span>+{quest.rewardPoints} XP</span>
+                              </span>
+                            </div>
+
+                            <h3 className="font-black text-xs sm:text-sm text-[#1E293B] group-hover/card:text-[#F26430] transition-colors leading-snug pt-0.5">
+                              {quest.title}
+                            </h3>
+                          </div>
                         </div>
 
-                        {/* Title & Goal */}
-                        <div className="space-y-1">
-                          <h3 className="font-extrabold text-xs sm:text-sm text-[#1E293B] group-hover/card:text-[#F26430] transition-colors leading-snug">
-                            {quest.title}
-                          </h3>
-                          <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
+                        {/* Goal & Objective snippet */}
+                        <div className="space-y-1 bg-slate-50/80 p-2.5 rounded-2xl border border-slate-100">
+                          <div className="text-[11px] font-extrabold text-amber-950 flex items-center gap-1">
+                            <Award className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                            <span>เหรียญ: {quest.badgeLabel}</span>
+                          </div>
+                          <p className="text-[11px] text-slate-600 line-clamp-2 leading-relaxed font-medium">
                             {quest.targetGoal}
                           </p>
                         </div>
 
-                        {/* ⏰ 2. ระยะเวลาเริ่ม - สิ้นสุด และเวลานับถอยหลัง */}
-                        <div className="flex items-center justify-between text-[10px] font-bold py-1 px-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                        {/* ⏰ ระยะเวลาเริ่ม - สิ้นสุด และเวลานับถอยหลัง */}
+                        <div className="flex items-center justify-between text-[10px] font-bold py-1.5 px-3 rounded-xl bg-white border border-slate-200/80 shadow-2xs">
                           <span className="flex items-center gap-1 text-slate-500 font-mono">
                             <span>📅 {quest.startDate} - {quest.endDate}</span>
                           </span>
@@ -534,23 +532,19 @@ export default function ChallengesDiscoveryPage() {
                           </span>
                         </div>
 
-                        {/* 🏃 3. Bottom Action Bar: State when Joined vs Not Joined */}
+                        {/* 🏃 Bottom Action Bar: State when Joined vs Not Joined */}
                         <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5 text-[11px] font-extrabold text-slate-600">
-                            <span className="text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
-                              +{quest.rewardPoints} XP
-                            </span>
-                            <span className="text-slate-400 font-normal">
-                              👥 {quest.participantsCount}
-                            </span>
-                          </div>
+                          <span className="text-[11px] font-medium text-slate-500 flex items-center gap-1">
+                            <Users className="w-3.5 h-3.5 text-slate-400" />
+                            <span>{quest.participantsCount} คนกำลังทำ</span>
+                          </span>
 
                           {isJoined ? (
                             /* State when quest is already active */
-                            <div className="flex items-center gap-1.5 shrink-0">
+                            <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                               <Link
                                 href="/myhub"
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-extrabold px-3 py-1.5 rounded-full transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-extrabold px-3.5 py-1.5 rounded-full transition-all shadow-xs flex items-center gap-1 cursor-pointer"
                                 title="ไปที่มายฮับเพื่อส่งหลักฐานเช็คอิน"
                               >
                                 <CheckCircle2 className="w-3.5 h-3.5" />
@@ -560,7 +554,7 @@ export default function ChallengesDiscoveryPage() {
                               <button
                                 type="button"
                                 onClick={() => setQuestToCancel(quest)}
-                                className="text-slate-400 hover:text-rose-600 text-[11px] p-1 rounded-full hover:bg-rose-50 transition-colors cursor-pointer"
+                                className="text-slate-400 hover:text-rose-600 text-[11px] p-1.5 rounded-full hover:bg-rose-50 transition-colors cursor-pointer"
                                 title="ยกเลิกภารกิจนี้"
                               >
                                 <X className="w-3.5 h-3.5" />
@@ -570,11 +564,18 @@ export default function ChallengesDiscoveryPage() {
                             /* State when quest is available to join */
                             <button
                               type="button"
-                              onClick={() => setQuestToJoin(quest)}
-                              className="bg-[#F26430] hover:bg-[#D95322] text-white text-xs font-extrabold px-3.5 py-1.5 rounded-full transition-all shadow-2xs shadow-[#F26430]/25 flex items-center gap-1 active:scale-95 cursor-pointer shrink-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (!isLoggedIn) {
+                                  setIsRequireMembershipOpen(true);
+                                } else {
+                                  setQuestToJoin(quest);
+                                }
+                              }}
+                              className="bg-[#F26430] hover:bg-[#D95322] text-white text-xs font-black px-4 py-1.5 rounded-full transition-all shadow-2xs shadow-[#F26430]/25 flex items-center gap-1 active:scale-95 cursor-pointer shrink-0"
                             >
-                              <span>รับภารกิจ</span>
-                              <ChevronRight className="w-3 h-3" />
+                              <span>ดูรายละเอียด & รับ</span>
+                              <ChevronRight className="w-3.5 h-3.5" />
                             </button>
                           )}
                         </div>
@@ -669,64 +670,22 @@ export default function ChallengesDiscoveryPage() {
         <p className="text-[11px] text-slate-400">© 2026 Chill & Connect Hub. All rights reserved.</p>
       </footer>
 
-      {/* 🛡️ 4. POPUP 1: Confirm Join Quest Modal (Double Confirm) */}
-      {questToJoin && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
-          <div 
-            className="bg-white rounded-3xl p-5 sm:p-6 max-w-sm w-full shadow-2xl border border-[#E8E2D8] text-center space-y-4 animate-scale-up"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 border border-amber-200 flex items-center justify-center mx-auto shadow-2xs">
-              <Trophy className="w-6 h-6" />
-            </div>
-
-            <div className="space-y-1.5">
-              <h3 className="font-black text-base text-[#1E293B]">
-                ยืนยันการรับภารกิจ?
-              </h3>
-              <p className="text-xs text-slate-600 font-medium">
-                คุณกำลังจะรับภารกิจ: <br />
-                <strong className="text-[#1E293B]">{questToJoin.title}</strong>
-              </p>
-
-              {/* Goal & Rules Summary */}
-              <div className="p-3 bg-[#FAF7F2] rounded-2xl border border-[#E8E2D8] text-left space-y-1.5 text-xs">
-                <p className="text-slate-600">
-                  🎯 <strong>เป้าหมาย:</strong> {questToJoin.targetGoal}
-                </p>
-                <p className="text-slate-600 font-mono text-[11px]">
-                  📅 <strong>ระยะเวลา:</strong> {questToJoin.startDate} - {questToJoin.endDate} (เหลือ {questToJoin.daysRemaining} วัน)
-                </p>
-                <div className="pt-1 border-t border-slate-200/60 flex items-center justify-between text-[11px] font-bold text-amber-700">
-                  <span>รางวัลเมื่อทำสำเร็จ:</span>
-                  <span>+{questToJoin.rewardPoints} XP • เหรียญ {questToJoin.badgeLabel}</span>
-                </div>
-              </div>
-
-              <p className="text-[10px] text-slate-400">
-                *ระบบจะมอบแต้ม XP และเหรียญรางวัลให้เมื่อทำภารกิจสำเร็จครบ {questToJoin.total} ครั้ง
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => setQuestToJoin(null)}
-                className="w-full py-2.5 rounded-full border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
-              >
-                ย้อนกลับ
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmJoin}
-                className="w-full py-2.5 rounded-full bg-[#F26430] hover:bg-[#D95322] text-white text-xs font-extrabold shadow-md shadow-[#F26430]/25 active:scale-95 cursor-pointer"
-              >
-                ยืนยันรับภารกิจ 🎉
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 🏆 Full Gamification Join Quest Detail Modal */}
+      <JoinChallengeModal
+        isOpen={!!questToJoin}
+        onClose={() => setQuestToJoin(null)}
+        quest={questToJoin}
+        onConfirmJoin={() => {
+          if (!isLoggedIn) {
+            setIsRequireMembershipOpen(true);
+            return;
+          }
+          if (questToJoin) {
+            handleConfirmJoin();
+          }
+        }}
+        isAlreadyJoined={questToJoin ? joinedQuestIds.includes(questToJoin.id) : false}
+      />
 
       {/* 🛡️ 4. POPUP 2: Confirm Cancel Quest Modal (Double Confirm) */}
       {questToCancel && (
@@ -773,6 +732,38 @@ export default function ChallengesDiscoveryPage() {
 
       {/* 5. Mobile Bottom Navigation */}
       <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />
+
+      {/* Free Membership Required Modal */}
+      <RequireMembershipModal
+        isOpen={isRequireMembershipOpen}
+        onClose={() => setIsRequireMembershipOpen(false)}
+        onOpenLogin={() => {
+          setIsRequireMembershipOpen(false);
+          setIsAuthModalOpen(true);
+        }}
+        actionTitle="เพื่อรับภารกิจและสะสมแต้ม XP"
+      />
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onLoginSuccess={() => {
+          handleSetIsLoggedIn(true);
+          showToast('เข้าสู่ระบบสำเร็จ! สามารถรับภารกิจและสะสมแต้มได้แล้ว 🎉');
+        }}
+      />
+
+      {/* Logout Modal */}
+      <LogoutConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirmLogout={() => {
+          handleSetIsLoggedIn(false);
+          setIsLogoutModalOpen(false);
+          showToast('ออกจากระบบเรียบร้อยแล้ว');
+        }}
+      />
 
     </div>
   );

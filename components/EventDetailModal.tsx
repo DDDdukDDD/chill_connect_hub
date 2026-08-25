@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { EventItem } from '@/data/mockData';
 import { isEventEnded } from '@/lib/dateUtils';
-import { X, Calendar, MapPin, Users, Heart, Share2, CheckCircle2, ShieldCheck, Clock, ExternalLink, Ticket, AlertCircle, Bell, Navigation2, MessageCircle, Check, Copy, Sparkles, Flag, ShieldAlert, Lock, AlertTriangle, Plus, ChevronDown, ChevronUp, Image as ImageIcon, HelpCircle, CheckSquare } from 'lucide-react';
+import { X, Calendar, MapPin, Users, Heart, Share2, CheckCircle2, ShieldCheck, Clock, ExternalLink, Ticket, AlertCircle, Bell, Navigation2, MessageCircle, Check, Copy, Sparkles, Flag, ShieldAlert, Lock, AlertTriangle, Plus, ChevronDown, ChevronUp, Image as ImageIcon, HelpCircle, CheckSquare, Star } from 'lucide-react';
 import { ReportSafetyModal } from './ReportSafetyModal';
 import { ProfileModal } from './ProfileModal';
 import { getConnectedUserIds, toggleUserConnect } from '@/data/profilesData';
@@ -365,19 +365,6 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
         {/* Content Body (Scrollable) */}
         <div className="p-3.5 sm:p-5 space-y-3.5 overflow-y-auto">
-          
-          {/* Ended Status Banner */}
-          {isEnded && (
-            <div className="bg-slate-100 border border-slate-200 p-2.5 rounded-2xl flex items-center justify-between gap-2 text-xs text-slate-700 font-bold animate-fade-in">
-              <span className="flex items-center gap-1.5">
-                <span className="text-base">🏁</span>
-                <span>{isPublicVenue ? 'งานนี้จัดเสร็จสิ้นไปแล้ว' : 'กิจกรรมนี้จัดเสร็จสิ้นไปแล้ว'} (เมื่อวันที่ {event.date})</span>
-              </span>
-              <span className="text-[10px] text-slate-500 bg-slate-200 px-2 py-0.5 rounded-md font-semibold">
-                สิ้นสุดแล้ว
-              </span>
-            </div>
-          )}
 
           {/* Joined Status Badge (If already registered) */}
           {isJoined && (
@@ -600,17 +587,17 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
           )}
 
           {/* Host Info Box with Official Source Link */}
-          <div className="p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#E8E2D8] space-y-2">
-            <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="p-2.5 sm:p-3 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:border-[#4A7C59]/40 transition-all">
+            <div className="flex items-center justify-between gap-2">
               <div 
                 onClick={() => !isPublicVenue && setSelectedProfileQuery(event.hostName)}
-                className={`flex items-center gap-2.5 min-w-0 ${!isPublicVenue ? 'cursor-pointer group' : ''}`}
+                className={`flex items-center gap-2 min-w-0 ${!isPublicVenue ? 'cursor-pointer group' : ''}`}
                 title={!isPublicVenue ? 'คลิกเพื่อดูโปรไฟล์โฮสต์' : undefined}
               >
                 <img
                   src={event.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
                   alt={event.hostName}
-                  className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-xs shrink-0 group-hover:scale-105 transition-transform"
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border-2 border-white shadow-2xs shrink-0 group-hover:scale-105 transition-transform"
                 />
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
@@ -619,11 +606,25 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                     </span>
                     <CheckCircle2 className="w-3.5 h-3.5 text-blue-500 fill-blue-50 shrink-0" />
                   </div>
-                  <p className="text-[11px] text-[#64748B] truncate">
-                    {isPublicVenue
-                      ? '🏛️ ผู้จัดงานทางการ / ศูนย์จัดแสดง'
-                      : '🌿 โฮสต์ Chill & Connect • คลิกดูโปรไฟล์ ➔'}
-                  </p>
+                  <div className="flex items-center gap-1.5 flex-wrap text-[10px] sm:text-[11px] text-[#64748B]">
+                    <span>
+                      {isPublicVenue
+                        ? '🏛️ ผู้จัดงานทางการ / ศูนย์จัดแสดง'
+                        : '🌿 โฮสต์ Chill & Connect'}
+                    </span>
+                    {!isPublicVenue && (
+                      <>
+                        <span>•</span>
+                        <span className="text-amber-600 font-bold flex items-center gap-0.5">
+                          <Star className="w-3 h-3 fill-amber-400 text-amber-500" />
+                          <span>{event.hostRating || event.rating || 4.9}</span>
+                        </span>
+                        <span className="text-slate-500">
+                          ({event.hostReviewsCount || event.reviewsCount || (event.reviews?.length || 8)} รีวิว)
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -643,7 +644,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                       href={finalUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[11px] font-extrabold px-3.5 py-1.5 rounded-full bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 flex items-center gap-1.5 shrink-0 transition-colors shadow-2xs cursor-pointer active:scale-95"
+                      className="text-[10px] sm:text-[11px] font-bold px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 flex items-center gap-1 shrink-0 transition-colors shadow-2xs cursor-pointer active:scale-95"
                       title="เปิดค้นหาข้อมูลทางการ แผนผังงาน และช่องทางซื้อบัตร"
                     >
                       <span>ดูข้อมูลเพิ่มเติม</span>
@@ -655,7 +656,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedProfileQuery(event.hostName)}
-                  className="text-[11px] font-bold px-3.5 py-1.5 rounded-full bg-white hover:bg-slate-50 text-slate-700 hover:text-[#4A7C59] border border-slate-200 shadow-2xs cursor-pointer transition-colors flex items-center gap-1 shrink-0 active:scale-95"
+                  className="text-[10px] sm:text-[11px] font-bold px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-[#4A7C59] border border-slate-200 shadow-2xs cursor-pointer transition-colors flex items-center gap-1 shrink-0 active:scale-95"
                 >
                   <span>ดูโปรไฟล์</span>
                   <ExternalLink className="w-3 h-3 text-slate-400" />
@@ -663,68 +664,6 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               )}
             </div>
           </div>
-
-          {/* Community Feedback & Reviews Section (Only for Community Events) */}
-          {!isPublicVenue && (
-            <div className="space-y-2.5 pt-1">
-              <div className="flex items-center justify-between">
-                <h4 className="font-extrabold text-xs sm:text-sm text-[#1E293B] flex items-center gap-1.5">
-                  <MessageCircle className="w-4 h-4 text-[#4A7C59]" />
-                  <span>ความประทับใจจากเพื่อนๆ</span>
-                  <span className="text-xs text-slate-500 font-semibold">
-                    ({event.reviews?.length || 0})
-                  </span>
-                </h4>
-              </div>
-
-              {event.reviews && event.reviews.length > 0 ? (
-                <div className="space-y-2">
-                  {event.reviews.map((rev) => (
-                    <div
-                      key={rev.id}
-                      className="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1.5 text-xs"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <img
-                            src={rev.userAvatar}
-                            alt={rev.userName}
-                            className="w-6 h-6 rounded-full object-cover border border-slate-300"
-                          />
-                          <span className="font-bold text-[#1E293B]">{rev.userName}</span>
-                        </div>
-                        <span className="text-[10px] text-slate-400 font-mono">{rev.date}</span>
-                      </div>
-
-                      <p className="text-slate-700 leading-relaxed pl-8">
-                        {rev.comment}
-                      </p>
-
-                      {rev.tags && rev.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 pl-8 pt-0.5">
-                          {rev.tags.map((t) => (
-                            <span
-                              key={t}
-                              className="text-[10px] font-bold text-[#4A7C59] bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md"
-                            >
-                              {t}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-4 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-center space-y-1">
-                  <p className="text-xs font-bold text-slate-600">🌱 ยังไม่มีความเห็นก่อนหน้า</p>
-                  <p className="text-[11px] text-slate-400">
-                    กิจกรรมนี้เป็นโอกาสดีที่คุณจะได้ร่วมงานและบอกเล่าความประทับใจให้เพื่อนๆ ฟัง!
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Public Venue Sub-Activities & Buddy Matcher (Collapsible - Hide if Event has Ended) */}
           {isPublicVenue && !isEnded && (
@@ -754,6 +693,11 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (!isLoggedIn && onRequireLogin) {
+                        onClose();
+                        onRequireLogin();
+                        return;
+                      }
                       setIsBuddyBoxOpen(true);
                       setShowSubForm(!showSubForm);
                     }}
@@ -1220,26 +1164,11 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
         <div className="p-3.5 sm:p-4 bg-slate-50 border-t border-[#E8E2D8] flex items-center justify-between sm:justify-end gap-2.5 shrink-0">
           
           {isEnded ? (
-            /* When Event Has Ended: Display Ended Badge and hide Follow Host if Public Venue */
-            <div className="flex items-center justify-between sm:justify-end gap-2 w-full">
-              <span className="px-4 py-2 rounded-full font-bold text-xs sm:text-sm bg-slate-200 text-slate-600 border border-slate-300/80 flex items-center gap-1.5 shrink-0">
+            /* When Event Has Ended: Display clean Ended Badge */
+            <div className="flex items-center justify-center sm:justify-end gap-2 w-full">
+              <span className="px-5 py-2 rounded-full font-extrabold text-xs sm:text-sm bg-slate-100 text-slate-600 border border-slate-300/80 flex items-center gap-1.5 shadow-2xs">
                 <span>🏁 งานนี้จัดเสร็จสิ้นแล้ว</span>
               </span>
-
-              {!isPublicVenue && (
-                <button
-                  type="button"
-                  onClick={() => setIsFollowingHost(!isFollowingHost)}
-                  className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all shadow-md flex items-center gap-1.5 active:scale-95 cursor-pointer ${
-                    isFollowingHost
-                      ? 'bg-emerald-600 text-white shadow-emerald-600/20'
-                      : 'bg-[#4A7C59] hover:bg-[#3B6447] text-white shadow-[#4A7C59]/20'
-                  }`}
-                >
-                  <Bell className="w-3.5 h-3.5" />
-                  <span>{isFollowingHost ? '✓ ติดตามแล้ว (แจ้งเตือนรอบหน้า)' : '🔔 ติดตามโฮสต์รอบหน้า'}</span>
-                </button>
-              )}
             </div>
           ) : isJoined ? (
             /* When Already Joined: If Public Venue, display only "ดูตารางนัดหมาย"; If Community, display Cancel + "ดูตั๋วกิจกรรมของฉัน" */

@@ -27,22 +27,25 @@ import {
   CheckCircle2,
   Trophy,
   Globe,
-  UserCheck
+  UserCheck,
 } from 'lucide-react';
+import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 
 export default function MomentsPage() {
   const [activeNavTab, setActiveNavTab] = useState('moments');
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
+  const [membershipActionTitle, setMembershipActionTitle] = useState('เพื่อแชร์เรื่องราวและภาพโมเมนต์');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('isLoggedIn');
-      if (saved === 'false') {
-        setIsLoggedIn(false);
+      if (saved === 'true') {
+        setIsLoggedIn(true);
       } else {
-        localStorage.setItem('isLoggedIn', 'true');
+        setIsLoggedIn(false);
       }
 
       // Check query param for personal moments tab
@@ -129,6 +132,11 @@ export default function MomentsPage() {
   };
 
   const handleToggleLike = (postId: string) => {
+    if (!isLoggedIn) {
+      setMembershipActionTitle('เพื่อส่งหัวใจและกดถูกใจโพสต์');
+      setIsRequireMembershipOpen(true);
+      return;
+    }
     setPosts((prev) =>
       prev.map((post) => {
         if (post.id === postId) {
@@ -143,6 +151,11 @@ export default function MomentsPage() {
   };
 
   const handleAddComment = (postId: string) => {
+    if (!isLoggedIn) {
+      setMembershipActionTitle('เพื่อร่วมพูดคุยและแสดงความคิดเห็น');
+      setIsRequireMembershipOpen(true);
+      return;
+    }
     if (!newCommentInput.trim()) return;
 
     const newCommentObj: PostComment = {
@@ -247,7 +260,14 @@ export default function MomentsPage() {
         setIsLoggedIn={handleSetIsLoggedIn}
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}
-        onOpenCreateEvent={() => setIsCreateEventModalOpen(true)}
+        onOpenCreateEvent={() => {
+          if (!isLoggedIn) {
+            setIsAuthModalOpen(true);
+            showToast('🔒 กรุณาเข้าสู่ระบบก่อนเปิดตี้หรือสร้างกิจกรรมใหม่');
+          } else {
+            setIsCreateEventModalOpen(true);
+          }
+        }}
       />
 
       {/* Main Container */}
@@ -270,8 +290,15 @@ export default function MomentsPage() {
                   className="w-10 h-10 rounded-full object-cover border-2 border-[#4A7C59]"
                 />
                 <button
-                  onClick={() => setIsCreateModalOpen(true)}
-                  className="flex-1 bg-slate-100 hover:bg-slate-200/80 text-slate-500 text-xs sm:text-sm font-medium px-4 py-2.5 rounded-full text-left transition-colors flex items-center justify-between"
+                  onClick={() => {
+                    if (!isLoggedIn) {
+                      setMembershipActionTitle('เพื่อโพสต์แชร์ภาพและแบ่งปันโมเมนต์');
+                      setIsRequireMembershipOpen(true);
+                    } else {
+                      setIsCreateModalOpen(true);
+                    }
+                  }}
+                  className="flex-1 bg-slate-100 hover:bg-slate-200/80 text-slate-500 text-xs sm:text-sm font-medium px-4 py-2.5 rounded-full text-left transition-colors flex items-center justify-between cursor-pointer"
                 >
                   <span>คุณส้ม วันนี้ไปร่วมกิจกรรมฮีลใจไหนมาบ้าง? แชร์เลย...</span>
                   <ImageIcon className="w-4 h-4 text-[#4A7C59]" />
@@ -761,6 +788,17 @@ export default function MomentsPage() {
         }}
       />
 
+      {/* Free Membership Required Modal */}
+      <RequireMembershipModal
+        isOpen={isRequireMembershipOpen}
+        onClose={() => setIsRequireMembershipOpen(false)}
+        onOpenLogin={() => {
+          setIsRequireMembershipOpen(false);
+          setIsAuthModalOpen(true);
+        }}
+        actionTitle={membershipActionTitle}
+      />
+
       {/* Auth Login / Signup Popup Modal */}
       <AuthModal
         isOpen={isAuthModalOpen}
@@ -777,6 +815,7 @@ export default function MomentsPage() {
         onClose={() => setIsLogoutModalOpen(false)}
         onConfirmLogout={() => {
           handleSetIsLoggedIn(false);
+          setIsLogoutModalOpen(false);
           showToast('ออกจากระบบเรียบร้อยแล้ว (Guest View)');
         }}
       />

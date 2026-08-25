@@ -317,36 +317,64 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {/* User Status Card */}
               {isLoggedIn ? (
-                <Link
-                  href="/profile?id=me"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="bg-white rounded-2xl p-4 border border-[#E8E2D8] shadow-2xs flex items-center gap-3 hover:border-[#4A7C59]/40 transition-colors"
-                >
-                  <div className="w-11 h-11 rounded-full bg-[#EBF3ED] border-2 border-[#4A7C59] overflow-hidden shrink-0">
-                    <img 
-                      src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" 
-                      alt={userName}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1">
-                      <p className="text-sm font-extrabold text-[#1E293B] truncate" title={userName}>{userName}</p>
-                      <ShieldCheck className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
+                <div className="bg-white rounded-2xl p-4 border border-[#E8E2D8] shadow-2xs space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-full bg-[#EBF3ED] border-2 border-[#4A7C59] overflow-hidden shrink-0">
+                      <img 
+                        src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" 
+                        alt={userName}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
-                    <p className="text-xs text-[#4A7C59] font-semibold">● ดูโปรไฟล์ของฉัน ➔</p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1">
+                        <p className="text-sm font-extrabold text-[#1E293B] truncate" title={userName}>{userName}</p>
+                        <ShieldCheck className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
+                      </div>
+                      <p className="text-xs text-[#4A7C59] font-semibold">● สมาชิก Chill & Connect</p>
+                    </div>
                   </div>
-                </Link>
+
+                  {/* Profile & Logout Action Buttons inside User Card */}
+                  <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                    <Link
+                      href="/profile?id=me"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex-1 text-center py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <User className="w-3.5 h-3.5 text-[#4A7C59]" />
+                      <span>ดูโปรไฟล์</span>
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        if (onOpenLogout) {
+                          onOpenLogout();
+                        } else {
+                          setIsLoggedIn(false);
+                          if (typeof window !== 'undefined') localStorage.setItem('isLoggedIn', 'false');
+                        }
+                      }}
+                      className="py-2 px-3.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer border border-rose-200/60"
+                      title="ออกจากระบบ"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>ออก</span>
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200 text-center space-y-2">
                   <p className="text-xs text-amber-800 font-medium">เข้าสู่ระบบเพื่อบันทึกและจัดการกิจกรรม</p>
                   <button
+                    type="button"
                     onClick={() => {
                       setIsMobileMenuOpen(false);
                       if (onOpenLogin) onOpenLogin();
                       else setIsLoggedIn(true);
                     }}
-                    className="w-full bg-[#1E293B] hover:bg-[#0F172A] text-white py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs"
+                    className="w-full bg-[#1E293B] hover:bg-[#0F172A] text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
                   >
                     <LogIn className="w-3.5 h-3.5 text-emerald-400" />
                     <span>เข้าสู่ระบบ / สมัครสมาชิก</span>
@@ -390,11 +418,12 @@ export const Navbar: React.FC<NavbarProps> = ({
               {onOpenCreateEvent && (
                 <div className="pt-2">
                   <button
+                    type="button"
                     onClick={() => {
                       setIsMobileMenuOpen(false);
                       onOpenCreateEvent();
                     }}
-                    className="w-full bg-[#4A7C59] hover:bg-[#3B6347] text-white py-3 rounded-2xl text-sm font-bold shadow-md flex items-center justify-center gap-2 active:scale-95 transition-all"
+                    className="w-full bg-[#4A7C59] hover:bg-[#3B6347] text-white py-3 rounded-2xl text-sm font-bold shadow-md flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"
                   >
                     <PlusCircle className="w-4 h-4" />
                     <span>จัดกิจกรรมใหม่ ➕</span>
@@ -403,19 +432,24 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </div>
 
-            {/* Bottom Drawer Logout / Auth CTA */}
+            {/* Bottom Drawer Logout CTA */}
             {isLoggedIn && (
-              <div className="pt-6 border-t border-[#E8E2D8]">
+              <div className="pt-4 mt-2 border-t border-[#E8E2D8]">
                 <button
+                  type="button"
                   onClick={() => {
                     setIsMobileMenuOpen(false);
-                    if (onOpenLogout) onOpenLogout();
-                    else setIsLoggedIn(false);
+                    if (onOpenLogout) {
+                      onOpenLogout();
+                    } else {
+                      setIsLoggedIn(false);
+                      if (typeof window !== 'undefined') localStorage.setItem('isLoggedIn', 'false');
+                    }
                   }}
-                  className="w-full bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
+                  className="w-full bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 py-3 rounded-2xl text-xs font-extrabold flex items-center justify-center gap-2 transition-colors shadow-2xs cursor-pointer active:scale-95"
                 >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span>ออกจากระบบ</span>
+                  <LogOut className="w-4 h-4 text-rose-500" />
+                  <span>ออกจากระบบ (Logout)</span>
                 </button>
               </div>
             )}

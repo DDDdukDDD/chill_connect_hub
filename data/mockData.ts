@@ -99,6 +99,15 @@ export interface ChallengeQuest {
   rewardPoints?: number;
   targetGoal?: string;
   isOfficial?: boolean;
+  objective?: string;
+  steps?: string[];
+  verificationMethod?: string;
+  rewardsText?: string;
+  badgeIcon?: string;
+  badgeCoverImg?: string;
+  startDate?: string;
+  endDate?: string;
+  daysRemaining?: number;
 }
 
 export interface PostComment {
@@ -1361,43 +1370,111 @@ export const MOCK_EVENTS: EventItem[] = [
 export const MOCK_CHALLENGES: ChallengeQuest[] = [
   {
     id: '1',
-    title: 'Cafe Hunter 5',
+    title: 'Cafe Hunter 5: ตามรอย 5 คาเฟ่ Specialty ย่านอารีย์-ทองหล่อ ☕✨',
     iconName: 'Coffee',
+    category: 'chill',
     progressPercent: 60,
     current: '3',
     total: '5',
     badgeLabel: 'Cafe Explorer',
+    badgeIcon: '☕',
     completedCountInfo: 'ทำสำเร็จแล้ว 3/5 คาเฟ่',
+    targetGoal: 'แวะจิบกาแฟหรือเครื่องดื่ม Specialty 5 ร้านพาร์ทเนอร์ พร้อมถ่ายภาพเช็คอินโมเมนต์',
+    objective: 'ส่งเสริมการออกไปค้นหาบรรยากาศใหม่ๆ สนับสนุนร้านกาแฟคราฟต์ท้องถิ่น และพบปะเพื่อนสาย Cafe Hopper',
+    steps: [
+      'ค้นหาร้านกาแฟพาร์ทเนอร์ในแอป (ย่านอารีย์, สุขุมวิท, ทองหล่อ)',
+      'สั่งเครื่องดื่ม Specialty หรือเบเกอรี่ แล้วถ่ายภาพเช็คอินลง Moments',
+      'สะสมครบ 5 คาเฟ่ รับตราประทับและปลดล็อกเหรียญ Cafe Explorer ทันที'
+    ],
+    verificationMethod: '📸 ถ่ายรูปภาพแก้วกาแฟ/บรรยากาศร้านคู่กับระบบ GPS Check-in',
+    rewardsText: '🏅 เหรียญเกียรติยศ "Cafe Explorer" บนหน้าโปรไฟล์ + ⚡ 300 XP + 🎁 คูปองส่วนลด 15% ร้านพาร์ทเนอร์',
+    participantsCount: 380,
+    rewardPoints: 300,
+    isOfficial: true,
+    startDate: '1 มี.ค. 2026',
+    endDate: '31 มี.ค. 2026',
+    daysRemaining: 10,
   },
   {
     id: '2',
-    title: 'Step Count 30Days',
+    title: 'Step Count 30Days: เดินก้าวสุขภาพต่อเนื่อง 30 วัน 🏃‍♂️🌿',
     iconName: 'Footprints',
+    category: 'move',
     progressPercent: 85,
     current: '25.5',
     total: '30',
     badgeLabel: 'Active Walker',
+    badgeIcon: '👟',
     completedCountInfo: 'ทำสำเร็จแล้ว 25.5/30 วัน',
+    targetGoal: 'เดินสะสมก้าวอย่างน้อย 6,000 ก้าวต่อวัน ติดต่อกัน 30 วันเพื่อสุขภาพที่ดี',
+    objective: 'สร้างนิสัยการเคลื่อนไหวร่างกายในชีวิตประจำวัน ลดความเสี่ยงออฟฟิศซินโดรม และสร้างความสดชื่นกระปรี้กระเปร่า',
+    steps: [
+      'เปิดการเชื่อมต่อ Apple Health / Google Fit หรือบันทึกระยะก้าวเดิน',
+      'เดินออกกำลังกายหรือเดินในชีวิตประจำวันให้ครบ 6,000 ก้าว/วัน',
+      'กดซิงค์ความคืบหน้ารายวันผ่านแอป'
+    ],
+    verificationMethod: '📱 ซิงค์ข้อมูลก้าวเดินจากสมาร์ตโฟน หรือแคปภาพหน้าจอแอปนับก้าว',
+    rewardsText: '🏅 ตราเหรียญ "Active Walker" สีทอง + ⚡ 450 XP + 🎁 สิทธิ์ลุ้นรับอุปกรณ์ออกกำลังกายรายเดือน',
+    participantsCount: 520,
+    rewardPoints: 450,
+    isOfficial: true,
+    startDate: '1 มี.ค. 2026',
+    endDate: '15 เม.ย. 2026',
+    daysRemaining: 25,
   },
   {
     id: '3',
-    title: 'Offline 3 Hours',
+    title: 'Digital Detox: วางจอมือถือ ร่วมกิจกรรมพบปะเพื่อนใหม่ 3 ชั่วโมง 📵🌱',
     iconName: 'Users',
+    category: 'heal',
     progressPercent: 30,
     current: '1',
     total: '3',
-    badgeLabel: 'Digital Detox',
+    badgeLabel: 'Mindful Soul',
+    badgeIcon: '🧘',
     completedCountInfo: 'ทำสำเร็จแล้ว 1/3 ชม.',
+    targetGoal: 'วางสมาร์ตโฟนลง แล้วใช้เวลาร่วมกิจกรรมพูดคุย บอร์ดเกม หรือเวิร์กช็อปอย่างมีสมาธิ',
+    objective: 'ฟื้นฟูสุขภาพจิตใจ พักผ่อนสายตาจากหน้าจอ และเปิดรับบทสนทนาที่จริงใจกับผู้คนรอบข้าง',
+    steps: [
+      'ลงทะเบียนเข้าร่วมกิจกรรมกลุ่มย่อยประเภทบอร์ดเกม, งานคราฟต์ หรือจิบชา',
+      'เปิดโหมด Do Not Disturb (ไม่รบกวน) ตลอดช่วงกิจกรรม 3 ชั่วโมง',
+      'ให้โฮสต์สแกนยืนยันการเข้าร่วมเต็มเวลา'
+    ],
+    verificationMethod: '🤝 การยืนยันแบบ Peer-to-Peer จากโฮสต์ผู้จัดงานผ่าน QR Host Verification',
+    rewardsText: '🏅 ตราเหรียญ "Mindful Soul" + ⚡ 250 XP + 🎁 แต้ม Connect Points +100',
+    participantsCount: 210,
+    rewardPoints: 250,
+    isOfficial: true,
+    startDate: '5 มี.ค. 2026',
+    endDate: '25 มี.ค. 2026',
+    daysRemaining: 4,
   },
   {
     id: '4',
-    title: 'HYROX 4 Stations Workout Challenge',
+    title: 'HYROX 4 Stations: พิชิต 4 สถานีฟิตเนสบูทแคมป์ระดับสากล 🔥🏋️',
     iconName: 'Flame',
+    category: 'move',
     progressPercent: 75,
     current: '3',
     total: '4',
     badgeLabel: 'HYROX Warrior',
+    badgeIcon: '🔥',
     completedCountInfo: 'ทำสำเร็จแล้ว 3/4 สถานี',
+    targetGoal: 'ผ่านการฝึกซ้อมสถานี SkiErg, Sled Push, Burpee Broad Jump, และ Wall Balls',
+    objective: 'ทดสอบสมรรถภาพทางกาย เสริมสร้างความแข็งแรงของหัวใจและกล้ามเนื้อ ปลุกไฟนักกีฬาในตัวคุณ',
+    steps: [
+      'เข้าร่วมคลาสซ้อม HYROX Community Bootcamp',
+      'ฝึกซ้อมแต่ละสถานีตามโปรแกรมของโค้ชผู้เชี่ยวชาญ',
+      'โค้ชบันทึกสถิติและยืนยันผลผ่านระบบ'
+    ],
+    verificationMethod: '🏋️‍♂️ การยืนยันจากโค้ช/ยิมพาร์ทเนอร์ที่ผ่านการรับรอง Certified HYROX',
+    rewardsText: '🏅 เหรียญตราสุดเท่ "HYROX Warrior" + ⚡ 500 XP + 🎁 ส่วนลด 20% ค่าสมัครงานแข่ง HYROX Bangkok',
+    participantsCount: 430,
+    rewardPoints: 500,
+    isOfficial: true,
+    startDate: '1 มี.ค. 2026',
+    endDate: '31 มี.ค. 2026',
+    daysRemaining: 10,
   },
 ];
 

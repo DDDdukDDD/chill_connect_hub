@@ -12,6 +12,7 @@ import { MobileNav } from '@/components/MobileNav';
 import { MOCK_EVENTS, MOCK_POSTS, EventItem, calculateDistanceKm, BANGKOK_ZONES } from '@/data/mockData';
 import { CustomDatePickerModal } from '@/components/CustomDatePickerModal';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
+import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { FilterDrawer } from '@/components/FilterDrawer';
 import { StoryBar } from '@/components/StoryBar';
@@ -70,6 +71,8 @@ export default function Home() {
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState<boolean>(false);
+  const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState<boolean>(false);
+  const [membershipActionTitle, setMembershipActionTitle] = useState<string>('เพื่อดำเนินการต่อ');
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState<boolean>(false);
   const [isSurpriseModalOpen, setIsSurpriseModalOpen] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<'newest' | 'popular' | 'favorites'>('newest');
@@ -80,14 +83,23 @@ export default function Home() {
   const [eventsList, setEventsList] = useState<EventItem[]>(MOCK_EVENTS);
   const [favorites, setFavorites] = useState<string[]>(['1', '7']);
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(true);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isCreateChallengeModalOpen, setIsCreateChallengeModalOpen] = useState<boolean>(false);
   const [joinedQuestTitles, setJoinedQuestTitles] = useState<string[]>(['Cafe Hunter 5', 'Step Count 30Days']);
   const [hideEndedEvents, setHideEndedEvents] = useState<boolean>(true);
 
+  const triggerMembershipPrompt = (actionReason: string) => {
+    setMembershipActionTitle(actionReason);
+    setIsRequireMembershipOpen(true);
+  };
+
   const handleJoinQuestFromHome = (questTitle: string) => {
+    if (!isLoggedIn) {
+      triggerMembershipPrompt('เพื่อเข้าร่วมภารกิจและรับแต้มโบนัส');
+      return;
+    }
     if (!joinedQuestTitles.includes(questTitle)) {
       setJoinedQuestTitles((prev) => [...prev, questTitle]);
       showToast(`🎉 คุณได้รับภารกิจ "${questTitle}" เข้าสู่หน้ารายการของคุณเรียบร้อย! (+XP Bonus)`);
@@ -129,10 +141,10 @@ export default function Home() {
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('isLoggedIn');
-      if (saved === 'false') {
-        setIsLoggedIn(false);
+      if (saved === 'true') {
+        setIsLoggedIn(true);
       } else {
-        localStorage.setItem('isLoggedIn', 'true');
+        setIsLoggedIn(false);
       }
     }
   }, []);
@@ -550,7 +562,13 @@ export default function Home() {
         }}
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}
-        onOpenCreateEvent={() => setIsCreateEventModalOpen(true)}
+        onOpenCreateEvent={() => {
+          if (!isLoggedIn) {
+            triggerMembershipPrompt('เพื่อสร้างกิจกรรมหรือเปิดตี้ใหม่');
+          } else {
+            setIsCreateEventModalOpen(true);
+          }
+        }}
       />
 
       {/* Main Content Area */}
@@ -564,7 +582,7 @@ export default function Home() {
           onOpenSurpriseModal={() => setIsSurpriseModalOpen(true)}
         />
 
-        <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-7 py-2 relative z-10">
+        <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8 sm:space-y-10 py-3 relative z-10">
           
           {/* 3. Auto-Sliding Trending Events Carousel */}
           <TrendingCarousel
@@ -874,7 +892,13 @@ export default function Home() {
           <CommunityChallengeBar
             onJoinQuest={handleJoinQuestFromHome}
             joinedQuestTitles={joinedQuestTitles}
-            onOpenCreateModal={() => setIsCreateChallengeModalOpen(true)}
+            onOpenCreateModal={() => {
+              if (!isLoggedIn) {
+                triggerMembershipPrompt('เพื่อสร้างชาเลนจ์ใหม่ในคอมมูนิตี้');
+              } else {
+                setIsCreateChallengeModalOpen(true);
+              }
+            }}
           />
 
           {/* SECTION 5: 💬 เสียงตอบรับจากเพื่อนๆ (Auto-Slide Carousel) */}
@@ -905,8 +929,7 @@ export default function Home() {
         isJoined={selectedEvent ? joinedEventIds.includes(selectedEvent.id) : false}
         isLoggedIn={isLoggedIn}
         onRequireLogin={() => {
-          setIsAuthModalOpen(true);
-          showToast('🔒 กรุณาเข้าสู่ระบบก่อนบันทึกหรือเข้าร่วมกิจกรรม');
+          triggerMembershipPrompt('เพื่อจองตั๋ว E-Ticket และเข้าร่วมกิจกรรม');
         }}
       />
 
@@ -968,6 +991,17 @@ export default function Home() {
         }}
       />
 
+      {/* Free Membership Required Prompt Modal */}
+      <RequireMembershipModal
+        isOpen={isRequireMembershipOpen}
+        onClose={() => setIsRequireMembershipOpen(false)}
+        onOpenLogin={() => {
+          setIsRequireMembershipOpen(false);
+          setIsAuthModalOpen(true);
+        }}
+        actionTitle={membershipActionTitle}
+      />
+
       {/* Auth Login / Signup Popup Modal */}
       <AuthModal
         isOpen={isAuthModalOpen}
@@ -983,7 +1017,8 @@ export default function Home() {
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
         onConfirmLogout={() => {
-          setIsLoggedIn(false);
+          handleSetIsLoggedIn(false);
+          setIsLogoutModalOpen(false);
           showToast('ออกจากระบบเรียบร้อยแล้ว (Guest View)');
         }}
       />
