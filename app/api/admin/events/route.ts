@@ -6,6 +6,7 @@ import {
   approveAllPendingEvents,
   deleteEvent,
   updateAdminEvent,
+  createAdminEvent,
   setAutoPublish,
   isAutoPublishEnabled,
   resetAndSeedAllEvents,
@@ -25,7 +26,16 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { action, id, status, updatedFields, autoPublish } = body;
+    const { action, id, status, updatedFields, autoPublish, eventData } = body;
+
+    if (action === 'create' && eventData) {
+      const updated = await createAdminEvent(eventData);
+      return NextResponse.json({
+        success: true,
+        message: `สร้างกิจกรรม "${eventData.title}" สำเร็จเรียบร้อย!`,
+        events: updated,
+      });
+    }
 
     if (action === 'reset_and_seed') {
       const result = await resetAndSeedAllEvents();

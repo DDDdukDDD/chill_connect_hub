@@ -303,3 +303,25 @@ export async function updateAdminEvent(id: string, updatedFields: Partial<AdminE
 
   return updated;
 }
+
+export async function createAdminEvent(eventData: Omit<AdminEventItem, 'id'> & { id?: string }): Promise<AdminEventItem[]> {
+  const currentEvents = await loadCache();
+  const newId = eventData.id || `admin-event-${Date.now()}`;
+  const newEvent: AdminEventItem = {
+    ...eventData,
+    id: newId,
+    approvalStatus: eventData.approvalStatus || 'approved',
+    source: eventData.source || (eventData.eventType === 'public_venue' ? 'Admin Official' : 'Chill & Connect Community'),
+    galleryImages: eventData.galleryImages && eventData.galleryImages.length > 0 ? eventData.galleryImages : [eventData.image],
+    subActivities: eventData.subActivities || [],
+  };
+
+  const updated = [newEvent, ...currentEvents];
+  MEMORY_CACHE = updated;
+
+  const db = await readDatabase();
+  db.events = updated;
+  await writeDatabase(db);
+
+  return updated;
+}

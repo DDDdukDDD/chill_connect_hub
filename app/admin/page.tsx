@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { AdminEventItem } from '@/lib/eventsStore';
 import { EventDataSource } from '@/lib/sourcesStore';
 import { BANGKOK_ZONES } from '@/data/mockData';
+import { AdminCreateEventModal } from '@/components/AdminCreateEventModal';
 import {
   Bot,
   Sparkles,
@@ -52,6 +53,7 @@ export default function AdminPage() {
 
   // Edit Event Modal State
   const [editingEvent, setEditingEvent] = useState<AdminEventItem | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
 
   // Add Custom Source Modal State
   const [showAddSourceModal, setShowAddSourceModal] = useState<boolean>(false);
@@ -428,6 +430,17 @@ export default function AdminPage() {
 
         {/* Header Right Actions */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Create New Event Button */}
+          <button
+            type="button"
+            onClick={() => setIsCreateModalOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-950/40 transition-all cursor-pointer active:scale-95"
+            title="สร้างกิจกรรมใหม่ (แยกอีเวนต์ & งานแฟร์ vs Chill & Connect Community)"
+          >
+            <Plus className="w-3.5 h-3.5 stroke-[3]" />
+            <span>สร้างกิจกรรมใหม่</span>
+          </button>
+
           <Link
             href="/myhub"
             target="_blank"
@@ -1428,6 +1441,17 @@ export default function AdminPage() {
           <span>{toastMessage}</span>
         </div>
       )}
+
+      {/* Admin Create Event Modal */}
+      <AdminCreateEventModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={(newEvent) => {
+          fetchEvents();
+          showToast(`🎉 สร้างกิจกรรม "${newEvent.title}" สำเร็จเรียบร้อย!`);
+          setSelectedTab('all');
+        }}
+      />
 
     </div>
   );
