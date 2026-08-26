@@ -42,11 +42,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   ];
 
   return (
-    <section className="relative z-30 pt-1 pb-1 md:pt-2 md:pb-2 bg-[#FAF7F2]">
+    <section className="relative z-30 pt-0.5 pb-0.5 md:pt-1.5 md:pb-1.5 bg-white">
       <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-3 sm:px-6 lg:px-8 relative">
         
-        {/* Full Hero Banner Container with Modern Lifestyle Photography - Compact on Mobile (-30% height) */}
-        <div className="relative rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-md min-h-[190px] sm:min-h-[270px] md:min-h-[305px] flex items-center justify-center">
+        {/* Full Hero Banner Container with Modern Lifestyle Photography - Sleek 20% Compact Profile */}
+        <div className="relative rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-md min-h-[155px] sm:min-h-[215px] md:min-h-[245px] flex items-center justify-center">
           
           {/* Full-bleed Background Image with Cinematic Golden Hour Vibe (Clipped to Rounded Corners) */}
           <div className="absolute inset-0 z-0 pointer-events-none rounded-2xl sm:rounded-3xl overflow-hidden">
@@ -61,26 +61,26 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <div className="absolute inset-0 bg-gradient-to-b from-slate-900/30 via-transparent to-slate-900/40" />
           </div>
 
-          {/* Centered Safe Zone for Text & Search Bar - Compact padding on mobile */}
-          <div className="relative z-10 text-center space-y-2 sm:space-y-3.5 max-w-3xl mx-auto px-3.5 sm:px-4 py-3 sm:py-6 md:py-8 w-full">
+          {/* Centered Safe Zone for Text & Search Bar - Sleek compact vertical metrics */}
+          <div className="relative z-10 text-center space-y-2 sm:space-y-3 max-w-3xl mx-auto px-3.5 sm:px-4 py-3 sm:py-4.5 md:py-5.5 w-full">
             
-            {/* Dynamic Headline (Pure White with Coral Highlight & Strong Contrast) */}
-            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight drop-shadow-[0_2px_6px_rgba(0,0,0,0.7)]">
-              วันหยุดนี้... <span className="text-[#FFA07A] inline-block hover:scale-105 transition-transform cursor-default">ทำอะไรดี?</span>
+            {/* Dynamic Headline (Prominent, Bold & Punchy with Golden-Coral Accent) */}
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.75)]">
+              วันหยุดนี้... <span className="text-[#FFA07A] inline-block hover:scale-105 transition-transform cursor-default drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">ทำอะไรดี?</span>
             </h1>
 
-            {/* Subtitle */}
-            <p className="text-[11px] sm:text-xs md:text-sm text-white/95 font-bold max-w-2xl mx-auto drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)] line-clamp-1 sm:line-clamp-none">
+            {/* Subtitle (Clear, Crisp & Legible) */}
+            <p className="text-xs sm:text-sm md:text-base text-white font-bold max-w-2xl mx-auto drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">
               ค้นหากิจกรรมฮีลใจ ที่เที่ยวสุดชิลล์ และหาเพื่อนใหม่ทั่วไทย ✨
             </p>
 
-            {/* High-Contrast Floating Pill Search Bar (Expanded & Spacious) */}
-            <div className="pt-0.5 sm:pt-1.5 max-w-2xl mx-auto relative z-30">
-              <div className="relative flex items-center bg-white rounded-full p-1 sm:p-1.5 md:p-2 shadow-2xl shadow-black/35 border-2 border-white/95 focus-within:border-[#F26430] focus-within:ring-4 focus-within:ring-[#F26430]/25 transition-all z-20">
+            {/* High-Contrast Floating Pill Search Bar (Slim, Sleek & Modern) */}
+            <div className="pt-1 max-w-2xl mx-auto relative z-30">
+              <div className="relative flex items-center bg-white rounded-full p-1 sm:p-1.5 shadow-2xl shadow-black/35 border-2 border-white/95 focus-within:border-[#F26430] focus-within:ring-4 focus-within:ring-[#F26430]/25 transition-all z-20">
                 
                 {/* Search Icon */}
-                <div className="pl-3 sm:pl-4 pr-1.5 sm:pr-2.5 text-[#94A3B8]">
-                  <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-slate-400" />
+                <div className="pl-3 sm:pl-3.5 pr-1.5 text-[#94A3B8]">
+                  <Search className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-slate-400" />
                 </div>
 
                 {/* Input Field */}
@@ -105,13 +105,13 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   </button>
                 )}
 
-                {/* Coral CTA Button (Prominent & Easy to Click) */}
+                {/* Coral CTA Button (Slim, Punchy & Click-friendly) */}
                 <button
                   onClick={() => {
                     setIsFocused(false);
                     if (onSearchSubmit) onSearchSubmit();
                   }}
-                  className="bg-[#F26430] hover:bg-[#D95322] text-white px-3.5 sm:px-6 md:px-7 py-2 sm:py-2.5 md:py-3 rounded-full font-black text-xs sm:text-sm md:text-base transition-all shadow-md shadow-[#F26430]/25 flex items-center justify-center gap-1.5 shrink-0 active:scale-95 cursor-pointer"
+                  className="bg-[#F26430] hover:bg-[#D95322] text-white px-3.5 sm:px-5 md:px-6 py-1.5 sm:py-2 rounded-full font-black text-xs sm:text-sm md:text-base transition-all shadow-md shadow-[#F26430]/25 flex items-center justify-center gap-1.5 shrink-0 active:scale-95 cursor-pointer"
                 >
                   <Search className="w-3.5 h-3.5 sm:hidden" />
                   <span className="hidden sm:inline">ค้นหาเลย</span>
@@ -189,14 +189,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
             {/* Single Clean Surprise Me Discovery Button */}
             {onOpenSurpriseModal && (
-              <div className="pt-0.5 sm:pt-1.5 flex items-center justify-center">
+              <div className="pt-0.5 sm:pt-1 flex items-center justify-center">
                 <button
                   type="button"
                   onClick={onOpenSurpriseModal}
-                  className="text-[11px] sm:text-xs md:text-[13px] font-extrabold px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full bg-white/95 hover:bg-white text-[#1E293B] hover:text-[#F26430] border border-[#E8E2D8] hover:border-[#F26430]/40 shadow-xs hover:shadow-md transition-all flex items-center gap-1.5 sm:gap-2 cursor-pointer active:scale-95 group"
+                  className="text-[10px] sm:text-xs md:text-xs font-extrabold px-3.5 sm:px-4 py-1 sm:py-1.5 rounded-full bg-white/95 hover:bg-white text-[#1E293B] hover:text-[#F26430] border border-[#E8E2D8] hover:border-[#F26430]/40 shadow-xs hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 group"
                   title="สุ่มกิจกรรมวันหยุดให้ฉันทันที"
                 >
-                  <Dices className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#F26430] group-hover:rotate-180 transition-transform duration-500" />
+                  <Dices className="w-3.5 h-3.5 text-[#F26430] group-hover:rotate-180 transition-transform duration-500" />
                   <span>คิดไม่ออก? <span className="text-[#F26430] underline underline-offset-2">สุ่มกิจกรรมให้ฉัน</span> ✨</span>
                 </button>
               </div>

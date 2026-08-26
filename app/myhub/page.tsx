@@ -873,7 +873,7 @@ export default function MyHubPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] text-[#1E293B] font-sans pb-24 md:pb-16 flex flex-col justify-between">
+    <div className="min-h-screen bg-white text-[#1E293B] font-sans pb-24 md:pb-16 flex flex-col justify-between">
       <div>
         {/* Navigation Bar */}
         <Navbar
@@ -941,7 +941,7 @@ export default function MyHubPage() {
         ) : (
           <>
             {/* Hero Banner Header of MyHub */}
-            <div className="bg-gradient-to-b from-white to-[#FAF7F2] border-b border-[#E8E2D8] pt-6 pb-6 sm:pt-8 sm:pb-8">
+            <div className="bg-white border-b border-slate-200/90 pt-6 pb-6 sm:pt-8 sm:pb-8">
           <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               

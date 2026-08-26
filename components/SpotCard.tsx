@@ -47,6 +47,16 @@ export const SpotCard: React.FC<SpotCardProps> = ({
           </span>
         </div>
 
+        {/* Top-Left Distance Badge when searching near me */}
+        {(spot as any).distanceKm !== undefined && (
+          <div className="absolute top-2 left-2 flex items-center gap-1 z-20">
+            <span className="text-[10px] font-black bg-slate-900/90 backdrop-blur-md text-white px-2 py-0.5 rounded-full flex items-center gap-1 shadow-md border border-white/20">
+              <MapPin className="w-2.5 h-2.5 text-[#F26430]" />
+              <span>{((spot as any).distanceKm).toFixed(1)} กม.</span>
+            </span>
+          </div>
+        )}
+
         {/* Top-Right Favorite Button */}
         <button
           type="button"
@@ -92,7 +102,7 @@ export const SpotCard: React.FC<SpotCardProps> = ({
           </div>
 
           {/* Title */}
-          <h3 className="font-bold text-xs sm:text-sm lg:text-[13px] xl:text-sm text-[#1E293B] line-clamp-1 group-hover:text-[#D95322] transition-colors leading-snug">
+          <h3 className="font-bold text-xs sm:text-sm lg:text-[13px] xl:text-sm text-[#1E293B] line-clamp-1 group-hover:text-[#F26430] transition-colors leading-snug">
             {spot.title}
           </h3>
 
@@ -104,7 +114,7 @@ export const SpotCard: React.FC<SpotCardProps> = ({
             </div>
 
             <div className="flex items-center gap-1.5 min-w-0">
-              <MapPin className="w-3.5 h-3.5 text-[#D95322] shrink-0" />
+              <MapPin className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
               <span className="truncate">{spot.district}, {spot.province}</span>
             </div>
           </div>
@@ -112,12 +122,12 @@ export const SpotCard: React.FC<SpotCardProps> = ({
 
         {/* Bottom Action Footer (Bottom-Left: สถานที่เที่ยว & จุดฮีลใจ, Bottom-Right: ดูข้อมูลสถานที่) */}
         <div className="pt-2.5 flex items-center justify-between gap-2 border-t border-slate-100 mt-auto">
-          <span className="text-[10px] sm:text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border bg-orange-50 text-[#D95322] border-orange-200/90 flex items-center gap-1 truncate max-w-[170px]">
-            <MapPin className="w-3 h-3 text-[#D95322] shrink-0" />
+          <span className="text-[10px] sm:text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border bg-orange-50 text-[#F26430] border-orange-200/90 flex items-center gap-1 truncate max-w-[170px]">
+            <MapPin className="w-3 h-3 text-[#F26430] shrink-0" />
             <span className="truncate">สถานที่เที่ยว & จุดฮีลใจ</span>
           </span>
 
-          <span className="text-[11px] font-extrabold text-[#D95322] flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform shrink-0">
+          <span className="text-[11px] font-extrabold text-[#F26430] flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform shrink-0">
             <span>ดูข้อมูลสถานที่</span>
             <ArrowRight className="w-3 h-3" />
           </span>

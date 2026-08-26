@@ -93,7 +93,7 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
       <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col z-10 animate-slide-left border-l border-[#E8E2D8]">
         
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-[#FAF7F2]">
+        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-[#4A7C59] flex items-center justify-center text-white shadow-xs">
               <SlidersHorizontal className="w-5 h-5" />
@@ -138,7 +138,7 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="font-extrabold text-xs text-[#1E293B] flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4 text-[#D95322]" />
+                    <MapPin className="w-4 h-4 text-[#F26430]" />
                     <span>ค้นหา & เลือกจังหวัดทั่วไทย (77 จังหวัด):</span>
                   </label>
                   {selectedSpotProvince !== 'all' && setSelectedSpotProvince && (
@@ -160,7 +160,7 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
                     value={provinceSearch}
                     onChange={(e) => setProvinceSearch(e.target.value)}
                     placeholder="พิมพ์ชื่อจังหวัด เช่น เชียงใหม่, น่าน, กาญจนบุรี..."
-                    className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#D95322]"
+                    className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#F26430]"
                   />
                 </div>
 
@@ -175,7 +175,7 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
                         : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
                     }`}
                   >
-                    ✨ ทั่วประเทศ
+                    📍 ทั่วประเทศ
                   </button>
 
                   {filteredProvinces.map((prov) => {
@@ -187,8 +187,8 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
                         onClick={() => setSelectedSpotProvince && setSelectedSpotProvince(prov)}
                         className={`px-2.5 py-1.5 rounded-xl font-bold border text-xs transition-all cursor-pointer ${
                           isSelected
-                            ? 'bg-[#D95322] text-white border-[#D95322] shadow-xs'
-                            : 'bg-white text-slate-700 border-slate-200 hover:border-[#D95322]/50'
+                            ? 'bg-[#F26430] text-white border-[#F26430] shadow-xs'
+                            : 'bg-white text-slate-700 border-slate-200 hover:border-[#F26430]/50'
                         }`}
                       >
                         {prov}
@@ -465,7 +465,7 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 sm:p-5 border-t border-slate-100 bg-[#FAF7F2] flex items-center justify-between gap-3">
+        <div className="p-4 sm:p-5 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={onResetAll}

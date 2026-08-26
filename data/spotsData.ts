@@ -61,13 +61,14 @@ export interface LifestyleSpotItem {
 }
 
 export const SPOT_CATEGORIES = [
-  { id: 'all', label: 'ทั้งหมด', icon: '✨' },
-  { id: 'park', label: 'สวน & ธรรมชาติ', icon: '🌳' },
-  { id: 'art', label: 'หอศิลป์ & มิวเซียม', icon: '🎨' },
-  { id: 'cafe', label: 'คาเฟ่ & Slow Bar', icon: '☕' },
-  { id: 'oldtown', label: 'ย่านเก่า & ชุมชน', icon: '🏛️' },
-  { id: 'workspace', label: 'ที่นั่งทำงาน & อ่านหนังสือ', icon: '📚' },
-  { id: 'viewpoint', label: 'จุดชมวิว & ริมน้ำ', icon: '🌆' },
+  { id: 'all', label: 'ทุกหมวดหมู่สถานที่', icon: '✨' },
+  { id: 'park', label: 'สวนสาธารณะ & ธรรมชาติ', icon: '🌳' },
+  { id: 'cafe', label: 'คาเฟ่ & Slow Bar / สเปซนั่งชิลล์', icon: '☕' },
+  { id: 'art', label: 'หอศิลป์ & มิวเซียม / นิทรรศการ', icon: '🎨' },
+  { id: 'oldtown', label: 'ย่านเก่า & ชุมชนสร้างสรรค์', icon: '🏛️' },
+  { id: 'workspace', label: 'ที่นั่งทำงาน Co-working & อ่านหนังสือ', icon: '📚' },
+  { id: 'viewpoint', label: 'จุดชมวิว & ริมน้ำ / ทะเล', icon: '🌆' },
+  { id: 'nature', label: 'ธรรมชาติ & แคมปิ้ง / เอาต์ดอร์', icon: '🌲' },
 ];
 
 export const SPOT_PROVINCES = [
@@ -86,7 +87,9 @@ export const SPOT_PROVINCES = [
   { id: 'khonkaen', label: 'ขอนแก่น', name: 'ขอนแก่น' },
 ];
 
-export const MOCK_SPOTS: LifestyleSpotItem[] = [
+import { PROVINCES_77_TOP_SPOTS } from './allProvincesSpots';
+
+const INITIAL_MOCK_SPOTS: LifestyleSpotItem[] = [
   // ==========================================
   // 1. กรุงเทพฯ (10 สถานที่ยอดนิยม)
   // ==========================================
@@ -1440,4 +1443,25 @@ export const MOCK_SPOTS: LifestyleSpotItem[] = [
     longitude: 102.8154,
     interestedCount: 245
   }
+];
+
+// Combine unique spots ensuring all 77 Thai provinces are fully covered
+const existingTitles = new Set(INITIAL_MOCK_SPOTS.map((s) => s.title));
+const supplemental77Spots = PROVINCES_77_TOP_SPOTS.filter((s) => !existingTitles.has(s.title));
+
+export const MOCK_SPOTS: LifestyleSpotItem[] = [
+  ...INITIAL_MOCK_SPOTS,
+  ...supplemental77Spots,
+];
+
+export const ALL_THAI_PROVINCES = [
+  'กรุงเทพฯ', 'กระบี่', 'กาญจนบุรี', 'กาฬสินธุ์', 'กำแพงเพชร', 'ขอนแก่น', 'จันทบุรี', 'ฉะเชิงเทรา', 'ชลบุรี',
+  'ชัยนาท', 'ชัยภูมิ', 'ชุมพร', 'เชียงราย', 'เชียงใหม่', 'ตรัง', 'ตราด', 'ตาก', 'นครนายก', 'นครปฐม',
+  'นครพนม', 'นครราชสีมา', 'นครศรีธรรมราช', 'นครสวรรค์', 'นนทบุรี', 'นราธิวาส', 'น่าน', 'บึงกาฬ', 'บุรีรัมย์',
+  'ปทุมธานี', 'ประจวบคีรีขันธ์', 'ปราจีนบุรี', 'ปัตตานี', 'พระนครศรีอยุธยา', 'พังงา', 'พัทลุง', 'พิจิตร',
+  'พิษณุโลก', 'เพชรบุรี', 'เพชรบูรณ์', 'แพร่', 'พะเยา', 'ภูเก็ต', 'มหาสารคาม', 'มุกดาหาร', 'แม่ฮ่องสอน',
+  'ยะลา', 'ยโสธร', 'ร้อยเอ็ด', 'ระนอง', 'ระยอง', 'ราชบุรี', 'ลพบุรี', 'ลำปาง', 'ลำพูน', 'เลย', 'ศรีสะเกษ',
+  'สกลนคร', 'สงขลา', 'สตูล', 'สมุทรปราการ', 'สมุทรสงคราม', 'สมุทรสาคร', 'สระแก้ว', 'สระบุรี', 'สิงห์บุรี',
+  'สุโขทัย', 'สุพรรณบุรี', 'สุราษฎร์ธานี', 'สุรินทร์', 'หนองคาย', 'หนองบัวลำภู', 'อ่างทอง', 'อุดรธานี',
+  'อุทัยธานี', 'อุตรดิตถ์', 'อุบลราชธานี', 'อำนาจเจริญ'
 ];

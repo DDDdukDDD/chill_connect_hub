@@ -228,9 +228,9 @@ export const LogoutConfirmModal: React.FC<LogoutConfirmModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[100002] flex items-center justify-center p-4 bg-black/65 backdrop-blur-xs animate-fade-in">
-      <div className="bg-white rounded-3xl max-w-sm w-full border border-[#E8E2D8] shadow-2xl p-6 space-y-5 animate-scale-up text-center">
+      <div className="bg-white rounded-3xl max-w-sm w-full border border-slate-200 shadow-2xl p-6 space-y-5 animate-scale-up text-center">
         
-        <div className="w-14 h-14 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto border border-rose-200">
+        <div className="w-14 h-14 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center mx-auto border border-slate-200 shadow-2xs">
           <LogOut className="w-7 h-7" />
         </div>
 
@@ -245,17 +245,19 @@ export const LogoutConfirmModal: React.FC<LogoutConfirmModalProps> = ({
 
         <div className="grid grid-cols-2 gap-3 pt-2">
           <button
+            type="button"
             onClick={onClose}
-            className="py-2.5 px-4 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+            className="py-2.5 px-4 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
           >
             ยกเลิก
           </button>
           <button
+            type="button"
             onClick={() => {
               onConfirmLogout();
               onClose();
             }}
-            className="py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 transition-all shadow-sm active:scale-95"
+            className="py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-[#1E293B] hover:bg-[#0F172A] transition-all shadow-md active:scale-95 cursor-pointer"
           >
             ออกจากระบบ
           </button>

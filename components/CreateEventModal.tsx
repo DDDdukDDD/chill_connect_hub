@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { X, PlusCircle, Calendar, MapPin, Users, Sparkles, Tag, CheckCircle2, UserCheck, Shield, Flame } from 'lucide-react';
 import { EventItem } from '@/data/mockData';
+import { MOCK_SPOTS } from '@/data/spotsData';
 
 interface CreateEventModalProps {
   isOpen: boolean;
@@ -38,6 +39,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
   const [description, setDescription] = useState('');
   const [image, setImage] = useState(PRESET_IMAGES[0].url);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [selectedSpotId, setSelectedSpotId] = useState<string>('');
 
   if (!isOpen) return null;
 
@@ -201,15 +203,51 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
             </div>
           </div>
 
-          {/* Location */}
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-[#1E293B]">สถานที่จัดกิจกรรม:</label>
+          {/* Location & Quick Spot Selector */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-[#1E293B] flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5 text-[#F26430]" />
+                <span>สถานที่จัดกิจกรรม</span>
+                <span className="text-red-500">*</span>
+              </label>
+              <span className="text-[11px] text-[#4A7C59] font-bold">เลือกสถานที่แนะนำเพื่อ Auto-fill ได้ ✨</span>
+            </div>
+
+            {/* Quick Spot Selector Dropdown */}
+            <select
+              value={selectedSpotId}
+              onChange={(e) => {
+                const spotId = e.target.value;
+                setSelectedSpotId(spotId);
+                const found = MOCK_SPOTS.find(s => s.id === spotId);
+                if (found) {
+                  setLocation(`${found.title}, ${found.district}, ${found.province}`);
+                  setImage(found.image);
+                  if (!title.trim()) {
+                    setTitle(`ชวนไปเที่ยว ${found.title}`);
+                  }
+                  if (found.category === 'art') setCategory('learn');
+                  else if (found.category === 'nature' || found.category === 'park' || found.category === 'viewpoint') setCategory('heal');
+                  else if (found.category === 'cafe' || found.category === 'oldtown' || found.category === 'workspace') setCategory('chill');
+                }
+              }}
+              className="w-full bg-orange-50/60 border border-orange-200 text-[#1E293B] rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#F26430] cursor-pointer"
+            >
+              <option value="">📍 หรือเลือกจาก 53 สถานที่เที่ยว & จุดฮีลใจ (ช่วยกรอกข้อมูลอัตโนมัติ)...</option>
+              {MOCK_SPOTS.map((s) => (
+                <option key={s.id} value={s.id}>
+                  📍 {s.title} ({s.province})
+                </option>
+              ))}
+            </select>
+
             <input
               type="text"
               required
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="เช่น ร้านคาเฟ่ More Than Games อารีย์ / สวนลุมพินี"
+              placeholder="หรือพิมพ์ระบุสถานที่ เช่น ร้านคาเฟ่ More Than Games อารีย์ / สวนลุมพินี"
               className="w-full bg-slate-50 border border-[#E2DCD2] rounded-xl px-3.5 py-2.5 text-xs font-medium text-[#1E293B] focus:outline-none focus:border-[#4A7C59]"
             />
           </div>

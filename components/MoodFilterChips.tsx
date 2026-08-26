@@ -172,7 +172,7 @@ export const MoodFilterChips: React.FC<MoodFilterChipsProps> = ({
                   className={`shrink-0 rounded-full px-4.5 py-2 text-xs font-bold transition-all border flex items-center gap-1.5 ${
                     isSelected
                       ? 'bg-[#4A7C59] text-white border-[#4A7C59] shadow-xs scale-102 font-extrabold'
-                      : 'bg-[#FAF7F2] text-[#334155] border-[#E2DCD2] hover:border-[#4A7C59] hover:bg-white'
+                      : 'bg-slate-50 text-[#334155] border-slate-200 hover:border-[#4A7C59] hover:bg-white'
                   }`}
                 >
                   <span className="text-sm">{cat.icon}</span>

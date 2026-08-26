@@ -293,7 +293,7 @@ export default function ChallengesDiscoveryPage() {
   }, [selectedCategory, selectedType, searchQuery]);
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] text-[#1E293B] flex flex-col font-sans selection:bg-[#F26430] selection:text-white">
+    <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans selection:bg-[#F26430] selection:text-white">
       
       {/* 1. Header Navbar */}
       <Navbar
@@ -317,7 +317,7 @@ export default function ChallengesDiscoveryPage() {
       <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] mx-auto px-3.5 sm:px-6 lg:px-8 py-2.5 sm:py-4 space-y-3 sm:space-y-4 w-full">
         
         {/* 🌟 1. Ultra-Compact Brand-Tone Hero Banner (Mobile & iPad Friendly) */}
-        <section className="relative rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#FAF7F2] via-white to-amber-50/40 p-4 sm:p-5 md:p-6 shadow-2xs border border-[#E8E2D8] overflow-hidden">
+        <section className="relative rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-5 md:p-6 shadow-xs border border-slate-200/90 overflow-hidden">
           <div className="relative z-10 max-w-3xl space-y-1.5 sm:space-y-2">
             
             <h1 className="text-lg sm:text-xl md:text-2xl font-black text-[#1E293B] tracking-tight leading-tight">

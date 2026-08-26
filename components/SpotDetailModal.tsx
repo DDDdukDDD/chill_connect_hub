@@ -904,8 +904,8 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
 
         </div>
 
-        {/* Modal Action Footer: ปุ่มบันทึกสถานที่ (สีส้มโทนภายนอก -> บันทึกแล้วเปลี่ยนเป็นสีเขียว พร้อมตัด icon ซ้ำ) */}
-        <div className="p-3.5 sm:p-4 border-t border-slate-100 bg-[#FAF7F2] flex items-center justify-end shrink-0">
+        {/* Modal Action Footer: ปุ่มบันทึกสถานที่ */}
+        <div className="p-3.5 sm:p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end shrink-0">
           <button
             type="button"
             onClick={() => {

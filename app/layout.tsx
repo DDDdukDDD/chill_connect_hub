@@ -155,7 +155,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
         />
       </head>
-      <body className="min-h-screen bg-[#FAF7F2] text-[#1E293B] flex flex-col font-sans">
+      <body className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans">
         {children}
       </body>
     </html>

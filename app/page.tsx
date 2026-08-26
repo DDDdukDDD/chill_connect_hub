@@ -21,7 +21,7 @@ import { ReviewCarousel } from '@/components/ReviewCarousel';
 import { CommunityChallengeBar } from '@/components/CommunityChallengeBar';
 import { CreateChallengeModal } from '@/components/CreateChallengeModal';
 import { Pagination } from '@/components/Pagination';
-import { MOCK_SPOTS, SPOT_CATEGORIES, SPOT_PROVINCES, LifestyleSpotItem } from '@/data/spotsData';
+import { MOCK_SPOTS, SPOT_CATEGORIES, ALL_THAI_PROVINCES, LifestyleSpotItem } from '@/data/spotsData';
 import { SpotCard } from '@/components/SpotCard';
 import { SpotDetailModal } from '@/components/SpotDetailModal';
 import { isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp, isEventEndedByDate } from '@/lib/dateUtils';
@@ -53,6 +53,7 @@ import {
   Navigation,
   LocateFixed,
   Loader2,
+  ChevronDown,
   X
 } from 'lucide-react';
 
@@ -405,7 +406,7 @@ export default function Home() {
 
   // Filtered Lifestyle Spots (พิกัดเที่ยว & จุดฮีลใจ ทั่วประเทศ)
   const filteredSpots = useMemo(() => {
-    return MOCK_SPOTS.filter((spot) => {
+    let result = MOCK_SPOTS.filter((spot) => {
       // 1. Category Filter
       if (selectedSpotCategory !== 'all' && spot.category !== selectedSpotCategory) {
         return false;
@@ -413,8 +414,9 @@ export default function Home() {
 
       // 2. Province Filter
       if (selectedSpotProvince !== 'all') {
-        const provObj = SPOT_PROVINCES.find((p) => p.id === selectedSpotProvince);
-        if (provObj && provObj.name && !spot.province.includes(provObj.name)) {
+        const pLower = selectedSpotProvince.toLowerCase();
+        const spotProv = spot.province.toLowerCase();
+        if (!spotProv.includes(pLower) && !pLower.includes(spotProv)) {
           return false;
         }
       }
@@ -438,8 +440,27 @@ export default function Home() {
       }
 
       return true;
+    }).map((spot) => {
+      if (userLocation && spot.latitude && spot.longitude) {
+        return {
+          ...spot,
+          distanceKm: calculateDistanceKm(userLocation.lat, userLocation.lng, spot.latitude, spot.longitude),
+        };
+      }
+      return spot;
     });
-  }, [selectedSpotCategory, selectedSpotProvince, sortBy, favoriteSpots, searchQuery]);
+
+    if (sortByNearMe) {
+      result.sort((a, b) => ((a as any).distanceKm ?? 999) - ((b as any).distanceKm ?? 999));
+    } else if (sortBy === 'favorites') {
+      // Keep order
+    } else {
+      // Default: highest rating
+      result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    }
+
+    return result;
+  }, [selectedSpotCategory, selectedSpotProvince, sortBy, sortByNearMe, userLocation, favoriteSpots, searchQuery]);
 
   const handleSearchSubmit = () => {
     // Smart Search Auto-Clear: reset conflicting sub-filters so the search result is not blocked
@@ -628,7 +649,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] text-[#1E293B] flex flex-col font-sans selection:bg-[#F26430] selection:text-white">
+    <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans selection:bg-[#F26430] selection:text-white">
 
       {/* Schema.org Structured Data for AI Engine & Google Events Parsing */}
       <script
@@ -656,7 +677,7 @@ export default function Home() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 space-y-6">
+      <main className="flex-1 space-y-2 sm:space-y-3">
         
         {/* 2. Hero Section (with h1 tag for SEO & Clean Instant Surprise Me) */}
         <HeroSection
@@ -666,7 +687,7 @@ export default function Home() {
           onOpenSurpriseModal={() => setIsSurpriseModalOpen(true)}
         />
 
-        <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8 sm:space-y-10 py-3 relative z-10">
+        <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-8 pt-1 sm:pt-2 pb-6 relative z-10">
           
           {/* 3. Auto-Sliding Trending Events Carousel */}
           <TrendingCarousel
@@ -677,12 +698,25 @@ export default function Home() {
           />
 
           {/* 5. 🌿 คลังกิจกรรม & พิกัดเที่ยว (Mobile-First 3-Tab Mode Switcher) */}
-          <section id="catalog-section" className="space-y-4 pt-1">
+          <section id="catalog-section" className="space-y-2 sm:space-y-2.5 pt-1">
             
-            {/* 📱 3-Tab Segmented Mode Switcher (Mobile-Friendly Responsive Segmented Pill) */}
-            <div className="bg-slate-200/80 p-1.5 rounded-2xl border border-slate-300/80 shadow-inner flex items-center justify-between gap-1.5">
+            {/* Clean & Compact Mode Header matching TrendingCarousel Style */}
+            <div className="flex items-center gap-2 px-0.5 min-w-0">
+              <div className="p-1 sm:p-1.5 rounded-lg bg-orange-50 text-[#F26430] border border-orange-200/80 shrink-0 shadow-2xs">
+                <Compass className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#F26430]" />
+              </div>
+              <h2 className="text-xs sm:text-base font-extrabold text-[#1E293B] flex items-baseline gap-1.5 flex-wrap">
+                <span>วันนี้อยากไปไหน ทำอะไรดี?</span>
+                <span className="text-[11px] sm:text-xs text-slate-500 font-normal">
+                  (แตะเลือกกลุ่มกิจกรรมด้านล่างเพื่อเริ่มความสนุกได้เลย)
+                </span>
+              </h2>
+            </div>
+
+            {/* 📱 3-Tab Segmented Mode Switcher (Pure White Floating Segmented Pill - Option B) */}
+            <div className="bg-white p-1.5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-between gap-1.5">
               
-              {/* Tab 1: 📍 สถานที่เที่ยว & จุดฮีลใจ (Lifestyle Spots ทั่วประเทศ) */}
+              {/* Tab 1: 📍 สถานที่เที่ยว & จุดฮีลใจ (Lifestyle Spots ทั่วประเทศ - Chill) */}
               <div className="relative flex-1 group/tip">
                 <button
                   type="button"
@@ -691,11 +725,11 @@ export default function Home() {
                   }}
                   className={`w-full flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-black text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-98 ${
                     eventTypeTab === 'spots'
-                      ? 'bg-[#D95322] text-white shadow-md'
-                      : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'
+                      ? 'bg-[#F26430] hover:bg-[#D95322] text-white shadow-md shadow-[#F26430]/25'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                   }`}
                 >
-                  <MapPin className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${eventTypeTab === 'spots' ? 'text-amber-200' : 'text-slate-500'}`} />
+                  <MapPin className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${eventTypeTab === 'spots' ? 'text-amber-100' : 'text-slate-400'}`} />
                   <span className="inline sm:hidden">สถานที่เที่ยว</span>
                   <span className="hidden sm:inline">สถานที่เที่ยว & จุดฮีลใจ</span>
                 </button>
@@ -707,7 +741,33 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Tab 2: 🏛️ อีเวนต์ & งานแฟร์ */}
+              {/* Tab 2: 👥 กิจกรรมคอมมูนิตี้ (Community Meetups & Workshops - Connect) */}
+              <div className="relative flex-1 group/tip">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEventTypeTab('community');
+                    setSelectedVenueFilter(null);
+                  }}
+                  className={`w-full flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-black text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-98 ${
+                    eventTypeTab === 'community'
+                      ? 'bg-[#4A7C59] text-white shadow-md'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                >
+                  <Users className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${eventTypeTab === 'community' ? 'text-emerald-200' : 'text-slate-400'}`} />
+                  <span className="inline sm:hidden">คอมมูนิตี้</span>
+                  <span className="hidden sm:inline">กิจกรรมคอมมูนิตี้</span>
+                </button>
+                {/* Instant Floating Tooltip */}
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-64 p-2.5 bg-slate-900/95 text-white text-[11px] font-medium rounded-xl shadow-xl border border-white/10 opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-150 pointer-events-none z-50 leading-relaxed backdrop-blur-md text-center">
+                  <strong className="block text-emerald-300 font-extrabold mb-0.5">🌿 กิจกรรมคอมมูนิตี้:</strong>
+                  กิจกรรมนัดพบกลุ่มย่อยจากเพื่อนๆ และโฮสต์บนแพลตฟอร์ม ชวนทำกิจกรรมสนุกๆ ไปด้วยกัน
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95" />
+                </div>
+              </div>
+
+              {/* Tab 3: 🏛️ อีเวนต์ & งานแฟร์ (Major Exhibitions & Public Venue Events) */}
               <div className="relative flex-1 group/tip">
                 <button
                   type="button"
@@ -719,42 +779,16 @@ export default function Home() {
                   className={`w-full flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-black text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-98 ${
                     eventTypeTab === 'public_venue'
                       ? 'bg-[#2B527A] text-white shadow-md'
-                      : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                   }`}
                 >
-                  <Building2 className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${eventTypeTab === 'public_venue' ? 'text-sky-300' : 'text-slate-500'}`} />
+                  <Building2 className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${eventTypeTab === 'public_venue' ? 'text-sky-300' : 'text-slate-400'}`} />
                   <span className="truncate">อีเวนต์ & งานแฟร์</span>
                 </button>
                 {/* Instant Floating Tooltip */}
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-60 p-2.5 bg-slate-900/95 text-white text-[11px] font-medium rounded-xl shadow-xl border border-white/10 opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-150 pointer-events-none z-50 leading-relaxed backdrop-blur-md text-center">
                   <strong className="block text-sky-300 font-extrabold mb-0.5">🏛️ อีเวนต์ & งานแฟร์:</strong>
                   งานคอนเสิร์ต มหกรรม นิทรรศการ หรือแมตช์กีฬาจัดโดยผู้จัดทางการ
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95" />
-                </div>
-              </div>
-
-              {/* Tab 3: 👥 กิจกรรมคอมมูนิตี้ */}
-              <div className="relative flex-1 group/tip">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEventTypeTab('community');
-                    setSelectedVenueFilter(null);
-                  }}
-                  className={`w-full flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-black text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-98 ${
-                    eventTypeTab === 'community'
-                      ? 'bg-[#4A7C59] text-white shadow-md'
-                      : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'
-                  }`}
-                >
-                  <Users className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${eventTypeTab === 'community' ? 'text-emerald-200' : 'text-slate-500'}`} />
-                  <span className="inline sm:hidden">คอมมูนิตี้</span>
-                  <span className="hidden sm:inline">กิจกรรมคอมมูนิตี้</span>
-                </button>
-                {/* Instant Floating Tooltip */}
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-64 p-2.5 bg-slate-900/95 text-white text-[11px] font-medium rounded-xl shadow-xl border border-white/10 opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-150 pointer-events-none z-50 leading-relaxed backdrop-blur-md text-center">
-                  <strong className="block text-emerald-300 font-extrabold mb-0.5">🌿 กิจกรรมคอมมูนิตี้:</strong>
-                  กิจกรรมนัดพบกลุ่มย่อยจากเพื่อนๆ และโฮสต์บนแพลตฟอร์ม ชวนทำกิจกรรมสนุกๆ ไปด้วยกัน
                   <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95" />
                 </div>
               </div>
@@ -767,64 +801,54 @@ export default function Home() {
             {eventTypeTab === 'spots' ? (
               <div className="space-y-4 animate-fade-in">
                 
-                {/* Dedicated Spot Control & Filter Bar */}
-                <div className="bg-white p-3 sm:p-4 rounded-3xl border border-[#E8E2D8] shadow-xs space-y-3">
+                {/* Dedicated Spot Control & Filter Bar (Compact Dual-Dropdown + Actions) */}
+                <div className="bg-white p-2 sm:p-2.5 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-2">
                   
-                  {/* Row 1: Spot Category Filter Chips */}
-                  <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5">
-                    <span className="text-xs font-black text-slate-400 shrink-0 mr-1 hidden sm:inline">
-                      หมวดสถานที่:
-                    </span>
-                    {SPOT_CATEGORIES.map((cat) => {
-                      const isActive = selectedSpotCategory === cat.id;
-                      return (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() => setSelectedSpotCategory(cat.id)}
-                          className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-black transition-all shrink-0 whitespace-nowrap flex items-center gap-1.5 cursor-pointer active:scale-95 ${
-                            isActive
-                              ? 'bg-[#D95322] text-white shadow-md shadow-[#D95322]/20'
-                              : 'bg-[#FAF7F2] text-slate-700 hover:bg-slate-100 border border-[#E8E2D8]'
-                          }`}
-                        >
-                          <span>{cat.icon}</span>
-                          <span>{cat.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Row 2: Province Selector & Saved Spots Filter */}
-                  <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                  {/* Left: Dual Dropdowns (Category + Province) */}
+                  <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap flex-1 min-w-0">
                     
-                    {/* Province Pills */}
-                    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-                      <span className="text-xs font-black text-slate-400 shrink-0 mr-1 flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-[#D95322]" />
-                        <span>จังหวัด:</span>
-                      </span>
-                      {SPOT_PROVINCES.map((prov) => {
-                        const isProvActive = selectedSpotProvince === prov.id;
-                        return (
-                          <button
-                            key={prov.id}
-                            type="button"
-                            onClick={() => setSelectedSpotProvince(prov.id)}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all shrink-0 whitespace-nowrap cursor-pointer ${
-                              isProvActive
-                                ? 'bg-slate-900 text-white shadow-xs'
-                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80'
-                            }`}
-                          >
-                            {prov.label}
-                          </button>
-                        );
-                      })}
+                    {/* 1. Category Dropdown */}
+                    <div className="relative flex items-center flex-1 min-w-[170px] max-w-xs">
+                      <Compass className="w-3.5 h-3.5 text-[#F26430] absolute left-3 pointer-events-none" />
+                      <select
+                        value={selectedSpotCategory}
+                        onChange={(e) => setSelectedSpotCategory(e.target.value)}
+                        className="w-full pl-8 pr-7 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200/90 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-[#F26430] cursor-pointer shadow-2xs appearance-none transition-colors truncate"
+                      >
+                        {SPOT_CATEGORIES.map((cat) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.label}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 pointer-events-none" />
                     </div>
 
-                    {/* Right Controls: Saved Spots Filter + Advance Filter Drawer Button */}
-                    <div className="flex items-center gap-2 self-start sm:self-auto shrink-0 flex-wrap">
+                    {/* 2. Province Dropdown (Clean 77 Thai Provinces) */}
+                    <div className="relative flex items-center flex-1 min-w-[130px] max-w-[180px]">
+                      <MapPin className="w-3.5 h-3.5 text-[#F26430] absolute left-3 pointer-events-none" />
+                      <select
+                        value={selectedSpotProvince}
+                        onChange={(e) => setSelectedSpotProvince(e.target.value)}
+                        className="w-full pl-8 pr-7 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200/90 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-[#F26430] cursor-pointer shadow-2xs appearance-none transition-colors truncate"
+                      >
+                        <option value="all">ทั่วประเทศ</option>
+                        {ALL_THAI_PROVINCES.map((p) => (
+                          <option key={p} value={p}>
+                            {p}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 pointer-events-none" />
+                    </div>
+
+                  </div>
+
+                  {/* Right Controls: Favorites + Near Me (GPS) + Filter Drawer */}
+                  <div className="flex items-center justify-end gap-1.5 shrink-0 pt-1 md:pt-0 border-t md:border-t-0 border-slate-100">
+                    
+                    {/* 💖 Favorites Button */}
+                    <div className="relative group/tip shrink-0">
                       <button
                         type="button"
                         onClick={() => {
@@ -832,35 +856,65 @@ export default function Home() {
                             setSortBy('newest');
                           } else {
                             setSortBy('favorites');
+                            setSortByNearMe(false);
                           }
                         }}
-                        className={`px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 shrink-0 border cursor-pointer ${
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 border ${
                           sortBy === 'favorites'
-                            ? 'bg-rose-500 text-white border-rose-500 shadow-xs'
-                            : 'bg-white text-slate-700 border-slate-200 hover:bg-rose-50 hover:text-rose-600'
+                            ? 'bg-rose-500 text-white border-rose-500 shadow-sm ring-2 ring-rose-500/20'
+                            : 'bg-white hover:bg-rose-50/80 text-[#1E293B] hover:text-rose-600 border-slate-200 hover:border-rose-300'
                         }`}
                       >
-                        <Heart className={`w-3.5 h-3.5 ${sortBy === 'favorites' ? 'fill-white' : 'text-rose-500'}`} />
+                        <Heart className={`w-3.5 h-3.5 ${sortBy === 'favorites' ? 'fill-white text-white' : 'fill-rose-500/20 text-rose-500'}`} />
                         <span>ที่บันทึกไว้ ({favoriteSpots.length})</span>
                       </button>
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-44 p-2 bg-slate-900/95 text-white text-[10px] font-medium rounded-xl shadow-xl border border-white/10 opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-150 pointer-events-none z-50 leading-tight text-center">
+                        💖 ดูสถานที่ที่คุณกดหัวใจหรือบันทึกไว้
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95" />
+                      </div>
+                    </div>
 
-                      {/* ⚙️ Advance Filter Drawer Button */}
+                    {/* 🎯 Near Me (Location Search) Button with LocateFixed Icon */}
+                    <div className="relative group/tip shrink-0">
                       <button
                         type="button"
-                        onClick={() => setIsFilterDrawerOpen(true)}
-                        className={`flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 border ${
-                          (selectedSpotCategory !== 'all' || selectedSpotProvince !== 'all' || priceFilter !== 'all')
-                            ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-                            : 'bg-white hover:bg-slate-50 text-[#1E293B] border-[#E8E2D8] hover:border-slate-300'
+                        onClick={handleToggleNearMe}
+                        disabled={isLocating}
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 border ${
+                          sortByNearMe
+                            ? 'bg-gradient-to-r from-orange-500 to-[#F26430] text-white border-[#F26430] shadow-sm ring-2 ring-orange-500/20'
+                            : 'bg-white hover:bg-orange-50/80 text-[#1E293B] hover:text-[#F26430] border-slate-200 hover:border-orange-300'
                         }`}
                       >
-                        <SlidersHorizontal className="w-3.5 h-3.5" />
-                        <span>ตัวกรอง</span>
-                        {(selectedSpotCategory !== 'all' || selectedSpotProvince !== 'all' || priceFilter !== 'all') && (
-                          <span className="w-2 h-2 rounded-full bg-[#D95322] animate-pulse" />
+                        {isLocating ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-[#F26430]" />
+                        ) : (
+                          <LocateFixed className={`w-3.5 h-3.5 ${sortByNearMe ? 'text-white animate-pulse' : 'text-[#F26430]'}`} />
                         )}
+                        <span>{isLocating ? 'กำลังหาพิกัด...' : sortByNearMe ? 'ใกล้ฉัน (เปิดอยู่)' : 'ใกล้ฉัน'}</span>
                       </button>
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2 bg-slate-900/95 text-white text-[10px] font-medium rounded-xl shadow-xl border border-white/10 opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-150 pointer-events-none z-50 leading-tight text-center">
+                        📍 ค้นหาและเรียงลำดับสถานที่ตามระยะทางจากพิกัดของคุณ
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95" />
+                      </div>
                     </div>
+
+                    {/* ⚙️ Advance Filter Drawer Button */}
+                    <button
+                      type="button"
+                      onClick={() => setIsFilterDrawerOpen(true)}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 border ${
+                        (selectedSpotCategory !== 'all' || selectedSpotProvince !== 'all' || priceFilter !== 'all')
+                          ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                          : 'bg-white hover:bg-slate-50 text-[#1E293B] border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <SlidersHorizontal className="w-3.5 h-3.5" />
+                      <span>ตัวกรอง</span>
+                      {(selectedSpotCategory !== 'all' || selectedSpotProvince !== 'all' || priceFilter !== 'all') && (
+                        <span className="w-2 h-2 rounded-full bg-[#F26430] animate-pulse" />
+                      )}
+                    </button>
 
                   </div>
 
@@ -871,7 +925,7 @@ export default function Home() {
                   <span className="flex items-center gap-1.5">
                     <span>📍 พบสถานที่ทั้งหมด <strong className="text-slate-900 font-extrabold">{filteredSpots.length}</strong> แห่ง</span>
                     {selectedSpotProvince !== 'all' && (
-                      <span className="text-slate-400">• จังหวัด: {SPOT_PROVINCES.find(p => p.id === selectedSpotProvince)?.label}</span>
+                      <span className="text-slate-400">• จังหวัด: {selectedSpotProvince}</span>
                     )}
                   </span>
                   {(selectedSpotCategory !== 'all' || selectedSpotProvince !== 'all' || searchQuery.trim() !== '' || sortBy === 'favorites') && (
@@ -884,7 +938,7 @@ export default function Home() {
                         setSortBy('newest');
                         showToast('ล้างตัวกรองสถานที่แล้ว ✨');
                       }}
-                      className="text-[#D95322] hover:underline cursor-pointer"
+                      className="text-[#F26430] hover:underline cursor-pointer"
                     >
                       ✕ ล้างตัวกรองสถานที่
                     </button>
@@ -935,7 +989,7 @@ export default function Home() {
                         setSearchQuery('');
                         setSortBy('newest');
                       }}
-                      className="px-4 py-2 bg-[#D95322] text-white rounded-xl text-xs font-bold shadow-xs hover:bg-[#BF4519] transition-all cursor-pointer"
+                      className="px-4 py-2 bg-[#F26430] hover:bg-[#D95322] text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer"
                     >
                       แสดงสถานที่ทั้งหมด
                     </button>

@@ -69,7 +69,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E8E2D8] transition-all">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 transition-all">
         <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 h-18 sm:h-20 flex items-center justify-between">
           
           {/* Left: Brand Logo & Name */}
@@ -248,9 +248,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                             setIsLoggedIn(false);
                           }
                         }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-rose-600 hover:bg-rose-50 font-bold text-xs transition-colors cursor-pointer"
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-bold text-xs transition-colors cursor-pointer"
                       >
-                        <LogOut className="w-4 h-4 text-rose-500" />
+                        <LogOut className="w-4 h-4 text-slate-400" />
                         <span>ออกจากระบบ (Log out)</span>
                       </button>
                     </div>
@@ -295,11 +295,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           />
 
           {/* Drawer Content Panel */}
-          <div className="relative w-[300px] sm:w-[340px] bg-[#FAF7F2] h-full shadow-2xl flex flex-col justify-between p-6 z-10 animate-slide-left border-l border-[#E8E2D8] overflow-y-auto">
+          <div className="relative w-[300px] sm:w-[340px] bg-white h-full shadow-2xl flex flex-col justify-between p-6 z-10 animate-slide-left border-l border-slate-200 overflow-y-auto">
             
             {/* Top Drawer Header */}
             <div className="space-y-6">
-              <div className="flex items-center justify-between border-b border-[#E8E2D8] pb-4">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-4">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-xl bg-[#4A7C59] flex items-center justify-center text-white">
                     <Sprout className="w-4 h-4 stroke-[2.5]" />
@@ -356,10 +356,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                           if (typeof window !== 'undefined') localStorage.setItem('isLoggedIn', 'false');
                         }
                       }}
-                      className="py-2 px-3.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer border border-rose-200/60"
+                      className="py-2 px-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer border border-slate-200"
                       title="ออกจากระบบ"
                     >
-                      <LogOut className="w-3.5 h-3.5" />
+                      <LogOut className="w-3.5 h-3.5 text-slate-500" />
                       <span>ออก</span>
                     </button>
                   </div>
@@ -446,9 +446,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                       if (typeof window !== 'undefined') localStorage.setItem('isLoggedIn', 'false');
                     }
                   }}
-                  className="w-full bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 py-3 rounded-2xl text-xs font-extrabold flex items-center justify-center gap-2 transition-colors shadow-2xs cursor-pointer active:scale-95"
+                  className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 py-3 rounded-2xl text-xs font-extrabold flex items-center justify-center gap-2 transition-colors shadow-2xs cursor-pointer active:scale-95"
                 >
-                  <LogOut className="w-4 h-4 text-rose-500" />
+                  <LogOut className="w-4 h-4 text-slate-500" />
                   <span>ออกจากระบบ (Logout)</span>
                 </button>
               </div>

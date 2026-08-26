@@ -244,7 +244,7 @@ export default function MomentsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] text-[#1E293B] flex flex-col font-sans selection:bg-[#F26430] selection:text-white">
+    <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans selection:bg-[#F26430] selection:text-white">
       
       {/* Schema.org Structured Data for AI Engine Parsing */}
       <script

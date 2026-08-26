@@ -218,24 +218,19 @@ const HANGOUT_STYLES = [
   },
 ];
 
-// Step 3: Bangkok & Vicinity Living Areas (6 Balanced Urban Hubs)
-const BANGKOK_ZONES = [
-  { id: 'siam_silom', label: 'สยาม - สามย่าน - สีลม', detail: 'ใจกลางเมือง, BTS/MRT, คาเฟ่ & ช้อปปิ้ง' },
-  { id: 'ari_chatuchak', label: 'อารีย์ - พญาไท - จตุจักร', detail: 'Specialty Coffee, สวนจตุจักร, งานคราฟต์' },
-  { id: 'sukhumvit_ekkamai', label: 'สุขุมวิท - เอกมัย - อโศก', detail: 'สวนเบญจกิติ, ดาดฟ้า, ไลฟ์สไตล์คนเมือง' },
-  { id: 'thonburi_riverside', label: 'เจริญกรุง - ฝั่งธนฯ - ริมน้ำ', detail: 'แกลเลอรีศิลปะ, นิทรรศการ, งานสร้างสรรค์' },
-  { id: 'bangna_bitec', label: 'บางนา - ศรีนครินทร์ (BITEC)', detail: 'งานแฟร์ใหญ่, ศูนย์การค้า, สปอร์ตคลับ' },
-  { id: 'north_impact', label: 'รังสิต - นนทบุรี - แจ้งวัฒนะ', detail: 'IMPACT เมืองทอง, คอนเสิร์ต, เอาต์ดอร์' },
-];
+import { ALL_THAI_PROVINCES } from '@/data/spotsData';
 
-// Step 3: Provincial & Nationwide Living Areas (6 Major Regions Across Thailand)
-const PROVINCIAL_ZONES = [
-  { id: 'north_chiangmai', label: 'ภาคเหนือ (เชียงใหม่ / เชียงราย)', detail: 'นิมมาน, คาเฟ่ธรรมชาติ, วิ่งเทรล, ดอย & แกลเลอรี' },
-  { id: 'east_chonburi', label: 'ภาคตะวันออก (ชลบุรี / พัทยา / ระยอง)', detail: 'บางแสน, เซิร์ฟบอร์ด, คอนเสิร์ตริมหาด, แคมปิ้ง' },
-  { id: 'south_phuket', label: 'ภาคใต้ (ภูเก็ต / หาดใหญ่ / สมุย)', detail: 'กิจกรรมทางน้ำ, ดำน้ำ, คาเฟ่ทะเล, สตรีทฟู้ด' },
-  { id: 'isan_khonkaen', label: 'ภาคอีสาน (ขอนแก่น / โคราช / อุดรฯ)', detail: 'คอมมูนิตี้คนรุ่นใหม่, ดนตรีอินดี้, งานคราฟต์อีสาน' },
-  { id: 'central_huahin', label: 'ภาคกลาง & ตะวันตก (หัวหิน / กาญจนบุรี)', detail: 'หัวหิน, อยุธยา, แพกาญจน์, โรดทริป & คาเฟ่' },
-  { id: 'online_virtual', label: 'ตี้ออนไลน์ / Virtual Meetup', detail: 'เล่นเกมออนไลน์, บุ๊กคลับ, ดิสคอร์ด จอยได้ทั่วไทย' },
+// Step 3: Popular Living Provinces in Thailand
+const POPULAR_PROVINCES = [
+  { id: 'กรุงเทพฯ', label: '🏙️ กรุงเทพฯ', desc: 'เมืองหลวง & ศูนย์รวมอีเวนต์' },
+  { id: 'นนทบุรี', label: '🏡 นนทบุรี', desc: 'อิมแพ็ค เมืองทองธานี & ชานเมือง' },
+  { id: 'ปทุมธานี', label: '🌳 ปทุมธานี', desc: 'รังสิต, คลองหลวง & คอมมูนิตี้' },
+  { id: 'สมุทรปราการ', label: '✈️ สมุทรปราการ', desc: 'บางพลี, บางปู & นิทรรศการ' },
+  { id: 'เชียงใหม่', label: '🌄 เชียงใหม่', desc: 'นิมมาน, คาเฟ่ดอย & ศิลปวัฒนธรรม' },
+  { id: 'ชลบุรี', label: '🌊 ชลบุรี / พัทยา', desc: 'บางแสน, หาดพัทยา & เซิร์ฟบอร์ด' },
+  { id: 'ภูเก็ต', label: '🏝️ ภูเก็ต', desc: 'ทะเลอันดามัน, เมืองเก่า & กิจกรรมทางน้ำ' },
+  { id: 'ขอนแก่น', label: '🌾 ขอนแก่น', desc: 'เมืองมหาวิทยาลัย & ดนตรีอินดี้' },
+  { id: 'นครราชสีมา', label: '🌲 นครราชสีมา', desc: 'เขาใหญ่, แคมปิ้ง & คาเฟ่ธรรมชาติ' },
 ];
 
 // Step 4: 20 Comprehensive Lifestyle Activities (100% Full Text Visibility)
@@ -329,10 +324,9 @@ export default function OnboardingPage() {
   ]);
   const [formError, setFormError] = useState<string>('');
 
-  // Step 3 Hangout Styles (12 Styles) & Living Areas
+  // Step 3 Hangout Styles (12 Styles) & Living Province
   const [selectedStyles, setSelectedStyles] = useState<string[]>(['cozy_chill', 'foodie_cafe']);
-  const [livingAreaTab, setLivingAreaTab] = useState<'bkk' | 'provinces'>('bkk');
-  const [selectedLivingAreas, setSelectedLivingAreas] = useState<string[]>(['sukhumvit_ekkamai', 'ari_chatuchak']);
+  const [selectedProvince, setSelectedProvince] = useState<string>('กรุงเทพฯ');
 
   // Step 4 Interests
   const [selectedInterests, setSelectedInterests] = useState<string[]>(['coffee', 'boardgames', 'exhibitions', 'running']);
@@ -409,15 +403,7 @@ export default function OnboardingPage() {
     }
   };
 
-  // Toggle Living Area helper
-  const handleLivingAreaToggle = (id: string) => {
-    if (selectedLivingAreas.includes(id)) {
-      if (selectedLivingAreas.length === 1) return;
-      setSelectedLivingAreas(selectedLivingAreas.filter((z) => z !== id));
-    } else {
-      setSelectedLivingAreas([...selectedLivingAreas, id]);
-    }
-  };
+
 
   const handleInterestToggle = (id: string) => {
     if (selectedInterests.includes(id)) {
@@ -474,8 +460,9 @@ export default function OnboardingPage() {
       educationLevel,
       institution: institution.trim() || '',
       styles: selectedStyles,
-      livingAreas: selectedLivingAreas,
-      zones: selectedLivingAreas, // Backward compatibility
+      province: selectedProvince,
+      livingAreas: [selectedProvince],
+      zones: [selectedProvince], // Backward compatibility
       interests: selectedInterests,
       goals: selectedGoals,
       badges: userRole !== 'member' 
@@ -490,14 +477,18 @@ export default function OnboardingPage() {
     localStorage.setItem('userRole', userRole);
     localStorage.setItem('userProfile', JSON.stringify(profile));
 
-    router.push('/myhub?welcome=true');
+    if (userRole !== 'member') {
+      router.push('/myhub?welcome=true');
+    } else {
+      router.push('/?welcome=true');
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] text-slate-900 font-sans flex flex-col justify-between selection:bg-[#4A7C59] selection:text-white">
+    <div className="min-h-screen bg-white text-slate-900 font-sans flex flex-col justify-between selection:bg-[#4A7C59] selection:text-white">
       
       {/* Top Header with Exact Main Page Branding (Clean & Focused) */}
-      <header className="sticky top-0 z-40 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E8E2D8] transition-all">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 transition-all">
         <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 h-18 sm:h-20 flex items-center justify-between">
           
           {/* Left: Exact Brand Logo & Slogan matching Main Page */}
@@ -533,7 +524,7 @@ export default function OnboardingPage() {
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 flex flex-col justify-center">
         
         {/* Full-width Spacious Card Container */}
-        <div className="bg-white rounded-3xl border border-[#E8E2D8] shadow-xl p-6 sm:p-10 lg:p-12 flex flex-col justify-between min-h-[660px] transition-all">
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-6 sm:p-10 lg:p-12 flex flex-col justify-between min-h-[660px] transition-all">
           
           {/* Top 4-Segmented Step Bar Indicator (Step 1 green, others gray) */}
           {currentStep > 0 && currentStep < 5 && (
@@ -639,7 +630,7 @@ export default function OnboardingPage() {
                     setAuthMethod('email');
                     setCurrentStep(1);
                   }}
-                  className="w-full bg-[#FAF7F2] hover:bg-slate-100 text-slate-700 py-3 px-5 rounded-2xl text-xs sm:text-sm font-bold transition-all border border-slate-200 flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 py-3 px-5 rounded-2xl text-xs sm:text-sm font-bold transition-all border border-slate-200 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <span>ใช้อีเมลและรหัสผ่าน</span>
                 </button>
@@ -713,7 +704,7 @@ export default function OnboardingPage() {
                   }}
                   className={`py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                     step1RoleTab === 'host_business'
-                      ? 'bg-indigo-600 text-white font-black shadow-md'
+                      ? 'bg-[#2B527A] text-white font-black shadow-md'
                       : 'text-slate-500 hover:text-slate-800 bg-transparent'
                   }`}
                 >
@@ -736,7 +727,7 @@ export default function OnboardingPage() {
                       className={`min-h-[104px] p-4 sm:p-5 rounded-2xl border-2 transition-all cursor-pointer flex items-start gap-4 select-none ${
                         isSelected
                           ? isHostMode
-                            ? 'bg-indigo-50/80 border-indigo-600 ring-4 ring-indigo-500/15 shadow-sm'
+                            ? 'bg-sky-50/80 border-[#2B527A] ring-4 ring-[#2B527A]/15 shadow-sm'
                             : 'bg-emerald-50/80 border-[#4A7C59] ring-4 ring-[#4A7C59]/15 shadow-sm'
                           : 'bg-white hover:bg-slate-50 border-[#E8E2D8]'
                       }`}
@@ -744,10 +735,10 @@ export default function OnboardingPage() {
                       <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
                         isSelected
                           ? isHostMode
-                            ? 'bg-indigo-600 text-white shadow-xs'
+                            ? 'bg-[#2B527A] text-white shadow-xs'
                             : 'bg-[#4A7C59] text-white shadow-xs'
                           : isHostMode
-                          ? 'bg-indigo-50 text-indigo-600'
+                          ? 'bg-sky-100 text-[#2B527A]'
                           : 'bg-slate-100 text-slate-600'
                       }`}>
                         <Icon className="w-6 h-6" />
@@ -759,7 +750,7 @@ export default function OnboardingPage() {
                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 ${
                         isSelected
                           ? isHostMode
-                            ? 'bg-indigo-600 border-indigo-600 text-white'
+                            ? 'bg-[#2B527A] border-[#2B527A] text-white'
                             : 'bg-[#4A7C59] border-[#4A7C59] text-white'
                           : 'border-slate-300'
                       }`}>
@@ -1246,66 +1237,43 @@ export default function OnboardingPage() {
                   </div>
                 </div>
 
-                {/* Section 2: Residential Living Areas (Nationwide + Bangkok Region Switcher) */}
-                <div className="space-y-2.5">
+                {/* Section 2: Residential Living Province (Popular Quick Cards + Full 77 Province Dropdown) */}
+                <div className="space-y-3 pt-2">
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-1.5">
-                      <Home className="w-4 h-4 text-[#4A7C59]" />
+                      <MapPin className="w-4 h-4 text-[#F26430]" />
                       <label className="block text-sm font-black text-slate-800">
-                        พื้นที่พักอาศัย & ย่านที่คุณใช้ชีวิต:
+                        จังหวัดที่คุณอาศัย หรือใช้ชีวิตหลัก (Primary Living Province): <span className="text-rose-500">*</span>
                       </label>
                     </div>
-
-                    {/* Region Selector Tabs (BKK vs Nationwide Provinces) */}
-                    <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200">
-                      <button
-                        type="button"
-                        onClick={() => setLivingAreaTab('bkk')}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
-                          livingAreaTab === 'bkk'
-                            ? 'bg-white text-slate-900 shadow-xs'
-                            : 'text-slate-500 hover:text-slate-800'
-                        }`}
-                      >
-                        🏙️ กรุงเทพฯ & ปริมณฑล
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setLivingAreaTab('provinces')}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
-                          livingAreaTab === 'provinces'
-                            ? 'bg-white text-slate-900 shadow-xs'
-                            : 'text-slate-500 hover:text-slate-800'
-                        }`}
-                      >
-                        🌄 ต่างจังหวัด & ทั่วประเทศ
-                      </button>
-                    </div>
+                    <span className="text-xs font-bold text-[#4A7C59] bg-emerald-50 px-2.5 py-0.5 rounded-lg border border-emerald-200">
+                      📍 เลือก: {selectedProvince}
+                    </span>
                   </div>
 
-                  {/* Location Grid (6 Balanced White Cards per Tab) */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {(livingAreaTab === 'bkk' ? BANGKOK_ZONES : PROVINCIAL_ZONES).map((zone) => {
-                      const isSelected = selectedLivingAreas.includes(zone.id);
+                  {/* Quick Popular Provinces */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                    {POPULAR_PROVINCES.map((prov) => {
+                      const isSelected = selectedProvince === prov.id;
                       return (
                         <div
-                          key={zone.id}
-                          onClick={() => handleLivingAreaToggle(zone.id)}
-                          className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-start justify-between gap-3 select-none shadow-2xs ${
+                          key={prov.id}
+                          onClick={() => setSelectedProvince(prov.id)}
+                          className={`p-3 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between gap-2.5 select-none shadow-2xs ${
                             isSelected
                               ? 'bg-emerald-50/80 border-[#4A7C59] ring-2 ring-[#4A7C59]/20 shadow-xs'
-                              : 'bg-white border-[#E8E2D8] hover:bg-slate-50'
+                              : 'bg-white border-slate-200 hover:bg-slate-50'
                           }`}
                         >
                           <div className="min-w-0 flex-1">
                             <h5 className="font-extrabold text-xs sm:text-sm text-slate-900 truncate">
-                              {zone.label}
+                              {prov.label}
                             </h5>
-                            <p className="text-[11px] text-slate-500 mt-0.5 leading-snug line-clamp-1">
-                              {zone.detail}
+                            <p className="text-[11px] text-slate-500 mt-0.5 leading-snug truncate">
+                              {prov.desc}
                             </p>
                           </div>
-                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 ${
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
                             isSelected ? 'bg-[#4A7C59] border-[#4A7C59] text-white' : 'border-slate-300'
                           }`}>
                             {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
@@ -1313,6 +1281,27 @@ export default function OnboardingPage() {
                         </div>
                       );
                     })}
+                  </div>
+
+                  {/* Dropdown for All 77 Provinces */}
+                  <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <Compass className="w-4 h-4 text-[#4A7C59]" />
+                      <span className="text-xs font-extrabold text-slate-700 whitespace-nowrap">
+                        หรือเลือกจังหวัดอื่นๆ ทั่วไทย (77 จังหวัด):
+                      </span>
+                    </div>
+                    <select
+                      value={selectedProvince}
+                      onChange={(e) => setSelectedProvince(e.target.value)}
+                      className="w-full sm:w-64 bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:border-[#4A7C59] shadow-2xs cursor-pointer"
+                    >
+                      {ALL_THAI_PROVINCES.map((p) => (
+                        <option key={p} value={p}>
+                          📍 {p}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
@@ -1471,7 +1460,7 @@ export default function OnboardingPage() {
                       <span className="text-[11px] font-black text-[#4A7C59] uppercase tracking-wider block">STEP 1 • DISCOVERY</span>
                       <h3 className="text-sm sm:text-base font-black text-slate-900 mt-0.5">1. ค้นหา & แมตช์ตี้</h3>
                       <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
-                        รวมงานแฟร์ใหญ่และตี้กลุ่มย่อย (กาแฟ, วิ่ง, บอร์ดเกม) พร้อมระบบ <strong className="text-slate-700">Buddy Matcher</strong> หาเพื่อนคอเดียวกันทันที
+                        รวมสถานที่น่าสนใจ งานแฟร์ใหญ่และตี้กลุ่มย่อย (กาแฟ, วิ่ง, บอร์ดเกม) พร้อมระบบ <strong className="text-slate-700">Buddy Matcher</strong> หาเพื่อนคอเดียวกันทันที
                       </p>
                     </div>
                   </div>
@@ -1550,8 +1539,8 @@ export default function OnboardingPage() {
                 </span>
               </div>
 
-              {/* Launch CTA Button */}
-              <div className="max-w-md w-full mx-auto">
+              {/* Launch CTA Button (Adjusted downward with generous breathing room) */}
+              <div className="max-w-md w-full mx-auto pt-6 sm:pt-8 mt-2">
                 <button
                   type="button"
                   onClick={handleCompleteOnboarding}

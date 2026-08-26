@@ -154,7 +154,7 @@ function ProfileContent() {
   }, [profile.id]);
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] text-[#1E293B] flex flex-col font-sans">
+    <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans">
       <Navbar
         activeTab="profile"
         setActiveTab={() => {}}
