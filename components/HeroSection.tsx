@@ -25,28 +25,31 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     }
   };
 
-  const SUGGESTIONS = [
+  const SPOT_SUGGESTIONS = [
+    { label: '🌳 สวนสาธารณะ & ป่าใจกลางเมือง', query: 'สวน', sub: 'สวนเบญจกิติ, สวนลุมฯ, สวนรถไฟ, อ่างแก้ว มช.' },
+    { label: '🎨 หอศิลป์ & สเปซงานคราฟต์', query: 'หอศิลป์', sub: 'BACC, MOCA Bangkok, บ้านข้างวัด, โคลัมโบ' },
+    { label: '☕ คาเฟ่ Slow Bar & วิวธรรมชาติ', query: 'คาเฟ่', sub: 'ย่านอารีย์, ทรงวาด, เขาใหญ่, ภูลังกา' },
+    { label: '🏛️ ย่านเก่า & ชุมชนประวัติศาสตร์', query: 'ย่านเก่า', sub: 'ตลาดน้อย, เมืองเก่าภูเก็ต, ท่าแพ, สะพานมอญ' },
+    { label: '🌅 จุดชมวิว ทะเล & ริมน้ำ', query: 'จุดชมวิว', sub: 'บางแสน, แหลมพรหมเทพ, เกาะล้าน, สกายพาร์ค' },
+  ];
+
+  const EVENT_SUGGESTIONS = [
     { label: '🏛️ งานอีเวนต์ & มหกรรมใหญ่', query: 'งานอีเวนต์ & มหกรรมใหญ่', sub: 'สัปดาห์หนังสือ, ไบเทค, อิมแพ็ค, สิริกิติ์' },
-    { label: '🏃‍♂️ งานวิ่ง & มาราธอน', query: 'งานวิ่ง & มาราธอน', sub: 'ซิตี้รัน, ไนท์มาราธอน, สวนเบญฯ, สวนรถไฟ' },
-    { label: '🏋️‍♀️ ฟิตเนส & ไฮร็อกซ์ (HYROX)', query: 'ฟิตเนส & ไฮร็อกซ์ (HYROX)', sub: 'เวิร์กเอาต์กลุ่ม, ฟิตเนส, บูตแคมป์, เทรนนิ่ง' },
-    { label: '🧘 โยคะ & สมาธิเสียงคลื่น (Sound Bath)', query: 'โยคะ & สมาธิเสียงคลื่น (Sound Bath)', sub: 'Sound Bath, โยคะสวน, ฝึกสมาธิ, บำบัดจิตใจ' },
-    { label: '☕ คาเฟ่ & ดนตรีอะคูสติก', query: 'คาเฟ่ & ดนตรีอะคูสติก', sub: 'สโลว์บาร์, ดนตรีสด, แจ๊ส, จิบกาแฟคุยชิลล์' },
-    { label: '🎲 บอร์ดเกม & กิจกรรมเพื่อนใหม่', query: 'บอร์ดเกม & กิจกรรมเพื่อนใหม่', sub: 'ปาร์ตี้บอร์ดเกม, Pub Quiz, ทำความรู้จักเพื่อนใหม่' },
-    { label: '🎨 เวิร์กช็อปศิลปะ & งานคราฟต์', query: 'เวิร์กช็อปศิลปะ & งานคราฟต์', sub: 'ปั้นเซรามิก, ระบายสีน้ำ, เทียนหอม, เย็บหนัง, ยิงพรม' },
-    { label: '🍵 ชงชา & เวิร์กช็อปทำอาหาร', query: 'ชงชา & เวิร์กช็อปทำอาหาร', sub: 'ชงมัทฉะ, อบขนมปังซาวร์โด, ทำขนม, เบเกอรี่' },
-    { label: '📷 เดินถ่ายรูป & สำรวจเมือง', query: 'เดินถ่ายรูป & สำรวจเมือง', sub: 'กล้องฟิล์ม, สตรีทโฟโต้, Photo Walk, เดินตลาดเก่า' },
-    { label: '🏄‍♂️ กิจกรรมกีฬา & เอาต์ดอร์', query: 'กิจกรรมกีฬา & เอาต์ดอร์', sub: 'ปีนหน้าผาจำลอง, ตีแบด, ปั่นจักรยาน, พิกเคิลบอล, มวยไทย' },
+    { label: '🏃‍♂️ งานวิ่ง, HYROX & เอาต์ดอร์', query: 'งานวิ่ง', sub: 'ซิตี้รัน, ไนท์มาราธอน, ฟิตเนส, เทรนนิ่ง, ปีนผา' },
+    { label: '🧘 โยคะ & สมาธิเสียงคลื่น (Sound Bath)', query: 'โยคะ', sub: 'Sound Bath, โยคะสวน, ฝึกสมาธิ, บำบัดจิตใจ' },
+    { label: '🎲 บอร์ดเกม & กิจกรรมเพื่อนใหม่', query: 'บอร์ดเกม', sub: 'ปาร์ตี้บอร์ดเกม, Pub Quiz, พบปะเพื่อนใหม่' },
+    { label: '🎨 เวิร์กช็อปศิลปะ & ชงชาทำอาหาร', query: 'เวิร์กช็อป', sub: 'ปั้นเซรามิก, ชงมัทฉะ, อบขนมปัง, ระบายสีน้ำ' },
   ];
 
   return (
     <section className="relative z-30 pt-1 pb-1 md:pt-2 md:pb-2 bg-[#FAF7F2]">
-      <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 relative">
+      <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-3 sm:px-6 lg:px-8 relative">
         
-        {/* Full Hero Banner Container with Modern Lifestyle Photography - Responsive & Clean */}
-        <div className="relative rounded-3xl border border-slate-200/90 shadow-md min-h-[270px] sm:min-h-[310px] flex items-center justify-center">
+        {/* Full Hero Banner Container with Modern Lifestyle Photography - Compact on Mobile (-30% height) */}
+        <div className="relative rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-md min-h-[190px] sm:min-h-[270px] md:min-h-[305px] flex items-center justify-center">
           
           {/* Full-bleed Background Image with Cinematic Golden Hour Vibe (Clipped to Rounded Corners) */}
-          <div className="absolute inset-0 z-0 pointer-events-none rounded-3xl overflow-hidden">
+          <div className="absolute inset-0 z-0 pointer-events-none rounded-2xl sm:rounded-3xl overflow-hidden">
             <img
               src="/hero-bg-lifestyle.jpg"
               alt="Chill & Connect Bangkok Lifestyle Community"
@@ -58,26 +61,26 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <div className="absolute inset-0 bg-gradient-to-b from-slate-900/30 via-transparent to-slate-900/40" />
           </div>
 
-          {/* Centered Safe Zone for Text & Search Bar */}
-          <div className="relative z-10 text-center space-y-3.5 max-w-3xl mx-auto px-4 py-7 sm:py-9 w-full">
+          {/* Centered Safe Zone for Text & Search Bar - Compact padding on mobile */}
+          <div className="relative z-10 text-center space-y-2 sm:space-y-3.5 max-w-3xl mx-auto px-3.5 sm:px-4 py-3 sm:py-6 md:py-8 w-full">
             
             {/* Dynamic Headline (Pure White with Coral Highlight & Strong Contrast) */}
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight leading-tight drop-shadow-[0_2px_6px_rgba(0,0,0,0.7)]">
+            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight drop-shadow-[0_2px_6px_rgba(0,0,0,0.7)]">
               วันหยุดนี้... <span className="text-[#FFA07A] inline-block hover:scale-105 transition-transform cursor-default">ทำอะไรดี?</span>
             </h1>
 
             {/* Subtitle */}
-            <p className="text-xs sm:text-sm md:text-base text-white font-bold max-w-2xl mx-auto drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">
-              ค้นหากิจกรรมฮีลใจ หาเพื่อนใหม่ และความสนุกในกรุงเทพฯ ✨
+            <p className="text-[11px] sm:text-xs md:text-sm text-white/95 font-bold max-w-2xl mx-auto drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)] line-clamp-1 sm:line-clamp-none">
+              ค้นหากิจกรรมฮีลใจ ที่เที่ยวสุดชิลล์ และหาเพื่อนใหม่ทั่วไทย ✨
             </p>
 
             {/* High-Contrast Floating Pill Search Bar (Expanded & Spacious) */}
-            <div className="pt-1.5 max-w-2xl mx-auto relative z-30">
-              <div className="relative flex items-center bg-white rounded-full p-1.5 sm:p-2 shadow-2xl shadow-black/35 border-2 border-white/95 focus-within:border-[#F26430] focus-within:ring-4 focus-within:ring-[#F26430]/25 transition-all z-20">
+            <div className="pt-0.5 sm:pt-1.5 max-w-2xl mx-auto relative z-30">
+              <div className="relative flex items-center bg-white rounded-full p-1 sm:p-1.5 md:p-2 shadow-2xl shadow-black/35 border-2 border-white/95 focus-within:border-[#F26430] focus-within:ring-4 focus-within:ring-[#F26430]/25 transition-all z-20">
                 
                 {/* Search Icon */}
-                <div className="pl-3.5 sm:pl-4 pr-2 sm:pr-2.5 text-[#94A3B8]">
-                  <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />
+                <div className="pl-3 sm:pl-4 pr-1.5 sm:pr-2.5 text-[#94A3B8]">
+                  <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-slate-400" />
                 </div>
 
                 {/* Input Field */}
@@ -85,20 +88,20 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   type="text"
                   value={searchQuery}
                   onFocus={() => setIsFocused(true)}
-                  onBlur={() => setTimeout(() => setIsFocused(false), 200)}
+                  onBlur={() => setTimeout(() => setIsFocused(false), 250)}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="ค้นหากิจกรรม, สถานที่ หรือแท็ก..."
-                  className="w-full bg-transparent text-sm sm:text-base text-[#1E293B] placeholder-[#94A3B8] focus:outline-none pr-2 font-medium"
+                  placeholder="ค้นหากิจกรรม, สถานที่เที่ยว หรือแท็ก..."
+                  className="w-full bg-transparent text-xs sm:text-sm md:text-base text-[#1E293B] placeholder-[#94A3B8] focus:outline-none pr-2 font-medium"
                 />
 
                 {/* Clear Query Button */}
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="p-1 text-[#94A3B8] hover:text-[#475569] mr-1.5 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+                    className="p-1 text-[#94A3B8] hover:text-[#475569] mr-1 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </button>
                 )}
 
@@ -108,35 +111,35 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     setIsFocused(false);
                     if (onSearchSubmit) onSearchSubmit();
                   }}
-                  className="bg-[#F26430] hover:bg-[#D95322] text-white px-4 sm:px-7 py-2.5 sm:py-3 rounded-full font-black text-xs sm:text-sm md:text-base transition-all shadow-md shadow-[#F26430]/25 flex items-center justify-center gap-1.5 shrink-0 active:scale-95 cursor-pointer"
+                  className="bg-[#F26430] hover:bg-[#D95322] text-white px-3.5 sm:px-6 md:px-7 py-2 sm:py-2.5 md:py-3 rounded-full font-black text-xs sm:text-sm md:text-base transition-all shadow-md shadow-[#F26430]/25 flex items-center justify-center gap-1.5 shrink-0 active:scale-95 cursor-pointer"
                 >
                   <Search className="w-3.5 h-3.5 sm:hidden" />
                   <span className="hidden sm:inline">ค้นหาเลย</span>
-                  <span className="sm:hidden text-xs">ค้นหา</span>
+                  <span className="sm:hidden text-xs font-bold">ค้นหา</span>
                 </button>
               </div>
 
-              {/* Auto-Suggest Dropdown Menu */}
+              {/* Auto-Suggest Dropdown Menu (Balanced: 5 Spots + 5 Events) */}
               {isFocused && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-[#E8E2D8] p-3 z-50 text-left space-y-3 animate-fade-in max-h-72 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-[#E8E2D8] p-3 z-50 text-left space-y-3 animate-fade-in max-h-72 sm:max-h-80 overflow-y-auto">
                   
-                  {/* Section 1: Popular Search Suggestions */}
+                  {/* Group 1: สถานที่เที่ยว & พิกัดฮีลใจ */}
                   <div className="space-y-1">
-                    <p className="text-[11px] font-bold text-slate-400 px-3 py-1 uppercase tracking-wider sticky top-0 bg-white z-10 border-b border-slate-100 flex items-center justify-between">
-                      <span>🔥 10 หมวดหมู่กิจกรรมยอดนิยม</span>
+                    <p className="text-[11px] font-extrabold text-[#4A7C59] px-3 py-1 uppercase tracking-wider sticky top-0 bg-white z-10 border-b border-emerald-100 flex items-center justify-between">
+                      <span>📍 พิกัดเที่ยว & จุดฮีลใจยอดนิยม</span>
                     </p>
-                    {SUGGESTIONS.map((sug, idx) => (
+                    {SPOT_SUGGESTIONS.map((sug, idx) => (
                       <button
-                        key={idx}
+                        key={`spot-sug-${idx}`}
                         onMouseDown={() => {
                           setSearchQuery(sug.query);
                           setIsFocused(false);
                           if (onSearchSubmit) onSearchSubmit();
                         }}
-                        className="w-full text-left px-3 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-[#1E293B] hover:bg-[#FAF7F2] hover:text-[#F26430] transition-colors flex items-center justify-between gap-2 cursor-pointer group"
+                        className="w-full text-left px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold text-[#1E293B] hover:bg-[#FAF7F2] hover:text-[#4A7C59] transition-colors flex items-center justify-between gap-2 cursor-pointer group"
                       >
                         <div className="min-w-0 flex-1">
-                          <p className="font-bold text-xs sm:text-sm text-[#1E293B] group-hover:text-[#F26430] transition-colors truncate">
+                          <p className="font-bold text-xs sm:text-sm text-[#1E293B] group-hover:text-[#4A7C59] transition-colors truncate">
                             {sug.label}
                           </p>
                           <p className="text-[10px] sm:text-[11px] text-slate-400 font-normal truncate mt-0.5">
@@ -150,20 +153,50 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     ))}
                   </div>
 
+                  {/* Group 2: กิจกรรม & อีเวนต์ */}
+                  <div className="space-y-1 pt-1 border-t border-slate-100">
+                    <p className="text-[11px] font-extrabold text-[#F26430] px-3 py-1 uppercase tracking-wider sticky top-0 bg-white z-10 border-b border-orange-100 flex items-center justify-between">
+                      <span>🎪 กิจกรรม & อีเวนต์ยอดฮิต</span>
+                    </p>
+                    {EVENT_SUGGESTIONS.map((sug, idx) => (
+                      <button
+                        key={`event-sug-${idx}`}
+                        onMouseDown={() => {
+                          setSearchQuery(sug.query);
+                          setIsFocused(false);
+                          if (onSearchSubmit) onSearchSubmit();
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold text-[#1E293B] hover:bg-[#FAF7F2] hover:text-[#F26430] transition-colors flex items-center justify-between gap-2 cursor-pointer group"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold text-xs sm:text-sm text-[#1E293B] group-hover:text-[#F26430] transition-colors truncate">
+                            {sug.label}
+                          </p>
+                          <p className="text-[10px] sm:text-[11px] text-slate-400 font-normal truncate mt-0.5">
+                            {sug.sub}
+                          </p>
+                        </div>
+                        <span className="text-[10px] text-[#D95322] bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200 shrink-0 font-bold">
+                          {sug.query}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+
                 </div>
               )}
             </div>
 
             {/* Single Clean Surprise Me Discovery Button */}
             {onOpenSurpriseModal && (
-              <div className="pt-2 flex items-center justify-center">
+              <div className="pt-0.5 sm:pt-1.5 flex items-center justify-center">
                 <button
                   type="button"
                   onClick={onOpenSurpriseModal}
-                  className="text-xs sm:text-[13px] font-extrabold px-4 sm:px-5 py-2 rounded-full bg-white/95 hover:bg-white text-[#1E293B] hover:text-[#F26430] border border-[#E8E2D8] hover:border-[#F26430]/40 shadow-xs hover:shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95 group"
+                  className="text-[11px] sm:text-xs md:text-[13px] font-extrabold px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full bg-white/95 hover:bg-white text-[#1E293B] hover:text-[#F26430] border border-[#E8E2D8] hover:border-[#F26430]/40 shadow-xs hover:shadow-md transition-all flex items-center gap-1.5 sm:gap-2 cursor-pointer active:scale-95 group"
                   title="สุ่มกิจกรรมวันหยุดให้ฉันทันที"
                 >
-                  <Dices className="w-4 h-4 text-[#F26430] group-hover:rotate-180 transition-transform duration-500" />
+                  <Dices className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#F26430] group-hover:rotate-180 transition-transform duration-500" />
                   <span>คิดไม่ออก? <span className="text-[#F26430] underline underline-offset-2">สุ่มกิจกรรมให้ฉัน</span> ✨</span>
                 </button>
               </div>

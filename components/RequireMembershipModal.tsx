@@ -20,7 +20,7 @@ export const RequireMembershipModal: React.FC<RequireMembershipModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+    <div className="fixed inset-0 z-[100002] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
       <div 
         className="bg-white rounded-3xl max-w-sm sm:max-w-md w-full border border-[#E8E2D8] shadow-2xl overflow-hidden animate-scale-up text-[#1E293B] relative p-5 sm:p-6 space-y-4"
         onClick={(e) => e.stopPropagation()}

@@ -31,7 +31,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-xs animate-fade-in">
+      <div className="fixed inset-0 z-[100002] flex items-center justify-center p-4 bg-black/65 backdrop-blur-xs animate-fade-in">
         <div className="bg-white rounded-3xl max-w-md w-full border border-[#E8E2D8] shadow-2xl overflow-hidden animate-scale-up">
           
           {/* Header with Brand & Close */}
@@ -227,7 +227,7 @@ export const LogoutConfirmModal: React.FC<LogoutConfirmModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-xs animate-fade-in">
+    <div className="fixed inset-0 z-[100002] flex items-center justify-center p-4 bg-black/65 backdrop-blur-xs animate-fade-in">
       <div className="bg-white rounded-3xl max-w-sm w-full border border-[#E8E2D8] shadow-2xl p-6 space-y-5 animate-scale-up text-center">
         
         <div className="w-14 h-14 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto border border-rose-200">

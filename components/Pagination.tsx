@@ -9,6 +9,7 @@ interface PaginationProps {
   onPageChange: (page: number) => void;
   totalItems: number;
   itemsPerPage?: number;
+  itemUnit?: string;
 }
 
 export const Pagination: React.FC<PaginationProps> = ({
@@ -17,6 +18,7 @@ export const Pagination: React.FC<PaginationProps> = ({
   onPageChange,
   totalItems,
   itemsPerPage = 24,
+  itemUnit = 'กิจกรรม',
 }) => {
   if (totalPages <= 1) return null;
 
@@ -67,7 +69,7 @@ export const Pagination: React.FC<PaginationProps> = ({
       {/* Information text */}
       <div className="text-xs sm:text-sm text-[#64748B] font-medium text-center sm:text-left">
         แสดง <span className="font-bold text-[#1E293B]">{startItem} - {endItem}</span> จากทั้งหมด{' '}
-        <span className="font-bold text-[#1E293B]">{totalItems}</span> กิจกรรม{' '}
+        <span className="font-bold text-[#1E293B]">{totalItems}</span> {itemUnit}{' '}
         <span className="text-slate-400 font-normal">({currentPage}/{totalPages} หน้า)</span>
       </div>
 
