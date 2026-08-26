@@ -57,6 +57,12 @@ function ProfileContent() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -900,6 +906,13 @@ function ProfileContent() {
           showToast('ออกจากระบบเรียบร้อยแล้ว (Guest View)');
         }}
       />
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[99999] bg-slate-900/95 text-white px-5 py-3 rounded-2xl shadow-2xl border border-white/20 text-xs sm:text-sm font-bold flex items-center gap-2 animate-scale-up backdrop-blur-md">
+          <span>{toastMessage}</span>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="bg-white border-t border-[#E8E2D8] py-8 text-center text-xs text-[#64748B] space-y-2 mt-auto">

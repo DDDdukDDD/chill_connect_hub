@@ -51,6 +51,7 @@ export interface EventItem {
   rules?: string[];
   whatToBring?: string[];
   instructions?: string[];
+  subActivities?: any[];
 }
 
 export const BANGKOK_ZONES = [
