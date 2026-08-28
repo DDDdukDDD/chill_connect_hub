@@ -99,7 +99,7 @@ export const CommunityMoments: React.FC<CommunityMomentsProps> = ({
 
   return (
     <section className="space-y-6 pt-4 pb-8">
-      
+
       {/* Section Header with Create Post CTA */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E8E2D8] pb-4">
         <div>
@@ -129,7 +129,7 @@ export const CommunityMoments: React.FC<CommunityMomentsProps> = ({
           return (
             <div
               key={post.id}
-              className="bg-white rounded-3xl border border-[#E8E2D8] shadow-sm hover:shadow-md transition-all duration-300 flex flex-col overflow-hidden"
+              className="bg-white rounded-3xl shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden"
             >
               {/* Post Header: User Avatar & Badge */}
               <div className="p-4 flex items-center justify-between border-b border-slate-100">
@@ -175,7 +175,7 @@ export const CommunityMoments: React.FC<CommunityMomentsProps> = ({
 
               {/* Post Actions (Like, Comment, Share) */}
               <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
-                
+
                 <div className="space-y-2">
                   {/* Action Icons Bar */}
                   <div className="flex items-center justify-between text-xs text-[#64748B] pb-1 border-b border-slate-100">
@@ -186,9 +186,8 @@ export const CommunityMoments: React.FC<CommunityMomentsProps> = ({
                         className="flex items-center gap-1.5 font-bold hover:text-[#F26430] transition-colors"
                       >
                         <Heart
-                          className={`w-4 h-4 transition-transform active:scale-125 ${
-                            post.isLiked ? 'fill-[#F26430] text-[#F26430]' : 'text-[#64748B]'
-                          }`}
+                          className={`w-4 h-4 transition-transform active:scale-125 ${post.isLiked ? 'fill-[#F26430] text-[#F26430]' : 'text-[#64748B]'
+                            }`}
                         />
                         <span>{post.likesCount} ถูกใจ</span>
                       </button>
@@ -231,7 +230,7 @@ export const CommunityMoments: React.FC<CommunityMomentsProps> = ({
                 {/* Interactive Comments Container */}
                 {activeCommentPostId === post.id && (
                   <div className="pt-3 border-t border-slate-100 space-y-3 animate-fade-in">
-                    
+
                     {/* Existing Comments List */}
                     {post.comments.length > 0 ? (
                       <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
@@ -301,7 +300,7 @@ export const CommunityMoments: React.FC<CommunityMomentsProps> = ({
 
             {/* Form Fields */}
             <form onSubmit={handleCreatePost} className="space-y-4">
-              
+
               {/* Select Activity Tag */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-[#1E293B]">

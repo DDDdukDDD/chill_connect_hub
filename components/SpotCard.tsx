@@ -28,7 +28,7 @@ export const SpotCard: React.FC<SpotCardProps> = ({
     <Link
       href={`/spots/${encodeURIComponent(spot.id)}`}
       onClick={() => onSelect && onSelect(spot)}
-      className="group bg-white rounded-2xl border border-[#E8E2D8] shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer relative"
+      className="group bg-white rounded-2xl shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer relative"
     >
       {/* Top Image Container (aspect-video ratio matching Event Cards) */}
       <div className="relative aspect-video w-full overflow-hidden bg-slate-100 shrink-0">
@@ -71,9 +71,8 @@ export const SpotCard: React.FC<SpotCardProps> = ({
           title={isFavorite ? 'ยกเลิกบันทึก' : 'บันทึกสถานที่นี้'}
         >
           <Heart
-            className={`w-4 h-4 transition-colors ${
-              isFavorite ? 'fill-[#F26430] text-[#F26430]' : 'text-[#64748B]'
-            }`}
+            className={`w-4 h-4 transition-colors ${isFavorite ? 'fill-[#F26430] text-[#F26430]' : 'text-[#64748B]'
+              }`}
           />
         </button>
 
@@ -95,11 +94,10 @@ export const SpotCard: React.FC<SpotCardProps> = ({
               {spot.categoryLabel}
             </span>
 
-            <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border shrink-0 ${
-              spot.price.includes('ฟรี')
+            <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border shrink-0 ${spot.price.includes('ฟรี')
                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                 : 'bg-amber-50 text-amber-900 border-amber-200'
-            }`}>
+              }`}>
               {spot.price.includes('ฟรี') ? 'เข้าฟรี' : spot.price}
             </span>
           </div>

@@ -99,6 +99,7 @@ export default function Home() {
   const [isCreateChallengeModalOpen, setIsCreateChallengeModalOpen] = useState<boolean>(false);
   const [joinedQuestTitles, setJoinedQuestTitles] = useState<string[]>(['Cafe Hunter 5', 'Step Count 30Days']);
   const [hideEndedEvents, setHideEndedEvents] = useState<boolean>(true);
+  const [layoutMode, setLayoutMode] = useState<'v1' | 'v2'>('v2');
 
   const toggleFavoriteSpot = (spotId: string) => {
     setFavoriteSpots((prev) => {
@@ -674,13 +675,37 @@ export default function Home() {
 
         <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-8 pt-1 sm:pt-2 pb-6 relative z-10">
           
+          {/* Layout Toggle for UX Testing */}
+          <div className="flex justify-end mb-4 -mt-2 animate-fade-in">
+            <div className="bg-white p-1 rounded-xl shadow-xs border border-slate-200 inline-flex items-center">
+              <button
+                type="button"
+                onClick={() => setLayoutMode('v1')}
+                className={`px-3 sm:px-4 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition-all cursor-pointer ${layoutMode === 'v1' ? 'bg-[#1E293B] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}
+              >
+                V1 (Global Highlight)
+              </button>
+              <button
+                type="button"
+                onClick={() => setLayoutMode('v2')}
+                className={`px-3 sm:px-4 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition-all cursor-pointer ${layoutMode === 'v2' ? 'bg-[#1E293B] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}
+              >
+                V2 (Contextual Highlight)
+              </button>
+            </div>
+          </div>
+          
           {/* 3. Auto-Sliding Trending Events Carousel */}
-          <TrendingCarousel
-            events={eventsList}
-            onSelectEvent={() => {}}
-            favorites={favorites}
-            toggleFavorite={toggleFavorite}
-          />
+          {layoutMode === 'v1' && (
+            <div className="animate-fade-in">
+              <TrendingCarousel
+                events={eventsList}
+                onSelectEvent={() => {}}
+                favorites={favorites}
+                toggleFavorite={toggleFavorite}
+              />
+            </div>
+          )}
 
           {/* 5. 🌿 คลังกิจกรรม & พิกัดเที่ยว (Mobile-First 3-Tab Mode Switcher) */}
           <section id="catalog-section" className="space-y-2 sm:space-y-2.5 pt-1">
@@ -986,6 +1011,18 @@ export default function Home() {
               /* VIEW B: EVENTS & COMMUNITY MEETUPS (อีเวนต์ & กิจกรรมคอมมูนิตี้)              */
               /* ========================================================================= */
               <div className="space-y-4">
+                
+                {/* Auto-Sliding Trending Events Carousel (Moved inside Events Tab for V2) */}
+                {layoutMode === 'v2' && (
+                  <div className="pt-2 animate-fade-in">
+                    <TrendingCarousel
+                      events={eventsList}
+                      onSelectEvent={() => {}}
+                      favorites={favorites}
+                      toggleFavorite={toggleFavorite}
+                    />
+                  </div>
+                )}
                 
                 {/* Search/Filter Results Notice (Only when explicitly searching or filtering) */}
                 {searchQuery.trim() !== '' || selectedCategory !== null || selectedVenueFilter !== null || selectedZone !== null || sortByNearMe || priceFilter !== 'all' || (timeFilter === 'custom' && startDate) ? (
