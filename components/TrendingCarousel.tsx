@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { Sparkles, Flame, Calendar, MapPin, Users, Heart, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { EventItem } from '@/data/mockData';
 import { isEventEnded } from '@/lib/dateUtils';
@@ -18,6 +19,7 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
   favorites,
   toggleFavorite,
 }) => {
+  const router = useRouter();
   const [isPaused, setIsPaused] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -130,7 +132,7 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
           <h2 className="text-xs sm:text-base font-extrabold text-[#1E293B] truncate">
             กิจกรรมไฮไลต์ยอดฮิตสัปดาห์นี้
           </h2>
-          <span className="text-[9px] sm:text-[10px] font-extrabold bg-rose-500 text-white px-1.5 py-0.5 rounded-full shadow-2xs shrink-0">
+          <span className="text-[9px] sm:text-[10px] font-black bg-red-600 text-white px-2 py-0.5 rounded-full shadow-xs shrink-0 tracking-wider">
             HOT
           </span>
         </div>
@@ -195,10 +197,11 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
               key={`trending-${event.id}`}
               onClick={() => {
                 if (!hasMoved) {
+                  router.push(`/events/${encodeURIComponent(event.id)}`);
                   onSelectEvent(event);
                 }
               }}
-              className="min-w-[260px] sm:min-w-[290px] max-w-[290px] bg-white rounded-2xl overflow-hidden border border-[#E8E2D8] shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer group flex flex-col shrink-0 relative"
+              className="min-w-[260px] sm:min-w-[290px] max-w-[290px] bg-white rounded-2xl overflow-hidden border border-[#E8E2D8] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col shrink-0 relative"
             >
               {/* Image Banner */}
               <div className="relative h-32 w-full bg-slate-100 overflow-hidden">

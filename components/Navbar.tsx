@@ -32,6 +32,7 @@ interface NavbarProps {
   onOpenLogout?: () => void;
   onOpenCreateEvent?: () => void;
   userName?: string;
+  isAuthReady?: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -43,10 +44,16 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenLogout,
   onOpenCreateEvent,
   userName = 'Jirathitigorn Maneekord',
+  isAuthReady,
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Close profile dropdown when clicking outside
   useEffect(() => {
@@ -70,7 +77,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <>
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 transition-all">
-        <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 h-18 sm:h-20 flex items-center justify-between">
+        <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-15 flex items-center justify-between">
           
           {/* Left: Brand Logo & Name */}
           <Link 
@@ -78,23 +85,23 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => setActiveTab('explore')}
             className="flex items-center gap-2.5 sm:gap-3 cursor-pointer group"
           >
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-[#4A7C59] flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform shrink-0">
-              <Sprout className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5]" />
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-[#4A7C59] flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform shrink-0">
+              <Sprout className="w-5 h-5 sm:w-5.5 sm:h-5.5 stroke-[2.5]" />
             </div>
             <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-lg sm:text-xl tracking-tight text-[#1E293B] font-sans">
+              <div className="flex items-center gap-1">
+                <span className="font-black text-lg sm:text-xl tracking-tight text-[#1E293B] font-sans leading-none">
                   Chill & Connect Hub
                 </span>
               </div>
-              <p className="text-[11px] sm:text-xs text-[#64748B] font-medium tracking-wide">
+              <p className="text-[9.5px] sm:text-[10.5px] text-[#64748B] font-medium tracking-wide leading-tight mt-0.5">
                 แชร์โมเมนต์ • พบเพื่อนใหม่ • ชิลล์ได้ทุกวัน
               </p>
             </div>
           </Link>
 
-          {/* Center: Desktop Navigation Links (Visible on Large Screens) */}
-          <nav className="hidden lg:flex items-center gap-8">
+          {/* Center: Desktop Navigation Links (Understated, elegant & well-balanced) */}
+          <nav className="hidden lg:flex items-center gap-5 xl:gap-7">
             {navItems.map((item) => {
               const isActive = activeTab === item.id;
               return (
@@ -102,10 +109,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                   key={item.id}
                   href={item.href}
                   onClick={() => setActiveTab(item.id)}
-                  className={`text-sm font-medium transition-all relative py-1.5 flex items-center gap-1.5 ${
+                  className={`text-xs sm:text-[13px] transition-all relative py-1 flex items-center gap-1.5 tracking-normal ${
                     isActive
                       ? 'text-[#4A7C59] font-bold'
-                      : 'text-[#475569] hover:text-[#1E293B]'
+                      : 'text-slate-600 hover:text-slate-900 font-medium'
                   }`}
                 >
                   <span>{item.label}</span>
@@ -118,16 +125,21 @@ export const Navbar: React.FC<NavbarProps> = ({
           </nav>
 
           {/* Right: Actions */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-2.5">
             
             {/* Desktop User Avatar & Profile Dropdown (Facebook/Google Style) */}
-            {isLoggedIn ? (
+            {(isAuthReady !== undefined ? !isAuthReady : !isMounted) ? (
+              <>
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-200 animate-pulse border-2 border-slate-100 lg:hidden shrink-0"></div>
+                <div className="hidden lg:block w-[110px] h-9 rounded-full bg-slate-200 animate-pulse shrink-0"></div>
+              </>
+            ) : isLoggedIn ? (
               <div className="relative" ref={dropdownRef}>
                 {/* Profile Trigger Button (Clean Avatar Only - No Text) */}
                 <button
                   type="button"
                   onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                  className={`relative w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden border-2 transition-all cursor-pointer shadow-xs active:scale-95 flex items-center justify-center shrink-0 ${
+                  className={`relative w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden border-2 transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center justify-center shrink-0 ${
                     isProfileDropdownOpen
                       ? 'border-[#4A7C59] ring-2 ring-[#4A7C59]/20 scale-105'
                       : 'border-[#4A7C59]/80 hover:border-[#4A7C59] hover:ring-2 hover:ring-[#4A7C59]/10'

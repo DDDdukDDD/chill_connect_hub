@@ -21,6 +21,9 @@ export interface EventItem {
   maxParticipants: number;
   hostName: string;
   hostAvatar?: string;
+  hostId?: string;
+  source?: string;
+  sourceUrl?: string;
   price?: string;
   description: string;
   isTrending?: boolean;
@@ -1828,3 +1831,27 @@ export const MOCK_POSTS: CommunityPost[] = [
     comments: [],
   },
 ];
+
+/**
+ * Retrieve an event by its ID
+ */
+export function getEventById(id: string): EventItem | undefined {
+  return MOCK_EVENTS.find((e) => e.id === id || encodeURIComponent(e.id) === id);
+}
+
+/**
+ * Retrieve related events in the same category or upcoming
+ */
+export function getRelatedEvents(currentEvent: EventItem, limit = 4): EventItem[] {
+  const sameCategory = MOCK_EVENTS.filter(
+    (e) => e.id !== currentEvent.id && e.category === currentEvent.category
+  );
+  if (sameCategory.length >= limit) {
+    return sameCategory.slice(0, limit);
+  }
+  const otherEvents = MOCK_EVENTS.filter(
+    (e) => e.id !== currentEvent.id && !sameCategory.includes(e)
+  );
+  return [...sameCategory, ...otherEvents].slice(0, limit);
+}
+

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import {
   MapPin,
   Clock,
@@ -12,7 +13,7 @@ import { LifestyleSpotItem } from '@/data/spotsData';
 
 interface SpotCardProps {
   spot: LifestyleSpotItem;
-  onSelect: (spot: LifestyleSpotItem) => void;
+  onSelect?: (spot: LifestyleSpotItem) => void;
   isFavorite: boolean;
   onToggleFavorite: (id: string) => void;
 }
@@ -24,8 +25,9 @@ export const SpotCard: React.FC<SpotCardProps> = ({
   onToggleFavorite,
 }) => {
   return (
-    <div
-      onClick={() => onSelect(spot)}
+    <Link
+      href={`/spots/${encodeURIComponent(spot.id)}`}
+      onClick={() => onSelect && onSelect(spot)}
       className="group bg-white rounded-2xl border border-[#E8E2D8] shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer relative"
     >
       {/* Top Image Container (aspect-video ratio matching Event Cards) */}
@@ -61,6 +63,7 @@ export const SpotCard: React.FC<SpotCardProps> = ({
         <button
           type="button"
           onClick={(e) => {
+            e.preventDefault();
             e.stopPropagation();
             onToggleFavorite(spot.id);
           }}
@@ -133,6 +136,6 @@ export const SpotCard: React.FC<SpotCardProps> = ({
           </span>
         </div>
       </div>
-    </div>
+    </Link>
   );
 };

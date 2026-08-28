@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { EventItem } from '@/data/mockData';
 import { Heart, Calendar, MapPin, Users, Star, CheckCircle2, Sparkles, Building2, Tag, RotateCcw, ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -80,13 +81,16 @@ export const EventGrid: React.FC<EventGridProps> = ({
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: idx * 0.05 }}
-                onClick={() => onSelectEvent(event)}
-                className={`group bg-white rounded-2xl transition-all duration-300 flex flex-col overflow-hidden transform hover:-translate-y-1 cursor-pointer relative ${
-                  isJoined
-                    ? 'border-2 border-[#4A7C59] ring-2 ring-[#4A7C59]/15 shadow-md'
-                    : 'border border-[#E8E2D8] shadow-xs hover:shadow-lg'
-                }`}
               >
+                <Link
+                  href={`/events/${encodeURIComponent(event.id)}`}
+                  onClick={() => onSelectEvent && onSelectEvent(event)}
+                  className={`group bg-white rounded-2xl transition-all duration-300 flex flex-col overflow-hidden transform hover:-translate-y-1 cursor-pointer relative h-full ${
+                    isJoined
+                      ? 'border-2 border-[#4A7C59] ring-2 ring-[#4A7C59]/15 shadow-md'
+                      : 'border border-[#E8E2D8] shadow-xs hover:shadow-lg'
+                  }`}
+                >
                 <div className="relative aspect-video w-full overflow-hidden bg-slate-100 shrink-0">
                   <img
                     src={event.image}
@@ -269,6 +273,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                     )}
                   </div>
                 </div>
+                </Link>
               </motion.div>
             );
           })}

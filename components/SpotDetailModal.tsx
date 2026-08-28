@@ -25,7 +25,9 @@ import {
   ShieldCheck,
   ShieldAlert,
   AlertTriangle,
-  Flag
+  Flag,
+  Trophy,
+  ArrowRight
 } from 'lucide-react';
 import { LifestyleSpotItem, SpotSubActivity, SpotRelatedQuest } from '@/data/spotsData';
 import { JoinChallengeModal } from '@/components/JoinChallengeModal';
@@ -443,149 +445,31 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
           </div>
 
           {/* ========================================================================= */}
-          {/* ชาเลนจ์ประจำสถานที่ (Collapsible Accordion พร้อมปุ่ม แตะเพื่อย่อ/เปิดดู) */}
+          {/* ชาเลนจ์ & เควสต์ที่เกี่ยวข้อง (Clean Secondary Banner เชื่อมต่อไปยังหน้า Challenges) */}
           {/* ========================================================================= */}
-          <div className="rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/90 overflow-hidden shadow-2xs transition-all">
-            {/* Header (Click to Collapse / Expand) */}
-            <div
-              onClick={() => setIsQuestsSectionOpen(!isQuestsSectionOpen)}
-              className="p-3.5 sm:p-4 flex items-center justify-between cursor-pointer hover:bg-amber-100/40 transition-colors select-none"
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-black uppercase text-amber-900 bg-amber-200/80 px-2.5 py-0.5 rounded-lg flex items-center gap-1.5">
-                  <Zap className="w-3.5 h-3.5 text-amber-600" />
-                  <span>ชาเลนจ์ประจำสถานที่ ({relatedQuestsList.length})</span>
-                </span>
-                <span className="text-[10px] font-bold text-amber-800 bg-amber-200/80 px-2 py-0.5 rounded-full">
-                  {isQuestsSectionOpen ? 'แตะเพื่อย่อ' : 'แตะเพื่อเปิดดู'}
-                </span>
+          <div className="rounded-2xl bg-gradient-to-r from-amber-50/80 via-orange-50/80 to-amber-50/80 border border-amber-200/80 p-3.5 flex items-center justify-between gap-3 shadow-2xs">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-amber-100/90 text-amber-700 flex items-center justify-center shrink-0 border border-amber-200">
+                <Trophy className="w-4 h-4 text-amber-600" />
               </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <Link
-                  href="/challenges"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onClose();
-                  }}
-                  className="text-xs font-extrabold text-amber-900 hover:text-amber-950 hover:underline"
-                >
-                  ดูชาเลนจ์ทั้งหมด ➔
-                </Link>
-                <span className="text-amber-700 p-0.5">
-                  {isQuestsSectionOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              <div className="min-w-0">
+                <span className="text-xs font-bold text-slate-800 block truncate">
+                  มีเควสต์สะสม XP ประจำสถานที่นี้ 🎯
+                </span>
+                <span className="text-[11px] text-slate-500 block truncate">
+                  เช็คอินหรือบันทึกภาพโมเมนต์เพื่อรับแต้ม XP และเหรียญตรา
                 </span>
               </div>
             </div>
 
-            {/* Collapsible Body */}
-            {isQuestsSectionOpen && (
-              <div className="p-3.5 sm:p-4 pt-0 space-y-2.5 border-t border-amber-200/60 animate-fade-in">
-                {relatedQuestsList.map((quest) => {
-                  const isQuestJoined = joinedQuestTitles.includes(quest.title);
-
-                  const openQuestDetailModal = () => {
-                    const questCategory: 'heal' | 'move' | 'chill' | 'learn' =
-                      (spot.category === 'park' || spot.category === 'nature') ? 'heal' :
-                      (spot.category === 'art' || spot.category === 'oldtown') ? 'learn' : 'chill';
-
-                    const questObj: ChallengeQuest = {
-                      id: quest.id,
-                      title: quest.title,
-                      iconName: 'Zap',
-                      category: questCategory,
-                      badgeLabel: `${spot.title} Explorer`,
-                      badgeIcon: '🏅',
-                      completedCountInfo: isQuestJoined ? '1/1 ครั้ง' : '0/1 ครั้ง',
-                      progressPercent: isQuestJoined ? 100 : 0,
-                      current: isQuestJoined ? '1' : '0',
-                      total: '1',
-                      visibility: 'public',
-                      creatorName: 'Chill & Connect Official',
-                      creatorAvatar: '/favicon.ico',
-                      participantsCount: spot.interestedCount || 142,
-                      rewardPoints: quest.xp,
-                      isOfficial: true,
-                      targetGoal: `ทำภารกิจ ณ ${spot.title} (${spot.district}, ${spot.province})`,
-                      objective: `ออกไปเปิดประสบการณ์ใหม่และสัมผัสบรรยากาศจริงที่ ${spot.title} พร้อมบันทึกภาพถ่ายโมเมนต์ความประทับใจลงบนคอมมูนิตี้`,
-                      steps: [
-                        `เดินทางไปยัง ${spot.title} (${spot.district}, ${spot.province})`,
-                        'ทำกิจกรรมตามโจทย์ภารกิจ (เช่น ถ่ายภาพมุมสวย, เดินชิลล์, ดื่มด่ำบรรยากาศ)',
-                        'กดเช็คอินพิกัดหรือโพสต์รูปภาพโมเมนต์ลงในแอปเพื่อรับแต้ม XP'
-                      ],
-                      verificationMethod: `📍 ระบบตรวจเช็คการโพสต์โมเมนต์หรือพิกัดสถานที่ ณ ${spot.title}`,
-                      rewardsText: `🏅 เหรียญเกียรติยศ "${spot.title} Explorer" + ⚡ ${quest.xp} XP Bonus`,
-                    };
-                    setSelectedQuestModal(questObj);
-                  };
-
-                  return (
-                    <div
-                      key={quest.id}
-                      className={`bg-white/95 p-3 sm:p-3.5 rounded-2xl border flex items-center justify-between gap-3 shadow-2xs hover:shadow-xs transition-all ${
-                        isQuestJoined ? 'border-emerald-300 ring-1 ring-emerald-400/30' : 'border-amber-200/80'
-                      }`}
-                    >
-                      {/* ข้อ 1 & 3: ตัด Icon ซ้ำซ้อนด้านหน้าออก และแสดงชื่อชาเลนจ์แบบเต็ม ไม่ต้องมี ... */}
-                      <div className="min-w-0 space-y-1 flex-1 cursor-pointer" onClick={openQuestDetailModal}>
-                        <h5 className="text-xs sm:text-sm font-extrabold text-[#1E293B] leading-snug hover:text-[#4A7C59] transition-colors">
-                          {quest.title}
-                        </h5>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[11px] sm:text-xs font-black text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-md inline-block">
-                            +{quest.xp} XP
-                          </span>
-                          {isQuestJoined && (
-                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                              กำลังทำภารกิจ 🎯
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* State Button: ถ้ายังไม่รับ แสดง "ดูรายละเอียด ➔", ถ้ารับแล้ว แสดง "✓ รับภารกิจแล้ว" + "ยกเลิก" */}
-                      {isQuestJoined ? (
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <button
-                            type="button"
-                            onClick={openQuestDetailModal}
-                            className="px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 font-extrabold text-xs shadow-2xs hover:bg-emerald-200/80 transition-all cursor-pointer flex items-center gap-1 active:scale-95"
-                            title="กดเพื่อดูขั้นตอนทำภารกิจ"
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                            <span>รับภารกิจแล้ว</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (onCancelQuest) {
-                                onCancelQuest(quest.title);
-                              } else {
-                                showToast(`ยกเลิกภารกิจ "${quest.title}" แล้ว`);
-                              }
-                            }}
-                            className="text-[11px] text-rose-500 hover:text-rose-700 font-bold hover:underline px-1.5 py-1 cursor-pointer transition-colors"
-                            title="ยกเลิกภารกิจนี้"
-                          >
-                            ยกเลิก
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={openQuestDetailModal}
-                          className="px-3.5 sm:px-4 py-1.5 rounded-full bg-[#4A7C59] hover:bg-[#3B6447] text-white font-extrabold text-xs shadow-xs transition-all shrink-0 active:scale-95 cursor-pointer whitespace-nowrap"
-                        >
-                          ดูรายละเอียด ➔
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            <Link
+              href="/challenges"
+              onClick={onClose}
+              className="inline-flex items-center gap-1 text-xs font-extrabold text-amber-900 hover:text-amber-950 bg-white hover:bg-amber-100/80 px-3 py-1.5 rounded-xl border border-amber-300/80 transition-all shrink-0 shadow-2xs active:scale-95 cursor-pointer"
+            >
+              <span>ดูเควสต์</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
           </div>
 
           {/* ========================================================================= */}

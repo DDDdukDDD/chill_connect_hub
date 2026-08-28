@@ -26,8 +26,10 @@ import {
   X,
   ShieldCheck,
   Check,
-  Sprout
+  Sprout,
+  ChevronDown
 } from 'lucide-react';
+import { useAuth } from '@/lib/useAuth';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
@@ -216,28 +218,12 @@ export default function ChallengesDiscoveryPage() {
   const [searchQuery, setSearchQuery] = useState('');
   
   // Auth state
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
 
-  React.useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('isLoggedIn');
-      if (saved === 'true') {
-        setIsLoggedIn(true);
-      } else {
-        setIsLoggedIn(false);
-      }
-    }
-  }, []);
 
-  const handleSetIsLoggedIn = (status: boolean) => {
-    setIsLoggedIn(status);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('isLoggedIn', status ? 'true' : 'false');
-    }
-  };
 
   // Joined Quest state
   const [joinedQuestIds, setJoinedQuestIds] = useState<string[]>(['comm-quest-1', 'comm-quest-2']);
@@ -300,6 +286,7 @@ export default function ChallengesDiscoveryPage() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         isLoggedIn={isLoggedIn}
+        isAuthReady={isAuthReady}
         setIsLoggedIn={handleSetIsLoggedIn}
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}

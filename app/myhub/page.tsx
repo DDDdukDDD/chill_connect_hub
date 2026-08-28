@@ -7,6 +7,8 @@ import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { CreateChallengeModal } from '@/components/CreateChallengeModal';
+import { RequireMembershipModal } from '@/components/RequireMembershipModal';
+import { useAuth } from '@/lib/useAuth';
 import { VerifyQuestModal } from '@/components/VerifyQuestModal';
 import { ETicketModal } from '@/components/ETicketModal';
 import { CancelTicketModal } from '@/components/CancelTicketModal';
@@ -190,8 +192,7 @@ export default function MyHubPage() {
   
   // Member vs Host Persona
   const [currentRole, setCurrentRole] = useState<'member' | 'host'>('member');
-
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [myChallenges, setMyChallenges] = useState<ChallengeQuest[]>(MOCK_CHALLENGES);
@@ -310,13 +311,6 @@ export default function MyHubPage() {
   // Sync login status and joined sub-activities across pages
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
-      const savedLoginState = localStorage.getItem('isLoggedIn');
-      if (savedLoginState === 'true') {
-        setIsLoggedIn(true);
-      } else {
-        setIsLoggedIn(false);
-      }
-
       try {
         const storedSubs = JSON.parse(localStorage.getItem('joinedSubActivities') || '{}');
         setJoinedSubActivities(storedSubs);
@@ -374,12 +368,7 @@ export default function MyHubPage() {
     }
   }, []);
 
-  const handleSetIsLoggedIn = (status: boolean) => {
-    setIsLoggedIn(status);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('isLoggedIn', status ? 'true' : 'false');
-    }
-  };
+
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -880,6 +869,7 @@ export default function MyHubPage() {
           activeTab={activeNavTab}
           setActiveTab={setActiveNavTab}
           isLoggedIn={isLoggedIn}
+          isAuthReady={isAuthReady}
           setIsLoggedIn={handleSetIsLoggedIn}
           onOpenLogin={() => setIsAuthModalOpen(true)}
           onOpenLogout={() => setIsLogoutModalOpen(true)}

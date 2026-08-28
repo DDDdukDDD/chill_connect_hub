@@ -5,6 +5,7 @@ import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { EventDetailModal } from '@/components/EventDetailModal';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
+import { useAuth } from '@/lib/useAuth';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { MOCK_EVENTS, MOCK_POSTS, EventItem, CommunityPost, PostComment } from '@/data/mockData';
 import {
@@ -33,35 +34,20 @@ import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 
 export default function MomentsPage() {
   const [activeNavTab, setActiveNavTab] = useState('moments');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
   const [membershipActionTitle, setMembershipActionTitle] = useState('เพื่อแชร์เรื่องราวและภาพโมเมนต์');
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('isLoggedIn');
-      if (saved === 'true') {
-        setIsLoggedIn(true);
-      } else {
-        setIsLoggedIn(false);
-      }
-
-      // Check query param for personal moments tab
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('tab') === 'mine') {
         setActiveTabFilter('mine');
       }
     }
   }, []);
-
-  const handleSetIsLoggedIn = (status: boolean) => {
-    setIsLoggedIn(status);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('isLoggedIn', status ? 'true' : 'false');
-    }
-  };
   const [posts, setPosts] = useState<CommunityPost[]>(MOCK_POSTS);
   const [activeTabFilter, setActiveTabFilter] = useState<'all' | 'popular' | 'mine'>('all');
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
@@ -257,6 +243,7 @@ export default function MomentsPage() {
         activeTab={activeNavTab}
         setActiveTab={setActiveNavTab}
         isLoggedIn={isLoggedIn}
+        isAuthReady={isAuthReady}
         setIsLoggedIn={handleSetIsLoggedIn}
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}

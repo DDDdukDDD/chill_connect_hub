@@ -2,12 +2,12 @@
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { HeroSection } from '@/components/HeroSection';
 import { MoodFilterChips, SUB_CATEGORIES_MAP } from '@/components/MoodFilterChips';
 import { SurpriseModal } from '@/components/SurpriseModal';
 import { EventGrid } from '@/components/EventGrid';
-import { EventDetailModal } from '@/components/EventDetailModal';
 import { MobileNav } from '@/components/MobileNav';
 import { MOCK_EVENTS, MOCK_POSTS, EventItem, calculateDistanceKm, BANGKOK_ZONES } from '@/data/mockData';
 import { CustomDatePickerModal } from '@/components/CustomDatePickerModal';
@@ -23,8 +23,8 @@ import { CreateChallengeModal } from '@/components/CreateChallengeModal';
 import { Pagination } from '@/components/Pagination';
 import { MOCK_SPOTS, SPOT_CATEGORIES, ALL_THAI_PROVINCES, LifestyleSpotItem } from '@/data/spotsData';
 import { SpotCard } from '@/components/SpotCard';
-import { SpotDetailModal } from '@/components/SpotDetailModal';
 import { isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp, isEventEndedByDate } from '@/lib/dateUtils';
+import { useAuth } from '@/lib/useAuth';
 import {
   Heart,
   Sprout,
@@ -60,6 +60,7 @@ import {
 const ITEMS_PER_PAGE = 24;
 
 export default function Home() {
+  const router = useRouter();
   const [activeNavTab, setActiveNavTab] = useState('explore');
   const [selectedCategory, setSelectedCategory] = useState<'heal' | 'move' | 'chill' | 'learn' | null>(null);
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
@@ -91,7 +92,7 @@ export default function Home() {
   const [eventsList, setEventsList] = useState<EventItem[]>(MOCK_EVENTS);
   const [favorites, setFavorites] = useState<string[]>(['1', '7']);
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [currentSpotPage, setCurrentSpotPage] = useState<number>(1);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -165,23 +166,6 @@ export default function Home() {
     loadLiveEvents();
   }, []);
 
-  React.useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('isLoggedIn');
-      if (saved === 'true') {
-        setIsLoggedIn(true);
-      } else {
-        setIsLoggedIn(false);
-      }
-    }
-  }, []);
-
-  const handleSetIsLoggedIn = (status: boolean) => {
-    setIsLoggedIn(status);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('isLoggedIn', status ? 'true' : 'false');
-    }
-  };
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -662,6 +646,7 @@ export default function Home() {
         activeTab={activeNavTab}
         setActiveTab={setActiveNavTab}
         isLoggedIn={isLoggedIn}
+        isAuthReady={isAuthReady}
         setIsLoggedIn={(status) => {
           handleSetIsLoggedIn(status);
         }}
@@ -692,7 +677,7 @@ export default function Home() {
           {/* 3. Auto-Sliding Trending Events Carousel */}
           <TrendingCarousel
             events={eventsList}
-            onSelectEvent={(event) => setSelectedEvent(event)}
+            onSelectEvent={() => {}}
             favorites={favorites}
             toggleFavorite={toggleFavorite}
           />
@@ -953,7 +938,6 @@ export default function Home() {
                         <SpotCard
                           key={spot.id}
                           spot={spot}
-                          onSelect={(s) => setSelectedSpot(s)}
                           isFavorite={favoriteSpots.includes(spot.id)}
                           onToggleFavorite={(id) => {
                             if (!isLoggedIn) {
@@ -1221,7 +1205,7 @@ export default function Home() {
                 {/* Event Grid */}
                 <EventGrid
                   events={displayedEvents}
-                  onSelectEvent={(event) => setSelectedEvent(event)}
+                  onSelectEvent={() => {}}
                   favorites={favorites}
                   toggleFavorite={toggleFavorite}
                   joinedEventIds={joinedEventIds}
@@ -1272,20 +1256,7 @@ export default function Home() {
         <p className="text-[11px] text-slate-400">© 2026 Chill & Connect Hub. All rights reserved.</p>
       </footer>
 
-      {/* Event Detail Popup Modal */}
-      <EventDetailModal
-        event={selectedEvent}
-        onClose={() => setSelectedEvent(null)}
-        isFavorite={selectedEvent ? favorites.includes(selectedEvent.id) : false}
-        onToggleFavorite={toggleFavorite}
-        onJoinSuccess={handleJoinSuccess}
-        onLeaveSuccess={handleLeaveSuccess}
-        isJoined={selectedEvent ? joinedEventIds.includes(selectedEvent.id) : false}
-        isLoggedIn={isLoggedIn}
-        onRequireLogin={() => {
-          triggerMembershipPrompt('เพื่อจองตั๋ว E-Ticket และเข้าร่วมกิจกรรม');
-        }}
-      />
+
 
       {/* Advanced Filter Drawer */}
       <FilterDrawer
@@ -1366,7 +1337,7 @@ export default function Home() {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         onLoginSuccess={(userName) => {
-          setIsLoggedIn(true);
+          handleSetIsLoggedIn(true);
           showToast(`ยินดีต้อนรับ ${userName}! เข้าสู่ระบบเรียบร้อย 🎉`);
         }}
       />
@@ -1387,29 +1358,7 @@ export default function Home() {
         isOpen={isSurpriseModalOpen}
         onClose={() => setIsSurpriseModalOpen(false)}
         events={eventsList}
-        onSelectEvent={(event) => setSelectedEvent(event)}
-      />
-
-      {/* Lifestyle Spot Detail Popup Modal */}
-      <SpotDetailModal
-        spot={selectedSpot}
-        isOpen={!!selectedSpot}
-        onClose={() => setSelectedSpot(null)}
-        isFavorite={selectedSpot ? favoriteSpots.includes(selectedSpot.id) : false}
-        onToggleFavorite={(id) => {
-          if (!isLoggedIn) {
-            triggerMembershipPrompt('เพื่อบันทึกสถานที่โปรด');
-            return;
-          }
-          toggleFavoriteSpot(id);
-        }}
-        isLoggedIn={isLoggedIn}
-        onRequireLogin={() => {
-          triggerMembershipPrompt('เพื่อรับภารกิจ ชวนเพื่อนเที่ยว และบันทึกสถานที่');
-        }}
-        onAcceptQuest={handleJoinQuestFromHome}
-        joinedQuestTitles={joinedQuestTitles}
-        onCancelQuest={handleCancelQuestFromHome}
+        onSelectEvent={(ev) => router.push(`/events/${encodeURIComponent(ev.id)}`)}
       />
 
       {/* Mobile Nav */}

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { X, Sparkles, Heart, ArrowRight, Camera } from 'lucide-react';
 import { MOCK_POSTS, CommunityPost } from '@/data/mockData';
 
@@ -9,6 +10,7 @@ interface StoryBarProps {
 }
 
 export const StoryBar: React.FC<StoryBarProps> = ({ onSelectEventId }) => {
+  const router = useRouter();
   const [selectedStory, setSelectedStory] = useState<CommunityPost | null>(null);
 
   return (
@@ -119,11 +121,11 @@ export const StoryBar: React.FC<StoryBarProps> = ({ onSelectEventId }) => {
                   onClick={() => {
                     const evId = selectedStory.eventId;
                     setSelectedStory(null);
-                    if (onSelectEventId && evId) {
-                      onSelectEventId(evId);
+                    if (evId) {
+                      router.push(`/events/${encodeURIComponent(evId)}`);
                     }
                   }}
-                  className="bg-[#F26430] hover:bg-[#D95322] text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-md transition-all flex items-center gap-1 active:scale-95"
+                  className="bg-[#F26430] hover:bg-[#D95322] text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-md transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
                 >
                   <span>อยากไปงานนี้ด้วย</span>
                   <ArrowRight className="w-3.5 h-3.5" />

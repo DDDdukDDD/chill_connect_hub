@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import { useAuth } from '@/lib/useAuth';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
@@ -54,7 +55,7 @@ function ProfileContent() {
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editForm, setEditForm] = useState<Partial<UserProfile>>({});
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -64,23 +65,6 @@ function ProfileContent() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('isLoggedIn');
-      if (saved === 'true') {
-        setIsLoggedIn(true);
-      } else {
-        setIsLoggedIn(false);
-      }
-    }
-  }, []);
-
-  const handleSetIsLoggedIn = (status: boolean) => {
-    setIsLoggedIn(status);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('isLoggedIn', status ? 'true' : 'false');
-    }
-  };
 
   // Sync profile when query param changes or loaded from local storage
   useEffect(() => {
@@ -159,6 +143,7 @@ function ProfileContent() {
         activeTab="profile"
         setActiveTab={() => {}}
         isLoggedIn={isLoggedIn}
+        isAuthReady={isAuthReady}
         setIsLoggedIn={handleSetIsLoggedIn}
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}

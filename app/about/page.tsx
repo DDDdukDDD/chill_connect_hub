@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
+import { useAuth } from '@/lib/useAuth';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { EventItem } from '@/data/mockData';
 import {
@@ -36,29 +37,11 @@ import {
 
 export default function AboutPage() {
   const [activeNavTab, setActiveNavTab] = useState('about');
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  React.useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('isLoggedIn');
-      if (saved === 'false') {
-        setIsLoggedIn(false);
-      } else {
-        localStorage.setItem('isLoggedIn', 'true');
-      }
-    }
-  }, []);
-
-  const handleSetIsLoggedIn = (status: boolean) => {
-    setIsLoggedIn(status);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('isLoggedIn', status ? 'true' : 'false');
-    }
-  };
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -73,6 +56,7 @@ export default function AboutPage() {
         activeTab={activeNavTab}
         setActiveTab={setActiveNavTab}
         isLoggedIn={isLoggedIn}
+        isAuthReady={isAuthReady}
         setIsLoggedIn={handleSetIsLoggedIn}
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}
@@ -685,9 +669,9 @@ export default function AboutPage() {
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
-        onLoginSuccess={(userName) => {
-          setIsLoggedIn(true);
-          showToast(`ยินดีต้อนรับ ${userName}! เข้าสู่ระบบเรียบร้อย 🎉`);
+        onLoginSuccess={(name) => {
+          handleSetIsLoggedIn(true);
+          showToast(`ยินดีต้อนรับ ${name}! เข้าสู่ระบบเรียบร้อย 🎉`);
         }}
       />
 
@@ -696,7 +680,7 @@ export default function AboutPage() {
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
         onConfirmLogout={() => {
-          setIsLoggedIn(false);
+          handleSetIsLoggedIn(false);
           showToast('ออกจากระบบเรียบร้อยแล้ว (Guest View)');
         }}
       />

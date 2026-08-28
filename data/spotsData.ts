@@ -1465,3 +1465,33 @@ export const ALL_THAI_PROVINCES = [
   'สุโขทัย', 'สุพรรณบุรี', 'สุราษฎร์ธานี', 'สุรินทร์', 'หนองคาย', 'หนองบัวลำภู', 'อ่างทอง', 'อุดรธานี',
   'อุทัยธานี', 'อุตรดิตถ์', 'อุบลราชธานี', 'อำนาจเจริญ'
 ];
+
+/**
+ * Retrieve a spot by its unique ID
+ */
+export function getSpotById(id: string): LifestyleSpotItem | undefined {
+  return MOCK_SPOTS.find((s) => s.id === id || encodeURIComponent(s.id) === id);
+}
+
+/**
+ * Retrieve nearby or similar spots in the same province or category
+ */
+export function getNearbySpots(currentSpot: LifestyleSpotItem, limit = 4): LifestyleSpotItem[] {
+  const sameProvince = MOCK_SPOTS.filter(
+    (s) => s.id !== currentSpot.id && s.province === currentSpot.province
+  );
+  if (sameProvince.length >= limit) {
+    return sameProvince.slice(0, limit);
+  }
+
+  const sameCategory = MOCK_SPOTS.filter(
+    (s) => s.id !== currentSpot.id && s.category === currentSpot.category && !sameProvince.includes(s)
+  );
+
+  const fallback = MOCK_SPOTS.filter(
+    (s) => s.id !== currentSpot.id && !sameProvince.includes(s) && !sameCategory.includes(s)
+  );
+
+  return [...sameProvince, ...sameCategory, ...fallback].slice(0, limit);
+}
+

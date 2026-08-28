@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { MOCK_POSTS, CommunityPost, PostComment, EventItem } from '@/data/mockData';
 import { Heart, MessageCircle, Share2, Sparkles, PlusCircle, X, Image as ImageIcon, Send, MapPin, Tag, CheckCircle2, ShieldCheck } from 'lucide-react';
 
@@ -162,14 +163,14 @@ export const CommunityMoments: React.FC<CommunityMomentsProps> = ({
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
 
                 {/* Event Tag Pill (Clickable -> Opens Event Detail) */}
-                <button
-                  onClick={() => matchedEvent && onSelectEvent(matchedEvent)}
-                  className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold text-[#1E293B] shadow-md flex items-center gap-1.5 hover:bg-[#F26430] hover:text-white transition-all cursor-pointer"
+                <Link
+                  href={`/events/${encodeURIComponent(post.eventId)}`}
+                  className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold text-[#1E293B] shadow-md flex items-center gap-1.5 hover:bg-[#F26430] hover:text-white transition-all cursor-pointer z-10"
                   title="คลิกเพื่อดูรายละเอียดกิจกรรมนี้"
                 >
                   <Tag className="w-3 h-3 text-[#F26430] group-hover:text-white" />
                   <span className="truncate max-w-[200px]">{post.eventTitle}</span>
-                </button>
+                </Link>
               </div>
 
               {/* Post Actions (Like, Comment, Share) */}

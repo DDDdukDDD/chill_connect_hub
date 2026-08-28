@@ -42,11 +42,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   ];
 
   return (
-    <section className="relative z-30 pt-0.5 pb-0.5 md:pt-1.5 md:pb-1.5 bg-white">
+    <section className="relative z-30 pt-3 sm:pt-4 md:pt-5 pb-1 sm:pb-2 bg-white">
       <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-3 sm:px-6 lg:px-8 relative">
         
-        {/* Full Hero Banner Container with Modern Lifestyle Photography - Sleek 20% Compact Profile */}
-        <div className="relative rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-md min-h-[155px] sm:min-h-[215px] md:min-h-[245px] flex items-center justify-center">
+        {/* Full Hero Banner Container with Modern Lifestyle Photography - Sleek Balanced Profile */}
+        <div className="relative rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-md min-h-[150px] sm:min-h-[195px] md:min-h-[225px] flex items-center justify-center">
           
           {/* Full-bleed Background Image with Cinematic Golden Hour Vibe (Clipped to Rounded Corners) */}
           <div className="absolute inset-0 z-0 pointer-events-none rounded-2xl sm:rounded-3xl overflow-hidden">
@@ -61,16 +61,16 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <div className="absolute inset-0 bg-gradient-to-b from-slate-900/30 via-transparent to-slate-900/40" />
           </div>
 
-          {/* Centered Safe Zone for Text & Search Bar - Sleek compact vertical metrics */}
-          <div className="relative z-10 text-center space-y-2 sm:space-y-3 max-w-3xl mx-auto px-3.5 sm:px-4 py-3 sm:py-4.5 md:py-5.5 w-full">
+          {/* Centered Safe Zone for Text & Search Bar - Airy & Balanced Vertical Spacing */}
+          <div className="relative z-10 text-center space-y-2 sm:space-y-3 max-w-3xl mx-auto px-3.5 sm:px-4 py-3 sm:py-4 md:py-5 w-full">
             
             {/* Dynamic Headline (Prominent, Bold & Punchy with Golden-Coral Accent) */}
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.75)]">
+            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.75)]">
               วันหยุดนี้... <span className="text-[#FFA07A] inline-block hover:scale-105 transition-transform cursor-default drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">ทำอะไรดี?</span>
             </h1>
 
             {/* Subtitle (Clear, Crisp & Legible) */}
-            <p className="text-xs sm:text-sm md:text-base text-white font-bold max-w-2xl mx-auto drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">
+            <p className="text-[11px] sm:text-xs md:text-sm text-white font-bold max-w-2xl mx-auto drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">
               ค้นหากิจกรรมฮีลใจ ที่เที่ยวสุดชิลล์ และหาเพื่อนใหม่ทั่วไทย ✨
             </p>
 
