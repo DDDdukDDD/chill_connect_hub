@@ -215,58 +215,59 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
 
                   {/* Top-Left Activity Type Badge */}
-                  <div className="absolute top-2 left-2 z-10">
-                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full shadow-md backdrop-blur-md border border-white/20 flex items-center gap-1 ${
-                      isPublicVenue
-                        ? 'bg-slate-900/85 text-sky-200'
-                        : 'bg-[#4A7C59]/90 text-white'
-                    }`}>
-                      <span>{isPublicVenue ? '🏛️ อีเวนต์ & งานแฟร์' : '🌿 Chill & Connect Community'}</span>
+                  <div className="absolute top-2.5 left-2.5 z-10">
+                    <span className="text-[11px] font-semibold bg-white/90 backdrop-blur-md text-slate-800 px-2.5 py-0.5 rounded-full shadow-xs">
+                      {isPublicVenue ? 'งานแฟร์ & อีเวนต์' : 'กิจกรรมชุมชน'}
                     </span>
                   </div>
 
                   {/* Favorite Heart Button */}
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       toggleFavorite(event.id);
                     }}
-                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center text-slate-600 hover:text-red-500 transition-colors shadow-sm z-10 cursor-pointer"
+                    className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center text-slate-400 hover:text-[#F26430] transition-colors shadow-xs z-10 cursor-pointer"
                   >
-                    <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-red-500 text-red-500' : ''}`} />
+                    <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-[#F26430] text-[#F26430]' : ''}`} />
                   </button>
                 </div>
 
                 {/* Card Content */}
-                <div className="p-3.5 flex-1 flex flex-col justify-between space-y-2.5">
-                  <div className="space-y-2">
+                <div className="p-3.5 flex-1 flex flex-col justify-between space-y-2">
+                  <div className="space-y-1.5">
 
                     {/* Host & Price Row */}
                     <div className="flex items-center justify-between gap-1.5">
-                      <span className="text-[11px] font-semibold text-slate-700 truncate">
+                      <span className="text-[11px] font-medium text-slate-500 truncate">
                         {event.hostName}
                       </span>
                       {event.price && (
-                        <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border shrink-0 ${event.price.includes('ฟรี')
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : 'bg-orange-50 text-[#F26430] border-orange-200'
-                          }`}>
+                        <span
+                          className={`text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
+                            event.price.includes('ฟรี')
+                              ? 'bg-emerald-50 text-emerald-800'
+                              : 'bg-slate-100 text-slate-700'
+                          }`}
+                        >
                           {event.price.includes('ฟรี') ? 'ฟรี' : event.price.replace(/\s*\([^)]*\)/g, '').trim()}
                         </span>
                       )}
                     </div>
 
-                    <h3 className="font-extrabold text-xs sm:text-sm text-[#1E293B] line-clamp-1 group-hover:text-[#F26430] transition-colors">
+                    <h3 className="font-bold text-sm text-slate-900 line-clamp-1 group-hover:text-[#4A7C59] transition-colors">
                       {event.title}
                     </h3>
 
-                    <div className="space-y-1 text-[11px] text-[#64748B]">
-                      <div className="flex items-center gap-1.5 truncate">
-                        <Calendar className="w-3 h-3 text-[#4A7C59] shrink-0" />
-                        <span className="truncate">{event.date} • {event.time}</span>
+                    {/* Date & Location */}
+                    <div className="space-y-1 text-xs text-slate-500">
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate">{event.date}</span>
                       </div>
-                      <div className="flex items-center gap-1.5 truncate">
-                        <MapPin className="w-3 h-3 text-[#F26430] shrink-0" />
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                         <span className="truncate">{event.location}</span>
                       </div>
                     </div>

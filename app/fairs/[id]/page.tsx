@@ -361,7 +361,7 @@ export default function FairDetailPage() {
         />
         <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-6">
           <div className="h-6 w-48 bg-slate-100 animate-pulse rounded-lg" />
-          <div className="h-64 sm:h-80 md:h-[460px] bg-slate-100 animate-pulse rounded-3xl" />
+          <div className="h-56 sm:h-72 md:h-[320px] bg-slate-100 animate-pulse rounded-3xl" />
         </main>
       </div>
     );
@@ -481,7 +481,7 @@ export default function FairDetailPage() {
            ========================================================================= */}
         <section className="space-y-2">
           
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-2.5 rounded-3xl overflow-hidden bg-slate-100 max-h-[460px] relative group">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-2.5 rounded-3xl overflow-hidden bg-slate-100 h-56 sm:h-72 md:h-[320px] max-h-[320px] relative group">
             
             {/* Main Big Photo (Left - 2 Cols x 2 Rows) */}
             <div
@@ -489,7 +489,7 @@ export default function FairDetailPage() {
                 setActivePhotoIndex(0);
                 setIsLightboxOpen(true);
               }}
-              className="md:col-span-2 md:row-span-2 relative h-64 md:h-[460px] overflow-hidden cursor-pointer bg-slate-200"
+              className="md:col-span-2 md:row-span-2 relative h-56 sm:h-72 md:h-[320px] overflow-hidden cursor-pointer bg-slate-200"
             >
               <img
                 src={galleryImages[0] || eventData.image}
@@ -497,18 +497,6 @@ export default function FairDetailPage() {
                 className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-50 hover:opacity-25 transition-opacity" />
-              
-              {/* Badges Over Photo */}
-              <div className="absolute top-3.5 left-3.5 flex items-center gap-2 z-10 flex-wrap">
-                <span className="text-xs font-black px-3 py-1 rounded-full bg-sky-900/90 text-white border border-white/20 shadow-md backdrop-blur-md flex items-center gap-1.5">
-                  <Building2 className="w-3.5 h-3.5 text-sky-400" />
-                  <span>อีเวนต์ & งานแฟร์ระดับประเทศ</span>
-                </span>
-
-                <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-900/80 text-slate-100 border border-white/20 backdrop-blur-md">
-                  {cleanText(eventData.location).split(' ')[0] || 'กรุงเทพฯ'}
-                </span>
-              </div>
             </div>
 
             {/* 4 Secondary Thumbnail Photos (Right 2x2 Grid) */}
@@ -522,7 +510,7 @@ export default function FairDetailPage() {
                     setActivePhotoIndex(photoIdx);
                     setIsLightboxOpen(true);
                   }}
-                  className="hidden md:block relative h-[225px] overflow-hidden cursor-pointer bg-slate-200"
+                  className="hidden md:block relative h-[155px] overflow-hidden cursor-pointer bg-slate-200"
                 >
                   <img
                     src={imgUrl}
@@ -605,7 +593,7 @@ export default function FairDetailPage() {
               </h1>
 
               <p className="text-xs sm:text-sm text-slate-500 font-medium flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-[#F26430] shrink-0" />
+                <MapPin className="w-4 h-4 text-[#2B527A] shrink-0" />
                 <span>{cleanText(eventData.location)}</span>
               </p>
             </div>
@@ -692,14 +680,14 @@ export default function FairDetailPage() {
               <h2 className="text-base font-black text-slate-900 tracking-tight">
                 จุดเด่น & ไฮไลต์ที่ไม่ควรพลาดในงาน
               </h2>
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 pt-0.5">
+              <ul className="space-y-3 pt-1">
                 {fairHighlights.map((h, idx) => (
                   <li
                     key={idx}
-                    className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-800 leading-relaxed font-medium"
+                    className="flex items-start gap-3 text-xs sm:text-sm text-slate-800 leading-relaxed font-medium"
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#2B527A] shrink-0 mt-2" />
-                    <span>{cleanText(h)}</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-800 shrink-0 mt-2" />
+                    <span className="flex-1">{cleanText(h)}</span>
                   </li>
                 ))}
               </ul>
@@ -883,7 +871,7 @@ export default function FairDetailPage() {
                           className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer active:scale-95 ${
                             isJoined
                               ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                              : 'bg-slate-900 hover:bg-slate-800 text-white shadow-2xs'
+                              : 'bg-[#2B527A] hover:bg-[#1E3B59] text-white shadow-2xs'
                           }`}
                         >
                           {isJoined ? '✓ เข้าร่วมแล้ว' : 'ขอแจมกลุ่ม'}
@@ -978,7 +966,7 @@ export default function FairDetailPage() {
                 </div>
 
                 <div className="flex items-start gap-2.5">
-                  <Clock className="w-4 h-4 text-[#4A7C59] shrink-0 mt-0.5" />
+                  <Clock className="w-4 h-4 text-[#2B527A] shrink-0 mt-0.5" />
                   <div>
                     <span className="text-slate-400 text-[10px] block font-bold">เวลาเปิด-ปิด</span>
                     <span className="font-bold text-slate-900">{cleanText(eventData.time)}</span>
@@ -986,7 +974,7 @@ export default function FairDetailPage() {
                 </div>
 
                 <div className="flex items-start gap-2.5">
-                  <MapPin className="w-4 h-4 text-[#F26430] shrink-0 mt-0.5" />
+                  <MapPin className="w-4 h-4 text-[#2B527A] shrink-0 mt-0.5" />
                   <div>
                     <span className="text-slate-400 text-[10px] block font-bold">สถานที่จัดงาน</span>
                     <span className="font-bold text-slate-900 leading-snug">{cleanText(eventData.location)}</span>
@@ -1062,8 +1050,8 @@ export default function FairDetailPage() {
                       alt={item.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
-                    <div className="absolute top-2 left-2 bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded-md">
-                      🏛️ งานอีเวนต์ & งานแฟร์
+                    <div className="absolute top-2 left-2 bg-[#2B527A] shadow-md border border-white/20 backdrop-blur-xs text-white text-[10px] font-black px-2.5 py-1 rounded-full">
+                      🏛️ อีเวนต์ & งานแฟร์
                     </div>
                   </div>
 

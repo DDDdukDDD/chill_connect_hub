@@ -528,7 +528,7 @@ export default function MyHubPage() {
     if (!checkedInTicketIds.includes(ticketId)) {
       setCheckedInTicketIds((prev) => [...prev, ticketId]);
       setUserXp((prev) => prev + 50);
-      showToast('🎉 เช็คอินสำเร็จ! คุณได้รับ +50 XP และปลดล็อกความคืบหน้า Badge แล้ว!');
+      showToast('เช็คอินสำเร็จ! คุณได้รับ +50 XP และปลดล็อกความคืบหน้า Badge แล้ว');
     }
   };
 
@@ -552,7 +552,7 @@ export default function MyHubPage() {
     );
 
     setUserXp((prev) => prev + 50);
-    showToast(`✅ ยืนยันหลักฐานสำเร็จ! ความคืบหน้าเพิ่มขึ้น +50 XP (${proofData.type === 'photo' ? 'รูปถ่าย 📸' : proofData.type === 'gps' ? 'พิกัด GPS 📍' : 'ตั๋ว QR 🎟️'})`);
+    showToast(`ยืนยันหลักฐานสำเร็จ! ความคืบหน้าเพิ่มขึ้น +50 XP`);
   };
 
   // Helper to render Event Card

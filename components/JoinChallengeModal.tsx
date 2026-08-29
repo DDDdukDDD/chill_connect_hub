@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import Link from 'next/link';
 import {
   X,
   Trophy,
@@ -20,7 +21,15 @@ import {
   Target,
   Share2,
   Check,
-  Crown
+  Crown,
+  Camera,
+  MapPin,
+  QrCode,
+  AlertTriangle,
+  ArrowRight,
+  ChevronRight,
+  UploadCloud,
+  RotateCcw
 } from 'lucide-react';
 import { ChallengeQuest } from '@/data/mockData';
 
@@ -30,6 +39,9 @@ interface JoinChallengeModalProps {
   quest: ChallengeQuest | null;
   onConfirmJoin: (quest: ChallengeQuest) => void;
   isAlreadyJoined?: boolean;
+  onCancelQuest?: (quest: ChallengeQuest) => void;
+  onSubmitProgress?: (quest: ChallengeQuest, newCurrent: number) => void;
+  isCompleted?: boolean;
 }
 
 export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
@@ -38,13 +50,45 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
   quest,
   onConfirmJoin,
   isAlreadyJoined = false,
+  onCancelQuest,
+  onSubmitProgress,
+  isCompleted = false,
 }) => {
   const [copied, setCopied] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  // Journey States
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showSubmitProof, setShowSubmitProof] = useState(false);
+  const [selectedProofType, setSelectedProofType] = useState<'gps' | 'photo' | 'host'>('gps');
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [proofNote, setProofNote] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccessMessage, setSubmitSuccessMessage] = useState<string | null>(null);
+
+  // Local simulated progress
+  const targetTotal = quest ? (parseInt(quest.total || '3', 10) || 3) : 3;
+  const [currentProgress, setCurrentProgress] = useState(
+    quest ? (parseInt(quest.current || '0', 10) || (isAlreadyJoined ? 1 : 0)) : 0
+  );
+  const [localCompleted, setLocalCompleted] = useState(isCompleted);
+
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (quest) {
+      setShowCancelConfirm(false);
+      setShowSubmitProof(false);
+      setPhotoPreview(null);
+      setProofNote('');
+      setSubmitSuccessMessage(null);
+      const parsedCurrent = parseInt(quest.current || '0', 10) || (isAlreadyJoined ? 1 : 0);
+      setCurrentProgress(parsedCurrent);
+      setLocalCompleted(isCompleted || parsedCurrent >= targetTotal);
+    }
+  }, [quest, isAlreadyJoined, isCompleted, targetTotal]);
 
   if (!isOpen || !quest || !mounted) return null;
 
@@ -79,15 +123,50 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
     }
   };
 
+  const handleSimulateSubmit = () => {
+    setIsSubmitting(true);
+    setTimeout(() => {
+      setIsSubmitting(false);
+      const nextCount = Math.min(targetTotal, currentProgress + 1);
+      setCurrentProgress(nextCount);
+
+      if (nextCount >= targetTotal) {
+        setLocalCompleted(true);
+        setSubmitSuccessMessage(`🎉 ยินดีด้วย! คุณพิชิตภารกิจครบ ${targetTotal}/${targetTotal} และปลดล็อกเหรียญ "${quest.badgeLabel}" สำเร็จแล้ว!`);
+      } else {
+        setSubmitSuccessMessage(`✨ บันทึกหลักฐานสำเร็จ! ความคืบหน้าสะสมเป็น ${nextCount}/${targetTotal}`);
+      }
+
+      if (onSubmitProgress) {
+        onSubmitProgress(quest, nextCount);
+      }
+
+      setTimeout(() => {
+        setShowSubmitProof(false);
+        setSubmitSuccessMessage(null);
+      }, 2000);
+    }, 900);
+  };
+
+  const handleConfirmCancel = () => {
+    if (onCancelQuest) {
+      onCancelQuest(quest);
+    }
+    setShowCancelConfirm(false);
+    onClose();
+  };
+
+  const progressPercent = Math.min(100, Math.round((currentProgress / targetTotal) * 100));
+
   return createPortal(
     <div className="fixed inset-0 z-[99999] overflow-y-auto flex items-center justify-center p-3.5 sm:p-5 md:p-6 bg-slate-950/75 backdrop-blur-xs animate-fade-in">
       <div
         className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200/90 my-auto max-h-[92vh] flex flex-col animate-scale-up"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Modal Top Header (Calm Forest Green Gradient & Integrated Temporal Context) */}
+        {/* Modal Top Header */}
         <div className="relative p-5 sm:p-6 bg-gradient-to-r from-[#21432E] via-[#2E583C] to-[#4A7C59] text-white shrink-0 overflow-hidden">
-          {/* Subtle Ambient Shapes */}
+          {/* Subtle Ambient Glow Shapes */}
           <div className="absolute -right-8 -bottom-8 w-44 h-44 bg-white/10 rounded-full blur-2xl pointer-events-none" />
           <div className="absolute left-1/3 -top-10 w-32 h-32 bg-emerald-400/10 rounded-full blur-xl pointer-events-none" />
 
@@ -107,6 +186,19 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                   👥 ชุมชนสร้างสรรค์
                 </span>
               )}
+
+              {/* Status Badge */}
+              {localCompleted ? (
+                <span className="text-[11px] font-black px-3 py-1 rounded-full bg-amber-300 text-amber-950 shadow-xs flex items-center gap-1 animate-pulse">
+                  <Trophy className="w-3.5 h-3.5" />
+                  <span>พิชิตภารกิจแล้ว</span>
+                </span>
+              ) : isAlreadyJoined ? (
+                <span className="text-[11px] font-extrabold px-3 py-1 rounded-full bg-emerald-400 text-emerald-950 shadow-xs flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-900 animate-ping" />
+                  <span>กำลังทำภารกิจ</span>
+                </span>
+              ) : null}
             </div>
 
             <button
@@ -129,7 +221,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                 {quest.title}
               </h2>
 
-              {/* Integrated Temporal Strip & Highlights (Point 2 & Point 5) */}
+              {/* Integrated Metadata Strip */}
               <div className="flex items-center gap-2 flex-wrap pt-0.5 text-xs text-white/90 font-medium">
                 <span className="flex items-center gap-1 bg-white/15 px-2.5 py-0.5 rounded-lg border border-white/20 font-bold">
                   <Zap className="w-3.5 h-3.5 text-emerald-200 fill-emerald-200" />
@@ -155,104 +247,297 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Real-time In-Progress Ribbon (When Already Joined) */}
+          {(isAlreadyJoined || localCompleted) && (
+            <div className="mt-4 p-3 bg-white/15 backdrop-blur-md rounded-2xl border border-white/25 space-y-1.5">
+              <div className="flex items-center justify-between text-xs font-bold text-white">
+                <span className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <span>ความคืบหน้าของคุณ</span>
+                </span>
+                <span className="font-extrabold text-amber-200">
+                  {currentProgress} / {targetTotal} ({progressPercent}%)
+                </span>
+              </div>
+              <div className="w-full h-2.5 bg-black/25 rounded-full overflow-hidden p-0.5 border border-white/20">
+                <div
+                  className="h-full bg-gradient-to-r from-amber-300 to-emerald-300 rounded-full transition-all duration-500 shadow-sm"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Scrollable Content Body (Clear 4 Real-World Standardized Sections) */}
+        {/* Scrollable Content Body */}
         <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1 bg-white">
           
-          {/* 🎯 Section 1: Objective & Purpose */}
-          <div className="p-4 rounded-2xl bg-[#F4F7F4] border border-[#DDE7DF] space-y-1.5">
-            <div className="flex items-center gap-2">
-              <Target className="w-4 h-4 text-[#4A7C59] shrink-0" />
-              <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">
-                วัตถุประสงค์ & ที่มาของภารกิจ
-              </h4>
+          {/* Submission Sheet Mode */}
+          {showSubmitProof ? (
+            <div className="p-5 rounded-3xl bg-[#FAF7F2] border border-[#E8E2D8] space-y-4 animate-fade-in">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                <div className="flex items-center gap-2">
+                  <Camera className="w-5 h-5 text-[#4A7C59]" />
+                  <h3 className="font-black text-sm sm:text-base text-slate-900">
+                    ส่งหลักฐานความคืบหน้าภารกิจ (ครั้งที่ {currentProgress + 1}/{targetTotal})
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowSubmitProof(false)}
+                  className="text-xs font-bold text-slate-500 hover:text-slate-800"
+                >
+                  ย้อนกลับ
+                </button>
+              </div>
+
+              {/* Success Message Banner */}
+              {submitSuccessMessage && (
+                <div className="p-3 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{submitSuccessMessage}</span>
+                </div>
+              )}
+
+              {/* Select Submission Method */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 block">เลือกรูปแบบการส่งหลักฐาน:</label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedProofType('gps')}
+                    className={`p-2.5 rounded-xl border text-center transition-all flex flex-col items-center gap-1 cursor-pointer ${
+                      selectedProofType === 'gps'
+                        ? 'bg-[#4A7C59] text-white border-[#4A7C59] font-bold shadow-xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <MapPin className="w-4 h-4" />
+                    <span className="text-[11px]">📍 พิกัด GPS</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedProofType('photo')}
+                    className={`p-2.5 rounded-xl border text-center transition-all flex flex-col items-center gap-1 cursor-pointer ${
+                      selectedProofType === 'photo'
+                        ? 'bg-[#4A7C59] text-white border-[#4A7C59] font-bold shadow-xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <Camera className="w-4 h-4" />
+                    <span className="text-[11px]">📸 รูปภาพ/โมเมนต์</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedProofType('host')}
+                    className={`p-2.5 rounded-xl border text-center transition-all flex flex-col items-center gap-1 cursor-pointer ${
+                      selectedProofType === 'host'
+                        ? 'bg-[#4A7C59] text-white border-[#4A7C59] font-bold shadow-xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <QrCode className="w-4 h-4" />
+                    <span className="text-[11px]">🤝 โฮสต์สแกน QR</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Method Details */}
+              {selectedProofType === 'gps' && (
+                <div className="p-3.5 bg-white rounded-2xl border border-slate-200 space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+                    <MapPin className="w-4 h-4 text-emerald-600" />
+                    <span>ระบบตรวจสอบพิกัด GPS อัตโนมัติ</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                    ระบบจะตรวจสอบว่าคุณอยู่ในรัศมีของสถานที่พาร์ทเนอร์หรือสวนสาธารณะที่ระบุในเงื่อนไขภารกิจ
+                  </p>
+                </div>
+              )}
+
+              {selectedProofType === 'photo' && (
+                <div className="p-3.5 bg-white rounded-2xl border border-slate-200 space-y-3">
+                  <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center hover:border-[#4A7C59] transition-colors cursor-pointer bg-slate-50">
+                    <UploadCloud className="w-6 h-6 text-slate-400 mx-auto mb-1" />
+                    <span className="text-xs font-bold text-slate-700 block">คลิกเพื่อเลือกภาพถ่ายหลักฐาน</span>
+                    <span className="text-[10px] text-slate-400">รองรับไฟล์ JPG, PNG (ไม่เกิน 5MB)</span>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="เขียนบันทึกความรู้สึกหรือเล่าโมเมนต์สั้นๆ..."
+                    value={proofNote}
+                    onChange={(e) => setProofNote(e.target.value)}
+                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#4A7C59]"
+                  />
+                </div>
+              )}
+
+              {selectedProofType === 'host' && (
+                <div className="p-4 bg-white rounded-2xl border border-slate-200 text-center space-y-2">
+                  <div className="w-24 h-24 mx-auto bg-slate-100 border border-slate-300 rounded-xl flex items-center justify-center">
+                    <QrCode className="w-16 h-16 text-slate-800" />
+                  </div>
+                  <p className="text-xs font-bold text-slate-700">รหัสตรวจสอบ: QUEST-PASS-{quest.id.toUpperCase()}</p>
+                  <p className="text-[11px] text-slate-500">ยื่น QR Code นี้ให้โฮสต์ผู้จัดงานหรือผู้ดูแลกิจกรรมเพื่อสแกนยืนยัน</p>
+                </div>
+              )}
+
+              {/* Action Buttons in Submission */}
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowSubmitProof(false)}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-xl transition-all cursor-pointer"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={handleSimulateSubmit}
+                  className="px-6 py-2 bg-[#4A7C59] hover:bg-[#3D684A] text-white text-xs font-black rounded-xl shadow-md transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5 active:scale-95"
+                >
+                  {isSubmitting ? (
+                    <span>กำลังตรวจสอบ...</span>
+                  ) : (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      <span>ยืนยันและส่งผล ({currentProgress + 1}/{targetTotal})</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
-            <p className="text-xs sm:text-sm text-slate-700 leading-relaxed pl-6 font-medium">
-              {quest.objective || quest.targetGoal || 'ส่งเสริมการออกไปใช้ชีวิต ทำกิจกรรมสร้างสรรค์ และสร้างแรงบันดาลใจร่วมกับเพื่อนๆ ในคอมมูนิตี้'}
-            </p>
-          </div>
+          ) : showCancelConfirm ? (
+            /* Cancel Quest Confirmation Box */
+            <div className="p-5 rounded-3xl bg-rose-50 border border-rose-200 space-y-3 animate-fade-in">
+              <div className="flex items-center gap-2.5 text-rose-800">
+                <AlertTriangle className="w-5 h-5 shrink-0 text-rose-600" />
+                <h4 className="font-extrabold text-sm sm:text-base">
+                  คุณต้องการยกเลิกภารกิจ "{quest.title}" ใช่หรือไม่?
+                </h4>
+              </div>
+              <p className="text-xs text-rose-700 leading-relaxed font-medium pl-7.5">
+                ความคืบหน้าที่สะสมไว้ ({currentProgress}/{targetTotal}) จะถูกรีเซ็ต แต่คุณสามารถกลับมารับภารกิจนี้ใหม่ได้ตลอดเวลาจนกว่าจะหมดเวลาของภารกิจ
+              </p>
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCancelConfirm(false)}
+                  className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-100 transition-all cursor-pointer"
+                >
+                  ทำภารกิจต่อ
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmCancel}
+                  className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black transition-all cursor-pointer active:scale-95 shadow-sm"
+                >
+                  ยืนยันขอยกเลิก
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Normal Quest Details View */
+            <>
+              {/* 🎯 Section 1: Objective & Purpose */}
+              <div className="p-4 rounded-2xl bg-[#F4F7F4] border border-[#DDE7DF] space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <Target className="w-4 h-4 text-[#4A7C59] shrink-0" />
+                  <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">
+                    วัตถุประสงค์ & ที่มาของภารกิจ
+                  </h4>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-700 leading-relaxed pl-6 font-medium">
+                  {quest.objective || quest.targetGoal || 'ส่งเสริมการออกไปใช้ชีวิต ทำกิจกรรมสร้างสรรค์ และสร้างแรงบันดาลใจร่วมกับเพื่อนๆ ในคอมมูนิตี้'}
+                </p>
+              </div>
 
-          {/* 📜 Section 2: Step-by-Step Instructions & Conditions */}
-          <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3">
-            <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 flex items-center gap-2">
-              <span className="w-5 h-5 rounded-md bg-emerald-100 text-emerald-800 text-[11px] font-black flex items-center justify-center">
-                1
-              </span>
-              <span>ขั้นตอนและเงื่อนไขการทำภารกิจ</span>
-            </h4>
-
-            <div className="space-y-2 pl-2 sm:pl-3">
-              {(quest.steps && quest.steps.length > 0 ? quest.steps : [
-                'ตรวจสอบพิกัดหรือเงื่อนไขของกิจกรรมที่เข้าร่วม',
-                'ทำกิจกรรมตามเป้าหมายที่กำหนดให้ครบถ้วน',
-                'ส่งหลักฐานเพื่อรับเหรียญรางวัลและคะแนน XP'
-              ]).map((step, idx) => (
-                <div key={idx} className="flex items-start gap-3 text-xs sm:text-sm text-slate-700">
-                  <span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-300 text-slate-700 font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5">
-                    {idx + 1}
+              {/* 📜 Section 2: Step-by-Step Instructions & Conditions */}
+              <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3">
+                <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-md bg-emerald-100 text-emerald-800 text-[11px] font-black flex items-center justify-center">
+                    1
                   </span>
-                  <span className="leading-relaxed font-medium">{step}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+                  <span>ขั้นตอนและเงื่อนไขการทำภารกิจ</span>
+                </h4>
 
-          {/* 🔍 Section 3: Verification Method */}
-          <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-2">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-[#4A7C59] shrink-0" />
-              <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">
-                วิธีการตรวจสอบและส่งหลักฐาน (Verification)
-              </h4>
-            </div>
-            <div className="pl-6 text-xs sm:text-sm text-emerald-950 font-medium leading-relaxed bg-[#EBF5EE] p-3 rounded-xl border border-emerald-200">
-              {quest.verificationMethod || '📍 เช็คอินพิกัด GPS จริง หรือ 📸 ถ่ายรูปภาพบรรยากาศคู่กับกิจกรรมเพื่อยืนยันความคืบหน้า'}
-            </div>
-          </div>
-
-          {/* 🎁 Section 4: Rewards & Perks */}
-          <div className="p-4 rounded-2xl bg-[#F8FAF8] border border-emerald-200/80 shadow-2xs space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                <Gift className="w-4 h-4 text-[#4A7C59] shrink-0" />
-                <span>ของรางวัล & สิทธิประโยชน์เมื่อทำสำเร็จ</span>
-              </h4>
-              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">
-                Reward Unlocks
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-              <div className="p-3 bg-white rounded-xl border border-emerald-200/60 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center text-xl shrink-0 border border-emerald-100">
-                  {quest.badgeIcon || '🏅'}
-                </div>
-                <div>
-                  <span className="text-[10px] font-bold text-slate-400 block">เหรียญตราเกียรติยศ</span>
-                  <span className="text-xs sm:text-sm font-extrabold text-slate-800">{quest.badgeLabel}</span>
+                <div className="space-y-2 pl-2 sm:pl-3">
+                  {(quest.steps && quest.steps.length > 0 ? quest.steps : [
+                    'ตรวจสอบพิกัดหรือเงื่อนไขของกิจกรรมที่เข้าร่วม',
+                    'ทำกิจกรรมตามเป้าหมายที่กำหนดให้ครบถ้วน',
+                    'ส่งหลักฐานเพื่อรับเหรียญรางวัลและคะแนน XP'
+                  ]).map((step, idx) => (
+                    <div key={idx} className="flex items-start gap-3 text-xs sm:text-sm text-slate-700">
+                      <span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-300 text-slate-700 font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5">
+                        {idx + 1}
+                      </span>
+                      <span className="leading-relaxed font-medium">{step}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <div className="p-3 bg-white rounded-xl border border-emerald-200/60 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-800 flex items-center justify-center shrink-0 border border-amber-100">
-                  <Zap className="w-5 h-5 text-amber-600 fill-amber-500" />
+              {/* 🔍 Section 3: Verification Method */}
+              <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-2">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[#4A7C59] shrink-0" />
+                  <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">
+                    วิธีการตรวจสอบและส่งหลักฐาน (Verification Method)
+                  </h4>
                 </div>
-                <div>
-                  <span className="text-[10px] font-bold text-slate-400 block">แต้มและคะแนน XP</span>
-                  <span className="text-xs sm:text-sm font-extrabold text-slate-800">+{quest.rewardPoints || 300} XP Points</span>
+                <div className="pl-6 text-xs sm:text-sm text-emerald-950 font-medium leading-relaxed bg-[#EBF5EE] p-3 rounded-xl border border-emerald-200">
+                  {quest.verificationMethod || '📍 เช็คอินพิกัด GPS จริง หรือ 📸 ถ่ายรูปภาพบรรยากาศคู่กับกิจกรรมเพื่อยืนยันความคืบหน้า'}
                 </div>
               </div>
-            </div>
 
-            <p className="text-[11px] sm:text-xs text-slate-600 font-medium pl-1">
-              ✨ {quest.rewardsText || `เหรียญเกียรติยศ "${quest.badgeLabel}" จะปรากฏบนหน้าโปรไฟล์ของคุณ และสามารถนำแต้มไปแลกรับของรางวัลได้ใน MyHub`}
-            </p>
-          </div>
+              {/* 🎁 Section 4: Rewards & Perks */}
+              <div className="p-4 rounded-2xl bg-[#F8FAF8] border border-emerald-200/80 shadow-2xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                    <Gift className="w-4 h-4 text-[#4A7C59] shrink-0" />
+                    <span>ของรางวัล & สิทธิประโยชน์เมื่อทำสำเร็จ</span>
+                  </h4>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                    Reward Unlocks
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                  <div className="p-3 bg-white rounded-xl border border-emerald-200/60 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center text-xl shrink-0 border border-emerald-100">
+                      {quest.badgeIcon || '🏅'}
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 block">เหรียญตราเกียรติยศ</span>
+                      <span className="text-xs sm:text-sm font-extrabold text-slate-800">{quest.badgeLabel}</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-xl border border-emerald-200/60 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-800 flex items-center justify-center shrink-0 border border-amber-100">
+                      <Zap className="w-5 h-5 text-amber-600 fill-amber-500" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 block">แต้มและคะแนน XP</span>
+                      <span className="text-xs sm:text-sm font-extrabold text-slate-800">+{quest.rewardPoints || 300} XP Points</span>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-[11px] sm:text-xs text-slate-600 font-medium pl-1">
+                  ✨ {quest.rewardsText || `เหรียญเกียรติยศ "${quest.badgeLabel}" จะปรากฏบนหน้าโปรไฟล์ของคุณ และสามารถนำแต้มไปแลกรับของรางวัลได้ใน MyHub`}
+                </p>
+              </div>
+            </>
+          )}
 
         </div>
 
-        {/* Modal Bottom Action Footer (Clean & Focused - Point 1 & Point 5) */}
+        {/* Modal Bottom Action Footer (The Complete Journey Control) */}
         <div className="p-3.5 sm:p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
           <button
             type="button"
@@ -273,17 +558,48 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
             )}
           </button>
 
+          {/* Action Buttons depending on State */}
           <div className="flex items-center gap-2">
-            {isAlreadyJoined ? (
-              <span className="px-5 py-2.5 rounded-xl bg-emerald-100 text-emerald-800 font-extrabold text-xs flex items-center gap-1.5 border border-emerald-300 select-none shadow-2xs">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>คุณรับภารกิจนี้แล้ว (กำลังทำ)</span>
-              </span>
+            {localCompleted ? (
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/myhub?tab=badges"
+                  onClick={onClose}
+                  className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-amber-950 font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer"
+                >
+                  <Trophy className="w-4 h-4" />
+                  <span>ดูเหรียญตราใน MyHub</span>
+                </Link>
+              </div>
+            ) : isAlreadyJoined ? (
+              <div className="flex items-center gap-2">
+                {/* Abandon / Cancel Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowCancelConfirm(true)}
+                  className="px-3 py-2.5 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 text-xs font-bold transition-all cursor-pointer"
+                  title="ยกเลิกการทำภารกิจนี้"
+                >
+                  <span>ยกเลิกภารกิจ</span>
+                </button>
+
+                {/* Primary CTA: Submit Proof / Progress */}
+                <button
+                  type="button"
+                  onClick={() => setShowSubmitProof(true)}
+                  className="px-5 sm:px-7 py-2.5 rounded-xl bg-[#4A7C59] hover:bg-[#3D684A] text-white font-extrabold text-xs sm:text-sm shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-2"
+                >
+                  <Camera className="w-4 h-4 text-emerald-200" />
+                  <span>ส่งผล / บันทึกความคืบหน้า</span>
+                </button>
+              </div>
             ) : (
+              /* Not Joined Yet */
               <button
                 type="button"
                 onClick={() => {
                   onConfirmJoin(quest);
+                  // Don't close immediately if user wants to see their in-progress state, or close cleanly
                   onClose();
                 }}
                 className="px-7 sm:px-9 py-2.5 rounded-xl bg-[#4A7C59] hover:bg-[#3D684A] text-white font-extrabold text-xs sm:text-sm shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-2"

@@ -11,6 +11,54 @@ import {
 } from 'lucide-react';
 import { LifestyleSpotItem } from '@/data/spotsData';
 
+/**
+ * Formats lengthy spot price details into a clean, compact badge string for card views.
+ */
+export function formatSpotBadgePrice(price: string | undefined | null): string {
+  if (!price) return 'เข้าฟรี';
+  const clean = price.trim();
+
+  // 1. Check if free
+  if (clean.startsWith('เข้าฟรี') || clean === 'ฟรี') {
+    return 'เข้าฟรี';
+  }
+  if (clean.startsWith('คนไทยเข้าฟรี')) {
+    return 'คนไทยฟรี';
+  }
+  if (clean.includes('เข้าฟรี') && !clean.includes('฿') && !clean.includes('บาท')) {
+    return 'เข้าฟรี';
+  }
+
+  // 2. Remove parenthetical remarks like (เช่าเรือ...), (ต่างชาติ...), (กางเต็นท์...)
+  const basePrice = clean.replace(/\s*\([^)]*\)/g, '').trim();
+
+  // 3. Extract numbers for concise display
+  const numberMatches = basePrice.match(/\d[\d,]*/g);
+
+  if (numberMatches && numberMatches.length > 0) {
+    const nums = numberMatches
+      .map(n => parseInt(n.replace(/,/g, ''), 10))
+      .filter(n => !isNaN(n) && n > 0 && n < 10000);
+
+    if (nums.length >= 2 && (basePrice.includes('/') || basePrice.includes('-') || basePrice.includes('ถึง') || basePrice.includes(','))) {
+      const primaryNums = nums.slice(0, 2);
+      const min = Math.min(...primaryNums);
+      const max = Math.max(...primaryNums);
+      if (min === max) return `฿${min}`;
+      return `฿${min} - ฿${max}`;
+    }
+
+    if (nums.length >= 1) {
+      return `฿${nums[0]}`;
+    }
+  }
+
+  if (basePrice.length > 12) {
+    return basePrice.slice(0, 10) + '...';
+  }
+  return basePrice || 'มีค่าเข้า';
+}
+
 interface SpotCardProps {
   spot: LifestyleSpotItem;
   onSelect?: (spot: LifestyleSpotItem) => void;
@@ -37,37 +85,34 @@ export const SpotCard: React.FC<SpotCardProps> = ({
         }
         if (onSelect) onSelect(spot);
       }}
-      className="group bg-white rounded-2xl shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer relative"
+      className="group bg-white rounded-2xl border border-slate-200/70 hover:border-slate-300 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer relative"
     >
-      {/* Top Image Container (aspect-video ratio matching Event Cards) */}
-      <div className="relative aspect-video w-full overflow-hidden bg-slate-100 shrink-0">
+      {/* Image */}
+      <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100 shrink-0">
         <img
           src={spot.image}
           alt={spot.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
           loading="lazy"
         />
 
-        {/* Ambient Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60" />
+        {/* Gradient Overlay for bottom text */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-70" />
 
-        {/* Top-Left Badges: Category Type + Distance (Safe spacing from right heart button) */}
-        <div className="absolute top-2 left-2 right-11 flex items-center gap-1.5 flex-wrap z-20 pointer-events-none">
-          {/* Spot Category Badge */}
-          <span className="text-[10px] font-black bg-[#F26430]/90 backdrop-blur-md text-white px-2.5 py-1 rounded-full shadow-md border border-white/25 flex items-center gap-1 truncate max-w-full pointer-events-auto">
-            <span>📍 สถานที่เที่ยว & จุดฮีลใจ</span>
+        {/* Top Badges */}
+        <div className="absolute top-2.5 left-2.5 right-11 flex items-center gap-1.5 flex-wrap z-10">
+          <span className="text-[11px] font-semibold bg-white/90 backdrop-blur-md text-slate-800 px-2.5 py-0.5 rounded-full shadow-xs">
+            {spot.categoryLabel}
           </span>
 
-          {/* Distance Badge when searching near me */}
           {(spot as any).distanceKm !== undefined && (
-            <span className="text-[10px] font-black bg-slate-900/90 backdrop-blur-md text-white px-2 py-1 rounded-full flex items-center gap-1 shadow-md border border-white/20 shrink-0 pointer-events-auto">
-              <MapPin className="w-2.5 h-2.5 text-[#F26430]" />
-              <span>{((spot as any).distanceKm).toFixed(1)} กม.</span>
+            <span className="text-[10px] font-medium bg-slate-900/80 backdrop-blur-md text-white px-2 py-0.5 rounded-full">
+              {((spot as any).distanceKm).toFixed(1)} กม.
             </span>
           )}
         </div>
 
-        {/* Top-Right Favorite Button */}
+        {/* Favorite Button */}
         <button
           type="button"
           onClick={(e) => {
@@ -75,55 +120,52 @@ export const SpotCard: React.FC<SpotCardProps> = ({
             e.stopPropagation();
             onToggleFavorite(spot.id);
           }}
-          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-[#F26430] hover:scale-110 active:scale-95 transition-all z-20 cursor-pointer"
+          className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/90 backdrop-blur-md shadow-xs flex items-center justify-center text-slate-400 hover:text-[#F26430] hover:scale-110 active:scale-95 transition-all z-20 cursor-pointer"
           title={isFavorite ? 'ยกเลิกบันทึก' : 'บันทึกสถานที่นี้'}
         >
           <Heart
-            className={`w-4 h-4 transition-colors ${isFavorite ? 'fill-[#F26430] text-[#F26430]' : 'text-[#64748B]'
-              }`}
+            className={`w-4 h-4 transition-colors ${
+              isFavorite ? 'fill-[#F26430] text-[#F26430]' : ''
+            }`}
           />
         </button>
 
-        {/* Bottom Image Info: Rating & Reviews */}
-        <div className="absolute bottom-2 right-2 flex items-center gap-1 text-white z-10">
-          <span className="text-[10px] font-black bg-amber-400/95 backdrop-blur-md text-slate-950 px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shadow-2xs">
-            <Star className="w-2.5 h-2.5 fill-slate-950" />
+        {/* Rating */}
+        <div className="absolute bottom-2 right-2.5 flex items-center gap-1 text-white z-10">
+          <span className="text-[11px] font-bold bg-black/60 backdrop-blur-md text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
             <span>{spot.rating}</span>
           </span>
         </div>
       </div>
 
-      {/* Card Content Body (Clean, structured and realistic) */}
-      <div className="p-3 sm:p-3.5 flex flex-col justify-between flex-1 gap-2">
+      {/* Body */}
+      <div className="p-3.5 flex flex-col justify-between flex-1 gap-2.5">
         <div className="space-y-1.5">
-          {/* Top Row: Specific Sub-category / Location (Left) + Price Chip (Right) */}
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[11px] font-semibold text-slate-700 truncate">
-              {spot.categoryLabel}
-            </span>
-
-            <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border shrink-0 ${spot.price.includes('ฟรี')
-                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                : 'bg-amber-50 text-amber-900 border-amber-200'
-              }`}>
-              {spot.price.includes('ฟรี') ? 'เข้าฟรี' : spot.price}
+          {/* Title & Price */}
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="font-bold text-sm text-slate-900 line-clamp-1 group-hover:text-[#4A7C59] transition-colors leading-snug flex-1">
+              {spot.title}
+            </h3>
+            <span
+              className={`text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
+                spot.price.includes('ฟรี')
+                  ? 'bg-emerald-50 text-emerald-800'
+                  : 'bg-slate-100 text-slate-700'
+              }`}
+            >
+              {formatSpotBadgePrice(spot.price)}
             </span>
           </div>
 
-          {/* Title */}
-          <h3 className="font-bold text-xs sm:text-sm lg:text-[13px] xl:text-sm text-[#1E293B] line-clamp-1 group-hover:text-[#F26430] transition-colors leading-snug">
-            {spot.title}
-          </h3>
-
-          {/* Meta Information: Open Hours below title + District & Province */}
-          <div className="space-y-1 text-xs text-[#64748B] pt-0.5">
+          {/* Meta Info */}
+          <div className="space-y-1 text-xs text-slate-500">
             <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
-              <span className="truncate font-medium text-slate-700">{spot.openHours}</span>
+              <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span className="truncate">{spot.openHours}</span>
             </div>
-
-            <div className="flex items-center gap-1.5 min-w-0">
-              <MapPin className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
+            <div className="flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
               <span className="truncate">{spot.district}, {spot.province}</span>
             </div>
           </div>

@@ -27,7 +27,7 @@ interface NavbarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   isLoggedIn: boolean;
-  setIsLoggedIn: (status: boolean) => void;
+  setIsLoggedIn?: (status: boolean) => void;
   onOpenLogin?: () => void;
   onOpenLogout?: () => void;
   onOpenCreateEvent?: () => void;
@@ -67,67 +67,83 @@ export const Navbar: React.FC<NavbarProps> = ({
   }, []);
 
   const navItems = [
-    { id: 'explore', label: 'ค้นหากิจกรรม', href: '/', icon: Compass },
-    { id: 'challenges', label: 'ชาเลนจ์ & ภารกิจ', href: '/challenges', icon: Zap },
-    { id: 'moments', label: 'โมเมนต์โซเชียล', href: '/moments', icon: Camera },
+    { id: 'explore', label: 'ค้นพบ', href: '/', icon: Compass },
+    { id: 'challenges', label: 'ชาเลนจ์', href: '/challenges', icon: Zap },
+    { id: 'moments', label: 'โมเมนต์', href: '/moments', icon: Camera },
     { id: 'myhub', label: 'มายฮับ', href: '/myhub', icon: Ticket },
     { id: 'about', label: 'เกี่ยวกับเรา', href: '/about', icon: Info },
   ];
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 transition-all">
-        <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-17 flex items-center justify-between">
+      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 transition-all duration-300 shadow-2xs">
+        <div className="max-w-7xl 2xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-17 flex items-center justify-between gap-4">
           
           {/* Left: Brand Logo & Name */}
           <Link 
             href="/"
             onClick={() => setActiveTab('explore')}
-            className="flex items-center gap-2.5 sm:gap-3.5 cursor-pointer group py-1"
+            className="flex items-center gap-3 cursor-pointer group py-1 shrink-0"
           >
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-[#4A7C59] flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform shrink-0">
-              <Sprout className="w-5.5 h-5.5 sm:w-6 sm:h-6 stroke-[2.5]" />
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-600 via-[#4A7C59] to-[#386144] flex items-center justify-center text-white shadow-xs group-hover:scale-105 group-hover:shadow-md transition-all duration-300 shrink-0 ring-2 ring-emerald-500/10">
+              <Sprout className="w-5.5 h-5.5 stroke-[2.5]" />
             </div>
             <div className="flex flex-col justify-center">
-              <span className="font-black text-lg sm:text-[20px] tracking-tight text-[#1E293B] font-sans leading-none">
-                Chill & Connect Hub
-              </span>
-              <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium tracking-normal leading-none mt-1.5 sm:mt-2 flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5">
+                <span className="font-black text-lg sm:text-[19px] tracking-tight text-[#0F172A] font-sans leading-none">
+                  Chill & Connect Hub
+                </span>
+                <span className="hidden sm:inline-block text-[9px] font-black text-[#4A7C59] bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.2 rounded-md">
+                  TH
+                </span>
+              </div>
+              <p className="text-[10.5px] text-slate-500 font-medium tracking-normal leading-none mt-1.5 flex items-center gap-1.5">
                 <span>แชร์โมเมนต์</span>
                 <span className="text-slate-300">•</span>
                 <span>พบเพื่อนใหม่</span>
                 <span className="text-slate-300">•</span>
-                <span>ชิลล์ได้ทุกวัน</span>
+                <span>เที่ยว 77 จังหวัด</span>
               </p>
             </div>
           </Link>
 
-          {/* Center: Desktop Navigation Links (Understated, elegant & well-balanced) */}
-          <nav className="hidden lg:flex items-center gap-5 xl:gap-7">
+          {/* Center: Desktop Dynamic Pill Navigation Links (Floating Glass Pill Strip) */}
+          <nav className="hidden lg:flex items-center bg-slate-100/80 backdrop-blur-md p-1 rounded-2xl border border-slate-200/60 shadow-2xs">
             {navItems.map((item) => {
               const isActive = activeTab === item.id;
+              const Icon = item.icon;
               return (
                 <Link
                   key={item.id}
                   href={item.href}
                   onClick={() => setActiveTab(item.id)}
-                  className={`text-xs sm:text-[13px] transition-all relative py-1 flex items-center gap-1.5 tracking-normal ${
+                  className={`text-xs font-bold transition-all duration-200 px-4 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer select-none relative ${
                     isActive
-                      ? 'text-[#4A7C59] font-bold'
-                      : 'text-slate-600 hover:text-slate-900 font-medium'
+                      ? 'bg-white text-[#4A7C59] shadow-xs ring-1 ring-slate-200/50'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                   }`}
                 >
+                  <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#4A7C59]' : 'text-slate-400'}`} />
                   <span>{item.label}</span>
-                  {isActive && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#4A7C59] rounded-full" />
-                  )}
                 </Link>
               );
             })}
           </nav>
 
           {/* Right: Actions */}
-          <div className="flex items-center gap-2 sm:gap-2.5">
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+            
+            {/* Quick Action: Create Event Pill Button */}
+            {onOpenCreateEvent && (
+              <button
+                type="button"
+                onClick={onOpenCreateEvent}
+                className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-[#4A7C59] text-white text-xs font-bold shadow-xs hover:shadow-md transition-all duration-200 active:scale-95 cursor-pointer shrink-0"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>สร้างกิจกรรม</span>
+              </button>
+            )}
             
             {/* Desktop User Avatar & Profile Dropdown (Facebook/Google Style) */}
             {(isAuthReady !== undefined ? !isAuthReady : !isMounted) ? (
@@ -258,7 +274,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                           setIsProfileDropdownOpen(false);
                           if (onOpenLogout) {
                             onOpenLogout();
-                          } else {
+                          } else if (setIsLoggedIn) {
                             setIsLoggedIn(false);
                           }
                         }}
@@ -274,7 +290,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             ) : (
               <button 
-                onClick={() => onOpenLogin ? onOpenLogin() : setIsLoggedIn(true)}
+                onClick={() => onOpenLogin ? onOpenLogin() : setIsLoggedIn?.(true)}
                 className="hidden lg:flex rounded-full bg-[#1E293B] hover:bg-[#0F172A] text-white px-5 py-2 text-xs font-semibold transition-all shadow-sm items-center gap-2 active:scale-95 cursor-pointer"
                 title="คลิกเพื่อเข้าสู่ระบบ / สมัครสมาชิก"
               >
@@ -365,7 +381,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         setIsMobileMenuOpen(false);
                         if (onOpenLogout) {
                           onOpenLogout();
-                        } else {
+                        } else if (setIsLoggedIn) {
                           setIsLoggedIn(false);
                           if (typeof window !== 'undefined') localStorage.setItem('isLoggedIn', 'false');
                         }
@@ -386,7 +402,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     onClick={() => {
                       setIsMobileMenuOpen(false);
                       if (onOpenLogin) onOpenLogin();
-                      else setIsLoggedIn(true);
+                      else setIsLoggedIn?.(true);
                     }}
                     className="w-full bg-[#1E293B] hover:bg-[#0F172A] text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
                   >
@@ -455,7 +471,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     setIsMobileMenuOpen(false);
                     if (onOpenLogout) {
                       onOpenLogout();
-                    } else {
+                    } else if (setIsLoggedIn) {
                       setIsLoggedIn(false);
                       if (typeof window !== 'undefined') localStorage.setItem('isLoggedIn', 'false');
                     }

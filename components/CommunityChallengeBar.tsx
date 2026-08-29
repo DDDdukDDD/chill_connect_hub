@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Trophy,
@@ -184,6 +184,68 @@ export const COMMUNITY_PUBLIC_QUESTS: (ChallengeQuest & { image?: string })[] = 
     endDate: '31 มี.ค. 2026',
     daysRemaining: 10,
   },
+  {
+    id: 'comm-quest-6',
+    title: 'Bangkok Art Gallery Walk: ชม 3 แกลเลอรีริมน้ำ',
+    image: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=600&q=80',
+    iconName: 'Sparkles',
+    category: 'chill',
+    badgeLabel: 'Art Collector',
+    badgeIcon: '🎨',
+    completedCountInfo: '0/3 แห่ง',
+    progressPercent: 0,
+    current: '0',
+    total: '3',
+    visibility: 'public',
+    creatorName: 'River City Art Club',
+    creatorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
+    participantsCount: 168,
+    rewardPoints: 280,
+    isOfficial: true,
+    targetGoal: 'เสพงานศิลปะและเช็คอินแกลเลอรีหรือมิวเซียมศิลปะริมแม่น้ำเจ้าพระยาครบ 3 แห่ง',
+    objective: 'สนับสนุนวงการศิลปะไทย และสร้างแรงบันดาลใจทางความคิดสร้างสรรค์',
+    steps: [
+      'เยี่ยมชมแกลเลอรีย่านเจริญกรุง-ตลาดน้อย-คลองสาน',
+      'ถ่ายภาพงานนิทรรศการลง Moments',
+      'เช็คอินครบ 3 แห่งเพื่อรับเข็มกลัด'
+    ],
+    verificationMethod: '📸 ภาพถ่ายนิทรรศการคู่กับการเช็คอิน GPS',
+    rewardsText: '🏅 เหรียญ "Art Collector" + ⚡ 280 XP',
+    startDate: '1 มี.ค. 2026',
+    endDate: '31 มี.ค. 2026',
+    daysRemaining: 10,
+  },
+  {
+    id: 'comm-quest-7',
+    title: 'Board Game Master: เล่นครบ 3 บอร์ดเกมใหม่',
+    image: 'https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?auto=format&fit=crop&w=600&q=80',
+    iconName: 'Award',
+    category: 'chill',
+    badgeLabel: 'Game Strategist',
+    badgeIcon: '🎲',
+    completedCountInfo: '0/3 เกม',
+    progressPercent: 0,
+    current: '0',
+    total: '3',
+    visibility: 'public',
+    creatorName: 'Boardgame Addict',
+    creatorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80',
+    participantsCount: 114,
+    rewardPoints: 220,
+    isOfficial: false,
+    targetGoal: 'ทดลองเล่นบอร์ดเกมประเภทวางแผนหรือปาร์ตี้เกมที่ไม่เคยเล่นมาก่อนครบ 3 เกม',
+    objective: 'เปิดประสบการณ์การเล่นเกมใหม่ๆ ฝึกกระบวนการคิด และสร้างมิตรภาพผ่านโต๊ะบอร์ดเกม',
+    steps: [
+      'เข้าร่วมตี้บอร์ดเกมคาเฟ่หรืออีเวนต์คอมมูนิตี้',
+      'ร่วมเล่นเกมจนจบกระดานและบันทึกคะแนน',
+      'สะสมครบ 3 เกม'
+    ],
+    verificationMethod: '🎲 ถ่ายรูปกระดานเกมหลังจบการเล่น',
+    rewardsText: '🏅 เหรียญ "Game Strategist" + ⚡ 220 XP',
+    startDate: '1 มี.ค. 2026',
+    endDate: '31 มี.ค. 2026',
+    daysRemaining: 10,
+  },
 ];
 
 export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
@@ -194,6 +256,59 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
   const [joinedList, setJoinedList] = useState<string[]>(joinedQuestTitles);
   const [selectedQuestForModal, setSelectedQuestForModal] = useState<ChallengeQuest | null>(null);
 
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const checkScrollability = () => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+      setCanScrollLeft(scrollLeft > 5);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 5);
+
+      const firstCard = scrollContainerRef.current.firstElementChild as HTMLElement | null;
+      const cardWidth = firstCard ? firstCard.offsetWidth + 16 : 320;
+      const index = Math.round(scrollLeft / cardWidth);
+      setActiveIndex(Math.min(Math.max(0, index), COMMUNITY_PUBLIC_QUESTS.length - 1));
+    }
+  };
+
+  useEffect(() => {
+    checkScrollability();
+    window.addEventListener('resize', checkScrollability);
+    return () => window.removeEventListener('resize', checkScrollability);
+  }, []);
+
+  const handleScroll = (direction: 'left' | 'right') => {
+    if (scrollContainerRef.current) {
+      const firstCard = scrollContainerRef.current.firstElementChild as HTMLElement | null;
+      const cardWidth = firstCard ? firstCard.offsetWidth + 16 : 320;
+      // Scroll by 1 card step for smooth, granular exploration of all 7 cards
+      const scrollAmount = cardWidth;
+      scrollContainerRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth',
+      });
+      setTimeout(checkScrollability, 350);
+    }
+  };
+
+  const scrollToCard = (index: number) => {
+    if (scrollContainerRef.current) {
+      const firstCard = scrollContainerRef.current.firstElementChild as HTMLElement | null;
+      const cardWidth = firstCard ? firstCard.offsetWidth + 16 : 320;
+      scrollContainerRef.current.scrollTo({
+        left: index * cardWidth,
+        behavior: 'smooth',
+      });
+      setTimeout(checkScrollability, 350);
+    }
+  };
+
+  const [questProgressMap, setQuestProgressMap] = useState<Record<string, number>>({});
+  const [completedList, setCompletedList] = useState<string[]>([]);
+
   const handleOpenDetailModal = (quest: ChallengeQuest) => {
     setSelectedQuestForModal(quest);
   };
@@ -201,9 +316,28 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
   const handleConfirmJoinModal = (quest: ChallengeQuest) => {
     if (!joinedList.includes(quest.title)) {
       setJoinedList((prev) => [...prev, quest.title]);
+      setQuestProgressMap((prev) => ({ ...prev, [quest.title]: prev[quest.title] || 1 }));
       if (onJoinQuest) {
         onJoinQuest(quest.title);
       }
+    }
+  };
+
+  const handleCancelQuestModal = (quest: ChallengeQuest) => {
+    setJoinedList((prev) => prev.filter((t) => t !== quest.title));
+    setQuestProgressMap((prev) => {
+      const next = { ...prev };
+      delete next[quest.title];
+      return next;
+    });
+    setCompletedList((prev) => prev.filter((t) => t !== quest.title));
+  };
+
+  const handleSubmitProgressModal = (quest: ChallengeQuest, newCurrent: number) => {
+    setQuestProgressMap((prev) => ({ ...prev, [quest.title]: newCurrent }));
+    const targetTotal = parseInt(quest.total || '3', 10) || 3;
+    if (newCurrent >= targetTotal && !completedList.includes(quest.title)) {
+      setCompletedList((prev) => [...prev, quest.title]);
     }
   };
 
@@ -224,157 +358,205 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
   return (
     <section className="my-8 sm:my-10 space-y-4 relative">
       
-      {/* Header Strip (Clean Minimal Header with Sleek Icon & Action-Oriented Subtitle) */}
-      <div className="flex items-center justify-between gap-3 pb-1">
-        <div className="min-w-0">
-          <h2 className="text-base sm:text-lg font-black text-[#1E293B] tracking-tight truncate flex items-center gap-2">
-            <span className="w-7 h-7 rounded-xl bg-[#FFF4EE] border border-[#FCD9C6] flex items-center justify-center text-[#F26430] shrink-0 shadow-2xs">
-              <Target className="w-4 h-4 stroke-[2.5]" />
+      {/* Header Strip: ⚡ Editorial Section 04 Banner (Royal Amber & Gold) */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-amber-50/70 via-orange-50/30 to-transparent p-3.5 sm:p-4 rounded-2xl border border-amber-200/70 shadow-2xs">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="w-6 h-6 rounded-lg bg-amber-500/15 text-amber-900 flex items-center justify-center text-xs font-black shrink-0 border border-amber-500/30">
+              04
             </span>
-            <span>ชาเลนจ์ & ภารกิจท้าทาย</span>
-            <span className="text-[10px] font-black bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full">
-              Quests
-            </span>
-          </h2>
-          <p className="text-xs text-[#64748B] font-medium mt-1 hidden sm:block">
-            ร่วมภารกิจเพื่อสะสมเหรียญ Badge หรือ EXP ประจำตัว เพื่อสิทธิพิเศษมากมาย
+            <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+              <span>ชาเลนจ์ & ภารกิจท้าทาย</span>
+              <span className="text-[10px] font-black text-amber-900 bg-amber-100/80 px-2 py-0.5 rounded-full border border-amber-300/80">
+                Quests & Badges
+              </span>
+            </h2>
+          </div>
+          <p className="text-xs text-slate-500 mt-1 font-medium pl-8">
+            ร่วมภารกิจเพื่อสะสมเหรียญ Badge พิเศษ หรือ EXP ประจำตัวเพื่อปลดล็อกสิทธิพิเศษ
           </p>
         </div>
 
-        {/* Right Actions: View All Link */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          <Link
-            href="/challenges"
-            className="bg-[#1E293B] hover:bg-[#4A7C59] text-white text-xs font-bold px-3.5 py-1.5 rounded-xl transition-all shadow-2xs flex items-center gap-1 cursor-pointer active:scale-95"
-          >
-            <span>ดูทั้งหมด ({COMMUNITY_PUBLIC_QUESTS.length})</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
+        {/* Right Actions: Clean Glassmorphic Pill Link */}
+        <Link
+          href="/challenges"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-amber-600 text-amber-900 hover:text-white border border-amber-200/90 hover:border-amber-600 rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
+        >
+          <span>ดูภารกิจทั้งหมด ({COMMUNITY_PUBLIC_QUESTS.length})</span>
+          <ArrowUpRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
+        </Link>
       </div>
 
-      {/* 4-Card Responsive Grid (Modern Collectible Cards with Full Hero Visual Art) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-        {COMMUNITY_PUBLIC_QUESTS.slice(0, 4).map((quest) => {
-          const isJoined = joinedList.includes(quest.title);
+      {/* Horizontal Scrollable Carousel (Manual Swipe / Scroll / Floating Center Arrows, No Auto Slide) */}
+      <div className="relative group/carousel">
+        
+        {/* Floating Left Arrow */}
+        <button
+          type="button"
+          onClick={() => handleScroll('left')}
+          disabled={!canScrollLeft}
+          className={`absolute -left-2.5 sm:-left-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/95 backdrop-blur-sm border border-slate-200 shadow-md hover:shadow-lg hover:bg-white flex items-center justify-center text-slate-700 hover:text-slate-900 transition-all cursor-pointer active:scale-95 disabled:opacity-0 disabled:pointer-events-none`}
+          title="เลื่อนไปทางซ้าย"
+          aria-label="Previous challenge"
+        >
+          <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
+        </button>
 
-          return (
-            <div
-              key={quest.id}
-              onClick={() => handleOpenDetailModal(quest)}
-              className="bg-white rounded-3xl p-3.5 sm:p-4 border border-slate-200 shadow-2xs hover:shadow-xl hover:border-[#4A7C59]/40 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between space-y-3 relative overflow-hidden group/card cursor-pointer"
-            >
-              {/* Official Quest Top Accent Stripe */}
-              {quest.isOfficial && (
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#4A7C59] via-emerald-400 to-amber-400" />
-              )}
+        {/* Floating Right Arrow */}
+        <button
+          type="button"
+          onClick={() => handleScroll('right')}
+          disabled={!canScrollRight}
+          className={`absolute -right-2.5 sm:-right-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/95 backdrop-blur-sm border border-slate-200 shadow-md hover:shadow-lg hover:bg-white flex items-center justify-center text-slate-700 hover:text-slate-900 transition-all cursor-pointer active:scale-95 disabled:opacity-0 disabled:pointer-events-none`}
+          title="เลื่อนไปทางขวา"
+          aria-label="Next challenge"
+        >
+          <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
+        </button>
 
-              {/* 1. Top Badges Row: Category + Official/Community + XP Token */}
-              <div className="flex items-center justify-between gap-1.5 pt-0.5">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-[#4A7C59] bg-[#EBF3ED] px-2 py-0.5 rounded-md">
-                    {getCategoryLabel(quest.category)}
-                  </span>
-                  {quest.isOfficial ? (
-                    <span
-                      title="ชาเลนจ์ทางการที่จัดทำโดย Chill & Connect Hub"
-                      className="text-[10px] font-black text-amber-900 bg-amber-100/90 px-1.5 py-0.5 rounded-md flex items-center gap-0.5 border border-amber-300/80"
-                    >
-                      <Crown className="w-2.5 h-2.5 text-amber-700 fill-amber-500" />
-                      <span>Official</span>
-                    </span>
-                  ) : (
-                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md">
-                      👥 ชุมชน
-                    </span>
-                  )}
-                </div>
+        <div
+          ref={scrollContainerRef}
+          onScroll={checkScrollability}
+          className="flex gap-3.5 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory py-2 px-1 -mx-1 scroll-smooth"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          {COMMUNITY_PUBLIC_QUESTS.map((quest) => {
+            const isJoined = joinedList.includes(quest.title);
+            const isDone = completedList.includes(quest.title);
+            const targetTotal = parseInt(quest.total || '3', 10) || 3;
+            const currentProg = questProgressMap[quest.title] || (isJoined ? 1 : 0);
 
-                <span className="text-[10px] font-black text-amber-800 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/90 px-2 py-0.5 rounded-md flex items-center gap-0.5 shrink-0 shadow-2xs">
-                  <Zap className="w-3 h-3 text-amber-600 fill-amber-500" />
-                  <span>+{quest.rewardPoints} XP</span>
-                </span>
-              </div>
-
-              {/* 2. Full Inner Image Banner with Floating Glass Badge */}
-              <div className="relative h-28 sm:h-32 w-full rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 group-hover/card:border-[#4A7C59]/40 transition-colors">
-                <img
-                  src={quest.image || 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80'}
-                  alt={quest.title}
-                  className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500"
-                />
-                
-                {/* Ambient Dark Gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-
-                {/* Top-Right Mini Badge Emoji */}
-                <div className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-sm border border-white/30">
-                  {quest.badgeIcon || '🏅'}
-                </div>
-
-                {/* Bottom-Left Floating Glass Medal Badge */}
-                <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
-                  <div className="inline-flex items-center gap-1.5 text-[10.5px] font-black text-white bg-slate-900/80 backdrop-blur-md px-2.5 py-1 rounded-xl border border-white/20 shadow-md truncate max-w-full">
-                    <Award className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    <span className="truncate">เหรียญ {quest.badgeLabel}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* 3. Title & Target Description */}
-              <div className="space-y-1 flex-1">
-                <h3
-                  title={quest.title}
-                  className="font-black text-xs sm:text-[13px] text-slate-900 group-hover/card:text-[#4A7C59] transition-colors leading-snug line-clamp-1"
-                >
-                  {quest.title}
-                </h3>
-                <p
-                  title={quest.targetGoal}
-                  className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed font-medium"
-                >
-                  {quest.targetGoal}
-                </p>
-              </div>
-
-              {/* 4. Meta Row: Creator & Participant count */}
-              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                <div className="flex items-center gap-1.5 truncate max-w-[120px]">
-                  <img
-                    src={quest.creatorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80'}
-                    alt={quest.creatorName || ''}
-                    className="w-4 h-4 rounded-full object-cover border border-slate-200 shrink-0"
-                  />
-                  <span className="truncate text-slate-700 font-medium">{quest.creatorName}</span>
-                </div>
-
-                <span className="font-bold text-slate-600 flex items-center gap-1 text-[10.5px]">
-                  <Users className="w-3 h-3 text-[#4A7C59]" />
-                  <span>{quest.participantsCount} คน</span>
-                </span>
-              </div>
-
-              {/* 5. Primary Interactive CTA Button */}
-              <div>
-                {isJoined ? (
-                  <div className="w-full py-1.5 px-3 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200/90 text-xs font-black flex items-center justify-center gap-1 shadow-2xs">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>กำลังทำภารกิจ</span>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    className="w-full py-1.5 px-3 rounded-xl bg-[#4A7C59] hover:bg-[#3B6347] text-white text-xs font-extrabold flex items-center justify-center gap-1 shadow-xs hover:shadow-md transition-all active:scale-95 cursor-pointer"
-                  >
-                    <span>ดูภารกิจ & เข้าร่วม</span>
-                    <ArrowUpRight className="w-3 h-3" />
-                  </button>
+            return (
+              <div
+                key={quest.id}
+                onClick={() => handleOpenDetailModal(quest)}
+                className="w-[80vw] sm:w-[calc(50%-0.625rem)] lg:w-[calc(25%-0.75rem)] shrink-0 snap-start bg-white rounded-3xl p-3.5 sm:p-4 border border-slate-200 shadow-2xs hover:shadow-xl hover:border-[#4A7C59]/40 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between space-y-3 relative overflow-hidden group/card cursor-pointer"
+              >
+                {/* Official Quest Top Accent Stripe */}
+                {quest.isOfficial && (
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#4A7C59] via-emerald-400 to-amber-400" />
                 )}
-              </div>
 
-            </div>
-          );
-        })}
+                {/* 1. Top Badges Row: Category + Official/Community + XP Token */}
+                <div className="flex items-center justify-between gap-1.5 pt-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#4A7C59] bg-[#EBF3ED] px-2 py-0.5 rounded-md">
+                      {getCategoryLabel(quest.category)}
+                    </span>
+                    {quest.isOfficial ? (
+                      <span
+                        title="ชาเลนจ์ทางการที่จัดทำโดย Chill & Connect Hub"
+                        className="text-[10px] font-black text-amber-900 bg-amber-100/90 px-1.5 py-0.5 rounded-md flex items-center gap-0.5 border border-amber-300/80"
+                      >
+                        <Crown className="w-2.5 h-2.5 text-amber-700 fill-amber-500" />
+                        <span>Official</span>
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md">
+                        👥 ชุมชน
+                      </span>
+                    )}
+                  </div>
+
+                  <span className="text-[10px] font-black text-amber-800 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/90 px-2 py-0.5 rounded-md flex items-center gap-0.5 shrink-0 shadow-2xs">
+                    <Zap className="w-3 h-3 text-amber-600 fill-amber-500" />
+                    <span>+{quest.rewardPoints} XP</span>
+                  </span>
+                </div>
+
+                {/* 2. Full Inner Image Banner with Floating Glass Badge */}
+                <div className="relative h-28 sm:h-32 w-full rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 group-hover/card:border-[#4A7C59]/40 transition-colors">
+                  <img
+                    src={quest.image || 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80'}
+                    alt={quest.title}
+                    className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500"
+                  />
+                  
+                  {/* Ambient Dark Gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+                  {/* Bottom-Left Floating Glass Medal Badge */}
+                  <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
+                    <div className="inline-flex items-center gap-1.5 text-[10.5px] font-black text-white bg-slate-900/80 backdrop-blur-md px-2.5 py-1 rounded-xl border border-white/20 shadow-md truncate max-w-full">
+                      <Award className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span className="truncate">เหรียญ {quest.badgeLabel}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Title & Target Description */}
+                <div className="space-y-1 flex-1">
+                  <h3
+                    title={quest.title}
+                    className="font-black text-xs sm:text-[13px] text-slate-900 group-hover/card:text-[#4A7C59] transition-colors leading-snug line-clamp-1"
+                  >
+                    {quest.title}
+                  </h3>
+                  <p
+                    title={quest.targetGoal}
+                    className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed font-medium"
+                  >
+                    {quest.targetGoal}
+                  </p>
+                </div>
+
+                {/* 4. Meta Row: Creator & Participant count + Status Indicator (Clean, No Button) */}
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                  <div className="flex items-center gap-1.5 truncate max-w-[120px]">
+                    <img
+                      src={quest.creatorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80'}
+                      alt={quest.creatorName || ''}
+                      className="w-4 h-4 rounded-full object-cover border border-slate-200 shrink-0"
+                    />
+                    <span className="truncate text-slate-700 font-medium">{quest.creatorName}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {isDone ? (
+                      <span className="inline-flex items-center gap-1 text-[10.5px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200/80">
+                        <Trophy className="w-3 h-3" />
+                        <span>พิชิตแล้ว</span>
+                      </span>
+                    ) : isJoined ? (
+                      <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        <span>{currentProg}/{targetTotal}</span>
+                      </span>
+                    ) : (
+                      <span className="font-bold text-slate-600 flex items-center gap-1 text-[10.5px]">
+                        <Users className="w-3 h-3 text-[#4A7C59]" />
+                        <span>{quest.participantsCount} คน</span>
+                      </span>
+                    )}
+
+                    <div className="w-6 h-6 rounded-full bg-slate-50 group-hover/card:bg-[#4A7C59] flex items-center justify-center text-slate-400 group-hover/card:text-white transition-colors shrink-0">
+                      <ArrowUpRight className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Pagination Dots Indicator for all 7 Quests */}
+        <div className="flex items-center justify-center gap-1.5 pt-1">
+          {COMMUNITY_PUBLIC_QUESTS.map((quest, idx) => (
+            <button
+              key={quest.id}
+              type="button"
+              onClick={() => scrollToCard(idx)}
+              className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                idx === activeIndex
+                  ? 'w-6 bg-[#4A7C59]'
+                  : 'w-1.5 bg-slate-200 hover:bg-slate-300'
+              }`}
+              title={`ไปยังภารกิจที่ ${idx + 1}: ${quest.title}`}
+              aria-label={`Go to quest ${idx + 1}`}
+            />
+          ))}
+        </div>
       </div>
 
       {/* Detail & Confirmation Modal */}
@@ -383,6 +565,10 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
         onClose={() => setSelectedQuestForModal(null)}
         quest={selectedQuestForModal}
         onConfirmJoin={handleConfirmJoinModal}
+        isAlreadyJoined={selectedQuestForModal ? joinedList.includes(selectedQuestForModal.title) : false}
+        onCancelQuest={handleCancelQuestModal}
+        onSubmitProgress={handleSubmitProgressModal}
+        isCompleted={selectedQuestForModal ? completedList.includes(selectedQuestForModal.title) : false}
       />
 
     </section>

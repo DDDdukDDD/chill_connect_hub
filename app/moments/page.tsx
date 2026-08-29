@@ -244,13 +244,12 @@ export default function MomentsPage() {
         setActiveTab={setActiveNavTab}
         isLoggedIn={isLoggedIn}
         isAuthReady={isAuthReady}
-        setIsLoggedIn={handleSetIsLoggedIn}
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}
         onOpenCreateEvent={() => {
           if (!isLoggedIn) {
             setIsAuthModalOpen(true);
-            showToast('🔒 กรุณาเข้าสู่ระบบก่อนเปิดตี้หรือสร้างกิจกรรมใหม่');
+            showToast('กรุณาเข้าสู่ระบบก่อนสร้างกิจกรรมใหม่');
           } else {
             setIsCreateEventModalOpen(true);
           }
@@ -266,17 +265,18 @@ export default function MomentsPage() {
           {/* Left Column (8-cols): Main Social Feed Stream */}
           <div className="lg:col-span-8 space-y-5">
             
-            {/* Facebook-style Top Simple Tab Filter Chips & Create Bar */}
-            <div className="bg-white rounded-3xl p-4 border border-[#E8E2D8] shadow-sm space-y-3">
+            {/* Top Simple Tab Filter Chips & Create Bar */}
+            <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-3">
               
               {/* Quick Post Prompt Bar */}
               <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
                 <img
                   src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80"
                   alt="User avatar"
-                  className="w-10 h-10 rounded-full object-cover border-2 border-[#4A7C59]"
+                  className="w-9 h-9 rounded-full object-cover shrink-0"
                 />
                 <button
+                  type="button"
                   onClick={() => {
                     if (!isLoggedIn) {
                       setMembershipActionTitle('เพื่อโพสต์แชร์ภาพและแบ่งปันโมเมนต์');
@@ -285,29 +285,30 @@ export default function MomentsPage() {
                       setIsCreateModalOpen(true);
                     }
                   }}
-                  className="flex-1 bg-slate-100 hover:bg-slate-200/80 text-slate-500 text-xs sm:text-sm font-medium px-4 py-2.5 rounded-full text-left transition-colors flex items-center justify-between cursor-pointer"
+                  className="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-400 text-xs sm:text-sm font-medium px-4 py-2 rounded-xl text-left transition-colors flex items-center justify-between cursor-pointer border border-slate-200"
                 >
-                  <span>คุณส้ม วันนี้ไปร่วมกิจกรรมฮีลใจไหนมาบ้าง? แชร์เลย...</span>
-                  <ImageIcon className="w-4 h-4 text-[#4A7C59]" />
+                  <span>แชร์ภาพโมเมนต์กิจกรรมล่าสุดของคุณ...</span>
+                  <ImageIcon className="w-4 h-4 text-slate-400" />
                 </button>
               </div>
 
-              {/* Simple Facebook Tabs: ทั้งหมด | ยอดฮิต | โมเมนต์ของฉัน */}
-              <div className="flex items-center gap-2 pt-1">
+              {/* Minimal Segmented Tabs */}
+              <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1">
                 {[
-                  { id: 'all', label: '🌐 ฟีดทั้งหมด' },
-                  { id: 'popular', label: '🔥 ยอดนิยม' },
-                  { id: 'mine', label: '👤 โมเมนต์ของฉัน' },
+                  { id: 'all', label: 'ฟีดทั้งหมด' },
+                  { id: 'popular', label: 'ยอดนิยม' },
+                  { id: 'mine', label: 'โมเมนต์ของฉัน' },
                 ].map((tab) => {
                   const isActive = activeTabFilter === tab.id;
                   return (
                     <button
                       key={tab.id}
+                      type="button"
                       onClick={() => setActiveTabFilter(tab.id as any)}
-                      className={`flex-1 py-2.5 px-3 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 border ${
+                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                         isActive
-                          ? 'bg-[#4A7C59] text-white border-[#4A7C59] shadow-xs scale-102'
-                          : 'bg-slate-50 text-slate-600 border-slate-200/70 hover:bg-slate-100'
+                          ? 'bg-white text-slate-900 shadow-xs'
+                          : 'text-slate-500 hover:text-slate-900'
                       }`}
                     >
                       <span>{tab.label}</span>
@@ -319,96 +320,96 @@ export default function MomentsPage() {
             </div>
 
             {/* Feed Post List */}
-            <div className="space-y-6">
+            <div className="space-y-4">
               {displayedPosts.map((post) => {
                 const matchedEvent = MOCK_EVENTS.find((ev) => ev.id === post.eventId);
 
                 return (
                   <article
                     key={post.id}
-                    className="bg-white rounded-3xl border border-[#E8E2D8] shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
+                    className="bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
                   >
                     {/* Post User Header */}
-                    <div className="p-4 sm:p-5 flex items-center justify-between border-b border-slate-100">
+                    <div className="p-4 flex items-center justify-between border-b border-slate-100">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-11 h-11 rounded-full bg-[#EBF3ED] border-2 border-[#4A7C59] overflow-hidden shrink-0 shadow-sm">
-                          <img src={post.userAvatar} alt={post.userName} className="w-full h-full object-cover" />
-                        </div>
+                        <img src={post.userAvatar} alt={post.userName} className="w-9 h-9 rounded-full object-cover shrink-0" />
                         <div className="min-w-0">
-                          <h3 className="font-bold text-sm sm:text-base text-[#1E293B] truncate flex items-center gap-1.5">
-                            <span>{post.userName}</span>
-                            <ShieldCheck className="w-4 h-4 text-[#4A7C59] shrink-0" />
+                          <h3 className="font-bold text-sm text-slate-900 truncate">
+                            {post.userName}
                           </h3>
-                          <p className="text-xs text-[#F26430] font-bold tracking-wide">
+                          <p className="text-xs text-slate-400 font-medium">
                             {post.userBadge}
                           </p>
                         </div>
                       </div>
 
-                      <span className="text-xs text-[#94A3B8] font-medium shrink-0">
+                      <span className="text-xs text-slate-400 font-medium shrink-0">
                         {post.timeAgo}
                       </span>
                     </div>
 
-                    {/* Post Photo Banner - Adjusted Aspect Ratio & Height for Better Viewing */}
+                    {/* Post Photo Banner */}
                     <div className="relative aspect-[16/9] max-h-[380px] w-full bg-slate-100 overflow-hidden group">
                       <img
                         src={post.images[0]}
                         alt="Moment photo"
                         className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-70" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-70" />
 
                       {/* Clickable Event Tag Link Pill */}
                       <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
                         <button
+                          type="button"
                           onClick={() => matchedEvent && setSelectedEvent(matchedEvent)}
-                          className="bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-bold text-[#1E293B] shadow-md flex items-center gap-1.5 hover:bg-[#F26430] hover:text-white transition-all group/btn"
-                          title="คลิกดูรายละเอียดกิจกรรมนี้"
+                          className="bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold text-slate-800 shadow-xs flex items-center gap-1.5 hover:bg-white transition-all cursor-pointer"
                         >
-                          <Tag className="w-3.5 h-3.5 text-[#F26430] group-hover/btn:text-white" />
+                          <Tag className="w-3.5 h-3.5 text-slate-500" />
                           <span className="truncate max-w-[220px] sm:max-w-md">{post.eventTitle}</span>
-                          <ArrowUpRight className="w-3.5 h-3.5 opacity-70" />
+                          <ArrowUpRight className="w-3 h-3 text-slate-400" />
                         </button>
                       </div>
                     </div>
 
                     {/* Post Actions & Caption Body */}
-                    <div className="p-4 sm:p-5 space-y-3">
+                    <div className="p-4 space-y-3">
                       
                       {/* Action Bar */}
                       <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                        <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-5">
                           {/* Like Button */}
                           <button
+                            type="button"
                             onClick={() => handleToggleLike(post.id)}
-                            className="flex items-center gap-2 font-bold text-xs sm:text-sm text-[#1E293B] hover:text-[#F26430] transition-colors"
+                            className="flex items-center gap-1.5 font-semibold text-xs text-slate-700 hover:text-[#F26430] transition-colors cursor-pointer"
                           >
                             <Heart
-                              className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform active:scale-125 ${
-                                post.isLiked ? 'fill-[#F26430] text-[#F26430]' : 'text-[#64748B]'
+                              className={`w-4 h-4 transition-transform active:scale-125 ${
+                                post.isLiked ? 'fill-[#F26430] text-[#F26430]' : 'text-slate-400'
                               }`}
                             />
-                            <span>{post.likesCount} ถูกใจ</span>
+                            <span>{post.likesCount}</span>
                           </button>
 
                           {/* Comment Toggle Button */}
                           <button
+                            type="button"
                             onClick={() =>
                               setActiveCommentPostId(
                                 activeCommentPostId === post.id ? null : post.id
                               )
                             }
-                            className="flex items-center gap-2 font-semibold text-xs sm:text-sm text-[#475569] hover:text-[#4A7C59] transition-colors"
+                            className="flex items-center gap-1.5 font-semibold text-xs text-slate-700 hover:text-[#4A7C59] transition-colors cursor-pointer"
                           >
-                            <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 text-[#64748B]" />
-                            <span>{post.commentsCount} คอมเมนต์</span>
+                            <MessageCircle className="w-4 h-4 text-slate-400" />
+                            <span>{post.commentsCount} ความเห็น</span>
                           </button>
                         </div>
 
                         <button
+                          type="button"
                           onClick={() => showToast('คัดลอกลิงก์โมเมนต์แล้ว!')}
-                          className="p-1.5 text-[#94A3B8] hover:text-[#1E293B] transition-colors rounded-full hover:bg-slate-100"
+                          className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors rounded-full hover:bg-slate-50 cursor-pointer"
                           title="แชร์โมเมนต์"
                         >
                           <Share2 className="w-4 h-4" />
@@ -416,26 +417,27 @@ export default function MomentsPage() {
                       </div>
 
                       {/* Caption Text */}
-                      <p className="text-xs sm:text-sm text-[#334155] leading-relaxed font-medium">
+                      <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
                         {post.caption}
                       </p>
 
-                      {/* Location & Event Conversion CTA (จุดที่ 2) */}
+                      {/* Location & Event CTA */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
-                        <div className="flex items-center gap-1.5 text-xs text-[#64748B] font-semibold">
-                          <MapPin className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
+                        <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                           <span>{post.location}</span>
                         </div>
 
                         <button
+                          type="button"
                           onClick={() => {
                             const matched = MOCK_EVENTS.find((ev) => ev.id === post.eventId) || MOCK_EVENTS[0];
                             setSelectedEvent(matched);
                           }}
-                          className="bg-[#EBF3ED] hover:bg-[#4A7C59] text-[#4A7C59] hover:text-white border border-[#4A7C59]/30 px-3 py-1 rounded-full text-xs font-bold transition-all shrink-0 flex items-center justify-center gap-1 shadow-2xs"
+                          className="text-xs font-semibold text-[#4A7C59] hover:underline cursor-pointer flex items-center gap-1"
                         >
-                          <Tag className="w-3 h-3 text-[#4A7C59] group-hover:text-white" />
-                          <span>📌 อยากไปบ้าง / ดูงานนี้ ➔</span>
+                          <span>ดูกิจกรรมนี้</span>
+                          <ArrowUpRight className="w-3.5 h-3.5" />
                         </button>
                       </div>
 

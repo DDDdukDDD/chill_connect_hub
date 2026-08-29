@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { EventItem } from '@/data/mockData';
 import { isEventEnded } from '@/lib/dateUtils';
-import { X, Calendar, MapPin, Users, Heart, Share2, CheckCircle2, ShieldCheck, Clock, ExternalLink, Ticket, AlertCircle, Bell, Navigation2, MessageCircle, Check, Copy, Sparkles, Flag, ShieldAlert, Lock, AlertTriangle, Plus, ChevronDown, ChevronUp, Image as ImageIcon, HelpCircle, CheckSquare, Star } from 'lucide-react';
+import { X, Calendar, MapPin, Users, Heart, Share2, CheckCircle2, ShieldCheck, Clock, ExternalLink, Ticket, AlertCircle, Bell, Navigation2, MessageCircle, Check, Copy, Sparkles, Flag, ShieldAlert, Lock, AlertTriangle, Plus, ChevronDown, ChevronUp, Image as ImageIcon, HelpCircle, CheckSquare, Star, User, QrCode, ArrowRight } from 'lucide-react';
 import { ReportSafetyModal } from './ReportSafetyModal';
 import { ProfileModal } from './ProfileModal';
 import { getConnectedUserIds, toggleUserConnect } from '@/data/profilesData';
@@ -1162,7 +1162,6 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
         {/* Modal Bottom Action Footer */}
         <div className="p-3.5 sm:p-4 bg-slate-50 border-t border-[#E8E2D8] flex items-center justify-between sm:justify-end gap-2.5 shrink-0">
-          
           {isEnded ? (
             /* When Event Has Ended: Display clean Ended Badge */
             <div className="flex items-center justify-center sm:justify-end gap-2 w-full">
@@ -1229,45 +1228,123 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
       {/* POPUP 1: Double Confirm Join Modal (สำหรับกิจกรรมหลัก) */}
       {showConfirmJoinModal && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fade-in">
+        <div 
+          className="fixed inset-0 z-60 flex items-center justify-center p-4 sm:p-6 bg-slate-950/70 backdrop-blur-md animate-fade-in"
+          onClick={() => setShowConfirmJoinModal(false)}
+        >
           <div 
-            className="bg-white rounded-3xl p-5 sm:p-6 max-w-sm w-full shadow-2xl border border-[#E8E2D8] text-center space-y-4 animate-scale-up"
+            className="bg-white rounded-[36px] p-6 sm:p-8 max-w-lg sm:max-w-xl w-full shadow-2xl border border-[#E8E2D8] text-left space-y-5 animate-scale-up relative overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="space-y-2">
-              <h3 className="font-extrabold text-base sm:text-lg text-[#1E293B]">
-                {isPublicVenue ? 'ยืนยันบันทึกลงตารางนัด?' : 'ยืนยันการเข้าร่วมกิจกรรม?'}
-              </h3>
-              <p className="text-xs sm:text-sm font-extrabold text-[#1E293B] leading-snug px-1">
-                {event.title}
-              </p>
-              <div className="text-[11px] text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-left space-y-0.5">
-                <p>📅 วันที่: <strong>{event.date}</strong></p>
-                <p>⏰ เวลา: <strong>{event.time}</strong></p>
-                <p>📍 สถานที่: <strong>{event.location}</strong></p>
+            {/* Top Bar: Category Pill & Close Button */}
+            <div className="flex items-center justify-between">
+              <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wide border ${
+                isPublicVenue
+                  ? 'bg-sky-50 text-[#2B527A] border-sky-200'
+                  : 'bg-[#FAF7F2] text-[#4A7C59] border-[#E8E2D8]'
+              }`}>
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{isPublicVenue ? 'Official Venue & Fair Pass' : 'กิจกรรมคอมมูนิตี้ • Safe Space Verified'}</span>
               </div>
-
-              {/* Notice that item will be saved in MyHub */}
-              <div className="bg-emerald-50 p-2.5 rounded-xl border border-emerald-200/80 text-[11px] text-emerald-800 font-semibold text-left flex items-start gap-1.5 leading-relaxed">
-                <span className="shrink-0">📌</span>
-                <span>รายการที่เข้าร่วมจะถูกบันทึกไปยังหน้า <strong>มายฮับ (MyHub)</strong> โดยอัตโนมัติ</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 pt-1">
               <button
                 type="button"
                 onClick={() => setShowConfirmJoinModal(false)}
-                className="w-full py-2.5 rounded-full border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                className="w-9 h-9 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors flex items-center justify-center cursor-pointer"
+                aria-label="ปิดหน้าต่าง"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Headline */}
+            <div className="space-y-1">
+              <h3 className="text-2xl sm:text-[26px] font-black text-slate-900 tracking-tight leading-tight">
+                {isPublicVenue ? 'ยืนยันบันทึกลงตารางนัดหมาย' : 'ยืนยันการลงทะเบียน'}
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-500 font-medium">
+                {isPublicVenue ? 'บันทึกอีเวนต์ลง MyHub พร้อมแจ้งเตือนกำหนดการจัดงาน' : 'ร่วมกิจกรรมและพบปะเพื่อนใหม่ในบรรยากาศที่เป็นกันเองและปลอดภัย'}
+              </p>
+            </div>
+
+            {/* Editorial Reservation Pass Card */}
+            <div className="bg-[#FAF7F2] rounded-3xl p-5 sm:p-6 border border-[#E8E2D8] space-y-4 shadow-2xs relative">
+              {/* Event Title & Price Pill */}
+              <div className="flex items-start justify-between gap-3">
+                <h4 className={`text-base sm:text-lg font-black leading-snug ${isPublicVenue ? 'text-[#2B527A]' : 'text-slate-900'}`}>
+                  {event.title}
+                </h4>
+                <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black shrink-0">
+                  {!event.price || event.price.includes('ฟรี') ? 'เข้าร่วมฟรี' : event.price}
+                </span>
+              </div>
+
+              {/* Clean Key-Value Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm text-slate-700 font-medium pt-1">
+                <div className="flex items-center gap-2.5">
+                  <Calendar className={`w-4 h-4 shrink-0 ${isPublicVenue ? 'text-[#2B527A]' : 'text-[#4A7C59]'}`} />
+                  <div>
+                    <span className="text-slate-400 block text-[11px]">วันที่จัด:</span>
+                    <span className="font-bold text-slate-900">{event.date}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2.5">
+                  <Clock className={`w-4 h-4 shrink-0 ${isPublicVenue ? 'text-[#2B527A]' : 'text-[#4A7C59]'}`} />
+                  <div>
+                    <span className="text-slate-400 block text-[11px]">ช่วงเวลา:</span>
+                    <span className="font-bold text-slate-900">{event.time}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5 sm:col-span-2">
+                  <MapPin className={`w-4 h-4 shrink-0 mt-0.5 ${isPublicVenue ? 'text-[#2B527A]' : 'text-[#4A7C59]'}`} />
+                  <div>
+                    <span className="text-slate-400 block text-[11px]">สถานที่:</span>
+                    <span className="font-bold text-slate-900 leading-relaxed">{event.location}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2.5 sm:col-span-2">
+                  <User className={`w-4 h-4 shrink-0 ${isPublicVenue ? 'text-[#2B527A]' : 'text-[#4A7C59]'}`} />
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-slate-400 text-[11px]">ผู้จัดงาน:</span>
+                    <span className="font-bold text-slate-900">{event.hostName || 'Official Partner'}</span>
+                    <ShieldCheck className={`w-3.5 h-3.5 ${isPublicVenue ? 'text-[#2B527A]' : 'text-[#4A7C59]'}`} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Perforated Divider & E-Ticket Guarantee */}
+              <div className="border-t border-dashed border-[#E8E2D8] pt-3.5">
+                <div className="flex items-center gap-2.5 text-xs text-slate-600 font-medium">
+                  <div className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                    <QrCode className="w-3.5 h-3.5" />
+                  </div>
+                  <span>ระบบจะสร้าง <strong>QR E-Ticket</strong> และบันทึกเข้าหน้า <strong>MyHub</strong> ให้อัตโนมัติ</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-3.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowConfirmJoinModal(false)}
+                className="w-full py-3.5 rounded-2xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-100 transition-all active:scale-98 cursor-pointer"
               >
                 ย้อนกลับ
               </button>
               <button
                 type="button"
                 onClick={handleExecuteJoin}
-                className="w-full py-2.5 rounded-full bg-[#F26430] hover:bg-[#D95322] text-white text-xs font-bold shadow-md shadow-[#F26430]/25 active:scale-95 cursor-pointer"
+                className={`w-full py-3.5 rounded-2xl text-white text-sm font-black shadow-lg transition-all active:scale-98 cursor-pointer flex items-center justify-center gap-2 ${
+                  isPublicVenue
+                    ? 'bg-[#2B527A] hover:bg-[#1F3C5C] shadow-sky-900/25'
+                    : 'bg-[#4A7C59] hover:bg-[#3B6347] shadow-[#4A7C59]/25'
+                }`}
               >
-                ยืนยันเข้าร่วม
+                <span>{isPublicVenue ? 'บันทึกลงตาราง' : 'ยืนยันและรับตั๋ว'}</span>
+                <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </div>

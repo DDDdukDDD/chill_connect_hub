@@ -73,38 +73,38 @@ export default function AboutPage() {
           <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4 relative z-10">
             
             {/* Platform Tag Badge */}
-            <div className="inline-flex items-center gap-2 text-xs font-extrabold text-[#4A7C59] bg-[#EBF3ED] px-4 py-1.5 rounded-full border border-[#4A7C59]/20 shadow-2xs">
+            <div className="inline-flex items-center gap-2 text-xs font-bold text-[#4A7C59] bg-emerald-50 px-3.5 py-1 rounded-full border border-emerald-200">
               <Sparkles className="w-3.5 h-3.5 text-[#4A7C59]" />
-              <span>Lifestyle Discovery & Community Engagement Platform</span>
+              <span>Lifestyle Discovery & Community Platform</span>
             </div>
 
             {/* Main Headline */}
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-snug max-w-3xl mx-auto">
               แพลตฟอร์มค้นพบไลฟ์สไตล์ <br className="hidden sm:inline" />
-              <span className="bg-gradient-to-r from-[#F26430] via-[#E8590C] to-[#4A7C59] bg-clip-text text-transparent">
+              <span className="text-[#4A7C59]">
                 สำหรับคนชอบออกไปใช้ชีวิต
               </span>
             </h1>
 
             {/* Subtitle */}
-            <p className="text-xs sm:text-sm md:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed font-normal">
-              <strong>Chill & Connect Hub</strong> คือศูนย์กลางที่รวม <span className="text-[#F26430] font-bold">สถานที่เที่ยว & จุดฮีลใจ</span>, <span className="text-[#4A7C59] font-bold">กิจกรรมและอีเวนต์</span>, และ <span className="text-[#2B527A] font-bold">เพื่อนร่วมทางคอเดียวกัน</span> เข้าไว้ในที่เดียว เพื่อให้ทุกวันหยุดของคุณมีความหมายและเติมเต็มพลังบวกได้ทุกวัน 🌿✨
+            <p className="text-xs sm:text-sm md:text-base text-slate-500 max-w-2xl mx-auto leading-relaxed font-normal">
+              <strong>Chill & Connect Hub</strong> คือศูนย์กลางที่รวมสถานที่เที่ยว & จุดฮีลใจ, กิจกรรมและอีเวนต์, และเพื่อนร่วมทางคอเดียวกันเข้าไว้ในที่เดียว เพื่อให้ทุกวันหยุดของคุณมีความหมายและเติมเต็มพลังบวกได้ทุกวัน
             </p>
 
-            {/* Impact Stats Banner (Compact & Aesthetic) */}
+            {/* Impact Stats Banner */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-4xl mx-auto pt-3">
               {[
-                { label: 'ผู้ใช้งานต่อวัน', val: '10,000+', icon: <Users className="w-4 h-4 text-[#F26430]" />, color: 'border-orange-100 hover:border-orange-300' },
-                { label: 'สถานที่ & อีเวนต์', val: '1,000+', icon: <Compass className="w-4 h-4 text-[#4A7C59]" />, color: 'border-emerald-100 hover:border-emerald-300' },
-                { label: 'มิตรภาพ & ตี้กลุ่มย่อย', val: '3,500+', icon: <Sparkles className="w-4 h-4 text-[#2B527A]" />, color: 'border-blue-100 hover:border-blue-300' },
-                { label: 'Safe Space Community', val: '100%', icon: <ShieldCheck className="w-4 h-4 text-emerald-600" />, color: 'border-teal-100 hover:border-teal-300' },
+                { label: 'ผู้ใช้งานต่อวัน', val: '10,000+', icon: <Users className="w-4 h-4 text-[#F26430]" /> },
+                { label: 'สถานที่ & อีเวนต์', val: '1,000+', icon: <Compass className="w-4 h-4 text-[#4A7C59]" /> },
+                { label: 'มิตรภาพ & ตี้กลุ่มย่อย', val: '3,500+', icon: <Sparkles className="w-4 h-4 text-[#2B527A]" /> },
+                { label: 'Safe Space Community', val: '100%', icon: <ShieldCheck className="w-4 h-4 text-emerald-600" /> },
               ].map((stat, idx) => (
-                <div key={idx} className={`bg-white p-3.5 rounded-2xl border ${stat.color} shadow-2xs text-center space-y-0.5 transition-all`}>
-                  <div className="flex items-center justify-center gap-1.5 text-[11px] font-semibold text-slate-500">
+                <div key={idx} className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs text-center space-y-0.5">
+                  <div className="flex items-center justify-center gap-1.5 text-xs font-medium text-slate-500">
                     {stat.icon}
                     <span>{stat.label}</span>
                   </div>
-                  <p className="text-xl sm:text-2xl font-black text-slate-900">{stat.val}</p>
+                  <p className="text-xl sm:text-2xl font-bold text-slate-900">{stat.val}</p>
                 </div>
               ))}
             </div>

@@ -1448,8 +1448,11 @@ const INITIAL_MOCK_SPOTS: LifestyleSpotItem[] = [
 ];
 
 // Combine unique spots ensuring all 77 Thai provinces are fully covered
-const existingTitles = new Set(INITIAL_MOCK_SPOTS.map((s) => s.title));
-const supplemental77Spots = PROVINCES_77_TOP_SPOTS.filter((s) => !existingTitles.has(s.title));
+const existingTitles = new Set(INITIAL_MOCK_SPOTS.map((s) => s.title.toLowerCase().trim()));
+const existingIds = new Set(INITIAL_MOCK_SPOTS.map((s) => s.id));
+const supplemental77Spots = PROVINCES_77_TOP_SPOTS.filter(
+  (s) => !existingTitles.has(s.title.toLowerCase().trim()) && !existingIds.has(s.id)
+);
 
 export const MOCK_SPOTS: LifestyleSpotItem[] = [
   ...INITIAL_MOCK_SPOTS,

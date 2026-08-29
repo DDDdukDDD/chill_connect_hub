@@ -303,51 +303,51 @@ export default function ChallengesDiscoveryPage() {
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] mx-auto px-3.5 sm:px-6 lg:px-8 py-2.5 sm:py-4 space-y-3 sm:space-y-4 w-full">
         
-        {/* 🌟 1. Ultra-Compact Brand-Tone Hero Banner (Mobile & iPad Friendly) */}
-        <section className="relative rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-5 md:p-6 shadow-xs border border-slate-200/90 overflow-hidden">
-          <div className="relative z-10 max-w-3xl space-y-1.5 sm:space-y-2">
+        {/* 1. Ultra-Compact Brand-Tone Hero Banner */}
+        <section className="relative rounded-2xl bg-white p-5 sm:p-6 shadow-sm border border-slate-200/80 overflow-hidden">
+          <div className="relative z-10 max-w-3xl space-y-2">
             
-            <h1 className="text-lg sm:text-xl md:text-2xl font-black text-[#1E293B] tracking-tight leading-tight">
-              พิชิตเป้าหมายวันว่าง <span className="text-[#F26430]">สะสมเหรียญรางวัล</span>
+            <h1 className="text-lg sm:text-xl md:text-2xl font-black text-slate-900 tracking-tight leading-tight">
+              พิชิตเป้าหมายวันว่าง <span className="text-[#4A7C59]">สะสมเหรียญรางวัล</span>
             </h1>
 
-            <p className="text-xs sm:text-sm text-[#475569] leading-relaxed font-medium">
-              รับภารกิจ ออกไปวิ่ง เช็คอินคาเฟ่ หรือฮีลใจ สะสมเหรียญรางวัล Badges และส่งหลักฐานเพื่อรับแต้ม XP พิเศษเมื่อทำสำเร็จ!
+            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-normal">
+              รับภารกิจ ออกไปวิ่ง เช็คอินคาเฟ่ หรือฮีลใจ สะสมเหรียญรางวัล Badges และส่งหลักฐานเพื่อรับแต้ม XP พิเศษเมื่อทำสำเร็จ
             </p>
 
-            {/* Quick Info Badges (Compact & Responsive) */}
-            <div className="pt-0.5 flex flex-wrap items-center gap-1.5 sm:gap-2 text-[11px] font-bold text-slate-600">
-              <span className="flex items-center gap-1 bg-white px-2.5 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
-                <Flame className="w-3 h-3 text-orange-500" />
+            {/* Quick Info Badges */}
+            <div className="pt-1 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-600">
+              <span className="flex items-center gap-1.5 bg-slate-50 px-3 py-1 rounded-full border border-slate-200">
+                <Flame className="w-3.5 h-3.5 text-[#F26430]" />
                 <span>{ALL_QUESTS.length} ภารกิจ</span>
               </span>
-              <span className="flex items-center gap-1 bg-white px-2.5 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
-                <Users className="w-3 h-3 text-emerald-600" />
+              <span className="flex items-center gap-1.5 bg-slate-50 px-3 py-1 rounded-full border border-slate-200">
+                <Users className="w-3.5 h-3.5 text-[#4A7C59]" />
                 <span>1,400+ ผู้เข้าร่วม</span>
               </span>
-              <span className="flex items-center gap-1 bg-white px-2.5 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
-                <Trophy className="w-3 h-3 text-amber-500" />
-                <span>Leaderboard ประจำสัปดาห์</span>
+              <span className="flex items-center gap-1.5 bg-slate-50 px-3 py-1 rounded-full border border-slate-200">
+                <Trophy className="w-3.5 h-3.5 text-amber-500" />
+                <span>อันดับประจำสัปดาห์</span>
               </span>
             </div>
 
           </div>
         </section>
 
-        {/* 📦 5. Container Block ครอบคลังกิจกรรมและ Leaderboard ทั้งหมด */}
-        <section className="bg-white/80 backdrop-blur-xs rounded-3xl p-4 sm:p-6 border border-[#E8E2D8] shadow-xs space-y-5">
+        {/* 2. Main Content Container */}
+        <section className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200/80 shadow-sm space-y-5">
           
           {/* Category Tabs & Search Bar Row */}
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-[#FAF7F2] p-2.5 sm:p-3 rounded-2xl border border-[#E8E2D8]">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-slate-50 p-2 sm:p-2.5 rounded-2xl border border-slate-200">
             
             {/* Category Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
               {[
-                { id: 'all', label: '🌟 ทั้งหมด' },
-                { id: 'move', label: '🏃 สายขยับกาย' },
-                { id: 'heal', label: '🌿 สายฮีลใจ' },
-                { id: 'chill', label: '☕ สายชิลล์ & คาเฟ่' },
-                { id: 'learn', label: '🎨 สายสร้างสรรค์' },
+                { id: 'all', label: 'ทั้งหมด' },
+                { id: 'move', label: 'สายแอคทีฟ' },
+                { id: 'heal', label: 'สายฮีลใจ' },
+                { id: 'chill', label: 'สายชิลล์' },
+                { id: 'learn', label: 'สายเรียนรู้' },
               ].map((cat) => {
                 const isSelected = selectedCategory === cat.id;
                 return (
@@ -356,8 +356,8 @@ export default function ChallengesDiscoveryPage() {
                     onClick={() => setSelectedCategory(cat.id)}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap cursor-pointer ${
                       isSelected
-                        ? 'bg-[#1E293B] text-white shadow-xs'
-                        : 'text-slate-600 hover:bg-white'
+                        ? 'bg-white text-slate-900 shadow-xs'
+                        : 'text-slate-500 hover:text-slate-900'
                     }`}
                   >
                     {cat.label}
@@ -372,7 +372,7 @@ export default function ChallengesDiscoveryPage() {
                 <button
                   onClick={() => setSelectedType('all')}
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    selectedType === 'all' ? 'bg-[#1E293B] text-white shadow-2xs' : 'text-slate-500'
+                    selectedType === 'all' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-500'
                   }`}
                 >
                   ทั้งหมด
@@ -380,18 +380,18 @@ export default function ChallengesDiscoveryPage() {
                 <button
                   onClick={() => setSelectedType('official')}
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    selectedType === 'official' ? 'bg-[#4A7C59] text-white shadow-2xs' : 'text-slate-500'
+                    selectedType === 'official' ? 'bg-[#4A7C59] text-white shadow-xs' : 'text-slate-500'
                   }`}
                 >
-                  🌟 ทางการ
+                  ทางการ
                 </button>
                 <button
                   onClick={() => setSelectedType('community')}
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    selectedType === 'community' ? 'bg-[#F26430] text-white shadow-2xs' : 'text-slate-500'
+                    selectedType === 'community' ? 'bg-[#F26430] text-white shadow-xs' : 'text-slate-500'
                   }`}
                 >
-                  👥 ชุมชน
+                  ชุมชน
                 </button>
               </div>
 
@@ -402,7 +402,7 @@ export default function ChallengesDiscoveryPage() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="ค้นหาชาเลนจ์..."
+                  placeholder="ค้นหาภารกิจ..."
                   className="w-full pl-8.5 pr-3 py-1.5 text-xs bg-white rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#4A7C59]"
                 />
               </div>
@@ -410,25 +410,22 @@ export default function ChallengesDiscoveryPage() {
 
           </div>
 
-          {/* 2-Column Layout: Quests Grid (Left 68%) & Weekly Leaderboard (Right 32%) */}
+          {/* 2-Column Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6 items-start">
             
             {/* Left: Quests Grid */}
             <div className="lg:col-span-2 space-y-3.5">
               <div className="flex items-center justify-between pb-1">
-                <h2 className="text-sm sm:text-base font-extrabold text-[#1E293B] flex items-center gap-1.5">
+                <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-1.5">
                   <Trophy className="w-4 h-4 text-amber-500" />
                   <span>คลังภารกิจที่เปิดรับสมัคร</span>
-                  <span className="text-xs font-semibold text-slate-400">({filteredQuests.length})</span>
+                  <span className="text-xs font-medium text-slate-400">({filteredQuests.length})</span>
                 </h2>
               </div>
 
               {filteredQuests.length === 0 ? (
-                <div className="bg-[#FAF7F2] rounded-3xl p-10 text-center border border-[#E8E2D8] space-y-3">
-                  <div className="w-12 h-12 rounded-full bg-white text-slate-400 flex items-center justify-center mx-auto text-xl shadow-xs">
-                    🔍
-                  </div>
-                  <h3 className="font-extrabold text-sm text-[#1E293B]">ไม่พบภารกิจที่ตรงกับเงื่อนไข</h3>
+                <div className="bg-slate-50 rounded-2xl p-10 text-center border border-slate-200 space-y-3">
+                  <h3 className="font-bold text-sm text-slate-900">ไม่พบภารกิจที่ตรงกับเงื่อนไข</h3>
                   <p className="text-xs text-slate-500">ลองเปลี่ยนหมวดหมู่หรือคำค้นหาดูใหม่อีกครั้ง</p>
                   <button
                     onClick={() => {
@@ -436,7 +433,7 @@ export default function ChallengesDiscoveryPage() {
                       setSelectedType('all');
                       setSearchQuery('');
                     }}
-                    className="text-xs text-[#F26430] font-bold hover:underline"
+                    className="text-xs text-[#4A7C59] font-bold hover:underline"
                   >
                     ล้างตัวกรองทั้งหมด
                   </button>
@@ -451,104 +448,90 @@ export default function ChallengesDiscoveryPage() {
                       <div
                         key={quest.id}
                         onClick={() => setQuestToJoin(quest)}
-                        className={`group/card bg-white rounded-3xl p-4.5 sm:p-5 border transition-all duration-300 flex flex-col justify-between space-y-3.5 relative overflow-hidden shadow-xs hover:shadow-lg hover:-translate-y-1 cursor-pointer ${
+                        className={`group/card bg-white rounded-2xl p-4.5 border transition-all duration-300 flex flex-col justify-between space-y-3 relative overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 cursor-pointer ${
                           isJoined 
-                            ? 'border-emerald-300 ring-2 ring-emerald-500/15 bg-emerald-50/20' 
-                            : 'border-[#E8E2D8] hover:border-amber-300'
+                            ? 'border-emerald-300 ring-1 ring-emerald-500/20 bg-emerald-50/10' 
+                            : 'border-slate-200 hover:border-slate-300'
                         }`}
                       >
-                        {/* Top Accent Stripe for Official Quests */}
-                        {quest.isOfficial && (
-                          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500" />
-                        )}
-
-                        {/* Top Row: 3D Badge Avatar + Title & Badges */}
+                        {/* Top Row: Icon + Title & Badges */}
                         <div className="flex items-start gap-3">
-                          <div className="w-12 h-12 rounded-2xl bg-amber-50 border-2 border-amber-200/80 shadow-inner flex items-center justify-center text-2xl shrink-0 group-hover/card:scale-110 transition-transform">
+                          <div className="w-11 h-11 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-xl shrink-0 group-hover/card:scale-105 transition-transform">
                             {quest.badgeIcon || (quest.iconName === 'Flame' ? '🔥' : quest.iconName === 'Coffee' ? '☕' : quest.iconName === 'Footprints' ? '👟' : '🏅')}
                           </div>
 
                           <div className="min-w-0 flex-1 space-y-0.5">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="text-[10px] font-black uppercase tracking-wider text-[#4A7C59] bg-[#EBF3ED] px-2 py-0.5 rounded-md">
-                                {quest.category === 'move' ? '🏃 Move' : quest.category === 'heal' ? '🌱 Heal' : quest.category === 'chill' ? '☕ Chill' : '🎨 Learn'}
+                              <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+                                {quest.category === 'move' ? 'Move' : quest.category === 'heal' ? 'Heal' : quest.category === 'chill' ? 'Chill' : 'Learn'}
                               </span>
                               {quest.isOfficial ? (
-                                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 shrink-0 flex items-center gap-1">
-                                  <Crown className="w-3 h-3 text-amber-600 fill-amber-500" />
-                                  <span>Official</span>
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 shrink-0">
+                                  Official
                                 </span>
                               ) : (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 shrink-0">
-                                  👥 ชุมชน
+                                <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 shrink-0">
+                                  ชุมชน
                                 </span>
                               )}
-                              <span className="text-[10px] font-black text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md flex items-center gap-0.5 ml-auto">
+                              <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md flex items-center gap-0.5 ml-auto">
                                 <Zap className="w-3 h-3 text-amber-600 fill-amber-500" />
                                 <span>+{quest.rewardPoints} XP</span>
                               </span>
                             </div>
 
-                            <h3 className="font-black text-xs sm:text-sm text-[#1E293B] group-hover/card:text-[#F26430] transition-colors leading-snug pt-0.5">
+                            <h3 className="font-bold text-sm text-slate-900 group-hover/card:text-[#4A7C59] transition-colors leading-snug pt-0.5">
                               {quest.title}
                             </h3>
                           </div>
                         </div>
 
-                        {/* Goal & Objective snippet */}
-                        <div className="space-y-1 bg-slate-50/80 p-2.5 rounded-2xl border border-slate-100">
-                          <div className="text-[11px] font-extrabold text-amber-950 flex items-center gap-1">
+                        {/* Goal */}
+                        <div className="space-y-1 bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs">
+                          <div className="font-semibold text-slate-800 flex items-center gap-1">
                             <Award className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                             <span>เหรียญ: {quest.badgeLabel}</span>
                           </div>
-                          <p className="text-[11px] text-slate-600 line-clamp-2 leading-relaxed font-medium">
+                          <p className="text-slate-500 line-clamp-2 leading-relaxed">
                             {quest.targetGoal}
                           </p>
                         </div>
 
-                        {/* ⏰ ระยะเวลาเริ่ม - สิ้นสุด และเวลานับถอยหลัง */}
-                        <div className="flex items-center justify-between text-[10px] font-bold py-1.5 px-3 rounded-xl bg-white border border-slate-200/80 shadow-2xs">
-                          <span className="flex items-center gap-1 text-slate-500 font-mono">
-                            <span>📅 {quest.startDate} - {quest.endDate}</span>
-                          </span>
-                          <span className={`flex items-center gap-1 font-bold ${
-                            isUrgent ? 'text-rose-600 animate-pulse' : 'text-slate-600'
-                          }`}>
-                            <Clock className="w-3 h-3" />
-                            <span>เหลือ {quest.daysRemaining} วัน</span>
+                        {/* Duration */}
+                        <div className="flex items-center justify-between text-[11px] font-medium py-1 px-2.5 rounded-lg bg-slate-50 border border-slate-100 text-slate-500">
+                          <span>{quest.startDate} - {quest.endDate}</span>
+                          <span className={isUrgent ? 'text-rose-600 font-semibold' : ''}>
+                            เหลือ {quest.daysRemaining} วัน
                           </span>
                         </div>
 
-                        {/* 🏃 Bottom Action Bar: State when Joined vs Not Joined */}
+                        {/* Action Bar */}
                         <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-                          <span className="text-[11px] font-medium text-slate-500 flex items-center gap-1">
+                          <span className="text-xs text-slate-500 flex items-center gap-1">
                             <Users className="w-3.5 h-3.5 text-slate-400" />
                             <span>{quest.participantsCount} คนกำลังทำ</span>
                           </span>
 
                           {isJoined ? (
-                            /* State when quest is already active */
                             <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                               <Link
                                 href="/myhub"
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-extrabold px-3.5 py-1.5 rounded-full transition-all shadow-xs flex items-center gap-1 cursor-pointer"
-                                title="ไปที่มายฮับเพื่อส่งหลักฐานเช็คอิน"
+                                className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1"
                               >
                                 <CheckCircle2 className="w-3.5 h-3.5" />
-                                <span>กำลังทำ (ดูมายฮับ)</span>
+                                <span>กำลังทำ</span>
                               </Link>
                               
                               <button
                                 type="button"
                                 onClick={() => setQuestToCancel(quest)}
-                                className="text-slate-400 hover:text-rose-600 text-[11px] p-1.5 rounded-full hover:bg-rose-50 transition-colors cursor-pointer"
+                                className="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
                                 title="ยกเลิกภารกิจนี้"
                               >
                                 <X className="w-3.5 h-3.5" />
                               </button>
                             </div>
                           ) : (
-                            /* State when quest is available to join */
                             <button
                               type="button"
                               onClick={(e) => {
@@ -559,9 +542,9 @@ export default function ChallengesDiscoveryPage() {
                                   setQuestToJoin(quest);
                                 }
                               }}
-                              className="bg-[#F26430] hover:bg-[#D95322] text-white text-xs font-black px-4 py-1.5 rounded-full transition-all shadow-2xs shadow-[#F26430]/25 flex items-center gap-1 active:scale-95 cursor-pointer shrink-0"
+                              className="bg-[#4A7C59] hover:bg-[#3D6649] text-white text-xs font-bold px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1 active:scale-95 cursor-pointer shrink-0"
                             >
-                              <span>ดูรายละเอียด & รับ</span>
+                              <span>รับภารกิจ</span>
                               <ChevronRight className="w-3.5 h-3.5" />
                             </button>
                           )}
