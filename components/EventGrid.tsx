@@ -75,6 +75,10 @@ export const EventGrid: React.FC<EventGridProps> = ({
           const isAlmostFull = fillRatio >= 0.8;
           const catStyle = CATEGORY_COLORS[event.category] || CATEGORY_COLORS.heal;
 
+          const detailHref = event.eventType === 'public_venue'
+            ? `/fairs/${encodeURIComponent(event.id)}`
+            : `/community/${encodeURIComponent(event.id)}`;
+
           return (
             <motion.div
               key={event.id}
@@ -84,7 +88,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
               transition={{ duration: 0.3, delay: idx * 0.05 }}
             >
               <Link
-                href={`/events/${encodeURIComponent(event.id)}`}
+                href={detailHref}
                 onClick={() => {
                   if (typeof window !== 'undefined') {
                     try {

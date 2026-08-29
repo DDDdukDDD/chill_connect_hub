@@ -1453,7 +1453,12 @@ export default function Home() {
         isOpen={isSurpriseModalOpen}
         onClose={() => setIsSurpriseModalOpen(false)}
         events={eventsList}
-        onSelectEvent={(ev) => router.push(`/events/${encodeURIComponent(ev.id)}`)}
+        onSelectEvent={(ev) => {
+          const targetPath = ev.eventType === 'public_venue'
+            ? `/fairs/${encodeURIComponent(ev.id)}`
+            : `/community/${encodeURIComponent(ev.id)}`;
+          router.push(targetPath);
+        }}
       />
 
       {/* Mobile Nav */}

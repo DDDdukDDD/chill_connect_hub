@@ -31,7 +31,7 @@ export interface SpotRelatedMoment {
 export interface LifestyleSpotItem {
   id: string;
   title: string;
-  category: 'park' | 'art' | 'cafe' | 'oldtown' | 'workspace' | 'viewpoint' | 'nature';
+  category: 'park' | 'art' | 'cafe' | 'oldtown' | 'workspace' | 'viewpoint' | 'nature' | 'temple' | 'beach' | 'market' | 'museum' | 'bar' | 'coworking';
   categoryLabel: string;
   province: string;
   district: string;
@@ -59,6 +59,8 @@ export interface LifestyleSpotItem {
   relatedMoments?: SpotRelatedMoment[];
   subActivities?: SpotSubActivity[];
 }
+
+export type Spot = LifestyleSpotItem;
 
 export const SPOT_CATEGORIES = [
   { id: 'all', label: 'ทุกหมวดหมู่สถานที่', icon: '✨' },

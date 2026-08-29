@@ -25,7 +25,7 @@ export const TermsPrivacyModal: React.FC<TermsPrivacyModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fade-in">
+    <div className="fixed inset-0 z-[100010] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
       <div className="bg-white rounded-3xl max-w-2xl w-full border border-[#E8E2D8] shadow-2xl overflow-hidden animate-scale-up flex flex-col max-h-[90vh]">
         
         {/* Modal Header */}

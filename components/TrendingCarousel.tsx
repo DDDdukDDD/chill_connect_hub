@@ -196,7 +196,10 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
                 key={`trending-${event.id}`}
                 onClick={() => {
                   if (!hasMoved) {
-                    router.push(`/events/${encodeURIComponent(event.id)}`);
+                    const targetPath = event.eventType === 'public_venue'
+                      ? `/fairs/${encodeURIComponent(event.id)}`
+                      : `/community/${encodeURIComponent(event.id)}`;
+                    router.push(targetPath);
                     onSelectEvent(event);
                   }
                 }}

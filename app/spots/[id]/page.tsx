@@ -9,7 +9,8 @@ import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { useAuth } from '@/lib/useAuth';
 import { CreateEventModal } from '@/components/CreateEventModal';
-import { EventItem } from '@/data/mockData';
+import { MOCK_EVENTS, EventItem } from '@/data/mockData';
+import { SafetyGuidelinesModal } from '@/components/SafetyGuidelinesModal';
 import {
   getSpotById,
   getNearbySpots,
@@ -44,6 +45,15 @@ import {
   Tag
 } from 'lucide-react';
 
+// Helper to strip rogue emojis from text fields for clean, elegant typography
+const cleanText = (str?: string): string => {
+  if (!str) return '';
+  return str
+    .replace(/[\p{Extended_Pictographic}\p{Emoji_Presentation}\u200d\uFE0F\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
 export default function SpotDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -55,6 +65,7 @@ export default function SpotDetailPage() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
+  const [isSafetyModalOpen, setIsSafetyModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Favorites state
@@ -82,6 +93,146 @@ export default function SpotDetailPage() {
     if (!spot) return [];
     return getNearbySpots(spot, 4);
   }, [spot]);
+
+  // Separate Public Transit & Private Car Info for real-world clarity (with clean text)
+  const { publicTransitText, parkingText } = useMemo(() => {
+    if (!spot?.transitInfo) {
+      return {
+        publicTransitText: 'เดินทางด้วยรถไฟฟ้าหรือรถประจำทางที่ผ่านบริเวณใกล้เคียง',
+        parkingText: 'มีพื้นที่จอดรถสำหรับผู้มาติดต่อ หรือจุดจอดรถบริเวณใกล้เคียง'
+      };
+    }
+
+    const raw = cleanText(spot.transitInfo);
+    const parts = raw.split(/,|และ|พร้อม/).map((s) => s.trim()).filter(Boolean);
+    const publicParts = parts.filter((p) =>
+      /bts|mrt|รถไฟฟ้า|เรือ|แอร์พอร์ต|รถเมล์|รถสองแถว|สถานี|เดินต่อ|สาย/i.test(p)
+    );
+    const parkingParts = parts.filter((p) =>
+      /จอด|รถยนต์|ลานจอด|ถนน|ทางหลวง|ขับรถ|อาคารจอด/i.test(p)
+    );
+
+    return {
+      publicTransitText: publicParts.length > 0 ? publicParts.join(', ') : raw,
+      parkingText: parkingParts.length > 0 ? parkingParts.join(', ') : 'มีจุดจอดรถยนต์บริเวณสถานที่ หรือเดินทางตามพิกัด GPS'
+    };
+  }, [spot]);
+
+  // Curated Buddy Trips matching this specific spot
+  const spotBuddyTrips = useMemo(() => {
+    if (!spot) return [];
+
+    const isBeachOrClimb = /หาด|เกาะ|ทะเล|ปีน|ผา|อ่าว|คายัค/i.test(spot.title + spot.description);
+    const isCultureOrCafe = /คาเฟ่|ศิลป์|แกลเลอรี|พิพิธภัณฑ์|กาแฟ|วัด|ประวัติ/i.test(spot.title + spot.description);
+
+    if (isBeachOrClimb) {
+      return [
+        {
+          id: 'buddy-1',
+          title: `หาตี้ปีนผาหน้าใหม่ & พายคายัคลอดถ้ำที่ ${spot.title}`,
+          hostName: 'กัปตันโฟล์ก',
+          hostAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
+          hostBadge: 'Superhost',
+          date: 'เสาร์นี้ 30 ส.ค.',
+          time: '09:30 - 15:00 น.',
+          participantsCount: 5,
+          maxParticipants: 8,
+          description: 'เน้นปีนผาเส้นทางง่ายสำหรับมือใหม่ มีครูฝึกคอยดูแล ปิดท้ายด้วยพายคายัคชมวิวทะเลด้วยกันครับ',
+          tag: 'กิจกรรมแอดเวนเจอร์'
+        },
+        {
+          id: 'buddy-2',
+          title: `ชวนนั่งชมพระอาทิตย์ตก & ฟาดดินเนอร์ซีฟู้ดริมหาด`,
+          hostName: 'เมย์ลดา',
+          hostAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+          hostBadge: 'Verified',
+          date: 'อาทิตย์นี้ 31 ส.ค.',
+          time: '17:00 - 19:30 น.',
+          participantsCount: 3,
+          maxParticipants: 4,
+          description: 'หาเพื่อนร่วมโต๊ะอาหารเย็นริมหาด ฟังเสียงคลื่นแลกเปลี่ยนประสบการณ์ท่องเที่ยว บรรยากาศสบายๆ',
+          tag: 'ชมวิว & ดินเนอร์'
+        }
+      ];
+    }
+
+    if (isCultureOrCafe) {
+      return [
+        {
+          id: 'buddy-1',
+          title: `เสพงานศิลป์ & ดริปกาแฟพูดคุยเบาๆ สไตล์ Introvert`,
+          hostName: 'พลอย สตูดิโอ',
+          hostAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80',
+          hostBadge: 'Superhost',
+          date: 'เสาร์นี้ 30 ส.ค.',
+          time: '13:30 - 16:00 น.',
+          participantsCount: 3,
+          maxParticipants: 4,
+          description: 'เดินชมผลงานเงียบๆ ไม่เร่งรีบ แล้วแวะจิบกาแฟพูดคุยแลกเปลี่ยนมุมมองศิลปะอย่างเป็นกันเอง',
+          tag: 'นิทรรศการ & กาแฟ'
+        },
+        {
+          id: 'buddy-2',
+          title: `นัดวาดรูปสีน้ำ & ถ่ายภาพเก็บแสงบ่ายที่ ${spot.title}`,
+          hostName: 'กฤต ช่างภาพ',
+          hostAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
+          hostBadge: 'Verified',
+          date: 'อาทิตย์นี้ 31 ส.ค.',
+          time: '14:30 - 17:30 น.',
+          participantsCount: 2,
+          maxParticipants: 4,
+          description: 'พกสมุดสเก็ตช์หรือกล้องถ่ายรูปมาแชร์เทคนิคและบันทึกช่วงเวลาสวยๆ ไปด้วยกันครับ',
+          tag: 'ถ่ายรูป & สเก็ตช์'
+        }
+      ];
+    }
+
+    // Default / Park & Outdoor
+    return [
+      {
+        id: 'buddy-1',
+        title: `วิ่ง City Run รับลมเช้า + จิบกาแฟสโลว์บาร์ที่ ${spot.title}`,
+        hostName: 'ณภัทร รันเนอร์',
+        hostAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
+        hostBadge: 'Superhost',
+        date: 'เสาร์นี้ 30 ส.ค.',
+        time: '06:30 - 08:00 น.',
+        participantsCount: 4,
+        maxParticipants: 6,
+        description: 'วิ่งเพซสบายๆ (Pace 6.5 - 7.0) มือใหม่วิ่งตามได้สบาย จบแล้วแวะจิบกาแฟพูดคุยต้อนรับวันใหม่ด้วยกัน',
+        tag: 'สุขภาพ & วิ่งเช้า'
+      },
+      {
+        id: 'buddy-2',
+        title: `เดินถ่ายภาพสตรีท & รับลมเย็นช่วง Golden Hour`,
+        hostName: 'กัญญา มิ้นท์',
+        hostAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+        hostBadge: 'Verified',
+        date: 'อาทิตย์นี้ 31 ส.ค.',
+        time: '16:45 - 18:30 น.',
+        participantsCount: 3,
+        maxParticipants: 4,
+        description: 'เดินถ่ายภาพบรรยากาศพระอาทิตย์ตก แสงแดดสะท้อนผิวน้ำ ส่องนกธรรมชาติในสวน สบายใจคนเดียวไม่เกร็ง',
+        tag: 'เดินชิลล์ & ถ่ายภาพ'
+      }
+    ];
+  }, [spot]);
+
+  const [joinedTrips, setJoinedTrips] = useState<string[]>([]);
+
+  const handleJoinTrip = (tripId: string, tripTitle: string) => {
+    if (!isLoggedIn) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+    if (joinedTrips.includes(tripId)) {
+      setJoinedTrips((prev) => prev.filter((id) => id !== tripId));
+      showToast(`ยกเลิกคำขอเข้าร่วมทริป "${tripTitle}" แล้ว`);
+    } else {
+      setJoinedTrips((prev) => [...prev, tripId]);
+      showToast(`ส่งคำขอเข้าร่วมทริป "${tripTitle}" เรียบร้อยแล้ว! 🎉`);
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -356,38 +507,52 @@ export default function SpotDetailPage() {
         </section>
 
         {/* =========================================================================
-            CORE CONTENT: 2-COLUMN EDITORIAL LAYOUT
+            CORE CONTENT: 2-COLUMN EDITORIAL LAYOUT (Clean Editorial Flow)
            ========================================================================= */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start pt-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-10 items-start pt-3">
           
-          {/* LEFT COLUMN: PRIMARY DETAILS (2 Cols) */}
-          <div className="lg:col-span-2 space-y-6">
+          {/* LEFT COLUMN: PRIMARY DETAILS (2 Cols - Editorial Focus) */}
+          <div className="lg:col-span-2 space-y-7">
             
-            {/* Header Title & Ratings */}
-            <div className="space-y-2.5">
+            {/* 1. Header Title, Badges & Ratings */}
+            <div className="space-y-3 pb-4 border-b border-slate-100">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-orange-50 text-[#F26430] border border-orange-200">
+                {/* Category Badge */}
+                <span className="text-xs font-black px-3 py-1 rounded-full bg-[#FFF4EE] text-[#F26430] border border-[#FCD9C6]">
                   {spot.categoryLabel}
                 </span>
 
-                <span className={`text-xs font-extrabold px-3 py-1 rounded-full border ${
+                {/* Price Badge */}
+                <span className={`text-xs font-black px-3 py-1 rounded-full border ${
                   spot.price.includes('ฟรี')
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                     : 'bg-amber-50 text-amber-900 border-amber-200'
                 }`}>
-                  {spot.price.includes('ฟรี') ? '🎉 เข้าฟรีไม่มีค่าใช้จ่าย' : `🏷️ ${spot.price}`}
+                  {cleanText(spot.price).includes('ฟรี') ? 'เข้าฟรี' : cleanText(spot.price)}
                 </span>
 
-                <div className="flex items-center gap-1 text-xs font-bold text-slate-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200/80">
+                {/* Live Open Status Indicator */}
+                <span className="text-xs font-black px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>เปิดให้บริการ ({cleanText(spot.openHours).split('-')[0]?.trim() || 'เปิด'})</span>
+                </span>
+
+                {/* Star Rating & Reviews */}
+                <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-2xs ml-auto sm:ml-0">
                   <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                   <span>{spot.rating}</span>
                   <span className="text-slate-400 font-normal">({spot.reviewsCount || 480} รีวิว)</span>
                 </div>
               </div>
 
-              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-snug">
-                {spot.title}
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+                {cleanText(spot.title)}
               </h1>
+
+              {/* Location & District */}
+              <p className="text-xs sm:text-sm text-slate-500 font-medium">
+                {spot.district}, จังหวัด{spot.province}
+              </p>
 
               {/* Vibe Tags */}
               {spot.vibeTags && spot.vibeTags.length > 0 && (
@@ -395,158 +560,341 @@ export default function SpotDetailPage() {
                   {spot.vibeTags.map((vibe, idx) => (
                     <span
                       key={idx}
-                      className="text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1 rounded-xl transition-colors"
+                      className="text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1 rounded-xl transition-colors"
                     >
-                      {vibe}
+                      {cleanText(vibe)}
                     </span>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* About / Description Section */}
-            <div className="space-y-2.5 pt-2">
-              <h2 className="text-sm font-black uppercase text-slate-900 flex items-center gap-2 tracking-wider">
-                <Compass className="w-4 h-4 text-[#4A7C59]" />
-                <span>เกี่ยวกับสถานที่นี้</span>
-              </h2>
-              <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal">
-                {spot.description}
-              </p>
+            {/* 2. Sleek Inline Metadata Ribbon (Clean text with vertical divider) */}
+            <div className="py-3.5 px-5 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs sm:text-sm text-slate-700">
+              <div className="flex items-center gap-2">
+                <span className="text-slate-500 font-medium">เวลาเปิด-ปิด:</span>
+                <span className="font-bold text-slate-900">{cleanText(spot.openHours) || 'เปิดทุกวัน'}</span>
+              </div>
+              <span className="hidden sm:inline text-slate-300">|</span>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-500 font-medium">ช่วงเวลาแนะนำ:</span>
+                <span className="font-bold text-slate-900">{cleanText(spot.bestTime) || '16:30 - 18:30 น.'}</span>
+              </div>
             </div>
 
-            {/* Highlights Section */}
+            {/* 3. About / Story Section (Clean Editorial Paragraphs) */}
+            <div className="space-y-3 pt-1">
+              <h2 className="text-base font-black text-slate-900 tracking-tight">
+                เกี่ยวกับสถานที่นี้
+              </h2>
+              <div className="space-y-3 text-sm sm:text-base text-slate-700 leading-relaxed font-normal">
+                {spot.description.split('\n').filter(Boolean).map((para, idx) => (
+                  <p key={idx} className="leading-relaxed">
+                    {cleanText(para)}
+                  </p>
+                ))}
+              </div>
+            </div>
+
+            {/* 4. Highlights Section (Clean Minimal Bullets) */}
             {spot.highlights && spot.highlights.length > 0 && (
-              <div className="space-y-3 pt-2">
-                <h2 className="text-sm font-black uppercase text-slate-900 flex items-center gap-2 tracking-wider">
-                  <Sparkles className="w-4 h-4 text-[#F26430]" />
-                  <span>จุดเด่น & ไฮไลท์ที่ไม่ควรพลาด</span>
+              <div className="space-y-3.5 pt-5 border-t border-slate-100">
+                <h2 className="text-base font-black text-slate-900 tracking-tight">
+                  จุดเด่น & ไฮไลต์ที่ไม่ควรพลาด
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 pt-0.5">
                   {spot.highlights.map((h, idx) => (
-                    <div key={idx} className="flex items-start gap-2.5 p-3 rounded-2xl bg-orange-50/50 border border-orange-100 text-xs sm:text-sm text-slate-800 font-medium">
-                      <CheckCircle2 className="w-4 h-4 text-[#F26430] shrink-0 mt-0.5" />
-                      <span>{h}</span>
-                    </div>
+                    <li
+                      key={idx}
+                      className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-800 leading-relaxed font-medium"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#4A7C59] shrink-0 mt-2" />
+                      <span>{cleanText(h)}</span>
+                    </li>
                   ))}
-                </div>
+                </ul>
               </div>
             )}
 
-            {/* Facilities & Transit Section */}
-            <div className="space-y-3 pt-2">
-              <h2 className="text-sm font-black uppercase text-slate-900 flex items-center gap-2 tracking-wider">
-                <Car className="w-4 h-4 text-[#2B527A]" />
-                <span>สิ่งอำนวยความสะดวก & การเดินทาง</span>
+            {/* 5. Transit & Facilities Section (2-Column Structured Rhythm) */}
+            <div className="space-y-4 pt-5 border-t border-slate-100">
+              <h2 className="text-base font-black text-slate-900 tracking-tight">
+                การเดินทาง & สิ่งอำนวยความสะดวก
               </h2>
 
-              {spot.transitInfo && (
-                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-700 leading-relaxed">
-                  <strong className="text-slate-900 block font-bold mb-0.5">การเดินทาง:</strong>
-                  {spot.transitInfo}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-1">
+                {/* 1. Public Transit */}
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                    รถสาธารณะ & รถไฟฟ้า
+                  </span>
+                  <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
+                    {cleanText(publicTransitText)}
+                  </p>
                 </div>
-              )}
 
+                {/* 2. Private Car & Parking */}
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                    รถยนต์ส่วนตัว & ที่จอดรถ
+                  </span>
+                  <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
+                    {cleanText(parkingText)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Facilities tags */}
               {spot.facilities && spot.facilities.length > 0 && (
-                <div className="flex items-center gap-2 flex-wrap">
-                  {spot.facilities.map((fac, idx) => (
-                    <span
-                      key={idx}
-                      className="text-xs font-bold text-slate-700 bg-white border border-slate-200/90 px-3 py-1.5 rounded-xl shadow-2xs flex items-center gap-1.5"
-                    >
-                      <Check className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>{fac}</span>
-                    </span>
-                  ))}
+                <div className="space-y-2 pt-2">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                    สิ่งอำนวยความสะดวก
+                  </span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {spot.facilities.map((fac, idx) => (
+                      <span
+                        key={idx}
+                        className="text-xs font-semibold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-xl"
+                      >
+                        {cleanText(fac)}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* Moments & Photos Community Feed Link */}
-            <div className="p-5 rounded-3xl bg-gradient-to-r from-purple-50 via-pink-50 to-orange-50 border border-purple-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-purple-900 font-bold text-sm">
-                  <Camera className="w-4 h-4 text-purple-600" />
-                  <span>แชร์ภาพโมเมนต์ & ดูรีวิวจากคอมมูนิตี้</span>
-                </div>
-                <p className="text-xs text-slate-600">
-                  มีผู้เช็คอินและบันทึกโมเมนต์ที่ <strong>{spot.title}</strong> แล้วกว่า <strong>{spot.interestedCount || 52} คน</strong>
-                </p>
+            {/* 6. Interactive Google Map */}
+            <div className="space-y-3.5 pt-5 border-t border-slate-100">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-base font-black text-slate-900 tracking-tight">
+                  พิกัดแผนที่ & เส้นทาง
+                </h3>
+
+                <a
+                  href={spot.googleMapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-[#4A7C59] hover:underline shrink-0"
+                >
+                  <span>เปิดดูใน Google Maps</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
               </div>
 
-              <Link
-                href={`/moments?location=${encodeURIComponent(spot.title)}`}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs transition-all shrink-0 active:scale-95"
-              >
-                <span>เปิดดู Moments ฟีด</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
+              <div className="relative w-full h-60 sm:h-72 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-2xs">
+                <iframe
+                  title={`Google Map - ${cleanText(spot.title)}`}
+                  src={`https://maps.google.com/maps?q=${spot.latitude},${spot.longitude}&hl=th&z=15&output=embed`}
+                  className="w-full h-full border-0"
+                  loading="lazy"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
+            </div>
+
+            {/* 7. Buddy Gatherings & Group Trips Section */}
+            <div className="space-y-4 pt-6 border-t border-slate-100">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-black text-slate-900 tracking-tight">
+                      ทริป & นัดชวนเพื่อนไปที่นี่
+                    </h2>
+                    <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-50 text-[#4A7C59] border border-emerald-200/80">
+                      {spotBuddyTrips.length} ทริปเปิดรับ
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsSafetyModalOpen(true)}
+                      className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-[#4A7C59] transition-colors cursor-pointer ml-1"
+                      title="ดูแนวทางความปลอดภัยและข้อจำกัดความรับผิด"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5 text-[#4A7C59]" />
+                      <span>ข้อกำหนดความปลอดภัย</span>
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-500 font-medium pt-0.5">
+                    หาเพื่อนสายเดียวกันไปเที่ยว หรือเป็นคนเปิดทริปใหม่ได้ง่ายๆ
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!isLoggedIn) {
+                      setIsAuthModalOpen(true);
+                    } else {
+                      setIsCreateEventModalOpen(true);
+                    }
+                  }}
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#4A7C59] hover:bg-[#3B6347] text-white text-xs font-extrabold shadow-md shadow-[#4A7C59]/20 transition-all cursor-pointer active:scale-95 shrink-0"
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  <span>โพสต์ชวนเพื่อนเที่ยว</span>
+                </button>
+              </div>
+
+              {/* Gathering Cards Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                {spotBuddyTrips.map((trip) => {
+                  const isJoined = joinedTrips.includes(trip.id);
+                  const availableSlots = trip.maxParticipants - trip.participantsCount;
+
+                  return (
+                    <div
+                      key={trip.id}
+                      className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:border-[#4A7C59]/40 hover:shadow-xs transition-all space-y-3 flex flex-col justify-between"
+                    >
+                      <div className="space-y-2.5">
+                        {/* Host Info & Time */}
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <img
+                              src={trip.hostAvatar}
+                              alt={trip.hostName}
+                              className="w-6 h-6 rounded-full object-cover border border-slate-200 shrink-0"
+                            />
+                            <span className="font-bold text-slate-800 truncate">{trip.hostName}</span>
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 shrink-0">
+                              {trip.hostBadge}
+                            </span>
+                          </div>
+                          <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-lg shrink-0">
+                            {trip.date}
+                          </span>
+                        </div>
+
+                        {/* Title */}
+                        <h3 className="text-xs sm:text-sm font-black text-slate-900 leading-snug">
+                          {trip.title}
+                        </h3>
+
+                        {/* Description snippet */}
+                        <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">
+                          {trip.description}
+                        </p>
+
+                        <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          <span>เวลา {trip.time}</span>
+                        </div>
+                      </div>
+
+                      {/* Footer: Slots & Join CTA */}
+                      <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2 text-xs">
+                        <span className="text-slate-500 font-medium">
+                          รับ <strong className="text-slate-900">{trip.participantsCount + (isJoined ? 1 : 0)}/{trip.maxParticipants}</strong> คน
+                          <span className="text-[#F26430] font-bold ml-1.5">
+                            (ว่าง {Math.max(0, availableSlots - (isJoined ? 1 : 0))} ที่)
+                          </span>
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => handleJoinTrip(trip.id, trip.title)}
+                          className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all active:scale-95 cursor-pointer flex items-center gap-1 ${
+                            isJoined
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                              : 'bg-slate-100 hover:bg-[#4A7C59] hover:text-white text-slate-700'
+                          }`}
+                        >
+                          {isJoined ? (
+                            <>
+                              <Check className="w-3 h-3" />
+                              <span>ส่งคำขอแล้ว</span>
+                            </>
+                          ) : (
+                            <span>ขอร่วมทริป ➔</span>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
           </div>
 
           {/* RIGHT COLUMN: STICKY PLACE SUMMARY & DIRECTIONS CARD (1 Col) */}
-          <div className="lg:col-span-1 space-y-5 lg:sticky lg:top-24">
+          <div className="lg:col-span-1 space-y-4 lg:sticky lg:top-24">
             
-            {/* Quick Info Box */}
-            <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-sm space-y-4">
+            {/* Quick Info Action Box */}
+            <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200/90 shadow-sm space-y-4">
               
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              {/* Header Status & Price */}
+              <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-xs font-bold text-emerald-700">เปิดให้บริการ</span>
+                  <span className="text-xs font-extrabold text-emerald-800">เปิดให้บริการวันนี้</span>
                 </div>
-                <span className="text-xs font-black text-slate-900">{spot.price}</span>
+                <span className="text-sm font-black text-slate-900">{cleanText(spot.price)}</span>
               </div>
 
-              {/* Operating Hours */}
+              {/* Operating Hours Summary */}
               <div className="space-y-1">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                  <Clock className="w-3.5 h-3.5 text-[#4A7C59]" />
-                  <span>เวลาเปิด-ปิด</span>
-                </div>
-                <p className="text-sm font-extrabold text-slate-900">{spot.openHours}</p>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                  เวลาทำการ
+                </span>
+                <p className="text-sm font-black text-slate-900">{cleanText(spot.openHours)}</p>
               </div>
 
-              {/* Best Time to Visit */}
+              {/* Location Address */}
               <div className="space-y-1">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                  <Sparkles className="w-3.5 h-3.5 text-[#F26430]" />
-                  <span>ช่วงเวลาแนะนำ</span>
-                </div>
-                <p className="text-sm font-semibold text-slate-700">{spot.bestTime}</p>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                  ที่ตั้ง & ย่าน
+                </span>
+                <p className="text-xs font-semibold text-slate-900 leading-relaxed">{spot.district}, จังหวัด{spot.province}</p>
               </div>
 
-              {/* Location */}
-              <div className="space-y-1">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                  <MapPin className="w-3.5 h-3.5 text-[#F26430]" />
-                  <span>พิกัด & ย่าน</span>
-                </div>
-                <p className="text-sm font-semibold text-slate-900">{spot.district}, {spot.province}</p>
-              </div>
+              {/* Action Buttons: Favorite (Primary) + Moments & Share (Secondary Dual Grid) */}
+              <div className="space-y-2 pt-1">
+                {/* 1. Primary Action: Bookmark / Favorite */}
+                <button
+                  type="button"
+                  onClick={() => toggleFavorite(spot.id)}
+                  className={`w-full py-3 px-4 rounded-2xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 shadow-sm ${
+                    isFavorite
+                      ? 'bg-rose-50 text-rose-600 border border-rose-200'
+                      : 'bg-[#4A7C59] hover:bg-[#3B6347] text-white shadow-[#4A7C59]/20'
+                  }`}
+                >
+                  <Heart className={`w-4 h-4 ${isFavorite ? 'fill-rose-500 text-rose-500' : 'fill-white text-white'}`} />
+                  <span>{isFavorite ? 'บันทึกในรายการโปรดแล้ว' : 'บันทึกลงรายการโปรด'}</span>
+                </button>
 
-              {/* Google Maps Button */}
-              <a
-                href={spot.googleMapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full bg-[#F26430] hover:bg-[#D95322] text-white py-3 px-4 rounded-2xl font-bold text-xs sm:text-sm transition-all shadow-md shadow-orange-500/20 flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
-              >
-                <Navigation className="w-4 h-4" />
-                <span>นำทางด้วย Google Maps</span>
-                <ExternalLink className="w-3.5 h-3.5 opacity-80" />
-              </a>
+                {/* 2. Secondary Dual Action: Moments + Share */}
+                <div className="grid grid-cols-2 gap-2">
+                  <Link
+                    href={`/moments?location=${encodeURIComponent(spot.title)}`}
+                    className="py-2.5 px-3 rounded-2xl font-bold text-xs bg-slate-50 hover:bg-slate-100 hover:text-[#4A7C59] text-slate-700 border border-slate-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98 truncate"
+                  >
+                    <Camera className="w-3.5 h-3.5 text-slate-500" />
+                    <span>ดูภาพ Moments</span>
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={handleShare}
+                    className="py-2.5 px-3 rounded-2xl font-bold text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98 truncate"
+                  >
+                    <Share2 className="w-3.5 h-3.5 text-slate-500" />
+                    <span>{isCopied ? 'คัดลอกแล้ว!' : 'แชร์สถานที่'}</span>
+                  </button>
+                </div>
+              </div>
 
               {/* Quest Banner Helper */}
-              <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-center justify-between gap-2 text-xs">
+              <div className="p-3 rounded-2xl bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200/90 flex items-center justify-between gap-2 text-xs">
                 <div className="flex items-center gap-2 min-w-0">
                   <Trophy className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span className="font-bold text-amber-900 truncate">มีเควสต์สะสม XP ที่นี่</span>
+                  <span className="font-bold text-amber-900 truncate">มีเควสต์สะสมแต้ม XP ที่นี่</span>
                 </div>
                 <Link
                   href="/challenges"
-                  className="font-extrabold text-amber-900 hover:text-amber-950 underline shrink-0 text-[11px]"
+                  className="font-black text-amber-900 hover:text-amber-950 underline shrink-0 text-[11px]"
                 >
                   ดูเควสต์ ➔
                 </Link>
@@ -731,9 +1079,16 @@ export default function SpotDetailPage() {
       <CreateEventModal
         isOpen={isCreateEventModalOpen}
         onClose={() => setIsCreateEventModalOpen(false)}
+        initialLocation={spot ? `${spot.title}, ${spot.district}, จังหวัด${spot.province}` : undefined}
+        initialTitle={spot ? `ชวนไปเที่ยว ${spot.title}` : undefined}
+        initialImage={spot?.image}
         onCreateSuccess={(newEvent: EventItem) => {
           showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จเรียบร้อย! 🎉`);
         }}
+      />
+      <SafetyGuidelinesModal
+        isOpen={isSafetyModalOpen}
+        onClose={() => setIsSafetyModalOpen(false)}
       />
       <MobileNav
         activeTab={activeNavTab}

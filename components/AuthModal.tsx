@@ -613,18 +613,18 @@ export const LogoutConfirmModal: React.FC<LogoutConfirmModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[100002] flex items-center justify-center p-4 bg-black/65 backdrop-blur-xs animate-fade-in">
-      <div className="bg-white rounded-3xl max-w-sm w-full border border-slate-200 shadow-2xl p-6 space-y-5 animate-scale-up text-center">
+      <div className="bg-white rounded-3xl max-w-md w-full border border-slate-200 shadow-2xl p-7 sm:p-8 space-y-6 animate-scale-up text-center">
         
-        <div className="w-14 h-14 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center mx-auto border border-slate-200 shadow-2xs">
-          <LogOut className="w-7 h-7" />
+        <div className="w-16 h-16 rounded-3xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto border border-rose-200/80 shadow-2xs">
+          <LogOut className="w-8 h-8" />
         </div>
 
-        <div className="space-y-1.5">
-          <h3 className="font-extrabold text-lg text-[#1E293B]">
+        <div className="space-y-2">
+          <h3 className="font-black text-xl text-slate-900 tracking-tight">
             ยืนยันการออกจากระบบ?
           </h3>
-          <p className="text-xs text-slate-500 font-medium leading-relaxed">
-            คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ Chill & Connect Hub? คุณสามารถกลับมาเข้าสู่ระบบได้ตลอดเวลา
+          <p className="text-xs sm:text-sm text-slate-500 font-medium leading-relaxed max-w-xs mx-auto">
+            คุณต้องการออกจากระบบ Chill & Connect Hub ใช่หรือไม่? ข้อมูลกิจกรรมและรายการโปรดของคุณจะยังคงถูกบันทึกไว้อย่างปลอดภัย
           </p>
         </div>
 
@@ -632,7 +632,7 @@ export const LogoutConfirmModal: React.FC<LogoutConfirmModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="py-2.5 px-4 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
+            className="py-3 px-5 rounded-2xl text-xs sm:text-sm font-extrabold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer active:scale-95"
           >
             ยกเลิก
           </button>
@@ -642,7 +642,7 @@ export const LogoutConfirmModal: React.FC<LogoutConfirmModalProps> = ({
               onConfirmLogout();
               onClose();
             }}
-            className="py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-[#1E293B] hover:bg-[#0F172A] transition-all shadow-md active:scale-95 cursor-pointer"
+            className="py-3 px-5 rounded-2xl text-xs sm:text-sm font-extrabold text-white bg-rose-600 hover:bg-rose-700 transition-all shadow-md shadow-rose-600/20 active:scale-95 cursor-pointer"
           >
             ออกจากระบบ
           </button>
