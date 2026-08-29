@@ -27,7 +27,16 @@ export const SpotCard: React.FC<SpotCardProps> = ({
   return (
     <Link
       href={`/spots/${encodeURIComponent(spot.id)}`}
-      onClick={() => onSelect && onSelect(spot)}
+      id={`spot-${spot.id}`}
+      onClick={() => {
+        if (typeof window !== 'undefined') {
+          try {
+            sessionStorage.setItem('chill_last_viewed_spot', spot.id);
+            sessionStorage.setItem('chill_active_tab', 'spots');
+          } catch (e) {}
+        }
+        if (onSelect) onSelect(spot);
+      }}
       className="group bg-white rounded-2xl shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer relative"
     >
       {/* Top Image Container (aspect-video ratio matching Event Cards) */}
@@ -42,22 +51,21 @@ export const SpotCard: React.FC<SpotCardProps> = ({
         {/* Ambient Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60" />
 
-        {/* Hover Hint Pill (Matching Event Card) */}
-        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none z-10">
-          <span className="text-[11px] font-extrabold px-2.5 py-1 rounded-full shadow-lg border bg-white/95 text-[#1E293B] border-white/50">
-            ดูรายละเอียดสถานที่
+        {/* Top-Left Badges: Category Type + Distance (Safe spacing from right heart button) */}
+        <div className="absolute top-2 left-2 right-11 flex items-center gap-1.5 flex-wrap z-20 pointer-events-none">
+          {/* Spot Category Badge */}
+          <span className="text-[10px] font-black bg-[#F26430]/90 backdrop-blur-md text-white px-2.5 py-1 rounded-full shadow-md border border-white/25 flex items-center gap-1 truncate max-w-full pointer-events-auto">
+            <span>📍 สถานที่เที่ยว & จุดฮีลใจ</span>
           </span>
-        </div>
 
-        {/* Top-Left Distance Badge when searching near me */}
-        {(spot as any).distanceKm !== undefined && (
-          <div className="absolute top-2 left-2 flex items-center gap-1 z-20">
-            <span className="text-[10px] font-black bg-slate-900/90 backdrop-blur-md text-white px-2 py-0.5 rounded-full flex items-center gap-1 shadow-md border border-white/20">
+          {/* Distance Badge when searching near me */}
+          {(spot as any).distanceKm !== undefined && (
+            <span className="text-[10px] font-black bg-slate-900/90 backdrop-blur-md text-white px-2 py-1 rounded-full flex items-center gap-1 shadow-md border border-white/20 shrink-0 pointer-events-auto">
               <MapPin className="w-2.5 h-2.5 text-[#F26430]" />
               <span>{((spot as any).distanceKm).toFixed(1)} กม.</span>
             </span>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Top-Right Favorite Button */}
         <button
@@ -88,9 +96,9 @@ export const SpotCard: React.FC<SpotCardProps> = ({
       {/* Card Content Body (Clean, structured and realistic) */}
       <div className="p-3 sm:p-3.5 flex flex-col justify-between flex-1 gap-2">
         <div className="space-y-1.5">
-          {/* Top Row: Category Tag (Left) + Price Chip (Right) */}
+          {/* Top Row: Specific Sub-category / Location (Left) + Price Chip (Right) */}
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[11px] font-bold text-slate-700 truncate">
+            <span className="text-[11px] font-semibold text-slate-700 truncate">
               {spot.categoryLabel}
             </span>
 
@@ -119,19 +127,6 @@ export const SpotCard: React.FC<SpotCardProps> = ({
               <span className="truncate">{spot.district}, {spot.province}</span>
             </div>
           </div>
-        </div>
-
-        {/* Bottom Action Footer (Bottom-Left: สถานที่เที่ยว & จุดฮีลใจ, Bottom-Right: ดูข้อมูลสถานที่) */}
-        <div className="pt-2.5 flex items-center justify-between gap-2 border-t border-slate-100 mt-auto">
-          <span className="text-[10px] sm:text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border bg-orange-50 text-[#F26430] border-orange-200/90 flex items-center gap-1 truncate max-w-[170px]">
-            <MapPin className="w-3 h-3 text-[#F26430] shrink-0" />
-            <span className="truncate">สถานที่เที่ยว & จุดฮีลใจ</span>
-          </span>
-
-          <span className="text-[11px] font-extrabold text-[#F26430] flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform shrink-0">
-            <span>ดูข้อมูลสถานที่</span>
-            <ArrowRight className="w-3 h-3" />
-          </span>
         </div>
       </div>
     </Link>

@@ -102,6 +102,10 @@ export default function SpotDetailPage() {
   };
 
   const toggleFavorite = (spotId: string) => {
+    if (!isLoggedIn) {
+      setIsAuthModalOpen(true);
+      return;
+    }
     setFavorites((prev) => {
       const isFav = prev.includes(spotId);
       let updated: string[];
@@ -224,7 +228,7 @@ export default function SpotDetailPage() {
           <nav className="text-xs text-slate-500 font-medium truncate flex items-center gap-1.5">
             <Link href="/" className="hover:text-[#F26430] transition-colors font-semibold py-2 px-1">หน้าแรก</Link>
             <span className="py-2">/</span>
-            <Link href="/?category=park" className="hover:text-[#F26430] transition-colors py-2 px-1">สถานที่เที่ยว</Link>
+            <Link href="/?tab=spots" className="hover:text-[#F26430] transition-colors py-2 px-1 font-semibold">สถานที่เที่ยว & จุดฮีลใจ</Link>
             <span className="py-2">/</span>
             <span className="text-slate-700 font-semibold py-2 px-1">{spot.province}</span>
             <span className="py-2">/</span>

@@ -1,4 +1,4 @@
-import { EventItem, BANGKOK_ZONES } from '@/data/mockData';
+import { EventItem } from '@/data/mockData';
 
 export interface ScrapedRawEvent {
   source: 'Zipevent' | 'Eventpop' | 'QSNCC' | 'QSNCC Events' | 'BITEC' | 'BITEC Events' | 'BMA_Bangkok' | 'BMA Events' | 'ThaiRun' | 'SET_Thailand' | 'The Concert' | 'Ticketmelon' | 'Money Expo' | 'Facebook' | string;
@@ -276,13 +276,11 @@ export function processRawEventWithAI(raw: ScrapedRawEvent, idSuffix: number): E
 
   const priceClean = raw.rawPrice ? raw.rawPrice.trim() : 'ฟรี!';
 
-  // Smart Classification: Community Meetup vs Public Scale Venue
   const titleLower = raw.rawTitle.toLowerCase();
   const descLower = (raw.rawDescription || '').toLowerCase();
-  const textComb = `${titleLower} ${descLower}`;
 
   // All external scraped events are strictly public_venue (อีเวนต์ & งานแฟร์)
-  const eventType: 'public_venue' = 'public_venue';
+  const eventType = 'public_venue' as const;
   const isEnded = titleLower.includes('งานที่ผ่านมา') || descLower.includes('จัดเสร็จสิ้นแล้ว');
 
   const maxParticipants = 500;

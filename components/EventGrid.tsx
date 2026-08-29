@@ -78,13 +78,22 @@ export const EventGrid: React.FC<EventGridProps> = ({
           return (
             <motion.div
               key={event.id}
+              id={`event-${event.id}`}
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: idx * 0.05 }}
             >
               <Link
                 href={`/events/${encodeURIComponent(event.id)}`}
-                onClick={() => onSelectEvent && onSelectEvent(event)}
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    try {
+                      sessionStorage.setItem('chill_last_viewed_event', event.id);
+                      sessionStorage.setItem('chill_active_tab', event.eventType === 'public_venue' ? 'public_venue' : 'community');
+                    } catch (e) {}
+                  }
+                  if (onSelectEvent) onSelectEvent(event);
+                }}
                 className={`group bg-white rounded-2xl transition-all duration-300 flex flex-col overflow-hidden transform hover:-translate-y-1 cursor-pointer relative h-full ${
                   isJoined
                     ? 'shadow-[0_8px_30px_rgb(74,124,89,0.15)] ring-1 ring-[#4A7C59]'
@@ -99,11 +108,31 @@ export const EventGrid: React.FC<EventGridProps> = ({
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
 
-                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none z-10">
-                    <span className={`text-[11px] font-extrabold px-2.5 py-1 rounded-full shadow-lg border flex items-center gap-1 ${isJoined ? 'bg-[#4A7C59] text-white border-white/40' : 'bg-white/95 text-[#1E293B] border-white/50'
-                      }`}>
-                      {isJoined ? (event.eventType === 'public_venue' ? 'บันทึกนัดแล้ว' : 'เข้าร่วมแล้ว') : 'ดูรายละเอียด'}
+                  {/* Top-Left Badges: Category Type + Distance (Safe spacing from right heart button) */}
+                  <div className="absolute top-2 left-2 right-11 flex items-center gap-1.5 flex-wrap z-20 pointer-events-none">
+                    {/* Activity Type Badge */}
+                    <span className={`text-[10px] font-black px-2.5 py-1 rounded-full shadow-md backdrop-blur-md border border-white/25 flex items-center gap-1 text-white truncate max-w-full pointer-events-auto ${
+                      event.eventType === 'public_venue'
+                        ? 'bg-slate-900/85 text-sky-200'
+                        : 'bg-[#4A7C59]/90 text-white'
+                    }`}>
+                      {event.eventType === 'public_venue' ? (
+                        <span>🏛️ อีเวนต์ & งานแฟร์</span>
+                      ) : (
+                        <>
+                          <span className="inline sm:hidden">🌿 Chill & Connect</span>
+                          <span className="hidden sm:inline">🌿 Chill & Connect Community</span>
+                        </>
+                      )}
                     </span>
+
+                    {/* Distance Badge when searching near me */}
+                    {event.distanceKm !== undefined && (
+                      <span className="text-[10px] font-black bg-slate-900/90 backdrop-blur-md text-white px-2 py-1 rounded-full flex items-center gap-1 shadow-md border border-white/20 shrink-0 pointer-events-auto">
+                        <MapPin className="w-2.5 h-2.5 text-[#F26430]" />
+                        <span>{event.distanceKm.toFixed(1)} กม.</span>
+                      </span>
+                    )}
                   </div>
 
                   {!isEnded && (
@@ -112,7 +141,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                         e.stopPropagation();
                         toggleFavorite(event.id);
                       }}
-                      className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-[#F26430] hover:scale-110 active:scale-95 transition-all z-10"
+                      className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-[#F26430] hover:scale-110 active:scale-95 transition-all z-10 cursor-pointer"
                       title={isFav ? 'ยกเลิกถูกใจ' : 'บันทึกกิจกรรม'}
                     >
                       <Heart
@@ -200,72 +229,6 @@ export const EventGrid: React.FC<EventGridProps> = ({
                       </div>
                     </div>
                   )}
-
-                  {/* Bottom Action Area: Event Type (Left) + CTA Button (Right) */}
-                  <div className="pt-2.5 flex items-center justify-between gap-2 border-t border-slate-100 mt-auto">
-                    {/* Event Type Badge with Floating Hover Tooltip (Always Community / Public Venue) */}
-                    <div className="relative group/tooltip">
-                      <span className={`text-[10px] sm:text-[11px] font-extrabold px-2.5 py-1 rounded-full border shrink-0 flex items-center gap-1 cursor-help transition-all ${event.eventType === 'public_venue'
-                          ? 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100'
-                          : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                        }`}>
-                        <span>
-                          {event.eventType === 'public_venue' ? (
-                            '🏛️ อีเวนต์ & งานแฟร์'
-                          ) : (
-                            <>
-                              <span className="inline sm:hidden">🌿 Chill & Connect</span>
-                              <span className="hidden sm:inline">🌿 Chill & Connect Community</span>
-                            </>
-                          )}
-                        </span>
-                      </span>
-
-                      {/* Tooltip Popup */}
-                      <div className="absolute bottom-full left-0 mb-2 w-56 p-2.5 bg-slate-900/95 text-white text-[11px] font-medium rounded-xl shadow-xl border border-white/10 opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 pointer-events-none z-30 leading-relaxed backdrop-blur-md">
-                        {event.eventType === 'public_venue' ? (
-                          <>
-                            <strong className="block text-sky-300 font-extrabold mb-0.5">🏛️ อีเวนต์ & งานแฟร์:</strong>
-                            งานคอนเสิร์ต มหกรรม นิทรรศการ หรือแมตช์กีฬาจัดโดยผู้จัดทางการ
-                          </>
-                        ) : (
-                          <>
-                            <strong className="block text-emerald-300 font-extrabold mb-0.5">🌿 Chill & Connect Community:</strong>
-                            กิจกรรมนัดพบกลุ่มย่อยจากเพื่อนๆ และโฮสต์บนแพลตฟอร์ม ชวนทำกิจกรรมสนุกๆ ไปด้วยกัน
-                          </>
-                        )}
-                        {/* Downward Arrow */}
-                        <div className="absolute top-full left-4 -mt-1 border-4 border-transparent border-t-slate-900/95" />
-                      </div>
-                    </div>
-
-                    {/* Right Action Button or Ended Status Badge */}
-                    {isEnded ? (
-                      <span
-                        onClick={() => onSelectEvent(event)}
-                        className="px-3 sm:px-3.5 py-1.5 rounded-full font-bold text-[11px] sm:text-xs bg-slate-100 hover:bg-slate-200 text-slate-500 border border-slate-200/80 flex items-center justify-center gap-1 shrink-0 cursor-pointer transition-colors"
-                        title="คลิกเพื่อดูรายละเอียดและรีวิวกิจกรรม"
-                      >
-                        <span>สิ้นสุดแล้ว</span>
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => onSelectEvent(event)}
-                        className={`px-4 py-1.5 rounded-full font-bold text-xs transition-all shadow-xs hover:shadow active:scale-95 flex items-center justify-center gap-1 cursor-pointer shrink-0 ${isJoined
-                            ? 'bg-[#4A7C59] text-white shadow-[#4A7C59]/20'
-                            : 'bg-[#F26430] hover:bg-[#D95322] text-white shadow-[#F26430]/20'
-                          }`}
-                      >
-                        <span>
-                          {isJoined
-                            ? (event.eventType === 'public_venue' ? 'บันทึกนัดแล้ว' : 'เข้าร่วมแล้ว')
-                            : event.eventType === 'public_venue'
-                              ? 'ดูรายละเอียด'
-                              : 'เข้าร่วม'}
-                        </span>
-                      </button>
-                    )}
-                  </div>
                 </div>
               </Link>
             </motion.div>

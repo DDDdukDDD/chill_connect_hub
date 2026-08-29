@@ -158,6 +158,10 @@ export default function EventDetailPage() {
   };
 
   const toggleFavorite = (eventId: string) => {
+    if (!isLoggedIn) {
+      setIsAuthModalOpen(true);
+      return;
+    }
     setFavorites((prev) => {
       const isFav = prev.includes(eventId);
       let updated: string[];
@@ -345,7 +349,12 @@ export default function EventDetailPage() {
           <nav className="text-xs text-slate-500 font-medium truncate flex items-center gap-1.5">
             <Link href="/" className="hover:text-[#F26430] transition-colors font-semibold py-2 px-1">หน้าแรก</Link>
             <span className="py-2">/</span>
-            <Link href="/?category=all" className="hover:text-[#F26430] transition-colors py-2 px-1">กิจกรรม & อีเวนต์</Link>
+            <Link
+              href={`/?tab=${eventData.eventType === 'public_venue' ? 'public_venue' : 'community'}`}
+              className="hover:text-[#F26430] transition-colors py-2 px-1 font-semibold"
+            >
+              {eventData.eventType === 'public_venue' ? 'อีเวนต์ & งานแฟร์' : 'กิจกรรมคอมมูนิตี้'}
+            </Link>
             <span className="py-2">/</span>
             <span className="text-slate-900 font-bold truncate py-2 px-1">{eventData.title}</span>
           </nav>

@@ -54,7 +54,7 @@ export interface EventItem {
   rules?: string[];
   whatToBring?: string[];
   instructions?: string[];
-  subActivities?: any[];
+  subActivities?: Array<{ title: string; time?: string; description?: string; location?: string }>;
 }
 
 export const BANGKOK_ZONES = [

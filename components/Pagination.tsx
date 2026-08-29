@@ -65,29 +65,29 @@ export const Pagination: React.FC<PaginationProps> = ({
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 pb-2 border-t border-[#E8E2D8] mt-8">
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-5 pb-1 border-t border-slate-200/70 mt-6">
       {/* Information text */}
-      <div className="text-xs sm:text-sm text-[#64748B] font-medium text-center sm:text-left">
-        แสดง <span className="font-bold text-[#1E293B]">{startItem} - {endItem}</span> จากทั้งหมด{' '}
+      <div className="text-[11px] sm:text-xs text-[#64748B] font-medium text-center sm:text-left">
+        แสดง <span className="font-bold text-[#1E293B]">{startItem} - {endItem}</span> จาก{' '}
         <span className="font-bold text-[#1E293B]">{totalItems}</span> {itemUnit}{' '}
         <span className="text-slate-400 font-normal">({currentPage}/{totalPages} หน้า)</span>
       </div>
 
-      {/* Google-style Page Buttons Bar */}
-      <div className="flex items-center gap-1.5 sm:gap-2">
+      {/* Google-style Compact Page Buttons Bar */}
+      <div className="flex items-center gap-1 sm:gap-1.5">
         {/* Previous Button */}
         <button
           onClick={() => handlePageSelect(currentPage - 1)}
           disabled={currentPage === 1}
-          className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1 transition-all ${
+          className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${
             currentPage === 1
-              ? 'text-slate-300 bg-slate-100 cursor-not-allowed'
-              : 'text-[#475569] bg-white border border-[#E8E2D8] hover:bg-slate-50 hover:text-[#1E293B] active:scale-95 cursor-pointer shadow-2xs'
+              ? 'text-slate-300 bg-slate-50 border border-slate-100 cursor-not-allowed'
+              : 'text-[#475569] bg-white border border-slate-200/90 hover:bg-slate-50 hover:text-[#1E293B] active:scale-95 cursor-pointer shadow-2xs'
           }`}
           title="หน้าก่อนหน้า"
         >
-          <ChevronLeft className="w-4 h-4" />
-          <span className="hidden sm:inline">ก่อนหน้า</span>
+          <ChevronLeft className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline text-[11px]">ก่อนหน้า</span>
         </button>
 
         {/* Page Number Chips */}
@@ -97,7 +97,7 @@ export const Pagination: React.FC<PaginationProps> = ({
               return (
                 <span
                   key={`ellipsis-${idx}`}
-                  className="w-8 h-9 flex items-center justify-center text-xs text-slate-400 font-bold"
+                  className="w-7 h-7 flex items-center justify-center text-[11px] text-slate-400 font-bold"
                 >
                   ...
                 </span>
@@ -111,10 +111,10 @@ export const Pagination: React.FC<PaginationProps> = ({
               <button
                 key={pageNum}
                 onClick={() => handlePageSelect(pageNum)}
-                className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center cursor-pointer ${
+                className={`w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-lg text-xs font-extrabold transition-all flex items-center justify-center cursor-pointer ${
                   isActive
-                    ? 'bg-[#4A7C59] text-white shadow-sm ring-2 ring-[#4A7C59]/20'
-                    : 'bg-white text-[#475569] border border-[#E8E2D8] hover:bg-slate-100 hover:text-[#1E293B] active:scale-95'
+                    ? 'bg-[#4A7C59] text-white shadow-xs ring-1 ring-[#4A7C59]/30'
+                    : 'bg-white text-[#475569] border border-slate-200/90 hover:bg-slate-50 hover:text-[#1E293B] active:scale-95'
                 }`}
                 title={`ไปหน้าที่ ${pageNum}`}
               >
@@ -128,15 +128,15 @@ export const Pagination: React.FC<PaginationProps> = ({
         <button
           onClick={() => handlePageSelect(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1 transition-all ${
+          className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${
             currentPage === totalPages
-              ? 'text-slate-300 bg-slate-100 cursor-not-allowed'
-              : 'text-[#475569] bg-white border border-[#E8E2D8] hover:bg-slate-50 hover:text-[#1E293B] active:scale-95 cursor-pointer shadow-2xs'
+              ? 'text-slate-300 bg-slate-50 border border-slate-100 cursor-not-allowed'
+              : 'text-[#475569] bg-white border border-slate-200/90 hover:bg-slate-50 hover:text-[#1E293B] active:scale-95 cursor-pointer shadow-2xs'
           }`}
           title="หน้าถัดไป"
         >
-          <span className="hidden sm:inline">ถัดไป</span>
-          <ChevronRight className="w-4 h-4" />
+          <span className="hidden sm:inline text-[11px]">ถัดไป</span>
+          <ChevronRight className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>

@@ -16,7 +16,8 @@ import {
   ChevronRight,
   ShieldCheck,
   Crown,
-  ArrowUpRight
+  ArrowUpRight,
+  Target
 } from 'lucide-react';
 import { ChallengeQuest } from '@/data/mockData';
 import { JoinChallengeModal } from '@/components/JoinChallengeModal';
@@ -27,10 +28,11 @@ interface CommunityChallengeBarProps {
   onOpenCreateModal?: () => void;
 }
 
-export const COMMUNITY_PUBLIC_QUESTS: ChallengeQuest[] = [
+export const COMMUNITY_PUBLIC_QUESTS: (ChallengeQuest & { image?: string })[] = [
   {
     id: 'comm-quest-1',
     title: 'Bangkok Coffee Trail: ตะลุย 3 คาเฟ่อารีย์',
+    image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80',
     iconName: 'Coffee',
     category: 'chill',
     badgeLabel: 'Coffee Explorer',
@@ -61,6 +63,7 @@ export const COMMUNITY_PUBLIC_QUESTS: ChallengeQuest[] = [
   {
     id: 'comm-quest-2',
     title: 'BMA Park Run: วิ่งสะสม 3 สวนสาธารณะ',
+    image: 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=600&q=80',
     iconName: 'Footprints',
     category: 'move',
     badgeLabel: 'BMA Park Champion',
@@ -91,6 +94,7 @@ export const COMMUNITY_PUBLIC_QUESTS: ChallengeQuest[] = [
   {
     id: 'comm-quest-3',
     title: 'HYROX 10K Running & Workout Prep',
+    image: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=600&q=80',
     iconName: 'Flame',
     category: 'move',
     badgeLabel: 'HYROX Warrior',
@@ -121,6 +125,7 @@ export const COMMUNITY_PUBLIC_QUESTS: ChallengeQuest[] = [
   {
     id: 'comm-quest-4',
     title: 'Morning Yoga 7 Days: ฮีลใจรับอรุณ',
+    image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=600&q=80',
     iconName: 'Sparkles',
     category: 'heal',
     badgeLabel: 'Yoga Spirit',
@@ -151,6 +156,7 @@ export const COMMUNITY_PUBLIC_QUESTS: ChallengeQuest[] = [
   {
     id: 'comm-quest-5',
     title: 'Digital Detox 3 Hours: วันหยุดไร้จอมือถือ',
+    image: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=600&q=80',
     iconName: 'Sparkles',
     category: 'chill',
     badgeLabel: 'Mindful Soul',
@@ -187,33 +193,22 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
 }) => {
   const [joinedList, setJoinedList] = useState<string[]>(joinedQuestTitles);
   const [selectedQuestForModal, setSelectedQuestForModal] = useState<ChallengeQuest | null>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-
-  const handlePrev = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: -320, behavior: 'smooth' });
-    }
-  };
-
-  const handleNext = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: 320, behavior: 'smooth' });
-    }
-  };
 
   const handleOpenDetailModal = (quest: ChallengeQuest) => {
     setSelectedQuestForModal(quest);
   };
 
   const handleConfirmJoinModal = (quest: ChallengeQuest) => {
-    setJoinedList((prev) => [...prev, quest.title]);
-    if (onJoinQuest) {
-      onJoinQuest(quest.title);
+    if (!joinedList.includes(quest.title)) {
+      setJoinedList((prev) => [...prev, quest.title]);
+      if (onJoinQuest) {
+        onJoinQuest(quest.title);
+      }
     }
   };
 
-  const getCategoryLabel = (cat?: string) => {
-    switch (cat) {
+  const getCategoryLabel = (catId?: string) => {
+    switch (catId) {
       case 'move':
         return '🏃 Move';
       case 'heal':
@@ -227,176 +222,159 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
   };
 
   return (
-    <section className="my-6 sm:my-8 bg-white/90 backdrop-blur-xs rounded-3xl p-5 sm:p-7 border border-[#E8E2D8] shadow-xs space-y-5 relative group">
+    <section className="my-8 sm:my-10 space-y-4 relative">
       
-      {/* Header Strip (Calm Forest Green & Gold Gamification Branding) */}
-      <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
-        <div className="min-w-0 flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#2E583C] to-[#4A7C59] flex items-center justify-center text-white shadow-2xs shrink-0">
-            <Trophy className="w-4 h-4 text-amber-300" />
-          </div>
-          <div>
-            <h2 className="text-sm sm:text-base font-black text-[#1E293B] tracking-tight truncate flex items-center gap-1.5">
-              <span>ชาเลนจ์ & ภารกิจท้าทาย</span>
-              <span className="text-[9px] font-black bg-emerald-50 text-emerald-800 border border-emerald-200 px-1.5 py-0.2 rounded-md hidden sm:inline-block">
-                Quests
-              </span>
-            </h2>
-            <p className="text-[11px] text-[#64748B] font-medium hidden sm:block">
-              พิชิตภารกิจสนุกๆ รับเหรียญตราเกียรติยศ และแต้ม XP พิเศษ
-            </p>
-          </div>
+      {/* Header Strip (Clean Minimal Header with Sleek Icon & Action-Oriented Subtitle) */}
+      <div className="flex items-center justify-between gap-3 pb-1">
+        <div className="min-w-0">
+          <h2 className="text-base sm:text-lg font-black text-[#1E293B] tracking-tight truncate flex items-center gap-2">
+            <span className="w-7 h-7 rounded-xl bg-[#FFF4EE] border border-[#FCD9C6] flex items-center justify-center text-[#F26430] shrink-0 shadow-2xs">
+              <Target className="w-4 h-4 stroke-[2.5]" />
+            </span>
+            <span>ชาเลนจ์ & ภารกิจท้าทาย</span>
+            <span className="text-[10px] font-black bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full">
+              Quests
+            </span>
+          </h2>
+          <p className="text-xs text-[#64748B] font-medium mt-1 hidden sm:block">
+            ร่วมภารกิจเพื่อสะสมเหรียญ Badge หรือ EXP ประจำตัว เพื่อสิทธิพิเศษมากมาย
+          </p>
         </div>
 
-        {/* Right Actions: View All */}
+        {/* Right Actions: View All Link */}
         <div className="flex items-center gap-1.5 shrink-0">
           <Link
             href="/challenges"
-            className="bg-[#1E293B] hover:bg-[#4A7C59] text-white text-[11px] font-bold px-3.5 py-1.5 rounded-xl transition-all shadow-2xs flex items-center gap-1 cursor-pointer active:scale-95"
+            className="bg-[#1E293B] hover:bg-[#4A7C59] text-white text-xs font-bold px-3.5 py-1.5 rounded-xl transition-all shadow-2xs flex items-center gap-1 cursor-pointer active:scale-95"
           >
-            <span>ดูทั้งหมด</span>
+            <span>ดูทั้งหมด ({COMMUNITY_PUBLIC_QUESTS.length})</span>
             <ChevronRight className="w-3.5 h-3.5" />
           </Link>
         </div>
       </div>
 
-      {/* Carousel Container with Floating Center Left/Right Buttons */}
-      <div className="relative">
-        
-        {/* Floating Left Button */}
-        <button
-          onClick={handlePrev}
-          className="hidden lg:flex absolute -left-4 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 hover:bg-white text-slate-800 border border-slate-200/90 shadow-md hover:shadow-lg items-center justify-center transition-all cursor-pointer opacity-90 hover:opacity-100 active:scale-90"
-          aria-label="เลื่อนซ้าย"
-          title="เลื่อนซ้าย"
-        >
-          <ChevronLeft className="w-5 h-5 text-slate-700" />
-        </button>
+      {/* 4-Card Responsive Grid (Modern Collectible Cards with Full Hero Visual Art) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+        {COMMUNITY_PUBLIC_QUESTS.slice(0, 4).map((quest) => {
+          const isJoined = joinedList.includes(quest.title);
 
-        {/* Floating Right Button */}
-        <button
-          onClick={handleNext}
-          className="hidden lg:flex absolute -right-4 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 hover:bg-white text-slate-800 border border-slate-200/90 shadow-md hover:shadow-lg items-center justify-center transition-all cursor-pointer opacity-90 hover:opacity-100 active:scale-90"
-          aria-label="เลื่อนขวา"
-          title="เลื่อนขวา"
-        >
-          <ChevronRight className="w-5 h-5 text-slate-700" />
-        </button>
+          return (
+            <div
+              key={quest.id}
+              onClick={() => handleOpenDetailModal(quest)}
+              className="bg-white rounded-3xl p-3.5 sm:p-4 border border-slate-200 shadow-2xs hover:shadow-xl hover:border-[#4A7C59]/40 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between space-y-3 relative overflow-hidden group/card cursor-pointer"
+            >
+              {/* Official Quest Top Accent Stripe */}
+              {quest.isOfficial && (
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#4A7C59] via-emerald-400 to-amber-400" />
+              )}
 
-        {/* Horizontal Scrollable Cards (Clean White, Generous Bottom Padding) */}
-        <div
-          ref={scrollContainerRef}
-          className="flex gap-4 overflow-x-auto no-scrollbar scroll-smooth pb-5 pt-1.5 -mx-1 px-1"
-        >
-          {COMMUNITY_PUBLIC_QUESTS.map((quest) => {
-            const isJoined = joinedList.includes(quest.title);
-
-            return (
-              <div
-                key={quest.id}
-                onClick={() => handleOpenDetailModal(quest)}
-                className={`w-[310px] sm:w-[340px] md:w-[360px] shrink-0 bg-white rounded-3xl p-4 sm:p-5 border transition-all duration-300 flex flex-col justify-between space-y-3.5 shadow-2xs hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group/card cursor-pointer ${
-                  quest.isOfficial
-                    ? 'border-slate-200/90 hover:border-[#4A7C59]/40'
-                    : 'border-slate-200/90 hover:border-[#4A7C59]/40'
-                }`}
-              >
-                {/* Official Quest Top Accent Stripe */}
-                {quest.isOfficial && (
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#4A7C59] via-emerald-400 to-amber-400" />
-                )}
-
-                {/* Top Row: Category Tag / Official Tag + XP Pill */}
-                <div className="flex items-center justify-between gap-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-[#4A7C59] bg-[#EBF3ED] px-2.5 py-0.5 rounded-md">
-                      {getCategoryLabel(quest.category)}
-                    </span>
-                    {quest.isOfficial ? (
-                      <span
-                        title="ชาเลนจ์ทางการที่จัดทำโดย Chill & Connect Hub"
-                        className="text-[10px] font-black text-amber-900 bg-amber-100 px-2 py-0.5 rounded-md flex items-center gap-1 border border-amber-300/80"
-                      >
-                        <Crown className="w-3 h-3 text-amber-700 fill-amber-500" />
-                        <span>Official</span>
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
-                        👥 ชุมชน
-                      </span>
-                    )}
-                  </div>
-
-                  <span className="text-[10px] font-black text-amber-800 bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 rounded-md flex items-center gap-0.5 shrink-0">
-                    <Zap className="w-3 h-3 text-amber-600 fill-amber-500" />
-                    <span>+{quest.rewardPoints} XP</span>
+              {/* 1. Top Badges Row: Category + Official/Community + XP Token */}
+              <div className="flex items-center justify-between gap-1.5 pt-0.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-[#4A7C59] bg-[#EBF3ED] px-2 py-0.5 rounded-md">
+                    {getCategoryLabel(quest.category)}
                   </span>
-                </div>
-
-                {/* Title & 3D Badge Avatar Content */}
-                <div className="space-y-2.5 flex-1">
-                  <div className="flex items-start gap-3">
-                    <div className="w-11 h-11 rounded-2xl bg-[#F4F7F4] border border-[#DDE7DF] flex items-center justify-center shrink-0 shadow-2xs group-hover/card:scale-110 transition-transform text-2xl">
-                      {quest.badgeIcon || (quest.iconName === 'Flame' ? '🔥' : quest.iconName === 'Coffee' ? '☕' : quest.iconName === 'Footprints' ? '👟' : '🏅')}
-                    </div>
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <h3
-                        title={quest.title}
-                        className="font-black text-xs sm:text-sm text-[#1E293B] group-hover/card:text-[#4A7C59] transition-colors leading-snug break-words"
-                      >
-                        {quest.title}
-                      </h3>
-                      <p
-                        title={quest.targetGoal}
-                        className="text-xs text-slate-500 line-clamp-2 leading-relaxed font-medium pt-0.5"
-                      >
-                        {quest.targetGoal}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Clean Reward Badge Block */}
-                  <div className="bg-[#F8FAF8] border border-emerald-200/70 p-2 rounded-xl flex items-center gap-2 text-[11px] font-bold text-slate-800">
-                    <Award className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
-                    <span className="truncate">เหรียญ: {quest.badgeLabel}</span>
-                  </div>
-                </div>
-
-                {/* Clean Bottom Strip: Creator + Participants Count & Micro-CTA */}
-                <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                  <div className="flex items-center gap-1.5 truncate max-w-[120px]">
-                    <img
-                      src={quest.creatorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80'}
-                      alt={quest.creatorName || ''}
-                      className="w-4 h-4 rounded-full object-cover border border-slate-200 shrink-0"
-                    />
-                    <span className="truncate text-slate-700 font-medium">{quest.creatorName}</span>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    {isJoined ? (
-                      <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                        <span>กำลังทำ</span>
-                      </span>
-                    ) : (
-                      <span className="font-bold text-slate-600 flex items-center gap-1 text-[11px]">
-                        <Users className="w-3.5 h-3.5 text-[#4A7C59]" />
-                        <span>{quest.participantsCount} คน</span>
-                      </span>
-                    )}
-
-                    <span className="text-[#4A7C59] font-bold text-[11px] flex items-center gap-0.5 group-hover/card:translate-x-0.5 transition-transform">
-                      <span>ดูรายละเอียด</span>
-                      <ArrowUpRight className="w-3 h-3" />
+                  {quest.isOfficial ? (
+                    <span
+                      title="ชาเลนจ์ทางการที่จัดทำโดย Chill & Connect Hub"
+                      className="text-[10px] font-black text-amber-900 bg-amber-100/90 px-1.5 py-0.5 rounded-md flex items-center gap-0.5 border border-amber-300/80"
+                    >
+                      <Crown className="w-2.5 h-2.5 text-amber-700 fill-amber-500" />
+                      <span>Official</span>
                     </span>
+                  ) : (
+                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md">
+                      👥 ชุมชน
+                    </span>
+                  )}
+                </div>
+
+                <span className="text-[10px] font-black text-amber-800 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/90 px-2 py-0.5 rounded-md flex items-center gap-0.5 shrink-0 shadow-2xs">
+                  <Zap className="w-3 h-3 text-amber-600 fill-amber-500" />
+                  <span>+{quest.rewardPoints} XP</span>
+                </span>
+              </div>
+
+              {/* 2. Full Inner Image Banner with Floating Glass Badge */}
+              <div className="relative h-28 sm:h-32 w-full rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 group-hover/card:border-[#4A7C59]/40 transition-colors">
+                <img
+                  src={quest.image || 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80'}
+                  alt={quest.title}
+                  className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500"
+                />
+                
+                {/* Ambient Dark Gradient */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+                {/* Top-Right Mini Badge Emoji */}
+                <div className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-sm border border-white/30">
+                  {quest.badgeIcon || '🏅'}
+                </div>
+
+                {/* Bottom-Left Floating Glass Medal Badge */}
+                <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
+                  <div className="inline-flex items-center gap-1.5 text-[10.5px] font-black text-white bg-slate-900/80 backdrop-blur-md px-2.5 py-1 rounded-xl border border-white/20 shadow-md truncate max-w-full">
+                    <Award className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span className="truncate">เหรียญ {quest.badgeLabel}</span>
                   </div>
                 </div>
               </div>
-            );
-          })}
-        </div>
 
+              {/* 3. Title & Target Description */}
+              <div className="space-y-1 flex-1">
+                <h3
+                  title={quest.title}
+                  className="font-black text-xs sm:text-[13px] text-slate-900 group-hover/card:text-[#4A7C59] transition-colors leading-snug line-clamp-1"
+                >
+                  {quest.title}
+                </h3>
+                <p
+                  title={quest.targetGoal}
+                  className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed font-medium"
+                >
+                  {quest.targetGoal}
+                </p>
+              </div>
+
+              {/* 4. Meta Row: Creator & Participant count */}
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                <div className="flex items-center gap-1.5 truncate max-w-[120px]">
+                  <img
+                    src={quest.creatorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80'}
+                    alt={quest.creatorName || ''}
+                    className="w-4 h-4 rounded-full object-cover border border-slate-200 shrink-0"
+                  />
+                  <span className="truncate text-slate-700 font-medium">{quest.creatorName}</span>
+                </div>
+
+                <span className="font-bold text-slate-600 flex items-center gap-1 text-[10.5px]">
+                  <Users className="w-3 h-3 text-[#4A7C59]" />
+                  <span>{quest.participantsCount} คน</span>
+                </span>
+              </div>
+
+              {/* 5. Primary Interactive CTA Button */}
+              <div>
+                {isJoined ? (
+                  <div className="w-full py-1.5 px-3 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200/90 text-xs font-black flex items-center justify-center gap-1 shadow-2xs">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>กำลังทำภารกิจ</span>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="w-full py-1.5 px-3 rounded-xl bg-[#4A7C59] hover:bg-[#3B6347] text-white text-xs font-extrabold flex items-center justify-center gap-1 shadow-xs hover:shadow-md transition-all active:scale-95 cursor-pointer"
+                  >
+                    <span>ดูภารกิจ & เข้าร่วม</span>
+                    <ArrowUpRight className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+            </div>
+          );
+        })}
       </div>
 
       {/* Detail & Confirmation Modal */}

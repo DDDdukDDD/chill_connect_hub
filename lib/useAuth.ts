@@ -1,29 +1,42 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useSyncExternalStore } from 'react';
 
 let globalIsLoggedIn = false;
-let hasHydrated = false;
+const listeners = new Set<() => void>();
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function getSnapshot() {
+  return globalIsLoggedIn;
+}
+
+function getServerSnapshot() {
+  return false;
+}
 
 export function useAuth() {
-  const [isLoggedIn, setIsLoggedIn] = useState(globalIsLoggedIn);
-  const [isAuthReady, setIsAuthReady] = useState(hasHydrated);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const isLoggedIn = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   useEffect(() => {
-    hasHydrated = true;
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('isLoggedIn');
-      const loggedIn = saved === 'true';
-      globalIsLoggedIn = loggedIn;
-      setIsLoggedIn(loggedIn);
-      setIsAuthReady(true);
+    const saved = localStorage.getItem('isLoggedIn') === 'true';
+    if (saved !== globalIsLoggedIn) {
+      globalIsLoggedIn = saved;
+      listeners.forEach((l) => l());
     }
+    setIsAuthReady(true);
   }, []);
 
   const handleSetIsLoggedIn = (status: boolean) => {
     globalIsLoggedIn = status;
-    setIsLoggedIn(status);
     if (typeof window !== 'undefined') {
       localStorage.setItem('isLoggedIn', status ? 'true' : 'false');
     }
+    listeners.forEach((l) => l());
   };
 
   return { isLoggedIn, isAuthReady, handleSetIsLoggedIn };

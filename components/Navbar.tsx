@@ -77,25 +77,27 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <>
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 transition-all">
-        <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-15 flex items-center justify-between">
+        <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-17 flex items-center justify-between">
           
           {/* Left: Brand Logo & Name */}
           <Link 
             href="/"
             onClick={() => setActiveTab('explore')}
-            className="flex items-center gap-2.5 sm:gap-3 cursor-pointer group"
+            className="flex items-center gap-2.5 sm:gap-3.5 cursor-pointer group py-1"
           >
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-[#4A7C59] flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform shrink-0">
-              <Sprout className="w-5 h-5 sm:w-5.5 sm:h-5.5 stroke-[2.5]" />
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-[#4A7C59] flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform shrink-0">
+              <Sprout className="w-5.5 h-5.5 sm:w-6 sm:h-6 stroke-[2.5]" />
             </div>
-            <div>
-              <div className="flex items-center gap-1">
-                <span className="font-black text-lg sm:text-xl tracking-tight text-[#1E293B] font-sans leading-none">
-                  Chill & Connect Hub
-                </span>
-              </div>
-              <p className="text-[9.5px] sm:text-[10.5px] text-[#64748B] font-medium tracking-wide leading-tight mt-0.5">
-                แชร์โมเมนต์ • พบเพื่อนใหม่ • ชิลล์ได้ทุกวัน
+            <div className="flex flex-col justify-center">
+              <span className="font-black text-lg sm:text-[20px] tracking-tight text-[#1E293B] font-sans leading-none">
+                Chill & Connect Hub
+              </span>
+              <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium tracking-normal leading-none mt-1.5 sm:mt-2 flex items-center gap-1.5">
+                <span>แชร์โมเมนต์</span>
+                <span className="text-slate-300">•</span>
+                <span>พบเพื่อนใหม่</span>
+                <span className="text-slate-300">•</span>
+                <span>ชิลล์ได้ทุกวัน</span>
               </p>
             </div>
           </Link>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
@@ -17,7 +17,6 @@ import { CreateEventModal } from '@/components/CreateEventModal';
 import { FilterDrawer } from '@/components/FilterDrawer';
 import { StoryBar } from '@/components/StoryBar';
 import { TrendingCarousel } from '@/components/TrendingCarousel';
-import { ReviewCarousel } from '@/components/ReviewCarousel';
 import { CommunityChallengeBar } from '@/components/CommunityChallengeBar';
 import { CreateChallengeModal } from '@/components/CreateChallengeModal';
 import { Pagination } from '@/components/Pagination';
@@ -98,10 +97,69 @@ export default function Home() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isCreateChallengeModalOpen, setIsCreateChallengeModalOpen] = useState<boolean>(false);
   const [joinedQuestTitles, setJoinedQuestTitles] = useState<string[]>(['Cafe Hunter 5', 'Step Count 30Days']);
-  const [hideEndedEvents, setHideEndedEvents] = useState<boolean>(true);
-  const [layoutMode, setLayoutMode] = useState<'v1' | 'v2'>('v2');
+  const [showEndedEvents, setShowEndedEvents] = useState<boolean>(false);
+
+  // Sync and persist active tab switcher
+  const handleSelectEventTypeTab = (tab: 'spots' | 'public_venue' | 'community') => {
+    setEventTypeTab(tab);
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.setItem('chill_active_tab', tab);
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', tab);
+        window.history.replaceState({}, '', url.toString());
+      } catch (err) {
+        console.error('Session storage error:', err);
+      }
+    }
+  };
+
+  // Restore Active Tab & Scroll to Card when navigating back from Event/Spot details
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get('tab') as 'spots' | 'public_venue' | 'community' | null;
+      const savedTab = sessionStorage.getItem('chill_active_tab') as 'spots' | 'public_venue' | 'community' | null;
+
+      const targetTab = tabParam || savedTab;
+      if (targetTab && ['spots', 'public_venue', 'community'].includes(targetTab)) {
+        setEventTypeTab(targetTab);
+      }
+
+      // Scroll to previous card if available
+      const lastEventId = sessionStorage.getItem('chill_last_viewed_event');
+      const lastSpotId = sessionStorage.getItem('chill_last_viewed_spot');
+      const hash = window.location.hash;
+
+      const targetId = hash ? hash.replace('#', '') : (lastEventId ? `event-${lastEventId}` : (lastSpotId ? `spot-${lastSpotId}` : null));
+
+      if (targetId) {
+        const timer = setTimeout(() => {
+          const el = document.getElementById(targetId);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('ring-4', 'ring-[#4A7C59]/40', 'transition-all', 'duration-500');
+            setTimeout(() => {
+              el.classList.remove('ring-4', 'ring-[#4A7C59]/40');
+            }, 2000);
+          }
+          sessionStorage.removeItem('chill_last_viewed_event');
+          sessionStorage.removeItem('chill_last_viewed_spot');
+        }, 400);
+        return () => clearTimeout(timer);
+      }
+    } catch (e) {
+      console.error('Tab & scroll restore error:', e);
+    }
+  }, []);
 
   const toggleFavoriteSpot = (spotId: string) => {
+    if (!isLoggedIn) {
+      triggerMembershipPrompt('เพื่อบันทึกสถานที่นี้ไว้ใน Bucket List');
+      return;
+    }
     setFavoriteSpots((prev) => {
       const isFav = prev.includes(spotId);
       if (isFav) {
@@ -174,6 +232,10 @@ export default function Home() {
   };
 
   const toggleFavorite = (eventId: string) => {
+    if (!isLoggedIn) {
+      triggerMembershipPrompt('เพื่อบันทึกกิจกรรมนี้ไว้ในรายการโปรด');
+      return;
+    }
     setFavorites((prev) => {
       const isFav = prev.includes(eventId);
       if (isFav) {
@@ -322,9 +384,10 @@ export default function Home() {
       let matchesPrice = true;
       const priceStr = event.price || '';
       if (priceFilter === 'free') {
-        matchesPrice = priceStr === 'ฟรี!' || priceStr === 'ฟรี';
+        matchesPrice = priceStr.includes('ฟรี');
       } else if (priceFilter === 'under500') {
-        matchesPrice = priceStr === 'ฟรี!' || priceStr === 'ฟรี' || priceStr.includes('150') || priceStr.includes('200') || priceStr.includes('350');
+        const num = parseInt(priceStr.replace(/[^0-9]/g, ''), 10);
+        matchesPrice = priceStr.includes('ฟรี') || (!isNaN(num) && num <= 500);
       }
 
       let matchesZone = true;
@@ -332,24 +395,27 @@ export default function Home() {
         matchesZone = event.zone === selectedZone;
       }
 
-      // Hide Ended Events filter
+      // Ended Events filter (Default: hide ended events, show when showEndedEvents is true)
       let matchesEnded = true;
-      if (hideEndedEvents) {
+      if (!showEndedEvents) {
         matchesEnded = !isEventEnded(event);
       }
 
       return matchesCategory && matchesVenue && matchesEventType && matchesTime && matchesSubCategory && matchesSearch && matchesPrice && matchesZone && matchesEnded;
     });
 
-    // Calculate distance for all events if userLocation is available
+    // Calculate distance for all events ONLY when sortByNearMe is active
     result = result.map((ev) => {
-      if (userLocation && ev.latitude && ev.longitude) {
+      if (sortByNearMe && userLocation && ev.latitude && ev.longitude) {
         return {
           ...ev,
           distanceKm: calculateDistanceKm(userLocation.lat, userLocation.lng, ev.latitude, ev.longitude),
         };
       }
-      return ev;
+      return {
+        ...ev,
+        distanceKm: undefined,
+      };
     });
 
     if (sortByNearMe) {
@@ -386,7 +452,7 @@ export default function Home() {
     sortByNearMe,
     userLocation,
     favorites,
-    hideEndedEvents,
+    showEndedEvents,
   ]);
 
   // Filtered Lifestyle Spots (พิกัดเที่ยว & จุดฮีลใจ ทั่วประเทศ)
@@ -411,7 +477,14 @@ export default function Home() {
         return false;
       }
 
-      // 4. Search Query Filter
+      // 4. Price Filter (เข้าฟรี)
+      if (priceFilter === 'free') {
+        if (!spot.price.includes('ฟรี')) {
+          return false;
+        }
+      }
+
+      // 5. Search Query Filter
       if (searchQuery.trim() !== '') {
         const q = searchQuery.toLowerCase().trim();
         const matchTitle = spot.title.toLowerCase().includes(q);
@@ -426,13 +499,16 @@ export default function Home() {
 
       return true;
     }).map((spot) => {
-      if (userLocation && spot.latitude && spot.longitude) {
+      if (sortByNearMe && userLocation && spot.latitude && spot.longitude) {
         return {
           ...spot,
           distanceKm: calculateDistanceKm(userLocation.lat, userLocation.lng, spot.latitude, spot.longitude),
         };
       }
-      return spot;
+      return {
+        ...spot,
+        distanceKm: undefined,
+      };
     });
 
     if (sortByNearMe) {
@@ -445,7 +521,7 @@ export default function Home() {
     }
 
     return result;
-  }, [selectedSpotCategory, selectedSpotProvince, sortBy, sortByNearMe, userLocation, favoriteSpots, searchQuery]);
+  }, [selectedSpotCategory, selectedSpotProvince, priceFilter, sortBy, sortByNearMe, userLocation, favoriteSpots, searchQuery]);
 
   const handleSearchSubmit = () => {
     // Smart Search Auto-Clear: reset conflicting sub-filters so the search result is not blocked
@@ -522,6 +598,8 @@ export default function Home() {
     setSearchQuery('');
     setSortBy('newest');
     setSortByNearMe(false);
+    setUserLocation(null);
+    setShowEndedEvents(false);
     setSelectedSpotCategory('all');
     setSelectedSpotProvince('all');
     setCurrentPage(1);
@@ -531,6 +609,7 @@ export default function Home() {
   const handleToggleNearMe = () => {
     if (sortByNearMe) {
       setSortByNearMe(false);
+      setUserLocation(null);
       showToast('ปิดการเรียงตามระยะทางใกล้ฉันแล้ว');
       return;
     }
@@ -675,37 +754,13 @@ export default function Home() {
 
         <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-8 pt-1 sm:pt-2 pb-6 relative z-10">
           
-          {/* Layout Toggle for UX Testing */}
-          <div className="flex justify-end mb-4 -mt-2 animate-fade-in">
-            <div className="bg-white p-1 rounded-xl shadow-xs border border-slate-200 inline-flex items-center">
-              <button
-                type="button"
-                onClick={() => setLayoutMode('v1')}
-                className={`px-3 sm:px-4 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition-all cursor-pointer ${layoutMode === 'v1' ? 'bg-[#1E293B] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}
-              >
-                V1 (Global Highlight)
-              </button>
-              <button
-                type="button"
-                onClick={() => setLayoutMode('v2')}
-                className={`px-3 sm:px-4 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition-all cursor-pointer ${layoutMode === 'v2' ? 'bg-[#1E293B] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}
-              >
-                V2 (Contextual Highlight)
-              </button>
-            </div>
-          </div>
-          
           {/* 3. Auto-Sliding Trending Events Carousel */}
-          {layoutMode === 'v1' && (
-            <div className="animate-fade-in">
-              <TrendingCarousel
-                events={eventsList}
-                onSelectEvent={() => {}}
-                favorites={favorites}
-                toggleFavorite={toggleFavorite}
-              />
-            </div>
-          )}
+          <TrendingCarousel
+            events={eventsList}
+            onSelectEvent={() => {}}
+            favorites={favorites}
+            toggleFavorite={toggleFavorite}
+          />
 
           {/* 5. 🌿 คลังกิจกรรม & พิกัดเที่ยว (Mobile-First 3-Tab Mode Switcher) */}
           <section id="catalog-section" className="space-y-2 sm:space-y-2.5 pt-1">
@@ -731,7 +786,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => {
-                    setEventTypeTab('spots');
+                    handleSelectEventTypeTab('spots');
                   }}
                   className={`w-full flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-black text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-98 ${
                     eventTypeTab === 'spots'
@@ -756,7 +811,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => {
-                    setEventTypeTab('community');
+                    handleSelectEventTypeTab('community');
                     setSelectedVenueFilter(null);
                   }}
                   className={`w-full flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-black text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-98 ${
@@ -782,7 +837,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => {
-                    setEventTypeTab('public_venue');
+                    handleSelectEventTypeTab('public_venue');
                     setSelectedCategory(null);
                     setSelectedSubCategory(null);
                   }}
@@ -851,6 +906,19 @@ export default function Home() {
                       </select>
                       <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 pointer-events-none" />
                     </div>
+
+                    {/* 3. Quick Free Spot Toggle */}
+                    <button
+                      type="button"
+                      onClick={() => setPriceFilter(priceFilter === 'free' ? 'all' : 'free')}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap cursor-pointer border ${
+                        priceFilter === 'free'
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                          : 'bg-emerald-50/80 text-emerald-700 border-emerald-200 hover:bg-emerald-100/80'
+                      }`}
+                    >
+                      🎉 เข้าฟรี
+                    </button>
 
                   </div>
 
@@ -1012,17 +1080,6 @@ export default function Home() {
               /* ========================================================================= */
               <div className="space-y-4">
                 
-                {/* Auto-Sliding Trending Events Carousel (Moved inside Events Tab for V2) */}
-                {layoutMode === 'v2' && (
-                  <div className="pt-2 animate-fade-in">
-                    <TrendingCarousel
-                      events={eventsList}
-                      onSelectEvent={() => {}}
-                      favorites={favorites}
-                      toggleFavorite={toggleFavorite}
-                    />
-                  </div>
-                )}
                 
                 {/* Search/Filter Results Notice (Only when explicitly searching or filtering) */}
                 {searchQuery.trim() !== '' || selectedCategory !== null || selectedVenueFilter !== null || selectedZone !== null || sortByNearMe || priceFilter !== 'all' || (timeFilter === 'custom' && startDate) ? (
@@ -1143,21 +1200,25 @@ export default function Home() {
 
                     <div className="h-4 w-px bg-slate-200 shrink-0 hidden sm:block" />
 
-                    {/* Checkbox: Hide Ended Events */}
+                    {/* Checkbox: Show Ended Events */}
                     <div className="relative group/tip shrink-0">
-                      <label className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer select-none bg-slate-50 hover:bg-slate-100/80 px-2.5 py-1 rounded-xl border border-slate-200/80 transition-all">
+                      <label className={`flex items-center gap-1.5 text-xs font-bold cursor-pointer select-none px-2.5 py-1 rounded-xl border transition-all ${
+                        showEndedEvents
+                          ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100/80 border-slate-200/80'
+                      }`}>
                         <input
                           type="checkbox"
-                          checked={hideEndedEvents}
+                          checked={showEndedEvents}
                           onChange={(e) => {
-                            setHideEndedEvents(e.target.checked);
+                            setShowEndedEvents(e.target.checked);
                           }}
                           className="w-3.5 h-3.5 accent-[#4A7C59] rounded cursor-pointer"
                         />
-                        <span>ซ่อนงานที่จบไปแล้ว</span>
+                        <span>แสดงงานที่จบไปแล้ว</span>
                       </label>
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2 bg-slate-900/95 text-white text-[10px] font-medium rounded-xl shadow-xl border border-white/10 opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-150 pointer-events-none z-50 leading-tight text-center">
-                        🗓️ ซ่อนกิจกรรมและงานที่จัดเสร็จสิ้นไปแล้ว
+                        🗓️ ติ๊กเพื่อแสดงกิจกรรมและงานที่จัดเสร็จสิ้นไปแล้ว
                         <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95" />
                       </div>
                     </div>
@@ -1275,9 +1336,6 @@ export default function Home() {
               }
             }}
           />
-
-          {/* SECTION 5: 💬 เสียงตอบรับจากเพื่อนๆ (Auto-Slide Carousel) */}
-          <ReviewCarousel />
 
         </div>
 

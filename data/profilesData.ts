@@ -378,7 +378,7 @@ export function getConnectedUserIds(): string[] {
       return defaultConnects;
     }
     return JSON.parse(raw);
-  } catch (e) {
+  } catch {
     return ['host-mind', 'host-karn'];
   }
 }
@@ -402,7 +402,7 @@ export function toggleUserConnect(userId: string): { isConnected: boolean; count
 
     localStorage.setItem('connectedUserIds', JSON.stringify(updated));
     return { isConnected: !alreadyConnected, countDelta: delta };
-  } catch (e) {
+  } catch {
     return { isConnected: true, countDelta: 1 };
   }
 }

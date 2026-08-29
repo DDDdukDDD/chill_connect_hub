@@ -211,13 +211,24 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
 
+                  {/* Top-Left Activity Type Badge */}
+                  <div className="absolute top-2 left-2 z-10">
+                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full shadow-md backdrop-blur-md border border-white/20 flex items-center gap-1 ${
+                      isPublicVenue
+                        ? 'bg-slate-900/85 text-sky-200'
+                        : 'bg-[#4A7C59]/90 text-white'
+                    }`}>
+                      <span>{isPublicVenue ? '🏛️ อีเวนต์ & งานแฟร์' : '🌿 Chill & Connect Community'}</span>
+                    </span>
+                  </div>
+
                   {/* Favorite Heart Button */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       toggleFavorite(event.id);
                     }}
-                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center text-slate-600 hover:text-red-500 transition-colors shadow-sm z-10"
+                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center text-slate-600 hover:text-red-500 transition-colors shadow-sm z-10 cursor-pointer"
                   >
                     <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-red-500 text-red-500' : ''}`} />
                   </button>
@@ -256,52 +267,6 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
                         <span className="truncate">{event.location}</span>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Footer Action: Event Type (Left) + View Detail / Ended (Right) */}
-                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <div className="relative group/tooltip">
-                      <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border shrink-0 cursor-help transition-all ${isPublicVenue
-                          ? 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100'
-                          : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                        }`}>
-                        {isPublicVenue ? (
-                          '🏛️ อีเวนต์ & งานแฟร์'
-                        ) : (
-                          <>
-                            <span className="inline sm:hidden">🌿 Chill & Connect</span>
-                            <span className="hidden sm:inline">🌿 Chill & Connect Community</span>
-                          </>
-                        )}
-                      </span>
-
-                      {/* Tooltip Popup */}
-                      <div className="absolute bottom-full left-0 mb-2 w-52 p-2.5 bg-slate-900/95 text-white text-[10px] font-medium rounded-xl shadow-xl border border-white/10 opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 pointer-events-none z-30 leading-relaxed backdrop-blur-md">
-                        {isPublicVenue ? (
-                          <>
-                            <strong className="block text-sky-300 font-bold mb-0.5">🏛️ อีเวนต์ & งานแฟร์:</strong>
-                            งานคอนเสิร์ต มหกรรม นิทรรศการ หรือแมตช์กีฬาจัดโดยผู้จัดทางการ
-                          </>
-                        ) : (
-                          <>
-                            <strong className="block text-emerald-300 font-bold mb-0.5">🌿 Chill & Connect Community:</strong>
-                            กิจกรรมนัดพบกลุ่มย่อยจากเพื่อนๆ และโฮสต์บนแพลตฟอร์ม ชวนทำกิจกรรมสนุกๆ ไปด้วยกัน
-                          </>
-                        )}
-                        <div className="absolute top-full left-4 -mt-1 border-4 border-transparent border-t-slate-900/95" />
-                      </div>
-                    </div>
-
-                    {event.status === 'ended' ? (
-                      <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
-                        🏁 สิ้นสุดแล้ว
-                      </span>
-                    ) : (
-                      <span className="text-[#4A7C59] font-bold text-xs group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
-                        <span>ดูรายละเอียด</span>
-                        <ArrowRight className="w-3 h-3" />
-                      </span>
-                    )}
                   </div>
                 </div>
               </div>

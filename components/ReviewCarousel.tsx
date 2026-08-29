@@ -124,22 +124,22 @@ export const ReviewCarousel: React.FC = () => {
   }, [isPaused]);
 
   return (
-    <section className="my-6 sm:my-8 bg-white/90 backdrop-blur-xs rounded-3xl p-5 sm:p-7 border border-[#E8E2D8] shadow-xs space-y-5 relative group">
+    <section className="my-8 sm:my-10 space-y-4 relative group">
       
-      {/* Header Strip (Calm Forest Green Theme matching CommunityChallengeBar) */}
-      <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
+      {/* Header Strip (Calm Forest Green Theme matching CommunityChallengeBar - Borderless Minimal) */}
+      <div className="flex items-center justify-between gap-3 pb-1">
         <div className="min-w-0 flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#2E583C] to-[#4A7C59] flex items-center justify-center text-white shadow-2xs shrink-0">
             <MessageSquareQuote className="w-4 h-4 text-emerald-200" />
           </div>
           <div>
-            <h2 className="text-sm sm:text-base font-black text-[#1E293B] tracking-tight truncate flex items-center gap-1.5">
+            <h2 className="text-base sm:text-lg font-black text-[#1E293B] tracking-tight truncate flex items-center gap-1.5">
               <span>เสียงตอบรับจากเพื่อนๆ ที่ไปร่วมงานมาแล้ว</span>
               <span className="text-[9px] font-black bg-emerald-50 text-emerald-800 border border-emerald-200 px-1.5 py-0.2 rounded-md hidden sm:inline-block">
                 Reviews
               </span>
             </h2>
-            <p className="text-[11px] text-[#64748B] font-medium hidden sm:block">
+            <p className="text-xs text-[#64748B] font-medium hidden sm:block">
               ความรู้สึกจริงจากชาว Chill & Connect Hub ที่ลองออกไปเปิดประสบการณ์ยามว่าง
             </p>
           </div>
@@ -149,7 +149,7 @@ export const ReviewCarousel: React.FC = () => {
         <div className="flex items-center gap-1.5 shrink-0">
           <Link
             href="/moments"
-            className="bg-[#1E293B] hover:bg-[#4A7C59] text-white text-[11px] font-bold px-3.5 py-1.5 rounded-xl transition-all shadow-2xs flex items-center gap-1 cursor-pointer active:scale-95"
+            className="bg-[#1E293B] hover:bg-[#4A7C59] text-white text-xs font-bold px-3.5 py-1.5 rounded-xl transition-all shadow-2xs flex items-center gap-1 cursor-pointer active:scale-95"
           >
             <span>ดูรูปบรรยากาศทั้งหมด 📸</span>
             <ChevronRight className="w-3.5 h-3.5" />

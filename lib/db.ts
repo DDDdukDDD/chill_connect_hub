@@ -1,8 +1,8 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { EventItem, MOCK_EVENTS } from '@/data/mockData';
+import { MOCK_EVENTS } from '@/data/mockData';
 import { AdminEventItem } from './eventsStore';
-import { EventDataSource, DEFAULT_DATA_SOURCES } from './sourcesStore';
+import { EventDataSource } from './sourcesStore';
 
 const DB_DIR = path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DB_DIR, 'chill_database.json');
