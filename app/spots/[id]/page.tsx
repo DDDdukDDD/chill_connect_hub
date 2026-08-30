@@ -378,13 +378,13 @@ export default function SpotDetailPage() {
           
           {/* Left: Clean Breadcrumbs */}
           <nav className="text-xs text-slate-500 font-medium truncate flex items-center gap-1.5">
-            <Link href="/" className="hover:text-[#F26430] transition-colors font-semibold py-2 px-1">หน้าแรก</Link>
+            <Link href="/" className="hover:text-[#4A7C59] transition-colors font-semibold py-2 px-1">หน้าแรก</Link>
             <span className="py-2">/</span>
-            <Link href="/?tab=spots" className="hover:text-[#F26430] transition-colors py-2 px-1 font-semibold">สถานที่เที่ยว & จุดฮีลใจ</Link>
+            <Link href="/spots" className="hover:text-[#4A7C59] transition-colors py-2 px-1 font-semibold">พิกัดเที่ยว & จุดฮีลใจ</Link>
             <span className="py-2">/</span>
             <span className="text-slate-700 font-semibold py-2 px-1">{spot.province}</span>
             <span className="py-2">/</span>
-            <span className="text-slate-900 font-bold truncate py-2 px-1">{spot.title}</span>
+            <span className="text-slate-900 font-bold truncate py-2 px-1">{cleanText(spot.title)}</span>
           </nav>
 
           {/* Right: Favorite & Share Buttons */}
@@ -512,8 +512,8 @@ export default function SpotDetailPage() {
             {/* 1. Header Title, Badges & Ratings */}
             <div className="space-y-3 pb-4 border-b border-slate-100">
               <div className="flex items-center gap-2 flex-wrap">
-                {/* Category Badge */}
-                <span className="text-xs font-black px-3 py-1 rounded-full bg-[#FFF4EE] text-[#F26430] border border-[#FCD9C6]">
+                {/* Category Badge - Forest Green */}
+                <span className="text-xs font-black px-3 py-1 rounded-full bg-[#EBF3ED] text-[#2D5A3C] border border-emerald-200">
                   {spot.categoryLabel}
                 </span>
 
@@ -853,7 +853,7 @@ export default function SpotDetailPage() {
                   className={`w-full py-3 px-4 rounded-2xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 shadow-sm ${
                     isFavorite
                       ? 'bg-rose-50 text-rose-600 border border-rose-200'
-                      : 'bg-[#F26430] hover:bg-[#D95322] text-white shadow-[#F26430]/20'
+                      : 'bg-[#4A7C59] hover:bg-[#386144] text-white shadow-[#4A7C59]/20'
                   }`}
                 >
                   <Heart className={`w-4 h-4 ${isFavorite ? 'fill-rose-500 text-rose-500' : 'fill-white text-white'}`} />
@@ -864,7 +864,7 @@ export default function SpotDetailPage() {
                 <div className="grid grid-cols-2 gap-2">
                   <Link
                     href={`/moments?location=${encodeURIComponent(spot.title)}`}
-                    className="py-2.5 px-3 rounded-2xl font-bold text-xs bg-slate-50 hover:bg-slate-100 hover:text-[#F26430] text-slate-700 border border-slate-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98 truncate"
+                    className="py-2.5 px-3 rounded-2xl font-bold text-xs bg-slate-50 hover:bg-slate-100 hover:text-[#4A7C59] text-slate-700 border border-slate-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98 truncate"
                   >
                     <Camera className="w-3.5 h-3.5 text-slate-500" />
                     <span>ดูภาพ Moments</span>
@@ -881,15 +881,15 @@ export default function SpotDetailPage() {
                 </div>
               </div>
 
-              {/* Quest Banner Helper */}
-              <div className="p-3 rounded-2xl bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200/90 flex items-center justify-between gap-2 text-xs">
+              {/* Quest Banner Helper - Royal Violet Theme */}
+              <div className="p-3 rounded-2xl bg-purple-50 border border-purple-200/90 flex items-center justify-between gap-2 text-xs">
                 <div className="flex items-center gap-2 min-w-0">
-                  <Trophy className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span className="font-bold text-amber-900 truncate">มีเควสต์สะสมแต้ม XP ที่นี่</span>
+                  <Trophy className="w-4 h-4 text-purple-700 shrink-0" />
+                  <span className="font-bold text-purple-950 truncate">มีเควสต์สะสมแต้ม XP ที่นี่</span>
                 </div>
                 <Link
                   href="/challenges"
-                  className="font-black text-amber-900 hover:text-amber-950 underline shrink-0 text-[11px]"
+                  className="font-black text-purple-800 hover:text-purple-950 underline shrink-0 text-[11px]"
                 >
                   ดูเควสต์ ➔
                 </Link>

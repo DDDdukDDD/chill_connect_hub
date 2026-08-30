@@ -884,7 +884,7 @@ export default function Home() {
           {/* OPTION A: UNIFIED CURATED DISCOVERY STREAM (for Compact / Editorial Mode)  */}
           {/* ========================================================================= */}
           {heroVersion === 'editorial' ? (
-            <div id="catalog-section" className="space-y-10 sm:space-y-12 pt-2 animate-fade-in">
+            <div id="catalog-section" className="space-y-12 sm:space-y-14 pt-1 animate-fade-in">
 
               {/* ------------------------------------------------------------------------- */}
               {/* STREAM SECTION 1: 📍 LIFESTYLE SPOTS (พิกัดเที่ยว & จุดฮีลใจ ทั่วไทย)        */}
@@ -911,21 +911,6 @@ export default function Home() {
                   </div>
 
                   <div className="flex items-center gap-2 self-end sm:self-auto">
-                    {/* Category Filter Dropdown */}
-                    <div className="relative hidden sm:block">
-                      <select
-                        value={selectedSpotCategory}
-                        onChange={(e) => setSelectedSpotCategory(e.target.value)}
-                        aria-label="เลือกหมวดหมู่สถานที่"
-                        className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none cursor-pointer pr-7 appearance-none transition-colors shadow-2xs"
-                      >
-                        {SPOT_CATEGORIES.map((cat) => (
-                          <option key={cat.id} value={cat.id}>{cat.label}</option>
-                        ))}
-                      </select>
-                      <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    </div>
-
                     <Link
                       href={`/spots?category=${encodeURIComponent(selectedSpotCategory)}&province=${encodeURIComponent(selectedSpotProvince)}`}
                       className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-[#4A7C59] text-[#4A7C59] hover:text-white border border-emerald-200/80 hover:border-[#4A7C59] rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer"
@@ -946,22 +931,26 @@ export default function Home() {
                   />
                 </div>
 
-                {/* Spot Cards Grid (Top 10 items - 2 rows of 5 on desktop) */}
+                {/* Spot Cards Grid (15 items on desktop/tablet = 3 rows of 5, 8 items on mobile) */}
                 {filteredSpots.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
-                    {filteredSpots.slice(0, 10).map((spot) => (
-                      <SpotCard
+                    {filteredSpots.slice(0, 15).map((spot, idx) => (
+                      <div
                         key={spot.id}
-                        spot={spot}
-                        isFavorite={favoriteSpots.includes(spot.id)}
-                        onToggleFavorite={(id) => {
-                          if (!isLoggedIn) {
-                            triggerMembershipPrompt('เพื่อบันทึกสถานที่โปรด');
-                            return;
-                          }
-                          toggleFavoriteSpot(id);
-                        }}
-                      />
+                        className={idx >= 8 ? 'hidden sm:block' : 'block'}
+                      >
+                        <SpotCard
+                          spot={spot}
+                          isFavorite={favoriteSpots.includes(spot.id)}
+                          onToggleFavorite={(id) => {
+                            if (!isLoggedIn) {
+                              triggerMembershipPrompt('เพื่อบันทึกสถานที่โปรด');
+                              return;
+                            }
+                            toggleFavoriteSpot(id);
+                          }}
+                        />
+                      </div>
                     ))}
                   </div>
                 ) : (
@@ -972,7 +961,7 @@ export default function Home() {
               </section>
 
               {/* ------------------------------------------------------------------------- */}
-              {/* STREAM SECTION 2: 👥 COMMUNITY MEETUPS (กิจกรรมคอมมูนิตี้ & ชวนเพื่อน)     */}
+              {/* STREAM SECTION 2: 👥 COMMUNITY MEETUPS (กิจกรรมคอมมูนิตี้)                 */}
               {/* ------------------------------------------------------------------------- */}
               <section className="space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-orange-50/50 via-slate-50/30 to-transparent p-3.5 sm:p-4 rounded-2xl border border-orange-100/60 shadow-2xs">
@@ -982,7 +971,7 @@ export default function Home() {
                         02
                       </span>
                       <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                        <span>กิจกรรมคอมมูนิตี้ & ตี้เพื่อนใหม่</span>
+                        <span>กิจกรรมคอมมูนิตี้</span>
                         <span className="text-[10px] font-black text-[#F26430] bg-[#FFF4EE] px-2 py-0.5 rounded-full border border-orange-200">
                           Community
                         </span>
@@ -1016,9 +1005,10 @@ export default function Home() {
                   />
                 </div>
 
-                {/* Community Events Grid (Top 10 items - 2 rows of 5 on desktop) */}
+                {/* Community Events Grid (15 items on desktop/tablet = 3 rows of 5, 8 items on mobile) */}
                 <EventGrid
-                  events={streamCommunityEvents.slice(0, 10)}
+                  events={streamCommunityEvents}
+                  responsiveLimit={{ mobile: 8, desktop: 15 }}
                   onSelectEvent={() => { }}
                   favorites={favorites}
                   toggleFavorite={toggleFavorite}
@@ -1050,27 +1040,6 @@ export default function Home() {
                   </div>
 
                   <div className="flex items-center gap-2 self-end sm:self-auto">
-                    {/* Venue Filter Dropdown */}
-                    <div className="relative hidden sm:block">
-                      <select
-                        value={selectedVenueFilter || 'all'}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setSelectedVenueFilter(val === 'all' ? null : val);
-                        }}
-                        aria-label="เลือกศูนย์จัดแสดงสินค้า"
-                        className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none cursor-pointer pr-7 appearance-none transition-colors shadow-2xs"
-                      >
-                        <option value="all">ทุกศูนย์แสดงสินค้า & งานแฟร์</option>
-                        <option value="qsncc">ศูนย์ฯ สิริกิติ์ (QSNCC)</option>
-                        <option value="bitec">ไบเทค บางนา (BITEC)</option>
-                        <option value="impact">อิมแพ็ค เมืองทองธานี</option>
-                        <option value="marathon">งานวิ่ง & มาราธอน</option>
-                        <option value="park">สวนสาธารณะ</option>
-                      </select>
-                      <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    </div>
-
                     <Link
                       href={`/fairs${selectedVenueFilter ? `?venue=${encodeURIComponent(selectedVenueFilter)}` : ''}`}
                       className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-[#2B527A] text-[#2B527A] hover:text-white border border-blue-200/80 hover:border-[#2B527A] rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer"
@@ -1091,9 +1060,10 @@ export default function Home() {
                   />
                 </div>
 
-                {/* Public Venue Events Grid (Top 10 items - 2 rows of 5 on desktop) */}
+                {/* Public Venue Events Grid (15 items on desktop/tablet = 3 rows of 5, 8 items on mobile) */}
                 <EventGrid
-                  events={streamPublicEvents.slice(0, 10)}
+                  events={streamPublicEvents}
+                  responsiveLimit={{ mobile: 8, desktop: 15 }}
                   onSelectEvent={() => { }}
                   favorites={favorites}
                   toggleFavorite={toggleFavorite}
@@ -1102,12 +1072,32 @@ export default function Home() {
                 />
               </section>
 
+              {/* ------------------------------------------------------------------------- */}
+              {/* STREAM SECTION 4: ⚡ COMMUNITY QUESTS (ชาเลนจ์ & ภารกิจท้าทาย)             */}
+              {/* ------------------------------------------------------------------------- */}
+              <CommunityChallengeBar
+                onJoinQuest={handleJoinQuestFromHome}
+                joinedQuestTitles={joinedQuestTitles}
+                onOpenCreateModal={() => {
+                  if (!isLoggedIn) {
+                    triggerMembershipPrompt('เพื่อสร้างชาเลนจ์ใหม่ในคอมมูนิตี้');
+                  } else {
+                    setIsCreateChallengeModalOpen(true);
+                  }
+                }}
+              />
+
+              {/* ------------------------------------------------------------------------- */}
+              {/* STREAM SECTION 5: 📸 SOCIAL STORIES (โมเมนต์ & บรรยากาศจริงจากชุมชน)        */}
+              {/* ------------------------------------------------------------------------- */}
+              <CommunityMomentsStrip />
+
             </div>
           ) : (
             /* ========================================================================= */
             /* OPTION B: CLASSIC 3-TAB MODE SWITCHER (for Comparison)                    */
             /* ========================================================================= */
-            <section id="catalog-section" className="space-y-3 pt-1">
+            <section id="catalog-section" className="space-y-6 pt-1">
 
               {/* Mode Header */}
               <div className="flex items-center justify-between px-0.5">
@@ -1507,22 +1497,6 @@ export default function Home() {
               )}
             </section>
           )}
-
-          {/* SECTION 4: ⚡ ชาเลนจ์ & ภารกิจท้าทายจากคอมมูนิตี้ (Community Quests) */}
-          <CommunityChallengeBar
-            onJoinQuest={handleJoinQuestFromHome}
-            joinedQuestTitles={joinedQuestTitles}
-            onOpenCreateModal={() => {
-              if (!isLoggedIn) {
-                triggerMembershipPrompt('เพื่อสร้างชาเลนจ์ใหม่ในคอมมูนิตี้');
-              } else {
-                setIsCreateChallengeModalOpen(true);
-              }
-            }}
-          />
-
-          {/* SECTION 5: 📸 โมเมนต์ & บรรยากาศจริงจากชุมชน (Social Lifestyle Stories) */}
-          <CommunityMomentsStrip />
 
         </div>
 

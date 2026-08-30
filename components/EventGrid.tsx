@@ -15,6 +15,7 @@ interface EventGridProps {
   joinedEventIds?: string[];
   onResetFilters?: () => void;
   isFavoritesOnly?: boolean;
+  responsiveLimit?: { mobile: number; desktop: number };
 }
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string; badgeBg: string }> = {
@@ -32,6 +33,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
   joinedEventIds = [],
   onResetFilters,
   isFavoritesOnly = false,
+  responsiveLimit,
 }) => {
   if (events.length === 0) {
     return (
@@ -66,17 +68,23 @@ export const EventGrid: React.FC<EventGridProps> = ({
     );
   }
 
+  // Determine items to display based on responsiveLimit
+  const displayedEvents = responsiveLimit
+    ? events.slice(0, responsiveLimit.desktop)
+    : events;
+
   return (
     <div className="space-y-4">
       {/* GRID VIEW: Responsive 5-Column Grid Layout on Desktop/Wide Screens */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
-        {events.map((event, idx) => {
+        {displayedEvents.map((event, idx) => {
           const isFav = favorites.includes(event.id);
           const isJoined = joinedEventIds.includes(event.id);
           const isEnded = isEventEnded(event);
           const fillRatio = event.participantsCount / event.maxParticipants;
           const isAlmostFull = fillRatio >= 0.8;
           const catStyle = CATEGORY_COLORS[event.category] || CATEGORY_COLORS.heal;
+          const isHiddenOnMobile = responsiveLimit && idx >= responsiveLimit.mobile;
 
           const detailHref = event.eventType === 'public_venue'
             ? `/fairs/${encodeURIComponent(event.id)}`
@@ -88,7 +96,8 @@ export const EventGrid: React.FC<EventGridProps> = ({
               id={`event-${event.id}`}
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: idx * 0.05 }}
+              transition={{ duration: 0.3, delay: Math.min(idx, 10) * 0.04 }}
+              className={isHiddenOnMobile ? 'hidden sm:block' : 'block'}
             >
               <Link
                 href={detailHref}

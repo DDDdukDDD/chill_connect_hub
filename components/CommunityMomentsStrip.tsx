@@ -10,7 +10,7 @@ export const CommunityMomentsStrip: React.FC = () => {
   const displayPosts = MOCK_POSTS.slice(0, 5);
 
   return (
-    <section className="my-10 sm:my-14 space-y-4">
+    <section className="space-y-4">
       
       {/* Header Banner: Clean, Warm & Editorial */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-orange-50/60 via-amber-50/20 to-transparent p-3.5 sm:p-4 rounded-2xl border border-orange-200/60 shadow-2xs">

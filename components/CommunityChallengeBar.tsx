@@ -356,7 +356,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
   };
 
   return (
-    <section id="community-quests-section" className="my-8 sm:my-10 space-y-4 relative scroll-mt-20">
+    <section id="community-quests-section" className="space-y-4 relative scroll-mt-20">
       
       {/* Header Strip: ⚡ Editorial Section 04 Banner (Royal Violet & Purple) */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-purple-50/70 via-indigo-50/30 to-transparent p-3.5 sm:p-4 rounded-2xl border border-purple-200/70 shadow-2xs">
