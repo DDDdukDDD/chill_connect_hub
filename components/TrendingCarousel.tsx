@@ -228,9 +228,13 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
                       e.stopPropagation();
                       toggleFavorite(event.id);
                     }}
-                    className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center text-slate-400 hover:text-[#F26430] transition-colors shadow-xs z-10 cursor-pointer"
+                    className={`absolute top-2.5 right-2.5 w-7 h-7 rounded-full flex items-center justify-center transition-all shadow-xs z-10 cursor-pointer hover:scale-110 active:scale-95 ${
+                      isFav
+                        ? 'bg-[#F26430] text-white shadow-md shadow-orange-500/30 ring-1 ring-white/30'
+                        : 'bg-white/90 backdrop-blur-md text-slate-400 hover:text-[#F26430]'
+                    }`}
                   >
-                    <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-[#F26430] text-[#F26430]' : ''}`} />
+                    <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-white text-white' : ''}`} />
                   </button>
                 </div>
 

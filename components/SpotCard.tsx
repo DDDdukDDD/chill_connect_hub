@@ -120,12 +120,16 @@ export const SpotCard: React.FC<SpotCardProps> = ({
             e.stopPropagation();
             onToggleFavorite(spot.id);
           }}
-          className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/90 backdrop-blur-md shadow-xs flex items-center justify-center text-slate-400 hover:text-[#F26430] hover:scale-110 active:scale-95 transition-all z-20 cursor-pointer"
+          className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full shadow-xs flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-20 cursor-pointer ${
+            isFavorite
+              ? 'bg-[#F26430] text-white shadow-md shadow-orange-500/30 ring-1 ring-white/30'
+              : 'bg-white/90 backdrop-blur-md text-slate-400 hover:text-[#F26430]'
+          }`}
           title={isFavorite ? 'ยกเลิกบันทึก' : 'บันทึกสถานที่นี้'}
         >
           <Heart
             className={`w-4 h-4 transition-colors ${
-              isFavorite ? 'fill-[#F26430] text-[#F26430]' : ''
+              isFavorite ? 'fill-white text-white' : ''
             }`}
           />
         </button>

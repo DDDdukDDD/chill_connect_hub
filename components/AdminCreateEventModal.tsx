@@ -22,6 +22,7 @@ import {
   Check,
   AlignLeft,
 } from 'lucide-react';
+import { RichTextEditor } from './RichTextEditor';
 
 interface AdminCreateEventModalProps {
   isOpen: boolean;
@@ -631,64 +632,12 @@ export const AdminCreateEventModal: React.FC<AdminCreateEventModalProps> = ({
                 </button>
               </div>
             </div>
-
-            {/* Quick Formatting Insert Buttons (Clean Text - No HTML tags) */}
-            {descriptionViewMode === 'edit' && (
-              <div className="flex items-center gap-1.5 flex-wrap bg-slate-900/90 p-2 rounded-xl border border-slate-800">
-                <span className="text-[10px] font-bold text-slate-400 mr-1">เพิ่มรูปแบบ:</span>
-                
-                <button
-                  type="button"
-                  onClick={() => handleInsertSnippet('✨ ไฮไลต์ภายในงาน:')}
-                  className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md text-[11px] font-bold border border-slate-700 flex items-center gap-1 cursor-pointer"
-                >
-                  <Heading className="w-3 h-3 text-amber-400" />
-                  <span>+ หัวข้อไฮไลต์</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleInsertSnippet('• หัวข้อสำคัญ: รายละเอียดเพิ่มเติม...')}
-                  className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md text-[11px] font-bold border border-slate-700 flex items-center gap-1 cursor-pointer"
-                >
-                  <List className="w-3 h-3 text-emerald-400" />
-                  <span>+ รายการ Bullet Point (•)</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleInsertSnippet('📅 วันที่และเวลา:')}
-                  className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md text-[11px] font-bold border border-slate-700 flex items-center gap-1 cursor-pointer"
-                >
-                  <Clock className="w-3 h-3 text-sky-400" />
-                  <span>+ วันที่/เวลา</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleInsertSnippet('📍 พิกัดจุดนัดพบ:')}
-                  className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md text-[11px] font-bold border border-slate-700 flex items-center gap-1 cursor-pointer"
-                >
-                  <MapPin className="w-3 h-3 text-rose-400" />
-                  <span>+ จุดนัดพบ</span>
-                </button>
-              </div>
-            )}
-
-            {/* Input Editor vs Live Clean Preview Container */}
-            {descriptionViewMode === 'edit' ? (
-              <textarea
-                rows={7}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="พิมพ์รายละเอียดกิจกรรม เช่น ไฮไลต์, ย่อหน้า, หรือใช้เครื่องหมาย • สำหรับรายการ Bullet..."
-                className="w-full bg-slate-950 text-slate-100 text-xs sm:text-sm p-3.5 rounded-2xl border border-slate-700 focus:outline-hidden focus:border-[#4A7C59] leading-relaxed"
-              />
-            ) : (
-              <div className="bg-[#FAF7F2] text-slate-900 p-4 rounded-2xl border border-[#E8E2D8] shadow-inner max-h-60 overflow-y-auto text-xs leading-relaxed space-y-1">
-                {renderFormattedPreview(description)}
-              </div>
-            )}
+            <RichTextEditor
+              value={description}
+              onChange={setDescription}
+              placeholder="พิมพ์รายละเอียดกิจกรรม ไฮไลต์ ย่อหน้า หรือวางโครงสร้างข้อมูล..."
+              minHeight="180px"
+            />
           </div>
 
           {/* Section 4: Cover Image Picker */}

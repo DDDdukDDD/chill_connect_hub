@@ -78,3 +78,21 @@ The platform is structured into 3 core discovery pillars + 1 community engagemen
 2. **Filtering Isolation**:
    - Filters on Section 01, Section 02, and Section 03 must operate independently and not block other sections from rendering.
 
+---
+
+## 📝 4. Content Creation, Rich Text Editor & Form Validation Rules
+
+1. **Rich Text Editor Standard (`RichTextEditor.tsx`)**:
+   - Long-form content inputs (such as event descriptions, spot details, and buddy trip plans) must use `RichTextEditor.tsx` with WYSIWYG rendering.
+   - Headers and bold text must be styled as actual bold text (`<strong>`) in the editor and preview—**never display raw markdown asterisks `**`** to users.
+   - Use `renderDescriptionContent()` from `RichTextEditor.tsx` in detail pages (`/community/[id]`, `/spots/[id]`, `/fairs/[id]`) for unified, clean editorial typography.
+   - Use `stripHtmlToPlainText()` whenever rendering descriptions inside card snippets or list views with `line-clamp`.
+
+2. **Dedicated Spot Buddy Gathering Dialog (`SpotBuddyGatheringModal.tsx`)**:
+   - Spot buddy trips triggered from `/spots/[id]` must use the specialized, purpose-built `SpotBuddyGatheringModal.tsx` (preserving spot pre-fill, meeting point, participants counter 2-15, and community safety pledge).
+
+3. **Strict Form Validation**:
+   - All critical inputs (`title`, `description` >= 15 chars, `locationName`, dates, times, and participant quotas) must be validated before allowing users to proceed to Step 3 (Preview) or submit data.
+   - Users must explicitly accept the Safety and Community Pledge (`isSafetyAccepted`) before publishing.
+
+

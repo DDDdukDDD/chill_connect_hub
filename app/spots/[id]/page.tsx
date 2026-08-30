@@ -9,6 +9,7 @@ import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { useAuth } from '@/lib/useAuth';
 import { CreateEventModal } from '@/components/CreateEventModal';
+import { SpotBuddyGatheringModal, SpotBuddyPostItem } from '@/components/SpotBuddyGatheringModal';
 import { MOCK_EVENTS, EventItem } from '@/data/mockData';
 import { SafetyGuidelinesModal } from '@/components/SafetyGuidelinesModal';
 import {
@@ -19,6 +20,7 @@ import {
 } from '@/data/spotsData';
 import { formatSpotBadgePrice } from '@/components/SpotCard';
 import { resolveSpotGallery, resolveSpotImage } from '@/lib/spotImageResolver';
+import { renderDescriptionContent } from '@/components/RichTextEditor';
 import {
   MapPin,
   Clock,
@@ -62,12 +64,22 @@ export default function SpotDetailPage() {
   const decodedId = rawId ? decodeURIComponent(rawId) : '';
 
   const [activeNavTab, setActiveNavTab] = useState('spots');
-  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
+  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn, userProfile } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
+  const [isCreateBuddyModalOpen, setIsCreateBuddyModalOpen] = useState(false);
   const [isSafetyModalOpen, setIsSafetyModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Spot Buddy Post Form states
+  const [buddyTitleInput, setBuddyTitleInput] = useState('');
+  const [buddyDateInput, setBuddyDateInput] = useState('เสาร์นี้');
+  const [buddyTimeInput, setBuddyTimeInput] = useState('09:30 - 12:00 น.');
+  const [buddySlotsInput, setBuddySlotsInput] = useState(4);
+  const [buddyDescInput, setBuddyDescInput] = useState('');
+  const [buddyVibeInput, setBuddyVibeInput] = useState('☕ สายชิลจิบกาแฟ');
+  const [customBuddyTrips, setCustomBuddyTrips] = useState<any[]>([]);
 
   // Favorites state
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -126,70 +138,61 @@ export default function SpotDetailPage() {
     const isBeachOrClimb = /หาด|เกาะ|ทะเล|ปีน|ผา|อ่าว|คายัค/i.test(spot.title + spot.description);
     const isCultureOrCafe = /คาเฟ่|ศิลป์|แกลเลอรี|พิพิธภัณฑ์|กาแฟ|วัด|ประวัติ/i.test(spot.title + spot.description);
 
-    if (isBeachOrClimb) {
-      return [
-        {
-          id: 'buddy-1',
-          title: `หาตี้ปีนผาหน้าใหม่ & พายคายัคลอดถ้ำที่ ${spot.title}`,
-          hostName: 'กัปตันโฟล์ก',
-          hostAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
-          hostBadge: 'Superhost',
-          date: 'เสาร์นี้ 30 ส.ค.',
-          time: '09:30 - 15:00 น.',
-          participantsCount: 5,
-          maxParticipants: 8,
-          description: 'เน้นปีนผาเส้นทางง่ายสำหรับมือใหม่ มีครูฝึกคอยดูแล ปิดท้ายด้วยพายคายัคชมวิวทะเลด้วยกันครับ',
-          tag: 'กิจกรรมแอดเวนเจอร์'
-        },
-        {
-          id: 'buddy-2',
-          title: `ชวนนั่งชมพระอาทิตย์ตก & ฟาดดินเนอร์ซีฟู้ดริมหาด`,
-          hostName: 'เมย์ลดา',
-          hostAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
-          hostBadge: 'Verified',
-          date: 'อาทิตย์นี้ 31 ส.ค.',
-          time: '17:00 - 19:30 น.',
-          participantsCount: 3,
-          maxParticipants: 4,
-          description: 'หาเพื่อนร่วมโต๊ะอาหารเย็นริมหาด ฟังเสียงคลื่นแลกเปลี่ยนประสบการณ์ท่องเที่ยว บรรยากาศสบายๆ',
-          tag: 'ชมวิว & ดินเนอร์'
-        }
-      ];
-    }
-
-    if (isCultureOrCafe) {
-      return [
-        {
-          id: 'buddy-1',
-          title: `เสพงานศิลป์ & ดริปกาแฟพูดคุยเบาๆ สไตล์ Introvert`,
-          hostName: 'พลอย สตูดิโอ',
-          hostAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80',
-          hostBadge: 'Superhost',
-          date: 'เสาร์นี้ 30 ส.ค.',
-          time: '13:30 - 16:00 น.',
-          participantsCount: 3,
-          maxParticipants: 4,
-          description: 'เดินชมผลงานเงียบๆ ไม่เร่งรีบ แล้วแวะจิบกาแฟพูดคุยแลกเปลี่ยนมุมมองศิลปะอย่างเป็นกันเอง',
-          tag: 'นิทรรศการ & กาแฟ'
-        },
-        {
-          id: 'buddy-2',
-          title: `นัดวาดรูปสีน้ำ & ถ่ายภาพเก็บแสงบ่ายที่ ${spot.title}`,
-          hostName: 'กฤต ช่างภาพ',
-          hostAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
-          hostBadge: 'Verified',
-          date: 'อาทิตย์นี้ 31 ส.ค.',
-          time: '14:30 - 17:30 น.',
-          participantsCount: 2,
-          maxParticipants: 4,
-          description: 'พกสมุดสเก็ตช์หรือกล้องถ่ายรูปมาแชร์เทคนิคและบันทึกช่วงเวลาสวยๆ ไปด้วยกันครับ',
-          tag: 'ถ่ายรูป & สเก็ตช์'
-        }
-      ];
-    }
-
-    // Default / Park & Outdoor
-    return [
+    const baseTrips = isBeachOrClimb ? [
+      {
+        id: 'buddy-1',
+        title: `หาตี้ปีนผาหน้าใหม่ & พายคายัคลอดถ้ำที่ ${spot.title}`,
+        hostName: 'กัปตันโฟล์ก',
+        hostAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
+        hostBadge: 'Superhost',
+        date: 'เสาร์นี้ 30 ส.ค.',
+        time: '09:30 - 15:00 น.',
+        participantsCount: 5,
+        maxParticipants: 8,
+        description: 'เน้นปีนผาเส้นทางง่ายสำหรับมือใหม่ มีครูฝึกคอยดูแล ปิดท้ายด้วยพายคายัคชมวิวทะเลด้วยกันครับ',
+        tag: 'กิจกรรมแอดเวนเจอร์'
+      },
+      {
+        id: 'buddy-2',
+        title: `ชวนนั่งชมพระอาทิตย์ตก & ฟาดดินเนอร์ซีฟู้ดริมหาด`,
+        hostName: 'เมย์ลดา',
+        hostAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+        hostBadge: 'Verified',
+        date: 'อาทิตย์นี้ 31 ส.ค.',
+        time: '17:00 - 19:30 น.',
+        participantsCount: 3,
+        maxParticipants: 4,
+        description: 'หาเพื่อนร่วมโต๊ะอาหารเย็นริมหาด ฟังเสียงคลื่นแลกเปลี่ยนประสบการณ์ท่องเที่ยว บรรยากาศสบายๆ',
+        tag: 'ชมวิว & ดินเนอร์'
+      }
+    ] : isCultureOrCafe ? [
+      {
+        id: 'buddy-1',
+        title: `เสพงานศิลป์ & ดริปกาแฟพูดคุยเบาๆ สไตล์ Introvert`,
+        hostName: 'พลอย สตูดิโอ',
+        hostAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80',
+        hostBadge: 'Superhost',
+        date: 'เสาร์นี้ 30 ส.ค.',
+        time: '13:30 - 16:00 น.',
+        participantsCount: 3,
+        maxParticipants: 4,
+        description: 'เดินชมผลงานเงียบๆ ไม่เร่งรีบ แล้วแวะจิบกาแฟพูดคุยแลกเปลี่ยนมุมมองศิลปะอย่างเป็นกันเอง',
+        tag: 'นิทรรศการ & กาแฟ'
+      },
+      {
+        id: 'buddy-2',
+        title: `นัดวาดรูปสีน้ำ & ถ่ายภาพเก็บแสงบ่ายที่ ${spot.title}`,
+        hostName: 'กฤต ช่างภาพ',
+        hostAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
+        hostBadge: 'Verified',
+        date: 'อาทิตย์นี้ 31 ส.ค.',
+        time: '14:30 - 17:30 น.',
+        participantsCount: 2,
+        maxParticipants: 4,
+        description: 'พกสมุดสเก็ตช์หรือกล้องถ่ายรูปมาแชร์เทคนิคและบันทึกช่วงเวลาสวยๆ ไปด้วยกันครับ',
+        tag: 'ถ่ายรูป & สเก็ตช์'
+      }
+    ] : [
       {
         id: 'buddy-1',
         title: `วิ่ง City Run รับลมเช้า + จิบกาแฟสโลว์บาร์ที่ ${spot.title}`,
@@ -217,7 +220,9 @@ export default function SpotDetailPage() {
         tag: 'เดินชิลล์ & ถ่ายภาพ'
       }
     ];
-  }, [spot]);
+
+    return [...customBuddyTrips, ...baseTrips];
+  }, [spot, customBuddyTrips]);
 
   const [joinedTrips, setJoinedTrips] = useState<string[]>([]);
 
@@ -233,6 +238,31 @@ export default function SpotDetailPage() {
       setJoinedTrips((prev) => [...prev, tripId]);
       showToast(`ส่งคำขอเข้าร่วมทริป "${tripTitle}" เรียบร้อยแล้ว! 🎉`);
     }
+  };
+
+  const handleCreateSpotBuddy = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!buddyTitleInput.trim()) return;
+
+    const newTrip = {
+      id: `custom-spot-trip-${Date.now()}`,
+      title: buddyTitleInput.trim(),
+      hostName: userProfile.name || 'ฉันเอง',
+      hostAvatar: userProfile.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+      hostBadge: userProfile.badgeLabel || 'สมาชิก',
+      date: buddyDateInput,
+      time: buddyTimeInput.trim() || 'ตามนัดหมาย',
+      participantsCount: 1,
+      maxParticipants: buddySlotsInput || 4,
+      description: buddyDescInput.trim() || `ชวนเพื่อนๆ ไปเที่ยว ${spot?.title || 'สถานที่นี้'} ด้วยกัน สบายๆ เป็นกันเอง`,
+      tag: buddyVibeInput
+    };
+
+    setCustomBuddyTrips((prev) => [newTrip, ...prev]);
+    setIsCreateBuddyModalOpen(false);
+    setBuddyTitleInput('');
+    setBuddyDescInput('');
+    showToast(`โพสต์ชวนเพื่อนเที่ยว "${newTrip.title}" สำเร็จเรียบร้อย! 🚀`);
   };
 
   useEffect(() => {
@@ -577,18 +607,12 @@ export default function SpotDetailPage() {
               </div>
             </div>
 
-            {/* 3. About / Story Section (Clean Editorial Paragraphs) */}
+            {/* 3. About / Story Section (Clean Editorial Paragraphs & Rich Content) */}
             <div className="space-y-3 pt-1">
               <h2 className="text-base font-black text-slate-900 tracking-tight">
                 เกี่ยวกับสถานที่นี้
               </h2>
-              <div className="space-y-3 text-sm sm:text-base text-slate-700 leading-relaxed font-normal">
-                {spot.description.split('\n').filter(Boolean).map((para, idx) => (
-                  <p key={idx} className="leading-relaxed">
-                    {cleanText(para)}
-                  </p>
-                ))}
-              </div>
+              {renderDescriptionContent(spot.description)}
             </div>
 
             {/* 4. Highlights Section (Clean Minimal Bullets) */}
@@ -721,7 +745,8 @@ export default function SpotDetailPage() {
                     if (!isLoggedIn) {
                       setIsAuthModalOpen(true);
                     } else {
-                      setIsCreateEventModalOpen(true);
+                      setBuddyTitleInput(`ชวนไปเที่ยว ${spot?.title || ''}`);
+                      setIsCreateBuddyModalOpen(true);
                     }
                   }}
                   className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#F26430] hover:bg-[#D95322] text-white text-xs font-extrabold shadow-md shadow-[#F26430]/20 transition-all cursor-pointer active:scale-95 shrink-0"
@@ -1073,6 +1098,19 @@ export default function SpotDetailPage() {
           showToast('ออกจากระบบเรียบร้อย');
         }}
       />
+      {/* Dedicated Spot Buddy Gathering Modal (Restored Original Rich UX) */}
+      <SpotBuddyGatheringModal
+        isOpen={isCreateBuddyModalOpen}
+        onClose={() => setIsCreateBuddyModalOpen(false)}
+        spotTitle={spot?.title || 'สถานที่นี้'}
+        spotLocation={`${spot?.title || ''}, ${spot?.district || ''}, จังหวัด${spot?.province || ''}`}
+        spotImage={spot?.image}
+        onSuccess={(newTrip) => {
+          setCustomBuddyTrips((prev) => [newTrip, ...prev]);
+          showToast(`โพสต์ชวนเพื่อนเที่ยว "${newTrip.title}" สำเร็จเรียบร้อย! 🚀`);
+        }}
+      />
+
       <CreateEventModal
         isOpen={isCreateEventModalOpen}
         onClose={() => setIsCreateEventModalOpen(false)}

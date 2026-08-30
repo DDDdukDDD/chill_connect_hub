@@ -36,7 +36,7 @@ export const CommunityMomentsStrip: React.FC = () => {
           href="/moments"
           className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-[#F26430] text-slate-800 hover:text-white border border-slate-200 hover:border-[#F26430] rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
         >
-          <span>ดูโมเมนต์ทั้งหมด ({MOCK_POSTS.length}+ เรื่องราว)</span>
+          <span>ดูโมเมนต์ทั้งหมด</span>
           <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
         </Link>
       </div>

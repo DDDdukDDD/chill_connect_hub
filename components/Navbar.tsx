@@ -23,6 +23,7 @@ import {
   Zap,
   LayoutTemplate
 } from 'lucide-react';
+import { useAuth } from '@/lib/useAuth';
 
 interface NavbarProps {
   activeTab: string;
@@ -47,9 +48,11 @@ export const Navbar: React.FC<NavbarProps> = ({
   userName = 'Jirathitigorn Maneekord',
   isAuthReady,
 }) => {
+  const { userProfile } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
 
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => {
@@ -175,20 +178,20 @@ export const Navbar: React.FC<NavbarProps> = ({
                     {/* User Profile Header Card */}
                     <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-3 bg-slate-50/70 mx-2 rounded-xl">
                       <div className="relative w-11 h-11 rounded-full overflow-hidden bg-[#EBF3ED] border-2 border-[#4A7C59] shrink-0 shadow-xs">
-                        <img 
-                          src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" 
-                          alt={userName}
+                        <img
+                          src={userProfile.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80"}
+                          alt={userProfile.name || userName}
                           className="w-full h-full object-cover"
                         />
                         <span className="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h4 className="font-extrabold text-sm text-[#1E293B] truncate" title={userName}>
-                          {userName}
+                        <h4 className="font-extrabold text-sm text-[#1E293B] truncate" title={userProfile.name || userName}>
+                          {userProfile.name || userName}
                         </h4>
                         <div className="flex items-center gap-1 text-[11px] text-[#4A7C59] font-bold">
                           <Sparkles className="w-3 h-3" />
-                          <span>สมาชิก Chill & Connect</span>
+                          <span>{userProfile.badgeLabel || 'สมาชิก Chill & Connect'}</span>
                         </div>
                       </div>
                     </div>

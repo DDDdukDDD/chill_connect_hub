@@ -357,8 +357,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 onClick={handleScrollToQuests}
                 className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 hover:text-purple-900 transition-colors shrink-0 cursor-pointer"
               >
-                <span className="hidden sm:inline">ดูภารกิจ ({COMMUNITY_PUBLIC_QUESTS.length})</span>
-                <span className="sm:hidden">ดูภารกิจ</span>
+                <span>ดูภารกิจ</span>
                 <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
               </button>
             </div>

@@ -17,6 +17,7 @@ import {
 } from '@/data/mockData';
 import { isEventEnded } from '@/lib/dateUtils';
 import { resolveEventGallery } from '@/lib/eventImageResolver';
+import { renderDescriptionContent } from '@/components/RichTextEditor';
 import {
   MapPin,
   Clock,
@@ -666,13 +667,7 @@ export default function FairDetailPage() {
                 <Sparkles className="w-4 h-4 text-[#2B527A]" />
                 <span>เกี่ยวกับงานและนิทรรศการนี้</span>
               </h2>
-              <div className="space-y-3 text-sm sm:text-base text-slate-700 leading-relaxed font-normal">
-                {eventData.description.split('\n').filter(Boolean).map((para, idx) => (
-                  <p key={idx} className="leading-relaxed">
-                    {cleanText(para)}
-                  </p>
-                ))}
-              </div>
+              {renderDescriptionContent(eventData.description)}
             </div>
 
             {/* 5. Verified Highlights */}
