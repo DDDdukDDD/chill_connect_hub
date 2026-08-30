@@ -19,7 +19,7 @@ let AUTO_PUBLISH_ENABLED: boolean = false;
 export function getCoreCommunityEvents(): AdminEventItem[] {
   return MOCK_EVENTS.map((ev) => ({
     ...ev,
-    eventType: ev.eventType || (ev.id.startsWith('comm-') ? 'community' : 'public_venue'),
+    eventType: ev.id.startsWith('comm-') ? 'community' : 'public_venue',
     approvalStatus: 'approved' as const,
     source: ev.id.startsWith('comm-') ? 'Chill & Connect Community' : 'Chill & Connect Official',
   }));
@@ -78,7 +78,7 @@ export async function loadCache(): Promise<AdminEventItem[]> {
         };
       }
     }
-    if (ev.id?.startsWith('comm-') || ev.source === 'Chill & Connect Official' || ev.source === 'Chill & Connect Community') {
+    if (ev.id?.startsWith('comm-')) {
       if (ev.eventType !== 'community' || ev.approvalStatus !== 'approved') {
         hasUpdated = true;
         ev = {
@@ -86,6 +86,14 @@ export async function loadCache(): Promise<AdminEventItem[]> {
           eventType: 'community',
           approvalStatus: 'approved',
           source: 'Chill & Connect Community',
+        };
+      }
+    } else if (ev.id?.startsWith('pub-') || ev.id?.startsWith('live-agg-')) {
+      if (ev.eventType !== 'public_venue') {
+        hasUpdated = true;
+        ev = {
+          ...ev,
+          eventType: 'public_venue',
         };
       }
     }

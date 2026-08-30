@@ -16,7 +16,7 @@ import {
   ChevronRight,
   ShieldCheck,
   Crown,
-  ArrowUpRight,
+  ArrowRight,
   Target
 } from 'lucide-react';
 import { ChallengeQuest } from '@/data/mockData';
@@ -356,18 +356,18 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
   };
 
   return (
-    <section className="my-8 sm:my-10 space-y-4 relative">
+    <section id="community-quests-section" className="my-8 sm:my-10 space-y-4 relative scroll-mt-20">
       
-      {/* Header Strip: ⚡ Editorial Section 04 Banner (Royal Amber & Gold) */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-amber-50/70 via-orange-50/30 to-transparent p-3.5 sm:p-4 rounded-2xl border border-amber-200/70 shadow-2xs">
+      {/* Header Strip: ⚡ Editorial Section 04 Banner (Royal Violet & Purple) */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-purple-50/70 via-indigo-50/30 to-transparent p-3.5 sm:p-4 rounded-2xl border border-purple-200/70 shadow-2xs">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-6 h-6 rounded-lg bg-amber-500/15 text-amber-900 flex items-center justify-center text-xs font-black shrink-0 border border-amber-500/30">
+            <span className="w-6 h-6 rounded-lg bg-purple-500/15 text-purple-900 flex items-center justify-center text-xs font-black shrink-0 border border-purple-500/30">
               04
             </span>
             <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
               <span>ชาเลนจ์ & ภารกิจท้าทาย</span>
-              <span className="text-[10px] font-black text-amber-900 bg-amber-100/80 px-2 py-0.5 rounded-full border border-amber-300/80">
+              <span className="text-[10px] font-black text-purple-900 bg-purple-100/80 px-2 py-0.5 rounded-full border border-purple-300/80">
                 Quests & Badges
               </span>
             </h2>
@@ -380,10 +380,10 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
         {/* Right Actions: Clean Glassmorphic Pill Link */}
         <Link
           href="/challenges"
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-amber-600 text-amber-900 hover:text-white border border-amber-200/90 hover:border-amber-600 rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-purple-600 text-purple-900 hover:text-white border border-purple-200/90 hover:border-purple-600 rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
         >
           <span>ดูภารกิจทั้งหมด ({COMMUNITY_PUBLIC_QUESTS.length})</span>
-          <ArrowUpRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
+          <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
         </Link>
       </div>
 
@@ -430,11 +430,11 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
               <div
                 key={quest.id}
                 onClick={() => handleOpenDetailModal(quest)}
-                className="w-[80vw] sm:w-[calc(50%-0.625rem)] lg:w-[calc(25%-0.75rem)] shrink-0 snap-start bg-white rounded-3xl p-3.5 sm:p-4 border border-slate-200 shadow-2xs hover:shadow-xl hover:border-[#4A7C59]/40 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between space-y-3 relative overflow-hidden group/card cursor-pointer"
+                className="w-[80vw] sm:w-[calc(50%-0.625rem)] lg:w-[calc(25%-0.75rem)] shrink-0 snap-start bg-white rounded-3xl p-3.5 sm:p-4 border border-slate-200 shadow-2xs hover:shadow-xl hover:border-purple-500/40 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between space-y-3 relative overflow-hidden group/card cursor-pointer"
               >
                 {/* Official Quest Top Accent Stripe */}
                 {quest.isOfficial && (
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#4A7C59] via-emerald-400 to-amber-400" />
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-600 via-indigo-400 to-purple-400" />
                 )}
 
                 {/* 1. Top Badges Row: Category + Official/Community + XP Token */}
@@ -446,9 +446,9 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                     {quest.isOfficial ? (
                       <span
                         title="ชาเลนจ์ทางการที่จัดทำโดย Chill & Connect Hub"
-                        className="text-[10px] font-black text-amber-900 bg-amber-100/90 px-1.5 py-0.5 rounded-md flex items-center gap-0.5 border border-amber-300/80"
+                        className="text-[10px] font-black text-purple-900 bg-purple-100/90 px-1.5 py-0.5 rounded-md flex items-center gap-0.5 border border-purple-300/80"
                       >
-                        <Crown className="w-2.5 h-2.5 text-amber-700 fill-amber-500" />
+                        <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500" />
                         <span>Official</span>
                       </span>
                     ) : (
@@ -458,8 +458,8 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                     )}
                   </div>
 
-                  <span className="text-[10px] font-black text-amber-800 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/90 px-2 py-0.5 rounded-md flex items-center gap-0.5 shrink-0 shadow-2xs">
-                    <Zap className="w-3 h-3 text-amber-600 fill-amber-500" />
+                  <span className="text-[10px] font-black text-purple-800 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200/90 px-2 py-0.5 rounded-md flex items-center gap-0.5 shrink-0 shadow-2xs">
+                    <Zap className="w-3 h-3 text-purple-600 fill-purple-500" />
                     <span>+{quest.rewardPoints} XP</span>
                   </span>
                 </div>
@@ -488,7 +488,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                 <div className="space-y-1 flex-1">
                   <h3
                     title={quest.title}
-                    className="font-black text-xs sm:text-[13px] text-slate-900 group-hover/card:text-[#4A7C59] transition-colors leading-snug line-clamp-1"
+                    className="font-black text-xs sm:text-[13px] text-slate-900 group-hover/card:text-purple-700 transition-colors leading-snug line-clamp-1"
                   >
                     {quest.title}
                   </h3>
@@ -513,8 +513,8 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
 
                   <div className="flex items-center gap-2">
                     {isDone ? (
-                      <span className="inline-flex items-center gap-1 text-[10.5px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200/80">
-                        <Trophy className="w-3 h-3" />
+                      <span className="inline-flex items-center gap-1 text-[10.5px] font-black text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200/80">
+                        <Trophy className="w-3 h-3 text-purple-600" />
                         <span>พิชิตแล้ว</span>
                       </span>
                     ) : isJoined ? (
@@ -524,13 +524,13 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                       </span>
                     ) : (
                       <span className="font-bold text-slate-600 flex items-center gap-1 text-[10.5px]">
-                        <Users className="w-3 h-3 text-[#4A7C59]" />
+                        <Users className="w-3 h-3 text-purple-600" />
                         <span>{quest.participantsCount} คน</span>
                       </span>
                     )}
 
-                    <div className="w-6 h-6 rounded-full bg-slate-50 group-hover/card:bg-[#4A7C59] flex items-center justify-center text-slate-400 group-hover/card:text-white transition-colors shrink-0">
-                      <ArrowUpRight className="w-3.5 h-3.5" />
+                    <div className="w-6 h-6 rounded-full bg-slate-50 group-hover/card:bg-purple-600 flex items-center justify-center text-slate-400 group-hover/card:text-white transition-colors shrink-0">
+                      <ArrowRight className="w-3.5 h-3.5" />
                     </div>
                   </div>
                 </div>

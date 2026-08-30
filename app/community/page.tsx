@@ -17,10 +17,12 @@ import {
   CheckCircle2,
   PlusCircle,
 } from 'lucide-react';
+import { isEventEnded } from '@/lib/dateUtils';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { EventGrid } from '@/components/EventGrid';
 import { Pagination } from '@/components/Pagination';
+import { CommunityCategoryRail, COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
@@ -37,6 +39,7 @@ function CommunityPageContent() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('category') || 'all');
   const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'tomorrow' | 'weekend' | 'custom'>('all');
+  const [statusFilter, setStatusFilter] = useState<'upcoming' | 'ended' | 'all'>('upcoming');
   const [priceFilter, setPriceFilter] = useState<'all' | 'free'>((searchParams.get('price') as any) || 'all');
   const [sortBy, setSortBy] = useState<'newest' | 'favorites'>('newest');
   const [currentPage, setCurrentPage] = useState(1);
@@ -44,6 +47,22 @@ function CommunityPageContent() {
   const [joinedEventIds, setJoinedEventIds] = useState<string[]>(['1']);
   const [eventsList, setEventsList] = useState<EventItem[]>(MOCK_EVENTS);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Fetch live approved events from server
+  React.useEffect(() => {
+    const loadLiveEvents = async () => {
+      try {
+        const res = await fetch('/api/events');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.events) && data.events.length > 0) {
+          setEventsList(data.events);
+        }
+      } catch (err) {
+        console.log('Using default mock events fallback:', err);
+      }
+    };
+    loadLiveEvents();
+  }, []);
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -79,17 +98,62 @@ function CommunityPageContent() {
   const filteredEvents = useMemo(() => {
     return eventsList.filter((ev) => {
       if ((ev.eventType || 'community') !== 'community') return false;
-      if (selectedCategory !== 'all' && ev.category !== selectedCategory) return false;
+
+      // Status Filter (Upcoming / Ended / All)
+      const ended = isEventEnded(ev);
+      if (statusFilter === 'upcoming' && ended) return false;
+      if (statusFilter === 'ended' && !ended) return false;
+
+      const eventText = `${ev.title} ${ev.description} ${ev.tag} ${ev.location} ${ev.hostName}`.toLowerCase();
+
+      if (selectedCategory !== 'all') {
+        const cat = selectedCategory;
+        if (cat === 'heal' || cat === 'move' || cat === 'chill' || cat === 'learn') {
+          if (ev.category !== cat) return false;
+        } else if (cat === 'running_fitness') {
+          if (!['วิ่ง', 'running', 'marathon', 'hyrox', 'fitness', 'กีฬา', 'sport', 'climbing', 'ปีน', 'badminton'].some(k => eventText.includes(k))) return false;
+        } else if (cat === 'wellness_mind') {
+          if (!['sound bath', 'soundbath', 'yoga', 'โยคะ', 'สมาธิ', 'mindfulness', 'heal', 'ฮีลใจ', 'บำบัด', 'introvert'].some(k => eventText.includes(k))) return false;
+        } else if (cat === 'cafe_social') {
+          if (!['cafe', 'คาเฟ่', 'coffee', 'กาแฟ', 'slow bar', 'hangout', 'จิบกาแฟ', 'พูดคุย', 'อาหาร', 'tea', 'ชา', 'มัทฉะ'].some(k => eventText.includes(k))) return false;
+        } else if (cat === 'boardgames_party') {
+          if (!['board game', 'boardgame', 'บอร์ดเกม', 'เกม', 'catan', 'quiz', 'party', 'เกมกลุ่ม', 'เพื่อนใหม่'].some(k => eventText.includes(k))) return false;
+        } else if (cat === 'arts_crafts') {
+          if (!['workshop', 'เวิร์กช็อป', 'art', 'ศิลปะ', 'craft', 'คราฟต์', 'เซรามิก', 'pottery', 'ปั้นดิน', 'painting', 'สีน้ำ', 'เทียน', 'candle', 'ภาพวาด'].some(k => eventText.includes(k))) return false;
+        } else if (cat === 'travel_outdoor') {
+          if (!['outdoor', 'เอาต์ดอร์', 'camping', 'กางเต็นท์', 'เดินป่า', 'คายัค', 'sup board', 'ซับบอร์ด', 'ธรรมชาติ', 'photowalk', 'ถ่ายรูป'].some(k => eventText.includes(k))) return false;
+        } else if (cat === 'tech_skills') {
+          if (!['tech', 'ai', 'coding', 'developer', 'startup', 'business', 'networking', 'หนังสือ', 'book', 'talk', 'เสวนา'].some(k => eventText.includes(k))) return false;
+        } else if (cat === 'pets_family') {
+          if (!['pet', 'สัตว์เลี้ยง', 'หมา', 'แมว', 'dog', 'cat', 'family', 'ครอบครัว', 'เด็ก', 'kids'].some(k => eventText.includes(k))) return false;
+        }
+      }
+
       if (sortBy === 'favorites' && !favorites.includes(ev.id)) return false;
       if (priceFilter === 'free' && (!ev.price || !ev.price.includes('ฟรี'))) return false;
       if (searchQuery.trim() !== '') {
         const q = searchQuery.toLowerCase().trim();
-        const text = `${ev.title} ${ev.description} ${ev.tag} ${ev.location} ${ev.hostName}`.toLowerCase();
-        if (!text.includes(q)) return false;
+        if (!eventText.includes(q)) return false;
       }
       return true;
     });
-  }, [eventsList, selectedCategory, priceFilter, sortBy, favorites, searchQuery]);
+  }, [eventsList, statusFilter, selectedCategory, priceFilter, sortBy, favorites, searchQuery]);
+
+  // Calculate event counts per lifestyle category for Luma-style badge display
+  const categoryEventCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    const communityEvents = eventsList.filter((e) => (e.eventType || 'community') === 'community');
+
+    COMMUNITY_LIFESTYLE_CATEGORIES.forEach((cat) => {
+      const matchCount = communityEvents.filter((ev) => {
+        const text = `${ev.title} ${ev.description} ${ev.tag} ${ev.location} ${ev.hostName}`.toLowerCase();
+        return cat.keywords.some((k) => text.includes(k));
+      }).length;
+      counts[cat.id] = matchCount;
+    });
+
+    return counts;
+  }, [eventsList]);
 
   const totalPages = Math.ceil(filteredEvents.length / ITEMS_PER_PAGE) || 1;
   const paginatedEvents = useMemo(() => {
@@ -156,6 +220,19 @@ function CommunityPageContent() {
           </div>
         </div>
 
+        {/* Harmonious Horizontal Category Rail (Same as Homepage) */}
+        <div className="bg-slate-50/60 p-2.5 sm:p-3 rounded-2xl border border-slate-200/70 shadow-2xs">
+          <CommunityCategoryRail
+            selectedCategoryId={selectedCategory === 'all' ? null : selectedCategory}
+            onSelectCategory={(catId) => {
+              setSelectedCategory(catId || 'all');
+              setCurrentPage(1);
+            }}
+            eventCounts={categoryEventCounts}
+            variant="rail"
+          />
+        </div>
+
         {/* Filter & Search Bar */}
         <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
           <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2">
@@ -185,7 +262,7 @@ function CommunityPageContent() {
             </div>
 
             {/* Category Select */}
-            <div className="relative w-full md:w-48 shrink-0">
+            <div className="relative w-full md:w-56 shrink-0">
               <select
                 value={selectedCategory}
                 onChange={(e) => {
@@ -195,13 +272,60 @@ function CommunityPageContent() {
                 aria-label="เลือกหมวดหมู่กิจกรรม"
                 className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#4A7C59] cursor-pointer appearance-none pr-8"
               >
-                <option value="all">ทุกหมวดหมู่</option>
-                <option value="chill">ชิลล์ & สังสรรค์</option>
-                <option value="heal">ฮีลใจ & สุขภาพ</option>
-                <option value="move">ออกกำลังกาย & วิ่ง</option>
-                <option value="learn">เวิร์กช็อป & เรียนรู้</option>
+                <option value="all">ทุกหมวดกิจกรรมชุมชน</option>
+                {COMMUNITY_LIFESTYLE_CATEGORIES.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name} ({cat.nameEn})
+                  </option>
+                ))}
               </select>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
+            {/* Status Filter Tabs (Upcoming vs Ended) */}
+            <div className="flex items-center bg-white p-1 rounded-xl border border-slate-200 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setStatusFilter('upcoming');
+                  setCurrentPage(1);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  statusFilter === 'upcoming'
+                    ? 'bg-[#EBF3ED] text-[#2D5A3C] shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                กำลังจะมาถึง
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setStatusFilter('ended');
+                  setCurrentPage(1);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  statusFilter === 'ended'
+                    ? 'bg-[#EBF3ED] text-[#2D5A3C] shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                กิจกรรมที่ผ่านมา
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setStatusFilter('all');
+                  setCurrentPage(1);
+                }}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  statusFilter === 'all'
+                    ? 'bg-[#EBF3ED] text-[#2D5A3C] shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                ทั้งหมด
+              </button>
             </div>
 
             {/* Free Button */}

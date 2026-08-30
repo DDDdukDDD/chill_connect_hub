@@ -18,7 +18,11 @@ import { FilterDrawer } from '@/components/FilterDrawer';
 import { StoryBar } from '@/components/StoryBar';
 import { TrendingCarousel } from '@/components/TrendingCarousel';
 import { CommunityChallengeBar } from '@/components/CommunityChallengeBar';
+import { CommunityMomentsStrip } from '@/components/CommunityMomentsStrip';
 import { CreateChallengeModal } from '@/components/CreateChallengeModal';
+import { CommunityCategoryRail, COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
+import { SpotCategoryRail, NATIONWIDE_SPOT_CATEGORIES } from '@/components/SpotCategoryRail';
+import { FairCategoryRail, NATIONWIDE_FAIR_CATEGORIES } from '@/components/FairCategoryRail';
 import { Pagination } from '@/components/Pagination';
 import { MOCK_SPOTS, SPOT_CATEGORIES, ALL_THAI_PROVINCES, LifestyleSpotItem } from '@/data/spotsData';
 import { SpotCard } from '@/components/SpotCard';
@@ -67,6 +71,8 @@ export default function Home() {
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
   const [eventTypeTab, setEventTypeTab] = useState<'spots' | 'public_venue' | 'community'>('spots');
   const [selectedSpotCategory, setSelectedSpotCategory] = useState<string>('all');
+  const [selectedSpotRailCategory, setSelectedSpotRailCategory] = useState<string | null>(null);
+  const [selectedFairRailCategory, setSelectedFairRailCategory] = useState<string | null>(null);
   const [selectedSpotProvince, setSelectedSpotProvince] = useState<string>('all');
   const [selectedSpot, setSelectedSpot] = useState<LifestyleSpotItem | null>(null);
   const [favoriteSpots, setFavoriteSpots] = useState<string[]>(['spot-bkk-1']);
@@ -302,8 +308,31 @@ export default function Home() {
   // Filtered and Sorted Events for Full Catalog
   const filteredEvents = useMemo(() => {
     let result = eventsList.filter((event) => {
-      const matchesCategory =
-        selectedCategory === null || event.category === selectedCategory;
+      const eventText = `${event.title} ${event.description} ${event.tag} ${event.badgeText || ''} ${event.location} ${event.hostName || ''} ${event.category} ${event.zone || ''}`.toLowerCase();
+
+      let matchesCategory = true;
+      if (selectedCategory !== null) {
+        const cat = selectedCategory as string;
+        if (cat === 'heal' || cat === 'move' || cat === 'chill' || cat === 'learn') {
+          matchesCategory = event.category === cat;
+        } else if (cat === 'running_fitness') {
+          matchesCategory = ['วิ่ง', 'running', 'marathon', 'hyrox', 'fitness', 'กีฬา', 'sport', 'climbing', 'ปีน', 'badminton'].some(k => eventText.includes(k));
+        } else if (cat === 'wellness_mind') {
+          matchesCategory = ['sound bath', 'soundbath', 'yoga', 'โยคะ', 'สมาธิ', 'mindfulness', 'heal', 'ฮีลใจ', 'บำบัด', 'introvert'].some(k => eventText.includes(k));
+        } else if (cat === 'cafe_social') {
+          matchesCategory = ['cafe', 'คาเฟ่', 'coffee', 'กาแฟ', 'slow bar', 'hangout', 'จิบกาแฟ', 'พูดคุย', 'อาหาร', 'tea', 'ชา', 'มัทฉะ'].some(k => eventText.includes(k));
+        } else if (cat === 'boardgames_party') {
+          matchesCategory = ['board game', 'boardgame', 'บอร์ดเกม', 'เกม', 'catan', 'quiz', 'party', 'เกมกลุ่ม', 'เพื่อนใหม่'].some(k => eventText.includes(k));
+        } else if (cat === 'arts_crafts') {
+          matchesCategory = ['workshop', 'เวิร์กช็อป', 'art', 'ศิลปะ', 'craft', 'คราฟต์', 'เซรามิก', 'pottery', 'ปั้นดิน', 'painting', 'สีน้ำ', 'เทียน', 'candle', 'ภาพวาด'].some(k => eventText.includes(k));
+        } else if (cat === 'travel_outdoor') {
+          matchesCategory = ['outdoor', 'เอาต์ดอร์', 'camping', 'กางเต็นท์', 'เดินป่า', 'คายัค', 'sup board', 'ซับบอร์ด', 'ธรรมชาติ', 'photowalk', 'ถ่ายรูป'].some(k => eventText.includes(k));
+        } else if (cat === 'tech_skills') {
+          matchesCategory = ['tech', 'ai', 'coding', 'developer', 'startup', 'business', 'networking', 'หนังสือ', 'book', 'talk', 'เสวนา'].some(k => eventText.includes(k));
+        } else if (cat === 'pets_family') {
+          matchesCategory = ['pet', 'สัตว์เลี้ยง', 'หมา', 'แมว', 'dog', 'cat', 'family', 'ครอบครัว', 'เด็ก', 'kids'].some(k => eventText.includes(k));
+        }
+      }
 
       let matchesVenue = true;
       if (selectedVenueFilter) {
@@ -472,18 +501,103 @@ export default function Home() {
     showEndedEvents,
   ]);
 
-  // Stream subsets for Option A (Unified Discovery Feed)
+  // Stream subsets for Option A (Unified Discovery Feed - Upcoming & Active Events Only)
   const streamCommunityEvents = useMemo(() => {
-    return eventsList.filter((e) => (e.eventType || 'community') === 'community');
-  }, [eventsList]);
+    return eventsList.filter((event) => {
+      if ((event.eventType || 'community') !== 'community') return false;
+      // Auto-hide ended events on homepage
+      if (isEventEnded(event)) return false;
+
+      const eventText = `${event.title} ${event.description} ${event.tag} ${event.badgeText || ''} ${event.location} ${event.hostName || ''} ${event.category} ${event.zone || ''}`.toLowerCase();
+
+      // Category filter for Community Stream
+      if (selectedCategory !== null) {
+        const cat = selectedCategory as string;
+        if (cat === 'heal' || cat === 'move' || cat === 'chill' || cat === 'learn') {
+          if (event.category !== cat) return false;
+        } else if (cat === 'running_fitness') {
+          if (!['วิ่ง', 'running', 'marathon', 'hyrox', 'fitness', 'กีฬา', 'sport', 'climbing', 'ปีน', 'badminton'].some(k => eventText.includes(k))) return false;
+        } else if (cat === 'wellness_mind') {
+          if (!['sound bath', 'soundbath', 'yoga', 'โยคะ', 'สมาธิ', 'mindfulness', 'heal', 'ฮีลใจ', 'บำบัด', 'introvert'].some(k => eventText.includes(k))) return false;
+        } else if (cat === 'cafe_social') {
+          if (!['cafe', 'คาเฟ่', 'coffee', 'กาแฟ', 'slow bar', 'hangout', 'จิบกาแฟ', 'พูดคุย', 'อาหาร', 'tea', 'ชา', 'มัทฉะ'].some(k => eventText.includes(k))) return false;
+        } else if (cat === 'boardgames_party') {
+          if (!['board game', 'boardgame', 'บอร์ดเกม', 'เกม', 'catan', 'quiz', 'party', 'เกมกลุ่ม', 'เพื่อนใหม่'].some(k => eventText.includes(k))) return false;
+        } else if (cat === 'arts_crafts') {
+          if (!['workshop', 'เวิร์กช็อป', 'art', 'ศิลปะ', 'craft', 'คราฟต์', 'เซรามิก', 'pottery', 'ปั้นดิน', 'painting', 'สีน้ำ', 'เทียน', 'candle', 'ภาพวาด'].some(k => eventText.includes(k))) return false;
+        } else if (cat === 'travel_outdoor') {
+          if (!['outdoor', 'เอาต์ดอร์', 'camping', 'กางเต็นท์', 'เดินป่า', 'คายัค', 'sup board', 'ซับบอร์ด', 'ธรรมชาติ', 'photowalk', 'ถ่ายรูป'].some(k => eventText.includes(k))) return false;
+        } else if (cat === 'tech_skills') {
+          if (!['tech', 'ai', 'coding', 'developer', 'startup', 'business', 'networking', 'หนังสือ', 'book', 'talk', 'เสวนา'].some(k => eventText.includes(k))) return false;
+        } else if (cat === 'pets_family') {
+          if (!['pet', 'สัตว์เลี้ยง', 'หมา', 'แมว', 'dog', 'cat', 'family', 'ครอบครัว', 'เด็ก', 'kids'].some(k => eventText.includes(k))) return false;
+        }
+      }
+
+      if (searchQuery.trim() !== '') {
+        const q = searchQuery.toLowerCase().trim();
+        if (!eventText.includes(q)) return false;
+      }
+
+      return true;
+    });
+  }, [eventsList, selectedCategory, searchQuery]);
 
   const streamPublicEvents = useMemo(() => {
-    return eventsList.filter((e) => e.eventType === 'public_venue');
-  }, [eventsList]);
+    return eventsList.filter((event) => {
+      if (event.eventType !== 'public_venue') return false;
+      // Auto-hide ended events on homepage
+      if (isEventEnded(event)) return false;
+
+      // Category Rail Filter for Fairs Stream
+      if (selectedFairRailCategory && selectedFairRailCategory !== 'all') {
+        const catDef = NATIONWIDE_FAIR_CATEGORIES.find((c) => c.id === selectedFairRailCategory);
+        if (catDef) {
+          const text = `${event.title} ${event.description} ${event.tag} ${event.location} ${event.hostName || ''} ${event.venueTag || ''}`.toLowerCase();
+          const matches = catDef.keywords.some((kw) => text.includes(kw.toLowerCase()));
+          if (!matches) return false;
+        }
+      }
+
+      // Independent Venue filter for Fairs Stream (supports venueTag, location name, and keywords)
+      if (selectedVenueFilter) {
+        const v = selectedVenueFilter.toLowerCase();
+        const vTag = (event.venueTag || '').toLowerCase();
+        const loc = (event.location || '').toLowerCase();
+        const title = (event.title || '').toLowerCase();
+        const text = `${vTag} ${loc} ${title}`;
+
+        if (v === 'qsncc' && !text.includes('สิริกิติ์') && !text.includes('qsncc')) return false;
+        else if (v === 'bitec' && !text.includes('ไบเทค') && !text.includes('bitec')) return false;
+        else if (v === 'impact' && !text.includes('อิมแพ็ค') && !text.includes('impact') && !text.includes('เมืองทอง')) return false;
+        else if (v === 'marathon' && !text.includes('วิ่ง') && !text.includes('มาราธอน') && !text.includes('marathon')) return false;
+        else if (v === 'park' && !text.includes('สวน') && !text.includes('park')) return false;
+        else if (!['qsncc', 'bitec', 'impact', 'marathon', 'park'].includes(v) && !text.includes(v)) return false;
+      }
+
+      if (searchQuery.trim() !== '') {
+        const q = searchQuery.toLowerCase().trim();
+        const eventText = `${event.title} ${event.description} ${event.tag} ${event.location} ${event.hostName}`.toLowerCase();
+        if (!eventText.includes(q)) return false;
+      }
+
+      return true;
+    });
+  }, [eventsList, selectedFairRailCategory, selectedVenueFilter, searchQuery]);
 
   // Filtered Lifestyle Spots (พิกัดเที่ยว & จุดฮีลใจ ทั่วประเทศ)
   const filteredSpots = useMemo(() => {
     let result = MOCK_SPOTS.filter((spot) => {
+      // 0. Spot Category Rail Filter
+      if (selectedSpotRailCategory && selectedSpotRailCategory !== 'all') {
+        const catDef = NATIONWIDE_SPOT_CATEGORIES.find((c) => c.id === selectedSpotRailCategory);
+        if (catDef) {
+          const text = `${spot.title} ${spot.category} ${spot.categoryLabel} ${spot.description} ${spot.province} ${(spot.vibeTags || []).join(' ')} ${(spot.highlights || []).join(' ')}`.toLowerCase();
+          const matches = catDef.keywords.some((kw) => text.includes(kw.toLowerCase()));
+          if (!matches) return false;
+        }
+      }
+
       // 1. Category Filter
       if (selectedSpotCategory !== 'all' && spot.category !== selectedSpotCategory) {
         return false;
@@ -547,7 +661,7 @@ export default function Home() {
     }
 
     return result;
-  }, [selectedSpotCategory, selectedSpotProvince, priceFilter, sortBy, sortByNearMe, userLocation, favoriteSpots, searchQuery]);
+  }, [selectedSpotRailCategory, selectedSpotCategory, selectedSpotProvince, priceFilter, sortBy, sortByNearMe, userLocation, favoriteSpots, searchQuery]);
 
   const handleSearchSubmit = () => {
     // Smart Search Auto-Clear: reset conflicting sub-filters so the search result is not blocked
@@ -720,7 +834,7 @@ export default function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
       />
-      
+
       {/* 1. Header / Navbar */}
       <Navbar
         activeTab={activeNavTab}
@@ -743,7 +857,7 @@ export default function Home() {
 
       {/* Main Content Area */}
       <main className="flex-1 space-y-2 sm:space-y-3">
-        
+
         {/* 2. Hero Section (with h1 tag for SEO & Clean Instant Surprise Me) */}
         <HeroSection
           searchQuery={searchQuery}
@@ -757,11 +871,11 @@ export default function Home() {
         />
 
         <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-8 pt-1 sm:pt-2 pb-6 relative z-10">
-          
+
           {/* 3. Auto-Sliding Trending Events Carousel */}
           <TrendingCarousel
             events={eventsList}
-            onSelectEvent={() => {}}
+            onSelectEvent={() => { }}
             favorites={favorites}
             toggleFavorite={toggleFavorite}
           />
@@ -771,7 +885,7 @@ export default function Home() {
           {/* ========================================================================= */}
           {heroVersion === 'editorial' ? (
             <div id="catalog-section" className="space-y-10 sm:space-y-12 pt-2 animate-fade-in">
-              
+
               {/* ------------------------------------------------------------------------- */}
               {/* STREAM SECTION 1: 📍 LIFESTYLE SPOTS (พิกัดเที่ยว & จุดฮีลใจ ทั่วไทย)        */}
               {/* ------------------------------------------------------------------------- */}
@@ -822,6 +936,16 @@ export default function Home() {
                   </div>
                 </div>
 
+                {/* Nationwide Spot Category Rail */}
+                <div className="pt-0.5">
+                  <SpotCategoryRail
+                    selectedCategoryId={selectedSpotRailCategory}
+                    onSelectCategory={(catId) => {
+                      setSelectedSpotRailCategory(catId);
+                    }}
+                  />
+                </div>
+
                 {/* Spot Cards Grid (Top 10 items - 2 rows of 5 on desktop) */}
                 {filteredSpots.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
@@ -869,19 +993,33 @@ export default function Home() {
                     </p>
                   </div>
 
-                  <Link
-                    href="/community"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-[#F26430] text-[#F26430] hover:text-white border border-orange-200/80 hover:border-[#F26430] rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
-                  >
-                    <span>สำรวจกิจกรรมชุมชนทั้งหมด ({filteredEvents.filter(e => e.eventType !== 'public_venue').length})</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
-                  </Link>
+                  <div className="flex items-center gap-2 self-end sm:self-auto">
+                    <Link
+                      href={`/community${selectedCategory ? `?category=${encodeURIComponent(selectedCategory)}` : ''}`}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-[#F26430] text-[#F26430] hover:text-white border border-orange-200/80 hover:border-[#F26430] rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer"
+                    >
+                      <span>สำรวจกิจกรรมชุมชนทั้งหมด ({streamCommunityEvents.length})</span>
+                      <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Meetup & Luma Inspired Lifestyle Category Rail */}
+                <div className="pt-0.5">
+                  <CommunityCategoryRail
+                    selectedCategoryId={selectedCategory}
+                    onSelectCategory={(catId) => {
+                      setSelectedCategory(catId as any);
+                      setSelectedSubCategory(null);
+                    }}
+                    variant="rail"
+                  />
                 </div>
 
                 {/* Community Events Grid (Top 10 items - 2 rows of 5 on desktop) */}
                 <EventGrid
-                  events={filteredEvents.filter(e => e.eventType !== 'public_venue').slice(0, 10)}
-                  onSelectEvent={() => {}}
+                  events={streamCommunityEvents.slice(0, 10)}
+                  onSelectEvent={() => { }}
                   favorites={favorites}
                   toggleFavorite={toggleFavorite}
                   joinedEventIds={joinedEventIds}
@@ -911,19 +1049,52 @@ export default function Home() {
                     </p>
                   </div>
 
-                  <Link
-                    href="/fairs"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-[#2B527A] text-[#2B527A] hover:text-white border border-blue-200/80 hover:border-[#2B527A] rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
-                  >
-                    <span>ดูงานแฟร์ทั้งหมด ({filteredEvents.filter(e => e.eventType === 'public_venue').length})</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
-                  </Link>
+                  <div className="flex items-center gap-2 self-end sm:self-auto">
+                    {/* Venue Filter Dropdown */}
+                    <div className="relative hidden sm:block">
+                      <select
+                        value={selectedVenueFilter || 'all'}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setSelectedVenueFilter(val === 'all' ? null : val);
+                        }}
+                        aria-label="เลือกศูนย์จัดแสดงสินค้า"
+                        className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none cursor-pointer pr-7 appearance-none transition-colors shadow-2xs"
+                      >
+                        <option value="all">ทุกศูนย์แสดงสินค้า & งานแฟร์</option>
+                        <option value="qsncc">ศูนย์ฯ สิริกิติ์ (QSNCC)</option>
+                        <option value="bitec">ไบเทค บางนา (BITEC)</option>
+                        <option value="impact">อิมแพ็ค เมืองทองธานี</option>
+                        <option value="marathon">งานวิ่ง & มาราธอน</option>
+                        <option value="park">สวนสาธารณะ</option>
+                      </select>
+                      <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+
+                    <Link
+                      href={`/fairs${selectedVenueFilter ? `?venue=${encodeURIComponent(selectedVenueFilter)}` : ''}`}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-[#2B527A] text-[#2B527A] hover:text-white border border-blue-200/80 hover:border-[#2B527A] rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer"
+                    >
+                      <span>ดูงานแฟร์ทั้งหมด ({streamPublicEvents.length})</span>
+                      <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Major Fairs & Expo Category Rail */}
+                <div className="pt-0.5">
+                  <FairCategoryRail
+                    selectedCategoryId={selectedFairRailCategory}
+                    onSelectCategory={(catId) => {
+                      setSelectedFairRailCategory(catId);
+                    }}
+                  />
                 </div>
 
                 {/* Public Venue Events Grid (Top 10 items - 2 rows of 5 on desktop) */}
                 <EventGrid
-                  events={filteredEvents.filter(e => e.eventType === 'public_venue').slice(0, 10)}
-                  onSelectEvent={() => {}}
+                  events={streamPublicEvents.slice(0, 10)}
+                  onSelectEvent={() => { }}
                   favorites={favorites}
                   toggleFavorite={toggleFavorite}
                   joinedEventIds={joinedEventIds}
@@ -937,7 +1108,7 @@ export default function Home() {
             /* OPTION B: CLASSIC 3-TAB MODE SWITCHER (for Comparison)                    */
             /* ========================================================================= */
             <section id="catalog-section" className="space-y-3 pt-1">
-              
+
               {/* Mode Header */}
               <div className="flex items-center justify-between px-0.5">
                 <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
@@ -947,16 +1118,15 @@ export default function Home() {
 
               {/* Modern Segmented Control */}
               <div className="bg-slate-100 p-1 rounded-2xl flex items-center gap-1 border border-slate-200/60">
-                
+
                 {/* Tab 1: สถานที่เที่ยว */}
                 <button
                   type="button"
                   onClick={() => handleSelectEventTypeTab('spots')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-98 ${
-                    eventTypeTab === 'spots'
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-98 ${eventTypeTab === 'spots'
                       ? 'bg-white text-[#4A7C59] shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                    }`}
                 >
                   <MapPin className="w-4 h-4 shrink-0" />
                   <span>สถานที่เที่ยว</span>
@@ -969,11 +1139,10 @@ export default function Home() {
                     handleSelectEventTypeTab('community');
                     setSelectedVenueFilter(null);
                   }}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-98 ${
-                    eventTypeTab === 'community'
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-98 ${eventTypeTab === 'community'
                       ? 'bg-white text-[#4A7C59] shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                    }`}
                 >
                   <Users className="w-4 h-4 shrink-0" />
                   <span>กิจกรรมคอมมูนิตี้</span>
@@ -987,11 +1156,10 @@ export default function Home() {
                     setSelectedCategory(null);
                     setSelectedSubCategory(null);
                   }}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-98 ${
-                    eventTypeTab === 'public_venue'
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-98 ${eventTypeTab === 'public_venue'
                       ? 'bg-white text-[#4A7C59] shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                    }`}
                 >
                   <Building2 className="w-4 h-4 shrink-0" />
                   <span className="truncate">อีเวนต์ & งานแฟร์</span>
@@ -1004,13 +1172,13 @@ export default function Home() {
               {/* ========================================================================= */}
               {eventTypeTab === 'spots' ? (
                 <div className="space-y-4 animate-fade-in">
-                  
+
                   {/* Dedicated Spot Control & Filter Bar */}
                   <div className="bg-white p-2.5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-2">
-                    
+
                     {/* Left: Dual Dropdowns (Category + Province) */}
                     <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap flex-1 min-w-0">
-                      
+
                       {/* 1. Category Dropdown */}
                       <div className="relative flex items-center flex-1 min-w-[170px] max-w-xs">
                         <select
@@ -1048,11 +1216,10 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={() => setPriceFilter(priceFilter === 'free' ? 'all' : 'free')}
-                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap cursor-pointer border ${
-                          priceFilter === 'free'
+                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap cursor-pointer border ${priceFilter === 'free'
                             ? 'bg-[#4A7C59] text-white border-[#4A7C59] shadow-xs'
                             : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                        }`}
+                          }`}
                       >
                         เข้าฟรี
                       </button>
@@ -1061,7 +1228,7 @@ export default function Home() {
 
                     {/* Right Controls: Favorites */}
                     <div className="flex items-center justify-end gap-1.5 shrink-0 pt-1 md:pt-0 border-t md:border-t-0 border-slate-100">
-                      
+
                       {/* Favorites Button */}
                       <button
                         type="button"
@@ -1073,11 +1240,10 @@ export default function Home() {
                             setSortByNearMe(false);
                           }
                         }}
-                        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer shrink-0 border ${
-                          sortBy === 'favorites'
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer shrink-0 border ${sortBy === 'favorites'
                             ? 'bg-gradient-to-r from-orange-500 to-[#F26430] text-white border-[#F26430] shadow-sm ring-2 ring-orange-500/20'
                             : 'bg-white hover:bg-orange-50/80 text-[#1E293B] hover:text-[#F26430] border-[#E8E2D8] hover:border-orange-300'
-                        }`}
+                          }`}
                       >
                         <Heart className={`w-3.5 h-3.5 ${sortBy === 'favorites' ? 'fill-white text-white' : 'text-slate-400'}`} />
                         <span>บันทึกไว้ ({favoriteSpots.length})</span>
@@ -1089,11 +1255,10 @@ export default function Home() {
                           type="button"
                           onClick={handleToggleNearMe}
                           disabled={isLocating}
-                          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 border ${
-                            sortByNearMe
+                          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 border ${sortByNearMe
                               ? 'bg-gradient-to-r from-orange-500 to-[#F26430] text-white border-[#F26430] shadow-sm ring-2 ring-orange-500/20'
                               : 'bg-white hover:bg-orange-50/80 text-[#1E293B] hover:text-[#F26430] border-slate-200 hover:border-orange-300'
-                          }`}
+                            }`}
                         >
                           {isLocating ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin text-[#F26430]" />
@@ -1186,12 +1351,142 @@ export default function Home() {
                 /* ========================================================================= */
                 /* VIEW B: EVENTS & COMMUNITY MEETUPS (อีเวนต์ & กิจกรรมคอมมูนิตี้)              */
                 /* ========================================================================= */
-                <div className="space-y-4">
-                  
+                <div className="space-y-4 animate-fade-in">
+
+                  {/* Unified Control & Filter Bar (Matching Spots Tab Compact Style) */}
+                  <div className="bg-white p-2.5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-2">
+                    
+                    {/* Left: Category Dropdown / Venue Dropdown + Time Tabs + Free Filter */}
+                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap flex-1 min-w-0">
+                      
+                      {/* 1. Category / Venue Quick Dropdown */}
+                      {eventTypeTab === 'community' ? (
+                        <div className="relative flex items-center flex-1 min-w-[170px] max-w-xs">
+                          <select
+                            value={selectedCategory || 'all'}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSelectedCategory(val === 'all' ? null : val as any);
+                              setSelectedSubCategory(null);
+                            }}
+                            className="w-full px-3.5 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#4A7C59] cursor-pointer appearance-none transition-colors truncate"
+                          >
+                            <option value="all">ทุกหมวดกิจกรรมชุมชน</option>
+                            <option value="heal">ฮีลใจ & ผ่อนคลาย (Heal)</option>
+                            <option value="move">ขยับกาย & กีฬา (Move)</option>
+                            <option value="chill">ชิลล์ & คอนเนกต์ (Chill)</option>
+                            <option value="learn">เรียนรู้ & งานคราฟต์ (Learn)</option>
+                          </select>
+                          <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 pointer-events-none" />
+                        </div>
+                      ) : (
+                        <div className="relative flex items-center flex-1 min-w-[170px] max-w-xs">
+                          <select
+                            value={selectedVenueFilter || 'all'}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSelectedVenueFilter(val === 'all' ? null : val);
+                            }}
+                            className="w-full px-3.5 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#4A7C59] cursor-pointer appearance-none transition-colors truncate"
+                          >
+                            <option value="all">ทุกศูนย์แสดงสินค้า & งานแฟร์</option>
+                            <option value="qsncc">ศูนย์ฯ สิริกิติ์ (QSNCC)</option>
+                            <option value="bitec">ไบเทค บางนา (BITEC)</option>
+                            <option value="impact">อิมแพ็ค เมืองทองธานี</option>
+                            <option value="marathon">งานวิ่ง & มาราธอน</option>
+                            <option value="park">สวนสาธารณะ</option>
+                          </select>
+                          <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 pointer-events-none" />
+                        </div>
+                      )}
+
+                      {/* 2. Time Filter Dropdown */}
+                      <div className="relative flex items-center flex-1 min-w-[130px] max-w-[160px]">
+                        <select
+                          value={timeFilter}
+                          onChange={(e) => {
+                            const val = e.target.value as any;
+                            setTimeFilter(val);
+                            if (val !== 'custom') {
+                              setStartDate('');
+                              setEndDate('');
+                            } else {
+                              setIsDatePickerOpen(true);
+                            }
+                          }}
+                          className="w-full px-3.5 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#4A7C59] cursor-pointer appearance-none transition-colors truncate"
+                        >
+                          <option value="all">ทุกช่วงเวลา</option>
+                          <option value="today">วันนี้</option>
+                          <option value="tomorrow">พรุ่งนี้</option>
+                          <option value="weekend">เสาร์-อาทิตย์นี้</option>
+                          <option value="custom">ระบุวันที่เอง...</option>
+                        </select>
+                        <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 pointer-events-none" />
+                      </div>
+
+                      {/* 3. Quick Free Event Toggle */}
+                      <button
+                        type="button"
+                        onClick={() => setPriceFilter(priceFilter === 'free' ? 'all' : 'free')}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap cursor-pointer border ${priceFilter === 'free'
+                          ? 'bg-[#4A7C59] text-white border-[#4A7C59] shadow-xs'
+                          : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        เข้าร่วมฟรี
+                      </button>
+
+                    </div>
+
+                    {/* Right Controls: Favorites + Filter Drawer */}
+                    <div className="flex items-center justify-end gap-1.5 shrink-0 pt-1 md:pt-0 border-t md:border-t-0 border-slate-100">
+                      
+                      {/* Favorites Button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (sortBy === 'favorites') {
+                            setSortBy('newest');
+                          } else {
+                            setSortBy('favorites');
+                            setSortByNearMe(false);
+                          }
+                        }}
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer shrink-0 border ${sortBy === 'favorites'
+                          ? 'bg-gradient-to-r from-orange-500 to-[#F26430] text-white border-[#F26430] shadow-sm ring-2 ring-orange-500/20'
+                          : 'bg-white hover:bg-orange-50/80 text-[#1E293B] hover:text-[#F26430] border-[#E8E2D8] hover:border-orange-300'
+                        }`}
+                      >
+                        <Heart className={`w-3.5 h-3.5 ${sortBy === 'favorites' ? 'fill-white text-white' : 'text-slate-400'}`} />
+                        <span>บันทึกไว้ ({favorites.length})</span>
+                      </button>
+
+                      {/* Advance Filter Drawer Button */}
+                      <button
+                        type="button"
+                        onClick={() => setIsFilterDrawerOpen(true)}
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 border ${
+                          (selectedVenueFilter || selectedCategory || selectedZone || priceFilter !== 'all' || (timeFilter === 'custom' && startDate))
+                            ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                            : 'bg-white hover:bg-slate-50 text-[#1E293B] border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        <SlidersHorizontal className="w-3.5 h-3.5 text-[#4A7C59]" />
+                        <span>ตัวกรอง {selectedZone ? '(1)' : ''}</span>
+                        {(selectedVenueFilter || selectedCategory || selectedZone || priceFilter !== 'all' || (timeFilter === 'custom' && startDate)) && (
+                          <span className="w-2 h-2 rounded-full bg-[#F26430] animate-pulse" />
+                        )}
+                      </button>
+
+                    </div>
+
+                  </div>
+
                   {/* Event Grid */}
                   <EventGrid
                     events={displayedEvents}
-                    onSelectEvent={() => {}}
+                    onSelectEvent={() => { }}
                     favorites={favorites}
                     toggleFavorite={toggleFavorite}
                     joinedEventIds={joinedEventIds}
@@ -1226,40 +1521,159 @@ export default function Home() {
             }}
           />
 
+          {/* SECTION 5: 📸 โมเมนต์ & บรรยากาศจริงจากชุมชน (Social Lifestyle Stories) */}
+          <CommunityMomentsStrip />
+
         </div>
 
       </main>
 
-      {/* Ultra-Clean Modern Editorial Footer */}
-      <footer className="bg-slate-900 text-white border-t border-slate-800 py-12 px-4 sm:px-6 lg:px-8 mt-16 mb-16 sm:mb-0">
-        <div className="max-w-7xl 2xl:max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          
-          <div className="space-y-1.5 text-center md:text-left">
-            <div className="flex items-center justify-center md:justify-start gap-2 text-base font-black text-white">
-              <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-emerald-500 to-[#4A7C59] flex items-center justify-center text-white shadow-sm">
-                <Sprout className="w-4 h-4 stroke-[2.5]" />
+      {/* Elegant Organic Lifestyle Footer (Clean, Minimal & Natural Editorial) */}
+      <footer 
+        role="contentinfo"
+        aria-label="Chill & Connect Hub Footer"
+        className="bg-[#FAF9F6] text-slate-700 border-t border-slate-200/80 pt-12 sm:pt-14 pb-24 sm:pb-12 px-4 sm:px-6 lg:px-8 mt-16 transition-colors"
+      >
+        <div className="max-w-7xl 2xl:max-w-[1600px] mx-auto space-y-8">
+
+          {/* Top Row: Brand Info + Navigation Columns */}
+          <div className="flex flex-col lg:flex-row items-start justify-between gap-8 pb-8 border-b border-slate-200/80">
+            
+            {/* Brand Intro */}
+            <div className="space-y-3 max-w-md">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-600 to-[#4A7C59] flex items-center justify-center text-white shadow-xs ring-2 ring-emerald-500/15 shrink-0">
+                  <Sprout className="w-4.5 h-4.5 stroke-[2.5]" />
+                </div>
+                <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                  Chill & Connect Hub
+                </span>
               </div>
-              <span>Chill & Connect Hub</span>
-              <span className="text-[10px] font-bold bg-white/10 text-emerald-300 px-2 py-0.5 rounded-full border border-white/10">
-                v2.0
-              </span>
+
+              <p className="text-xs sm:text-sm text-slate-600 font-normal leading-relaxed">
+                แพลตฟอร์มค้นพบพิกัดเที่ยว จุดฮีลใจ คาเฟ่ และกิจกรรมคอมมูนิตี้สำหรับคนรักการใช้ชีวิต เชื่อมต่อเพื่อนใหม่และสร้างบทสนทนาที่มีความหมาย
+              </p>
             </div>
-            <p className="text-xs text-slate-400 font-medium max-w-md">
-              Thailand's Curated Discovery & Community Experience Platform
-            </p>
+
+            {/* Quick Links Group */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 sm:gap-10 text-xs sm:text-sm w-full lg:w-auto">
+              
+              {/* Col 1: เสาหลักการค้นพบ */}
+              <div className="space-y-3">
+                <h4 className="font-extrabold text-slate-900 text-xs sm:text-sm uppercase tracking-wider">
+                  สำรวจไลฟ์สไตล์
+                </h4>
+                <ul className="space-y-2.5 font-medium text-slate-600">
+                  <li>
+                    <Link 
+                      href="/spots" 
+                      title="ค้นหาพิกัดเที่ยวและคาเฟ่"
+                      className="hover:text-[#4A7C59] transition-colors flex items-center gap-1.5 focus:outline-none focus:underline"
+                    >
+                      <span>พิกัดเที่ยว & จุดฮีลใจ</span>
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      href="/community" 
+                      title="หากิจกรรมคอมมูนิตี้และเปิดตี้เพื่อนใหม่"
+                      className="hover:text-[#F26430] transition-colors flex items-center gap-1.5 focus:outline-none focus:underline"
+                    >
+                      <span>ตี้เพื่อนใหม่ & กิจกรรม</span>
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      href="/fairs" 
+                      title="งานมหกรรม นิทรรศการ และเอ็กซ์โป"
+                      className="hover:text-blue-700 transition-colors flex items-center gap-1.5 focus:outline-none focus:underline"
+                    >
+                      <span>งานมหกรรม & เอ็กซ์โป</span>
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Col 2: ชุมชนและการมีส่วนร่วม */}
+              <div className="space-y-3">
+                <h4 className="font-extrabold text-slate-900 text-xs sm:text-sm uppercase tracking-wider">
+                  คอมมูนิตี้ & ชาเลนจ์
+                </h4>
+                <ul className="space-y-2.5 font-medium text-slate-600">
+                  <li>
+                    <Link 
+                      href="/challenges" 
+                      title="ภารกิจสะสมเหรียญตราและแต้ม EXP"
+                      className="hover:text-purple-700 transition-colors flex items-center gap-1.5 focus:outline-none focus:underline"
+                    >
+                      <span>ชาเลนจ์สะสมเหรียญตรา</span>
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      href="/moments" 
+                      title="แชร์และบันทึกโมเมนต์ความทรงจำ"
+                      className="hover:text-[#4A7C59] transition-colors focus:outline-none focus:underline"
+                    >
+                      <span>โมเมนต์ & ความทรงจำ</span>
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      href="/myhub" 
+                      title="ดูตั๋วและกิจกรรมที่เข้าร่วม"
+                      className="hover:text-[#4A7C59] transition-colors focus:outline-none focus:underline"
+                    >
+                      <span>มายฮับ & บอร์ดนัดพบ</span>
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Col 3: ความช่วยเหลือ & ข้อกำหนด */}
+              <div className="space-y-3 col-span-2 sm:col-span-1">
+                <h4 className="font-extrabold text-slate-900 text-xs sm:text-sm uppercase tracking-wider">
+                  ความปลอดภัย & ช่วยเหลือ
+                </h4>
+                <ul className="space-y-2.5 font-medium text-slate-600">
+                  <li>
+                    <Link 
+                      href="/about" 
+                      title="รู้จักวิสัยทัศน์ของ Chill & Connect Hub"
+                      className="hover:text-[#4A7C59] transition-colors focus:outline-none focus:underline"
+                    >
+                      <span>เกี่ยวกับเรา</span>
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      href="/safety" 
+                      title="มาตรฐานความปลอดภัยในการพบเพื่อนใหม่"
+                      className="hover:text-[#4A7C59] transition-colors focus:outline-none focus:underline"
+                    >
+                      <span>คู่มือความปลอดภัย</span>
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      href="/onboarding" 
+                      title="เริ่มต้นตั้งค่าโปรไฟล์และสไตล์ที่ชอบ"
+                      className="hover:text-[#4A7C59] transition-colors focus:outline-none focus:underline"
+                    >
+                      <span>แนะนำตัวสมาชิก</span>
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+
+            </div>
+
           </div>
 
-          <div className="flex items-center gap-6 text-xs font-semibold text-slate-400 flex-wrap justify-center">
-            <Link href="/spots" className="hover:text-white transition-colors">พิกัดเที่ยว</Link>
-            <Link href="/community" className="hover:text-white transition-colors">กิจกรรมชุมชน</Link>
-            <Link href="/fairs" className="hover:text-white transition-colors">งานแฟร์</Link>
-            <Link href="/challenges" className="hover:text-white transition-colors">ชาเลนจ์</Link>
-            <Link href="/about" className="hover:text-white transition-colors">เกี่ยวกับเรา</Link>
-          </div>
-
-          <div className="text-center md:text-right text-[11px] text-slate-500 font-medium">
-            <p>© 2026 Chill & Connect Hub. All rights reserved.</p>
-            <p className="mt-0.5 text-slate-600">Built for authentic lifestyle discovery in 77 provinces.</p>
+          {/* Bottom Row: Clean Copyright */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 font-medium pt-1">
+            <p>© 2026 Chill & Connect Hub. สร้างขึ้นด้วยความใส่ใจเพื่อชุมชนคนชอบใช้ชีวิต</p>
+            <p className="text-slate-400">Curated Lifestyle Discovery & Community Network</p>
           </div>
 
         </div>

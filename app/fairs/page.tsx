@@ -22,6 +22,8 @@ import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { useAuth } from '@/lib/useAuth';
 import { MOCK_EVENTS, EventItem } from '@/data/mockData';
+import { isEventEnded } from '@/lib/dateUtils';
+import { FairCategoryRail, NATIONWIDE_FAIR_CATEGORIES } from '@/components/FairCategoryRail';
 
 const ITEMS_PER_PAGE = 24;
 
@@ -40,7 +42,9 @@ function FairsPageContent() {
 
   const [activeNavTab, setActiveNavTab] = useState('explore');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedVenue, setSelectedVenue] = useState<string>(searchParams.get('venue') || 'all');
+  const [statusFilter, setStatusFilter] = useState<'upcoming' | 'ended' | 'all'>('upcoming');
   const [priceFilter, setPriceFilter] = useState<'all' | 'free'>((searchParams.get('price') as any) || 'all');
   const [sortBy, setSortBy] = useState<'newest' | 'favorites'>('newest');
   const [currentPage, setCurrentPage] = useState(1);
@@ -48,6 +52,22 @@ function FairsPageContent() {
   const [joinedEventIds, setJoinedEventIds] = useState<string[]>(['live-agg-1']);
   const [eventsList, setEventsList] = useState<EventItem[]>(MOCK_EVENTS);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Fetch live approved events from server
+  React.useEffect(() => {
+    const loadLiveEvents = async () => {
+      try {
+        const res = await fetch('/api/events');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.events) && data.events.length > 0) {
+          setEventsList(data.events);
+        }
+      } catch (err) {
+        console.log('Using default mock events fallback:', err);
+      }
+    };
+    loadLiveEvents();
+  }, []);
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -83,6 +103,22 @@ function FairsPageContent() {
   const filteredEvents = useMemo(() => {
     return eventsList.filter((ev) => {
       if (ev.eventType !== 'public_venue') return false;
+
+      // Status Filter (Upcoming / Ended / All)
+      const ended = isEventEnded(ev);
+      if (statusFilter === 'upcoming' && ended) return false;
+      if (statusFilter === 'ended' && !ended) return false;
+
+      // Category Rail Filter
+      if (selectedCategory && selectedCategory !== 'all') {
+        const catDef = NATIONWIDE_FAIR_CATEGORIES.find((c) => c.id === selectedCategory);
+        if (catDef) {
+          const text = `${ev.title} ${ev.description || ''} ${ev.tag || ''} ${ev.location || ''} ${ev.venueTag || ''}`.toLowerCase();
+          const matches = catDef.keywords.some((kw) => text.includes(kw.toLowerCase()));
+          if (!matches) return false;
+        }
+      }
+
       if (selectedVenue !== 'all') {
         const vLower = selectedVenue.toLowerCase();
         const loc = (ev.location || '').toLowerCase();
@@ -98,7 +134,19 @@ function FairsPageContent() {
       }
       return true;
     });
-  }, [eventsList, selectedVenue, priceFilter, sortBy, favorites, searchQuery]);
+  }, [eventsList, statusFilter, selectedCategory, selectedVenue, priceFilter, sortBy, favorites, searchQuery]);
+
+  const fairCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    const baseFairs = eventsList.filter((ev) => ev.eventType === 'public_venue' && (statusFilter === 'all' || (statusFilter === 'upcoming' ? !isEventEnded(ev) : isEventEnded(ev))));
+    for (const cat of NATIONWIDE_FAIR_CATEGORIES) {
+      counts[cat.id] = baseFairs.filter((ev) => {
+        const text = `${ev.title} ${ev.description || ''} ${ev.tag || ''} ${ev.location || ''} ${ev.venueTag || ''}`.toLowerCase();
+        return cat.keywords.some((kw) => text.includes(kw.toLowerCase()));
+      }).length;
+    }
+    return counts;
+  }, [eventsList, statusFilter]);
 
   const totalPages = Math.ceil(filteredEvents.length / ITEMS_PER_PAGE) || 1;
   const paginatedEvents = useMemo(() => {
@@ -144,11 +192,21 @@ function FairsPageContent() {
                 งานมหกรรม นิทรรศการ & เอ็กซ์โป
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
-                ศูนย์รวมงานแฟร์ใหญ่ระดับประเทศ ณ ศูนย์ฯ สิริกิติ์, ไบเทค บางนา, อิมแพ็ค เมืองทองธานี
+                ศูนย์รวมงานแฟร์ใหญ่ นิทรรศการ เทศกาลเมือง และงานระดับภูมิภาคทั่วประเทศ
               </p>
             </div>
           </div>
         </div>
+
+        {/* Nationwide Fair Category Rail */}
+        <FairCategoryRail
+          selectedCategoryId={selectedCategory}
+          onSelectCategory={(catId) => {
+            setSelectedCategory(catId);
+            setCurrentPage(1);
+          }}
+          fairCounts={fairCounts}
+        />
 
         {/* Filter & Search Bar */}
         <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
@@ -194,6 +252,52 @@ function FairsPageContent() {
                 ))}
               </select>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
+            {/* Status Filter Tabs (Upcoming vs Ended) */}
+            <div className="flex items-center bg-white p-1 rounded-xl border border-slate-200 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setStatusFilter('upcoming');
+                  setCurrentPage(1);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  statusFilter === 'upcoming'
+                    ? 'bg-[#EBF3ED] text-[#2D5A3C] shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                กำลังจะมาถึง
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setStatusFilter('ended');
+                  setCurrentPage(1);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  statusFilter === 'ended'
+                    ? 'bg-[#EBF3ED] text-[#2D5A3C] shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                งานที่ผ่านมา
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setStatusFilter('all');
+                  setCurrentPage(1);
+                }}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  statusFilter === 'all'
+                    ? 'bg-[#EBF3ED] text-[#2D5A3C] shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                ทั้งหมด
+              </button>
             </div>
 
             {/* Free Button */}

@@ -598,12 +598,12 @@ export default function OnboardingPage() {
               <span className="font-black text-lg sm:text-[20px] tracking-tight text-[#1E293B] font-sans leading-none">
                 Chill & Connect Hub
               </span>
-              <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium tracking-normal leading-none mt-1.5 sm:mt-2 flex items-center gap-1.5">
-                <span>แชร์โมเมนต์</span>
+              <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium tracking-normal leading-none mt-2 sm:mt-2.5 flex items-center gap-1.5">
+                <span>ค้นหาที่เที่ยว</span>
+                <span className="text-slate-300">•</span>
+                <span>ออกไปใช้ชีวิต</span>
                 <span className="text-slate-300">•</span>
                 <span>พบเพื่อนใหม่</span>
-                <span className="text-slate-300">•</span>
-                <span>ชิลล์ได้ทุกวัน</span>
               </p>
             </div>
           </Link>

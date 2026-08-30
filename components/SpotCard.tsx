@@ -140,15 +140,18 @@ export const SpotCard: React.FC<SpotCardProps> = ({
       </div>
 
       {/* Body */}
-      <div className="p-3.5 flex flex-col justify-between flex-1 gap-2.5">
+      <div className="p-3.5 flex flex-col justify-between flex-1 gap-2">
         <div className="space-y-1.5">
-          {/* Title & Price */}
+          {/* Title & Price Header */}
           <div className="flex items-start justify-between gap-2">
-            <h3 className="font-bold text-sm text-slate-900 line-clamp-1 group-hover:text-[#4A7C59] transition-colors leading-snug flex-1">
+            <h3 
+              className="font-bold text-[13px] sm:text-sm text-slate-900 line-clamp-2 min-h-[2.5rem] sm:min-h-[2.6rem] group-hover:text-[#4A7C59] transition-colors leading-[1.3] tracking-tight flex-1"
+              title={spot.title}
+            >
               {spot.title}
             </h3>
             <span
-              className={`text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
+              className={`text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 self-start ${
                 spot.price.includes('ฟรี')
                   ? 'bg-emerald-50 text-emerald-800'
                   : 'bg-slate-100 text-slate-700'
@@ -159,14 +162,14 @@ export const SpotCard: React.FC<SpotCardProps> = ({
           </div>
 
           {/* Meta Info */}
-          <div className="space-y-1 text-xs text-slate-500">
+          <div className="space-y-1 text-xs text-slate-500 pt-0.5">
             <div className="flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-              <span className="truncate">{spot.openHours}</span>
+              <span className="truncate text-[11px] sm:text-xs">{spot.openHours}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-              <span className="truncate">{spot.district}, {spot.province}</span>
+              <span className="truncate text-[11px] sm:text-xs">{spot.district}, {spot.province}</span>
             </div>
           </div>
         </div>

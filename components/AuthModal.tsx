@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   X,
   LogIn,
@@ -55,6 +56,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [isHumanVerified, setIsHumanVerified] = useState(false);
   const [isVerifyingHuman, setIsVerifyingHuman] = useState(false);
   const [signUpError, setSignUpError] = useState('');
+  const router = useRouter();
 
   if (!isOpen) return null;
 
@@ -90,12 +92,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }, 600);
   };
 
-  const handleSocialAuth = (method: 'google' | 'apple' | 'facebook') => {
+  const handleSocialAuth = (method: 'google' | 'apple' | 'facebook', isSignUp = false) => {
     let name = 'คุณส้ม (Google)';
     if (method === 'apple') name = 'คุณส้ม (Apple ID)';
     if (method === 'facebook') name = 'คุณส้ม (Facebook)';
     onLoginSuccess(name);
     onClose();
+    if (isSignUp) {
+      router.push('/onboarding');
+    }
   };
 
   const handleEmailSignUpSubmit = (e: React.FormEvent) => {
@@ -123,6 +128,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     onLoginSuccess(signUpName.trim());
     onClose();
+    router.push('/onboarding');
   };
 
   return (
@@ -329,7 +335,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <div className="space-y-3.5">
               <button
                 type="button"
-                onClick={() => handleSocialAuth('google')}
+                onClick={() => handleSocialAuth('google', true)}
                 className="w-full bg-white hover:bg-slate-50 text-slate-800 py-3.5 sm:py-4 px-6 rounded-full border border-slate-300 shadow-2xs font-extrabold text-sm sm:text-base flex items-center justify-center gap-3.5 active:scale-98 transition-all cursor-pointer group"
               >
                 <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
@@ -343,7 +349,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
               <button
                 type="button"
-                onClick={() => handleSocialAuth('apple')}
+                onClick={() => handleSocialAuth('apple', true)}
                 className="w-full bg-white hover:bg-slate-50 text-slate-800 py-3.5 sm:py-4 px-6 rounded-full border border-slate-300 shadow-2xs font-extrabold text-sm sm:text-base flex items-center justify-center gap-3.5 active:scale-98 transition-all cursor-pointer group"
               >
                 <svg className="w-5 h-5 fill-black shrink-0" viewBox="0 0 170 170">
@@ -354,7 +360,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
               <button
                 type="button"
-                onClick={() => handleSocialAuth('facebook')}
+                onClick={() => handleSocialAuth('facebook', true)}
                 className="w-full bg-white hover:bg-slate-50 text-slate-800 py-3.5 sm:py-4 px-6 rounded-full border border-slate-300 shadow-2xs font-extrabold text-sm sm:text-base flex items-center justify-center gap-3.5 active:scale-98 transition-all cursor-pointer group"
               >
                 <svg className="w-5 h-5 fill-[#1877F2] shrink-0" viewBox="0 0 24 24">

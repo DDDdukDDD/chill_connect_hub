@@ -135,7 +135,7 @@ const INITIAL_MOCK_SPOTS: LifestyleSpotItem[] = [
     subActivities: [
       {
         id: 'sub-bkk1-1',
-        title: '🏃‍♂️ ตี้วิ่งเบาๆ โซน 2 ชมแสง Sunset รอบสวนป่า',
+        title: 'ตี้วิ่งเบาๆ โซน 2 ชมแสง Sunset รอบสวนป่า',
         creatorName: 'พี่วิน นักวิ่งชิลล์',
         date: 'เสาร์นี้',
         time: '17:00 น.',
@@ -145,7 +145,7 @@ const INITIAL_MOCK_SPOTS: LifestyleSpotItem[] = [
       },
       {
         id: 'sub-bkk1-2',
-        title: '📷 Photo Walk เดินถ่ายฟิล์มมุมต้นไม้สะท้อนน้ำ',
+        title: 'Photo Walk เดินถ่ายฟิล์มมุมต้นไม้สะท้อนน้ำ',
         creatorName: 'มายด์ สาวกกล้องฟิล์ม',
         date: 'อาทิตย์นี้',
         time: '16:30 น.',
@@ -194,7 +194,7 @@ const INITIAL_MOCK_SPOTS: LifestyleSpotItem[] = [
     subActivities: [
       {
         id: 'sub-bkk2-1',
-        title: '🎨 ชวนเดินชมนิทรรศการภาพถ่ายชั้น 8 แล้วคุยแลกเปลี่ยน',
+        title: 'ชวนเดินชมนิทรรศการภาพถ่ายชั้น 8 แล้วคุยแลกเปลี่ยน',
         creatorName: 'กานต์ Art Lover',
         date: 'เสาร์นี้',
         time: '14:00 น.',

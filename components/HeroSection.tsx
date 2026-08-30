@@ -1,8 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, X, Dices, Sparkles, MapPin } from 'lucide-react';
+import { Search, X, Dices, Sparkles, MapPin, Zap, Award, ArrowRight, Camera } from 'lucide-react';
 import { ALL_THAI_PROVINCES } from '@/data/spotsData';
+import { COMMUNITY_PUBLIC_QUESTS } from '@/components/CommunityChallengeBar';
+import { MOCK_POSTS } from '@/data/mockData';
+import Link from 'next/link';
 
 export type HeroVersion = 'editorial' | 'classic';
 
@@ -57,6 +60,29 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     }
   }, []);
 
+  const [currentQuestIndex, setCurrentQuestIndex] = useState(0);
+
+  // Auto-cycle through quests calmly every 10 seconds (Zero visual distraction)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentQuestIndex((q) => (q + 1) % COMMUNITY_PUBLIC_QUESTS.length);
+    }, 10000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleScrollToQuests = () => {
+    if (typeof window !== 'undefined') {
+      const el = document.getElementById('community-quests-section');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+        el.classList.add('ring-4', 'ring-purple-500/40', 'transition-all', 'duration-500');
+        setTimeout(() => {
+          el.classList.remove('ring-4', 'ring-purple-500/40');
+        }, 2000);
+      }
+    }
+  };
+
   const handleSwitchVersion = (newVersion: HeroVersion) => {
     setVersion(newVersion);
     if (onVersionChange) onVersionChange(newVersion);
@@ -75,58 +101,36 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     }
   };
 
+  // 1. พิกัดเที่ยว & จุดฮีลใจทั่วไทย (Nationwide Spots)
   const SPOT_SUGGESTIONS = [
-    { label: 'สวนสาธารณะ & ป่าใจกลางเมือง', query: 'สวน', sub: 'สวนเบญจกิติ, สวนลุมฯ, สวนรถไฟ, อ่างแก้ว มช.' },
-    { label: 'หอศิลป์ & สเปซงานคราฟต์', query: 'หอศิลป์', sub: 'BACC, MOCA Bangkok, บ้านข้างวัด' },
-    { label: 'คาเฟ่ Slow Bar & วิวธรรมชาติ', query: 'คาเฟ่', sub: 'ย่านอารีย์, ทรงวาด, เขาใหญ่' },
-    { label: 'ย่านเก่า & ชุมชนประวัติศาสตร์', query: 'ย่านเก่า', sub: 'ตลาดน้อย, เมืองเก่าภูเก็ต, ท่าแพ' },
-    { label: 'จุดชมวิว ทะเล & ริมน้ำ', query: 'จุดชมวิว', sub: 'บางแสน, แหลมพรหมเทพ, เกาะล้าน' },
+    { label: 'ภูเขา & ทะเลหมอก', query: 'เขา', sub: 'ดอยอินทนนท์, เขาค้อ, น่าน, แม่ฮ่องสอน' },
+    { label: 'ทะเล & เกาะสวยทั่วไทย', query: 'ทะเล', sub: 'ภูเก็ต, กระบี่, เกาะสมุย, ชลบุรี, หัวหิน' },
+    { label: 'ป่าธรรมชาติ & แคมปิ้ง', query: 'ป่า', sub: 'เขาใหญ่, สวนเบญจกิติ, กาญจนบุรี, อุทยานแห่งชาติ' },
+    { label: 'คาเฟ่ & สเปซนั่งชิลล์', query: 'คาเฟ่', sub: 'สโลว์บาร์, อารีย์, ทรงวาด, เชียงใหม่' },
+    { label: 'ย่านเก่า & วิถีชุมชน', query: 'ย่านเก่า', sub: 'ตลาดน้อย, ภูเก็ตโอลด์ทาวน์, อยุธยา, เชียงคาน' },
+    { label: 'หอศิลป์ & สเปซศิลปะ', query: 'หอศิลป์', sub: 'BACC, MOCA Bangkok, แกลเลอรีสร้างสรรค์' },
   ];
 
-  const EVENT_SUGGESTIONS = [
-    { label: 'งานอีเวนต์ & มหกรรมใหญ่', query: 'งานอีเวนต์ & มหกรรมใหญ่', sub: 'สัปดาห์หนังสือ, ไบเทค, อิมแพ็ค' },
-    { label: 'งานวิ่ง, HYROX & เอาต์ดอร์', query: 'งานวิ่ง', sub: 'ซิตี้รัน, ไนท์มาราธอน, เทรนนิ่ง' },
-    { label: 'โยคะ & สมาธิเสียงคลื่น', query: 'โยคะ', sub: 'Sound Bath, โยคะสวน, ฝึกสมาธิ' },
-    { label: 'บอร์ดเกม & กิจกรรมเพื่อนใหม่', query: 'บอร์ดเกม', sub: 'ปาร์ตี้บอร์ดเกม, Pub Quiz' },
-    { label: 'เวิร์กช็อปศิลปะ & ทำอาหาร', query: 'เวิร์กช็อป', sub: 'ปั้นเซรามิก, ชงมัทฉะ, ระบายสีน้ำ' },
+  // 2. กิจกรรมคอมมูนิตี้ & ตี้เพื่อนใหม่ (Community Meetups)
+  const COMMUNITY_SUGGESTIONS = [
+    { label: 'งานวิ่ง & ฟิตเนส', query: 'วิ่ง', sub: 'ซิตี้รันสวนลุมฯ, ซ้อมวิ่งมาราธอน, HYROX' },
+    { label: 'ฮีลใจ & สมาธิ', query: 'sound bath', sub: 'Sound Healing, โยคะสวน, พักผ่อนใจ' },
+    { label: 'บอร์ดเกม & ปาร์ตี้เพื่อนใหม่', query: 'บอร์ดเกม', sub: 'ปาร์ตี้บอร์ดเกม, Catan, Pub Quiz' },
+    { label: 'เวิร์กช็อปศิลปะ & คราฟต์', query: 'workshop', sub: 'ปั้นเซรามิก, วาดภาพสีน้ำ, ถักพรม' },
+    { label: 'ท่องเที่ยว & เอาต์ดอร์', query: 'outdoor', sub: 'พายคายัค, ซับบอร์ด, กางเต็นท์, เดินป่า' },
+  ];
+
+  // 3. งานมหกรรม นิทรรศการ & เอ็กซ์โป (Major Fairs)
+  const FAIR_SUGGESTIONS = [
+    { label: 'ศูนย์การประชุมแห่งชาติสิริกิติ์ (QSNCC)', query: 'สิริกิติ์', sub: 'สัปดาห์หนังสือ, มหกรรมความรู้, คอนเสิร์ต' },
+    { label: 'ไบเทค บางนา (BITEC)', query: 'ไบเทค', sub: 'มหกรรมสินค้า, Comic Con, Expo' },
+    { label: 'อิมแพ็ค เมืองทองธานี (IMPACT)', query: 'อิมแพ็ค', sub: 'งานแสดงสินค้า, เทศกาลอาหาร, คอนเสิร์ตใหญ่' },
+    { label: 'เทศกาลเมือง & งานศิลป์', query: 'เทศกาล', sub: 'Design Week, Biennale, เทศกาลสร้างสรรค์' },
   ];
 
   return (
     <section className="relative z-30 pt-2 sm:pt-3 pb-1 sm:pb-2">
       <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-3 sm:px-6 lg:px-8 relative space-y-2">
-
-        {/* Version Switcher */}
-        <div className="flex items-center justify-between gap-2 px-1">
-          <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500">
-            <Sparkles className="w-3.5 h-3.5 text-[#F26430] animate-pulse" />
-            <span className="hidden sm:inline">โหมดมุมมองหน้าแรก:</span>
-            <span className="sm:hidden">สลับมุมมอง:</span>
-          </div>
-          <div className="inline-flex items-center p-0.5 rounded-full bg-slate-100 border border-slate-200 text-[11px] font-bold">
-            <button
-              type="button"
-              onClick={() => handleSwitchVersion('editorial')}
-              className={`px-3 py-1 rounded-full transition-all duration-200 cursor-pointer ${
-                version === 'editorial'
-                  ? 'bg-white text-[#4A7C59] shadow-sm font-black'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              Compact
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSwitchVersion('classic')}
-              className={`px-3 py-1 rounded-full transition-all duration-200 cursor-pointer ${
-                version === 'classic'
-                  ? 'bg-white text-[#F26430] shadow-sm font-black'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              Classic
-            </button>
-          </div>
-        </div>
 
         {/* ================================================================ */}
         {/* OPTION 1: Minimal Discovery Bar                                  */}
@@ -134,13 +138,22 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         {version === 'editorial' && (
           <div className="relative rounded-2xl bg-white border border-slate-200/80 shadow-sm p-4 sm:p-5">
 
-            {/* Headline */}
-            <h1 className="text-base sm:text-lg md:text-xl font-black text-slate-900 tracking-tight mb-3">
-              วันหยุดนี้... ทำอะไรดี?
-              <span className="text-slate-400 font-normal text-sm sm:text-base ml-2 hidden sm:inline">
-                สำรวจกว่า 460+ สถานที่ & กิจกรรมทั่วไทย
-              </span>
-            </h1>
+            {/* Editorial Headline & Responsive Subtitle */}
+            <div className="mb-3.5">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-black text-slate-900 tracking-tight leading-normal flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
+                <span className="shrink-0">วันหยุดนี้...</span>
+                <span className="text-[#2D5A3C] shrink-0 inline-block font-black">
+                  ทำอะไรดี?
+                </span>
+                <span className="text-xs sm:text-sm text-slate-400 font-normal tracking-normal hidden md:inline">
+                  • ค้นหากิจกรรมฮีลใจ ที่เที่ยวสุดชิลล์ และหาเพื่อนใหม่ทั่วไทย
+                </span>
+              </h1>
+              {/* Mobile / Tablet Subtitle (Separate Line) */}
+              <p className="text-xs text-slate-500 font-medium leading-relaxed mt-1 md:hidden">
+                ค้นหากิจกรรมฮีลใจ ที่เที่ยวสุดชิลล์ และหาเพื่อนใหม่ทั่วไทย
+              </p>
+            </div>
 
             {/* Search Row */}
             <div className="flex flex-col sm:flex-row items-stretch gap-2">
@@ -199,49 +212,94 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   </select>
                 </div>
 
-                {/* Auto-Suggest */}
+                {/* Auto-Suggest Dropdown (3 Distinct Categories: Spots, Community, Fairs) */}
                 {isFocused && (
-                  <div className="absolute top-full left-0 right-0 mt-1.5 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50 text-left animate-fade-in max-h-80 overflow-y-auto">
-                    <p className="px-4 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">สถานที่แนะนำ</p>
-                    {SPOT_SUGGESTIONS.map((sug, idx) => (
-                      <button
-                        key={`spot-${idx}`}
-                        type="button"
-                        onMouseDown={() => {
-                          setSearchQuery(sug.query);
-                          setIsFocused(false);
-                          if (onSearchSubmit) onSearchSubmit();
-                        }}
-                        className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-[#4A7C59] transition-colors cursor-pointer flex items-center justify-between gap-3"
-                      >
-                        <div className="min-w-0">
-                          <span className="font-semibold block truncate">{sug.label}</span>
-                          <span className="text-xs text-slate-400 block truncate">{sug.sub}</span>
-                        </div>
-                        <span className="text-[11px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded font-medium shrink-0">{sug.query}</span>
-                      </button>
-                    ))}
-                    <div className="border-t border-slate-100 mt-1 pt-1">
-                      <p className="px-4 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">กิจกรรม & อีเวนต์</p>
-                      {EVENT_SUGGESTIONS.map((sug, idx) => (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-slate-200/90 py-2.5 z-50 text-left animate-fade-in max-h-88 overflow-y-auto divide-y divide-slate-100">
+                    
+                    {/* 1. พิกัดเที่ยว & จุดฮีลใจทั่วไทย */}
+                    <div className="pb-2">
+                      <p className="px-4 py-1.5 text-[11px] font-extrabold text-[#4A7C59] uppercase tracking-wider flex items-center justify-between">
+                        <span>พิกัดเที่ยว & จุดฮีลใจ 77 จังหวัด</span>
+                        <span className="text-[10px] text-slate-400 font-medium">Spots & Chill</span>
+                      </p>
+                      {SPOT_SUGGESTIONS.map((sug, idx) => (
                         <button
-                          key={`event-${idx}`}
+                          key={`spot-${idx}`}
                           type="button"
                           onMouseDown={() => {
                             setSearchQuery(sug.query);
                             setIsFocused(false);
                             if (onSearchSubmit) onSearchSubmit();
                           }}
-                          className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-[#F26430] transition-colors cursor-pointer flex items-center justify-between gap-3"
+                          className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-[#EBF3ED]/60 hover:text-[#2D5A3C] transition-colors cursor-pointer flex items-center justify-between gap-3 group"
                         >
                           <div className="min-w-0">
-                            <span className="font-semibold block truncate">{sug.label}</span>
+                            <span className="font-semibold block truncate group-hover:text-[#2D5A3C]">{sug.label}</span>
                             <span className="text-xs text-slate-400 block truncate">{sug.sub}</span>
                           </div>
-                          <span className="text-[11px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded font-medium shrink-0">{sug.query}</span>
+                          <span className="text-[11px] text-slate-500 bg-slate-100 group-hover:bg-white group-hover:text-[#4A7C59] px-2 py-0.5 rounded-md font-medium shrink-0">
+                            {sug.query}
+                          </span>
                         </button>
                       ))}
                     </div>
+
+                    {/* 2. กิจกรรมคอมมูนิตี้ & ตี้เพื่อนใหม่ */}
+                    <div className="py-2">
+                      <p className="px-4 py-1.5 text-[11px] font-extrabold text-[#F26430] uppercase tracking-wider flex items-center justify-between">
+                        <span>กิจกรรมคอมมูนิตี้ & ตี้เพื่อนใหม่</span>
+                        <span className="text-[10px] text-slate-400 font-medium">Meetups & Buddies</span>
+                      </p>
+                      {COMMUNITY_SUGGESTIONS.map((sug, idx) => (
+                        <button
+                          key={`comm-${idx}`}
+                          type="button"
+                          onMouseDown={() => {
+                            setSearchQuery(sug.query);
+                            setIsFocused(false);
+                            if (onSearchSubmit) onSearchSubmit();
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-orange-50/60 hover:text-[#C2410C] transition-colors cursor-pointer flex items-center justify-between gap-3 group"
+                        >
+                          <div className="min-w-0">
+                            <span className="font-semibold block truncate group-hover:text-[#C2410C]">{sug.label}</span>
+                            <span className="text-xs text-slate-400 block truncate">{sug.sub}</span>
+                          </div>
+                          <span className="text-[11px] text-slate-500 bg-slate-100 group-hover:bg-white group-hover:text-[#F26430] px-2 py-0.5 rounded-md font-medium shrink-0">
+                            {sug.query}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* 3. งานมหกรรม นิทรรศการ & เอ็กซ์โป */}
+                    <div className="pt-2">
+                      <p className="px-4 py-1.5 text-[11px] font-extrabold text-blue-700 uppercase tracking-wider flex items-center justify-between">
+                        <span>งานมหกรรม นิทรรศการ & เอ็กซ์โป</span>
+                        <span className="text-[10px] text-slate-400 font-medium">Major Fairs & Expo</span>
+                      </p>
+                      {FAIR_SUGGESTIONS.map((sug, idx) => (
+                        <button
+                          key={`fair-${idx}`}
+                          type="button"
+                          onMouseDown={() => {
+                            setSearchQuery(sug.query);
+                            setIsFocused(false);
+                            if (onSearchSubmit) onSearchSubmit();
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-blue-50/60 hover:text-blue-900 transition-colors cursor-pointer flex items-center justify-between gap-3 group"
+                        >
+                          <div className="min-w-0">
+                            <span className="font-semibold block truncate group-hover:text-blue-900">{sug.label}</span>
+                            <span className="text-xs text-slate-400 block truncate">{sug.sub}</span>
+                          </div>
+                          <span className="text-[11px] text-slate-500 bg-slate-100 group-hover:bg-white group-hover:text-blue-700 px-2 py-0.5 rounded-md font-medium shrink-0">
+                            {sug.query}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+
                   </div>
                 )}
               </div>
@@ -254,7 +312,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     setIsFocused(false);
                     if (onSearchSubmit) onSearchSubmit();
                   }}
-                  className="bg-[#4A7C59] hover:bg-[#3D6649] text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95 cursor-pointer"
+                  className="bg-[#4A7C59] hover:bg-[#3D6649] text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95 cursor-pointer shadow-xs"
                 >
                   ค้นหา
                 </button>
@@ -262,7 +320,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   <button
                     type="button"
                     onClick={onOpenSurpriseModal}
-                    className="px-4 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:text-[#F26430] bg-slate-100 hover:bg-orange-50 border border-slate-200 hover:border-orange-200 transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+                    className="px-4 py-2.5 rounded-xl text-sm font-bold text-slate-700 hover:text-[#2D5A3C] bg-slate-100 hover:bg-[#EBF3ED] border border-slate-200 hover:border-emerald-200 transition-all active:scale-95 cursor-pointer whitespace-nowrap"
                   >
                     🎲 สุ่มให้เลย
                   </button>
@@ -270,6 +328,41 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               </div>
 
             </div>
+
+            {/* ⚡ Live Quest Ticker Capsule (Subtle, Minimal & Unified Muted Violet) */}
+            <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2 text-xs">
+              <button
+                type="button"
+                onClick={handleScrollToQuests}
+                className="flex items-center gap-2 min-w-0 text-left group/ticker cursor-pointer"
+                title="คลิกเพื่อดูรายละเอียดภารกิจนี้ด้านล่าง"
+              >
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-purple-50 text-purple-800 border border-purple-200/80 font-black text-[10px] uppercase tracking-wider shrink-0">
+                  <Zap className="w-3 h-3 text-purple-600 fill-purple-500" />
+                  <span>ชาเลนจ์</span>
+                </div>
+
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="font-bold text-slate-700 group-hover/ticker:text-purple-800 transition-colors truncate text-xs">
+                    {COMMUNITY_PUBLIC_QUESTS[currentQuestIndex]?.title}
+                  </span>
+                  <span className="hidden md:inline-block text-[10.5px] font-bold text-purple-700 bg-purple-50/80 border border-purple-200/60 px-1.5 py-0.2 rounded shrink-0">
+                    +{COMMUNITY_PUBLIC_QUESTS[currentQuestIndex]?.rewardPoints} XP
+                  </span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleScrollToQuests}
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 hover:text-purple-900 transition-colors shrink-0 cursor-pointer"
+              >
+                <span className="hidden sm:inline">ดูภารกิจ ({COMMUNITY_PUBLIC_QUESTS.length})</span>
+                <span className="sm:hidden">ดูภารกิจ</span>
+                <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            </div>
+
           </div>
         )}
 
@@ -277,7 +370,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         {/* OPTION 2: Classic Banner Hero                                    */}
         {/* ================================================================ */}
         {version === 'classic' && (
-          <div className="relative rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-md min-h-[150px] sm:min-h-[195px] md:min-h-[225px] flex items-center justify-center overflow-hidden transition-all duration-300">
+          <div className="relative rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-md min-h-[150px] sm:min-h-[195px] md:min-h-[225px] flex items-center justify-center transition-all duration-300 z-30">
 
             {/* Background */}
             <div className="absolute inset-0 z-0 pointer-events-none rounded-2xl sm:rounded-3xl overflow-hidden">
@@ -341,12 +434,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   </button>
                 </div>
 
-                {/* Auto-Suggest */}
+                {/* Auto-Suggest Dropdown (Classic Mode) */}
                 {isFocused && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 p-3 z-50 text-left space-y-3 animate-fade-in max-h-72 sm:max-h-80 overflow-y-auto">
-                    <div className="space-y-1">
-                      <p className="text-[11px] font-extrabold text-[#4A7C59] px-3 py-1 uppercase tracking-wider sticky top-0 bg-white z-10 border-b border-emerald-100">
-                        สถานที่แนะนำ
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 p-3 z-50 text-left space-y-3 animate-fade-in max-h-88 overflow-y-auto divide-y divide-slate-100">
+                    {/* 1. Spots */}
+                    <div className="space-y-1 pb-1">
+                      <p className="text-[11px] font-extrabold text-[#4A7C59] px-3 py-1 uppercase tracking-wider sticky top-0 bg-white z-10 flex items-center justify-between border-b border-emerald-100">
+                        <span>พิกัดเที่ยว & จุดฮีลใจ 77 จังหวัด</span>
+                        <span className="text-[10px] text-slate-400 font-medium">Spots & Chill</span>
                       </p>
                       {SPOT_SUGGESTIONS.map((sug, idx) => (
                         <button
@@ -357,39 +452,75 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                             setIsFocused(false);
                             if (onSearchSubmit) onSearchSubmit();
                           }}
-                          className="w-full text-left px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#4A7C59] transition-colors cursor-pointer flex items-center justify-between gap-2"
+                          className="w-full text-left px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:bg-[#EBF3ED]/60 hover:text-[#2D5A3C] transition-colors cursor-pointer flex items-center justify-between gap-2 group"
                         >
                           <div className="min-w-0">
-                            <span className="font-bold block truncate">{sug.label}</span>
+                            <span className="font-bold block truncate group-hover:text-[#2D5A3C]">{sug.label}</span>
                             <span className="text-xs text-slate-400 block truncate">{sug.sub}</span>
                           </div>
-                          <span className="text-[11px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded font-medium shrink-0">{sug.query}</span>
+                          <span className="text-[11px] text-slate-500 bg-slate-100 group-hover:bg-white group-hover:text-[#4A7C59] px-2 py-0.5 rounded-md font-medium shrink-0">
+                            {sug.query}
+                          </span>
                         </button>
                       ))}
                     </div>
-                    <div className="space-y-1 pt-1 border-t border-slate-100">
-                      <p className="text-[11px] font-extrabold text-[#F26430] px-3 py-1 uppercase tracking-wider sticky top-0 bg-white z-10 border-b border-orange-100">
-                        กิจกรรม & อีเวนต์
+
+                    {/* 2. Community */}
+                    <div className="space-y-1 py-1">
+                      <p className="text-[11px] font-extrabold text-[#F26430] px-3 py-1 uppercase tracking-wider sticky top-0 bg-white z-10 flex items-center justify-between border-b border-orange-100">
+                        <span>กิจกรรมคอมมูนิตี้ & ตี้เพื่อนใหม่</span>
+                        <span className="text-[10px] text-slate-400 font-medium">Meetups & Buddies</span>
                       </p>
-                      {EVENT_SUGGESTIONS.map((sug, idx) => (
+                      {COMMUNITY_SUGGESTIONS.map((sug, idx) => (
                         <button
-                          key={`classic-event-${idx}`}
+                          key={`classic-comm-${idx}`}
                           type="button"
                           onMouseDown={() => {
                             setSearchQuery(sug.query);
                             setIsFocused(false);
                             if (onSearchSubmit) onSearchSubmit();
                           }}
-                          className="w-full text-left px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#F26430] transition-colors cursor-pointer flex items-center justify-between gap-2"
+                          className="w-full text-left px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:bg-orange-50/60 hover:text-[#C2410C] transition-colors cursor-pointer flex items-center justify-between gap-2 group"
                         >
                           <div className="min-w-0">
-                            <span className="font-bold block truncate">{sug.label}</span>
+                            <span className="font-bold block truncate group-hover:text-[#C2410C]">{sug.label}</span>
                             <span className="text-xs text-slate-400 block truncate">{sug.sub}</span>
                           </div>
-                          <span className="text-[11px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded font-medium shrink-0">{sug.query}</span>
+                          <span className="text-[11px] text-slate-500 bg-slate-100 group-hover:bg-white group-hover:text-[#F26430] px-2 py-0.5 rounded-md font-medium shrink-0">
+                            {sug.query}
+                          </span>
                         </button>
                       ))}
                     </div>
+
+                    {/* 3. Fairs */}
+                    <div className="space-y-1 pt-1">
+                      <p className="text-[11px] font-extrabold text-blue-700 px-3 py-1 uppercase tracking-wider sticky top-0 bg-white z-10 flex items-center justify-between border-b border-blue-100">
+                        <span>งานมหกรรม นิทรรศการ & เอ็กซ์โป</span>
+                        <span className="text-[10px] text-slate-400 font-medium">Major Fairs & Expo</span>
+                      </p>
+                      {FAIR_SUGGESTIONS.map((sug, idx) => (
+                        <button
+                          key={`classic-fair-${idx}`}
+                          type="button"
+                          onMouseDown={() => {
+                            setSearchQuery(sug.query);
+                            setIsFocused(false);
+                            if (onSearchSubmit) onSearchSubmit();
+                          }}
+                          className="w-full text-left px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:bg-blue-50/60 hover:text-blue-900 transition-colors cursor-pointer flex items-center justify-between gap-2 group"
+                        >
+                          <div className="min-w-0">
+                            <span className="font-bold block truncate group-hover:text-blue-900">{sug.label}</span>
+                            <span className="text-xs text-slate-400 block truncate">{sug.sub}</span>
+                          </div>
+                          <span className="text-[11px] text-slate-500 bg-slate-100 group-hover:bg-white group-hover:text-blue-700 px-2 py-0.5 rounded-md font-medium shrink-0">
+                            {sug.query}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+
                   </div>
                 )}
               </div>

@@ -24,6 +24,7 @@ import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { useAuth } from '@/lib/useAuth';
 import { MOCK_SPOTS, SPOT_CATEGORIES, ALL_THAI_PROVINCES, LifestyleSpotItem } from '@/data/spotsData';
+import { SpotCategoryRail, NATIONWIDE_SPOT_CATEGORIES } from '@/components/SpotCategoryRail';
 import { EventItem } from '@/data/mockData';
 
 const ITEMS_PER_PAGE = 24;
@@ -48,6 +49,7 @@ function SpotsPageContent() {
 
   const [activeNavTab, setActiveNavTab] = useState('explore');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const [selectedRailCategory, setSelectedRailCategory] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('category') || 'all');
   const [selectedProvince, setSelectedProvince] = useState<string>(searchParams.get('province') || 'all');
   const [priceFilter, setPriceFilter] = useState<'all' | 'free'>((searchParams.get('price') as any) || 'all');
@@ -121,6 +123,14 @@ function SpotsPageContent() {
 
   const filteredSpots = useMemo(() => {
     let result = MOCK_SPOTS.filter((spot) => {
+      if (selectedRailCategory && selectedRailCategory !== 'all') {
+        const catDef = NATIONWIDE_SPOT_CATEGORIES.find((c) => c.id === selectedRailCategory);
+        if (catDef) {
+          const text = `${spot.title} ${spot.category} ${spot.categoryLabel} ${spot.description} ${spot.province} ${(spot.vibeTags || []).join(' ')} ${(spot.highlights || []).join(' ')}`.toLowerCase();
+          const matches = catDef.keywords.some((kw) => text.includes(kw.toLowerCase()));
+          if (!matches) return false;
+        }
+      }
       if (selectedCategory !== 'all' && spot.category !== selectedCategory) return false;
       if (selectedProvince !== 'all') {
         const pLower = selectedProvince.toLowerCase();
@@ -157,7 +167,18 @@ function SpotsPageContent() {
     }
 
     return result;
-  }, [selectedCategory, selectedProvince, priceFilter, sortBy, sortByNearMe, userLocation, favoriteSpots, searchQuery]);
+  }, [selectedRailCategory, selectedCategory, selectedProvince, priceFilter, sortBy, sortByNearMe, userLocation, favoriteSpots, searchQuery]);
+
+  const spotCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const cat of NATIONWIDE_SPOT_CATEGORIES) {
+      counts[cat.id] = MOCK_SPOTS.filter((spot) => {
+        const text = `${spot.title} ${spot.category} ${spot.categoryLabel} ${spot.description} ${spot.province} ${(spot.vibeTags || []).join(' ')} ${(spot.highlights || []).join(' ')}`.toLowerCase();
+        return cat.keywords.some((kw) => text.includes(kw.toLowerCase()));
+      }).length;
+    }
+    return counts;
+  }, []);
 
   const totalPages = Math.ceil(filteredSpots.length / ITEMS_PER_PAGE) || 1;
   const paginatedSpots = useMemo(() => {
@@ -208,6 +229,16 @@ function SpotsPageContent() {
             </div>
           </div>
         </div>
+
+        {/* Nationwide Spot Category Rail */}
+        <SpotCategoryRail
+          selectedCategoryId={selectedRailCategory}
+          onSelectCategory={(catId) => {
+            setSelectedRailCategory(catId);
+            setCurrentPage(1);
+          }}
+          spotCounts={spotCounts}
+        />
 
         {/* Filter & Search Bar */}
         <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
@@ -385,21 +416,36 @@ function SpotsPageContent() {
             </div>
           </>
         ) : (
-          <div className="bg-slate-50 rounded-3xl p-12 text-center space-y-3 border border-slate-200 shadow-xs my-8">
-            <div className="text-4xl">📍</div>
-            <h3 className="text-base font-bold text-slate-800">ไม่พบสถานที่ตามเงื่อนไขที่เลือก</h3>
-            <p className="text-xs text-slate-500 max-w-md mx-auto">ลองเปลี่ยนคำค้นหา หรือเลือกจังหวัดอื่นๆ ดูนะครับ</p>
+          <div className="w-full bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200/90 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-white border border-slate-200/80 text-slate-400 flex items-center justify-center shrink-0 shadow-2xs">
+                <Search className="w-4 h-4 text-slate-400" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="font-bold text-xs sm:text-sm text-slate-800 tracking-tight truncate">
+                  ยังไม่พบสถานที่ตามเงื่อนไขนี้
+                </h3>
+                <p className="text-[11px] text-slate-500 font-medium">
+                  ลองปรับเปลี่ยนคำค้นหา หรือเลือกจังหวัดอื่นๆ เพื่อสำรวจสถานที่เพิ่มเติม
+                </p>
+              </div>
+            </div>
+
             <button
               type="button"
               onClick={() => {
                 setSearchQuery('');
+                setSelectedRailCategory(null);
                 setSelectedCategory('all');
                 setSelectedProvince('all');
                 setPriceFilter('all');
+                setSortBy('newest');
+                setSortByNearMe(false);
+                setCurrentPage(1);
               }}
-              className="px-4 py-2 bg-[#4A7C59] hover:bg-[#386144] text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold shadow-2xs transition-all cursor-pointer shrink-0 self-end sm:self-center active:scale-95"
             >
-              แสดงสถานที่ทั้งหมด
+              <span>ดูสถานที่ทั้งหมด</span>
             </button>
           </div>
         )}
