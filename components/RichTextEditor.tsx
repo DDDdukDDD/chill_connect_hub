@@ -259,9 +259,9 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         contentEditable
         onInput={handleInput}
         onBlur={handleInput}
-        style={{ minHeight }}
+        style={{ minHeight: minHeight || '240px' }}
         data-placeholder={placeholder}
-        className="w-full px-3.5 py-3 rounded-b-xl border border-slate-200 text-xs sm:text-[13px] leading-relaxed outline-none focus:border-[#4A7C59] focus:ring-1 focus:ring-[#4A7C59]/30 bg-white text-slate-800 overflow-y-auto max-h-72 empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400 [&_strong]:font-black [&_strong]:text-slate-950 [&_ul]:list-disc [&_ul]:pl-5 [&_p]:mb-1.5"
+        className="w-full px-3.5 py-3 rounded-b-xl border border-slate-200 text-xs sm:text-[13px] leading-relaxed outline-none focus:border-[#4A7C59] focus:ring-1 focus:ring-[#4A7C59]/30 bg-white text-slate-800 overflow-y-auto max-h-[380px] empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400 [&_strong]:font-black [&_strong]:text-slate-950 [&_ul]:list-disc [&_ul]:pl-5 [&_p]:mb-1.5"
       />
 
       {/* Character Counter & Helper Footer */}

@@ -68,6 +68,12 @@ The platform is structured into 3 core discovery pillars + 1 community engagemen
    - Accent: Warm Amber (`#F26430` for Community), Slate Blue (`#2B527A` for Fairs), Royal Violet (`#7C3AED` for Quests & Badges).
    - **Never use pitch black (`bg-black` or heavy borders)** for active selections. Use soft tint fills (`bg-[#EBF3ED]` + `text-[#2D5A3C]`).
 
+6. **Ultra-Minimal Slim Scrollbar Design**:
+   - All scrollbars across modals, popups, and containers must be ultra-slim (`width: 6px`, `height: 6px`) with fully rounded pill thumb (`border-radius: 9999px`).
+   - **Track**: Always 100% `transparent` (never use visible gray or solid track bars).
+   - **Thumb**: Soft slate tint (`rgba(148, 163, 184, 0.35)`) and darkens softly to `rgba(100, 116, 139, 0.6)` on hover.
+   - Maintain cross-browser compatibility using `scrollbar-width: thin` and `scrollbar-color`.
+
 ---
 
 ## 💾 3. Data Integrity & Persistence Rules
@@ -91,8 +97,23 @@ The platform is structured into 3 core discovery pillars + 1 community engagemen
 2. **Dedicated Spot Buddy Gathering Dialog (`SpotBuddyGatheringModal.tsx`)**:
    - Spot buddy trips triggered from `/spots/[id]` must use the specialized, purpose-built `SpotBuddyGatheringModal.tsx` (preserving spot pre-fill, meeting point, participants counter 2-15, and community safety pledge).
 
-3. **Strict Form Validation**:
-   - All critical inputs (`title`, `description` >= 15 chars, `locationName`, dates, times, and participant quotas) must be validated before allowing users to proceed to Step 3 (Preview) or submit data.
-   - Users must explicitly accept the Safety and Community Pledge (`isSafetyAccepted`) before publishing.
+3. **Strict Form Validation & Required Fields Matrix**:
+   - **All Entity Types**:
+     - `title`: >= 5 chars, required.
+     - `province`: required for regional tagging and filtering.
+     - `locationName`: required (spot name / venue name / district).
+     - `description`: Rich text with plain text length >= 15 chars, required.
+     - `isSafetyAccepted`: Platform safety pledge checkbox must be checked.
+   - **👥 Community Meetups (`community` / `SpotBuddyGatheringModal`)**:
+     - `communityDate` & `time` (`startTime`, `endTime`): required.
+     - `meetingPoint`: required (specific spot landmark e.g., in front of cafe, entrance gate).
+     - `maxParticipants`: >= 2 people, required.
+   - **🏛️ Fairs & Public Venues (`fair`)**:
+     - `fairStartDate` & `fairEndDate`: required (`fairEndDate >= fairStartDate`).
+     - `fairOrganizer`: required (organizing association / company name).
+   - **🌲 Lifestyle Spots (`spot`)**:
+     - `spotOpenHours`: required (e.g. 08:00 - 18:00 น.).
+   - **⚡ Quests & Challenges (`challenge`)**:
+     - `questBadgeName`: required badge identifier.
 
 

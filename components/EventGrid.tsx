@@ -124,14 +124,20 @@ export const EventGrid: React.FC<EventGridProps> = ({
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
 
-                  {/* Top-Left Badge: Distance info when sortByNearMe is active */}
-                  {event.distanceKm !== undefined && (
-                    <div className="absolute top-2.5 left-2.5 z-10">
-                      <span className="text-[10px] font-semibold bg-slate-900/80 backdrop-blur-md text-white px-2.5 py-1 rounded-full shadow-xs">
+                  {/* Top-Left Badges: NEW tag & Distance */}
+                  <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5">
+                    {event.isNew && (
+                      <span className="text-[10px] font-black bg-gradient-to-r from-emerald-500 to-[#4A7C59] text-white px-2.5 py-0.5 rounded-full shadow-md tracking-wider flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                        <span>NEW</span>
+                      </span>
+                    )}
+                    {event.distanceKm !== undefined && (
+                      <span className="text-[10px] font-semibold bg-slate-900/80 backdrop-blur-md text-white px-2.5 py-0.5 rounded-full shadow-xs">
                         {event.distanceKm.toFixed(1)} กม.
                       </span>
-                    </div>
-                  )}
+                    )}
+                  </div>
 
                   {!isEnded && (
                     <button

@@ -101,6 +101,13 @@ export const SpotCard: React.FC<SpotCardProps> = ({
 
         {/* Top Badges */}
         <div className="absolute top-2.5 left-2.5 right-11 flex items-center gap-1.5 flex-wrap z-10">
+          {(spot as any).isNew && (
+            <span className="text-[10px] font-black bg-gradient-to-r from-emerald-500 to-[#4A7C59] text-white px-2.5 py-0.5 rounded-full shadow-md tracking-wider flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+              <span>NEW</span>
+            </span>
+          )}
+
           <span className="text-[11px] font-semibold bg-white/90 backdrop-blur-md text-slate-800 px-2.5 py-0.5 rounded-full shadow-xs">
             {spot.categoryLabel}
           </span>

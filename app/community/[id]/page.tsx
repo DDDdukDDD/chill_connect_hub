@@ -596,21 +596,49 @@ export default function CommunityDetailPage() {
             </div>
 
             {/* 2. Inline Metadata Ribbon */}
-            <div className="py-3.5 px-5 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs sm:text-sm text-slate-700">
-              <div className="flex items-center gap-2">
-                <span className="text-slate-500 font-medium">วันที่จัดกิจกรรม:</span>
-                <span className="font-bold text-slate-900">{cleanText(eventData.date)}</span>
+            <div className="py-3.5 px-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2 text-xs sm:text-sm text-slate-700">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-500 font-medium">วันที่จัดกิจกรรม:</span>
+                  <span className="font-bold text-slate-900">{cleanText(eventData.date)}</span>
+                </div>
+                <span className="hidden sm:inline text-slate-300">|</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-500 font-medium">เวลา:</span>
+                  <span className="font-bold text-slate-900">{cleanText(eventData.time)}</span>
+                </div>
+                <span className="hidden sm:inline text-slate-300">|</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-500 font-medium">จำนวนผู้ร่วมตี้:</span>
+                  <span className="font-bold text-slate-900">{eventData.participantsCount} / {eventData.maxParticipants} คน</span>
+                </div>
               </div>
-              <span className="hidden sm:inline text-slate-300">|</span>
-              <div className="flex items-center gap-2">
-                <span className="text-slate-500 font-medium">เวลา:</span>
-                <span className="font-bold text-slate-900">{cleanText(eventData.time)}</span>
-              </div>
-              <span className="hidden sm:inline text-slate-300">|</span>
-              <div className="flex items-center gap-2">
-                <span className="text-slate-500 font-medium">จำนวนผู้ร่วมตี้:</span>
-                <span className="font-bold text-slate-900">{eventData.participantsCount} / {eventData.maxParticipants} คน</span>
-              </div>
+
+              {(eventData.transportation || eventData.contactChannel) && (
+                <div className="pt-2 border-t border-slate-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                  {eventData.transportation && (
+                    <div className="flex items-center gap-1.5 text-slate-600">
+                      <span className="font-medium">🚗 สไตล์การเดินทาง:</span>
+                      <span className="font-bold text-slate-800">{eventData.transportation}</span>
+                    </div>
+                  )}
+
+                  {eventData.contactChannel && (
+                    <div className="flex items-center gap-1.5 text-slate-600">
+                      <span className="font-medium">💬 ช่องทางติดต่อกลุ่ม:</span>
+                      {isJoined ? (
+                        <span className="font-bold text-[#4A7C59] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                          {eventData.contactChannel}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 italic">
+                          🔒 เปิดเผยเมื่อลงทะเบียนเข้าร่วม
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* 3. Verified Host Card (Community Core) */}

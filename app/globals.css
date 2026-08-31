@@ -37,3 +37,31 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* 🌿 Ultra-Minimal, Slim & Soft Scrollbar for All Modals, Popups & Containers */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35); /* Soft slate tint */
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.6); /* Slightly darker on hover */
+}
+
+/* Firefox support for thin scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+}

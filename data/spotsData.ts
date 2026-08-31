@@ -92,6 +92,40 @@ export const SPOT_PROVINCES = [
 import { PROVINCES_77_TOP_SPOTS } from './allProvincesSpots';
 
 const INITIAL_MOCK_SPOTS: LifestyleSpotItem[] = [
+  {
+    id: 'spot-cm-secret-slowbar-2026',
+    title: 'หมอกเช้า สโลว์บาร์ & คราฟต์กาแฟดอยแม่แตง',
+    category: 'cafe',
+    categoryLabel: '☕ สโลว์บาร์ & กาแฟดริป',
+    province: 'เชียงใหม่',
+    district: 'แม่แตง',
+    transitInfo: '🚗 รถยนต์ส่วนตัว / มีที่จอดรถสะดวก',
+    image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80',
+    galleryImages: [
+      'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80'
+    ],
+    openHours: 'เปิดทุกวัน: 07:00 - 17:00 น.',
+    price: '฿80 - ฿160',
+    bestTime: '☕ 07:30 - 09:30 น. (สัมผัสไอหมอกและอากาศบริสุทธิ์)',
+    vibeTags: ['☕ กาแฟ Specialty ดอยแม่แตง', '🌄 หมอกเช้าคลอเคลีย', '🌿 สโลว์ไลฟ์กลางหุบเขา'],
+    description: 'สเปซพักผ่อนและสโลว์บาร์ลับที่ซ่อนตัวอยู่ท่ามกลางทิวเขาแม่แตง สัมผัสความเงียบสงบ จิบกาแฟคั่วอ่อนรสละมุนจากผลผลิตของเกษตรกรท้องถิ่น เหมาะแก่การมานั่งอ่านหนังสือและชาร์จพลังใจ',
+    highlights: [
+      'เมล็ดกาแฟ Specialty คั่วพิเศษประจำถิ่นเชียงใหม่',
+      'มุมที่นั่งระเบียงไม้เปิดโล่งรับลมภูเขา 180 องศา',
+      'บรรยากาศเงียบสงบ ปราศจากเสียงรบกวน'
+    ],
+    facilities: ['🅿️ ลานจอดรถ', '🚻 ห้องน้ำ', '📶 Wi-Fi ฟรี'],
+    googleMapsUrl: 'https://maps.google.com/?q=Mae+Taeng+Slowbar+Chiang+Mai',
+    rating: 5.0,
+    reviewsCount: 12,
+    latitude: 19.1200,
+    longitude: 98.9400,
+    isNew: true,
+    isTrending: true,
+    interestedCount: 88,
+    checkinsCount: 45,
+  },
   // ==========================================
   // 1. กรุงเทพฯ (10 สถานที่ยอดนิยม)
   // ==========================================
