@@ -21,7 +21,17 @@ import {
   Check,
   Upload,
   Heart,
-  Tag
+  Tag,
+  Target,
+  Gift,
+  Crown,
+  Zap,
+  ShieldCheck,
+  Trophy,
+  Medal,
+  Award,
+  Camera,
+  CheckCircle
 } from 'lucide-react';
 import { EventItem } from '@/data/mockData';
 import { ALL_THAI_PROVINCES } from '@/data/spotsData';
@@ -161,10 +171,46 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
   const [spotGoogleMapUrl, setSpotGoogleMapUrl] = useState('');
   const [spotHighlights, setSpotHighlights] = useState<string[]>(['มุมถ่ายรูปแสงธรรมชาติสวย', 'บรรยากาศสงบ นั่งอ่านหนังสือได้']);
 
-  // Challenge fields
-  const [questGoal, setQuestGoal] = useState('');
-  const [questRewardPoints, setQuestRewardPoints] = useState(250);
-  const [questBadgeName, setQuestBadgeName] = useState('Explorer Badge');
+  // Challenge / Quest specialized fields (1:1 with Quest Detail Modal)
+  const [questIcon, setQuestIcon] = useState('☕');
+  const [questMoodCategory, setQuestMoodCategory] = useState<'chill' | 'move' | 'heal' | 'learn'>('chill');
+  const [questIsOfficial, setQuestIsOfficial] = useState(true);
+  const [questStartDate, setQuestStartDate] = useState(() => getLeadTimeDate(0));
+  const [questEndDate, setQuestEndDate] = useState(() => getLeadTimeDate(30));
+  const [questObjective, setQuestObjective] = useState(
+    'สนับสนุนร้านกาแฟ Specialty ในย่านอารีย์ และสร้างแรงบันดาลใจให้เพื่อนๆ ออกไปสัมผัสบรรยากาศคาเฟ่คราฟต์'
+  );
+  const [questSteps, setQuestSteps] = useState<string[]>([
+    'เลือกร้านกาแฟพาร์ทเนอร์ย่านอารีย์ในระบบ',
+    'สั่งเครื่องดื่มและถ่ายภาพเช็คอินโมเมนต์',
+    'สะสมครบ 3 ร้านเพื่อรับเหรียญและคะแนน XP',
+  ]);
+  const [questVerificationMethod, setQuestVerificationMethod] = useState(
+    '📸 ถ่ายรูปภาพแก้วกาแฟหรือหน้าร้านคู่กับการเช็คอิน GPS'
+  );
+  const [questTargetCount, setQuestTargetCount] = useState<number>(3);
+  const [questBadgeName, setQuestBadgeName] = useState('Coffee Explorer');
+  const [questBadgeIcon, setQuestBadgeIcon] = useState('☕');
+  const [questRewardPoints, setQuestRewardPoints] = useState(300);
+  const [questRewardsText, setQuestRewardsText] = useState(
+    '✨ 🏅 เหรียญเกียรติยศ "Coffee Explorer" บนหน้าโปรไฟล์ + ⚡ 300 XP'
+  );
+
+  const handleAddQuestStep = () => {
+    setQuestSteps((prev) => [...prev, 'ทำกิจกรรมตามเป้าหมายและบันทึกความคืบหน้า']);
+  };
+
+  const handleUpdateQuestStep = (idx: number, val: string) => {
+    setQuestSteps((prev) => {
+      const next = [...prev];
+      next[idx] = val;
+      return next;
+    });
+  };
+
+  const handleRemoveQuestStep = (idx: number) => {
+    setQuestSteps((prev) => prev.filter((_, i) => i !== idx));
+  };
 
   // Itinerary fields
   const [itinerary, setItinerary] = useState<Array<{ time: string; title: string }>>([
@@ -381,17 +427,31 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
         return false;
       }
     } else if (entityType === 'challenge') {
+      if (!questObjective.trim()) {
+        setErrorMessage('กรุณาระบุวัตถุประสงค์และที่มาของภารกิจ (Section 1)');
+        return false;
+      }
+      if (questSteps.length === 0 || questSteps.some((s) => !s.trim())) {
+        setErrorMessage('กรุณาระบุขั้นตอนและเงื่อนไขการทำภารกิจอย่างน้อย 1 ขั้นตอน (Section 2)');
+        return false;
+      }
+      if (!questVerificationMethod.trim()) {
+        setErrorMessage('กรุณาระบุวิธีการตรวจสอบและส่งหลักฐาน (Section 3)');
+        return false;
+      }
       if (!questBadgeName.trim()) {
-        setErrorMessage('กรุณาระบุชื่อเหรียญรางวัลประจำภารกิจ');
+        setErrorMessage('กรุณาระบุชื่อเหรียญรางวัลประจำภารกิจ (Section 4)');
         return false;
       }
     }
 
-    // 4. Description validation (RichTextEditor content)
-    const plainDesc = stripHtmlToPlainText(description);
-    if (!plainDesc || plainDesc.length < 15) {
-      setErrorMessage('กรุณากรอกรายละเอียด & บรรยากาศอย่างน้อย 15 ตัวอักษร เพื่อให้เพื่อนๆ ทราบข้อมูลครบถ้วน');
-      return false;
+    // 4. Description validation (RichTextEditor content for non-challenge)
+    if (entityType !== 'challenge') {
+      const plainDesc = stripHtmlToPlainText(description);
+      if (!plainDesc || plainDesc.length < 15) {
+        setErrorMessage('กรุณากรอกรายละเอียด & บรรยากาศอย่างน้อย 15 ตัวอักษร เพื่อให้เพื่อนๆ ทราบข้อมูลครบถ้วน');
+        return false;
+      }
     }
 
     return true;
@@ -532,23 +592,30 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
 
         onCreateSuccess(spotPayload);
       } else if (entityType === 'challenge') {
+        const formattedStart = formatThaiDate(questStartDate);
+        const formattedEnd = formatThaiDate(questEndDate);
+        const startD = new Date(questStartDate);
+        const endD = new Date(questEndDate);
+        const diffDays = Math.max(1, Math.ceil((endD.getTime() - startD.getTime()) / (1000 * 60 * 60 * 24)));
+
         const challengePayload: EventItem = {
           id: `quest-user-${Date.now()}`,
-          title: title.trim(),
-          category: 'move',
+          title: title.trim() || 'Bangkok Coffee Trail: ตะลุย 3 คาเฟ่อารีย์',
+          category: questMoodCategory,
           eventType: 'community',
           image: finalImage,
-          badgeText: `+${questRewardPoints} EXP`,
-          tag: 'ภารกิจ',
-          date: 'เข้าร่วมได้ตลอดเวลา',
-          time: 'สะสมแต้ม XP',
+          badgeText: `+${questRewardPoints} XP`,
+          tag: questMoodCategory === 'chill' ? 'คาเฟ่ & ชิลล์' : questMoodCategory === 'move' ? 'ออกกำลังกาย' : questMoodCategory === 'heal' ? 'ฮีลใจ' : 'เวิร์กช็อป',
+          date: `${formattedStart} - ${formattedEnd}`,
+          time: `เหลือ ${diffDays} วัน`,
           location: locationName.trim() || `เช็คอินในพื้นที่ ${province}`,
           venueTag: 'park',
           price: 'รับรางวัล',
-          hostName: 'ระบบชาเลนจ์',
+          hostName: questIsOfficial ? 'Chill & Connect Official' : (userProfile.name || 'คอมมูนิตี้ชาเลนจ์'),
           participantsCount: 1,
           maxParticipants: 9999,
-          description: description.trim() || `พิชิตภารกิจ ${title.trim()} รับเหรียญ ${questBadgeName} และแต้ม EXP พิเศษ`,
+          description: questObjective.trim(),
+          rules: questSteps,
           isNew: true,
           createdAtTimestamp: Date.now(),
         };
@@ -786,9 +853,367 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
               </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              
-              {/* === LEFT COLUMN: CONTENT & LOGISTICS (7 Cols) === */}
+            {entityType === 'challenge' ? (
+              /* === DEDICATED CHALLENGE & QUEST CREATION STUDIO (1:1 with Quest Detail Modal) === */
+              <div className="space-y-5">
+                
+                {/* 🌟 1. Top Identity & Quest Header Setup */}
+                <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-br from-[#EBF3ED] via-white to-slate-50 border border-[#4A7C59]/20 shadow-xs space-y-4">
+                  <div className="flex items-center justify-between gap-2 border-b border-[#4A7C59]/15 pb-3 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-xl bg-[#4A7C59] text-white flex items-center justify-center text-sm font-bold shadow-xs">
+                        ⚡
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-extrabold text-slate-900">ตั้งค่าข้อมูลหลักของภารกิจ (Quest Header Setup)</h4>
+                        <p className="text-[11px] text-slate-500">กำหนดไอคอน, มูดกิจกรรม, สถานะ และระยะเวลา</p>
+                      </div>
+                    </div>
+                    
+                    {/* Official / Community Toggle */}
+                    <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200">
+                      <button
+                        type="button"
+                        onClick={() => setQuestIsOfficial(true)}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                          questIsOfficial ? 'bg-amber-400 text-slate-950 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                        }`}
+                      >
+                        👑 Official Quest
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setQuestIsOfficial(false)}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                          !questIsOfficial ? 'bg-[#4A7C59] text-white shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                        }`}
+                      >
+                        👥 ชุมชนสร้างสรรค์
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Title & Icon Row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                    <div className="sm:col-span-2 space-y-1">
+                      <label className="text-xs font-bold text-slate-800 block">ไอคอนภารกิจ</label>
+                      <input
+                        type="text"
+                        value={questIcon}
+                        onChange={(e) => {
+                          setQuestIcon(e.target.value);
+                          setQuestBadgeIcon(e.target.value);
+                        }}
+                        className="w-full text-center text-xl py-2 rounded-2xl bg-white border border-slate-200 font-bold focus:border-[#4A7C59] outline-none shadow-xs"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-7 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-800">
+                          ชื่อภารกิจท้าทาย (Quest Title) <span className="text-rose-500">*</span>
+                        </label>
+                        <span className="text-[10px] text-slate-400">{title.length}/60</span>
+                      </div>
+                      <input
+                        type="text"
+                        required
+                        maxLength={60}
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        placeholder="เช่น Bangkok Coffee Trail: ตะลุย 3 คาเฟ่อารีย์"
+                        className="w-full px-3.5 py-2 rounded-2xl bg-white border border-slate-200 text-xs sm:text-sm font-semibold text-slate-900 focus:border-[#4A7C59] outline-none shadow-xs"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-3 space-y-1">
+                      <label className="text-xs font-bold text-slate-800 block">หมวดหมู่มูด</label>
+                      <select
+                        value={questMoodCategory}
+                        onChange={(e) => setQuestMoodCategory(e.target.value as any)}
+                        className="w-full px-3 py-2 rounded-2xl bg-white border border-slate-200 text-xs font-bold text-slate-700 outline-none shadow-xs cursor-pointer"
+                      >
+                        <option value="chill">☕ ชิลล์ / คาเฟ่</option>
+                        <option value="move">🏃‍♂️ ขยับกาย / สปอร์ต</option>
+                        <option value="heal">🌱 ฮีลใจ / ธรรมชาติ</option>
+                        <option value="learn">🎨 เรียนรู้ / เวิร์กช็อป</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Date Range & Target Count */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 border-t border-slate-200/60">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                        <Calendar className="w-3 h-3 text-[#4A7C59]" />
+                        <span>วันเริ่มภารกิจ <span className="text-rose-500">*</span></span>
+                      </label>
+                      <input
+                        type="date"
+                        value={questStartDate}
+                        onChange={(e) => setQuestStartDate(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                        <Calendar className="w-3 h-3 text-[#4A7C59]" />
+                        <span>วันสิ้นสุดภารกิจ <span className="text-rose-500">*</span></span>
+                      </label>
+                      <input
+                        type="date"
+                        min={questStartDate}
+                        value={questEndDate}
+                        onChange={(e) => setQuestEndDate(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between">
+                        <span>เป้าหมายที่ต้องพิชิต:</span>
+                        <span className="text-emerald-700 font-extrabold">{questTargetCount} จุด/ครั้ง</span>
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={1}
+                          max={20}
+                          value={questTargetCount}
+                          onChange={(e) => setQuestTargetCount(Number(e.target.value) || 1)}
+                          className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 🎯 Section 1: วัตถุประสงค์ & ที่มาของภารกิจ */}
+                <div className="p-4 sm:p-5 rounded-3xl bg-[#F4F7F4] border border-[#DDE7DF] shadow-xs space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                      <Target className="w-4 h-4 text-[#4A7C59]" />
+                      <span>วัตถุประสงค์ & ที่มาของภารกิจ <span className="text-rose-500">*</span></span>
+                    </h4>
+                    <span className="text-[10px] text-slate-400">Section 01</span>
+                  </div>
+
+                  <p className="text-[11px] text-slate-500">
+                    บอกเล่าเป้าหมาย เรื่องราว และแรงบันดาลใจที่อยากชวนให้สมาชิกออกไปทำกิจกรรมนี้
+                  </p>
+
+                  <textarea
+                    rows={3}
+                    required
+                    value={questObjective}
+                    onChange={(e) => setQuestObjective(e.target.value)}
+                    placeholder="เช่น สนับสนุนร้านกาแฟ Specialty ในย่านอารีย์ และสร้างแรงบันดาลใจให้เพื่อนๆ ออกไปสัมผัสบรรยากาศคาเฟ่คราฟต์..."
+                    className="w-full p-3.5 rounded-2xl bg-white border border-slate-200 text-xs sm:text-sm font-medium text-slate-800 focus:border-[#4A7C59] outline-none shadow-2xs leading-relaxed"
+                  />
+
+                  {/* Preset Suggestions */}
+                  <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                    <span className="text-[10px] text-slate-400 font-bold">ตัวอย่างด่วน:</span>
+                    {[
+                      'สนับสนุนร้านกาแฟ Specialty ในย่านอารีย์ และสัมผัสบรรยากาศคาเฟ่คราฟต์',
+                      'ส่งเสริมการออกกำลังกายกลางแจ้ง สูดอากาศบริสุทธิ์ในปอดสีเขียวของกรุงเทพฯ',
+                      'เปิดประสบการณ์ใหม่ เที่ยวชมงานศิลปะและนิทรรศการสร้างสรรค์ใจกลางเมือง',
+                    ].map((sample, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setQuestObjective(sample)}
+                        className="text-[10.5px] px-2.5 py-1 rounded-lg bg-white hover:bg-emerald-50 text-slate-600 hover:text-[#2D5A3C] border border-slate-200 transition-colors truncate max-w-[280px]"
+                      >
+                        + {sample.slice(0, 32)}...
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 📜 Section 2: ขั้นตอนและเงื่อนไขการทำภารกิจ */}
+                <div className="p-4 sm:p-5 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-3.5">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-md bg-emerald-100 text-emerald-800 text-[11px] font-black flex items-center justify-center">
+                        1
+                      </span>
+                      <span>ขั้นตอนและเงื่อนไขการทำภารกิจ <span className="text-rose-500">*</span></span>
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={handleAddQuestStep}
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-[#4A7C59] bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 transition-all cursor-pointer"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>เพิ่มขั้นตอน</span>
+                    </button>
+                  </div>
+
+                  <p className="text-[11px] text-slate-500">
+                    ระบุลำดับขั้นตอนการทำภารกิจแบบเป็นข้อๆ ให้ผู้เข้าร่วมเข้าใจง่ายและทำตามได้จริง
+                  </p>
+
+                  <div className="space-y-2">
+                    {questSteps.map((stepItem, idx) => (
+                      <div key={idx} className="flex items-center gap-2.5">
+                        <span className="w-6 h-6 rounded-full bg-slate-100 border border-slate-300 text-slate-700 font-bold text-[11px] flex items-center justify-center shrink-0">
+                          {idx + 1}
+                        </span>
+                        <input
+                          type="text"
+                          required
+                          value={stepItem}
+                          onChange={(e) => handleUpdateQuestStep(idx, e.target.value)}
+                          placeholder={`ขั้นตอนที่ ${idx + 1}`}
+                          className="flex-1 px-3.5 py-2 rounded-xl bg-slate-50 focus:bg-white border border-slate-200 text-xs font-medium text-slate-800 focus:border-[#4A7C59] outline-none shadow-2xs"
+                        />
+                        {questSteps.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveQuestStep(idx)}
+                            className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                            title="ลบขั้นตอนนี้"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 🛡️ Section 3: วิธีการตรวจสอบและส่งหลักฐาน (Verification Method) */}
+                <div className="p-4 sm:p-5 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-[#4A7C59]" />
+                      <span>วิธีการตรวจสอบและส่งหลักฐาน (Verification Method) <span className="text-rose-500">*</span></span>
+                    </h4>
+                    <span className="text-[10px] text-slate-400">Section 03</span>
+                  </div>
+
+                  <p className="text-[11px] text-slate-500">
+                    เลือกรูปแบบหลักฐานที่ผู้ทำภารกิจต้องส่งเพื่อยืนยันความสำเร็จ
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {[
+                      { icon: '📸', label: '📸 ถ่ายรูปภาพแก้วกาแฟหรือหน้าร้านคู่กับการเช็คอิน GPS' },
+                      { icon: '📍', label: '📍 ระบบตรวจสอบพิกัด GPS อัตโนมัติเมื่ออยู่ในรัศมีที่กำหนด' },
+                      { icon: '🎟️', label: '🎟️ สแกน QR Code จากผู้จัดงานหรือร้านค้าพาร์ทเนอร์' },
+                      { icon: '✍️', label: '✍️ เขียนรีวิวและแชร์โมเมนต์ความประทับใจลงคอมมูนิตี้' },
+                    ].map((method) => (
+                      <button
+                        key={method.label}
+                        type="button"
+                        onClick={() => setQuestVerificationMethod(method.label)}
+                        className={`p-3 rounded-2xl border text-left text-xs font-bold transition-all flex items-start gap-2 ${
+                          questVerificationMethod === method.label
+                            ? 'bg-[#EBF5EE] text-[#2D5A3C] border-emerald-300 shadow-2xs'
+                            : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
+                        }`}
+                      >
+                        <span className="text-base shrink-0">{method.icon}</span>
+                        <span className="leading-snug">{method.label}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <input
+                    type="text"
+                    required
+                    value={questVerificationMethod}
+                    onChange={(e) => setQuestVerificationMethod(e.target.value)}
+                    placeholder="หรือพิมพ์ปรับแต่งข้อความเงื่อนไขการส่งหลักฐาน..."
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 focus:bg-white border border-slate-200 text-xs font-medium text-slate-800 focus:border-[#4A7C59] outline-none"
+                  />
+                </div>
+
+                {/* 🎁 Section 4: ของรางวัล & สิทธิประโยชน์เมื่อทำสำเร็จ (Rewards & Perks) */}
+                <div className="p-4 sm:p-5 rounded-3xl bg-[#F8FAF8] border border-emerald-200/80 shadow-xs space-y-4">
+                  <div className="flex items-center justify-between border-b border-emerald-200/60 pb-2.5">
+                    <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                      <Gift className="w-4 h-4 text-[#4A7C59]" />
+                      <span>ของรางวัล & สิทธิประโยชน์เมื่อทำสำเร็จ <span className="text-rose-500">*</span></span>
+                    </h4>
+                    <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 uppercase tracking-wide">
+                      Reward Unlocks
+                    </span>
+                  </div>
+
+                  {/* 2-Column Reward Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Badge Card */}
+                    <div className="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-2">
+                      <span className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wide block">
+                        เหรียญตราเกียรติยศ (Profile Badge)
+                      </span>
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-2xl shrink-0">
+                          {questBadgeIcon || questIcon}
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <input
+                            type="text"
+                            required
+                            value={questBadgeName}
+                            onChange={(e) => setQuestBadgeName(e.target.value)}
+                            placeholder="ชื่อเหรียญ เช่น Coffee Explorer"
+                            className="w-full px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-[#4A7C59]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* XP Points Card */}
+                    <div className="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-2">
+                      <span className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wide block">
+                        แต้มและคะแนน XP (XP Points)
+                      </span>
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-xl shrink-0 text-amber-500 font-bold">
+                          ⚡
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <select
+                            value={questRewardPoints}
+                            onChange={(e) => setQuestRewardPoints(Number(e.target.value) || 300)}
+                            className="w-full px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-[#4A7C59]"
+                          >
+                            <option value={100}>+100 XP Points</option>
+                            <option value={200}>+200 XP Points</option>
+                            <option value={300}>+300 XP Points</option>
+                            <option value={500}>+500 XP Points</option>
+                            <option value={1000}>+1000 XP Points</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Summary Text input */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 block">
+                      ข้อความสรุปของรางวัล (Highlight Perks Line):
+                    </label>
+                    <input
+                      type="text"
+                      value={questRewardsText}
+                      onChange={(e) => setQuestRewardsText(e.target.value)}
+                      placeholder="เช่น ✨ 🏅 เหรียญเกียรติยศ 'Coffee Explorer' บนหน้าโปรไฟล์ + ⚡ 300 XP"
+                      className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 outline-none focus:border-[#4A7C59]"
+                    />
+                  </div>
+                </div>
+
+              </div>
+            ) : (
+              /* === STANDARD 2-COLUMN FORM FOR COMMUNITY / FAIR / SPOT === */
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                {/* === LEFT COLUMN: CONTENT & LOGISTICS (7 Cols) === */}
               <div className="lg:col-span-7 space-y-4">
                 
                 {/* 1. Title & Primary Category */}
@@ -1337,8 +1762,9 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
               </div>
 
             </div>
-          </form>
-        )}
+          )}
+        </form>
+      )}
 
         {/* STEP 3: REALISTIC DETAIL PAGE MINI-PREVIEW & SAFETY CONFIRMATION */}
         {step === 3 && (
@@ -1352,8 +1778,169 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
               </span>
             </div>
 
-            {/* Realistic Mini-Detail Container (Scaled down representation) */}
-            <div className="rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-sm space-y-4">
+            {entityType === 'challenge' ? (
+              /* === REALISTIC LIVE PREVIEW FOR CHALLENGE (MATCHING SCREENSHOT 1:1) === */
+              <div className="rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-2xl space-y-0">
+                {/* Header Gradient */}
+                <div className="relative p-5 sm:p-6 bg-gradient-to-r from-[#21432E] via-[#2E583C] to-[#4A7C59] text-white overflow-hidden">
+                  <div className="absolute -right-8 -bottom-8 w-44 h-44 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+                  
+                  {/* Category Pill & Official Tag */}
+                  <div className="flex items-center justify-between gap-2 relative z-10">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[11px] font-extrabold px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/25 text-white shadow-2xs">
+                        {questMoodCategory === 'chill' ? '☕ ฮีลลิ่ง / พบปะเพื่อน & คาเฟ่' :
+                         questMoodCategory === 'move' ? '🏃‍♂️ ขยับกาย / ออกกำลังกาย' :
+                         questMoodCategory === 'heal' ? '🌱 ฮีลใจ / ธรรมชาติ & พักผ่อน' : '🎨 เรียนรู้ / งานคราฟต์ & เวิร์กช็อป'}
+                      </span>
+                      {questIsOfficial ? (
+                        <span className="text-[11px] font-black px-3 py-1 rounded-full bg-amber-400 text-slate-950 shadow-xs flex items-center gap-1">
+                          <Crown className="w-3.5 h-3.5 fill-slate-950 text-slate-950" />
+                          <span>Official Quest</span>
+                        </span>
+                      ) : (
+                        <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-white border border-white/20">
+                          👥 ชุมชนสร้างสรรค์
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Icon & Title */}
+                  <div className="mt-4 flex items-start gap-3.5 sm:gap-4 relative z-10">
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/95 text-slate-900 shadow-md flex items-center justify-center shrink-0 border border-white/80 text-3xl">
+                      {questBadgeIcon || questIcon}
+                    </div>
+
+                    <div className="space-y-1.5 min-w-0 flex-1">
+                      <h2 className="text-lg sm:text-2xl font-black text-white leading-tight tracking-tight drop-shadow-2xs">
+                        {title || 'Bangkok Coffee Trail: ตะลุย 3 คาเฟ่อารีย์'}
+                      </h2>
+
+                      {/* Metadata Strip */}
+                      <div className="flex items-center gap-2 flex-wrap pt-0.5 text-xs text-white/90 font-medium">
+                        <span className="flex items-center gap-1 bg-white/15 px-2.5 py-0.5 rounded-lg border border-white/20 font-bold text-emerald-200">
+                          <Zap className="w-3.5 h-3.5 fill-emerald-200 text-emerald-200" />
+                          <span>+{questRewardPoints} XP</span>
+                        </span>
+
+                        <span className="flex items-center gap-1 bg-white/15 px-2.5 py-0.5 rounded-lg border border-white/20">
+                          <Calendar className="w-3.5 h-3.5 text-emerald-200" />
+                          <span>{formatThaiDate(questStartDate)} - {formatThaiDate(questEndDate)}</span>
+                        </span>
+
+                        <span className="flex items-center gap-1 bg-white/15 px-2.5 py-0.5 rounded-lg border border-white/20">
+                          <Clock className="w-3.5 h-3.5 text-emerald-200" />
+                          <span>เหลือ {Math.max(1, Math.ceil((new Date(questEndDate).getTime() - new Date(questStartDate).getTime()) / (1000 * 60 * 60 * 24)))} วัน</span>
+                        </span>
+
+                        <span className="flex items-center gap-1 bg-white/15 px-2.5 py-0.5 rounded-lg border border-white/20">
+                          <Users className="w-3.5 h-3.5 text-emerald-200" />
+                          <span>1+ คนร่วมทำ</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Body Sections */}
+                <div className="p-4 sm:p-6 space-y-3.5 bg-white text-slate-800">
+                  
+                  {/* 🎯 Section 1: Objective & Purpose */}
+                  <div className="p-4 rounded-2xl bg-[#F4F7F4] border border-[#DDE7DF] space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <Target className="w-4 h-4 text-[#4A7C59] shrink-0" />
+                      <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">
+                        วัตถุประสงค์ & ที่มาของภารกิจ
+                      </h4>
+                    </div>
+                    <p className="text-xs sm:text-sm text-slate-700 leading-relaxed pl-6 font-medium">
+                      {questObjective}
+                    </p>
+                  </div>
+
+                  {/* 📜 Section 2: Step-by-Step Instructions & Conditions */}
+                  <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3">
+                    <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-md bg-emerald-100 text-emerald-800 text-[11px] font-black flex items-center justify-center">
+                        1
+                      </span>
+                      <span>ขั้นตอนและเงื่อนไขการทำภารกิจ</span>
+                    </h4>
+
+                    <div className="space-y-2 pl-2 sm:pl-3">
+                      {questSteps.map((step, idx) => (
+                        <div key={idx} className="flex items-start gap-3 text-xs sm:text-sm text-slate-700">
+                          <span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-300 text-slate-700 font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5">
+                            {idx + 1}
+                          </span>
+                          <span className="leading-relaxed font-medium">{step}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 🔍 Section 3: Verification Method */}
+                  <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-2">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-[#4A7C59] shrink-0" />
+                      <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">
+                        วิธีการตรวจสอบและส่งหลักฐาน (Verification Method)
+                      </h4>
+                    </div>
+                    <div className="pl-6 text-xs sm:text-sm text-emerald-950 font-medium leading-relaxed bg-[#EBF5EE] p-3 rounded-xl border border-emerald-200">
+                      {questVerificationMethod}
+                    </div>
+                  </div>
+
+                  {/* 🎁 Section 4: Rewards & Perks */}
+                  <div className="p-4 rounded-2xl bg-[#F8FAF8] border border-emerald-200/80 shadow-2xs space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                        <Gift className="w-4 h-4 text-[#4A7C59]" />
+                        <span>ของรางวัล & สิทธิประโยชน์เมื่อทำสำเร็จ</span>
+                      </h4>
+                      <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 uppercase tracking-wide">
+                        Reward Unlocks
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-0 sm:pl-6">
+                      <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-200">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-xl shrink-0">
+                          {questBadgeIcon || questIcon}
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase">เหรียญตราเกียรติยศ</p>
+                          <p className="text-xs sm:text-sm font-extrabold text-slate-900">{questBadgeName}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-200">
+                        <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-xl shrink-0 text-amber-500 font-bold">
+                          ⚡
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase">แต้มและคะแนน XP</p>
+                          <p className="text-xs sm:text-sm font-extrabold text-slate-900">+{questRewardPoints} XP Points</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {questRewardsText && (
+                      <div className="pl-0 sm:pl-6 pt-1">
+                        <p className="text-xs text-slate-700 font-bold">
+                          {questRewardsText}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+              </div>
+            ) : (
+              /* Realistic Mini-Detail Container for Community/Fair/Spot */
+              <div className="rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-sm space-y-4">
               
               {/* Cover Banner */}
               <div className="relative aspect-[21/9] sm:aspect-[24/9] w-full overflow-hidden bg-slate-900">
@@ -1465,6 +2052,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
               </div>
 
             </div>
+          )}
 
             {/* Safety Disclaimer Checkbox */}
             <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-3">

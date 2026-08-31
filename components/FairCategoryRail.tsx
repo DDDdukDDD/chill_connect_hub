@@ -1,100 +1,11 @@
 'use client';
 
 import React from 'react';
-import {
-  Compass,
-  Building2,
-  Palette,
-  Flame,
-  Landmark,
-  ShoppingBag,
-  Trees,
-  ArrowUpRight,
-  ChevronLeft,
-  ChevronRight,
-  LucideIcon
-} from 'lucide-react';
+import { Compass, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MASTER_FAIR_CATEGORIES, MasterFairCategory } from '@/data/masterHub';
 
-export interface FairVenueCategory {
-  id: string;
-  name: string;
-  nameEn: string;
-  icon: LucideIcon;
-  colorScheme: {
-    iconBg: string;
-    iconColor: string;
-  };
-  keywords: string[];
-}
-
-export const NATIONWIDE_FAIR_CATEGORIES: FairVenueCategory[] = [
-  {
-    id: 'convention_centers',
-    name: 'ศูนย์ประชุม & ฮอลล์ใหญ่',
-    nameEn: 'Convention Centers',
-    icon: Building2,
-    colorScheme: {
-      iconBg: 'bg-blue-100/70',
-      iconColor: 'text-blue-700',
-    },
-    keywords: ['qsncc', 'สิริกิติ์', 'bitec', 'ไบเทค', 'impact', 'อิมแพ็ค', 'เมืองทอง', 'paragon', 'พารากอน', 'iconsiam', 'ไอคอนสยาม', 'kice', 'cmecc'],
-  },
-  {
-    id: 'art_festivals',
-    name: 'เทศกาลเมือง & งานศิลป์',
-    nameEn: 'Design & Art Festivals',
-    icon: Palette,
-    colorScheme: {
-      iconBg: 'bg-purple-100/70',
-      iconColor: 'text-purple-700',
-    },
-    keywords: ['design week', 'biennale', 'art', 'ศิลปะ', 'creative', 'เทศกาล', 'festival', 'นิทรรศการ', 'gallery'],
-  },
-  {
-    id: 'marathon_sports',
-    name: 'งานวิ่งมาราธอน & กีฬา',
-    nameEn: 'Marathons & Sports',
-    icon: Flame,
-    colorScheme: {
-      iconBg: 'bg-orange-100/70',
-      iconColor: 'text-orange-700',
-    },
-    keywords: ['วิ่ง', 'marathon', 'มาราธอน', 'กีฬา', 'sport', 'race', 'ไตรกีฬา', 'triathlon', 'แข่งขัน'],
-  },
-  {
-    id: 'heritage_local',
-    name: 'งานประเพณี & งานประจำปี',
-    nameEn: 'Local Heritage Fairs',
-    icon: Landmark,
-    colorScheme: {
-      iconBg: 'bg-amber-100/70',
-      iconColor: 'text-amber-700',
-    },
-    keywords: ['ประเพณี', 'กาชาด', 'เกษตรแฟร์', 'งานวัด', 'heritage', 'วัฒนธรรม', 'ประจำปี', 'สมโภช'],
-  },
-  {
-    id: 'craft_market',
-    name: 'ตลาดนัด & คราฟต์แฟร์',
-    nameEn: 'Creative & Craft Fairs',
-    icon: ShoppingBag,
-    colorScheme: {
-      iconBg: 'bg-rose-100/70',
-      iconColor: 'text-rose-700',
-    },
-    keywords: ['craft', 'คราฟต์', 'ตลาดนัด', 'market', 'flea market', 'fair', 'แฟร์', 'สินค้าทำมือ', 'art toy', 'อาร์ตทอย'],
-  },
-  {
-    id: 'parks_openair',
-    name: 'สวนสาธารณะ & ลานดนตรี',
-    nameEn: 'Parks & Open-Air',
-    icon: Trees,
-    colorScheme: {
-      iconBg: 'bg-emerald-100/70',
-      iconColor: 'text-emerald-700',
-    },
-    keywords: ['สวน', 'park', 'ดนตรีในสวน', 'open air', 'คอนเสิร์ต', 'music', 'ลานคนเมือง', 'สนามหลวง'],
-  },
-];
+export type FairVenueCategory = MasterFairCategory;
+export const NATIONWIDE_FAIR_CATEGORIES = MASTER_FAIR_CATEGORIES;
 
 interface FairCategoryRailProps {
   selectedCategoryId: string | null;

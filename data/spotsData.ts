@@ -62,31 +62,23 @@ export interface LifestyleSpotItem {
 
 export type Spot = LifestyleSpotItem;
 
+import {
+  MASTER_SPOT_CATEGORIES,
+  MASTER_77_PROVINCES,
+  MASTER_POPULAR_PROVINCE_TAGS,
+  SpotVibeId,
+} from './masterHub';
+
+export { MASTER_77_PROVINCES as ALL_THAI_PROVINCES };
+export const SPOT_PROVINCES = MASTER_POPULAR_PROVINCE_TAGS;
+
 export const SPOT_CATEGORIES = [
   { id: 'all', label: 'ทุกหมวดหมู่สถานที่', icon: '✨' },
-  { id: 'park', label: 'สวนสาธารณะ & ธรรมชาติ', icon: '🌳' },
-  { id: 'cafe', label: 'คาเฟ่ & Slow Bar / สเปซนั่งชิลล์', icon: '☕' },
-  { id: 'art', label: 'หอศิลป์ & มิวเซียม / นิทรรศการ', icon: '🎨' },
-  { id: 'oldtown', label: 'ย่านเก่า & ชุมชนสร้างสรรค์', icon: '🏛️' },
-  { id: 'workspace', label: 'ที่นั่งทำงาน Co-working & อ่านหนังสือ', icon: '📚' },
-  { id: 'viewpoint', label: 'จุดชมวิว & ริมน้ำ / ทะเล', icon: '🌆' },
-  { id: 'nature', label: 'ธรรมชาติ & แคมปิ้ง / เอาต์ดอร์', icon: '🌲' },
-];
-
-export const SPOT_PROVINCES = [
-  { id: 'all', label: 'ทั่วประเทศ' },
-  { id: 'bangkok', label: 'กรุงเทพฯ', name: 'กรุงเทพฯ' },
-  { id: 'chiangmai', label: 'เชียงใหม่', name: 'เชียงใหม่' },
-  { id: 'chonburi', label: 'ชลบุรี / พัทยา', name: 'ชลบุรี' },
-  { id: 'khaoyai', label: 'เขาใหญ่ / โคราช', name: 'นครราชสีมา' },
-  { id: 'phuket', label: 'ภูเก็ต', name: 'ภูเก็ต' },
-  { id: 'nan', label: 'น่าน', name: 'น่าน' },
-  { id: 'kanchanaburi', label: 'กาญจนบุรี', name: 'กาญจนบุรี' },
-  { id: 'ayutthaya', label: 'อยุธยา', name: 'อยุธยา' },
-  { id: 'huahin', label: 'หัวหิน / ประจวบฯ', name: 'ประจวบคีรีขันธ์' },
-  { id: 'krabi', label: 'กระบี่', name: 'กระบี่' },
-  { id: 'samui', label: 'สุราษฎร์ฯ / สมุย', name: 'สุราษฎร์ธานี' },
-  { id: 'khonkaen', label: 'ขอนแก่น', name: 'ขอนแก่น' },
+  ...MASTER_SPOT_CATEGORIES.map((cat) => ({
+    id: cat.id,
+    label: cat.name,
+    icon: cat.iconChar,
+  })),
 ];
 
 import { PROVINCES_77_TOP_SPOTS } from './allProvincesSpots';
@@ -1491,18 +1483,6 @@ const supplemental77Spots = PROVINCES_77_TOP_SPOTS.filter(
 export const MOCK_SPOTS: LifestyleSpotItem[] = [
   ...INITIAL_MOCK_SPOTS,
   ...supplemental77Spots,
-];
-
-export const ALL_THAI_PROVINCES = [
-  'กรุงเทพฯ', 'กระบี่', 'กาญจนบุรี', 'กาฬสินธุ์', 'กำแพงเพชร', 'ขอนแก่น', 'จันทบุรี', 'ฉะเชิงเทรา', 'ชลบุรี',
-  'ชัยนาท', 'ชัยภูมิ', 'ชุมพร', 'เชียงราย', 'เชียงใหม่', 'ตรัง', 'ตราด', 'ตาก', 'นครนายก', 'นครปฐม',
-  'นครพนม', 'นครราชสีมา', 'นครศรีธรรมราช', 'นครสวรรค์', 'นนทบุรี', 'นราธิวาส', 'น่าน', 'บึงกาฬ', 'บุรีรัมย์',
-  'ปทุมธานี', 'ประจวบคีรีขันธ์', 'ปราจีนบุรี', 'ปัตตานี', 'พระนครศรีอยุธยา', 'พังงา', 'พัทลุง', 'พิจิตร',
-  'พิษณุโลก', 'เพชรบุรี', 'เพชรบูรณ์', 'แพร่', 'พะเยา', 'ภูเก็ต', 'มหาสารคาม', 'มุกดาหาร', 'แม่ฮ่องสอน',
-  'ยะลา', 'ยโสธร', 'ร้อยเอ็ด', 'ระนอง', 'ระยอง', 'ราชบุรี', 'ลพบุรี', 'ลำปาง', 'ลำพูน', 'เลย', 'ศรีสะเกษ',
-  'สกลนคร', 'สงขลา', 'สตูล', 'สมุทรปราการ', 'สมุทรสงคราม', 'สมุทรสาคร', 'สระแก้ว', 'สระบุรี', 'สิงห์บุรี',
-  'สุโขทัย', 'สุพรรณบุรี', 'สุราษฎร์ธานี', 'สุรินทร์', 'หนองคาย', 'หนองบัวลำภู', 'อ่างทอง', 'อุดรธานี',
-  'อุทัยธานี', 'อุตรดิตถ์', 'อุบลราชธานี', 'อำนาจเจริญ'
 ];
 
 /**

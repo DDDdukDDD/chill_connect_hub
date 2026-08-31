@@ -1,112 +1,11 @@
 'use client';
 
 import React from 'react';
-import {
-  Compass,
-  Mountain,
-  Waves,
-  Trees,
-  Coffee,
-  Landmark,
-  Palette,
-  Sparkles,
-  ArrowUpRight,
-  ChevronLeft,
-  ChevronRight,
-  LucideIcon
-} from 'lucide-react';
+import { Compass, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MASTER_SPOT_CATEGORIES, MasterSpotCategory, SpotVibeId } from '@/data/masterHub';
 
-export interface SpotVibeCategory {
-  id: string;
-  name: string;
-  nameEn: string;
-  icon: LucideIcon;
-  colorScheme: {
-    iconBg: string;
-    iconColor: string;
-  };
-  keywords: string[];
-}
-
-export const NATIONWIDE_SPOT_CATEGORIES: SpotVibeCategory[] = [
-  {
-    id: 'mountain_mist',
-    name: 'ภูเขา & ทะเลหมอก',
-    nameEn: 'Mountain & Mist',
-    icon: Mountain,
-    colorScheme: {
-      iconBg: 'bg-emerald-100/70',
-      iconColor: 'text-emerald-700',
-    },
-    keywords: ['ดอย', 'เขา', 'mountain', 'หมอก', 'viewpoint', 'จุดชมวิว', 'ภู', 'สันป่าเกี๊ยะ', 'ม่อน'],
-  },
-  {
-    id: 'sea_island',
-    name: 'ทะเล & เกาะสวย',
-    nameEn: 'Sea & Islands',
-    icon: Waves,
-    colorScheme: {
-      iconBg: 'bg-sky-100/70',
-      iconColor: 'text-sky-700',
-    },
-    keywords: ['ทะเล', 'หาด', 'เกาะ', 'beach', 'island', 'sea', 'อ่าว', 'กระบี่', 'ภูเก็ต', 'สมุย', 'พัทยา', 'หัวหิน'],
-  },
-  {
-    id: 'nature_camping',
-    name: 'ป่าธรรมชาติ & กางเต็นท์',
-    nameEn: 'Nature & Camping',
-    icon: Trees,
-    colorScheme: {
-      iconBg: 'bg-teal-100/70',
-      iconColor: 'text-teal-700',
-    },
-    keywords: ['ป่า', 'สวน', 'park', 'nature', 'อุทยาน', 'แคมปิ้ง', 'camping', 'น้ำตก', 'ล่องแก่ง', 'อ่างเก็บน้ำ'],
-  },
-  {
-    id: 'cafe_slowbar',
-    name: 'คาเฟ่ & สเปซนั่งชิลล์',
-    nameEn: 'Cafe & Slow Bar',
-    icon: Coffee,
-    colorScheme: {
-      iconBg: 'bg-amber-100/70',
-      iconColor: 'text-amber-700',
-    },
-    keywords: ['cafe', 'คาเฟ่', 'coffee', 'กาแฟ', 'slow bar', 'เบเกอรี่', 'tea', 'ชา', 'matcha', 'มัทฉะ'],
-  },
-  {
-    id: 'oldtown_culture',
-    name: 'ย่านเก่า & วิถีชุมชน',
-    nameEn: 'Old Town & Heritage',
-    icon: Landmark,
-    colorScheme: {
-      iconBg: 'bg-orange-100/70',
-      iconColor: 'text-orange-700',
-    },
-    keywords: ['ย่านเก่า', 'old town', 'oldtown', 'ชุมชน', 'วัด', 'temple', 'ประวัติศาสตร์', 'อยุธยา', 'เมืองเก่า', 'ตลาดน้ำ'],
-  },
-  {
-    id: 'art_creative',
-    name: 'หอศิลป์ & สเปซศิลปะ',
-    nameEn: 'Art & Culture Hubs',
-    icon: Palette,
-    colorScheme: {
-      iconBg: 'bg-purple-100/70',
-      iconColor: 'text-purple-700',
-    },
-    keywords: ['art', 'ศิลปะ', 'หอศิลป์', 'museum', 'มิวเซียม', 'แกลเลอรี', 'gallery', 'craft', 'คราฟต์', 'นิทรรศการ'],
-  },
-  {
-    id: 'wellness_retreat',
-    name: 'สปา & จุดฮีลใจ',
-    nameEn: 'Wellness & Healing',
-    icon: Sparkles,
-    colorScheme: {
-      iconBg: 'bg-rose-100/70',
-      iconColor: 'text-rose-700',
-    },
-    keywords: ['heal', 'ฮีลใจ', 'wellness', 'สปา', 'น้ำพุร้อน', 'onsen', 'สมาธิ', 'ผ่อนคลาย', 'บำบัด'],
-  },
-];
+export type SpotVibeCategory = MasterSpotCategory;
+export const NATIONWIDE_SPOT_CATEGORIES = MASTER_SPOT_CATEGORIES;
 
 interface SpotCategoryRailProps {
   selectedCategoryId: string | null;
