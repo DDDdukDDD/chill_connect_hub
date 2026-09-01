@@ -14,6 +14,7 @@ import {
   LocateFixed,
   Loader2,
   CheckCircle2,
+  PlusCircle,
 } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
@@ -227,6 +228,22 @@ function SpotsPageContent() {
                 ค้นพบสถานที่ท่องเที่ยว คาเฟ่ สวนสาธารณะ และสเปซพักผ่อนกว่า {filteredSpots.length} แห่งใน 77 จังหวัด
               </p>
             </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (!isLoggedIn) {
+                  setMembershipActionTitle('เพื่อแนะนำพิกัดสถานที่ใหม่');
+                  setIsRequireMembershipOpen(true);
+                } else {
+                  setIsCreateEventModalOpen(true);
+                }
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#4A7C59] hover:bg-[#386144] text-white rounded-xl text-xs font-bold shadow-xs hover:shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>แนะนำพิกัดเที่ยวใหม่</span>
+            </button>
           </div>
         </div>
 
@@ -455,9 +472,10 @@ function SpotsPageContent() {
       {/* Modals & Helpers */}
       <CreateEventModal
         isOpen={isCreateEventModalOpen}
+        initialType="spot"
         onClose={() => setIsCreateEventModalOpen(false)}
         onCreateSuccess={(newEvent: EventItem) => {
-          showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จ!`);
+          showToast(`แนะนำพิกัด "${newEvent.title}" สำเร็จ! ข้อมูลจะปรากฏในระบบ`);
         }}
       />
 

@@ -27,7 +27,8 @@ import {
   ShieldCheck,
   Check,
   Sprout,
-  ChevronDown
+  ChevronDown,
+  PlusCircle,
 } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
 import { Navbar } from '@/components/Navbar';
@@ -35,6 +36,7 @@ import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { JoinChallengeModal } from '@/components/JoinChallengeModal';
+import { CreateEventModal } from '@/components/CreateEventModal';
 import { ChallengeQuest, MOCK_CHALLENGES } from '@/data/mockData';
 
 // Extended Quest Interface with Date & Duration
@@ -222,6 +224,7 @@ export default function ChallengesDiscoveryPage() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
+  const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
 
 
 
@@ -290,6 +293,13 @@ export default function ChallengesDiscoveryPage() {
         setIsLoggedIn={handleSetIsLoggedIn}
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}
+        onOpenCreateEvent={() => {
+          if (!isLoggedIn) {
+            setIsRequireMembershipOpen(true);
+          } else {
+            setIsCreateEventModalOpen(true);
+          }
+        }}
       />
 
       {/* Toast Notification */}
@@ -304,8 +314,8 @@ export default function ChallengesDiscoveryPage() {
       <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] mx-auto px-3.5 sm:px-6 lg:px-8 py-2.5 sm:py-4 space-y-3 sm:space-y-4 w-full">
         
         {/* 1. Ultra-Compact Brand-Tone Hero Banner */}
-        <section className="relative rounded-2xl bg-white p-5 sm:p-6 shadow-sm border border-slate-200/80 overflow-hidden">
-          <div className="relative z-10 max-w-3xl space-y-2">
+        <section className="relative rounded-2xl bg-white p-5 sm:p-6 shadow-sm border border-slate-200/80 overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="relative z-10 max-w-2xl space-y-2">
             
             <h1 className="text-lg sm:text-xl md:text-2xl font-black text-slate-900 tracking-tight leading-tight">
               พิชิตเป้าหมายวันว่าง <span className="text-[#4A7C59]">สะสมเหรียญรางวัล</span>
@@ -332,6 +342,21 @@ export default function ChallengesDiscoveryPage() {
             </div>
 
           </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (!isLoggedIn) {
+                setIsRequireMembershipOpen(true);
+              } else {
+                setIsCreateEventModalOpen(true);
+              }
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer shrink-0 self-start sm:self-center"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>สร้างชาเลนจ์ / เควสต์ใหม่</span>
+          </button>
         </section>
 
         {/* 2. Main Content Container */}
@@ -703,6 +728,16 @@ export default function ChallengesDiscoveryPage() {
       {/* 5. Mobile Bottom Navigation */}
       <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />
 
+      {/* Create Challenge Modal */}
+      <CreateEventModal
+        isOpen={isCreateEventModalOpen}
+        initialType="challenge"
+        onClose={() => setIsCreateEventModalOpen(false)}
+        onCreateSuccess={(newEvent) => {
+          showToast(`สร้างชาเลนจ์ "${newEvent.title}" เรียบร้อยแล้ว! ⚡`);
+        }}
+      />
+
       {/* Free Membership Required Modal */}
       <RequireMembershipModal
         isOpen={isRequireMembershipOpen}
@@ -711,7 +746,7 @@ export default function ChallengesDiscoveryPage() {
           setIsRequireMembershipOpen(false);
           setIsAuthModalOpen(true);
         }}
-        actionTitle="เพื่อรับภารกิจและสะสมแต้ม XP"
+        actionTitle="เพื่อรับภารกิจและสร้างชาเลนจ์"
       />
 
       {/* Auth Modal */}

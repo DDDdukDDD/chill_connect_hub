@@ -57,7 +57,8 @@ import {
   LocateFixed,
   Loader2,
   ChevronDown,
-  X
+  X,
+  PlusCircle,
 } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 24;
@@ -88,6 +89,7 @@ export default function Home() {
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState<boolean>(false);
   const [membershipActionTitle, setMembershipActionTitle] = useState<string>('เพื่อดำเนินการต่อ');
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState<boolean>(false);
+  const [createModalInitialType, setCreateModalInitialType] = useState<'community' | 'fair' | 'spot' | 'challenge'>('community');
   const [isSurpriseModalOpen, setIsSurpriseModalOpen] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<'newest' | 'popular' | 'favorites'>('newest');
   const [sortByNearMe, setSortByNearMe] = useState<boolean>(false);
@@ -198,6 +200,20 @@ export default function Home() {
   const triggerMembershipPrompt = (actionReason: string) => {
     setMembershipActionTitle(actionReason);
     setIsRequireMembershipOpen(true);
+  };
+
+  const handleOpenCreateModal = (type: 'community' | 'fair' | 'spot' | 'challenge' = 'community') => {
+    if (!isLoggedIn) {
+      triggerMembershipPrompt(
+        type === 'spot' ? 'เพื่อแนะนำพิกัดสถานที่ใหม่' :
+        type === 'fair' ? 'เพื่อสร้างงานมหกรรมหรือเอ็กซ์โป' :
+        type === 'challenge' ? 'เพื่อสร้างเควสต์และชาเลนจ์ใหม่' :
+        'เพื่อสร้างกิจกรรมหรือเปิดตี้ใหม่'
+      );
+    } else {
+      setCreateModalInitialType(type);
+      setIsCreateEventModalOpen(true);
+    }
   };
 
   const handleJoinQuestFromHome = (questTitle: string) => {
@@ -846,13 +862,7 @@ export default function Home() {
         }}
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}
-        onOpenCreateEvent={() => {
-          if (!isLoggedIn) {
-            triggerMembershipPrompt('เพื่อสร้างกิจกรรมหรือเปิดตี้ใหม่');
-          } else {
-            setIsCreateEventModalOpen(true);
-          }
-        }}
+        onOpenCreateEvent={() => handleOpenCreateModal('community')}
       />
 
       {/* Main Content Area */}
@@ -910,7 +920,15 @@ export default function Home() {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 self-end sm:self-auto">
+                  <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenCreateModal('spot')}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#4A7C59] hover:bg-[#386144] text-white rounded-xl text-xs font-bold shadow-2xs hover:shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5" />
+                      <span>แนะนำพิกัดใหม่</span>
+                    </button>
                     <Link
                       href={`/spots?category=${encodeURIComponent(selectedSpotCategory)}&province=${encodeURIComponent(selectedSpotProvince)}`}
                       className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-[#4A7C59] text-[#4A7C59] hover:text-white border border-emerald-200/80 hover:border-[#4A7C59] rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer"
@@ -982,7 +1000,15 @@ export default function Home() {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 self-end sm:self-auto">
+                  <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenCreateModal('community')}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F26430] hover:bg-[#d85524] text-white rounded-xl text-xs font-bold shadow-2xs hover:shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5" />
+                      <span>เปิดตี้ใหม่</span>
+                    </button>
                     <Link
                       href={`/community${selectedCategory ? `?category=${encodeURIComponent(selectedCategory)}` : ''}`}
                       className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-[#F26430] text-[#F26430] hover:text-white border border-orange-200/80 hover:border-[#F26430] rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer"
@@ -1039,7 +1065,15 @@ export default function Home() {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 self-end sm:self-auto">
+                  <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenCreateModal('fair')}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#2B527A] hover:bg-[#1f3c5a] text-white rounded-xl text-xs font-bold shadow-2xs hover:shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5" />
+                      <span>สร้างงานมหกรรม</span>
+                    </button>
                     <Link
                       href={`/fairs${selectedVenueFilter ? `?venue=${encodeURIComponent(selectedVenueFilter)}` : ''}`}
                       className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-[#2B527A] text-[#2B527A] hover:text-white border border-blue-200/80 hover:border-[#2B527A] rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer"
@@ -1078,13 +1112,7 @@ export default function Home() {
               <CommunityChallengeBar
                 onJoinQuest={handleJoinQuestFromHome}
                 joinedQuestTitles={joinedQuestTitles}
-                onOpenCreateModal={() => {
-                  if (!isLoggedIn) {
-                    triggerMembershipPrompt('เพื่อสร้างชาเลนจ์ใหม่ในคอมมูนิตี้');
-                  } else {
-                    setIsCreateChallengeModalOpen(true);
-                  }
-                }}
+                onOpenCreateModal={() => handleOpenCreateModal('challenge')}
               />
 
               {/* ------------------------------------------------------------------------- */}
@@ -1760,6 +1788,17 @@ export default function Home() {
             ? `/fairs/${encodeURIComponent(ev.id)}`
             : `/community/${encodeURIComponent(ev.id)}`;
           router.push(targetPath);
+        }}
+      />
+
+      {/* Create Unified Event/Spot/Fair/Quest Modal */}
+      <CreateEventModal
+        isOpen={isCreateEventModalOpen}
+        initialType={createModalInitialType}
+        onClose={() => setIsCreateEventModalOpen(false)}
+        onCreateSuccess={(newEvent: EventItem) => {
+          setEventsList((prev) => [newEvent, ...prev]);
+          showToast(`สร้าง "${newEvent.title}" เรียบร้อยแล้ว! 🎉`);
         }}
       />
 

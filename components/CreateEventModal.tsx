@@ -49,13 +49,13 @@ const VENUE_OPTIONS = [
 ];
 
 const SPOT_VIBE_CATEGORIES = [
-  { id: 'slowbar', label: '☕ สโลว์บาร์ & กาแฟดริป', icon: '☕' },
-  { id: 'nature', label: '🌿 ธรรมชาติ & สวนเขียว', icon: '🌿' },
-  { id: 'viewpoint', label: '🌄 จุดชมวิว & หมอกเช้า', icon: '🌄' },
-  { id: 'oldtown', label: '🏮 ย่านเก่า & สถาปัตย์', icon: '🏮' },
-  { id: 'art', label: '🎨 ศิลปะ & สเปซสร้างสรรค์', icon: '🎨' },
-  { id: 'community_space', label: '🏡 คอมมูนิตี้สเปซ & เวิร์กช็อป', icon: '🏡' },
-  { id: 'riverside', label: '🌊 ริมน้ำ & พระอาทิตย์ตก', icon: '🌊' },
+  { id: 'slowbar', label: 'สโลว์บาร์ & กาแฟดริป', icon: '☕' },
+  { id: 'nature', label: 'ธรรมชาติ & สวนเขียว', icon: '🌿' },
+  { id: 'viewpoint', label: 'จุดชมวิว & หมอกเช้า', icon: '🌄' },
+  { id: 'oldtown', label: 'ย่านเก่า & สถาปัตย์', icon: '🏮' },
+  { id: 'art', label: 'ศิลปะ & สเปซสร้างสรรค์', icon: '🎨' },
+  { id: 'community_space', label: 'คอมมูนิตี้สเปซ & เวิร์กช็อป', icon: '🏡' },
+  { id: 'riverside', label: 'ริมน้ำ & พระอาทิตย์ตก', icon: '🌊' },
 ];
 
 const PRESET_IMAGES: Record<CreationEntityType, Array<{ id: string; label: string; url: string }>> = {
@@ -142,6 +142,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
   const [price, setPrice] = useState('ฟรี');
   const [image, setImage] = useState(initialImage || PRESET_IMAGES.community[0].url);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [hasDraft, setHasDraft] = useState(false);
 
   // Community fields
   const [communityCategory, setCommunityCategory] = useState<'move' | 'heal' | 'chill' | 'learn'>(initialCategory);
@@ -242,18 +243,144 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
   const minCommunityDate = isAdmin ? getLeadTimeDate(0) : getLeadTimeDate(3);
   const minFairDate = isAdmin ? getLeadTimeDate(0) : getLeadTimeDate(7);
 
+  const handleModalClose = () => {
+    if (step > 1 && (isOrganizer || isAdmin)) {
+      setStep(1);
+      setErrorMessage(null);
+    } else {
+      onClose();
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
-      setStep(1);
-      setEntityType(initialType);
+      if (isOrganizer || isAdmin) {
+        setStep(1);
+        setEntityType(initialType || 'community');
+      } else {
+        // Regular members, hosts, space owners directly enter the Community Meetup Form!
+        setStep(2);
+        setEntityType('community');
+      }
       if (initialTitle) setTitle(initialTitle);
       if (initialLocation) setLocationName(initialLocation);
       if (initialCategory) setCommunityCategory(initialCategory);
       if (initialImage) setImage(initialImage);
-      setImage(PRESET_IMAGES[initialType]?.[0]?.url || PRESET_IMAGES.community[0].url);
+      setImage(PRESET_IMAGES[initialType || 'community']?.[0]?.url || PRESET_IMAGES.community[0].url);
       setErrorMessage(null);
+
+      // Check if draft exists
+      try {
+        const saved = sessionStorage.getItem(`chill_draft_${initialType || 'community'}`);
+        if (saved) {
+          setHasDraft(true);
+        } else {
+          setHasDraft(false);
+        }
+      } catch {
+        setHasDraft(false);
+      }
     }
-  }, [isOpen, initialType, initialTitle, initialLocation, initialCategory, initialImage]);
+  }, [isOpen, initialType, initialTitle, initialLocation, initialCategory, initialImage, isOrganizer, isAdmin]);
+
+  // Auto-save form state to sessionStorage
+  useEffect(() => {
+    if (!isOpen || step !== 2) return;
+    try {
+      const draftData = {
+        title,
+        description,
+        province,
+        district,
+        locationName,
+        price,
+        image,
+        communityCategory,
+        communityDate,
+        startTime,
+        endTime,
+        meetingPoint,
+        maxParticipants,
+        targetGender,
+        fairOrganizer,
+        fairVenueId,
+        fairStartDate,
+        fairEndDate,
+        fairTicketUrl,
+        spotCategory,
+        spotOpenHours,
+        spotBestTime,
+        spotGoogleMapUrl,
+        spotHighlights,
+        questObjective,
+        questSteps,
+        questVerificationMethod,
+        questBadgeName,
+        questBadgeIcon,
+        questRewardPoints,
+        questRewardsText,
+        savedAt: Date.now()
+      };
+      sessionStorage.setItem(`chill_draft_${entityType}`, JSON.stringify(draftData));
+    } catch {
+      // ignore
+    }
+  }, [
+    isOpen, step, entityType, title, description, province, district, locationName,
+    price, image, communityCategory, communityDate, startTime, endTime,
+    meetingPoint, maxParticipants, targetGender, fairOrganizer, fairVenueId,
+    fairStartDate, fairEndDate, fairTicketUrl, spotCategory, spotOpenHours,
+    spotBestTime, spotGoogleMapUrl, spotHighlights, questObjective, questSteps,
+    questVerificationMethod, questBadgeName, questBadgeIcon, questRewardPoints, questRewardsText
+  ]);
+
+  const restoreDraft = () => {
+    try {
+      const saved = sessionStorage.getItem(`chill_draft_${entityType}`);
+      if (saved) {
+        const d = JSON.parse(saved);
+        if (d.title) setTitle(d.title);
+        if (d.description) setDescription(d.description);
+        if (d.province) setProvince(d.province);
+        if (d.district) setDistrict(d.district);
+        if (d.locationName) setLocationName(d.locationName);
+        if (d.price) setPrice(d.price);
+        if (d.image) setImage(d.image);
+        if (d.communityCategory) setCommunityCategory(d.communityCategory);
+        if (d.communityDate) setCommunityDate(d.communityDate);
+        if (d.startTime) setStartTime(d.startTime);
+        if (d.endTime) setEndTime(d.endTime);
+        if (d.meetingPoint) setMeetingPoint(d.meetingPoint);
+        if (d.maxParticipants) setMaxParticipants(d.maxParticipants);
+        if (d.fairOrganizer) setFairOrganizer(d.fairOrganizer);
+        if (d.fairVenueId) setFairVenueId(d.fairVenueId);
+        if (d.fairStartDate) setFairStartDate(d.fairStartDate);
+        if (d.fairEndDate) setFairEndDate(d.fairEndDate);
+        if (d.spotCategory) setSpotCategory(d.spotCategory);
+        if (d.spotOpenHours) setSpotOpenHours(d.spotOpenHours);
+        if (d.spotGoogleMapUrl) setSpotGoogleMapUrl(d.spotGoogleMapUrl);
+        if (d.spotHighlights) setSpotHighlights(d.spotHighlights);
+        if (d.questObjective) setQuestObjective(d.questObjective);
+        if (d.questSteps) setQuestSteps(d.questSteps);
+        if (d.questVerificationMethod) setQuestVerificationMethod(d.questVerificationMethod);
+        if (d.questBadgeName) setQuestBadgeName(d.questBadgeName);
+        if (d.questRewardPoints) setQuestRewardPoints(d.questRewardPoints);
+        if (d.questRewardsText) setQuestRewardsText(d.questRewardsText);
+        setHasDraft(false);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const clearDraft = () => {
+    try {
+      sessionStorage.removeItem(`chill_draft_${entityType}`);
+      setHasDraft(false);
+    } catch {
+      // ignore
+    }
+  };
 
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -623,6 +750,8 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
         onCreateSuccess(challengePayload);
       }
 
+      // Clear draft on success
+      clearDraft();
       onClose();
     } catch (err: any) {
       setErrorMessage(err.message || 'เกิดข้อผิดพลาดในการสร้างรายการ กรุณาลองใหม่อีกครั้ง');
@@ -634,7 +763,9 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 md:p-8 bg-black/60 backdrop-blur-sm animate-fade-in font-sans">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 md:p-8 bg-black/60 backdrop-blur-sm animate-fade-in font-sans"
+    >
       <div
         className="bg-white rounded-[28px] sm:rounded-[32px] max-w-5xl w-full p-5 sm:p-8 space-y-6 shadow-2xl relative animate-scale-up border border-slate-200 max-h-[92vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
@@ -642,16 +773,13 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
         {/* Header Ribbon & Close Button */}
         <div className="flex items-start justify-between border-b border-slate-100 pb-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#4A7C59] animate-pulse" />
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                {step === 1 && 'เลือกประเภทเนื้อหาที่ต้องการสร้าง'}
-                {step === 2 && `กรอกข้อมูล ${entityType === 'community' ? 'กิจกรรมคอมมูนิตี้' : entityType === 'fair' ? 'งานมหกรรม/เอ็กซ์โป' : entityType === 'spot' ? 'พิกัดเที่ยว 77 จังหวัด' : 'เควสต์ & ชาเลนจ์'}`}
-                {step === 3 && 'ตรวจสอบความถูกต้องก่อนเผยแพร่'}
-              </h2>
-            </div>
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              {step === 1 && 'เลือกประเภทกิจกรรมที่ต้องการสร้าง'}
+              {step === 2 && `กรอกข้อมูล ${entityType === 'community' ? 'กิจกรรมคอมมูนิตี้' : entityType === 'fair' ? 'งานมหกรรม นิทรรศการ เอ็กซ์โป และ งานวิ่ง' : entityType === 'spot' ? 'สถานที่เที่ยว & จุดฮีลใจ' : 'เควสต์ & ชาเลนจ์'}`}
+              {step === 3 && 'ตรวจสอบความถูกต้องก่อนเผยแพร่'}
+            </h2>
             <p className="text-xs sm:text-sm text-slate-500 font-medium">
-              {step === 1 && 'ระบบ Chill & Connect จัดแบ่ง 3 เสาหลักชัดเจน กรุณาเลือกหมวดที่ตรงกับกิจกรรมของคุณ'}
+              {step === 1 && 'คุณจะสามารถสร้างได้เฉพาะกิจกรรมที่คุณมีสิทธิ์ในการสร้างเท่านั้น'}
               {step === 2 && 'ระบุรายละเอียดให้ครบถ้วนเพื่อสร้างความชัดเจนและประสบการณ์ที่ดีแก่ผู้เข้าร่วม'}
               {step === 3 && 'จำลองหน้าเผยแพร่จริงเพื่อความมั่นใจก่อนเปิดรับเพื่อนเข้าร่วม'}
             </p>
@@ -659,8 +787,9 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
 
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleModalClose}
             className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+            title={step > 1 ? 'กลับไปหน้าเลือกประเภท' : 'ปิดหน้าต่าง'}
           >
             <X className="w-5 h-5" />
           </button>
@@ -683,160 +812,82 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                   <div className="w-10 h-10 rounded-xl bg-[#FFF4EE] text-[#F26430] border border-[#FCD9C6] flex items-center justify-center font-black">
                     <Users className="w-5 h-5" />
                   </div>
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <h3 className="font-black text-base text-slate-900 group-hover:text-[#F26430] transition-colors">
-                        กิจกรรมคอมมูนิตี้ & ตี้เพื่อนใหม่
-                      </h3>
-                    </div>
-                    <span className="text-[11px] font-bold text-[#F26430] bg-white px-2 py-0.5 rounded-full border border-orange-200 inline-block mt-1">
-                      👥 รับสมัครเพื่อน • มีโควตาคนจำกัด
-                    </span>
-                  </div>
+                  <h3 className="font-black text-base text-slate-900 group-hover:text-[#F26430] transition-colors">
+                    กิจกรรมคอมมูนิตี้
+                  </h3>
                   <p className="text-xs text-slate-600 leading-relaxed">
                     สร้างนัดวิ่งเช้า, ตี้บอร์ดเกม, เวิร์กช็อปวาดรูป, จิบกาแฟพูดคุย เหมาะสำหรับการเปิดห้องชวนเพื่อนทำกิจกรรมกลุ่มเล็ก-กลาง
                   </p>
-                </div>
-                <div className="pt-4 flex items-center justify-between text-xs font-black text-[#F26430]">
-                  <span>สร้างกิจกรรมนี้ ➔</span>
-                  <span className="text-[10px] text-slate-400 font-normal">เปิดรับสมัครทุกคน</span>
                 </div>
               </div>
 
               {/* Option 2: Public Venue / Expo */}
               <div
                 onClick={() => {
-                  if (!isOrganizer) {
-                    setErrorMessage('การสร้างงานมหกรรม/เอ็กซ์โป สงวนสิทธิ์สำหรับบทบาท ผู้จัดงาน (Organizer) หรือ แอดมิน');
-                  } else {
-                    setEntityType('fair');
-                    setStep(2);
-                  }
+                  setEntityType('fair');
+                  setStep(2);
                 }}
-                className={`group relative p-5 rounded-2xl border-2 transition-all flex flex-col justify-between ${
-                  isOrganizer
-                    ? 'border-blue-200 hover:border-[#2B527A] bg-blue-50/40 hover:bg-blue-50/80 cursor-pointer shadow-xs hover:shadow-md'
-                    : 'border-slate-200 bg-slate-50/50 opacity-75 cursor-not-allowed'
-                }`}
+                className="group relative p-5 rounded-2xl border-2 border-blue-200 hover:border-[#2B527A] bg-blue-50/40 hover:bg-blue-50/80 cursor-pointer shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
               >
                 <div className="space-y-2.5">
                   <div className="w-10 h-10 rounded-xl bg-blue-100/70 text-[#2B527A] border border-blue-200 flex items-center justify-center font-black">
                     <Building className="w-5 h-5" />
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-black text-base text-slate-900 group-hover:text-[#2B527A] transition-colors">
-                        งานมหกรรม นิทรรศการ & เอ็กซ์โป
-                      </h3>
-                      {!isOrganizer && (
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200 text-slate-600">
-                          สิทธิ์ Organizer
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-[11px] font-bold text-[#2B527A] bg-white px-2 py-0.5 rounded-full border border-blue-200 inline-block mt-1">
-                      🏛️ ศูนย์จัดแสดง • เปิดเข้าชมสาธารณะ
-                    </span>
-                  </div>
+                  <h3 className="font-black text-base text-slate-900 group-hover:text-[#2B527A] transition-colors">
+                    งานมหกรรม นิทรรศการ เอ็กซ์โป และ งานวิ่ง
+                  </h3>
                   <p className="text-xs text-slate-600 leading-relaxed">
                     สัปดาห์หนังสือ, งานกาแฟ Thailand Coffee Fest, Motor Expo ณ ศูนย์จัดแสดงชั้นนำ เช่น QSNCC, BITEC, IMPACT
                   </p>
                 </div>
-                <div className="pt-4 flex items-center justify-between text-xs font-black text-[#2B527A]">
-                  <span>{isOrganizer ? 'สร้างงานมหกรรม ➔' : 'ต้องใช้สิทธิ์ Organizer'}</span>
-                  <span className="text-[10px] text-slate-400 font-normal">ไม่มีการนับคนรับสมัคร</span>
-                </div>
               </div>
 
-              {/* Option 3: Lifestyle Spot 77 Provinces */}
-              <div
-                onClick={() => {
-                  setEntityType('spot');
-                  setStep(2);
-                }}
-                className="group relative p-5 rounded-2xl border-2 border-emerald-200 hover:border-[#4A7C59] bg-emerald-50/40 hover:bg-emerald-50/80 transition-all cursor-pointer shadow-xs hover:shadow-md flex flex-col justify-between"
-              >
-                <div className="space-y-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-100/70 text-[#4A7C59] border border-emerald-200 flex items-center justify-center font-black">
-                    <MapPin className="w-5 h-5" />
-                  </div>
-                  <div>
+              {/* Option 3: Lifestyle Spot 77 Provinces (Platform / Admin Only) */}
+              {isAdmin && (
+                <div
+                  onClick={() => {
+                    setEntityType('spot');
+                    setStep(2);
+                  }}
+                  className="group relative p-5 rounded-2xl border-2 border-emerald-200 hover:border-[#4A7C59] bg-emerald-50/40 hover:bg-emerald-50/80 transition-all cursor-pointer shadow-xs hover:shadow-md flex flex-col justify-between"
+                >
+                  <div className="space-y-2.5">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100/70 text-[#4A7C59] border border-emerald-200 flex items-center justify-center font-black">
+                      <MapPin className="w-5 h-5" />
+                    </div>
                     <h3 className="font-black text-base text-slate-900 group-hover:text-[#4A7C59] transition-colors">
-                      พิกัดเที่ยว & สเปซฮีลใจ 77 จังหวัด
+                      สถานที่เที่ยว & จุดฮีลใจ (Admin)
                     </h3>
-                    <span className="text-[11px] font-bold text-[#4A7C59] bg-white px-2 py-0.5 rounded-full border border-emerald-200 inline-block mt-1">
-                      🌲 สถานที่ถาวร • คาเฟ่ & จุดชมวิว
-                    </span>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      แนะนำสถานที่พักผ่อน สโลว์บาร์ สวนสาธารณะ สเปซศิลปะ หรือจุดฮีลใจประจำจังหวัด เพื่อให้สมาชิกปักหมุดตามรอย
+                    </p>
                   </div>
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    แนะนำสถานที่พักผ่อน สโลว์บาร์ สวนสาธารณะ สเปซศิลปะ หรือจุดฮีลใจประจำจังหวัด เพื่อให้สมาชิกปักหมุดตามรอย
-                  </p>
                 </div>
-                <div className="pt-4 flex items-center justify-between text-xs font-black text-[#4A7C59]">
-                  <span>เพิ่มพิกัดใหม่ ➔</span>
-                  <span className="text-[10px] text-slate-400 font-normal">ปักหมุดทั่วไทย</span>
-                </div>
-              </div>
+              )}
 
-              {/* Option 4: Quest & Challenge */}
-              <div
-                onClick={() => {
-                  setEntityType('challenge');
-                  setStep(2);
-                }}
-                className="group relative p-5 rounded-2xl border-2 border-purple-200 hover:border-purple-600 bg-purple-50/40 hover:bg-purple-50/80 transition-all cursor-pointer shadow-xs hover:shadow-md flex flex-col justify-between"
-              >
-                <div className="space-y-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 border border-purple-200 flex items-center justify-center font-black">
-                    <Sparkles className="w-5 h-5" />
-                  </div>
-                  <div>
+              {/* Option 4: Quest & Challenge (Platform / Admin Only) */}
+              {isAdmin && (
+                <div
+                  onClick={() => {
+                    setEntityType('challenge');
+                    setStep(2);
+                  }}
+                  className="group relative p-5 rounded-2xl border-2 border-purple-200 hover:border-purple-600 bg-purple-50/40 hover:bg-purple-50/80 transition-all cursor-pointer shadow-xs hover:shadow-md flex flex-col justify-between"
+                >
+                  <div className="space-y-2.5">
+                    <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 border border-purple-200 flex items-center justify-center font-black">
+                      <Sparkles className="w-5 h-5" />
+                    </div>
                     <h3 className="font-black text-base text-slate-900 group-hover:text-purple-700 transition-colors">
-                      เควสต์ & ชาเลนจ์สะสม EXP
+                      เควสต์ & ชาเลนจ์ (Admin)
                     </h3>
-                    <span className="text-[11px] font-bold text-purple-700 bg-white px-2 py-0.5 rounded-full border border-purple-200 inline-block mt-1">
-                      ⚡ Gamification • พิชิตภารกิจ
-                    </span>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      สร้างภารกิจท้าทายให้คอมมูนิตี้ทำร่วมกัน เช่น วิ่งสะสม 10km, ตะลุย 3 คาเฟ่อารีย์ เพื่อปลดล็อก Badge และสะสมคะแนน
+                    </p>
                   </div>
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    สร้างภารกิจท้าทายให้คอมมูนิตี้ทำร่วมกัน เช่น วิ่งสะสม 10km, ตะลุย 3 คาเฟ่อารีย์ เพื่อปลดล็อก Badge และสะสมคะแนน
-                  </p>
                 </div>
-                <div className="pt-4 flex items-center justify-between text-xs font-black text-purple-700">
-                  <span>สร้างเควสต์ ➔</span>
-                  <span className="text-[10px] text-slate-400 font-normal">แจกแต้ม & เหรียญ</span>
-                </div>
-              </div>
+              )}
 
-            </div>
-
-            {/* Role quick toggle helper banner */}
-            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-2 text-xs">
-              <span className="text-slate-600 font-medium">
-                บทบาทปัจจุบันของคุณ: <strong className="text-slate-900">{userProfile.name} ({userProfile.role})</strong>
-              </span>
-              <div className="flex items-center gap-1.5">
-                {(['member', 'host', 'organizer', 'venue_owner', 'admin'] as const).map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => {
-                      handleSetRole(r);
-                      setErrorMessage(null);
-                    }}
-                    className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
-                      userProfile.role === r
-                        ? 'bg-slate-900 text-white shadow-2xs'
-                        : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-200'
-                    }`}
-                  >
-                    {r === 'member' ? '👤 Member' :
-                     r === 'host' ? '🌟 Host' :
-                     r === 'organizer' ? '🏢 Organizer' :
-                     r === 'venue_owner' ? '📍 Space Owner' : '🛡️ Super Admin'}
-                  </button>
-                ))}
-              </div>
             </div>
           </div>
         )}
@@ -845,6 +896,34 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
         {step === 2 && (
           <form id="create-event-form" onSubmit={(e) => { e.preventDefault(); handleProceedToStep3(); }} className="space-y-5 py-1 animate-fade-in text-left">
             
+            {/* DRAFT RECOVERY NOTIFICATION */}
+            {hasDraft && (
+              <div className="p-3.5 rounded-2xl bg-amber-50/90 border border-amber-200/80 flex items-center justify-between gap-3 text-xs text-amber-900 animate-slide-down shadow-2xs">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>
+                    <strong>พบข้อมูลร่างที่เคยพิมพ์ไว้:</strong> คุณสามารถกู้คืนข้อมูลร่างสำหรับหมวดหมู่นี้ได้ทันที
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={restoreDraft}
+                    className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold shadow-2xs transition-all active:scale-95 cursor-pointer"
+                  >
+                    กู้คืนข้อมูล
+                  </button>
+                  <button
+                    type="button"
+                    onClick={clearDraft}
+                    className="px-2.5 py-1 bg-white hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-xl font-bold transition-all cursor-pointer"
+                  >
+                    ล้างร่าง
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Error Message banner in Step 2 if any validation fails */}
             {errorMessage && (
               <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-xs font-bold text-rose-700 flex items-start gap-2.5 animate-scale-up">
@@ -933,10 +1012,10 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                         onChange={(e) => setQuestMoodCategory(e.target.value as any)}
                         className="w-full px-3 py-2 rounded-2xl bg-white border border-slate-200 text-xs font-bold text-slate-700 outline-none shadow-xs cursor-pointer"
                       >
-                        <option value="chill">☕ ชิลล์ / คาเฟ่</option>
-                        <option value="move">🏃‍♂️ ขยับกาย / สปอร์ต</option>
-                        <option value="heal">🌱 ฮีลใจ / ธรรมชาติ</option>
-                        <option value="learn">🎨 เรียนรู้ / เวิร์กช็อป</option>
+                        <option value="chill">ชิลล์ / คาเฟ่</option>
+                        <option value="move">ขยับกาย / สปอร์ต</option>
+                        <option value="heal">ฮีลใจ / ธรรมชาติ</option>
+                        <option value="learn">เรียนรู้ / เวิร์กช็อป</option>
                       </select>
                     </div>
                   </div>
@@ -986,6 +1065,24 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                         />
                       </div>
                     </div>
+                  </div>
+
+                  {/* Challenge Target Area & Location */}
+                  <div className="pt-2 border-t border-slate-200/60 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-800">
+                        พื้นที่เป้าหมาย / ย่านที่ทำภารกิจ <span className="text-rose-500">*</span>
+                      </label>
+                      <span className="text-[10px] text-slate-400">{locationName.length}/80</span>
+                    </div>
+                    <input
+                      type="text"
+                      required
+                      value={locationName}
+                      onChange={(e) => setLocationName(e.target.value)}
+                      placeholder="เช่น คาเฟ่ย่านอารีย์, สวนสาธารณะทั่วกรุงเทพฯ"
+                      className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium focus:border-[#4A7C59] outline-none"
+                    />
                   </div>
                 </div>
 
@@ -1252,10 +1349,10 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                         onChange={(e) => setCommunityCategory(e.target.value as any)}
                         className="w-full px-3 py-2.5 rounded-2xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:outline-none cursor-pointer"
                       >
-                        <option value="chill">☕ จิบกาแฟ & ชิลล์</option>
-                        <option value="move">🏃 ขยับกาย & กีฬา</option>
-                        <option value="heal">🌱 ฮีลใจ & สมาธิ</option>
-                        <option value="learn">🎨 ศิลปะ & เวิร์กช็อป</option>
+                        <option value="chill">จิบกาแฟ & ชิลล์</option>
+                        <option value="move">ขยับกาย & กีฬา</option>
+                        <option value="heal">ฮีลใจ & สมาธิ</option>
+                        <option value="learn">ศิลปะ & เวิร์กช็อป</option>
                       </select>
                     )}
                     {entityType === 'fair' && (
@@ -1276,18 +1373,9 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                         className="w-full px-3 py-2.5 rounded-2xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:outline-none cursor-pointer"
                       >
                         {SPOT_VIBE_CATEGORIES.map(c => (
-                          <option key={c.id} value={c.id}>{c.icon} {c.label}</option>
+                          <option key={c.id} value={c.id}>{c.label}</option>
                         ))}
                       </select>
-                    )}
-                    {entityType === 'challenge' && (
-                      <input
-                        type="text"
-                        value={questBadgeName}
-                        onChange={(e) => setQuestBadgeName(e.target.value)}
-                        placeholder="ชื่อเหรียญรางวัล"
-                        className="w-full px-3 py-2.5 rounded-2xl border border-slate-200 text-xs font-bold outline-none"
-                      />
                     )}
                   </div>
                 </div>
@@ -1669,23 +1757,23 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                     <div className="space-y-2 pt-1 border-t border-slate-200/80">
                       <div>
                         <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                          🚗 สไตล์การเดินทาง (Transportation):
+                          สไตล์การเดินทาง (Transportation):
                         </label>
                         <select
                           value={transportation}
                           onChange={(e) => setTransportation(e.target.value)}
                           className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 outline-none cursor-pointer"
                         >
-                          <option value="พบกัน ณ จุดนัดพบ (เดินทางอิสระ)">📍 พบกัน ณ จุดนัดพบ (เดินทางอิสระ)</option>
-                          <option value="เดินทางด้วย BTS / MRT">🚇 เดินทางด้วย BTS / MRT</option>
-                          <option value="มีรถยนต์ส่วนตัว (รับเพื่อนร่วมทางได้)">🚗 มีรถยนต์ส่วนตัว (รับเพื่อนร่วมทางได้ / Carpool)</option>
-                          <option value="แชร์ค่ารถ / แท็กซี่ไปด้วยกัน">🚕 แชร์ค่ารถ / แท็กซี่ไปด้วยกัน</option>
+                          <option value="พบกัน ณ จุดนัดพบ (เดินทางอิสระ)">พบกัน ณ จุดนัดพบ (เดินทางอิสระ)</option>
+                          <option value="เดินทางด้วย BTS / MRT">เดินทางด้วย BTS / MRT</option>
+                          <option value="มีรถยนต์ส่วนตัว (รับเพื่อนร่วมทางได้ / Carpool)">มีรถยนต์ส่วนตัว (รับเพื่อนร่วมทางได้ / Carpool)</option>
+                          <option value="แชร์ค่ารถ / แท็กซี่ไปด้วยกัน">แชร์ค่ารถ / แท็กซี่ไปด้วยกัน</option>
                         </select>
                       </div>
 
                       <div>
                         <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                          💬 ช่องทางติดต่อกลุ่มหลังกดเข้าร่วม (Group Contact):
+                          ช่องทางติดต่อกลุ่มหลังกดเข้าร่วม (Group Contact):
                         </label>
                         <input
                           type="text"
@@ -1955,7 +2043,6 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                     {entityType === 'community' && 'กิจกรรมคอมมูนิตี้'}
                     {entityType === 'fair' && 'งานมหกรรม & เอ็กซ์โป'}
                     {entityType === 'spot' && 'พิกัดเที่ยว & สเปซฮีลใจ'}
-                    {entityType === 'challenge' && 'เควสต์ & ชาเลนจ์'}
                   </span>
                   <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xs text-white">
                     {price || 'ฟรี'}
@@ -1982,7 +2069,6 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                       {entityType === 'community' && `${communityDate} • ${startTime} - ${endTime} น.`}
                       {entityType === 'fair' && `${fairStartDate} ถึง ${fairEndDate}`}
                       {entityType === 'spot' && `${spotOpenHours}`}
-                      {entityType === 'challenge' && `สะสม ${questRewardPoints} EXP`}
                     </strong>
                   </div>
                   {entityType === 'community' && (
@@ -2086,80 +2172,71 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
           </div>
         )}
 
-        {/* Footer Navigation Buttons */}
-        <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-          <div>
-            {step > 1 && (
+        {/* Footer Navigation Buttons (Only shown for Step 2 and Step 3) */}
+        {step > 1 && (
+          <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+            <div>
+              {(step === 3 || ((isOrganizer || isAdmin) && step === 2)) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep((prev) => (prev - 1) as any);
+                    setErrorMessage(null);
+                  }}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
+                >
+                  ← ย้อนกลับ
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => {
-                  setStep((prev) => (prev - 1) as any);
-                  setErrorMessage(null);
-                }}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
+                onClick={handleModalClose}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition-all cursor-pointer"
               >
-                ← ย้อนกลับ
+                {(isOrganizer || isAdmin) && step > 1 ? 'ยกเลิก (กลับไปเลือกประเภท)' : 'ยกเลิก'}
               </button>
-            )}
+
+              {step === 2 && (
+                <button
+                  type="button"
+                  onClick={handleProceedToStep3}
+                  className="px-6 py-2.5 rounded-full bg-[#4A7C59] hover:bg-[#386144] text-white text-xs font-black transition-all shadow-md shadow-[#4A7C59]/20 cursor-pointer active:scale-95 flex items-center gap-1.5"
+                >
+                  <span>ตรวจสอบพรีวิว</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
+
+              {step === 3 && (
+                <button
+                  type="button"
+                  onClick={handleFormSubmit}
+                  disabled={isSubmitting || (!isSafetyAccepted && !isAdmin)}
+                  className={`px-8 py-2.5 rounded-full font-black text-xs transition-all flex items-center gap-2 shadow-md ${
+                    isSafetyAccepted || isAdmin
+                      ? 'bg-[#4A7C59] hover:bg-[#386144] text-white shadow-[#4A7C59]/25 cursor-pointer active:scale-95'
+                      : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+                  }`}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      <span>กำลังเผยแพร่...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>ยืนยัน & เผยแพร่ทันที</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition-all cursor-pointer"
-            >
-              ยกเลิก
-            </button>
-
-            {step === 1 && (
-              <button
-                type="button"
-                onClick={() => setStep(2)}
-                className="px-6 py-2.5 rounded-full bg-[#4A7C59] hover:bg-[#386144] text-white text-xs font-black transition-all shadow-md shadow-[#4A7C59]/20 cursor-pointer active:scale-95 flex items-center gap-1.5"
-              >
-                <span>ถัดไป: กรอกข้อมูล</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            )}
-
-            {step === 2 && (
-              <button
-                type="button"
-                onClick={handleProceedToStep3}
-                className="px-6 py-2.5 rounded-full bg-[#4A7C59] hover:bg-[#386144] text-white text-xs font-black transition-all shadow-md shadow-[#4A7C59]/20 cursor-pointer active:scale-95 flex items-center gap-1.5"
-              >
-                <span>ตรวจสอบพรีวิว</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            )}
-
-            {step === 3 && (
-              <button
-                type="button"
-                onClick={handleFormSubmit}
-                disabled={isSubmitting || (!isSafetyAccepted && !isAdmin)}
-                className={`px-8 py-2.5 rounded-full font-black text-xs transition-all flex items-center gap-2 shadow-md ${
-                  isSafetyAccepted || isAdmin
-                    ? 'bg-[#4A7C59] hover:bg-[#386144] text-white shadow-[#4A7C59]/25 cursor-pointer active:scale-95'
-                    : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
-                }`}
-              >
-                {isSubmitting ? (
-                  <>
-                    <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    <span>กำลังเผยแพร่...</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>ยืนยัน & เผยแพร่ทันที</span>
-                  </>
-                )}
-              </button>
-            )}
-          </div>
-        </div>
+        )}
 
       </div>
     </div>

@@ -180,10 +180,10 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
                 onChange={(e) => setCategory(e.target.value as any)}
                 className="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#4A7C59] outline-none bg-white font-medium"
               >
-                <option value="move">🏃 ขยับกาย (Move)</option>
-                <option value="heal">🌿 ฮีลใจ (Heal)</option>
-                <option value="chill">☕ ชิลล์ (Chill)</option>
-                <option value="learn">🎨 สร้างสรรค์ (Learn)</option>
+                <option value="move">ขยับกาย (Move)</option>
+                <option value="heal">ฮีลใจ (Heal)</option>
+                <option value="chill">ชิลล์ (Chill)</option>
+                <option value="learn">สร้างสรรค์ (Learn)</option>
               </select>
             </div>
 
@@ -194,12 +194,12 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
                 onChange={(e) => setIconName(e.target.value)}
                 className="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#4A7C59] outline-none bg-white font-medium"
               >
-                <option value="Sparkles">✨ ประกายดาว (Sparkles)</option>
-                <option value="Flame">🔥 เปลวไฟ (Flame)</option>
-                <option value="Target">🎯 เป้าหมาย (Target)</option>
-                <option value="Zap">⚡ สายฟ้าพลังงาน (Zap)</option>
-                <option value="Coffee">☕ กาแฟ (Coffee)</option>
-                <option value="Footprints">👣 รอยเท้า (Footprints)</option>
+                <option value="Sparkles">ประกายดาว (Sparkles)</option>
+                <option value="Flame">เปลวไฟ (Flame)</option>
+                <option value="Target">เป้าหมาย (Target)</option>
+                <option value="Zap">สายฟ้าพลังงาน (Zap)</option>
+                <option value="Coffee">กาแฟ (Coffee)</option>
+                <option value="Footprints">รอยเท้า (Footprints)</option>
               </select>
             </div>
           </div>

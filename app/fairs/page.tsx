@@ -12,6 +12,7 @@ import {
   Search,
   X,
   CheckCircle2,
+  PlusCircle,
 } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
@@ -195,6 +196,22 @@ function FairsPageContent() {
                 ศูนย์รวมงานแฟร์ใหญ่ นิทรรศการ เทศกาลเมือง และงานระดับภูมิภาคทั่วประเทศ
               </p>
             </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (!isLoggedIn) {
+                  setMembershipActionTitle('เพื่อสร้างงานมหกรรมหรือเอ็กซ์โป');
+                  setIsRequireMembershipOpen(true);
+                } else {
+                  setIsCreateEventModalOpen(true);
+                }
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#2B527A] hover:bg-[#1f3c5a] text-white rounded-xl text-xs font-bold shadow-xs hover:shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>สร้างงานมหกรรม / เอ็กซ์โป</span>
+            </button>
           </div>
         </div>
 
@@ -398,10 +415,11 @@ function FairsPageContent() {
 
       <CreateEventModal
         isOpen={isCreateEventModalOpen}
+        initialType="fair"
         onClose={() => setIsCreateEventModalOpen(false)}
         onCreateSuccess={(newEvent: EventItem) => {
           setEventsList([newEvent, ...eventsList]);
-          showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จ!`);
+          showToast(`สร้างงานมหกรรม "${newEvent.title}" สำเร็จ! 🎉`);
         }}
       />
 

@@ -74,6 +74,10 @@ The platform is structured into 3 core discovery pillars + 1 community engagemen
    - **Thumb**: Soft slate tint (`rgba(148, 163, 184, 0.35)`) and darkens softly to `rgba(100, 116, 139, 0.6)` on hover.
    - Maintain cross-browser compatibility using `scrollbar-width: thin` and `scrollbar-color`.
 
+7. **Icon & Emoji Usage Rules (Strict No Duplication & Clean Dropdowns)**:
+   - **NO Redundant / Duplicate Icons**: Never display duplicate icons or emojis side-by-side representing the same concept (e.g. duplicating Lucide icon + emoji in the same label, or rendering both icon and emoji in the same pill).
+   - **NO Emojis / Icons in `<select>` Dropdown Options**: All `<option>` items inside HTML `<select>` dropdowns must contain clean, plain text only (e.g. `<option value="chill">จิบกาแฟ & ชิลล์</option>` ✅ instead of `<option value="chill">☕ จิบกาแฟ & ชิลล์</option>` ❌). This guarantees uniform, accessible, and elegant cross-platform typography without misaligned OS emojis.
+
 ---
 
 ## 💾 3. Data Integrity & Persistence Rules

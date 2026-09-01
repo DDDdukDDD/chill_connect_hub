@@ -48,7 +48,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   userName = 'Jirathitigorn Maneekord',
   isAuthReady,
 }) => {
-  const { userProfile } = useAuth();
+  const { userProfile, handleSetRole } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -210,47 +210,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <span>โปรไฟล์ส่วนตัวของฉัน</span>
                       </Link>
 
-                      <Link
-                        href="/myhub"
-                        onClick={() => {
-                          setActiveTab('myhub');
-                          setIsProfileDropdownOpen(false);
-                        }}
-                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 hover:text-[#1E293B] transition-colors"
-                      >
-                        <Ticket className="w-4 h-4 text-[#4A7C59]" />
-                        <span>มายฮับ & ตั๋วของฉัน</span>
-                      </Link>
-
-                      <Link
-                        href="/moments?tab=mine"
-                        onClick={() => {
-                          setActiveTab('moments');
-                          setIsProfileDropdownOpen(false);
-                        }}
-                        className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-100 hover:text-[#1E293B] transition-colors"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <Camera className="w-4 h-4 text-[#F26430]" />
-                          <span>โมเมนต์ของฉัน (ความทรงจำ)</span>
-                        </div>
-                        <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">ส่วนตัว</span>
-                      </Link>
-
-                      {onOpenCreateEvent && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsProfileDropdownOpen(false);
-                            onOpenCreateEvent();
-                          }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-emerald-50 hover:text-[#4A7C59] transition-colors text-left"
-                        >
-                          <PlusCircle className="w-4 h-4 text-[#4A7C59]" />
-                          <span>สร้างกิจกรรม / เปิดตี้ใหม่</span>
-                        </button>
-                      )}
-
                       {/* Home Layout Mode Switcher */}
                       <div className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-2 mt-1">
                         <div className="flex items-center gap-2">
@@ -289,18 +248,37 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </div>
                       </div>
 
-                      <Link
-                        href="/admin"
-                        target="_blank"
-                        onClick={() => setIsProfileDropdownOpen(false)}
-                        className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-100 text-slate-700 transition-colors text-left"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <Bot className="w-4 h-4 text-emerald-600" />
-                          <span>Event Bot & AI Panel</span>
+                      {/* Role Switcher (Test / Preview Environment) */}
+                      <div className="px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5 mt-1">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-slate-500 font-bold flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3 text-[#4A7C59]" />
+                            <span>สลับบทบาท (Role)</span>
+                          </span>
+                          <span className="font-extrabold text-[#4A7C59] bg-[#EBF3ED] px-1.5 py-0.5 rounded text-[10px]">
+                            {userProfile.role}
+                          </span>
                         </div>
-                        <span className="text-[9px] font-extrabold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-md">Admin</span>
-                      </Link>
+                        <div className="grid grid-cols-3 gap-1">
+                          {(['member', 'host', 'organizer', 'venue_owner', 'admin'] as const).map((r) => (
+                            <button
+                              key={r}
+                              type="button"
+                              onClick={() => handleSetRole(r)}
+                              className={`py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer text-center ${
+                                userProfile.role === r
+                                  ? 'bg-slate-900 text-white shadow-2xs'
+                                  : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-200'
+                              }`}
+                            >
+                              {r === 'member' ? 'Member' :
+                               r === 'host' ? 'Host' :
+                               r === 'organizer' ? 'Organizer' :
+                               r === 'venue_owner' ? 'Space' : 'Admin'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
 
                     {/* Divider & Logout Button */}
@@ -484,6 +462,38 @@ export const Navbar: React.FC<NavbarProps> = ({
                   >
                     Classic
                   </button>
+                </div>
+              </div>
+
+              {/* Role Switcher in Mobile Drawer */}
+              <div className="p-3 bg-slate-100/80 rounded-2xl border border-slate-200/80 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-[#4A7C59]" />
+                    <span className="font-bold text-slate-700">สลับบทบาท (Role)</span>
+                  </div>
+                  <span className="font-extrabold text-[#4A7C59] bg-white px-2 py-0.5 rounded-lg border border-slate-200 text-[11px]">
+                    {userProfile.role}
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {(['member', 'host', 'organizer', 'venue_owner', 'admin'] as const).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => handleSetRole(r)}
+                      className={`py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer text-center ${
+                        userProfile.role === r
+                          ? 'bg-slate-900 text-white shadow-2xs'
+                          : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-200'
+                      }`}
+                    >
+                      {r === 'member' ? 'Member' :
+                       r === 'host' ? 'Host' :
+                       r === 'organizer' ? 'Organizer' :
+                       r === 'venue_owner' ? 'Space' : 'Admin'}
+                    </button>
+                  ))}
                 </div>
               </div>
 

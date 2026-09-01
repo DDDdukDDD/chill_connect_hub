@@ -426,10 +426,11 @@ function CommunityPageContent() {
 
       <CreateEventModal
         isOpen={isCreateEventModalOpen}
+        initialType="community"
         onClose={() => setIsCreateEventModalOpen(false)}
         onCreateSuccess={(newEvent: EventItem) => {
           setEventsList([newEvent, ...eventsList]);
-          showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จ!`);
+          showToast(`เปิดตี้กิจกรรม "${newEvent.title}" สำเร็จ! 🎉`);
         }}
       />
 

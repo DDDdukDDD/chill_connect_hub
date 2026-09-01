@@ -846,11 +846,11 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                         onChange={(e) => setSubMaxMembers(Number(e.target.value))}
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-[#1E293B] focus:outline-none focus:border-[#4A7C59]"
                       >
-                        <option value={2}>👥 2 คน (เดินคู่สบายๆ)</option>
-                        <option value={3}>👥 3 คน</option>
-                        <option value={4}>👥 4 คน (แนะนำกลุ่มเล็ก)</option>
-                        <option value={6}>👥 6 คน</option>
-                        <option value={8}>👥 8 คน</option>
+                        <option value={2}>2 คน (เดินคู่สบายๆ)</option>
+                        <option value={3}>3 คน</option>
+                        <option value={4}>4 คน (แนะนำกลุ่มเล็ก)</option>
+                        <option value={6}>6 คน</option>
+                        <option value={8}>8 คน</option>
                       </select>
                     </div>
 
@@ -861,9 +861,9 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                         onChange={(e) => setSubTargetGender(e.target.value as any)}
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-[#1E293B] focus:outline-none focus:border-[#4A7C59]"
                       >
-                        <option value="all">👥 ทุกเพศ (All Genders)</option>
-                        <option value="female_only">👩 เฉพาะผู้หญิง (Women Only Safe Zone)</option>
-                        <option value="male_only">👨 เฉพาะผู้ชาย (Men Only)</option>
+                        <option value="all">ทุกเพศ (All Genders)</option>
+                        <option value="female_only">เฉพาะผู้หญิง (Women Only Safe Zone)</option>
+                        <option value="male_only">เฉพาะผู้ชาย (Men Only)</option>
                       </select>
                     </div>
                   </div>
