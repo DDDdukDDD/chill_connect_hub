@@ -1,11 +1,34 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Search, X, Dices, Sparkles, MapPin, Zap, Award, ArrowRight, Camera } from 'lucide-react';
-import { ALL_THAI_PROVINCES } from '@/data/spotsData';
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  Search, 
+  X, 
+  Dices, 
+  Sparkles, 
+  MapPin, 
+  Zap, 
+  Award, 
+  ArrowRight, 
+  Camera,
+  Compass,
+  Trees,
+  Mountain,
+  Waves,
+  Coffee,
+  Landmark,
+  Palette,
+  Flame,
+  Building2,
+  Calendar,
+  ChevronRight,
+  ShoppingBag,
+  ExternalLink,
+} from 'lucide-react';
+import { ALL_THAI_PROVINCES, MOCK_SPOTS, LifestyleSpotItem } from '@/data/spotsData';
 import { COMMUNITY_PUBLIC_QUESTS } from '@/components/CommunityChallengeBar';
 import { JoinChallengeModal } from '@/components/JoinChallengeModal';
-import { ChallengeQuest, MOCK_POSTS } from '@/data/mockData';
+import { ChallengeQuest, MOCK_EVENTS, EventItem } from '@/data/mockData';
 import Link from 'next/link';
 
 export type HeroVersion = 'editorial' | 'classic';
@@ -103,32 +126,439 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     }
   };
 
-  // 1. พิกัดเที่ยว & จุดฮีลใจทั่วไทย (Nationwide Spots)
-  const SPOT_SUGGESTIONS = [
-    { label: 'ภูเขา & ทะเลหมอก', query: 'เขา', sub: 'ดอยอินทนนท์, เขาค้อ, น่าน, แม่ฮ่องสอน' },
-    { label: 'ทะเล & เกาะสวยทั่วไทย', query: 'ทะเล', sub: 'ภูเก็ต, กระบี่, เกาะสมุย, ชลบุรี, หัวหิน' },
-    { label: 'ป่าธรรมชาติ & แคมปิ้ง', query: 'ป่า', sub: 'เขาใหญ่, สวนเบญจกิติ, กาญจนบุรี, อุทยานแห่งชาติ' },
-    { label: 'คาเฟ่ & สเปซนั่งชิลล์', query: 'คาเฟ่', sub: 'สโลว์บาร์, อารีย์, ทรงวาด, เชียงใหม่' },
-    { label: 'ย่านเก่า & วิถีชุมชน', query: 'ย่านเก่า', sub: 'ตลาดน้อย, ภูเก็ตโอลด์ทาวน์, อยุธยา, เชียงคาน' },
-    { label: 'หอศิลป์ & สเปซศิลปะ', query: 'หอศิลป์', sub: 'BACC, MOCA Bangkok, แกลเลอรีสร้างสรรค์' },
+  // =========================================================================
+  // 🌟 Discovery Pillars Taxonomy Data (for Empty Search Suggestions Directory)
+  // =========================================================================
+  const PILLAR_SPOT_CATEGORIES = [
+    { label: 'ภูเขา & ทะเลหมอก', query: 'เขา', icon: Mountain, sub: 'ดอย, เขาค้อ, น่าน, ชมวิว' },
+    { label: 'ทะเล & เกาะสวย', query: 'ทะเล', icon: Waves, sub: 'ภูเก็ต, กระบี่, เกาะสมุย, หาด' },
+    { label: 'ป่าธรรมชาติ & กางเต็นท์', query: 'ป่า', icon: Trees, sub: 'เขาใหญ่, กางเต็นท์, เดินป่า' },
+    { label: 'คาเฟ่ & สเปซนั่งชิลล์', query: 'คาเฟ่', icon: Coffee, sub: 'สโลว์บาร์, ดริปกาแฟ, นั่งชิลล์' },
+    { label: 'ย่านเก่า & วิถีชุมชน', query: 'ย่านเก่า', icon: Landmark, sub: 'ตลาดน้อย, ภูเก็ตเมืองเก่า, อยุธยา' },
+    { label: 'หอศิลป์ & สเปซศิลปะ', query: 'หอศิลป์', icon: Palette, sub: 'BACC, MOCA, แกลเลอรีสร้างสรรค์' },
+    { label: 'สปา & จุดฮีลใจ', query: 'สปา', icon: Sparkles, sub: 'ออนเซ็น, สมาธิ, ผ่อนคลาย' },
   ];
 
-  // 2. กิจกรรมคอมมูนิตี้ & ตี้เพื่อนใหม่ (Community Meetups)
-  const COMMUNITY_SUGGESTIONS = [
-    { label: 'งานวิ่ง & ฟิตเนส', query: 'วิ่ง', sub: 'ซิตี้รันสวนลุมฯ, ซ้อมวิ่งมาราธอน, HYROX' },
-    { label: 'ฮีลใจ & สมาธิ', query: 'sound bath', sub: 'Sound Healing, โยคะสวน, พักผ่อนใจ' },
-    { label: 'บอร์ดเกม & ปาร์ตี้เพื่อนใหม่', query: 'บอร์ดเกม', sub: 'ปาร์ตี้บอร์ดเกม, Catan, Pub Quiz' },
-    { label: 'เวิร์กช็อปศิลปะ & คราฟต์', query: 'workshop', sub: 'ปั้นเซรามิก, วาดภาพสีน้ำ, ถักพรม' },
-    { label: 'ท่องเที่ยว & เอาต์ดอร์', query: 'outdoor', sub: 'พายคายัค, ซับบอร์ด, กางเต็นท์, เดินป่า' },
+  const PILLAR_COMMUNITY_CATEGORIES = [
+    { label: 'งานวิ่ง & ฟิตเนส', query: 'วิ่ง', icon: Flame, sub: 'ซิตี้รัน, มาราธอน, HYROX, กีฬา' },
+    { label: 'ฮีลใจ & สมาธิ', query: 'sound bath', icon: Sparkles, sub: 'Sound Healing, โยคะ, พักผ่อนใจ' },
+    { label: 'คาเฟ่ & พบปะชิลล์', query: 'กาแฟ', icon: Coffee, sub: 'Slow Bar, จิบกาแฟ, นัดคุย' },
+    { label: 'บอร์ดเกม & ปาร์ตี้', query: 'บอร์ดเกม', icon: Dices, sub: 'ปาร์ตี้บอร์ดเกม, Catan, Pub Quiz' },
+    { label: 'ศิลปะ & งานคราฟต์', query: 'workshop', icon: Palette, sub: 'ปั้นเซรามิก, วาดภาพสีน้ำ, คราฟต์' },
+    { label: 'ท่องเที่ยว & เอาต์ดอร์', query: 'outdoor', icon: Trees, sub: 'พายคายัค, ซับบอร์ด, แคมปิ้ง' },
+    { label: 'ทักษะ & เทคโนโลยี', query: 'tech', icon: Award, sub: 'Tech Meetup, Coding, AI, ธุรกิจ' },
+    { label: 'สัตว์เลี้ยง & ครอบครัว', query: 'สัตว์เลี้ยง', icon: Compass, sub: 'พาน้องหมาแมวเที่ยว, นัดมีทติ้ง' },
   ];
 
-  // 3. งานมหกรรม นิทรรศการ & เอ็กซ์โป (Major Fairs)
-  const FAIR_SUGGESTIONS = [
-    { label: 'ศูนย์การประชุมแห่งชาติสิริกิติ์ (QSNCC)', query: 'สิริกิติ์', sub: 'สัปดาห์หนังสือ, มหกรรมความรู้, คอนเสิร์ต' },
-    { label: 'ไบเทค บางนา (BITEC)', query: 'ไบเทค', sub: 'มหกรรมสินค้า, Comic Con, Expo' },
-    { label: 'อิมแพ็ค เมืองทองธานี (IMPACT)', query: 'อิมแพ็ค', sub: 'งานแสดงสินค้า, เทศกาลอาหาร, คอนเสิร์ตใหญ่' },
-    { label: 'เทศกาลเมือง & งานศิลป์', query: 'เทศกาล', sub: 'Design Week, Biennale, เทศกาลสร้างสรรค์' },
+  const PILLAR_FAIR_CATEGORIES = [
+    { label: 'ศูนย์ประชุม & ฮอลล์ใหญ่', query: 'สิริกิติ์', icon: Building2, sub: 'QSNCC, ไบเทค บางนา, อิมแพ็ค' },
+    { label: 'เทศกาลเมือง & งานศิลป์', query: 'เทศกาล', icon: Palette, sub: 'Design Week, Biennale, งานศิลป์' },
+    { label: 'งานวิ่งมาราธอน & กีฬา', query: 'มาราธอน', icon: Flame, sub: 'วิ่งผ่าเมือง, ไตรกีฬา, แข่งขัน' },
+    { label: 'งานประเพณี & งานประจำปี', query: 'ประเพณี', icon: Landmark, sub: 'งานกาชาด, เกษตรแฟร์, งานวัด' },
+    { label: 'ตลาดนัด & คราฟต์แฟร์', query: 'ตลาดนัด', icon: ShoppingBag, sub: 'Flea Market, สินค้าทำมือ, Art Toy' },
+    { label: 'สวนสาธารณะ & ลานดนตรี', query: 'ดนตรีในสวน', icon: Trees, sub: 'ดนตรีในสวน, Open-Air, คอนเสิร์ต' },
   ];
+
+  // =========================================================================
+  // 🔍 Dynamic Predictive Search Filters (Matched against real entities)
+  // =========================================================================
+  const trimmedQuery = searchQuery.trim().toLowerCase();
+  const isTyping = trimmedQuery.length > 0;
+
+  const matchedSpots = useMemo(() => {
+    if (!isTyping) return [];
+    return MOCK_SPOTS.filter((s) => {
+      return (
+        s.title?.toLowerCase().includes(trimmedQuery) ||
+        s.province?.toLowerCase().includes(trimmedQuery) ||
+        s.district?.toLowerCase().includes(trimmedQuery) ||
+        s.categoryLabel?.toLowerCase().includes(trimmedQuery) ||
+        s.vibeTags?.some((v) => v.toLowerCase().includes(trimmedQuery)) ||
+        s.description?.toLowerCase().includes(trimmedQuery)
+      );
+    }).slice(0, 4);
+  }, [trimmedQuery, isTyping]);
+
+  const matchedCommunity = useMemo(() => {
+    if (!isTyping) return [];
+    return MOCK_EVENTS.filter((e) => {
+      if (e.eventType === 'public_venue') return false;
+      return (
+        e.title?.toLowerCase().includes(trimmedQuery) ||
+        e.location?.toLowerCase().includes(trimmedQuery) ||
+        e.tag?.toLowerCase().includes(trimmedQuery) ||
+        e.province?.toLowerCase().includes(trimmedQuery) ||
+        e.hostName?.toLowerCase().includes(trimmedQuery) ||
+        e.description?.toLowerCase().includes(trimmedQuery)
+      );
+    }).slice(0, 4);
+  }, [trimmedQuery, isTyping]);
+
+  const matchedFairs = useMemo(() => {
+    if (!isTyping) return [];
+    return MOCK_EVENTS.filter((e) => {
+      if (e.eventType !== 'public_venue') return false;
+      return (
+        e.title?.toLowerCase().includes(trimmedQuery) ||
+        e.location?.toLowerCase().includes(trimmedQuery) ||
+        e.tag?.toLowerCase().includes(trimmedQuery) ||
+        e.province?.toLowerCase().includes(trimmedQuery) ||
+        e.venueTag?.toLowerCase().includes(trimmedQuery) ||
+        e.hostName?.toLowerCase().includes(trimmedQuery) ||
+        e.description?.toLowerCase().includes(trimmedQuery)
+      );
+    }).slice(0, 4);
+  }, [trimmedQuery, isTyping]);
+
+  const totalMatches = matchedSpots.length + matchedCommunity.length + matchedFairs.length;
+
+  const renderSearchSuggestions = () => {
+    if (!isFocused) return null;
+
+    return (
+      <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200/90 z-50 text-left animate-fade-in max-h-[460px] overflow-y-auto divide-y divide-slate-100">
+        {/* CASE 1: Typing state (Dynamic Live Predictive Search grouped by 3 Core Pillars) */}
+        {isTyping ? (
+          <div className="p-2.5 sm:p-3 space-y-3">
+            {totalMatches === 0 ? (
+              <div className="py-6 px-4 text-center bg-slate-50/80 rounded-xl border border-dashed border-slate-200 space-y-2">
+                <p className="text-xs sm:text-sm font-bold text-slate-700">
+                  ไม่พบผลลัพธ์ที่ตรงกับ &ldquo;{searchQuery}&rdquo;
+                </p>
+                <p className="text-xs text-slate-400 max-w-md mx-auto">
+                  ลองค้นหาด้วยคำสำคัญ เช่น คาเฟ่, วิ่ง, สวน, ทะเล หรือกดปุ่มค้นหาเพื่อดูผลทั้งหมดในระบบ
+                </p>
+                <button
+                  type="button"
+                  onMouseDown={() => setSearchQuery('')}
+                  className="mt-2 text-xs font-bold text-[#4A7C59] hover:underline cursor-pointer"
+                >
+                  ล้างคำค้นหา
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* 1. 🌲 พิกัดเที่ยวที่พบ (Spots) */}
+                {matchedSpots.length > 0 && (
+                  <div className="space-y-1">
+                    <div className="px-2 py-1 flex items-center justify-between">
+                      <span className="text-[11px] font-extrabold text-[#2D5A3C] uppercase tracking-wider flex items-center gap-1.5">
+                        <Mountain className="w-3.5 h-3.5 text-[#4A7C59]" />
+                        <span>พิกัดเที่ยว & จุดฮีลใจ</span>
+                      </span>
+                      <span className="text-[10px] font-bold text-[#2D5A3C] bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
+                        พบ {matchedSpots.length} แห่ง
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      {matchedSpots.map((spot) => (
+                        <Link
+                          key={`matched-spot-${spot.id}`}
+                          href={`/spots/${spot.id}`}
+                          onMouseDown={() => setIsFocused(false)}
+                          className="flex items-center gap-3 p-2 rounded-xl hover:bg-[#EBF3ED]/70 transition-colors group cursor-pointer"
+                        >
+                          <img
+                            src={spot.image}
+                            alt={spot.title}
+                            className="w-10 h-10 rounded-lg object-cover bg-slate-100 shrink-0 border border-slate-200/60"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="font-bold text-xs text-slate-800 group-hover:text-[#2D5A3C] truncate">
+                              {spot.title}
+                            </p>
+                            <p className="text-[11px] text-slate-400 truncate flex items-center gap-1.5 mt-0.5">
+                              <span>{spot.province}</span>
+                              <span>•</span>
+                              <span>{spot.categoryLabel || spot.vibeTags?.[0] || 'พิกัดเที่ยว'}</span>
+                              {spot.openHours && (
+                                <>
+                                  <span>•</span>
+                                  <span>{spot.openHours}</span>
+                                </>
+                              )}
+                            </p>
+                          </div>
+                          <span className="text-[10px] font-bold text-[#2D5A3C] bg-[#EBF3ED] px-2 py-1 rounded-md shrink-0 border border-emerald-100 group-hover:border-emerald-200 flex items-center gap-1">
+                            <span>ดูพิกัด</span>
+                            <ChevronRight className="w-3 h-3 text-[#4A7C59]" />
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. 👥 กิจกรรมคอมมูนิตี้ที่พบ (Community) */}
+                {matchedCommunity.length > 0 && (
+                  <div className="space-y-1 pt-2 border-t border-slate-100">
+                    <div className="px-2 py-1 flex items-center justify-between">
+                      <span className="text-[11px] font-extrabold text-[#C2410C] uppercase tracking-wider flex items-center gap-1.5">
+                        <Flame className="w-3.5 h-3.5 text-[#F26430]" />
+                        <span>กิจกรรมคอมมูนิตี้ & ตี้เพื่อนใหม่</span>
+                      </span>
+                      <span className="text-[10px] font-bold text-[#C2410C] bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200/60">
+                        พบ {matchedCommunity.length} กิจกรรม
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      {matchedCommunity.map((comm) => (
+                        <Link
+                          key={`matched-comm-${comm.id}`}
+                          href={`/community/${comm.id}`}
+                          onMouseDown={() => setIsFocused(false)}
+                          className="flex items-center gap-3 p-2 rounded-xl hover:bg-orange-50/70 transition-colors group cursor-pointer"
+                        >
+                          <img
+                            src={comm.image}
+                            alt={comm.title}
+                            className="w-10 h-10 rounded-lg object-cover bg-slate-100 shrink-0 border border-slate-200/60"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="font-bold text-xs text-slate-800 group-hover:text-[#C2410C] truncate">
+                              {comm.title}
+                            </p>
+                            <p className="text-[11px] text-slate-400 truncate flex items-center gap-1.5 mt-0.5">
+                              <span>{comm.province || comm.location}</span>
+                              <span>•</span>
+                              <span>{comm.date}</span>
+                              {comm.hostName && (
+                                <>
+                                  <span>•</span>
+                                  <span>โดย {comm.hostName}</span>
+                                </>
+                              )}
+                            </p>
+                          </div>
+                          <span className="text-[10px] font-bold text-[#C2410C] bg-orange-50 px-2 py-1 rounded-md shrink-0 border border-orange-100 group-hover:border-orange-200 flex items-center gap-1">
+                            <span>ดูกิจกรรม</span>
+                            <ChevronRight className="w-3 h-3 text-[#F26430]" />
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. 🏛️ งานมหกรรม & เอ็กซ์โปที่พบ (Fairs) */}
+                {matchedFairs.length > 0 && (
+                  <div className="space-y-1 pt-2 border-t border-slate-100">
+                    <div className="px-2 py-1 flex items-center justify-between">
+                      <span className="text-[11px] font-extrabold text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
+                        <Building2 className="w-3.5 h-3.5 text-blue-700" />
+                        <span>งานมหกรรม & เอ็กซ์โป</span>
+                      </span>
+                      <span className="text-[10px] font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200/60">
+                        พบ {matchedFairs.length} งาน
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      {matchedFairs.map((fair) => (
+                        <Link
+                          key={`matched-fair-${fair.id}`}
+                          href={`/fairs/${fair.id}`}
+                          onMouseDown={() => setIsFocused(false)}
+                          className="flex items-center gap-3 p-2 rounded-xl hover:bg-blue-50/70 transition-colors group cursor-pointer"
+                        >
+                          <img
+                            src={fair.image}
+                            alt={fair.title}
+                            className="w-10 h-10 rounded-lg object-cover bg-slate-100 shrink-0 border border-slate-200/60"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="font-bold text-xs text-slate-800 group-hover:text-blue-900 truncate">
+                              {fair.title}
+                            </p>
+                            <p className="text-[11px] text-slate-400 truncate flex items-center gap-1.5 mt-0.5">
+                              <span>{fair.location}</span>
+                              <span>•</span>
+                              <span>{fair.date}</span>
+                            </p>
+                          </div>
+                          <span className="text-[10px] font-bold text-blue-900 bg-blue-50 px-2 py-1 rounded-md shrink-0 border border-blue-100 group-hover:border-blue-200 flex items-center gap-1">
+                            <span>ดูงานแฟร์</span>
+                            <ChevronRight className="w-3 h-3 text-blue-700" />
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Action Row: Full Search Submit */}
+            <div className="pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onMouseDown={() => {
+                  setIsFocused(false);
+                  if (onSearchSubmit) onSearchSubmit();
+                }}
+                className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-50 hover:bg-[#EBF3ED] text-slate-700 hover:text-[#2D5A3C] transition-all cursor-pointer group text-left border border-slate-200/70"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#4A7C59] shrink-0" />
+                  <span className="text-xs font-semibold truncate">
+                    ค้นหาคำว่า <strong className="font-bold text-slate-900 group-hover:text-[#2D5A3C]">&ldquo;{searchQuery}&rdquo;</strong> ในหน้าฟีดหลัก
+                  </span>
+                </div>
+                <span className="text-[10px] font-bold text-slate-500 bg-white group-hover:bg-[#4A7C59] group-hover:text-white px-2 py-0.5 rounded-md border border-slate-200 group-hover:border-transparent shrink-0">
+                  กด Enter ↵
+                </span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* CASE 2: Empty Query State (Complete 3 Core Pillars Directory in 2-Column Grid) */
+          <div className="p-2.5 sm:p-3 space-y-4">
+            <div className="px-1 pt-0.5 flex items-center justify-between border-b border-slate-100 pb-2">
+              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                <Compass className="w-3.5 h-3.5 text-[#4A7C59]" />
+                <span>สำรวจตามหมวดหมู่ 3 เสาหลัก (3 Discovery Pillars)</span>
+              </p>
+              <span className="text-[10px] text-slate-400 font-medium">คลิกเพื่อกรองค้นหา</span>
+            </div>
+
+            {/* 1. 🌲 พิกัดเที่ยว 7 ไวบ์ทั่วไทย (Spots & Chill) */}
+            <div className="space-y-2">
+              <div className="px-1 flex items-center justify-between">
+                <p className="text-[11px] font-black text-[#2D5A3C] uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#4A7C59]" />
+                  <span>พิกัดเที่ยว & จุดฮีลใจ 77 จังหวัด</span>
+                </p>
+                <span className="text-[10px] font-bold text-[#2D5A3C] bg-[#EBF3ED] px-2 py-0.5 rounded-md border border-emerald-200/50">
+                  7 ไวบ์ยอดนิยม
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                {PILLAR_SPOT_CATEGORIES.map((sug, idx) => {
+                  const IconComponent = sug.icon;
+                  return (
+                    <button
+                      key={`spot-cat-${idx}`}
+                      type="button"
+                      onMouseDown={() => {
+                        setSearchQuery(sug.query);
+                        setIsFocused(false);
+                        if (onSearchSubmit) onSearchSubmit();
+                      }}
+                      className="flex items-center justify-between gap-2 p-2 rounded-xl border border-slate-100 hover:border-emerald-200/90 hover:bg-[#EBF3ED]/70 text-left transition-all cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-6 h-6 rounded-lg bg-emerald-50 text-[#4A7C59] group-hover:bg-[#4A7C59] group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
+                          <IconComponent className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="text-xs font-bold text-slate-800 group-hover:text-[#2D5A3C] block truncate">
+                            {sug.label}
+                          </span>
+                          <span className="text-[10px] text-slate-400 block truncate">{sug.sub}</span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 group-hover:bg-white group-hover:text-[#2D5A3C] px-1.5 py-0.5 rounded shrink-0 border border-slate-200/60">
+                        {sug.query}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 2. 👥 กิจกรรมคอมมูนิตี้ & ตี้เพื่อนใหม่ (Community Meetups) */}
+            <div className="space-y-2 pt-2 border-t border-slate-100">
+              <div className="px-1 flex items-center justify-between">
+                <p className="text-[11px] font-black text-[#C2410C] uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#F26430]" />
+                  <span>กิจกรรมคอมมูนิตี้ & ตี้เพื่อนใหม่</span>
+                </p>
+                <span className="text-[10px] font-bold text-[#C2410C] bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200/50">
+                  8 สไตล์กิจกรรม
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                {PILLAR_COMMUNITY_CATEGORIES.map((sug, idx) => {
+                  const IconComponent = sug.icon;
+                  return (
+                    <button
+                      key={`comm-cat-${idx}`}
+                      type="button"
+                      onMouseDown={() => {
+                        setSearchQuery(sug.query);
+                        setIsFocused(false);
+                        if (onSearchSubmit) onSearchSubmit();
+                      }}
+                      className="flex items-center justify-between gap-2 p-2 rounded-xl border border-slate-100 hover:border-orange-200/90 hover:bg-orange-50/70 text-left transition-all cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-6 h-6 rounded-lg bg-orange-50 text-[#F26430] group-hover:bg-[#F26430] group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
+                          <IconComponent className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="text-xs font-bold text-slate-800 group-hover:text-[#C2410C] block truncate">
+                            {sug.label}
+                          </span>
+                          <span className="text-[10px] text-slate-400 block truncate">{sug.sub}</span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 group-hover:bg-white group-hover:text-[#C2410C] px-1.5 py-0.5 rounded shrink-0 border border-slate-200/60">
+                        {sug.query}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 3. 🏛️ งานมหกรรม นิทรรศการ & เอ็กซ์โป (Major Fairs & Venues) */}
+            <div className="space-y-2 pt-2 border-t border-slate-100">
+              <div className="px-1 flex items-center justify-between">
+                <p className="text-[11px] font-black text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-700" />
+                  <span>งานมหกรรม นิทรรศการ & เอ็กซ์โป</span>
+                </p>
+                <span className="text-[10px] font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200/50">
+                  6 ศูนย์จัดแสดง & ธีม
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                {PILLAR_FAIR_CATEGORIES.map((sug, idx) => {
+                  const IconComponent = sug.icon;
+                  return (
+                    <button
+                      key={`fair-cat-${idx}`}
+                      type="button"
+                      onMouseDown={() => {
+                        setSearchQuery(sug.query);
+                        setIsFocused(false);
+                        if (onSearchSubmit) onSearchSubmit();
+                      }}
+                      className="flex items-center justify-between gap-2 p-2 rounded-xl border border-slate-100 hover:border-blue-200/90 hover:bg-blue-50/70 text-left transition-all cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-6 h-6 rounded-lg bg-blue-50 text-blue-700 group-hover:bg-blue-700 group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
+                          <IconComponent className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="text-xs font-bold text-slate-800 group-hover:text-blue-900 block truncate">
+                            {sug.label}
+                          </span>
+                          <span className="text-[10px] text-slate-400 block truncate">{sug.sub}</span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 group-hover:bg-white group-hover:text-blue-900 px-1.5 py-0.5 rounded shrink-0 border border-slate-200/60">
+                        {sug.query}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <section className="relative z-30 pt-2 sm:pt-3 pb-1 sm:pb-2">
@@ -216,96 +646,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   </select>
                 </div>
 
-                {/* Auto-Suggest Dropdown (3 Distinct Categories: Spots, Community, Fairs) */}
-                {isFocused && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-slate-200/90 py-2.5 z-50 text-left animate-fade-in max-h-88 overflow-y-auto divide-y divide-slate-100">
-                    
-                    {/* 1. พิกัดเที่ยว & จุดฮีลใจทั่วไทย */}
-                    <div className="pb-2">
-                      <p className="px-4 py-1.5 text-[11px] font-extrabold text-[#4A7C59] uppercase tracking-wider flex items-center justify-between">
-                        <span>พิกัดเที่ยว & จุดฮีลใจ 77 จังหวัด</span>
-                        <span className="text-[10px] text-slate-400 font-medium">Spots & Chill</span>
-                      </p>
-                      {SPOT_SUGGESTIONS.map((sug, idx) => (
-                        <button
-                          key={`spot-${idx}`}
-                          type="button"
-                          onMouseDown={() => {
-                            setSearchQuery(sug.query);
-                            setIsFocused(false);
-                            if (onSearchSubmit) onSearchSubmit();
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-[#EBF3ED]/60 hover:text-[#2D5A3C] transition-colors cursor-pointer flex items-center justify-between gap-3 group"
-                        >
-                          <div className="min-w-0">
-                            <span className="font-semibold block truncate group-hover:text-[#2D5A3C]">{sug.label}</span>
-                            <span className="text-xs text-slate-400 block truncate">{sug.sub}</span>
-                          </div>
-                          <span className="text-[11px] text-slate-500 bg-slate-100 group-hover:bg-white group-hover:text-[#4A7C59] px-2 py-0.5 rounded-md font-medium shrink-0">
-                            {sug.query}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* 2. กิจกรรมคอมมูนิตี้ & ตี้เพื่อนใหม่ */}
-                    <div className="py-2">
-                      <p className="px-4 py-1.5 text-[11px] font-extrabold text-[#F26430] uppercase tracking-wider flex items-center justify-between">
-                        <span>กิจกรรมคอมมูนิตี้ & ตี้เพื่อนใหม่</span>
-                        <span className="text-[10px] text-slate-400 font-medium">Meetups & Buddies</span>
-                      </p>
-                      {COMMUNITY_SUGGESTIONS.map((sug, idx) => (
-                        <button
-                          key={`comm-${idx}`}
-                          type="button"
-                          onMouseDown={() => {
-                            setSearchQuery(sug.query);
-                            setIsFocused(false);
-                            if (onSearchSubmit) onSearchSubmit();
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-orange-50/60 hover:text-[#C2410C] transition-colors cursor-pointer flex items-center justify-between gap-3 group"
-                        >
-                          <div className="min-w-0">
-                            <span className="font-semibold block truncate group-hover:text-[#C2410C]">{sug.label}</span>
-                            <span className="text-xs text-slate-400 block truncate">{sug.sub}</span>
-                          </div>
-                          <span className="text-[11px] text-slate-500 bg-slate-100 group-hover:bg-white group-hover:text-[#F26430] px-2 py-0.5 rounded-md font-medium shrink-0">
-                            {sug.query}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* 3. งานมหกรรม นิทรรศการ & เอ็กซ์โป */}
-                    <div className="pt-2">
-                      <p className="px-4 py-1.5 text-[11px] font-extrabold text-blue-700 uppercase tracking-wider flex items-center justify-between">
-                        <span>งานมหกรรม นิทรรศการ & เอ็กซ์โป</span>
-                        <span className="text-[10px] text-slate-400 font-medium">Major Fairs & Expo</span>
-                      </p>
-                      {FAIR_SUGGESTIONS.map((sug, idx) => (
-                        <button
-                          key={`fair-${idx}`}
-                          type="button"
-                          onMouseDown={() => {
-                            setSearchQuery(sug.query);
-                            setIsFocused(false);
-                            if (onSearchSubmit) onSearchSubmit();
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-blue-50/60 hover:text-blue-900 transition-colors cursor-pointer flex items-center justify-between gap-3 group"
-                        >
-                          <div className="min-w-0">
-                            <span className="font-semibold block truncate group-hover:text-blue-900">{sug.label}</span>
-                            <span className="text-xs text-slate-400 block truncate">{sug.sub}</span>
-                          </div>
-                          <span className="text-[11px] text-slate-500 bg-slate-100 group-hover:bg-white group-hover:text-blue-700 px-2 py-0.5 rounded-md font-medium shrink-0">
-                            {sug.query}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-
-                  </div>
-                )}
+                {/* Auto-Suggest Dropdown (Dynamic Predictive & 3 Discovery Pillars Directory) */}
+                {renderSearchSuggestions()}
               </div>
 
               {/* Buttons */}
@@ -438,95 +780,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   </button>
                 </div>
 
-                {/* Auto-Suggest Dropdown (Classic Mode) */}
-                {isFocused && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 p-3 z-50 text-left space-y-3 animate-fade-in max-h-88 overflow-y-auto divide-y divide-slate-100">
-                    {/* 1. Spots */}
-                    <div className="space-y-1 pb-1">
-                      <p className="text-[11px] font-extrabold text-[#4A7C59] px-3 py-1 uppercase tracking-wider sticky top-0 bg-white z-10 flex items-center justify-between border-b border-emerald-100">
-                        <span>พิกัดเที่ยว & จุดฮีลใจ 77 จังหวัด</span>
-                        <span className="text-[10px] text-slate-400 font-medium">Spots & Chill</span>
-                      </p>
-                      {SPOT_SUGGESTIONS.map((sug, idx) => (
-                        <button
-                          key={`classic-spot-${idx}`}
-                          type="button"
-                          onMouseDown={() => {
-                            setSearchQuery(sug.query);
-                            setIsFocused(false);
-                            if (onSearchSubmit) onSearchSubmit();
-                          }}
-                          className="w-full text-left px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:bg-[#EBF3ED]/60 hover:text-[#2D5A3C] transition-colors cursor-pointer flex items-center justify-between gap-2 group"
-                        >
-                          <div className="min-w-0">
-                            <span className="font-bold block truncate group-hover:text-[#2D5A3C]">{sug.label}</span>
-                            <span className="text-xs text-slate-400 block truncate">{sug.sub}</span>
-                          </div>
-                          <span className="text-[11px] text-slate-500 bg-slate-100 group-hover:bg-white group-hover:text-[#4A7C59] px-2 py-0.5 rounded-md font-medium shrink-0">
-                            {sug.query}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* 2. Community */}
-                    <div className="space-y-1 py-1">
-                      <p className="text-[11px] font-extrabold text-[#F26430] px-3 py-1 uppercase tracking-wider sticky top-0 bg-white z-10 flex items-center justify-between border-b border-orange-100">
-                        <span>กิจกรรมคอมมูนิตี้ & ตี้เพื่อนใหม่</span>
-                        <span className="text-[10px] text-slate-400 font-medium">Meetups & Buddies</span>
-                      </p>
-                      {COMMUNITY_SUGGESTIONS.map((sug, idx) => (
-                        <button
-                          key={`classic-comm-${idx}`}
-                          type="button"
-                          onMouseDown={() => {
-                            setSearchQuery(sug.query);
-                            setIsFocused(false);
-                            if (onSearchSubmit) onSearchSubmit();
-                          }}
-                          className="w-full text-left px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:bg-orange-50/60 hover:text-[#C2410C] transition-colors cursor-pointer flex items-center justify-between gap-2 group"
-                        >
-                          <div className="min-w-0">
-                            <span className="font-bold block truncate group-hover:text-[#C2410C]">{sug.label}</span>
-                            <span className="text-xs text-slate-400 block truncate">{sug.sub}</span>
-                          </div>
-                          <span className="text-[11px] text-slate-500 bg-slate-100 group-hover:bg-white group-hover:text-[#F26430] px-2 py-0.5 rounded-md font-medium shrink-0">
-                            {sug.query}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* 3. Fairs */}
-                    <div className="space-y-1 pt-1">
-                      <p className="text-[11px] font-extrabold text-blue-700 px-3 py-1 uppercase tracking-wider sticky top-0 bg-white z-10 flex items-center justify-between border-b border-blue-100">
-                        <span>งานมหกรรม นิทรรศการ & เอ็กซ์โป</span>
-                        <span className="text-[10px] text-slate-400 font-medium">Major Fairs & Expo</span>
-                      </p>
-                      {FAIR_SUGGESTIONS.map((sug, idx) => (
-                        <button
-                          key={`classic-fair-${idx}`}
-                          type="button"
-                          onMouseDown={() => {
-                            setSearchQuery(sug.query);
-                            setIsFocused(false);
-                            if (onSearchSubmit) onSearchSubmit();
-                          }}
-                          className="w-full text-left px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:bg-blue-50/60 hover:text-blue-900 transition-colors cursor-pointer flex items-center justify-between gap-2 group"
-                        >
-                          <div className="min-w-0">
-                            <span className="font-bold block truncate group-hover:text-blue-900">{sug.label}</span>
-                            <span className="text-xs text-slate-400 block truncate">{sug.sub}</span>
-                          </div>
-                          <span className="text-[11px] text-slate-500 bg-slate-100 group-hover:bg-white group-hover:text-blue-700 px-2 py-0.5 rounded-md font-medium shrink-0">
-                            {sug.query}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-
-                  </div>
-                )}
+                {/* Auto-Suggest Dropdown (Dynamic Predictive & 3 Discovery Pillars Directory) */}
+                {renderSearchSuggestions()}
               </div>
 
               {/* Surprise Me */}
