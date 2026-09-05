@@ -1066,7 +1066,7 @@ export default function Home() {
                     href={`/community${selectedCategory ? `?category=${encodeURIComponent(selectedCategory)}` : ''}`}
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-[#F26430] text-[#F26430] hover:text-white border border-orange-200/80 hover:border-[#F26430] rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
                   >
-                    <span>สำรวจกิจกรรมชุมชนทั้งหมด ({streamCommunityEvents.length})</span>
+                    <span>สำรวจกิจกรรมคอมมูนิตี้ทั้งหมด ({streamCommunityEvents.length})</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
                   </Link>
                 </div>
@@ -1121,7 +1121,7 @@ export default function Home() {
                     href={`/fairs${selectedVenueFilter ? `?venue=${encodeURIComponent(selectedVenueFilter)}` : ''}`}
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-[#2B527A] text-[#2B527A] hover:text-white border border-blue-200/80 hover:border-[#2B527A] rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
                   >
-                    <span>ดูงานแฟร์ทั้งหมด ({streamPublicEvents.length})</span>
+                    <span>ดูงานทั้งหมด ({streamPublicEvents.length})</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
                   </Link>
                 </div>
