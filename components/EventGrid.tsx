@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { EventItem } from '@/data/mockData';
-import { Heart, Calendar, MapPin, Users, Star, CheckCircle2, Sparkles, Building2, Tag, RotateCcw, ExternalLink, Search } from 'lucide-react';
+import { Heart, Calendar, MapPin, Users, Star, CheckCircle2, Sparkles, Building2, Tag, RotateCcw, ExternalLink, Search, Globe, Repeat } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { isEventEnded } from '@/lib/dateUtils';
 
@@ -202,13 +202,33 @@ export const EventGrid: React.FC<EventGridProps> = ({
                     {/* Meta Info */}
                     <div className="space-y-1 text-xs text-slate-500">
                       <div className="flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span className="truncate">{event.date} • {event.time}</span>
+                        {event.scheduleType === 'recurring' ? (
+                          <Repeat className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        ) : (
+                          <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        )}
+                        <span className="truncate">
+                          {event.scheduleType === 'recurring' && event.recurrence?.customSummary
+                            ? `${event.recurrence.customSummary} • ${event.time}`
+                            : `${event.date} • ${event.time}`}
+                        </span>
                       </div>
 
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span className="truncate">{event.location}</span>
+                        {event.province === 'ออนไลน์' ? (
+                          <>
+                            <Globe className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+                            <span className="truncate text-sky-700 font-medium">ออนไลน์ • {event.location}</span>
+                          </>
+                        ) : (
+                          <>
+                            <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span className="truncate">
+                              {event.province ? `${event.province === 'กรุงเทพมหานคร' ? 'กรุงเทพฯ' : event.province.replace('จังหวัด', '')} • ` : ''}
+                              {event.location}
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>

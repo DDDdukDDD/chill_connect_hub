@@ -26,6 +26,8 @@ import {
   MapPin,
   Clock,
   Calendar,
+  Globe,
+  Repeat,
   Heart,
   Star,
   Share2,
@@ -590,8 +592,23 @@ export default function CommunityDetailPage() {
               </h1>
 
               <p className="text-xs sm:text-sm text-slate-500 font-medium flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-[#4A7C59] shrink-0" />
-                <span>{cleanText(eventData.location)}</span>
+                {eventData.locationType === 'online' || eventData.province === 'ออนไลน์' ? (
+                  <>
+                    <Globe className="w-4 h-4 text-sky-500 shrink-0" />
+                    <span className="text-sky-700 font-semibold">
+                      ออนไลน์ • {eventData.onlinePlatform ? eventData.onlinePlatform.toUpperCase() : 'Virtual Gathering'}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <MapPin className="w-4 h-4 text-[#4A7C59] shrink-0" />
+                    <span>
+                      {eventData.province && eventData.province !== 'ออนไลน์' && !eventData.location.includes(eventData.province)
+                        ? `${eventData.province} • ${cleanText(eventData.location)}`
+                        : cleanText(eventData.location)}
+                    </span>
+                  </>
+                )}
               </p>
             </div>
 
@@ -599,8 +616,20 @@ export default function CommunityDetailPage() {
             <div className="py-3.5 px-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2 text-xs sm:text-sm text-slate-700">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-slate-500 font-medium">วันที่จัดกิจกรรม:</span>
-                  <span className="font-bold text-slate-900">{cleanText(eventData.date)}</span>
+                  {eventData.scheduleType === 'recurring' ? (
+                    <>
+                      <Repeat className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span className="text-slate-500 font-medium">กำหนดการประจำ:</span>
+                      <span className="font-bold text-slate-900">
+                        {eventData.recurrence?.customSummary || cleanText(eventData.date)}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-slate-500 font-medium">วันที่จัดกิจกรรม:</span>
+                      <span className="font-bold text-slate-900">{cleanText(eventData.date)}</span>
+                    </>
+                  )}
                 </div>
                 <span className="hidden sm:inline text-slate-300">|</span>
                 <div className="flex items-center gap-2">
@@ -760,42 +789,88 @@ export default function CommunityDetailPage() {
               </ul>
             </div>
 
-            {/* 8. Transit & Map */}
+            {/* 8. Transit & Map OR Virtual Gathering Info */}
             <div className="space-y-4 pt-5 border-t border-slate-100">
-              <h2 className="text-base font-black text-slate-900 tracking-tight">
-                จุดนัดพบ & การเดินทาง
+              <h2 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
+                {eventData.locationType === 'online' || eventData.province === 'ออนไลน์' ? (
+                  <>
+                    <Globe className="w-4 h-4 text-sky-600" />
+                    <span>ช่องทางและแพลตฟอร์มกิจกรรมออนไลน์</span>
+                  </>
+                ) : (
+                  <span>จุดนัดพบ & การเดินทาง</span>
+                )}
               </h2>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-1">
-                <div className="space-y-1">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-                    รถสาธารณะ & รถไฟฟ้า
-                  </span>
-                  <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
-                    {cleanText(publicTransitText)}
+              {eventData.locationType === 'online' || eventData.province === 'ออนไลน์' ? (
+                <div className="p-5 rounded-2xl bg-sky-50/60 border border-sky-200/80 space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-bold text-sky-950">
+                    <span className="px-2.5 py-1 rounded-full bg-sky-100 text-sky-800 text-xs font-black uppercase tracking-wider">
+                      {eventData.onlinePlatform ? eventData.onlinePlatform.toUpperCase() : 'VIRTUAL'}
+                    </span>
+                    <span>รวมตัวผ่านแพลตฟอร์มออนไลน์</span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
+                    {eventData.meetingPoint || 'กิจกรรมนี้จัดในรูปแบบออนไลน์ สามารถเข้าร่วมพูดคุยและแลกเปลี่ยนความรู้ได้จากทุกที่'}
                   </p>
+                  <div className="pt-2 flex items-center gap-3">
+                    {isJoined ? (
+                      eventData.onlineJoinUrl ? (
+                        <a
+                          href={eventData.onlineJoinUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs shadow-xs transition-colors"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          <span>เปิดห้องกิจกรรม ({eventData.onlinePlatform || 'Online'})</span>
+                        </a>
+                      ) : (
+                        <div className="text-xs text-sky-800 font-bold bg-white/90 px-3.5 py-2 rounded-xl border border-sky-200">
+                          🔗 ลิงก์ห้องกิจกรรมจะส่งให้ผ่านช่องทางติดต่อกลุ่มก่อนเริ่มงาน
+                        </div>
+                      )
+                    ) : (
+                      <div className="text-xs text-slate-500 italic bg-white/80 px-3.5 py-2 rounded-xl border border-sky-200/60">
+                        🔒 ลิงก์ห้องกิจกรรมจะเปิดเผยให้เห็นหลังจากกดเข้าร่วมกิจกรรม
+                      </div>
+                    )}
+                  </div>
                 </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-1">
+                    <div className="space-y-1">
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                        รถสาธารณะ & รถไฟฟ้า
+                      </span>
+                      <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
+                        {cleanText(publicTransitText)}
+                      </p>
+                    </div>
 
-                <div className="space-y-1">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-                    รถยนต์ส่วนตัว & ที่จอดรถ
-                  </span>
-                  <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
-                    {cleanText(parkingText)}
-                  </p>
-                </div>
-              </div>
+                    <div className="space-y-1">
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                        รถยนต์ส่วนตัว & ที่จอดรถ
+                      </span>
+                      <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
+                        {cleanText(parkingText)}
+                      </p>
+                    </div>
+                  </div>
 
-              <div className="relative w-full h-60 sm:h-72 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-2xs">
-                <iframe
-                  title={`Google Map - ${cleanText(eventData.title)}`}
-                  src={`https://maps.google.com/maps?q=${encodeURIComponent(eventData.location)}&hl=th&z=15&output=embed`}
-                  className="w-full h-full border-0"
-                  loading="lazy"
-                  allowFullScreen
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
-              </div>
+                  <div className="relative w-full h-60 sm:h-72 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-2xs">
+                    <iframe
+                      title={`Google Map - ${cleanText(eventData.title)}`}
+                      src={`https://maps.google.com/maps?q=${encodeURIComponent(eventData.location)}&hl=th&z=15&output=embed`}
+                      className="w-full h-full border-0"
+                      loading="lazy"
+                      allowFullScreen
+                      referrerPolicy="no-referrer-when-downgrade"
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
           </div>
@@ -849,10 +924,20 @@ export default function CommunityDetailPage() {
               {/* Date & Time Summary */}
               <div className="space-y-2.5 pt-1 text-xs">
                 <div className="flex items-start gap-2.5">
-                  <Calendar className="w-4 h-4 text-[#4A7C59] shrink-0 mt-0.5" />
+                  {eventData.scheduleType === 'recurring' ? (
+                    <Repeat className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  ) : (
+                    <Calendar className="w-4 h-4 text-[#4A7C59] shrink-0 mt-0.5" />
+                  )}
                   <div>
-                    <span className="text-slate-400 text-[10px] block font-bold">วันที่จัดกิจกรรม</span>
-                    <span className="font-bold text-slate-900">{cleanText(eventData.date)}</span>
+                    <span className="text-slate-400 text-[10px] block font-bold">
+                      {eventData.scheduleType === 'recurring' ? 'กำหนดการประจำ' : 'วันที่จัดกิจกรรม'}
+                    </span>
+                    <span className="font-bold text-slate-900">
+                      {eventData.scheduleType === 'recurring' && eventData.recurrence?.customSummary
+                        ? eventData.recurrence.customSummary
+                        : cleanText(eventData.date)}
+                    </span>
                   </div>
                 </div>
 
@@ -865,10 +950,20 @@ export default function CommunityDetailPage() {
                 </div>
 
                 <div className="flex items-start gap-2.5">
-                  <MapPin className="w-4 h-4 text-[#4A7C59] shrink-0 mt-0.5" />
+                  {eventData.locationType === 'online' || eventData.province === 'ออนไลน์' ? (
+                    <Globe className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
+                  ) : (
+                    <MapPin className="w-4 h-4 text-[#4A7C59] shrink-0 mt-0.5" />
+                  )}
                   <div>
-                    <span className="text-slate-400 text-[10px] block font-bold">จุดนัดพบ</span>
-                    <span className="font-bold text-slate-900 leading-snug">{cleanText(eventData.location)}</span>
+                    <span className="text-slate-400 text-[10px] block font-bold">
+                      {eventData.locationType === 'online' || eventData.province === 'ออนไลน์' ? 'ช่องทาง' : 'จุดนัดพบ'}
+                    </span>
+                    <span className="font-bold text-slate-900 leading-snug">
+                      {eventData.locationType === 'online' || eventData.province === 'ออนไลน์'
+                        ? `ออนไลน์ (${eventData.onlinePlatform?.toUpperCase() || 'Virtual'})`
+                        : cleanText(eventData.location)}
+                    </span>
                   </div>
                 </div>
               </div>

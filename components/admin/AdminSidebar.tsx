@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import {
   LayoutDashboard,
   FolderTree,
@@ -15,7 +16,6 @@ import {
   ChevronRight,
   Zap,
   Crown,
-  LogOut,
   Settings,
   Home,
 } from 'lucide-react';
@@ -196,13 +196,13 @@ export function AdminSidebar({ activeModule, onModuleChange, currentRole, onRole
           <Settings size={13} className="text-slate-300 group-hover:text-slate-500 shrink-0 transition-colors" />
         </button>
         <div className="mt-1">
-          <a
+          <Link
             href="/"
             className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-slate-400 hover:text-[#4A7C59] hover:bg-[#EBF3ED] transition-colors text-[12px] font-medium"
           >
             <Home size={12} />
             <span>กลับหน้าหลัก</span>
-          </a>
+          </Link>
         </div>
       </div>
     </aside>

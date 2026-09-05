@@ -90,7 +90,7 @@ export const SafetyGuidelinesModal: React.FC<SafetyGuidelinesModalProps> = ({
             </div>
             <ul className="text-xs text-slate-600 space-y-1.5 list-disc list-inside font-normal">
               <li>ห้ามการคุกคามทางเพศ, วาจาไม่สุภาพ, การหลอกลวงทางการเงิน, หรือการชักชวนทำธุรกิจลูกโซ่ทุกรูปแบบ</li>
-              <li>หากพบพฤติกรรมไม่เหมาะสม สมาชิกสามารถกดปุ่ม **"รายงานผู้ใช้ (Report)"** ได้ทันที แพลตฟอร์มจะดำเนินการระงับบัญชีถาวรและส่งข้อมูลให้เจ้าหน้าที่ตำรวจตามกฎหมาย</li>
+              <li>หากพบพฤติกรรมไม่เหมาะสม สมาชิกสามารถกดปุ่ม <strong className="font-semibold text-slate-800">&ldquo;รายงานผู้ใช้ (Report)&rdquo;</strong> ได้ทันที แพลตฟอร์มจะดำเนินการระงับบัญชีถาวรและส่งข้อมูลให้เจ้าหน้าที่ตำรวจตามกฎหมาย</li>
             </ul>
           </div>
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Compass, ChevronLeft, ChevronRight, Layers, ArrowUpRight } from 'lucide-react';
+import { Compass, ChevronLeft, ChevronRight, Layers } from 'lucide-react';
 import {
   MASTER_COMMUNITY_LIFESTYLE_CATEGORIES,
   MasterCommunityLifestyleCategory,
@@ -23,6 +23,33 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
   eventCounts = {},
   variant = 'rail',
 }) => {
+  // Variant = 'rail' (Meetup + Luma Horizontal Flow Carousel with Smooth Scroll Buttons)
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = React.useState(false);
+  const [canScrollRight, setCanScrollRight] = React.useState(true);
+
+  const checkScrollability = React.useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (el) {
+      setCanScrollLeft(el.scrollLeft > 5);
+      setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 5);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (variant !== 'rail') return;
+    checkScrollability();
+    const el = scrollContainerRef.current;
+    if (el) {
+      el.addEventListener('scroll', checkScrollability);
+      window.addEventListener('resize', checkScrollability);
+      return () => {
+        el.removeEventListener('scroll', checkScrollability);
+        window.removeEventListener('resize', checkScrollability);
+      };
+    }
+  }, [variant, checkScrollability]);
+
   if (variant === 'grid') {
     return (
       <div className="space-y-3">
@@ -71,22 +98,15 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
                     <Icon className="w-4 h-4" />
                   </div>
 
-                  <div className="flex items-center gap-1.5">
-                    {count > 0 && (
-                      <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          isSelected ? 'bg-emerald-200/70 text-[#2D5A3C]' : 'bg-slate-100 text-slate-600'
-                        }`}
-                      >
-                        {count}
-                      </span>
-                    )}
-                    <ArrowUpRight
-                      className={`w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 ${
-                        isSelected ? 'text-[#4A7C59]' : 'text-slate-300 group-hover:text-slate-600'
+                  {count > 0 && (
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        isSelected ? 'bg-emerald-200/70 text-[#2D5A3C]' : 'bg-slate-100 text-slate-600'
                       }`}
-                    />
-                  </div>
+                    >
+                      {count}
+                    </span>
+                  )}
                 </div>
 
                 <div className="space-y-0.5 w-full">
@@ -108,32 +128,6 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
       </div>
     );
   }
-
-  // Variant = 'rail' (Meetup + Luma Horizontal Flow Carousel with Smooth Scroll Buttons)
-  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = React.useState(false);
-  const [canScrollRight, setCanScrollRight] = React.useState(true);
-
-  const checkScrollability = () => {
-    const el = scrollContainerRef.current;
-    if (el) {
-      setCanScrollLeft(el.scrollLeft > 5);
-      setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 5);
-    }
-  };
-
-  React.useEffect(() => {
-    checkScrollability();
-    const el = scrollContainerRef.current;
-    if (el) {
-      el.addEventListener('scroll', checkScrollability);
-      window.addEventListener('resize', checkScrollability);
-      return () => {
-        el.removeEventListener('scroll', checkScrollability);
-        window.removeEventListener('resize', checkScrollability);
-      };
-    }
-  }, []);
 
   const handleScroll = (direction: 'left' | 'right') => {
     if (scrollContainerRef.current) {

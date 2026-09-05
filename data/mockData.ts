@@ -8,6 +8,16 @@ export interface EventReview {
   tags?: string[];
 }
 
+export type DayOfWeek = 'MO' | 'TU' | 'WE' | 'TH' | 'FR' | 'SA' | 'SU';
+
+export interface EventRecurrence {
+  frequency: 'weekly' | 'biweekly' | 'monthly';
+  daysOfWeek: DayOfWeek[];
+  endType: 'never' | 'on_date';
+  endDate?: string;
+  customSummary?: string;
+}
+
 export interface EventItem {
   id: string;
   title: string;
@@ -46,6 +56,13 @@ export interface EventItem {
   latitude?: number;
   longitude?: number;
   zone?: string;
+  province?: string;
+  scheduleType?: 'single' | 'recurring';
+  recurrence?: EventRecurrence;
+  locationType?: 'physical' | 'online';
+  onlinePlatform?: 'zoom' | 'google_meet' | 'discord' | 'teams' | 'other' | string;
+  onlineJoinUrl?: string;
+  meetingPoint?: string;
   distanceKm?: number;
   status?: 'upcoming' | 'ongoing' | 'ended' | string;
   buddyCount?: number;
@@ -153,7 +170,7 @@ export const MOOD_CATEGORIES: MoodCategory[] = [
 ];
 
 export const MOCK_EVENTS: EventItem[] = [
-{
+  {
     "id": "live-agg-1",
     "title": "Cat Expo 2026: เทศกาลดนตรีและศิลปะอินดี้ที่ใหญ่ที่สุดในไทย",
     "category": "learn",
@@ -179,11 +196,12 @@ export const MOCK_EVENTS: EventItem[] = [
     "status": "active",
     "isNew": true,
     "createdAtTimestamp": 1788278059344,
-    "externalUrl": "https://www.bitec.co.th/gallery",
-    "link": "https://www.bitec.co.th/gallery",
+    "externalUrl": "https://www.theconcert.com/concert/cat-expo-2026",
+    "link": "https://www.theconcert.com/concert/cat-expo-2026",
     "approvalStatus": "approved",
     "source": "The Concert",
-    "sourceUrl": "https://www.bitec.co.th/gallery"
+    "sourceUrl": "https://www.theconcert.com/concert/cat-expo-2026",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-2",
@@ -214,7 +232,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.ticketmelon.com/mahorasop/2026",
     "approvalStatus": "approved",
     "source": "Ticketmelon",
-    "sourceUrl": "https://www.ticketmelon.com/mahorasop/2026"
+    "sourceUrl": "https://www.ticketmelon.com/mahorasop/2026",
+    "province": "ปทุมธานี"
   },
   {
     "id": "live-agg-3",
@@ -246,7 +265,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/bkk-jazz-park",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/bkk-jazz-park"
+    "sourceUrl": "https://www.eventpop.me/e/bkk-jazz-park",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-4",
@@ -278,7 +298,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.theconcert.com/concert/tpop-super-stage",
     "approvalStatus": "approved",
     "source": "The Concert",
-    "sourceUrl": "https://www.theconcert.com/concert/tpop-super-stage"
+    "sourceUrl": "https://www.theconcert.com/concert/tpop-super-stage",
+    "province": "นนทบุรี"
   },
   {
     "id": "live-agg-5",
@@ -309,7 +330,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.ticketmelon.com/rooftop/folk-night",
     "approvalStatus": "approved",
     "source": "Ticketmelon",
-    "sourceUrl": "https://www.ticketmelon.com/rooftop/folk-night"
+    "sourceUrl": "https://www.ticketmelon.com/rooftop/folk-night",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-6",
@@ -340,7 +362,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/siam-indie-live",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/siam-indie-live"
+    "sourceUrl": "https://www.eventpop.me/e/siam-indie-live",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-7",
@@ -371,7 +394,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.theconcert.com/concert/tpo-stars",
     "approvalStatus": "approved",
     "source": "The Concert",
-    "sourceUrl": "https://www.theconcert.com/concert/tpo-stars"
+    "sourceUrl": "https://www.theconcert.com/concert/tpo-stars",
+    "province": "นครปฐม"
   },
   {
     "id": "live-agg-8",
@@ -402,7 +426,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.ticketmelon.com/neon/synthwave-fest",
     "approvalStatus": "approved",
     "source": "Ticketmelon",
-    "sourceUrl": "https://www.ticketmelon.com/neon/synthwave-fest"
+    "sourceUrl": "https://www.ticketmelon.com/neon/synthwave-fest",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-9",
@@ -433,7 +458,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/vinyl-club-thonglor",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/vinyl-club-thonglor"
+    "sourceUrl": "https://www.eventpop.me/e/vinyl-club-thonglor",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-10",
@@ -464,7 +490,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.theconcert.com/concert/ghibli-orchestra",
     "approvalStatus": "approved",
     "source": "The Concert",
-    "sourceUrl": "https://www.theconcert.com/concert/ghibli-orchestra"
+    "sourceUrl": "https://www.theconcert.com/concert/ghibli-orchestra",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-11",
@@ -495,7 +522,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/yaowarat-photowalk",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/yaowarat-photowalk"
+    "sourceUrl": "https://www.eventpop.me/e/yaowarat-photowalk",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-12",
@@ -526,7 +554,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.bacc.or.th/event/photo-biennale",
     "approvalStatus": "approved",
     "source": "BMA Events",
-    "sourceUrl": "https://www.bacc.or.th/event/photo-biennale"
+    "sourceUrl": "https://www.bacc.or.th/event/photo-biennale",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-13",
@@ -557,7 +586,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/analog-darkroom",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/analog-darkroom"
+    "sourceUrl": "https://www.eventpop.me/e/analog-darkroom",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-14",
@@ -588,7 +618,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/golden-hour-chaophraya",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/golden-hour-chaophraya"
+    "sourceUrl": "https://www.eventpop.me/e/golden-hour-chaophraya",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-15",
@@ -619,7 +650,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/bangrak-architecture",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/bangrak-architecture"
+    "sourceUrl": "https://www.eventpop.me/e/bangrak-architecture",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-16",
@@ -650,7 +682,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/portrait-lighting",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/portrait-lighting"
+    "sourceUrl": "https://www.eventpop.me/e/portrait-lighting",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-17",
@@ -678,11 +711,12 @@ export const MOCK_EVENTS: EventItem[] = [
     "status": "active",
     "isNew": true,
     "createdAtTimestamp": 1788278059358,
-    "externalUrl": "https://www.bitec.co.th/gallery",
-    "link": "https://www.bitec.co.th/gallery",
+    "externalUrl": "https://www.bitec.co.th/events/photo-fair-2026",
+    "link": "https://www.bitec.co.th/events/photo-fair-2026",
     "approvalStatus": "approved",
     "source": "BITEC Events",
-    "sourceUrl": "https://www.bitec.co.th/gallery"
+    "sourceUrl": "https://www.bitec.co.th/events/photo-fair-2026",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-18",
@@ -713,7 +747,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/sathorn-nightscape",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/sathorn-nightscape"
+    "sourceUrl": "https://www.eventpop.me/e/sathorn-nightscape",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-20",
@@ -744,7 +779,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://race.thai.run/bmm2026",
     "approvalStatus": "approved",
     "source": "ThaiRun",
-    "sourceUrl": "https://race.thai.run/bmm2026"
+    "sourceUrl": "https://race.thai.run/bmm2026",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-21",
@@ -776,7 +812,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://race.thai.run/benchakitti10k",
     "approvalStatus": "approved",
     "source": "ThaiRun",
-    "sourceUrl": "https://race.thai.run/benchakitti10k"
+    "sourceUrl": "https://race.thai.run/benchakitti10k",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-22",
@@ -808,7 +845,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/hyrox-bkk",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/hyrox-bkk"
+    "sourceUrl": "https://www.eventpop.me/e/hyrox-bkk",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-23",
@@ -839,7 +877,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/skylane-meetup",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/skylane-meetup"
+    "sourceUrl": "https://www.eventpop.me/e/skylane-meetup",
+    "province": "สมุทรปราการ"
   },
   {
     "id": "live-agg-24",
@@ -870,7 +909,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://race.thai.run/cityrun-night",
     "approvalStatus": "approved",
     "source": "ThaiRun",
-    "sourceUrl": "https://race.thai.run/cityrun-night"
+    "sourceUrl": "https://race.thai.run/cityrun-night",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-25",
@@ -902,7 +942,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://race.thai.run/lumpini-run",
     "approvalStatus": "approved",
     "source": "ThaiRun",
-    "sourceUrl": "https://race.thai.run/lumpini-run"
+    "sourceUrl": "https://race.thai.run/lumpini-run",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-26",
@@ -933,7 +974,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/ari-badminton",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/ari-badminton"
+    "sourceUrl": "https://www.eventpop.me/e/ari-badminton",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-27",
@@ -964,7 +1006,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/urban-climbing",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/urban-climbing"
+    "sourceUrl": "https://www.eventpop.me/e/urban-climbing",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-28",
@@ -995,7 +1038,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://race.thai.run/chularun2026",
     "approvalStatus": "approved",
     "source": "ThaiRun",
-    "sourceUrl": "https://race.thai.run/chularun2026"
+    "sourceUrl": "https://race.thai.run/chularun2026",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-29",
@@ -1026,7 +1070,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://race.thai.run/rama8-run",
     "approvalStatus": "approved",
     "source": "ThaiRun",
-    "sourceUrl": "https://race.thai.run/rama8-run"
+    "sourceUrl": "https://race.thai.run/rama8-run",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-30",
@@ -1057,7 +1102,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://race.thai.run/atmbkk2026",
     "approvalStatus": "approved",
     "source": "ThaiRun",
-    "sourceUrl": "https://race.thai.run/atmbkk2026"
+    "sourceUrl": "https://race.thai.run/atmbkk2026",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-31",
@@ -1088,7 +1134,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/pickleball-sukhumvit",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/pickleball-sukhumvit"
+    "sourceUrl": "https://www.eventpop.me/e/pickleball-sukhumvit",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-32",
@@ -1119,7 +1166,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/muaythai-thonglor",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/muaythai-thonglor"
+    "sourceUrl": "https://www.eventpop.me/e/muaythai-thonglor",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-33",
@@ -1151,7 +1199,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://race.thai.run/suanluang-flora",
     "approvalStatus": "approved",
     "source": "ThaiRun",
-    "sourceUrl": "https://race.thai.run/suanluang-flora"
+    "sourceUrl": "https://race.thai.run/suanluang-flora",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-34",
@@ -1182,7 +1231,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://race.thai.run/chularun2027",
     "approvalStatus": "approved",
     "source": "ThaiRun",
-    "sourceUrl": "https://race.thai.run/chularun2027"
+    "sourceUrl": "https://race.thai.run/chularun2027",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-35",
@@ -1213,7 +1263,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/reformer-pilates",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/reformer-pilates"
+    "sourceUrl": "https://www.eventpop.me/e/reformer-pilates",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-36",
@@ -1244,7 +1295,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/soundbath-ari",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/soundbath-ari"
+    "sourceUrl": "https://www.eventpop.me/e/soundbath-ari",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-37",
@@ -1275,7 +1327,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/ceramic-pottery",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/ceramic-pottery"
+    "sourceUrl": "https://www.eventpop.me/e/ceramic-pottery",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-38",
@@ -1306,7 +1359,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/sourdough-baking",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/sourdough-baking"
+    "sourceUrl": "https://www.eventpop.me/e/sourdough-baking",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-39",
@@ -1337,7 +1391,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/watercolor-botanical",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/watercolor-botanical"
+    "sourceUrl": "https://www.eventpop.me/e/watercolor-botanical",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-40",
@@ -1368,7 +1423,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/silver-ring-craft",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/silver-ring-craft"
+    "sourceUrl": "https://www.eventpop.me/e/silver-ring-craft",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-41",
@@ -1399,7 +1455,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/soy-candle-making",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/soy-candle-making"
+    "sourceUrl": "https://www.eventpop.me/e/soy-candle-making",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-42",
@@ -1430,7 +1487,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/tufting-rug",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/tufting-rug"
+    "sourceUrl": "https://www.eventpop.me/e/tufting-rug",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-43",
@@ -1461,7 +1519,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/leather-craft",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/leather-craft"
+    "sourceUrl": "https://www.eventpop.me/e/leather-craft",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-44",
@@ -1492,7 +1551,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/matcha-ceremony",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/matcha-ceremony"
+    "sourceUrl": "https://www.eventpop.me/e/matcha-ceremony",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-45",
@@ -1523,7 +1583,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/terrarium-moss",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/terrarium-moss"
+    "sourceUrl": "https://www.eventpop.me/e/terrarium-moss",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-46",
@@ -1554,7 +1615,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/siam-boardgame-night",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/siam-boardgame-night"
+    "sourceUrl": "https://www.eventpop.me/e/siam-boardgame-night",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-47",
@@ -1585,7 +1647,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/ari-coffee-cupping",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/ari-coffee-cupping"
+    "sourceUrl": "https://www.eventpop.me/e/ari-coffee-cupping",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-48",
@@ -1616,7 +1679,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/silent-book-club",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/silent-book-club"
+    "sourceUrl": "https://www.eventpop.me/e/silent-book-club",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-49",
@@ -1647,7 +1711,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.set.or.th/event/young-investor-2026",
     "approvalStatus": "approved",
     "source": "SET_Thailand",
-    "sourceUrl": "https://www.set.or.th/event/young-investor-2026"
+    "sourceUrl": "https://www.set.or.th/event/young-investor-2026",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-50",
@@ -1678,7 +1743,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/rooftop-cinema",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/rooftop-cinema"
+    "sourceUrl": "https://www.eventpop.me/e/rooftop-cinema",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-51",
@@ -1709,7 +1775,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/comedy-open-mic",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/comedy-open-mic"
+    "sourceUrl": "https://www.eventpop.me/e/comedy-open-mic",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-55",
@@ -1737,11 +1804,12 @@ export const MOCK_EVENTS: EventItem[] = [
     "status": "active",
     "isNew": true,
     "createdAtTimestamp": 1788278059386,
-    "externalUrl": "https://www.bitec.co.th/gallery",
-    "link": "https://www.bitec.co.th/gallery",
+    "externalUrl": "https://www.bitec.co.th/events/bangkok-comic-con-2026",
+    "link": "https://www.bitec.co.th/events/bangkok-comic-con-2026",
     "approvalStatus": "approved",
     "source": "BITEC Events",
-    "sourceUrl": "https://www.bitec.co.th/gallery"
+    "sourceUrl": "https://www.bitec.co.th/events/bangkok-comic-con-2026",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-56",
@@ -1769,11 +1837,12 @@ export const MOCK_EVENTS: EventItem[] = [
     "status": "active",
     "isNew": true,
     "createdAtTimestamp": 1788278059387,
-    "externalUrl": "https://www.qsncc.com/en/whats-on/event-calendar",
-    "link": "https://www.qsncc.com/en/whats-on/event-calendar",
+    "externalUrl": "https://moneyexpo.net/bangkok-year-end-2026",
+    "link": "https://moneyexpo.net/bangkok-year-end-2026",
     "approvalStatus": "approved",
     "source": "Money Expo",
-    "sourceUrl": "https://www.qsncc.com/en/whats-on/event-calendar"
+    "sourceUrl": "https://moneyexpo.net/bangkok-year-end-2026",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-57",
@@ -1801,11 +1870,12 @@ export const MOCK_EVENTS: EventItem[] = [
     "status": "active",
     "isNew": true,
     "createdAtTimestamp": 1788278059388,
-    "externalUrl": "https://www.bitec.co.th/gallery",
-    "link": "https://www.bitec.co.th/gallery",
+    "externalUrl": "https://www.bitec.co.th/events/coffee-expo-2027",
+    "link": "https://www.bitec.co.th/events/coffee-expo-2027",
     "approvalStatus": "approved",
     "source": "BITEC Events",
-    "sourceUrl": "https://www.bitec.co.th/gallery"
+    "sourceUrl": "https://www.bitec.co.th/events/coffee-expo-2027",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-58",
@@ -1833,11 +1903,12 @@ export const MOCK_EVENTS: EventItem[] = [
     "status": "active",
     "isNew": true,
     "createdAtTimestamp": 1788278059390,
-    "externalUrl": "https://www.bitec.co.th/gallery",
-    "link": "https://www.bitec.co.th/gallery",
+    "externalUrl": "https://www.bitec.co.th/events/motor-sale-2027",
+    "link": "https://www.bitec.co.th/events/motor-sale-2027",
     "approvalStatus": "approved",
     "source": "BITEC Events",
-    "sourceUrl": "https://www.bitec.co.th/gallery"
+    "sourceUrl": "https://www.bitec.co.th/events/motor-sale-2027",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-76",
@@ -1869,7 +1940,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.homepro.co.th",
     "approvalStatus": "approved",
     "source": "IMPACT Exhibition",
-    "sourceUrl": "https://www.homepro.co.th"
+    "sourceUrl": "https://www.homepro.co.th",
+    "province": "นนทบุรี"
   },
   {
     "id": "live-agg-77",
@@ -1901,7 +1973,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.motorexpo.co.th",
     "approvalStatus": "approved",
     "source": "IMPACT Exhibition",
-    "sourceUrl": "https://www.motorexpo.co.th"
+    "sourceUrl": "https://www.motorexpo.co.th",
+    "province": "นนทบุรี"
   },
   {
     "id": "live-agg-78",
@@ -1933,7 +2006,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.cdd.go.th",
     "approvalStatus": "approved",
     "source": "IMPACT Exhibition",
-    "sourceUrl": "https://www.cdd.go.th"
+    "sourceUrl": "https://www.cdd.go.th",
+    "province": "นนทบุรี"
   },
   {
     "id": "live-agg-79",
@@ -1965,7 +2039,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.thailandcoffee.net",
     "approvalStatus": "approved",
     "source": "IMPACT Exhibition",
-    "sourceUrl": "https://www.thailandcoffee.net"
+    "sourceUrl": "https://www.thailandcoffee.net",
+    "province": "นนทบุรี"
   },
   {
     "id": "live-agg-80",
@@ -1997,7 +2072,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.impact.co.th/index.php/visitor/event/th",
     "approvalStatus": "approved",
     "source": "IMPACT Exhibition",
-    "sourceUrl": "https://www.impact.co.th/index.php/visitor/event/th"
+    "sourceUrl": "https://www.impact.co.th/index.php/visitor/event/th",
+    "province": "นนทบุรี"
   },
   {
     "id": "live-agg-81",
@@ -2029,7 +2105,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.motorshow.in.th",
     "approvalStatus": "approved",
     "source": "IMPACT Exhibition",
-    "sourceUrl": "https://www.motorshow.in.th"
+    "sourceUrl": "https://www.motorshow.in.th",
+    "province": "นนทบุรี"
   },
   {
     "id": "live-agg-82",
@@ -2061,7 +2138,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://thaifex-anuga.com",
     "approvalStatus": "approved",
     "source": "IMPACT Exhibition",
-    "sourceUrl": "https://thaifex-anuga.com"
+    "sourceUrl": "https://thaifex-anuga.com",
+    "province": "นนทบุรี"
   },
   {
     "id": "live-agg-83",
@@ -2093,7 +2171,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.babykid-bestbuy.com",
     "approvalStatus": "approved",
     "source": "IMPACT Exhibition",
-    "sourceUrl": "https://www.babykid-bestbuy.com"
+    "sourceUrl": "https://www.babykid-bestbuy.com",
+    "province": "นนทบุรี"
   },
   {
     "id": "live-agg-84",
@@ -2125,7 +2204,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.thailandsmartcityexpo.com",
     "approvalStatus": "approved",
     "source": "IMPACT Exhibition",
-    "sourceUrl": "https://www.thailandsmartcityexpo.com"
+    "sourceUrl": "https://www.thailandsmartcityexpo.com",
+    "province": "นนทบุรี"
   },
   {
     "id": "live-agg-88",
@@ -2157,7 +2237,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.cosmoprofcbeasean.com",
     "approvalStatus": "approved",
     "source": "IMPACT Exhibition",
-    "sourceUrl": "https://www.cosmoprofcbeasean.com"
+    "sourceUrl": "https://www.cosmoprofcbeasean.com",
+    "province": "นนทบุรี"
   },
   {
     "id": "live-agg-89",
@@ -2189,7 +2270,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://digitechasean.com",
     "approvalStatus": "approved",
     "source": "IMPACT Exhibition",
-    "sourceUrl": "https://digitechasean.com"
+    "sourceUrl": "https://digitechasean.com",
+    "province": "นนทบุรี"
   },
   {
     "id": "live-agg-90",
@@ -2221,7 +2303,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.thailandfranchising.com",
     "approvalStatus": "approved",
     "source": "IMPACT Exhibition",
-    "sourceUrl": "https://www.thailandfranchising.com"
+    "sourceUrl": "https://www.thailandfranchising.com",
+    "province": "นนทบุรี"
   },
   {
     "id": "live-agg-91",
@@ -2253,7 +2336,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.trafs.net",
     "approvalStatus": "approved",
     "source": "IMPACT Exhibition",
-    "sourceUrl": "https://www.trafs.net"
+    "sourceUrl": "https://www.trafs.net",
+    "province": "นนทบุรี"
   },
   {
     "id": "live-agg-93",
@@ -2285,7 +2369,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.propakasia.com",
     "approvalStatus": "approved",
     "source": "IMPACT Exhibition",
-    "sourceUrl": "https://www.propakasia.com"
+    "sourceUrl": "https://www.propakasia.com",
+    "province": "นนทบุรี"
   },
   {
     "id": "live-agg-94",
@@ -2317,7 +2402,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://thailandhalalassembly.com",
     "approvalStatus": "approved",
     "source": "IMPACT Exhibition",
-    "sourceUrl": "https://thailandhalalassembly.com"
+    "sourceUrl": "https://thailandhalalassembly.com",
+    "province": "นนทบุรี"
   },
   {
     "id": "live-agg-96",
@@ -2349,7 +2435,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.nsm.or.th",
     "approvalStatus": "approved",
     "source": "IMPACT Exhibition",
-    "sourceUrl": "https://www.nsm.or.th"
+    "sourceUrl": "https://www.nsm.or.th",
+    "province": "นนทบุรี"
   },
   {
     "id": "live-agg-98",
@@ -2381,7 +2468,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.ledexpothailand.com",
     "approvalStatus": "approved",
     "source": "IMPACT Exhibition",
-    "sourceUrl": "https://www.ledexpothailand.com"
+    "sourceUrl": "https://www.ledexpothailand.com",
+    "province": "นนทบุรี"
   },
   {
     "id": "live-agg-101",
@@ -2413,7 +2501,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.theconcert.com",
     "approvalStatus": "approved",
     "source": "IMPACT Exhibition",
-    "sourceUrl": "https://www.theconcert.com"
+    "sourceUrl": "https://www.theconcert.com",
+    "province": "นนทบุรี"
   },
   {
     "id": "live-agg-102",
@@ -2445,7 +2534,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://race.thai.run/pride2026",
     "approvalStatus": "approved",
     "source": "ThaiRun",
-    "sourceUrl": "https://race.thai.run/pride2026"
+    "sourceUrl": "https://race.thai.run/pride2026",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-103",
@@ -2477,7 +2567,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://pr-bangkok.com/music-in-park-july",
     "approvalStatus": "approved",
     "source": "BMA Events",
-    "sourceUrl": "https://pr-bangkok.com/music-in-park-july"
+    "sourceUrl": "https://pr-bangkok.com/music-in-park-july",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-104",
@@ -2509,7 +2600,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/coffee-fest-july",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/coffee-fest-july"
+    "sourceUrl": "https://www.eventpop.me/e/coffee-fest-july",
+    "province": "นนทบุรี"
   },
   {
     "id": "live-agg-105",
@@ -2541,7 +2633,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://race.thai.run/rotfai-july",
     "approvalStatus": "approved",
     "source": "ThaiRun",
-    "sourceUrl": "https://race.thai.run/rotfai-july"
+    "sourceUrl": "https://race.thai.run/rotfai-july",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "live-agg-106",
@@ -2572,7 +2665,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "link": "https://www.eventpop.me/e/ari-craft-august",
     "approvalStatus": "approved",
     "source": "Eventpop",
-    "sourceUrl": "https://www.eventpop.me/e/ari-craft-august"
+    "sourceUrl": "https://www.eventpop.me/e/ari-craft-august",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "comm-benjakitti-morning-run",
@@ -2605,7 +2699,9 @@ export const MOCK_EVENTS: EventItem[] = [
     ],
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร",
+    "zone": "silom"
   },
   {
     "id": "fair-bkk-art-design-2026",
@@ -2631,7 +2727,9 @@ export const MOCK_EVENTS: EventItem[] = [
     "transportation": "MRT ศูนย์การประชุมแห่งชาติสิริกิติ์ ทางออก 3",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร",
+    "zone": "silom"
   },
   {
     "id": "pub-football-rajamangala",
@@ -2663,7 +2761,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "ladprao",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "pub-1",
@@ -2694,7 +2793,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
     "sourceUrl": "https://www.qsncc.com/en/whats-on/event-calendar",
-    "link": "https://www.qsncc.com/en/whats-on/event-calendar"
+    "link": "https://www.qsncc.com/en/whats-on/event-calendar",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "pub-2",
@@ -2725,7 +2825,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "silom",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "pub-3",
@@ -2756,7 +2857,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "bangna",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "pub-4",
@@ -2787,7 +2889,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "nonthaburi",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "นนทบุรี"
   },
   {
     "id": "comm-1",
@@ -2819,7 +2922,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "siam",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "comm-2",
@@ -2852,7 +2956,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "ari",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "comm-3",
@@ -2884,7 +2989,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "sukhumvit",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "comm-4",
@@ -2915,7 +3021,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "silom",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "comm-5",
@@ -2946,7 +3053,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "thonglor",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "comm-6",
@@ -2977,7 +3085,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "ladprao",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "comm-7",
@@ -3008,7 +3117,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "thonglor",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "comm-8",
@@ -3039,7 +3149,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "sukhumvit",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "comm-9",
@@ -3070,7 +3181,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "silom",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "comm-10",
@@ -3101,7 +3213,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "sukhumvit",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "comm-11",
@@ -3132,7 +3245,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "silom",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "comm-12",
@@ -3163,7 +3277,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "silom",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "comm-13",
@@ -3194,7 +3309,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "ladprao",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "comm-14",
@@ -3225,7 +3341,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "sukhumvit",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "comm-15",
@@ -3256,7 +3373,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "siam",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "comm-16",
@@ -3287,7 +3405,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "silom",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "comm-17",
@@ -3318,7 +3437,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "siam",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "comm-18",
@@ -3349,7 +3469,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "sukhumvit",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "comm-19",
@@ -3380,7 +3501,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "silom",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "comm-20",
@@ -3411,7 +3533,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "ladprao",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "1",
@@ -3457,7 +3580,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "ladprao",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "2",
@@ -3488,7 +3612,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "sukhumvit",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "3",
@@ -3533,7 +3658,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "sukhumvit",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "4",
@@ -3562,7 +3688,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "ari",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "5",
@@ -3590,7 +3717,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "thonglor",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "6",
@@ -3620,7 +3748,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "silom",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "8",
@@ -3652,7 +3781,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "thonglor",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "9",
@@ -3680,7 +3810,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "ari",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "10",
@@ -3708,7 +3839,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "siam",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "11",
@@ -3736,7 +3868,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "silom",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "12",
@@ -3764,7 +3897,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "ari",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "13",
@@ -3792,7 +3926,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "sukhumvit",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "14",
@@ -3820,7 +3955,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "silom",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "15",
@@ -3848,7 +3984,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "silom",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "16",
@@ -3876,7 +4013,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "silom",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "17",
@@ -3904,7 +4042,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "ladprao",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "18",
@@ -3932,7 +4071,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "sukhumvit",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "19",
@@ -3960,7 +4100,8 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "silom",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
   },
   {
     "id": "20",
@@ -3988,8 +4129,215 @@ export const MOCK_EVENTS: EventItem[] = [
     "zone": "thonglor",
     "approvalStatus": "approved",
     "source": "Chill & Connect Official",
-    "sourceUrl": "https://chill-connect-hub.vercel.app"
+    "sourceUrl": "https://chill-connect-hub.vercel.app",
+    "province": "กรุงเทพมหานคร"
+  },
+  {
+    "id": "regional-cm-1",
+    "title": "Morning Slow Jogging & กาแฟดริปริมอ่างแก้ว มช.",
+    "category": "move",
+    "eventType": "community",
+    "image": "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=800&q=80",
+    "badgeText": "🏃 กิจกรรมคอมมูนิตี้",
+    "tag": "🏃 ชวนวิ่ง & วิ่งชิลล์",
+    "date": "27 ก.ย. 2026",
+    "time": "06:30 - 08:30 น.",
+    "location": "อ่างแก้ว มหาวิทยาลัยเชียงใหม่",
+    "province": "เชียงใหม่",
+    "zone": "chiangmai_city",
+    "latitude": 18.8041,
+    "longitude": 98.9535,
+    "hostName": "กานต์ นิมมาน รันเนอร์",
+    "hostAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
+    "participantsCount": 6,
+    "maxParticipants": 12,
+    "description": "วิ่งเบาๆ รับลมหนาวรอบอ่างแก้ว จังหวะช้าๆ เน้นคุยกันจบแล้วไปนั่งดริปกาแฟชิลล์ๆ ยินดีต้อนรับทั้งคนเชียงใหม่และคนที่มาเที่ยวครับ",
+    "price": "ฟรี",
+    "rating": 4.9,
+    "reviewsCount": 15,
+    "status": "recruiting",
+    "isNew": true,
+    "createdAtTimestamp": 1788597016632,
+    "approvalStatus": "approved"
+  },
+  {
+    "id": "regional-chon-1",
+    "title": "Bangsaen Sunset Sup Board & Chill Talk",
+    "category": "heal",
+    "eventType": "community",
+    "image": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
+    "badgeText": "🏄‍♂️ พายซับฮีลใจ",
+    "tag": "🏄 ซับบอร์ด & พายเรือ",
+    "date": "10 ต.ค. 2026",
+    "time": "16:00 - 18:30 น.",
+    "location": "หาดวอนนภา บางแสน",
+    "province": "ชลบุรี",
+    "zone": "bangsaen",
+    "latitude": 13.2831,
+    "longitude": 100.9168,
+    "hostName": "เบิร์ด วอนนภาคลับ",
+    "hostAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80",
+    "participantsCount": 4,
+    "maxParticipants": 8,
+    "description": "พายซับบอร์ดชมพระอาทิตย์ตกริมทะเลบางแสน บรรยากาศผ่อนคลาย มือใหม่มีคนสอนเบื้องต้นให้ครับ",
+    "price": "฿350 (รวมเช่าบอร์ด)",
+    "rating": 4.8,
+    "reviewsCount": 8,
+    "status": "recruiting",
+    "isNew": true,
+    "createdAtTimestamp": 1788597016632,
+    "approvalStatus": "approved"
+  },
+  {
+    "id": "regional-online-1",
+    "title": "Virtual Sunday Book Club: อ่านหนังสือและแชร์มุมมองฮีลใจ (Zoom)",
+    "category": "learn",
+    "eventType": "community",
+    "image": "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=800&q=80",
+    "badgeText": "เปิดรับสมัคร",
+    "tag": "พูดคุย & ชมรมหนังสือ",
+    "date": "4 ต.ค. 2026",
+    "time": "20:00 - 21:30 น.",
+    "location": "ออนไลน์ (Zoom Meeting)",
+    "province": "ออนไลน์",
+    "zone": "online",
+    "locationType": "online",
+    "onlinePlatform": "zoom",
+    "scheduleType": "single",
+    "hostName": "มนัสวี บุ๊กเลิฟเวอร์",
+    "hostAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80",
+    "participantsCount": 8,
+    "maxParticipants": 15,
+    "description": "นัดพบปะผ่าน Zoom พูดคุยแลกเปลี่ยนข้อคิดจากหนังสือฮีลใจประจำสัปดาห์ ไม่ต้องอ่านจบก็มาร่วมฟังและแชร์มุมมองได้ บรรยากาศอบอุ่นเป็นกันเอง",
+    "price": "ฟรี",
+    "rating": 4.95,
+    "reviewsCount": 18,
+    "status": "recruiting",
+    "isNew": true,
+    "createdAtTimestamp": 1788597016632,
+    "approvalStatus": "approved"
+  },
+  {
+    "id": "regional-online-2",
+    "title": "Guided Sound Bath & Breathwork คลื่นเสียงบำบัดออนไลน์ก่อนนอน (Google Meet)",
+    "category": "heal",
+    "eventType": "community",
+    "image": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=80",
+    "badgeText": "เปิดรับสมัคร",
+    "tag": "บำบัด & ผ่อนคลาย",
+    "date": "11 ต.ค. 2026",
+    "time": "21:00 - 22:00 น.",
+    "location": "ออนไลน์ (Google Meet)",
+    "province": "ออนไลน์",
+    "zone": "online",
+    "locationType": "online",
+    "onlinePlatform": "google_meet",
+    "scheduleType": "single",
+    "hostName": "ครูกานต์ Sound Healer",
+    "hostAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=100&q=80",
+    "participantsCount": 6,
+    "maxParticipants": 20,
+    "description": "เซสชันคลื่นเสียงบำบัด Singing Bowl และเทคนิคการฝึกหายใจ Breathwork เตรียมหูฟังและพื้นที่นอนสบายๆ ผ่อนคลายกล้ามเนื้อและความเครียดสะสมตลอดสัปดาห์",
+    "price": "ฟรี",
+    "rating": 4.98,
+    "reviewsCount": 24,
+    "status": "recruiting",
+    "isNew": true,
+    "createdAtTimestamp": 1788597016633,
+    "approvalStatus": "approved"
+  },
+  {
+    "id": "regional-online-3",
+    "title": "Late Night Virtual Coworking: เปิดเพลง Lo-Fi นั่งทำงานเงียบๆ ด้วยกัน (Discord)",
+    "category": "chill",
+    "eventType": "community",
+    "image": "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=800&q=80",
+    "badgeText": "เปิดรับสมัคร",
+    "tag": "ทำงาน & นั่งชิลล์",
+    "date": "ทุกวันพุธและศุกร์",
+    "time": "20:00 - 23:00 น.",
+    "location": "ออนไลน์ (Discord Community Voice)",
+    "province": "ออนไลน์",
+    "zone": "online",
+    "locationType": "online",
+    "onlinePlatform": "discord",
+    "scheduleType": "recurring",
+    "recurrence": {
+      "frequency": "weekly",
+      "daysOfWeek": ["WE", "FR"],
+      "endType": "never"
+    },
+    "hostName": "น้องพีช Freelancer Club",
+    "hostAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
+    "participantsCount": 12,
+    "maxParticipants": 30,
+    "description": "สเปซจำลองบรรยากาศร้านกาแฟและห้องสมุด นั่งเปิดกล้อง/ปิดกล้อง ทำงาน อ่านหนังสือ หรือทำงานฝีมือไปพร้อมเพลง Lo-Fi แวะคุยพักเบรกชิลล์ๆ ได้ตามใจชอบ",
+    "price": "ฟรี",
+    "rating": 4.9,
+    "reviewsCount": 35,
+    "status": "recruiting",
+    "isNew": true,
+    "createdAtTimestamp": 1788597016634,
+    "approvalStatus": "approved"
+  },
+  {
+    "id": "regional-online-4",
+    "title": "Morning Living Room Yoga: โยคะยืดกล้ามเนื้อแก้ออฟฟิศซินโดรม (Zoom)",
+    "category": "move",
+    "eventType": "community",
+    "image": "https://images.unsplash.com/photo-1545205597-3d9d02c29597?auto=format&fit=crop&w=800&q=80",
+    "badgeText": "เปิดรับสมัคร",
+    "tag": "โยคะ & ออกกำลังกาย",
+    "date": "10 ต.ค. 2026",
+    "time": "07:30 - 08:30 น.",
+    "location": "ออนไลน์ (Zoom Live)",
+    "province": "ออนไลน์",
+    "zone": "online",
+    "locationType": "online",
+    "onlinePlatform": "zoom",
+    "scheduleType": "single",
+    "hostName": "โค้ชพลอย Fit & Flow",
+    "hostAvatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=100&q=80",
+    "participantsCount": 9,
+    "maxParticipants": 15,
+    "description": "คลาสโยคะเบาๆ ระดับเริ่มต้น ไม่ต้องมีพื้นฐาน เน้นยืดกล้ามเนื้อคอบ่าไหล่และสะโพก บรรเทาอาการเมื่อยล้าจากการนั่งทำงานหน้าคอมพิวเตอร์เป็นเวลานาน",
+    "price": "ฟรี",
+    "rating": 4.96,
+    "reviewsCount": 22,
+    "status": "recruiting",
+    "isNew": true,
+    "createdAtTimestamp": 1788597016635,
+    "approvalStatus": "approved"
+  },
+  {
+    "id": "regional-cm-fair-1",
+    "title": "Chiang Mai Design Week 2026: เทศกาลงานออกแบบเชียงใหม่",
+    "category": "learn",
+    "eventType": "public_venue",
+    "image": "https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=800&q=80",
+    "badgeText": "✨ เทศกาลงานดีไซน์",
+    "tag": "🎨 ศิลปะ & ดีไซน์",
+    "date": "5 - 13 ธ.ค. 2026",
+    "time": "10:00 - 20:00 น.",
+    "location": "ย่านล่ามช้าง - กลางเวียง เชียงใหม่",
+    "province": "เชียงใหม่",
+    "zone": "chiangmai_city",
+    "latitude": 18.7904,
+    "longitude": 98.9877,
+    "hostName": "CEA Chiang Mai",
+    "hostAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
+    "participantsCount": 450,
+    "maxParticipants": 2000,
+    "description": "มหกรรมงานคราฟต์ ศิลปะ และนวัตกรรมการออกแบบประจำปีของเชียงใหม่ เปิดเข้าชมฟรีทั่วเมือง",
+    "price": "เข้าชมฟรี",
+    "rating": 4.9,
+    "reviewsCount": 42,
+    "status": "active",
+    "isNew": true,
+    "createdAtTimestamp": 1788597016632,
+    "approvalStatus": "approved"
   }
+
 ];
 
 export const MOCK_CHALLENGES: ChallengeQuest[] = [

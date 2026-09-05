@@ -13,6 +13,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 # 🌿 Chill & Connect Hub: Mandatory Project Architecture & Design Rules
 
 This document defines the strict, permanent architecture, data separation rules, and design conventions for **Chill & Connect Hub**. Every agent working on this codebase **MUST** strictly follow these rules without exception.
+For a complete system blueprint, mental model (3-4-3), and usage guide, see [ARCHITECTURE.md](file:///c:/Users/Asus/.gemini/antigravity-ide/scratch/chill-and-connect-hub/ARCHITECTURE.md).
 
 ---
 

@@ -17,10 +17,12 @@ import {
   Sparkles,
   ShieldCheck,
   CheckCircle2,
+  Loader2,
 } from 'lucide-react';
 import { SafetyGuidelinesModal } from './SafetyGuidelinesModal';
 import { useAuth } from '@/lib/useAuth';
 import { RichTextEditor, stripHtmlToPlainText } from './RichTextEditor';
+import { compressImage } from '@/lib/media/compressor';
 
 export interface SpotBuddyPostItem {
   id: string;
@@ -102,6 +104,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
   // Image states
   const [coverImage, setCoverImage] = useState<string>(spotImage || PRESET_VIBE_IMAGES[0].url);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   // What to bring
   const [whatToBringList, setWhatToBringList] = useState<string[]>(['ขวดน้ำดื่มส่วนตัว', 'รองเท้าวิ่ง / ผ้าใบ']);
@@ -134,19 +137,53 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
 
   if (!isOpen) return null;
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setErrorMessage('ขนาดรูปภาพต้องไม่เกิน 5MB');
-        return;
+    setErrorMessage(null);
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      setErrorMessage('ขนาดรูปภาพต้องไม่เกิน 10MB');
+      return;
+    }
+
+    try {
+      setIsUploadingImage(true);
+
+      // 1. Client-Side Pre-Compression to WebP
+      const compressed = await compressImage(file, {
+        maxWidth: 1600,
+        maxHeight: 1600,
+        quality: 0.82,
+      });
+
+      // 2. Upload to /api/upload
+      const formData = new FormData();
+      formData.append('file', compressed);
+      formData.append('folder', 'spots');
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success && data.url) {
+        setUploadedImage(data.url);
+        setCoverImage(data.url);
+      } else {
+        // Fallback to Data URL
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setUploadedImage(reader.result as string);
+          setCoverImage(reader.result as string);
+        };
+        reader.readAsDataURL(compressed);
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setUploadedImage(reader.result as string);
-        setCoverImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    } catch {
+      setErrorMessage('เกิดข้อผิดพลาดในการประมวลผลรูปภาพ');
+    } finally {
+      setIsUploadingImage(false);
     }
   };
 
@@ -489,15 +526,24 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                 {/* Upload Box */}
                 <label className="border-2 border-dashed border-slate-200 hover:border-[#4A7C59] bg-white rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:bg-emerald-50/30 group">
                   <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 group-hover:text-[#4A7C59] group-hover:bg-emerald-100 flex items-center justify-center mb-1.5 transition-colors">
-                    <Upload className="w-4 h-4" />
+                    {isUploadingImage ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-[#4A7C59]" />
+                    ) : (
+                      <Upload className="w-4 h-4" />
+                    )}
                   </div>
                   <span className="text-xs font-bold text-slate-700 group-hover:text-[#4A7C59]">
-                    {uploadedImage ? 'เปลี่ยนรูปภาพจากเครื่อง' : 'คลิกเพื่ออัปโหลดรูปจากเครื่อง'}
+                    {isUploadingImage
+                      ? 'กำลังบีบอัดและอัปโหลดรูปภาพ...'
+                      : uploadedImage
+                      ? 'เปลี่ยนรูปภาพจากเครื่อง'
+                      : 'คลิกเพื่ออัปโหลดรูปจากเครื่อง'}
                   </span>
-                  <span className="text-[10px] text-slate-400 mt-0.5">รองรับไฟล์ JPG, PNG, WEBP (ไม่เกิน 5MB)</span>
+                  <span className="text-[10px] text-slate-400 mt-0.5">รองรับไฟล์ JPG, PNG, WEBP (บีบอัดอัตโนมัติ)</span>
                   <input
                     type="file"
-                    accept="image/jpeg,image/png,image/webp"
+                    disabled={isUploadingImage}
+                    accept="image/jpeg,image/png,image/webp,image/avif"
                     onChange={handleFileUpload}
                     className="hidden"
                   />

@@ -24,6 +24,7 @@ import {
   LayoutTemplate
 } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
+import { BrandLogo } from './BrandLogo';
 
 interface NavbarProps {
   activeTab: string;
@@ -52,12 +53,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-
-  const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   // Close profile dropdown when clicking outside
   useEffect(() => {
@@ -89,9 +84,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => setActiveTab('explore')}
             className="flex items-center gap-3 cursor-pointer group py-1 shrink-0"
           >
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-600 via-[#4A7C59] to-[#386144] flex items-center justify-center text-white shadow-xs group-hover:scale-105 group-hover:shadow-md transition-all duration-300 shrink-0 ring-2 ring-emerald-500/10">
-              <Sprout className="w-5.5 h-5.5 stroke-[2.5]" />
-            </div>
+            <BrandLogo size="md" className="group-hover:scale-105 group-hover:shadow-md transition-all duration-300" />
             <div className="flex flex-col justify-center">
               <span className="font-black text-lg sm:text-[19px] tracking-tight text-[#0F172A] font-sans leading-none">
                 Chill & Connect Hub
@@ -132,8 +125,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Right: Actions */}
           <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             
-            {/* Quick Action: Create Event Pill Button */}
-            {onOpenCreateEvent && (
+            {/* Quick Action: Create Event Pill Button (Shown only for Logged-in Users) */}
+            {isLoggedIn && onOpenCreateEvent && (
               <button
                 type="button"
                 onClick={onOpenCreateEvent}
@@ -145,7 +138,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
             
             {/* Desktop User Avatar & Profile Dropdown (Facebook/Google Style) */}
-            {(isAuthReady !== undefined ? !isAuthReady : !isMounted) ? (
+            {!isAuthReady ? (
               <>
                 <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-200 animate-pulse border-2 border-slate-100 lg:hidden shrink-0"></div>
                 <div className="hidden lg:block w-[110px] h-9 rounded-full bg-slate-200 animate-pulse shrink-0"></div>
@@ -345,10 +338,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Top Drawer Header */}
             <div className="space-y-6">
               <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-[#4A7C59] flex items-center justify-center text-white">
-                    <Sprout className="w-4 h-4 stroke-[2.5]" />
-                  </div>
+                <div className="flex items-center gap-2.5">
+                  <BrandLogo size="sm" />
                   <span className="font-extrabold text-base text-[#1E293B]">เมนูหลัก</span>
                 </div>
                 <button
@@ -529,8 +520,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                 })}
               </div>
 
-              {/* Create Event CTA Button in Drawer */}
-              {onOpenCreateEvent && (
+              {/* Create Event CTA Button in Drawer (Only for Logged-in Users) */}
+              {isLoggedIn && onOpenCreateEvent && (
                 <div className="pt-2">
                   <button
                     type="button"
@@ -541,7 +532,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     className="w-full bg-[#4A7C59] hover:bg-[#3B6347] text-white py-3 rounded-2xl text-sm font-bold shadow-md flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"
                   >
                     <PlusCircle className="w-4 h-4" />
-                    <span>จัดกิจกรรมใหม่ ➕</span>
+                    <span>สร้างกิจกรรมใหม่</span>
                   </button>
                 </div>
               )}

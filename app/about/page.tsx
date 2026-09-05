@@ -8,6 +8,7 @@ import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { useAuth } from '@/lib/useAuth';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { EventItem } from '@/data/mockData';
+import { BrandLogo } from '@/components/BrandLogo';
 import {
   Sprout,
   Heart,
@@ -658,7 +659,7 @@ export default function AboutPage() {
       {/* Footer */}
       <footer className="bg-white border-t border-slate-200/90 py-6 text-center text-xs text-slate-500 space-y-1.5">
         <div className="flex items-center justify-center gap-2 text-sm font-bold text-slate-900">
-          <Sprout className="w-4 h-4 text-[#4A7C59]" />
+          <BrandLogo size="xs" />
           <span>Chill & Connect Hub</span>
         </div>
         <p className="font-medium text-slate-600 text-xs">Lifestyle Discovery & Community Engagement Platform ระดับประเทศ</p>

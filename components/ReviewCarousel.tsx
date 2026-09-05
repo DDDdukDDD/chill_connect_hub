@@ -208,7 +208,7 @@ export const ReviewCarousel: React.FC = () => {
                 </div>
 
                 <p className="text-xs text-[#334155] font-medium leading-relaxed italic line-clamp-3">
-                  "{rev.quote}"
+                  &ldquo;{rev.quote}&rdquo;
                 </p>
               </div>
 

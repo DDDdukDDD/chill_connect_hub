@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { BrandLogo } from '@/components/BrandLogo';
 import {
   Sprout,
   Sparkles,
@@ -591,9 +592,7 @@ export default function OnboardingPage() {
             href="/"
             className="flex items-center gap-2.5 sm:gap-3 cursor-pointer group"
           >
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-[#4A7C59] flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform shrink-0">
-              <Sprout className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5]" />
-            </div>
+            <BrandLogo size="md" className="group-hover:scale-105 transition-transform" />
             <div className="flex flex-col justify-center">
               <span className="font-black text-lg sm:text-[20px] tracking-tight text-[#1E293B] font-sans leading-none">
                 Chill & Connect Hub

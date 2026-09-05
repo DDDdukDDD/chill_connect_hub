@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { AdminEventItem } from '@/lib/eventsStore';
 import { EventDataSource } from '@/lib/sourcesStore';
@@ -143,8 +143,6 @@ function SpotsModule({
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Compass size={18} className="text-emerald-400" />
-            <h1 className="text-xl font-bold text-white">Lifestyle Spots</h1>
             <Compass size={18} className="text-[#4A7C59]" />
             <h1 className="text-xl font-bold text-slate-800">Lifestyle Spots</h1>
           </div>
@@ -357,9 +355,8 @@ export default function AdminPage() {
   };
 
   // ── Fetch Spots ──
-  const fetchSpots = async () => {
+  const fetchSpots = useCallback(async () => {
     try {
-      setIsSpotsLoading(true);
       const res = await fetch('/api/admin/spots');
       const data = await res.json();
       if (data.success) setSpots(data.spots);
@@ -368,11 +365,11 @@ export default function AdminPage() {
     } finally {
       setIsSpotsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchSpots();
-  }, []);
+  }, [fetchSpots]);
 
   // ── Spot Actions ──
   const handleAutoEnrichImages = async () => {

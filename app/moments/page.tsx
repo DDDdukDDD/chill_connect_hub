@@ -8,6 +8,7 @@ import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { useAuth } from '@/lib/useAuth';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { MOCK_EVENTS, MOCK_POSTS, EventItem, CommunityPost, PostComment } from '@/data/mockData';
+import { BrandLogo } from '@/components/BrandLogo';
 import {
   Sparkles,
   Heart,
@@ -40,16 +41,16 @@ export default function MomentsPage() {
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
   const [membershipActionTitle, setMembershipActionTitle] = useState('เพื่อแชร์เรื่องราวและภาพโมเมนต์');
 
-  React.useEffect(() => {
+  const [activeTabFilter, setActiveTabFilter] = useState<'all' | 'popular' | 'mine'>(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('tab') === 'mine') {
-        setActiveTabFilter('mine');
+        return 'mine';
       }
     }
-  }, []);
+    return 'all';
+  });
   const [posts, setPosts] = useState<CommunityPost[]>(MOCK_POSTS);
-  const [activeTabFilter, setActiveTabFilter] = useState<'all' | 'popular' | 'mine'>('all');
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
   const [newCommentInput, setNewCommentInput] = useState<string>('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
@@ -622,7 +623,7 @@ export default function MomentsPage() {
       {/* Footer */}
       <footer className="bg-white border-t border-[#E8E2D8] py-8 text-center text-xs text-[#64748B] space-y-2 mt-12 mb-16 md:mb-0">
         <div className="flex items-center justify-center gap-2 text-sm font-bold text-[#1E293B]">
-          <Sprout className="w-5 h-5 text-[#4A7C59]" />
+          <BrandLogo size="xs" />
           <span>Chill & Connect Hub</span>
         </div>
         <p className="font-medium text-slate-600">Hub กิจกรรมและคอมมูนิตี้สำหรับคนชอบออกไปใช้ชีวิต ที่เปลี่ยนทุกการไปเที่ยวให้เป็นเรื่องสนุกและต่อยอดมิตรภาพ</p>

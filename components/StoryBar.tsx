@@ -109,7 +109,7 @@ export const StoryBar: React.FC<StoryBarProps> = ({ onSelectEventId }) => {
             {/* Story Caption & Action Footer */}
             <div className="p-4 bg-slate-900 space-y-3">
               <p className="text-xs text-slate-200 leading-relaxed font-medium">
-                "{selectedStory.caption}"
+                &ldquo;{selectedStory.caption}&rdquo;
               </p>
 
               <div className="flex items-center justify-between pt-1 border-t border-slate-800">

@@ -28,6 +28,7 @@ import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { useAuth } from '@/lib/useAuth';
 import { MOCK_EVENTS, EventItem } from '@/data/mockData';
+import { ALL_THAI_PROVINCES } from '@/data/spotsData';
 
 const ITEMS_PER_PAGE = 24;
 
@@ -38,6 +39,7 @@ function CommunityPageContent() {
   const [activeNavTab, setActiveNavTab] = useState('explore');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('category') || 'all');
+  const [selectedProvince, setSelectedProvince] = useState<string>(searchParams.get('province') || 'all');
   const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'tomorrow' | 'weekend' | 'custom'>('all');
   const [statusFilter, setStatusFilter] = useState<'upcoming' | 'ended' | 'all'>('upcoming');
   const [priceFilter, setPriceFilter] = useState<'all' | 'free'>((searchParams.get('price') as any) || 'all');
@@ -129,6 +131,23 @@ function CommunityPageContent() {
         }
       }
 
+      if (selectedProvince !== 'all') {
+        const isBangkokFilter = selectedProvince === 'กรุงเทพฯ' || selectedProvince === 'กรุงเทพมหานคร';
+        const isOnlineFilter = selectedProvince === 'ออนไลน์' || selectedProvince.toLowerCase().includes('online');
+        const evProv = (ev.province || '').trim();
+        const evLoc = (ev.location || '').toLowerCase();
+
+        if (isOnlineFilter) {
+          const isOnlineEv = evProv === 'ออนไลน์' || evLoc.includes('zoom') || evLoc.includes('discord') || evLoc.includes('online');
+          if (!isOnlineEv) return false;
+        } else if (isBangkokFilter) {
+          const isBkkEv = evProv === 'กรุงเทพฯ' || evProv === 'กรุงเทพมหานคร' || (!evProv && (evLoc.includes('กทม') || evLoc.includes('กรุงเทพ')));
+          if (!isBkkEv) return false;
+        } else {
+          if (evProv !== selectedProvince && !evLoc.includes(selectedProvince.toLowerCase())) return false;
+        }
+      }
+
       if (sortBy === 'favorites' && !favorites.includes(ev.id)) return false;
       if (priceFilter === 'free' && (!ev.price || !ev.price.includes('ฟรี'))) return false;
       if (searchQuery.trim() !== '') {
@@ -137,7 +156,7 @@ function CommunityPageContent() {
       }
       return true;
     });
-  }, [eventsList, statusFilter, selectedCategory, priceFilter, sortBy, favorites, searchQuery]);
+  }, [eventsList, statusFilter, selectedCategory, selectedProvince, priceFilter, sortBy, favorites, searchQuery]);
 
   // Calculate event counts per lifestyle category for Luma-style badge display
   const categoryEventCounts = useMemo(() => {
@@ -262,7 +281,7 @@ function CommunityPageContent() {
             </div>
 
             {/* Category Select */}
-            <div className="relative w-full md:w-56 shrink-0">
+            <div className="relative w-full md:w-52 shrink-0">
               <select
                 value={selectedCategory}
                 onChange={(e) => {
@@ -278,6 +297,35 @@ function CommunityPageContent() {
                     {cat.name} ({cat.nameEn})
                   </option>
                 ))}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
+            {/* Province Select */}
+            <div className="relative w-full md:w-44 shrink-0">
+              <select
+                value={selectedProvince}
+                onChange={(e) => {
+                  setSelectedProvince(e.target.value);
+                  setCurrentPage(1);
+                }}
+                aria-label="เลือกจังหวัดหรือออนไลน์"
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#4A7C59] cursor-pointer appearance-none pr-8"
+              >
+                <option value="all">ทุกจังหวัด / ออนไลน์</option>
+                <option value="ออนไลน์">ออนไลน์ (Zoom / Discord)</option>
+                <optgroup label="จังหวัดยอดนิยม">
+                  <option value="กรุงเทพฯ">กรุงเทพฯ</option>
+                  <option value="นนทบุรี">นนทบุรี</option>
+                  <option value="เชียงใหม่">เชียงใหม่</option>
+                  <option value="ชลบุรี">ชลบุรี</option>
+                  <option value="ภูเก็ต">ภูเก็ต</option>
+                </optgroup>
+                <optgroup label="77 จังหวัดทั่วไทย">
+                  {ALL_THAI_PROVINCES.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </optgroup>
               </select>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
@@ -365,12 +413,13 @@ function CommunityPageContent() {
 
           <div className="flex items-center justify-between text-xs font-semibold text-slate-500 pt-1 border-t border-slate-200/60">
             <span>พบทั้งหมด <strong className="text-slate-900 font-bold">{filteredEvents.length}</strong> รายการ</span>
-            {(searchQuery || selectedCategory !== 'all' || priceFilter !== 'all' || sortBy === 'favorites') && (
+            {(searchQuery || selectedCategory !== 'all' || selectedProvince !== 'all' || priceFilter !== 'all' || sortBy === 'favorites') && (
               <button
                 type="button"
                 onClick={() => {
                   setSearchQuery('');
                   setSelectedCategory('all');
+                  setSelectedProvince('all');
                   setPriceFilter('all');
                   setSortBy('newest');
                   setCurrentPage(1);

@@ -17,6 +17,7 @@ import { TipHostModal } from '@/components/TipHostModal';
 import { EventDetailModal } from '@/components/EventDetailModal';
 import { MOCK_CHALLENGES, ChallengeQuest, EventItem } from '@/data/mockData';
 import { isEventEnded } from '@/lib/dateUtils';
+import { BrandLogo } from '@/components/BrandLogo';
 import {
   Award,
   Coffee,
@@ -268,7 +269,7 @@ export default function MyHubPage() {
       externalUrl: 'https://www.qsncc.com/th/event-calendar',
       participantsCount: 840,
       maxParticipants: 5000,
-      createdAtTimestamp: Date.now() - 3600000,
+      createdAtTimestamp: 1787400000000,
     },
     {
       id: 'joined-community-1',
@@ -286,7 +287,7 @@ export default function MyHubPage() {
       eventType: 'community',
       participantsCount: 16,
       maxParticipants: 20,
-      createdAtTimestamp: Date.now() - 7200000,
+      createdAtTimestamp: 1787350000000,
     },
     {
       id: 'joined-community-2',
@@ -304,7 +305,7 @@ export default function MyHubPage() {
       eventType: 'community',
       participantsCount: 8,
       maxParticipants: 10,
-      createdAtTimestamp: Date.now() - 14400000,
+      createdAtTimestamp: 1787300000000,
     },
   ]);
 
@@ -1552,7 +1553,7 @@ export default function MyHubPage() {
       {/* Footer */}
       <footer className="bg-white border-t border-[#E8E2D8] py-8 text-center text-xs text-[#64748B] space-y-2 mt-12">
         <div className="flex items-center justify-center gap-2 text-sm font-bold text-[#1E293B]">
-          <Sprout className="w-5 h-5 text-[#4A7C59]" />
+          <BrandLogo size="xs" />
           <span>Chill & Connect Hub</span>
         </div>
         <p className="font-medium text-slate-600">Hub กิจกรรมและคอมมูนิตี้สำหรับคนชอบออกไปใช้ชีวิต ที่เปลี่ยนทุกการไปเที่ยวให้เป็นเรื่องสนุกและต่อยอดมิตรภาพ</p>

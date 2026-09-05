@@ -108,7 +108,7 @@ export const ReportSafetyModal: React.FC<ReportSafetyModalProps> = ({
                   รายงานความไม่ปลอดภัย
                 </h3>
                 <p className="text-xs text-slate-500 truncate mt-0.5">
-                  กลุ่ม: <span className="font-semibold text-slate-700">"{targetTitle}"</span>
+                  กลุ่ม: <span className="font-semibold text-slate-700">&ldquo;{targetTitle}&rdquo;</span>
                   {targetHostName && <span> (โฮสต์: {targetHostName})</span>}
                 </p>
               </div>

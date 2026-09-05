@@ -44,10 +44,32 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
     e.preventDefault();
     if (!title.trim() || !badgeLabel.trim()) return;
 
+    const generatedSteps = [
+      `ทำกิจกรรมตามเป้าหมาย "${title.trim()}" ในแต่ละรอบ`,
+      verificationMethod === 'gps'
+        ? `เช็คอินพิกัด GPS ณ ${targetLocations || 'สถานที่เป้าหมาย'}`
+        : verificationMethod === 'photo'
+        ? 'ถ่ายภาพโมเมนต์และอัปโหลดเพื่อบันทึกความคืบหน้า'
+        : 'สแกนบัตรหรือ QR Code เพื่อยืนยันการเข้าร่วม',
+      `สะสมความคืบหน้าครบ ${totalCount} ครั้งเพื่อปลดล็อกเหรียญและรับคะแนน XP`,
+    ];
+
+    const getBadgeEmoji = (icon: string) => {
+      switch (icon) {
+        case 'Flame': return '🔥';
+        case 'Target': return '🎯';
+        case 'Zap': return '⚡';
+        case 'Coffee': return '☕';
+        case 'Footprints': return '🏃‍♂️';
+        default: return '🏅';
+      }
+    };
+
     const newQuest: ChallengeQuest = {
       id: `quest-custom-${Date.now()}`,
       title: title.trim(),
       badgeLabel: badgeLabel.trim(),
+      badgeIcon: getBadgeEmoji(iconName),
       iconName: iconName,
       current: '0',
       total: totalCount.toString(),
@@ -61,6 +83,17 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
       targetGoal: targetGoal.trim() 
         ? `${targetGoal.trim()}${verificationMethod === 'gps' && targetLocations ? ` (เป้าหมาย: ${targetLocations})` : ''}`
         : `ทำเป้าหมาย "${title.trim()}" ให้สำเร็จครบ ${totalCount} ครั้ง${verificationMethod === 'gps' && targetLocations ? ` (เป้าหมาย: ${targetLocations})` : ''}`,
+      objective: targetGoal.trim() || `มุ่งมั่นทำเป้าหมาย "${title.trim()}" ให้สำเร็จครบ ${totalCount} ครั้ง เพื่อสร้างวินัยและสุขภาพที่ดี`,
+      steps: generatedSteps,
+      verificationMethod: verificationMethod === 'gps' 
+        ? `ระบบตรวจสอบพิกัด GPS อัตโนมัติ (สถานที่: ${targetLocations || 'สถานที่เป้าหมาย'})`
+        : verificationMethod === 'photo'
+        ? 'ส่งภาพถ่ายโมเมนต์ความประทับใจเพื่อยืนยันผล'
+        : 'สแกน QR Code จากผู้จัดหรือร้านค้าพาร์ทเนอร์',
+      rewardsText: `เหรียญตราเกียรติยศ "${badgeLabel.trim()}" บนหน้าโปรไฟล์ พร้อมรับคะแนนสะสม ${rewardPoints} XP`,
+      startDate: '1 มี.ค. 2026',
+      endDate: '31 มี.ค. 2026',
+      daysRemaining: 15,
       isOfficial: isOfficial,
     };
 
@@ -84,14 +117,14 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
 
         {/* Header Title */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-500 shrink-0">
+          <div className="w-10 h-10 rounded-2xl bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-600 shrink-0">
             <Trophy className="w-5 h-5" />
           </div>
           <div>
             <h3 className="font-extrabold text-base sm:text-lg text-[#1E293B]">
               สร้างชาเลนจ์ & ภารกิจใหม่
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5 font-medium">
               ตั้งเป้าหมายกิจกรรมยามว่างของคุณ หรือเปิดภารกิจให้เพื่อนๆ ใน Hub ร่วมสนุก
             </p>
           </div>
@@ -111,21 +144,21 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
                 onClick={() => setVisibility('public')}
                 className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
                   visibility === 'public'
-                    ? 'bg-emerald-50/80 border-[#4A7C59] ring-2 ring-[#4A7C59]/20 text-slate-900 shadow-2xs'
+                    ? 'bg-purple-50/80 border-[#7C3AED] ring-2 ring-purple-100 text-slate-900 shadow-2xs'
                     : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-black text-xs text-[#4A7C59] flex items-center gap-1.5">
-                    <span>🌐 สาธารณะ (Public)</span>
+                  <span className="font-extrabold text-xs text-[#7C3AED]">
+                    สาธารณะ (Public)
                   </span>
                   <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
-                    visibility === 'public' ? 'border-[#4A7C59] bg-[#4A7C59]' : 'border-slate-300'
+                    visibility === 'public' ? 'border-[#7C3AED] bg-[#7C3AED]' : 'border-slate-300'
                   }`}>
                     {visibility === 'public' && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
+                <p className="text-[10px] text-slate-500 mt-1 leading-relaxed font-medium">
                   ชวนเพื่อนๆ ร่วมทำได้ และแสดงในแถบชาเลนจ์หน้าแรก
                 </p>
               </button>
@@ -140,8 +173,8 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-black text-xs text-slate-800 flex items-center gap-1.5">
-                    <span>🔒 ส่วนตัว (Private)</span>
+                  <span className="font-extrabold text-xs text-slate-800">
+                    ส่วนตัว (Private)
                   </span>
                   <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
                     visibility === 'private' ? 'border-slate-700 bg-slate-700' : 'border-slate-300'
@@ -149,7 +182,7 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
                     {visibility === 'private' && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
+                <p className="text-[10px] text-slate-500 mt-1 leading-relaxed font-medium">
                   เป้าหมายส่วนตัว แสดงเฉพาะในหน้ากิจกรรมของคุณ
                 </p>
               </button>
@@ -166,7 +199,7 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="เช่น วิ่งรับลมเช้าสวนลุมพินี 5 ครั้ง, อ่านหนังสือจบ 2 เล่ม..."
-              className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#4A7C59] focus:border-[#4A7C59] outline-none"
+              className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-100 focus:border-[#7C3AED] outline-none"
               required
             />
           </div>
@@ -178,7 +211,7 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value as any)}
-                className="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#4A7C59] outline-none bg-white font-medium"
+                className="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-100 focus:border-[#7C3AED] outline-none bg-white font-medium"
               >
                 <option value="move">ขยับกาย (Move)</option>
                 <option value="heal">ฮีลใจ (Heal)</option>
@@ -188,13 +221,13 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 block">ไอคอนสัญลักษณ์</label>
+              <label className="text-xs font-bold text-slate-700 block">สัญลักษณ์รางวัล</label>
               <select
                 value={iconName}
                 onChange={(e) => setIconName(e.target.value)}
-                className="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#4A7C59] outline-none bg-white font-medium"
+                className="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-100 focus:border-[#7C3AED] outline-none bg-white font-medium"
               >
-                <option value="Sparkles">ประกายดาว (Sparkles)</option>
+                <option value="Sparkles">เหรียญเกียรติยศ (Sparkles)</option>
                 <option value="Flame">เปลวไฟ (Flame)</option>
                 <option value="Target">เป้าหมาย (Target)</option>
                 <option value="Zap">สายฟ้าพลังงาน (Zap)</option>
@@ -215,7 +248,7 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
                 value={badgeLabel}
                 onChange={(e) => setBadgeLabel(e.target.value)}
                 placeholder="เช่น Coffee Lover, Zen Spirit"
-                className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#4A7C59] outline-none"
+                className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-100 focus:border-[#7C3AED] outline-none"
                 required
               />
             </div>
@@ -228,7 +261,7 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
                 max={30}
                 value={totalCount}
                 onChange={(e) => setTotalCount(parseInt(e.target.value) || 1)}
-                className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#4A7C59] outline-none"
+                className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-100 focus:border-[#7C3AED] outline-none"
                 required
               />
             </div>
@@ -242,20 +275,20 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
               onChange={(e) => setTargetGoal(e.target.value)}
               placeholder="ระบุสิ่งที่ต้องทำ เช่น วิ่งสะสมครบ 3 สวนสาธารณะในกทม. หรือเข้าร่วมเวิร์กช็อป..."
               rows={2}
-              className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#4A7C59] outline-none"
+              className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-100 focus:border-[#7C3AED] outline-none"
             />
           </div>
 
           {/* Verification Method Selector (GPS, Photo Proof, Ticket) */}
           <div className="space-y-1.5 pt-1">
             <label className="text-xs font-bold text-slate-700 block">
-              🛡️ รูปแบบการตรวจสอบความคืบหน้า (Verification Method)
+              รูปแบบการตรวจสอบความคืบหน้า (Verification Method)
             </label>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { id: 'gps', label: '📍 พิกัด GPS จริง', desc: 'เช็คอินสถานที่จริง' },
-                { id: 'photo', label: '📸 ภาพถ่ายโมเมนต์', desc: 'อัปโหลดรูปลง Hub' },
-                { id: 'ticket', label: '🎟️ สแกนตั๋วงาน', desc: 'เชื่อมตั๋วในระบบ' },
+                { id: 'gps', label: 'พิกัด GPS จริง', desc: 'เช็คอินสถานที่จริง' },
+                { id: 'photo', label: 'ภาพถ่ายโมเมนต์', desc: 'อัปโหลดรูปลง Hub' },
+                { id: 'ticket', label: 'สแกนตั๋วงาน', desc: 'เชื่อมตั๋วในระบบ' },
               ].map((method) => {
                 const isSelected = verificationMethod === method.id;
                 return (
@@ -265,7 +298,7 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
                     onClick={() => setVerificationMethod(method.id as any)}
                     className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                       isSelected
-                        ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500/20 text-emerald-900 shadow-2xs'
+                        ? 'bg-purple-50 border-[#7C3AED] ring-2 ring-purple-100 text-purple-950 shadow-2xs'
                         : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                     }`}
                   >
@@ -286,7 +319,7 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
                   value={targetLocations}
                   onChange={(e) => setTargetLocations(e.target.value)}
                   placeholder="เช่น สวนลุมพินี, สวนเบญจกิติ, สวนวชิรเบญจทัศ (สวนรถไฟ)"
-                  className="w-full text-xs p-2.5 rounded-xl border border-slate-200 mt-1 focus:ring-2 focus:ring-[#4A7C59] outline-none"
+                  className="w-full text-xs p-2.5 rounded-xl border border-slate-200 mt-1 focus:ring-2 focus:ring-purple-100 focus:border-[#7C3AED] outline-none"
                 />
               </div>
             )}
@@ -303,7 +336,7 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
             </button>
             <button
               type="submit"
-              className="flex-1 bg-gradient-to-r from-[#4A7C59] to-emerald-600 hover:from-[#3B6347] hover:to-emerald-500 text-white font-extrabold text-xs py-3 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+              className="flex-1 bg-gradient-to-r from-[#581C87] to-[#7C3AED] hover:from-[#4C1D95] hover:to-[#6D28D9] text-white font-extrabold text-xs py-3 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
             >
               <PlusCircle className="w-4 h-4" />
               <span>สร้างชาเลนจ์ทันที (+{rewardPoints} XP)</span>

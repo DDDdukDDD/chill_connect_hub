@@ -156,3 +156,7 @@ export async function writeDatabase(db: DatabaseSchema): Promise<void> {
     console.error('Error writing database to disk:', err);
   }
 }
+
+// ── Re-export modern enterprise Data Access Layer (DAO) ──
+export * from './db/index';
+

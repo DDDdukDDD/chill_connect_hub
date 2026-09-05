@@ -595,7 +595,11 @@ export default function FairDetailPage() {
 
               <p className="text-xs sm:text-sm text-slate-500 font-medium flex items-center gap-1.5">
                 <MapPin className="w-4 h-4 text-[#2B527A] shrink-0" />
-                <span>{cleanText(eventData.location)}</span>
+                <span>
+                  {eventData.province && !eventData.location.includes(eventData.province)
+                    ? `${eventData.province} • ${cleanText(eventData.location)}`
+                    : cleanText(eventData.location)}
+                </span>
               </p>
             </div>
 

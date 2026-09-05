@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { Search, X, Dices, Sparkles, MapPin, Zap, Award, ArrowRight, Camera } from 'lucide-react';
 import { ALL_THAI_PROVINCES } from '@/data/spotsData';
 import { COMMUNITY_PUBLIC_QUESTS } from '@/components/CommunityChallengeBar';
-import { MOCK_POSTS } from '@/data/mockData';
+import { JoinChallengeModal } from '@/components/JoinChallengeModal';
+import { ChallengeQuest, MOCK_POSTS } from '@/data/mockData';
 import Link from 'next/link';
 
 export type HeroVersion = 'editorial' | 'classic';
@@ -18,6 +19,9 @@ interface HeroSectionProps {
   onOpenSurpriseModal?: () => void;
   initialVersion?: HeroVersion;
   onVersionChange?: (version: HeroVersion) => void;
+  onJoinQuest?: (questTitle: string) => void;
+  joinedQuestTitles?: string[];
+  onCancelQuest?: (questTitle: string) => void;
 }
 
 export const HeroSection: React.FC<HeroSectionProps> = ({
@@ -29,17 +33,15 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   onOpenSurpriseModal,
   initialVersion = 'editorial',
   onVersionChange,
+  onJoinQuest,
+  joinedQuestTitles = [],
+  onCancelQuest,
 }) => {
   const [version, setVersion] = useState<HeroVersion>(initialVersion);
   const [isFocused, setIsFocused] = useState(false);
-  const [localProvince, setLocalProvince] = useState(selectedProvince);
-
-  useEffect(() => {
-    setLocalProvince(selectedProvince);
-  }, [selectedProvince]);
+  const [selectedQuestForModal, setSelectedQuestForModal] = useState<ChallengeQuest | null>(null);
 
   const handleProvinceChange = (prov: string) => {
-    setLocalProvince(prov);
     if (setSelectedProvince) setSelectedProvince(prov);
   };
 
@@ -189,13 +191,15 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 <div className="flex items-center gap-2 px-4 py-2.5 sm:w-[200px] shrink-0">
                   <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
                   <select
-                    value={localProvince}
+                    value={selectedProvince}
                     onChange={(e) => handleProvinceChange(e.target.value)}
                     className="w-full bg-transparent text-sm font-medium text-slate-700 focus:outline-none cursor-pointer truncate appearance-none"
                   >
-                    <option value="all">ทุกจังหวัด</option>
+                    <option value="all">ทุกจังหวัด (ทั่วไทย)</option>
+                    <option value="ออนไลน์">ออนไลน์ (ไม่จำกัดสถานที่)</option>
                     <optgroup label="ยอดนิยม">
                       <option value="กรุงเทพฯ">กรุงเทพมหานคร</option>
+                      <option value="นนทบุรี">นนทบุรี</option>
                       <option value="เชียงใหม่">เชียงใหม่</option>
                       <option value="ชลบุรี">ชลบุรี</option>
                       <option value="ภูเก็ต">ภูเก็ต</option>
@@ -333,9 +337,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2 text-xs">
               <button
                 type="button"
-                onClick={handleScrollToQuests}
+                onClick={() => setSelectedQuestForModal(COMMUNITY_PUBLIC_QUESTS[currentQuestIndex])}
                 className="flex items-center gap-2 min-w-0 text-left group/ticker cursor-pointer"
-                title="คลิกเพื่อดูรายละเอียดภารกิจนี้ด้านล่าง"
+                title="คลิกเพื่อเปิดดูรายละเอียดและเงื่อนไขภารกิจนี้ทันที"
               >
                 <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-purple-50 text-purple-800 border border-purple-200/80 font-black text-[10px] uppercase tracking-wider shrink-0">
                   <Zap className="w-3 h-3 text-purple-600 fill-purple-500" />
@@ -356,9 +360,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 type="button"
                 onClick={handleScrollToQuests}
                 className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 hover:text-purple-900 transition-colors shrink-0 cursor-pointer"
+                title="เลื่อนลงไปสำรวจภารกิจทั้งหมดใน Section 4"
               >
-                <span>ดูภารกิจ</span>
-                <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                <span>ดูภารกิจทั้งหมด</span>
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
               </button>
             </div>
 
@@ -543,6 +548,20 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         )}
 
       </div>
+
+      {/* Detail & Confirmation Modal for Quest Selected from Hero Ticker */}
+      <JoinChallengeModal
+        isOpen={Boolean(selectedQuestForModal)}
+        onClose={() => setSelectedQuestForModal(null)}
+        quest={selectedQuestForModal}
+        onConfirmJoin={(q) => {
+          if (onJoinQuest) onJoinQuest(q.title);
+        }}
+        isAlreadyJoined={selectedQuestForModal ? (joinedQuestTitles || []).includes(selectedQuestForModal.title) : false}
+        onCancelQuest={(q) => {
+          if (onCancelQuest) onCancelQuest(q.title);
+        }}
+      />
     </section>
   );
 };

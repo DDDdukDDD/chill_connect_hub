@@ -19,6 +19,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { TermsPrivacyModal } from '@/components/TermsPrivacyModal';
+import { BrandLogo } from '@/components/BrandLogo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -126,9 +127,7 @@ export default function LoginPage() {
       {/* Header */}
       <header className="px-4 sm:px-8 py-4 flex items-center justify-between border-b border-[#E8E2D8] bg-white/80 backdrop-blur-md">
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#4A7C59] to-emerald-400 flex items-center justify-center text-white shadow-xs">
-            <Sparkles className="w-4 h-4" />
-          </div>
+          <BrandLogo size="sm" />
           <div>
             <span className="font-extrabold text-sm sm:text-base text-[#1E293B] block leading-tight">
               Chill & Connect Hub

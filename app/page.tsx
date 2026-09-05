@@ -24,6 +24,7 @@ import { CommunityCategoryRail, COMMUNITY_LIFESTYLE_CATEGORIES } from '@/compone
 import { SpotCategoryRail, NATIONWIDE_SPOT_CATEGORIES } from '@/components/SpotCategoryRail';
 import { FairCategoryRail, NATIONWIDE_FAIR_CATEGORIES } from '@/components/FairCategoryRail';
 import { Pagination } from '@/components/Pagination';
+import { BrandLogo } from '@/components/BrandLogo';
 import { MOCK_SPOTS, SPOT_CATEGORIES, ALL_THAI_PROVINCES, LifestyleSpotItem } from '@/data/spotsData';
 import { SpotCard } from '@/components/SpotCard';
 import { isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp, isEventEndedByDate } from '@/lib/dateUtils';
@@ -457,13 +458,34 @@ export default function Home() {
         matchesZone = event.zone === selectedZone;
       }
 
+      // Province filter
+      let matchesProvince = true;
+      if (selectedSpotProvince && selectedSpotProvince !== 'all' && selectedSpotProvince !== 'ทั่วไทย') {
+        const pLower = selectedSpotProvince.toLowerCase().trim();
+        const isOnlineQuery = pLower === 'online' || pLower.includes('ออนไลน์');
+        if (isOnlineQuery) {
+          matchesProvince = event.province === 'ออนไลน์' || (event.location || '').toLowerCase().includes('ออนไลน์');
+        } else {
+          const evLocation = (event.location || '').toLowerCase();
+          const evProv = (event.province || '').toLowerCase();
+          const isBkkQuery = pLower.includes('กรุงเทพ') || pLower.includes('กทม') || pLower.includes('bangkok');
+          const isEvBkk = evProv.includes('กรุงเทพ') || evProv.includes('กทม') || evLocation.includes('กรุงเทพ') || evLocation.includes('กทม');
+          if (isBkkQuery) {
+            matchesProvince = isEvBkk;
+          } else {
+            const cleanQuery = pLower.replace('จังหวัด', '').trim();
+            matchesProvince = evLocation.includes(cleanQuery) || evProv.includes(cleanQuery);
+          }
+        }
+      }
+
       // Ended Events filter (Default: hide ended events, show when showEndedEvents is true)
       let matchesEnded = true;
       if (!showEndedEvents) {
         matchesEnded = !isEventEnded(event);
       }
 
-      return matchesCategory && matchesVenue && matchesEventType && matchesTime && matchesSubCategory && matchesSearch && matchesPrice && matchesZone && matchesEnded;
+      return matchesCategory && matchesVenue && matchesEventType && matchesTime && matchesSubCategory && matchesSearch && matchesPrice && matchesZone && matchesProvince && matchesEnded;
     });
 
     // Calculate distance for all events ONLY when sortByNearMe is active
@@ -503,6 +525,7 @@ export default function Home() {
     selectedSubCategory,
     selectedVenueFilter,
     selectedZone,
+    selectedSpotProvince,
     eventTypeTab,
     joinedEventIds,
     timeFilter,
@@ -525,6 +548,29 @@ export default function Home() {
       if (isEventEnded(event)) return false;
 
       const eventText = `${event.title} ${event.description} ${event.tag} ${event.badgeText || ''} ${event.location} ${event.hostName || ''} ${event.category} ${event.zone || ''}`.toLowerCase();
+
+      // Province filter for Community Stream
+      if (selectedSpotProvince && selectedSpotProvince !== 'all' && selectedSpotProvince !== 'ทั่วไทย') {
+        const pLower = selectedSpotProvince.toLowerCase().trim();
+        const isOnlineQuery = pLower === 'online' || pLower.includes('ออนไลน์');
+
+        if (isOnlineQuery) {
+          const isOnline = event.province === 'ออนไลน์' || (event.location || '').toLowerCase().includes('ออนไลน์') || (event.location || '').toLowerCase().includes('zoom');
+          if (!isOnline) return false;
+        } else {
+          const evLocation = (event.location || '').toLowerCase();
+          const evProv = (event.province || '').toLowerCase();
+          const isBkkQuery = pLower.includes('กรุงเทพ') || pLower.includes('กทม') || pLower.includes('bangkok');
+          const isEvBkk = evProv.includes('กรุงเทพ') || evProv.includes('กทม') || evLocation.includes('กรุงเทพ') || evLocation.includes('กทม');
+
+          if (isBkkQuery) {
+            if (!isEvBkk) return false;
+          } else {
+            const cleanQuery = pLower.replace('จังหวัด', '').trim();
+            if (!evLocation.includes(cleanQuery) && !evProv.includes(cleanQuery)) return false;
+          }
+        }
+      }
 
       // Category filter for Community Stream
       if (selectedCategory !== null) {
@@ -557,13 +603,36 @@ export default function Home() {
 
       return true;
     });
-  }, [eventsList, selectedCategory, searchQuery]);
+  }, [eventsList, selectedCategory, searchQuery, selectedSpotProvince]);
 
   const streamPublicEvents = useMemo(() => {
     return eventsList.filter((event) => {
       if (event.eventType !== 'public_venue') return false;
       // Auto-hide ended events on homepage
       if (isEventEnded(event)) return false;
+
+      // Province filter for Fairs Stream
+      if (selectedSpotProvince && selectedSpotProvince !== 'all' && selectedSpotProvince !== 'ทั่วไทย') {
+        const pLower = selectedSpotProvince.toLowerCase().trim();
+        const isOnlineQuery = pLower === 'online' || pLower.includes('ออนไลน์');
+
+        if (isOnlineQuery) {
+          const isOnline = event.province === 'ออนไลน์' || (event.location || '').toLowerCase().includes('ออนไลน์');
+          if (!isOnline) return false;
+        } else {
+          const evLocation = (event.location || '').toLowerCase();
+          const evProv = (event.province || '').toLowerCase();
+          const isBkkQuery = pLower.includes('กรุงเทพ') || pLower.includes('กทม') || pLower.includes('bangkok');
+          const isEvBkk = evProv.includes('กรุงเทพ') || evProv.includes('กทม') || evLocation.includes('กรุงเทพ') || evLocation.includes('กทม');
+
+          if (isBkkQuery) {
+            if (!isEvBkk) return false;
+          } else {
+            const cleanQuery = pLower.replace('จังหวัด', '').trim();
+            if (!evLocation.includes(cleanQuery) && !evProv.includes(cleanQuery)) return false;
+          }
+        }
+      }
 
       // Category Rail Filter for Fairs Stream
       if (selectedFairRailCategory && selectedFairRailCategory !== 'all') {
@@ -599,11 +668,11 @@ export default function Home() {
 
       return true;
     });
-  }, [eventsList, selectedFairRailCategory, selectedVenueFilter, searchQuery]);
+  }, [eventsList, selectedFairRailCategory, selectedVenueFilter, searchQuery, selectedSpotProvince]);
 
   // Filtered Lifestyle Spots (พิกัดเที่ยว & จุดฮีลใจ ทั่วประเทศ)
   const filteredSpots = useMemo(() => {
-    let result = MOCK_SPOTS.filter((spot) => {
+    const result = MOCK_SPOTS.filter((spot) => {
       // 0. Spot Category Rail Filter
       if (selectedSpotRailCategory && selectedSpotRailCategory !== 'all') {
         const catDef = NATIONWIDE_SPOT_CATEGORIES.find((c) => c.id === selectedSpotRailCategory);
@@ -878,6 +947,9 @@ export default function Home() {
           onOpenSurpriseModal={() => setIsSurpriseModalOpen(true)}
           initialVersion={heroVersion}
           onVersionChange={(v) => setHeroVersion(v)}
+          onJoinQuest={handleJoinQuestFromHome}
+          joinedQuestTitles={joinedQuestTitles}
+          onCancelQuest={handleCancelQuestFromHome}
         />
 
         <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-8 pt-1 sm:pt-2 pb-6 relative z-10">
@@ -920,23 +992,13 @@ export default function Home() {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenCreateModal('spot')}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#4A7C59] hover:bg-[#386144] text-white rounded-xl text-xs font-bold shadow-2xs hover:shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
-                    >
-                      <PlusCircle className="w-3.5 h-3.5" />
-                      <span>แนะนำพิกัดใหม่</span>
-                    </button>
-                    <Link
-                      href={`/spots?category=${encodeURIComponent(selectedSpotCategory)}&province=${encodeURIComponent(selectedSpotProvince)}`}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-[#4A7C59] text-[#4A7C59] hover:text-white border border-emerald-200/80 hover:border-[#4A7C59] rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer"
-                    >
-                      <span>ดูสถานที่ทั้งหมด ({filteredSpots.length})</span>
-                      <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
-                    </Link>
-                  </div>
+                  <Link
+                    href={`/spots?category=${encodeURIComponent(selectedSpotCategory)}&province=${encodeURIComponent(selectedSpotProvince)}`}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-[#4A7C59] text-[#4A7C59] hover:text-white border border-emerald-200/80 hover:border-[#4A7C59] rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
+                  >
+                    <span>ดูสถานที่ทั้งหมด ({filteredSpots.length})</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
+                  </Link>
                 </div>
 
                 {/* Nationwide Spot Category Rail */}
@@ -1000,23 +1062,13 @@ export default function Home() {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenCreateModal('community')}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F26430] hover:bg-[#d85524] text-white rounded-xl text-xs font-bold shadow-2xs hover:shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
-                    >
-                      <PlusCircle className="w-3.5 h-3.5" />
-                      <span>เปิดตี้ใหม่</span>
-                    </button>
-                    <Link
-                      href={`/community${selectedCategory ? `?category=${encodeURIComponent(selectedCategory)}` : ''}`}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-[#F26430] text-[#F26430] hover:text-white border border-orange-200/80 hover:border-[#F26430] rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer"
-                    >
-                      <span>สำรวจกิจกรรมชุมชนทั้งหมด ({streamCommunityEvents.length})</span>
-                      <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
-                    </Link>
-                  </div>
+                  <Link
+                    href={`/community${selectedCategory ? `?category=${encodeURIComponent(selectedCategory)}` : ''}`}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-[#F26430] text-[#F26430] hover:text-white border border-orange-200/80 hover:border-[#F26430] rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
+                  >
+                    <span>สำรวจกิจกรรมชุมชนทั้งหมด ({streamCommunityEvents.length})</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
+                  </Link>
                 </div>
 
                 {/* Meetup & Luma Inspired Lifestyle Category Rail */}
@@ -1065,23 +1117,13 @@ export default function Home() {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenCreateModal('fair')}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#2B527A] hover:bg-[#1f3c5a] text-white rounded-xl text-xs font-bold shadow-2xs hover:shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
-                    >
-                      <PlusCircle className="w-3.5 h-3.5" />
-                      <span>สร้างงานมหกรรม</span>
-                    </button>
-                    <Link
-                      href={`/fairs${selectedVenueFilter ? `?venue=${encodeURIComponent(selectedVenueFilter)}` : ''}`}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-[#2B527A] text-[#2B527A] hover:text-white border border-blue-200/80 hover:border-[#2B527A] rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer"
-                    >
-                      <span>ดูงานแฟร์ทั้งหมด ({streamPublicEvents.length})</span>
-                      <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
-                    </Link>
-                  </div>
+                  <Link
+                    href={`/fairs${selectedVenueFilter ? `?venue=${encodeURIComponent(selectedVenueFilter)}` : ''}`}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-[#2B527A] text-[#2B527A] hover:text-white border border-blue-200/80 hover:border-[#2B527A] rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
+                  >
+                    <span>ดูงานแฟร์ทั้งหมด ({streamPublicEvents.length})</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
+                  </Link>
                 </div>
 
                 {/* Major Fairs & Expo Category Rail */}
@@ -1112,7 +1154,6 @@ export default function Home() {
               <CommunityChallengeBar
                 onJoinQuest={handleJoinQuestFromHome}
                 joinedQuestTitles={joinedQuestTitles}
-                onOpenCreateModal={() => handleOpenCreateModal('challenge')}
               />
 
               {/* ------------------------------------------------------------------------- */}
@@ -1544,9 +1585,7 @@ export default function Home() {
             {/* Brand Intro */}
             <div className="space-y-3 max-w-md">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-600 to-[#4A7C59] flex items-center justify-center text-white shadow-xs ring-2 ring-emerald-500/15 shrink-0">
-                  <Sprout className="w-4.5 h-4.5 stroke-[2.5]" />
-                </div>
+                <BrandLogo size="sm" />
                 <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
                   Chill & Connect Hub
                 </span>

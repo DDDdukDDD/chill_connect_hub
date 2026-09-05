@@ -31,12 +31,17 @@ import {
   Medal,
   Award,
   Camera,
-  CheckCircle
+  CheckCircle,
+  Loader2,
+  Globe,
+  Repeat,
+  Laptop
 } from 'lucide-react';
-import { EventItem } from '@/data/mockData';
+import { EventItem, DayOfWeek, EventRecurrence } from '@/data/mockData';
 import { ALL_THAI_PROVINCES } from '@/data/spotsData';
 import { useAuth } from '@/lib/useAuth';
 import { RichTextEditor, stripHtmlToPlainText, renderDescriptionContent } from './RichTextEditor';
+import { compressImage } from '@/lib/media/compressor';
 
 export type CreationEntityType = 'community' | 'fair' | 'spot' | 'challenge';
 
@@ -57,6 +62,71 @@ const SPOT_VIBE_CATEGORIES = [
   { id: 'community_space', label: 'คอมมูนิตี้สเปซ & เวิร์กช็อป', icon: '🏡' },
   { id: 'riverside', label: 'ริมน้ำ & พระอาทิตย์ตก', icon: '🌊' },
 ];
+
+export const DAY_OPTIONS: { id: DayOfWeek; label: string; full: string }[] = [
+  { id: 'MO', label: 'จ.', full: 'วันจันทร์' },
+  { id: 'TU', label: 'อ.', full: 'วันอังคาร' },
+  { id: 'WE', label: 'พ.', full: 'วันพุธ' },
+  { id: 'TH', label: 'พฤ.', full: 'วันพฤหัสบดี' },
+  { id: 'FR', label: 'ศ.', full: 'วันศุกร์' },
+  { id: 'SA', label: 'ส.', full: 'วันเสาร์' },
+  { id: 'SU', label: 'อา.', full: 'วันอาทิตย์' },
+];
+
+export const ONLINE_PLATFORMS = [
+  { id: 'zoom', label: 'Zoom Meeting', icon: '📹', placeholder: 'https://us02web.zoom.us/j/...' },
+  { id: 'google_meet', label: 'Google Meet', icon: '🟢', placeholder: 'https://meet.google.com/...' },
+  { id: 'discord', label: 'Discord Voice & Community', icon: '💬', placeholder: 'https://discord.gg/...' },
+  { id: 'teams', label: 'Microsoft Teams', icon: '💼', placeholder: 'https://teams.microsoft.com/...' },
+  { id: 'other', label: 'แพลตฟอร์มอื่น ๆ / Live Streaming', icon: '🌐', placeholder: 'https://...' },
+];
+
+export function formatRecurrenceSummary(
+  days: DayOfWeek[],
+  frequency: 'weekly' | 'biweekly' | 'monthly',
+  startTime: string,
+  endTime: string
+): string {
+  if (days.length === 0) return 'ยังไม่ได้เลือกวันในสัปดาห์';
+  const order: DayOfWeek[] = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'];
+  const sorted = [...days].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+
+  let daysStr = '';
+  if (sorted.length === 7) {
+    daysStr = 'ทุกวัน';
+  } else if (sorted.length === 5 && sorted.every(d => ['MO', 'TU', 'WE', 'TH', 'FR'].includes(d))) {
+    daysStr = 'ทุกวันจันทร์ - ศุกร์';
+  } else if (sorted.length === 2 && sorted.includes('SA') && sorted.includes('SU')) {
+    daysStr = 'ทุกวันเสาร์ - อาทิตย์';
+  } else {
+    daysStr = 'ทุกวัน' + sorted.map(d => DAY_OPTIONS.find(o => o.id === d)?.label || '').join(' ');
+  }
+
+  const freqSuffix = frequency === 'biweekly' ? ' (สัปดาห์เว้นสัปดาห์)' : frequency === 'monthly' ? ' (เดือนละครั้ง)' : '';
+  return `${daysStr}${freqSuffix} • ${startTime} - ${endTime} น.`;
+}
+
+export function formatRecurrenceDaysOnly(
+  days: DayOfWeek[],
+  frequency: 'weekly' | 'biweekly' | 'monthly'
+): string {
+  if (days.length === 0) return 'จัดซ้ำเป็นประจำ';
+  const order: DayOfWeek[] = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'];
+  const sorted = [...days].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+
+  let daysStr = '';
+  if (sorted.length === 7) {
+    daysStr = 'ทุกวัน';
+  } else if (sorted.length === 5 && sorted.every(d => ['MO', 'TU', 'WE', 'TH', 'FR'].includes(d))) {
+    daysStr = 'ทุกวันจันทร์ - ศุกร์';
+  } else if (sorted.length === 2 && sorted.includes('SA') && sorted.includes('SU')) {
+    daysStr = 'ทุกวันเสาร์ - อาทิตย์';
+  } else {
+    daysStr = 'ทุกวัน' + sorted.map(d => DAY_OPTIONS.find(o => o.id === d)?.label || '').join(' ');
+  }
+  const freqSuffix = frequency === 'biweekly' ? ' (เว้นสัปดาห์)' : frequency === 'monthly' ? ' (รายเดือน)' : '';
+  return `${daysStr}${freqSuffix}`;
+}
 
 const PRESET_IMAGES: Record<CreationEntityType, Array<{ id: string; label: string; url: string }>> = {
   community: [
@@ -123,11 +193,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
   initialImage = '',
   onCreateSuccess,
 }) => {
-  const { userProfile, handleSetRole } = useAuth();
-  const isAdmin = userProfile.role === 'admin';
-  const isOrganizer = userProfile.role === 'organizer' || isAdmin;
-  const isVenueOwner = userProfile.role === 'venue_owner' || isAdmin;
-  const isHost = userProfile.role === 'host' || isAdmin;
+  const { userProfile, handleSetRole, isAdmin, isOrganizer, isVenueOwner, isHost, isMember } = useAuth();
 
   // Wizard Steps: 1: Choose Type, 2: Form, 3: Preview & Confirm
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -157,6 +223,19 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
   const [customBringInput, setCustomBringInput] = useState('');
   const [transportation, setTransportation] = useState('พบกัน ณ จุดนัดพบ (เดินทางอิสระ)');
   const [contactChannel, setContactChannel] = useState('');
+
+  // Community schedule & recurring fields
+  const [scheduleType, setScheduleType] = useState<'single' | 'recurring'>('single');
+  const [recurrenceFrequency, setRecurrenceFrequency] = useState<'weekly' | 'biweekly' | 'monthly'>('weekly');
+  const [selectedDaysOfWeek, setSelectedDaysOfWeek] = useState<DayOfWeek[]>(['SA']);
+  const [recurrenceEndType, setRecurrenceEndType] = useState<'never' | 'on_date'>('never');
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState<string>(() => getLeadTimeDate(isAdmin ? 30 : 60));
+
+  // Location type & online meetup fields
+  const [locationType, setLocationType] = useState<'physical' | 'online'>('physical');
+  const [onlinePlatform, setOnlinePlatform] = useState<string>('zoom');
+  const [onlineJoinUrl, setOnlineJoinUrl] = useState<string>('');
+  const [onlineMeetingNote, setOnlineMeetingNote] = useState<string>('ส่งลิงก์ห้องให้หลังกดเข้าร่วมตี้');
 
   // Fair fields
   const [fairOrganizer, setFairOrganizer] = useState('');
@@ -239,12 +318,14 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
   // Safety acceptance
   const [isSafetyAccepted, setIsSafetyAccepted] = useState(false);
   const [isSafetyModalOpen, setIsSafetyModalOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const minCommunityDate = isAdmin ? getLeadTimeDate(0) : getLeadTimeDate(3);
   const minFairDate = isAdmin ? getLeadTimeDate(0) : getLeadTimeDate(7);
 
   const handleModalClose = () => {
-    if (step > 1 && (isOrganizer || isAdmin)) {
+    if (step > 1 && (isOrganizer || isVenueOwner || isAdmin)) {
       setStep(1);
       setErrorMessage(null);
     } else {
@@ -254,11 +335,12 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      if (isOrganizer || isAdmin) {
+      if (userProfile.role === 'member') {
+        setStep(1);
+      } else if (isAdmin || isOrganizer || isVenueOwner) {
         setStep(1);
         setEntityType(initialType || 'community');
-      } else {
-        // Regular members, hosts, space owners directly enter the Community Meetup Form!
+      } else if (isHost) {
         setStep(2);
         setEntityType('community');
       }
@@ -281,7 +363,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
         setHasDraft(false);
       }
     }
-  }, [isOpen, initialType, initialTitle, initialLocation, initialCategory, initialImage, isOrganizer, isAdmin]);
+  }, [isOpen, initialType, initialTitle, initialLocation, initialCategory, initialImage, userProfile.role, isOrganizer, isVenueOwner, isHost, isAdmin]);
 
   // Auto-save form state to sessionStorage
   useEffect(() => {
@@ -383,30 +465,62 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
   };
 
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     setUploadError(null);
-    if (file) {
-      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-      if (!validTypes.includes(file.type)) {
-        setUploadError('รองรับเฉพาะไฟล์รูปภาพ .jpg, .png, .webp เท่านั้น');
-        return;
-      }
+    if (!file) return;
 
-      const maxSizeInBytes = 5 * 1024 * 1024;
-      if (file.size > maxSizeInBytes) {
-        setUploadError('ขนาดไฟล์เกิน 5MB กรุณาเลือกรูปภาพที่มีขนาดเล็กลง');
-        return;
-      }
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif'];
+    if (!validTypes.includes(file.type)) {
+      setUploadError('รองรับเฉพาะไฟล์รูปภาพ .jpg, .png, .webp, .avif เท่านั้น');
+      return;
+    }
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setUploadedImage(reader.result);
-        }
-      };
-      reader.readAsDataURL(file);
+    const maxSizeInBytes = 10 * 1024 * 1024; // Up to 10MB input before client-side WebP compression
+    if (file.size > maxSizeInBytes) {
+      setUploadError('ขนาดไฟล์เกิน 10MB กรุณาเลือกรูปภาพที่มีขนาดเล็กลง');
+      return;
+    }
+
+    try {
+      setIsUploadingImage(true);
+
+      // 1. Client-Side Pre-Compression to WebP (scales down and cuts size by 80-95%)
+      const compressed = await compressImage(file, {
+        maxWidth: 1600,
+        maxHeight: 1600,
+        quality: 0.82,
+      });
+
+      // 2. Upload to /api/upload
+      const formData = new FormData();
+      formData.append('file', compressed);
+      formData.append('folder', entityType);
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success && data.url) {
+        setUploadedImage(data.url);
+      } else {
+        // Fallback to Data URL if offline or API error
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (typeof reader.result === 'string') {
+            setUploadedImage(reader.result);
+          }
+        };
+        reader.readAsDataURL(compressed);
+      }
+    } catch {
+      setUploadError('เกิดข้อผิดพลาดในการประมวลผลรูปภาพ');
+    } finally {
+      setIsUploadingImage(false);
     }
   };
 
@@ -491,9 +605,6 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
     setCustomBringInput('');
   };
 
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
   const validateStep2 = (): boolean => {
     setErrorMessage(null);
 
@@ -508,21 +619,36 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
     }
 
     // 2. Location & Province Validation (Crucial for badges, maps, and province filters)
-    if (!locationName.trim()) {
-      setErrorMessage('กรุณาระบุชื่อสถานที่ / ย่าน / จุดสังเกตให้ชัดเจน');
-      return false;
-    }
-    if (!province) {
-      setErrorMessage('กรุณาเลือกจังหวัดของสถานที่');
-      return false;
+    const isOnlineCommunity = entityType === 'community' && locationType === 'online';
+    if (!isOnlineCommunity) {
+      if (!locationName.trim()) {
+        setErrorMessage('กรุณาระบุชื่อสถานที่ / ย่าน / จุดสังเกตให้ชัดเจน');
+        return false;
+      }
+      if (!province) {
+        setErrorMessage('กรุณาเลือกจังหวัดของสถานที่');
+        return false;
+      }
     }
 
     // 3. Entity-specific required fields
     if (entityType === 'community') {
-      if (!communityDate) {
-        setErrorMessage('กรุณาเลือกวันที่จัดกิจกรรม');
-        return false;
+      if (scheduleType === 'single') {
+        if (!communityDate) {
+          setErrorMessage('กรุณาเลือกวันที่จัดกิจกรรม');
+          return false;
+        }
+      } else {
+        if (selectedDaysOfWeek.length === 0) {
+          setErrorMessage('กรุณาเลือกวันในสัปดาห์ที่จัดกิจกรรมอย่างน้อย 1 วัน (เช่น จันทร์, พุธ, ศุกร์)');
+          return false;
+        }
+        if (recurrenceEndType === 'on_date' && !recurrenceEndDate) {
+          setErrorMessage('กรุณาระบุวันสิ้นสุดของรอบกิจกรรมที่จัดซ้ำ');
+          return false;
+        }
       }
+
       if (!startTime || !endTime) {
         setErrorMessage('กรุณาระบุเวลาเริ่มและเวลาสิ้นสุดกิจกรรม');
         return false;
@@ -531,7 +657,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
         setErrorMessage('จำนวนคนที่เปิดรับต้องมีอย่างน้อย 2 คน');
         return false;
       }
-      if (!meetingPoint.trim()) {
+      if (locationType === 'physical' && !meetingPoint.trim()) {
         setErrorMessage('กรุณาระบุจุดนัดพบที่แน่นอน / จุดสังเกต (Meeting Point) เพื่อความสะดวกของผู้ร่วมกิจกรรม');
         return false;
       }
@@ -608,11 +734,22 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
       const finalImage = uploadedImage || image;
 
       if (entityType === 'community') {
-        const formattedDate = formatThaiDate(communityDate);
+        const isOnline = locationType === 'online';
+        const platformObj = ONLINE_PLATFORMS.find(p => p.id === onlinePlatform);
+        const fullLocation = isOnline
+          ? `ออนไลน์ (${platformObj?.label || 'Virtual Meeting'})`
+          : (meetingPoint.trim() 
+              ? `${locationName.trim()} (จุดนัดพบ: ${meetingPoint.trim()})` 
+              : `${locationName.trim()}, จังหวัด${province}`);
+
+        const finalProvince = isOnline ? 'ออนไลน์' : (province.trim() || 'กรุงเทพฯ');
+        const finalZone = isOnline ? 'online' : (district.trim() || undefined);
+
+        const isRecurring = scheduleType === 'recurring';
+        const formattedDate = isRecurring
+          ? formatRecurrenceDaysOnly(selectedDaysOfWeek, recurrenceFrequency)
+          : formatThaiDate(communityDate);
         const formattedTime = `${startTime} - ${endTime} น.`;
-        const fullLocation = meetingPoint.trim() 
-          ? `${locationName.trim()} (จุดนัดพบ: ${meetingPoint.trim()})` 
-          : `${locationName.trim()}, จังหวัด${province}`;
 
         const communityPayload: EventItem = {
           id: `comm-user-${Date.now()}`,
@@ -624,8 +761,21 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
           tag: communityCategory === 'move' ? 'ออกกำลังกาย' : communityCategory === 'heal' ? 'ฮีลใจ' : communityCategory === 'chill' ? 'นัดชิลล์' : 'เวิร์กช็อป',
           date: formattedDate,
           time: formattedTime,
+          province: finalProvince,
+          zone: finalZone,
           location: fullLocation,
           venueTag: 'park',
+          scheduleType: isRecurring ? 'recurring' : 'single',
+          recurrence: isRecurring ? {
+            frequency: recurrenceFrequency,
+            daysOfWeek: selectedDaysOfWeek,
+            endType: recurrenceEndType,
+            endDate: recurrenceEndType === 'on_date' ? recurrenceEndDate : undefined,
+            customSummary: formatRecurrenceSummary(selectedDaysOfWeek, recurrenceFrequency, startTime, endTime),
+          } : undefined,
+          locationType: isOnline ? 'online' : 'physical',
+          onlinePlatform: isOnline ? onlinePlatform : undefined,
+          onlineJoinUrl: isOnline && onlineJoinUrl.trim() ? onlineJoinUrl.trim() : undefined,
           price: price.trim() || 'ฟรี',
           hostName: userProfile.name || 'คุณส้ม (Som_Chill)',
           hostAvatar: userProfile.avatar,
@@ -635,8 +785,8 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
           targetAge: targetAge || 'ไม่จำกัดอายุ',
           energyLevel: 'chill',
           description: description.trim() || 'ชวนเพื่อนสายเดียวกันมาเปิดประสบการณ์และทำกิจกรรมฮีลใจร่วมกัน บรรยากาศเป็นกันเอง!',
-          whatToBring: whatToBringList,
-          transportation: transportation,
+          whatToBring: isOnline ? ['อินเทอร์เน็ตความเร็วเสถียร', 'หูฟัง & ไมโครโฟน'] : whatToBringList,
+          transportation: isOnline ? 'เข้าร่วมออนไลน์ผ่านอุปกรณ์คอมพิวเตอร์ / สมาร์ทโฟน' : transportation,
           contactChannel: contactChannel.trim() || undefined,
           isNew: true,
           createdAtTimestamp: Date.now(),
@@ -670,6 +820,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
           tag: 'งานมหกรรม',
           date: dateRangeStr,
           time: '10:00 - 20:00 น.',
+          province: province.trim() || (fairVenueId === 'IMPACT' ? 'นนทบุรี' : 'กรุงเทพฯ'),
           location: locationName.trim() || venueObj?.label || 'ศูนย์การประชุมแห่งชาติสิริกิติ์',
           venueTag: venueObj?.tag || 'qsncc',
           price: price.trim() || 'ฟรี',
@@ -706,6 +857,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
           tag: spotCategory,
           date: 'เปิดบริการทุกวัน',
           time: spotOpenHours,
+          province: province.trim() || 'กรุงเทพฯ',
           location: `${locationName.trim()}, จังหวัด${province}`,
           venueTag: 'park',
           price: price.trim() || 'ฟรี',
@@ -774,12 +926,12 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
         <div className="flex items-start justify-between border-b border-slate-100 pb-4">
           <div className="space-y-1">
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              {step === 1 && 'เลือกประเภทกิจกรรมที่ต้องการสร้าง'}
+              {step === 1 && (userProfile.role === 'member' ? 'สิทธิ์การสร้างกิจกรรมสำหรับสมาชิก' : 'เลือกประเภทกิจกรรมที่ต้องการสร้าง')}
               {step === 2 && `กรอกข้อมูล ${entityType === 'community' ? 'กิจกรรมคอมมูนิตี้' : entityType === 'fair' ? 'งานมหกรรม นิทรรศการ เอ็กซ์โป และ งานวิ่ง' : entityType === 'spot' ? 'สถานที่เที่ยว & จุดฮีลใจ' : 'เควสต์ & ชาเลนจ์'}`}
               {step === 3 && 'ตรวจสอบความถูกต้องก่อนเผยแพร่'}
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 font-medium">
-              {step === 1 && 'คุณจะสามารถสร้างได้เฉพาะกิจกรรมที่คุณมีสิทธิ์ในการสร้างเท่านั้น'}
+              {step === 1 && (userProfile.role === 'member' ? 'บทบาทปัจจุบัน: Member (สมาชิกทั่วไป)' : 'คุณจะสามารถสร้างได้เฉพาะกิจกรรมที่คุณมีสิทธิ์ในการสร้างเท่านั้น')}
               {step === 2 && 'ระบุรายละเอียดให้ครบถ้วนเพื่อสร้างความชัดเจนและประสบการณ์ที่ดีแก่ผู้เข้าร่วม'}
               {step === 3 && 'จำลองหน้าเผยแพร่จริงเพื่อความมั่นใจก่อนเปิดรับเพื่อนเข้าร่วม'}
             </p>
@@ -795,10 +947,115 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
           </button>
         </div>
 
-        {/* STEP 1: ENTITY TYPE SELECTOR CARDS */}
-        {step === 1 && (
+        {/* STEP 1: ENTITY TYPE SELECTOR CARDS OR MEMBER PERMISSION NOTICE */}
+        {step === 1 && userProfile.role === 'member' ? (
+          <div className="space-y-5 py-2 animate-fade-in text-left">
+            <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-br from-amber-50/50 via-slate-50 to-emerald-50/30 border border-slate-200 shadow-xs space-y-4">
+              <div className="flex items-start gap-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-amber-100 border border-amber-200 text-amber-800 flex items-center justify-center font-bold shrink-0">
+                  <ShieldAlert className="w-6 h-6 text-amber-600" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-base sm:text-lg font-black text-slate-900">
+                      สิทธิ์เฉพาะ Host, Organizer และ Space Owner
+                    </h3>
+                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-200/80 text-slate-700">
+                      Role: Member (สมาชิกทั่วไป)
+                    </span>
+                  </div>
+                  <p className="text-xs sm:text-[13px] text-slate-600 mt-1 leading-relaxed">
+                    บทบาทปัจจุบันของคุณคือ <strong>Member (สมาชิกทั่วไป)</strong> ซึ่งสามารถค้นหา เข้าร่วมตี้ และส่งต่อโมเมนต์ความประทับใจได้ แต่ยังไม่สามารถสร้างกิจกรรมใหม่ได้ด้วยตนเอง
+                  </p>
+                </div>
+              </div>
+
+              {/* Role Permissions Matrix */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center text-xs font-bold shrink-0">👥</span>
+                    <span className="font-black text-xs text-slate-900">Verified Host</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    สร้างกิจกรรมคอมมูนิตี้ & ตี้เพื่อนใหม่ (วิ่ง, กาแฟ, บอร์ดเกม, เวิร์กช็อป)
+                  </p>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold shrink-0">🏛️</span>
+                    <span className="font-black text-xs text-slate-900">Organizer / Space</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    สร้างงานมหกรรม นิทรรศการ เอ็กซ์โป และกิจกรรมคอมมูนิตี้
+                  </p>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs font-bold shrink-0">🛡️</span>
+                    <span className="font-black text-xs text-slate-900">Super Admin</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    สร้างและจัดการได้ทุกประเภท รวมถึงพิกัดเที่ยว 77 จังหวัด และเควสต์
+                  </p>
+                </div>
+              </div>
+
+              {/* Fast Test Role Switcher inside Modal */}
+              <div className="pt-3 border-t border-slate-200/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="text-xs text-slate-600 font-semibold flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-[#4A7C59] shrink-0" />
+                  <span>ทดสอบฟอร์มสร้างกิจกรรม? สลับบทบาทได้ทันที:</span>
+                </div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => handleSetRole('host')}
+                    className="px-3 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all active:scale-95 cursor-pointer"
+                  >
+                    สลับเป็น Host
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSetRole('organizer')}
+                    className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all active:scale-95 cursor-pointer"
+                  >
+                    สลับเป็น Organizer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSetRole('venue_owner')}
+                    className="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all active:scale-95 cursor-pointer"
+                  >
+                    สลับเป็น Space
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSetRole('admin')}
+                    className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all active:scale-95 cursor-pointer"
+                  >
+                    สลับเป็น Admin
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="flex justify-end pt-1">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+              >
+                เข้าใจแล้ว (ปิดหน้าต่าง)
+              </button>
+            </div>
+          </div>
+        ) : step === 1 ? (
           <div className="space-y-4 py-2 animate-fade-in text-left">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className={`grid grid-cols-1 ${isAdmin ? 'sm:grid-cols-2' : (isOrganizer || isVenueOwner) ? 'sm:grid-cols-2' : 'sm:grid-cols-1'} gap-4`}>
               
               {/* Option 1: Community Meetup */}
               <div
@@ -821,26 +1078,28 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                 </div>
               </div>
 
-              {/* Option 2: Public Venue / Expo */}
-              <div
-                onClick={() => {
-                  setEntityType('fair');
-                  setStep(2);
-                }}
-                className="group relative p-5 rounded-2xl border-2 border-blue-200 hover:border-[#2B527A] bg-blue-50/40 hover:bg-blue-50/80 cursor-pointer shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
-              >
-                <div className="space-y-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-blue-100/70 text-[#2B527A] border border-blue-200 flex items-center justify-center font-black">
-                    <Building className="w-5 h-5" />
+              {/* Option 2: Public Venue / Expo (Organizer, Space Owner, Admin) */}
+              {(isOrganizer || isVenueOwner || isAdmin) && (
+                <div
+                  onClick={() => {
+                    setEntityType('fair');
+                    setStep(2);
+                  }}
+                  className="group relative p-5 rounded-2xl border-2 border-blue-200 hover:border-[#2B527A] bg-blue-50/40 hover:bg-blue-50/80 cursor-pointer shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+                >
+                  <div className="space-y-2.5">
+                    <div className="w-10 h-10 rounded-xl bg-blue-100/70 text-[#2B527A] border border-blue-200 flex items-center justify-center font-black">
+                      <Building className="w-5 h-5" />
+                    </div>
+                    <h3 className="font-black text-base text-slate-900 group-hover:text-[#2B527A] transition-colors">
+                      งานมหกรรม นิทรรศการ เอ็กซ์โป และ งานวิ่ง
+                    </h3>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      สัปดาห์หนังสือ, งานกาแฟ Thailand Coffee Fest, Motor Expo ณ ศูนย์จัดแสดงชั้นนำ เช่น QSNCC, BITEC, IMPACT
+                    </p>
                   </div>
-                  <h3 className="font-black text-base text-slate-900 group-hover:text-[#2B527A] transition-colors">
-                    งานมหกรรม นิทรรศการ เอ็กซ์โป และ งานวิ่ง
-                  </h3>
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    สัปดาห์หนังสือ, งานกาแฟ Thailand Coffee Fest, Motor Expo ณ ศูนย์จัดแสดงชั้นนำ เช่น QSNCC, BITEC, IMPACT
-                  </p>
                 </div>
-              </div>
+              )}
 
               {/* Option 3: Lifestyle Spot 77 Provinces (Platform / Admin Only) */}
               {isAdmin && (
@@ -890,7 +1149,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
 
             </div>
           </div>
-        )}
+        ) : null}
 
         {/* STEP 2: TAILORED 2-COLUMN BALANCED SUITE FORM */}
         {step === 2 && (
@@ -1093,10 +1352,10 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                       <Target className="w-4 h-4 text-[#4A7C59]" />
                       <span>วัตถุประสงค์ & ที่มาของภารกิจ <span className="text-rose-500">*</span></span>
                     </h4>
-                    <span className="text-[10px] text-slate-400">Section 01</span>
+                    <span className="text-[10px] text-purple-600 font-bold uppercase tracking-wider">Section 01</span>
                   </div>
 
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-[11px] text-slate-500 font-medium">
                     บอกเล่าเป้าหมาย เรื่องราว และแรงบันดาลใจที่อยากชวนให้สมาชิกออกไปทำกิจกรรมนี้
                   </p>
 
@@ -1106,7 +1365,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                     value={questObjective}
                     onChange={(e) => setQuestObjective(e.target.value)}
                     placeholder="เช่น สนับสนุนร้านกาแฟ Specialty ในย่านอารีย์ และสร้างแรงบันดาลใจให้เพื่อนๆ ออกไปสัมผัสบรรยากาศคาเฟ่คราฟต์..."
-                    className="w-full p-3.5 rounded-2xl bg-white border border-slate-200 text-xs sm:text-sm font-medium text-slate-800 focus:border-[#4A7C59] outline-none shadow-2xs leading-relaxed"
+                    className="w-full p-3.5 rounded-2xl bg-white border border-slate-200 text-xs sm:text-sm font-medium text-slate-800 focus:border-[#7C3AED] focus:ring-2 focus:ring-purple-100 outline-none shadow-2xs leading-relaxed"
                   />
 
                   {/* Preset Suggestions */}
@@ -1121,7 +1380,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                         key={i}
                         type="button"
                         onClick={() => setQuestObjective(sample)}
-                        className="text-[10.5px] px-2.5 py-1 rounded-lg bg-white hover:bg-emerald-50 text-slate-600 hover:text-[#2D5A3C] border border-slate-200 transition-colors truncate max-w-[280px]"
+                        className="text-[10.5px] px-2.5 py-1 rounded-lg bg-white hover:bg-purple-50 text-slate-600 hover:text-purple-800 border border-slate-200 transition-colors truncate max-w-[280px] cursor-pointer"
                       >
                         + {sample.slice(0, 32)}...
                       </button>
@@ -1129,33 +1388,30 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                   </div>
                 </div>
 
-                {/* 📜 Section 2: ขั้นตอนและเงื่อนไขการทำภารกิจ */}
+                {/* Section 2: ขั้นตอนและเงื่อนไขการทำภารกิจ */}
                 <div className="p-4 sm:p-5 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-3.5">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                      <span className="w-5 h-5 rounded-md bg-emerald-100 text-emerald-800 text-[11px] font-black flex items-center justify-center">
-                        1
-                      </span>
-                      <span>ขั้นตอนและเงื่อนไขการทำภารกิจ <span className="text-rose-500">*</span></span>
+                    <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">
+                      ขั้นตอนและเงื่อนไขการทำภารกิจ <span className="text-rose-500">*</span>
                     </h4>
                     <button
                       type="button"
                       onClick={handleAddQuestStep}
-                      className="inline-flex items-center gap-1 text-[11px] font-bold text-[#4A7C59] bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 transition-all cursor-pointer"
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-[#7C3AED] bg-purple-50 hover:bg-purple-100 px-2.5 py-1 rounded-lg border border-purple-200 transition-all cursor-pointer"
                     >
                       <Plus className="w-3 h-3" />
                       <span>เพิ่มขั้นตอน</span>
                     </button>
                   </div>
 
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-[11px] text-slate-500 font-medium">
                     ระบุลำดับขั้นตอนการทำภารกิจแบบเป็นข้อๆ ให้ผู้เข้าร่วมเข้าใจง่ายและทำตามได้จริง
                   </p>
 
                   <div className="space-y-2">
                     {questSteps.map((stepItem, idx) => (
                       <div key={idx} className="flex items-center gap-2.5">
-                        <span className="w-6 h-6 rounded-full bg-slate-100 border border-slate-300 text-slate-700 font-bold text-[11px] flex items-center justify-center shrink-0">
+                        <span className="w-6 h-6 rounded-full bg-purple-100 text-purple-900 font-bold text-[11px] flex items-center justify-center shrink-0">
                           {idx + 1}
                         </span>
                         <input
@@ -1164,7 +1420,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                           value={stepItem}
                           onChange={(e) => handleUpdateQuestStep(idx, e.target.value)}
                           placeholder={`ขั้นตอนที่ ${idx + 1}`}
-                          className="flex-1 px-3.5 py-2 rounded-xl bg-slate-50 focus:bg-white border border-slate-200 text-xs font-medium text-slate-800 focus:border-[#4A7C59] outline-none shadow-2xs"
+                          className="flex-1 px-3.5 py-2 rounded-xl bg-slate-50 focus:bg-white border border-slate-200 text-xs font-medium text-slate-800 focus:border-[#7C3AED] focus:ring-2 focus:ring-purple-100 outline-none shadow-2xs"
                         />
                         {questSteps.length > 1 && (
                           <button
@@ -1181,38 +1437,36 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                   </div>
                 </div>
 
-                {/* 🛡️ Section 3: วิธีการตรวจสอบและส่งหลักฐาน (Verification Method) */}
+                {/* Section 3: วิธีการตรวจสอบและส่งหลักฐาน (Verification Method) */}
                 <div className="p-4 sm:p-5 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-3">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4 text-[#4A7C59]" />
-                      <span>วิธีการตรวจสอบและส่งหลักฐาน (Verification Method) <span className="text-rose-500">*</span></span>
+                    <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">
+                      วิธีการตรวจสอบและส่งหลักฐาน <span className="text-rose-500">*</span>
                     </h4>
-                    <span className="text-[10px] text-slate-400">Section 03</span>
+                    <span className="text-[10px] text-purple-600 font-bold uppercase tracking-wider">Section 03</span>
                   </div>
 
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-[11px] text-slate-500 font-medium">
                     เลือกรูปแบบหลักฐานที่ผู้ทำภารกิจต้องส่งเพื่อยืนยันความสำเร็จ
                   </p>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {[
-                      { icon: '📸', label: '📸 ถ่ายรูปภาพแก้วกาแฟหรือหน้าร้านคู่กับการเช็คอิน GPS' },
-                      { icon: '📍', label: '📍 ระบบตรวจสอบพิกัด GPS อัตโนมัติเมื่ออยู่ในรัศมีที่กำหนด' },
-                      { icon: '🎟️', label: '🎟️ สแกน QR Code จากผู้จัดงานหรือร้านค้าพาร์ทเนอร์' },
-                      { icon: '✍️', label: '✍️ เขียนรีวิวและแชร์โมเมนต์ความประทับใจลงคอมมูนิตี้' },
+                      { label: 'ถ่ายรูปภาพเช็คอินโมเมนต์คู่กับสถานที่จัดกิจกรรม' },
+                      { label: 'ระบบตรวจสอบพิกัด GPS อัตโนมัติเมื่ออยู่ในรัศมีที่กำหนด' },
+                      { label: 'สแกน QR Code จากผู้จัดงานหรือร้านค้าพาร์ทเนอร์' },
+                      { label: 'เขียนรีวิวและแชร์โมเมนต์ความประทับใจลงคอมมูนิตี้' },
                     ].map((method) => (
                       <button
                         key={method.label}
                         type="button"
                         onClick={() => setQuestVerificationMethod(method.label)}
-                        className={`p-3 rounded-2xl border text-left text-xs font-bold transition-all flex items-start gap-2 ${
+                        className={`p-3 rounded-2xl border text-left text-xs font-bold transition-all flex items-start gap-2.5 cursor-pointer ${
                           questVerificationMethod === method.label
-                            ? 'bg-[#EBF5EE] text-[#2D5A3C] border-emerald-300 shadow-2xs'
+                            ? 'bg-purple-50 text-purple-900 border-purple-300 shadow-2xs ring-1 ring-purple-300'
                             : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
                         }`}
                       >
-                        <span className="text-base shrink-0">{method.icon}</span>
                         <span className="leading-snug">{method.label}</span>
                       </button>
                     ))}
@@ -1224,18 +1478,17 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                     value={questVerificationMethod}
                     onChange={(e) => setQuestVerificationMethod(e.target.value)}
                     placeholder="หรือพิมพ์ปรับแต่งข้อความเงื่อนไขการส่งหลักฐาน..."
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 focus:bg-white border border-slate-200 text-xs font-medium text-slate-800 focus:border-[#4A7C59] outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 focus:bg-white border border-slate-200 text-xs font-medium text-slate-800 focus:border-[#7C3AED] focus:ring-2 focus:ring-purple-100 outline-none"
                   />
                 </div>
 
-                {/* 🎁 Section 4: ของรางวัล & สิทธิประโยชน์เมื่อทำสำเร็จ (Rewards & Perks) */}
-                <div className="p-4 sm:p-5 rounded-3xl bg-[#F8FAF8] border border-emerald-200/80 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between border-b border-emerald-200/60 pb-2.5">
-                    <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                      <Gift className="w-4 h-4 text-[#4A7C59]" />
-                      <span>ของรางวัล & สิทธิประโยชน์เมื่อทำสำเร็จ <span className="text-rose-500">*</span></span>
+                {/* Section 4: ของรางวัล & สิทธิประโยชน์เมื่อทำสำเร็จ (Rewards & Perks) */}
+                <div className="p-4 sm:p-5 rounded-3xl bg-purple-50/30 border border-purple-200/80 shadow-xs space-y-4">
+                  <div className="flex items-center justify-between border-b border-purple-100 pb-2.5">
+                    <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">
+                      ของรางวัลเมื่อทำสำเร็จ <span className="text-rose-500">*</span>
                     </h4>
-                    <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 uppercase tracking-wide">
+                    <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 uppercase tracking-wide">
                       Reward Unlocks
                     </span>
                   </div>
@@ -1243,12 +1496,12 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                   {/* 2-Column Reward Cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {/* Badge Card */}
-                    <div className="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-2">
+                    <div className="p-3.5 bg-white rounded-2xl border border-purple-100 shadow-2xs space-y-2">
                       <span className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wide block">
                         เหรียญตราเกียรติยศ (Profile Badge)
                       </span>
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-2xl shrink-0">
+                        <div className="w-12 h-12 rounded-2xl bg-purple-50 border border-purple-200 flex items-center justify-center text-2xl shrink-0">
                           {questBadgeIcon || questIcon}
                         </div>
                         <div className="flex-1 space-y-1">
@@ -1258,26 +1511,26 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                             value={questBadgeName}
                             onChange={(e) => setQuestBadgeName(e.target.value)}
                             placeholder="ชื่อเหรียญ เช่น Coffee Explorer"
-                            className="w-full px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-[#4A7C59]"
+                            className="w-full px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-[#7C3AED]"
                           />
                         </div>
                       </div>
                     </div>
 
                     {/* XP Points Card */}
-                    <div className="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-2">
+                    <div className="p-3.5 bg-white rounded-2xl border border-purple-100 shadow-2xs space-y-2">
                       <span className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wide block">
                         แต้มและคะแนน XP (XP Points)
                       </span>
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-xl shrink-0 text-amber-500 font-bold">
-                          ⚡
+                        <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center shrink-0">
+                          <Zap className="w-6 h-6 text-amber-500 fill-amber-500" />
                         </div>
                         <div className="flex-1 space-y-1">
                           <select
                             value={questRewardPoints}
                             onChange={(e) => setQuestRewardPoints(Number(e.target.value) || 300)}
-                            className="w-full px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-[#4A7C59]"
+                            className="w-full px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-[#7C3AED]"
                           >
                             <option value={100}>+100 XP Points</option>
                             <option value={200}>+200 XP Points</option>
@@ -1299,8 +1552,8 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                       type="text"
                       value={questRewardsText}
                       onChange={(e) => setQuestRewardsText(e.target.value)}
-                      placeholder="เช่น ✨ 🏅 เหรียญเกียรติยศ 'Coffee Explorer' บนหน้าโปรไฟล์ + ⚡ 300 XP"
-                      className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 outline-none focus:border-[#4A7C59]"
+                      placeholder="เช่น เหรียญเกียรติยศ Coffee Explorer บนหน้าโปรไฟล์ พร้อมรับแต้มสะสม 300 XP"
+                      className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 outline-none focus:border-[#7C3AED]"
                     />
                   </div>
                 </div>
@@ -1380,49 +1633,189 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                   </div>
                 </div>
 
-                {/* 2. Date & Time Cards Row */}
+                {/* 2. Community Schedule Card (Single vs Recurring) */}
                 {entityType === 'community' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 p-3.5 rounded-2xl bg-orange-50/50 border border-orange-200/80">
-                    <div className="space-y-1.5">
+                  <div className="p-3.5 sm:p-4 rounded-2xl bg-orange-50/50 border border-orange-200/80 space-y-3">
+                    <div className="flex items-center justify-between gap-2 flex-wrap pb-1 border-b border-orange-200/60">
                       <label className="text-xs font-bold text-orange-950 flex items-center gap-1.5">
                         <Calendar className="w-3.5 h-3.5 text-[#F26430]" />
-                        <span>วันที่จัดกิจกรรม <span className="text-rose-500">*</span></span>
+                        <span>กำหนดการจัดกิจกรรม <span className="text-rose-500">*</span></span>
                       </label>
-                      <input
-                        type="date"
-                        min={minCommunityDate}
-                        value={communityDate}
-                        onChange={(e) => setCommunityDate(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 outline-none"
-                      />
-                      <div className="text-[10.5px] font-bold text-orange-800 bg-orange-100/60 p-1 rounded-md text-center">
-                        {formatThaiDate(communityDate)}
+                      
+                      {/* Schedule Type Segmented Toggle */}
+                      <div className="inline-flex p-0.5 rounded-xl bg-orange-100/70 text-xs font-bold">
+                        <button
+                          type="button"
+                          onClick={() => setScheduleType('single')}
+                          className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                            scheduleType === 'single'
+                              ? 'bg-white text-orange-950 shadow-2xs'
+                              : 'text-orange-800 hover:text-orange-950'
+                          }`}
+                        >
+                          ครั้งเดียว (Single)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setScheduleType('recurring')}
+                          className={`flex items-center gap-1 px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                            scheduleType === 'recurring'
+                              ? 'bg-white text-orange-950 shadow-2xs'
+                              : 'text-orange-800 hover:text-orange-950'
+                          }`}
+                        >
+                          <Repeat className="w-3 h-3 text-[#F26430]" />
+                          <span>จัดเป็นประจำ (Recurring)</span>
+                        </button>
                       </div>
                     </div>
 
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-orange-950 flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-[#F26430]" />
-                        <span>ช่วงเวลากิจกรรม <span className="text-rose-500">*</span></span>
-                      </label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <input
-                          type="time"
-                          value={startTime}
-                          onChange={(e) => setStartTime(e.target.value)}
-                          className="w-full px-2 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 outline-none"
-                        />
-                        <input
-                          type="time"
-                          value={endTime}
-                          onChange={(e) => setEndTime(e.target.value)}
-                          className="w-full px-2 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 outline-none"
-                        />
+                    {/* Mode A: Single Event Date */}
+                    {scheduleType === 'single' ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-orange-900">
+                            วันที่จัดกิจกรรม <span className="text-rose-500">*</span>
+                          </label>
+                          <input
+                            type="date"
+                            min={minCommunityDate}
+                            value={communityDate}
+                            onChange={(e) => setCommunityDate(e.target.value)}
+                            className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-[#F26430]"
+                          />
+                          <div className="text-[10.5px] font-bold text-orange-800 bg-orange-100/60 p-1 rounded-md text-center">
+                            {formatThaiDate(communityDate)}
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-orange-900 flex items-center gap-1.5">
+                            <Clock className="w-3 h-3 text-[#F26430]" />
+                            <span>ช่วงเวลากิจกรรม <span className="text-rose-500">*</span></span>
+                          </label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <input
+                              type="time"
+                              value={startTime}
+                              onChange={(e) => setStartTime(e.target.value)}
+                              className="w-full px-2 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 outline-none"
+                            />
+                            <input
+                              type="time"
+                              value={endTime}
+                              onChange={(e) => setEndTime(e.target.value)}
+                              className="w-full px-2 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 outline-none"
+                            />
+                          </div>
+                          <div className="text-[10.5px] font-bold text-orange-800 bg-orange-100/60 p-1 rounded-md text-center">
+                            {startTime} - {endTime} น.
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-[10.5px] font-bold text-orange-800 bg-orange-100/60 p-1 rounded-md text-center">
-                        {startTime} - {endTime} น.
+                    ) : (
+                      /* Mode B: Recurring Schedule (Days of week + Presets + End conditions) */
+                      <div className="space-y-3 pt-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <label className="text-xs font-bold text-orange-900">
+                            เลือกวันในสัปดาห์ที่จัดกิจกรรม <span className="text-rose-500">*</span>
+                          </label>
+
+                          {/* Quick Presets */}
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedDaysOfWeek(['MO', 'TU', 'WE', 'TH', 'FR'])}
+                              className="text-[10.5px] px-2 py-0.5 rounded-md bg-white border border-orange-200 text-orange-800 hover:bg-orange-100/80 font-bold transition-all cursor-pointer"
+                            >
+                              วันธรรมดา (จ.-ศ.)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedDaysOfWeek(['SA', 'SU'])}
+                              className="text-[10.5px] px-2 py-0.5 rounded-md bg-white border border-orange-200 text-orange-800 hover:bg-orange-100/80 font-bold transition-all cursor-pointer"
+                            >
+                              สุดสัปดาห์ (ส.-อา.)
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Day of Week Pill Buttons */}
+                        <div className="grid grid-cols-7 gap-1.5">
+                          {DAY_OPTIONS.map((day) => {
+                            const isSelected = selectedDaysOfWeek.includes(day.id);
+                            return (
+                              <button
+                                key={day.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedDaysOfWeek((prev) =>
+                                    prev.includes(day.id)
+                                      ? prev.filter((d) => d !== day.id)
+                                      : [...prev, day.id]
+                                  );
+                                }}
+                                title={day.full}
+                                className={`py-2 text-center rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                                  isSelected
+                                    ? 'bg-[#EBF3ED] text-[#2D5A3C] border-[#2D5A3C]/40 shadow-2xs font-extrabold'
+                                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                }`}
+                              >
+                                {day.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Time & Frequency Row */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                          <div className="space-y-1">
+                            <label className="text-xs font-bold text-orange-900">
+                              ความถี่การจัด
+                            </label>
+                            <select
+                              value={recurrenceFrequency}
+                              onChange={(e) => setRecurrenceFrequency(e.target.value as any)}
+                              className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 outline-none"
+                            >
+                              <option value="weekly">ทุกสัปดาห์ (Weekly)</option>
+                              <option value="biweekly">สัปดาห์เว้นสัปดาห์ (ทุก 2 สัปดาห์)</option>
+                              <option value="monthly">ทุกเดือน (Monthly)</option>
+                            </select>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-xs font-bold text-orange-900 flex items-center gap-1.5">
+                              <Clock className="w-3 h-3 text-[#F26430]" />
+                              <span>ช่วงเวลาแต่ละรอบ <span className="text-rose-500">*</span></span>
+                            </label>
+                            <div className="grid grid-cols-2 gap-2">
+                              <input
+                                type="time"
+                                value={startTime}
+                                onChange={(e) => setStartTime(e.target.value)}
+                                className="w-full px-2 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 outline-none"
+                              />
+                              <input
+                                type="time"
+                                value={endTime}
+                                onChange={(e) => setEndTime(e.target.value)}
+                                className="w-full px-2 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 outline-none"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Live Recurrence Human-Readable Summary */}
+                        <div className="p-2.5 rounded-xl bg-white/90 border border-orange-200 text-xs font-bold text-[#2D5A3C] flex items-center gap-2">
+                          <Repeat className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
+                          <span>
+                            สรุปกำหนดการ: {formatRecurrenceSummary(selectedDaysOfWeek, recurrenceFrequency, startTime, endTime)}
+                          </span>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 )}
 
@@ -1458,56 +1851,142 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                   </div>
                 )}
 
-                {/* 3. Location & Meeting Point Card */}
+                {/* 3. Location & Meeting Point Card (Physical vs Online for Community) */}
                 <div className="p-4 rounded-2xl bg-slate-50/70 border border-slate-200 space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-700 block">
-                        จังหวัด <span className="text-rose-500">*</span>
-                      </label>
-                      <select
-                        value={province}
-                        onChange={(e) => setProvince(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white"
-                      >
-                        {ALL_THAI_PROVINCES.map((p) => (
-                          <option key={p} value={p}>{p}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="sm:col-span-2 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-slate-700">
-                          ชื่อสถานที่ / ย่าน <span className="text-rose-500">*</span>
-                        </label>
-                        <span className="text-[10px] text-slate-400">{locationName.length}/80</span>
-                      </div>
-                      <input
-                        type="text"
-                        required
-                        maxLength={80}
-                        value={locationName}
-                        onChange={(e) => setLocationName(e.target.value)}
-                        placeholder="เช่น สวนวชิรเบญจทัศ (สวนรถไฟ), คาเฟ่ อารีย์"
-                        className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium focus:border-[#4A7C59] outline-none"
-                      />
-                    </div>
-                  </div>
-
+                  
+                  {/* Location Type Segmented Toggle (Community only) */}
                   {entityType === 'community' && (
-                    <div className="space-y-1 pt-1">
-                      <label className="text-xs font-bold text-slate-700 block">
-                        จุดนัดพบที่แน่นอน / จุดสังเกต (Meeting Point) <span className="text-rose-500">*</span>
+                    <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-slate-200/80">
+                      <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-[#4A7C59]" />
+                        <span>รูปแบบสถานที่จัดกิจกรรม <span className="text-rose-500">*</span></span>
                       </label>
-                      <input
-                        type="text"
-                        required
-                        value={meetingPoint}
-                        onChange={(e) => setMeetingPoint(e.target.value)}
-                        placeholder="เช่น หน้าร้านกาแฟ หรือหน้าบันไดทางเข้าหลัก"
-                        className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium focus:border-[#4A7C59] outline-none"
-                      />
+                      
+                      <div className="inline-flex p-0.5 rounded-xl bg-slate-200/70 text-xs font-bold">
+                        <button
+                          type="button"
+                          onClick={() => setLocationType('physical')}
+                          className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                            locationType === 'physical'
+                              ? 'bg-white text-slate-900 shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          <MapPin className="w-3 h-3 text-[#4A7C59]" />
+                          <span>นัดเจอสถานที่จริง (On-site)</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setLocationType('online')}
+                          className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                            locationType === 'online'
+                              ? 'bg-white text-[#2B527A] shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          <Globe className="w-3 h-3 text-[#2B527A]" />
+                          <span>รวมตัวออนไลน์ (Virtual)</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Physical Location Form */}
+                  {locationType === 'physical' || entityType !== 'community' ? (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-slate-700 block">
+                            จังหวัด <span className="text-rose-500">*</span>
+                          </label>
+                          <select
+                            value={province}
+                            onChange={(e) => setProvince(e.target.value)}
+                            className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white"
+                          >
+                            {ALL_THAI_PROVINCES.map((p) => (
+                              <option key={p} value={p}>{p}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="sm:col-span-2 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold text-slate-700">
+                              ชื่อสถานที่ / ย่าน <span className="text-rose-500">*</span>
+                            </label>
+                            <span className="text-[10px] text-slate-400">{locationName.length}/80</span>
+                          </div>
+                          <input
+                            type="text"
+                            required
+                            maxLength={80}
+                            value={locationName}
+                            onChange={(e) => setLocationName(e.target.value)}
+                            placeholder="เช่น สวนวชิรเบญจทัศ (สวนรถไฟ), คาเฟ่ อารีย์"
+                            className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium focus:border-[#4A7C59] outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      {entityType === 'community' && (
+                        <div className="space-y-1 pt-1">
+                          <label className="text-xs font-bold text-slate-700 block">
+                            จุดนัดพบที่แน่นอน / จุดสังเกต (Meeting Point) <span className="text-rose-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={meetingPoint}
+                            onChange={(e) => setMeetingPoint(e.target.value)}
+                            placeholder="เช่น หน้าร้านกาแฟ หรือหน้าบันไดทางเข้าหลัก"
+                            className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium focus:border-[#4A7C59] outline-none"
+                          />
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    /* Online Platform Form */
+                    <div className="space-y-3 pt-1">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-slate-700 block">
+                            แพลตฟอร์มออนไลน์ <span className="text-rose-500">*</span>
+                          </label>
+                          <select
+                            value={onlinePlatform}
+                            onChange={(e) => setOnlinePlatform(e.target.value)}
+                            className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 bg-white focus:outline-none"
+                          >
+                            {ONLINE_PLATFORMS.map((p) => (
+                              <option key={p.id} value={p.id}>{p.label}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-slate-700 block">
+                            ลิงก์ห้องประชุม / ช่องทางติดต่อ (ทางเลือก)
+                          </label>
+                          <input
+                            type="url"
+                            value={onlineJoinUrl}
+                            onChange={(e) => setOnlineJoinUrl(e.target.value)}
+                            placeholder={ONLINE_PLATFORMS.find(p => p.id === onlinePlatform)?.placeholder || 'ระบุลิงก์ห้องประชุม (ถ้ามี)'}
+                            className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium focus:border-[#2B527A] outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-sky-50/70 border border-sky-200 text-xs text-sky-900 space-y-1">
+                        <div className="font-bold flex items-center gap-1.5">
+                          <Globe className="w-3.5 h-3.5 text-sky-700 shrink-0" />
+                          <span>กิจกรรมนี้จัดในรูปแบบออนไลน์ (Virtual Meetup)</span>
+                        </div>
+                        <p className="text-[11.5px] text-sky-800">
+                          ผู้เข้าร่วมสามารถเปิดคอมพิวเตอร์หรือสมาร์ทโฟนเข้าร่วมได้จากทุกที่ทั่วประเทศ ระบบจะติดป้าย "🌐 ออนไลน์" บนการ์ดกิจกรรมอัตโนมัติ
+                        </p>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1600,15 +2079,24 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                   {/* Upload Box */}
                   <label className="border-2 border-dashed border-slate-200 hover:border-[#4A7C59] bg-white rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:bg-emerald-50/30 group">
                     <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 group-hover:text-[#4A7C59] group-hover:bg-emerald-100 flex items-center justify-center mb-1.5 transition-colors">
-                      <Upload className="w-4 h-4" />
+                      {isUploadingImage ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-[#4A7C59]" />
+                      ) : (
+                        <Upload className="w-4 h-4" />
+                      )}
                     </div>
                     <span className="text-xs font-bold text-slate-700 group-hover:text-[#4A7C59]">
-                      {uploadedImage ? 'เปลี่ยนรูปภาพจากเครื่อง' : 'คลิกเพื่ออัปโหลดรูปภาพ'}
+                      {isUploadingImage
+                        ? 'กำลังบีบอัดและอัปโหลดรูปภาพ...'
+                        : uploadedImage
+                        ? 'เปลี่ยนรูปภาพจากเครื่อง'
+                        : 'คลิกเพื่ออัปโหลดรูปภาพ'}
                     </span>
-                    <span className="text-[10px] text-slate-400 mt-0.5">JPG, PNG, WEBP (ไม่เกิน 5MB)</span>
+                    <span className="text-[10px] text-slate-400 mt-0.5">JPG, PNG, WEBP (บีบอัดอัตโนมัติ)</span>
                     <input
                       type="file"
-                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      disabled={isUploadingImage}
+                      accept="image/jpeg,image/jpg,image/png,image/webp,image/avif"
                       onChange={handleFileUpload}
                       className="hidden"
                     />
@@ -1869,26 +2357,26 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
             {entityType === 'challenge' ? (
               /* === REALISTIC LIVE PREVIEW FOR CHALLENGE (MATCHING SCREENSHOT 1:1) === */
               <div className="rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-2xl space-y-0">
-                {/* Header Gradient */}
-                <div className="relative p-5 sm:p-6 bg-gradient-to-r from-[#21432E] via-[#2E583C] to-[#4A7C59] text-white overflow-hidden">
-                  <div className="absolute -right-8 -bottom-8 w-44 h-44 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+                {/* Header Gradient: Royal Violet Signature */}
+                <div className="relative p-5 sm:p-6 bg-gradient-to-r from-[#2E1065] via-[#4C1D95] to-[#7C3AED] text-white overflow-hidden">
+                  <div className="absolute -right-8 -bottom-8 w-44 h-44 bg-purple-400/20 rounded-full blur-2xl pointer-events-none" />
                   
                   {/* Category Pill & Official Tag */}
                   <div className="flex items-center justify-between gap-2 relative z-10">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[11px] font-extrabold px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/25 text-white shadow-2xs">
-                        {questMoodCategory === 'chill' ? '☕ ฮีลลิ่ง / พบปะเพื่อน & คาเฟ่' :
-                         questMoodCategory === 'move' ? '🏃‍♂️ ขยับกาย / ออกกำลังกาย' :
-                         questMoodCategory === 'heal' ? '🌱 ฮีลใจ / ธรรมชาติ & พักผ่อน' : '🎨 เรียนรู้ / งานคราฟต์ & เวิร์กช็อป'}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[11px] font-extrabold px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white shadow-2xs">
+                        {questMoodCategory === 'chill' ? 'คาเฟ่ & ชิลล์' :
+                         questMoodCategory === 'move' ? 'ขยับกาย & สปอร์ต' :
+                         questMoodCategory === 'heal' ? 'ฮีลใจ & ธรรมชาติ' : 'เรียนรู้ & เวิร์กช็อป'}
                       </span>
                       {questIsOfficial ? (
-                        <span className="text-[11px] font-black px-3 py-1 rounded-full bg-amber-400 text-slate-950 shadow-xs flex items-center gap-1">
+                        <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-amber-400 text-slate-950 shadow-xs flex items-center gap-1">
                           <Crown className="w-3.5 h-3.5 fill-slate-950 text-slate-950" />
                           <span>Official Quest</span>
                         </span>
                       ) : (
-                        <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-white border border-white/20">
-                          👥 ชุมชนสร้างสรรค์
+                        <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-md text-white border border-white/20">
+                          ชุมชนสร้างสรรค์
                         </span>
                       )}
                     </div>
@@ -1896,7 +2384,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
 
                   {/* Icon & Title */}
                   <div className="mt-4 flex items-start gap-3.5 sm:gap-4 relative z-10">
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/95 text-slate-900 shadow-md flex items-center justify-center shrink-0 border border-white/80 text-3xl">
+                    <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-white/95 text-slate-900 shadow-md flex items-center justify-center shrink-0 border border-white/80 text-2xl sm:text-3xl">
                       {questBadgeIcon || questIcon}
                     </div>
 
@@ -1907,23 +2395,23 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
 
                       {/* Metadata Strip */}
                       <div className="flex items-center gap-2 flex-wrap pt-0.5 text-xs text-white/90 font-medium">
-                        <span className="flex items-center gap-1 bg-white/15 px-2.5 py-0.5 rounded-lg border border-white/20 font-bold text-emerald-200">
-                          <Zap className="w-3.5 h-3.5 fill-emerald-200 text-emerald-200" />
+                        <span className="flex items-center gap-1 bg-white/15 px-2.5 py-0.5 rounded-lg border border-white/20 font-bold text-amber-200">
+                          <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
                           <span>+{questRewardPoints} XP</span>
                         </span>
 
                         <span className="flex items-center gap-1 bg-white/15 px-2.5 py-0.5 rounded-lg border border-white/20">
-                          <Calendar className="w-3.5 h-3.5 text-emerald-200" />
+                          <Calendar className="w-3.5 h-3.5 text-purple-200" />
                           <span>{formatThaiDate(questStartDate)} - {formatThaiDate(questEndDate)}</span>
                         </span>
 
                         <span className="flex items-center gap-1 bg-white/15 px-2.5 py-0.5 rounded-lg border border-white/20">
-                          <Clock className="w-3.5 h-3.5 text-emerald-200" />
+                          <Clock className="w-3.5 h-3.5 text-purple-200" />
                           <span>เหลือ {Math.max(1, Math.ceil((new Date(questEndDate).getTime() - new Date(questStartDate).getTime()) / (1000 * 60 * 60 * 24)))} วัน</span>
                         </span>
 
                         <span className="flex items-center gap-1 bg-white/15 px-2.5 py-0.5 rounded-lg border border-white/20">
-                          <Users className="w-3.5 h-3.5 text-emerald-200" />
+                          <Users className="w-3.5 h-3.5 text-purple-200" />
                           <span>1+ คนร่วมทำ</span>
                         </span>
                       </div>
@@ -1934,32 +2422,31 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                 {/* Body Sections */}
                 <div className="p-4 sm:p-6 space-y-3.5 bg-white text-slate-800">
                   
-                  {/* 🎯 Section 1: Objective & Purpose */}
-                  <div className="p-4 rounded-2xl bg-[#F4F7F4] border border-[#DDE7DF] space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      <Target className="w-4 h-4 text-[#4A7C59] shrink-0" />
-                      <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">
-                        วัตถุประสงค์ & ที่มาของภารกิจ
-                      </h4>
-                    </div>
-                    <p className="text-xs sm:text-sm text-slate-700 leading-relaxed pl-6 font-medium">
+                  {/* Section 1: Objective & Purpose */}
+                  <div className="p-4 rounded-2xl bg-purple-50/50 border border-purple-100 space-y-1.5">
+                    <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">
+                      วัตถุประสงค์ของภารกิจ
+                    </h4>
+                    <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
                       {questObjective}
                     </p>
                   </div>
 
-                  {/* 📜 Section 2: Step-by-Step Instructions & Conditions */}
+                  {/* Section 2: Step-by-Step Instructions & Conditions */}
                   <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3">
-                    <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                      <span className="w-5 h-5 rounded-md bg-emerald-100 text-emerald-800 text-[11px] font-black flex items-center justify-center">
-                        1
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">
+                        ขั้นตอนและเงื่อนไขการทำภารกิจ
+                      </h4>
+                      <span className="text-[10.5px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200">
+                        {questSteps.length} ขั้นตอน
                       </span>
-                      <span>ขั้นตอนและเงื่อนไขการทำภารกิจ</span>
-                    </h4>
+                    </div>
 
-                    <div className="space-y-2 pl-2 sm:pl-3">
+                    <div className="space-y-2">
                       {questSteps.map((step, idx) => (
-                        <div key={idx} className="flex items-start gap-3 text-xs sm:text-sm text-slate-700">
-                          <span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-300 text-slate-700 font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5">
+                        <div key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-700">
+                          <span className="w-5 h-5 rounded-full bg-purple-100 text-purple-900 font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5">
                             {idx + 1}
                           </span>
                           <span className="leading-relaxed font-medium">{step}</span>
@@ -1968,59 +2455,53 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                     </div>
                   </div>
 
-                  {/* 🔍 Section 3: Verification Method */}
+                  {/* Section 3: Verification Method */}
                   <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-2">
-                    <div className="flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4 text-[#4A7C59] shrink-0" />
-                      <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">
-                        วิธีการตรวจสอบและส่งหลักฐาน (Verification Method)
-                      </h4>
-                    </div>
-                    <div className="pl-6 text-xs sm:text-sm text-emerald-950 font-medium leading-relaxed bg-[#EBF5EE] p-3 rounded-xl border border-emerald-200">
+                    <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">
+                      วิธีการตรวจสอบและส่งหลักฐาน
+                    </h4>
+                    <div className="text-xs sm:text-sm text-purple-950 font-medium leading-relaxed bg-purple-50/60 p-3 rounded-xl border border-purple-200/70">
                       {questVerificationMethod}
                     </div>
                   </div>
 
-                  {/* 🎁 Section 4: Rewards & Perks */}
-                  <div className="p-4 rounded-2xl bg-[#F8FAF8] border border-emerald-200/80 shadow-2xs space-y-3">
+                  {/* Section 4: Rewards & Perks */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-50/40 via-white to-amber-50/20 border border-purple-200/80 shadow-2xs space-y-3">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                        <Gift className="w-4 h-4 text-[#4A7C59]" />
-                        <span>ของรางวัล & สิทธิประโยชน์เมื่อทำสำเร็จ</span>
+                      <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">
+                        ของรางวัลเมื่อทำสำเร็จ
                       </h4>
-                      <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 uppercase tracking-wide">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-purple-800 bg-purple-100 px-2.5 py-0.5 rounded-full">
                         Reward Unlocks
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-0 sm:pl-6">
-                      <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-200">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-xl shrink-0">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-0.5">
+                      <div className="p-3 bg-white rounded-xl border border-purple-100 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-800 flex items-center justify-center text-xl shrink-0 border border-purple-100">
                           {questBadgeIcon || questIcon}
                         </div>
-                        <div>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase">เหรียญตราเกียรติยศ</p>
-                          <p className="text-xs sm:text-sm font-extrabold text-slate-900">{questBadgeName}</p>
+                        <div className="min-w-0">
+                          <span className="text-[10px] font-bold text-slate-400 block">เหรียญตราเกียรติยศ</span>
+                          <span className="text-xs sm:text-sm font-extrabold text-slate-800 truncate block">{questBadgeName}</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-200">
-                        <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-xl shrink-0 text-amber-500 font-bold">
-                          ⚡
+                      <div className="p-3 bg-white rounded-xl border border-amber-100 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-800 flex items-center justify-center shrink-0 border border-amber-100">
+                          <Zap className="w-5 h-5 text-amber-600 fill-amber-500" />
                         </div>
-                        <div>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase">แต้มและคะแนน XP</p>
-                          <p className="text-xs sm:text-sm font-extrabold text-slate-900">+{questRewardPoints} XP Points</p>
+                        <div className="min-w-0">
+                          <span className="text-[10px] font-bold text-slate-400 block">แต้มและคะแนน XP</span>
+                          <span className="text-xs sm:text-sm font-extrabold text-slate-800">+{questRewardPoints} XP Points</span>
                         </div>
                       </div>
                     </div>
 
                     {questRewardsText && (
-                      <div className="pl-0 sm:pl-6 pt-1">
-                        <p className="text-xs text-slate-700 font-bold">
-                          {questRewardsText}
-                        </p>
-                      </div>
+                      <p className="text-[11px] sm:text-xs text-slate-600 font-medium pt-0.5">
+                        {questRewardsText}
+                      </p>
                     )}
                   </div>
 
@@ -2053,8 +2534,17 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                     {title || 'หัวข้อของคุณ'}
                   </h4>
                   <p className="text-xs text-slate-200 font-medium flex items-center gap-1.5 pt-1">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span>{locationName || province}, จังหวัด{province}</span>
+                    {entityType === 'community' && locationType === 'online' ? (
+                      <>
+                        <Globe className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                        <span>ออนไลน์ ({ONLINE_PLATFORMS.find(p => p.id === onlinePlatform)?.label || 'Virtual'})</span>
+                      </>
+                    ) : (
+                      <>
+                        <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span>{locationName || province}, จังหวัด{province}</span>
+                      </>
+                    )}
                   </p>
                 </div>
               </div>
@@ -2063,10 +2553,18 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
               <div className="px-5">
                 <div className="py-2.5 px-4 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-700">
                   <div className="flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-[#4A7C59]" />
+                    {entityType === 'community' && scheduleType === 'recurring' ? (
+                      <Repeat className="w-3.5 h-3.5 text-emerald-600" />
+                    ) : (
+                      <Clock className="w-3.5 h-3.5 text-[#4A7C59]" />
+                    )}
                     <span className="text-slate-500 font-medium">วัน/เวลา:</span>
                     <strong className="text-slate-900">
-                      {entityType === 'community' && `${communityDate} • ${startTime} - ${endTime} น.`}
+                      {entityType === 'community' && (
+                        scheduleType === 'recurring'
+                          ? `${formatRecurrenceDaysOnly(selectedDaysOfWeek, recurrenceFrequency)} • ${startTime} - ${endTime} น.`
+                          : `${communityDate} • ${startTime} - ${endTime} น.`
+                      )}
                       {entityType === 'fair' && `${fairStartDate} ถึง ${fairEndDate}`}
                       {entityType === 'spot' && `${spotOpenHours}`}
                     </strong>

@@ -773,7 +773,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
                             </div>
                             {sub.note && (
                               <p className="text-[11px] leading-relaxed italic bg-white p-2 rounded-lg border border-amber-100">
-                                "{sub.note}"
+                                &ldquo;{sub.note}&rdquo;
                               </p>
                             )}
                           </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 
 export type UserRole = 'member' | 'host' | 'organizer' | 'venue_owner' | 'admin';
 
@@ -17,12 +17,13 @@ const DEFAULT_PROFILE: UserProfile = {
   name: 'นภัสสร รักษ์ธรรมชาติ',
   avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
   role: 'member',
-  badgeLabel: 'สมาชิก',
+  badgeLabel: 'สมาชิกทั่วไป',
   isVerified: false,
 };
 
 let globalIsLoggedIn = false;
 let globalUserProfile: UserProfile = DEFAULT_PROFILE;
+let isInitialized = false;
 const listeners = new Set<() => void>();
 
 function subscribe(listener: () => void) {
@@ -32,40 +33,59 @@ function subscribe(listener: () => void) {
   };
 }
 
-function getSnapshot() {
+function getLoggedInSnapshot() {
   return globalIsLoggedIn;
 }
 
-function getServerSnapshot() {
+function getProfileSnapshot() {
+  return globalUserProfile;
+}
+
+function getServerLoggedInSnapshot() {
   return false;
 }
 
+function getServerProfileSnapshot() {
+  return DEFAULT_PROFILE;
+}
+
+function getAuthReadySnapshot() {
+  return isInitialized;
+}
+
+function getServerAuthReadySnapshot() {
+  return false;
+}
+
+function initFromStorage() {
+  if (typeof window === 'undefined' || isInitialized) return;
+  isInitialized = true;
+  const savedLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+  globalIsLoggedIn = savedLoggedIn;
+
+  const savedRole = (localStorage.getItem('user_role') as UserRole) || 'member';
+  const savedProfile = localStorage.getItem('user_profile');
+  if (savedProfile) {
+    try {
+      const parsed = JSON.parse(savedProfile);
+      globalUserProfile = { ...DEFAULT_PROFILE, ...parsed, role: savedRole };
+    } catch {
+      globalUserProfile = { ...DEFAULT_PROFILE, role: savedRole };
+    }
+  } else {
+    globalUserProfile = { ...DEFAULT_PROFILE, role: savedRole };
+  }
+}
+
 export function useAuth() {
-  const [isAuthReady, setIsAuthReady] = useState(false);
-  const [userProfile, setUserProfile] = useState<UserProfile>(globalUserProfile);
-  const isLoggedIn = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const isAuthReady = useSyncExternalStore(subscribe, getAuthReadySnapshot, getServerAuthReadySnapshot);
+  const isLoggedIn = useSyncExternalStore(subscribe, getLoggedInSnapshot, getServerLoggedInSnapshot);
+  const userProfile = useSyncExternalStore(subscribe, getProfileSnapshot, getServerProfileSnapshot);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('isLoggedIn') === 'true';
-      if (saved !== globalIsLoggedIn) {
-        globalIsLoggedIn = saved;
-      }
-      const savedRole = (localStorage.getItem('user_role') as UserRole) || 'member';
-      const savedProfile = localStorage.getItem('user_profile');
-      if (savedProfile) {
-        try {
-          const parsed = JSON.parse(savedProfile);
-          globalUserProfile = { ...DEFAULT_PROFILE, ...parsed, role: savedRole };
-        } catch {
-          globalUserProfile = { ...DEFAULT_PROFILE, role: savedRole };
-        }
-      } else {
-        globalUserProfile = { ...DEFAULT_PROFILE, role: savedRole };
-      }
-      setUserProfile(globalUserProfile);
+    if (!isInitialized) {
+      initFromStorage();
       listeners.forEach((l) => l());
-      setIsAuthReady(true);
     }
   }, []);
 
@@ -85,14 +105,13 @@ export function useAuth() {
       venue_owner: 'Verified Space Owner',
       admin: 'Super Admin',
     };
-    const updated = {
+    const updated: UserProfile = {
       ...globalUserProfile,
       role,
-      badgeLabel: roleBadges[role] || 'สมาชิก',
+      badgeLabel: roleBadges[role] || 'สมาชิกทั่วไป',
       isVerified: role !== 'member',
     };
     globalUserProfile = updated;
-    setUserProfile(updated);
     if (typeof window !== 'undefined') {
       localStorage.setItem('user_role', role);
       localStorage.setItem('user_profile', JSON.stringify(updated));
@@ -104,6 +123,7 @@ export function useAuth() {
   const isHost = userProfile.role === 'host' || isAdmin;
   const isOrganizer = userProfile.role === 'organizer' || isAdmin;
   const isVenueOwner = userProfile.role === 'venue_owner' || isAdmin;
+  const isMember = userProfile.role === 'member';
 
   return {
     isLoggedIn,
@@ -115,6 +135,8 @@ export function useAuth() {
     isHost,
     isOrganizer,
     isVenueOwner,
+    isMember,
   };
 }
+
 

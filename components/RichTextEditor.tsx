@@ -9,8 +9,7 @@ import {
   Clock,
   FileText,
   Trash2,
-  Undo,
-  Redo
+  Undo
 } from 'lucide-react';
 
 interface RichTextEditorProps {
@@ -20,6 +19,7 @@ interface RichTextEditorProps {
   templateLabel?: string;
   onApplyTemplate?: () => void;
   minHeight?: string;
+  className?: string;
 }
 
 /**
@@ -35,7 +35,7 @@ export const markdownToHtml = (text: string): string => {
   // Convert line breaks and **bold**
   const lines = text.split('\n');
   const htmlLines = lines.map((line) => {
-    let processed = line
+    const processed = line
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>');
 
@@ -136,6 +136,13 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const editorRef = useRef<HTMLDivElement>(null);
   const [characterCount, setCharacterCount] = useState(0);
 
+  const calculateCount = React.useCallback(() => {
+    if (editorRef.current) {
+      const text = editorRef.current.innerText || '';
+      setCharacterCount(text.trim().length);
+    }
+  }, []);
+
   // Sync initial value into contentEditable
   useEffect(() => {
     if (editorRef.current) {
@@ -145,14 +152,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         calculateCount();
       }
     }
-  }, [value]);
-
-  const calculateCount = () => {
-    if (editorRef.current) {
-      const text = editorRef.current.innerText || '';
-      setCharacterCount(text.trim().length);
-    }
-  };
+  }, [value, calculateCount]);
 
   const handleInput = () => {
     if (editorRef.current) {

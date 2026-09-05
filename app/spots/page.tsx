@@ -123,7 +123,7 @@ function SpotsPageContent() {
   };
 
   const filteredSpots = useMemo(() => {
-    let result = MOCK_SPOTS.filter((spot) => {
+    const result = MOCK_SPOTS.filter((spot) => {
       if (selectedRailCategory && selectedRailCategory !== 'all') {
         const catDef = NATIONWIDE_SPOT_CATEGORIES.find((c) => c.id === selectedRailCategory);
         if (catDef) {
