@@ -1031,7 +1031,7 @@ export default function FairDetailPage() {
                 href="/?tab=public_venue"
                 className="text-xs font-extrabold text-[#2B527A] hover:underline flex items-center gap-1 shrink-0"
               >
-                <span>ดูงานทั้งหมด</span>
+                <span>สำรวจงานมหกรรม & เอ็กซ์โปทั้งหมด</span>
                 <ArrowRight className="w-3 h-3" />
               </Link>
             </div>

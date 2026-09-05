@@ -996,7 +996,7 @@ export default function Home() {
                     href={`/spots?category=${encodeURIComponent(selectedSpotCategory)}&province=${encodeURIComponent(selectedSpotProvince)}`}
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-[#4A7C59] text-[#4A7C59] hover:text-white border border-emerald-200/80 hover:border-[#4A7C59] rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
                   >
-                    <span>ดูสถานที่ทั้งหมด ({filteredSpots.length})</span>
+                    <span>สำรวจพิกัดเที่ยวทั้งหมด ({filteredSpots.length})</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
                   </Link>
                 </div>
@@ -1121,7 +1121,7 @@ export default function Home() {
                     href={`/fairs${selectedVenueFilter ? `?venue=${encodeURIComponent(selectedVenueFilter)}` : ''}`}
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-[#2B527A] text-[#2B527A] hover:text-white border border-blue-200/80 hover:border-[#2B527A] rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
                   >
-                    <span>ดูงานทั้งหมด ({streamPublicEvents.length})</span>
+                    <span>สำรวจงานมหกรรม & เอ็กซ์โปทั้งหมด ({streamPublicEvents.length})</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
                   </Link>
                 </div>
