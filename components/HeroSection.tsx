@@ -29,6 +29,11 @@ import { ALL_THAI_PROVINCES, MOCK_SPOTS, LifestyleSpotItem } from '@/data/spotsD
 import { COMMUNITY_PUBLIC_QUESTS } from '@/components/CommunityChallengeBar';
 import { JoinChallengeModal } from '@/components/JoinChallengeModal';
 import { ChallengeQuest, MOCK_EVENTS, EventItem } from '@/data/mockData';
+import {
+  MASTER_SPOT_CATEGORIES,
+  MASTER_COMMUNITY_LIFESTYLE_CATEGORIES,
+  MASTER_FAIR_CATEGORIES,
+} from '@/data/masterHub';
 import Link from 'next/link';
 
 export type HeroVersion = 'editorial' | 'classic';
@@ -127,37 +132,37 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   };
 
   // =========================================================================
-  // 🌟 Discovery Pillars Taxonomy Data (for Empty Search Suggestions Directory)
+  // 🌟 Dynamic Discovery Pillars Taxonomy (Derived from Master Taxonomy Hub)
   // =========================================================================
-  const PILLAR_SPOT_CATEGORIES = [
-    { label: 'ภูเขา & ทะเลหมอก', query: 'เขา', icon: Mountain, sub: 'ดอย, เขาค้อ, น่าน, ชมวิว' },
-    { label: 'ทะเล & เกาะสวย', query: 'ทะเล', icon: Waves, sub: 'ภูเก็ต, กระบี่, เกาะสมุย, หาด' },
-    { label: 'ป่าธรรมชาติ & กางเต็นท์', query: 'ป่า', icon: Trees, sub: 'เขาใหญ่, กางเต็นท์, เดินป่า' },
-    { label: 'คาเฟ่ & สเปซนั่งชิลล์', query: 'คาเฟ่', icon: Coffee, sub: 'สโลว์บาร์, ดริปกาแฟ, นั่งชิลล์' },
-    { label: 'ย่านเก่า & วิถีชุมชน', query: 'ย่านเก่า', icon: Landmark, sub: 'ตลาดน้อย, ภูเก็ตเมืองเก่า, อยุธยา' },
-    { label: 'หอศิลป์ & สเปซศิลปะ', query: 'หอศิลป์', icon: Palette, sub: 'BACC, MOCA, แกลเลอรีสร้างสรรค์' },
-    { label: 'สปา & จุดฮีลใจ', query: 'สปา', icon: Sparkles, sub: 'ออนเซ็น, สมาธิ, ผ่อนคลาย' },
-  ];
+  const PILLAR_SPOT_CATEGORIES = useMemo(() => {
+    return MASTER_SPOT_CATEGORIES.map((c) => ({
+      id: c.id,
+      label: c.name,
+      query: c.keywords[1] || c.keywords[0] || c.name,
+      icon: c.icon,
+      sub: c.description || c.nameEn,
+    }));
+  }, []);
 
-  const PILLAR_COMMUNITY_CATEGORIES = [
-    { label: 'งานวิ่ง & ฟิตเนส', query: 'วิ่ง', icon: Flame, sub: 'ซิตี้รัน, มาราธอน, HYROX, กีฬา' },
-    { label: 'ฮีลใจ & สมาธิ', query: 'sound bath', icon: Sparkles, sub: 'Sound Healing, โยคะ, พักผ่อนใจ' },
-    { label: 'คาเฟ่ & พบปะชิลล์', query: 'กาแฟ', icon: Coffee, sub: 'Slow Bar, จิบกาแฟ, นัดคุย' },
-    { label: 'บอร์ดเกม & ปาร์ตี้', query: 'บอร์ดเกม', icon: Dices, sub: 'ปาร์ตี้บอร์ดเกม, Catan, Pub Quiz' },
-    { label: 'ศิลปะ & งานคราฟต์', query: 'workshop', icon: Palette, sub: 'ปั้นเซรามิก, วาดภาพสีน้ำ, คราฟต์' },
-    { label: 'ท่องเที่ยว & เอาต์ดอร์', query: 'outdoor', icon: Trees, sub: 'พายคายัค, ซับบอร์ด, แคมปิ้ง' },
-    { label: 'ทักษะ & เทคโนโลยี', query: 'tech', icon: Award, sub: 'Tech Meetup, Coding, AI, ธุรกิจ' },
-    { label: 'สัตว์เลี้ยง & ครอบครัว', query: 'สัตว์เลี้ยง', icon: Compass, sub: 'พาน้องหมาแมวเที่ยว, นัดมีทติ้ง' },
-  ];
+  const PILLAR_COMMUNITY_CATEGORIES = useMemo(() => {
+    return MASTER_COMMUNITY_LIFESTYLE_CATEGORIES.map((c) => ({
+      id: c.id,
+      label: c.name,
+      query: c.keywords[0] || c.name,
+      icon: c.icon,
+      sub: c.desc || c.nameEn,
+    }));
+  }, []);
 
-  const PILLAR_FAIR_CATEGORIES = [
-    { label: 'ศูนย์ประชุม & ฮอลล์ใหญ่', query: 'สิริกิติ์', icon: Building2, sub: 'QSNCC, ไบเทค บางนา, อิมแพ็ค' },
-    { label: 'เทศกาลเมือง & งานศิลป์', query: 'เทศกาล', icon: Palette, sub: 'Design Week, Biennale, งานศิลป์' },
-    { label: 'งานวิ่งมาราธอน & กีฬา', query: 'มาราธอน', icon: Flame, sub: 'วิ่งผ่าเมือง, ไตรกีฬา, แข่งขัน' },
-    { label: 'งานประเพณี & งานประจำปี', query: 'ประเพณี', icon: Landmark, sub: 'งานกาชาด, เกษตรแฟร์, งานวัด' },
-    { label: 'ตลาดนัด & คราฟต์แฟร์', query: 'ตลาดนัด', icon: ShoppingBag, sub: 'Flea Market, สินค้าทำมือ, Art Toy' },
-    { label: 'สวนสาธารณะ & ลานดนตรี', query: 'ดนตรีในสวน', icon: Trees, sub: 'ดนตรีในสวน, Open-Air, คอนเสิร์ต' },
-  ];
+  const PILLAR_FAIR_CATEGORIES = useMemo(() => {
+    return MASTER_FAIR_CATEGORIES.map((c) => ({
+      id: c.id,
+      label: c.name,
+      query: c.keywords[0] || c.name,
+      icon: c.icon,
+      sub: c.nameEn || (c.keywords && c.keywords.slice(0, 3).join(', ')),
+    }));
+  }, []);
 
   // =========================================================================
   // 🔍 Dynamic Predictive Search Filters (Matched against real entities)
