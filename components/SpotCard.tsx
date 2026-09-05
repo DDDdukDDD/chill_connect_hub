@@ -5,9 +5,10 @@ import Link from 'next/link';
 import {
   MapPin,
   Clock,
-  Heart,
+  Bookmark,
   Star,
-  ArrowRight
+  ArrowRight,
+  Check
 } from 'lucide-react';
 import { LifestyleSpotItem } from '@/data/spotsData';
 
@@ -85,7 +86,11 @@ export const SpotCard: React.FC<SpotCardProps> = ({
         }
         if (onSelect) onSelect(spot);
       }}
-      className="group bg-white rounded-2xl border border-slate-200/70 hover:border-slate-300 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer relative"
+      className={`group bg-white rounded-2xl transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer relative ${
+        isFavorite
+          ? 'border-2 border-[#4A7C59] ring-2 ring-[#4A7C59]/30 shadow-md'
+          : 'border border-slate-200/70 hover:border-slate-300 shadow-sm hover:shadow-md'
+      }`}
     >
       {/* Image */}
       <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100 shrink-0">
@@ -112,6 +117,13 @@ export const SpotCard: React.FC<SpotCardProps> = ({
             {spot.categoryLabel}
           </span>
 
+          {isFavorite && (
+            <span className="text-[10px] font-bold bg-[#EBF3ED]/95 backdrop-blur-md text-[#2D5A3C] border border-[#C5DEC9] px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1">
+              <Check className="w-3 h-3 text-[#2D5A3C]" />
+              <span>บันทึกแล้ว</span>
+            </span>
+          )}
+
           {(spot as any).distanceKm !== undefined && (
             <span className="text-[10px] font-medium bg-slate-900/80 backdrop-blur-md text-white px-2 py-0.5 rounded-full">
               {((spot as any).distanceKm).toFixed(1)} กม.
@@ -119,7 +131,7 @@ export const SpotCard: React.FC<SpotCardProps> = ({
           )}
         </div>
 
-        {/* Favorite Button */}
+        {/* Favorite / Travel Scrapbook Button */}
         <button
           type="button"
           onClick={(e) => {
@@ -129,12 +141,12 @@ export const SpotCard: React.FC<SpotCardProps> = ({
           }}
           className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full shadow-xs flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-20 cursor-pointer ${
             isFavorite
-              ? 'bg-[#F26430] text-white shadow-md shadow-orange-500/30 ring-1 ring-white/30'
-              : 'bg-white/90 backdrop-blur-md text-slate-400 hover:text-[#F26430]'
+              ? 'bg-[#4A7C59] text-white shadow-md shadow-[#4A7C59]/30 ring-1 ring-white/30'
+              : 'bg-white/90 backdrop-blur-md text-slate-400 hover:text-[#4A7C59]'
           }`}
-          title={isFavorite ? 'ยกเลิกบันทึก' : 'บันทึกสถานที่นี้'}
+          title={isFavorite ? 'นำออกจากสมุดท่องเที่ยว' : 'บันทึกลงสมุดท่องเที่ยว'}
         >
-          <Heart
+          <Bookmark
             className={`w-4 h-4 transition-colors ${
               isFavorite ? 'fill-white text-white' : ''
             }`}

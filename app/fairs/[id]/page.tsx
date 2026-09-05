@@ -17,12 +17,28 @@ import {
 } from '@/data/mockData';
 import { isEventEnded } from '@/lib/dateUtils';
 import { resolveEventGallery } from '@/lib/eventImageResolver';
-import { renderDescriptionContent } from '@/components/RichTextEditor';
+import { renderDescriptionContent, stripHtmlToPlainText } from '@/components/RichTextEditor';
+import { SpotBuddyGatheringModal, SpotBuddyPostItem } from '@/components/SpotBuddyGatheringModal';
+import { ExpoMeetupPassModal, ExpoMeetupPassData } from '@/components/ExpoMeetupPassModal';
+
+export interface FairSubActivityItem {
+  id: string;
+  title: string;
+  creatorName: string;
+  creatorAvatar: string;
+  meetupPoint: string;
+  time: string;
+  currentMembers: number;
+  maxMembers: number;
+  note: string;
+  contactChannel?: string;
+}
 import {
   MapPin,
   Clock,
   Calendar,
   Heart,
+  BookMarked,
   Star,
   Share2,
   Check,
@@ -82,16 +98,11 @@ export default function FairDetailPage() {
   const [eventData, setEventData] = useState<EventItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Sub-activity form in Fair
-  const [showSubActivityForm, setShowSubActivityForm] = useState(false);
-  const [newSubTitle, setNewSubTitle] = useState('');
-  const [newSubMeetupPoint, setNewSubMeetupPoint] = useState('');
-  const [newSubTime, setNewSubTime] = useState('14:00 น.');
-  const [newSubMaxMembers, setNewSubMaxMembers] = useState(4);
-  const [newSubNote, setNewSubNote] = useState('');
+  // Fair Expo Buddy Gathering Modal
+  const [isFairBuddyModalOpen, setIsFairBuddyModalOpen] = useState(false);
 
   // Sub-activities for this Fair
-  const [fairSubActivities, setFairSubActivities] = useState([
+  const [fairSubActivities, setFairSubActivities] = useState<FairSubActivityItem[]>([
     {
       id: 'fair-sub-1',
       title: 'นัดเดินดูโซนไฮไลต์ & ชมนิทรรศการพิเศษด้วยกัน',
@@ -99,8 +110,10 @@ export default function FairDetailPage() {
       creatorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
       meetupPoint: 'จุดนัดพบหน้า Information Counter ชั้น G',
       time: '14:00 น.',
-      membersCount: '2/4 คน',
-      note: 'เดินชมงานแบบสบายๆ ไม่รีบร้อน ใครมาคนเดียวมารวมกลุ่มกันได้เลยครับ'
+      currentMembers: 2,
+      maxMembers: 4,
+      note: 'เดินชมงานแบบสบายๆ ไม่รีบร้อน ใครมาคนเดียวมารวมกลุ่มกันได้เลยครับ',
+      contactChannel: 'LINE: @mind_chill'
     },
     {
       id: 'fair-sub-2',
@@ -109,12 +122,28 @@ export default function FairDetailPage() {
       creatorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
       meetupPoint: 'หน้าร้านกาแฟ Slow Bar ชั้น 1',
       time: '16:00 น.',
-      membersCount: '3/5 คน',
-      note: 'นั่งคุยแลกเปลี่ยนไอเดียหลังเดินดูงานเสร็จ ชิลล์ๆ ไม่เกร็งครับ'
+      currentMembers: 3,
+      maxMembers: 5,
+      note: 'นั่งคุยแลกเปลี่ยนไอเดียหลังเดินดูงานเสร็จ ชิลล์ๆ ไม่เกร็งครับ',
+      contactChannel: 'IG: nott_artwalk'
     }
   ]);
 
   const [joinedSubIds, setJoinedSubIds] = useState<string[]>([]);
+  const [selectedPassData, setSelectedPassData] = useState<ExpoMeetupPassData | null>(null);
+  const [isPassModalOpen, setIsPassModalOpen] = useState(false);
+
+  // Joined Sub IDs from localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedJoinedSubs = localStorage.getItem('joined_fair_sub_ids');
+        if (savedJoinedSubs) {
+          setJoinedSubIds(JSON.parse(savedJoinedSubs));
+        }
+      } catch {}
+    }
+  }, []);
 
   // Retrieve event from mock and live API
   useEffect(() => {
@@ -234,49 +263,121 @@ export default function FairDetailPage() {
     showToast('เปิดบันทึกลง Google Calendar เรียบร้อย! 📅');
   };
 
-  const handleJoinSubActivity = (subId: string, title: string) => {
+  const handleJoinSubActivity = (sub: FairSubActivityItem) => {
     if (!isLoggedIn) {
       setIsAuthModalOpen(true);
       return;
     }
-    if (joinedSubIds.includes(subId)) {
-      setJoinedSubIds((prev) => prev.filter((id) => id !== subId));
-      showToast(`ยกเลิกการเข้าร่วมกลุ่ม "${title}" แล้ว`);
+
+    const isJoined = joinedSubIds.includes(sub.id);
+
+    if (isJoined) {
+      // Re-open existing pass
+      setSelectedPassData({
+        id: sub.id,
+        fairTitle: cleanText(eventData?.title) || 'งานมหกรรม & เอ็กซ์โป',
+        fairLocation: cleanText(eventData?.location) || 'ศูนย์นิทรรศการ',
+        fairDate: cleanText(eventData?.date) || 'วันจัดแสดง',
+        groupTitle: sub.title,
+        meetupPoint: sub.meetupPoint,
+        time: sub.time,
+        creatorName: sub.creatorName,
+        creatorAvatar: sub.creatorAvatar,
+        contactChannel: sub.contactChannel,
+        note: sub.note,
+        currentMembers: sub.currentMembers,
+        maxMembers: sub.maxMembers
+      });
+      setIsPassModalOpen(true);
     } else {
-      setJoinedSubIds((prev) => [...prev, subId]);
-      showToast(`เข้าร่วมกลุ่มเดินงาน "${title}" เรียบร้อย! 🎉`);
+      if (sub.currentMembers >= sub.maxMembers) {
+        showToast('กลุ่มนี้มีผู้เข้าร่วมครบจำนวนแล้ว');
+        return;
+      }
+
+      const updatedCount = sub.currentMembers + 1;
+      setFairSubActivities((prev) =>
+        prev.map((item) => (item.id === sub.id ? { ...item, currentMembers: updatedCount } : item))
+      );
+
+      const newJoined = [...joinedSubIds, sub.id];
+      setJoinedSubIds(newJoined);
+
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('joined_fair_sub_ids', JSON.stringify(newJoined));
+          const existingJoined = JSON.parse(localStorage.getItem('joined_event_ids') || '[]');
+          if (!existingJoined.includes(sub.id)) {
+            localStorage.setItem('joined_event_ids', JSON.stringify([...existingJoined, sub.id]));
+          }
+        } catch {}
+      }
+
+      setSelectedPassData({
+        id: sub.id,
+        fairTitle: cleanText(eventData?.title) || 'งานมหกรรม & เอ็กซ์โป',
+        fairLocation: cleanText(eventData?.location) || 'ศูนย์นิทรรศการ',
+        fairDate: cleanText(eventData?.date) || 'วันจัดแสดง',
+        groupTitle: sub.title,
+        meetupPoint: sub.meetupPoint,
+        time: sub.time,
+        creatorName: sub.creatorName,
+        creatorAvatar: sub.creatorAvatar,
+        contactChannel: sub.contactChannel,
+        note: sub.note,
+        currentMembers: updatedCount,
+        maxMembers: sub.maxMembers
+      });
+      setIsPassModalOpen(true);
+      showToast(`ขอแจมกลุ่ม "${sub.title}" สำเร็จ! เปิดตั๋วนัดพบแล้ว 🎟️`);
     }
   };
 
-  const handleCreateSubActivity = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isLoggedIn) {
-      setIsAuthModalOpen(true);
-      return;
-    }
-    if (!newSubTitle.trim() || !newSubMeetupPoint.trim()) {
-      showToast('กรุณากรอกหัวข้อและจุดนัดพบให้ครบถ้วน');
-      return;
+  const handleCancelJoinSubActivity = (groupId: string) => {
+    setFairSubActivities((prev) =>
+      prev.map((item) => (item.id === groupId ? { ...item, currentMembers: Math.max(1, item.currentMembers - 1) } : item))
+    );
+
+    const newJoined = joinedSubIds.filter((id) => id !== groupId);
+    setJoinedSubIds(newJoined);
+
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('joined_fair_sub_ids', JSON.stringify(newJoined));
+        const existingJoined = JSON.parse(localStorage.getItem('joined_event_ids') || '[]');
+        localStorage.setItem(
+          'joined_event_ids',
+          JSON.stringify(existingJoined.filter((id: string) => id !== groupId))
+        );
+      } catch {}
     }
 
-    const newSub = {
-      id: `fair-sub-${Date.now()}`,
-      title: newSubTitle.trim(),
-      creatorName: 'คุณ (ผู้สร้างกลุ่ม)',
-      creatorAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
-      meetupPoint: newSubMeetupPoint.trim(),
-      time: newSubTime,
-      membersCount: `1/${newSubMaxMembers} คน`,
-      note: newSubNote.trim() || 'มาเดินดูงานด้วยกัน บรรยากาศเป็นกันเองครับ'
+    setIsPassModalOpen(false);
+    showToast('ยกเลิกการเข้าร่วมกลุ่มเดินงานแล้ว');
+  };
+
+  const handleBuddyModalSuccess = (newTrip: SpotBuddyPostItem) => {
+    const newSub: FairSubActivityItem = {
+      id: newTrip.id,
+      title: newTrip.title,
+      creatorName: newTrip.hostName,
+      creatorAvatar: newTrip.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+      meetupPoint: newTrip.meetingPoint || 'จุดนัดพบในงาน',
+      time: newTrip.time,
+      currentMembers: 1,
+      maxMembers: newTrip.maxParticipants || 4,
+      note: stripHtmlToPlainText(newTrip.description) || 'มาเดินดูงานด้วยกัน บรรยากาศเป็นกันเองครับ',
+      contactChannel: 'LINE: @' + (newTrip.hostName.toLowerCase().replace(/\s+/g, '_') || 'host')
     };
-
     setFairSubActivities((prev) => [newSub, ...prev]);
-    setJoinedSubIds((prev) => [...prev, newSub.id]);
-    setShowSubActivityForm(false);
-    setNewSubTitle('');
-    setNewSubMeetupPoint('');
-    setNewSubNote('');
-    showToast('เปิดกลุ่มนัดเดินงานสำเร็จแล้ว! 👥✨');
+    const newJoined = [...joinedSubIds, newSub.id];
+    setJoinedSubIds(newJoined);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('joined_fair_sub_ids', JSON.stringify(newJoined));
+      } catch {}
+    }
+    showToast(`เปิดกลุ่มนัดเดินงาน "${newSub.title}" สำเร็จแล้ว! 👥✨`);
   };
 
   // Keyboard navigation for lightbox
@@ -388,11 +489,11 @@ export default function FairDetailPage() {
           <h1 className="text-2xl font-black text-slate-900">ไม่พบข้อมูลงานอีเวนต์หรือนิทรรศการนี้</h1>
           <p className="text-sm text-slate-600">งานนี้อาจสิ้นสุดลงแล้วหรือถูกย้ายออกจากระบบ</p>
           <Link
-            href="/?tab=public_venue"
+            href="/fairs"
             className="inline-flex items-center gap-2 bg-[#2B527A] hover:bg-[#1E3B59] text-white px-6 py-2.5 rounded-full font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>กลับสู่หน้าอีเวนต์ & งานแฟร์</span>
+            <span>กลับสู่หน้างามหกรรม & เอ็กซ์โป</span>
           </Link>
         </main>
       </div>
@@ -413,7 +514,7 @@ export default function FairDetailPage() {
         isAuthReady={isAuthReady}
         setIsLoggedIn={handleSetIsLoggedIn}
         onOpenLogin={() => setIsAuthModalOpen(true)}
-        onOpenLogout={() => setIsLogoutModalOpen(true)}
+        onOpenLogout={() => setIsLogoutModalOpen(false)}
         onOpenCreateEvent={() => setIsCreateEventModalOpen(true)}
       />
 
@@ -430,10 +531,10 @@ export default function FairDetailPage() {
             <Link href="/" className="hover:text-[#2B527A] transition-colors font-semibold py-2 px-1">หน้าแรก</Link>
             <span className="py-2">/</span>
             <Link
-              href="/?tab=public_venue"
+              href="/fairs"
               className="hover:text-[#2B527A] transition-colors py-2 px-1 font-semibold text-sky-800"
             >
-              อีเวนต์ & งานแฟร์
+              งานมหกรรม & เอ็กซ์โป
             </Link>
             <span className="py-2">/</span>
             <span className="text-slate-700 font-semibold py-2 px-1">{cleanText(venueOrganizerName)}</span>
@@ -448,12 +549,12 @@ export default function FairDetailPage() {
               onClick={() => toggleFavorite(eventData.id)}
               className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-2xs border cursor-pointer active:scale-95 ${
                 isFav
-                  ? 'bg-rose-50 text-rose-600 border-rose-200'
-                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                  ? 'bg-sky-50 text-[#2B527A] border-sky-200'
+                  : 'bg-white text-slate-700 border-slate-200 hover:bg-sky-50 hover:text-[#2B527A]'
               }`}
             >
-              <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-rose-500 text-rose-500' : 'text-slate-500'}`} />
-              <span>{isFav ? 'บันทึกแล้ว' : 'บันทึกงานนี้'}</span>
+              <BookMarked className={`w-3.5 h-3.5 ${isFav ? 'text-[#2B527A]' : 'text-slate-500'}`} />
+              <span>{isFav ? 'บันทึกใน MyHub แล้ว' : 'บันทึกงานนี้'}</span>
             </button>
 
             <button
@@ -569,14 +670,6 @@ export default function FairDetailPage() {
                   <span>{venueOrganizerName}</span>
                 </span>
 
-                <span className={`text-xs font-black px-3 py-1 rounded-full border ${
-                  !eventData.price || eventData.price.includes('ฟรี')
-                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                    : 'bg-amber-50 text-amber-900 border-amber-200'
-                }`}>
-                  {!eventData.price || cleanText(eventData.price).includes('ฟรี') ? 'เข้าชมฟรี' : cleanText(eventData.price)}
-                </span>
-
                 {isEnded ? (
                   <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
                     🏁 งานสิ้นสุดลงแล้ว
@@ -667,16 +760,15 @@ export default function FairDetailPage() {
 
             {/* 4. About the Fair / Story */}
             <div className="space-y-3 pt-1">
-              <h2 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#2B527A]" />
-                <span>เกี่ยวกับงานและนิทรรศการนี้</span>
+              <h2 className="text-lg font-black text-slate-900 tracking-tight">
+                เกี่ยวกับงานและนิทรรศการนี้
               </h2>
               {renderDescriptionContent(eventData.description)}
             </div>
 
             {/* 5. Verified Highlights */}
             <div className="space-y-3.5 pt-5 border-t border-slate-100">
-              <h2 className="text-base font-black text-slate-900 tracking-tight">
+              <h2 className="text-lg font-black text-slate-900 tracking-tight">
                 จุดเด่น & ไฮไลต์ที่ไม่ควรพลาดในงาน
               </h2>
               <ul className="space-y-3 pt-1">
@@ -692,12 +784,69 @@ export default function FairDetailPage() {
               </ul>
             </div>
 
-            {/* 6. Sub-Activities: ชวนรวมแก๊งเดินดูโซนในงาน (Fairs Concept) */}
+            {/* 6. Hall Transit & Parking */}
+            <div className="space-y-4 pt-5 border-t border-slate-100">
+              <h2 className="text-lg font-black text-slate-900 tracking-tight">
+                การเดินทางเข้าศูนย์นิทรรศการ & ที่จอดรถ
+              </h2>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-1">
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                    รถไฟฟ้า MRT / BTS & ทางเชื่อมอาคาร
+                  </span>
+                  <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
+                    {cleanText(publicTransitText)}
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                    อาคารจอดรถ & จุดชาร์จ EV
+                  </span>
+                  <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
+                    {cleanText(parkingText)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* 7. Interactive Google Maps */}
+            <div className="space-y-3.5 pt-5 border-t border-slate-100">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-lg font-black text-slate-900 tracking-tight">
+                  พิกัดแผนที่ศูนย์นิทรรศการ
+                </h3>
+
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(eventData.location)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-[#2B527A] hover:underline shrink-0"
+                >
+                  <span>เปิดดูใน Google Maps</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
+
+              <div className="relative w-full h-60 sm:h-72 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-2xs">
+                <iframe
+                  title={`Google Map - ${cleanText(eventData.title)}`}
+                  src={`https://maps.google.com/maps?q=${encodeURIComponent(eventData.location)}&hl=th&z=15&output=embed`}
+                  className="w-full h-full border-0"
+                  loading="lazy"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
+            </div>
+
+            {/* 8. Sub-Activities: กลุ่มนัดเดินดูงาน & หาเพื่อนแวะจิบกาแฟ (Relocated Under Map) */}
             <div className="space-y-4 pt-6 border-t border-slate-100">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-base font-black text-slate-900 tracking-tight">
+                    <h2 className="text-lg font-black text-slate-900 tracking-tight">
                       กลุ่มนัดเดินดูงาน & หาเพื่อนแวะจิบกาแฟ
                     </h2>
                     <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-800 border border-sky-200">
@@ -715,7 +864,7 @@ export default function FairDetailPage() {
                     if (!isLoggedIn) {
                       setIsAuthModalOpen(true);
                     } else {
-                      setShowSubActivityForm(!showSubActivityForm);
+                      setIsFairBuddyModalOpen(true);
                     }
                   }}
                   className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#2B527A] hover:bg-[#1E3B59] text-white text-xs font-extrabold shadow-md shadow-sky-900/20 transition-all cursor-pointer active:scale-95 shrink-0"
@@ -725,120 +874,35 @@ export default function FairDetailPage() {
                 </button>
               </div>
 
-              {/* Sub-Activity Creation Form */}
-              {showSubActivityForm && (
-                <form
-                  onSubmit={handleCreateSubActivity}
-                  className="p-4 sm:p-5 rounded-3xl bg-slate-50 border border-slate-200 space-y-3.5 animate-in fade-in duration-300"
-                >
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-extrabold text-sm text-slate-900">
-                      เปิดกลุ่มนัดเพื่อนเดินงานในจุดที่สนใจ 👥
-                    </h4>
-                    <button
-                      type="button"
-                      onClick={() => setShowSubActivityForm(false)}
-                      className="text-slate-400 hover:text-slate-600"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                    <div className="space-y-1">
-                      <label className="font-bold text-slate-700">หัวข้อกลุ่มนัดเดิน</label>
-                      <input
-                        type="text"
-                        placeholder="เช่น ชวนดูโซนนิยายแปล & ซื้อหนังสือ"
-                        value={newSubTitle}
-                        onChange={(e) => setNewSubTitle(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:outline-sky-600"
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="font-bold text-slate-700">จุดนัดพบในงาน / หน้าบูธ</label>
-                      <input
-                        type="text"
-                        placeholder="เช่น หน้า Information Counter หรือเสา B02"
-                        value={newSubMeetupPoint}
-                        onChange={(e) => setNewSubMeetupPoint(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:outline-sky-600"
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="font-bold text-slate-700">เวลานัดพบ</label>
-                      <input
-                        type="text"
-                        placeholder="เช่น 14:30 น."
-                        value={newSubTime}
-                        onChange={(e) => setNewSubTime(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:outline-sky-600"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="font-bold text-slate-700">จำนวนคนที่เปิดรับ (คน)</label>
-                      <input
-                        type="number"
-                        min="2"
-                        max="10"
-                        value={newSubMaxMembers}
-                        onChange={(e) => setNewSubMaxMembers(Number(e.target.value))}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:outline-sky-600"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1 text-xs">
-                    <label className="font-bold text-slate-700">โน้ตเพิ่มเติม</label>
-                    <input
-                      type="text"
-                      placeholder="เช่น เดินชิลล์ๆ ไม่รีบ แวะพักจิบเครื่องดื่มระหว่างทาง"
-                      value={newSubNote}
-                      onChange={(e) => setNewSubNote(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:outline-sky-600"
-                    />
-                  </div>
-
-                  <div className="flex justify-end gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setShowSubActivityForm(false)}
-                      className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-bold"
-                    >
-                      ยกเลิก
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-5 py-2 rounded-xl bg-[#2B527A] text-white text-xs font-bold shadow-md active:scale-95"
-                    >
-                      เปิดกลุ่มนัดหมาย
-                    </button>
-                  </div>
-                </form>
-              )}
-
               {/* Sub-Activities Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
                 {fairSubActivities.map((sub) => {
                   const isJoined = joinedSubIds.includes(sub.id);
+                  const isFull = sub.currentMembers >= sub.maxMembers;
+                  const availableSlots = Math.max(0, sub.maxMembers - sub.currentMembers);
 
                   return (
                     <div
                       key={sub.id}
-                      className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:border-sky-300 hover:shadow-xs transition-all space-y-3 flex flex-col justify-between"
+                      className={`p-4 rounded-2xl bg-white border transition-all space-y-3 flex flex-col justify-between ${
+                        isJoined
+                          ? 'border-sky-400 ring-2 ring-sky-300/50 shadow-md bg-gradient-to-b from-sky-50/25 to-white'
+                          : 'border-slate-200/90 shadow-2xs hover:border-sky-300 hover:shadow-xs'
+                      }`}
                     >
                       <div className="space-y-2">
                         <div className="flex items-center justify-between gap-2 text-[11px]">
-                          <span className="font-black text-sky-800 bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200">
+                          <span className="font-black text-sky-800 bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200 truncate">
                             📍 {sub.meetupPoint}
                           </span>
-                          <span className="font-bold text-slate-500">
-                            {sub.membersCount}
+                          <span className={`font-bold shrink-0 px-2 py-0.5 rounded-full text-[10px] ${
+                            isFull
+                              ? 'bg-slate-100 text-slate-500'
+                              : isJoined
+                              ? 'bg-emerald-50 text-emerald-700 font-extrabold border border-emerald-200'
+                              : 'bg-sky-50 text-sky-700'
+                          }`}>
+                            {sub.currentMembers}/{sub.maxMembers} คน {isFull ? '(เต็มแล้ว)' : `(ว่าง ${availableSlots})`}
                           </span>
                         </div>
 
@@ -866,14 +930,29 @@ export default function FairDetailPage() {
 
                         <button
                           type="button"
-                          onClick={() => handleJoinSubActivity(sub.id, sub.title)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer active:scale-95 ${
+                          onClick={() => handleJoinSubActivity(sub)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer active:scale-95 flex items-center gap-1.5 ${
                             isJoined
-                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                              ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100'
+                              : isFull
+                              ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                               : 'bg-[#2B527A] hover:bg-[#1E3B59] text-white shadow-2xs'
                           }`}
+                          disabled={isFull && !isJoined}
                         >
-                          {isJoined ? '✓ เข้าร่วมแล้ว' : 'ขอแจมกลุ่ม'}
+                          {isJoined ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>เข้าร่วมแล้ว (ดูตั๋ว)</span>
+                            </>
+                          ) : isFull ? (
+                            <span>เต็มแล้ว</span>
+                          ) : (
+                            <>
+                              <span>ขอแจมกลุ่ม</span>
+                              <ArrowRight className="w-3 h-3" />
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
@@ -882,69 +961,16 @@ export default function FairDetailPage() {
               </div>
             </div>
 
-            {/* 7. Hall Transit & Parking */}
-            <div className="space-y-4 pt-5 border-t border-slate-100">
-              <h2 className="text-base font-black text-slate-900 tracking-tight">
-                การเดินทางเข้าศูนย์นิทรรศการ & ที่จอดรถ
-              </h2>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-1">
-                <div className="space-y-1">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-                    รถไฟฟ้า MRT / BTS & ทางเชื่อมอาคาร
-                  </span>
-                  <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
-                    {cleanText(publicTransitText)}
-                  </p>
-                </div>
-
-                <div className="space-y-1">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-                    อาคารจอดรถ & จุดชาร์จ EV
-                  </span>
-                  <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
-                    {cleanText(parkingText)}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* 8. Interactive Google Maps */}
-            <div className="space-y-3.5 pt-5 border-t border-slate-100">
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="text-base font-black text-slate-900 tracking-tight">
-                  พิกัดแผนที่ศูนย์นิทรรศการ
-                </h3>
-
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(eventData.location)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs font-bold text-[#2B527A] hover:underline shrink-0"
-                >
-                  <span>เปิดดูใน Google Maps</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-              </div>
-
-              <div className="relative w-full h-60 sm:h-72 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-2xs">
-                <iframe
-                  title={`Google Map - ${cleanText(eventData.title)}`}
-                  src={`https://maps.google.com/maps?q=${encodeURIComponent(eventData.location)}&hl=th&z=15&output=embed`}
-                  className="w-full h-full border-0"
-                  loading="lazy"
-                  allowFullScreen
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
-              </div>
-            </div>
-
           </div>
 
           {/* RIGHT COLUMN: STICKY SCHEDULE & ACTION CARD (1 Col) */}
           <div className="lg:col-span-1 space-y-5 lg:sticky lg:top-24">
             
-            <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm space-y-5">
+            <div className={`p-6 rounded-3xl transition-all space-y-5 ${
+              isFav
+                ? 'bg-gradient-to-b from-sky-50/40 via-white to-white border-2 border-sky-400 shadow-md ring-2 ring-sky-300/40'
+                : 'bg-white border border-slate-200/90 shadow-sm'
+            }`}>
               
               {/* Header Price & Status */}
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -981,28 +1007,43 @@ export default function FairDetailPage() {
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="space-y-2.5 pt-2">
+              {/* Action Buttons: Pure Retention Hero CTA */}
+              <div className="space-y-2 pt-2">
                 <button
                   type="button"
-                  onClick={handleSaveToCalendar}
-                  className="w-full bg-[#2B527A] hover:bg-[#1E3B59] text-white py-3.5 px-4 rounded-2xl font-black text-xs sm:text-sm shadow-md shadow-sky-900/20 transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
+                  onClick={() => toggleFavorite(eventData.id)}
+                  className={`group w-full py-3.5 px-4 rounded-2xl font-black text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer ${
+                    isFav
+                      ? 'bg-sky-50 text-[#2B527A] border border-sky-300 shadow-sky-900/10 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200'
+                      : 'bg-[#2B527A] hover:bg-[#1E3B59] text-white shadow-sky-900/20'
+                  }`}
                 >
-                  <CalendarPlus className="w-4 h-4" />
-                  <span>{isSavedToCalendar ? 'บันทึกลงปฏิทินแล้ว ✓' : 'บันทึกลงปฏิทิน (Google / iCal)'}</span>
+                  {isFav ? (
+                    <>
+                      <span className="flex items-center gap-2 group-hover:hidden">
+                        <Check className="w-4 h-4 text-[#2B527A]" />
+                        <span>บันทึกงานนี้ลง MyHub แล้ว</span>
+                      </span>
+                      <span className="hidden items-center gap-2 group-hover:flex text-rose-600">
+                        <X className="w-4 h-4 text-rose-500" />
+                        <span>นำออกจาก MyHub</span>
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <BookMarked className="w-4 h-4 text-white" />
+                      <span>บันทึกงานนี้ลง MyHub</span>
+                    </>
+                  )}
                 </button>
 
-                {officialWebsiteUrl && (
-                  <a
-                    href={officialWebsiteUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full bg-sky-50 hover:bg-sky-100 text-sky-900 border border-sky-200 py-3 px-4 rounded-2xl font-bold text-xs transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
+                {isFav && (
+                  <Link
+                    href="/myhub"
+                    className="text-center text-[11px] font-bold text-sky-800 hover:underline block pt-0.5"
                   >
-                    <Globe className="w-4 h-4 text-sky-600" />
-                    <span>ไปที่เว็บไซต์ผู้จัดงานทางการ</span>
-                    <ExternalLink className="w-3.5 h-3.5 opacity-70" />
-                  </a>
+                    ดูงานที่บันทึกไว้ใน MyHub ของคุณ →
+                  </Link>
                 )}
               </div>
 
@@ -1028,7 +1069,7 @@ export default function FairDetailPage() {
               </div>
 
               <Link
-                href="/?tab=public_venue"
+                href="/fairs"
                 className="text-xs font-extrabold text-[#2B527A] hover:underline flex items-center gap-1 shrink-0"
               >
                 <span>สำรวจงานมหกรรม & เอ็กซ์โปทั้งหมด</span>
@@ -1037,32 +1078,44 @@ export default function FairDetailPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {relatedFairs.map((item) => (
-                <Link
-                  key={item.id}
-                  href={`/fairs/${encodeURIComponent(item.id)}`}
-                  className="group bg-white rounded-2xl border border-slate-200/90 hover:border-sky-300 shadow-2xs hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col justify-between overflow-hidden cursor-pointer"
-                >
-                  <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
-                    <img
-                      src={item.image}
-                      alt={item.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute top-2 left-2 bg-[#2B527A] shadow-md border border-white/20 backdrop-blur-xs text-white text-[10px] font-black px-2.5 py-1 rounded-full">
-                      🏛️ อีเวนต์ & งานแฟร์
+              {relatedFairs.map((item) => {
+                const isItemFav = favorites.includes(item.id);
+
+                return (
+                  <Link
+                    key={item.id}
+                    href={`/fairs/${encodeURIComponent(item.id)}`}
+                    className={`group bg-white rounded-2xl transition-all flex flex-col justify-between overflow-hidden cursor-pointer relative ${
+                      isItemFav
+                        ? 'border-2 border-sky-400 ring-2 ring-sky-300/50 shadow-md'
+                        : 'border border-slate-200/90 hover:border-sky-300 shadow-2xs hover:shadow-lg hover:-translate-y-1'
+                    }`}
+                  >
+                    <div className="relative aspect-[20/9] w-full overflow-hidden bg-slate-100">
+                      <img
+                        src={item.image}
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      {isItemFav && (
+                        <div className="absolute top-2.5 left-2.5 z-10">
+                          <span className="text-[10px] font-bold bg-sky-50/95 backdrop-blur-md text-[#2B527A] border border-sky-200 px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1">
+                            <Check className="w-3 h-3 text-sky-600" />
+                            <span>บันทึกแล้ว</span>
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  </div>
 
                   <div className="p-4 space-y-2 flex-1 flex flex-col justify-between">
                     <div className="space-y-1">
+                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-sky-800">
+                        <span className="w-1.5 h-1.5 rounded-full bg-sky-600 shrink-0" />
+                        <span className="truncate">{cleanText(item.location)}</span>
+                      </div>
                       <h4 className="font-extrabold text-sm text-slate-900 group-hover:text-[#2B527A] transition-colors line-clamp-2 leading-snug">
                         {cleanText(item.title)}
                       </h4>
-                      <p className="text-xs text-slate-500 flex items-center gap-1 truncate">
-                        <MapPin className="w-3 h-3 text-[#F26430] shrink-0" />
-                        <span className="truncate">{cleanText(item.location)}</span>
-                      </p>
                     </div>
 
                     <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600 font-medium">
@@ -1073,7 +1126,8 @@ export default function FairDetailPage() {
                     </div>
                   </div>
                 </Link>
-              ))}
+              );
+            })}
             </div>
           </section>
         )}
@@ -1166,12 +1220,33 @@ export default function FairDetailPage() {
         }}
       />
       {eventData && (
-        <ReportSafetyModal
-          isOpen={isReportModalOpen}
-          onClose={() => setIsReportModalOpen(false)}
-          targetTitle={eventData.title}
-          targetHostName={venueOrganizerName}
-        />
+        <>
+          <SpotBuddyGatheringModal
+            isOpen={isFairBuddyModalOpen}
+            onClose={() => setIsFairBuddyModalOpen(false)}
+            spotTitle={cleanText(eventData.title)}
+            spotLocation={eventData.location}
+            spotImage={eventData.image}
+            spotId={eventData.id}
+            spotProvince={eventData.province}
+            mode="fair"
+            onSuccess={handleBuddyModalSuccess}
+          />
+          <ReportSafetyModal
+            isOpen={isReportModalOpen}
+            onClose={() => setIsReportModalOpen(false)}
+            targetTitle={eventData.title}
+            targetHostName={venueOrganizerName}
+          />
+          {selectedPassData && (
+            <ExpoMeetupPassModal
+              isOpen={isPassModalOpen}
+              onClose={() => setIsPassModalOpen(false)}
+              passData={selectedPassData}
+              onCancelJoin={handleCancelJoinSubActivity}
+            />
+          )}
+        </>
       )}
 
       <MobileNav activeTab={activeNavTab} setActiveTab={setActiveNavTab} favoritesCount={favorites.length} />

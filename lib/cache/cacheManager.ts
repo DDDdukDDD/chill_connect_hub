@@ -168,6 +168,17 @@ export class MemoryCacheManager {
     };
   }
 
+  /**
+   * Return list of active tags and their cached key counts
+   */
+  public getActiveTags(): { tag: string; count: number }[] {
+    const result: { tag: string; count: number }[] = [];
+    for (const [tag, keys] of this.tagIndex.entries()) {
+      result.push({ tag, count: keys.size });
+    }
+    return result;
+  }
+
   private evictExpiredOrOldest(): void {
     const now = Date.now();
     let evicted = false;

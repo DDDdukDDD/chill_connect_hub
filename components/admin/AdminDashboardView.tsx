@@ -144,12 +144,14 @@ export function AdminDashboardView({ onNavigate }: AdminDashboardViewProps) {
           <div className="grid grid-cols-2 gap-2">
             {[
               { label: 'Master Taxonomy', emoji: '🗂️', module: 'taxonomy' },
-              { label: '77 จังหวัด', emoji: '📍', module: 'provinces' },
+              { label: '77 จังหวัด & โซน', emoji: '📍', module: 'provinces' },
               { label: 'Lifestyle Spots', emoji: '🌲', module: 'spots' },
               { label: 'Community Events', emoji: '👥', module: 'community' },
               { label: 'Fairs & Expos', emoji: '🏛️', module: 'fairs' },
+              { label: 'Media & Image Hub', emoji: '🖼️', module: 'media' },
+              { label: 'Cache & Speed', emoji: '⚡', module: 'cache' },
+              { label: 'Scraper Engine', emoji: '🤖', module: 'scraper' },
               { label: 'Users & RBAC', emoji: '🛡️', module: 'rbac' },
-              { label: 'Quests Engine', emoji: '⚡', module: 'quests' },
               { label: 'Backup & Logs', emoji: '💾', module: 'backup' },
             ].map((item) => (
               <button

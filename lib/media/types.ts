@@ -30,6 +30,23 @@ export interface UploadResult {
   height?: number;
 }
 
+export interface StoredMediaFile {
+  key: string;
+  url: string;
+  size: number;
+  mimeType: string;
+  filename: string;
+  folder: string;
+  createdAt: string;
+}
+
+export interface MediaStorageStats {
+  totalFiles: number;
+  totalSizeBytes: number;
+  webpFilesCount: number;
+  storageDriver: string;
+}
+
 export interface IMediaStorage {
   /**
    * Upload an image buffer/stream to storage
@@ -50,4 +67,15 @@ export interface IMediaStorage {
    * Retrieve the public URL for a given storage key
    */
   getPublicUrl(key: string): string;
+
+  /**
+   * List all stored media files
+   */
+  listFiles?(): Promise<StoredMediaFile[]>;
+
+  /**
+   * Get overall storage stats
+   */
+  getStats?(): Promise<MediaStorageStats>;
 }
+

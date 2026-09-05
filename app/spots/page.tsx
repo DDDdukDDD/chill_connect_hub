@@ -59,8 +59,22 @@ function SpotsPageContent() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [favoriteSpots, setFavoriteSpots] = useState<string[]>(['spot-bkk-1']);
+  const [favoriteSpots, setFavoriteSpots] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Load favorite spots from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('favorite_spots');
+        if (saved) {
+          setFavoriteSpots(JSON.parse(saved));
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -83,13 +97,18 @@ function SpotsPageContent() {
     }
     setFavoriteSpots((prev) => {
       const isFav = prev.includes(spotId);
+      let updated: string[];
       if (isFav) {
         showToast('ลบออกจากรายการบันทึกแล้ว');
-        return prev.filter((id) => id !== spotId);
+        updated = prev.filter((id) => id !== spotId);
       } else {
         showToast('บันทึกสถานที่เรียบร้อยแล้ว');
-        return [...prev, spotId];
+        updated = [...prev, spotId];
       }
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('favorite_spots', JSON.stringify(updated));
+      }
+      return updated;
     });
   };
 

@@ -612,6 +612,34 @@ export default function CommunityDetailPage() {
               </p>
             </div>
 
+            {/* Linked Spot Pill / Card */}
+            {((eventData as any).spotId || (eventData as any).spotTitle) && (
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-[#EBF3ED]/80 border border-[#4A7C59]/30 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-xl bg-[#4A7C59]/10 text-[#4A7C59] flex items-center justify-center shrink-0">
+                    <MapPin className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[11px] font-bold text-[#4A7C59] uppercase tracking-wider block">
+                      🌲 พิกัดจุดเที่ยวที่นัดหมาย
+                    </span>
+                    <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                      {(eventData as any).spotTitle || cleanText(eventData.location)}
+                    </p>
+                  </div>
+                </div>
+                {(eventData as any).spotId && (
+                  <Link
+                    href={`/spots/${encodeURIComponent((eventData as any).spotId)}`}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-white hover:bg-[#4A7C59] text-[#2D5A3C] hover:text-white border border-[#4A7C59]/30 rounded-xl text-xs font-bold transition-all shadow-2xs shrink-0"
+                  >
+                    <span>ดูข้อมูลสถานที่</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                )}
+              </div>
+            )}
+
             {/* 2. Inline Metadata Ribbon */}
             <div className="py-3.5 px-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2 text-xs sm:text-sm text-slate-700">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -740,7 +768,7 @@ export default function CommunityDetailPage() {
 
             {/* 5. About Story */}
             <div className="space-y-3 pt-1">
-              <h2 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
+              <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-[#4A7C59]" />
                 <span>รายละเอียดกิจกรรม & วัตถุประสงค์</span>
               </h2>
@@ -749,7 +777,7 @@ export default function CommunityDetailPage() {
 
             {/* 6. Highlights */}
             <div className="space-y-3.5 pt-5 border-t border-slate-100">
-              <h2 className="text-base font-black text-slate-900 tracking-tight">
+              <h2 className="text-lg font-black text-slate-900 tracking-tight">
                 จุดเด่นของกิจกรรมนี้
               </h2>
               <ul className="space-y-3 pt-1">
@@ -767,7 +795,7 @@ export default function CommunityDetailPage() {
 
             {/* 7. Checklist */}
             <div className="space-y-3.5 pt-5 border-t border-slate-100">
-              <h2 className="text-base font-black text-slate-900 tracking-tight">
+              <h2 className="text-lg font-black text-slate-900 tracking-tight">
                 สิ่งที่ควรเตรียมมา & กฎการอยู่ร่วมกัน
               </h2>
 
@@ -791,7 +819,7 @@ export default function CommunityDetailPage() {
 
             {/* 8. Transit & Map OR Virtual Gathering Info */}
             <div className="space-y-4 pt-5 border-t border-slate-100">
-              <h2 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
+              <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
                 {eventData.locationType === 'online' || eventData.province === 'ออนไลน์' ? (
                   <>
                     <Globe className="w-4 h-4 text-sky-600" />

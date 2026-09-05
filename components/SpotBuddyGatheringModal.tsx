@@ -53,7 +53,11 @@ interface SpotBuddyGatheringModalProps {
   spotTitle: string;
   spotLocation: string;
   spotImage?: string;
+  spotId?: string;
+  spotProvince?: string;
+  spotDistrict?: string;
   onSuccess: (newTrip: SpotBuddyPostItem) => void;
+  mode?: 'spot' | 'fair';
 }
 
 const WHAT_TO_BRING_SUGGESTIONS = [
@@ -81,9 +85,14 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
   spotTitle,
   spotLocation,
   spotImage,
+  spotId,
+  spotProvince,
+  spotDistrict,
   onSuccess,
+  mode = 'spot',
 }) => {
   const { userProfile } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form states matching original design exactly
   const [title, setTitle] = useState('');
@@ -125,15 +134,38 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
 
   useEffect(() => {
     if (isOpen) {
-      setTitle(`ชวนไป ${spotTitle}`);
-      setLocationName(spotTitle || '');
-      setMeetingPoint(`หน้าจุดนัดหมายหลัก / หน้าร้าน ${spotTitle}`);
+      if (mode === 'fair') {
+        setTitle(`ชวนเดินงาน ${spotTitle}`);
+        setLocationName(spotTitle || '');
+        setMeetingPoint(`จุดนัดพบหน้าเคาน์เตอร์ประชาสัมพันธ์ / ประตูเข้างาน ${spotTitle}`);
+        setStartTime('13:30');
+        setEndTime('17:00');
+        setItinerary([
+          { time: '13:30 น.', title: 'รวมตัวกันหน้าจุดนัดพบ / ลงทะเบียน' },
+          { time: '14:00 น.', title: 'เริ่มเดินชมโซนไฮไลต์ & ชมนิทรรศการ' },
+          { time: '16:30 น.', title: 'แวะพักขา จิบกาแฟ & นั่งคุยแลกเปลี่ยน' },
+        ]);
+        setWhatToBringList(['ถุงผ้าใส่ของ/เอกสาร', 'พาวเวอร์แบงก์', 'รองเท้าผ้าใบเดินสบาย']);
+        setDescription(`<p><strong>ภาพรวมกลุ่มนัดเดินงาน:</strong></p><p>หาเพื่อนเดินดูงานเอ็กซ์โปด้วยกัน ชมโซนไฮไลต์และแลกเปลี่ยนความสนใจแบบสบายๆ ใครมาคนเดียวมาร่วมกลุ่มกันได้เลยครับ</p>`);
+      } else {
+        setTitle(`ชวนไป ${spotTitle}`);
+        setLocationName(spotTitle || '');
+        setMeetingPoint(`หน้าจุดนัดหมายหลัก / หน้าร้าน ${spotTitle}`);
+        setStartTime('06:30');
+        setEndTime('08:30');
+        setItinerary([
+          { time: '06:30 น.', title: 'รวมตัวกันหน้าจุดนัดพบ' },
+          { time: '07:00 น.', title: 'เริ่มกิจกรรมหลักร่วมกัน' },
+          { time: '08:15 น.', title: 'แวะจิบกาแฟ & นั่งคุยผ่อนคลาย' },
+        ]);
+        setWhatToBringList(['ขวดน้ำดื่มส่วนตัว', 'รองเท้าวิ่ง / ผ้าใบ']);
+        setDescription(`<p><strong>ภาพรวมกิจกรรม:</strong></p><p>ชวนเพื่อนสายเดียวกันไปเที่ยวหรือเปิดทริปฮีลใจยามว่างด้วยกันอย่างเป็นกันเอง ใครมาคนเดียวไม่ต้องเกร็ง ยินดีต้อนรับทุกคนครับ</p>`);
+      }
       setCoverImage(spotImage || PRESET_VIBE_IMAGES[0].url);
-      setDescription(`<p><strong>ภาพรวมกิจกรรม:</strong></p><p>ชวนเพื่อนสายเดียวกันไปเที่ยวหรือเปิดทริปฮีลใจยามว่างด้วยกันอย่างเป็นกันเอง ใครมาคนเดียวไม่ต้องเกร็ง ยินดีต้อนรับทุกคนครับ</p>`);
       setIsSafetyAccepted(false);
       setErrorMessage(null);
     }
-  }, [isOpen, spotTitle, spotImage]);
+  }, [isOpen, spotTitle, spotImage, mode]);
 
   if (!isOpen) return null;
 
@@ -255,7 +287,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
     const newTrip: SpotBuddyPostItem = {
       id: `spot-buddy-${Date.now()}`,
       title: title.trim(),
-      hostName: userProfile.name || 'คุณส้ม (Som_Chill)',
+      hostName: userProfile.name || 'ฉันเอง',
       hostAvatar: userProfile.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
       hostBadge: userProfile.badgeLabel || 'สมาชิก',
       date: date,
@@ -263,20 +295,61 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
       participantsCount: 1,
       maxParticipants: maxParticipants || 6,
       description: description.trim(),
-      tag: '☕ กิจกรรมชวนเที่ยว',
+      tag: mode === 'fair' ? '🏛️ นัดเดินดูงาน' : '☕ กิจกรรมชวนเที่ยว',
       meetingPoint: meetingPoint.trim(),
       targetGender: targetGender,
       targetAge: targetAge,
-      price: price.trim() || 'ฟรี',
-      image: uploadedImage || coverImage,
+      price: price.trim() || 'เข้าฟรี / หารเฉลี่ย',
+      image: uploadedImage || coverImage || spotImage,
       whatToBring: whatToBringList,
       transportation: transportation,
       contactChannel: contactChannel.trim() || undefined,
       itinerary: itinerary,
     };
 
-    onSuccess(newTrip);
-    onClose();
+    (async () => {
+      try {
+        setIsSubmitting(true);
+        const res = await fetch('/api/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'create',
+            eventData: {
+              ...newTrip,
+              eventType: 'community',
+              category: mode === 'fair' ? 'learn' : 'chill',
+              province: spotProvince || 'กรุงเทพฯ',
+              location: locationName.trim() || spotLocation,
+              spotId: spotId,
+              spotTitle: spotTitle,
+              hostId: userProfile.id || 'user-current',
+            },
+          }),
+        });
+        const data = await res.json();
+        if (data.success && data.event) {
+          onSuccess({
+            ...newTrip,
+            id: data.event.id || newTrip.id,
+          });
+          onClose();
+        } else if (data.message) {
+          // If server responded with error message
+          setErrorMessage(data.message);
+        } else {
+          onSuccess(newTrip);
+          onClose();
+        }
+      } catch (err) {
+        console.error('Error creating spot buddy trip:', err);
+        // Fallback so user is not blocked
+        onSuccess(newTrip);
+        onClose();
+      } finally {
+        setIsSubmitting(false);
+      }
+    })();
   };
 
   return (
@@ -290,7 +363,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                เปิดวงชวนเพื่อนเที่ยว / สร้างกิจกรรมใหม่
+                {mode === 'fair' ? 'เปิดกลุ่มนัดเดินดูงาน & หาเพื่อนแวะจิบกาแฟ' : 'เปิดวงชวนเพื่อนเที่ยว / สร้างกิจกรรมใหม่'}
               </h2>
               <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
                 <Sparkles className="w-3 h-3 text-emerald-600" />
@@ -298,7 +371,9 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
               </span>
             </div>
             <p className="text-xs sm:text-sm text-slate-500 font-medium">
-              ชวนเพื่อนสายเดียวกันไปเที่ยว หรือเปิดทริปฮีลใจยามว่างด้วยกันอย่างเป็นกันเอง
+              {mode === 'fair'
+                ? 'สร้างกลุ่มนัดหมายเพื่อนร่วมทางเดินชมงานแฟร์ นิทรรศการ และแลกเปลี่ยนความสนใจไปด้วยกัน'
+                : 'ชวนเพื่อนสายเดียวกันไปเที่ยว หรือเปิดทริปฮีลใจยามว่างด้วยกันอย่างเป็นกันเอง'}
             </p>
           </div>
 
@@ -323,7 +398,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-slate-800">
-                    ชื่อกิจกรรม / หัวข้อทริปชวนเพื่อน <span className="text-rose-500">*</span>
+                    {mode === 'fair' ? 'ชื่อกลุ่มนัดเดินดูงาน' : 'ชื่อกิจกรรม / หัวข้อทริปชวนเพื่อน'} <span className="text-rose-500">*</span>
                   </label>
                   <span className="text-[11px] text-slate-400 font-medium">หัวข้อกระชับ เข้าใจง่าย</span>
                 </div>
@@ -332,7 +407,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="เช่น วิ่งเช้ารับลมที่สวนเบญจกิติ, จอยบอร์ดเกมคาเฟ่อารีย์"
+                  placeholder={mode === 'fair' ? 'เช่น ชวนดูโซนนิยายแปล & ซื้อหนังสือ, เดินดูโซนดีไซน์แล้วแวะจิบกาแฟ' : 'เช่น วิ่งเช้ารับลมที่สวนเบญจกิติ, จอยบอร์ดเกมคาเฟ่อารีย์'}
                   className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs sm:text-sm font-medium text-slate-900 focus:bg-white focus:border-[#4A7C59] outline-none transition-all"
                 />
               </div>
@@ -805,15 +880,19 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
             </button>
             <button
               type="submit"
-              disabled={!isSafetyAccepted}
+              disabled={!isSafetyAccepted || isSubmitting}
               className={`px-7 py-2.5 rounded-xl font-black text-xs transition-all flex items-center gap-2 cursor-pointer shadow-md ${
-                isSafetyAccepted
+                isSafetyAccepted && !isSubmitting
                   ? 'bg-[#F26430] hover:bg-[#D95322] text-white shadow-orange-500/25 active:scale-95'
                   : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
               }`}
             >
-              <Users className="w-4 h-4" />
-              <span>เปิดวงชวนเพื่อนเลย</span>
+              {isSubmitting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Users className="w-4 h-4" />
+              )}
+              <span>{isSubmitting ? 'กำลังบันทึก...' : 'เปิดวงชวนเพื่อนเลย'}</span>
             </button>
           </div>
 

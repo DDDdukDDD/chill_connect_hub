@@ -18,6 +18,11 @@ import {
   RefreshCw,
   CheckCheck,
   Building2,
+  Repeat,
+  Globe,
+  ShieldCheck,
+  AlertTriangle,
+  Radio,
 } from 'lucide-react';
 import { AdminEventItem } from '@/lib/eventsStore';
 import { stripHtmlToPlainText } from '@/components/RichTextEditor';
@@ -31,6 +36,7 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [formatFilter, setFormatFilter] = useState<'all' | 'recurring' | 'online' | 'physical'>('all');
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -109,7 +115,23 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
     }
   };
 
-  // Filter events by type (community vs public_venue) and search
+  // Safe online link verifier
+  const verifyOnlineLink = (url?: string, platform?: string) => {
+    if (!url) return { isSafe: true, label: 'ไม่มีลิงก์แนบ' };
+    const lower = url.toLowerCase();
+    const isKnown =
+      lower.includes('zoom.us') ||
+      lower.includes('meet.google.com') ||
+      lower.includes('discord.gg') ||
+      lower.includes('discord.com') ||
+      lower.includes('teams.microsoft.com');
+    if (isKnown) {
+      return { isSafe: true, label: `🛡️ Verified ${platform || 'Meeting Link'}` };
+    }
+    return { isSafe: false, label: '⚠️ ลิงก์ภายนอก (ควรตรวจ Phishing)' };
+  };
+
+  // Filter events by type, status, format, and search
   const filteredEvents = useMemo(() => {
     return events.filter((ev) => {
       // Type matching
@@ -118,6 +140,18 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
 
       // Status matching
       if (statusFilter !== 'all' && ev.approvalStatus !== statusFilter) return false;
+
+      // Format matching (recurring / online / physical)
+      if (formatFilter === 'recurring') {
+        const isRecurring = ev.scheduleType === 'recurring' || Boolean(ev.recurrence);
+        if (!isRecurring) return false;
+      } else if (formatFilter === 'online') {
+        const isOnline = ev.locationType === 'online' || ev.province === 'ออนไลน์' || Boolean(ev.onlineJoinUrl);
+        if (!isOnline) return false;
+      } else if (formatFilter === 'physical') {
+        const isOnline = ev.locationType === 'online' || ev.province === 'ออนไลน์' || Boolean(ev.onlineJoinUrl);
+        if (isOnline) return false;
+      }
 
       // Search query
       if (searchQuery.trim()) {
@@ -130,7 +164,7 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
       }
       return true;
     });
-  }, [events, type, statusFilter, searchQuery]);
+  }, [events, type, statusFilter, formatFilter, searchQuery]);
 
   const stats = useMemo(() => {
     const scope = events.filter((ev) => {
@@ -141,7 +175,10 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
     const pending = scope.filter((e) => e.approvalStatus === 'pending').length;
     const approved = scope.filter((e) => e.approvalStatus === 'approved').length;
     const rejected = scope.filter((e) => e.approvalStatus === 'rejected').length;
-    return { total: scope.length, pending, approved, rejected };
+    const recurring = scope.filter((e) => e.scheduleType === 'recurring' || Boolean(e.recurrence)).length;
+    const online = scope.filter((e) => e.locationType === 'online' || e.province === 'ออนไลน์' || Boolean(e.onlineJoinUrl)).length;
+
+    return { total: scope.length, pending, approved, rejected, recurring, online };
   }, [events, type]);
 
   const isCommunity = type === 'community';
@@ -179,12 +216,12 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
                   : 'bg-sky-50 text-[#2B527A] border-sky-200'
               }`}
             >
-              {isCommunity ? 'ตี้เพื่อน & กิจกรรมชุมชน' : 'งานมหกรรม & ศูนย์ประชุม'}
+              {isCommunity ? 'ตี้เพื่อน & นัดซ้ำ & ออนไลน์' : 'งานมหกรรม & ศูนย์ประชุม'}
             </span>
           </div>
           <p className="text-slate-500 text-sm">
             {isCommunity
-              ? 'จัดการและตรวจสอบกิจกรรมที่สร้างโดยคอมมูนิตี้ มีระบบนับผู้เข้าร่วมและควบคุมความปลอดภัย'
+              ? 'ตรวจสอบกิจกรรมคอมมูนิตี้ คัดกรองนัดซ้ำทุกสัปดาห์ (Recurring) และตรวจสอบความปลอดภัยของลิงก์ห้องประชุมออนไลน์'
               : 'จัดการนิทรรศการ งานแฟร์ และเอ็กซ์โปขนาดใหญ่ที่ดึงมาจาก Scraper และพาร์ทเนอร์จัดแสดง'}
           </p>
         </div>
@@ -211,12 +248,13 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {[
           { label: 'กิจกรรมทั้งหมด', value: stats.total, style: 'bg-slate-50 border-slate-200 text-slate-800' },
           { label: 'รอตรวจสอบ (Pending)', value: stats.pending, style: 'bg-amber-50 border-amber-200 text-amber-800' },
           { label: 'อนุมัติแล้ว (Approved)', value: stats.approved, style: 'bg-[#EBF3ED] border-[#4A7C59]/20 text-[#2D5A3C]' },
-          { label: 'ปฏิเสธ (Rejected)', value: stats.rejected, style: 'bg-rose-50 border-rose-200 text-rose-800' },
+          { label: '🔁 นัดประจำ (Recurring)', value: stats.recurring, style: 'bg-purple-50 border-purple-200 text-purple-800' },
+          { label: '🌐 ออนไลน์ (Virtual)', value: stats.online, style: 'bg-sky-50 border-sky-200 text-[#2B527A]' },
         ].map((s) => (
           <div key={s.label} className={`border rounded-xl p-3.5 ${s.style}`}>
             <p className="text-2xl font-bold">{s.value}</p>
@@ -226,7 +264,7 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex items-center justify-between gap-3 flex-wrap bg-white border border-slate-200/80 rounded-2xl p-3 shadow-xs">
         <div className="relative flex-1 min-w-[200px]">
           <Search size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           <input
@@ -234,10 +272,47 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
             placeholder="ค้นหาชื่อกิจกรรม, สถานที่, หรือผู้จัด..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 text-xs placeholder-slate-400 focus:outline-none focus:border-[#4A7C59]/50 focus:ring-1 focus:ring-[#4A7C59]/20 shadow-xs"
+            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-xs placeholder-slate-400 focus:outline-none focus:border-[#4A7C59]/50 focus:ring-1 focus:ring-[#4A7C59]/20"
           />
         </div>
 
+        {/* Format Selector */}
+        <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
+          <button
+            onClick={() => setFormatFilter('all')}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+              formatFilter === 'all' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            ทุกรูปแบบ
+          </button>
+          <button
+            onClick={() => setFormatFilter('recurring')}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+              formatFilter === 'recurring' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            🔁 นัดประจำ ({stats.recurring})
+          </button>
+          <button
+            onClick={() => setFormatFilter('online')}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+              formatFilter === 'online' ? 'bg-[#2B527A] text-white shadow-xs' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            🌐 ออนไลน์ ({stats.online})
+          </button>
+          <button
+            onClick={() => setFormatFilter('physical')}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+              formatFilter === 'physical' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            📍 สถานที่จริง
+          </button>
+        </div>
+
+        {/* Status Filter */}
         <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
           {(['all', 'pending', 'approved', 'rejected'] as const).map((st) => (
             <button
@@ -248,7 +323,7 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
               }`}
             >
               {{
-                all: 'ทั้งหมด',
+                all: 'ทุกสถานะ',
                 pending: `รอตรวจ (${stats.pending})`,
                 approved: 'อนุมัติแล้ว',
                 rejected: 'ปฏิเสธ',
@@ -273,6 +348,9 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
             const isPending = ev.approvalStatus === 'pending';
             const isApproved = ev.approvalStatus === 'approved';
             const isRejected = ev.approvalStatus === 'rejected';
+            const isRecurring = ev.scheduleType === 'recurring' || Boolean(ev.recurrence);
+            const isOnline = ev.locationType === 'online' || ev.province === 'ออนไลน์' || Boolean(ev.onlineJoinUrl);
+            const linkCheck = verifyOnlineLink(ev.onlineJoinUrl, ev.onlinePlatform);
 
             return (
               <div
@@ -309,6 +387,35 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600">
                           {ev.tag || ev.category}
                         </span>
+
+                        {/* Recurring badge */}
+                        {isRecurring && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1">
+                            <Repeat size={10} />
+                            นัดซ้ำ: {ev.recurrence?.frequency === 'monthly' ? 'รายเดือน' : 'ทุกสัปดาห์'}
+                          </span>
+                        )}
+
+                        {/* Virtual / Online badge */}
+                        {isOnline && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-50 text-[#2B527A] border border-sky-200 flex items-center gap-1">
+                            <Globe size={10} />
+                            ออนไลน์: {ev.onlinePlatform || 'Virtual'}
+                          </span>
+                        )}
+
+                        {/* Safe link verification badge */}
+                        {isOnline && ev.onlineJoinUrl && (
+                          <span
+                            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border flex items-center gap-1 ${
+                              linkCheck.isSafe
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : 'bg-amber-50 text-amber-700 border-amber-200'
+                            }`}
+                          >
+                            {linkCheck.label}
+                          </span>
+                        )}
 
                         {ev.source && (
                           <span className="text-[10px] text-slate-400 font-medium">

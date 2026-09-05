@@ -50,6 +50,7 @@ export interface LifestyleSpotItem {
   reviewsCount: number;
   latitude: number;
   longitude: number;
+  zone?: string;
   isTrending?: boolean;
   isNew?: boolean;
   interestedCount?: number;
@@ -189,9 +190,9 @@ const INITIAL_MOCK_SPOTS: LifestyleSpotItem[] = [
     province: 'กรุงเทพฯ',
     district: 'ปทุมวัน',
     transitInfo: '🚝 BTS สนามกีฬาแห่งชาติ ทางออก 3 (Skywalk เชื่อมเข้าอาคาร)',
-    image: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=800&q=80',
     galleryImages: [
-      'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=800&q=80'
+      'https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=800&q=80'
     ],
     openHours: 'เปิดวันอังคาร - อาทิตย์: 10:00 - 20:00 น. (ปิดวันจันทร์)',
     price: 'เข้าฟรี (บางนิทรรศการพิเศษอาจมีค่าเข้า)',
@@ -1492,25 +1493,90 @@ export function getSpotById(id: string): LifestyleSpotItem | undefined {
   return MOCK_SPOTS.find((s) => s.id === id || encodeURIComponent(s.id) === id);
 }
 
+function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return 999999;
+  const R = 6371; // Earth radius in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 10) / 10;
+}
+
 /**
- * Retrieve nearby or similar spots in the same province or category
+ * Retrieve nearby or similar spots prioritizing same zone, district, GPS proximity, and province
  */
 export function getNearbySpots(currentSpot: LifestyleSpotItem, limit = 4): LifestyleSpotItem[] {
-  const sameProvince = MOCK_SPOTS.filter(
-    (s) => s.id !== currentSpot.id && s.province === currentSpot.province
-  );
-  if (sameProvince.length >= limit) {
-    return sameProvince.slice(0, limit);
-  }
+  const others = MOCK_SPOTS.filter((s) => s.id !== currentSpot.id);
 
-  const sameCategory = MOCK_SPOTS.filter(
-    (s) => s.id !== currentSpot.id && s.category === currentSpot.category && !sameProvince.includes(s)
-  );
+  // Score each spot based on proximity factors:
+  // 1. Same Zone (if specified) -> top priority
+  // 2. Same District -> very high priority
+  // 3. GPS Distance (within 15km)
+  // 4. Same Province
+  // 5. Same Category
+  const scored = others.map((s) => {
+    let score = 0;
+    const distanceKm = getDistanceKm(currentSpot.latitude, currentSpot.longitude, s.latitude, s.longitude);
 
-  const fallback = MOCK_SPOTS.filter(
-    (s) => s.id !== currentSpot.id && !sameProvince.includes(s) && !sameCategory.includes(s)
-  );
+    if (currentSpot.zone && s.zone && currentSpot.zone === s.zone) {
+      score += 100;
+    }
+    if (currentSpot.district && s.district && currentSpot.district === s.district) {
+      score += 80;
+    }
+    if (currentSpot.province === s.province) {
+      score += 50;
+    }
+    if (distanceKm <= 5) {
+      score += 40;
+    } else if (distanceKm <= 15) {
+      score += 25;
+    } else if (distanceKm <= 35) {
+      score += 10;
+    }
+    if (currentSpot.category === s.category) {
+      score += 15;
+    }
 
-  return [...sameProvince, ...sameCategory, ...fallback].slice(0, limit);
+    return { spot: s, score, distanceKm };
+  });
+
+  scored.sort((a, b) => {
+    if (b.score !== a.score) {
+      return b.score - a.score;
+    }
+    return a.distanceKm - b.distanceKm;
+  });
+
+  return scored.slice(0, limit).map((item) => item.spot);
 }
+
+/**
+ * Recommendation info package with smart zonal title and subtitle
+ */
+export function getNearbyRecommendationInfo(currentSpot: LifestyleSpotItem, limit = 4) {
+  const spots = getNearbySpots(currentSpot, limit);
+  const zoneName = currentSpot.zone || currentSpot.district;
+  const isZonal = Boolean(zoneName && zoneName !== currentSpot.province);
+
+  const sectionTitle = isZonal
+    ? `สถานที่แนะนำในย่าน ${zoneName} และใกล้เคียง 🌿`
+    : `สถานที่แนะนำอื่นๆ ในจังหวัด ${currentSpot.province} 🌿`;
+
+  const sectionSubtitle = isZonal
+    ? `จุดเช็คอินและที่เที่ยวยอดฮิตในย่าน ${zoneName} ที่เดินทางไปต่อได้สะดวกในทริปเดียวกัน`
+    : `จุดเช็คอินและที่เที่ยวยอดฮิตที่น่าแวะไปต่อในจังหวัด ${currentSpot.province}`;
+
+  return {
+    spots,
+    sectionTitle,
+    sectionSubtitle,
+    zoneName: isZonal ? zoneName : currentSpot.province,
+  };
+}
+
 

@@ -5,7 +5,13 @@
 
 import fs from 'fs/promises';
 import path from 'path';
-import { IMediaStorage, UploadOptions, UploadResult } from '../types';
+import {
+  IMediaStorage,
+  UploadOptions,
+  UploadResult,
+  StoredMediaFile,
+  MediaStorageStats,
+} from '../types';
 
 const DEFAULT_ALLOWED_TYPES = [
   'image/jpeg',
@@ -95,6 +101,63 @@ export class LocalStorageAdapter implements IMediaStorage {
   public getPublicUrl(key: string): string {
     const cleanKey = key.replace(/^\/+/, '');
     return `${this.publicPrefix}/${cleanKey}`;
+  }
+
+  public async listFiles(): Promise<StoredMediaFile[]> {
+    const results: StoredMediaFile[] = [];
+    try {
+      await fs.mkdir(this.baseUploadDir, { recursive: true });
+
+      const scanDirectory = async (currentDir: string, currentFolder = '') => {
+        const entries = await fs.readdir(currentDir, { withFileTypes: true });
+        for (const entry of entries) {
+          const fullPath = path.join(currentDir, entry.name);
+          if (entry.isDirectory()) {
+            await scanDirectory(fullPath, entry.name);
+          } else if (entry.isFile()) {
+            const stat = await fs.stat(fullPath);
+            const folder = currentFolder || 'general';
+            const key = currentFolder ? `${currentFolder}/${entry.name}` : entry.name;
+            const ext = path.extname(entry.name).replace('.', '').toLowerCase();
+            const mimeType =
+              ext === 'webp'
+                ? 'image/webp'
+                : ext === 'png'
+                ? 'image/png'
+                : ext === 'svg'
+                ? 'image/svg+xml'
+                : 'image/jpeg';
+
+            results.push({
+              key,
+              url: this.getPublicUrl(key),
+              size: stat.size,
+              mimeType,
+              filename: entry.name,
+              folder,
+              createdAt: stat.birthtime ? stat.birthtime.toISOString() : stat.mtime.toISOString(),
+            });
+          }
+        }
+      };
+
+      await scanDirectory(this.baseUploadDir);
+    } catch (err) {
+      console.error('Failed to list files in LocalStorageAdapter:', err);
+    }
+    return results.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  public async getStats(): Promise<MediaStorageStats> {
+    const files = await this.listFiles();
+    const totalSizeBytes = files.reduce((acc, f) => acc + f.size, 0);
+    const webpFilesCount = files.filter((f) => f.mimeType === 'image/webp').length;
+    return {
+      totalFiles: files.length,
+      totalSizeBytes,
+      webpFilesCount,
+      storageDriver: 'local',
+    };
   }
 
   private getExtensionFromMime(mimeType: string, originalName: string): string {

@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { EventItem } from '@/data/mockData';
-import { Heart, Calendar, MapPin, Users, Star, CheckCircle2, Sparkles, Building2, Tag, RotateCcw, ExternalLink, Search, Globe, Repeat } from 'lucide-react';
+import { Heart, Calendar, MapPin, Users, Star, CheckCircle2, Sparkles, Building2, Tag, RotateCcw, ExternalLink, Search, Globe, Repeat, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { isEventEnded } from '@/lib/dateUtils';
 
@@ -113,7 +113,11 @@ export const EventGrid: React.FC<EventGridProps> = ({
                 className={`group bg-white rounded-2xl transition-all duration-300 flex flex-col overflow-hidden transform hover:-translate-y-1 cursor-pointer relative h-full ${
                   isJoined
                     ? 'shadow-[0_8px_30px_rgb(74,124,89,0.15)] ring-1 ring-[#4A7C59]'
-                    : 'shadow-lg hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)]'
+                    : isFav
+                    ? event.eventType === 'public_venue'
+                      ? 'border-2 border-sky-400 ring-2 ring-sky-300/50 shadow-md'
+                      : 'border-2 border-orange-400 ring-2 ring-orange-300/50 shadow-md'
+                    : 'shadow-lg hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-100'
                 }`}
               >
                 <div className="relative aspect-video w-full overflow-hidden bg-slate-100 shrink-0">
@@ -124,8 +128,18 @@ export const EventGrid: React.FC<EventGridProps> = ({
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
 
-                  {/* Top-Left Badges: NEW tag & Distance */}
-                  <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5">
+                  {/* Top-Left Badges: Saved indicator, NEW tag & Distance */}
+                  <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 flex-wrap">
+                    {isFav && (
+                      <span className={`text-[10px] font-bold backdrop-blur-md px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1 ${
+                        event.eventType === 'public_venue'
+                          ? 'bg-sky-50/95 text-[#2B527A] border border-sky-200'
+                          : 'bg-orange-50/95 text-[#F26430] border border-orange-200'
+                      }`}>
+                        <Check className="w-3 h-3" />
+                        <span>บันทึกแล้ว</span>
+                      </span>
+                    )}
                     {event.isNew && (
                       <span className="text-[10px] font-black bg-gradient-to-r from-emerald-500 to-[#4A7C59] text-white px-2.5 py-0.5 rounded-full shadow-md tracking-wider flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />

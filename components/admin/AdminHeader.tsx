@@ -31,6 +31,8 @@ const MODULE_BREADCRUMBS: Record<AdminModuleId, { parent: string; label: string 
   quests:     { parent: 'Discovery & Content', label: 'Quests & Badges Engine' },
   rbac:       { parent: 'System & Operations', label: 'Users & Permissions' },
   scraper:    { parent: 'System & Operations', label: 'Scraper & Aggregator' },
+  media:      { parent: 'System & Operations', label: 'Media & Image Hub' },
+  cache:      { parent: 'System & Operations', label: 'Cache & Performance' },
   backup:     { parent: 'System & Operations', label: 'Backup & Audit Logs' },
 };
 

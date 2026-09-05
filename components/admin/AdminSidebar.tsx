@@ -18,6 +18,7 @@ import {
   Crown,
   Settings,
   Home,
+  Image as ImageIcon,
 } from 'lucide-react';
 
 export type AdminModuleId =
@@ -31,7 +32,9 @@ export type AdminModuleId =
   | 'quests'
   | 'rbac'
   | 'scraper'
-  | 'backup';
+  | 'backup'
+  | 'media'
+  | 'cache';
 
 interface SidebarModule {
   id: AdminModuleId;
@@ -74,6 +77,8 @@ const SIDEBAR_GROUPS: SidebarGroup[] = [
   {
     groupLabel: 'SYSTEM & OPERATIONS',
     modules: [
+      { id: 'media', label: 'Media & Image Hub', labelEn: 'Asset Storage', icon: ImageIcon, badge: 'Storage' },
+      { id: 'cache', label: 'Cache & Performance', labelEn: 'Memory Engine', icon: Zap, badge: 'L1' },
       { id: 'rbac', label: 'Users & Permissions', labelEn: 'Role Management', icon: ShieldCheck },
       { id: 'scraper', label: 'Scraper Engine', labelEn: 'Aggregator & Bots', icon: Bot },
       { id: 'backup', label: 'Backup & Audit Logs', labelEn: 'Database & Logs', icon: Database },

@@ -19,6 +19,8 @@ import { RbacUsersView } from '@/components/admin/RbacUsersView';
 import { ScraperEngineView } from '@/components/admin/ScraperEngineView';
 import { DbBackupView } from '@/components/admin/DbBackupView';
 import { EventsModerationView } from '@/components/admin/EventsModerationView';
+import { MediaManagerView } from '@/components/admin/MediaManagerView';
+import { SystemCacheView } from '@/components/admin/SystemCacheView';
 import {
   Bot,
   Sparkles,
@@ -507,6 +509,10 @@ export default function AdminPage() {
           : <AccessDeniedScreen currentRole={currentRole} onSwitchRole={() => setCurrentRole('Super Admin')} />;
       case 'scraper':
         return <ScraperEngineView />;
+      case 'media':
+        return <MediaManagerView />;
+      case 'cache':
+        return <SystemCacheView />;
       case 'backup':
         return currentRole === 'Super Admin'
           ? <DbBackupView />

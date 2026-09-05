@@ -18,6 +18,9 @@ import { EventDetailModal } from '@/components/EventDetailModal';
 import { MOCK_CHALLENGES, ChallengeQuest, EventItem } from '@/data/mockData';
 import { isEventEnded } from '@/lib/dateUtils';
 import { BrandLogo } from '@/components/BrandLogo';
+import { MOCK_SPOTS, LifestyleSpotItem } from '@/data/spotsData';
+import { resolveSpotImage } from '@/lib/spotImageResolver';
+import { formatSpotBadgePrice } from '@/components/SpotCard';
 import {
   Award,
   Coffee,
@@ -48,6 +51,11 @@ import {
   Tag,
   ChevronUp,
   Lock,
+  BookOpen,
+  BookMarked,
+  Star,
+  Compass,
+  Trash2,
 } from 'lucide-react';
 
 const THAI_MONTH_NAMES = [
@@ -189,7 +197,7 @@ const REWARD_SHOP_ITEMS: RewardShopItem[] = [
 
 export default function MyHubPage() {
   const [activeNavTab, setActiveNavTab] = useState('myhub');
-  const [activeSubTab, setActiveSubTab] = useState<'joined_events' | 'quests' | 'rewards'>('joined_events');
+  const [activeSubTab, setActiveSubTab] = useState<'joined_events' | 'quests' | 'rewards' | 'scrapbook'>('joined_events');
   
   // Member vs Host Persona
   const [currentRole, setCurrentRole] = useState<'member' | 'host'>('member');
@@ -198,6 +206,22 @@ export default function MyHubPage() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [myChallenges, setMyChallenges] = useState<ChallengeQuest[]>(MOCK_CHALLENGES);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Travel Scrapbook state
+  const [savedSpotIds, setSavedSpotIds] = useState<string[]>([]);
+
+  const savedSpotsList: LifestyleSpotItem[] = useMemo(() => {
+    return MOCK_SPOTS.filter((s) => savedSpotIds.includes(s.id));
+  }, [savedSpotIds]);
+
+  const handleRemoveFromScrapbook = (spotId: string, spotTitle: string) => {
+    const updated = savedSpotIds.filter((id) => id !== spotId);
+    setSavedSpotIds(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('favorite_spots', JSON.stringify(updated));
+    }
+    showToast(`นำ "${spotTitle}" ออกจากสมุดบันทึกสถานที่เที่ยวแล้ว`);
+  };
 
   // View Mode: Calendar vs List
   const [hubViewMode, setHubViewMode] = useState<'list' | 'calendar'>('list');
@@ -363,8 +387,20 @@ export default function MyHubPage() {
             });
           }, 350);
         }
+
+        // Deep-linking: auto switch to scrapbook tab if ?tab=scrapbook
+        const tabParam = params.get('tab');
+        if (tabParam === 'scrapbook') {
+          setActiveSubTab('scrapbook');
+        }
+
+        // Sync saved favorite spots for Travel Scrapbook
+        const storedFavSpots = JSON.parse(localStorage.getItem('favorite_spots') || '[]');
+        if (Array.isArray(storedFavSpots)) {
+          setSavedSpotIds(storedFavSpots);
+        }
       } catch (e) {
-        console.log('Error reading joinedSubActivities in MyHub:', e);
+        console.log('Error reading localStorage in MyHub:', e);
       }
     }
   }, []);
@@ -1035,6 +1071,19 @@ export default function MyHubPage() {
                 <Gift className="w-4 h-4 text-rose-400" />
                 <span>ร้านแลกรางวัล</span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveSubTab('scrapbook')}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${
+                  activeSubTab === 'scrapbook'
+                    ? 'bg-[#1E293B] text-white shadow-sm'
+                    : 'bg-white text-[#64748B] hover:text-[#1E293B] border border-[#E8E2D8]'
+                }`}
+              >
+                <BookOpen className="w-4 h-4 text-emerald-400" />
+                <span>สมุดบันทึกสถานที่เที่ยว ({savedSpotsList.length})</span>
+              </button>
             </div>
 
           </div>
@@ -1542,6 +1591,154 @@ export default function MyHubPage() {
                   {REWARD_SHOP_ITEMS.map((item) => renderRewardCard(item))}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* TAB 4: TRAVEL SCRAPBOOK (สมุดบันทึกสถานที่เที่ยว) */}
+          {activeSubTab === 'scrapbook' && (
+            <div className="space-y-6">
+              {/* Scrapbook Banner */}
+              <div className="bg-gradient-to-r from-[#2D5A3C] via-[#4A7C59] to-[#3B6347] rounded-3xl p-5 sm:p-6 text-white shadow-md flex items-center justify-between gap-4 flex-wrap">
+                <div className="space-y-1.5 max-w-xl">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black uppercase tracking-wider bg-white/20 text-emerald-100 px-2.5 py-0.5 rounded-full backdrop-blur-xs">
+                      My Travel Scrapbook
+                    </span>
+                    <span className="text-xs text-emerald-200">
+                      • {savedSpotsList.length} พิกัดที่บันทึกไว้
+                    </span>
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-black tracking-tight">
+                    สมุดบันทึกสถานที่เที่ยว & จุดฮีลใจของฉัน 📖
+                  </h3>
+                  <p className="text-xs text-emerald-100 leading-relaxed">
+                    รวบรวมพิกัดคาเฟ่ สโลว์บาร์ สวนสาธารณะ และจุดชมวิวที่ถูกใจ พร้อมสำหรับวางแผนทริปและชวนเพื่อนออกเดินทางไปด้วยกัน
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2.5">
+                  <Link
+                    href="/spots"
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-white text-[#2D5A3C] hover:bg-emerald-50 text-xs font-black shadow-sm transition-all cursor-pointer active:scale-95 shrink-0"
+                  >
+                    <Compass className="w-3.5 h-3.5" />
+                    <span>ค้นหาพิกัดเที่ยว 77 จังหวัด</span>
+                  </Link>
+                </div>
+              </div>
+
+              {/* Spots Grid or Empty State */}
+              {savedSpotsList.length === 0 ? (
+                <div className="bg-slate-50/80 rounded-3xl p-8 sm:p-12 border border-dashed border-slate-200 text-center space-y-4 max-w-md mx-auto my-6">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-[#4A7C59] flex items-center justify-center mx-auto text-2xl shadow-2xs">
+                    📖
+                  </div>
+                  <div className="space-y-1.5">
+                    <h4 className="text-base font-black text-slate-900">
+                      ยังไม่มีพิกัดในสมุดบันทึกสถานที่เที่ยว
+                    </h4>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      เมื่อคุณพบสถานที่ท่องเที่ยวหรือจุดฮีลใจที่น่าสนใจในหน้าพิกัดเที่ยว ให้กด &quot;เพิ่มในสมุดบันทึกสถานที่เที่ยว&quot; เพื่อรวบรวมไว้ที่นี่
+                    </p>
+                  </div>
+                  <Link
+                    href="/spots"
+                    className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-2xl bg-[#4A7C59] hover:bg-[#3B6347] text-white text-xs font-black shadow-sm transition-all cursor-pointer active:scale-95"
+                  >
+                    <span>สำรวจพิกัดเที่ยว 77 จังหวัด ➔</span>
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between border-b border-emerald-200/60 pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#4A7C59]" />
+                      <h4 className="font-black text-sm sm:text-base text-[#1E293B]">
+                        พิกัดที่บันทึกไว้ ({savedSpotsList.length} สถานที่)
+                      </h4>
+                    </div>
+                    <span className="text-xs text-slate-400">
+                      คลิกดูรายละเอียด หรือเปิดชวนเพื่อนเที่ยวได้ทันที
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+                    {savedSpotsList.map((spotItem) => (
+                      <div
+                        key={spotItem.id}
+                        className="group bg-white rounded-3xl border border-slate-200/90 hover:border-emerald-300 shadow-2xs hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden justify-between"
+                      >
+                        {/* Spot Image */}
+                        <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
+                          <img
+                            src={resolveSpotImage(spotItem)}
+                            alt={spotItem.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                          <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                            <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-white/95 text-[#2D5A3C] shadow-2xs border border-emerald-200/60">
+                              {spotItem.categoryLabel}
+                            </span>
+                          </div>
+
+                          <div className="absolute top-2.5 right-2.5 flex items-center gap-1">
+                            <span className="bg-amber-400 text-slate-950 text-[10px] font-black px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shadow-2xs">
+                              <Star className="w-2.5 h-2.5 fill-slate-950" />
+                              <span>{spotItem.rating}</span>
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Content Body */}
+                        <div className="p-4 flex flex-col justify-between flex-1 gap-3">
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
+                              <span className="flex items-center gap-1 text-slate-600">
+                                <MapPin className="w-3 h-3 text-[#4A7C59]" />
+                                <span className="truncate">{spotItem.district}, {spotItem.province}</span>
+                              </span>
+                              <span className="text-[#2D5A3C] font-black shrink-0">
+                                {formatSpotBadgePrice(spotItem.price)}
+                              </span>
+                            </div>
+
+                            <Link
+                              href={`/spots/${encodeURIComponent(spotItem.id)}`}
+                              className="font-black text-sm text-slate-900 group-hover:text-[#4A7C59] transition-colors line-clamp-1 block"
+                            >
+                              {spotItem.title}
+                            </Link>
+
+                            <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                              {spotItem.description}
+                            </p>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2 text-xs">
+                            <Link
+                              href={`/spots/${encodeURIComponent(spotItem.id)}`}
+                              className="flex-1 py-2 px-2.5 rounded-xl bg-[#EBF3ED] hover:bg-[#4A7C59] hover:text-white text-[#2D5A3C] font-black text-center transition-all text-[11px] truncate flex items-center justify-center gap-1"
+                            >
+                              <span>เปิดดูพิกัด</span>
+                              <ArrowRight className="w-3 h-3" />
+                            </Link>
+
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveFromScrapbook(spotItem.id, spotItem.title)}
+                              className="p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
+                              title="นำออกจากสมุดบันทึก"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
