@@ -160,7 +160,7 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({
         </div>
 
         {/* Member Avatars Strip */}
-        <div className="bg-[#FAF7F2] px-4 py-2 border-b border-[#E8E2D8] flex items-center justify-between text-xs text-[#64748B] shrink-0">
+        <div className="bg-slate-50 px-4 py-2 border-b border-slate-200 flex items-center justify-between text-xs text-slate-500 shrink-0">
           <div className="flex items-center gap-2">
             <span className="font-bold text-[#1E293B] text-[11px]">สมาชิกในกลุ่ม:</span>
             <div className="flex -space-x-1.5 overflow-hidden">

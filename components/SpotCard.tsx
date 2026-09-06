@@ -11,6 +11,7 @@ import {
   Check
 } from 'lucide-react';
 import { LifestyleSpotItem } from '@/data/spotsData';
+import { isEventNew } from '@/lib/dateUtils';
 
 /**
  * Formats lengthy spot price details into a clean, compact badge string for card views.
@@ -65,6 +66,7 @@ interface SpotCardProps {
   onSelect?: (spot: LifestyleSpotItem) => void;
   isFavorite: boolean;
   onToggleFavorite: (id: string) => void;
+  isJoined?: boolean;
 }
 
 export const SpotCard: React.FC<SpotCardProps> = ({
@@ -72,6 +74,7 @@ export const SpotCard: React.FC<SpotCardProps> = ({
   onSelect,
   isFavorite,
   onToggleFavorite,
+  isJoined = false,
 }) => {
   return (
     <Link
@@ -87,7 +90,9 @@ export const SpotCard: React.FC<SpotCardProps> = ({
         if (onSelect) onSelect(spot);
       }}
       className={`group bg-white rounded-2xl transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer relative ${
-        isFavorite
+        isJoined
+          ? 'border-2 border-[#4A7C59] ring-2 ring-[#4A7C59]/30 shadow-md'
+          : isFavorite
           ? 'border-2 border-[#4A7C59] ring-2 ring-[#4A7C59]/30 shadow-md'
           : 'border border-slate-200/70 hover:border-slate-300 shadow-sm hover:shadow-md'
       }`}
@@ -106,7 +111,21 @@ export const SpotCard: React.FC<SpotCardProps> = ({
 
         {/* Top Badges */}
         <div className="absolute top-2.5 left-2.5 right-11 flex items-center gap-1.5 flex-wrap z-10">
-          {(spot as any).isNew && (
+          {isJoined && (
+            <span className="text-[10px] font-black bg-[#EBF3ED]/95 backdrop-blur-md text-[#2D5A3C] border border-[#A3CEB0] px-2.5 py-0.5 rounded-full shadow-xs flex items-center gap-1">
+              <Check className="w-3.5 h-3.5 text-[#2D5A3C] stroke-[2.5]" />
+              <span>ลงทะเบียนแล้ว</span>
+            </span>
+          )}
+
+          {isFavorite && (
+            <span className="text-[10px] font-bold bg-[#EBF3ED]/95 backdrop-blur-md text-[#2D5A3C] border border-[#C5DEC9] px-2.5 py-0.5 rounded-full shadow-xs flex items-center gap-1">
+              <Check className="w-3.5 h-3.5 text-[#2D5A3C]" />
+              <span>บันทึกแล้ว</span>
+            </span>
+          )}
+
+          {isEventNew(spot as any) && (
             <span className="text-[10px] font-black bg-gradient-to-r from-emerald-500 to-[#4A7C59] text-white px-2.5 py-0.5 rounded-full shadow-md tracking-wider flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
               <span>NEW</span>
@@ -117,15 +136,8 @@ export const SpotCard: React.FC<SpotCardProps> = ({
             {spot.categoryLabel}
           </span>
 
-          {isFavorite && (
-            <span className="text-[10px] font-bold bg-[#EBF3ED]/95 backdrop-blur-md text-[#2D5A3C] border border-[#C5DEC9] px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1">
-              <Check className="w-3 h-3 text-[#2D5A3C]" />
-              <span>บันทึกแล้ว</span>
-            </span>
-          )}
-
           {(spot as any).distanceKm !== undefined && (
-            <span className="text-[10px] font-medium bg-slate-900/80 backdrop-blur-md text-white px-2 py-0.5 rounded-full">
+            <span className="text-[10px] font-medium bg-slate-900/80 backdrop-blur-md text-white px-2.5 py-0.5 rounded-full">
               {((spot as any).distanceKm).toFixed(1)} กม.
             </span>
           )}

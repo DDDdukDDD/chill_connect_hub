@@ -60,15 +60,20 @@ function SpotsPageContent() {
   const [isLocating, setIsLocating] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [favoriteSpots, setFavoriteSpots] = useState<string[]>([]);
+  const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Load favorite spots from localStorage on mount
+  // Load favorite spots and joined events from localStorage on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
         const saved = localStorage.getItem('favorite_spots');
         if (saved) {
           setFavoriteSpots(JSON.parse(saved));
+        }
+        const savedJoined = localStorage.getItem('joined_event_ids');
+        if (savedJoined) {
+          setJoinedEventIds(JSON.parse(savedJoined));
         }
       } catch {
         // ignore
@@ -431,6 +436,7 @@ function SpotsPageContent() {
                   key={spot.id}
                   spot={spot}
                   isFavorite={favoriteSpots.includes(spot.id)}
+                  isJoined={joinedEventIds.includes(spot.id)}
                   onToggleFavorite={(id) => toggleFavoriteSpot(id)}
                 />
               ))}

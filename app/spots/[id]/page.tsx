@@ -17,9 +17,10 @@ import {
   LifestyleSpotItem,
   MOCK_SPOTS
 } from '@/data/spotsData';
-import { formatSpotBadgePrice } from '@/components/SpotCard';
+import { SpotCard, formatSpotBadgePrice } from '@/components/SpotCard';
 import { resolveSpotGallery, resolveSpotImage } from '@/lib/spotImageResolver';
 import { renderDescriptionContent } from '@/components/RichTextEditor';
+import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import {
   MapPin,
   Clock,
@@ -46,7 +47,8 @@ import {
   Car,
   Tag,
   BookOpen,
-  BookMarked
+  BookMarked,
+  Flag
 } from 'lucide-react';
 
 // Helper to strip rogue emojis from text fields for clean, elegant typography
@@ -65,17 +67,17 @@ export default function SpotDetailPage() {
   const decodedId = rawId ? decodeURIComponent(rawId) : '';
 
   const [activeNavTab, setActiveNavTab] = useState('spots');
-  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn, userProfile } = useAuth();
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
+  const [isCopied, setIsCopied] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
 
-  // Favorites state
-  const [favorites, setFavorites] = useState<string[]>([]);
-  const [isCopied, setIsCopied] = useState(false);
-
-  // Lightbox State
+  // Fullscreen Photo Lightbox Modal State
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
 
@@ -133,6 +135,14 @@ export default function SpotDetailPage() {
           // ignore
         }
       }
+      const savedJoined = localStorage.getItem('joined_event_ids');
+      if (savedJoined) {
+        try {
+          setJoinedEventIds(JSON.parse(savedJoined));
+        } catch {
+          // ignore
+        }
+      }
     }
   }, [decodedId]);
 
@@ -154,7 +164,8 @@ export default function SpotDetailPage() {
         showToast('นำออกจากสมุดบันทึกสถานที่เที่ยวแล้ว 📖');
       } else {
         updated = [...prev, spotId];
-        showToast(`เพิ่ม "${cleanText(spot?.title)}" ลงในสมุดบันทึกสถานที่เที่ยวแล้ว! 📖✨`);
+        const addedSpotTitle = spotId === spot?.id ? spot?.title : (nearbySpots.find((s) => s.id === spotId)?.title || spot?.title);
+        showToast(`เพิ่ม "${cleanText(addedSpotTitle)}" ลงในสมุดบันทึกสถานที่เที่ยวแล้ว! 📖✨`);
       }
       if (typeof window !== 'undefined') {
         localStorage.setItem('favorite_spots', JSON.stringify(updated));
@@ -306,6 +317,15 @@ export default function SpotDetailPage() {
                   <span>แชร์สถานที่</span>
                 </>
               )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsReportModalOpen(true)}
+              className="w-8 h-8 rounded-xl border border-slate-200 hover:border-rose-300 text-slate-400 hover:text-rose-600 flex items-center justify-center transition-colors cursor-pointer active:scale-95"
+              title="รายงานข้อมูลสถานที่ปิด / พิกัดไม่ถูกต้อง"
+            >
+              <Flag className="w-3.5 h-3.5" />
             </button>
           </div>
 
@@ -546,7 +566,7 @@ export default function SpotDetailPage() {
                   href={spot.googleMapsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs font-bold text-[#F26430] hover:underline shrink-0"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-[#4A7C59] hover:underline shrink-0"
                 >
                   <span>เปิดดูใน Google Maps</span>
                   <ExternalLink className="w-3.5 h-3.5" />
@@ -775,69 +795,15 @@ export default function SpotDetailPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {nearbySpots.map((item) => {
-                const isItemSaved = favorites.includes(item.id);
-                return (
-                  <Link
-                    key={item.id}
-                    href={`/spots/${encodeURIComponent(item.id)}`}
-                    className={`group bg-white rounded-2xl transition-all flex flex-col justify-between overflow-hidden cursor-pointer relative ${
-                      isItemSaved
-                        ? 'border-2 border-[#4A7C59] ring-2 ring-[#4A7C59]/30 shadow-md'
-                        : 'border border-slate-200/90 hover:border-[#4A7C59]/50 shadow-2xs hover:shadow-md hover:-translate-y-0.5'
-                    }`}
-                  >
-                    <div className="relative aspect-[20/9] w-full overflow-hidden bg-slate-100 shrink-0">
-                      <img
-                        src={resolveSpotImage(item)}
-                        alt={item.title}
-                        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
-                        onError={(e) => {
-                          e.currentTarget.src = 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=800&q=80';
-                        }}
-                      />
-                      {/* Gradient Overlay for bottom text and badges */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none" />
-
-                      {/* Saved Badge Top Left */}
-                      {isItemSaved && (
-                        <div className="absolute top-2 left-2 bg-[#EBF3ED]/95 backdrop-blur-md text-[#2D5A3C] border border-[#C5DEC9] text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs z-10 flex items-center gap-1">
-                          <Check className="w-3 h-3 text-[#2D5A3C]" />
-                          <span>บันทึกแล้ว</span>
-                        </div>
-                      )}
-
-                      {/* Review Rating Badge at Bottom Right */}
-                      <div className="absolute bottom-2 right-2 bg-amber-400 text-slate-950 text-[10px] font-black px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shadow-sm z-10">
-                        <Star className="w-2.5 h-2.5 fill-slate-950 text-slate-950" />
-                        <span>{item.rating}</span>
-                      </div>
-                    </div>
-
-                    <div className="p-3.5 space-y-1.5 flex-1 flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 min-w-0 gap-2">
-                          <span className="truncate min-w-0 flex-1">{item.categoryLabel}</span>
-                          <span className="text-[#4A7C59] shrink-0 font-extrabold" title={item.price}>
-                            {formatSpotBadgePrice(item.price)}
-                          </span>
-                        </div>
-                        <h3 className="font-bold text-xs sm:text-sm text-slate-900 line-clamp-1 group-hover:text-[#4A7C59] transition-colors mt-0.5">
-                          {item.title}
-                        </h3>
-                        <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
-                          📍 {item.district}, {item.province}
-                        </p>
-                      </div>
-
-                      <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-bold text-[#4A7C59]">
-                        <span>ดูข้อมูลสถานที่</span>
-                        <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
+              {nearbySpots.map((item) => (
+                <SpotCard
+                  key={item.id}
+                  spot={item}
+                  isFavorite={favorites.includes(item.id)}
+                  isJoined={joinedEventIds.includes(item.id)}
+                  onToggleFavorite={toggleFavorite}
+                />
+              ))}
             </div>
           </section>
         )}
@@ -954,6 +920,17 @@ export default function SpotDetailPage() {
           showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จเรียบร้อย! 🎉`);
         }}
       />
+      {spot && (
+        <ReportSafetyModal
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          targetTitle={spot.title}
+          targetHostName={spot.province}
+          onReportSubmitted={() => {
+            showToast('ส่งรายงานข้อมูลสถานที่เรียบร้อย ทีมงานจะตรวจสอบโดยเร็วครับ 🙏');
+          }}
+        />
+      )}
       <MobileNav
         activeTab={activeNavTab}
         setActiveTab={setActiveNavTab}

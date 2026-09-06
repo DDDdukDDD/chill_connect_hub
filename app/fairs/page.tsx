@@ -51,10 +51,26 @@ function FairsPageContent() {
   const [priceFilter, setPriceFilter] = useState<'all' | 'free'>((searchParams.get('price') as any) || 'all');
   const [sortBy, setSortBy] = useState<'newest' | 'favorites'>('newest');
   const [currentPage, setCurrentPage] = useState(1);
-  const [favorites, setFavorites] = useState<string[]>(['7', 'live-agg-1']);
-  const [joinedEventIds, setJoinedEventIds] = useState<string[]>(['live-agg-1']);
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
   const [eventsList, setEventsList] = useState<EventItem[]>(MOCK_EVENTS);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Sync favorites & joined events from localStorage
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedFavs = localStorage.getItem('favorite_events');
+        if (savedFavs) {
+          setFavorites(JSON.parse(savedFavs));
+        }
+        const savedJoined = localStorage.getItem('joined_fair_sub_ids') || localStorage.getItem('joined_event_ids');
+        if (savedJoined) {
+          setJoinedEventIds(JSON.parse(savedJoined));
+        }
+      } catch {}
+    }
+  }, []);
 
   // Fetch live approved events from server
   React.useEffect(() => {
@@ -93,13 +109,18 @@ function FairsPageContent() {
     }
     setFavorites((prev) => {
       const isFav = prev.includes(eventId);
+      let updated: string[];
       if (isFav) {
+        updated = prev.filter((id) => id !== eventId);
         showToast('ลบออกจากรายการโปรดแล้ว');
-        return prev.filter((id) => id !== eventId);
       } else {
-        showToast('เพิ่มเข้าในรายการโปรดเรียบร้อย! ❤️');
-        return [...prev, eventId];
+        updated = [...prev, eventId];
+        showToast('เพิ่มเข้าในรายการโปรดเรียบร้อย! 📌');
       }
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('favorite_events', JSON.stringify(updated));
+      }
+      return updated;
     });
   };
 

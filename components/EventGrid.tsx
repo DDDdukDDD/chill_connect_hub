@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { EventItem } from '@/data/mockData';
 import { Heart, Calendar, MapPin, Users, Star, CheckCircle2, Sparkles, Building2, Tag, RotateCcw, ExternalLink, Search, Globe, Repeat, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { isEventEnded } from '@/lib/dateUtils';
+import { isEventEnded, isEventNew } from '@/lib/dateUtils';
 
 interface EventGridProps {
   events: EventItem[];
@@ -16,6 +16,7 @@ interface EventGridProps {
   onResetFilters?: () => void;
   isFavoritesOnly?: boolean;
   responsiveLimit?: { mobile: number; desktop: number };
+  columns?: 4 | 5;
 }
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string; badgeBg: string }> = {
@@ -34,6 +35,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
   onResetFilters,
   isFavoritesOnly = false,
   responsiveLimit,
+  columns = 5,
 }) => {
   if (events.length === 0) {
     return (
@@ -73,10 +75,14 @@ export const EventGrid: React.FC<EventGridProps> = ({
     ? events.slice(0, responsiveLimit.desktop)
     : events;
 
+  const gridColsClass = columns === 4
+    ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'
+    : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4';
+
   return (
     <div className="space-y-4">
-      {/* GRID VIEW: Responsive 5-Column Grid Layout on Desktop/Wide Screens */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
+      {/* GRID VIEW */}
+      <div className={`grid ${gridColsClass}`}>
         {displayedEvents.map((event, idx) => {
           const isFav = favorites.includes(event.id);
           const isJoined = joinedEventIds.includes(event.id);
@@ -112,12 +118,12 @@ export const EventGrid: React.FC<EventGridProps> = ({
                 }}
                 className={`group bg-white rounded-2xl transition-all duration-300 flex flex-col overflow-hidden transform hover:-translate-y-1 cursor-pointer relative h-full ${
                   isJoined
-                    ? 'shadow-[0_8px_30px_rgb(74,124,89,0.15)] ring-1 ring-[#4A7C59]'
+                    ? 'border-2 border-[#4A7C59] ring-2 ring-[#4A7C59]/30 shadow-md'
                     : isFav
                     ? event.eventType === 'public_venue'
-                      ? 'border-2 border-sky-400 ring-2 ring-sky-300/50 shadow-md'
-                      : 'border-2 border-orange-400 ring-2 ring-orange-300/50 shadow-md'
-                    : 'shadow-lg hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-100'
+                      ? 'border-2 border-sky-400 ring-2 ring-sky-300/40 shadow-md'
+                      : 'border-2 border-orange-400 ring-2 ring-orange-300/40 shadow-md'
+                    : 'border border-slate-200/70 hover:border-slate-300 shadow-sm hover:shadow-md'
                 }`}
               >
                 <div className="relative aspect-video w-full overflow-hidden bg-slate-100 shrink-0">
@@ -128,19 +134,25 @@ export const EventGrid: React.FC<EventGridProps> = ({
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
 
-                  {/* Top-Left Badges: Saved indicator, NEW tag & Distance */}
+                  {/* Top-Left Badges: Registered/Joined indicator, Saved indicator, NEW tag & Distance */}
                   <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 flex-wrap">
+                    {isJoined && (
+                      <span className="text-[10px] font-black bg-[#EBF3ED]/95 backdrop-blur-md text-[#2D5A3C] border border-[#A3CEB0] px-2.5 py-0.5 rounded-full shadow-xs flex items-center gap-1">
+                        <Check className="w-3.5 h-3.5 text-[#2D5A3C] stroke-[2.5]" />
+                        <span>ลงทะเบียนแล้ว</span>
+                      </span>
+                    )}
                     {isFav && (
-                      <span className={`text-[10px] font-bold backdrop-blur-md px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1 ${
+                      <span className={`text-[10px] font-bold backdrop-blur-md px-2.5 py-0.5 rounded-full shadow-xs flex items-center gap-1 ${
                         event.eventType === 'public_venue'
                           ? 'bg-sky-50/95 text-[#2B527A] border border-sky-200'
                           : 'bg-orange-50/95 text-[#F26430] border border-orange-200'
                       }`}>
-                        <Check className="w-3 h-3" />
+                        <Check className="w-3.5 h-3.5" />
                         <span>บันทึกแล้ว</span>
                       </span>
                     )}
-                    {event.isNew && (
+                    {isEventNew(event) && (
                       <span className="text-[10px] font-black bg-gradient-to-r from-emerald-500 to-[#4A7C59] text-white px-2.5 py-0.5 rounded-full shadow-md tracking-wider flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
                         <span>NEW</span>

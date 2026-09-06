@@ -45,10 +45,26 @@ function CommunityPageContent() {
   const [priceFilter, setPriceFilter] = useState<'all' | 'free'>((searchParams.get('price') as any) || 'all');
   const [sortBy, setSortBy] = useState<'newest' | 'favorites'>('newest');
   const [currentPage, setCurrentPage] = useState(1);
-  const [favorites, setFavorites] = useState<string[]>(['1', '3']);
-  const [joinedEventIds, setJoinedEventIds] = useState<string[]>(['1']);
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
   const [eventsList, setEventsList] = useState<EventItem[]>(MOCK_EVENTS);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Sync favorites & joined events from localStorage
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedFavs = localStorage.getItem('favorite_events');
+        if (savedFavs) {
+          setFavorites(JSON.parse(savedFavs));
+        }
+        const savedJoined = localStorage.getItem('joined_event_ids');
+        if (savedJoined) {
+          setJoinedEventIds(JSON.parse(savedJoined));
+        }
+      } catch {}
+    }
+  }, []);
 
   // Fetch live approved events from server
   React.useEffect(() => {
@@ -87,13 +103,18 @@ function CommunityPageContent() {
     }
     setFavorites((prev) => {
       const isFav = prev.includes(eventId);
+      let updated: string[];
       if (isFav) {
+        updated = prev.filter((id) => id !== eventId);
         showToast('ลบออกจากรายการโปรดแล้ว');
-        return prev.filter((id) => id !== eventId);
       } else {
+        updated = [...prev, eventId];
         showToast('เพิ่มเข้าในรายการโปรดเรียบร้อย! ❤️');
-        return [...prev, eventId];
       }
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('favorite_events', JSON.stringify(updated));
+      }
+      return updated;
     });
   };
 
@@ -434,40 +455,37 @@ function CommunityPageContent() {
         </div>
 
         {/* High-Density Community Events Grid */}
-        {filteredEvents.length > 0 ? (
-          <>
-            <EventGrid
-              events={paginatedEvents}
-              onSelectEvent={() => {}}
-              favorites={favorites}
-              toggleFavorite={toggleFavorite}
-              joinedEventIds={joinedEventIds}
-              onResetFilters={() => {
-                setSearchQuery('');
-                setSelectedCategory('all');
-                setPriceFilter('all');
-              }}
-              isFavoritesOnly={sortBy === 'favorites'}
-            />
+        <EventGrid
+          events={paginatedEvents}
+          onSelectEvent={() => {}}
+          favorites={favorites}
+          toggleFavorite={toggleFavorite}
+          joinedEventIds={joinedEventIds}
+          onResetFilters={() => {
+            setSearchQuery('');
+            setSelectedCategory('all');
+            setSelectedProvince('all');
+            setTimeFilter('all');
+            setStatusFilter('upcoming');
+            setPriceFilter('all');
+            setSortBy('newest');
+            setCurrentPage(1);
+          }}
+          isFavoritesOnly={sortBy === 'favorites'}
+        />
 
-            <div className="pt-4">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={(page) => {
-                  setCurrentPage(page);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                totalItems={filteredEvents.length}
-                itemsPerPage={ITEMS_PER_PAGE}
-              />
-            </div>
-          </>
-        ) : (
-          <div className="bg-slate-50 rounded-3xl p-12 text-center space-y-3 border border-slate-200 shadow-xs my-8">
-            <div className="text-4xl">👥</div>
-            <h3 className="text-base font-bold text-slate-800">ไม่พบกิจกรรมตามเงื่อนไขที่เลือก</h3>
-            <p className="text-xs text-slate-500 max-w-md mx-auto">ลองเปลี่ยนหมวดหมู่ หรือกดเปิดตี้สร้างกิจกรรมใหม่ได้เลยครับ</p>
+        {filteredEvents.length > ITEMS_PER_PAGE && (
+          <div className="pt-4">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={(page) => {
+                setCurrentPage(page);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              totalItems={filteredEvents.length}
+              itemsPerPage={ITEMS_PER_PAGE}
+            />
           </div>
         )}
 

@@ -350,19 +350,19 @@ export default function MyHubPage() {
                 newEventsToAdd.push({
                   id: sub.eventId,
                   title: sub.eventTitle,
-                  category: 'chill',
-                  tag: 'งานมหกรรม & ชวนเพื่อน',
+                  category: sub.category || (sub.eventType === 'community' ? 'heal' : 'chill'),
+                  tag: sub.tag || (sub.eventType === 'community' ? 'กิจกรรมคอมมูนิตี้' : 'งานมหกรรม & ชวนเพื่อน'),
                   date: sub.eventDate || '28 มี.ค. 2026',
                   time: sub.eventTime || '10:00 - 20:00 น.',
                   location: sub.eventLocation || 'ศูนย์การประชุมแห่งชาติสิริกิติ์',
                   image: sub.eventImage || 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80',
                   price: sub.eventPrice || 'เข้าชมฟรี!',
-                  description: `กิจกรรมและกลุ่มชวนเพื่อนที่คุณลงทะเบียนเข้าร่วม: ${sub.subTitle}`,
-                  hostName: sub.creatorName || 'ศูนย์การประชุมแห่งชาติสิริกิติ์',
-                  hostAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
+                  description: sub.description || `กิจกรรมที่คุณลงทะเบียนเข้าร่วม: ${sub.subTitle || sub.eventTitle}`,
+                  hostName: sub.creatorName || 'โฮสต์ผู้จัด',
+                  hostAvatar: sub.creatorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
                   eventType: sub.eventType || 'public_venue',
-                  participantsCount: 4,
-                  maxParticipants: 10,
+                  participantsCount: sub.participantsCount || 4,
+                  maxParticipants: sub.maxParticipants || 10,
                   createdAtTimestamp: Date.now(),
                 });
               }
@@ -392,6 +392,13 @@ export default function MyHubPage() {
         const tabParam = params.get('tab');
         if (tabParam === 'scrapbook') {
           setActiveSubTab('scrapbook');
+        }
+
+        // Deep-linking: auto filter event type if ?type=public_venue or ?type=community
+        const typeParam = params.get('type');
+        if (typeParam === 'public_venue' || typeParam === 'community') {
+          setJoinedTypeFilter(typeParam);
+          setActiveSubTab('joined_events');
         }
 
         // Sync saved favorite spots for Travel Scrapbook
@@ -552,6 +559,11 @@ export default function MyHubPage() {
           delete stored[cancelTargetEvent.id];
           localStorage.setItem('joinedSubActivities', JSON.stringify(stored));
           setJoinedSubActivities(stored);
+
+          // 2-Way Sync: Also remove from joined_event_ids so Community Detail page status updates immediately
+          const currentJoinedIds: string[] = JSON.parse(localStorage.getItem('joined_event_ids') || '[]');
+          const updatedJoinedIds = currentJoinedIds.filter((id) => id !== cancelTargetEvent.id);
+          localStorage.setItem('joined_event_ids', JSON.stringify(updatedJoinedIds));
         } catch (e) {
           console.log(e);
         }

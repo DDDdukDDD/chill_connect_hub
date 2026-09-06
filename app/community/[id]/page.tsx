@@ -10,7 +10,6 @@ import { CreateEventModal } from '@/components/CreateEventModal';
 import { ETicketModal } from '@/components/ETicketModal';
 import { GroupChatModal } from '@/components/GroupChatModal';
 import { CancelTicketModal } from '@/components/CancelTicketModal';
-import { TipHostModal } from '@/components/TipHostModal';
 import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import { useAuth } from '@/lib/useAuth';
 import {
@@ -22,6 +21,7 @@ import {
 import { isEventEnded } from '@/lib/dateUtils';
 import { resolveEventGallery } from '@/lib/eventImageResolver';
 import { renderDescriptionContent } from '@/components/RichTextEditor';
+import { EventGrid } from '@/components/EventGrid';
 import {
   MapPin,
   Clock,
@@ -96,7 +96,6 @@ export default function CommunityDetailPage() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isConfirmJoinModalOpen, setIsConfirmJoinModalOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-  const [isTipModalOpen, setIsTipModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   // Dynamic Event State
@@ -172,14 +171,15 @@ export default function CommunityDetailPage() {
       return;
     }
     setFavorites((prev) => {
-      const isFav = prev.includes(eventId);
+      const isFavorited = prev.includes(eventId);
       let updated: string[];
-      if (isFav) {
+      if (isFavorited) {
         updated = prev.filter((id) => id !== eventId);
         showToast('ลบออกจากรายการโปรดแล้ว');
       } else {
         updated = [...prev, eventId];
-        showToast('บันทึกกิจกรรมคอมมูนิตี้ในรายการโปรดเรียบร้อย! ❤️');
+        const targetTitle = eventId === eventData?.id ? eventData?.title : (relatedActivities.find((a) => a.id === eventId)?.title || eventData?.title);
+        showToast(`เพิ่ม "${cleanText(targetTitle)}" ใน MyHub เรียบร้อย! ❤️`);
       }
       if (typeof window !== 'undefined') {
         localStorage.setItem('favorite_events', JSON.stringify(updated));
@@ -212,11 +212,34 @@ export default function CommunityDetailPage() {
     const newJoined = [...joinedEventIds, eventData.id];
     setJoinedEventIds(newJoined);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('joined_event_ids', JSON.stringify(newJoined));
+      try {
+        localStorage.setItem('joined_event_ids', JSON.stringify(newJoined));
+        const existingSubs = JSON.parse(localStorage.getItem('joinedSubActivities') || '{}');
+        existingSubs[eventData.id] = {
+          id: eventData.id,
+          eventId: eventData.id,
+          eventTitle: cleanText(eventData.title),
+          subTitle: cleanText(eventData.title),
+          eventDate: cleanText(eventData.date),
+          eventTime: cleanText(eventData.time),
+          eventLocation: cleanText(eventData.location),
+          eventImage: eventData.image,
+          creatorName: cleanText(eventData.hostName),
+          creatorAvatar: eventData.hostAvatar,
+          eventType: 'community',
+          category: eventData.category || 'heal',
+          tag: eventData.tag || 'กิจกรรมคอมมูนิตี้',
+          description: eventData.description,
+          price: eventData.price,
+          participantsCount: updatedParticipants,
+          maxParticipants: eventData.maxParticipants,
+        };
+        localStorage.setItem('joinedSubActivities', JSON.stringify(existingSubs));
+      } catch {}
     }
 
     setIsConfirmJoinModalOpen(false);
-    showToast(`ยินดีด้วย! คุณลงทะเบียนเข้าร่วม "${eventData.title}" สำเร็จแล้ว 🎉`);
+    showToast(`ยินดีด้วย! คุณลงทะเบียนเข้าร่วม "${cleanText(eventData.title)}" สำเร็จแล้ว 🎉`);
     setIsETicketOpen(true);
   };
 
@@ -228,7 +251,12 @@ export default function CommunityDetailPage() {
     const newJoined = joinedEventIds.filter((id) => id !== eventData.id);
     setJoinedEventIds(newJoined);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('joined_event_ids', JSON.stringify(newJoined));
+      try {
+        localStorage.setItem('joined_event_ids', JSON.stringify(newJoined));
+        const existingSubs = JSON.parse(localStorage.getItem('joinedSubActivities') || '{}');
+        delete existingSubs[eventData.id];
+        localStorage.setItem('joinedSubActivities', JSON.stringify(existingSubs));
+      } catch {}
     }
 
     setIsCancelModalOpen(false);
@@ -305,24 +333,6 @@ export default function CommunityDetailPage() {
     };
   }, [eventData]);
 
-  // Buddy Gathering / Carpool for solo attendees
-  const communityBuddyTrips = useMemo(() => {
-    if (!eventData) return [];
-    return [
-      {
-        id: 'buddy-comm-1',
-        title: `นัดรวมตัวล่วงหน้า 15 นาที นั่งคุยทำความรู้จักกันก่อนเริ่ม`,
-        hostName: eventData.hostName || 'โฮสต์ผู้จัด',
-        hostAvatar: eventData.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
-        date: eventData.date,
-        time: 'ก่อนเริ่มงาน 15 นาที',
-        participantsCount: Math.min(eventData.participantsCount, 4),
-        maxParticipants: eventData.maxParticipants,
-        description: 'ยินดีต้อนรับทุกคนครับ มาถึงก่อนเวลามานั่งคุยจิบน้ำผ่อนคลายด้วยกันก่อนได้เลย',
-        tag: 'นัดพบล่วงหน้า'
-      }
-    ];
-  }, [eventData]);
 
   // Related Community Activities
   const relatedActivities = useMemo(() => {
@@ -429,19 +439,19 @@ export default function CommunityDetailPage() {
             <span className="text-slate-900 font-bold truncate py-2 px-1">{cleanText(eventData.title)}</span>
           </nav>
 
-          {/* Right: Favorite & Share Buttons */}
+          {/* Right: Favorite, Share & Report Buttons */}
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={() => toggleFavorite(eventData.id)}
               className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-2xs border cursor-pointer active:scale-95 ${
                 isFav
-                  ? 'bg-rose-50 text-rose-600 border-rose-200'
-                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                  ? 'bg-orange-50 text-[#F26430] border-orange-200'
+                  : 'bg-white text-slate-700 border-slate-200 hover:bg-orange-50 hover:text-[#F26430]'
               }`}
             >
-              <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-rose-500 text-rose-500' : 'text-slate-500'}`} />
-              <span>{isFav ? 'บันทึกแล้ว' : 'บันทึก'}</span>
+              <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-[#F26430] text-[#F26430]' : 'text-slate-500'}`} />
+              <span>{isFav ? 'บันทึกใน MyHub แล้ว' : isEnded ? 'เพิ่มเข้าคลังเพื่อติดตามรอบถัดไป' : 'บันทึกกิจกรรม'}</span>
             </button>
 
             <button
@@ -460,6 +470,15 @@ export default function CommunityDetailPage() {
                   <span>แชร์กิจกรรม</span>
                 </>
               )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsReportModalOpen(true)}
+              className="w-8 h-8 rounded-xl border border-slate-200 hover:border-rose-300 text-slate-400 hover:text-rose-600 flex items-center justify-center transition-colors cursor-pointer active:scale-95"
+              title="รายงานกิจกรรม / พฤติกรรมไม่เหมาะสม"
+            >
+              <Flag className="w-3.5 h-3.5" />
             </button>
           </div>
 
@@ -556,21 +575,18 @@ export default function CommunityDetailPage() {
                   {catStyle.label}
                 </span>
 
-                <span className={`text-xs font-black px-3 py-1 rounded-full border ${
-                  !eventData.price || eventData.price.includes('ฟรี')
-                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                    : 'bg-amber-50 text-amber-900 border-amber-200'
-                }`}>
-                  {!eventData.price || cleanText(eventData.price).includes('ฟรี') ? 'เข้าร่วมฟรี' : cleanText(eventData.price)}
-                </span>
-
                 {isEnded ? (
                   <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-                    🏁 สิ้นสุดกิจกรรมแล้ว
+                    กิจกรรมสิ้นสุดแล้ว
+                  </span>
+                ) : eventData.participantsCount >= eventData.maxParticipants ? (
+                  <span className="text-xs font-black px-3 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-rose-500" />
+                    <span>ที่นั่งเต็มแล้ว</span>
                   </span>
                 ) : isAlmostFull ? (
-                  <span className="text-xs font-black px-3 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                  <span className="text-xs font-black px-3 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
                     <span>ที่นั่งใกล้เต็ม (เหลือ {Math.max(eventData.maxParticipants - eventData.participantsCount, 0)} ที่)</span>
                   </span>
                 ) : (
@@ -579,12 +595,6 @@ export default function CommunityDetailPage() {
                     <span>เปิดรับสมัคร</span>
                   </span>
                 )}
-
-                <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-2xs ml-auto sm:ml-0">
-                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                  <span>{eventData.hostRating || 4.9}</span>
-                  <span className="text-slate-400 font-normal">({eventData.hostReviewsCount || 58} รีวิว)</span>
-                </div>
               </div>
 
               <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight">
@@ -621,7 +631,7 @@ export default function CommunityDetailPage() {
                   </div>
                   <div className="min-w-0">
                     <span className="text-[11px] font-bold text-[#4A7C59] uppercase tracking-wider block">
-                      🌲 พิกัดจุดเที่ยวที่นัดหมาย
+                      พิกัดจุดเที่ยวที่นัดหมาย
                     </span>
                     <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
                       {(eventData as any).spotTitle || cleanText(eventData.location)}
@@ -671,25 +681,32 @@ export default function CommunityDetailPage() {
                 </div>
               </div>
 
-              {(eventData.transportation || eventData.contactChannel) && (
+              {(eventData.meetingPoint || eventData.transportation || eventData.contactChannel) && (
                 <div className="pt-2 border-t border-slate-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                  {eventData.meetingPoint && (
+                    <div className="flex items-center gap-1.5 text-slate-700">
+                      <span className="font-semibold text-[#4A7C59]">จุดนัดพบเจาะจง:</span>
+                      <span className="font-bold text-slate-900">{cleanText(eventData.meetingPoint)}</span>
+                    </div>
+                  )}
+
                   {eventData.transportation && (
                     <div className="flex items-center gap-1.5 text-slate-600">
-                      <span className="font-medium">🚗 สไตล์การเดินทาง:</span>
+                      <span className="font-medium">การเดินทาง:</span>
                       <span className="font-bold text-slate-800">{eventData.transportation}</span>
                     </div>
                   )}
 
                   {eventData.contactChannel && (
                     <div className="flex items-center gap-1.5 text-slate-600">
-                      <span className="font-medium">💬 ช่องทางติดต่อกลุ่ม:</span>
+                      <span className="font-medium">ช่องทางติดต่อกลุ่ม:</span>
                       {isJoined ? (
                         <span className="font-bold text-[#4A7C59] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
                           {eventData.contactChannel}
                         </span>
                       ) : (
                         <span className="text-slate-400 italic">
-                          🔒 เปิดเผยเมื่อลงทะเบียนเข้าร่วม
+                          เปิดเผยเมื่อลงทะเบียนเข้าร่วม
                         </span>
                       )}
                     </div>
@@ -699,7 +716,7 @@ export default function CommunityDetailPage() {
             </div>
 
             {/* 3. Verified Host Card (Community Core) */}
-            <div className="p-4 sm:p-5 rounded-3xl bg-[#FAF7F2] border border-[#E8E2D8] flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 shadow-2xs">
+            <div className="p-4 sm:p-5 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 shadow-2xs">
               <Link
                 href={profileHref}
                 className="flex items-center gap-3.5 min-w-0 group cursor-pointer"
@@ -718,12 +735,13 @@ export default function CommunityDetailPage() {
                     <h3 className="font-extrabold text-sm text-slate-900 group-hover:text-[#4A7C59] transition-colors truncate">
                       {eventData.hostName}
                     </h3>
-                    <span className="text-[10px] font-black text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-full border border-emerald-200">
-                      Verified Host 🛡️
+                    <span className="text-[10px] font-black text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                      <span>Verified Host</span>
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    จัดกิจกรรมมาแล้ว {eventData.hostHostedCount || 12} ครั้ง • เรตติ้ง ⭐ {eventData.hostRating || 4.9} ({eventData.hostReviewsCount || 58} รีวิว)
+                    จัดกิจกรรมมาแล้ว {eventData.hostHostedCount || 12} ครั้ง • เรตติ้ง {eventData.hostRating || 4.9}/5.0 ({eventData.hostReviewsCount || 58} รีวิว)
                   </p>
                 </div>
               </Link>
@@ -739,15 +757,6 @@ export default function CommunityDetailPage() {
 
                 <button
                   type="button"
-                  onClick={() => setIsTipModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-bold shadow-2xs transition-all active:scale-95 cursor-pointer"
-                >
-                  <Coffee className="w-3.5 h-3.5 text-amber-600" />
-                  <span>Tip Host</span>
-                </button>
-
-                <button
-                  type="button"
                   onClick={() => setIsReportModalOpen(true)}
                   className="p-1.5 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
                   title="รายงานกิจกรรมไม่เหมาะสม"
@@ -757,20 +766,10 @@ export default function CommunityDetailPage() {
               </div>
             </div>
 
-            {/* 4. Safe Space Community Pledge */}
-            <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 flex items-start gap-3">
-              <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-              <div className="space-y-0.5 text-xs text-emerald-950 leading-relaxed">
-                <strong className="block font-bold">100% Safe Space & Welcoming Atmosphere</strong>
-                <span>กิจกรรมในคอมมูนิตี้นี้เน้นความเป็นมิตร อบอุ่น สบายใจ ไร้ความกดดัน ใครมาคนเดียวไม่ต้องเกร็ง มี Host ดูแลต้อนรับเป็นกันเองทุกคน</span>
-              </div>
-            </div>
-
-            {/* 5. About Story */}
+            {/* 4. About Story */}
             <div className="space-y-3 pt-1">
-              <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#4A7C59]" />
-                <span>รายละเอียดกิจกรรม & วัตถุประสงค์</span>
+              <h2 className="text-lg font-black text-slate-900 tracking-tight">
+                รายละเอียดกิจกรรม & วัตถุประสงค์
               </h2>
               {renderDescriptionContent(eventData.description)}
             </div>
@@ -819,16 +818,30 @@ export default function CommunityDetailPage() {
 
             {/* 8. Transit & Map OR Virtual Gathering Info */}
             <div className="space-y-4 pt-5 border-t border-slate-100">
-              <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-                {eventData.locationType === 'online' || eventData.province === 'ออนไลน์' ? (
-                  <>
-                    <Globe className="w-4 h-4 text-sky-600" />
-                    <span>ช่องทางและแพลตฟอร์มกิจกรรมออนไลน์</span>
-                  </>
-                ) : (
-                  <span>จุดนัดพบ & การเดินทาง</span>
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
+                  {eventData.locationType === 'online' || eventData.province === 'ออนไลน์' ? (
+                    <>
+                      <Globe className="w-4 h-4 text-sky-600" />
+                      <span>ช่องทางและแพลตฟอร์มกิจกรรมออนไลน์</span>
+                    </>
+                  ) : (
+                    <span>จุดนัดพบ & การเดินทาง</span>
+                  )}
+                </h2>
+
+                {eventData.locationType !== 'online' && eventData.province !== 'ออนไลน์' && (
+                  <a
+                    href={`https://maps.google.com/?q=${encodeURIComponent(eventData.location)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-[#4A7C59] hover:underline shrink-0"
+                  >
+                    <span>เปิดดูใน Google Maps</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
                 )}
-              </h2>
+              </div>
 
               {eventData.locationType === 'online' || eventData.province === 'ออนไลน์' ? (
                 <div className="p-5 rounded-2xl bg-sky-50/60 border border-sky-200/80 space-y-3">
@@ -912,7 +925,7 @@ export default function CommunityDetailPage() {
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <span className="text-xs font-bold text-slate-500">ค่าลงทะเบียน</span>
                 <span className="text-lg font-black text-slate-900">
-                  {eventData.price && !eventData.price.includes('ฟรี') ? eventData.price : '🎉 เข้าร่วมฟรี'}
+                  {eventData.price && !eventData.price.includes('ฟรี') ? eventData.price : 'เข้าร่วมฟรี'}
                 </span>
               </div>
 
@@ -1003,7 +1016,14 @@ export default function CommunityDetailPage() {
                     disabled
                     className="w-full bg-slate-100 text-slate-400 py-3 rounded-2xl font-bold text-xs cursor-not-allowed text-center"
                   >
-                    กิจกรรมนี้สิ้นสุดแล้ว
+                    ปิดรับการลงทะเบียน (กิจกรรมสิ้นสุดแล้ว)
+                  </button>
+                ) : eventData.participantsCount >= eventData.maxParticipants && !isJoined ? (
+                  <button
+                    disabled
+                    className="w-full bg-slate-100 text-slate-400 py-3 rounded-2xl font-bold text-xs cursor-not-allowed text-center"
+                  >
+                    ที่นั่งเต็มแล้ว (Full)
                   </button>
                 ) : isJoined ? (
                   <>
@@ -1013,7 +1033,7 @@ export default function CommunityDetailPage() {
                       className="w-full bg-[#4A7C59] hover:bg-[#3B6447] text-white py-3 px-4 rounded-2xl font-black text-xs sm:text-sm shadow-md shadow-[#4A7C59]/20 transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
                     >
                       <QrCode className="w-4 h-4" />
-                      <span>ดูตั๋ว E-Ticket ของคุณ ➔</span>
+                      <span>ดูตั๋ว E-Ticket ของคุณ</span>
                     </button>
 
                     <button
@@ -1043,6 +1063,15 @@ export default function CommunityDetailPage() {
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 )}
+
+                {isJoined && (
+                  <Link
+                    href="/myhub?type=community"
+                    className="w-full text-center inline-flex items-center justify-center gap-1 text-[11px] font-bold text-[#4A7C59] hover:underline pt-0.5"
+                  >
+                    <span>ดูกิจกรรมใน MyHub ของคุณ</span>
+                  </Link>
+                )}
               </div>
 
             </div>
@@ -1052,7 +1081,7 @@ export default function CommunityDetailPage() {
         </div>
 
         {/* =========================================================================
-            RELATED ACTIVITIES SECTION
+            RELATED ACTIVITIES SECTION (REUSE STANDARD EVENTGRID)
            ========================================================================= */}
         {relatedActivities.length > 0 && (
           <section className="pt-10 border-t border-slate-100 space-y-5">
@@ -1075,41 +1104,14 @@ export default function CommunityDetailPage() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {relatedActivities.map((relEvent) => (
-                <Link
-                  key={relEvent.id}
-                  href={`/community/${encodeURIComponent(relEvent.id)}`}
-                  className="group bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-2xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col"
-                >
-                  <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
-                    <img
-                      src={relEvent.image}
-                      alt={relEvent.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <span className="absolute top-2 left-2 text-[10px] font-black bg-slate-900/80 text-white px-2 py-0.5 rounded-full backdrop-blur-xs">
-                      {relEvent.price || 'ฟรี'}
-                    </span>
-                  </div>
-                  <div className="p-3.5 flex flex-col justify-between flex-1 space-y-2">
-                    <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 line-clamp-1 group-hover:text-[#4A7C59] transition-colors">
-                      {cleanText(relEvent.title)}
-                    </h3>
-                    <div className="text-[11px] text-slate-500 space-y-1">
-                      <div className="flex items-center gap-1.5">
-                        <Calendar className="w-3 h-3 text-[#4A7C59] shrink-0" />
-                        <span className="truncate">{cleanText(relEvent.date)}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <MapPin className="w-3 h-3 text-[#4A7C59] shrink-0" />
-                        <span className="truncate">{cleanText(relEvent.location)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
+            <EventGrid
+              events={relatedActivities}
+              favorites={favorites}
+              toggleFavorite={toggleFavorite}
+              joinedEventIds={joinedEventIds}
+              onSelectEvent={() => {}}
+              columns={4}
+            />
           </section>
         )}
 
@@ -1208,14 +1210,13 @@ export default function CommunityDetailPage() {
           onClick={() => setIsConfirmJoinModalOpen(false)}
         >
           <div
-            className="bg-white rounded-[36px] p-6 sm:p-8 max-w-lg sm:max-w-xl w-full shadow-2xl border border-[#E8E2D8] text-left space-y-5 animate-scale-up relative overflow-hidden"
+            className="bg-white rounded-3xl p-6 sm:p-7 max-w-lg sm:max-w-xl w-full shadow-2xl border border-slate-200 text-left space-y-5 animate-scale-up relative overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Top Bar: Category Pill & Close Button */}
             <div className="flex items-center justify-between">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FAF7F2] border border-[#E8E2D8] text-[#4A7C59] text-xs font-bold tracking-wide">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>กิจกรรมคอมมูนิตี้ • Safe Space Verified</span>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[#4A7C59] text-xs font-bold tracking-wide">
+                <span>กิจกรรมคอมมูนิตี้</span>
               </div>
               <button
                 type="button"
@@ -1238,7 +1239,7 @@ export default function CommunityDetailPage() {
             </div>
 
             {/* Editorial Reservation Pass Card */}
-            <div className="bg-[#FAF7F2] rounded-3xl p-5 sm:p-6 border border-[#E8E2D8] space-y-4 shadow-2xs relative">
+            <div className="bg-slate-50 rounded-2xl p-5 sm:p-6 border border-slate-200 space-y-4 shadow-2xs relative">
               {/* Event Title & Price Pill */}
               <div className="flex items-start justify-between gap-3">
                 <h4 className="text-base sm:text-lg font-black text-slate-900 leading-snug">
@@ -1286,7 +1287,7 @@ export default function CommunityDetailPage() {
               </div>
 
               {/* Perforated Divider & E-Ticket Guarantee */}
-              <div className="border-t border-dashed border-[#E8E2D8] pt-3.5">
+              <div className="border-t border-dashed border-slate-200 pt-3.5">
                 <div className="flex items-center gap-2.5 text-xs text-slate-600 font-medium">
                   <div className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
                     <QrCode className="w-3.5 h-3.5" />
@@ -1338,15 +1339,6 @@ export default function CommunityDetailPage() {
             event={eventData}
             ticketId={`TICK-${eventData.id}`}
             onConfirmCancel={handleConfirmCancel}
-          />
-          <TipHostModal
-            isOpen={isTipModalOpen}
-            onClose={() => setIsTipModalOpen(false)}
-            event={eventData}
-            onTipSubmit={() => {
-              setIsTipModalOpen(false);
-              showToast('ส่งทิปให้ผู้จัดงานเรียบร้อย ขอบคุณสำหรับกำลังใจค่ะ! ☕✨');
-            }}
           />
           <ReportSafetyModal
             isOpen={isReportModalOpen}

@@ -27,7 +27,7 @@ import { Pagination } from '@/components/Pagination';
 import { BrandLogo } from '@/components/BrandLogo';
 import { MOCK_SPOTS, SPOT_CATEGORIES, ALL_THAI_PROVINCES, LifestyleSpotItem } from '@/data/spotsData';
 import { SpotCard } from '@/components/SpotCard';
-import { isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp, isEventEndedByDate } from '@/lib/dateUtils';
+import { isEventEnded, isEventNew, parseEventDateToTimestamp, parseEventEndDateToTimestamp, isEventEndedByDate } from '@/lib/dateUtils';
 import { useAuth } from '@/lib/useAuth';
 import {
   Heart,
@@ -181,6 +181,31 @@ export default function Home() {
     }
   }, []);
 
+  // Sync favorites & joined events with localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedFavEvents = localStorage.getItem('favorite_events');
+        if (savedFavEvents) {
+          const parsed = JSON.parse(savedFavEvents);
+          if (Array.isArray(parsed)) setFavorites(parsed);
+        }
+        const savedFavSpots = localStorage.getItem('favorite_spots');
+        if (savedFavSpots) {
+          const parsed = JSON.parse(savedFavSpots);
+          if (Array.isArray(parsed)) setFavoriteSpots(parsed);
+        }
+        const savedJoined = localStorage.getItem('joined_event_ids');
+        if (savedJoined) {
+          const parsed = JSON.parse(savedJoined);
+          if (Array.isArray(parsed)) setJoinedEventIds(parsed);
+        }
+      } catch (e) {
+        console.error('Error loading stored favorites/joined:', e);
+      }
+    }
+  }, []);
+
   const toggleFavoriteSpot = (spotId: string) => {
     if (!isLoggedIn) {
       triggerMembershipPrompt('เพื่อบันทึกสถานที่นี้ไว้ใน Bucket List');
@@ -188,13 +213,16 @@ export default function Home() {
     }
     setFavoriteSpots((prev) => {
       const isFav = prev.includes(spotId);
+      const updated = isFav ? prev.filter((id) => id !== spotId) : [...prev, spotId];
       if (isFav) {
         showToast('ลบสถานที่ออกจากรายการบันทึกแล้ว');
-        return prev.filter((id) => id !== spotId);
       } else {
         showToast('บันทึกสถานที่ลงใน Bucket List เรียบร้อย! 💖');
-        return [...prev, spotId];
       }
+      try {
+        localStorage.setItem('favorite_spots', JSON.stringify(updated));
+      } catch {}
+      return updated;
     });
   };
 
@@ -278,13 +306,16 @@ export default function Home() {
     }
     setFavorites((prev) => {
       const isFav = prev.includes(eventId);
+      const updated = isFav ? prev.filter((id) => id !== eventId) : [...prev, eventId];
       if (isFav) {
         showToast('ลบออกจากรายการโปรดแล้ว');
-        return prev.filter((id) => id !== eventId);
       } else {
         showToast('เพิ่มเข้าในรายการโปรดเรียบร้อย! ❤️');
-        return [...prev, eventId];
       }
+      try {
+        localStorage.setItem('favorite_events', JSON.stringify(updated));
+      } catch {}
+      return updated;
     });
   };
 
@@ -296,7 +327,13 @@ export default function Home() {
           : item
       )
     );
-    setJoinedEventIds((prev) => (prev.includes(eventId) ? prev : [...prev, eventId]));
+    setJoinedEventIds((prev) => {
+      const updated = prev.includes(eventId) ? prev : [...prev, eventId];
+      try {
+        localStorage.setItem('joined_event_ids', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
     showToast('ยินดีด้วย! คุณลงทะเบียนเข้าร่วมกิจกรรมเรียบร้อย 🎉');
   };
 
@@ -308,7 +345,13 @@ export default function Home() {
           : item
       )
     );
-    setJoinedEventIds((prev) => prev.filter((id) => id !== eventId));
+    setJoinedEventIds((prev) => {
+      const updated = prev.filter((id) => id !== eventId);
+      try {
+        localStorage.setItem('joined_event_ids', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
     showToast('ยกเลิกการเข้าร่วมกิจกรรมเรียบร้อยแล้ว');
   };
 
@@ -317,9 +360,9 @@ export default function Home() {
     return eventsList.filter((e) => e.isTrending);
   }, [eventsList]);
 
-  // Newly Added Events (isNew = true)
+  // Newly Added Events (isNew within 3 days, not ended)
   const newEvents = useMemo(() => {
-    return eventsList.filter((e) => e.isNew);
+    return eventsList.filter((e) => isEventNew(e));
   }, [eventsList]);
 
   // Filtered and Sorted Events for Full Catalog
@@ -1022,6 +1065,7 @@ export default function Home() {
                         <SpotCard
                           spot={spot}
                           isFavorite={favoriteSpots.includes(spot.id)}
+                          isJoined={joinedEventIds.includes(spot.id)}
                           onToggleFavorite={(id) => {
                             if (!isLoggedIn) {
                               triggerMembershipPrompt('เพื่อบันทึกสถานที่โปรด');
@@ -1376,6 +1420,7 @@ export default function Home() {
                             key={spot.id}
                             spot={spot}
                             isFavorite={favoriteSpots.includes(spot.id)}
+                            isJoined={joinedEventIds.includes(spot.id)}
                             onToggleFavorite={(id) => {
                               if (!isLoggedIn) {
                                 triggerMembershipPrompt('เพื่อบันทึกสถานที่โปรด');

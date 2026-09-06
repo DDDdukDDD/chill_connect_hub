@@ -20,6 +20,7 @@ import { resolveEventGallery } from '@/lib/eventImageResolver';
 import { renderDescriptionContent, stripHtmlToPlainText } from '@/components/RichTextEditor';
 import { SpotBuddyGatheringModal, SpotBuddyPostItem } from '@/components/SpotBuddyGatheringModal';
 import { ExpoMeetupPassModal, ExpoMeetupPassData } from '@/components/ExpoMeetupPassModal';
+import { EventGrid } from '@/components/EventGrid';
 
 export interface FairSubActivityItem {
   id: string;
@@ -214,7 +215,8 @@ export default function FairDetailPage() {
         showToast('ลบออกจากรายการบันทึกแล้ว');
       } else {
         updated = [...prev, eventId];
-        showToast('บันทึกงานแฟร์นี้ในรายการที่สนใจเรียบร้อย! 📌');
+        const isTargetEnded = eventId === eventData?.id ? isEnded : false;
+        showToast(isTargetEnded ? 'เพิ่มเข้าคลังเพื่อติดตามรอบถัดไปเรียบร้อย! 📌' : 'บันทึกงานแฟร์นี้ใน MyHub เรียบร้อย! 📌');
       }
       if (typeof window !== 'undefined') {
         localStorage.setItem('favorite_events', JSON.stringify(updated));
@@ -310,6 +312,23 @@ export default function FairDetailPage() {
           if (!existingJoined.includes(sub.id)) {
             localStorage.setItem('joined_event_ids', JSON.stringify([...existingJoined, sub.id]));
           }
+
+          // Sync with joinedSubActivities for MyHub calendar & joined list
+          const existingSubs = JSON.parse(localStorage.getItem('joinedSubActivities') || '{}');
+          existingSubs[sub.id] = {
+            id: sub.id,
+            eventId: eventData?.id || sub.id,
+            eventTitle: cleanText(eventData?.title) || 'งานมหกรรม & เอ็กซ์โป',
+            subTitle: sub.title,
+            eventDate: cleanText(eventData?.date) || 'วันจัดแสดง',
+            eventTime: sub.time,
+            eventLocation: cleanText(eventData?.location) || 'ศูนย์นิทรรศการ',
+            eventImage: eventData?.image || 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80',
+            creatorName: sub.creatorName,
+            creatorAvatar: sub.creatorAvatar,
+            eventType: 'public_venue'
+          };
+          localStorage.setItem('joinedSubActivities', JSON.stringify(existingSubs));
         } catch {}
       }
 
@@ -349,6 +368,11 @@ export default function FairDetailPage() {
           'joined_event_ids',
           JSON.stringify(existingJoined.filter((id: string) => id !== groupId))
         );
+
+        // Remove from joinedSubActivities
+        const existingSubs = JSON.parse(localStorage.getItem('joinedSubActivities') || '{}');
+        delete existingSubs[groupId];
+        localStorage.setItem('joinedSubActivities', JSON.stringify(existingSubs));
       } catch {}
     }
 
@@ -375,6 +399,21 @@ export default function FairDetailPage() {
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('joined_fair_sub_ids', JSON.stringify(newJoined));
+        const existingSubs = JSON.parse(localStorage.getItem('joinedSubActivities') || '{}');
+        existingSubs[newSub.id] = {
+          id: newSub.id,
+          eventId: eventData?.id || newSub.id,
+          eventTitle: cleanText(eventData?.title) || 'งานมหกรรม & เอ็กซ์โป',
+          subTitle: newSub.title,
+          eventDate: cleanText(eventData?.date) || 'วันจัดแสดง',
+          eventTime: newSub.time,
+          eventLocation: cleanText(eventData?.location) || 'ศูนย์นิทรรศการ',
+          eventImage: eventData?.image || 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80',
+          creatorName: newSub.creatorName,
+          creatorAvatar: newSub.creatorAvatar,
+          eventType: 'public_venue'
+        };
+        localStorage.setItem('joinedSubActivities', JSON.stringify(existingSubs));
       } catch {}
     }
     showToast(`เปิดกลุ่มนัดเดินงาน "${newSub.title}" สำเร็จแล้ว! 👥✨`);
@@ -554,7 +593,15 @@ export default function FairDetailPage() {
               }`}
             >
               <BookMarked className={`w-3.5 h-3.5 ${isFav ? 'text-[#2B527A]' : 'text-slate-500'}`} />
-              <span>{isFav ? 'บันทึกใน MyHub แล้ว' : 'บันทึกงานนี้'}</span>
+              <span>
+                {isFav
+                  ? isEnded
+                    ? 'บันทึกในคลัง MyHub แล้ว'
+                    : 'บันทึกใน MyHub แล้ว'
+                  : isEnded
+                  ? 'ติดตามรอบถัดไป'
+                  : 'บันทึกงานนี้'}
+              </span>
             </button>
 
             <button
@@ -858,20 +905,30 @@ export default function FairDetailPage() {
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!isLoggedIn) {
-                      setIsAuthModalOpen(true);
-                    } else {
-                      setIsFairBuddyModalOpen(true);
-                    }
-                  }}
-                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#2B527A] hover:bg-[#1E3B59] text-white text-xs font-extrabold shadow-md shadow-sky-900/20 transition-all cursor-pointer active:scale-95 shrink-0"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>สร้างกลุ่มนัดเดินงาน</span>
-                </button>
+                {isEnded ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold cursor-not-allowed shrink-0"
+                  >
+                    <span>ปิดรับการนัดหมาย (งานสิ้นสุดแล้ว)</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!isLoggedIn) {
+                        setIsAuthModalOpen(true);
+                      } else {
+                        setIsFairBuddyModalOpen(true);
+                      }
+                    }}
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#2B527A] hover:bg-[#1E3B59] text-white text-xs font-extrabold shadow-md shadow-sky-900/20 transition-all cursor-pointer active:scale-95 shrink-0"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>สร้างกลุ่มนัดเดินงาน</span>
+                  </button>
+                )}
               </div>
 
               {/* Sub-Activities Grid */}
@@ -934,17 +991,21 @@ export default function FairDetailPage() {
                           className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer active:scale-95 flex items-center gap-1.5 ${
                             isJoined
                               ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100'
+                              : isEnded
+                              ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
                               : isFull
                               ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                               : 'bg-[#2B527A] hover:bg-[#1E3B59] text-white shadow-2xs'
                           }`}
-                          disabled={isFull && !isJoined}
+                          disabled={(isFull && !isJoined) || (isEnded && !isJoined)}
                         >
                           {isJoined ? (
                             <>
                               <Check className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>เข้าร่วมแล้ว (ดูตั๋ว)</span>
+                              <span>{isEnded ? 'ประวัติเข้าร่วม (ดูตั๋ว)' : 'เข้าร่วมแล้ว (ดูตั๋ว)'}</span>
                             </>
+                          ) : isEnded ? (
+                            <span>สิ้นสุดกิจกรรม</span>
                           ) : isFull ? (
                             <span>เต็มแล้ว</span>
                           ) : (
@@ -1022,27 +1083,27 @@ export default function FairDetailPage() {
                     <>
                       <span className="flex items-center gap-2 group-hover:hidden">
                         <Check className="w-4 h-4 text-[#2B527A]" />
-                        <span>บันทึกงานนี้ลง MyHub แล้ว</span>
+                        <span>{isEnded ? 'บันทึกในคลัง MyHub แล้ว' : 'บันทึกงานนี้ลง MyHub แล้ว'}</span>
                       </span>
                       <span className="hidden items-center gap-2 group-hover:flex text-rose-600">
                         <X className="w-4 h-4 text-rose-500" />
-                        <span>นำออกจาก MyHub</span>
+                        <span>{isEnded ? 'นำออกจากคลัง' : 'นำออกจาก MyHub'}</span>
                       </span>
                     </>
                   ) : (
                     <>
                       <BookMarked className="w-4 h-4 text-white" />
-                      <span>บันทึกงานนี้ลง MyHub</span>
+                      <span>{isEnded ? 'เพิ่มเข้าคลังเพื่อติดตามรอบถัดไป' : 'บันทึกงานนี้ลง MyHub'}</span>
                     </>
                   )}
                 </button>
 
                 {isFav && (
                   <Link
-                    href="/myhub"
+                    href="/myhub?type=public_venue"
                     className="text-center text-[11px] font-bold text-sky-800 hover:underline block pt-0.5"
                   >
-                    ดูงานที่บันทึกไว้ใน MyHub ของคุณ →
+                    <span>{isEnded ? 'ดูงานในคลัง MyHub ของคุณ →' : 'ดูงานที่บันทึกไว้ใน MyHub ของคุณ →'}</span>
                   </Link>
                 )}
               </div>
@@ -1054,7 +1115,7 @@ export default function FairDetailPage() {
         </div>
 
         {/* =========================================================================
-            RELATED FAIRS & EXPOS SECTION
+            RELATED FAIRS & EXPOS SECTION (REUSE STANDARD EVENTGRID)
            ========================================================================= */}
         {relatedFairs.length > 0 && (
           <section className="pt-10 border-t border-slate-100 space-y-5">
@@ -1077,58 +1138,13 @@ export default function FairDetailPage() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {relatedFairs.map((item) => {
-                const isItemFav = favorites.includes(item.id);
-
-                return (
-                  <Link
-                    key={item.id}
-                    href={`/fairs/${encodeURIComponent(item.id)}`}
-                    className={`group bg-white rounded-2xl transition-all flex flex-col justify-between overflow-hidden cursor-pointer relative ${
-                      isItemFav
-                        ? 'border-2 border-sky-400 ring-2 ring-sky-300/50 shadow-md'
-                        : 'border border-slate-200/90 hover:border-sky-300 shadow-2xs hover:shadow-lg hover:-translate-y-1'
-                    }`}
-                  >
-                    <div className="relative aspect-[20/9] w-full overflow-hidden bg-slate-100">
-                      <img
-                        src={item.image}
-                        alt={item.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      {isItemFav && (
-                        <div className="absolute top-2.5 left-2.5 z-10">
-                          <span className="text-[10px] font-bold bg-sky-50/95 backdrop-blur-md text-[#2B527A] border border-sky-200 px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1">
-                            <Check className="w-3 h-3 text-sky-600" />
-                            <span>บันทึกแล้ว</span>
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                  <div className="p-4 space-y-2 flex-1 flex flex-col justify-between">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-sky-800">
-                        <span className="w-1.5 h-1.5 rounded-full bg-sky-600 shrink-0" />
-                        <span className="truncate">{cleanText(item.location)}</span>
-                      </div>
-                      <h4 className="font-extrabold text-sm text-slate-900 group-hover:text-[#2B527A] transition-colors line-clamp-2 leading-snug">
-                        {cleanText(item.title)}
-                      </h4>
-                    </div>
-
-                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600 font-medium">
-                      <span>{cleanText(item.date)}</span>
-                      <span className="font-bold text-sky-800">
-                        {item.price && !item.price.includes('ฟรี') ? item.price : 'เข้าฟรี'}
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-            </div>
+            <EventGrid
+              events={relatedFairs}
+              favorites={favorites}
+              toggleFavorite={toggleFavorite}
+              onSelectEvent={() => {}}
+              columns={4}
+            />
           </section>
         )}
 

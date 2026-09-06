@@ -89,3 +89,37 @@ export function isEventEnded(event: { status?: string; date?: string; title?: st
   if (t.includes('งานที่ผ่านมา') || d.includes('จัดเสร็จสิ้นแล้ว')) return true;
   return false;
 }
+
+/**
+ * Checks whether an event or spot should display the 'NEW' tag.
+ * Strict Platform Rules:
+ * 1. Ended or past events must NEVER display the NEW tag.
+ * 2. The NEW tag is only valid for at most 3 days (3 * 24 * 60 * 60 * 1000 ms)
+ *    from the creation date (createdAtTimestamp). After 3 days, it automatically expires.
+ */
+export function isEventNew(event: {
+  isNew?: boolean;
+  createdAtTimestamp?: number;
+  status?: string;
+  date?: string;
+  title?: string;
+  description?: string;
+}): boolean {
+  if (!event) return false;
+
+  // Rule 1: Never show NEW if event has ended or is in the past
+  if (isEventEnded(event)) return false;
+
+  // Rule 2: 3-day expiration window from creation
+  const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+
+  if (event.createdAtTimestamp) {
+    const elapsed = Date.now() - event.createdAtTimestamp;
+    // Valid within 3 days (allowing small clock offset)
+    return elapsed >= -60000 && elapsed <= THREE_DAYS_MS;
+  }
+
+  // Fallback: If no timestamp exists, only honor isNew if explicitly flagged and not ended
+  return !!event.isNew;
+}
+

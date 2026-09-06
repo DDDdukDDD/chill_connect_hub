@@ -16,31 +16,26 @@ const REPORT_REASONS = [
     id: 'investment_mlm',
     title: 'ชักชวนลงทุน / ขายตรง / งานออนไลน์',
     desc: 'มีการชวนทำธุรกิจลูกโซ่ คริปโต หรือหารายได้เสริมแอบแฝง',
-    icon: '💼',
   },
   {
     id: 'harassment',
     title: 'คุกคาม / วาจาไม่เหมาะสม / ไม่ปลอดภัย',
     desc: 'แสดงพฤติกรรมคุกคามทางเพศ ใช้คำพูดหยาบคาย หรือละเมิดความเป็นส่วนตัว',
-    icon: '⚠️',
   },
   {
     id: 'unsafe_location',
     title: 'นัดพบในสถานที่ลับตาคน / นอกงาน',
     desc: 'ระบุจุดนัดพบในมุมอับ รถยนต์ส่วนตัว หรือนอกพื้นที่สาธารณะของงาน',
-    icon: '📍',
   },
   {
     id: 'fake_or_spam',
     title: 'กลุ่มสแปม / ไม่มาตามนัด / ตั้งกลุ่มหลอก',
     desc: 'ข้อมูลเท็จ ไม่มีเจตนามาทำกิจกรรมจริง หรือตั้งกลุ่มรบกวนผู้อื่น',
-    icon: '❌',
   },
   {
     id: 'other',
     title: 'สาเหตุอื่นๆ',
     desc: 'พฤติกรรมอื่นๆ ที่ไม่เป็นไปตามแนวทางความปลอดภัยของคอมมูนิตี้',
-    icon: '❓',
   },
 ];
 
@@ -93,7 +88,7 @@ export const ReportSafetyModal: React.FC<ReportSafetyModalProps> = ({
               ได้รับรายงานความปลอดภัยแล้ว
             </h3>
             <p className="text-xs text-slate-600 max-w-xs mx-auto leading-relaxed">
-              ขอบคุณที่ช่วยดูแลความปลอดภัยของคอมมูนิตี้ ทีมงาน Trust & Safety จะทำการตรวจสอบข้อมูลทันทีครับ 🛡️
+              ขอบคุณที่ช่วยดูแลความปลอดภัยของคอมมูนิตี้ ทีมงาน Trust & Safety จะทำการตรวจสอบข้อมูลทันทีค่ะ
             </p>
           </div>
         ) : (
@@ -146,9 +141,8 @@ export const ReportSafetyModal: React.FC<ReportSafetyModalProps> = ({
                       className="mt-1 text-rose-600 focus:ring-rose-500 cursor-pointer"
                     />
                     <div className="min-w-0 text-left">
-                      <div className="flex items-center gap-1.5 font-bold text-xs text-[#1E293B]">
-                        <span>{r.icon}</span>
-                        <span>{r.title}</span>
+                      <div className="font-bold text-xs text-[#1E293B]">
+                        {r.title}
                       </div>
                       <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">
                         {r.desc}
