@@ -618,14 +618,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   };
 
   return (
-    <section className="relative z-30 pt-1 sm:pt-2 pb-1">
+    <section className="relative z-40 pt-1 sm:pt-2 pb-1">
       <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-3 sm:px-6 lg:px-8 relative space-y-2">
 
         {version === 'editorial' && (
-          <div className="relative rounded-3xl overflow-hidden border border-slate-200/90 shadow-lg min-h-[250px] sm:min-h-[280px] md:min-h-[300px] flex flex-col justify-center px-3.5 sm:px-6 md:px-8 py-5 sm:py-7 transition-all duration-300">
+          <div className="relative rounded-3xl overflow-visible border border-slate-200/90 shadow-lg min-h-[250px] sm:min-h-[280px] md:min-h-[300px] flex flex-col justify-center px-3.5 sm:px-6 md:px-8 py-5 sm:py-7 transition-all duration-300">
 
             {/* 1. Atmospheric Lifestyle Photography Background */}
-            <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+            <div className="absolute inset-0 z-0 pointer-events-none rounded-3xl overflow-hidden">
               <img
                 src="/hero-bg-lifestyle.jpg"
                 alt="Chill & Connect Lifestyle Hub"
