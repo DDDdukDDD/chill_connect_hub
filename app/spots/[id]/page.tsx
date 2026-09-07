@@ -126,25 +126,31 @@ export default function SpotDetailPage() {
   }, [spot]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedFavs = localStorage.getItem('favorite_spots');
-      if (savedFavs) {
-        try {
-          setFavorites(JSON.parse(savedFavs));
-        } catch {
-          // ignore
-        }
-      }
-      const savedJoined = localStorage.getItem('joined_event_ids');
-      if (savedJoined) {
-        try {
-          setJoinedEventIds(JSON.parse(savedJoined));
-        } catch {
-          // ignore
-        }
+    if (typeof window === 'undefined') return;
+
+    if (!isLoggedIn) {
+      setFavorites([]);
+      setJoinedEventIds([]);
+      return;
+    }
+
+    const savedFavs = localStorage.getItem('favorite_spots');
+    if (savedFavs) {
+      try {
+        setFavorites(JSON.parse(savedFavs));
+      } catch {
+        // ignore
       }
     }
-  }, [decodedId]);
+    const savedJoined = localStorage.getItem('joined_event_ids');
+    if (savedJoined) {
+      try {
+        setJoinedEventIds(JSON.parse(savedJoined));
+      } catch {
+        // ignore
+      }
+    }
+  }, [decodedId, isLoggedIn]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -250,7 +256,7 @@ export default function SpotDetailPage() {
     );
   }
 
-  const isFavorite = favorites.includes(spot.id);
+  const isFavorite = isLoggedIn && favorites.includes(spot.id);
 
   return (
     <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans selection:bg-[#F26430] selection:text-white">
@@ -799,8 +805,8 @@ export default function SpotDetailPage() {
                 <SpotCard
                   key={item.id}
                   spot={item}
-                  isFavorite={favorites.includes(item.id)}
-                  isJoined={joinedEventIds.includes(item.id)}
+                  isFavorite={isLoggedIn && favorites.includes(item.id)}
+                  isJoined={isLoggedIn && joinedEventIds.includes(item.id)}
                   onToggleFavorite={toggleFavorite}
                 />
               ))}

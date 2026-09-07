@@ -47,6 +47,7 @@ function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: num
 function SpotsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
 
   const [activeNavTab, setActiveNavTab] = useState('explore');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
@@ -63,31 +64,35 @@ function SpotsPageContent() {
   const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Load favorite spots and joined events from localStorage on mount
+  // Load favorite spots and joined events from localStorage (Only active when user is logged in)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('favorite_spots');
-        if (saved) {
-          setFavoriteSpots(JSON.parse(saved));
-        }
-        const savedJoined = localStorage.getItem('joined_event_ids');
-        if (savedJoined) {
-          setJoinedEventIds(JSON.parse(savedJoined));
-        }
-      } catch {
-        // ignore
-      }
+    if (typeof window === 'undefined') return;
+
+    if (!isLoggedIn) {
+      setFavoriteSpots([]);
+      setJoinedEventIds([]);
+      return;
     }
-  }, []);
+
+    try {
+      const saved = localStorage.getItem('favorite_spots');
+      if (saved) {
+        setFavoriteSpots(JSON.parse(saved));
+      }
+      const savedJoined = localStorage.getItem('joined_event_ids');
+      if (savedJoined) {
+        setJoinedEventIds(JSON.parse(savedJoined));
+      }
+    } catch {
+      // ignore
+    }
+  }, [isLoggedIn]);
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
   const [membershipActionTitle, setMembershipActionTitle] = useState('เพื่อดำเนินการต่อ');
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
-
-  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -435,8 +440,8 @@ function SpotsPageContent() {
                 <SpotCard
                   key={spot.id}
                   spot={spot}
-                  isFavorite={favoriteSpots.includes(spot.id)}
-                  isJoined={joinedEventIds.includes(spot.id)}
+                  isFavorite={isLoggedIn && favoriteSpots.includes(spot.id)}
+                  isJoined={isLoggedIn && joinedEventIds.includes(spot.id)}
                   onToggleFavorite={(id) => toggleFavoriteSpot(id)}
                 />
               ))}

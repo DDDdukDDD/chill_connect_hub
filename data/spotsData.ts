@@ -89,7 +89,7 @@ const INITIAL_MOCK_SPOTS: LifestyleSpotItem[] = [
     id: 'spot-cm-secret-slowbar-2026',
     title: 'หมอกเช้า สโลว์บาร์ & คราฟต์กาแฟดอยแม่แตง',
     category: 'cafe',
-    categoryLabel: '☕ สโลว์บาร์ & กาแฟดริป',
+    categoryLabel: 'สโลว์บาร์ & กาแฟดริป',
     province: 'เชียงใหม่',
     district: 'แม่แตง',
     transitInfo: '🚗 รถยนต์ส่วนตัว / มีที่จอดรถสะดวก',

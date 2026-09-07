@@ -132,10 +132,6 @@ export const SpotCard: React.FC<SpotCardProps> = ({
             </span>
           )}
 
-          <span className="text-[11px] font-semibold bg-white/90 backdrop-blur-md text-slate-800 px-2.5 py-0.5 rounded-full shadow-xs">
-            {spot.categoryLabel}
-          </span>
-
           {(spot as any).distanceKm !== undefined && (
             <span className="text-[10px] font-medium bg-slate-900/80 backdrop-blur-md text-white px-2.5 py-0.5 rounded-full">
               {((spot as any).distanceKm).toFixed(1)} กม.

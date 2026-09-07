@@ -104,12 +104,8 @@ export default function PreviewLogoPage() {
                   <span className="font-black text-lg sm:text-[19px] tracking-tight text-slate-900 dark:text-white leading-none block">
                     Chill & Connect Hub
                   </span>
-                  <p className="text-[10.5px] text-slate-400 font-medium mt-1.5 flex items-center gap-1.5">
-                    <span>ค้นหาที่เที่ยว</span>
-                    <span>•</span>
-                    <span>ออกไปใช้ชีวิต</span>
-                    <span>•</span>
-                    <span>พบเพื่อนใหม่</span>
+                  <p className="text-[10.5px] text-slate-400 font-medium mt-1.5">
+                    Lifestyle Discovery & Community Platform
                   </p>
                 </div>
               </div>

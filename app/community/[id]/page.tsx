@@ -141,24 +141,30 @@ export default function CommunityDetailPage() {
     return resolveEventGallery(eventData);
   }, [eventData]);
 
-  // Load user status from localStorage
+  // Load user status from localStorage (Only active when logged in)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedFavs = localStorage.getItem('favorite_events');
-      if (savedFavs) {
-        try {
-          setFavorites(JSON.parse(savedFavs));
-        } catch {}
-      }
+    if (typeof window === 'undefined') return;
 
-      const savedJoined = localStorage.getItem('joined_event_ids');
-      if (savedJoined) {
-        try {
-          setJoinedEventIds(JSON.parse(savedJoined));
-        } catch {}
-      }
+    if (!isLoggedIn) {
+      setFavorites([]);
+      setJoinedEventIds([]);
+      return;
     }
-  }, []);
+
+    const savedFavs = localStorage.getItem('favorite_events');
+    if (savedFavs) {
+      try {
+        setFavorites(JSON.parse(savedFavs));
+      } catch {}
+    }
+
+    const savedJoined = localStorage.getItem('joined_event_ids');
+    if (savedJoined) {
+      try {
+        setJoinedEventIds(JSON.parse(savedJoined));
+      } catch {}
+    }
+  }, [isLoggedIn]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -392,8 +398,8 @@ export default function CommunityDetailPage() {
     );
   }
 
-  const isFav = favorites.includes(eventData.id);
-  const isJoined = joinedEventIds.includes(eventData.id);
+  const isFav = isLoggedIn && favorites.includes(eventData.id);
+  const isJoined = isLoggedIn && joinedEventIds.includes(eventData.id);
   const isEnded = isEventEnded(eventData);
   const fillRatio = eventData.participantsCount / eventData.maxParticipants;
   const isAlmostFull = fillRatio >= 0.8;
@@ -1106,9 +1112,9 @@ export default function CommunityDetailPage() {
 
             <EventGrid
               events={relatedActivities}
-              favorites={favorites}
+              favorites={isLoggedIn ? favorites : []}
               toggleFavorite={toggleFavorite}
-              joinedEventIds={joinedEventIds}
+              joinedEventIds={isLoggedIn ? joinedEventIds : []}
               onSelectEvent={() => {}}
               columns={4}
             />

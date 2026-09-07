@@ -21,7 +21,8 @@ import {
   Heart,
   Bot,
   Zap,
-  LayoutTemplate
+  LayoutTemplate,
+  Gift
 } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
 import { BrandLogo } from './BrandLogo';
@@ -89,12 +90,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="font-black text-lg sm:text-[19px] tracking-tight text-[#0F172A] font-sans leading-none">
                 Chill & Connect Hub
               </span>
-              <p className="text-[10.5px] text-slate-500 font-medium tracking-normal leading-none mt-2 flex items-center gap-1.5">
-                <span>ค้นหาที่เที่ยว</span>
-                <span className="text-slate-300">•</span>
-                <span>ออกไปใช้ชีวิต</span>
-                <span className="text-slate-300">•</span>
-                <span>พบเพื่อนใหม่</span>
+              <p className="text-[10.5px] text-slate-500 font-medium tracking-normal leading-none mt-1.5">
+                Lifestyle Discovery & Community Platform
               </p>
             </div>
           </Link>
@@ -201,6 +198,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                       >
                         <User className="w-4 h-4 text-[#4A7C59]" />
                         <span>โปรไฟล์ส่วนตัวของฉัน</span>
+                      </Link>
+
+                      <Link
+                        href="/rewards"
+                        onClick={() => {
+                          setActiveTab('rewards');
+                          setIsProfileDropdownOpen(false);
+                        }}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 hover:text-[#1E293B] transition-colors"
+                      >
+                        <Gift className="w-4 h-4 text-[#F26430]" />
+                        <span>ของรางวัล & สิทธิพิเศษ</span>
                       </Link>
 
                       {/* Home Layout Mode Switcher */}

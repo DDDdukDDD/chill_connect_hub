@@ -77,8 +77,8 @@ export default function Home() {
   const [selectedFairRailCategory, setSelectedFairRailCategory] = useState<string | null>(null);
   const [selectedSpotProvince, setSelectedSpotProvince] = useState<string>('all');
   const [selectedSpot, setSelectedSpot] = useState<LifestyleSpotItem | null>(null);
-  const [favoriteSpots, setFavoriteSpots] = useState<string[]>(['spot-bkk-1']);
-  const [joinedEventIds, setJoinedEventIds] = useState<string[]>(['1', '3', 'live-agg-1', 'live-agg-3', 'live-agg-9']);
+  const [favoriteSpots, setFavoriteSpots] = useState<string[]>([]);
+  const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
   const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'tomorrow' | 'weekend' | 'next_month' | 'custom'>('all');
   const [priceFilter, setPriceFilter] = useState<'all' | 'free' | 'under500'>('all');
   const [startDate, setStartDate] = useState<string>('');
@@ -92,22 +92,24 @@ export default function Home() {
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState<boolean>(false);
   const [createModalInitialType, setCreateModalInitialType] = useState<'community' | 'fair' | 'spot' | 'challenge'>('community');
   const [isSurpriseModalOpen, setIsSurpriseModalOpen] = useState<boolean>(false);
+  const [surpriseModalMode, setSurpriseModalMode] = useState<'all' | 'spots' | 'community' | 'fairs'>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'popular' | 'favorites'>('newest');
   const [sortByNearMe, setSortByNearMe] = useState<boolean>(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isLocating, setIsLocating] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [eventsList, setEventsList] = useState<EventItem[]>(MOCK_EVENTS);
-  const [favorites, setFavorites] = useState<string[]>(['1', '7']);
+  const [favorites, setFavorites] = useState<string[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [currentSpotPage, setCurrentSpotPage] = useState<number>(1);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isCreateChallengeModalOpen, setIsCreateChallengeModalOpen] = useState<boolean>(false);
-  const [joinedQuestTitles, setJoinedQuestTitles] = useState<string[]>(['Cafe Hunter 5', 'Step Count 30Days']);
+  const [joinedQuestTitles, setJoinedQuestTitles] = useState<string[]>([]);
   const [showEndedEvents, setShowEndedEvents] = useState<boolean>(false);
   const [heroVersion, setHeroVersion] = useState<'editorial' | 'classic'>('editorial');
+  const [activeScopeTab, setActiveScopeTab] = useState<'all' | 'spots' | 'community' | 'fairs'>('all');
 
   // Listen to hero version in URL or localStorage
   useEffect(() => {
@@ -181,30 +183,38 @@ export default function Home() {
     }
   }, []);
 
-  // Sync favorites & joined events with localStorage
+  // Sync favorites & joined events with localStorage (Only active when user is logged in)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const savedFavEvents = localStorage.getItem('favorite_events');
-        if (savedFavEvents) {
-          const parsed = JSON.parse(savedFavEvents);
-          if (Array.isArray(parsed)) setFavorites(parsed);
-        }
-        const savedFavSpots = localStorage.getItem('favorite_spots');
-        if (savedFavSpots) {
-          const parsed = JSON.parse(savedFavSpots);
-          if (Array.isArray(parsed)) setFavoriteSpots(parsed);
-        }
-        const savedJoined = localStorage.getItem('joined_event_ids');
-        if (savedJoined) {
-          const parsed = JSON.parse(savedJoined);
-          if (Array.isArray(parsed)) setJoinedEventIds(parsed);
-        }
-      } catch (e) {
-        console.error('Error loading stored favorites/joined:', e);
-      }
+    if (typeof window === 'undefined') return;
+
+    if (!isLoggedIn) {
+      setFavorites([]);
+      setFavoriteSpots([]);
+      setJoinedEventIds([]);
+      setJoinedQuestTitles([]);
+      return;
     }
-  }, []);
+
+    try {
+      const savedFavEvents = localStorage.getItem('favorite_events');
+      if (savedFavEvents) {
+        const parsed = JSON.parse(savedFavEvents);
+        if (Array.isArray(parsed)) setFavorites(parsed);
+      }
+      const savedFavSpots = localStorage.getItem('favorite_spots');
+      if (savedFavSpots) {
+        const parsed = JSON.parse(savedFavSpots);
+        if (Array.isArray(parsed)) setFavoriteSpots(parsed);
+      }
+      const savedJoined = localStorage.getItem('joined_event_ids');
+      if (savedJoined) {
+        const parsed = JSON.parse(savedJoined);
+        if (Array.isArray(parsed)) setJoinedEventIds(parsed);
+      }
+    } catch (e) {
+      console.error('Error loading stored favorites/joined:', e);
+    }
+  }, [isLoggedIn]);
 
   const toggleFavoriteSpot = (spotId: string) => {
     if (!isLoggedIn) {
@@ -803,8 +813,21 @@ export default function Home() {
     setEndDate('');
     setSortByNearMe(false);
     setCurrentPage(1);
-    const el = document.getElementById('catalog-section');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
+
+    // Scroll to the targeted section based on the active scope tab
+    if (activeScopeTab === 'spots') {
+      const el = document.getElementById('section-spots');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (activeScopeTab === 'community') {
+      const el = document.getElementById('section-community');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (activeScopeTab === 'fairs') {
+      const el = document.getElementById('section-fairs');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      const el = document.getElementById('catalog-section');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   // AI Search & Google Events Rich Results Schema (GEO / Generative Engine Optimization)
@@ -954,6 +977,11 @@ export default function Home() {
     }
   };
 
+  const handleSelectDiscoveryTab = (tab: 'all' | 'spots' | 'community' | 'fairs') => {
+    setActiveScopeTab(tab);
+    // Scope Search mode (Airbnb style): Stay at Hero! Do NOT auto-scroll away.
+  };
+
   return (
     <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans selection:bg-[#F26430] selection:text-white">
 
@@ -987,12 +1015,16 @@ export default function Home() {
           selectedProvince={selectedSpotProvince}
           setSelectedProvince={setSelectedSpotProvince}
           onSearchSubmit={handleSearchSubmit}
-          onOpenSurpriseModal={() => setIsSurpriseModalOpen(true)}
+          onOpenSurpriseModal={(mode) => {
+            setSurpriseModalMode(mode || activeScopeTab || 'all');
+            setIsSurpriseModalOpen(true);
+          }}
           initialVersion={heroVersion}
           onVersionChange={(v) => setHeroVersion(v)}
           onJoinQuest={handleJoinQuestFromHome}
           joinedQuestTitles={joinedQuestTitles}
           onCancelQuest={handleCancelQuestFromHome}
+          onSelectDiscoveryTab={handleSelectDiscoveryTab}
         />
 
         <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-8 pt-1 sm:pt-2 pb-6 relative z-10">
@@ -1014,7 +1046,7 @@ export default function Home() {
               {/* ------------------------------------------------------------------------- */}
               {/* STREAM SECTION 1: 📍 LIFESTYLE SPOTS (พิกัดเที่ยว & จุดฮีลใจ ทั่วไทย)        */}
               {/* ------------------------------------------------------------------------- */}
-              <section className="space-y-4">
+              <section id="section-spots" className="space-y-4 scroll-mt-20">
                 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-emerald-50/50 via-slate-50/30 to-transparent p-3.5 sm:p-4 rounded-2xl border border-emerald-100/60 shadow-2xs">
                   <div>
                     <div className="flex items-center gap-2">
@@ -1064,8 +1096,8 @@ export default function Home() {
                       >
                         <SpotCard
                           spot={spot}
-                          isFavorite={favoriteSpots.includes(spot.id)}
-                          isJoined={joinedEventIds.includes(spot.id)}
+                          isFavorite={isLoggedIn && favoriteSpots.includes(spot.id)}
+                          isJoined={isLoggedIn && joinedEventIds.includes(spot.id)}
                           onToggleFavorite={(id) => {
                             if (!isLoggedIn) {
                               triggerMembershipPrompt('เพื่อบันทึกสถานที่โปรด');
@@ -1087,7 +1119,7 @@ export default function Home() {
               {/* ------------------------------------------------------------------------- */}
               {/* STREAM SECTION 2: 👥 COMMUNITY MEETUPS (กิจกรรมคอมมูนิตี้)                 */}
               {/* ------------------------------------------------------------------------- */}
-              <section className="space-y-4">
+              <section id="section-community" className="space-y-4 scroll-mt-20">
                 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-orange-50/50 via-slate-50/30 to-transparent p-3.5 sm:p-4 rounded-2xl border border-orange-100/60 shadow-2xs">
                   <div>
                     <div className="flex items-center gap-2">
@@ -1132,9 +1164,9 @@ export default function Home() {
                   events={streamCommunityEvents}
                   responsiveLimit={{ mobile: 8, desktop: 15 }}
                   onSelectEvent={() => { }}
-                  favorites={favorites}
+                  favorites={isLoggedIn ? favorites : []}
                   toggleFavorite={toggleFavorite}
-                  joinedEventIds={joinedEventIds}
+                  joinedEventIds={isLoggedIn ? joinedEventIds : []}
                   onResetFilters={handleResetAllFilters}
                 />
               </section>
@@ -1142,7 +1174,7 @@ export default function Home() {
               {/* ------------------------------------------------------------------------- */}
               {/* STREAM SECTION 3: 🏛️ EXHIBITIONS & FAIRS (งานมหกรรม นิทรรศการ & งานแฟร์)  */}
               {/* ------------------------------------------------------------------------- */}
-              <section className="space-y-4">
+              <section id="section-fairs" className="space-y-4 scroll-mt-20">
                 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-blue-50/50 via-slate-50/30 to-transparent p-3.5 sm:p-4 rounded-2xl border border-blue-100/60 shadow-2xs">
                   <div>
                     <div className="flex items-center gap-2">
@@ -1185,9 +1217,9 @@ export default function Home() {
                   events={streamPublicEvents}
                   responsiveLimit={{ mobile: 8, desktop: 15 }}
                   onSelectEvent={() => { }}
-                  favorites={favorites}
+                  favorites={isLoggedIn ? favorites : []}
                   toggleFavorite={toggleFavorite}
-                  joinedEventIds={joinedEventIds}
+                  joinedEventIds={isLoggedIn ? joinedEventIds : []}
                   onResetFilters={handleResetAllFilters}
                 />
               </section>
@@ -1197,7 +1229,7 @@ export default function Home() {
               {/* ------------------------------------------------------------------------- */}
               <CommunityChallengeBar
                 onJoinQuest={handleJoinQuestFromHome}
-                joinedQuestTitles={joinedQuestTitles}
+                joinedQuestTitles={isLoggedIn ? joinedQuestTitles : []}
               />
 
               {/* ------------------------------------------------------------------------- */}
@@ -1419,8 +1451,8 @@ export default function Home() {
                           <SpotCard
                             key={spot.id}
                             spot={spot}
-                            isFavorite={favoriteSpots.includes(spot.id)}
-                            isJoined={joinedEventIds.includes(spot.id)}
+                            isFavorite={isLoggedIn && favoriteSpots.includes(spot.id)}
+                            isJoined={isLoggedIn && joinedEventIds.includes(spot.id)}
                             onToggleFavorite={(id) => {
                               if (!isLoggedIn) {
                                 triggerMembershipPrompt('เพื่อบันทึกสถานที่โปรด');
@@ -1591,9 +1623,9 @@ export default function Home() {
                   <EventGrid
                     events={displayedEvents}
                     onSelectEvent={() => { }}
-                    favorites={favorites}
+                    favorites={isLoggedIn ? favorites : []}
                     toggleFavorite={toggleFavorite}
-                    joinedEventIds={joinedEventIds}
+                    joinedEventIds={isLoggedIn ? joinedEventIds : []}
                     onResetFilters={handleResetAllFilters}
                     isFavoritesOnly={sortBy === 'favorites'}
                   />
@@ -1862,16 +1894,22 @@ export default function Home() {
         }}
       />
 
-      {/* Surprise Me! Interactive Random Event Modal */}
+      {/* Surprise Me! Interactive Random Event / Spot Modal */}
       <SurpriseModal
         isOpen={isSurpriseModalOpen}
+        mode={surpriseModalMode}
         onClose={() => setIsSurpriseModalOpen(false)}
         events={eventsList}
-        onSelectEvent={(ev) => {
-          const targetPath = ev.eventType === 'public_venue'
-            ? `/fairs/${encodeURIComponent(ev.id)}`
-            : `/community/${encodeURIComponent(ev.id)}`;
-          router.push(targetPath);
+        spots={MOCK_SPOTS}
+        onSelectTarget={({ type, id }) => {
+          setIsSurpriseModalOpen(false);
+          if (type === 'spot') {
+            router.push(`/spots/${encodeURIComponent(id)}`);
+          } else if (type === 'fair') {
+            router.push(`/fairs/${encodeURIComponent(id)}`);
+          } else {
+            router.push(`/community/${encodeURIComponent(id)}`);
+          }
         }}
       />
 

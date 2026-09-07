@@ -35,6 +35,7 @@ const ITEMS_PER_PAGE = 24;
 function CommunityPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
 
   const [activeNavTab, setActiveNavTab] = useState('explore');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
@@ -50,21 +51,27 @@ function CommunityPageContent() {
   const [eventsList, setEventsList] = useState<EventItem[]>(MOCK_EVENTS);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Sync favorites & joined events from localStorage
+  // Sync favorites & joined events from localStorage (Only active when user is logged in)
   React.useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const savedFavs = localStorage.getItem('favorite_events');
-        if (savedFavs) {
-          setFavorites(JSON.parse(savedFavs));
-        }
-        const savedJoined = localStorage.getItem('joined_event_ids');
-        if (savedJoined) {
-          setJoinedEventIds(JSON.parse(savedJoined));
-        }
-      } catch {}
+    if (typeof window === 'undefined') return;
+
+    if (!isLoggedIn) {
+      setFavorites([]);
+      setJoinedEventIds([]);
+      return;
     }
-  }, []);
+
+    try {
+      const savedFavs = localStorage.getItem('favorite_events');
+      if (savedFavs) {
+        setFavorites(JSON.parse(savedFavs));
+      }
+      const savedJoined = localStorage.getItem('joined_event_ids');
+      if (savedJoined) {
+        setJoinedEventIds(JSON.parse(savedJoined));
+      }
+    } catch {}
+  }, [isLoggedIn]);
 
   // Fetch live approved events from server
   React.useEffect(() => {
@@ -87,8 +94,6 @@ function CommunityPageContent() {
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
   const [membershipActionTitle, setMembershipActionTitle] = useState('เพื่อดำเนินการต่อ');
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
-
-  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -458,9 +463,9 @@ function CommunityPageContent() {
         <EventGrid
           events={paginatedEvents}
           onSelectEvent={() => {}}
-          favorites={favorites}
+          favorites={isLoggedIn ? favorites : []}
           toggleFavorite={toggleFavorite}
-          joinedEventIds={joinedEventIds}
+          joinedEventIds={isLoggedIn ? joinedEventIds : []}
           onResetFilters={() => {
             setSearchQuery('');
             setSelectedCategory('all');

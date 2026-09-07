@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   CheckCircle2,
   Loader2,
+  Lock,
 } from 'lucide-react';
 import { SafetyGuidelinesModal } from './SafetyGuidelinesModal';
 import { useAuth } from '@/lib/useAuth';
@@ -295,7 +296,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
       participantsCount: 1,
       maxParticipants: maxParticipants || 6,
       description: description.trim(),
-      tag: mode === 'fair' ? '🏛️ นัดเดินดูงาน' : '☕ กิจกรรมชวนเที่ยว',
+      tag: mode === 'fair' ? 'นัดเดินดูงาน' : 'กิจกรรมชวนเที่ยว',
       meetingPoint: meetingPoint.trim(),
       targetGender: targetGender,
       targetAge: targetAge,
@@ -365,8 +366,12 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
               <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
                 {mode === 'fair' ? 'เปิดกลุ่มนัดเดินดูงาน & หาเพื่อนแวะจิบกาแฟ' : 'เปิดวงชวนเพื่อนเที่ยว / สร้างกิจกรรมใหม่'}
               </h2>
-              <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                <Sparkles className="w-3 h-3 text-emerald-600" />
+              <span className={`inline-flex items-center gap-1 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border ${
+                mode === 'fair'
+                  ? 'text-[#2B527A] bg-sky-50 border-sky-200'
+                  : 'text-[#C2410C] bg-orange-50 border-orange-200'
+              }`}>
+                <Sparkles className={`w-3 h-3 ${mode === 'fair' ? 'text-[#2B527A]' : 'text-[#F26430]'}`} />
                 <span>Safe & Chill</span>
               </span>
             </div>
@@ -800,23 +805,23 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                 <div className="space-y-2 pt-2 border-t border-slate-200/80">
                   <div>
                     <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                      🚗 สไตล์การเดินทาง (Transportation):
+                      สไตล์การเดินทาง (Transportation):
                     </label>
                     <select
                       value={transportation}
                       onChange={(e) => setTransportation(e.target.value)}
                       className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 outline-none cursor-pointer"
                     >
-                      <option value="พบกัน ณ จุดนัดพบ (เดินทางอิสระ)">📍 พบกัน ณ จุดนัดพบ (เดินทางอิสระ)</option>
-                      <option value="มีรถยนต์ส่วนตัว (รับเพื่อนร่วมทางได้ / Carpool)">🚗 มีรถยนต์ส่วนตัว (รับเพื่อนร่วมทางได้ / Carpool)</option>
-                      <option value="เดินทางด้วย BTS / MRT">🚇 เดินทางด้วย BTS / MRT</option>
-                      <option value="แชร์ค่ารถ / แท็กซี่ไปด้วยกัน">🚕 แชร์ค่ารถ / แท็กซี่ไปด้วยกัน</option>
+                      <option value="พบกัน ณ จุดนัดพบ (เดินทางอิสระ)">พบกัน ณ จุดนัดพบ (เดินทางอิสระ)</option>
+                      <option value="มีรถยนต์ส่วนตัว (รับเพื่อนร่วมทางได้ / Carpool)">มีรถยนต์ส่วนตัว (รับเพื่อนร่วมทางได้ / Carpool)</option>
+                      <option value="เดินทางด้วย BTS / MRT">เดินทางด้วย BTS / MRT</option>
+                      <option value="แชร์ค่ารถ / แท็กซี่ไปด้วยกัน">แชร์ค่ารถ / แท็กซี่ไปด้วยกัน</option>
                     </select>
                   </div>
 
                   <div>
                     <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                      💬 ช่องทางติดต่อหลังกดเข้าร่วม (Group Contact):
+                      ช่องทางติดต่อหลังกดเข้าร่วม (Group Contact):
                     </label>
                     <input
                       type="text"
@@ -825,8 +830,9 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                       placeholder="เช่น Line OpenChat / Line ID โฮสต์"
                       className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 outline-none"
                     />
-                    <span className="text-[10px] text-slate-400 mt-0.5 block">
-                      🔒 จะเปิดเผยเฉพาะสมาชิกที่กดยืนยันเข้าร่วมสำเร็จเท่านั้น
+                    <span className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1">
+                      <Lock className="w-3 h-3 text-slate-400 shrink-0" />
+                      <span>จะเปิดเผยเฉพาะสมาชิกที่กดยืนยันเข้าร่วมสำเร็จเท่านั้น</span>
                     </span>
                   </div>
                 </div>
@@ -883,7 +889,9 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
               disabled={!isSafetyAccepted || isSubmitting}
               className={`px-7 py-2.5 rounded-xl font-black text-xs transition-all flex items-center gap-2 cursor-pointer shadow-md ${
                 isSafetyAccepted && !isSubmitting
-                  ? 'bg-[#F26430] hover:bg-[#D95322] text-white shadow-orange-500/25 active:scale-95'
+                  ? mode === 'fair'
+                    ? 'bg-[#2B527A] hover:bg-[#1E3A5A] text-white shadow-sky-900/20 active:scale-95'
+                    : 'bg-[#F26430] hover:bg-[#D95322] text-white shadow-orange-500/25 active:scale-95'
                   : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
               }`}
             >

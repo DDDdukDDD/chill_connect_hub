@@ -134,17 +134,22 @@ export default function FairDetailPage() {
   const [selectedPassData, setSelectedPassData] = useState<ExpoMeetupPassData | null>(null);
   const [isPassModalOpen, setIsPassModalOpen] = useState(false);
 
-  // Joined Sub IDs from localStorage
+  // Joined Sub IDs from localStorage (Only active when logged in)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const savedJoinedSubs = localStorage.getItem('joined_fair_sub_ids');
-        if (savedJoinedSubs) {
-          setJoinedSubIds(JSON.parse(savedJoinedSubs));
-        }
-      } catch {}
+    if (typeof window === 'undefined') return;
+
+    if (!isLoggedIn) {
+      setJoinedSubIds([]);
+      return;
     }
-  }, []);
+
+    try {
+      const savedJoinedSubs = localStorage.getItem('joined_fair_sub_ids');
+      if (savedJoinedSubs) {
+        setJoinedSubIds(JSON.parse(savedJoinedSubs));
+      }
+    } catch {}
+  }, [isLoggedIn]);
 
   // Retrieve event from mock and live API
   useEffect(() => {
@@ -185,17 +190,22 @@ export default function FairDetailPage() {
     return resolveEventGallery(eventData);
   }, [eventData]);
 
-  // Favorites from localStorage
+  // Favorites from localStorage (Only active when logged in)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedFavs = localStorage.getItem('favorite_events');
-      if (savedFavs) {
-        try {
-          setFavorites(JSON.parse(savedFavs));
-        } catch {}
-      }
+    if (typeof window === 'undefined') return;
+
+    if (!isLoggedIn) {
+      setFavorites([]);
+      return;
     }
-  }, []);
+
+    const savedFavs = localStorage.getItem('favorite_events');
+    if (savedFavs) {
+      try {
+        setFavorites(JSON.parse(savedFavs));
+      } catch {}
+    }
+  }, [isLoggedIn]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -539,7 +549,7 @@ export default function FairDetailPage() {
     );
   }
 
-  const isFav = favorites.includes(eventData.id);
+  const isFav = isLoggedIn && favorites.includes(eventData.id);
   const isEnded = isEventEnded(eventData);
 
   return (

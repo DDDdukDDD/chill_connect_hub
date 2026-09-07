@@ -29,6 +29,7 @@ import {
   Sprout,
   ChevronDown,
   PlusCircle,
+  Gift,
 } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
 import { Navbar } from '@/components/Navbar';
@@ -344,20 +345,30 @@ export default function ChallengesDiscoveryPage() {
 
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              if (!isLoggedIn) {
-                setIsRequireMembershipOpen(true);
-              } else {
-                setIsCreateEventModalOpen(true);
-              }
-            }}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer shrink-0 self-start sm:self-center"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>สร้างชาเลนจ์ / เควสต์ใหม่</span>
-          </button>
+          <div className="flex items-center gap-2 shrink-0 self-start sm:self-center flex-wrap">
+            <Link
+              href="/rewards"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-amber-50 hover:bg-amber-100 text-[#D04A1B] border border-amber-200 rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
+            >
+              <Gift className="w-4 h-4 text-amber-600" />
+              <span>ศูนย์ของรางวัล</span>
+            </Link>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (!isLoggedIn) {
+                  setIsRequireMembershipOpen(true);
+                } else {
+                  setIsCreateEventModalOpen(true);
+                }
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>สร้างชาเลนจ์ / เควสต์ใหม่</span>
+            </button>
+          </div>
         </section>
 
         {/* 2. Main Content Container */}
