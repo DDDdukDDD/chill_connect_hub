@@ -799,6 +799,19 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
         });
         const data = await res.json();
 
+        if (typeof window !== 'undefined') {
+          try {
+            const currentCreated = JSON.parse(localStorage.getItem('user_created_events') || '[]');
+            localStorage.setItem('user_created_events', JSON.stringify([communityPayload, ...currentCreated]));
+            const currentJoined = JSON.parse(localStorage.getItem('joined_event_ids') || '[]');
+            if (!currentJoined.includes(communityPayload.id)) {
+              localStorage.setItem('joined_event_ids', JSON.stringify([communityPayload.id, ...currentJoined]));
+            }
+          } catch (e) {
+            console.error('Error saving created event to local storage', e);
+          }
+        }
+
         if (data.success) {
           onCreateSuccess(communityPayload);
         } else {
@@ -840,6 +853,19 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
           body: JSON.stringify({ eventData: fairPayload, userRole: userProfile.role }),
         });
         const data = await res.json();
+
+        if (typeof window !== 'undefined') {
+          try {
+            const currentCreated = JSON.parse(localStorage.getItem('user_created_events') || '[]');
+            localStorage.setItem('user_created_events', JSON.stringify([fairPayload, ...currentCreated]));
+            const currentJoined = JSON.parse(localStorage.getItem('joined_event_ids') || '[]');
+            if (!currentJoined.includes(fairPayload.id)) {
+              localStorage.setItem('joined_event_ids', JSON.stringify([fairPayload.id, ...currentJoined]));
+            }
+          } catch (e) {
+            console.error('Error saving created fair to local storage', e);
+          }
+        }
 
         if (data.success) {
           onCreateSuccess(fairPayload);

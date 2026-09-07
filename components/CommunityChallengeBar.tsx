@@ -437,23 +437,20 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                   <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-600 via-indigo-400 to-purple-400" />
                 )}
 
-                {/* 1. Top Badges Row: Category + Official/Community + XP Token */}
+                {/* 1. Top Badges Row: Official/Community + XP Token (Category badge CHILL/MOVE/HEAL removed) */}
                 <div className="flex items-center justify-between gap-1.5 pt-0.5">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-[#4A7C59] bg-[#EBF3ED] px-2 py-0.5 rounded-md">
-                      {getCategoryLabel(quest.category)}
-                    </span>
                     {quest.isOfficial ? (
                       <span
                         title="ชาเลนจ์ทางการที่จัดทำโดย Chill & Connect Hub"
-                        className="text-[10px] font-black text-purple-900 bg-purple-100/90 px-1.5 py-0.5 rounded-md flex items-center gap-0.5 border border-purple-300/80"
+                        className="text-[10px] font-black text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-purple-300/80"
                       >
                         <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500" />
                         <span>Official</span>
                       </span>
                     ) : (
-                      <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md">
-                        👥 ชุมชน
+                      <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                        ชุมชน
                       </span>
                     )}
                   </div>

@@ -73,12 +73,6 @@ export default function AboutPage() {
         <section className="bg-white py-10 sm:py-14 border-b border-slate-100 relative overflow-hidden">
           <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4 relative z-10">
             
-            {/* Platform Tag Badge */}
-            <div className="inline-flex items-center gap-2 text-xs font-bold text-[#4A7C59] bg-emerald-50 px-3.5 py-1 rounded-full border border-emerald-200">
-              <Sparkles className="w-3.5 h-3.5 text-[#4A7C59]" />
-              <span>Lifestyle Discovery & Community Platform</span>
-            </div>
-
             {/* Main Headline */}
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-snug max-w-3xl mx-auto">
               แพลตฟอร์มค้นพบไลฟ์สไตล์ <br className="hidden sm:inline" />
@@ -119,10 +113,6 @@ export default function AboutPage() {
         <section className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 space-y-8">
           
           <div className="text-center space-y-2 max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-1.5 text-xs font-extrabold text-[#2B527A] bg-[#EBF2F7] px-3.5 py-1 rounded-full border border-[#2B527A]/20 shadow-2xs">
-              <Zap className="w-3.5 h-3.5 text-[#2B527A]" />
-              <span>Infographic: Platform User Journey</span>
-            </div>
             <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">
               เส้นทางการใช้งานที่เชื่อมโยงทุกฟังก์ชันอย่างไร้รอยต่อ 🚀
             </h2>
@@ -372,10 +362,6 @@ export default function AboutPage() {
           <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             
             <div className="text-center space-y-2 max-w-3xl mx-auto">
-              <div className="inline-flex items-center gap-1.5 text-xs font-extrabold text-[#F26430] bg-orange-50 px-3.5 py-1 rounded-full border border-orange-200 shadow-2xs">
-                <Target className="w-3.5 h-3.5 text-[#F26430]" />
-                <span>3 เสาหลักของ Chill & Connect Hub</span>
-              </div>
               <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">
                 คำตอบครบทุกมิติของการออกไปใช้ชีวิต 🎯
               </h2>
@@ -564,10 +550,6 @@ export default function AboutPage() {
           <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-7">
             
             <div className="max-w-3xl mx-auto text-center space-y-2">
-              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#4A7C59] bg-[#EBF3ED] px-3.5 py-1 rounded-full border border-[#4A7C59]/20 shadow-2xs">
-                <Sparkles className="w-3.5 h-3.5 text-[#4A7C59]" />
-                <span>ออกแบบเพื่อตอบโจทย์คนชอบออกไปใช้ชีวิตทุกคน (All-in-One Lifestyle Hub)</span>
-              </div>
               <h2 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-slate-900">
                 "หาสถานที่โดนใจ สร้างกิจกรรมสุดมันส์ พบเพื่อนใหม่คอเดียวกัน" ✨
               </h2>

@@ -100,8 +100,10 @@ export default function MyHubPage() {
   const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
   const [joinedSubActivities, setJoinedSubActivities] = useState<Record<string, any>>({});
 
-  // Main Dual Mode: Categories (Cards) vs Master Calendar
-  const [hubMainMode, setHubMainMode] = useState<'categories' | 'calendar'>('categories');
+  // Main Dual Mode: Master Calendar by default as requested
+  const [hubMainMode, setHubMainMode] = useState<'categories' | 'calendar'>('calendar');
+  // User Created Events (Host)
+  const [userCreatedEvents, setUserCreatedEvents] = useState<EventItem[]>([]);
   // Master Calendar Category Layer Filter
   const [calendarCategoryFilter, setCalendarCategoryFilter] = useState<'all' | 'community' | 'fairs' | 'spots' | 'quests'>('all');
   // View Mode: Cards List vs Calendar
@@ -151,6 +153,12 @@ export default function MyHubPage() {
 
       const storedSubs = JSON.parse(localStorage.getItem('joinedSubActivities') || '{}');
       setJoinedSubActivities(storedSubs);
+
+      // 1.1 Sync User Created Events (Host)
+      const storedCreated: EventItem[] = JSON.parse(localStorage.getItem('user_created_events') || '[]');
+      if (Array.isArray(storedCreated)) {
+        setUserCreatedEvents(storedCreated);
+      }
 
       // 2. Sync Saved Spots (Scrapbook)
       const storedFavSpots = JSON.parse(localStorage.getItem('favorite_spots') || '[]');
@@ -224,9 +232,21 @@ export default function MyHubPage() {
     const list: EventItem[] = [];
     const addedIds = new Set<string>();
 
+    // 0. From userCreatedEvents (Events created by current user as Host)
+    userCreatedEvents.forEach((e) => {
+      if (!addedIds.has(e.id)) {
+        list.push({
+          ...e,
+          isHost: true as any,
+          badgeText: e.badgeText || 'เปิดรับสมัคร',
+        });
+        addedIds.add(e.id);
+      }
+    });
+
     // 1. From MOCK_EVENTS matching joinedEventIds
     MOCK_EVENTS.forEach((e) => {
-      if (joinedEventIds.includes(e.id)) {
+      if (joinedEventIds.includes(e.id) && !addedIds.has(e.id)) {
         list.push(e);
         addedIds.add(e.id);
       }
@@ -295,7 +315,7 @@ export default function MyHubPage() {
     });
 
     return list;
-  }, [joinedEventIds, joinedSubActivities, myChallenges]);
+  }, [joinedEventIds, joinedSubActivities, myChallenges, userCreatedEvents]);
 
   // Separate Community Meetups vs Fairs
   const communityEvents = useMemo(() => {
@@ -1058,130 +1078,175 @@ export default function MyHubPage() {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
                 {dailyAgendaEvents.map((ev, idx) => {
                   const meta = getEventPillarMeta(ev);
                   const ticketId = ev.eventType === 'public_venue'
                     ? `CCH-FAIR-${(idx + 201).toString().padStart(4, '0')}`
                     : `CCH-2026-${(idx + 101).toString().padStart(4, '0')}`;
+                  const fallbackImg = 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80';
 
                   return (
                     <div
                       key={ev.id}
-                      className={`bg-white rounded-2xl border border-slate-200/90 ${meta.cardHover} p-4 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between gap-3 group`}
+                      className={`group bg-white rounded-2xl border border-slate-200/80 hover:border-slate-300 shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between overflow-hidden relative transform hover:-translate-y-1`}
                     >
-                      {/* Top row: Badge & Ticket ID */}
-                      <div className="flex items-center justify-between gap-2">
-                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${meta.badgeBg} ${meta.badgeText} ${meta.badgeBorder}`}>
-                          {meta.label}
-                        </span>
-                        <span className="text-[10px] font-mono font-bold text-slate-400">
-                          #{ticketId}
-                        </span>
-                      </div>
+                      {/* Card Image Banner */}
+                      <div
+                        onClick={() => setDetailModalEvent(ev)}
+                        className="relative aspect-video w-full overflow-hidden bg-slate-100 shrink-0 cursor-pointer"
+                      >
+                        <img
+                          src={ev.image || fallbackImg}
+                          alt={ev.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60" />
 
-                      {/* Title & Info */}
-                      <div className="space-y-1.5">
-                        <h4
-                          onClick={() => setDetailModalEvent(ev)}
-                          className={`font-bold text-xs sm:text-sm text-slate-900 line-clamp-2 min-h-[2.5rem] ${meta.titleHover} transition-colors cursor-pointer`}
-                          title={ev.title}
-                        >
-                          {ev.title}
-                        </h4>
+                        {/* Top-Left Badges: Pillar Tag + Host Badge */}
+                        <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 flex-wrap">
+                          <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border shadow-xs backdrop-blur-md ${meta.badgeBg} ${meta.badgeText} ${meta.badgeBorder}`}>
+                            {meta.label}
+                          </span>
+                          {(ev.isHost || userCreatedEvents.some((u) => u.id === ev.id)) && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white shadow-xs">
+                              👑 โฮสต์
+                            </span>
+                          )}
+                        </div>
 
-                        {meta.pillar === 'quests' && selectedCalDay !== null && (
-                          <div className="pt-0.5">
-                            {(ev as any).questDeadlineDay === selectedCalDay ? (
-                              <span className="inline-flex items-center gap-1 text-[10.5px] font-black px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 shadow-2xs">
-                                <span>🚨 วันสิ้นสุดภารกิจ (Due Today - วันสุดท้าย)</span>
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 text-[10.5px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200">
-                                <span>⚡ อยู่ในช่วงภารกิจ (วันที่ {selectedCalDay - ((ev as any).questStartDay || 1) + 1} จาก {((ev as any).questDeadlineDay || 31) - ((ev as any).questStartDay || 1) + 1} วัน)</span>
-                              </span>
-                            )}
+                        {/* Top-Right Badge: Urgent Due Date for Quests only */}
+                        {meta.pillar === 'quests' && (ev as any).questDeadlineDay === selectedCalDay && (
+                          <div className="absolute top-2.5 right-2.5 z-10">
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-600 text-white shadow-xs animate-pulse">
+                              🚨 เดดไลน์วันนี้
+                            </span>
                           </div>
                         )}
-
-                        <div className="space-y-1 text-xs text-slate-500">
-                          <div className="flex items-center gap-1.5">
-                            <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span className="truncate">{ev.date} • {ev.time}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span className="truncate">{ev.location}</span>
-                          </div>
-                        </div>
                       </div>
 
-                      {/* Actions */}
-                      <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2 mt-auto">
-                        {meta.pillar === 'quests' ? (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const rawQuestId = ev.id.replace('quest-', '');
-                                const q = myChallenges.find((item) => item.id === rawQuestId) || myChallenges[0];
-                                if (q) setSelectedQuestForVerifyModal(q);
-                              }}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
-                            >
-                              <CheckCircle2 className="w-3.5 h-3.5 text-purple-600" />
-                              <span>ส่งหลักฐานเช็คอิน</span>
-                            </button>
+                      {/* Card Body */}
+                      <div className="p-3.5 flex flex-col justify-between flex-1 gap-2.5">
+                        <div className="space-y-1.5">
+                          {/* Top Row: Host Info + Ticket ID */}
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <img
+                                src={ev.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
+                                alt={ev.hostName || 'Host'}
+                                className="w-4 h-4 rounded-full object-cover border border-slate-200 shrink-0"
+                              />
+                              <span className="text-[11px] font-medium text-slate-500 truncate">
+                                {ev.hostName || 'ระบบกิจกรรม'}
+                              </span>
+                            </div>
+                            {meta.pillar === 'quests' ? (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200 shrink-0">
+                                {ev.price || '+50 XP'}
+                              </span>
+                            ) : ev.price ? (
+                              <span
+                                className={`text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
+                                  ev.price.includes('ฟรี')
+                                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/60'
+                                    : 'bg-slate-100 text-slate-700 border border-slate-200/60'
+                                }`}
+                              >
+                                {ev.price.includes('ฟรี') ? 'ฟรี' : ev.price.replace(/\s*\([^)]*\)/g, '').trim()}
+                              </span>
+                            ) : null}
+                          </div>
 
-                            <Link
-                              href="/challenges"
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 text-xs font-bold transition-all cursor-pointer"
-                              title="ดูรายละเอียดภารกิจทั้งหมดในหน้าชาเลนจ์"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5" />
-                              <span className="hidden sm:inline">ดูเควสต์</span>
-                            </Link>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedTicketEvent(ev);
-                                setSelectedTicketId(ticketId);
-                                setIsETicketModalOpen(true);
-                              }}
-                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl ${meta.btnBg} ${meta.btnHover} ${meta.btnText} border ${meta.btnBorder} text-xs font-bold transition-all cursor-pointer`}
-                            >
-                              <Ticket className={`w-3.5 h-3.5 ${meta.btnText}`} />
-                              <span>ดูบัตร {meta.passLabel}</span>
-                            </button>
+                          {/* Title */}
+                          <h3
+                            onClick={() => setDetailModalEvent(ev)}
+                            className={`font-bold text-[13px] sm:text-sm text-slate-900 line-clamp-2 min-h-[2.5rem] sm:min-h-[2.6rem] ${meta.titleHover} transition-colors leading-[1.3] tracking-tight cursor-pointer`}
+                            title={ev.title}
+                          >
+                            {ev.title}
+                          </h3>
 
-                            {ev.eventType !== 'public_venue' ? (
+                          {/* Meta: Date & Location */}
+                          <div className="space-y-1 text-xs text-slate-500">
+                            <div className="flex items-center gap-1.5">
+                              <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <span className="truncate">{ev.date} • {ev.time}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <span className="truncate text-slate-600 font-medium" title={ev.location}>
+                                {ev.location}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Actions Area */}
+                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5 mt-auto">
+                          {meta.pillar === 'quests' ? (
+                            <>
                               <button
                                 type="button"
                                 onClick={() => {
-                                  setChatTargetEvent(ev);
-                                  setIsChatModalOpen(true);
+                                  const rawQuestId = ev.id.replace('quest-', '');
+                                  const q = myChallenges.find((item) => item.id === rawQuestId) || myChallenges[0];
+                                  if (q) setSelectedQuestForVerifyModal(q);
                                 }}
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 text-xs font-bold transition-all cursor-pointer"
-                                title="เปิดห้องแชทกลุ่ม"
+                                className="flex-1 py-1.5 px-2.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
                               >
-                                <MessageCircle className="w-3.5 h-3.5" />
-                                <span className="hidden sm:inline">แชท</span>
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>ส่งหลักฐาน</span>
                               </button>
-                            ) : (
                               <Link
-                                href={`/fairs/${encodeURIComponent(ev.id)}`}
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 text-xs font-bold transition-all cursor-pointer"
-                                title="ดูรายละเอียดงานแฟร์"
+                                href="/challenges"
+                                className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-purple-50 text-purple-700 border border-purple-200 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 shadow-2xs"
+                                title="ดูรายละเอียดภารกิจทั้งหมดในหน้าชาเลนจ์"
                               >
                                 <ExternalLink className="w-3.5 h-3.5" />
-                                <span className="hidden sm:inline">รายละเอียด</span>
+                                <span className="hidden sm:inline">ดูเควสต์</span>
                               </Link>
-                            )}
-                          </>
-                        )}
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedTicketEvent(ev);
+                                  setSelectedTicketId(ticketId);
+                                  setIsETicketModalOpen(true);
+                                }}
+                                className={`flex-1 py-1.5 px-2.5 rounded-xl ${meta.btnBg} ${meta.btnHover} ${meta.btnText} border ${meta.btnBorder} text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95`}
+                              >
+                                <Ticket className={`w-3.5 h-3.5 ${meta.btnText}`} />
+                                <span>ดูบัตร</span>
+                              </button>
+
+                              {ev.eventType !== 'public_venue' ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setChatTargetEvent(ev);
+                                    setIsChatModalOpen(true);
+                                  }}
+                                  className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 shadow-2xs"
+                                  title="เปิดห้องแชทกลุ่ม"
+                                >
+                                  <MessageCircle className="w-3.5 h-3.5 text-slate-500" />
+                                  <span>แชท</span>
+                                </button>
+                              ) : (
+                                <Link
+                                  href={`/fairs/${encodeURIComponent(ev.id)}`}
+                                  className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-[#EEF4FA] text-[#2B527A] border border-slate-200 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 shadow-2xs"
+                                  title="ดูรายละเอียดงานแฟร์"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                  <span className="hidden sm:inline">งานแฟร์</span>
+                                </Link>
+                              )}
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
@@ -1228,93 +1293,219 @@ export default function MyHubPage() {
         {!isLoggedIn ? (
           <div className="max-w-4xl mx-auto px-4 py-12 sm:py-16 space-y-8 animate-fade-in">
             {/* Teaser Header */}
-            <div className="text-center space-y-3 max-w-xl mx-auto">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold shadow-2xs">
-                <Ticket className="w-3.5 h-3.5 text-slate-600" />
-                <span>Personal Lifestyle Passbook</span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-tight">
-                เปิดกระเป๋า MyHub เพื่อจัดการทุกการเดินทางและมิตรภาพ
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                ศูนย์รวมตั๋ว E-Ticket ดิจิทัล, ห้องแชตนัดพบเพื่อนร่วมตี้, สมุดปักหมุดพิกัดเที่ยว 77 จังหวัด และกระเป๋าแต้มสะสม XP สำหรับชาวคอมมูนิตี้
+            <div className="text-center space-y-2.5 max-w-xl mx-auto">
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                มายฮับส่วนตัว (My Hub)
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+                ศูนย์รวมกิจกรรม นัดหมาย  สมุดบันทึกพิกัดเที่ยว และกระเป๋าแต้มสะสม
               </p>
             </div>
 
-            {/* 3 Feature Showcase Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
-              <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs space-y-3 flex flex-col justify-between">
-                <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center border border-slate-200 shadow-2xs">
-                  <QrCode className="w-6 h-6" />
+            {/* 4 Feature Showcase Infographic Cards (Clean White Editorial with Brand Organic Accents) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+              
+              {/* Pillar 1: Digital E-Ticket & Group Chat (Forest Green) */}
+              <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4 flex flex-col justify-between hover:border-[#4A7C59]/40 hover:shadow-xs transition-all duration-300">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="w-12 h-12 rounded-2xl bg-[#EBF3ED] text-[#2D5A3C] flex items-center justify-center border border-[#A3CEB0]/60 shadow-2xs">
+                      <Ticket className="w-6 h-6" />
+                    </div>
+                    <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-[#EBF3ED] text-[#2D5A3C] border border-[#A3CEB0]/60 shadow-2xs">
+                      ✦ ตั๋วดิจิทัล & แชตกลุ่ม
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="font-extrabold text-base text-slate-900">
+                      Digital E-Ticket & Group Chat
+                    </h3>
+                    <p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed">
+                      บัตรกิจกรรมพร้อม QR Code สแกนเข้างานหรือเช็คอินกับโฮสต์ เข้าถึงง่ายไม่ต้องค้นหาในอีเมล พร้อมห้องแชตกลุ่มสำหรับประสานงานกับเพื่อนร่วมตี้ทันที
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <h3 className="font-bold text-sm text-slate-900">Digital Boarding Pass & QR</h3>
-                  <p className="text-xs text-slate-500 leading-relaxed">
-                    ตั๋วกิจกรรมและนัดหมายพร้อม QR Code สำหรับเช็คอินหน้างาน เข้าถึงง่ายไม่ต้องค้นหาในอีเมล
-                  </p>
+
+                {/* Micro Visual Badge */}
+                <div className="bg-slate-50/80 p-2.5 rounded-2xl border border-slate-200/70 flex items-center justify-between text-xs">
+                  <span className="inline-flex items-center gap-1.5 font-bold text-[#2D5A3C] text-[11px]">
+                    <QrCode className="w-3.5 h-3.5 text-[#4A7C59]" />
+                    <span>Boarding Pass #CCH-2026</span>
+                  </span>
+                  <span className="text-[10.5px] font-bold text-[#2D5A3C] bg-[#EBF3ED] px-2 py-0.5 rounded-md border border-[#A3CEB0]/50">
+                    ยืนยันที่นั่งแล้ว
+                  </span>
                 </div>
-                <span className="text-[11px] font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1 transition-colors">
-                  <span>พร้อมห้องแชตกลุ่ม</span>
-                  <ArrowRight className="w-3 h-3" />
-                </span>
               </div>
 
-              <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs space-y-3 flex flex-col justify-between">
-                <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center border border-slate-200 shadow-2xs">
-                  <BookOpen className="w-6 h-6" />
+              {/* Pillar 2: Master Lifestyle Calendar (Slate Blue) */}
+              <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4 flex flex-col justify-between hover:border-[#2B527A]/40 hover:shadow-xs transition-all duration-300">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="w-12 h-12 rounded-2xl bg-[#F0F4F8] text-[#2B527A] flex items-center justify-center border border-[#CBD5E1]/60 shadow-2xs">
+                      <CalendarDays className="w-6 h-6" />
+                    </div>
+                    <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-[#F0F4F8] text-[#2B527A] border border-[#CBD5E1]/60 shadow-2xs">
+                      ✦ ปฏิทินรวมนัดหมาย
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="font-extrabold text-base text-slate-900">
+                      Master Lifestyle Calendar
+                    </h3>
+                    <p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed">
+                      รวมนัดหมายทุกไลฟ์สไตล์ไว้ในตารางเดียว ทั้งตี้คอมมูนิตี้ งานมหกรรมเอ็กซ์โป และเควสต์ประจำสัปดาห์ ไม่พลาดทุกทริปและเวลาพักผ่อน
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <h3 className="font-bold text-sm text-slate-900">Travel Scrapbook & Buddy</h3>
-                  <p className="text-xs text-slate-500 leading-relaxed">
-                    ปักหมุดพิกัดฮีลใจและคาเฟ่ลับที่อยากไป พร้อมกดปุ่มเปิดตี้ชวนเพื่อนไปเที่ยวด้วยกันใน 1 คลิก
-                  </p>
+
+                {/* Micro Visual Badge */}
+                <div className="bg-slate-50/80 p-2.5 rounded-2xl border border-slate-200/70 flex items-center justify-between text-xs">
+                  <span className="inline-flex items-center gap-1.5 font-bold text-[#2B527A] text-[11px]">
+                    <Clock className="w-3.5 h-3.5 text-[#2B527A]" />
+                    <span>ซิงก์นัดหมายทุกประเภท</span>
+                  </span>
+                  <span className="text-[10.5px] font-bold text-[#2B527A] bg-[#F0F4F8] px-2 py-0.5 rounded-md border border-[#CBD5E1]/50">
+                    4 หมวดหมู่ในที่เดียว
+                  </span>
                 </div>
-                <span className="text-[11px] font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1 transition-colors">
-                  <span>77 จังหวัดทั่วไทย</span>
-                  <ArrowRight className="w-3 h-3" />
-                </span>
               </div>
 
-              <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs space-y-3 flex flex-col justify-between">
-                <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center border border-slate-200 shadow-2xs">
-                  <Trophy className="w-6 h-6" />
+              {/* Pillar 3: Travel Scrapbook & Buddy (Warm Amber) */}
+              <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4 flex flex-col justify-between hover:border-[#F26430]/40 hover:shadow-xs transition-all duration-300">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="w-12 h-12 rounded-2xl bg-[#FFF7ED] text-[#F26430] flex items-center justify-center border border-[#FED7AA]/60 shadow-2xs">
+                      <BookOpen className="w-6 h-6" />
+                    </div>
+                    <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-[#FFF7ED] text-[#F26430] border border-[#FED7AA]/60 shadow-2xs">
+                      ✦ 77 จังหวัดทั่วไทย
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="font-extrabold text-base text-slate-900">
+                      Travel Scrapbook & Buddy
+                    </h3>
+                    <p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed">
+                      ปักหมุดพิกัดฮีลใจ คาเฟ่สโลว์บาร์ และจุดชมวิวที่อยากไป บันทึกเป็นสมุดท่องเที่ยวส่วนตัว พร้อมกดปุ่มเปิดตี้ชวนเพื่อนไปเที่ยวด้วยกันในคลิกเดียว
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <h3 className="font-bold text-sm text-slate-900">Explorer Quests & Rewards</h3>
-                  <p className="text-xs text-slate-500 leading-relaxed">
-                    สะสมแต้ม XP จากภารกิจเช็คอิน แลกรับส่วนลด Specialty Coffee, บอร์ดเกม และของรางวัลสุดพรีเมียม
-                  </p>
+
+                {/* Micro Visual Badge */}
+                <div className="bg-slate-50/80 p-2.5 rounded-2xl border border-slate-200/70 flex items-center justify-between text-xs">
+                  <span className="inline-flex items-center gap-1.5 font-bold text-[#F26430] text-[11px]">
+                    <MapPin className="w-3.5 h-3.5 text-[#F26430]" />
+                    <span>ปักหมุด & เปิดตี้ชวนเที่ยว</span>
+                  </span>
+                  <span className="text-[10.5px] font-bold text-[#F26430] bg-[#FFF7ED] px-2 py-0.5 rounded-md border border-[#FED7AA]/50">
+                    ชวนเพื่อน 1-Click
+                  </span>
                 </div>
-                <span className="text-[11px] font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1 transition-colors">
-                  <span>ปลดล็อกระดับเลเวล</span>
-                  <ArrowRight className="w-3 h-3" />
-                </span>
+              </div>
+
+              {/* Pillar 4: Explorer Quests & Rewards (Royal Violet) */}
+              <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4 flex flex-col justify-between hover:border-[#7C3AED]/40 hover:shadow-xs transition-all duration-300">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="w-12 h-12 rounded-2xl bg-[#F5F3FF] text-[#7C3AED] flex items-center justify-center border border-[#DDD6FE]/60 shadow-2xs">
+                      <Trophy className="w-6 h-6" />
+                    </div>
+                    <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-[#F5F3FF] text-[#7C3AED] border border-[#DDD6FE]/60 shadow-2xs">
+                      ✦ แต้มสะสม & สิทธิพิเศษ
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="font-extrabold text-base text-slate-900">
+                      Explorer Quests & Rewards
+                    </h3>
+                    <p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed">
+                      สะสมแต้ม XP จากภารกิจเช็คอินและร่วมกิจกรรม เลื่อนระดับ Explorer แลกรับส่วนลด Specialty Coffee สิทธิ์เล่นบอร์ดเกมฟรี และของรางวัลสุดพรีเมียม
+                    </p>
+                  </div>
+                </div>
+
+                {/* Micro Visual Badge */}
+                <div className="bg-slate-50/80 p-2.5 rounded-2xl border border-slate-200/70 flex items-center justify-between text-xs">
+                  <span className="inline-flex items-center gap-1.5 font-bold text-[#7C3AED] text-[11px]">
+                    <Gift className="w-3.5 h-3.5 text-[#7C3AED]" />
+                    <span>กระเป๋าแต้มสะสม XP</span>
+                  </span>
+                  <span className="text-[10.5px] font-bold text-[#7C3AED] bg-[#F5F3FF] px-2 py-0.5 rounded-md border border-[#DDD6FE]/50">
+                    แลกของรางวัลฟรี
+                  </span>
+                </div>
+              </div>
+
+            </div>
+
+            {/* 3-Step Infographic Journey Strip (Soft Organic Tints) */}
+            <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-3.5">
+              <h4 className="text-sm sm:text-base font-black text-slate-900">
+                3 ขั้นตอนง่ายๆ ในการเริ่มต้นใช้งาน My Hub
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-1">
+                <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-100/90 space-y-1.5 flex flex-col justify-between">
+                  <div className="space-y-1.5">
+                    <span className="text-[11px] font-bold text-[#2D5A3C] bg-[#EBF3ED] px-2.5 py-0.5 rounded-md border border-[#A3CEB0]/60 inline-block">
+                      ขั้นตอนที่ 1
+                    </span>
+                    <h5 className="font-extrabold text-sm sm:text-base text-slate-900">สำรวจ & ปักหมุดที่ชอบ</h5>
+                    <p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed">
+                      ค้นหากิจกรรมคอมมูนิตี้ งานแฟร์ หรือเซฟพิกัดเที่ยว 77 จังหวัด
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-100/90 space-y-1.5 flex flex-col justify-between">
+                  <div className="space-y-1.5">
+                    <span className="text-[11px] font-bold text-[#2B527A] bg-[#F0F4F8] px-2.5 py-0.5 rounded-md border border-[#CBD5E1]/60 inline-block">
+                      ขั้นตอนที่ 2
+                    </span>
+                    <h5 className="font-extrabold text-sm sm:text-base text-slate-900">รับตั๋ว & รวมตี้ในแชต</h5>
+                    <p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed">
+                      ระบบออก E-Ticket และนัดหมายลงปฏิทินส่วนตัวให้อัตโนมัติ
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-100/90 space-y-1.5 flex flex-col justify-between">
+                  <div className="space-y-1.5">
+                    <span className="text-[11px] font-bold text-[#7C3AED] bg-[#F5F3FF] px-2.5 py-0.5 rounded-md border border-[#DDD6FE]/60 inline-block">
+                      ขั้นตอนที่ 3
+                    </span>
+                    <h5 className="font-extrabold text-sm sm:text-base text-slate-900">เช็คอิน & แลกรางวัล</h5>
+                    <p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed">
+                      ร่วมกิจกรรมจริง รับแต้มสะสม XP แลกสิทธิพิเศษมากมาย
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* CTAs */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 max-w-sm mx-auto">
+            {/* CTAs (Equal Size & Balanced Alignment) */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3 max-w-lg mx-auto w-full">
               <button
                 type="button"
                 onClick={() => setIsAuthModalOpen(true)}
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 px-6 rounded-2xl font-bold text-xs sm:text-sm shadow-2xs transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full sm:flex-1 h-12 rounded-2xl bg-[#4A7C59] hover:bg-[#386144] text-white font-bold text-xs sm:text-sm shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer border border-[#4A7C59] whitespace-nowrap"
               >
-                <LogIn className="w-4 h-4" />
+                <LogIn className="w-4 h-4 shrink-0" />
                 <span>เข้าสู่ระบบสมาชิก</span>
               </button>
               <Link
                 href="/onboarding"
-                className="w-full bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 py-3 px-6 rounded-2xl font-bold text-xs sm:text-sm transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full sm:flex-1 h-12 rounded-2xl bg-[#EBF3ED] hover:bg-[#DCEDE0] text-[#2D5A3C] border border-[#A3CEB0] font-bold text-xs sm:text-sm transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer shadow-2xs whitespace-nowrap"
               >
-                <Sparkles className="w-4 h-4 text-slate-600" />
-                <span>สมัครสมาชิกใหม่</span>
+                <Sparkles className="w-4 h-4 text-[#4A7C59] shrink-0" />
+                <span>สมัครสมาชิกใหม่ (ฟรี)</span>
               </Link>
             </div>
 
-            <div className="text-center pt-2">
+            <div className="text-center pt-1">
               <Link
                 href="/"
-                className="text-xs font-bold text-slate-400 hover:text-slate-700 transition-colors"
+                className="text-xs font-bold text-slate-400 hover:text-[#4A7C59] transition-colors"
               >
                 ← กลับไปสำรวจกิจกรรมในหน้าแรก
               </Link>
@@ -1351,7 +1542,7 @@ export default function MyHubPage() {
                       </div>
 
                       <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-xl">
-                        ศูนย์รวมบัตรกิจกรรม นัดหมายเพื่อนร่วมตี้ สมุดพิกัดเที่ยว 77 จังหวัด และกระเป๋าแต้มสะสม
+                        ศูนย์รวมกิจกรรม นัดหมาย  สมุดบันทึกพิกัดเที่ยว และกระเป๋าแต้มสะสม
                       </p>
 
                       {/* XP Progress Bar to Next Level */}
@@ -1368,10 +1559,10 @@ export default function MyHubPage() {
                       </div>
                     </div>
 
-                    {/* Passport Metrics & Action Bar */}
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 self-stretch lg:self-auto">
+                    {/* Passport Metrics */}
+                    <div className="flex items-center self-stretch lg:self-auto">
                       {/* Metric Chips */}
-                      <div className="grid grid-cols-3 gap-2 bg-slate-50 p-2 rounded-2xl border border-slate-200/80">
+                      <div className="grid grid-cols-3 gap-2 bg-slate-50 p-2 rounded-2xl border border-slate-200/80 w-full sm:w-auto">
                         <div className="px-3 py-1.5 text-center">
                           <span className="text-[10px] uppercase font-bold text-slate-400 block">นัดหมาย</span>
                           <span className="text-base sm:text-lg font-black text-slate-900">
@@ -1395,27 +1586,6 @@ export default function MyHubPage() {
                           </span>
                         </Link>
                       </div>
-
-                      {/* CTAs */}
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setIsCreateEventModalOpen(true)}
-                          className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-2xs transition-all active:scale-95 cursor-pointer"
-                        >
-                          <PlusCircle className="w-4 h-4" />
-                          <span>เปิดตี้ใหม่</span>
-                        </button>
-                        <Link
-                          href="/profile?id=me"
-                          className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold border border-slate-200 transition-all cursor-pointer shadow-2xs"
-                          title="ดูโปรไฟล์สาธารณะของคุณ"
-                        >
-                          <User className="w-4 h-4 text-slate-500" />
-                          <span className="hidden sm:inline">โปรไฟล์</span>
-                        </Link>
-                      </div>
-
                     </div>
 
                   </div>
@@ -1597,106 +1767,93 @@ export default function MyHubPage() {
                     </div>
                   ) : (
                     /* Community Cards Grid */
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
                       {filteredCommunityEvents.map((event, idx) => {
                         const ticketId = `CCH-2026-${(idx + 101).toString().padStart(4, '0')}`;
-                        const subInfo = joinedSubActivities[event.id];
                         const isMenuOpen = activeMenuId === event.id;
                         const moodTheme = getCommunityMoodTheme(event.category);
 
                         return (
                           <div
                             key={event.id}
-                            className={`group bg-white rounded-3xl border border-slate-200/90 ${moodTheme.border} shadow-2xs hover:shadow-xs transition-all duration-300 flex flex-col justify-between overflow-hidden relative`}
+                            className={`group bg-white rounded-2xl border border-slate-200/80 hover:border-slate-300 shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between overflow-hidden relative transform hover:-translate-y-1`}
                           >
                             {/* Card Image */}
                             <div
                               onClick={() => setDetailModalEvent(event)}
-                              className="relative aspect-video w-full overflow-hidden bg-slate-100 cursor-pointer"
+                              className="relative aspect-video w-full overflow-hidden bg-slate-100 shrink-0 cursor-pointer"
                             >
                               <img
                                 src={event.image}
                                 alt={event.title}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                               />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-70" />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60" />
 
-                              <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5">
-                                <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border shadow-2xs flex items-center gap-1.5 backdrop-blur-md ${moodTheme.badge}`}>
-                                  <span className={`w-1.5 h-1.5 rounded-full ${moodTheme.dot}`} />
-                                  <span>{moodTheme.label}</span>
-                                </span>
-                              </div>
-
-                              <div className="absolute top-3 right-3 z-10">
-                                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-white border border-white/20">
-                                  {event.price?.includes('ฟรี') ? 'ฟรี' : event.price || 'ฟรี'}
-                                </span>
-                              </div>
-
-                              <div className="absolute bottom-2.5 left-3 right-3 z-10 flex items-center justify-between text-white text-xs font-semibold">
-                                <span className="flex items-center gap-1.5 truncate">
-                                  <Clock className="w-3.5 h-3.5 text-slate-200 shrink-0" />
-                                  <span className="truncate">{event.date} • {event.time}</span>
-                                </span>
-                              </div>
+                              {/* Host status badge if user is host */}
+                              {(event.isHost || userCreatedEvents.some((u) => u.id === event.id)) && (
+                                <div className="absolute top-2.5 left-2.5 z-10">
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white shadow-xs">
+                                    👑 โฮสต์
+                                  </span>
+                                </div>
+                              )}
                             </div>
 
                             {/* Card Body */}
-                            <div className="p-4 flex flex-col justify-between flex-1 gap-3">
-                              <div className="space-y-2">
+                            <div className="p-3.5 flex flex-col justify-between flex-1 gap-2.5">
+                              <div className="space-y-1.5">
                                 {/* Host Header */}
                                 <div className="flex items-center justify-between gap-2">
                                   <div className="flex items-center gap-1.5 min-w-0">
                                     <img
                                       src={event.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
                                       alt={event.hostName}
-                                      className="w-5 h-5 rounded-full object-cover border border-slate-200 shrink-0"
+                                      className="w-4 h-4 rounded-full object-cover border border-slate-200 shrink-0"
                                     />
-                                    <span className="text-[11px] font-semibold text-slate-700 truncate">
+                                    <span className="text-[11px] font-medium text-slate-500 truncate">
                                       {event.hostName}
                                     </span>
                                   </div>
-                                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-[#EBF3ED] text-[#2D5A3C] border border-[#A3CEB0]/60 shadow-2xs">
-                                    #{ticketId}
-                                  </span>
+                                    {event.price && (
+                                      <span
+                                        className={`text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
+                                          event.price.includes('ฟรี')
+                                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/60'
+                                            : 'bg-slate-100 text-slate-700 border border-slate-200/60'
+                                        }`}
+                                      >
+                                        {event.price.includes('ฟรี') ? 'ฟรี' : event.price.replace(/\s*\([^)]*\)/g, '').trim()}
+                                      </span>
+                                    )}
                                 </div>
 
                                 {/* Title */}
                                 <h3
                                   onClick={() => setDetailModalEvent(event)}
-                                  className={`font-bold text-xs sm:text-sm text-slate-900 line-clamp-2 min-h-[2.5rem] ${moodTheme.titleHover} transition-colors cursor-pointer`}
+                                  className={`font-bold text-[13px] sm:text-sm text-slate-900 line-clamp-2 min-h-[2.5rem] sm:min-h-[2.6rem] ${moodTheme.titleHover} transition-colors leading-[1.3] tracking-tight cursor-pointer`}
                                   title={event.title}
                                 >
                                   {event.title}
                                 </h3>
 
                                 {/* Meta Info */}
-                                <div className="space-y-1 text-xs text-slate-500 pt-0.5">
+                                <div className="space-y-1 text-xs text-slate-500">
+                                  <div className="flex items-center gap-1.5">
+                                    <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                    <span className="truncate">{event.date} • {event.time}</span>
+                                  </div>
                                   <div className="flex items-center gap-1.5 min-w-0">
                                     <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                    <span className="truncate text-slate-700 font-medium" title={event.location}>
+                                    <span className="truncate text-slate-600 font-medium" title={event.location}>
                                       {event.location}
                                     </span>
                                   </div>
                                 </div>
-
-                                {/* Sub Activity details if joined a sub-group */}
-                                {subInfo && (
-                                  <div className="bg-emerald-50/50 border border-emerald-200/70 rounded-2xl p-2.5 text-xs text-slate-800 space-y-0.5 mt-1">
-                                    <p className="font-bold text-emerald-900 truncate text-[11px] flex items-center gap-1">
-                                      <Users className="w-3 h-3 text-emerald-700 shrink-0" />
-                                      <span className="truncate">&ldquo;{subInfo.subTitle}&rdquo;</span>
-                                    </p>
-                                    <p className="text-[10px] text-emerald-700 truncate pl-4">
-                                      นัดพบ: {subInfo.meetupPoint || 'จุดนัดพบตามที่ระบุ'}
-                                    </p>
-                                  </div>
-                                )}
                               </div>
 
                               {/* Action Buttons Area */}
-                              <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-1.5 mt-auto">
+                              <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5 mt-auto">
                                 <div className="flex items-center gap-1.5 flex-1 min-w-0">
                                   <button
                                     type="button"
@@ -1705,10 +1862,10 @@ export default function MyHubPage() {
                                       setSelectedTicketId(ticketId);
                                       setIsETicketModalOpen(true);
                                     }}
-                                    className="flex-1 py-2 px-2.5 rounded-xl bg-[#2D5A3C] hover:bg-[#1E3F29] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
+                                    className="flex-1 py-1.5 px-2.5 rounded-xl bg-[#2D5A3C] hover:bg-[#1E3F29] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
                                   >
                                     <QrCode className="w-3.5 h-3.5 shrink-0" />
-                                    <span>ตั๋ว E-Ticket</span>
+                                    <span>ดูบัตร</span>
                                   </button>
 
                                   <button
@@ -1717,7 +1874,7 @@ export default function MyHubPage() {
                                       setChatTargetEvent(event);
                                       setIsChatModalOpen(true);
                                     }}
-                                    className="py-2 px-2.5 rounded-xl bg-white hover:bg-[#EBF3ED] text-slate-700 hover:text-[#2D5A3C] border border-slate-200 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 shadow-2xs"
+                                    className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-[#EBF3ED] text-slate-700 hover:text-[#2D5A3C] border border-slate-200 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 shadow-2xs"
                                     title="เปิดห้องแชตกลุ่ม"
                                   >
                                     <MessageCircle className="w-3.5 h-3.5 text-slate-500" />
@@ -1855,7 +2012,7 @@ export default function MyHubPage() {
                     </div>
                   ) : (
                     /* Fairs Cards Grid */
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
                       {filteredExpoEvents.map((event, idx) => {
                         const ticketId = `CCH-FAIR-${(idx + 201).toString().padStart(4, '0')}`;
                         const isMenuOpen = activeMenuId === event.id;
@@ -1863,63 +2020,64 @@ export default function MyHubPage() {
                         return (
                           <div
                             key={event.id}
-                            className="group bg-white rounded-3xl border border-slate-200/90 hover:border-[#B8D1E8] shadow-2xs hover:shadow-xs transition-all duration-300 flex flex-col justify-between overflow-hidden relative"
+                            className="group bg-white rounded-2xl border border-slate-200/80 hover:border-slate-300 shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between overflow-hidden relative transform hover:-translate-y-1"
                           >
                             {/* Card Image */}
                             <div
                               onClick={() => setDetailModalEvent(event)}
-                              className="relative aspect-video w-full overflow-hidden bg-slate-100 cursor-pointer"
+                              className="relative aspect-video w-full overflow-hidden bg-slate-100 shrink-0 cursor-pointer"
                             >
                               <img
                                 src={event.image}
                                 alt={event.title}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                               />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-70" />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60" />
 
-                              <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5">
-                                <span className="text-[10px] font-bold bg-[#EEF4FA]/95 backdrop-blur-md text-[#2B527A] border border-[#B8D1E8] px-2.5 py-0.5 rounded-full shadow-2xs flex items-center gap-1">
+                              <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5">
+                                <span className="text-[10px] font-bold bg-[#EEF4FA]/95 backdrop-blur-md text-[#2B527A] border border-[#B8D1E8] px-2.5 py-0.5 rounded-full shadow-xs flex items-center gap-1">
                                   <Check className="w-3.5 h-3.5 text-[#2B527A] stroke-[2.5]" />
                                   <span>บันทึกแล้ว</span>
-                                </span>
-                              </div>
-
-                              <div className="absolute top-3 right-3 z-10">
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-white border border-white/20">
-                                  {event.price || 'เข้าชมฟรี'}
-                                </span>
-                              </div>
-
-                              <div className="absolute bottom-2.5 left-3 right-3 z-10 flex items-center justify-between text-white text-xs font-semibold">
-                                <span className="flex items-center gap-1.5 truncate">
-                                  <Calendar className="w-3.5 h-3.5 text-slate-200 shrink-0" />
-                                  <span className="truncate">{event.date}</span>
                                 </span>
                               </div>
                             </div>
 
                             {/* Card Body */}
-                            <div className="p-4 flex flex-col justify-between flex-1 gap-3">
-                              <div className="space-y-2">
+                            <div className="p-3.5 flex flex-col justify-between flex-1 gap-2.5">
+                              <div className="space-y-1.5">
                                 <div className="flex items-center justify-between text-[11px] font-bold">
                                   <span className="text-[#2B527A] font-bold bg-[#EEF4FA] border border-[#B8D1E8]/70 px-2 py-0.5 rounded-md truncate">
                                     {event.venueTag || 'ศูนย์นิทรรศการ'}
                                   </span>
-                                  <span className="text-slate-400 font-mono">#{ticketId}</span>
+                                  {event.price && (
+                                    <span
+                                      className={`text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
+                                        event.price.includes('ฟรี')
+                                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/60'
+                                          : 'bg-slate-100 text-slate-700 border border-slate-200/60'
+                                      }`}
+                                    >
+                                      {event.price.includes('ฟรี') ? 'ฟรี' : event.price.replace(/\s*\([^)]*\)/g, '').trim()}
+                                    </span>
+                                  )}
                                 </div>
 
                                 <h3
                                   onClick={() => setDetailModalEvent(event)}
-                                  className="font-bold text-xs sm:text-sm text-slate-900 line-clamp-2 min-h-[2.5rem] group-hover:text-[#2B527A] transition-colors cursor-pointer"
+                                  className="font-bold text-[13px] sm:text-sm text-slate-900 line-clamp-2 min-h-[2.5rem] sm:min-h-[2.6rem] group-hover:text-[#2B527A] transition-colors leading-[1.3] tracking-tight cursor-pointer"
                                   title={event.title}
                                 >
                                   {event.title}
                                 </h3>
 
-                                <div className="space-y-1 text-xs text-slate-500 pt-0.5">
+                                <div className="space-y-1 text-xs text-slate-500">
+                                  <div className="flex items-center gap-1.5">
+                                    <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                    <span className="truncate">{event.date}</span>
+                                  </div>
                                   <div className="flex items-center gap-1.5 min-w-0">
-                                    <MapPin className="w-3.5 h-3.5 text-[#2B527A]/70 shrink-0" />
-                                    <span className="truncate text-slate-700 font-medium" title={event.location}>
+                                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                    <span className="truncate text-slate-600 font-medium" title={event.location}>
                                       {event.location}
                                     </span>
                                   </div>
@@ -1927,10 +2085,10 @@ export default function MyHubPage() {
                               </div>
 
                               {/* Action Buttons */}
-                              <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-1.5 mt-auto">
+                              <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5 mt-auto">
                                 <Link
                                   href={`/fairs/${encodeURIComponent(event.id)}`}
-                                  className="flex-1 py-2 px-2.5 rounded-xl bg-[#2B527A] hover:bg-[#1E3B59] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
+                                  className="flex-1 py-1.5 px-2.5 rounded-xl bg-[#2B527A] hover:bg-[#1E3B59] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
                                 >
                                   <span>ดูข้อมูลงาน</span>
                                   <ArrowRight className="w-3.5 h-3.5" />
@@ -1942,7 +2100,7 @@ export default function MyHubPage() {
                                     setChatTargetEvent(event);
                                     setIsChatModalOpen(true);
                                   }}
-                                  className="py-2 px-2.5 rounded-xl bg-white hover:bg-[#EEF4FA] text-[#2B527A] border border-slate-200 hover:border-[#B8D1E8] text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 shadow-2xs"
+                                  className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-[#EEF4FA] text-[#2B527A] border border-slate-200 hover:border-[#B8D1E8] text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 shadow-2xs"
                                   title="ชวนเพื่อนเดินงาน"
                                 >
                                   <MessageCircle className="w-3.5 h-3.5 text-[#2B527A]" />
@@ -2055,58 +2213,79 @@ export default function MyHubPage() {
                       </Link>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
                       {savedSpotsList.map((spotItem) => (
                         <div
                           key={spotItem.id}
-                          className="group bg-white rounded-3xl border border-slate-200/90 hover:border-[#A3CEB0] shadow-2xs hover:shadow-xs transition-all duration-300 flex flex-col justify-between overflow-hidden"
+                          className="group bg-white rounded-2xl border border-slate-200/80 hover:border-slate-300 shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between overflow-hidden relative transform hover:-translate-y-1"
                         >
                           {/* Spot Image */}
-                          <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
+                          <div className="relative aspect-video w-full overflow-hidden bg-slate-100 shrink-0">
                             <img
                               src={resolveSpotImage(spotItem)}
                               alt={spotItem.title}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             />
-                            <div className="absolute top-3 right-3 flex items-center gap-1">
-                              <span className="bg-white/95 backdrop-blur-md text-slate-800 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5 shadow-2xs border border-amber-200">
-                                <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60" />
+
+                            {/* Top-Left: Saved Badge */}
+                            <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5">
+                              <span className="text-[10px] font-bold bg-[#EBF3ED]/95 backdrop-blur-md text-[#2D5A3C] border border-[#A3CEB0] px-2.5 py-0.5 rounded-full shadow-xs flex items-center gap-1">
+                                <Check className="w-3.5 h-3.5 text-[#2D5A3C]" />
+                                <span>บันทึกแล้ว</span>
+                              </span>
+                            </div>
+
+                            {/* Bottom-Right: Rating */}
+                            <div className="absolute bottom-2 right-2.5 z-10">
+                              <span className="text-[10px] font-bold bg-black/60 backdrop-blur-md text-white px-2 py-0.5 rounded-full flex items-center gap-1 border border-white/20">
+                                <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                                 <span>{spotItem.rating}</span>
                               </span>
                             </div>
                           </div>
 
                           {/* Content Body */}
-                          <div className="p-4 flex flex-col justify-between flex-1 gap-3">
+                          <div className="p-3.5 flex flex-col justify-between flex-1 gap-2.5">
                             <div className="space-y-1.5">
                               <div className="flex items-center justify-between text-[11px] font-bold">
                                 <span className="flex items-center gap-1 text-[#2D5A3C] font-semibold truncate">
                                   <MapPin className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
                                   <span className="truncate">{spotItem.district}, {spotItem.province}</span>
                                 </span>
-                                <span className="text-[#2D5A3C] font-bold shrink-0 bg-[#EBF3ED] px-2 py-0.5 rounded-md text-[11px] border border-[#A3CEB0]/50">
+                                <span
+                                  className={`text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
+                                    spotItem.price.includes('ฟรี')
+                                      ? 'bg-emerald-50 text-emerald-800'
+                                      : 'bg-slate-100 text-slate-700'
+                                  }`}
+                                >
                                   {formatSpotBadgePrice(spotItem.price)}
                                 </span>
                               </div>
 
                               <Link
                                 href={`/spots/${encodeURIComponent(spotItem.id)}`}
-                                className="font-bold text-xs sm:text-sm text-slate-900 group-hover:text-[#2D5A3C] transition-colors line-clamp-2 min-h-[2.5rem] block"
+                                className="font-bold text-[13px] sm:text-sm text-slate-900 group-hover:text-[#2D5A3C] transition-colors line-clamp-2 min-h-[2.5rem] sm:min-h-[2.6rem] leading-[1.3] tracking-tight block"
+                                title={spotItem.title}
                               >
                                 {spotItem.title}
                               </Link>
 
-                              <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
-                                {spotItem.description}
-                              </p>
+                              <div className="space-y-1 text-xs text-slate-500">
+                                <div className="flex items-center gap-1.5">
+                                  <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                  <span className="truncate">{spotItem.openHours}</span>
+                                </div>
+                              </div>
                             </div>
 
                             {/* Action Buttons: Open Spot & Spot Buddy Gathering */}
-                            <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-1.5 text-xs mt-auto">
+                            <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5 text-xs mt-auto">
                               <button
                                 type="button"
                                 onClick={() => handleOpenSpotBuddy(spotItem)}
-                                className="flex-1 py-2 px-2.5 rounded-xl bg-[#2D5A3C] hover:bg-[#1E3F29] text-white font-bold text-center transition-all text-[11px] truncate flex items-center justify-center gap-1 cursor-pointer shadow-2xs active:scale-95"
+                                className="flex-1 py-1.5 px-2.5 rounded-xl bg-[#2D5A3C] hover:bg-[#1E3F29] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
                                 title="เปิดตี้ชวนเพื่อนไปที่นี่"
                               >
                                 <Users className="w-3.5 h-3.5 shrink-0" />
@@ -2115,7 +2294,7 @@ export default function MyHubPage() {
 
                               <Link
                                 href={`/spots/${encodeURIComponent(spotItem.id)}`}
-                                className="py-2 px-2.5 rounded-xl bg-[#EBF3ED] hover:bg-[#DCECE0] text-[#2D5A3C] font-bold text-center transition-all text-[11px] truncate flex items-center justify-center gap-1 shrink-0 border border-[#A3CEB0]/60"
+                                className="py-1.5 px-2.5 rounded-xl bg-[#EBF3ED] hover:bg-[#DCECE0] text-[#2D5A3C] border border-[#A3CEB0]/60 text-xs font-bold transition-all flex items-center justify-center gap-1 shrink-0 shadow-2xs"
                                 title="เปิดดูพิกัดสถานที่"
                               >
                                 <span>ดูพิกัด</span>
@@ -2125,7 +2304,7 @@ export default function MyHubPage() {
                               <button
                                 type="button"
                                 onClick={() => handleRemoveFromScrapbook(spotItem.id, spotItem.title)}
-                                className="p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
+                                className="p-1.5 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
                                 title="นำออกจากสมุดบันทึก"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -2182,8 +2361,8 @@ export default function MyHubPage() {
                     </div>
                   </div>
 
-                  {/* Quests Grid (Matched with Challenges Discovery Aesthetics) */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+                  {/* Quests Grid (Matched with Discovery Aesthetics) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
                     {myChallenges.map((quest) => {
                       const isCompleted = quest.progressPercent >= 100;
                       const isUrgent = (quest.daysRemaining || 10) <= 5;
@@ -2207,7 +2386,7 @@ export default function MyHubPage() {
                       return (
                         <div
                           key={quest.id}
-                          className={`group/card bg-white rounded-3xl p-4 sm:p-4.5 border transition-all duration-300 flex flex-col justify-between space-y-3 relative overflow-hidden shadow-2xs hover:shadow-xs hover:-translate-y-0.5 ${
+                          className={`group/card bg-white rounded-2xl p-3.5 sm:p-4 border transition-all duration-300 flex flex-col justify-between space-y-3 relative overflow-hidden shadow-2xs hover:shadow-xs hover:-translate-y-0.5 ${
                             isCompleted
                               ? 'border-emerald-300 ring-1 ring-emerald-500/20 bg-emerald-50/10'
                               : 'border-slate-200/90 hover:border-purple-300'
@@ -2520,6 +2699,7 @@ export default function MyHubPage() {
         isOpen={isCreateEventModalOpen}
         onClose={() => setIsCreateEventModalOpen(false)}
         onCreateSuccess={(newEvent) => {
+          setUserCreatedEvents((prev) => [newEvent, ...prev]);
           setJoinedEventIds((prev) => [newEvent.id, ...prev]);
           showToast(`🎉 สร้างกิจกรรม "${newEvent.title}" สำเร็จ!`);
         }}

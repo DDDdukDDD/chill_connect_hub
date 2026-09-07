@@ -38,6 +38,7 @@ export interface EventItem {
   description: string;
   isTrending?: boolean;
   isNew?: boolean;
+  isHost?: boolean;
   rating?: number;
   reviewsCount?: number;
   hostHostedCount?: number;
@@ -149,17 +150,21 @@ export interface CommunityPost {
   userName: string;
   userAvatar: string;
   userBadge: string;
-  eventId: string;
-  eventTitle: string;
-  category: 'heal' | 'move' | 'chill' | 'learn';
+  eventId?: string;
+  eventTitle?: string;
+  category?: 'heal' | 'move' | 'chill' | 'learn';
   images: string[];
   caption: string;
   location: string;
   likesCount: number;
   commentsCount: number;
+  sharesCount?: number;
   timeAgo: string;
   isLiked?: boolean;
   comments: PostComment[];
+  targetType?: 'spot' | 'community' | 'fair' | 'challenge';
+  targetId?: string;
+  targetTitle?: string;
 }
 
 export const MOOD_CATEGORIES: MoodCategory[] = [
@@ -4453,18 +4458,120 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
 
 export const MOCK_POSTS: CommunityPost[] = [
   {
+    id: 'post-spot-1',
+    userName: 'คุณกี้ (Kee_Explorer)',
+    userAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
+    userBadge: '🌿 Nature Lover',
+    targetType: 'spot',
+    targetId: 'spot-bkk-1',
+    targetTitle: 'สวนป่าเบญจกิติ',
+    category: 'heal',
+    images: [
+      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1519331379826-f10be5486c6f?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1473448912268-2022ce9509d8?auto=format&fit=crop&w=800&q=80',
+    ],
+    caption: 'เดินรับลมยามเย็นบน Skywalk สวนป่าเบญจกิติ แสงสีทองกระทบผิวน้ำสวยจนลืมความเหนื่อยล้าทั้งสัปดาห์เลย แนะนำมาช่วง 17:30 น. นะครับ 🌅🌿',
+    location: 'สวนป่าเบญจกิติ, คลองเตย',
+    likesCount: 84,
+    commentsCount: 0,
+    sharesCount: 14,
+    timeAgo: '2 ชั่วโมงที่แล้ว',
+    isLiked: true,
+    comments: [],
+  },
+  {
+    id: 'post-fair-1',
+    userName: 'คุณแพรว (Praew_Art)',
+    userAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80',
+    userBadge: '🎨 Expo Explorer',
+    targetType: 'fair',
+    targetId: 'live-agg-1',
+    targetTitle: 'Cat Expo 2026: เทศกาลดนตรีและศิลปะอินดี้',
+    category: 'learn',
+    images: [
+      'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&w=800&q=80',
+    ],
+    caption: 'แวะมาเดินงาน Cat Expo ได้ยินเสียงดนตรีสดและได้ซื้อผลงานภาพพิมพ์จากศิลปินหน้าใหม่กลับบ้านด้วย มู้ดงานดีมาก คนเยอะแต่พลังงานบวกสุดๆ 🎶✨',
+    location: 'ศูนย์ประชุมแห่งชาติสิริกิติ์ (QSNCC)',
+    likesCount: 76,
+    commentsCount: 0,
+    sharesCount: 9,
+    timeAgo: '4 ชั่วโมงที่แล้ว',
+    isLiked: false,
+    comments: [],
+  },
+  {
+    id: 'post-4',
+    userName: 'คุณฟ้า (Fah_Craft)',
+    userAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80',
+    userBadge: '🏺 Artisan Creator',
+    targetType: 'community',
+    targetId: '4',
+    targetTitle: 'Pottery & Ceramic Workshop สตูดิโอปั้นดิน',
+    category: 'learn',
+    images: [
+      'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=800&q=80',
+    ],
+    caption: 'ขึ้นทรงแก้วกาแฟใบแรกในชีวิตสำเร็จแล้ว! ดินสัมผัสนุ่มละมุน สมาธิอยู่กับมือทุกวินาที รอลุ้นผลงานหลังเข้าเตาอบสัปดาห์หน้าเลย ☕✨',
+    location: 'อารีย์ สตูดิโอ คราฟต์',
+    likesCount: 64,
+    commentsCount: 0,
+    sharesCount: 12,
+    timeAgo: '8 ชั่วโมงที่แล้ว',
+    isLiked: true,
+    comments: [],
+  },
+  {
+    id: 'post-challenge-1',
+    userName: 'คุณแจน (Jan_Challenge)',
+    userAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80',
+    userBadge: '🏆 Quest Hunter',
+    targetType: 'challenge',
+    targetId: '4',
+    targetTitle: 'HYROX 4 Stations: พิชิต 4 สถานีฟิตเนสบูทแคมป์ระดับสากล',
+    category: 'move',
+    images: [
+      'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=800&q=80',
+    ],
+    caption: 'ส่งหลักฐานภาพถ่ายพิชิตสถานี Wall Balls ครบเซ็ตเรียบร้อย ปลดล็อกเหรียญตรา HYROX Warrior สำเร็จแล้ว เหนื่อยแต่ฟินสุดๆ! ⚡🔥',
+    location: 'HYROX Studio, สุขุมวิท 39',
+    likesCount: 95,
+    commentsCount: 0,
+    sharesCount: 28,
+    timeAgo: '1 ชั่วโมงที่แล้ว',
+    isLiked: true,
+    comments: [],
+  },
+  {
     id: 'post-1',
     userName: 'คุณส้ม (Som_Chill)',
     userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
     userBadge: '🏆 HYROX Finisher',
+    targetType: 'community',
+    targetId: '7',
+    targetTitle: 'HYROX Physical Fitness Bootcamp',
     eventId: '7',
-    eventTitle: 'HYROX Physical Fitness Bootcamp 🏃‍♂️🏋️‍♀️',
+    eventTitle: 'HYROX Physical Fitness Bootcamp',
     category: 'move',
-    images: ['/event-hyrox.png'],
+    images: [
+      '/event-hyrox.png',
+      'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80',
+    ],
     caption: 'ได้ลอง HYROX ครั้งแรกโหดแต่อารมณ์ดีสุดๆ! สลัดความเหนื่อยล้าด้วยพลังกลุ่มเพื่อนๆ โค้ชดูแลดีมาก ใครอยากขยับตัวลองมาซ้อมด้วยกันรอบหน้าครับ 🔥💪',
     location: 'HYROX Gym Studio, สุขุมวิท 39',
     likesCount: 42,
     commentsCount: 5,
+    sharesCount: 7,
     timeAgo: '2 ชั่วโมงที่แล้ว',
     isLiked: false,
     comments: [
@@ -4485,6 +4592,7 @@ export const MOCK_POSTS: CommunityPost[] = [
     location: 'Introvert-friendly, พระราม 9',
     likesCount: 58,
     commentsCount: 3,
+    sharesCount: 11,
     timeAgo: '4 ชั่วโมงที่แล้ว',
     isLiked: true,
     comments: [
@@ -4504,28 +4612,10 @@ export const MOCK_POSTS: CommunityPost[] = [
     location: 'คืนบอร์ดเกม อโศก',
     likesCount: 35,
     commentsCount: 2,
+    sharesCount: 5,
     timeAgo: '6 ชั่วโมงที่แล้ว',
     isLiked: false,
     comments: [],
-  },
-  {
-    id: 'post-4',
-    userName: 'คุณฟ้า (Fah_Craft)',
-    userAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80',
-    userBadge: '🏺 Artisan Creator',
-    eventId: '4',
-    eventTitle: 'Pottery & Ceramic Workshop สตูดิโอปั้นดิน',
-    category: 'learn',
-    images: ['https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=800&q=80'],
-    caption: 'ขึ้นทรงแก้วกาแฟใบแรกในชีวิตสำเร็จแล้ว! ดินสัมผัสนุ่มละมุน สมาธิอยู่กับมือทุกวินาที รอลุ้นผลงานหลังเข้าเตาอบสัปดาห์หน้าเลย ☕✨',
-    location: 'อารีย์ สตูดิโอ',
-    likesCount: 64,
-    commentsCount: 4,
-    timeAgo: '8 ชั่วโมงที่แล้ว',
-    isLiked: true,
-    comments: [
-      { id: 'c4', userName: 'คุณต่าย (Tai_Art)', userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80', text: 'ปั้นสวยมากเลยค่ะ โทนสีละมุนตามาก', timeAgo: '6 ชั่วโมงที่แล้ว' },
-    ],
   },
   {
     id: 'post-5',
@@ -4540,6 +4630,7 @@ export const MOCK_POSTS: CommunityPost[] = [
     location: 'ทองหล่อ Soi 10',
     likesCount: 49,
     commentsCount: 1,
+    sharesCount: 8,
     timeAgo: '12 ชั่วโมงที่แล้ว',
     isLiked: false,
     comments: [],
@@ -4557,6 +4648,7 @@ export const MOCK_POSTS: CommunityPost[] = [
     location: 'สวนลุมพินี ปทุมวัน',
     likesCount: 71,
     commentsCount: 6,
+    sharesCount: 15,
     timeAgo: '14 ชั่วโมงที่แล้ว',
     isLiked: true,
     comments: [],
