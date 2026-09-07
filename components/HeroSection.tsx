@@ -622,257 +622,203 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-3 sm:px-6 lg:px-8 relative space-y-2">
 
         {version === 'editorial' && (
-          <div className="relative rounded-3xl bg-white border border-slate-200/90 shadow-xs pt-3 sm:pt-3.5 pb-3.5 sm:pb-4 px-4 sm:px-6 md:px-7">
+          <div className="relative rounded-3xl overflow-hidden border border-slate-200/90 shadow-lg min-h-[250px] sm:min-h-[280px] md:min-h-[300px] flex flex-col justify-center px-3.5 sm:px-6 md:px-8 py-5 sm:py-7 transition-all duration-300">
 
-            {/* Subtle Tri-Color Accent Line (The 3 Discovery Pillars) */}
-            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#4A7C59] via-[#F26430] to-[#2B527A] rounded-t-3xl" />
+            {/* 1. Atmospheric Lifestyle Photography Background */}
+            <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+              <img
+                src="/hero-bg-lifestyle.jpg"
+                alt="Chill & Connect Lifestyle Hub"
+                className="w-full h-full object-cover object-center scale-105 filter brightness-[0.88] contrast-[1.05]"
+              />
+              {/* Soft Cinematic Overlays */}
+              <div className="absolute inset-0 bg-slate-950/40 mix-blend-multiply" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/30 to-slate-950/60" />
+            </div>
 
-            {/* Ambient Soft Glow in corner */}
-            <div className="pointer-events-none absolute -top-14 -right-14 w-80 h-80 bg-gradient-to-br from-emerald-50/50 via-amber-50/20 to-transparent rounded-full blur-2xl -z-0" />
+            {/* 2. Tri-Color Accent Line (Subtle Brand Identity) */}
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#4A7C59] via-[#F26430] to-[#2B527A] rounded-t-3xl z-10" />
 
-            {/* 1. Clean Minimal Mode Tabs at Top (Centered with comfortable breathing room) */}
-            <div className="relative z-10 flex justify-center mb-4 sm:mb-5">
-              <div className="inline-flex p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80 gap-1 overflow-x-auto max-w-full no-scrollbar shadow-xs">
-                {/* Tab 1: All */}
-                <button
-                  type="button"
-                  onClick={() => handleTabClick('all')}
-                  className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                    activeModeTab === 'all'
-                      ? 'bg-white text-slate-900 shadow-xs border border-slate-200/70'
-                      : 'text-slate-500 hover:text-slate-900 hover:bg-white/60'
-                  }`}
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-[#4A7C59]" />
-                  <span>ทั้งหมด</span>
-                </button>
+            {/* 3. Main Centerpiece Content */}
+            <div className="relative z-10 text-center space-y-3 sm:space-y-4 max-w-3xl mx-auto w-full">
 
-                {/* Tab 2: Spots */}
-                <button
-                  type="button"
-                  onClick={() => handleTabClick('spots')}
-                  className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                    activeModeTab === 'spots'
-                      ? 'bg-[#EBF3ED] text-[#2D5A3C] shadow-xs border border-emerald-200'
-                      : 'text-slate-500 hover:text-[#2D5A3C] hover:bg-[#EBF3ED]/50'
-                  }`}
-                >
-                  <Compass className="w-3.5 h-3.5 text-[#4A7C59]" />
-                  <span>พิกัดเที่ยว & จุดฮีลใจ</span>
-                </button>
-
-                {/* Tab 3: Community */}
-                <button
-                  type="button"
-                  onClick={() => handleTabClick('community')}
-                  className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                    activeModeTab === 'community'
-                      ? 'bg-orange-50 text-orange-900 shadow-xs border border-orange-200'
-                      : 'text-slate-500 hover:text-orange-900 hover:bg-orange-50/50'
-                  }`}
-                >
-                  <Users className="w-3.5 h-3.5 text-[#F26430]" />
-                  <span>กิจกรรมคอมมูนิตี้</span>
-                </button>
-
-                {/* Tab 4: Fairs */}
-                <button
-                  type="button"
-                  onClick={() => handleTabClick('fairs')}
-                  className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                    activeModeTab === 'fairs'
-                      ? 'bg-sky-50 text-blue-900 shadow-xs border border-blue-200'
-                      : 'text-slate-500 hover:text-blue-900 hover:bg-sky-50/50'
-                  }`}
-                >
-                  <Building2 className="w-3.5 h-3.5 text-[#2B527A]" />
-                  <span>งานมหกรรม นิทรรศการ & เอ็กซ์โป</span>
-                </button>
+              {/* Inspiring Headline with High Contrast */}
+              <div className="space-y-1">
+                <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
+                  วันหยุดนี้...{' '}
+                  <span className="text-[#FFA07A] inline-block drop-shadow-[0_2px_6px_rgba(0,0,0,0.7)]">
+                    {activeModeTab === 'spots' && 'ไปพักใจที่ไหนดี?'}
+                    {activeModeTab === 'community' && 'ไปจอยตี้ไหนดี?'}
+                    {activeModeTab === 'fairs' && 'ไปเดินงานไหนดี?'}
+                    {activeModeTab === 'all' && 'ไปไหนดี?'}
+                  </span>
+                </h1>
+                <p className="text-[11px] sm:text-xs md:text-sm text-stone-200 font-medium max-w-xl mx-auto drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)] min-h-[1.5rem] flex items-center justify-center transition-all duration-300">
+                  {activeModeTab === 'spots' && 'รวมจุดพักใจ คาเฟ่ ชุมชนลับ และธรรมชาติ 77 จังหวัดทั่วไทย เที่ยวชิลล์ๆ ได้ด้วยตัวเอง'}
+                  {activeModeTab === 'community' && 'หาเพื่อนใหม่กลุ่มย่อย วิ่ง บอร์ดเกม เวิร์กช็อป ตี้กาแฟ ในคอมมูนิตี้ที่ปลอดภัยไร้แรงกดดัน'}
+                  {activeModeTab === 'fairs' && 'อัปเดตงานอีเวนต์ใหญ่ นิทรรศการ งานหนังสือ เทศกาลกาแฟ และเอ็กซ์โปทั่วประเทศ'}
+                  {activeModeTab === 'all' && 'รวมพิกัดฮีลใจ 77 จังหวัด • ตี้เพื่อนใหม่ไร้ความกดดัน • งานแฟร์ & นิทรรศการทั่วไทย'}
+                </p>
               </div>
-            </div>
 
-            {/* 2. Editorial Headline & Dynamic Concept Subtitle (Flowing Inline) */}
-            <div className="relative z-10 mb-2.5 sm:mb-3 text-left">
-              <h1 className="text-slate-900 leading-snug">
-                {/* Dynamic Main Headline */}
-                <span className="text-lg sm:text-xl lg:text-2xl font-black tracking-tight align-baseline mr-2 inline-block sm:inline">
-                  {activeModeTab === 'spots' && (
-                    <>วันหยุดนี้... <span className="text-[#2D5A3C]">ไปพักใจที่ไหนดี?</span></>
-                  )}
-                  {activeModeTab === 'community' && (
-                    <>วันหยุดนี้... <span className="text-[#C2410C]">ไปจอยตี้ไหนดี?</span></>
-                  )}
-                  {activeModeTab === 'fairs' && (
-                    <>วันหยุดนี้... <span className="text-[#2B527A]">ไปเดินงานไหนดี?</span></>
-                  )}
-                  {activeModeTab === 'all' && (
-                    <>วันหยุดนี้... <span className="text-[#2D5A3C]">ไปไหนดี?</span></>
-                  )}
-                </span>
-
-                {/* Dynamic Concept Storytelling Subtitle with About Link (Continuing Directly from Title) */}
-                <span className="text-xs sm:text-sm text-slate-600 font-normal align-baseline inline">
-                  <span className="text-slate-300 font-light mx-1.5 hidden sm:inline">•</span>
-                  {activeModeTab === 'spots' && (
-                    <span>รวมจุดพักใจ คาเฟ่ ชุมชนลับ และธรรมชาติ 77 จังหวัดทั่วไทย เที่ยวชิลล์ๆ ได้ด้วยตัวเอง</span>
-                  )}
-                  {activeModeTab === 'community' && (
-                    <span>หาเพื่อนใหม่กลุ่มย่อย วิ่ง บอร์ดเกม เวิร์กช็อป ตี้กาแฟ ในคอมมูนิตี้ที่ปลอดภัยไร้แรงกดดัน</span>
-                  )}
-                  {activeModeTab === 'fairs' && (
-                    <span>อัปเดตงานอีเวนต์ใหญ่ นิทรรศการ งานหนังสือ เทศกาลกาแฟ และเอ็กซ์โปทั่วประเทศ</span>
-                  )}
-                  {activeModeTab === 'all' && (
-                    <span>ค้นพบสถานที่เที่ยว พิกัดฮีลใจ กิจกรรมสนุกๆ พร้อมเพื่อนใหม่ๆ ได้ที่นี่</span>
-                  )}
-                  {' '}
-                  <Link
-                    href="/about"
-                    className="inline-flex items-center gap-0.5 text-xs font-bold text-[#4A7C59] hover:text-[#386244] hover:underline transition-colors whitespace-nowrap ml-1.5 align-baseline"
+              {/* The 3 Discovery Pillars (Floating Glass Tabs) */}
+              <div className="flex justify-center">
+                <div className="inline-flex p-1 bg-black/40 backdrop-blur-md rounded-2xl border border-white/20 gap-1 overflow-x-auto max-w-full no-scrollbar shadow-lg">
+                  {/* Tab 1: All */}
+                  <button
+                    type="button"
+                    onClick={() => handleTabClick('all')}
+                    className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                      activeModeTab === 'all'
+                        ? 'bg-white text-slate-900 shadow-md font-black'
+                        : 'text-white/80 hover:text-white hover:bg-white/15'
+                    }`}
                   >
-                    <span>ทำความรู้จักเรา</span>
-                    <ArrowRight className="w-3.5 h-3.5 inline" />
-                  </Link>
-                </span>
-              </h1>
-            </div>
+                    <Sparkles className={`w-3.5 h-3.5 ${activeModeTab === 'all' ? 'text-[#4A7C59]' : 'text-amber-300'}`} />
+                    <span>ทั้งหมด</span>
+                  </button>
 
-            {/* Search Row (Full Width Discovery Capsule) */}
-            <div className="relative z-30 w-full flex flex-col sm:flex-row items-stretch gap-2">
+                  {/* Tab 2: Spots */}
+                  <button
+                    type="button"
+                    onClick={() => handleTabClick('spots')}
+                    className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                      activeModeTab === 'spots'
+                        ? 'bg-[#EBF3ED] text-[#2D5A3C] shadow-md font-black'
+                        : 'text-white/80 hover:text-white hover:bg-white/15'
+                    }`}
+                  >
+                    <Compass className={`w-3.5 h-3.5 ${activeModeTab === 'spots' ? 'text-[#4A7C59]' : 'text-emerald-300'}`} />
+                    <span>พิกัดเที่ยว & จุดฮีลใจ</span>
+                  </button>
 
-              {/* Search Capsule */}
-              <div className="relative flex-1 flex flex-col sm:flex-row items-stretch bg-slate-50 rounded-xl border border-slate-200 focus-within:border-[#4A7C59] focus-within:ring-2 focus-within:ring-[#4A7C59]/15 transition-all divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
+                  {/* Tab 3: Community */}
+                  <button
+                    type="button"
+                    onClick={() => handleTabClick('community')}
+                    className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                      activeModeTab === 'community'
+                        ? 'bg-orange-50 text-orange-950 shadow-md font-black'
+                        : 'text-white/80 hover:text-white hover:bg-white/15'
+                    }`}
+                  >
+                    <Users className={`w-3.5 h-3.5 ${activeModeTab === 'community' ? 'text-[#F26430]' : 'text-orange-300'}`} />
+                    <span>กิจกรรมคอมมูนิตี้</span>
+                  </button>
 
-                {/* Keyword */}
-                <div className="flex items-center gap-2.5 px-4 py-2 sm:py-2.5 flex-1 min-w-0">
-                  <Search className="w-4 h-4 text-slate-400 shrink-0" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setTimeout(() => setIsFocused(false), 250)}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder={getSearchPlaceholder()}
-                    className="w-full bg-transparent text-sm text-slate-900 placeholder-slate-400 focus:outline-none font-medium"
-                  />
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery('')}
-                      className="p-0.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-200/60 transition-colors cursor-pointer shrink-0"
+                  {/* Tab 4: Fairs */}
+                  <button
+                    type="button"
+                    onClick={() => handleTabClick('fairs')}
+                    className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                      activeModeTab === 'fairs'
+                        ? 'bg-sky-50 text-blue-950 shadow-md font-black'
+                        : 'text-white/80 hover:text-white hover:bg-white/15'
+                    }`}
+                  >
+                    <Building2 className={`w-3.5 h-3.5 ${activeModeTab === 'fairs' ? 'text-[#2B527A]' : 'text-sky-300'}`} />
+                    <span>งานมหกรรม & เอ็กซ์โป</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* The Hero Search Capsule (Primary Focal Point) */}
+              <div className="relative w-full max-w-2xl sm:max-w-3xl mx-auto z-30">
+                <div className="relative flex flex-col sm:flex-row items-stretch bg-white rounded-2xl sm:rounded-full p-1.5 sm:p-2 shadow-2xl shadow-black/40 border-2 border-white/95 focus-within:border-[#4A7C59] focus-within:ring-4 focus-within:ring-[#4A7C59]/20 transition-all divide-y sm:divide-y-0 sm:divide-x divide-slate-100 text-left">
+                  {/* Keyword */}
+                  <div className="flex items-center gap-2.5 px-3.5 py-1.5 sm:py-2 flex-1 min-w-0">
+                    <Search className="w-4 h-4 text-slate-400 shrink-0" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onFocus={() => setIsFocused(true)}
+                      onBlur={() => setTimeout(() => setIsFocused(false), 250)}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder={getSearchPlaceholder()}
+                      className="w-full bg-transparent text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none font-medium"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery('')}
+                        className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Province */}
+                  <div className="flex items-center gap-2 px-3 py-1.5 sm:py-2 sm:w-[190px] shrink-0">
+                    <MapPin className="w-4 h-4 text-[#4A7C59] shrink-0" />
+                    <select
+                      value={selectedProvince}
+                      onChange={(e) => handleProvinceChange(e.target.value)}
+                      className="w-full bg-transparent text-xs sm:text-sm font-semibold text-slate-700 focus:outline-none cursor-pointer truncate appearance-none"
                     >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
+                      <option value="all">ทุกจังหวัด (ทั่วไทย)</option>
+                      <option value="ออนไลน์">ออนไลน์ (ไม่จำกัดสถานที่)</option>
+                      <optgroup label="ยอดนิยม">
+                        <option value="กรุงเทพฯ">กรุงเทพมหานคร</option>
+                        <option value="นนทบุรี">นนทบุรี</option>
+                        <option value="เชียงใหม่">เชียงใหม่</option>
+                        <option value="ชลบุรี">ชลบุรี</option>
+                        <option value="ภูเก็ต">ภูเก็ต</option>
+                        <option value="นครราชสีมา">นครราชสีมา</option>
+                        <option value="น่าน">น่าน</option>
+                        <option value="ประจวบคีรีขันธ์">ประจวบคีรีขันธ์</option>
+                        <option value="ขอนแก่น">ขอนแก่น</option>
+                      </optgroup>
+                      <optgroup label="ทั้งหมด 77 จังหวัด">
+                        {ALL_THAI_PROVINCES.map((prov) => (
+                          <option key={prov} value={prov}>{prov}</option>
+                        ))}
+                      </optgroup>
+                    </select>
+                  </div>
 
-                {/* Province */}
-                <div className="flex items-center gap-2 px-3.5 py-2 sm:py-2.5 sm:w-[180px] shrink-0">
-                  <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
-                  <select
-                    value={selectedProvince}
-                    onChange={(e) => handleProvinceChange(e.target.value)}
-                    className="w-full bg-transparent text-sm font-medium text-slate-700 focus:outline-none cursor-pointer truncate appearance-none"
+                  {/* Search Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsFocused(false);
+                      if (onSearchSubmit) onSearchSubmit();
+                    }}
+                    className="bg-[#4A7C59] hover:bg-[#3D6649] text-white px-5 sm:px-6 py-2 sm:py-2 rounded-xl sm:rounded-full font-black text-xs sm:text-sm transition-all shadow-md shadow-[#4A7C59]/30 flex items-center justify-center gap-1.5 shrink-0 active:scale-95 cursor-pointer"
                   >
-                    <option value="all">ทุกจังหวัด (ทั่วไทย)</option>
-                    <option value="ออนไลน์">ออนไลน์ (ไม่จำกัดสถานที่)</option>
-                    <optgroup label="ยอดนิยม">
-                      <option value="กรุงเทพฯ">กรุงเทพมหานคร</option>
-                      <option value="นนทบุรี">นนทบุรี</option>
-                      <option value="เชียงใหม่">เชียงใหม่</option>
-                      <option value="ชลบุรี">ชลบุรี</option>
-                      <option value="ภูเก็ต">ภูเก็ต</option>
-                      <option value="นครราชสีมา">นครราชสีมา</option>
-                      <option value="น่าน">น่าน</option>
-                      <option value="ประจวบคีรีขันธ์">ประจวบคีรีขันธ์</option>
-                      <option value="ขอนแก่น">ขอนแก่น</option>
-                    </optgroup>
-                    <optgroup label="ทั้งหมด 77 จังหวัด">
-                      {ALL_THAI_PROVINCES.map((prov) => (
-                        <option key={prov} value={prov}>{prov}</option>
-                      ))}
-                    </optgroup>
-                  </select>
+                    <Search className="w-3.5 h-3.5" />
+                    <span>ค้นหา</span>
+                  </button>
                 </div>
 
-                {/* Auto-Suggest Dropdown (Dynamic Predictive & 3 Discovery Pillars Directory) */}
+                {/* Suggestions Dropdown */}
                 {renderSearchSuggestions()}
               </div>
 
-              {/* Buttons */}
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsFocused(false);
-                    if (onSearchSubmit) onSearchSubmit();
-                  }}
-                  className="bg-[#4A7C59] hover:bg-[#3D6649] text-white px-5 py-2 sm:py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95 cursor-pointer shadow-xs"
-                >
-                  ค้นหา
-                </button>
-                {onOpenSurpriseModal && (
+              {/* Surprise Me / Quick Explorer Pill */}
+              {onOpenSurpriseModal && (
+                <div className="pt-0.5 flex items-center justify-center">
                   <button
                     type="button"
                     onClick={() => onOpenSurpriseModal(activeModeTab)}
-                    className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all active:scale-95 cursor-pointer whitespace-nowrap flex items-center gap-1.5 shadow-xs border ${
-                      activeModeTab === 'spots'
-                        ? 'bg-[#EBF3ED] text-[#2D5A3C] border-emerald-200 hover:bg-[#dfeee3]'
-                        : activeModeTab === 'community'
-                        ? 'bg-orange-50 text-orange-900 border-orange-200 hover:bg-orange-100'
-                        : activeModeTab === 'fairs'
-                        ? 'bg-sky-50 text-blue-900 border-blue-200 hover:bg-sky-100'
-                        : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
-                    }`}
+                    className="text-[11px] sm:text-xs font-bold px-4 py-1.5 rounded-full bg-white/95 hover:bg-white text-slate-800 hover:text-[#F26430] border border-white/80 shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 group"
                   >
-                    <Dices className="w-4 h-4" />
+                    <Dices className="w-3.5 h-3.5 text-[#F26430] group-hover:rotate-180 transition-transform duration-500" />
                     <span>
-                      {activeModeTab === 'spots' && 'สุ่มพิกัดเที่ยว'}
-                      {activeModeTab === 'community' && 'สุ่มตี้กิจกรรม'}
-                      {activeModeTab === 'fairs' && 'สุ่มงานแฟร์'}
-                      {activeModeTab === 'all' && 'สุ่มให้เลย'}
+                      คิดไม่ออก?{' '}
+                      <span className="text-[#F26430] underline underline-offset-2">
+                        {activeModeTab === 'spots' && 'สุ่มพิกัดเที่ยวให้ฉัน'}
+                        {activeModeTab === 'community' && 'สุ่มตี้กิจกรรมให้ฉัน'}
+                        {activeModeTab === 'fairs' && 'สุ่มงานแฟร์ให้ฉัน'}
+                        {activeModeTab === 'all' && 'สุ่มกิจกรรมให้ฉัน'}
+                      </span>
+                      {' '}✨
                     </span>
                   </button>
-                )}
-              </div>
-
-            </div>
-
-            {/* Bottom Bar: Live Quest Ticker + Editorial Story Link */}
-            <div className="relative z-10 mt-2.5 pt-2 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 text-xs">
-              {/* Left: Quest Ticker */}
-              <button
-                type="button"
-                onClick={() => setSelectedQuestForModal(COMMUNITY_PUBLIC_QUESTS[currentQuestIndex])}
-                className="flex items-center gap-2 min-w-0 text-left group/ticker cursor-pointer"
-                title="คลิกเพื่อเปิดดูรายละเอียดและเงื่อนไขภารกิจนี้ทันที"
-              >
-                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-purple-50 text-purple-800 border border-purple-200/80 font-black text-[10px] uppercase tracking-wider shrink-0">
-                  <Zap className="w-3 h-3 text-purple-600 fill-purple-500" />
-                  <span>ชาเลนจ์</span>
                 </div>
+              )}
 
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="font-bold text-slate-700 group-hover/ticker:text-purple-800 transition-colors truncate text-xs">
-                    {COMMUNITY_PUBLIC_QUESTS[currentQuestIndex]?.title}
-                  </span>
-                  <span className="hidden md:inline-block text-[10.5px] font-bold text-purple-700 bg-purple-50/80 border border-purple-200/60 px-1.5 py-0.2 rounded shrink-0">
-                    +{COMMUNITY_PUBLIC_QUESTS[currentQuestIndex]?.rewardPoints} XP
-                  </span>
-                </div>
-              </button>
-
-              {/* Right: Actions */}
-              <button
-                type="button"
-                onClick={handleScrollToQuests}
-                className="inline-flex items-center gap-1 text-[11.5px] font-bold text-purple-700 hover:text-purple-900 transition-colors shrink-0 cursor-pointer self-end sm:self-auto"
-                title="เลื่อนลงไปสำรวจภารกิจทั้งหมดใน Section 4"
-              >
-                <span>ดูภารกิจทั้งหมด</span>
-                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-              </button>
             </div>
 
           </div>

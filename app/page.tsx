@@ -18,6 +18,7 @@ import { FilterDrawer } from '@/components/FilterDrawer';
 import { StoryBar } from '@/components/StoryBar';
 import { TrendingCarousel } from '@/components/TrendingCarousel';
 import { CommunityChallengeBar } from '@/components/CommunityChallengeBar';
+import { DailyQuestXPStrip } from '@/components/DailyQuestXPStrip';
 import { CommunityMomentsStrip } from '@/components/CommunityMomentsStrip';
 import { CreateChallengeModal } from '@/components/CreateChallengeModal';
 import { CommunityCategoryRail, COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
@@ -1027,7 +1028,16 @@ export default function Home() {
           onSelectDiscoveryTab={handleSelectDiscoveryTab}
         />
 
-        <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-8 pt-1 sm:pt-2 pb-6 relative z-10">
+        <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-4 sm:space-y-6 pt-1 sm:pt-2 pb-6 relative z-10">
+
+          {/* 2.5 Gamified Daily Quest & XP Spotlight Strip */}
+          <DailyQuestXPStrip
+            onJoinQuest={handleJoinQuestFromHome}
+            joinedQuestTitles={isLoggedIn ? joinedQuestTitles : []}
+            onCancelQuest={handleCancelQuestFromHome}
+            isLoggedIn={isLoggedIn}
+            onOpenLogin={() => triggerMembershipPrompt('เพื่อรับภารกิจและสะสมแต้ม XP')}
+          />
 
           {/* 3. Auto-Sliding Trending Events Carousel */}
           <TrendingCarousel
