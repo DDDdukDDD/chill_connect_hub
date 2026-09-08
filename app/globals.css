@@ -24,7 +24,7 @@
 body {
   background-color: var(--background);
   color: #1E293B;
-  font-family: var(--font-prompt), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-ibm-plex-thai), var(--font-plus-jakarta), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   overflow-x: hidden;
 }
 

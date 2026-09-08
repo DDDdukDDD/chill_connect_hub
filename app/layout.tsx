@@ -1,17 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import { Prompt, Inter } from "next/font/google";
+import { IBM_Plex_Sans_Thai, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
-const prompt = Prompt({
+const ibmPlexSansThai = IBM_Plex_Sans_Thai({
   weight: ["300", "400", "500", "600", "700"],
   subsets: ["thai", "latin"],
-  variable: "--font-prompt",
+  variable: "--font-ibm-plex-thai",
   display: "swap",
 });
 
-const inter = Inter({
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-plus-jakarta",
   display: "swap",
 });
 
@@ -149,7 +149,7 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="th" className={`${prompt.variable} ${inter.variable} antialiased`}>
+    <html lang="th" className={`${ibmPlexSansThai.variable} ${plusJakartaSans.variable} antialiased`}>
       <head>
         <script
           type="application/ld+json"

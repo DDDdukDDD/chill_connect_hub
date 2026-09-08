@@ -1643,11 +1643,11 @@ export default function MyHubPage() {
                       onClick={() => setActiveSubTab('community')}
                       className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all shrink-0 flex items-center gap-2 cursor-pointer ${
                         activeSubTab === 'community'
-                          ? 'bg-[#EBF3ED] text-[#2D5A3C] border border-[#A3CEB0] shadow-2xs'
+                          ? 'bg-[#FFF4EE] text-[#F26430] border border-orange-200 shadow-2xs'
                           : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-slate-200/80'
                       }`}
                     >
-                      <Users className={`w-4 h-4 ${activeSubTab === 'community' ? 'text-[#2D5A3C]' : 'text-slate-400'}`} />
+                      <Users className={`w-4 h-4 ${activeSubTab === 'community' ? 'text-[#F26430]' : 'text-slate-400'}`} />
                       <span>ตี้กิจกรรมคอมมูนิตี้ ({communityEvents.length})</span>
                     </button>
 
@@ -1657,11 +1657,11 @@ export default function MyHubPage() {
                       onClick={() => setActiveSubTab('fairs')}
                       className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all shrink-0 flex items-center gap-2 cursor-pointer ${
                         activeSubTab === 'fairs'
-                          ? 'bg-[#EBF3ED] text-[#2D5A3C] border border-[#A3CEB0] shadow-2xs'
+                          ? 'bg-[#EEF4FA] text-[#2B527A] border border-blue-200 shadow-2xs'
                           : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-slate-200/80'
                       }`}
                     >
-                      <Calendar className={`w-4 h-4 ${activeSubTab === 'fairs' ? 'text-[#2D5A3C]' : 'text-slate-400'}`} />
+                      <Calendar className={`w-4 h-4 ${activeSubTab === 'fairs' ? 'text-[#2B527A]' : 'text-slate-400'}`} />
                       <span>งานแฟร์ & นิทรรศการ ({expoEvents.length})</span>
                     </button>
 
@@ -1685,11 +1685,11 @@ export default function MyHubPage() {
                       onClick={() => setActiveSubTab('quests_rewards')}
                       className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all shrink-0 flex items-center gap-2 cursor-pointer ${
                         activeSubTab === 'quests_rewards'
-                          ? 'bg-[#EBF3ED] text-[#2D5A3C] border border-[#A3CEB0] shadow-2xs'
+                          ? 'bg-[#F5F3FF] text-[#7C3AED] border border-purple-200 shadow-2xs'
                           : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-slate-200/80'
                       }`}
                     >
-                      <Trophy className={`w-4 h-4 ${activeSubTab === 'quests_rewards' ? 'text-[#2D5A3C]' : 'text-slate-400'}`} />
+                      <Trophy className={`w-4 h-4 ${activeSubTab === 'quests_rewards' ? 'text-[#7C3AED]' : 'text-slate-400'}`} />
                       <span>เควสต์ & แต้มสะสม ({myChallenges.length})</span>
                     </button>
                   </div>

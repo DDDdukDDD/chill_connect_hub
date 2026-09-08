@@ -17,6 +17,7 @@ interface EventGridProps {
   isFavoritesOnly?: boolean;
   responsiveLimit?: { mobile: number; desktop: number };
   columns?: 4 | 5;
+  dynamicResponsiveGrid?: boolean;
 }
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string; badgeBg: string }> = {
@@ -36,6 +37,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
   isFavoritesOnly = false,
   responsiveLimit,
   columns = 5,
+  dynamicResponsiveGrid = false,
 }) => {
   if (events.length === 0) {
     return (
@@ -60,10 +62,10 @@ export const EventGrid: React.FC<EventGridProps> = ({
           <button
             type="button"
             onClick={onResetFilters}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold shadow-2xs transition-all cursor-pointer shrink-0 self-end sm:self-center active:scale-95"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer shadow-2xs active:scale-95"
           >
             <RotateCcw className="w-3 h-3 text-slate-500" />
-            <span>ดูทั้งหมด</span>
+            <span>รีเซ็ตตัวกรอง</span>
           </button>
         )}
       </div>
@@ -90,7 +92,22 @@ export const EventGrid: React.FC<EventGridProps> = ({
           const fillRatio = event.participantsCount / event.maxParticipants;
           const isAlmostFull = fillRatio >= 0.8;
           const catStyle = CATEGORY_COLORS[event.category] || CATEGORY_COLORS.heal;
-          const isHiddenOnMobile = responsiveLimit && idx >= responsiveLimit.mobile;
+
+          // Responsive visibility to prevent incomplete/hanging rows
+          let responsiveVisibilityClass = 'block';
+          if (dynamicResponsiveGrid || (responsiveLimit && responsiveLimit.desktop === 10)) {
+            if (idx >= 8) {
+              responsiveVisibilityClass = 'hidden 2xl:block'; // 5 cols (2xl) shows 10 (2 rows of 5)
+            } else if (idx >= 6) {
+              responsiveVisibilityClass = 'hidden lg:block';  // 4 cols (lg/xl) shows 8 (2 rows of 4)
+            } else if (idx >= 4) {
+              responsiveVisibilityClass = 'hidden sm:block';  // 2/3 cols (sm/md) shows 6 (2 rows of 3, 3 rows of 2)
+            } else {
+              responsiveVisibilityClass = 'block';            // mobile shows 4
+            }
+          } else if (responsiveLimit && idx >= responsiveLimit.mobile) {
+            responsiveVisibilityClass = 'hidden sm:block';
+          }
 
           const detailHref = event.eventType === 'public_venue'
             ? `/fairs/${encodeURIComponent(event.id)}`
@@ -103,7 +120,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: Math.min(idx, 10) * 0.04 }}
-              className={isHiddenOnMobile ? 'hidden sm:block' : 'block'}
+              className={responsiveVisibilityClass}
             >
               <Link
                 href={detailHref}

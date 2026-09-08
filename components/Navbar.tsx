@@ -76,7 +76,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 transition-all duration-300 shadow-2xs">
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 transition-all duration-300 shadow-2xs">
         <div className="max-w-7xl 2xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-17 flex items-center justify-between gap-4">
           
           {/* Left: Brand Logo & Name */}
@@ -91,7 +91,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 Chill & Connect Hub
               </span>
               <p className="text-[10.5px] text-slate-500 font-medium tracking-normal leading-none mt-1.5">
-                Lifestyle Discovery & Community Platform
+                Curated Lifestyle & Meaningful Connections
               </p>
             </div>
           </Link>

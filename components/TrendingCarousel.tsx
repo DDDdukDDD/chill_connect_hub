@@ -126,15 +126,20 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
 
   return (
     <section className="space-y-2.5">
-      {/* Header (Clean & Minimal) */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="min-w-0 flex-1 flex items-center gap-1.5 truncate">
-          <h2 className="text-xs sm:text-base font-extrabold text-[#1E293B] truncate">
-            กิจกรรมไฮไลต์ยอดฮิตสัปดาห์นี้
-          </h2>
-          <span className="text-[9px] sm:text-[10px] font-black bg-red-600 text-white px-2 py-0.5 rounded-full shadow-xs shrink-0 tracking-wider">
-            HOT
-          </span>
+      {/* Header (Refined Editorial Trend Feed) */}
+      <div className="flex items-end justify-between gap-2 px-0.5">
+        <div className="min-w-0 flex-1 space-y-0.5">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm sm:text-base font-black text-[#1E293B] tracking-tight truncate">
+              Trending Lifestyle Agenda
+            </h2>
+            <span className="text-[9.5px] font-extrabold bg-rose-50 text-rose-600 border border-rose-200/80 px-2 py-0.5 rounded-full shadow-2xs shrink-0 tracking-wider">
+              ยอดนิยม
+            </span>
+          </div>
+          <p className="text-[11px] sm:text-xs font-medium text-slate-500 truncate hidden sm:block">
+            คัดสรรกิจกรรมและงานอีเวนต์ที่มีผู้ให้ความสนใจสูงสุดประจำสัปดาห์นี้
+          </p>
         </div>
 
         <button
@@ -142,9 +147,10 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
             const el = document.getElementById('catalog-section');
             if (el) el.scrollIntoView({ behavior: 'smooth' });
           }}
-          className="text-[11px] sm:text-xs font-bold text-[#4A7C59] hover:underline flex items-center gap-1 cursor-pointer transition-colors shrink-0 whitespace-nowrap"
+          className="text-[11px] sm:text-xs font-extrabold text-[#4A7C59] hover:text-[#2D5A3C] hover:underline flex items-center gap-1 cursor-pointer transition-colors shrink-0 whitespace-nowrap"
         >
-          <span>ดูกิจกรรมทั้งหมด ➔</span>
+          <span>สำรวจทั้งหมด</span>
+          <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
 

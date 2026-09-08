@@ -440,7 +440,34 @@ export default function Home() {
       } else if (timeFilter === 'next_month') {
         matchesTime = event.date.includes('ก.ย.') || event.date.includes('เม.ย.') || event.date.includes('พ.ค.');
       } else if (timeFilter === 'custom' && (startDate || endDate)) {
-        matchesTime = true;
+        const parseCustomDateToTimestamp = (dateStr: string, isEndOfDay = false): number => {
+          if (!dateStr) return isEndOfDay ? 9999999999999 : 0;
+          let y = 2026, m = 0, d = 1;
+          if (dateStr.includes('/')) {
+            const parts = dateStr.split('/');
+            d = parseInt(parts[0], 10) || 1;
+            m = (parseInt(parts[1], 10) || 1) - 1;
+            y = parseInt(parts[2], 10) || 2026;
+          } else if (dateStr.includes('-')) {
+            const parts = dateStr.split('-');
+            if (parts[0].length === 4) {
+              y = parseInt(parts[0], 10);
+              m = (parseInt(parts[1], 10) || 1) - 1;
+              d = parseInt(parts[2], 10) || 1;
+            } else {
+              d = parseInt(parts[0], 10) || 1;
+              m = (parseInt(parts[1], 10) || 1) - 1;
+              y = parseInt(parts[2], 10) || 2026;
+            }
+          }
+          return isEndOfDay ? new Date(y, m, d, 23, 59, 59).getTime() : new Date(y, m, d, 0, 0, 0).getTime();
+        };
+
+        const filterStart = startDate ? parseCustomDateToTimestamp(startDate, false) : 0;
+        const filterEnd = endDate ? parseCustomDateToTimestamp(endDate, true) : (startDate ? parseCustomDateToTimestamp(startDate, true) : 9999999999999);
+        const evStart = parseEventDateToTimestamp(event.date);
+        const evEnd = parseEventEndDateToTimestamp(event.date);
+        matchesTime = evStart <= filterEnd && evEnd >= filterStart;
       }
 
       let matchesSubCategory = true;
@@ -1015,6 +1042,16 @@ export default function Home() {
           setSearchQuery={setSearchQuery}
           selectedProvince={selectedSpotProvince}
           setSelectedProvince={setSelectedSpotProvince}
+          timeFilter={timeFilter}
+          setTimeFilter={setTimeFilter}
+          startDate={startDate}
+          endDate={endDate}
+          onOpenDatePicker={() => setIsDatePickerOpen(true)}
+          onClearCustomDate={() => {
+            setStartDate('');
+            setEndDate('');
+            setTimeFilter('all');
+          }}
           onSearchSubmit={handleSearchSubmit}
           onOpenSurpriseModal={(mode) => {
             setSurpriseModalMode(mode || activeScopeTab || 'all');
@@ -1030,14 +1067,16 @@ export default function Home() {
 
         <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-4 sm:space-y-6 pt-1 sm:pt-2 pb-6 relative z-10">
 
-          {/* 2.5 Gamified Daily Quest & XP Spotlight Strip */}
-          <DailyQuestXPStrip
-            onJoinQuest={handleJoinQuestFromHome}
-            joinedQuestTitles={isLoggedIn ? joinedQuestTitles : []}
-            onCancelQuest={handleCancelQuestFromHome}
-            isLoggedIn={isLoggedIn}
-            onOpenLogin={() => triggerMembershipPrompt('เพื่อรับภารกิจและสะสมแต้ม XP')}
-          />
+          {/* 2.5 Gamified Daily Quest & XP Spotlight Strip (Preserved for Classic Banner Mode Only) */}
+          {heroVersion === 'classic' && (
+            <DailyQuestXPStrip
+              onJoinQuest={handleJoinQuestFromHome}
+              joinedQuestTitles={isLoggedIn ? joinedQuestTitles : []}
+              onCancelQuest={handleCancelQuestFromHome}
+              isLoggedIn={isLoggedIn}
+              onOpenLogin={() => triggerMembershipPrompt('เพื่อรับภารกิจและสะสมแต้ม XP')}
+            />
+          )}
 
           {/* 3. Auto-Sliding Trending Events Carousel */}
           <TrendingCarousel
@@ -1064,7 +1103,7 @@ export default function Home() {
                         01
                       </span>
                       <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                        <span>พิกัดเที่ยว & จุดฮีลใจทั่วไทย</span>
+                        <span>พิกัดพักใจ & ชุมชนน่าหลงใหล 77 จังหวัด</span>
                         <span className="text-[10px] font-black text-[#4A7C59] bg-[#EBF3ED] px-2 py-0.5 rounded-full border border-emerald-200">
                           {selectedSpotProvince === 'all' ? '77 จังหวัด' : selectedSpotProvince}
                         </span>
@@ -1072,8 +1111,8 @@ export default function Home() {
                     </div>
                     <p className="text-xs text-slate-500 mt-1 font-medium pl-8">
                       {selectedSpotProvince === 'all'
-                        ? `คัดสรรคาเฟ่ สเปซฮีลใจ และแลนด์มาร์กเด่นทั่วประเทศ (${filteredSpots.length} แห่ง)`
-                        : `สถานที่น่าสนใจในจังหวัด${selectedSpotProvince} (${filteredSpots.length} แห่ง)`}
+                        ? `พื้นที่ชาร์จพลัง คาเฟ่รักษ์โลก และจุดพักผ่อนธรรมชาติที่ผ่านการคัดสรรโดยคนท้องถิ่น (${filteredSpots.length} แห่ง)`
+                        : `พื้นที่พักผ่อนและสเปซน่าหลงใหลในจังหวัด${selectedSpotProvince} (${filteredSpots.length} แห่ง)`}
                     </p>
                   </div>
 
@@ -1096,28 +1135,36 @@ export default function Home() {
                   />
                 </div>
 
-                {/* Spot Cards Grid (15 items on desktop/tablet = 3 rows of 5, 8 items on mobile) */}
+                {/* Spot Cards Grid: Responsive complete rows (2xl: 10 items, lg/xl: 8 items, md/sm: 6 items, mobile: 4 items) */}
                 {filteredSpots.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
-                    {filteredSpots.slice(0, 15).map((spot, idx) => (
-                      <div
-                        key={spot.id}
-                        className={idx >= 8 ? 'hidden sm:block' : 'block'}
-                      >
-                        <SpotCard
-                          spot={spot}
-                          isFavorite={isLoggedIn && favoriteSpots.includes(spot.id)}
-                          isJoined={isLoggedIn && joinedEventIds.includes(spot.id)}
-                          onToggleFavorite={(id) => {
-                            if (!isLoggedIn) {
-                              triggerMembershipPrompt('เพื่อบันทึกสถานที่โปรด');
-                              return;
-                            }
-                            toggleFavoriteSpot(id);
-                          }}
-                        />
-                      </div>
-                    ))}
+                    {filteredSpots.slice(0, 10).map((spot, idx) => {
+                      const responsiveVisibilityClass =
+                        idx >= 8 ? 'hidden 2xl:block' : // 5 cols (2xl) shows 10 (2 rows of 5)
+                        idx >= 6 ? 'hidden lg:block' :  // 4 cols (lg/xl) shows 8 (2 rows of 4)
+                        idx >= 4 ? 'hidden sm:block' :  // 2/3 cols (sm/md) shows 6 (2 rows of 3, 3 rows of 2)
+                        'block';                        // mobile shows 4
+
+                      return (
+                        <div
+                          key={spot.id}
+                          className={responsiveVisibilityClass}
+                        >
+                          <SpotCard
+                            spot={spot}
+                            isFavorite={isLoggedIn && favoriteSpots.includes(spot.id)}
+                            isJoined={isLoggedIn && joinedEventIds.includes(spot.id)}
+                            onToggleFavorite={(id) => {
+                              if (!isLoggedIn) {
+                                triggerMembershipPrompt('เพื่อบันทึกสถานที่โปรด');
+                                return;
+                              }
+                              toggleFavoriteSpot(id);
+                            }}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="bg-slate-50 rounded-2xl p-6 text-center text-xs text-slate-500 font-medium">
@@ -1137,14 +1184,14 @@ export default function Home() {
                         02
                       </span>
                       <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                        <span>กิจกรรมคอมมูนิตี้</span>
+                        <span>ตี้เพื่อนใหม่ & กิจกรรมกลุ่มย่อย</span>
                         <span className="text-[10px] font-black text-[#F26430] bg-[#FFF4EE] px-2 py-0.5 rounded-full border border-orange-200">
-                          Community
+                          Community Circles
                         </span>
                       </h2>
                     </div>
                     <p className="text-xs text-slate-500 mt-1 font-medium pl-8">
-                      เปิดตี้วิ่ง บอร์ดเกม คาเฟ่ฮอปปิ้ง เวิร์กช็อปศิลปะ และคอมมูนิตี้สายชิลล์
+                      เชื่อมต่อมิตรภาพผ่านกิจกรรมสร้างสรรค์ ในบรรยากาศอบอุ่น เป็นกันเอง และปลอดภัย
                     </p>
                   </div>
 
@@ -1169,10 +1216,11 @@ export default function Home() {
                   />
                 </div>
 
-                {/* Community Events Grid (15 items on desktop/tablet = 3 rows of 5, 8 items on mobile) */}
+                {/* Community Events Grid (Responsive complete rows: 2xl: 10, lg/xl: 8, md/sm: 6, mobile: 4) */}
                 <EventGrid
                   events={streamCommunityEvents}
-                  responsiveLimit={{ mobile: 8, desktop: 15 }}
+                  responsiveLimit={{ mobile: 4, desktop: 10 }}
+                  dynamicResponsiveGrid={true}
                   onSelectEvent={() => { }}
                   favorites={isLoggedIn ? favorites : []}
                   toggleFavorite={toggleFavorite}
@@ -1192,14 +1240,14 @@ export default function Home() {
                         03
                       </span>
                       <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                        <span>งานมหกรรม นิทรรศการ & เอ็กซ์โป</span>
+                        <span>เทศกาล งานศิลปะ & มหกรรมระดับชาติ</span>
                         <span className="text-[10px] font-black text-[#2B527A] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
-                          Major Fairs
+                          Grand Exhibitions
                         </span>
                       </h2>
                     </div>
                     <p className="text-xs text-slate-500 mt-1 font-medium pl-8">
-                      รวมงานใหญ่ระดับประเทศ ณ ศูนย์การประชุมแห่งชาติสิริกิติ์, BITEC, IMPACT, เมืองทองธานี
+                      นิทรรศการ คอนเวนชัน และเทศกาลระดับประเทศ ณ ศูนย์การประชุมและแลนด์มาร์กชั้นนำ
                     </p>
                   </div>
 
@@ -1222,10 +1270,11 @@ export default function Home() {
                   />
                 </div>
 
-                {/* Public Venue Events Grid (15 items on desktop/tablet = 3 rows of 5, 8 items on mobile) */}
+                {/* Public Venue Events Grid (Responsive complete rows: 2xl: 10, lg/xl: 8, md/sm: 6, mobile: 4) */}
                 <EventGrid
                   events={streamPublicEvents}
-                  responsiveLimit={{ mobile: 8, desktop: 15 }}
+                  responsiveLimit={{ mobile: 4, desktop: 10 }}
+                  dynamicResponsiveGrid={true}
                   onSelectEvent={() => { }}
                   favorites={isLoggedIn ? favorites : []}
                   toggleFavorite={toggleFavorite}
@@ -1798,10 +1847,24 @@ export default function Home() {
 
           </div>
 
-          {/* Bottom Row: Clean Copyright */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 font-medium pt-1">
-            <p>© 2026 Chill & Connect Hub. สร้างขึ้นด้วยความใส่ใจเพื่อชุมชนคนชอบใช้ชีวิต</p>
-            <p className="text-slate-400">Curated Lifestyle Discovery & Community Network</p>
+          {/* Bottom Row: Clean Copyright & Global Regional Tag */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 font-medium pt-3 border-t border-slate-200/60">
+            <div className="flex items-center gap-3 flex-wrap">
+              <p>© 2026 Chill & Connect Hub. สร้างขึ้นด้วยความใส่ใจเพื่อชุมชนคนชอบใช้ชีวิต</p>
+              <span className="text-slate-300 hidden sm:inline">•</span>
+              <span className="text-slate-400 text-[11px]">Curated Lifestyle Discovery & Community Network</span>
+            </div>
+            
+            {/* Global International / Currency / Language Selector Mock */}
+            <div className="flex items-center gap-3 text-[11px] text-slate-500 shrink-0">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100/80 border border-slate-200/80 hover:bg-slate-200/60 transition-colors cursor-pointer select-none">
+                <span>🇹🇭</span>
+                <span className="font-semibold text-slate-700">ไทย (TH)</span>
+              </span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100/80 border border-slate-200/80 hover:bg-slate-200/60 transition-colors cursor-pointer select-none">
+                <span className="font-semibold text-slate-700">THB (฿)</span>
+              </span>
+            </div>
           </div>
 
         </div>

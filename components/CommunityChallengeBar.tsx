@@ -366,21 +366,21 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
               04
             </span>
             <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <span>ชาเลนจ์ & ภารกิจท้าทาย</span>
+              <span>ภารกิจไลฟ์สไตล์ & ตราเกียรติยศ</span>
               <span className="text-[10px] font-black text-purple-900 bg-purple-100/80 px-2 py-0.5 rounded-full border border-purple-300/80">
-                Quests & Badges
+                Lifestyle Quests
               </span>
             </h2>
           </div>
           <p className="text-xs text-slate-500 mt-1 font-medium pl-8">
-            ร่วมภารกิจเพื่อสะสมเหรียญ Badge พิเศษ หรือ EXP ประจำตัวเพื่อปลดล็อกสิทธิพิเศษ
+            พิชิตภารกิจสนุกๆ เพื่อสะสมเข็มกลัดเกียรติยศและคะแนน XP แลกรับสิทธิพิเศษทั่วไทย
           </p>
         </div>
 
         {/* Right Actions: Clean Glassmorphic Pill Link */}
         <Link
           href="/challenges"
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-purple-600 text-purple-900 hover:text-white border border-purple-200/90 hover:border-purple-600 rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-purple-900 text-purple-900 hover:text-white border border-purple-200/90 hover:border-purple-900 rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
         >
           <span>ดูภารกิจทั้งหมด ({COMMUNITY_PUBLIC_QUESTS.length})</span>
           <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />

@@ -416,23 +416,24 @@ function MomentsContent() {
       />
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Main Grid: 2 Columns */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Column (8-cols): Main Visual Feed */}
-          <div className="lg:col-span-8 space-y-5">
-            {/* Header Title Banner (No icon in front of title per user request) */}
-            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
-                    โมเมนต์ & บรรยากาศจริงจากชาวฮับ
-                  </h1>
-                  <p className="text-xs text-slate-500 font-medium">
-                    ภาพถ่ายความประทับใจ รอยยิ้ม และความทรงจำจริงจากพิกัดเที่ยว กิจกรรม งานแฟร์ และภารกิจชาเลนจ์
-                  </p>
-                </div>
+      <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] w-full mx-auto px-3.5 sm:px-6 lg:px-8 py-2.5 sm:py-4 space-y-3 sm:space-y-4">
+        
+        {/* 1. Moments Signature Hero Banner (Full-Width Editorial Header) */}
+        <section className="relative rounded-2xl bg-white p-4 sm:p-5 shadow-2xs border border-slate-200/80 overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-center">
+            {/* Left (7-cols): Headline, Description & Actions */}
+            <div className="lg:col-span-7 space-y-2.5">
+              <div className="space-y-1">
+                <h1 className="text-lg sm:text-xl md:text-2xl font-black text-slate-900 tracking-tight leading-tight">
+                  โมเมนต์ & บรรยากาศจริง <span className="text-[#4A7C59]">จากชาวฮับ</span>
+                </h1>
+                <p className="text-xs sm:text-[13px] text-slate-500 leading-relaxed font-normal max-w-xl">
+                  ภาพถ่ายความประทับใจ รอยยิ้ม และความทรงจำจริงจากพิกัดเที่ยว กิจกรรมคอมมูนิตี้ งานแฟร์ และภารกิจชาเลนจ์ทั่วไทย
+                </p>
+              </div>
 
+              {/* Action Button & Community Stats */}
+              <div className="flex items-center gap-3 flex-wrap pt-0.5">
                 <button
                   type="button"
                   onClick={() => {
@@ -443,15 +444,60 @@ function MomentsContent() {
                       setIsCreateModalOpen(true);
                     }
                   }}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-[#4A7C59] hover:bg-[#3B6347] text-white rounded-xl text-xs font-bold shadow-xs hover:shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-[#4A7C59] hover:bg-[#386144] text-white rounded-xl text-xs font-bold shadow-2xs hover:shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
                 >
                   <Camera className="w-4 h-4" />
                   <span>แชร์โมเมนต์ของคุณ</span>
                 </button>
+
+                <span className="text-xs text-slate-400 flex items-center gap-2">
+                  <span className="font-semibold text-slate-600">{posts.length} โมเมนต์ที่แบ่งปัน</span>
+                  <span>•</span>
+                  <span>42+ พิกัดเช็คอิน</span>
+                  <span>•</span>
+                  <span>100% ภาพถ่ายจริง</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Right (5-cols): Visual Snapshot Collage Teaser */}
+            <div className="lg:col-span-5 bg-gradient-to-br from-emerald-50/70 via-slate-50/50 to-orange-50/30 p-3 sm:p-3.5 rounded-xl border border-emerald-100/80 shadow-2xs flex items-center justify-between gap-3">
+              <div className="space-y-1 min-w-0">
+                <span className="text-[10px] font-black text-[#2D5A3C] bg-[#EBF3ED] px-2 py-0.5 rounded-full border border-emerald-200 uppercase tracking-wider">
+                  Community Snapshots
+                </span>
+                <h3 className="font-bold text-xs sm:text-[13px] text-slate-800 truncate">
+                  ภาพบรรยากาศล่าสุดสัปดาห์นี้
+                </h3>
+                <p className="text-[10.5px] text-slate-500 leading-snug">
+                  เช็คอินคาเฟ่ • เวิร์กช็อปเซรามิก • ซาวด์บาธฮีลใจ
+                </p>
               </div>
 
+              {/* Overlapping Mini Photos Teaser */}
+              <div className="flex items-center -space-x-3 shrink-0">
+                <div className="w-12 h-14 rounded-lg overflow-hidden border-2 border-white shadow-sm -rotate-6">
+                  <img src="https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=200&q=80" alt="Cafe" className="w-full h-full object-cover" />
+                </div>
+                <div className="w-12 h-14 rounded-lg overflow-hidden border-2 border-white shadow-md rotate-2 z-10">
+                  <img src="https://images.unsplash.com/photo-1545205597-3d9d02c29597?w=200&q=80" alt="Sound bath" className="w-full h-full object-cover" />
+                </div>
+                <div className="w-12 h-14 rounded-lg overflow-hidden border-2 border-white shadow-sm rotate-8">
+                  <img src="https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=200&q=80" alt="Books" className="w-full h-full object-cover" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 2. Main Grid: 2 Columns */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Left Column (8-cols): Main Visual Feed */}
+          <div className="lg:col-span-8 space-y-4">
+            {/* Quick Post Prompt Input Bar & Segmented Tabs Container */}
+            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-2xs space-y-3.5">
               {/* Quick Post Prompt Input Bar (Adaptive for Logged in vs Logged out) */}
-              <div className="flex items-center gap-3 pt-3 border-t border-slate-100">
+              <div className="flex items-center gap-3">
                 {isLoggedIn ? (
                   <img
                     src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80"
@@ -492,7 +538,7 @@ function MomentsContent() {
               </div>
 
               {/* Clean Segmented Tabs */}
-              <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1">
+              <div className="bg-slate-100/90 p-1 rounded-xl flex items-center gap-1 border border-slate-200/70">
                 {[
                   { id: 'all', label: 'ฟีดทั้งหมด' },
                   { id: 'popular', label: 'ยอดนิยม (ส่งใจสูงสุด)' },
@@ -506,7 +552,7 @@ function MomentsContent() {
                       onClick={() => setActiveTabFilter(tab.id as any)}
                       className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                         isActive
-                          ? 'bg-white text-[#2D5A3C] shadow-xs'
+                          ? 'bg-white text-[#2D5A3C] shadow-2xs font-extrabold'
                           : 'text-slate-500 hover:text-slate-900'
                       }`}
                     >

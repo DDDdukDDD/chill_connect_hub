@@ -22,11 +22,17 @@ import {
   Building2,
   Calendar,
   ChevronRight,
+  ChevronLeft,
+  Trophy,
   ShoppingBag,
   ExternalLink,
   Users,
   ShieldCheck,
+  Ticket,
+  Gift,
+  Check,
 } from 'lucide-react';
+import { useAuth } from '@/lib/useAuth';
 import { ALL_THAI_PROVINCES, MOCK_SPOTS, LifestyleSpotItem } from '@/data/spotsData';
 import { COMMUNITY_PUBLIC_QUESTS } from '@/components/CommunityChallengeBar';
 import { JoinChallengeModal } from '@/components/JoinChallengeModal';
@@ -39,6 +45,60 @@ import {
 import Link from 'next/link';
 
 export type HeroVersion = 'editorial' | 'classic';
+
+export interface HeroSlideItem {
+  id: string;
+  pillar: 'spots' | 'community' | 'fairs' | 'challenges';
+  tag: string;
+  titleLead: string;
+  titleHighlight: string;
+  subtitle: string;
+  imageUrl: string;
+  imageAlt: string;
+}
+
+export const HERO_SLIDES: HeroSlideItem[] = [
+  {
+    id: 'slide-spots',
+    pillar: 'spots',
+    tag: 'พิกัดเที่ยว & จุดฮีลใจ 77 จังหวัด',
+    titleLead: 'วันหยุดนี้...',
+    titleHighlight: 'ไปพักใจที่ไหนดี?',
+    subtitle: 'รวมจุดพักใจ คาเฟ่ ชุมชนลับ และธรรมชาติ 77 จังหวัดทั่วไทย เที่ยวชิลล์ๆ ได้ด้วยตัวเอง',
+    imageUrl: '/hero-bkk-park-sunny.jpg',
+    imageAlt: 'สวนสาธารณะใจกลางกรุงเทพฯ ท้องฟ้าโปร่ง แสงแดดสดใส วิวเมืองและทะเลสาบฮีลใจ',
+  },
+  {
+    id: 'slide-community',
+    pillar: 'community',
+    tag: 'กิจกรรมคอมมูนิตี้ & ตี้เพื่อนใหม่',
+    titleLead: 'วันหยุดนี้...',
+    titleHighlight: 'ไปจอยตี้ไหนดี?',
+    subtitle: 'หาเพื่อนใหม่กลุ่มย่อย วิ่ง บอร์ดเกม เวิร์กช็อป ตี้กาแฟ ในคอมมูนิตี้ที่ปลอดภัยไร้แรงกดดัน',
+    imageUrl: '/hero-bkk-community-golden.jpg',
+    imageAlt: 'วิ่งออกกำลังกายและคอมมูนิตี้ริมทะเลสาบสวนสาธารณะกรุงเทพฯ ท่ามกลางแสงแดดอบอุ่น',
+  },
+  {
+    id: 'slide-fairs',
+    pillar: 'fairs',
+    tag: 'งานมหกรรม นิทรรศการ & เอ็กซ์โป',
+    titleLead: 'วันหยุดนี้...',
+    titleHighlight: 'ไปเดินงานไหนดี?',
+    subtitle: 'อัปเดตงานอีเวนต์ใหญ่ นิทรรศการ งานหนังสือ เทศกาลกาแฟ และเอ็กซ์โปทั่วประเทศ',
+    imageUrl: 'https://images.unsplash.com/photo-1518998053901-5348d3961a04?auto=format&fit=crop&w=1920&q=85',
+    imageAlt: 'งานนิทรรศการ อาร์ตสเปซ และงานเอ็กซ์โปทั่วไทย',
+  },
+  {
+    id: 'slide-challenges',
+    pillar: 'challenges',
+    tag: 'ชาเลนจ์ & พิกัดทะเล 77 จังหวัด',
+    titleLead: 'วันหยุดนี้...',
+    titleHighlight: 'ไปเที่ยวทะเลไหนดี?',
+    subtitle: 'เช็กลิสต์พิกัดเกาะพีพีและทะเล 77 จังหวัด พิชิตเควสต์สะสมแต้ม XP แลกรับสิทธิ์ฟรี',
+    imageUrl: '/hero-koh-phi-phi.jpg',
+    imageAlt: 'ทะเลเกาะพีพี อ่าวมาหยา น้ำทะเลสีมรกตใส เรือหางยาวและหน้าผาหินปูน',
+  },
+];
 
 interface HeroSectionProps {
   searchQuery: string;
@@ -53,7 +113,47 @@ interface HeroSectionProps {
   joinedQuestTitles?: string[];
   onCancelQuest?: (questTitle: string) => void;
   onSelectDiscoveryTab?: (tab: 'all' | 'spots' | 'community' | 'fairs') => void;
+  timeFilter?: string;
+  setTimeFilter?: (time: any) => void;
+  startDate?: string;
+  endDate?: string;
+  onOpenDatePicker?: () => void;
+  onClearCustomDate?: () => void;
 }
+
+const parseDateParts = (dateStr?: string) => {
+  if (!dateStr) return null;
+  const monthNames = ['', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+  if (dateStr.includes('/')) {
+    const p = dateStr.split('/');
+    const d = parseInt(p[0], 10);
+    const m = monthNames[parseInt(p[1], 10)] || '';
+    return { d, m };
+  }
+  if (dateStr.includes('-')) {
+    const p = dateStr.split('-');
+    if (p[0].length === 4) {
+      const d = parseInt(p[2], 10);
+      const m = monthNames[parseInt(p[1], 10)] || '';
+      return { d, m };
+    }
+    const d = parseInt(p[0], 10);
+    const m = monthNames[parseInt(p[1], 10)] || '';
+    return { d, m };
+  }
+  return null;
+};
+
+const formatDateDisplay = (start?: string, end?: string): string => {
+  const p1 = parseDateParts(start);
+  if (!p1) return '';
+  const p2 = parseDateParts(end);
+  if (!p2 || (p1.d === p2.d && p1.m === p2.m)) {
+    return `${p1.d} ${p1.m}`;
+  }
+  return p1.m === p2.m ? `${p1.d} - ${p2.d} ${p1.m}` : `${p1.d} ${p1.m} - ${p2.d} ${p2.m}`;
+};
+
 
 export const HeroSection: React.FC<HeroSectionProps> = ({
   searchQuery,
@@ -68,11 +168,26 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   joinedQuestTitles = [],
   onCancelQuest,
   onSelectDiscoveryTab,
+  timeFilter = 'all',
+  setTimeFilter,
+  startDate,
+  endDate,
+  onOpenDatePicker,
+  onClearCustomDate,
 }) => {
+  const { isLoggedIn } = useAuth();
   const [version, setVersion] = useState<HeroVersion>(initialVersion);
   const [isFocused, setIsFocused] = useState(false);
   const [selectedQuestForModal, setSelectedQuestForModal] = useState<ChallengeQuest | null>(null);
   const [activeModeTab, setActiveModeTab] = useState<'all' | 'spots' | 'community' | 'fairs'>('all');
+  const [showcaseTab, setShowcaseTab] = useState<'vouchers' | 'rewards'>('vouchers');
+  const [internalTimeFilter, setInternalTimeFilter] = useState('all');
+  const activeTime = timeFilter !== undefined ? timeFilter : internalTimeFilter;
+
+  const handleTimeChange = (t: string) => {
+    setInternalTimeFilter(t);
+    if (setTimeFilter) setTimeFilter(t);
+  };
 
   const handleProvinceChange = (prov: string) => {
     if (setSelectedProvince) setSelectedProvince(prov);
@@ -94,6 +209,26 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       }
     }
   }, []);
+
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [isHeroHovered, setIsHeroHovered] = useState(false);
+
+  // Klook-Style Auto-slide every 5.5s, pauses gracefully on hover or search focus
+  useEffect(() => {
+    if (isHeroHovered || isFocused) return;
+    const timer = setInterval(() => {
+      setCurrentSlideIndex((prev) => (prev + 1) % HERO_SLIDES.length);
+    }, 5500);
+    return () => clearInterval(timer);
+  }, [isHeroHovered, isFocused]);
+
+  const goToPrevSlide = () => {
+    setCurrentSlideIndex((prev) => (prev - 1 + HERO_SLIDES.length) % HERO_SLIDES.length);
+  };
+
+  const goToNextSlide = () => {
+    setCurrentSlideIndex((prev) => (prev + 1) % HERO_SLIDES.length);
+  };
 
   const [currentQuestIndex, setCurrentQuestIndex] = useState(0);
 
@@ -151,10 +286,37 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
   const handleTabClick = (tab: 'all' | 'spots' | 'community' | 'fairs') => {
     setActiveModeTab(tab);
+    if (tab === 'spots') setCurrentSlideIndex(0);
+    else if (tab === 'community') setCurrentSlideIndex(1);
+    else if (tab === 'fairs') setCurrentSlideIndex(2);
     if (onSelectDiscoveryTab) {
       onSelectDiscoveryTab(tab);
     }
   };
+
+  const currentSlide = HERO_SLIDES[currentSlideIndex];
+
+  const displayTitleLead = 'วันหยุดนี้...';
+
+  const displayTitleHighlight = activeModeTab === 'all'
+    ? 'ไปไหนดี'
+    : activeModeTab === 'spots'
+    ? 'ไปพักใจที่ไหนดี?'
+    : activeModeTab === 'community'
+    ? 'ไปจอยตี้ไหนดี?'
+    : activeModeTab === 'fairs'
+    ? 'ไปเดินงานไหนดี?'
+    : currentSlide.titleHighlight;
+
+  const displaySubtitle = activeModeTab === 'all'
+    ? 'รวมจุดพักใจ คาเฟ่ ตี้เพื่อนใหม่ เวิร์กช็อป และงานอีเวนต์ทั่วไทย ครบจบในที่เดียว'
+    : activeModeTab === 'spots'
+    ? 'รวมจุดพักใจ คาเฟ่ ชุมชนลับ และธรรมชาติ 77 จังหวัดทั่วไทย เที่ยวชิลล์ๆ ได้ด้วยตัวเอง'
+    : activeModeTab === 'community'
+    ? 'หาเพื่อนใหม่กลุ่มย่อย วิ่ง บอร์ดเกม เวิร์กช็อป ตี้กาแฟ ในคอมมูนิตี้ที่ปลอดภัยไร้แรงกดดัน'
+    : activeModeTab === 'fairs'
+    ? 'อัปเดตงานอีเวนต์ใหญ่ นิทรรศการ งานหนังสือ เทศกาลกาแฟ และเอ็กซ์โปทั่วประเทศ'
+    : currentSlide.subtitle;
 
   // =========================================================================
   // 🌟 Dynamic Discovery Pillars Taxonomy (Derived from Master Taxonomy Hub)
@@ -249,7 +411,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     if (!isFocused) return null;
 
     return (
-      <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200/90 z-[70] text-left animate-fade-in max-h-[460px] overflow-y-auto divide-y divide-slate-100">
+      <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200/90 z-[100] text-left animate-fade-in max-h-[460px] overflow-y-auto divide-y divide-slate-100">
         {/* CASE 1: Typing state (Dynamic Live Predictive Search grouped by 3 Core Pillars) */}
         {isTyping ? (
           <div className="p-2.5 sm:p-3 space-y-3">
@@ -618,126 +780,229 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   };
 
   return (
-    <section className="relative z-40 pt-1 sm:pt-2 pb-1">
-      <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-3 sm:px-6 lg:px-8 relative space-y-2">
+    <section className="relative z-30 pt-1 sm:pt-2 pb-1">
+      <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 relative space-y-2">
 
         {version === 'editorial' && (
-          <div className="relative rounded-3xl overflow-visible border border-slate-200/90 shadow-lg min-h-[250px] sm:min-h-[280px] md:min-h-[300px] flex flex-col justify-center px-3.5 sm:px-6 md:px-8 py-5 sm:py-7 transition-all duration-300">
-
-            {/* 1. Atmospheric Lifestyle Photography Background */}
-            <div className="absolute inset-0 z-0 pointer-events-none rounded-3xl overflow-hidden">
-              <img
-                src="/hero-bg-lifestyle.jpg"
-                alt="Chill & Connect Lifestyle Hub"
-                className="w-full h-full object-cover object-center scale-105 filter brightness-[0.88] contrast-[1.05]"
-              />
-              {/* Soft Cinematic Overlays */}
-              <div className="absolute inset-0 bg-slate-950/40 mix-blend-multiply" />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/30 to-slate-950/60" />
-            </div>
-
-            {/* 2. Tri-Color Accent Line (Subtle Brand Identity) */}
-            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#4A7C59] via-[#F26430] to-[#2B527A] rounded-t-3xl z-10" />
-
-            {/* 3. Main Centerpiece Content */}
-            <div className="relative z-10 text-center space-y-3 sm:space-y-4 max-w-3xl mx-auto w-full">
-
-              {/* Inspiring Headline with High Contrast */}
-              <div className="space-y-1">
-                <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
-                  วันหยุดนี้...{' '}
-                  <span className="text-[#FFA07A] inline-block drop-shadow-[0_2px_6px_rgba(0,0,0,0.7)]">
-                    {activeModeTab === 'spots' && 'ไปพักใจที่ไหนดี?'}
-                    {activeModeTab === 'community' && 'ไปจอยตี้ไหนดี?'}
-                    {activeModeTab === 'fairs' && 'ไปเดินงานไหนดี?'}
-                    {activeModeTab === 'all' && 'ไปไหนดี?'}
-                  </span>
-                </h1>
-                <p className="text-[11px] sm:text-xs md:text-sm text-stone-200 font-medium max-w-xl mx-auto drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)] min-h-[1.5rem] flex items-center justify-center transition-all duration-300">
-                  {activeModeTab === 'spots' && 'รวมจุดพักใจ คาเฟ่ ชุมชนลับ และธรรมชาติ 77 จังหวัดทั่วไทย เที่ยวชิลล์ๆ ได้ด้วยตัวเอง'}
-                  {activeModeTab === 'community' && 'หาเพื่อนใหม่กลุ่มย่อย วิ่ง บอร์ดเกม เวิร์กช็อป ตี้กาแฟ ในคอมมูนิตี้ที่ปลอดภัยไร้แรงกดดัน'}
-                  {activeModeTab === 'fairs' && 'อัปเดตงานอีเวนต์ใหญ่ นิทรรศการ งานหนังสือ เทศกาลกาแฟ และเอ็กซ์โปทั่วประเทศ'}
-                  {activeModeTab === 'all' && 'รวมพิกัดฮีลใจ 77 จังหวัด • ตี้เพื่อนใหม่ไร้ความกดดัน • งานแฟร์ & นิทรรศการทั่วไทย'}
-                </p>
+          <div 
+            onMouseEnter={() => setIsHeroHovered(true)}
+            onMouseLeave={() => setIsHeroHovered(false)}
+            className="group relative transition-all duration-300"
+          >
+            {/* 1. Immersive Panoramic Lifestyle Carousel Window (Bright Luxury View - Fixed Equal Height) */}
+            <div className="relative rounded-3xl overflow-hidden border border-slate-200/90 shadow-md h-[320px] sm:h-[350px] md:h-[370px] pb-24 sm:pb-28 md:pb-32 pt-6 sm:pt-8 px-4 sm:px-8 flex flex-col justify-start text-center">
+              
+              {/* Background Photos with Cross-fade */}
+              <div className="absolute inset-0 z-0 pointer-events-none">
+                {HERO_SLIDES.map((slide, idx) => (
+                  <div
+                    key={slide.id}
+                    className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                      currentSlideIndex === idx ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  >
+                    <img
+                      src={slide.imageUrl}
+                      alt={slide.imageAlt}
+                      className="w-full h-full object-cover object-center scale-105 filter brightness-[1.02] contrast-[1.05] saturate-[1.08]"
+                      loading={idx === 0 ? 'eager' : 'lazy'}
+                    />
+                  </div>
+                ))}
+                {/* Luminous Overlays - High Clarity & Vibrant Nature (Crisp & Bright, No Muddy Filter) */}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-slate-950/15 to-slate-950/30" />
+                <div className="absolute inset-0 bg-gradient-to-b from-slate-950/25 via-transparent to-transparent pointer-events-none" />
               </div>
 
-              {/* The 3 Discovery Pillars (Floating Glass Tabs) */}
-              <div className="flex justify-center">
-                <div className="inline-flex p-1 bg-black/40 backdrop-blur-md rounded-2xl border border-white/20 gap-1 overflow-x-auto max-w-full no-scrollbar shadow-lg">
-                  {/* Tab 1: All */}
-                  <button
-                    type="button"
-                    onClick={() => handleTabClick('all')}
-                    className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                      activeModeTab === 'all'
-                        ? 'bg-white text-slate-900 shadow-md font-black'
-                        : 'text-white/80 hover:text-white hover:bg-white/15'
-                    }`}
-                  >
-                    <Sparkles className={`w-3.5 h-3.5 ${activeModeTab === 'all' ? 'text-[#4A7C59]' : 'text-amber-300'}`} />
-                    <span>ทั้งหมด</span>
-                  </button>
+              {/* Prev / Next Carousel Navigation Arrows */}
+              <button
+                type="button"
+                onClick={goToPrevSlide}
+                className="absolute left-2 sm:left-4 top-1/3 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/30 hover:bg-black/60 text-white/90 hover:text-white backdrop-blur-md flex items-center justify-center transition-all cursor-pointer shadow-md active:scale-90 border border-white/20"
+                aria-label="สไลด์ก่อนหน้า"
+              >
+                <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
 
-                  {/* Tab 2: Spots */}
-                  <button
-                    type="button"
-                    onClick={() => handleTabClick('spots')}
-                    className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                      activeModeTab === 'spots'
-                        ? 'bg-[#EBF3ED] text-[#2D5A3C] shadow-md font-black'
-                        : 'text-white/80 hover:text-white hover:bg-white/15'
-                    }`}
-                  >
-                    <Compass className={`w-3.5 h-3.5 ${activeModeTab === 'spots' ? 'text-[#4A7C59]' : 'text-emerald-300'}`} />
-                    <span>พิกัดเที่ยว & จุดฮีลใจ</span>
-                  </button>
+              <button
+                type="button"
+                onClick={goToNextSlide}
+                className="absolute right-2 sm:right-4 top-1/3 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/30 hover:bg-black/60 text-white/90 hover:text-white backdrop-blur-md flex items-center justify-center transition-all cursor-pointer shadow-md active:scale-90 border border-white/20"
+                aria-label="สไลด์ถัดไป"
+              >
+                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
 
-                  {/* Tab 3: Community */}
-                  <button
-                    type="button"
-                    onClick={() => handleTabClick('community')}
-                    className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                      activeModeTab === 'community'
-                        ? 'bg-orange-50 text-orange-950 shadow-md font-black'
-                        : 'text-white/80 hover:text-white hover:bg-white/15'
-                    }`}
-                  >
-                    <Users className={`w-3.5 h-3.5 ${activeModeTab === 'community' ? 'text-[#F26430]' : 'text-orange-300'}`} />
-                    <span>กิจกรรมคอมมูนิตี้</span>
-                  </button>
+              {/* Centerpiece Content */}
+              <div className="relative z-10 text-center space-y-2 sm:space-y-3 max-w-3xl mx-auto w-full">
+                {/* Headline (Crisp Bold White with Bright Accent) */}
+                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight [text-shadow:_0_2px_14px_rgba(0,0,0,0.85),_0_1px_3px_rgba(0,0,0,0.9)]">
+                  {displayTitleLead}{' '}
+                  <span className="text-[#FFD166] inline-block transition-all duration-300">
+                    {displayTitleHighlight}
+                  </span>
+                </h1>
 
-                  {/* Tab 4: Fairs */}
-                  <button
-                    type="button"
-                    onClick={() => handleTabClick('fairs')}
-                    className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                      activeModeTab === 'fairs'
-                        ? 'bg-sky-50 text-blue-950 shadow-md font-black'
-                        : 'text-white/80 hover:text-white hover:bg-white/15'
-                    }`}
-                  >
-                    <Building2 className={`w-3.5 h-3.5 ${activeModeTab === 'fairs' ? 'text-[#2B527A]' : 'text-sky-300'}`} />
-                    <span>งานมหกรรม & เอ็กซ์โป</span>
-                  </button>
+                {/* Subtitle */}
+                <p className="text-xs sm:text-sm md:text-base text-white font-medium max-w-xl mx-auto [text-shadow:_0_1px_8px_rgba(0,0,0,0.85)]">
+                  {displaySubtitle}
+                </p>
+
+                {/* Micro Trust Bar (Luxury Frosted Glass Capsules) */}
+                <div className="flex items-center justify-center gap-2 sm:gap-3 flex-wrap pt-1 text-[11px] sm:text-xs font-bold text-white">
+                  <span className="inline-flex items-center gap-1.5 bg-black/35 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 shadow-xs">
+                    <span className="text-emerald-400 font-extrabold">✓</span>
+                    <span>คัดสรรคุณภาพ 77 จังหวัด</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 bg-black/35 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 shadow-xs">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>คอมมูนิตี้ปลอดภัย ยืนยันตัวตน</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 bg-black/35 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 shadow-xs">
+                    <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 shrink-0" />
+                    <span>สิทธิพิเศษ & รางวัลไลฟ์สไตล์</span>
+                  </span>
                 </div>
               </div>
 
-              {/* The Hero Search Capsule (Primary Focal Point) */}
-              <div className="relative w-full max-w-2xl sm:max-w-3xl mx-auto z-30">
-                <div className="relative flex flex-col sm:flex-row items-stretch bg-white rounded-2xl sm:rounded-full p-1.5 sm:p-2 shadow-2xl shadow-black/40 border-2 border-white/95 focus-within:border-[#4A7C59] focus-within:ring-4 focus-within:ring-[#4A7C59]/20 transition-all divide-y sm:divide-y-0 sm:divide-x divide-slate-100 text-left">
-                  {/* Keyword */}
-                  <div className="flex items-center gap-2.5 px-3.5 py-1.5 sm:py-2 flex-1 min-w-0">
+              {/* Dots Indicator */}
+              <div className="absolute top-4 right-4 sm:top-5 sm:right-6 z-20 flex items-center gap-1.5">
+                {HERO_SLIDES.map((slide, idx) => (
+                  <button
+                    key={`dot-${slide.id}`}
+                    type="button"
+                    onClick={() => setCurrentSlideIndex(idx)}
+                    className={`transition-all duration-300 rounded-full cursor-pointer ${
+                      currentSlideIndex === idx
+                        ? 'w-6 h-1.5 bg-white shadow-sm'
+                        : 'w-1.5 h-1.5 bg-white/40 hover:bg-white/80'
+                    }`}
+                    aria-label={`ไปที่สไลด์ ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* 2. Floating All-in-One Lifestyle Search Console (Trip.com Luxury Booking Portal Style) */}
+            <div className="relative -mt-20 sm:-mt-24 md:-mt-28 z-50 max-w-5xl mx-auto w-full px-2 sm:px-4">
+              <div className="relative z-50 bg-white rounded-3xl p-4 sm:p-6 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.18),0_4px_16px_rgba(15,23,42,0.04)] border border-slate-200/90 space-y-4">
+                
+                {/* Trip.com Signature Navigation Tabs: Icon Above Label with Active Underline Bar */}
+                <div className="flex items-center justify-between border-b border-slate-200/90 pb-3 sm:pb-3.5 px-1 sm:px-2 overflow-x-auto no-scrollbar gap-4 sm:gap-8">
+                  <div className="flex items-center gap-4 sm:gap-8 overflow-x-auto no-scrollbar">
+                    {/* Tab 1: ทั้งหมด */}
+                    <button
+                      type="button"
+                      onClick={() => handleTabClick('all')}
+                      className="flex flex-col items-center gap-1.5 pb-1 relative group cursor-pointer transition-all shrink-0"
+                    >
+                      <Sparkles className={`w-5 h-5 sm:w-6 sm:h-6 transition-colors ${
+                        activeModeTab === 'all' ? 'text-[#2563EB]' : 'text-slate-400 group-hover:text-slate-600'
+                      }`} />
+                      <span className={`text-xs sm:text-sm whitespace-nowrap transition-colors ${
+                        activeModeTab === 'all' ? 'font-black text-[#2563EB]' : 'font-semibold text-slate-500 group-hover:text-slate-800'
+                      }`}>
+                        ทั้งหมด
+                      </span>
+                      {activeModeTab === 'all' && (
+                        <span className="absolute -bottom-3 sm:-bottom-3.5 left-0 right-0 h-[3px] bg-[#2563EB] rounded-full" />
+                      )}
+                    </button>
+
+                    {/* Tab 2: พิกัดเที่ยว & จุดฮีลใจ */}
+                    <button
+                      type="button"
+                      onClick={() => handleTabClick('spots')}
+                      className="flex flex-col items-center gap-1.5 pb-1 relative group cursor-pointer transition-all shrink-0"
+                    >
+                      <Compass className={`w-5 h-5 sm:w-6 sm:h-6 transition-colors ${
+                        activeModeTab === 'spots' ? 'text-[#2D5A3C]' : 'text-slate-400 group-hover:text-slate-600'
+                      }`} />
+                      <span className={`text-xs sm:text-sm whitespace-nowrap transition-colors ${
+                        activeModeTab === 'spots' ? 'font-black text-[#2D5A3C]' : 'font-semibold text-slate-500 group-hover:text-slate-800'
+                      }`}>
+                        พิกัดเที่ยว & จุดฮีลใจ
+                      </span>
+                      {activeModeTab === 'spots' && (
+                        <span className="absolute -bottom-3 sm:-bottom-3.5 left-0 right-0 h-[3px] bg-[#2D5A3C] rounded-full" />
+                      )}
+                    </button>
+
+                    {/* Tab 3: กิจกรรมคอมมูนิตี้ */}
+                    <button
+                      type="button"
+                      onClick={() => handleTabClick('community')}
+                      className="flex flex-col items-center gap-1.5 pb-1 relative group cursor-pointer transition-all shrink-0"
+                    >
+                      <Users className={`w-5 h-5 sm:w-6 sm:h-6 transition-colors ${
+                        activeModeTab === 'community' ? 'text-[#F26430]' : 'text-slate-400 group-hover:text-slate-600'
+                      }`} />
+                      <span className={`text-xs sm:text-sm whitespace-nowrap transition-colors ${
+                        activeModeTab === 'community' ? 'font-black text-[#F26430]' : 'font-semibold text-slate-500 group-hover:text-slate-800'
+                      }`}>
+                        กิจกรรมคอมมูนิตี้
+                      </span>
+                      {activeModeTab === 'community' && (
+                        <span className="absolute -bottom-3 sm:-bottom-3.5 left-0 right-0 h-[3px] bg-[#F26430] rounded-full" />
+                      )}
+                    </button>
+
+                    {/* Tab 4: งานมหกรรม & เอ็กซ์โป */}
+                    <button
+                      type="button"
+                      onClick={() => handleTabClick('fairs')}
+                      className="flex flex-col items-center gap-1.5 pb-1 relative group cursor-pointer transition-all shrink-0"
+                    >
+                      <Building2 className={`w-5 h-5 sm:w-6 sm:h-6 transition-colors ${
+                        activeModeTab === 'fairs' ? 'text-[#2B527A]' : 'text-slate-400 group-hover:text-slate-600'
+                      }`} />
+                      <span className={`text-xs sm:text-sm whitespace-nowrap transition-colors ${
+                        activeModeTab === 'fairs' ? 'font-black text-[#2B527A]' : 'font-semibold text-slate-500 group-hover:text-slate-800'
+                      }`}>
+                        งานมหกรรม & เอ็กซ์โป
+                      </span>
+                      {activeModeTab === 'fairs' && (
+                        <span className="absolute -bottom-3 sm:-bottom-3.5 left-0 right-0 h-[3px] bg-[#2B527A] rounded-full" />
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Right Tab: สุ่มให้ฉันที */}
+                  {onOpenSurpriseModal && (
+                    <button
+                      type="button"
+                      onClick={() => onOpenSurpriseModal(activeModeTab === 'all' && currentSlideIndex === 3 ? 'all' : activeModeTab)}
+                      className="flex flex-col items-center gap-1.5 pb-1 relative group cursor-pointer transition-all shrink-0 text-amber-700 hover:text-amber-800"
+                    >
+                      <Dices className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600 group-hover:rotate-180 transition-transform duration-500" />
+                      <span className="text-xs sm:text-sm font-bold whitespace-nowrap">
+                        สุ่มให้ฉันที
+                      </span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Console Search Inputs (Trip.com Integrated Row Layout) */}
+                <div className="relative flex flex-col md:flex-row items-stretch bg-white border border-slate-200/90 hover:border-slate-300 rounded-2xl p-1.5 transition-all focus-within:ring-4 focus-within:ring-[#2563EB]/10 focus-within:border-[#2563EB] divide-y md:divide-y-0 md:divide-x divide-slate-200 shadow-2xs">
+                  
+                  {/* Column 1: Keyword Input */}
+                  <div className="flex items-center gap-3 px-3.5 sm:px-4 py-2 flex-1 min-w-0">
                     <Search className="w-4 h-4 text-slate-400 shrink-0" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onFocus={() => setIsFocused(true)}
-                      onBlur={() => setTimeout(() => setIsFocused(false), 250)}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder={getSearchPlaceholder()}
-                      className="w-full bg-transparent text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none font-medium"
-                    />
+                    <div className="flex-1 min-w-0 text-left">
+                      <label className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider leading-none mb-1">
+                        ค้นหาอะไรดี?
+                      </label>
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onFocus={() => setIsFocused(true)}
+                        onBlur={() => setTimeout(() => setIsFocused(false), 250)}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder={getSearchPlaceholder()}
+                        className="w-full bg-transparent text-xs sm:text-sm font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-normal focus:outline-none truncate"
+                      />
+                    </div>
                     {searchQuery && (
                       <button
                         type="button"
@@ -749,73 +1014,495 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     )}
                   </div>
 
-                  {/* Province */}
-                  <div className="flex items-center gap-2 px-3 py-1.5 sm:py-2 sm:w-[190px] shrink-0">
+                  {/* Column 2: Province / Area */}
+                  <div className="flex items-center gap-3 px-3.5 sm:px-4 py-2 md:w-[220px] shrink-0 text-left">
                     <MapPin className="w-4 h-4 text-[#4A7C59] shrink-0" />
-                    <select
-                      value={selectedProvince}
-                      onChange={(e) => handleProvinceChange(e.target.value)}
-                      className="w-full bg-transparent text-xs sm:text-sm font-semibold text-slate-700 focus:outline-none cursor-pointer truncate appearance-none"
-                    >
-                      <option value="all">ทุกจังหวัด (ทั่วไทย)</option>
-                      <option value="ออนไลน์">ออนไลน์ (ไม่จำกัดสถานที่)</option>
-                      <optgroup label="ยอดนิยม">
-                        <option value="กรุงเทพฯ">กรุงเทพมหานคร</option>
-                        <option value="นนทบุรี">นนทบุรี</option>
-                        <option value="เชียงใหม่">เชียงใหม่</option>
-                        <option value="ชลบุรี">ชลบุรี</option>
-                        <option value="ภูเก็ต">ภูเก็ต</option>
-                        <option value="นครราชสีมา">นครราชสีมา</option>
-                        <option value="น่าน">น่าน</option>
-                        <option value="ประจวบคีรีขันธ์">ประจวบคีรีขันธ์</option>
-                        <option value="ขอนแก่น">ขอนแก่น</option>
-                      </optgroup>
-                      <optgroup label="ทั้งหมด 77 จังหวัด">
-                        {ALL_THAI_PROVINCES.map((prov) => (
-                          <option key={prov} value={prov}>{prov}</option>
-                        ))}
-                      </optgroup>
-                    </select>
+                    <div className="flex-1 min-w-0">
+                      <label className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider leading-none mb-1">
+                        จุดหมาย / จังหวัด
+                      </label>
+                      <select
+                        value={selectedProvince}
+                        onChange={(e) => handleProvinceChange(e.target.value)}
+                        className="w-full bg-transparent text-xs sm:text-sm font-bold text-slate-900 focus:outline-none cursor-pointer truncate appearance-none"
+                      >
+                        <option value="all">ทุกจังหวัด (ทั่วไทย)</option>
+                        <option value="ออนไลน์">ออนไลน์ (ไม่จำกัดสถานที่)</option>
+                        <optgroup label="ยอดนิยม">
+                          <option value="กรุงเทพฯ">กรุงเทพมหานคร</option>
+                          <option value="นนทบุรี">นนทบุรี</option>
+                          <option value="เชียงใหม่">เชียงใหม่</option>
+                          <option value="ชลบุรี">ชลบุรี</option>
+                          <option value="ภูเก็ต">ภูเก็ต</option>
+                          <option value="ประจวบคีรีขันธ์">ประจวบคีรีขันธ์</option>
+                          <option value="ขอนแก่น">ขอนแก่น</option>
+                        </optgroup>
+                        <optgroup label="ทั้งหมด 77 จังหวัด">
+                          {ALL_THAI_PROVINCES.map((prov) => (
+                            <option key={prov} value={prov}>{prov}</option>
+                          ))}
+                        </optgroup>
+                      </select>
+                    </div>
                   </div>
 
-                  {/* Search Button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsFocused(false);
-                      if (onSearchSubmit) onSearchSubmit();
-                    }}
-                    className="bg-[#4A7C59] hover:bg-[#3D6649] text-white px-5 sm:px-6 py-2 sm:py-2 rounded-xl sm:rounded-full font-black text-xs sm:text-sm transition-all shadow-md shadow-[#4A7C59]/30 flex items-center justify-center gap-1.5 shrink-0 active:scale-95 cursor-pointer"
-                  >
-                    <Search className="w-3.5 h-3.5" />
-                    <span>ค้นหา</span>
-                  </button>
+                  {/* Column 3: Time Filter (with Trip.com-style Micro Chip Badge) */}
+                  <div className="flex items-center gap-3 px-3.5 sm:px-4 py-2 md:w-[210px] shrink-0 text-left">
+                    <Calendar className="w-4 h-4 text-[#2B527A] shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <label className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider leading-none mb-1">
+                        ช่วงเวลา
+                      </label>
+                      {timeFilter === 'custom' && startDate ? (
+                        <div className="flex items-center justify-between gap-1">
+                          <button
+                            type="button"
+                            onClick={onOpenDatePicker}
+                            className="text-xs sm:text-sm font-bold text-[#2B527A] truncate hover:underline text-left cursor-pointer"
+                            title="คลิกเพื่อเปลี่ยนวันที่"
+                          >
+                            {formatDateDisplay(startDate, endDate)}
+                          </button>
+                          {onClearCustomDate && (
+                            <button
+                              type="button"
+                              onClick={onClearCustomDate}
+                              className="p-0.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 cursor-pointer shrink-0"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between gap-1">
+                          <select
+                            value={activeTime}
+                            onChange={(e) => {
+                              if (e.target.value === 'custom') {
+                                if (onOpenDatePicker) onOpenDatePicker();
+                              } else {
+                                handleTimeChange(e.target.value);
+                                if (onClearCustomDate) onClearCustomDate();
+                              }
+                            }}
+                            className="w-full bg-transparent text-xs sm:text-sm font-bold text-slate-900 focus:outline-none cursor-pointer truncate appearance-none"
+                          >
+                            <option value="all">ทุกช่วงเวลา</option>
+                            <option value="today">วันนี้</option>
+                            <option value="tomorrow">พรุ่งนี้</option>
+                            <option value="weekend">สุดสัปดาห์นี้</option>
+                            <option value="next_month">เดือนนี้</option>
+                            <option value="custom">ระบุวันที่เอง...</option>
+                          </select>
+                          {activeTime === 'weekend' && (
+                            <span className="text-[9.5px] font-black text-[#2B527A] bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 shrink-0">
+                              ส.-อา.
+                            </span>
+                          )}
+                          {activeTime === 'today' && (
+                            <span className="text-[9.5px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 shrink-0">
+                              วันนี้
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Column 4: Primary Action Search Button */}
+                  <div className="p-1 shrink-0 flex items-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsFocused(false);
+                        if (onSearchSubmit) onSearchSubmit();
+                      }}
+                      className="w-full md:w-auto bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-7 sm:px-8 py-2.5 sm:py-3 rounded-xl font-extrabold text-xs sm:text-sm transition-all shadow-sm flex items-center justify-center gap-2 shrink-0 active:scale-95 cursor-pointer"
+                    >
+                      <Search className="w-4 h-4" />
+                      <span>ค้นหา</span>
+                    </button>
+                  </div>
+
                 </div>
 
-                {/* Suggestions Dropdown */}
+                {/* Suggestions Dropdown (Positioned cleanly relative to console) */}
                 {renderSearchSuggestions()}
-              </div>
 
-              {/* Surprise Me / Quick Explorer Pill */}
-              {onOpenSurpriseModal && (
-                <div className="pt-0.5 flex items-center justify-center">
+              </div>
+            </div>
+
+            {/* 3. New User Exclusive & Privilege Ticket Strip (Compact & Refined Luxury Ticket Bar) */}
+            <div className="mt-5 sm:mt-7 w-full space-y-3">
+              
+              {/* Section Header */}
+              <div className="flex items-end justify-between gap-3 px-1 flex-wrap">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                      Member Privileges
+                    </h2>
+                    <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100/80">
+                      Curated Perks
+                    </span>
+                  </div>
+                  <p className="text-[11px] sm:text-xs font-medium text-slate-500">
+                    สิทธิประโยชน์คัดสรรและของรางวัลไลฟ์สไตล์ เพื่อการเริ่มต้นออกสำรวจอย่างคุ้มค่า
+                  </p>
+                </div>
+                
+                {/* Tab Switcher (Compact Segmented Control) */}
+                <div className="inline-flex items-center p-0.5 rounded-xl bg-slate-100/90 border border-slate-200/80 text-xs shadow-2xs">
                   <button
                     type="button"
-                    onClick={() => onOpenSurpriseModal(activeModeTab)}
-                    className="text-[11px] sm:text-xs font-bold px-4 py-1.5 rounded-full bg-white/95 hover:bg-white text-slate-800 hover:text-[#F26430] border border-white/80 shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 group"
+                    onClick={() => setShowcaseTab('vouchers')}
+                    className={`px-3 py-1 rounded-lg font-extrabold text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
+                      showcaseTab === 'vouchers'
+                        ? 'bg-white text-slate-900 shadow-xs'
+                        : 'text-slate-500 hover:text-slate-900'
+                    }`}
                   >
-                    <Dices className="w-3.5 h-3.5 text-[#F26430] group-hover:rotate-180 transition-transform duration-500" />
-                    <span>
-                      คิดไม่ออก?{' '}
-                      <span className="text-[#F26430] underline underline-offset-2">
-                        {activeModeTab === 'spots' && 'สุ่มพิกัดเที่ยวให้ฉัน'}
-                        {activeModeTab === 'community' && 'สุ่มตี้กิจกรรมให้ฉัน'}
-                        {activeModeTab === 'fairs' && 'สุ่มงานแฟร์ให้ฉัน'}
-                        {activeModeTab === 'all' && 'สุ่มกิจกรรมให้ฉัน'}
-                      </span>
-                      {' '}✨
-                    </span>
+                    <Gift className="w-3 h-3 text-blue-600" />
+                    <span>สิทธิ์ต้อนรับ</span>
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowcaseTab('rewards')}
+                    className={`px-3 py-1 rounded-lg font-extrabold text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
+                      showcaseTab === 'rewards'
+                        ? 'bg-white text-purple-900 shadow-xs'
+                        : 'text-slate-500 hover:text-purple-900'
+                    }`}
+                  >
+                    <Sparkles className="w-3 h-3 text-purple-600" />
+                    <span>ใช้ XP แลก</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* TAB 1: New User Exclusive Real Perforated Ticket Vouchers */}
+              {showcaseTab === 'vouchers' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5 animate-fade-in">
+                  
+                  {/* Card 1: Trip.com Promo Callout Banner Card (Compact) */}
+                  <div className="relative rounded-xl bg-gradient-to-br from-blue-50/90 via-sky-50/40 to-indigo-50/70 border border-blue-100/90 p-2.5 sm:p-3 flex flex-col justify-between shadow-2xs group hover:border-blue-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 min-h-[92px] sm:min-h-[98px]">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-0.5 min-w-0">
+                        <span className="text-[9px] font-black text-blue-700 uppercase tracking-wider block leading-none">
+                          Welcome Privilege
+                        </span>
+                        <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 leading-snug truncate">
+                          สิทธิ์สมาชิกใหม่ รับส่วนลด & +100 XP
+                        </h3>
+                        <p className="text-[10px] text-slate-500 truncate mt-0.5">
+                          สร้างโปรไฟล์ครั้งแรก เพื่อปลดล็อกสิทธิ์ทุกพิกัด
+                        </p>
+                      </div>
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white text-blue-600 shadow-xs flex items-center justify-center shrink-0 border border-blue-100 group-hover:scale-105 transition-transform">
+                        <Gift className="w-4 h-4 text-blue-600" />
+                      </div>
+                    </div>
+
+                    <div className="pt-1.5">
+                      <Link
+                        href={isLoggedIn ? '/rewards' : '/onboarding'}
+                        className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer gap-1 leading-none"
+                      >
+                        <span>{isLoggedIn ? 'ดูสิทธิ์ของคุณ' : 'เข้าสู่ระบบเพื่อรับสิทธิ์'}</span>
+                        <ArrowRight className="w-2.5 h-2.5" />
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* Card 2: 10% off Specialty Coffee (Compact Perforated Ticket) */}
+                  <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[92px] sm:min-h-[98px]">
+                    <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
+                            ลด 10%
+                          </span>
+                          <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded leading-none">
+                            เครื่องดื่ม
+                          </span>
+                        </div>
+                        <p className="text-[11px] font-medium text-slate-600 truncate mt-0.5">
+                          Specialty Coffee 77 จังหวัด
+                        </p>
+                      </div>
+
+                      <div className="pt-1.5">
+                        <Link
+                          href="/rewards"
+                          className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
+                        >
+                          เก็บสิทธิ์
+                        </Link>
+                      </div>
+                    </div>
+
+                    {/* Perforated Vertical Divider with Scallop Notches */}
+                    <div className="relative flex flex-col justify-between items-center w-0 shrink-0">
+                      <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_-1px_2px_rgba(0,0,0,0.04)]" />
+                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]" />
+                    </div>
+
+                    {/* Right Stub: Amber Category Icon */}
+                    <div className="w-14 sm:w-16 shrink-0 flex flex-col items-center justify-center p-2 bg-amber-50/70 rounded-r-xl border-l border-dashed border-slate-200">
+                      <Coffee className="w-4 h-4 sm:w-5 sm:h-5 text-amber-700 group-hover:scale-105 transition-transform" />
+                      <span className="text-[9.5px] font-bold text-amber-800 mt-1 text-center truncate">
+                        คาเฟ่
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Card 3: Free Community Meetup Pass (Compact Perforated Ticket) */}
+                  <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[92px] sm:min-h-[98px]">
+                    <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
+                            จอยตี้ฟรี
+                          </span>
+                          <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded leading-none">
+                            ตี้แรก
+                          </span>
+                        </div>
+                        <p className="text-[11px] font-medium text-slate-600 truncate mt-0.5">
+                          คอมมูนิตี้ & เพื่อนใหม่
+                        </p>
+                      </div>
+
+                      <div className="pt-1.5">
+                        <Link
+                          href="/community"
+                          className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
+                        >
+                          เก็บสิทธิ์
+                        </Link>
+                      </div>
+                    </div>
+
+                    {/* Perforated Vertical Divider with Scallop Notches */}
+                    <div className="relative flex flex-col justify-between items-center w-0 shrink-0">
+                      <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_-1px_2px_rgba(0,0,0,0.04)]" />
+                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]" />
+                    </div>
+
+                    {/* Right Stub: Orange Category Icon */}
+                    <div className="w-14 sm:w-16 shrink-0 flex flex-col items-center justify-center p-2 bg-orange-50/70 rounded-r-xl border-l border-dashed border-slate-200">
+                      <Ticket className="w-4 h-4 sm:w-5 sm:h-5 text-orange-700 group-hover:scale-105 transition-transform" />
+                      <span className="text-[9.5px] font-bold text-orange-800 mt-1 text-center truncate">
+                        มีตอัป
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Card 4: 15% off Craft Workshop (Compact Perforated Ticket) */}
+                  <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[92px] sm:min-h-[98px]">
+                    <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
+                            ลด 15%
+                          </span>
+                          <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded leading-none">
+                            เวิร์กช็อป
+                          </span>
+                        </div>
+                        <p className="text-[11px] font-medium text-slate-600 truncate mt-0.5">
+                          คราฟต์ & ศิลปะเซรามิก
+                        </p>
+                      </div>
+
+                      <div className="pt-1.5">
+                        <Link
+                          href="/rewards"
+                          className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
+                        >
+                          เก็บสิทธิ์
+                        </Link>
+                      </div>
+                    </div>
+
+                    {/* Perforated Vertical Divider with Scallop Notches */}
+                    <div className="relative flex flex-col justify-between items-center w-0 shrink-0">
+                      <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_-1px_2px_rgba(0,0,0,0.04)]" />
+                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]" />
+                    </div>
+
+                    {/* Right Stub: Emerald Category Icon */}
+                    <div className="w-14 sm:w-16 shrink-0 flex flex-col items-center justify-center p-2 bg-emerald-50/70 rounded-r-xl border-l border-dashed border-slate-200">
+                      <Palette className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-700 group-hover:scale-105 transition-transform" />
+                      <span className="text-[9.5px] font-bold text-emerald-800 mt-1 text-center truncate">
+                        เวิร์กช็อป
+                      </span>
+                    </div>
+                  </div>
+
+                </div>
+              )}
+
+              {/* TAB 2: XP Store Rewards Real Perforated Ticket Vouchers */}
+              {showcaseTab === 'rewards' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5 animate-fade-in">
+                  
+                  {/* Card 1: XP Store Callout Banner Card (Compact) */}
+                  <div className="relative rounded-xl bg-gradient-to-br from-purple-50/90 via-indigo-50/40 to-purple-100/70 border border-purple-100/90 p-2.5 sm:p-3 flex flex-col justify-between shadow-2xs group hover:border-purple-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 min-h-[92px] sm:min-h-[98px]">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-0.5 min-w-0">
+                        <span className="text-[9px] font-black text-purple-700 uppercase tracking-wider block leading-none">
+                          XP Rewards Hub
+                        </span>
+                        <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 leading-snug truncate">
+                          รวม 24 ของรางวัลไลฟ์สไตล์
+                        </h3>
+                        <p className="text-[10px] text-slate-500 truncate mt-0.5">
+                          สะสมแต้ม XP จากชาเลนจ์มาแลกรับสิทธิ์
+                        </p>
+                      </div>
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white text-purple-600 shadow-xs flex items-center justify-center shrink-0 border border-purple-100 group-hover:scale-105 transition-transform">
+                        <Sparkles className="w-4 h-4 text-purple-600" />
+                      </div>
+                    </div>
+
+                    <div className="pt-1.5">
+                      <Link
+                        href="/rewards"
+                        className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-purple-700 hover:bg-purple-800 text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer gap-1 leading-none"
+                      >
+                        <span>ดูของรางวัลทั้งหมด</span>
+                        <ArrowRight className="w-2.5 h-2.5" />
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* Card 2: ฿50 Specialty Coffee (150 XP - Compact) */}
+                  <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[92px] sm:min-h-[98px]">
+                    <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
+                            ลด ฿50
+                          </span>
+                          <span className="text-[10px] font-extrabold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded leading-none border border-purple-100">
+                            150 XP
+                          </span>
+                        </div>
+                        <p className="text-[11px] font-medium text-slate-600 truncate mt-0.5">
+                          Specialty Coffee อารีย์ & สุขุมวิท
+                        </p>
+                      </div>
+
+                      <div className="pt-1.5">
+                        <Link
+                          href="/rewards"
+                          className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-purple-700 text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
+                        >
+                          ใช้ XP แลก
+                        </Link>
+                      </div>
+                    </div>
+
+                    {/* Perforated Vertical Divider with Scallop Notches */}
+                    <div className="relative flex flex-col justify-between items-center w-0 shrink-0">
+                      <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_-1px_2px_rgba(0,0,0,0.04)]" />
+                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]" />
+                    </div>
+
+                    {/* Right Stub: Amber Category Icon */}
+                    <div className="w-14 sm:w-16 shrink-0 flex flex-col items-center justify-center p-2 bg-amber-50/70 rounded-r-xl border-l border-dashed border-slate-200">
+                      <Coffee className="w-4 h-4 sm:w-5 sm:h-5 text-amber-700 group-hover:scale-105 transition-transform" />
+                      <span className="text-[9.5px] font-bold text-amber-800 mt-1 text-center truncate">
+                        กาแฟ
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Card 3: Free Board Game Day Pass (250 XP - Compact) */}
+                  <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[92px] sm:min-h-[98px]">
+                    <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
+                            เล่นฟรี 1 วัน
+                          </span>
+                          <span className="text-[10px] font-extrabold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded leading-none border border-purple-100">
+                            250 XP
+                          </span>
+                        </div>
+                        <p className="text-[11px] font-medium text-slate-600 truncate mt-0.5">
+                          Siam Board Game Lounge
+                        </p>
+                      </div>
+
+                      <div className="pt-1.5">
+                        <Link
+                          href="/rewards"
+                          className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-purple-700 text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
+                        >
+                          ใช้ XP แลก
+                        </Link>
+                      </div>
+                    </div>
+
+                    {/* Perforated Vertical Divider with Scallop Notches */}
+                    <div className="relative flex flex-col justify-between items-center w-0 shrink-0">
+                      <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_-1px_2px_rgba(0,0,0,0.04)]" />
+                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]" />
+                    </div>
+
+                    {/* Right Stub: Purple Category Icon */}
+                    <div className="w-14 sm:w-16 shrink-0 flex flex-col items-center justify-center p-2 bg-purple-50/70 rounded-r-xl border-l border-dashed border-slate-200">
+                      <Dices className="w-4 h-4 sm:w-5 sm:h-5 text-purple-700 group-hover:scale-105 transition-transform" />
+                      <span className="text-[9.5px] font-bold text-purple-800 mt-1 text-center truncate">
+                        บอร์ดเกม
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Card 4: 15% off Craft Workshop (350 XP - Compact) */}
+                  <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[92px] sm:min-h-[98px]">
+                    <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
+                            ลด 15%
+                          </span>
+                          <span className="text-[10px] font-extrabold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded leading-none border border-purple-100">
+                            350 XP
+                          </span>
+                        </div>
+                        <p className="text-[11px] font-medium text-slate-600 truncate mt-0.5">
+                          Clay & Craft Studio สุขุมวิท
+                        </p>
+                      </div>
+
+                      <div className="pt-1.5">
+                        <Link
+                          href="/rewards"
+                          className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-purple-700 text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
+                        >
+                          ใช้ XP แลก
+                        </Link>
+                      </div>
+                    </div>
+
+                    {/* Perforated Vertical Divider with Scallop Notches */}
+                    <div className="relative flex flex-col justify-between items-center w-0 shrink-0">
+                      <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_-1px_2px_rgba(0,0,0,0.04)]" />
+                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]" />
+                    </div>
+
+                    {/* Right Stub: Emerald Category Icon */}
+                    <div className="w-14 sm:w-16 shrink-0 flex flex-col items-center justify-center p-2 bg-emerald-50/70 rounded-r-xl border-l border-dashed border-slate-200">
+                      <Palette className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-700 group-hover:scale-105 transition-transform" />
+                      <span className="text-[9.5px] font-bold text-emerald-800 mt-1 text-center truncate">
+                        เวิร์กช็อป
+                      </span>
+                    </div>
+                  </div>
+
                 </div>
               )}
 
@@ -833,7 +1520,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             {/* Background */}
             <div className="absolute inset-0 z-0 pointer-events-none rounded-2xl sm:rounded-3xl overflow-hidden">
               <img
-                src="/hero-bg-lifestyle.jpg"
+                src={HERO_SLIDES[currentSlideIndex].imageUrl}
                 alt="Chill & Connect Bangkok Lifestyle Community"
                 className="w-full h-full object-cover object-center"
               />
