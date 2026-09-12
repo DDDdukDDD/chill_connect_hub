@@ -1,6 +1,6 @@
 {
   "version": "2.0.0",
-  "lastUpdated": "2026-09-12T04:27:05.174Z",
+  "lastUpdated": "2026-09-12T16:42:47.923Z",
   "autoPublish": true,
   "events": [
     {
@@ -29,11 +29,11 @@
       "status": "active",
       "isNew": true,
       "createdAtTimestamp": 1788278059344,
-      "externalUrl": "https://www.bitec.co.th/gallery",
-      "link": "https://www.bitec.co.th/gallery",
+      "externalUrl": "https://www.theconcert.com/concert/cat-expo-2026",
+      "link": "https://www.theconcert.com/concert/cat-expo-2026",
       "approvalStatus": "approved",
       "source": "The Concert",
-      "sourceUrl": "https://www.bitec.co.th/gallery",
+      "sourceUrl": "https://www.theconcert.com/concert/cat-expo-2026",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -544,11 +544,11 @@
       "status": "active",
       "isNew": true,
       "createdAtTimestamp": 1788278059358,
-      "externalUrl": "https://www.bitec.co.th/gallery",
-      "link": "https://www.bitec.co.th/gallery",
+      "externalUrl": "https://www.bitec.co.th/events/photo-fair-2026",
+      "link": "https://www.bitec.co.th/events/photo-fair-2026",
       "approvalStatus": "approved",
       "source": "BITEC Events",
-      "sourceUrl": "https://www.bitec.co.th/gallery",
+      "sourceUrl": "https://www.bitec.co.th/events/photo-fair-2026",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1637,11 +1637,11 @@
       "status": "active",
       "isNew": true,
       "createdAtTimestamp": 1788278059386,
-      "externalUrl": "https://www.bitec.co.th/gallery",
-      "link": "https://www.bitec.co.th/gallery",
+      "externalUrl": "https://www.bitec.co.th/events/bangkok-comic-con-2026",
+      "link": "https://www.bitec.co.th/events/bangkok-comic-con-2026",
       "approvalStatus": "approved",
       "source": "BITEC Events",
-      "sourceUrl": "https://www.bitec.co.th/gallery",
+      "sourceUrl": "https://www.bitec.co.th/events/bangkok-comic-con-2026",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1670,11 +1670,11 @@
       "status": "active",
       "isNew": true,
       "createdAtTimestamp": 1788278059387,
-      "externalUrl": "https://www.qsncc.com/en/whats-on/event-calendar",
-      "link": "https://www.qsncc.com/en/whats-on/event-calendar",
+      "externalUrl": "https://moneyexpo.net/bangkok-year-end-2026",
+      "link": "https://moneyexpo.net/bangkok-year-end-2026",
       "approvalStatus": "approved",
       "source": "Money Expo",
-      "sourceUrl": "https://www.qsncc.com/en/whats-on/event-calendar",
+      "sourceUrl": "https://moneyexpo.net/bangkok-year-end-2026",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1703,11 +1703,11 @@
       "status": "active",
       "isNew": true,
       "createdAtTimestamp": 1788278059388,
-      "externalUrl": "https://www.bitec.co.th/gallery",
-      "link": "https://www.bitec.co.th/gallery",
+      "externalUrl": "https://www.bitec.co.th/events/coffee-expo-2027",
+      "link": "https://www.bitec.co.th/events/coffee-expo-2027",
       "approvalStatus": "approved",
       "source": "BITEC Events",
-      "sourceUrl": "https://www.bitec.co.th/gallery",
+      "sourceUrl": "https://www.bitec.co.th/events/coffee-expo-2027",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1736,11 +1736,11 @@
       "status": "active",
       "isNew": true,
       "createdAtTimestamp": 1788278059390,
-      "externalUrl": "https://www.bitec.co.th/gallery",
-      "link": "https://www.bitec.co.th/gallery",
+      "externalUrl": "https://www.bitec.co.th/events/motor-sale-2027",
+      "link": "https://www.bitec.co.th/events/motor-sale-2027",
       "approvalStatus": "approved",
       "source": "BITEC Events",
-      "sourceUrl": "https://www.bitec.co.th/gallery",
+      "sourceUrl": "https://www.bitec.co.th/events/motor-sale-2027",
       "province": "กรุงเทพมหานคร"
     },
     {

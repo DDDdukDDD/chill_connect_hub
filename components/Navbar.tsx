@@ -68,9 +68,9 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const navItems = [
     { id: 'explore', label: 'ค้นพบ', href: '/', icon: Compass },
-    { id: 'challenges', label: 'ชาเลนจ์', href: '/challenges', icon: Zap },
     { id: 'moments', label: 'โมเมนต์', href: '/moments', icon: Camera },
-    { id: 'myhub', label: 'มายฮับ', href: '/myhub', icon: Ticket },
+    { id: 'challenges', label: 'ชาเลนจ์', href: '/challenges', icon: Zap },
+    { id: 'myhub', label: 'มาฮับ', href: '/myhub', icon: Ticket },
     { id: 'about', label: 'เกี่ยวกับเรา', href: '/about', icon: Info },
   ];
 
@@ -91,7 +91,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 Chill & Connect Hub
               </span>
               <p className="text-[10.5px] text-slate-500 font-medium tracking-normal leading-none mt-1.5">
-                Curated Lifestyle & Meaningful Connections
+                Curated Lifestyle & Meaningful Activities
               </p>
             </div>
           </Link>

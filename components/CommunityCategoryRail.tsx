@@ -83,7 +83,7 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
                 onClick={() => onSelectCategory(isSelected ? null : cat.id)}
                 className={`p-3.5 rounded-2xl border transition-all duration-200 text-left flex flex-col justify-between gap-2.5 cursor-pointer relative group ${
                   isSelected
-                    ? 'bg-emerald-50/90 border-[#4A7C59] ring-2 ring-[#4A7C59]/25 shadow-sm'
+                    ? 'bg-[#FFF4EE] border-[#F26430] ring-2 ring-[#F26430]/25 shadow-sm'
                     : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200/80 hover:border-slate-300 shadow-2xs hover:shadow-xs'
                 }`}
               >
@@ -91,7 +91,7 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
                   <div
                     className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
                       isSelected
-                        ? 'bg-[#4A7C59] text-white shadow-xs'
+                        ? 'bg-[#F26430] text-white shadow-xs'
                         : `${cat.colorScheme.iconBg} ${cat.colorScheme.iconColor}`
                     }`}
                   >
@@ -101,7 +101,7 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
                   {count > 0 && (
                     <span
                       className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        isSelected ? 'bg-emerald-200/70 text-[#2D5A3C]' : 'bg-slate-100 text-slate-600'
+                        isSelected ? 'bg-orange-200/70 text-[#D04A1B]' : 'bg-slate-100 text-slate-600'
                       }`}
                     >
                       {count}
@@ -111,12 +111,12 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
 
                 <div className="space-y-0.5 w-full">
                   <span className={`font-bold text-xs sm:text-sm truncate block leading-snug ${
-                    isSelected ? 'text-[#2D5A3C]' : 'text-slate-900'
+                    isSelected ? 'text-[#D04A1B]' : 'text-slate-900'
                   }`}>
                     {cat.name}
                   </span>
                   <p className={`text-[11px] font-medium truncate leading-normal ${
-                    isSelected ? 'text-[#4A7C59]' : 'text-slate-400'
+                    isSelected ? 'text-[#F26430]' : 'text-slate-400'
                   }`}>
                     {cat.nameEn}
                   </p>
@@ -178,25 +178,25 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
           onClick={() => onSelectCategory(null)}
           className={`shrink-0 2xl:flex-1 h-[82px] min-w-[105px] sm:min-w-[110px] 2xl:min-w-0 p-3 rounded-2xl border transition-all duration-200 flex flex-col justify-between cursor-pointer group select-none active:scale-98 ${
             selectedCategoryId === null
-              ? 'bg-[#EBF3ED] border-[#4A7C59] ring-2 ring-[#4A7C59]/25 shadow-xs'
+              ? 'bg-[#FFF4EE] border-[#F26430] ring-2 ring-[#F26430]/25 shadow-xs'
               : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200/80 hover:border-slate-300'
           }`}
         >
           <div className="flex items-center justify-between w-full">
             <div className={`w-7 h-7 rounded-xl flex items-center justify-center ${
-              selectedCategoryId === null ? 'bg-[#4A7C59] text-white shadow-xs' : 'bg-slate-100 text-slate-500'
+              selectedCategoryId === null ? 'bg-[#F26430] text-white shadow-xs' : 'bg-slate-100 text-slate-500'
             }`}>
               <Compass className="w-4 h-4" />
             </div>
           </div>
           <div className="text-left leading-tight">
             <span className={`block text-xs font-bold ${
-              selectedCategoryId === null ? 'text-[#2D5A3C]' : 'text-slate-900'
+              selectedCategoryId === null ? 'text-[#D04A1B]' : 'text-slate-900'
             }`}>
               ทั้งหมด
             </span>
             <span className={`block text-[10px] font-medium ${
-              selectedCategoryId === null ? 'text-[#4A7C59]' : 'text-slate-400'
+              selectedCategoryId === null ? 'text-[#F26430]' : 'text-slate-400'
             }`}>
               All Events
             </span>
@@ -216,7 +216,7 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
               onClick={() => onSelectCategory(isSelected ? null : cat.id)}
               className={`shrink-0 2xl:flex-1 h-[82px] min-w-[145px] sm:min-w-[155px] 2xl:min-w-0 p-3 rounded-2xl border transition-all duration-200 flex flex-col justify-between cursor-pointer group relative select-none active:scale-98 ${
                 isSelected
-                  ? 'bg-[#EBF3ED] border-[#4A7C59] ring-2 ring-[#4A7C59]/25 shadow-xs'
+                  ? 'bg-[#FFF4EE] border-[#F26430] ring-2 ring-[#F26430]/25 shadow-xs'
                   : 'bg-white hover:bg-slate-50/90 text-slate-800 border-slate-200/80 hover:border-slate-300 shadow-2xs'
               }`}
             >
@@ -224,7 +224,7 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
                 <div
                   className={`w-7 h-7 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105 ${
                     isSelected
-                      ? 'bg-[#4A7C59] text-white shadow-xs'
+                      ? 'bg-[#F26430] text-white shadow-xs'
                       : `${cat.colorScheme.iconBg} ${cat.colorScheme.iconColor}`
                   }`}
                 >
@@ -235,7 +235,7 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
                   {count > 0 && (
                     <span
                       className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                        isSelected ? 'bg-emerald-200/70 text-[#2D5A3C]' : 'bg-slate-100 text-slate-600'
+                        isSelected ? 'bg-orange-200/70 text-[#D04A1B]' : 'bg-slate-100 text-slate-600'
                       }`}
                     >
                       {count}
@@ -246,13 +246,13 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
 
               <div className="text-left w-full pr-1 space-y-0.5">
                 <span className={`block text-xs font-bold truncate leading-snug ${
-                  isSelected ? 'text-[#2D5A3C]' : 'text-slate-900'
+                  isSelected ? 'text-[#D04A1B]' : 'text-slate-900'
                 }`}>
                   {cat.name}
                 </span>
                 <span
                   className={`block text-[10px] font-medium truncate leading-normal ${
-                    isSelected ? 'text-[#4A7C59]' : 'text-slate-400'
+                    isSelected ? 'text-[#F26430]' : 'text-slate-400'
                   }`}
                 >
                   {cat.nameEn}

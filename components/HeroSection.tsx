@@ -23,6 +23,7 @@ import {
   Calendar,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
   Trophy,
   ShoppingBag,
   ExternalLink,
@@ -253,6 +254,16 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     }
   };
 
+  const handleScrollToWhySection = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (typeof window !== 'undefined') {
+      const el = document.getElementById('why-chill-and-connect');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  };
+
   const handleSwitchVersion = (newVersion: HeroVersion) => {
     setVersion(newVersion);
     if (onVersionChange) onVersionChange(newVersion);
@@ -317,6 +328,85 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     : activeModeTab === 'spots'
     ? 'รวมจุดพักใจ คาเฟ่ ชุมชนลับ และธรรมชาติ 77 จังหวัดทั่วไทย เที่ยวชิลล์ๆ ได้ด้วยตัวเอง'
     : currentSlide.subtitle;
+
+  // 3 Micro Trust Badges mapped dynamically to the active discovery tab
+  const heroTrustBadges = useMemo(() => {
+    switch (activeModeTab) {
+      case 'community':
+        return [
+          {
+            id: 'b1',
+            icon: <span className="text-emerald-400 font-extrabold">✓</span>,
+            text: 'รวมกิจกรรมสำหรับออกไปใช้ชีวิต',
+          },
+          {
+            id: 'b2',
+            icon: <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />,
+            text: 'คอมมูนิตี้ปลอดภัย',
+          },
+          {
+            id: 'b3',
+            icon: <Users className="w-3.5 h-3.5 text-amber-300 shrink-0" />,
+            text: 'พบเพื่อน มิตรภาพใหม่',
+          },
+        ];
+      case 'fairs':
+        return [
+          {
+            id: 'b1',
+            icon: <span className="text-emerald-400 font-extrabold">✓</span>,
+            text: 'รวมกิจกรรมสาธารณะ',
+          },
+          {
+            id: 'b2',
+            icon: <Calendar className="w-3.5 h-3.5 text-amber-300 shrink-0" />,
+            text: 'ตอบโจทย์ กิจกรรมวันหยุด',
+          },
+          {
+            id: 'b3',
+            icon: <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />,
+            text: 'คัดสรรค์ข้อมูลผ่านระบบ AI คุณภาพสูง',
+          },
+        ];
+      case 'spots':
+        return [
+          {
+            id: 'b1',
+            icon: <span className="text-emerald-400 font-extrabold">✓</span>,
+            text: 'คัดสรรพิกัดเที่ยวทั่วไทย',
+          },
+          {
+            id: 'b2',
+            icon: <Trees className="w-3.5 h-3.5 text-emerald-300 shrink-0" />,
+            text: 'ตอบโจทย์การพักผ่อน',
+          },
+          {
+            id: 'b3',
+            icon: <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />,
+            text: 'สถานที่ฮีลใจ ผ่อนคลาย',
+          },
+        ];
+      case 'all':
+      default:
+        return [
+          {
+            id: 'b1',
+            icon: <span className="text-emerald-400 font-extrabold">✓</span>,
+            text: 'คัดสรรกิจกรรมและสถานที่คุณภาพ',
+          },
+          {
+            id: 'b2',
+            icon: <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />,
+            text: 'คอมมูนิตี้ปลอดภัย',
+          },
+          {
+            id: 'b3',
+            icon: <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 shrink-0" />,
+            text: 'สิทธิพิเศษ & รางวัลไลฟ์สไตล์',
+          },
+        ];
+    }
+  }, [activeModeTab]);
 
   // =========================================================================
   // 🌟 Dynamic Discovery Pillars Taxonomy (Derived from Master Taxonomy Hub)
@@ -848,20 +938,17 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   {displaySubtitle}
                 </p>
 
-                {/* Micro Trust Bar (Luxury Frosted Glass Capsules) */}
-                <div className="flex items-center justify-center gap-2 sm:gap-3 flex-wrap pt-1 text-[11px] sm:text-xs font-bold text-white">
-                  <span className="inline-flex items-center gap-1.5 bg-black/35 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 shadow-xs">
-                    <span className="text-emerald-400 font-extrabold">✓</span>
-                    <span>คัดสรรคุณภาพ 77 จังหวัด</span>
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 bg-black/35 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 shadow-xs">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span>คอมมูนิตี้ปลอดภัย ยืนยันตัวตน</span>
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 bg-black/35 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 shadow-xs">
-                    <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 shrink-0" />
-                    <span>สิทธิพิเศษ & รางวัลไลฟ์สไตล์</span>
-                  </span>
+                {/* Micro Trust Bar (Luxury Frosted Glass Capsules - Dynamically synced with Active Tab) */}
+                <div className="flex items-center justify-center gap-2 sm:gap-3 flex-wrap pt-1 text-[11px] sm:text-xs font-bold text-white transition-all duration-300">
+                  {heroTrustBadges.map((badge) => (
+                    <span
+                      key={`${activeModeTab}-${badge.id}`}
+                      className="inline-flex items-center gap-1.5 bg-black/35 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 shadow-xs animate-fade-in"
+                    >
+                      {badge.icon}
+                      <span>{badge.text}</span>
+                    </span>
+                  ))}
                 </div>
               </div>
 
@@ -884,8 +971,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             </div>
 
             {/* 2. Floating All-in-One Lifestyle Search Console (Trip.com Luxury Booking Portal Style) */}
-            <div className="relative -mt-20 sm:-mt-24 md:-mt-28 z-50 w-[95%] sm:w-[92%] md:w-[90%] lg:w-full max-w-5xl xl:max-w-6xl 2xl:max-w-[1200px] mx-auto px-2 sm:px-4">
-              <div className="relative z-50 bg-white rounded-3xl p-4 sm:p-5 md:p-6 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.18),0_4px_16px_rgba(15,23,42,0.04)] border border-slate-200/90 space-y-4">
+            <div className="relative -mt-[92px] sm:-mt-[106px] md:-mt-[116px] lg:-mt-[120px] z-50 w-[95%] sm:w-[92%] md:w-[90%] lg:w-full max-w-5xl xl:max-w-6xl 2xl:max-w-[1200px] mx-auto px-2 sm:px-4">
+              <div className="relative z-50 bg-white rounded-3xl p-3.5 sm:p-4 md:p-5 pb-2.5 sm:pb-3 md:pb-3.5 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.18),0_4px_16px_rgba(15,23,42,0.04)] border border-slate-200/90 space-y-3 sm:space-y-3.5">
                 
                 {/* Trip.com Signature Navigation Tabs: Icon Above Label with Active Underline Bar */}
                 <div className="flex items-end justify-between border-b border-slate-200/90 px-1 sm:px-2 overflow-x-auto overflow-y-hidden no-scrollbar gap-4 sm:gap-8 select-none">
@@ -982,14 +1069,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   )}
                 </div>
 
-                {/* Console Search Inputs (Luxury Booking Portal Responsive Layout) */}
-                <div className="relative grid grid-cols-1 md:grid-cols-12 lg:flex lg:flex-row items-stretch bg-white border border-slate-200/90 hover:border-slate-300 rounded-2xl p-1.5 sm:p-2 transition-all focus-within:ring-4 focus-within:ring-[#2563EB]/10 focus-within:border-[#2563EB] divide-y md:divide-y-0 lg:divide-x divide-slate-200 shadow-2xs">
+                {/* Console Search Inputs (Luxury Booking Portal Responsive Layout - 20% Compact Height) */}
+                <div className="relative grid grid-cols-1 md:grid-cols-12 lg:flex lg:flex-row items-stretch bg-white border border-slate-200/90 hover:border-slate-300 rounded-2xl p-1 sm:p-1.5 transition-all focus-within:ring-4 focus-within:ring-[#2563EB]/10 focus-within:border-[#2563EB] divide-y md:divide-y-0 lg:divide-x divide-slate-200 shadow-2xs">
                   
                   {/* Column 1: Keyword Input (Full width on iPad md, flexible on lg desktop) */}
-                  <div className="flex items-center gap-3 px-3.5 sm:px-4 py-2.5 sm:py-3.5 md:col-span-12 lg:flex-1 lg:min-w-[280px] md:border-b md:border-slate-200 lg:border-b-0">
-                    <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 shrink-0" />
+                  <div className="flex items-center gap-2.5 sm:gap-3 px-3 sm:px-3.5 py-2 sm:py-2.5 md:col-span-12 lg:flex-1 lg:min-w-[280px] md:border-b md:border-slate-200 lg:border-b-0">
+                    <Search className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-slate-400 shrink-0" />
                     <div className="flex-1 min-w-0 text-left">
-                      <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 block uppercase tracking-wider leading-none mb-1">
+                      <label className="text-[9.5px] sm:text-[10px] font-bold text-slate-400 block uppercase tracking-wider leading-none mb-0.5">
                         ค้นหาอะไรดี?
                       </label>
                       <input
@@ -1000,7 +1087,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onKeyDown={handleKeyDown}
                         placeholder={getSearchPlaceholder()}
-                        className="w-full bg-transparent text-sm sm:text-base font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-normal focus:outline-none truncate"
+                        className="w-full bg-transparent text-sm sm:text-base font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-normal focus:outline-none truncate leading-normal"
                       />
                     </div>
                     {searchQuery && (
@@ -1015,16 +1102,16 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   </div>
 
                   {/* Column 2: Province / Area (5 cols on iPad md, reduced 10% on desktop) */}
-                  <div className="flex items-center gap-2.5 sm:gap-3 px-3 sm:px-3.5 py-2.5 sm:py-3.5 md:col-span-5 lg:w-[195px] xl:w-[225px] shrink-0 text-left md:border-r md:border-slate-200 lg:border-r-0">
-                    <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-[#4A7C59] shrink-0" />
+                  <div className="flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-2 sm:py-2.5 md:col-span-5 lg:w-[195px] xl:w-[225px] shrink-0 text-left md:border-r md:border-slate-200 lg:border-r-0">
+                    <MapPin className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-[#4A7C59] shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 block uppercase tracking-wider leading-none mb-1">
+                      <label className="text-[9.5px] sm:text-[10px] font-bold text-slate-400 block uppercase tracking-wider leading-none mb-0.5">
                         จุดหมาย / จังหวัด
                       </label>
                       <select
                         value={selectedProvince}
                         onChange={(e) => handleProvinceChange(e.target.value)}
-                        className="w-full bg-transparent text-xs sm:text-sm font-bold text-slate-900 focus:outline-none cursor-pointer truncate appearance-none"
+                        className="w-full bg-transparent text-xs sm:text-sm font-bold text-slate-900 focus:outline-none cursor-pointer truncate appearance-none leading-normal"
                       >
                         <option value="all">ทุกจังหวัด (ทั่วไทย)</option>
                         <option value="ออนไลน์">ออนไลน์ (ไม่จำกัดสถานที่)</option>
@@ -1047,10 +1134,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   </div>
 
                   {/* Column 3: Time Filter (4 cols on iPad md, reduced 10% on desktop) */}
-                  <div className="flex items-center gap-2.5 sm:gap-3 px-3 sm:px-3.5 py-2.5 sm:py-3.5 md:col-span-4 lg:w-[185px] xl:w-[205px] shrink-0 text-left md:border-r md:border-slate-200 lg:border-r-0">
-                    <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-[#2B527A] shrink-0" />
+                  <div className="flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-2 sm:py-2.5 md:col-span-4 lg:w-[185px] xl:w-[205px] shrink-0 text-left md:border-r md:border-slate-200 lg:border-r-0">
+                    <Calendar className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-[#2B527A] shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 block uppercase tracking-wider leading-none mb-1">
+                      <label className="text-[9.5px] sm:text-[10px] font-bold text-slate-400 block uppercase tracking-wider leading-none mb-0.5">
                         ช่วงเวลา
                       </label>
                       {timeFilter === 'custom' && startDate ? (
@@ -1085,7 +1172,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                                 if (onClearCustomDate) onClearCustomDate();
                               }
                             }}
-                            className="w-full bg-transparent text-xs sm:text-sm font-bold text-slate-900 focus:outline-none cursor-pointer truncate appearance-none"
+                            className="w-full bg-transparent text-xs sm:text-sm font-bold text-slate-900 focus:outline-none cursor-pointer truncate appearance-none leading-normal"
                           >
                             <option value="all">ทุกช่วงเวลา</option>
                             <option value="today">วันนี้</option>
@@ -1115,20 +1202,34 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   </div>
 
                   {/* Column 4: Primary Action Search Button (3 cols on iPad md) */}
-                  <div className="p-1.5 md:col-span-3 lg:w-auto shrink-0 flex items-center justify-center">
+                  <div className="p-1 md:col-span-3 lg:w-auto shrink-0 flex items-center justify-center">
                     <button
                       type="button"
                       onClick={() => {
                         setIsFocused(false);
                         if (onSearchSubmit) onSearchSubmit();
                       }}
-                      className="w-full lg:w-auto bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-7 sm:px-9 py-2.5 sm:py-3.5 rounded-xl font-extrabold text-sm sm:text-base transition-all shadow-sm flex items-center justify-center gap-2 shrink-0 active:scale-95 cursor-pointer"
+                      className="w-full lg:w-auto bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-6 sm:px-8 py-2 sm:py-2.5 rounded-xl font-extrabold text-sm sm:text-base transition-all shadow-sm flex items-center justify-center gap-2 shrink-0 active:scale-95 cursor-pointer leading-normal"
                     >
-                      <Search className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                      <Search className="w-4 h-4" />
                       <span>ค้นหา</span>
                     </button>
                   </div>
 
+                </div>
+
+                {/* Under Search Box: Right-aligned Link under Search Button */}
+                <div className="flex justify-end pt-0 px-1 -mt-0.5 -mb-0.5">
+                  <a
+                    href="#why-chill-and-connect"
+                    onClick={handleScrollToWhySection}
+                    className="inline-flex items-center gap-1.5 text-xs sm:text-[12.5px] font-semibold text-slate-500 hover:text-[#2563EB] transition-colors group cursor-pointer"
+                  >
+                    <span className="hover:underline underline-offset-4 decoration-slate-300 group-hover:decoration-[#2563EB]">
+                      ทำไมต้อง Chill & Connect Hub?
+                    </span>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#2563EB] group-hover:translate-y-0.5 transition-transform duration-200" />
+                  </a>
                 </div>
 
                 {/* Suggestions Dropdown (Positioned cleanly relative to console) */}
@@ -1138,21 +1239,16 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             </div>
 
             {/* 3. New User Exclusive & Privilege Ticket Strip (Compact & Refined Luxury Ticket Bar) */}
-            <div className="mt-5 sm:mt-7 w-full space-y-3">
+            <div className="mt-2.5 sm:mt-3.5 w-full space-y-2.5">
               
               {/* Section Header */}
               <div className="flex items-end justify-between gap-3 px-1 flex-wrap">
                 <div className="space-y-0.5">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-                      Member Privileges
-                    </h2>
-                    <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100/80">
-                      Curated Perks
-                    </span>
-                  </div>
+                  <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                    Member Privileges
+                  </h2>
                   <p className="text-[11px] sm:text-xs font-medium text-slate-500">
-                    สิทธิประโยชน์คัดสรรและของรางวัลไลฟ์สไตล์ เพื่อการเริ่มต้นออกสำรวจอย่างคุ้มค่า
+                    สิทธิประโยชน์ และของรางวัลไลฟ์สไตล์ เพื่อการออกไปใช้ชีวิตอย่างมีความหมาย
                   </p>
                 </div>
                 
@@ -1175,12 +1271,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     onClick={() => setShowcaseTab('rewards')}
                     className={`px-3 py-1 rounded-lg font-extrabold text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
                       showcaseTab === 'rewards'
-                        ? 'bg-white text-purple-900 shadow-xs'
-                        : 'text-slate-500 hover:text-purple-900'
+                        ? 'bg-white text-slate-900 shadow-xs'
+                        : 'text-slate-500 hover:text-slate-900'
                     }`}
                   >
-                    <Sparkles className="w-3 h-3 text-purple-600" />
-                    <span>ใช้ XP แลก</span>
+                    <Award className="w-3 h-3 text-blue-600" />
+                    <span>XP แลกรางวัล</span>
                   </button>
                 </div>
               </div>
@@ -1197,10 +1293,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                           Welcome Privilege
                         </span>
                         <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 leading-snug truncate">
-                          สิทธิ์สมาชิกใหม่ รับส่วนลด & +100 XP
+                          สิทธิ์พิเศษสำหรับ สมาชิก
                         </h3>
                         <p className="text-[10px] text-slate-500 truncate mt-0.5">
-                          สร้างโปรไฟล์ครั้งแรก เพื่อปลดล็อกสิทธิ์ทุกพิกัด
+                          สร้างโปรไฟล์ สมัครสมาชิกฟรี เพื่อปลดล็อกสิทธิ์พิเศษมากมาย
                         </p>
                       </div>
                       <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white text-blue-600 shadow-xs flex items-center justify-center shrink-0 border border-blue-100 group-hover:scale-105 transition-transform">
@@ -1353,28 +1449,28 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5 animate-fade-in">
                   
                   {/* Card 1: XP Store Callout Banner Card (Compact) */}
-                  <div className="relative rounded-xl bg-gradient-to-br from-purple-50/90 via-indigo-50/40 to-purple-100/70 border border-purple-100/90 p-2.5 sm:p-3 flex flex-col justify-between shadow-2xs group hover:border-purple-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 min-h-[92px] sm:min-h-[98px]">
+                  <div className="relative rounded-xl bg-gradient-to-br from-blue-50/90 via-sky-50/40 to-indigo-50/70 border border-blue-100/90 p-2.5 sm:p-3 flex flex-col justify-between shadow-2xs group hover:border-blue-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 min-h-[92px] sm:min-h-[98px]">
                     <div className="flex items-start justify-between gap-2">
                       <div className="space-y-0.5 min-w-0">
-                        <span className="text-[9px] font-black text-purple-700 uppercase tracking-wider block leading-none">
+                        <span className="text-[9px] font-black text-blue-700 uppercase tracking-wider block leading-none">
                           XP Rewards Hub
                         </span>
                         <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 leading-snug truncate">
-                          รวม 24 ของรางวัลไลฟ์สไตล์
+                          รวมของรางวัลไลฟ์สไตล์
                         </h3>
                         <p className="text-[10px] text-slate-500 truncate mt-0.5">
                           สะสมแต้ม XP จากชาเลนจ์มาแลกรับสิทธิ์
                         </p>
                       </div>
-                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white text-purple-600 shadow-xs flex items-center justify-center shrink-0 border border-purple-100 group-hover:scale-105 transition-transform">
-                        <Sparkles className="w-4 h-4 text-purple-600" />
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white text-blue-600 shadow-xs flex items-center justify-center shrink-0 border border-blue-100 group-hover:scale-105 transition-transform">
+                        <Award className="w-4 h-4 text-blue-600" />
                       </div>
                     </div>
 
                     <div className="pt-1.5">
                       <Link
                         href="/rewards"
-                        className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-purple-700 hover:bg-purple-800 text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer gap-1 leading-none"
+                        className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer gap-1 leading-none"
                       >
                         <span>ดูของรางวัลทั้งหมด</span>
                         <ArrowRight className="w-2.5 h-2.5" />
@@ -1390,7 +1486,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                           <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
                             ลด ฿50
                           </span>
-                          <span className="text-[10px] font-extrabold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded leading-none border border-purple-100">
+                          <span className="text-[10px] font-extrabold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded leading-none border border-blue-100">
                             150 XP
                           </span>
                         </div>
@@ -1402,9 +1498,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       <div className="pt-1.5">
                         <Link
                           href="/rewards"
-                          className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-purple-700 text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
+                          className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
                         >
-                          ใช้ XP แลก
+                          ใช้สิทธิ์
                         </Link>
                       </div>
                     </div>
@@ -1432,7 +1528,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                           <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
                             เล่นฟรี 1 วัน
                           </span>
-                          <span className="text-[10px] font-extrabold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded leading-none border border-purple-100">
+                          <span className="text-[10px] font-extrabold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded leading-none border border-blue-100">
                             250 XP
                           </span>
                         </div>
@@ -1444,9 +1540,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       <div className="pt-1.5">
                         <Link
                           href="/rewards"
-                          className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-purple-700 text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
+                          className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
                         >
-                          ใช้ XP แลก
+                          ใช้สิทธิ์
                         </Link>
                       </div>
                     </div>
@@ -1457,10 +1553,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]" />
                     </div>
 
-                    {/* Right Stub: Purple Category Icon */}
-                    <div className="w-14 sm:w-16 shrink-0 flex flex-col items-center justify-center p-2 bg-purple-50/70 rounded-r-xl border-l border-dashed border-slate-200">
-                      <Dices className="w-4 h-4 sm:w-5 sm:h-5 text-purple-700 group-hover:scale-105 transition-transform" />
-                      <span className="text-[9.5px] font-bold text-purple-800 mt-1 text-center truncate">
+                    {/* Right Stub: Indigo/Blue Category Icon */}
+                    <div className="w-14 sm:w-16 shrink-0 flex flex-col items-center justify-center p-2 bg-blue-50/70 rounded-r-xl border-l border-dashed border-slate-200">
+                      <Dices className="w-4 h-4 sm:w-5 sm:h-5 text-blue-700 group-hover:scale-105 transition-transform" />
+                      <span className="text-[9.5px] font-bold text-blue-800 mt-1 text-center truncate">
                         บอร์ดเกม
                       </span>
                     </div>
@@ -1474,7 +1570,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                           <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
                             ลด 15%
                           </span>
-                          <span className="text-[10px] font-extrabold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded leading-none border border-purple-100">
+                          <span className="text-[10px] font-extrabold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded leading-none border border-blue-100">
                             350 XP
                           </span>
                         </div>
@@ -1486,9 +1582,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       <div className="pt-1.5">
                         <Link
                           href="/rewards"
-                          className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-purple-700 text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
+                          className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
                         >
-                          ใช้ XP แลก
+                          ใช้สิทธิ์
                         </Link>
                       </div>
                     </div>

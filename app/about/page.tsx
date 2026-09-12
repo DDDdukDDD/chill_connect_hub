@@ -163,7 +163,7 @@ export default function AboutPage() {
                       1. ค้นพบสถานที่ & อีเวนต์
                     </h3>
                     <p className="text-xs text-slate-600 leading-relaxed">
-                      ค้นหาจุดฮีลใจและแลนด์มาร์กทั่วไทย พร้อมระบบเรดาร์ <strong>[ 🎯 ใกล้ฉัน ]</strong> คำนวณระยะทางจาก GPS จริง
+                      ค้นหาจุดฮีลใจและพิกัดชาร์จพลังทั่วไทย ปักหมุดที่เที่ยวใกล้ตัว พร้อมเช็คระยะทางได้ทันที
                     </p>
                   </div>
 
@@ -175,7 +175,7 @@ export default function AboutPage() {
                     </div>
                     <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-200/80">
                       <Sparkles className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
-                      <span>AI คัดกรองอีเวนต์สดใหม่</span>
+                      <span>คัดสรรเฉพาะอีเวนต์คุณภาพ</span>
                     </div>
                   </div>
                 </div>
@@ -183,7 +183,7 @@ export default function AboutPage() {
                 {/* Bottom Action Link */}
                 <div className="pt-3 mt-3 border-t border-slate-100">
                   <Link
-                    href="/"
+                    href="/spots"
                     className="w-full bg-orange-50 hover:bg-[#F26430] text-[#F26430] hover:text-white py-1.5 px-3 rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-1.5 group/btn"
                   >
                     <span>สำรวจสถานที่ & อีเวนต์</span>
@@ -218,7 +218,7 @@ export default function AboutPage() {
                       2. รวมตี้ & บัดดี้คอเดียวกัน
                     </h3>
                     <p className="text-xs text-slate-600 leading-relaxed">
-                      เปิดตี้หรือจอยกลุ่มย่อย <strong>(Sub-activities)</strong> เช่น กาแฟ, วิ่ง, บอร์ดเกม มี Host ดูแลอบอุ่น สบายใจ ไร้แรงกดดัน
+                      เปิดตี้หรือจอยกลุ่มกิจกรรม เช่น กาแฟ, วิ่ง, บอร์ดเกม บรรยากาศเป็นกันเอง ปลอดภัย สบายใจแม้เป็น Introvert
                     </p>
                   </div>
 
@@ -238,7 +238,7 @@ export default function AboutPage() {
                 {/* Bottom Action Link */}
                 <div className="pt-3 mt-3 border-t border-slate-100">
                   <Link
-                    href="/"
+                    href="/community"
                     className="w-full bg-emerald-50 hover:bg-[#4A7C59] text-[#4A7C59] hover:text-white py-1.5 px-3 rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-1.5 group/btn"
                   >
                     <span>ค้นหาตี้และเพื่อนร่วมทาง</span>
@@ -394,8 +394,8 @@ export default function AboutPage() {
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/25 to-transparent" />
                     
                     {/* Floating Badge */}
-                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-2.5 py-0.5 rounded-full shadow-xs text-[11px] font-black text-[#F26430] border border-white/50">
-                      <MapPin className="w-3 h-3" />
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-2.5 py-0.5 rounded-full shadow-xs text-[11px] font-black text-[#4A7C59] border border-white/50">
+                      <MapPin className="w-3 h-3 text-[#4A7C59]" />
                       <span>WHERE TO GO</span>
                     </div>
 
@@ -409,17 +409,17 @@ export default function AboutPage() {
                   {/* Content */}
                   <div className="p-5 space-y-3">
                     <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                      คลังข้อมูลจุดเช็คอิน สวนสาธารณะ คาเฟ่ Slow Bar หอศิลป์ มิวเซียม และธรรมชาติคัดสรร <strong>ครบทั้ง 77 จังหวัดทั่วไทย</strong> อัปเดตพิกัด เวลาเปิด-ปิด และไฮไลท์ครบถ้วน
+                      ค้นพบมุมสงบและพิกัดชาร์จพลังที่ใช่สำหรับคุณ รวบรวมตั้งแต่คาเฟ่ลับ สวนสีเขียว ไปจนถึงอาร์ตสเปซ <strong>77 จังหวัดทั่วไทย</strong> พร้อมข้อมูลอัปเดตจริงที่วางใจได้
                     </p>
 
                     <div className="space-y-1.5 pt-0.5">
-                      <div className="flex items-center gap-2 text-[11px] font-bold text-slate-800 bg-orange-50/70 p-2 rounded-xl border border-orange-100">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
-                        <span>เรดาร์ [ 🎯 ใกล้ฉัน ] คำนวณระยะทางจาก GPS จริง</span>
+                      <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-700 bg-emerald-50/60 p-2 rounded-xl border border-emerald-100/80">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
+                        <span>ปักหมุดพิกัดชิลล์ใกล้ตัว ค้นหาง่ายแค่ปลายนิ้ว</span>
                       </div>
-                      <div className="flex items-center gap-2 text-[11px] font-bold text-slate-800 bg-orange-50/70 p-2 rounded-xl border border-orange-100">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
-                        <span>คลังภาพความละเอียดสูง & Vibe Tags ตรงปก</span>
+                      <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-700 bg-emerald-50/60 p-2 rounded-xl border border-emerald-100/80">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
+                        <span>ภาพบรรยากาศจริง ฟีลตรงปก มั่นใจได้ทุกการเดินทาง</span>
                       </div>
                     </div>
                   </div>
@@ -427,11 +427,11 @@ export default function AboutPage() {
 
                 <div className="p-5 pt-0">
                   <Link
-                    href="/"
-                    className="w-full bg-[#F26430] hover:bg-[#D95322] text-white py-2 px-3 rounded-xl font-bold text-xs transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-98"
+                    href="/spots"
+                    className="w-full bg-[#4A7C59] hover:bg-[#3B6447] text-white py-2.5 px-3 rounded-xl font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 group/btn cursor-pointer active:scale-[0.98]"
                   >
                     <span>สำรวจจุดฮีลใจ 77 จังหวัด</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
                   </Link>
                 </div>
               </div>
@@ -449,14 +449,14 @@ export default function AboutPage() {
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/25 to-transparent" />
                     
                     {/* Floating Badge */}
-                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-2.5 py-0.5 rounded-full shadow-xs text-[11px] font-black text-[#4A7C59] border border-white/50">
-                      <Calendar className="w-3 h-3" />
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-2.5 py-0.5 rounded-full shadow-xs text-[11px] font-black text-[#2B527A] border border-white/50">
+                      <Calendar className="w-3 h-3 text-[#2B527A]" />
                       <span>WHAT TO DO</span>
                     </div>
 
                     {/* Bottom Title on Image */}
                     <div className="absolute bottom-3 left-3.5 right-3.5 text-white">
-                      <div className="text-base sm:text-lg font-black tracking-tight">2. กิจกรรมและอีเวนต์สดใหม่</div>
+                      <div className="text-base sm:text-lg font-black tracking-tight">2. กิจกรรมและงานมหกรรมสดใหม่</div>
                       <div className="text-[11px] text-slate-200 font-medium">วันหยุดนี้ไม่มีเบื่อ รวมทุกงานแฟร์ & เวิร์กช็อป</div>
                     </div>
                   </div>
@@ -464,17 +464,17 @@ export default function AboutPage() {
                   {/* Content */}
                   <div className="p-5 space-y-3">
                     <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                      ศูนย์รวมงานอีเวนต์ คอนเสิร์ต งานแฟร์ เวิร์กช็อปศิลปะ วิ่งมาราธอน และกิจกรรมไลฟ์สไตล์ อัปเดตสดใหม่ผ่านระบบ <strong>AI Aggregator Engine</strong> คุณภาพสูง
+                      เปลี่ยนวันว่างให้มีสีสัน รวมทุกเทศกาล งานแฟร์ คอนเสิร์ต และเวิร์กช็อปน่าลอง <strong>คัดเฉพาะงานคุณภาพ</strong> อัปเดตสดใหม่ทุกสัปดาห์ ให้คุณไม่พลาดทุกเทรนด์ฮิต
                     </p>
 
                     <div className="space-y-1.5 pt-0.5">
-                      <div className="flex items-center gap-2 text-[11px] font-bold text-slate-800 bg-emerald-50/70 p-2 rounded-xl border border-emerald-100">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
-                        <span>AI จัดหมวดหมู่และกรองงานซ้ำ 100%</span>
+                      <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-700 bg-blue-50/60 p-2 rounded-xl border border-blue-100/80">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#2B527A] shrink-0" />
+                        <span>คัดเฉพาะงานน่าไป กรองงานซ้ำ หมดปัญหาข้อมูลล้น</span>
                       </div>
-                      <div className="flex items-center gap-2 text-[11px] font-bold text-slate-800 bg-emerald-50/70 p-2 rounded-xl border border-emerald-100">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
-                        <span>ระบบตั๋ว E-Ticket ดิจิทัล เช็คอินสะดวก</span>
+                      <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-700 bg-blue-50/60 p-2 rounded-xl border border-blue-100/80">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#2B527A] shrink-0" />
+                        <span>บันทึกงานโปรด พร้อมรับบัตรเข้างานทันทีบนมือถือ</span>
                       </div>
                     </div>
                   </div>
@@ -482,11 +482,11 @@ export default function AboutPage() {
 
                 <div className="p-5 pt-0">
                   <Link
-                    href="/"
-                    className="w-full bg-[#4A7C59] hover:bg-[#3B6447] text-white py-2 px-3 rounded-xl font-bold text-xs transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-98"
+                    href="/fairs"
+                    className="w-full bg-[#2B527A] hover:bg-[#1F3D5C] text-white py-2.5 px-3 rounded-xl font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 group/btn cursor-pointer active:scale-[0.98]"
                   >
                     <span>ค้นหากิจกรรมและงานแฟร์</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
                   </Link>
                 </div>
               </div>
@@ -504,8 +504,8 @@ export default function AboutPage() {
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/25 to-transparent" />
                     
                     {/* Floating Badge */}
-                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-2.5 py-0.5 rounded-full shadow-xs text-[11px] font-black text-[#2B527A] border border-white/50">
-                      <Users className="w-3 h-3" />
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-2.5 py-0.5 rounded-full shadow-xs text-[11px] font-black text-[#F26430] border border-white/50">
+                      <Users className="w-3 h-3 text-[#F26430]" />
                       <span>WHO TO GO WITH</span>
                     </div>
 
@@ -519,17 +519,17 @@ export default function AboutPage() {
                   {/* Content */}
                   <div className="p-5 space-y-3">
                     <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                      เชื่อมต่อมิตรภาพอบอุ่นผ่านระบบ <strong>Buddy Matcher & Sub-activities</strong> ตั้งตี้กลุ่มย่อย จิบกาแฟ วิ่ง บอร์ดเกม พร้อมระบบ <strong>เควสต์ชาเลนจ์ & แต้ม XP</strong>
+                      เจอเพื่อนใหม่คอเดียวกันในพื้นที่สบายใจ ไม่ว่าจะเป็นสายกาแฟ ชวนวิ่ง หรือบอร์ดเกม จะมาเดี่ยวหรือมาชิลล์ก็อบอุ่น เพราะทุกคนพร้อม <strong>เปิดรับมิตรภาพใหม่</strong>
                     </p>
 
                     <div className="space-y-1.5 pt-0.5">
-                      <div className="flex items-center gap-2 text-[11px] font-bold text-slate-800 bg-blue-50/70 p-2 rounded-xl border border-blue-100">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#2B527A] shrink-0" />
-                        <span>100% Introvert-Friendly มี Host คอยต้อนรับ</span>
+                      <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-700 bg-orange-50/60 p-2 rounded-xl border border-orange-100/80">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
+                        <span>บรรยากาศเป็นกันเอง ปลอดภัย สบายใจแม้เป็น Introvert</span>
                       </div>
-                      <div className="flex items-center gap-2 text-[11px] font-bold text-slate-800 bg-blue-50/70 p-2 rounded-xl border border-blue-100">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#2B527A] shrink-0" />
-                        <span>สะสมแต้ม XP แลกรับส่วนลดและของรางวัล</span>
+                      <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-700 bg-orange-50/60 p-2 rounded-xl border border-orange-100/80">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
+                        <span>ยิ่งออกไปใช้ชีวิต ยิ่งสะสมแต้มแลกรับของรางวัลพิเศษ</span>
                       </div>
                     </div>
                   </div>
@@ -537,11 +537,11 @@ export default function AboutPage() {
 
                 <div className="p-5 pt-0">
                   <Link
-                    href="/"
-                    className="w-full bg-[#2B527A] hover:bg-[#1F3D5C] text-white py-2 px-3 rounded-xl font-bold text-xs transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-98"
+                    href="/community"
+                    className="w-full bg-[#F26430] hover:bg-[#D95322] text-white py-2.5 px-3 rounded-xl font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 group/btn cursor-pointer active:scale-[0.98]"
                   >
                     <span>หาตี้และเพื่อนร่วมทาง</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
                   </Link>
                 </div>
               </div>
@@ -570,30 +570,30 @@ export default function AboutPage() {
               {[
                 { 
                   title: 'ค้นพบสถานที่ & จุดฮีลใจ 77 จังหวัด', 
-                  desc: 'รวมคลังพิกัดลับ คาเฟ่ Slow Bar สวนสาธารณะ และธรรมชาติทั่วไทย พร้อมระบบเรดาร์ [ ใกล้ฉัน ] ช่วยแนะนำจุดเช็คอินตามพิกัดจริง',
-                  icon: <MapPin className="w-5 h-5 text-[#F26430]" />,
-                  bg: 'bg-orange-50 border-orange-100',
-                  hover: 'hover:border-orange-300',
-                  tag: 'Where to go',
-                  tagColor: 'text-[#F26430] bg-orange-50 border-orange-200/60'
-                },
-                { 
-                  title: 'สร้าง & จอยกิจกรรมหลากหลายสุดสนุก', 
-                  desc: 'ทั้งสายวิ่ง จิบกาแฟ บอร์ดเกม เวิร์กช็อปศิลปะ และคอนเสิร์ต คุณสามารถเปิดตี้เป็น Host เองได้ง่ายๆ หรือกดจอยงานที่สนใจได้ทันที',
-                  icon: <Sparkles className="w-5 h-5 text-[#4A7C59]" />,
+                  desc: 'ค้นพบพิกัดลับ คาเฟ่ Slow Bar สวนสีเขียว และอาร์ตสเปซทั่วไทย ปักหมุดที่เที่ยวใกล้ตัว พร้อมข้อมูลอัปเดตจริงตรงปก',
+                  icon: <MapPin className="w-5 h-5 text-[#4A7C59]" />,
                   bg: 'bg-emerald-50 border-emerald-100',
                   hover: 'hover:border-emerald-300',
-                  tag: 'What to do',
+                  tag: 'Where to go',
                   tagColor: 'text-[#4A7C59] bg-emerald-50 border-emerald-200/60'
                 },
                 { 
-                  title: 'พบเพื่อนใหม่ & คอมมูนิตี้ที่อบอุ่น', 
-                  desc: 'เชื่อมต่อมิตรภาพผ่านความชอบจริง มีระบบห้องแชตนัดพบ และบรรยากาศที่เป็นกันเอง สบายใจสำหรับทุกคนทั้ง Introvert และ Extrovert',
-                  icon: <Users className="w-5 h-5 text-[#2B527A]" />,
+                  title: 'สร้าง & จอยกิจกรรมหลากหลายสุดสนุก', 
+                  desc: 'รวมทุกเทศกาล คอนเสิร์ต งานแฟร์ และเวิร์กช็อปน่าลอง คัดเฉพาะงานคุณภาพ อัปเดตสดใหม่ ให้คุณเลือกจอยได้ไม่รู้จบ',
+                  icon: <Sparkles className="w-5 h-5 text-[#2B527A]" />,
                   bg: 'bg-blue-50 border-blue-100',
                   hover: 'hover:border-blue-300',
-                  tag: 'Who to connect',
+                  tag: 'What to do',
                   tagColor: 'text-[#2B527A] bg-blue-50 border-blue-200/60'
+                },
+                { 
+                  title: 'พบเพื่อนใหม่ & คอมมูนิตี้ที่อบอุ่น', 
+                  desc: 'เจอเพื่อนใหม่คอเดียวกันในพื้นที่สบายใจ ไม่ว่าจะมาเดี่ยวหรือชวนเพื่อนมา ก็อบอุ่นเป็นกันเอง ไร้ความกดดันแม้เป็น Introvert',
+                  icon: <Users className="w-5 h-5 text-[#F26430]" />,
+                  bg: 'bg-orange-50 border-orange-100',
+                  hover: 'hover:border-orange-300',
+                  tag: 'Who to go with',
+                  tagColor: 'text-[#F26430] bg-orange-50 border-orange-200/60'
                 },
               ].map((item, idx) => (
                 <div key={idx} className={`bg-white p-5 rounded-2xl border border-slate-200/90 ${item.hover} shadow-xs hover:shadow-md transition-all space-y-2.5 relative overflow-hidden group`}>

@@ -1306,11 +1306,6 @@ export default function Home() {
               {/* ------------------------------------------------------------------------- */}
               <CommunityMomentsStrip />
 
-              {/* ------------------------------------------------------------------------- */}
-              {/* STREAM SECTION 6: 💎 PLATFORM TRUST & LIFESTYLE PERKS (Inspired by Klook)   */}
-              {/* ------------------------------------------------------------------------- */}
-              <PlatformTrustAndPerks onOpenLogin={() => setIsAuthModalOpen(true)} />
-
             </div>
           ) : (
             /* ========================================================================= */
@@ -1717,6 +1712,11 @@ export default function Home() {
               )}
             </section>
           )}
+
+          {/* ------------------------------------------------------------------------- */}
+          {/* STREAM SECTION 6: 💎 PLATFORM TRUST & LIFESTYLE PERKS (ทำไมต้อง Chill & Connect Hub?) */}
+          {/* ------------------------------------------------------------------------- */}
+          <PlatformTrustAndPerks onOpenLogin={() => setIsAuthModalOpen(true)} />
 
         </div>
 

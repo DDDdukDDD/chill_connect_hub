@@ -19,15 +19,15 @@ interface PlatformTrustAndPerksProps {
 
 export const PlatformTrustAndPerks: React.FC<PlatformTrustAndPerksProps> = () => {
   return (
-    <section className="space-y-6 sm:space-y-8 pt-2">
+    <section id="why-chill-and-connect" className="space-y-6 sm:space-y-8 pt-2 scroll-mt-24">
       
       {/* Header */}
       <div className="space-y-1.5 text-left">
         <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
           ทำไมต้อง Chill & Connect Hub?
         </h2>
-        <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-2xl">
-          คำตอบครบทุกมิติของการออกไปใช้ชีวิต: ไปไหน ทำอะไร และไปกับใคร เพื่อให้ทุกวันหยุดของคุณมีความหมายและเติมเต็มพลังบวก
+        <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-none md:whitespace-nowrap">
+          เพราะเราคัดสรรค์ รวบรวมทุกมิติของการออกไปใช้ชีวิต พร้อมตอบคำถาม ไปไหน ไปทำอะไร ไปกับใคร เพื่อให้ทุกวันหยุดและวันดีดีของคุณมีความหมาย
         </p>
       </div>
 
@@ -66,17 +66,17 @@ export const PlatformTrustAndPerks: React.FC<PlatformTrustAndPerksProps> = () =>
               {/* Content Body */}
               <div className="p-5 space-y-3">
                 <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                  คลังข้อมูลจุดเช็คอิน สวนสาธารณะ คาเฟ่ Slow Bar หอศิลป์ มิวเซียม และธรรมชาติคัดสรร <strong>ครบทั้ง 77 จังหวัดทั่วไทย</strong> อัปเดตพิกัด เวลาเปิด-ปิด และไฮไลท์ครบถ้วน
+                  ค้นพบมุมสงบและพิกัดชาร์จพลังที่ใช่สำหรับคุณ รวบรวมตั้งแต่คาเฟ่ลับ สวนสีเขียว ไปจนถึงอาร์ตสเปซ <strong>77 จังหวัดทั่วไทย</strong> พร้อมข้อมูลอัปเดตจริงที่วางใจได้
                 </p>
 
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-700 bg-emerald-50/60 p-2 rounded-xl border border-emerald-100/80">
                     <CheckCircle2 className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
-                    <span>เรดาร์ [ 🎯 ใกล้ฉัน ] คำนวณระยะทางจาก GPS จริง</span>
+                    <span>ปักหมุดพิกัดชิลล์ใกล้ตัว ค้นหาง่ายแค่ปลายนิ้ว</span>
                   </div>
                   <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-700 bg-emerald-50/60 p-2 rounded-xl border border-emerald-100/80">
                     <CheckCircle2 className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
-                    <span>คลังภาพความละเอียดสูง & Vibe Tags ตรงปก</span>
+                    <span>ภาพบรรยากาศจริง ฟีลตรงปก มั่นใจได้ทุกการเดินทาง</span>
                   </div>
                 </div>
               </div>
@@ -86,7 +86,7 @@ export const PlatformTrustAndPerks: React.FC<PlatformTrustAndPerksProps> = () =>
             <div className="p-5 pt-0">
               <Link
                 href="/spots"
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white py-2.5 px-3 rounded-xl font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 group/btn cursor-pointer"
+                className="w-full bg-[#4A7C59] hover:bg-[#3B6447] text-white py-2.5 px-3 rounded-xl font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 group/btn cursor-pointer active:scale-[0.98]"
               >
                 <span>สำรวจจุดฮีลใจ 77 จังหวัด</span>
                 <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
@@ -126,17 +126,17 @@ export const PlatformTrustAndPerks: React.FC<PlatformTrustAndPerksProps> = () =>
               {/* Content Body */}
               <div className="p-5 space-y-3">
                 <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                  ศูนย์รวมงานอีเวนต์ คอนเสิร์ต งานแฟร์ เวิร์กช็อปศิลปะ วิ่งมาราธอน และกิจกรรมไลฟ์สไตล์ อัปเดตสดใหม่ผ่านระบบ <strong>AI Aggregator Engine</strong> คุณภาพสูง
+                  เปลี่ยนวันว่างให้มีสีสัน รวมทุกเทศกาล งานแฟร์ คอนเสิร์ต และเวิร์กช็อปน่าลอง <strong>คัดเฉพาะงานคุณภาพ</strong> อัปเดตสดใหม่ทุกสัปดาห์ ให้คุณไม่พลาดทุกเทรนด์ฮิต
                 </p>
 
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-700 bg-blue-50/60 p-2 rounded-xl border border-blue-100/80">
                     <CheckCircle2 className="w-3.5 h-3.5 text-[#2B527A] shrink-0" />
-                    <span>AI จัดหมวดหมู่และกรองงานซ้ำ 100%</span>
+                    <span>คัดเฉพาะงานน่าไป กรองงานซ้ำ หมดปัญหาข้อมูลล้น</span>
                   </div>
                   <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-700 bg-blue-50/60 p-2 rounded-xl border border-blue-100/80">
                     <CheckCircle2 className="w-3.5 h-3.5 text-[#2B527A] shrink-0" />
-                    <span>ระบบตั๋ว E-Ticket ดิจิทัล เช็คอินสะดวก</span>
+                    <span>บันทึกงานโปรด พร้อมรับบัตรเข้างานทันทีบนมือถือ</span>
                   </div>
                 </div>
               </div>
@@ -146,7 +146,7 @@ export const PlatformTrustAndPerks: React.FC<PlatformTrustAndPerksProps> = () =>
             <div className="p-5 pt-0">
               <Link
                 href="/fairs"
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white py-2.5 px-3 rounded-xl font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 group/btn cursor-pointer"
+                className="w-full bg-[#2B527A] hover:bg-[#1F3D5C] text-white py-2.5 px-3 rounded-xl font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 group/btn cursor-pointer active:scale-[0.98]"
               >
                 <span>ค้นหากิจกรรมและงานแฟร์</span>
                 <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
@@ -186,17 +186,17 @@ export const PlatformTrustAndPerks: React.FC<PlatformTrustAndPerksProps> = () =>
               {/* Content Body */}
               <div className="p-5 space-y-3">
                 <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                  เชื่อมต่อมิตรภาพอบอุ่นผ่านระบบ <strong>เปิดตี้และจอยกลุ่มย่อย</strong> (Sub-activities) จิบกาแฟ วิ่ง บอร์ดเกม ปลอดภัย สบายใจ <strong>100% Introvert-Friendly</strong> มี Host ดูแล
+                  เจอเพื่อนใหม่คอเดียวกันในพื้นที่สบายใจ ไม่ว่าจะเป็นสายกาแฟ ชวนวิ่ง หรือบอร์ดเกม จะมาเดี่ยวหรือมาชิลล์ก็อบอุ่น เพราะทุกคนพร้อม <strong>เปิดรับมิตรภาพใหม่</strong>
                 </p>
 
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-700 bg-orange-50/60 p-2 rounded-xl border border-orange-100/80">
                     <CheckCircle2 className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
-                    <span>100% Introvert-Friendly มี Host คอยต้อนรับ</span>
+                    <span>บรรยากาศเป็นกันเอง ปลอดภัย สบายใจแม้เป็น Introvert</span>
                   </div>
                   <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-700 bg-orange-50/60 p-2 rounded-xl border border-orange-100/80">
                     <CheckCircle2 className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
-                    <span>สะสมแต้ม HubXP แลกรับส่วนลดและของรางวัล</span>
+                    <span>ยิ่งออกไปใช้ชีวิต ยิ่งสะสมแต้มแลกรับของรางวัลพิเศษ</span>
                   </div>
                 </div>
               </div>
@@ -206,7 +206,7 @@ export const PlatformTrustAndPerks: React.FC<PlatformTrustAndPerksProps> = () =>
             <div className="p-5 pt-0">
               <Link
                 href="/community"
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white py-2.5 px-3 rounded-xl font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 group/btn cursor-pointer"
+                className="w-full bg-[#F26430] hover:bg-[#D95322] text-white py-2.5 px-3 rounded-xl font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 group/btn cursor-pointer active:scale-[0.98]"
               >
                 <span>หาตี้และเพื่อนร่วมทาง</span>
                 <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
