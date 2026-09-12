@@ -2900,7 +2900,7 @@ export const MOCK_EVENTS: EventItem[] = [
   {
     "id": "comm-1",
     "title": "ตี้บอร์ดเกมล่าหมาป่า & Strategy Game สยามสแควร์",
-    "date": "23 ส.ค. 2026",
+    "date": "13 ก.ย. 2026",
     "time": "14:00 - 18:00 น.",
     "location": "Siam Square One ชั้น 3 (ร้าน Board Game Academy)",
     "tag": "🎲 บอร์ดเกม",
@@ -2933,7 +2933,7 @@ export const MOCK_EVENTS: EventItem[] = [
   {
     "id": "comm-2",
     "title": "Specialty Drip Coffee & Cupping แลกเปลี่ยนเมล็ดกาแฟ ย่านอารีย์",
-    "date": "24 ส.ค. 2026",
+    "date": "13 ก.ย. 2026",
     "time": "09:30 - 12:00 น.",
     "location": "Ari Specialty Coffee Bar, พหลโยธิน ซอย 7",
     "tag": "☕ นัดชิลล์",
@@ -2967,7 +2967,7 @@ export const MOCK_EVENTS: EventItem[] = [
   {
     "id": "comm-3",
     "title": "Sunset City Run & Walk จ็อกกิ้งรับลมเย็น สวนเบญจกิติ",
-    "date": "23 ส.ค. 2026",
+    "date": "12 ก.ย. 2026",
     "time": "17:00 - 18:45 น.",
     "location": "สวนเบญจกิติ (ลานน้ำพุด้านหน้า ทางเชื่อม BTS อโศก)",
     "tag": "🏃 ออกกำลังกาย",
@@ -3000,7 +3000,7 @@ export const MOCK_EVENTS: EventItem[] = [
   {
     "id": "comm-4",
     "title": "Sound Healing อาบคลื่นเสียง & Sunset Yoga สวนลุมพินี",
-    "date": "24 ส.ค. 2026",
+    "date": "12 ก.ย. 2026",
     "time": "16:30 - 18:00 น.",
     "location": "สวนลุมพินี (ลานหญ้าริมสระน้ำ ประตู 3 ถ.วิทยุ)",
     "tag": "🌱 ธรรมชาติ & ฮีลใจ",
@@ -3032,7 +3032,7 @@ export const MOCK_EVENTS: EventItem[] = [
   {
     "id": "comm-5",
     "title": "Tufting Rug เวิร์กช็อปยิงพรมไหมพรมโฮมเมด ทองหล่อ",
-    "date": "25 ส.ค. 2026",
+    "date": "19 ก.ย. 2026",
     "time": "13:00 - 16:30 น.",
     "location": "Craft Studio Thonglor, สุขุมวิท 55",
     "tag": "🎨 เวิร์กช็อป",
@@ -3064,7 +3064,7 @@ export const MOCK_EVENTS: EventItem[] = [
   {
     "id": "comm-6",
     "title": "ก๊วนตีแบดมินตันมือใหม่ ชวนออกกำลังกายกระชับมิตร พระราม 9",
-    "date": "24 ส.ค. 2026",
+    "date": "16 ก.ย. 2026",
     "time": "19:00 - 21:00 น.",
     "location": "สนามแบดมินตันพระราม 9 ซอย 13",
     "tag": "🏃 ออกกำลังกาย",
@@ -3096,7 +3096,7 @@ export const MOCK_EVENTS: EventItem[] = [
   {
     "id": "comm-7",
     "title": "Ceramic Pottery ปั้นแก้วเซรามิกแฮนด์เมด เอกมัย",
-    "date": "26 ส.ค. 2026",
+    "date": "19 ก.ย. 2026",
     "time": "14:00 - 17:00 น.",
     "location": "Clay Space Studio, เอกมัย ซอย 10",
     "tag": "🎨 เวิร์กช็อป",
@@ -3128,7 +3128,7 @@ export const MOCK_EVENTS: EventItem[] = [
   {
     "id": "comm-8",
     "title": "Sunday Book Club จิบชาสนทนาวรรณกรรมแปล พร้อมพงษ์",
-    "date": "27 ส.ค. 2026",
+    "date": "20 ก.ย. 2026",
     "time": "14:00 - 16:30 น.",
     "location": "Open House Book Lounge, สุขุมวิท 24",
     "tag": "🌱 ธรรมชาติ & ฮีลใจ",
@@ -3160,7 +3160,7 @@ export const MOCK_EVENTS: EventItem[] = [
   {
     "id": "comm-9",
     "title": "Baking French Pastry อบคุกกี้ & สโคนสไตล์ฝรั่งเศส สีลม",
-    "date": "25 ส.ค. 2026",
+    "date": "20 ก.ย. 2026",
     "time": "10:00 - 13:00 น.",
     "location": "Pastry Kitchen Studio, สีลม ซอย 3",
     "tag": "🎨 เวิร์กช็อป",
@@ -3192,7 +3192,7 @@ export const MOCK_EVENTS: EventItem[] = [
   {
     "id": "comm-10",
     "title": "Matcha Ceremony สมาธิวิถีชาและชงชาเขียวมัทฉะแท้ อโศก",
-    "date": "26 ส.ค. 2026",
+    "date": "23 ก.ย. 2026",
     "time": "15:00 - 17:00 น.",
     "location": "Chashitsu Teahouse, สุขุมวิท 21 (อโศก)",
     "tag": "🌱 ธรรมชาติ & ฮีลใจ",
@@ -3224,7 +3224,7 @@ export const MOCK_EVENTS: EventItem[] = [
   {
     "id": "comm-11",
     "title": "Indie Film Night ดูหนังอินดี้ในโกดังเก่า & เสวนา เยาวราช",
-    "date": "28 ส.ค. 2026",
+    "date": "25 ก.ย. 2026",
     "time": "19:00 - 22:00 น.",
     "location": "Warehouse Art Space, ถนนทรงวาด เยาวราช",
     "tag": "☕ นัดชิลล์",
@@ -3256,7 +3256,7 @@ export const MOCK_EVENTS: EventItem[] = [
   {
     "id": "comm-12",
     "title": "Bangkok Street Photo Walk เดินถ่ายรูปเมืองเก่า เจริญกรุง",
-    "date": "24 ส.ค. 2026",
+    "date": "26 ก.ย. 2026",
     "time": "15:30 - 18:30 น.",
     "location": "จุดนัดพบ หน้าร้านกาแฟตลาดน้อย เจริญกรุง",
     "tag": "🎨 เวิร์กช็อป",
@@ -3288,7 +3288,7 @@ export const MOCK_EVENTS: EventItem[] = [
   {
     "id": "comm-13",
     "title": "Scented Soy Candle ปรุงกลิ่นทำเทียนหอมอโรมา ลาดพร้าว",
-    "date": "29 ส.ค. 2026",
+    "date": "26 ก.ย. 2026",
     "time": "13:30 - 16:00 น.",
     "location": "Aroma Studio, ลาดพร้าว ซอย 18",
     "tag": "🌱 ธรรมชาติ & ฮีลใจ",
@@ -3320,7 +3320,7 @@ export const MOCK_EVENTS: EventItem[] = [
   {
     "id": "comm-14",
     "title": "Stand-up Comedy ชมเดี่ยวไมโครโฟน & จิบเครื่องดื่ม สุขุมวิท 39",
-    "date": "28 ส.ค. 2026",
+    "date": "27 ก.ย. 2026",
     "time": "20:00 - 22:30 น.",
     "location": "Comedy Club Bangkok, สุขุมวิท 39",
     "tag": "☕ นัดชิลล์",
@@ -3352,7 +3352,7 @@ export const MOCK_EVENTS: EventItem[] = [
   {
     "id": "comm-15",
     "title": "Surf Skate & Longboard รวมพลไถบอร์ด อุทยาน 100 ปี จุฬาฯ",
-    "date": "29 ส.ค. 2026",
+    "date": "27 ก.ย. 2026",
     "time": "17:00 - 19:30 น.",
     "location": "อุทยาน 100 ปี จุฬาลงกรณ์มหาวิทยาลัย (ลานกิจกรรมกลาง)",
     "tag": "🏃 ออกกำลังกาย",
@@ -3384,7 +3384,7 @@ export const MOCK_EVENTS: EventItem[] = [
   {
     "id": "comm-16",
     "title": "Silver Ring Crafting เวิร์กช็อปทำแหวนเงินแท้คู่ใจ พระนคร",
-    "date": "30 ส.ค. 2026",
+    "date": "03 ต.ค. 2026",
     "time": "13:00 - 16:30 น.",
     "location": "Silver Craft Workshop, ถนนดินสอ พระนคร",
     "tag": "🎨 เวิร์กช็อป",
@@ -3416,7 +3416,7 @@ export const MOCK_EVENTS: EventItem[] = [
   {
     "id": "comm-17",
     "title": "Clean Food Cooking Class ทำอาหารคลีนสำหรับคนฟิตหุ่น อนุสาวรีย์ชัยฯ",
-    "date": "30 ส.ค. 2026",
+    "date": "03 ต.ค. 2026",
     "time": "10:00 - 12:30 น.",
     "location": "Healthy Kitchen Space, ซอยรางน้ำ อนุสาวรีย์ชัยฯ",
     "tag": "🏃 ออกกำลังกาย",
@@ -3448,7 +3448,7 @@ export const MOCK_EVENTS: EventItem[] = [
   {
     "id": "comm-18",
     "title": "English & Cultural Exchange เม้าท์มอยฝึกภาษาเพื่อนต่างชาติ พระโขนง",
-    "date": "28 ส.ค. 2026",
+    "date": "04 ต.ค. 2026",
     "time": "18:30 - 20:30 น.",
     "location": "W District Community Mall, สุขุมวิท 69 (พระโขนง)",
     "tag": "☕ นัดชิลล์",
@@ -3480,7 +3480,7 @@ export const MOCK_EVENTS: EventItem[] = [
   {
     "id": "comm-19",
     "title": "Acoustic Guitar Jam จอยดนตรีโฟล์กซองริมน้ำ ตลาดพลู",
-    "date": "29 ส.ค. 2026",
+    "date": "10 ต.ค. 2026",
     "time": "18:00 - 21:00 น.",
     "location": "ลานริมคลองบางหลวง ตลาดพลู (ฝั่งธนบุรี)",
     "tag": "☕ นัดชิลล์",
@@ -3512,7 +3512,7 @@ export const MOCK_EVENTS: EventItem[] = [
   {
     "id": "comm-20",
     "title": "Cat Cafe Meetup มีตติ้งทาสแมว เล่นบอร์ดเกมเบาๆ รัชดาภิเษก",
-    "date": "30 ส.ค. 2026",
+    "date": "11 ต.ค. 2026",
     "time": "14:00 - 16:30 น.",
     "location": "Caturday Cafe, รัชดา ซอย 3",
     "tag": "🌱 ธรรมชาติ & ฮีลใจ",

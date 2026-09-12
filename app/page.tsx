@@ -20,6 +20,7 @@ import { TrendingCarousel } from '@/components/TrendingCarousel';
 import { CommunityChallengeBar } from '@/components/CommunityChallengeBar';
 import { DailyQuestXPStrip } from '@/components/DailyQuestXPStrip';
 import { CommunityMomentsStrip } from '@/components/CommunityMomentsStrip';
+import { PlatformTrustAndPerks } from '@/components/PlatformTrustAndPerks';
 import { CreateChallengeModal } from '@/components/CreateChallengeModal';
 import { CommunityCategoryRail, COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
 import { SpotCategoryRail, NATIONWIDE_SPOT_CATEGORIES } from '@/components/SpotCategoryRail';
@@ -28,7 +29,7 @@ import { Pagination } from '@/components/Pagination';
 import { BrandLogo } from '@/components/BrandLogo';
 import { MOCK_SPOTS, SPOT_CATEGORIES, ALL_THAI_PROVINCES, LifestyleSpotItem } from '@/data/spotsData';
 import { SpotCard } from '@/components/SpotCard';
-import { isEventEnded, isEventNew, parseEventDateToTimestamp, parseEventEndDateToTimestamp, isEventEndedByDate } from '@/lib/dateUtils';
+import { isEventEnded, isEventNew, parseEventDateToTimestamp, parseEventEndDateToTimestamp, isEventEndedByDate, isEventMatchingTimeFilter } from '@/lib/dateUtils';
 import { useAuth } from '@/lib/useAuth';
 import {
   Heart,
@@ -72,7 +73,7 @@ export default function Home() {
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
   const [selectedVenueFilter, setSelectedVenueFilter] = useState<string | null>(null);
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
-  const [eventTypeTab, setEventTypeTab] = useState<'spots' | 'public_venue' | 'community'>('spots');
+  const [eventTypeTab, setEventTypeTab] = useState<'community' | 'public_venue' | 'spots'>('community');
   const [selectedSpotCategory, setSelectedSpotCategory] = useState<string>('all');
   const [selectedSpotRailCategory, setSelectedSpotRailCategory] = useState<string | null>(null);
   const [selectedFairRailCategory, setSelectedFairRailCategory] = useState<string | null>(null);
@@ -418,57 +419,7 @@ export default function Home() {
         matchesEventType = currentEvType === 'community';
       }
 
-      let matchesTime = true;
-      if (timeFilter === 'today') {
-        const startT = parseEventDateToTimestamp(event.date);
-        const endT = parseEventEndDateToTimestamp(event.date);
-        const todayStart = new Date(2026, 7, 22, 0, 0, 0).getTime();
-        const todayEnd = new Date(2026, 7, 22, 23, 59, 59).getTime();
-        matchesTime = (startT <= todayEnd && endT >= todayStart) || event.date.includes('22 ส.ค.');
-      } else if (timeFilter === 'tomorrow') {
-        const startT = parseEventDateToTimestamp(event.date);
-        const endT = parseEventEndDateToTimestamp(event.date);
-        const tomStart = new Date(2026, 7, 23, 0, 0, 0).getTime();
-        const tomEnd = new Date(2026, 7, 23, 23, 59, 59).getTime();
-        matchesTime = (startT <= tomEnd && endT >= tomStart) || event.date.includes('23 ส.ค.');
-      } else if (timeFilter === 'weekend') {
-        const startT = parseEventDateToTimestamp(event.date);
-        const endT = parseEventEndDateToTimestamp(event.date);
-        const wkndStart = new Date(2026, 7, 22, 0, 0, 0).getTime();
-        const wkndEnd = new Date(2026, 7, 23, 23, 59, 59).getTime();
-        matchesTime = (startT <= wkndEnd && endT >= wkndStart) || event.date.includes('เสาร์') || event.date.includes('อาทิตย์') || event.date.includes('22') || event.date.includes('23');
-      } else if (timeFilter === 'next_month') {
-        matchesTime = event.date.includes('ก.ย.') || event.date.includes('เม.ย.') || event.date.includes('พ.ค.');
-      } else if (timeFilter === 'custom' && (startDate || endDate)) {
-        const parseCustomDateToTimestamp = (dateStr: string, isEndOfDay = false): number => {
-          if (!dateStr) return isEndOfDay ? 9999999999999 : 0;
-          let y = 2026, m = 0, d = 1;
-          if (dateStr.includes('/')) {
-            const parts = dateStr.split('/');
-            d = parseInt(parts[0], 10) || 1;
-            m = (parseInt(parts[1], 10) || 1) - 1;
-            y = parseInt(parts[2], 10) || 2026;
-          } else if (dateStr.includes('-')) {
-            const parts = dateStr.split('-');
-            if (parts[0].length === 4) {
-              y = parseInt(parts[0], 10);
-              m = (parseInt(parts[1], 10) || 1) - 1;
-              d = parseInt(parts[2], 10) || 1;
-            } else {
-              d = parseInt(parts[0], 10) || 1;
-              m = (parseInt(parts[1], 10) || 1) - 1;
-              y = parseInt(parts[2], 10) || 2026;
-            }
-          }
-          return isEndOfDay ? new Date(y, m, d, 23, 59, 59).getTime() : new Date(y, m, d, 0, 0, 0).getTime();
-        };
-
-        const filterStart = startDate ? parseCustomDateToTimestamp(startDate, false) : 0;
-        const filterEnd = endDate ? parseCustomDateToTimestamp(endDate, true) : (startDate ? parseCustomDateToTimestamp(startDate, true) : 9999999999999);
-        const evStart = parseEventDateToTimestamp(event.date);
-        const evEnd = parseEventEndDateToTimestamp(event.date);
-        matchesTime = evStart <= filterEnd && evEnd >= filterStart;
-      }
+      const matchesTime = isEventMatchingTimeFilter(event.date, timeFilter, startDate, endDate);
 
       let matchesSubCategory = true;
       if (selectedCategory && selectedSubCategory) {
@@ -682,9 +633,16 @@ export default function Home() {
         if (!eventText.includes(q)) return false;
       }
 
+      // Time filter for Community Stream
+      if (timeFilter !== 'all') {
+        if (!isEventMatchingTimeFilter(event.date, timeFilter, startDate, endDate)) {
+          return false;
+        }
+      }
+
       return true;
     });
-  }, [eventsList, selectedCategory, searchQuery, selectedSpotProvince]);
+  }, [eventsList, selectedCategory, searchQuery, selectedSpotProvince, timeFilter, startDate, endDate]);
 
   const streamPublicEvents = useMemo(() => {
     return eventsList.filter((event) => {
@@ -747,9 +705,16 @@ export default function Home() {
         if (!eventText.includes(q)) return false;
       }
 
+      // Time filter for Fairs Stream
+      if (timeFilter !== 'all') {
+        if (!isEventMatchingTimeFilter(event.date, timeFilter, startDate, endDate)) {
+          return false;
+        }
+      }
+
       return true;
     });
-  }, [eventsList, selectedFairRailCategory, selectedVenueFilter, searchQuery, selectedSpotProvince]);
+  }, [eventsList, selectedFairRailCategory, selectedVenueFilter, searchQuery, selectedSpotProvince, timeFilter, startDate, endDate]);
 
   // Filtered Lifestyle Spots (พิกัดเที่ยว & จุดฮีลใจ ทั่วประเทศ)
   const filteredSpots = useMemo(() => {
@@ -836,21 +801,18 @@ export default function Home() {
     setSelectedVenueFilter(null);
     setSelectedZone(null);
     setPriceFilter('all');
-    setTimeFilter('all');
-    setStartDate('');
-    setEndDate('');
     setSortByNearMe(false);
     setCurrentPage(1);
 
     // Scroll to the targeted section based on the active scope tab
-    if (activeScopeTab === 'spots') {
-      const el = document.getElementById('section-spots');
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } else if (activeScopeTab === 'community') {
+    if (activeScopeTab === 'community') {
       const el = document.getElementById('section-community');
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else if (activeScopeTab === 'fairs') {
       const el = document.getElementById('section-fairs');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (activeScopeTab === 'spots') {
+      const el = document.getElementById('section-spots');
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
       const el = document.getElementById('catalog-section');
@@ -1093,17 +1055,175 @@ export default function Home() {
             <div id="catalog-section" className="space-y-12 sm:space-y-14 pt-1 animate-fade-in">
 
               {/* ------------------------------------------------------------------------- */}
-              {/* STREAM SECTION 1: 📍 LIFESTYLE SPOTS (พิกัดเที่ยว & จุดฮีลใจ ทั่วไทย)        */}
+              {/* STREAM SECTION 1: 👥 COMMUNITY MEETUPS (กิจกรรมคอมมูนิตี้)                 */}
+              {/* ------------------------------------------------------------------------- */}
+              <section id="section-community" className="space-y-4 scroll-mt-20">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-orange-50/50 via-slate-50/30 to-transparent p-3.5 sm:p-4 rounded-2xl border border-orange-100/60 shadow-2xs">
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="w-6 h-6 rounded-lg bg-orange-500/10 text-[#F26430] flex items-center justify-center text-xs font-black shrink-0 border border-orange-500/20">
+                        01
+                      </span>
+                      <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                        <span>กิจกรรมคอมมูนิตี้</span>
+                        <span className="text-[10px] font-black text-[#F26430] bg-[#FFF4EE] px-2 py-0.5 rounded-full border border-orange-200">
+                          Community Circles
+                        </span>
+                      </h2>
+                      {timeFilter !== 'all' && (
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-orange-950 bg-orange-100/90 px-2.5 py-0.5 rounded-full border border-orange-200 shadow-2xs">
+                          <Calendar className="w-3 h-3 text-[#F26430]" />
+                          <span>
+                            {timeFilter === 'today' && 'วันนี้ (12 ก.ย.)'}
+                            {timeFilter === 'tomorrow' && 'พรุ่งนี้ (13 ก.ย.)'}
+                            {timeFilter === 'weekend' && 'สุดสัปดาห์นี้'}
+                            {timeFilter === 'next_month' && 'เดือนนี้'}
+                            {timeFilter === 'custom' && (startDate ? `${startDate}${endDate && endDate !== startDate ? ` - ${endDate}` : ''}` : 'ระบุวันที่')}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTimeFilter('all');
+                              setStartDate('');
+                              setEndDate('');
+                            }}
+                            className="p-0.5 hover:bg-orange-200 rounded-full cursor-pointer ml-0.5"
+                            title="ล้างตัวกรองช่วงเวลา"
+                          >
+                            <X className="w-3 h-3 text-orange-700" />
+                          </button>
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1 font-medium pl-8">
+                      เชื่อมต่อมิตรภาพผ่านกิจกรรมสร้างสรรค์ ในบรรยากาศอบอุ่น เป็นกันเอง และปลอดภัย
+                    </p>
+                  </div>
+
+                  <Link
+                    href={`/community${selectedCategory ? `?category=${encodeURIComponent(selectedCategory)}` : ''}`}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-[#F26430] text-[#F26430] hover:text-white border border-orange-200/80 hover:border-[#F26430] rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
+                  >
+                    <span>สำรวจกิจกรรมคอมมูนิตี้ทั้งหมด ({streamCommunityEvents.length})</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
+                  </Link>
+                </div>
+
+                {/* Meetup & Luma Inspired Lifestyle Category Rail */}
+                <div className="pt-0.5">
+                  <CommunityCategoryRail
+                    selectedCategoryId={selectedCategory}
+                    onSelectCategory={(catId) => {
+                      setSelectedCategory(catId as any);
+                      setSelectedSubCategory(null);
+                    }}
+                    variant="rail"
+                  />
+                </div>
+
+                {/* Community Events Grid (Responsive complete rows: 2xl: 10, lg/xl: 8, md/sm: 6, mobile: 4) */}
+                <EventGrid
+                  events={streamCommunityEvents}
+                  responsiveLimit={{ mobile: 4, desktop: 10 }}
+                  dynamicResponsiveGrid={true}
+                  onSelectEvent={() => { }}
+                  favorites={isLoggedIn ? favorites : []}
+                  toggleFavorite={toggleFavorite}
+                  joinedEventIds={isLoggedIn ? joinedEventIds : []}
+                  onResetFilters={handleResetAllFilters}
+                />
+              </section>
+
+              {/* ------------------------------------------------------------------------- */}
+              {/* STREAM SECTION 2: 🏛️ EXHIBITIONS & FAIRS (งานมหกรรม & เอ็กซ์โป)           */}
+              {/* ------------------------------------------------------------------------- */}
+              <section id="section-fairs" className="space-y-4 scroll-mt-20">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-blue-50/50 via-slate-50/30 to-transparent p-3.5 sm:p-4 rounded-2xl border border-blue-100/60 shadow-2xs">
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="w-6 h-6 rounded-lg bg-blue-500/10 text-[#2B527A] flex items-center justify-center text-xs font-black shrink-0 border border-blue-500/20">
+                        02
+                      </span>
+                      <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                        <span>งานมหกรรม & เอ็กซ์โป</span>
+                        <span className="text-[10px] font-black text-[#2B527A] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                          Grand Exhibitions
+                        </span>
+                      </h2>
+                      {timeFilter !== 'all' && (
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-950 bg-blue-100/90 px-2.5 py-0.5 rounded-full border border-blue-200 shadow-2xs">
+                          <Calendar className="w-3 h-3 text-[#2B527A]" />
+                          <span>
+                            {timeFilter === 'today' && 'วันนี้ (12 ก.ย.)'}
+                            {timeFilter === 'tomorrow' && 'พรุ่งนี้ (13 ก.ย.)'}
+                            {timeFilter === 'weekend' && 'สุดสัปดาห์นี้'}
+                            {timeFilter === 'next_month' && 'เดือนนี้'}
+                            {timeFilter === 'custom' && (startDate ? `${startDate}${endDate && endDate !== startDate ? ` - ${endDate}` : ''}` : 'ระบุวันที่')}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTimeFilter('all');
+                              setStartDate('');
+                              setEndDate('');
+                            }}
+                            className="p-0.5 hover:bg-blue-200 rounded-full cursor-pointer ml-0.5"
+                            title="ล้างตัวกรองช่วงเวลา"
+                          >
+                            <X className="w-3 h-3 text-blue-700" />
+                          </button>
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1 font-medium pl-8">
+                      นิทรรศการ คอนเวนชัน และเทศกาลระดับประเทศ ณ ศูนย์การประชุมและแลนด์มาร์กชั้นนำ
+                    </p>
+                  </div>
+
+                  <Link
+                    href={`/fairs${selectedVenueFilter ? `?venue=${encodeURIComponent(selectedVenueFilter)}` : ''}`}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-[#2B527A] text-[#2B527A] hover:text-white border border-blue-200/80 hover:border-[#2B527A] rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
+                  >
+                    <span>สำรวจงานมหกรรม & เอ็กซ์โปทั้งหมด ({streamPublicEvents.length})</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
+                  </Link>
+                </div>
+
+                {/* Major Fairs & Expo Category Rail */}
+                <div className="pt-0.5">
+                  <FairCategoryRail
+                    selectedCategoryId={selectedFairRailCategory}
+                    onSelectCategory={(catId) => {
+                      setSelectedFairRailCategory(catId);
+                    }}
+                  />
+                </div>
+
+                {/* Public Venue Events Grid (Responsive complete rows: 2xl: 10, lg/xl: 8, md/sm: 6, mobile: 4) */}
+                <EventGrid
+                  events={streamPublicEvents}
+                  responsiveLimit={{ mobile: 4, desktop: 10 }}
+                  dynamicResponsiveGrid={true}
+                  onSelectEvent={() => { }}
+                  favorites={isLoggedIn ? favorites : []}
+                  toggleFavorite={toggleFavorite}
+                  joinedEventIds={isLoggedIn ? joinedEventIds : []}
+                  onResetFilters={handleResetAllFilters}
+                />
+              </section>
+
+              {/* ------------------------------------------------------------------------- */}
+              {/* STREAM SECTION 3: 📍 LIFESTYLE SPOTS (พิกัดเที่ยว & จุดฮีลใจ ทั่วไทย)        */}
               {/* ------------------------------------------------------------------------- */}
               <section id="section-spots" className="space-y-4 scroll-mt-20">
                 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-emerald-50/50 via-slate-50/30 to-transparent p-3.5 sm:p-4 rounded-2xl border border-emerald-100/60 shadow-2xs">
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="w-6 h-6 rounded-lg bg-emerald-500/10 text-[#4A7C59] flex items-center justify-center text-xs font-black shrink-0 border border-emerald-500/20">
-                        01
+                        03
                       </span>
                       <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                        <span>พิกัดพักใจ & ชุมชนน่าหลงใหล 77 จังหวัด</span>
+                        <span>พิกัดเที่ยว & จุดฮีลใจ</span>
                         <span className="text-[10px] font-black text-[#4A7C59] bg-[#EBF3ED] px-2 py-0.5 rounded-full border border-emerald-200">
                           {selectedSpotProvince === 'all' ? '77 จังหวัด' : selectedSpotProvince}
                         </span>
@@ -1174,116 +1294,6 @@ export default function Home() {
               </section>
 
               {/* ------------------------------------------------------------------------- */}
-              {/* STREAM SECTION 2: 👥 COMMUNITY MEETUPS (กิจกรรมคอมมูนิตี้)                 */}
-              {/* ------------------------------------------------------------------------- */}
-              <section id="section-community" className="space-y-4 scroll-mt-20">
-                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-orange-50/50 via-slate-50/30 to-transparent p-3.5 sm:p-4 rounded-2xl border border-orange-100/60 shadow-2xs">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-lg bg-orange-500/10 text-[#F26430] flex items-center justify-center text-xs font-black shrink-0 border border-orange-500/20">
-                        02
-                      </span>
-                      <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                        <span>ตี้เพื่อนใหม่ & กิจกรรมกลุ่มย่อย</span>
-                        <span className="text-[10px] font-black text-[#F26430] bg-[#FFF4EE] px-2 py-0.5 rounded-full border border-orange-200">
-                          Community Circles
-                        </span>
-                      </h2>
-                    </div>
-                    <p className="text-xs text-slate-500 mt-1 font-medium pl-8">
-                      เชื่อมต่อมิตรภาพผ่านกิจกรรมสร้างสรรค์ ในบรรยากาศอบอุ่น เป็นกันเอง และปลอดภัย
-                    </p>
-                  </div>
-
-                  <Link
-                    href={`/community${selectedCategory ? `?category=${encodeURIComponent(selectedCategory)}` : ''}`}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-[#F26430] text-[#F26430] hover:text-white border border-orange-200/80 hover:border-[#F26430] rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
-                  >
-                    <span>สำรวจกิจกรรมคอมมูนิตี้ทั้งหมด ({streamCommunityEvents.length})</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
-                  </Link>
-                </div>
-
-                {/* Meetup & Luma Inspired Lifestyle Category Rail */}
-                <div className="pt-0.5">
-                  <CommunityCategoryRail
-                    selectedCategoryId={selectedCategory}
-                    onSelectCategory={(catId) => {
-                      setSelectedCategory(catId as any);
-                      setSelectedSubCategory(null);
-                    }}
-                    variant="rail"
-                  />
-                </div>
-
-                {/* Community Events Grid (Responsive complete rows: 2xl: 10, lg/xl: 8, md/sm: 6, mobile: 4) */}
-                <EventGrid
-                  events={streamCommunityEvents}
-                  responsiveLimit={{ mobile: 4, desktop: 10 }}
-                  dynamicResponsiveGrid={true}
-                  onSelectEvent={() => { }}
-                  favorites={isLoggedIn ? favorites : []}
-                  toggleFavorite={toggleFavorite}
-                  joinedEventIds={isLoggedIn ? joinedEventIds : []}
-                  onResetFilters={handleResetAllFilters}
-                />
-              </section>
-
-              {/* ------------------------------------------------------------------------- */}
-              {/* STREAM SECTION 3: 🏛️ EXHIBITIONS & FAIRS (งานมหกรรม นิทรรศการ & งานแฟร์)  */}
-              {/* ------------------------------------------------------------------------- */}
-              <section id="section-fairs" className="space-y-4 scroll-mt-20">
-                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-blue-50/50 via-slate-50/30 to-transparent p-3.5 sm:p-4 rounded-2xl border border-blue-100/60 shadow-2xs">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-lg bg-blue-500/10 text-[#2B527A] flex items-center justify-center text-xs font-black shrink-0 border border-blue-500/20">
-                        03
-                      </span>
-                      <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                        <span>เทศกาล งานศิลปะ & มหกรรมระดับชาติ</span>
-                        <span className="text-[10px] font-black text-[#2B527A] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
-                          Grand Exhibitions
-                        </span>
-                      </h2>
-                    </div>
-                    <p className="text-xs text-slate-500 mt-1 font-medium pl-8">
-                      นิทรรศการ คอนเวนชัน และเทศกาลระดับประเทศ ณ ศูนย์การประชุมและแลนด์มาร์กชั้นนำ
-                    </p>
-                  </div>
-
-                  <Link
-                    href={`/fairs${selectedVenueFilter ? `?venue=${encodeURIComponent(selectedVenueFilter)}` : ''}`}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-[#2B527A] text-[#2B527A] hover:text-white border border-blue-200/80 hover:border-[#2B527A] rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
-                  >
-                    <span>สำรวจงานมหกรรม & เอ็กซ์โปทั้งหมด ({streamPublicEvents.length})</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
-                  </Link>
-                </div>
-
-                {/* Major Fairs & Expo Category Rail */}
-                <div className="pt-0.5">
-                  <FairCategoryRail
-                    selectedCategoryId={selectedFairRailCategory}
-                    onSelectCategory={(catId) => {
-                      setSelectedFairRailCategory(catId);
-                    }}
-                  />
-                </div>
-
-                {/* Public Venue Events Grid (Responsive complete rows: 2xl: 10, lg/xl: 8, md/sm: 6, mobile: 4) */}
-                <EventGrid
-                  events={streamPublicEvents}
-                  responsiveLimit={{ mobile: 4, desktop: 10 }}
-                  dynamicResponsiveGrid={true}
-                  onSelectEvent={() => { }}
-                  favorites={isLoggedIn ? favorites : []}
-                  toggleFavorite={toggleFavorite}
-                  joinedEventIds={isLoggedIn ? joinedEventIds : []}
-                  onResetFilters={handleResetAllFilters}
-                />
-              </section>
-
-              {/* ------------------------------------------------------------------------- */}
               {/* STREAM SECTION 4: ⚡ COMMUNITY QUESTS (ชาเลนจ์ & ภารกิจท้าทาย)             */}
               {/* ------------------------------------------------------------------------- */}
               <CommunityChallengeBar
@@ -1295,6 +1305,11 @@ export default function Home() {
               {/* STREAM SECTION 5: 📸 SOCIAL STORIES (โมเมนต์ & บรรยากาศจริงจากชุมชน)        */}
               {/* ------------------------------------------------------------------------- */}
               <CommunityMomentsStrip />
+
+              {/* ------------------------------------------------------------------------- */}
+              {/* STREAM SECTION 6: 💎 PLATFORM TRUST & LIFESTYLE PERKS (Inspired by Klook)   */}
+              {/* ------------------------------------------------------------------------- */}
+              <PlatformTrustAndPerks onOpenLogin={() => setIsAuthModalOpen(true)} />
 
             </div>
           ) : (
@@ -1313,7 +1328,40 @@ export default function Home() {
               {/* Modern Segmented Control */}
               <div className="bg-slate-100 p-1 rounded-2xl flex items-center gap-1 border border-slate-200/60">
 
-                {/* Tab 1: สถานที่เที่ยว */}
+                {/* Tab 1: กิจกรรมคอมมูนิตี้ */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleSelectEventTypeTab('community');
+                    setSelectedVenueFilter(null);
+                  }}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-98 ${eventTypeTab === 'community'
+                      ? 'bg-white text-[#F26430] shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                >
+                  <Users className="w-4 h-4 shrink-0" />
+                  <span>กิจกรรมคอมมูนิตี้</span>
+                </button>
+
+                {/* Tab 2: งานมหกรรม & เอ็กซ์โป */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleSelectEventTypeTab('public_venue');
+                    setSelectedCategory(null);
+                    setSelectedSubCategory(null);
+                  }}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-98 ${eventTypeTab === 'public_venue'
+                      ? 'bg-white text-[#2B527A] shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                >
+                  <Building2 className="w-4 h-4 shrink-0" />
+                  <span className="truncate">งานมหกรรม & เอ็กซ์โป</span>
+                </button>
+
+                {/* Tab 3: พิกัดเที่ยว & จุดฮีลใจ */}
                 <button
                   type="button"
                   onClick={() => handleSelectEventTypeTab('spots')}
@@ -1323,40 +1371,7 @@ export default function Home() {
                     }`}
                 >
                   <MapPin className="w-4 h-4 shrink-0" />
-                  <span>สถานที่เที่ยว</span>
-                </button>
-
-                {/* Tab 2: กิจกรรมคอมมูนิตี้ */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleSelectEventTypeTab('community');
-                    setSelectedVenueFilter(null);
-                  }}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-98 ${eventTypeTab === 'community'
-                      ? 'bg-white text-[#4A7C59] shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                >
-                  <Users className="w-4 h-4 shrink-0" />
-                  <span>กิจกรรมคอมมูนิตี้</span>
-                </button>
-
-                {/* Tab 3: อีเวนต์ & งานแฟร์ */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleSelectEventTypeTab('public_venue');
-                    setSelectedCategory(null);
-                    setSelectedSubCategory(null);
-                  }}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-98 ${eventTypeTab === 'public_venue'
-                      ? 'bg-white text-[#4A7C59] shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                >
-                  <Building2 className="w-4 h-4 shrink-0" />
-                  <span className="truncate">อีเวนต์ & งานแฟร์</span>
+                  <span>พิกัดเที่ยว & จุดฮีลใจ</span>
                 </button>
 
               </div>

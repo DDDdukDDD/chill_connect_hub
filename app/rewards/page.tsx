@@ -211,22 +211,24 @@ export default function RewardsPage() {
           
           {/* Breadcrumb Navigation */}
           <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-            <Link href="/" className="hover:text-slate-900 transition-colors">หน้าแรก</Link>
+            <Link href="/" className="hover:text-slate-900 transition-colors flex items-center gap-1">
+              <span>หน้าแรก</span>
+            </Link>
             <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-            <span className="text-slate-800 font-bold">ศูนย์ของรางวัล & สิทธิพิเศษ</span>
+            <span className="text-slate-900 font-bold">ศูนย์สิทธิพิเศษ & ของรางวัลไลฟ์สไตล์</span>
           </div>
 
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="space-y-3 max-w-2xl">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FEF3EE] border border-[#FCD5C5] text-[#D04A1B] text-xs font-bold shadow-2xs">
                 <Gift className="w-3.5 h-3.5" />
-                <span>Rewards & Community Perks</span>
+                <span>Member Privileges & Rewards</span>
               </div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-tight">
-                ของรางวัล & สิทธิพิเศษคอมมูนิตี้
+                ศูนย์สิทธิพิเศษ & ของรางวัลไลฟ์สไตล์
               </h1>
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                เปลี่ยนทุกแต้ม XP ที่สะสมจากการเข้าร่วมตี้เพื่อนใหม่ เช็คอินพิกัดฮีลใจ 77 จังหวัด และทำภารกิจ ให้เป็นส่วนลดคาเฟ่ สโลว์บาร์ ตั๋วบอร์ดเกม และของที่ระลึกพิเศษ
+                แลกรับสิทธิประโยชน์ ส่วนลดคาเฟ่ ตั๋วเวิร์กช็อป และของที่ระลึกพิเศษ ด้วยแต้มสะสม XP จากการออกไปใช้ชีวิตในทุกๆ วัน
               </p>
             </div>
 

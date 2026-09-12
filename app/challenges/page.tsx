@@ -9,7 +9,8 @@ import {
   Award, 
   Users, 
   Target, 
-  ArrowRight, 
+  ArrowRight,
+  ArrowLeft,
   Crown, 
   Compass, 
   ChevronRight, 
@@ -185,6 +186,7 @@ export default function ChallengesDiscoveryPage() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
+  const [isExpandedAllQuests, setIsExpandedAllQuests] = useState(false);
 
 
 
@@ -289,6 +291,16 @@ export default function ChallengesDiscoveryPage() {
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] mx-auto px-3.5 sm:px-6 lg:px-8 py-2.5 sm:py-4 space-y-3 sm:space-y-4 w-full">
         
+        {/* Header Bar with Breadcrumb */}
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+          <Link href="/" className="hover:text-slate-900 transition-colors flex items-center gap-1">
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>หน้าแรก</span>
+          </Link>
+          <span>/</span>
+          <span className="text-slate-900 font-bold">ภารกิจไลฟ์สไตล์ & ชาเลนจ์ (Lifestyle Quests & Badges)</span>
+        </div>
+
         {/* 1. Unified Compact Hero with Integrated Spotlight Quest (Single Clean Banner) */}
         <section className="relative rounded-2xl bg-white p-4 sm:p-5 shadow-2xs border border-slate-200/80 overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-center">
@@ -296,8 +308,13 @@ export default function ChallengesDiscoveryPage() {
             {/* Left Side (7 Cols): Hero Headline, Description & Actions */}
             <div className="lg:col-span-7 space-y-2.5">
               <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200 uppercase tracking-wider">
+                    Lifestyle Quests & Badges
+                  </span>
+                </div>
                 <h1 className="text-lg sm:text-xl md:text-2xl font-black text-slate-900 tracking-tight leading-tight">
-                  พิชิตเป้าหมายวันว่าง <span className="text-[#7C3AED]">สะสมเหรียญรางวัล</span>
+                  ภารกิจไลฟ์สไตล์ & ชาเลนจ์
                 </h1>
                 <p className="text-xs sm:text-[13px] text-slate-500 leading-relaxed font-normal max-w-xl">
                   รับภารกิจ ออกไปวิ่ง เช็คอินคาเฟ่ หรือฮีลใจ สะสมเหรียญรางวัล Badges และส่งหลักฐานเพื่อรับแต้ม XP พิเศษเมื่อทำสำเร็จ
@@ -507,15 +524,26 @@ export default function ChallengesDiscoveryPage() {
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                  {filteredQuests.map((quest) => {
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  {filteredQuests.map((quest, idx) => {
                     const isJoined = joinedQuestIds.includes(quest.id);
                     const isUrgent = quest.daysRemaining <= 5;
+
+                    // Dynamic responsive complete rows: 2xl: 10 (5x2), lg/xl: 8 (4x2), md: 6 (3x2), mobile: 4 (4x1)
+                    const responsiveVisibilityClass =
+                      idx >= 8 ? 'hidden 2xl:block' : // 2xl shows 10 (5 rows of 2)
+                      idx >= 6 ? 'hidden lg:block' :  // lg/xl shows 8 (4 rows of 2)
+                      idx >= 4 ? 'hidden md:block' :  // md shows 6 (3 rows of 2)
+                      'block';                        // mobile shows 4 (4 rows of 1)
 
                     return (
                       <div
                         key={quest.id}
-                        onClick={() => setQuestToJoin(quest)}
+                        className={!isExpandedAllQuests ? responsiveVisibilityClass : 'block'}
+                      >
+                        <div
+                          onClick={() => setQuestToJoin(quest)}
                         className={`group/card bg-white rounded-2xl p-3.5 sm:p-4 border transition-all duration-300 flex flex-col justify-between space-y-3 relative overflow-hidden shadow-2xs hover:shadow-xl hover:border-purple-300/80 hover:-translate-y-0.5 cursor-pointer ${
                           isJoined 
                             ? 'border-purple-300 bg-purple-50/15 ring-1 ring-purple-200' 
@@ -647,12 +675,27 @@ export default function ChallengesDiscoveryPage() {
                             )}
                           </div>
                         </div>
-
                       </div>
-                    );
+                    </div>
+                  );
                   })}
                 </div>
-              )}
+
+                {/* Expand / Collapse Toggle Button */}
+                {filteredQuests.length > 4 && (
+                  <div className="pt-2 text-center">
+                    <button
+                      type="button"
+                      onClick={() => setIsExpandedAllQuests(!isExpandedAllQuests)}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-purple-50 hover:bg-purple-100 text-[#7C3AED] font-bold text-xs rounded-xl border border-purple-200/80 transition-all cursor-pointer shadow-2xs active:scale-95"
+                    >
+                      <span>{isExpandedAllQuests ? 'ย่อรายการภารกิจ' : `ดูภารกิจทั้งหมด (${filteredQuests.length})`}</span>
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isExpandedAllQuests ? 'rotate-180' : ''}`} />
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
             </div>
 
             {/* Right: Sidebar (Rewards & Community Challengers) */}

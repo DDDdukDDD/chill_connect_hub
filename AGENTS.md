@@ -10,115 +10,114 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ---
 
-# 🌿 Chill & Connect Hub: Mandatory Project Architecture & Design Rules
+# 🌿 Chill & Connect Hub: Mandatory Architecture & Design Concept (Global Luxury 9.8+)
 
-This document defines the strict, permanent architecture, data separation rules, and design conventions for **Chill & Connect Hub**. Every agent working on this codebase **MUST** strictly follow these rules without exception.
+This document defines the strict, permanent architecture, design system, and editorial standards for **Chill & Connect Hub**. Every agent working on this codebase **MUST** strictly adhere to these conventions.
 For a complete system blueprint, mental model (3-4-3), and usage guide, see [ARCHITECTURE.md](file:///c:/Users/Asus/.gemini/antigravity-ide/scratch/chill-and-connect-hub/ARCHITECTURE.md).
 
 ---
 
-## 🏛️ 1. Core Platform Architecture (3 Distinct Discovery Pillars)
+## 💎 1. Core Design Philosophy: Global Luxury & Editorial Simplicity (9.8+)
 
-The platform is structured into 3 core discovery pillars + 1 community engagement pillar:
+Chill & Connect Hub employs a **Global Luxury & Minimal Editorial** aesthetic—combining the clarity of international lifestyle curation (e.g. Monocle, Apple, Airbnb, Klook) with warm, organic Thai hospitality:
 
-### 1. 🌲 พิกัดเที่ยว & จุดฮีลใจ 77 จังหวัด (Nationwide Lifestyle Spots - `/spots`)
-- **Nature**: Curated lifestyle spots, viewpoints, cafes, slow bars, nature, old towns, and art spaces across all 77 Thai provinces.
-- **Dataset**: Managed in `data/spotsData.ts` and submodule datasets (`data/spots/*`).
-- **Cards & Rails**: Uses `SpotCard.tsx` and `SpotCategoryRail.tsx` (7 Vibe Categories).
+1. **Hierarchy via English Capsule Badges**:
+   - Every page header and major section begins with a compact, uppercase English category pill (e.g. `Curated Spaces • 77 Provinces`, `Meetups & Circles`, `Major Fairs & Public Expos`, `Personal Lifestyle Hub`, `Our Vision & Architecture`).
+2. **Frosted Trust Micro-Pills**:
+   - Headers feature floating frosted white pills (`bg-white/90 border shadow-2xs`) displaying key quality signals and safety assurances (e.g. `✓ คัดสรรคุณภาพ 77 จังหวัด`, `ShieldCheck คอมมูนิตี้ปลอดภัย`).
+3. **High-Clarity Hero Imagery**:
+   - Hero media uses sunny, high-saturation, crisp landscape and city imagery (vibrant green Bangkok parks, turquoise Andaman waters) with subtle gradients and balanced auto-cycling.
+4. **Voucher & Privilege Cards**:
+   - New member vouchers and privilege cards must remain compact, elegant, and proportionate (`max-w-[270px]`, `min-h-[105px]`), never oversized or dominating the card grid below.
 
-### 2. 👥 กิจกรรมคอมมูนิตี้ & ตี้เพื่อนใหม่ (Community Meetups - `/community`)
+---
+
+## 🔘 2. Unified Common Button System (`#2563EB` Royal Blue + Slate Black)
+
+To eliminate "Rainbow Buttons" (visual clutter caused by buttons matching every section color), the platform strictly enforces a **Centralized Two-Tier Button Hierarchy**:
+
+| Button Level | Color & Styling | Applied Locations |
+| :--- | :--- | :--- |
+| **Primary Action (Main CTA)** | **Royal Blue**<br>`bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm` | • Hero search buttons (Editorial & Classic modes)<br>• `+ แนะนำพิกัดเที่ยวใหม่` (`/spots`)<br>• `+ เปิดตี้ / สร้างกิจกรรมใหม่` (`/community`)<br>• `+ สร้างงานมหกรรม / เอ็กซ์โป` (`/fairs`)<br>• Primary login / conversion buttons (`/myhub`, `/about`) |
+| **Secondary / Neutral Action** | **Slate Black**<br>`bg-slate-900 hover:bg-slate-800 text-white`<br>or `bg-slate-100 hover:bg-slate-200 text-slate-700` | • Navbar login trigger (`bg-[#1E293B]`)<br>• Register member buttons (`bg-slate-900`)<br>• Modal close / back buttons (`bg-slate-100`)<br>• Secondary navigation chips |
+| **Section Accent Identity** | **Strictly on Cards, Category Rails, and Badges only** | • Never apply section colors to primary action buttons.<br>• Section colors belong exclusively to cards, tags, and category pills. |
+
+---
+
+## 🎨 3. Discovery Pillars & Color Separation
+
+The platform is strictly organized into 3 discovery pillars + 1 community engagement pillar (Community-First Hierarchy):
+
+### 1. 👥 กิจกรรมคอมมูนิตี้ & ตี้เพื่อนใหม่ (Community Meetups - `/community`)
+- **Theme Color**: **Sunset Amber** (`#F26430` / `#D04A1B`, soft tint `#FFF4EE`).
 - **Nature**: Peer-to-peer user-created meetups, running clubs, board games, workshops, and chill activities.
 - **Rules**:
-  - `eventType: 'community'`
+  - `eventType: 'community'`.
   - Must display attendee count (`4/10 คน`) and recruitment status badge (`เปิดรับสมัคร` / `เต็มแล้ว`).
   - Cards show host avatars, participants, and category colors (`heal`, `move`, `chill`, `learn`).
 - **Cards & Rails**: Uses `EventGrid.tsx` and `CommunityCategoryRail.tsx`.
 
-### 3. 🏛️ งานมหกรรม นิทรรศการ & เอ็กซ์โป (Major Fairs & Public Venues - `/fairs`)
-- **Nature**: Public venue exhibitions, convention center expos (QSNCC, BITEC, IMPACT), marathons, and city design festivals.
+### 2. 🏛️ งานมหกรรม นิทรรศการ & เอ็กซ์โป (Major Fairs & Public Venues - `/fairs`)
+- **Theme Color**: **Slate Blue** (`#2B527A` / `#1F3D5C`, soft tint `#EEF4FA`).
+- **Nature**: Public venue exhibitions, convention center expos (QSNCC, BITEC, IMPACT), marathons, and design festivals.
 - **Rules**:
-  - `eventType: 'public_venue'`
-  - **NO attendee counting** and **NO recruitment status** (public walk-in / ticketed venues).
-  - Cards show venue location badge, organizer name, and date range. **NO bottom attendee bar** (`[ศูนย์จัดแสดง เปิดเข้าชม]` was removed).
+  - `eventType: 'public_venue'`.
+  - **NO attendee counting** and **NO recruitment status** (walk-in / ticketed venues).
+  - Cards show venue location badge, organizer name, and date range. **NO bottom attendee bar**.
 - **Cards & Rails**: Uses `EventGrid.tsx` and `FairCategoryRail.tsx`.
 
+### 3. 🌲 พิกัดเที่ยว & จุดฮีลใจ 77 จังหวัด (Nationwide Lifestyle Spots - `/spots`)
+- **Theme Color**: **Forest Green** (`#4A7C59` / `#2D5A3C`, soft mint `#EBF3ED`).
+- **Nature**: Curated lifestyle spots, viewpoints, cafes, slow bars, nature, old towns, and art spaces across all 77 Thai provinces.
+- **Dataset**: `data/spotsData.ts` and submodule datasets (`data/spots/*`).
+- **Cards & Rails**: Uses `SpotCard.tsx` and `SpotCategoryRail.tsx` (7 Vibe Categories).
+
 ### 4. ⚡ ชาเลนจ์ & ภารกิจท้าทาย (Community Quests - `/challenges`)
+- **Theme Color**: **Royal Violet** (`#7C3AED`, soft tint `#F5F3FF`).
 - **Nature**: Gamified lifestyle check-ins and quests to earn XP and profile badges.
 
 ---
 
-## 🎨 2. Strict UI/UX & Aesthetic Rules (Clean, Minimal & Editorial)
+## 🧹 4. Strict UI/UX Hygiene & Editorial Conventions
 
 1. **Clean & Minimal Typography**:
-   - **NO cluttered emojis in titles**: Titles in database (`data/mockData.ts`, `data/chill_database.json`, `data/spotsData.ts`) must never contain trailing decorative emojis (e.g. `ปั้นเซรามิก 🎨` ❌ -> `ปั้นเซรามิก` ✅).
-   - **NO arrow icons (`↗`) on titles or category cards**: Cards and rails use clean typography without trailing diagonal arrows.
-   - Use standard `line-clamp-2` with `min-h-[2.5rem]` for card titles to ensure uniform grid height.
+   - **NO cluttered emojis in titles or headers**: Titles in databases (`data/mockData.ts`, `data/chill_database.json`, `data/spotsData.ts`) and section headings must never contain trailing decorative emojis (e.g. `ปั้นเซรามิก 🎨` ❌ -> `ปั้นเซรามิก` ✅).
+   - **NO raw unicode arrows (`↗`)**: Use clean typography without trailing diagonal arrows. Always use SVG `<ArrowRight />` when an arrow is needed.
+   - Use standard `line-clamp-2` with `min-h-[2.5rem]` for card titles to maintain uniform grid rhythm.
 
 2. **No Redundant Badges**:
-   - **Do NOT put category overlay badges on card images** in `EventGrid.tsx` (e.g. "กิจกรรมชุมชน" or "งานแฟร์ & อีเวนต์" on top-left of image was removed).
+   - Do NOT overlay category badges on card images in `EventGrid.tsx` (e.g. redundant "กิจกรรมชุมชน" or "งานแฟร์" overlay on top-left was removed).
 
-3. **Compact Inline Empty State**:
-   - Empty search / filter results must use a slim, unobtrusive horizontal banner (`bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200`) with a compact `ดูทั้งหมด` reset button. Never use huge vertical boxes with oversized emoji icons.
+3. **No Raw Markdown Asterisks in UI**:
+   - Never output raw markdown asterisks `**text**` in JSX. Always use standard `<strong>` tags or WYSIWYG rendering via `RichTextEditor.tsx`.
 
-4. **Default Home View Direction**:
-   - The default homepage layout is **Compact Mode (Editorial Discovery Feed)**.
-   - The `Classic Mode` (Hero Banner with 3-tab segmented control) is preserved but subtle: switcher is located inside the user profile dropdown and mobile drawer menu.
+4. **Dropdown Cleanliness**:
+   - **NO emojis or icons in `<select>` dropdown options**: All `<option>` items must contain clean, plain text only (e.g. `<option value="chill">จิบกาแฟ & ชิลล์</option>` ✅).
 
-5. **Soft Organic Color Palette**:
-   - Primary: Forest Green (`#4A7C59`), Soft Mint (`#EBF3ED`), Slate (`#1E293B`, `#0F172A`).
-   - Accent: Warm Amber (`#F26430` for Community), Slate Blue (`#2B527A` for Fairs), Royal Violet (`#7C3AED` for Quests & Badges).
-   - **Never use pitch black (`bg-black` or heavy borders)** for active selections. Use soft tint fills (`bg-[#EBF3ED]` + `text-[#2D5A3C]`).
+5. **Compact Inline Empty State**:
+   - Empty search / filter results must use a slim, horizontal banner (`bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200`) with a compact `ดูทั้งหมด` reset button. Never use huge vertical boxes with oversized emoji icons.
 
 6. **Ultra-Minimal Slim Scrollbar Design**:
-   - All scrollbars across modals, popups, and containers must be ultra-slim (`width: 6px`, `height: 6px`) with fully rounded pill thumb (`border-radius: 9999px`).
-   - **Track**: Always 100% `transparent` (never use visible gray or solid track bars).
-   - **Thumb**: Soft slate tint (`rgba(148, 163, 184, 0.35)`) and darkens softly to `rgba(100, 116, 139, 0.6)` on hover.
-   - Maintain cross-browser compatibility using `scrollbar-width: thin` and `scrollbar-color`.
-
-7. **Icon & Emoji Usage Rules (Strict No Duplication & Clean Dropdowns)**:
-   - **NO Redundant / Duplicate Icons**: Never display duplicate icons or emojis side-by-side representing the same concept (e.g. duplicating Lucide icon + emoji in the same label, or rendering both icon and emoji in the same pill).
-   - **NO Emojis / Icons in `<select>` Dropdown Options**: All `<option>` items inside HTML `<select>` dropdowns must contain clean, plain text only (e.g. `<option value="chill">จิบกาแฟ & ชิลล์</option>` ✅ instead of `<option value="chill">☕ จิบกาแฟ & ชิลล์</option>` ❌). This guarantees uniform, accessible, and elegant cross-platform typography without misaligned OS emojis.
+   - Modals and scroll containers must use ultra-slim 6px scrollbars (`scrollbar-width: thin`) with a transparent track and soft slate rounded pill thumb (`border-radius: 9999px`).
 
 ---
 
-## 💾 3. Data Integrity & Persistence Rules
+## 💾 5. Data Integrity & Persistence Rules
 
 1. **Ended Events Filter**:
-   - Past events (date prior to current active date) must have `status: 'ended'` in both `data/chill_database.json` and `data/mockData.ts`.
-   - On homepage feeds, ended events are auto-hidden by default using `isEventEnded(event)`.
+   - Past events must have `status: 'ended'`.
+   - On homepage feeds, ended events are hidden by default via `isEventEnded(event)`.
 2. **Filtering Isolation**:
-   - Filters on Section 01, Section 02, and Section 03 must operate independently and not block other sections from rendering.
+   - Filters on Section 01, Section 02, and Section 03 operate independently and never block other sections from rendering.
 
 ---
 
-## 📝 4. Content Creation, Rich Text Editor & Form Validation Rules
+## 📝 6. Form Validation & Safety Standards
 
-1. **Rich Text Editor Standard (`RichTextEditor.tsx`)**:
-   - Long-form content inputs (such as event descriptions, spot details, and buddy trip plans) must use `RichTextEditor.tsx` with WYSIWYG rendering.
-   - Headers and bold text must be styled as actual bold text (`<strong>`) in the editor and preview—**never display raw markdown asterisks `**`** to users.
-   - Use `renderDescriptionContent()` from `RichTextEditor.tsx` in detail pages (`/community/[id]`, `/spots/[id]`, `/fairs/[id]`) for unified, clean editorial typography.
-   - Use `stripHtmlToPlainText()` whenever rendering descriptions inside card snippets or list views with `line-clamp`.
-
-2. **Dedicated Spot Buddy Gathering Dialog (`SpotBuddyGatheringModal.tsx`)**:
-   - Spot buddy trips triggered from `/spots/[id]` must use the specialized, purpose-built `SpotBuddyGatheringModal.tsx` (preserving spot pre-fill, meeting point, participants counter 2-15, and community safety pledge).
-
-3. **Strict Form Validation & Required Fields Matrix**:
-   - **All Entity Types**:
-     - `title`: >= 5 chars, required.
-     - `province`: required for regional tagging and filtering.
-     - `locationName`: required (spot name / venue name / district).
-     - `description`: Rich text with plain text length >= 15 chars, required.
-     - `isSafetyAccepted`: Platform safety pledge checkbox must be checked.
-   - **👥 Community Meetups (`community` / `SpotBuddyGatheringModal`)**:
-     - `communityDate` & `time` (`startTime`, `endTime`): required.
-     - `meetingPoint`: required (specific spot landmark e.g., in front of cafe, entrance gate).
-     - `maxParticipants`: >= 2 people, required.
-   - **🏛️ Fairs & Public Venues (`fair`)**:
-     - `fairStartDate` & `fairEndDate`: required (`fairEndDate >= fairStartDate`).
-     - `fairOrganizer`: required (organizing association / company name).
-   - **🌲 Lifestyle Spots (`spot`)**:
-     - `spotOpenHours`: required (e.g. 08:00 - 18:00 น.).
-   - **⚡ Quests & Challenges (`challenge`)**:
-     - `questBadgeName`: required badge identifier.
+- **All Entities**: `title` >= 5 chars, `province` required, `locationName` required, `description` >= 15 chars plain text, and `isSafetyAccepted` checked.
+- **Community Meetups**: Date, start/end time, landmark meeting point, and max participants (2-15) required.
+- **Fairs & Expos**: Start date, end date, and official organizer required.
+- **Spots**: Open hours required.
+- **Dedicated Spot Buddy Dialog**: Spot buddy trips triggered from `/spots/[id]` must use `SpotBuddyGatheringModal.tsx`.
 
 

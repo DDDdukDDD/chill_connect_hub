@@ -143,7 +143,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                     : 'border border-slate-200/70 hover:border-slate-300 shadow-sm hover:shadow-md'
                 }`}
               >
-                <div className="relative aspect-video w-full overflow-hidden bg-slate-100 shrink-0">
+                <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100 shrink-0">
                   <img
                     src={event.image}
                     alt={event.title}

@@ -1094,7 +1094,7 @@ export default function MyHubPage() {
                       {/* Card Image Banner */}
                       <div
                         onClick={() => setDetailModalEvent(ev)}
-                        className="relative aspect-video w-full overflow-hidden bg-slate-100 shrink-0 cursor-pointer"
+                        className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100 shrink-0 cursor-pointer"
                       >
                         <img
                           src={ev.image || fallbackImg}
@@ -1293,12 +1293,16 @@ export default function MyHubPage() {
         {!isLoggedIn ? (
           <div className="max-w-4xl mx-auto px-4 py-12 sm:py-16 space-y-8 animate-fade-in">
             {/* Teaser Header */}
-            <div className="text-center space-y-2.5 max-w-xl mx-auto">
-              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                มายฮับส่วนตัว (My Hub)
+            <div className="text-center space-y-3 max-w-xl mx-auto">
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase bg-[#EBF3ED] text-[#2D5A3C] border border-[#A3CEB0]/60 shadow-2xs">
+                <Sparkles className="w-3.5 h-3.5 text-[#4A7C59]" />
+                Personal Lifestyle Hub
+              </span>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
+                มายฮับส่วนตัว (My Hub: Personal Lifestyle Hub)
               </h2>
-              <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
-                ศูนย์รวมกิจกรรม นัดหมาย  สมุดบันทึกพิกัดเที่ยว และกระเป๋าแต้มสะสม
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-lg mx-auto">
+                ศูนย์รวมกำหนดการนัดหมาย ตั๋วดิจิทัล สมุดบันทึกพิกัดเที่ยว 77 จังหวัด และกระเป๋าแต้มสะสมส่วนตัวในที่เดียว
               </p>
             </div>
 
@@ -1488,16 +1492,16 @@ export default function MyHubPage() {
               <button
                 type="button"
                 onClick={() => setIsAuthModalOpen(true)}
-                className="w-full sm:flex-1 h-12 rounded-2xl bg-[#4A7C59] hover:bg-[#386144] text-white font-bold text-xs sm:text-sm shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer border border-[#4A7C59] whitespace-nowrap"
+                className="w-full sm:flex-1 h-12 rounded-2xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-xs sm:text-sm shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer border border-[#2563EB] whitespace-nowrap"
               >
                 <LogIn className="w-4 h-4 shrink-0" />
                 <span>เข้าสู่ระบบสมาชิก</span>
               </button>
               <Link
                 href="/onboarding"
-                className="w-full sm:flex-1 h-12 rounded-2xl bg-[#EBF3ED] hover:bg-[#DCEDE0] text-[#2D5A3C] border border-[#A3CEB0] font-bold text-xs sm:text-sm transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer shadow-2xs whitespace-nowrap"
+                className="w-full sm:flex-1 h-12 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer shadow-2xs whitespace-nowrap"
               >
-                <Sparkles className="w-4 h-4 text-[#4A7C59] shrink-0" />
+                <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
                 <span>สมัครสมาชิกใหม่ (ฟรี)</span>
               </Link>
             </div>
@@ -1522,10 +1526,10 @@ export default function MyHubPage() {
                   <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                     
                     {/* User Identity Info */}
-                    <div className="space-y-2 min-w-0">
+                    <div className="space-y-2.5 min-w-0">
                       <div className="flex items-center gap-2.5 flex-wrap">
                         <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-slate-900 truncate">
-                          มายฮับส่วนตัว (My Hub)
+                          มายฮับส่วนตัว (My Hub: Personal Lifestyle Hub)
                         </h1>
                         <span className="text-[11px] font-bold px-3 py-0.5 rounded-full bg-[#EBF3ED] text-[#2D5A3C] border border-[#A3CEB0] flex items-center gap-1.5 shadow-2xs">
                           <ShieldCheck className="w-3.5 h-3.5 text-[#2D5A3C]" />
@@ -1541,8 +1545,8 @@ export default function MyHubPage() {
                         </Link>
                       </div>
 
-                      <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-xl">
-                        ศูนย์รวมกิจกรรม นัดหมาย  สมุดบันทึกพิกัดเที่ยว และกระเป๋าแต้มสะสม
+                      <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-xl">
+                        ศูนย์รวมกำหนดการนัดหมาย ตั๋วดิจิทัล สมุดบันทึกพิกัดเที่ยว 77 จังหวัด และกระเป๋าแต้มสะสมส่วนตัวในที่เดียว
                       </p>
 
                       {/* XP Progress Bar to Next Level */}
@@ -1781,7 +1785,7 @@ export default function MyHubPage() {
                             {/* Card Image */}
                             <div
                               onClick={() => setDetailModalEvent(event)}
-                              className="relative aspect-video w-full overflow-hidden bg-slate-100 shrink-0 cursor-pointer"
+                              className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100 shrink-0 cursor-pointer"
                             >
                               <img
                                 src={event.image}
@@ -2025,7 +2029,7 @@ export default function MyHubPage() {
                             {/* Card Image */}
                             <div
                               onClick={() => setDetailModalEvent(event)}
-                              className="relative aspect-video w-full overflow-hidden bg-slate-100 shrink-0 cursor-pointer"
+                              className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100 shrink-0 cursor-pointer"
                             >
                               <img
                                 src={event.image}
@@ -2220,7 +2224,7 @@ export default function MyHubPage() {
                           className="group bg-white rounded-2xl border border-slate-200/80 hover:border-slate-300 shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between overflow-hidden relative transform hover:-translate-y-1"
                         >
                           {/* Spot Image */}
-                          <div className="relative aspect-video w-full overflow-hidden bg-slate-100 shrink-0">
+                          <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100 shrink-0">
                             <img
                               src={resolveSpotImage(spotItem)}
                               alt={spotItem.title}

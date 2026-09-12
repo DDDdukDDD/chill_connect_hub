@@ -94,7 +94,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
           title: quest.title,
           text: quest.targetGoal || quest.title,
           url: shareUrl,
-        }).catch(() => {});
+        }).catch(() => { });
       } else {
         navigator.clipboard.writeText(shareUrl);
         setCopied(true);
@@ -152,7 +152,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
 
   const progressPercent = Math.min(100, Math.round((currentProgress / targetTotal) * 100));
   const cleanedVerification = cleanEmojiPrefix(quest.verificationMethod || 'ระบบตรวจสอบพิกัด GPS อัตโนมัติ หรือส่งภาพถ่ายคู่กับกิจกรรมเพื่อยืนยัน');
-  
+
   const formattedRewardsNote = (() => {
     if (!quest.rewardsText) {
       return 'เมื่อพิชิตภารกิจสำเร็จ ระบบจะมอบเหรียญตราประจำภารกิจและสะสมคะแนน XP เข้าสู่โปรไฟล์ของคุณโดยอัตโนมัติ';
@@ -276,7 +276,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
 
         {/* Scrollable Content Body */}
         <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1 bg-white">
-          
+
           {/* Submission Sheet Mode */}
           {showSubmitProof ? (
             <div className="p-5 rounded-3xl bg-purple-50/40 border border-purple-100 space-y-4 animate-fade-in">
@@ -311,11 +311,10 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setSelectedProofType('gps')}
-                    className={`p-2.5 rounded-xl border text-center transition-all flex flex-col items-center gap-1 cursor-pointer ${
-                      selectedProofType === 'gps'
+                    className={`p-2.5 rounded-xl border text-center transition-all flex flex-col items-center gap-1 cursor-pointer ${selectedProofType === 'gps'
                         ? 'bg-[#7C3AED] text-white border-[#7C3AED] font-bold shadow-xs'
                         : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     <MapPin className="w-4 h-4" />
                     <span className="text-[11px]">พิกัด GPS</span>
@@ -324,11 +323,10 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setSelectedProofType('photo')}
-                    className={`p-2.5 rounded-xl border text-center transition-all flex flex-col items-center gap-1 cursor-pointer ${
-                      selectedProofType === 'photo'
+                    className={`p-2.5 rounded-xl border text-center transition-all flex flex-col items-center gap-1 cursor-pointer ${selectedProofType === 'photo'
                         ? 'bg-[#7C3AED] text-white border-[#7C3AED] font-bold shadow-xs'
                         : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     <Camera className="w-4 h-4" />
                     <span className="text-[11px]">รูปภาพโมเมนต์</span>
@@ -337,11 +335,10 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setSelectedProofType('host')}
-                    className={`p-2.5 rounded-xl border text-center transition-all flex flex-col items-center gap-1 cursor-pointer ${
-                      selectedProofType === 'host'
+                    className={`p-2.5 rounded-xl border text-center transition-all flex flex-col items-center gap-1 cursor-pointer ${selectedProofType === 'host'
                         ? 'bg-[#7C3AED] text-white border-[#7C3AED] font-bold shadow-xs'
                         : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     <QrCode className="w-4 h-4" />
                     <span className="text-[11px]">สแกน QR</span>

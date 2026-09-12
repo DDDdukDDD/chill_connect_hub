@@ -15,6 +15,7 @@ import {
   Loader2,
   CheckCircle2,
   PlusCircle,
+  Sprout,
 } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
@@ -27,8 +28,7 @@ import { useAuth } from '@/lib/useAuth';
 import { MOCK_SPOTS, SPOT_CATEGORIES, ALL_THAI_PROVINCES, LifestyleSpotItem } from '@/data/spotsData';
 import { SpotCategoryRail, NATIONWIDE_SPOT_CATEGORIES } from '@/components/SpotCategoryRail';
 import { EventItem } from '@/data/mockData';
-
-const ITEMS_PER_PAGE = 24;
+import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
 
 function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
@@ -48,6 +48,7 @@ function SpotsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
+  const itemsPerPage = useResponsiveItemsPerPage();
 
   const [activeNavTab, setActiveNavTab] = useState('explore');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
@@ -210,11 +211,11 @@ function SpotsPageContent() {
     return counts;
   }, []);
 
-  const totalPages = Math.ceil(filteredSpots.length / ITEMS_PER_PAGE) || 1;
+  const totalPages = Math.ceil(filteredSpots.length / itemsPerPage) || 1;
   const paginatedSpots = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredSpots.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredSpots, currentPage]);
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredSpots.slice(start, start + itemsPerPage);
+  }, [filteredSpots, currentPage, itemsPerPage]);
 
   return (
     <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans">
@@ -245,17 +246,42 @@ function SpotsPageContent() {
               <span>หน้าแรก</span>
             </Link>
             <span>/</span>
-            <span className="text-slate-900">พิกัดเที่ยว & จุดฮีลใจทั่วไทย</span>
+            <span className="text-slate-900 font-bold">พิกัดเที่ยว & จุดฮีลใจ (Curated Spaces • 77 Provinces)</span>
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                พิกัดเที่ยว & จุดฮีลใจทั่วไทย
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 bg-gradient-to-r from-emerald-50/70 via-slate-50/40 to-transparent p-4 sm:p-6 rounded-3xl border border-emerald-100/80 shadow-2xs">
+            <div className="space-y-1.5 max-w-2xl">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-black text-[#2D5A3C] bg-[#EBF3ED] px-2.5 py-0.5 rounded-full border border-emerald-200 uppercase tracking-wider">
+                  Curated Spaces • 77 Provinces
+                </span>
+                <span className="text-xs font-bold text-slate-400">•</span>
+                <span className="text-xs font-bold text-slate-600">
+                  {selectedProvince === 'all' ? 'ทุกจังหวัดทั่วไทย' : `จังหวัด${selectedProvince}`} ({filteredSpots.length} แห่ง)
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight">
+                พิกัดเที่ยว & จุดฮีลใจ
               </h1>
-              <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
-                ค้นพบสถานที่ท่องเที่ยว คาเฟ่ สวนสาธารณะ และสเปซพักผ่อนกว่า {filteredSpots.length} แห่งใน 77 จังหวัด
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
+                ค้นพบสเปซฮีลใจ คาเฟ่รักษ์โลก จุดชมวิวธรรมชาติ และชุมชนท้องถิ่นที่ผ่านการคัดสรรโดยคนพื้นที่ทั่วไทย
               </p>
+              
+              {/* Frosted Trust Pills */}
+              <div className="flex items-center gap-2 pt-1 flex-wrap text-[11px] font-semibold text-slate-600">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/90 border border-emerald-200/80 shadow-2xs">
+                  <span className="text-emerald-600 font-bold">✓</span>
+                  <span>คัดสรรคุณภาพ 77 จังหวัด</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/90 border border-emerald-200/80 shadow-2xs">
+                  <Sprout className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>ชุมชนท้องถิ่นแนะนำ</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/90 border border-emerald-200/80 shadow-2xs">
+                  <Heart className="w-3 h-3 text-rose-500 fill-rose-500" />
+                  <span>บันทึกลง Bucket List ได้</span>
+                </span>
+              </div>
             </div>
 
             <button
@@ -268,7 +294,7 @@ function SpotsPageContent() {
                   setIsCreateEventModalOpen(true);
                 }
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[#4A7C59] hover:bg-[#386144] text-white rounded-xl text-xs font-bold shadow-xs hover:shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl text-xs font-bold shadow-2xs hover:shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
             >
               <PlusCircle className="w-4 h-4" />
               <span>แนะนำพิกัดเที่ยวใหม่</span>
@@ -457,7 +483,7 @@ function SpotsPageContent() {
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 totalItems={filteredSpots.length}
-                itemsPerPage={ITEMS_PER_PAGE}
+                itemsPerPage={itemsPerPage}
                 itemUnit="สถานที่"
               />
             </div>

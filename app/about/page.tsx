@@ -73,6 +73,14 @@ export default function AboutPage() {
         <section className="bg-white py-10 sm:py-14 border-b border-slate-100 relative overflow-hidden">
           <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4 relative z-10">
             
+            {/* Editorial Badge */}
+            <div className="flex justify-center">
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase bg-[#EBF3ED] text-[#2D5A3C] border border-[#A3CEB0]/60 shadow-2xs">
+                <Sparkles className="w-3.5 h-3.5 text-[#4A7C59]" />
+                Our Vision & Architecture
+              </span>
+            </div>
+
             {/* Main Headline */}
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-snug max-w-3xl mx-auto">
               แพลตฟอร์มค้นพบไลฟ์สไตล์ <br className="hidden sm:inline" />
@@ -82,7 +90,7 @@ export default function AboutPage() {
             </h1>
 
             {/* Subtitle */}
-            <p className="text-xs sm:text-sm md:text-base text-slate-500 max-w-2xl mx-auto leading-relaxed font-normal">
+            <p className="text-xs sm:text-sm md:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed font-normal">
               <strong>Chill & Connect Hub</strong> คือศูนย์กลางที่รวมสถานที่เที่ยว & จุดฮีลใจ, กิจกรรมและอีเวนต์, และเพื่อนร่วมทางคอเดียวกันเข้าไว้ในที่เดียว เพื่อให้ทุกวันหยุดของคุณมีความหมายและเติมเต็มพลังบวกได้ทุกวัน
             </p>
 
@@ -114,7 +122,7 @@ export default function AboutPage() {
           
           <div className="text-center space-y-2 max-w-3xl mx-auto">
             <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">
-              เส้นทางการใช้งานที่เชื่อมโยงทุกฟังก์ชันอย่างไร้รอยต่อ 🚀
+              เส้นทางการใช้งานที่เชื่อมโยงทุกฟังก์ชันอย่างไร้รอยต่อ
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-xl mx-auto">
               ตั้งแต่การค้นหาสถานที่ จนถึงการออกไปเจอเพื่อนและสะสมรางวัล เป็นเรื่องง่ายและสนุก
@@ -363,7 +371,7 @@ export default function AboutPage() {
             
             <div className="text-center space-y-2 max-w-3xl mx-auto">
               <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">
-                คำตอบครบทุกมิติของการออกไปใช้ชีวิต 🎯
+                คำตอบครบทุกมิติของการออกไปใช้ชีวิต
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal max-w-xl mx-auto">
                 ตอบ 3 คำถามสำคัญ เพื่อให้การวางแผนวันหยุดและการออกไปเปิดประสบการณ์ใหม่ของคุณง่ายและมีความสุขที่สุด
@@ -551,7 +559,7 @@ export default function AboutPage() {
             
             <div className="max-w-3xl mx-auto text-center space-y-2">
               <h2 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-slate-900">
-                "หาสถานที่โดนใจ สร้างกิจกรรมสุดมันส์ พบเพื่อนใหม่คอเดียวกัน" ✨
+                "หาสถานที่โดนใจ สร้างกิจกรรมสุดมันส์ พบเพื่อนใหม่คอเดียวกัน"
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 max-w-xl mx-auto">
                 ไม่ว่าจะอยากเที่ยวคนเดียวชิลๆ ชวนกลุ่มเพื่อนสนิท หรือเปิดตี้หากลุ่มเพื่อนใหม่ Chill & Connect Hub พร้อมตอบโจทย์ทุกไลฟ์สไตล์อย่างลงตัว:
@@ -616,7 +624,7 @@ export default function AboutPage() {
             
             <div className="space-y-1.5 relative z-10 max-w-2xl mx-auto">
               <h2 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight">
-                พร้อมเริ่มออกไปค้นพบความสุขใหม่ๆ หรือยัง? 🎉
+                พร้อมเริ่มออกไปค้นพบความสุขใหม่ๆ หรือยัง?
               </h2>
               <p className="text-xs sm:text-sm text-emerald-100 font-normal leading-relaxed">
                 เลือกจุดฮีลใจใกล้ตัว ค้นหากิจกรรมที่คุณชอบ หรือชวนเพื่อนคอเดียวกันไปเปิดประสบการณ์ใหม่ แล้วปล่อยให้พลังบวกเกิดขึ้นเอง!
@@ -626,7 +634,7 @@ export default function AboutPage() {
             <div className="pt-2 relative z-10 flex justify-center">
               <Link
                 href="/"
-                className="bg-[#F26430] hover:bg-[#D95322] text-white px-8 py-3 rounded-full font-black text-sm sm:text-base transition-all shadow-lg shadow-black/25 hover:shadow-xl hover:scale-102 active:scale-98 flex items-center gap-2.5 cursor-pointer group"
+                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-8 py-3 rounded-full font-black text-sm sm:text-base transition-all shadow-lg shadow-blue-600/30 hover:shadow-xl hover:scale-102 active:scale-98 flex items-center gap-2.5 cursor-pointer group"
               >
                 <span>เริ่มความสนุกกับ Chill & Connect Hub กันเลย</span>
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />

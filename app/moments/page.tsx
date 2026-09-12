@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
@@ -36,6 +37,7 @@ import {
   User,
   LogIn,
   MapPin,
+  ArrowLeft,
 } from 'lucide-react';
 
 function MomentsContent() {
@@ -68,9 +70,22 @@ function MomentsContent() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [uploadedPostImages, setUploadedPostImages] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [visibleCount, setVisibleCount] = useState<number>(8);
+  const [visibleCount, setVisibleCount] = useState<number>(6);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  // Dynamic responsive initial count based on screen size (4 mobile, 6 tablet, 8 desktop)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const width = window.innerWidth;
+    if (width >= 1024) {
+      setVisibleCount(8);
+    } else if (width >= 640) {
+      setVisibleCount(6);
+    } else {
+      setVisibleCount(4);
+    }
+  }, []);
 
   // Lightbox Modal State for Viewing Fullscreen Images
   const [lightboxData, setLightboxData] = useState<{
@@ -338,7 +353,8 @@ function MomentsContent() {
         if (first.isIntersecting && !isLoadingMore && visibleCount < posts.length) {
           setIsLoadingMore(true);
           setTimeout(() => {
-            setVisibleCount((prev) => Math.min(prev + 4, posts.length));
+            const step = typeof window !== 'undefined' && window.innerWidth >= 1024 ? 6 : 4;
+            setVisibleCount((prev) => Math.min(prev + step, posts.length));
             setIsLoadingMore(false);
           }, 300);
         }
@@ -418,17 +434,32 @@ function MomentsContent() {
       {/* Main Container */}
       <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] w-full mx-auto px-3.5 sm:px-6 lg:px-8 py-2.5 sm:py-4 space-y-3 sm:space-y-4">
         
+        {/* Header Bar with Breadcrumb */}
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+          <Link href="/" className="hover:text-slate-900 transition-colors flex items-center gap-1">
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>หน้าแรก</span>
+          </Link>
+          <span>/</span>
+          <span className="text-slate-900 font-bold">โมเมนต์ & บรรยากาศจริงจากชุมชน (Community Stories)</span>
+        </div>
+
         {/* 1. Moments Signature Hero Banner (Full-Width Editorial Header) */}
         <section className="relative rounded-2xl bg-white p-4 sm:p-5 shadow-2xs border border-slate-200/80 overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-center">
             {/* Left (7-cols): Headline, Description & Actions */}
             <div className="lg:col-span-7 space-y-2.5">
               <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black text-[#2D5A3C] bg-[#EBF3ED] px-2.5 py-0.5 rounded-full border border-emerald-200 uppercase tracking-wider">
+                    Community Stories
+                  </span>
+                </div>
                 <h1 className="text-lg sm:text-xl md:text-2xl font-black text-slate-900 tracking-tight leading-tight">
-                  โมเมนต์ & บรรยากาศจริง <span className="text-[#4A7C59]">จากชาวฮับ</span>
+                  โมเมนต์ & บรรยากาศจริงจากชุมชน
                 </h1>
-                <p className="text-xs sm:text-[13px] text-slate-500 leading-relaxed font-normal max-w-xl">
-                  ภาพถ่ายความประทับใจ รอยยิ้ม และความทรงจำจริงจากพิกัดเที่ยว กิจกรรมคอมมูนิตี้ งานแฟร์ และภารกิจชาเลนจ์ทั่วไทย
+                <p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed font-normal max-w-xl">
+                  ภาพถ่ายจริงและบรรยากาศจากพิกัดเที่ยว กิจกรรมคอมมูนิตี้ งานมหกรรม และภารกิจชาเลนจ์ทั่วประเทศ
                 </p>
               </div>
 

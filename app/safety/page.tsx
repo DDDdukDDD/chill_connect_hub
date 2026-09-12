@@ -37,14 +37,19 @@ export default function SafetyPage() {
         {/* Title Header */}
         <div className="space-y-3 pb-6 border-b border-slate-200">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#4A7C59] flex items-center justify-center border border-emerald-200 shrink-0 shadow-2xs">
+            <div className="w-12 h-12 rounded-2xl bg-[#EBF3ED] text-[#2D5A3C] flex items-center justify-center border border-[#A3CEB0]/60 shrink-0 shadow-2xs">
               <ShieldCheck className="w-6 h-6" />
             </div>
-            <div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold tracking-wide uppercase bg-[#EBF3ED] text-[#2D5A3C] border border-[#A3CEB0]/60">
+                  Trust & Safety Architecture
+                </span>
+              </div>
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                 แนวทางความปลอดภัยและข้อกำหนดชุมชน
               </h1>
-              <p className="text-xs sm:text-sm text-slate-500 font-medium pt-0.5">
+              <p className="text-xs sm:text-sm text-slate-500 font-medium">
                 Community Safety Guidelines & Legal Terms of Service
               </p>
             </div>
@@ -61,10 +66,11 @@ export default function SafetyPage() {
               <h2>1. สถานะตัวกลางของแพลตฟอร์ม (Platform Intermediary Notice)</h2>
             </div>
             <p className="text-sm text-slate-600 leading-relaxed font-normal">
-              Chill & Connect Hub ให้บริการในฐานะ **พื้นที่สื่อกลางออนไลน์ (Bulletin Board / Platform Intermediary)** เพื่ออำนวยความสะดวกในการค้นพบสถานที่ท่องเที่ยว พักผ่อน ฮีลใจ และเปิดพื้นที่ให้สมาชิกในชุมชนได้แลกเปลี่ยนข้อมูลและนัดหมายทำกิจกรรมร่วมกันตามความสมัครใจ
+              Chill & Connect Hub ให้บริการในฐานะ <strong>พื้นที่สื่อกลางออนไลน์ (Bulletin Board / Platform Intermediary)</strong> เพื่ออำนวยความสะดวกในการค้นพบสถานที่ท่องเที่ยว พักผ่อน ฮีลใจ และเปิดพื้นที่ให้สมาชิกในชุมชนได้แลกเปลี่ยนข้อมูลและนัดหมายทำกิจกรรมร่วมกันตามความสมัครใจ
             </p>
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs text-slate-600 leading-relaxed font-medium">
-              ⚠️ แพลตฟอร์มไม่ได้เป็นผู้จัดกิจกรรม, ตัวแทน, นายหน้า หรือผู้ว่าจ้างของสมาชิกใดๆ สมาชิกผู้จัดกิจกรรม (Host) และผู้เข้าร่วม (Participants) เป็นผู้ตกลงและรับผิดชอบร่วมกันเองโดยตรง
+            <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-xs text-amber-900 leading-relaxed font-medium flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <span>แพลตฟอร์มไม่ได้เป็นผู้จัดกิจกรรม, ตัวแทน, นายหน้า หรือผู้ว่าจ้างของสมาชิกใดๆ สมาชิกผู้จัดกิจกรรม (Host) และผู้เข้าร่วม (Participants) เป็นผู้ตกลงและรับผิดชอบร่วมกันเองโดยตรง</span>
             </div>
           </div>
 
@@ -75,7 +81,7 @@ export default function SafetyPage() {
               <h2>2. กฎการนัดพบในพื้นที่สาธารณะเท่านั้น (Public Space Meeting Policy)</h2>
             </div>
             <ul className="text-sm text-slate-600 space-y-2 list-disc list-inside font-normal">
-              <li>การนัดหมายทุกกิจกรรม **ต้องเกิดขึ้นในพื้นที่สาธารณะที่เปิดโล่ง ปลอดภัย และมีผู้คนพลุกพล่าน** เช่น สวนสาธารณะ, คาเฟ่, หอศิลป์, พิพิธภัณฑ์ หรือสนามกีฬา</li>
+              <li>การนัดหมายทุกกิจกรรม <strong>ต้องเกิดขึ้นในพื้นที่สาธารณะที่เปิดโล่ง ปลอดภัย และมีผู้คนพลุกพล่าน</strong> เช่น สวนสาธารณะ, คาเฟ่, หอศิลป์, พิพิธภัณฑ์ หรือสนามกีฬา</li>
               <li><strong>ข้อห้ามเด็ดขาด:</strong> ไม่อนุญาตให้นัดพบในที่รโหฐาน, ที่พักอาศัยส่วนตัว, หรือสถานที่ลับตาคนโดยเด็ดขาด เพื่อความปลอดภัยสูงสุดของสมาชิกทุกคน</li>
             </ul>
           </div>
@@ -103,12 +109,12 @@ export default function SafetyPage() {
           </div>
 
           {/* Card 5: Safety Tips */}
-          <div className="p-6 rounded-3xl bg-gradient-to-br from-emerald-50/80 to-teal-50/50 border border-emerald-200 shadow-2xs space-y-3">
-            <div className="flex items-center gap-2.5 text-emerald-950 font-black text-base">
+          <div className="p-6 rounded-3xl bg-[#EBF3ED]/60 border border-[#A3CEB0]/60 shadow-2xs space-y-3">
+            <div className="flex items-center gap-2.5 text-[#2D5A3C] font-black text-base">
               <PhoneCall className="w-5 h-5 text-[#4A7C59]" />
               <h2>5. คำแนะนำเพื่อความปลอดภัยของตนเอง (Practical Safety Tips)</h2>
             </div>
-            <div className="text-xs sm:text-sm text-emerald-900 space-y-2 font-medium">
+            <div className="text-xs sm:text-sm text-[#2D5A3C] space-y-2 font-medium">
               <p>• <strong>แจ้งคนใกล้ชิดเสมอ:</strong> ส่งลิงก์กิจกรรมและบอกคนในครอบครัวหรือเพื่อนสนิทก่อนออกไปทำกิจกรรม</p>
               <p>• <strong>เดินทางด้วยตนเอง:</strong> หลีกเลี่ยงการขึ้นรถส่วนตัวของผู้ที่เพิ่งรู้จักกันครั้งแรก</p>
               <p>• <strong>สิทธิในการออกจากกิจกรรม:</strong> หากรู้สึกไม่สบายใจหรือบรรยากาศไม่เป็นไปตามที่ตกลงไว้ สมาชิกสามารถขอตัวกลับได้ทันที</p>

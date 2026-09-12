@@ -59,16 +59,6 @@ export interface HeroSlideItem {
 
 export const HERO_SLIDES: HeroSlideItem[] = [
   {
-    id: 'slide-spots',
-    pillar: 'spots',
-    tag: 'พิกัดเที่ยว & จุดฮีลใจ 77 จังหวัด',
-    titleLead: 'วันหยุดนี้...',
-    titleHighlight: 'ไปพักใจที่ไหนดี?',
-    subtitle: 'รวมจุดพักใจ คาเฟ่ ชุมชนลับ และธรรมชาติ 77 จังหวัดทั่วไทย เที่ยวชิลล์ๆ ได้ด้วยตัวเอง',
-    imageUrl: '/hero-bkk-park-sunny.jpg',
-    imageAlt: 'สวนสาธารณะใจกลางกรุงเทพฯ ท้องฟ้าโปร่ง แสงแดดสดใส วิวเมืองและทะเลสาบฮีลใจ',
-  },
-  {
     id: 'slide-community',
     pillar: 'community',
     tag: 'กิจกรรมคอมมูนิตี้ & ตี้เพื่อนใหม่',
@@ -81,12 +71,22 @@ export const HERO_SLIDES: HeroSlideItem[] = [
   {
     id: 'slide-fairs',
     pillar: 'fairs',
-    tag: 'งานมหกรรม นิทรรศการ & เอ็กซ์โป',
+    tag: 'งานมหกรรม & เอ็กซ์โป',
     titleLead: 'วันหยุดนี้...',
     titleHighlight: 'ไปเดินงานไหนดี?',
     subtitle: 'อัปเดตงานอีเวนต์ใหญ่ นิทรรศการ งานหนังสือ เทศกาลกาแฟ และเอ็กซ์โปทั่วประเทศ',
     imageUrl: 'https://images.unsplash.com/photo-1518998053901-5348d3961a04?auto=format&fit=crop&w=1920&q=85',
     imageAlt: 'งานนิทรรศการ อาร์ตสเปซ และงานเอ็กซ์โปทั่วไทย',
+  },
+  {
+    id: 'slide-spots',
+    pillar: 'spots',
+    tag: 'พิกัดเที่ยว & จุดฮีลใจ 77 จังหวัด',
+    titleLead: 'วันหยุดนี้...',
+    titleHighlight: 'ไปพักใจที่ไหนดี?',
+    subtitle: 'รวมจุดพักใจ คาเฟ่ ชุมชนลับ และธรรมชาติ 77 จังหวัดทั่วไทย เที่ยวชิลล์ๆ ได้ด้วยตัวเอง',
+    imageUrl: '/hero-bkk-park-sunny.jpg',
+    imageAlt: 'สวนสาธารณะใจกลางกรุงเทพฯ ท้องฟ้าโปร่ง แสงแดดสดใส วิวเมืองและทะเลสาบฮีลใจ',
   },
   {
     id: 'slide-challenges',
@@ -284,11 +284,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     }
   };
 
-  const handleTabClick = (tab: 'all' | 'spots' | 'community' | 'fairs') => {
+  const handleTabClick = (tab: 'all' | 'community' | 'fairs' | 'spots') => {
     setActiveModeTab(tab);
-    if (tab === 'spots') setCurrentSlideIndex(0);
-    else if (tab === 'community') setCurrentSlideIndex(1);
-    else if (tab === 'fairs') setCurrentSlideIndex(2);
+    if (tab === 'community') setCurrentSlideIndex(0);
+    else if (tab === 'fairs') setCurrentSlideIndex(1);
+    else if (tab === 'spots') setCurrentSlideIndex(2);
     if (onSelectDiscoveryTab) {
       onSelectDiscoveryTab(tab);
     }
@@ -300,22 +300,22 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
   const displayTitleHighlight = activeModeTab === 'all'
     ? 'ไปไหนดี'
-    : activeModeTab === 'spots'
-    ? 'ไปพักใจที่ไหนดี?'
     : activeModeTab === 'community'
     ? 'ไปจอยตี้ไหนดี?'
     : activeModeTab === 'fairs'
     ? 'ไปเดินงานไหนดี?'
+    : activeModeTab === 'spots'
+    ? 'ไปพักใจที่ไหนดี?'
     : currentSlide.titleHighlight;
 
   const displaySubtitle = activeModeTab === 'all'
     ? 'รวมจุดพักใจ คาเฟ่ ตี้เพื่อนใหม่ เวิร์กช็อป และงานอีเวนต์ทั่วไทย ครบจบในที่เดียว'
-    : activeModeTab === 'spots'
-    ? 'รวมจุดพักใจ คาเฟ่ ชุมชนลับ และธรรมชาติ 77 จังหวัดทั่วไทย เที่ยวชิลล์ๆ ได้ด้วยตัวเอง'
     : activeModeTab === 'community'
     ? 'หาเพื่อนใหม่กลุ่มย่อย วิ่ง บอร์ดเกม เวิร์กช็อป ตี้กาแฟ ในคอมมูนิตี้ที่ปลอดภัยไร้แรงกดดัน'
     : activeModeTab === 'fairs'
     ? 'อัปเดตงานอีเวนต์ใหญ่ นิทรรศการ งานหนังสือ เทศกาลกาแฟ และเอ็กซ์โปทั่วประเทศ'
+    : activeModeTab === 'spots'
+    ? 'รวมจุดพักใจ คาเฟ่ ชุมชนลับ และธรรมชาติ 77 จังหวัดทั่วไทย เที่ยวชิลล์ๆ ได้ด้วยตัวเอง'
     : currentSlide.subtitle;
 
   // =========================================================================
@@ -442,60 +442,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               </div>
             ) : (
               <>
-                {/* 1. 🌲 พิกัดเที่ยวที่พบ (Spots) */}
-                {matchedSpots.length > 0 && (
-                  <div className="space-y-1">
-                    <div className="px-2 py-1 flex items-center justify-between">
-                      <span className="text-[11px] font-extrabold text-[#2D5A3C] uppercase tracking-wider flex items-center gap-1.5">
-                        <Mountain className="w-3.5 h-3.5 text-[#4A7C59]" />
-                        <span>พิกัดเที่ยว & จุดฮีลใจ</span>
-                      </span>
-                      <span className="text-[10px] font-bold text-[#2D5A3C] bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
-                        พบ {matchedSpots.length} แห่ง
-                      </span>
-                    </div>
-                    <div className="space-y-1">
-                      {matchedSpots.map((spot) => (
-                        <Link
-                          key={`matched-spot-${spot.id}`}
-                          href={`/spots/${spot.id}`}
-                          onMouseDown={() => setIsFocused(false)}
-                          className="flex items-center gap-3 p-2 rounded-xl hover:bg-[#EBF3ED]/70 transition-colors group cursor-pointer"
-                        >
-                          <img
-                            src={spot.image}
-                            alt={spot.title}
-                            className="w-10 h-10 rounded-lg object-cover bg-slate-100 shrink-0 border border-slate-200/60"
-                          />
-                          <div className="min-w-0 flex-1">
-                            <p className="font-bold text-xs text-slate-800 group-hover:text-[#2D5A3C] truncate">
-                              {spot.title}
-                            </p>
-                            <p className="text-[11px] text-slate-400 truncate flex items-center gap-1.5 mt-0.5">
-                              <span>{spot.province}</span>
-                              <span>•</span>
-                              <span>{spot.categoryLabel || spot.vibeTags?.[0] || 'พิกัดเที่ยว'}</span>
-                              {spot.openHours && (
-                                <>
-                                  <span>•</span>
-                                  <span>{spot.openHours}</span>
-                                </>
-                              )}
-                            </p>
-                          </div>
-                          <span className="text-[10px] font-bold text-[#2D5A3C] bg-[#EBF3ED] px-2 py-1 rounded-md shrink-0 border border-emerald-100 group-hover:border-emerald-200 flex items-center gap-1">
-                            <span>ดูพิกัด</span>
-                            <ChevronRight className="w-3 h-3 text-[#4A7C59]" />
-                          </span>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* 2. 👥 กิจกรรมคอมมูนิตี้ที่พบ (Community) */}
+                {/* 1. 👥 กิจกรรมคอมมูนิตี้ที่พบ (Community) */}
                 {matchedCommunity.length > 0 && (
-                  <div className={`space-y-1 ${matchedSpots.length > 0 ? 'pt-2 border-t border-slate-100' : ''}`}>
+                  <div className="space-y-1">
                     <div className="px-2 py-1 flex items-center justify-between">
                       <span className="text-[11px] font-extrabold text-[#C2410C] uppercase tracking-wider flex items-center gap-1.5">
                         <Flame className="w-3.5 h-3.5 text-[#F26430]" />
@@ -544,9 +493,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   </div>
                 )}
 
-                {/* 3. 🏛️ งานมหกรรม & เอ็กซ์โปที่พบ (Fairs) */}
+                {/* 2. 🏛️ งานมหกรรม & เอ็กซ์โปที่พบ (Fairs) */}
                 {matchedFairs.length > 0 && (
-                  <div className={`space-y-1 ${matchedSpots.length > 0 || matchedCommunity.length > 0 ? 'pt-2 border-t border-slate-100' : ''}`}>
+                  <div className={`space-y-1 ${matchedCommunity.length > 0 ? 'pt-2 border-t border-slate-100' : ''}`}>
                     <div className="px-2 py-1 flex items-center justify-between">
                       <span className="text-[11px] font-extrabold text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
                         <Building2 className="w-3.5 h-3.5 text-blue-700" />
@@ -582,6 +531,57 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                           <span className="text-[10px] font-bold text-blue-900 bg-blue-50 px-2 py-1 rounded-md shrink-0 border border-blue-100 group-hover:border-blue-200 flex items-center gap-1">
                             <span>ดูงานแฟร์</span>
                             <ChevronRight className="w-3 h-3 text-blue-700" />
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. 🌲 พิกัดเที่ยวที่พบ (Spots) */}
+                {matchedSpots.length > 0 && (
+                  <div className={`space-y-1 ${matchedCommunity.length > 0 || matchedFairs.length > 0 ? 'pt-2 border-t border-slate-100' : ''}`}>
+                    <div className="px-2 py-1 flex items-center justify-between">
+                      <span className="text-[11px] font-extrabold text-[#2D5A3C] uppercase tracking-wider flex items-center gap-1.5">
+                        <Mountain className="w-3.5 h-3.5 text-[#4A7C59]" />
+                        <span>พิกัดเที่ยว & จุดฮีลใจ</span>
+                      </span>
+                      <span className="text-[10px] font-bold text-[#2D5A3C] bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
+                        พบ {matchedSpots.length} แห่ง
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      {matchedSpots.map((spot) => (
+                        <Link
+                          key={`matched-spot-${spot.id}`}
+                          href={`/spots/${spot.id}`}
+                          onMouseDown={() => setIsFocused(false)}
+                          className="flex items-center gap-3 p-2 rounded-xl hover:bg-[#EBF3ED]/70 transition-colors group cursor-pointer"
+                        >
+                          <img
+                            src={spot.image}
+                            alt={spot.title}
+                            className="w-10 h-10 rounded-lg object-cover bg-slate-100 shrink-0 border border-slate-200/60"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="font-bold text-xs text-slate-800 group-hover:text-[#2D5A3C] truncate">
+                              {spot.title}
+                            </p>
+                            <p className="text-[11px] text-slate-400 truncate flex items-center gap-1.5 mt-0.5">
+                              <span>{spot.province}</span>
+                              <span>•</span>
+                              <span>{spot.categoryLabel || spot.vibeTags?.[0] || 'พิกัดเที่ยว'}</span>
+                              {spot.openHours && (
+                                <>
+                                  <span>•</span>
+                                  <span>{spot.openHours}</span>
+                                </>
+                              )}
+                            </p>
+                          </div>
+                          <span className="text-[10px] font-bold text-[#2D5A3C] bg-[#EBF3ED] px-2 py-1 rounded-md shrink-0 border border-emerald-100 group-hover:border-emerald-200 flex items-center gap-1">
+                            <span>ดูพิกัด</span>
+                            <ChevronRight className="w-3 h-3 text-[#4A7C59]" />
                           </span>
                         </Link>
                       ))}
@@ -633,56 +633,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               <span className="text-[10px] text-slate-400 font-medium">คลิกเพื่อกรองค้นหา</span>
             </div>
 
-            {/* 1. 🌲 พิกัดเที่ยว 7 ไวบ์ทั่วไทย (Spots & Chill) */}
-            {(activeModeTab === 'all' || activeModeTab === 'spots') && (
-              <div className="space-y-2">
-                <div className="px-1 flex items-center justify-between">
-                  <p className="text-[11px] font-black text-[#2D5A3C] uppercase tracking-wider flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#4A7C59]" />
-                    <span>พิกัดเที่ยว & จุดฮีลใจ 77 จังหวัด</span>
-                  </p>
-                  <span className="text-[10px] font-bold text-[#2D5A3C] bg-[#EBF3ED] px-2 py-0.5 rounded-md border border-emerald-200/50">
-                    7 ไวบ์ยอดนิยม
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                  {PILLAR_SPOT_CATEGORIES.map((sug, idx) => {
-                    const IconComponent = sug.icon;
-                    return (
-                      <button
-                        key={`spot-cat-${idx}`}
-                        type="button"
-                        onMouseDown={() => {
-                          setSearchQuery(sug.query);
-                          setIsFocused(false);
-                          if (onSearchSubmit) onSearchSubmit();
-                        }}
-                        className="flex items-center justify-between gap-2 p-2 rounded-xl border border-slate-100 hover:border-emerald-200/90 hover:bg-[#EBF3ED]/70 text-left transition-all cursor-pointer group"
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className="w-6 h-6 rounded-lg bg-emerald-50 text-[#4A7C59] group-hover:bg-[#4A7C59] group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
-                            <IconComponent className="w-3.5 h-3.5" />
-                          </div>
-                          <div className="min-w-0">
-                            <span className="text-xs font-bold text-slate-800 group-hover:text-[#2D5A3C] block truncate">
-                              {sug.label}
-                            </span>
-                            <span className="text-[10px] text-slate-400 block truncate">{sug.sub}</span>
-                          </div>
-                        </div>
-                        <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 group-hover:bg-white group-hover:text-[#2D5A3C] px-1.5 py-0.5 rounded shrink-0 border border-slate-200/60">
-                          {sug.query}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* 2. 👥 กิจกรรมคอมมูนิตี้ & ตี้เพื่อนใหม่ (Community Meetups) */}
+            {/* 1. 👥 กิจกรรมคอมมูนิตี้ & ตี้เพื่อนใหม่ (Community Meetups) */}
             {(activeModeTab === 'all' || activeModeTab === 'community') && (
-              <div className={`space-y-2 ${activeModeTab === 'all' ? 'pt-2 border-t border-slate-100' : ''}`}>
+              <div className="space-y-2">
                 <div className="px-1 flex items-center justify-between">
                   <p className="text-[11px] font-black text-[#C2410C] uppercase tracking-wider flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#F26430]" />
@@ -727,7 +680,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               </div>
             )}
 
-            {/* 3. 🏛️ งานมหกรรม นิทรรศการ & เอ็กซ์โป (Major Fairs & Venues) */}
+            {/* 2. 🏛️ งานมหกรรม นิทรรศการ & เอ็กซ์โป (Major Fairs & Venues) */}
             {(activeModeTab === 'all' || activeModeTab === 'fairs') && (
               <div className={`space-y-2 ${activeModeTab === 'all' ? 'pt-2 border-t border-slate-100' : ''}`}>
                 <div className="px-1 flex items-center justify-between">
@@ -765,6 +718,53 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                           </div>
                         </div>
                         <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 group-hover:bg-white group-hover:text-blue-900 px-1.5 py-0.5 rounded shrink-0 border border-slate-200/60">
+                          {sug.query}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 3. 🌲 พิกัดเที่ยว 7 ไวบ์ทั่วไทย (Spots & Chill) */}
+            {(activeModeTab === 'all' || activeModeTab === 'spots') && (
+              <div className={`space-y-2 ${activeModeTab === 'all' ? 'pt-2 border-t border-slate-100' : ''}`}>
+                <div className="px-1 flex items-center justify-between">
+                  <p className="text-[11px] font-black text-[#2D5A3C] uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#4A7C59]" />
+                    <span>พิกัดเที่ยว & จุดฮีลใจ 77 จังหวัด</span>
+                  </p>
+                  <span className="text-[10px] font-bold text-[#2D5A3C] bg-[#EBF3ED] px-2 py-0.5 rounded-md border border-emerald-200/50">
+                    7 ไวบ์ยอดนิยม
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                  {PILLAR_SPOT_CATEGORIES.map((sug, idx) => {
+                    const IconComponent = sug.icon;
+                    return (
+                      <button
+                        key={`spot-cat-${idx}`}
+                        type="button"
+                        onMouseDown={() => {
+                          setSearchQuery(sug.query);
+                          setIsFocused(false);
+                          if (onSearchSubmit) onSearchSubmit();
+                        }}
+                        className="flex items-center justify-between gap-2 p-2 rounded-xl border border-slate-100 hover:border-emerald-200/90 hover:bg-[#EBF3ED]/70 text-left transition-all cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-6 h-6 rounded-lg bg-emerald-50 text-[#4A7C59] group-hover:bg-[#4A7C59] group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
+                            <IconComponent className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <span className="text-xs font-bold text-slate-800 group-hover:text-[#2D5A3C] block truncate">
+                              {sug.label}
+                            </span>
+                            <span className="text-[10px] text-slate-400 block truncate">{sug.sub}</span>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 group-hover:bg-white group-hover:text-[#2D5A3C] px-1.5 py-0.5 rounded shrink-0 border border-slate-200/60">
                           {sug.query}
                         </span>
                       </button>
@@ -884,17 +884,17 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             </div>
 
             {/* 2. Floating All-in-One Lifestyle Search Console (Trip.com Luxury Booking Portal Style) */}
-            <div className="relative -mt-20 sm:-mt-24 md:-mt-28 z-50 max-w-5xl mx-auto w-full px-2 sm:px-4">
-              <div className="relative z-50 bg-white rounded-3xl p-4 sm:p-6 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.18),0_4px_16px_rgba(15,23,42,0.04)] border border-slate-200/90 space-y-4">
+            <div className="relative -mt-20 sm:-mt-24 md:-mt-28 z-50 w-[95%] sm:w-[92%] md:w-[90%] lg:w-full max-w-5xl xl:max-w-6xl 2xl:max-w-[1200px] mx-auto px-2 sm:px-4">
+              <div className="relative z-50 bg-white rounded-3xl p-4 sm:p-5 md:p-6 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.18),0_4px_16px_rgba(15,23,42,0.04)] border border-slate-200/90 space-y-4">
                 
                 {/* Trip.com Signature Navigation Tabs: Icon Above Label with Active Underline Bar */}
-                <div className="flex items-center justify-between border-b border-slate-200/90 pb-3 sm:pb-3.5 px-1 sm:px-2 overflow-x-auto no-scrollbar gap-4 sm:gap-8">
-                  <div className="flex items-center gap-4 sm:gap-8 overflow-x-auto no-scrollbar">
+                <div className="flex items-end justify-between border-b border-slate-200/90 px-1 sm:px-2 overflow-x-auto overflow-y-hidden no-scrollbar gap-4 sm:gap-8 select-none">
+                  <div className="flex items-end gap-4 sm:gap-8 shrink-0">
                     {/* Tab 1: ทั้งหมด */}
                     <button
                       type="button"
                       onClick={() => handleTabClick('all')}
-                      className="flex flex-col items-center gap-1.5 pb-1 relative group cursor-pointer transition-all shrink-0"
+                      className="flex flex-col items-center gap-1.5 pt-1 pb-3 sm:pb-3.5 relative group cursor-pointer transition-all shrink-0"
                     >
                       <Sparkles className={`w-5 h-5 sm:w-6 sm:h-6 transition-colors ${
                         activeModeTab === 'all' ? 'text-[#2563EB]' : 'text-slate-400 group-hover:text-slate-600'
@@ -905,34 +905,15 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                         ทั้งหมด
                       </span>
                       {activeModeTab === 'all' && (
-                        <span className="absolute -bottom-3 sm:-bottom-3.5 left-0 right-0 h-[3px] bg-[#2563EB] rounded-full" />
+                        <span className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#2563EB] rounded-full" />
                       )}
                     </button>
 
-                    {/* Tab 2: พิกัดเที่ยว & จุดฮีลใจ */}
-                    <button
-                      type="button"
-                      onClick={() => handleTabClick('spots')}
-                      className="flex flex-col items-center gap-1.5 pb-1 relative group cursor-pointer transition-all shrink-0"
-                    >
-                      <Compass className={`w-5 h-5 sm:w-6 sm:h-6 transition-colors ${
-                        activeModeTab === 'spots' ? 'text-[#2D5A3C]' : 'text-slate-400 group-hover:text-slate-600'
-                      }`} />
-                      <span className={`text-xs sm:text-sm whitespace-nowrap transition-colors ${
-                        activeModeTab === 'spots' ? 'font-black text-[#2D5A3C]' : 'font-semibold text-slate-500 group-hover:text-slate-800'
-                      }`}>
-                        พิกัดเที่ยว & จุดฮีลใจ
-                      </span>
-                      {activeModeTab === 'spots' && (
-                        <span className="absolute -bottom-3 sm:-bottom-3.5 left-0 right-0 h-[3px] bg-[#2D5A3C] rounded-full" />
-                      )}
-                    </button>
-
-                    {/* Tab 3: กิจกรรมคอมมูนิตี้ */}
+                    {/* Tab 2: กิจกรรมคอมมูนิตี้ (Section 1) */}
                     <button
                       type="button"
                       onClick={() => handleTabClick('community')}
-                      className="flex flex-col items-center gap-1.5 pb-1 relative group cursor-pointer transition-all shrink-0"
+                      className="flex flex-col items-center gap-1.5 pt-1 pb-3 sm:pb-3.5 relative group cursor-pointer transition-all shrink-0"
                     >
                       <Users className={`w-5 h-5 sm:w-6 sm:h-6 transition-colors ${
                         activeModeTab === 'community' ? 'text-[#F26430]' : 'text-slate-400 group-hover:text-slate-600'
@@ -943,15 +924,15 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                         กิจกรรมคอมมูนิตี้
                       </span>
                       {activeModeTab === 'community' && (
-                        <span className="absolute -bottom-3 sm:-bottom-3.5 left-0 right-0 h-[3px] bg-[#F26430] rounded-full" />
+                        <span className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#F26430] rounded-full" />
                       )}
                     </button>
 
-                    {/* Tab 4: งานมหกรรม & เอ็กซ์โป */}
+                    {/* Tab 3: งานมหกรรม & เอ็กซ์โป (Section 2) */}
                     <button
                       type="button"
                       onClick={() => handleTabClick('fairs')}
-                      className="flex flex-col items-center gap-1.5 pb-1 relative group cursor-pointer transition-all shrink-0"
+                      className="flex flex-col items-center gap-1.5 pt-1 pb-3 sm:pb-3.5 relative group cursor-pointer transition-all shrink-0"
                     >
                       <Building2 className={`w-5 h-5 sm:w-6 sm:h-6 transition-colors ${
                         activeModeTab === 'fairs' ? 'text-[#2B527A]' : 'text-slate-400 group-hover:text-slate-600'
@@ -962,7 +943,26 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                         งานมหกรรม & เอ็กซ์โป
                       </span>
                       {activeModeTab === 'fairs' && (
-                        <span className="absolute -bottom-3 sm:-bottom-3.5 left-0 right-0 h-[3px] bg-[#2B527A] rounded-full" />
+                        <span className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#2B527A] rounded-full" />
+                      )}
+                    </button>
+
+                    {/* Tab 4: พิกัดเที่ยว & จุดฮีลใจ (Section 3) */}
+                    <button
+                      type="button"
+                      onClick={() => handleTabClick('spots')}
+                      className="flex flex-col items-center gap-1.5 pt-1 pb-3 sm:pb-3.5 relative group cursor-pointer transition-all shrink-0"
+                    >
+                      <Compass className={`w-5 h-5 sm:w-6 sm:h-6 transition-colors ${
+                        activeModeTab === 'spots' ? 'text-[#2D5A3C]' : 'text-slate-400 group-hover:text-slate-600'
+                      }`} />
+                      <span className={`text-xs sm:text-sm whitespace-nowrap transition-colors ${
+                        activeModeTab === 'spots' ? 'font-black text-[#2D5A3C]' : 'font-semibold text-slate-500 group-hover:text-slate-800'
+                      }`}>
+                        พิกัดเที่ยว & จุดฮีลใจ
+                      </span>
+                      {activeModeTab === 'spots' && (
+                        <span className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#2D5A3C] rounded-full" />
                       )}
                     </button>
                   </div>
@@ -972,7 +972,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     <button
                       type="button"
                       onClick={() => onOpenSurpriseModal(activeModeTab === 'all' && currentSlideIndex === 3 ? 'all' : activeModeTab)}
-                      className="flex flex-col items-center gap-1.5 pb-1 relative group cursor-pointer transition-all shrink-0 text-amber-700 hover:text-amber-800"
+                      className="flex flex-col items-center gap-1.5 pt-1 pb-3 sm:pb-3.5 relative group cursor-pointer transition-all shrink-0 text-amber-700 hover:text-amber-800"
                     >
                       <Dices className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600 group-hover:rotate-180 transition-transform duration-500" />
                       <span className="text-xs sm:text-sm font-bold whitespace-nowrap">
@@ -982,14 +982,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   )}
                 </div>
 
-                {/* Console Search Inputs (Trip.com Integrated Row Layout) */}
-                <div className="relative flex flex-col md:flex-row items-stretch bg-white border border-slate-200/90 hover:border-slate-300 rounded-2xl p-1.5 transition-all focus-within:ring-4 focus-within:ring-[#2563EB]/10 focus-within:border-[#2563EB] divide-y md:divide-y-0 md:divide-x divide-slate-200 shadow-2xs">
+                {/* Console Search Inputs (Luxury Booking Portal Responsive Layout) */}
+                <div className="relative grid grid-cols-1 md:grid-cols-12 lg:flex lg:flex-row items-stretch bg-white border border-slate-200/90 hover:border-slate-300 rounded-2xl p-1.5 sm:p-2 transition-all focus-within:ring-4 focus-within:ring-[#2563EB]/10 focus-within:border-[#2563EB] divide-y md:divide-y-0 lg:divide-x divide-slate-200 shadow-2xs">
                   
-                  {/* Column 1: Keyword Input */}
-                  <div className="flex items-center gap-3 px-3.5 sm:px-4 py-2 flex-1 min-w-0">
-                    <Search className="w-4 h-4 text-slate-400 shrink-0" />
+                  {/* Column 1: Keyword Input (Full width on iPad md, flexible on lg desktop) */}
+                  <div className="flex items-center gap-3 px-3.5 sm:px-4 py-2.5 sm:py-3.5 md:col-span-12 lg:flex-1 lg:min-w-[280px] md:border-b md:border-slate-200 lg:border-b-0">
+                    <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 shrink-0" />
                     <div className="flex-1 min-w-0 text-left">
-                      <label className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider leading-none mb-1">
+                      <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 block uppercase tracking-wider leading-none mb-1">
                         ค้นหาอะไรดี?
                       </label>
                       <input
@@ -1000,7 +1000,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onKeyDown={handleKeyDown}
                         placeholder={getSearchPlaceholder()}
-                        className="w-full bg-transparent text-xs sm:text-sm font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-normal focus:outline-none truncate"
+                        className="w-full bg-transparent text-sm sm:text-base font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-normal focus:outline-none truncate"
                       />
                     </div>
                     {searchQuery && (
@@ -1009,16 +1009,16 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                         onClick={() => setSearchQuery('')}
                         className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
                       >
-                        <X className="w-3.5 h-3.5" />
+                        <X className="w-4 h-4" />
                       </button>
                     )}
                   </div>
 
-                  {/* Column 2: Province / Area */}
-                  <div className="flex items-center gap-3 px-3.5 sm:px-4 py-2 md:w-[220px] shrink-0 text-left">
-                    <MapPin className="w-4 h-4 text-[#4A7C59] shrink-0" />
+                  {/* Column 2: Province / Area (5 cols on iPad md, reduced 10% on desktop) */}
+                  <div className="flex items-center gap-2.5 sm:gap-3 px-3 sm:px-3.5 py-2.5 sm:py-3.5 md:col-span-5 lg:w-[195px] xl:w-[225px] shrink-0 text-left md:border-r md:border-slate-200 lg:border-r-0">
+                    <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-[#4A7C59] shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <label className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider leading-none mb-1">
+                      <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 block uppercase tracking-wider leading-none mb-1">
                         จุดหมาย / จังหวัด
                       </label>
                       <select
@@ -1046,11 +1046,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     </div>
                   </div>
 
-                  {/* Column 3: Time Filter (with Trip.com-style Micro Chip Badge) */}
-                  <div className="flex items-center gap-3 px-3.5 sm:px-4 py-2 md:w-[210px] shrink-0 text-left">
-                    <Calendar className="w-4 h-4 text-[#2B527A] shrink-0" />
+                  {/* Column 3: Time Filter (4 cols on iPad md, reduced 10% on desktop) */}
+                  <div className="flex items-center gap-2.5 sm:gap-3 px-3 sm:px-3.5 py-2.5 sm:py-3.5 md:col-span-4 lg:w-[185px] xl:w-[205px] shrink-0 text-left md:border-r md:border-slate-200 lg:border-r-0">
+                    <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-[#2B527A] shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <label className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider leading-none mb-1">
+                      <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 block uppercase tracking-wider leading-none mb-1">
                         ช่วงเวลา
                       </label>
                       {timeFilter === 'custom' && startDate ? (
@@ -1104,22 +1104,27 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                               วันนี้
                             </span>
                           )}
+                          {activeTime === 'tomorrow' && (
+                            <span className="text-[9.5px] font-black text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 shrink-0">
+                              พรุ่งนี้
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>
                   </div>
 
-                  {/* Column 4: Primary Action Search Button */}
-                  <div className="p-1 shrink-0 flex items-center">
+                  {/* Column 4: Primary Action Search Button (3 cols on iPad md) */}
+                  <div className="p-1.5 md:col-span-3 lg:w-auto shrink-0 flex items-center justify-center">
                     <button
                       type="button"
                       onClick={() => {
                         setIsFocused(false);
                         if (onSearchSubmit) onSearchSubmit();
                       }}
-                      className="w-full md:w-auto bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-7 sm:px-8 py-2.5 sm:py-3 rounded-xl font-extrabold text-xs sm:text-sm transition-all shadow-sm flex items-center justify-center gap-2 shrink-0 active:scale-95 cursor-pointer"
+                      className="w-full lg:w-auto bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-7 sm:px-9 py-2.5 sm:py-3.5 rounded-xl font-extrabold text-sm sm:text-base transition-all shadow-sm flex items-center justify-center gap-2 shrink-0 active:scale-95 cursor-pointer"
                     >
-                      <Search className="w-4 h-4" />
+                      <Search className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                       <span>ค้นหา</span>
                     </button>
                   </div>
@@ -1571,7 +1576,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       setIsFocused(false);
                       if (onSearchSubmit) onSearchSubmit();
                     }}
-                    className="bg-[#F26430] hover:bg-[#D95322] text-white px-3.5 sm:px-5 md:px-6 py-1.5 sm:py-2 rounded-full font-black text-xs sm:text-sm transition-all shadow-md shadow-[#F26430]/25 flex items-center justify-center gap-1.5 shrink-0 active:scale-95 cursor-pointer"
+                    className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-3.5 sm:px-5 md:px-6 py-1.5 sm:py-2 rounded-full font-black text-xs sm:text-sm transition-all shadow-md shadow-blue-600/25 flex items-center justify-center gap-1.5 shrink-0 active:scale-95 cursor-pointer"
                   >
                     <Search className="w-3.5 h-3.5 sm:hidden" />
                     <span className="hidden sm:inline">ค้นหาเลย</span>
