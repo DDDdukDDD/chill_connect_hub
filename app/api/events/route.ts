@@ -148,6 +148,11 @@ export async function POST(req: Request) {
     };
 
     const updatedEvents = await createAdminEvent(newEventToSave);
+    try {
+      await db.createEvent(newEventToSave);
+    } catch (dbErr) {
+      console.error('Failed to create in db adapter:', dbErr);
+    }
 
     return NextResponse.json({
       success: true,

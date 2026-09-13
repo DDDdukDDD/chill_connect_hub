@@ -311,13 +311,51 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
     (async () => {
       try {
         setIsSubmitting(true);
-        const res = await fetch('/api/events', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'create',
-            eventData: {
-              ...newTrip,
+        let createdId = newTrip.id;
+
+        try {
+          const res = await fetch('/api/events', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'create',
+              eventData: {
+                ...newTrip,
+                eventType: 'community',
+                category: mode === 'fair' ? 'learn' : 'chill',
+                province: spotProvince || 'กรุงเทพฯ',
+                location: locationName.trim() || spotLocation,
+                spotId: spotId,
+                spotTitle: spotTitle,
+                hostId: userProfile.id || 'user-current',
+                status: 'recruiting',
+                isSoloFriendly: true,
+                isBeginnerFriendly: true,
+                cancellationPolicy: 'free_anytime',
+                createdAtTimestamp: Date.now(),
+              },
+            }),
+          });
+          const data = await res.json();
+          if (data.success && data.event && data.event.id) {
+            createdId = data.event.id;
+          }
+        } catch (apiErr) {
+          console.warn('API save fallback, using client persistence:', apiErr);
+        }
+
+        const finalTrip: SpotBuddyPostItem = {
+          ...newTrip,
+          id: createdId,
+        };
+
+        // Guarantee client-side persistence so the trip appears in MyHub, Community, and Spots
+        if (typeof window !== 'undefined') {
+          try {
+            const savedCreated = localStorage.getItem('user_created_events');
+            const createdList = savedCreated ? JSON.parse(savedCreated) : [];
+            const newEventPayload = {
+              ...finalTrip,
               eventType: 'community',
               category: mode === 'fair' ? 'learn' : 'chill',
               province: spotProvince || 'กรุงเทพฯ',
@@ -325,26 +363,25 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
               spotId: spotId,
               spotTitle: spotTitle,
               hostId: userProfile.id || 'user-current',
-            },
-          }),
-        });
-        const data = await res.json();
-        if (data.success && data.event) {
-          onSuccess({
-            ...newTrip,
-            id: data.event.id || newTrip.id,
-          });
-          onClose();
-        } else if (data.message) {
-          // If server responded with error message
-          setErrorMessage(data.message);
-        } else {
-          onSuccess(newTrip);
-          onClose();
+              status: 'recruiting',
+              isSoloFriendly: true,
+              isBeginnerFriendly: true,
+              cancellationPolicy: 'free_anytime',
+              createdAtTimestamp: Date.now(),
+            };
+            localStorage.setItem(
+              'user_created_events',
+              JSON.stringify([newEventPayload, ...createdList.filter((e: any) => e.id !== createdId)])
+            );
+          } catch (e) {
+            console.error('Error saving to user_created_events in modal:', e);
+          }
         }
+
+        onSuccess(finalTrip);
+        onClose();
       } catch (err) {
         console.error('Error creating spot buddy trip:', err);
-        // Fallback so user is not blocked
         onSuccess(newTrip);
         onClose();
       } finally {
@@ -366,14 +403,6 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
               <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
                 {mode === 'fair' ? 'เปิดกลุ่มนัดเดินดูงาน & หาเพื่อนแวะจิบกาแฟ' : 'เปิดวงชวนเพื่อนเที่ยว / สร้างกิจกรรมใหม่'}
               </h2>
-              <span className={`inline-flex items-center gap-1 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border ${
-                mode === 'fair'
-                  ? 'text-[#2B527A] bg-sky-50 border-sky-200'
-                  : 'text-[#C2410C] bg-orange-50 border-orange-200'
-              }`}>
-                <Sparkles className={`w-3 h-3 ${mode === 'fair' ? 'text-[#2B527A]' : 'text-[#F26430]'}`} />
-                <span>Safe & Chill</span>
-              </span>
             </div>
             <p className="text-xs sm:text-sm text-slate-500 font-medium">
               {mode === 'fair'
@@ -432,7 +461,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                     onChange={(e) => setDate(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 outline-none"
                   />
-                  <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-800 text-[11px] font-bold text-center border border-emerald-100">
+                  <div className="py-1 px-2.5 rounded-xl bg-white text-slate-700 text-[11px] font-semibold text-center border border-slate-200/90 shadow-2xs">
                     วันนัดหมาย: {date}
                   </div>
                 </div>
@@ -463,8 +492,8 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                       />
                     </div>
                   </div>
-                  <div className="p-1.5 rounded-lg bg-amber-50 text-amber-900 text-[11px] font-bold text-center border border-amber-100">
-                    {startTime} - {endTime} น.
+                  <div className="py-1 px-2.5 rounded-xl bg-white text-slate-700 text-[11px] font-semibold text-center border border-slate-200/90 shadow-2xs">
+                    ช่วงเวลา: {startTime} - {endTime} น.
                   </div>
                 </div>
               </div>
@@ -887,18 +916,16 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
             <button
               type="submit"
               disabled={!isSafetyAccepted || isSubmitting}
-              className={`px-7 py-2.5 rounded-xl font-black text-xs transition-all flex items-center gap-2 cursor-pointer shadow-md ${
+              className={`px-7 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer shadow-sm ${
                 isSafetyAccepted && !isSubmitting
-                  ? mode === 'fair'
-                    ? 'bg-[#2B527A] hover:bg-[#1E3A5A] text-white shadow-sky-900/20 active:scale-95'
-                    : 'bg-[#F26430] hover:bg-[#D95322] text-white shadow-orange-500/25 active:scale-95'
+                  ? 'bg-slate-900 hover:bg-slate-800 text-white active:scale-95'
                   : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
               }`}
             >
               {isSubmitting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <Users className="w-4 h-4" />
+                <Users className="w-4 h-4 text-emerald-400" />
               )}
               <span>{isSubmitting ? 'กำลังบันทึก...' : 'เปิดวงชวนเพื่อนเลย'}</span>
             </button>

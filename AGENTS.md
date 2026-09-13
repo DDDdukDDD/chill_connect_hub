@@ -38,9 +38,9 @@ To eliminate "Rainbow Buttons" (visual clutter caused by buttons matching every 
 
 | Button Level | Color & Styling | Applied Locations |
 | :--- | :--- | :--- |
-| **Primary Action (Main CTA)** | **Royal Blue**<br>`bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm` | • Hero search buttons (Editorial & Classic modes)<br>• `+ แนะนำพิกัดเที่ยวใหม่` (`/spots`)<br>• `+ เปิดตี้ / สร้างกิจกรรมใหม่` (`/community`)<br>• `+ สร้างงานมหกรรม / เอ็กซ์โป` (`/fairs`)<br>• Primary login / conversion buttons (`/myhub`, `/about`) |
-| **Secondary / Neutral Action** | **Slate Black**<br>`bg-slate-900 hover:bg-slate-800 text-white`<br>or `bg-slate-100 hover:bg-slate-200 text-slate-700` | • Navbar login trigger (`bg-[#1E293B]`)<br>• Register member buttons (`bg-slate-900`)<br>• Modal close / back buttons (`bg-slate-100`)<br>• Secondary navigation chips |
-| **Section Accent Identity** | **Strictly on Cards, Category Rails, and Badges only** | • Never apply section colors to primary action buttons.<br>• Section colors belong exclusively to cards, tags, and category pills. |
+| **Primary Action (Main CTA)** | **Royal Blue**<br>`bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm` | • Hero search buttons (Editorial & Classic modes)<br>• Primary login / conversion buttons (`/myhub`, `/about`) |
+| **Editorial Header Action & Secondary** | **Slate Black**<br>`bg-slate-900 hover:bg-slate-800 text-white shadow-2xs`<br>or `bg-slate-100 hover:bg-slate-200 text-slate-700` | • Subpage header CTA (`+ แนะนำพิกัดเที่ยวใหม่`, `+ เปิดตี้ / สร้างกิจกรรมใหม่`, `+ สร้างงานมหกรรม / เอ็กซ์โป`)<br>• Navbar login trigger (`bg-[#1E293B]`)<br>• Register member buttons (`bg-slate-900`)<br>• Modal close / back buttons (`bg-slate-100`)<br>• Active filter chips |
+| **Section Accent Identity** | **Strictly on Cards, Category Rails, and Badges only** | • Never apply section colors to action buttons.<br>• Section colors belong exclusively to cards, tags, and category pills. |
 
 ---
 

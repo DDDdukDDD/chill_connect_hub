@@ -3,15 +3,10 @@
 import React from 'react';
 import Link from 'next/link';
 import {
-  MapPin,
-  Clock,
   Bookmark,
   Star,
-  ArrowRight,
-  Check
 } from 'lucide-react';
 import { LifestyleSpotItem } from '@/data/spotsData';
-import { isEventNew } from '@/lib/dateUtils';
 
 /**
  * Formats lengthy spot price details into a clean, compact badge string for card views.
@@ -106,34 +101,13 @@ export const SpotCard: React.FC<SpotCardProps> = ({
           loading="lazy"
         />
 
-        {/* Gradient Overlay for bottom text */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-70" />
+        {/* Subtle Bottom Gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent opacity-60" />
 
-        {/* Top Badges */}
+        {/* Top Badges (Distance only if applicable) */}
         <div className="absolute top-2.5 left-2.5 right-11 flex items-center gap-1.5 flex-wrap z-10">
-          {isJoined && (
-            <span className="text-[10px] font-black bg-[#EBF3ED]/95 backdrop-blur-md text-[#2D5A3C] border border-[#A3CEB0] px-2.5 py-0.5 rounded-full shadow-xs flex items-center gap-1">
-              <Check className="w-3.5 h-3.5 text-[#2D5A3C] stroke-[2.5]" />
-              <span>ลงทะเบียนแล้ว</span>
-            </span>
-          )}
-
-          {isFavorite && (
-            <span className="text-[10px] font-bold bg-[#EBF3ED]/95 backdrop-blur-md text-[#2D5A3C] border border-[#C5DEC9] px-2.5 py-0.5 rounded-full shadow-xs flex items-center gap-1">
-              <Check className="w-3.5 h-3.5 text-[#2D5A3C]" />
-              <span>บันทึกแล้ว</span>
-            </span>
-          )}
-
-          {isEventNew(spot as any) && (
-            <span className="text-[10px] font-black bg-gradient-to-r from-emerald-500 to-[#4A7C59] text-white px-2.5 py-0.5 rounded-full shadow-md tracking-wider flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
-              <span>NEW</span>
-            </span>
-          )}
-
           {(spot as any).distanceKm !== undefined && (
-            <span className="text-[10px] font-medium bg-slate-900/80 backdrop-blur-md text-white px-2.5 py-0.5 rounded-full">
+            <span className="text-[10px] font-semibold bg-slate-900/80 backdrop-blur-md text-white px-2.5 py-0.5 rounded-full shadow-2xs">
               {((spot as any).distanceKm).toFixed(1)} กม.
             </span>
           )}
@@ -192,16 +166,14 @@ export const SpotCard: React.FC<SpotCardProps> = ({
             </span>
           </div>
 
-          {/* Meta Info */}
-          <div className="space-y-1 text-xs text-slate-500 pt-0.5">
-            <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-              <span className="truncate text-[11px] sm:text-xs">{spot.openHours}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-              <span className="truncate text-[11px] sm:text-xs">{spot.district}, {spot.province}</span>
-            </div>
+          {/* Clean Editorial Meta Info */}
+          <div className="text-xs text-slate-500 pt-0.5 space-y-0.5">
+            <p className="truncate text-[11px] sm:text-xs font-medium text-slate-600">
+              {spot.district}, {spot.province}
+            </p>
+            <p className="truncate text-[11px] sm:text-xs text-slate-400">
+              {spot.openHours}
+            </p>
           </div>
         </div>
       </div>

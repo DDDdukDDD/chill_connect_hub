@@ -12,19 +12,21 @@ export const CommunityMomentsStrip: React.FC = () => {
   return (
     <section className="space-y-4">
       
-      {/* Header Bar: Clean, Minimalist Editorial Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 px-1">
+      {/* Header Bar: Editorial Section 05 Banner (Warm Amber / Sunset Accent) */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-amber-50/60 via-orange-50/30 to-transparent p-3.5 sm:p-4 rounded-2xl border border-amber-200/70 shadow-2xs">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-orange-500/10 text-[#F26430] border border-orange-500/20 text-[11px] font-bold tracking-wide">
-              <Camera className="w-3.5 h-3.5 text-[#F26430]" />
-              <span>Real Community Moments</span>
+          <div className="flex items-center gap-2">
+            <span className="w-6 h-6 rounded-lg bg-amber-500/15 text-amber-900 flex items-center justify-center text-xs font-black shrink-0 border border-amber-500/30">
+              05
             </span>
+            <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+              <span>โมเมนต์ & บรรยากาศจริงจากชุมชน</span>
+              <span className="text-[10px] font-black text-amber-900 bg-amber-100/80 px-2 py-0.5 rounded-full border border-amber-300/80">
+                Community Moments
+              </span>
+            </h2>
           </div>
-          <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-            <span>โมเมนต์ & บรรยากาศจริงจากชุมชน</span>
-          </h2>
-          <p className="text-xs text-slate-500 font-medium mt-0.5">
+          <p className="text-xs text-slate-500 mt-1 font-medium pl-8">
             ภาพถ่ายความประทับใจ บรรยากาศคาเฟ่ และมิตรภาพใหม่ๆ ที่เกิดขึ้นจริงจากผู้ร่วมทริป
           </p>
         </div>
@@ -32,9 +34,9 @@ export const CommunityMomentsStrip: React.FC = () => {
         {/* Action Link: Jump to /moments */}
         <Link
           href="/moments"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-[#F26430] text-slate-700 hover:text-white rounded-xl text-xs font-bold transition-all duration-200 group/btn shrink-0 cursor-pointer self-start sm:self-auto"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-slate-900 text-slate-700 hover:text-white border border-slate-200/80 hover:border-slate-900 rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
         >
-          <span>ดูโมเมนต์ทั้งหมด</span>
+          <span>ดูโมเมนต์ทั้งหมด ({MOCK_POSTS.length})</span>
           <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
         </Link>
       </div>

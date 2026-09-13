@@ -82,6 +82,86 @@ export const SPOT_CATEGORIES = [
   })),
 ];
 
+/**
+ * Maps any LifestyleSpotItem to exactly one of the 7 Master Spot Vibe categories.
+ * Guarantees a precise 1-to-1 mapping so category rail totals sum exactly to 100% of spots.
+ */
+export function getSpotVibeCategory(spot: LifestyleSpotItem): SpotVibeId {
+  const cat = spot.category;
+  const text = `${spot.title} ${spot.categoryLabel} ${spot.description} ${spot.province} ${(spot.vibeTags || []).join(' ')}`.toLowerCase();
+
+  // 1. Sea & Island
+  if (
+    ['ทะเล', 'หาด', 'เกาะ', 'beach', 'island', 'อ่าว', 'อันดามัน', 'อ่าวไทย', 'ภูเก็ต', 'กระบี่', 'พังงา', 'สมุย'].some((k) =>
+      text.includes(k)
+    ) &&
+    !text.includes('ดอย') &&
+    !text.includes('เขาใหญ่')
+  ) {
+    return 'sea_island';
+  }
+  // 2. Cafe & Slow Bar
+  if (
+    cat === 'cafe' ||
+    text.includes('สโลว์บาร์') ||
+    text.includes('คาเฟ่') ||
+    text.includes('coffee') ||
+    text.includes('roaster')
+  ) {
+    return 'cafe_slowbar';
+  }
+  // 3. Art & Creative
+  if (
+    cat === 'art' ||
+    cat === 'museum' ||
+    text.includes('หอศิลป์') ||
+    text.includes('แกลเลอรี') ||
+    text.includes('ศิลปะ') ||
+    text.includes('มิวเซียม') ||
+    text.includes('คราฟต์')
+  ) {
+    return 'art_creative';
+  }
+  // 4. Old Town & Culture
+  if (
+    cat === 'oldtown' ||
+    cat === 'temple' ||
+    cat === 'market' ||
+    text.includes('วัด') ||
+    text.includes('เมืองเก่า') ||
+    text.includes('ชุมชน') ||
+    text.includes('โบราณ') ||
+    text.includes('ประวัติศาสตร์')
+  ) {
+    return 'oldtown_culture';
+  }
+  // 5. Mountain & Mist
+  if (
+    cat === 'viewpoint' ||
+    text.includes('ดอย') ||
+    text.includes('หมอก') ||
+    text.includes('ม่อน') ||
+    text.includes('ยอดเขา') ||
+    text.includes('ภูทับเบิก') ||
+    text.includes('ภูชี้ฟ้า') ||
+    text.includes('สันป่าเกี๊ยะ')
+  ) {
+    return 'mountain_mist';
+  }
+  // 6. Wellness & Quiet Retreat
+  if (
+    text.includes('บำบัด') ||
+    text.includes('ฮีลใจ') ||
+    text.includes('สปา') ||
+    text.includes('บ่อน้ำพุร้อน') ||
+    text.includes('สงบ')
+  ) {
+    return 'wellness_retreat';
+  }
+  // 7. Nature & Camping (Default nature/park)
+  return 'nature_camping';
+}
+
 import { PROVINCES_77_TOP_SPOTS } from './allProvincesSpots';
 
 const INITIAL_MOCK_SPOTS: LifestyleSpotItem[] = [

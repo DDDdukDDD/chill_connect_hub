@@ -183,8 +183,8 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({
             </div>
           </div>
 
-          <span className="text-[10px] font-extrabold bg-[#EBF3ED] text-[#4A7C59] px-2.5 py-0.5 rounded-full border border-[#4A7C59]/20 flex items-center gap-1">
-            <ShieldCheck className="w-3 h-3 text-[#4A7C59]" />
+          <span className="text-[10px] font-extrabold bg-orange-50 text-[#D04A1B] px-2.5 py-0.5 rounded-full border border-orange-200 flex items-center gap-1">
+            <ShieldCheck className="w-3 h-3 text-[#D04A1B]" />
             <span>คอมมูนิตี้ปลอดภัย</span>
           </span>
         </div>
@@ -223,7 +223,7 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({
                 <div className={`flex items-center gap-1.5 text-[10px] ${msg.isMe ? 'justify-end' : 'justify-start'}`}>
                   <span
                     onClick={() => !msg.isMe && setSelectedProfileQuery(msg.senderName)}
-                    className={`font-bold text-slate-700 ${!msg.isMe ? 'cursor-pointer hover:text-[#4A7C59] transition-colors' : ''}`}
+                    className={`font-bold text-slate-700 ${!msg.isMe ? 'cursor-pointer hover:text-slate-900 transition-colors' : ''}`}
                   >
                     {msg.senderName}
                   </span>
@@ -239,7 +239,7 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({
                 <div
                   className={`p-3 rounded-2xl text-xs leading-relaxed ${
                     msg.isMe
-                      ? 'bg-[#4A7C59] text-white rounded-tr-xs shadow-xs'
+                      ? 'bg-slate-900 text-white rounded-tr-xs shadow-xs'
                       : 'bg-white text-slate-800 border border-slate-200/90 rounded-tl-xs shadow-xs'
                   }`}
                 >
@@ -279,13 +279,13 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             placeholder="พิมพ์ข้อความทักทายเพื่อนๆ ในตี้..."
-            className="flex-1 bg-slate-100 border border-slate-200 rounded-full px-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#4A7C59] focus:bg-white transition-all"
+            className="flex-1 bg-slate-100 border border-slate-200 rounded-full px-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white transition-all"
           />
 
           <button
             type="submit"
             disabled={!inputText.trim()}
-            className="w-10 h-10 rounded-full bg-[#4A7C59] hover:bg-[#3B6347] disabled:opacity-40 text-white flex items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer shrink-0"
+            className="w-10 h-10 rounded-full bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-white flex items-center justify-center transition-all shadow-2xs hover:shadow-md active:scale-95 cursor-pointer shrink-0"
             title="ส่งข้อความ"
           >
             <Send className="w-4 h-4" />

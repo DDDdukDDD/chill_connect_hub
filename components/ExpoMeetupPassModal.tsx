@@ -81,7 +81,7 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
               </span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              ตั๋วนัดพบกลุ่มเดินดูงาน 🎫
+              ตั๋วนัดพบกลุ่มเดินดูงาน
             </h2>
             <p className="text-xs text-slate-500 font-medium">
               ข้อมูลนัดหมายและช่องทางติดต่อเพื่อนร่วมทางสำหรับงานนี้
@@ -159,7 +159,7 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
             {/* Note if any */}
             {passData.note && (
               <div className="p-3 rounded-2xl bg-white/80 border border-slate-200/60 text-xs text-slate-600 leading-relaxed font-medium">
-                <span className="font-bold text-slate-700 block mb-0.5">💬 ข้อความจากผู้จัด:</span>
+                <span className="font-bold text-slate-700 block mb-0.5">ข้อความจากผู้จัด:</span>
                 {passData.note}
               </div>
             )}
@@ -192,7 +192,7 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
                   {isCopiedContact ? (
                     <>
                       <Check className="w-3 h-3 text-emerald-600" />
-                      <span className="text-emerald-700">คัดลอกแล้ว!</span>
+                      <span className="text-emerald-700">คัดลอกแล้ว</span>
                     </>
                   ) : (
                     <>
@@ -231,7 +231,7 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="py-3 px-4 rounded-2xl bg-[#2B527A] hover:bg-[#1E3B59] text-white text-xs font-black shadow-md shadow-sky-900/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+              className="py-3 px-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
             >
               <span>รับทราบ เข้าใจแล้ว</span>
             </button>

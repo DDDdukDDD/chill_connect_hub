@@ -185,6 +185,25 @@ export default function Home() {
     }
   }, []);
 
+  // Support custom event for seamless tab switching from lifestyle journey links
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleCustomTabSwitch = (e: Event) => {
+      const customEvent = e as CustomEvent<{ sectionId: string }>;
+      if (!customEvent.detail) return;
+      const { sectionId } = customEvent.detail;
+      if (sectionId === 'section-spots') {
+        handleSelectEventTypeTab('spots');
+      } else if (sectionId === 'section-community') {
+        handleSelectEventTypeTab('community');
+      } else if (sectionId === 'section-fairs') {
+        handleSelectEventTypeTab('public_venue');
+      }
+    };
+    window.addEventListener('chill_switch_tab', handleCustomTabSwitch);
+    return () => window.removeEventListener('chill_switch_tab', handleCustomTabSwitch);
+  }, []);
+
   // Sync favorites & joined events with localStorage (Only active when user is logged in)
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -288,6 +307,20 @@ export default function Home() {
       }
     }
   }, [eventsList]);
+
+  // Hash Anchor Smooth-Scroll on Load (e.g. from /about or direct deep link)
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const hash = window.location.hash.replace('#', '');
+      const timer = setTimeout(() => {
+        const target = document.getElementById(hash);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   // Fetch live approved events from server
   React.useEffect(() => {
@@ -1296,15 +1329,19 @@ export default function Home() {
               {/* ------------------------------------------------------------------------- */}
               {/* STREAM SECTION 4: ⚡ COMMUNITY QUESTS (ชาเลนจ์ & ภารกิจท้าทาย)             */}
               {/* ------------------------------------------------------------------------- */}
-              <CommunityChallengeBar
-                onJoinQuest={handleJoinQuestFromHome}
-                joinedQuestTitles={isLoggedIn ? joinedQuestTitles : []}
-              />
+              <div id="section-challenges" className="scroll-mt-24">
+                <CommunityChallengeBar
+                  onJoinQuest={handleJoinQuestFromHome}
+                  joinedQuestTitles={isLoggedIn ? joinedQuestTitles : []}
+                />
+              </div>
 
               {/* ------------------------------------------------------------------------- */}
               {/* STREAM SECTION 5: 📸 SOCIAL STORIES (โมเมนต์ & บรรยากาศจริงจากชุมชน)        */}
               {/* ------------------------------------------------------------------------- */}
-              <CommunityMomentsStrip />
+              <div id="section-moments" className="scroll-mt-24">
+                <CommunityMomentsStrip />
+              </div>
 
             </div>
           ) : (

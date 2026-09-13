@@ -218,14 +218,7 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
                     alt={event.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-
-                  {/* Top-Left Activity Type Badge */}
-                  <div className="absolute top-2.5 left-2.5 z-10">
-                    <span className="text-[11px] font-semibold bg-white/90 backdrop-blur-md text-slate-800 px-2.5 py-0.5 rounded-full shadow-xs">
-                      {isPublicVenue ? 'งานแฟร์ & อีเวนต์' : 'กิจกรรมชุมชน'}
-                    </span>
-                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent opacity-60" />
 
                   {/* Favorite Heart Button */}
                   <button
@@ -266,7 +259,7 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
                       )}
                     </div>
 
-                    <h3 className="font-bold text-sm text-slate-900 line-clamp-1 group-hover:text-[#4A7C59] transition-colors">
+                    <h3 className="font-bold text-sm text-slate-900 line-clamp-1 group-hover:text-[#F26430] transition-colors">
                       {event.title}
                     </h3>
 

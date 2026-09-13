@@ -58,7 +58,7 @@ export const ETicketModal: React.FC<ETicketModalProps> = ({
         {/* Top Header Bar */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-black uppercase tracking-wider bg-[#EBF3ED] text-[#2D5A3C] px-3 py-1 rounded-full border border-[#C5DCCB]">
+            <span className="text-[11px] font-black uppercase tracking-wider bg-orange-50 text-[#D04A1B] px-3 py-1 rounded-full border border-orange-200">
               Digital E-Ticket
             </span>
             <span className="text-xs font-semibold text-slate-500 hidden sm:inline">
@@ -73,8 +73,8 @@ export const ETicketModal: React.FC<ETicketModalProps> = ({
                 <span>เช็คอินเข้างานแล้ว</span>
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 bg-[#EBF3ED] text-[#2D5A3C] border border-[#A3CEB0] text-xs font-bold px-3 py-1 rounded-full shadow-2xs">
-                <ShieldCheck className="w-3.5 h-3.5 text-[#2D5A3C]" />
+              <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold px-3 py-1 rounded-full shadow-2xs">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
                 <span>ยืนยันสิทธิ์แล้ว</span>
               </span>
             )}
@@ -98,7 +98,7 @@ export const ETicketModal: React.FC<ETicketModalProps> = ({
               {/* Category & Title */}
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold text-[#4A7C59] uppercase tracking-wider">
+                  <span className="text-[10px] font-bold text-[#F26430] uppercase tracking-wider">
                     #{event.tag || 'คอมมูนิตี้'}
                   </span>
                   <span className="text-slate-300">•</span>
@@ -130,7 +130,7 @@ export const ETicketModal: React.FC<ETicketModalProps> = ({
                   {event.location}
                 </p>
                 {event.meetingPoint && (
-                  <p className="text-[11px] text-[#2D5A3C] font-semibold bg-[#EBF3ED] px-2.5 py-1 rounded-xl border border-[#C5DCCB] inline-block">
+                  <p className="text-[11px] text-[#D04A1B] font-semibold bg-orange-50 px-2.5 py-1 rounded-xl border border-orange-200 inline-block">
                     จุดนัดพบเจาะจง: {event.meetingPoint}
                   </p>
                 )}
@@ -147,7 +147,7 @@ export const ETicketModal: React.FC<ETicketModalProps> = ({
               <button
                 type="button"
                 onClick={handleCopyTicket}
-                className="text-[11px] font-bold text-[#4A7C59] hover:underline cursor-pointer"
+                className="text-[11px] font-bold text-slate-600 hover:text-slate-900 hover:underline cursor-pointer"
               >
                 {copied ? 'คัดลอกรหัสแล้ว!' : 'คัดลอกรหัส'}
               </button>
@@ -169,19 +169,19 @@ export const ETicketModal: React.FC<ETicketModalProps> = ({
                   <rect width="100" height="100" fill="white" />
                   <rect x="10" y="10" width="26" height="26" fill="#1E293B" rx="3" />
                   <rect x="14" y="14" width="18" height="18" fill="white" rx="2" />
-                  <rect x="18" y="18" width="10" height="10" fill="#4A7C59" rx="1" />
+                  <rect x="18" y="18" width="10" height="10" fill="#F26430" rx="1" />
                   <rect x="64" y="10" width="26" height="26" fill="#1E293B" rx="3" />
                   <rect x="68" y="14" width="18" height="18" fill="white" rx="2" />
-                  <rect x="72" y="18" width="10" height="10" fill="#4A7C59" rx="1" />
+                  <rect x="72" y="18" width="10" height="10" fill="#F26430" rx="1" />
                   <rect x="10" y="64" width="26" height="26" fill="#1E293B" rx="3" />
                   <rect x="14" y="68" width="18" height="18" fill="white" rx="2" />
-                  <rect x="18" y="72" width="10" height="10" fill="#4A7C59" rx="1" />
+                  <rect x="18" y="72" width="10" height="10" fill="#F26430" rx="1" />
                   <rect x="42" y="12" width="6" height="6" fill="#1E293B" />
                   <rect x="52" y="18" width="6" height="6" fill="#1E293B" />
                   <rect x="42" y="28" width="6" height="6" fill="#1E293B" />
                   <rect x="12" y="42" width="6" height="6" fill="#1E293B" />
                   <rect x="22" y="52" width="6" height="6" fill="#1E293B" />
-                  <rect x="42" y="42" width="16" height="16" fill="#4A7C59" rx="3" />
+                  <rect x="42" y="42" width="16" height="16" fill="#F26430" rx="3" />
                   <circle cx="50" cy="50" r="3" fill="white" />
                   <rect x="64" y="42" width="6" height="6" fill="#1E293B" />
                   <rect x="74" y="52" width="6" height="6" fill="#1E293B" />
@@ -201,7 +201,7 @@ export const ETicketModal: React.FC<ETicketModalProps> = ({
               {!isCheckedIn ? (
                 <button
                   onClick={() => onCheckIn(ticketId)}
-                  className="w-full bg-[#4A7C59] hover:bg-[#3B6447] text-white font-extrabold text-xs py-2.5 px-3 rounded-xl shadow-sm flex items-center justify-center gap-1.5 active:scale-98 transition-all cursor-pointer"
+                  className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2.5 px-3 rounded-xl shadow-2xs hover:shadow-md flex items-center justify-center gap-1.5 active:scale-98 transition-all cursor-pointer"
                 >
                   <Zap className="w-3.5 h-3.5 text-amber-300" />
                   <span>จำลองเช็คอินหน้างาน (+50 XP)</span>
@@ -221,7 +221,7 @@ export const ETicketModal: React.FC<ETicketModalProps> = ({
                   rel="noopener noreferrer"
                   className="bg-white hover:bg-slate-100 text-slate-700 font-bold py-2 px-2 rounded-xl border border-slate-200 flex items-center justify-center gap-1 transition-colors"
                 >
-                  <MapPin className="w-3 h-3 text-[#4A7C59]" />
+                  <MapPin className="w-3 h-3 text-slate-500" />
                   <span>แผนที่</span>
                 </a>
 
@@ -233,7 +233,7 @@ export const ETicketModal: React.FC<ETicketModalProps> = ({
                   }}
                   className="bg-white hover:bg-slate-100 text-slate-700 font-bold py-2 px-2 rounded-xl border border-slate-200 flex items-center justify-center gap-1 transition-colors cursor-pointer"
                 >
-                  <MessageCircle className="w-3 h-3 text-[#4A7C59]" />
+                  <MessageCircle className="w-3 h-3 text-slate-500" />
                   <span>แชตกลุ่ม</span>
                 </button>
               </div>

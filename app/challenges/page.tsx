@@ -298,7 +298,7 @@ export default function ChallengesDiscoveryPage() {
             <span>หน้าแรก</span>
           </Link>
           <span>/</span>
-          <span className="text-slate-900 font-bold">ภารกิจไลฟ์สไตล์ & ชาเลนจ์ (Lifestyle Quests & Badges)</span>
+          <span className="text-slate-900 font-bold">ภารกิจไลฟ์สไตล์ & ชาเลนจ์</span>
         </div>
 
         {/* 1. Unified Compact Hero with Integrated Spotlight Quest (Single Clean Banner) */}
@@ -308,11 +308,6 @@ export default function ChallengesDiscoveryPage() {
             {/* Left Side (7 Cols): Hero Headline, Description & Actions */}
             <div className="lg:col-span-7 space-y-2.5">
               <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-black text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200 uppercase tracking-wider">
-                    Lifestyle Quests & Badges
-                  </span>
-                </div>
                 <h1 className="text-lg sm:text-xl md:text-2xl font-black text-slate-900 tracking-tight leading-tight">
                   ภารกิจไลฟ์สไตล์ & ชาเลนจ์
                 </h1>
@@ -337,7 +332,8 @@ export default function ChallengesDiscoveryPage() {
                         className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-700 hover:text-purple-900 bg-purple-50 px-3 py-1.5 rounded-xl border border-purple-200/80 hover:bg-purple-100 transition-colors shadow-2xs"
                       >
                         <Zap className="w-3.5 h-3.5 text-purple-600 fill-purple-500" />
-                        <span>กำลังทำ {joinedQuestIds.length} ภารกิจ (My Hub ↗)</span>
+                        <span>กำลังทำ {joinedQuestIds.length} ภารกิจ</span>
+                        <ArrowRight className="w-3 h-3 text-purple-600" />
                       </Link>
                     )}
                   </div>
@@ -411,7 +407,8 @@ export default function ChallengesDiscoveryPage() {
                 className="w-full py-1.5 sm:py-2 rounded-lg bg-gradient-to-r from-[#F26430] to-[#E0531E] hover:from-[#E0531E] hover:to-[#C84312] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer"
               >
                 <Gift className="w-3.5 h-3.5" />
-                <span>{isLoggedIn ? `แลกสิทธิ์ด้วยแต้มสะสม (${userXp} XP)` : 'สำรวจของรางวัลทั้งหมด'} ↗</span>
+                <span>{isLoggedIn ? `แลกสิทธิ์ด้วยแต้มสะสม (${userXp} XP)` : 'สำรวจของรางวัลทั้งหมด'}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
 
@@ -509,18 +506,31 @@ export default function ChallengesDiscoveryPage() {
               </div>
 
               {filteredQuests.length === 0 ? (
-                <div className="bg-slate-50/80 rounded-2xl p-6 text-center border border-dashed border-slate-200 space-y-2">
-                  <p className="text-xs font-bold text-slate-700">ไม่พบภารกิจที่ตรงกับเงื่อนไข</p>
-                  <p className="text-xs text-slate-400">ลองเปลี่ยนหมวดหมู่หรือคำค้นหาดูใหม่อีกครั้ง</p>
+                <div className="w-full bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200/90 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-white border border-slate-200/80 text-slate-400 flex items-center justify-center shrink-0 shadow-2xs">
+                      <Search className="w-4 h-4 text-slate-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-xs sm:text-sm text-slate-800 tracking-tight truncate">
+                        ไม่พบภารกิจที่ตรงกับเงื่อนไข
+                      </h3>
+                      <p className="text-[11px] text-slate-500 font-medium">
+                        ลองเปลี่ยนหมวดหมู่หรือคำค้นหาดูใหม่อีกครั้ง
+                      </p>
+                    </div>
+                  </div>
+
                   <button
+                    type="button"
                     onClick={() => {
                       setSelectedCategory('all');
                       setSelectedType('all');
                       setSearchQuery('');
                     }}
-                    className="text-xs text-[#7C3AED] font-bold hover:underline cursor-pointer pt-1"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold shadow-2xs transition-all cursor-pointer shrink-0 self-end sm:self-center active:scale-95"
                   >
-                    ล้างตัวกรองทั้งหมด
+                    <span>ดูภารกิจทั้งหมด</span>
                   </button>
                 </div>
               ) : (

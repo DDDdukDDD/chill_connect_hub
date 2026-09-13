@@ -55,7 +55,7 @@ export const SafetyGuidelinesModal: React.FC<SafetyGuidelinesModalProps> = ({
               <span>1. ข้อจำกัดความรับผิดชอบของแพลตฟอร์ม (Platform Intermediary Notice)</span>
             </div>
             <p className="text-xs text-slate-600 leading-relaxed font-normal">
-              Chill & Connect Hub เป็นเพียง **พื้นที่สื่อกลางออนไลน์ (Bulletin Board / Platform Intermediary)** สำหรับการแลกเปลี่ยนข้อมูลและเปิดโอกาสให้สมาชิกได้พบปะเพื่อนใหม่ที่มีความสนใจตรงกัน แพลตฟอร์มไม่ได้เป็นผู้จัดกิจกรรม, นายหน้า, ตัวแทน, หรือนายจ้างของสมาชิกใดๆ ทั้งสิ้น การนัดหมายและการเข้าร่วมกิจกรรมถือเป็นการตัดสินใจโดยสมัครใจของผู้ใช้งานเอง
+              Chill & Connect Hub เป็นเพียง <strong className="font-bold text-slate-800">พื้นที่สื่อกลางออนไลน์ (Bulletin Board / Platform Intermediary)</strong> สำหรับการแลกเปลี่ยนข้อมูลและเปิดโอกาสให้สมาชิกได้พบปะเพื่อนใหม่ที่มีความสนใจตรงกัน แพลตฟอร์มไม่ได้เป็นผู้จัดกิจกรรม, นายหน้า, ตัวแทน, หรือนายจ้างของสมาชิกใดๆ ทั้งสิ้น การนัดหมายและการเข้าร่วมกิจกรรมถือเป็นการตัดสินใจโดยสมัครใจของผู้ใช้งานเอง
             </p>
           </div>
 
@@ -66,7 +66,7 @@ export const SafetyGuidelinesModal: React.FC<SafetyGuidelinesModalProps> = ({
               <span>2. กฎการนัดหมายในพื้นที่สาธารณะเท่านั้น (Public Space Policy)</span>
             </div>
             <ul className="text-xs text-slate-600 space-y-1.5 list-disc list-inside font-normal">
-              <li>กิจกรรมชุมชนทุกกิจกรรม **ต้องนัดพบในพื้นที่สาธารณะ** ที่มีผู้คนพลุกพล่าน เช่น สวนสาธารณะ, คาเฟ่, หอศิลป์, หรือห้างสรรพสินค้า</li>
+              <li>กิจกรรมชุมชนทุกกิจกรรม <strong className="font-bold text-slate-800">ต้องนัดพบในพื้นที่สาธารณะ</strong> ที่มีผู้คนพลุกพล่าน เช่น สวนสาธารณะ, คาเฟ่, หอศิลป์, หรือห้างสรรพสินค้า</li>
               <li><strong>ห้ามเด็ดขาด:</strong> การนัดหมายในสถานที่ปิดลับตา, ที่พักอาศัยส่วนบุคคล, หรือสถานที่ที่มีความเสี่ยง</li>
             </ul>
           </div>
@@ -114,7 +114,7 @@ export const SafetyGuidelinesModal: React.FC<SafetyGuidelinesModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="w-full sm:w-auto bg-[#4A7C59] hover:bg-[#3B6347] text-white px-7 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm transition-all shadow-md shadow-[#4A7C59]/20 active:scale-95 cursor-pointer"
+            className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white px-7 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm active:scale-95 cursor-pointer"
           >
             ข้าพเจ้ารับทราบและยอมรับข้อกำหนด
           </button>

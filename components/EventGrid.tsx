@@ -3,9 +3,9 @@
 import React from 'react';
 import Link from 'next/link';
 import { EventItem } from '@/data/mockData';
-import { Heart, Calendar, MapPin, Users, Star, CheckCircle2, Sparkles, Building2, Tag, RotateCcw, ExternalLink, Search, Globe, Repeat, Check } from 'lucide-react';
+import { Heart, Calendar, MapPin, Users, Star, RotateCcw, Search, Globe, Repeat, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { isEventEnded, isEventNew } from '@/lib/dateUtils';
+import { isEventEnded } from '@/lib/dateUtils';
 
 interface EventGridProps {
   events: EventItem[];
@@ -135,12 +135,10 @@ export const EventGrid: React.FC<EventGridProps> = ({
                 }}
                 className={`group bg-white rounded-2xl transition-all duration-300 flex flex-col overflow-hidden transform hover:-translate-y-1 cursor-pointer relative h-full ${
                   isJoined
-                    ? 'border-2 border-[#4A7C59] ring-2 ring-[#4A7C59]/30 shadow-md'
-                    : isFav
                     ? event.eventType === 'public_venue'
-                      ? 'border-2 border-sky-400 ring-2 ring-sky-300/40 shadow-md'
-                      : 'border-2 border-orange-400 ring-2 ring-orange-300/40 shadow-md'
-                    : 'border border-slate-200/70 hover:border-slate-300 shadow-sm hover:shadow-md'
+                      ? 'border-2 border-[#2B527A] ring-2 ring-[#2B527A]/25 shadow-md'
+                      : 'border-2 border-[#F26430] ring-2 ring-[#F26430]/25 shadow-md'
+                    : 'border border-slate-200/70 hover:border-slate-300 shadow-2xs hover:shadow-md'
                 }`}
               >
                 <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100 shrink-0">
@@ -149,35 +147,20 @@ export const EventGrid: React.FC<EventGridProps> = ({
                     alt={event.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
+                  {/* Subtle Gradient Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent opacity-60" />
 
-                  {/* Top-Left Badges: Registered/Joined indicator, Saved indicator, NEW tag & Distance */}
+                  {/* Top-Left Badges: Distance + Urgency Pill */}
                   <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 flex-wrap">
-                    {isJoined && (
-                      <span className="text-[10px] font-black bg-[#EBF3ED]/95 backdrop-blur-md text-[#2D5A3C] border border-[#A3CEB0] px-2.5 py-0.5 rounded-full shadow-xs flex items-center gap-1">
-                        <Check className="w-3.5 h-3.5 text-[#2D5A3C] stroke-[2.5]" />
-                        <span>ลงทะเบียนแล้ว</span>
-                      </span>
-                    )}
-                    {isFav && (
-                      <span className={`text-[10px] font-bold backdrop-blur-md px-2.5 py-0.5 rounded-full shadow-xs flex items-center gap-1 ${
-                        event.eventType === 'public_venue'
-                          ? 'bg-sky-50/95 text-[#2B527A] border border-sky-200'
-                          : 'bg-orange-50/95 text-[#F26430] border border-orange-200'
-                      }`}>
-                        <Check className="w-3.5 h-3.5" />
-                        <span>บันทึกแล้ว</span>
-                      </span>
-                    )}
-                    {isEventNew(event) && (
-                      <span className="text-[10px] font-black bg-gradient-to-r from-emerald-500 to-[#4A7C59] text-white px-2.5 py-0.5 rounded-full shadow-md tracking-wider flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
-                        <span>NEW</span>
-                      </span>
-                    )}
                     {event.distanceKm !== undefined && (
-                      <span className="text-[10px] font-semibold bg-slate-900/80 backdrop-blur-md text-white px-2.5 py-0.5 rounded-full shadow-xs">
+                      <span className="text-[10px] font-semibold bg-slate-900/80 backdrop-blur-md text-white px-2.5 py-0.5 rounded-full shadow-2xs">
                         {event.distanceKm.toFixed(1)} กม.
+                      </span>
+                    )}
+                    {event.eventType !== 'public_venue' && isAlmostFull && !isJoined && !isEnded && (
+                      <span className="text-[10px] font-bold bg-slate-900/85 backdrop-blur-md text-white px-2 py-0.5 rounded-full shadow-2xs flex items-center gap-1 border border-white/10">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                        เหลือ {Math.max(1, event.maxParticipants - event.participantsCount)} ที่
                       </span>
                     )}
                   </div>
@@ -192,7 +175,11 @@ export const EventGrid: React.FC<EventGridProps> = ({
                       }}
                       className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full shadow-xs flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-20 cursor-pointer ${
                         isFav
-                          ? 'bg-[#F26430] text-white shadow-md shadow-orange-500/30 ring-1 ring-white/30'
+                          ? event.eventType === 'public_venue'
+                            ? 'bg-[#2B527A] text-white shadow-md shadow-sky-900/30 ring-1 ring-white/30'
+                            : 'bg-[#F26430] text-white shadow-md shadow-orange-500/30 ring-1 ring-white/30'
+                          : event.eventType === 'public_venue'
+                          ? 'bg-white/90 backdrop-blur-md text-slate-400 hover:text-[#2B527A]'
                           : 'bg-white/90 backdrop-blur-md text-slate-400 hover:text-[#F26430]'
                       }`}
                       title={isFav ? 'ยกเลิกถูกใจ' : 'บันทึกกิจกรรม'}
@@ -219,6 +206,15 @@ export const EventGrid: React.FC<EventGridProps> = ({
                         <span className="text-[11px] font-medium text-slate-500 truncate">
                           {event.hostName}
                         </span>
+                        {event.eventType !== 'public_venue' && (
+                          <span
+                            className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-700 bg-amber-50/90 border border-amber-200/60 px-1 py-0.2 rounded shrink-0"
+                            title={`คะแนนโฮสต์ ${(event.hostRating || event.rating || 4.9).toFixed(1)} / 5`}
+                          >
+                            <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                            <span>{(event.hostRating || event.rating || 4.9).toFixed(1)}</span>
+                          </span>
+                        )}
                       </div>
 
                       {event.price && (
@@ -236,7 +232,9 @@ export const EventGrid: React.FC<EventGridProps> = ({
 
                     {/* Title */}
                     <h3 
-                      className="font-bold text-[13px] sm:text-sm text-slate-900 line-clamp-2 min-h-[2.5rem] sm:min-h-[2.6rem] group-hover:text-[#4A7C59] transition-colors leading-[1.3] tracking-tight"
+                      className={`font-bold text-[13px] sm:text-sm text-slate-900 line-clamp-2 min-h-[2.5rem] sm:min-h-[2.6rem] ${
+                        event.eventType === 'public_venue' ? 'group-hover:text-[#2B527A]' : 'group-hover:text-[#F26430]'
+                      } transition-colors leading-[1.3] tracking-tight`}
                       title={event.title}
                     >
                       {event.title}
@@ -258,7 +256,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                       </div>
 
                       <div className="flex items-center gap-1.5 min-w-0">
-                        {event.province === 'ออนไลน์' ? (
+                        {event.province === 'ออนไลน์' || event.locationType === 'online' ? (
                           <>
                             <Globe className="w-3.5 h-3.5 text-sky-500 shrink-0" />
                             <span className="truncate text-sky-700 font-medium">ออนไลน์ • {event.location}</span>
@@ -284,12 +282,17 @@ export const EventGrid: React.FC<EventGridProps> = ({
                         <span>{event.participantsCount || 0}/{event.maxParticipants || 10} คน</span>
                       </div>
 
-                      {isEnded ? (
+                      {isJoined ? (
+                        <span className="text-[11px] font-bold text-[#F26430] flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>เข้าร่วมแล้ว</span>
+                        </span>
+                      ) : isEnded ? (
                         <span className="text-[11px] font-medium text-slate-400">จบกิจกรรมแล้ว</span>
                       ) : isAlmostFull ? (
-                        <span className="text-[11px] font-semibold text-[#F26430]">ใกล้เต็มแล้ว</span>
+                        <span className="text-[11px] font-semibold text-amber-600">ใกล้เต็มแล้ว</span>
                       ) : (
-                        <span className="text-[11px] font-semibold text-[#4A7C59]">เปิดรับสมัคร</span>
+                        <span className="text-[11px] font-semibold text-emerald-700">เปิดรับสมัคร</span>
                       )}
                     </div>
                   ) : isEnded ? (

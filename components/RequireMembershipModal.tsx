@@ -36,25 +36,25 @@ export const RequireMembershipModal: React.FC<RequireMembershipModalProps> = ({
 
         {/* Header (Clean White / Light Style) */}
         <div className="text-center space-y-2.5 pt-1">
-          <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#4A7C59] bg-[#EBF3ED] px-3.5 py-1 rounded-full border border-[#C5DCCB]">
-            <Sparkles className="w-3.5 h-3.5 text-[#4A7C59]" />
+          <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#D04A1B] bg-orange-50 px-3.5 py-1 rounded-full border border-orange-200">
+            <Sparkles className="w-3.5 h-3.5 text-[#F26430]" />
             <span>สมัครฟรี 100% ไม่มีค่าใช้จ่าย</span>
           </div>
 
           <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            สมัครสมาชิกเพื่อเข้าร่วมกิจกรรม
+            เข้าสู่ระบบ {actionTitle}
           </h3>
 
           <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed max-w-sm mx-auto">
-            สมัครสมาชิกหรือเข้าสู่ระบบ เพื่อปลดล็อกสิทธิพิเศษและเชื่อมต่อคอมมูนิตี้
+            เข้าสู่ระบบหรือสมัครสมาชิก เพื่อปลดล็อกสิทธิพิเศษและเชื่อมต่อคอมมูนิตี้
           </p>
         </div>
 
         {/* Membership Perks (Clean Spacious Cards) */}
         <div className="space-y-3">
           {/* Card 1 */}
-          <div className="flex items-center gap-3.5 p-3.5 sm:p-4 rounded-2xl bg-slate-50/70 border border-slate-200/90 shadow-2xs hover:border-[#4A7C59]/40 hover:bg-white hover:shadow-xs transition-all">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-[#4A7C59] border border-emerald-200 flex items-center justify-center shrink-0 shadow-2xs">
+          <div className="flex items-center gap-3.5 p-3.5 sm:p-4 rounded-2xl bg-slate-50/70 border border-slate-200/90 shadow-2xs hover:bg-white hover:shadow-xs transition-all">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center shrink-0 shadow-2xs">
               <Ticket className="w-5 h-5" />
             </div>
             <div className="min-w-0">
@@ -102,7 +102,7 @@ export const RequireMembershipModal: React.FC<RequireMembershipModalProps> = ({
           <Link
             href="/onboarding"
             onClick={onClose}
-            className="w-full bg-[#4A7C59] hover:bg-[#3B6347] text-white py-3 sm:py-3.5 px-5 rounded-2xl font-bold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 sm:py-3.5 px-5 rounded-2xl font-bold text-xs sm:text-sm shadow-sm transition-all active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
           >
             <span>สมัครสมาชิกใหม่ฟรี (เพียง 1 นาที)</span>
             <ArrowRight className="w-4 h-4" />
@@ -114,9 +114,13 @@ export const RequireMembershipModal: React.FC<RequireMembershipModalProps> = ({
               onClose();
               onOpenLogin();
             }}
-            className="w-full text-center py-1.5 text-xs sm:text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+            className="w-full text-center py-1.5 text-xs sm:text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer flex items-center justify-center gap-1"
           >
-            มีบัญชีอยู่แล้ว? <span className="font-bold text-[#4A7C59] hover:underline">เข้าสู่ระบบ ➔</span>
+            <span>มีบัญชีอยู่แล้ว?</span>
+            <span className="font-bold text-slate-900 hover:text-[#F26430] hover:underline inline-flex items-center gap-1">
+              <span>เข้าสู่ระบบ</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </span>
           </button>
         </div>
 

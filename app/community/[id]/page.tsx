@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
+import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { ETicketModal } from '@/components/ETicketModal';
 import { GroupChatModal } from '@/components/GroupChatModal';
@@ -78,7 +79,10 @@ export default function CommunityDetailPage() {
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
+  const [membershipActionTitle, setMembershipActionTitle] = useState('เพื่อดำเนินการต่อ');
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Favorites & Joined Events State
@@ -173,7 +177,9 @@ export default function CommunityDetailPage() {
 
   const toggleFavorite = (eventId: string) => {
     if (!isLoggedIn) {
-      setIsAuthModalOpen(true);
+      setMembershipActionTitle('เพื่อบันทึกกิจกรรมโปรด');
+      setPendingAction(`favorite:${eventId}`);
+      setIsRequireMembershipOpen(true);
       return;
     }
     setFavorites((prev) => {
@@ -196,7 +202,9 @@ export default function CommunityDetailPage() {
 
   const handleJoinEvent = () => {
     if (!isLoggedIn) {
-      setIsAuthModalOpen(true);
+      setMembershipActionTitle('เพื่อลงทะเบียนเข้าร่วมกิจกรรม');
+      setPendingAction('join');
+      setIsRequireMembershipOpen(true);
       return;
     }
     if (!eventData) return;
@@ -381,14 +389,14 @@ export default function CommunityDetailPage() {
           onOpenCreateEvent={() => setIsCreateEventModalOpen(true)}
         />
         <main className="flex-1 max-w-4xl mx-auto px-4 py-20 text-center space-y-4">
-          <div className="w-16 h-16 bg-emerald-50 text-[#4A7C59] rounded-2xl flex items-center justify-center mx-auto text-2xl">
+          <div className="w-16 h-16 bg-orange-50 text-[#F26430] rounded-2xl flex items-center justify-center mx-auto text-2xl">
             🌿
           </div>
           <h1 className="text-2xl font-black text-slate-900">ไม่พบข้อมูลกิจกรรมคอมมูนิตี้นี้</h1>
           <p className="text-sm text-slate-600">กิจกรรมนี้อาจสิ้นสุดลงแล้วหรือถูกยกเลิก</p>
           <Link
-            href="/?tab=community"
-            className="inline-flex items-center gap-2 bg-[#4A7C59] hover:bg-[#3B6447] text-white px-6 py-2.5 rounded-full font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer"
+            href="/community"
+            className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-2xs hover:shadow-md transition-all cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>กลับสู่หน้ากิจกรรมคอมมูนิตี้</span>
@@ -407,7 +415,7 @@ export default function CommunityDetailPage() {
   const profileHref = `/profile?id=${encodeURIComponent(eventData.hostId || 'host-mind')}&name=${encodeURIComponent(eventData.hostName)}`;
 
   return (
-    <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans selection:bg-[#4A7C59] selection:text-white">
+    <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans selection:bg-[#F26430] selection:text-white">
       
       {/* 1. Header Navbar */}
       <Navbar
@@ -418,7 +426,15 @@ export default function CommunityDetailPage() {
         setIsLoggedIn={handleSetIsLoggedIn}
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}
-        onOpenCreateEvent={() => setIsCreateEventModalOpen(true)}
+        onOpenCreateEvent={() => {
+          if (!isLoggedIn) {
+            setMembershipActionTitle('เพื่อเปิดตี้หรือสร้างกิจกรรมใหม่');
+            setPendingAction('create');
+            setIsRequireMembershipOpen(true);
+          } else {
+            setIsCreateEventModalOpen(true);
+          }
+        }}
       />
 
       {/* Main Container */}
@@ -431,11 +447,11 @@ export default function CommunityDetailPage() {
           
           {/* Left: Clean Breadcrumbs */}
           <nav className="text-xs text-slate-500 font-medium truncate flex items-center gap-1.5">
-            <Link href="/" className="hover:text-[#4A7C59] transition-colors font-semibold py-2 px-1">หน้าแรก</Link>
+            <Link href="/" className="hover:text-slate-900 transition-colors font-semibold py-2 px-1">หน้าแรก</Link>
             <span className="py-2">/</span>
             <Link
-              href="/?tab=community"
-              className="hover:text-[#4A7C59] transition-colors py-2 px-1 font-semibold text-emerald-800"
+              href="/community"
+              className="hover:text-[#F26430] transition-colors py-2 px-1 font-semibold text-slate-800"
             >
               กิจกรรมคอมมูนิตี้
             </Link>
@@ -463,7 +479,7 @@ export default function CommunityDetailPage() {
             <button
               type="button"
               onClick={handleShare}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-emerald-50 text-slate-700 hover:text-[#4A7C59] text-xs font-bold transition-all shadow-2xs border border-slate-200 hover:border-emerald-200 cursor-pointer active:scale-95"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 text-xs font-bold transition-all shadow-2xs border border-slate-200 cursor-pointer active:scale-95"
             >
               {isCopied ? (
                 <>
@@ -601,6 +617,28 @@ export default function CommunityDetailPage() {
                     <span>เปิดรับสมัคร</span>
                   </span>
                 )}
+
+                {/* Frosted Trust Micro-Pills (AGENTS.md Rule 1.2) */}
+                {!(eventData.province === 'ออนไลน์' || eventData.locationType === 'online') && eventData.isSoloFriendly !== false && (
+                  <span className="text-xs font-medium text-slate-600 bg-slate-100/90 px-2.5 py-0.5 rounded-full border border-slate-200/60">
+                    มาคนเดียวได้
+                  </span>
+                )}
+                {!(eventData.province === 'ออนไลน์' || eventData.locationType === 'online') && eventData.isPetFriendly && (
+                  <span className="text-xs font-medium text-slate-600 bg-slate-100/90 px-2.5 py-0.5 rounded-full border border-slate-200/60">
+                    สัตว์เลี้ยงร่วมได้
+                  </span>
+                )}
+                {eventData.isBeginnerFriendly && (
+                  <span className="text-xs font-medium text-slate-600 bg-slate-100/90 px-2.5 py-0.5 rounded-full border border-slate-200/60">
+                    เหมาะกับมือใหม่
+                  </span>
+                )}
+                {(eventData.province === 'ออนไลน์' || eventData.locationType === 'online') && (
+                  <span className="text-xs font-medium text-sky-700 bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200/60">
+                    รวมตัวออนไลน์
+                  </span>
+                )}
               </div>
 
               <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight">
@@ -617,7 +655,7 @@ export default function CommunityDetailPage() {
                   </>
                 ) : (
                   <>
-                    <MapPin className="w-4 h-4 text-[#4A7C59] shrink-0" />
+                    <MapPin className="w-4 h-4 text-[#F26430] shrink-0" />
                     <span>
                       {eventData.province && eventData.province !== 'ออนไลน์' && !eventData.location.includes(eventData.province)
                         ? `${eventData.province} • ${cleanText(eventData.location)}`
@@ -630,13 +668,13 @@ export default function CommunityDetailPage() {
 
             {/* Linked Spot Pill / Card */}
             {((eventData as any).spotId || (eventData as any).spotTitle) && (
-              <div className="p-3.5 sm:p-4 rounded-2xl bg-[#EBF3ED]/80 border border-[#4A7C59]/30 flex items-center justify-between gap-3">
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded-xl bg-[#4A7C59]/10 text-[#4A7C59] flex items-center justify-center shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
                     <MapPin className="w-4 h-4" />
                   </div>
                   <div className="min-w-0">
-                    <span className="text-[11px] font-bold text-[#4A7C59] uppercase tracking-wider block">
+                    <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider block">
                       พิกัดจุดเที่ยวที่นัดหมาย
                     </span>
                     <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
@@ -647,7 +685,7 @@ export default function CommunityDetailPage() {
                 {(eventData as any).spotId && (
                   <Link
                     href={`/spots/${encodeURIComponent((eventData as any).spotId)}`}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-white hover:bg-[#4A7C59] text-[#2D5A3C] hover:text-white border border-[#4A7C59]/30 rounded-xl text-xs font-bold transition-all shadow-2xs shrink-0"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-white hover:bg-slate-900 text-slate-800 hover:text-white border border-slate-200 rounded-xl text-xs font-bold transition-all shadow-2xs shrink-0"
                   >
                     <span>ดูข้อมูลสถานที่</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -657,7 +695,7 @@ export default function CommunityDetailPage() {
             )}
 
             {/* 2. Inline Metadata Ribbon */}
-            <div className="py-3.5 px-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2 text-xs sm:text-sm text-slate-700">
+            <div className="py-3.5 px-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5 text-xs sm:text-sm text-slate-700">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   {eventData.scheduleType === 'recurring' ? (
@@ -687,27 +725,42 @@ export default function CommunityDetailPage() {
                 </div>
               </div>
 
-              {(eventData.meetingPoint || eventData.transportation || eventData.contactChannel) && (
-                <div className="pt-2 border-t border-slate-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                  {eventData.meetingPoint && (
-                    <div className="flex items-center gap-1.5 text-slate-700">
-                      <span className="font-semibold text-[#4A7C59]">จุดนัดพบเจาะจง:</span>
-                      <span className="font-bold text-slate-900">{cleanText(eventData.meetingPoint)}</span>
-                    </div>
-                  )}
+              <div className="pt-2.5 border-t border-slate-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+                <div className="flex items-center gap-1.5 text-slate-700">
+                  <span className="font-semibold text-slate-500">จุดนัดพบเจาะจง:</span>
+                  <span className="font-bold text-slate-900">
+                    {cleanText(eventData.meetingPoint) || cleanText(eventData.location)}
+                  </span>
+                </div>
 
+                <div className="flex items-center gap-1.5 sm:text-right shrink-0">
+                  <span className="text-slate-500 font-medium">เงื่อนไขการยกเลิก:</span>
+                  <span className="font-bold text-slate-800">
+                    {eventData.cancellationPolicy === 'free_anytime'
+                      ? 'ยกเลิกฟรีตลอดเวลา'
+                      : eventData.cancellationPolicy === 'free_48h'
+                      ? 'ยกเลิกฟรีก่อน 48 ชม.'
+                      : eventData.cancellationPolicy === 'chat_notice'
+                      ? 'แจ้งในกลุ่มแชท'
+                      : 'ยกเลิกฟรีก่อน 24 ชม.'}
+                  </span>
+                </div>
+              </div>
+
+              {(eventData.transportation || eventData.contactChannel) && (
+                <div className="pt-2 border-t border-slate-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
                   {eventData.transportation && (
                     <div className="flex items-center gap-1.5 text-slate-600">
-                      <span className="font-medium">การเดินทาง:</span>
+                      <span className="font-medium text-slate-500">การเดินทาง:</span>
                       <span className="font-bold text-slate-800">{eventData.transportation}</span>
                     </div>
                   )}
 
                   {eventData.contactChannel && (
                     <div className="flex items-center gap-1.5 text-slate-600">
-                      <span className="font-medium">ช่องทางติดต่อกลุ่ม:</span>
+                      <span className="font-medium text-slate-500">ช่องทางติดต่อกลุ่ม:</span>
                       {isJoined ? (
-                        <span className="font-bold text-[#4A7C59] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                        <span className="font-bold text-[#D04A1B] bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200">
                           {eventData.contactChannel}
                         </span>
                       ) : (
@@ -738,9 +791,16 @@ export default function CommunityDetailPage() {
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <h3 className="font-extrabold text-sm text-slate-900 group-hover:text-[#4A7C59] transition-colors truncate">
+                    <h3 className="font-extrabold text-sm text-slate-900 group-hover:text-[#F26430] transition-colors truncate">
                       {eventData.hostName}
                     </h3>
+                    <span
+                      className="inline-flex items-center gap-0.5 text-[10.5px] font-bold text-amber-700 bg-amber-50 border border-amber-200/80 px-1.5 py-0.2 rounded shrink-0"
+                      title={`คะแนนโฮสต์ ${(eventData.hostRating || eventData.rating || 4.9).toFixed(1)} / 5`}
+                    >
+                      <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                      <span>{(eventData.hostRating || eventData.rating || 4.9).toFixed(1)}</span>
+                    </span>
                     <span className="text-[10px] font-black text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
                       <ShieldCheck className="w-3 h-3 text-emerald-600" />
                       <span>Verified Host</span>
@@ -841,7 +901,7 @@ export default function CommunityDetailPage() {
                     href={`https://maps.google.com/?q=${encodeURIComponent(eventData.location)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs font-bold text-[#4A7C59] hover:underline shrink-0"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-slate-900 hover:underline shrink-0"
                   >
                     <span>เปิดดูใน Google Maps</span>
                     <ExternalLink className="w-3.5 h-3.5" />
@@ -939,7 +999,7 @@ export default function CommunityDetailPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs font-bold">
                   <span className="text-slate-600 flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-[#4A7C59]" />
+                    <Users className="w-3.5 h-3.5 text-[#F26430]" />
                     <span>ผู้ลงทะเบียน</span>
                   </span>
                   <span className="text-slate-900 font-extrabold">
@@ -954,7 +1014,7 @@ export default function CommunityDetailPage() {
                         ? 'bg-rose-500'
                         : isAlmostFull
                         ? 'bg-amber-500'
-                        : 'bg-[#4A7C59]'
+                        : 'bg-[#F26430]'
                     }`}
                     style={{ width: `${Math.min(fillRatio * 100, 100)}%` }}
                   />
@@ -963,7 +1023,10 @@ export default function CommunityDetailPage() {
                 <div className="flex items-center justify-between text-[11px] text-slate-500 font-medium">
                   <span>เหลืออีก {Math.max(eventData.maxParticipants - eventData.participantsCount, 0)} ที่นั่ง</span>
                   {isAlmostFull && !isEnded && (
-                    <span className="text-rose-600 font-bold">ใกล้เต็มแล้ว!</span>
+                    <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 animate-pulse">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                      <span>ใกล้เต็มแล้ว! เหลือ {Math.max(eventData.maxParticipants - eventData.participantsCount, 0)} ที่</span>
+                    </span>
                   )}
                 </div>
               </div>
@@ -974,7 +1037,7 @@ export default function CommunityDetailPage() {
                   {eventData.scheduleType === 'recurring' ? (
                     <Repeat className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                   ) : (
-                    <Calendar className="w-4 h-4 text-[#4A7C59] shrink-0 mt-0.5" />
+                    <Calendar className="w-4 h-4 text-[#F26430] shrink-0 mt-0.5" />
                   )}
                   <div>
                     <span className="text-slate-400 text-[10px] block font-bold">
@@ -989,7 +1052,7 @@ export default function CommunityDetailPage() {
                 </div>
 
                 <div className="flex items-start gap-2.5">
-                  <Clock className="w-4 h-4 text-[#4A7C59] shrink-0 mt-0.5" />
+                  <Clock className="w-4 h-4 text-[#F26430] shrink-0 mt-0.5" />
                   <div>
                     <span className="text-slate-400 text-[10px] block font-bold">เวลา</span>
                     <span className="font-bold text-slate-900">{cleanText(eventData.time)}</span>
@@ -1000,7 +1063,7 @@ export default function CommunityDetailPage() {
                   {eventData.locationType === 'online' || eventData.province === 'ออนไลน์' ? (
                     <Globe className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
                   ) : (
-                    <MapPin className="w-4 h-4 text-[#4A7C59] shrink-0 mt-0.5" />
+                    <MapPin className="w-4 h-4 text-[#F26430] shrink-0 mt-0.5" />
                   )}
                   <div>
                     <span className="text-slate-400 text-[10px] block font-bold">
@@ -1013,6 +1076,23 @@ export default function CommunityDetailPage() {
                     </span>
                   </div>
                 </div>
+              </div>
+
+              {/* Trust Signal & Cancellation Policy in Sidebar */}
+              <div className="px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-xs">
+                <span className="flex items-center gap-1.5 text-slate-500 font-medium">
+                  <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
+                  <span>เงื่อนไขยกเลิก:</span>
+                </span>
+                <span className="font-bold text-slate-800">
+                  {eventData.cancellationPolicy === 'free_anytime'
+                    ? 'ยกเลิกฟรีตลอดเวลา'
+                    : eventData.cancellationPolicy === 'free_48h'
+                    ? 'ยกเลิกฟรีก่อน 48 ชม.'
+                    : eventData.cancellationPolicy === 'chat_notice'
+                    ? 'แจ้งในกลุ่มแชท'
+                    : 'ยกเลิกฟรีก่อน 24 ชม.'}
+                </span>
               </div>
 
               {/* ACTION BUTTONS (Join / View E-Ticket / Group Chat) */}
@@ -1036,7 +1116,7 @@ export default function CommunityDetailPage() {
                     <button
                       type="button"
                       onClick={() => setIsETicketOpen(true)}
-                      className="w-full bg-[#4A7C59] hover:bg-[#3B6447] text-white py-3 px-4 rounded-2xl font-black text-xs sm:text-sm shadow-md shadow-[#4A7C59]/20 transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
+                      className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 px-4 rounded-2xl font-bold text-xs sm:text-sm shadow-2xs hover:shadow-md transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
                     >
                       <QrCode className="w-4 h-4" />
                       <span>ดูตั๋ว E-Ticket ของคุณ</span>
@@ -1045,7 +1125,7 @@ export default function CommunityDetailPage() {
                     <button
                       type="button"
                       onClick={() => setIsChatOpen(true)}
-                      className="w-full bg-emerald-50 hover:bg-emerald-100 text-[#4A7C59] border border-emerald-200 py-2.5 px-4 rounded-2xl font-bold text-xs transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
+                      className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 py-2.5 px-4 rounded-2xl font-bold text-xs transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
                     >
                       <MessageCircle className="w-4 h-4" />
                       <span>ห้องแชตกลุ่มเตรียมนัดพบ</span>
@@ -1063,7 +1143,7 @@ export default function CommunityDetailPage() {
                   <button
                     type="button"
                     onClick={handleJoinEvent}
-                    className="w-full bg-[#4A7C59] hover:bg-[#3B6447] text-white py-3.5 px-4 rounded-2xl font-black text-xs sm:text-sm shadow-md shadow-[#4A7C59]/20 transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
+                    className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 px-4 rounded-2xl font-bold text-xs sm:text-sm shadow-2xs hover:shadow-md transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
                   >
                     <span>ลงทะเบียนเข้าร่วม</span>
                     <ArrowRight className="w-4 h-4" />
@@ -1073,7 +1153,7 @@ export default function CommunityDetailPage() {
                 {isJoined && (
                   <Link
                     href="/myhub?type=community"
-                    className="w-full text-center inline-flex items-center justify-center gap-1 text-[11px] font-bold text-[#4A7C59] hover:underline pt-0.5"
+                    className="w-full text-center inline-flex items-center justify-center gap-1 text-[11px] font-bold text-slate-600 hover:text-slate-900 hover:underline pt-0.5"
                   >
                     <span>ดูกิจกรรมใน MyHub ของคุณ</span>
                   </Link>
@@ -1102,8 +1182,8 @@ export default function CommunityDetailPage() {
               </div>
 
               <Link
-                href="/?tab=community"
-                className="text-xs sm:text-sm font-bold text-[#4A7C59] hover:underline flex items-center gap-1"
+                href="/community"
+                className="text-xs sm:text-sm font-bold text-slate-900 hover:text-[#F26430] hover:underline flex items-center gap-1"
               >
                 <span>ดูกิจกรรมทั้งหมด</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -1180,7 +1260,7 @@ export default function CommunityDetailPage() {
                 type="button"
                 onClick={() => setActivePhotoIndex(idx)}
                 className={`relative w-16 h-12 rounded-lg overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${
-                  activePhotoIndex === idx ? 'border-[#4A7C59] scale-105 opacity-100' : 'border-transparent opacity-50 hover:opacity-80'
+                  activePhotoIndex === idx ? 'border-[#F26430] scale-105 opacity-100' : 'border-transparent opacity-50 hover:opacity-80'
                 }`}
               >
                 <img src={imgUrl} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
@@ -1198,8 +1278,67 @@ export default function CommunityDetailPage() {
       )}
 
       {/* Modals */}
-      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onLoginSuccess={() => handleSetIsLoggedIn(true)} />
-      <LogoutConfirmModal isOpen={isLogoutModalOpen} onClose={() => setIsLogoutModalOpen(false)} onConfirmLogout={() => handleSetIsLoggedIn(false)} />
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          setPendingAction(null);
+        }}
+        onLoginSuccess={(name) => {
+          handleSetIsLoggedIn(true);
+          setIsAuthModalOpen(false);
+          showToast(`ยินดีต้อนรับ ${name}! เข้าสู่ระบบเรียบร้อย`);
+
+          // Seamlessly fulfill pending user action after login
+          if (pendingAction === 'join') {
+            setTimeout(() => {
+              setIsConfirmJoinModalOpen(true);
+            }, 300);
+          } else if (pendingAction === 'create') {
+            setTimeout(() => {
+              setIsCreateEventModalOpen(true);
+            }, 300);
+          } else if (pendingAction?.startsWith('favorite:') && eventData) {
+            const evId = pendingAction.replace('favorite:', '');
+            setTimeout(() => {
+              toggleFavorite(evId);
+            }, 300);
+          }
+          setPendingAction(null);
+        }}
+      />
+
+      <RequireMembershipModal
+        isOpen={isRequireMembershipOpen}
+        onClose={() => {
+          setIsRequireMembershipOpen(false);
+          setPendingAction(null);
+        }}
+        onOpenLogin={() => {
+          setIsRequireMembershipOpen(false);
+          setIsAuthModalOpen(true);
+        }}
+        actionTitle={membershipActionTitle}
+      />
+
+      <LogoutConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirmLogout={() => {
+          handleSetIsLoggedIn(false);
+          setIsLogoutModalOpen(false);
+          setFavorites([]);
+          setJoinedEventIds([]);
+          // Close all authenticated and pending modals on logout
+          setIsETicketOpen(false);
+          setIsChatOpen(false);
+          setIsConfirmJoinModalOpen(false);
+          setIsCancelModalOpen(false);
+          setIsCreateEventModalOpen(false);
+          setPendingAction(null);
+          showToast('ออกจากระบบเรียบร้อยแล้ว');
+        }}
+      />
       <CreateEventModal
         isOpen={isCreateEventModalOpen}
         onClose={() => setIsCreateEventModalOpen(false)}
@@ -1221,7 +1360,7 @@ export default function CommunityDetailPage() {
           >
             {/* Top Bar: Category Pill & Close Button */}
             <div className="flex items-center justify-between">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[#4A7C59] text-xs font-bold tracking-wide">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-[#F26430] text-xs font-bold tracking-wide">
                 <span>กิจกรรมคอมมูนิตี้</span>
               </div>
               <button
@@ -1259,7 +1398,7 @@ export default function CommunityDetailPage() {
               {/* Clean Key-Value Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm text-slate-700 font-medium pt-1">
                 <div className="flex items-center gap-2.5">
-                  <Calendar className="w-4 h-4 text-[#4A7C59] shrink-0" />
+                  <Calendar className="w-4 h-4 text-[#F26430] shrink-0" />
                   <div>
                     <span className="text-slate-400 block text-[11px]">วันที่จัด:</span>
                     <span className="font-bold text-slate-900">{cleanText(eventData.date)}</span>
@@ -1267,7 +1406,7 @@ export default function CommunityDetailPage() {
                 </div>
 
                 <div className="flex items-center gap-2.5">
-                  <Clock className="w-4 h-4 text-[#4A7C59] shrink-0" />
+                  <Clock className="w-4 h-4 text-[#F26430] shrink-0" />
                   <div>
                     <span className="text-slate-400 block text-[11px]">ช่วงเวลา:</span>
                     <span className="font-bold text-slate-900">{cleanText(eventData.time)}</span>
@@ -1275,7 +1414,7 @@ export default function CommunityDetailPage() {
                 </div>
 
                 <div className="flex items-start gap-2.5 sm:col-span-2">
-                  <MapPin className="w-4 h-4 text-[#4A7C59] shrink-0 mt-0.5" />
+                  <MapPin className="w-4 h-4 text-[#F26430] shrink-0 mt-0.5" />
                   <div>
                     <span className="text-slate-400 block text-[11px]">สถานที่นัดพบ:</span>
                     <span className="font-bold text-slate-900 leading-relaxed">{cleanText(eventData.location)}</span>
@@ -1283,11 +1422,11 @@ export default function CommunityDetailPage() {
                 </div>
 
                 <div className="flex items-center gap-2.5 sm:col-span-2">
-                  <User className="w-4 h-4 text-[#4A7C59] shrink-0" />
+                  <User className="w-4 h-4 text-[#F26430] shrink-0" />
                   <div className="flex items-center gap-1.5">
                     <span className="text-slate-400 text-[11px]">ผู้จัด:</span>
                     <span className="font-bold text-slate-900">{eventData.hostName || 'Verified Community Host'}</span>
-                    <ShieldCheck className="w-3.5 h-3.5 text-[#4A7C59]" />
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#F26430]" />
                   </div>
                 </div>
               </div>
@@ -1315,7 +1454,7 @@ export default function CommunityDetailPage() {
               <button
                 type="button"
                 onClick={handleExecuteJoin}
-                className="w-full py-3.5 rounded-2xl bg-[#4A7C59] hover:bg-[#3B6347] text-white text-sm font-black shadow-lg shadow-[#4A7C59]/25 transition-all active:scale-98 cursor-pointer flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold shadow-2xs hover:shadow-md transition-all active:scale-98 cursor-pointer flex items-center justify-center gap-2"
               >
                 <span>ยืนยันและรับตั๋ว</span>
                 <ArrowRight className="w-4 h-4" />

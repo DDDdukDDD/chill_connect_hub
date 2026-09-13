@@ -27,6 +27,27 @@ export default function EventSmartRouterPage() {
       return;
     }
 
+    // 1.1 Check user-created events from localStorage
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('user_created_events');
+        if (saved) {
+          const userEvents: EventItem[] = JSON.parse(saved);
+          const foundUserEv = userEvents.find((e) => e.id === decodedId || e.title === decodedId);
+          if (foundUserEv) {
+            if (foundUserEv.eventType === 'public_venue') {
+              router.replace(`/fairs/${encodeURIComponent(decodedId)}`);
+            } else {
+              router.replace(`/community/${encodeURIComponent(decodedId)}`);
+            }
+            return;
+          }
+        }
+      } catch (e) {
+        console.error('Error checking user_created_events in router:', e);
+      }
+    }
+
     // 2. Fetch live database events from /api/events
     fetch('/api/events')
       .then((res) => res.json())

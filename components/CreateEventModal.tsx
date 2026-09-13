@@ -224,6 +224,12 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
   const [transportation, setTransportation] = useState('พบกัน ณ จุดนัดพบ (เดินทางอิสระ)');
   const [contactChannel, setContactChannel] = useState('');
 
+  // Community Vibe & Perks and Cancellation Policy
+  const [isSoloFriendly, setIsSoloFriendly] = useState(true);
+  const [isPetFriendly, setIsPetFriendly] = useState(false);
+  const [isBeginnerFriendly, setIsBeginnerFriendly] = useState(true);
+  const [cancellationPolicy, setCancellationPolicy] = useState<'free_anytime' | 'free_24h' | 'free_48h' | 'chat_notice'>('free_24h');
+
   // Community schedule & recurring fields
   const [scheduleType, setScheduleType] = useState<'single' | 'recurring'>('single');
   const [recurrenceFrequency, setRecurrenceFrequency] = useState<'weekly' | 'biweekly' | 'monthly'>('weekly');
@@ -788,6 +794,10 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
           whatToBring: isOnline ? ['อินเทอร์เน็ตความเร็วเสถียร', 'หูฟัง & ไมโครโฟน'] : whatToBringList,
           transportation: isOnline ? 'เข้าร่วมออนไลน์ผ่านอุปกรณ์คอมพิวเตอร์ / สมาร์ทโฟน' : transportation,
           contactChannel: contactChannel.trim() || undefined,
+          isSoloFriendly: isOnline ? false : isSoloFriendly,
+          isPetFriendly: isOnline ? false : isPetFriendly,
+          isBeginnerFriendly,
+          cancellationPolicy,
           isNew: true,
           createdAtTimestamp: Date.now(),
         };
@@ -1891,7 +1901,10 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                       <div className="inline-flex p-0.5 rounded-xl bg-slate-200/70 text-xs font-bold">
                         <button
                           type="button"
-                          onClick={() => setLocationType('physical')}
+                          onClick={() => {
+                            setLocationType('physical');
+                            setIsSoloFriendly(true);
+                          }}
                           className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all cursor-pointer ${
                             locationType === 'physical'
                               ? 'bg-white text-slate-900 shadow-2xs'
@@ -1903,7 +1916,11 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                         </button>
                         <button
                           type="button"
-                          onClick={() => setLocationType('online')}
+                          onClick={() => {
+                            setLocationType('online');
+                            setIsSoloFriendly(false);
+                            setIsPetFriendly(false);
+                          }}
                           className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all cursor-pointer ${
                             locationType === 'online'
                               ? 'bg-white text-[#2B527A] shadow-2xs'
@@ -2303,6 +2320,193 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                     </div>
                   )}
 
+                  {/* Community Vibe & Perks and Cancellation Policy Card */}
+                  {entityType === 'community' && (
+                    <div className="p-4 rounded-2xl bg-slate-50/70 border border-slate-200 space-y-3.5">
+                      <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
+                        <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-[#F26430]" />
+                          <span>จุดเด่น & สิทธิประโยชน์ (Community Vibe & Perks)</span>
+                        </h4>
+                        <span className="text-[10px] font-bold text-[#D04A1B] bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200">
+                          แสดงบนการ์ดกิจกรรม
+                        </span>
+                      </div>
+
+                      {/* Toggle Chips */}
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-slate-700 block">
+                          เลือกจุดเด่นที่ตรงกับกิจกรรมของคุณ (แตะเพื่อเปิด/ปิด):
+                        </label>
+                        {locationType === 'online' ? (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 p-2.5 rounded-xl bg-blue-50/80 border border-blue-200/70 text-xs text-blue-900">
+                              <Globe className="w-4 h-4 text-blue-600 shrink-0" />
+                              <span className="text-[11px] leading-relaxed">
+                                <strong>กิจกรรมออนไลน์:</strong> รวมตัวผ่านหน้าจอ จึงเปิดให้เลือกเฉพาะ <strong>&ldquo;เหมาะกับมือใหม่&rdquo;</strong> (ไม่แสดงตัวเลือกมาคนเดียวได้ และสัตว์เลี้ยงร่วมได้)
+                              </span>
+                            </div>
+                            <div className="max-w-xs">
+                              {/* Beginner-friendly */}
+                              <button
+                                type="button"
+                                onClick={() => setIsBeginnerFriendly(!isBeginnerFriendly)}
+                                className={`w-full p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-1 ${
+                                  isBeginnerFriendly
+                                    ? 'bg-emerald-50/90 border-emerald-600 text-emerald-950 shadow-2xs'
+                                    : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-black">เหมาะกับมือใหม่</span>
+                                  <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                                    isBeginnerFriendly ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-400'
+                                  }`}>
+                                    {isBeginnerFriendly ? '✓' : ''}
+                                  </span>
+                                </div>
+                                <p className="text-[10px] leading-tight text-slate-500">
+                                  ไม่ต้องมีพื้นฐานมาก่อน ยินดีต้อนรับผู้เริ่มต้นทุกคน
+                                </p>
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            {/* Solo-friendly */}
+                            <button
+                              type="button"
+                              onClick={() => setIsSoloFriendly(!isSoloFriendly)}
+                              className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-1 ${
+                                isSoloFriendly
+                                  ? 'bg-orange-50/90 border-[#F26430] text-orange-950 shadow-2xs'
+                                  : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-black">มาคนเดียวได้</span>
+                                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                                  isSoloFriendly ? 'bg-[#F26430] text-white' : 'bg-slate-200 text-slate-400'
+                                }`}>
+                                  {isSoloFriendly ? '✓' : ''}
+                                </span>
+                              </div>
+                              <p className="text-[10px] leading-tight text-slate-500">
+                                ยินดีต้อนรับเพื่อนใหม่ & คนมาเดี่ยว
+                              </p>
+                            </button>
+
+                            {/* Pet-friendly */}
+                            <button
+                              type="button"
+                              onClick={() => setIsPetFriendly(!isPetFriendly)}
+                              className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-1 ${
+                                isPetFriendly
+                                  ? 'bg-amber-50/90 border-amber-500 text-amber-950 shadow-2xs'
+                                  : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-black">สัตว์เลี้ยงร่วมได้</span>
+                                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                                  isPetFriendly ? 'bg-amber-500 text-white' : 'bg-slate-200 text-slate-400'
+                                }`}>
+                                  {isPetFriendly ? '✓' : ''}
+                                </span>
+                              </div>
+                              <p className="text-[10px] leading-tight text-slate-500">
+                                นำน้องหมา/น้องแมวมาร่วมได้
+                              </p>
+                            </button>
+
+                            {/* Beginner-friendly */}
+                            <button
+                              type="button"
+                              onClick={() => setIsBeginnerFriendly(!isBeginnerFriendly)}
+                              className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-1 ${
+                                isBeginnerFriendly
+                                  ? 'bg-emerald-50/90 border-emerald-600 text-emerald-950 shadow-2xs'
+                                  : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-black">เหมาะกับมือใหม่</span>
+                                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                                  isBeginnerFriendly ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-400'
+                                }`}>
+                                  {isBeginnerFriendly ? '✓' : ''}
+                                </span>
+                              </div>
+                              <p className="text-[10px] leading-tight text-slate-500">
+                                ไม่ต้องมีพื้นฐานมาก่อน
+                              </p>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Smart Auto-Computed Badges Indicator */}
+                      <div className="flex items-center gap-2 flex-wrap pt-1 text-[11px] font-medium text-slate-500">
+                        <span className="text-[10.5px] font-bold text-slate-400">แท็กระบบอัจฉริยะ:</span>
+                        {(price === 'ฟรี' || price.includes('ฟรี')) ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[10.5px]">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <span>เข้าร่วมฟรี (คำนวณจากค่าใช้จ่าย)</span>
+                          </span>
+                        ) : null}
+                        {(() => {
+                          try {
+                            const diff = (new Date(communityDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+                            if (diff >= 0 && diff <= 7) {
+                              return (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 font-bold text-[10.5px]">
+                                  <Zap className="w-3 h-3 text-amber-500 fill-amber-500" />
+                                  <span>จัดขึ้นใน 7 วันนี้ (ติดแท็กเร็วๆ นี้อัตโนมัติ)</span>
+                                </span>
+                              );
+                            }
+                          } catch {}
+                          return null;
+                        })()}
+                      </div>
+
+                      {/* Cancellation Policy Setting */}
+                      <div className="space-y-1.5 pt-2 border-t border-slate-200/80">
+                        <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between">
+                          <span>เงื่อนไขการยกเลิก (Cancellation Policy) <span className="text-rose-500">*</span></span>
+                          <span className="text-[10px] text-slate-400 font-normal">แสดงใน E-Ticket และหน้ารายละเอียด</span>
+                        </label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {[
+                            { id: 'free_anytime', label: '✓ ยกเลิกฟรีตลอดเวลา', desc: 'ยืดหยุ่นเต็มที่ แจ้งยกเลิกได้ทุกเมื่อ' },
+                            { id: 'free_24h', label: '✓ ยกเลิกฟรีก่อน 24 ชม.', desc: 'แจ้งยกเลิกล่วงหน้าอย่างน้อย 1 วัน' },
+                            { id: 'free_48h', label: '✓ ยกเลิกฟรีก่อน 48 ชม.', desc: 'แจ้งยกเลิกล่วงหน้าอย่างน้อย 2 วัน' },
+                            { id: 'chat_notice', label: 'แจ้งในกลุ่มแชท', desc: 'หากติดธุระกะทันหันให้ทักบอกในแชท' },
+                          ].map((policy) => {
+                            const isSelected = cancellationPolicy === policy.id;
+                            return (
+                              <div
+                                key={policy.id}
+                                onClick={() => setCancellationPolicy(policy.id as any)}
+                                className={`p-2.5 rounded-xl border text-left cursor-pointer transition-all ${
+                                  isSelected
+                                    ? 'bg-slate-900 text-white border-slate-900 shadow-2xs font-bold'
+                                    : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
+                                }`}
+                              >
+                                <div className="text-xs font-bold">{policy.label}</div>
+                                <div className={`text-[10px] ${isSelected ? 'text-slate-300' : 'text-slate-400'}`}>
+                                  {policy.desc}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                    </div>
+                  )}
+
                   {entityType === 'fair' && (
                     <div className="space-y-2 pt-1">
                       <div>
@@ -2545,12 +2749,27 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                <div className="absolute top-3 left-3 flex items-center gap-2">
+                <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap max-w-[85%]">
                   <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-xs text-slate-900 shadow-xs uppercase tracking-wider">
                     {entityType === 'community' && 'กิจกรรมคอมมูนิตี้'}
                     {entityType === 'fair' && 'งานมหกรรม & เอ็กซ์โป'}
                     {entityType === 'spot' && 'พิกัดเที่ยว & สเปซฮีลใจ'}
                   </span>
+                  {entityType === 'community' && locationType !== 'online' && isSoloFriendly && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-xs text-slate-700 shadow-xs">
+                      มาคนเดียวได้
+                    </span>
+                  )}
+                  {entityType === 'community' && locationType !== 'online' && isPetFriendly && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/90 text-white shadow-xs">
+                      สัตว์เลี้ยงร่วมได้
+                    </span>
+                  )}
+                  {entityType === 'community' && isBeginnerFriendly && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-600/90 text-white shadow-xs">
+                      เหมาะกับมือใหม่
+                    </span>
+                  )}
                   <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xs text-white">
                     {price || 'ฟรี'}
                   </span>
@@ -2577,35 +2796,55 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
 
               {/* Mini Info Ribbon */}
               <div className="px-5">
-                <div className="py-2.5 px-4 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-700">
-                  <div className="flex items-center gap-1.5">
-                    {entityType === 'community' && scheduleType === 'recurring' ? (
-                      <Repeat className="w-3.5 h-3.5 text-emerald-600" />
-                    ) : (
-                      <Clock className="w-3.5 h-3.5 text-[#4A7C59]" />
-                    )}
-                    <span className="text-slate-500 font-medium">วัน/เวลา:</span>
-                    <strong className="text-slate-900">
-                      {entityType === 'community' && (
-                        scheduleType === 'recurring'
-                          ? `${formatRecurrenceDaysOnly(selectedDaysOfWeek, recurrenceFrequency)} • ${startTime} - ${endTime} น.`
-                          : `${communityDate} • ${startTime} - ${endTime} น.`
-                      )}
-                      {entityType === 'fair' && `${fairStartDate} ถึง ${fairEndDate}`}
-                      {entityType === 'spot' && `${spotOpenHours}`}
-                    </strong>
-                  </div>
-                  {entityType === 'community' && (
+                <div className="py-2.5 px-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2 text-xs text-slate-700">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5">
-                      <Users className="w-3.5 h-3.5 text-[#F26430]" />
-                      <span className="text-slate-500 font-medium">เปิดรับ:</span>
-                      <strong className="text-slate-900">1 / {maxParticipants} คน</strong>
+                      {entityType === 'community' && scheduleType === 'recurring' ? (
+                        <Repeat className="w-3.5 h-3.5 text-emerald-600" />
+                      ) : (
+                        <Clock className="w-3.5 h-3.5 text-[#4A7C59]" />
+                      )}
+                      <span className="text-slate-500 font-medium">วัน/เวลา:</span>
+                      <strong className="text-slate-900">
+                        {entityType === 'community' && (
+                          scheduleType === 'recurring'
+                            ? `${formatRecurrenceDaysOnly(selectedDaysOfWeek, recurrenceFrequency)} • ${startTime} - ${endTime} น.`
+                            : `${communityDate} • ${startTime} - ${endTime} น.`
+                        )}
+                        {entityType === 'fair' && `${fairStartDate} ถึง ${fairEndDate}`}
+                        {entityType === 'spot' && `${spotOpenHours}`}
+                      </strong>
+                    </div>
+                    {entityType === 'community' && (
+                      <div className="flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5 text-[#F26430]" />
+                        <span className="text-slate-500 font-medium">เปิดรับ:</span>
+                        <strong className="text-slate-900">1 / {maxParticipants} คน</strong>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-slate-500 font-medium">ผู้จัด:</span>
+                      <strong className="text-slate-900">{userProfile.name || 'คุณ'}</strong>
+                    </div>
+                  </div>
+
+                  {entityType === 'community' && (
+                    <div className="pt-2 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-slate-500 font-medium">จุดนัดพบ:</span>
+                        <strong className="text-slate-800">{meetingPoint || locationName || 'ตามที่ระบุ'}</strong>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-slate-500 font-medium">เงื่อนไขยกเลิก:</span>
+                        <strong className="text-slate-800">
+                          {cancellationPolicy === 'free_anytime' ? 'ยกเลิกฟรีตลอดเวลา' :
+                           cancellationPolicy === 'free_48h' ? 'ยกเลิกฟรีก่อน 48 ชม.' :
+                           cancellationPolicy === 'chat_notice' ? 'แจ้งในกลุ่มแชท' :
+                           'ยกเลิกฟรีก่อน 24 ชม.'}
+                        </strong>
+                      </div>
                     </div>
                   )}
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-slate-500 font-medium">ผู้จัด:</span>
-                    <strong className="text-slate-900">{userProfile.name || 'คุณ'}</strong>
-                  </div>
                 </div>
               </div>
 

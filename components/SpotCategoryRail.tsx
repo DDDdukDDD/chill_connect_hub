@@ -102,6 +102,15 @@ export const SpotCategoryRail: React.FC<SpotCategoryRailProps> = ({
             }`}>
               <Compass className="w-4 h-4" />
             </div>
+            {spotCounts['all'] !== undefined && spotCounts['all'] > 0 && (
+              <span
+                className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                  selectedCategoryId === null || selectedCategoryId === 'all' ? 'bg-emerald-200/70 text-[#2D5A3C]' : 'bg-slate-100 text-slate-600'
+                }`}
+              >
+                {spotCounts['all']}
+              </span>
+            )}
           </div>
           <div className="text-left leading-tight">
             <span className={`block text-xs font-bold ${

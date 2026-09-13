@@ -73,8 +73,13 @@ export interface EventItem {
   whatToBring?: string[];
   contactChannel?: string;
   transportation?: string;
+  isSoloFriendly?: boolean;
+  isPetFriendly?: boolean;
+  isBeginnerFriendly?: boolean;
+  cancellationPolicy?: 'free_anytime' | 'free_24h' | 'free_48h' | 'chat_notice' | string;
   instructions?: string[];
   subActivities?: Array<{ title: string; time?: string; description?: string; location?: string }>;
+  itinerary?: Array<{ time: string; title: string }>;
   approvalStatus?: 'approved' | 'pending' | 'rejected' | string;
   rejectionReason?: string;
   moderatedAt?: number;

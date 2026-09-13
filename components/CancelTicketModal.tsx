@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, CalendarX, UserCheck, Calendar, Clock } from 'lucide-react';
+import { X } from 'lucide-react';
 import { EventItem } from '@/data/mockData';
 
 interface CancelTicketModalProps {
@@ -19,6 +19,14 @@ const CANCEL_REASONS = [
   { id: 'travel_plan', label: 'การเดินทางไม่สะดวก / มีการเปลี่ยนแผน' },
   { id: 'other', label: 'อื่นๆ' },
 ];
+
+const cleanText = (str?: string): string => {
+  if (!str) return '';
+  return str
+    .replace(/[\p{Extended_Pictographic}\p{Emoji_Presentation}\u200d\uFE0F\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
 
 export const CancelTicketModal: React.FC<CancelTicketModalProps> = ({
   isOpen,
@@ -39,14 +47,27 @@ export const CancelTicketModal: React.FC<CancelTicketModalProps> = ({
     onClose();
   };
 
+  const cancellationText =
+    event.cancellationPolicy === 'free_anytime'
+      ? 'ยกเลิกฟรีตลอดเวลา'
+      : event.cancellationPolicy === 'free_48h'
+      ? 'ยกเลิกฟรีก่อน 48 ชม.'
+      : event.cancellationPolicy === 'chat_notice'
+      ? 'แจ้งในกลุ่มแชท'
+      : 'ยกเลิกฟรีก่อน 24 ชม.';
+
   return (
-    <div className="fixed inset-0 z-[100003] flex items-center justify-center p-4 bg-black/65 backdrop-blur-xs animate-fade-in">
+    <div
+      className="fixed inset-0 z-[100003] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in font-sans select-none"
+      onClick={onClose}
+    >
       <div
-        className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200 animate-scale-up p-6 sm:p-7 space-y-5 text-[#1E293B]"
+        className="relative w-full max-w-[480px] bg-white rounded-[28px] sm:rounded-[32px] shadow-2xl overflow-hidden border border-slate-200/90 animate-scale-up p-6 sm:p-7 space-y-5 text-[#1E293B]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
         <button
+          type="button"
           onClick={onClose}
           className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-all cursor-pointer"
           aria-label="ปิดหน้าต่าง"
@@ -54,69 +75,66 @@ export const CancelTicketModal: React.FC<CancelTicketModalProps> = ({
           <X className="w-4 h-4" />
         </button>
 
-        {/* Header Icon & Title */}
-        <div className="flex items-start gap-3.5 pr-8">
-          <div className="w-11 h-11 rounded-2xl bg-rose-50 border border-rose-200/80 flex items-center justify-center text-rose-600 shrink-0">
-            <CalendarX className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="font-extrabold text-lg text-slate-900 tracking-tight">
-              ยกเลิกการเข้าร่วมกิจกรรม
-            </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              รหัสตั๋ว: <span className="font-mono font-bold text-slate-800">{ticketId}</span>
-            </p>
-          </div>
+        {/* Minimal Editorial Header */}
+        <div className="space-y-1 pr-8 text-left">
+          <h3 className="font-black text-xl text-slate-900 tracking-tight">
+            ยกเลิกการเข้าร่วมกิจกรรม
+          </h3>
+          <p className="text-xs text-slate-500 font-medium">
+            รหัสตั๋ว <span className="font-mono font-bold text-slate-700">{ticketId}</span>
+          </p>
         </div>
 
-        {/* Event Summary Box (Clean Slate) */}
-        <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-1.5">
-          <span className="text-[10.5px] font-bold text-[#2D5A3C] bg-[#EBF3ED] px-2 py-0.5 rounded-md border border-[#C5DCCB] inline-block">
-            {event.tag || 'กิจกรรมคอมมูนิตี้'}
-          </span>
-          <h4 className="font-bold text-xs sm:text-sm text-slate-900 line-clamp-1">
-            {event.title}
+        {/* Clean Event Summary (No noisy badges or icons) */}
+        <div className="bg-slate-50/90 p-4 rounded-2xl border border-slate-100 space-y-1 text-left">
+          <h4 className="font-extrabold text-sm text-slate-900 leading-snug line-clamp-2">
+            {cleanText(event.title)}
           </h4>
-          <div className="flex items-center gap-2 text-[11px] text-slate-500 flex-wrap">
-            <span className="flex items-center gap-1">
-              <Calendar className="w-3 h-3 text-slate-400" />
-              <span>{event.date}</span>
-            </span>
-            <span>•</span>
-            <span className="flex items-center gap-1">
-              <Clock className="w-3 h-3 text-slate-400" />
-              <span>{event.time}</span>
-            </span>
-          </div>
+          <p className="text-xs text-slate-500 font-medium">
+            {event.date} • {event.time} • {cancellationText}
+          </p>
         </div>
 
         {/* Reason Selector Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 text-left">
           <div className="space-y-2">
             <label className="text-xs font-bold text-slate-700 block">
               เหตุผลในการยกเลิก <span className="text-rose-500">*</span>
             </label>
-            
-            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-              {CANCEL_REASONS.map((r) => (
-                <label
-                  key={r.id}
-                  className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-xs cursor-pointer transition-all ${
-                    selectedReason === r.label
-                      ? 'bg-[#EBF3ED] border-[#A3CEB0] text-[#2D5A3C] font-bold'
-                      : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="cancel_reason"
-                    checked={selectedReason === r.label}
-                    onChange={() => setSelectedReason(r.label)}
-                    className="accent-[#4A7C59] w-4 h-4"
-                  />
-                  <span>{r.label}</span>
-                </label>
-              ))}
+
+            {/* Seamless List (No inner cramped scrollbar) */}
+            <div className="space-y-1.5">
+              {CANCEL_REASONS.map((r) => {
+                const isSelected = selectedReason === r.label;
+                return (
+                  <label
+                    key={r.id}
+                    className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl border text-xs cursor-pointer transition-all ${
+                      isSelected
+                        ? 'bg-slate-50 border-slate-800 text-slate-900 font-bold ring-1 ring-slate-800/15'
+                        : 'bg-white border-slate-200/90 text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="cancel_reason"
+                      checked={isSelected}
+                      onChange={() => setSelectedReason(r.label)}
+                      className="sr-only"
+                    />
+                    <span
+                      className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${
+                        isSelected
+                          ? 'border-slate-800 bg-white'
+                          : 'border-slate-300 bg-white'
+                      }`}
+                    >
+                      {isSelected && <span className="w-2 h-2 rounded-full bg-slate-900" />}
+                    </span>
+                    <span>{r.label}</span>
+                  </label>
+                );
+              })}
             </div>
 
             {selectedReason === 'อื่นๆ' && (
@@ -124,36 +142,31 @@ export const CancelTicketModal: React.FC<CancelTicketModalProps> = ({
                 value={customNote}
                 onChange={(e) => setCustomNote(e.target.value)}
                 placeholder="ระบุเหตุผลเพิ่มเติมสั้นๆ..."
-                className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#4A7C59]/30 focus:border-[#4A7C59] outline-none"
+                className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-slate-400 focus:border-slate-800 outline-none transition-all mt-1"
                 rows={2}
                 required
               />
             )}
           </div>
 
-          {/* Friendly Community Notice */}
-          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px] text-slate-600 space-y-0.5">
-            <p className="font-bold text-slate-700 flex items-center gap-1">
-              <UserCheck className="w-3.5 h-3.5 text-[#4A7C59]" />
-              <span>การคืนสิทธิ์ที่นั่ง</span>
-            </p>
-            <p className="text-slate-500 leading-relaxed">
-              ระบบจะคืนสิทธิ์ที่นั่งให้กับเพื่อนสมาชิกคนอื่น และส่งการแจ้งเตือนไปยังโฮสต์ผู้จัดงานอย่างสุภาพ
-            </p>
+          {/* Minimal Notice (No icons) */}
+          <div className="bg-slate-50/70 p-3.5 rounded-2xl border border-slate-100 text-xs text-slate-500 leading-relaxed font-medium">
+            <span className="font-bold text-slate-700 block mb-0.5">การคืนสิทธิ์ที่นั่ง</span>
+            ระบบจะคืนสิทธิ์ที่นั่งให้กับเพื่อนสมาชิกคนอื่น และส่งการแจ้งเตือนไปยังโฮสต์ผู้จัดงานโดยอัตโนมัติ
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2.5 pt-1">
+          <div className="flex items-center gap-3 pt-1">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs py-3 rounded-2xl transition-colors cursor-pointer active:scale-98"
+              className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm py-3 rounded-2xl transition-all cursor-pointer active:scale-98"
             >
               ย้อนกลับ
             </button>
             <button
               type="submit"
-              className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs py-3 rounded-2xl shadow-sm transition-all active:scale-98 cursor-pointer"
+              className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm py-3 rounded-2xl shadow-sm transition-all active:scale-98 cursor-pointer"
             >
               ยืนยันการยกเลิกตั๋ว
             </button>

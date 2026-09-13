@@ -20,6 +20,7 @@ import { resolveEventGallery } from '@/lib/eventImageResolver';
 import { renderDescriptionContent, stripHtmlToPlainText } from '@/components/RichTextEditor';
 import { SpotBuddyGatheringModal, SpotBuddyPostItem } from '@/components/SpotBuddyGatheringModal';
 import { ExpoMeetupPassModal, ExpoMeetupPassData } from '@/components/ExpoMeetupPassModal';
+import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { EventGrid } from '@/components/EventGrid';
 
 export interface FairSubActivityItem {
@@ -85,6 +86,9 @@ export default function FairDetailPage() {
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
+  const [membershipActionTitle, setMembershipActionTitle] = useState('เพื่อดำเนินการต่อ');
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
 
   // Favorites state
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -95,9 +99,16 @@ export default function FairDetailPage() {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
 
-  // Dynamic Event State
-  const [eventData, setEventData] = useState<EventItem | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Dynamic Event State (Immediate sync for SSR & mock events)
+  const [eventData, setEventData] = useState<EventItem | null>(() => {
+    if (!decodedId) return null;
+    return getEventById(decodedId) || MOCK_EVENTS.find((e) => e.id === decodedId || e.title === decodedId) || null;
+  });
+  const [isLoading, setIsLoading] = useState(() => {
+    if (!decodedId) return false;
+    const found = getEventById(decodedId) || MOCK_EVENTS.find((e) => e.id === decodedId || e.title === decodedId);
+    return !found;
+  });
 
   // Fair Expo Buddy Gathering Modal
   const [isFairBuddyModalOpen, setIsFairBuddyModalOpen] = useState(false);
@@ -214,7 +225,9 @@ export default function FairDetailPage() {
 
   const toggleFavorite = (eventId: string) => {
     if (!isLoggedIn) {
-      setIsAuthModalOpen(true);
+      setMembershipActionTitle('เพื่อบันทึกงานนี้ลง MyHub');
+      setPendingAction(`favorite:${eventId}`);
+      setIsRequireMembershipOpen(true);
       return;
     }
     setFavorites((prev) => {
@@ -226,7 +239,7 @@ export default function FairDetailPage() {
       } else {
         updated = [...prev, eventId];
         const isTargetEnded = eventId === eventData?.id ? isEnded : false;
-        showToast(isTargetEnded ? 'เพิ่มเข้าคลังเพื่อติดตามรอบถัดไปเรียบร้อย! 📌' : 'บันทึกงานแฟร์นี้ใน MyHub เรียบร้อย! 📌');
+        showToast(isTargetEnded ? 'เพิ่มเข้าคลังเพื่อติดตามรอบถัดไปเรียบร้อย' : 'บันทึกงานแฟร์นี้ใน MyHub เรียบร้อย');
       }
       if (typeof window !== 'undefined') {
         localStorage.setItem('favorite_events', JSON.stringify(updated));
@@ -247,7 +260,7 @@ export default function FairDetailPage() {
     if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
       try {
         await navigator.share(shareData);
-        showToast('แชร์งานเรียบร้อย! 🎉');
+        showToast('แชร์งานเรียบร้อย');
         return;
       } catch {}
     }
@@ -255,7 +268,7 @@ export default function FairDetailPage() {
     try {
       await navigator.clipboard.writeText(url);
       setIsCopied(true);
-      showToast('คัดลอกลิงก์งานแฟร์แล้ว ส่งชวนเพื่อนใน LINE ได้เลย! 📋✨');
+      showToast('คัดลอกลิงก์งานแฟร์เรียบร้อย');
       setTimeout(() => setIsCopied(false), 2500);
     } catch {
       showToast('คัดลอกลิงก์เรียบร้อย');
@@ -272,12 +285,14 @@ export default function FairDetailPage() {
 
     window.open(googleCalendarUrl, '_blank');
     setIsSavedToCalendar(true);
-    showToast('เปิดบันทึกลง Google Calendar เรียบร้อย! 📅');
+    showToast('เปิดบันทึกลง Google Calendar เรียบร้อย');
   };
 
   const handleJoinSubActivity = (sub: FairSubActivityItem) => {
     if (!isLoggedIn) {
-      setIsAuthModalOpen(true);
+      setMembershipActionTitle('เพื่อขอร่วมกลุ่มเดินชมงานนี้');
+      setPendingAction(`join_sub:${sub.id}`);
+      setIsRequireMembershipOpen(true);
       return;
     }
 
@@ -358,7 +373,7 @@ export default function FairDetailPage() {
         maxMembers: sub.maxMembers
       });
       setIsPassModalOpen(true);
-      showToast(`ขอแจมกลุ่ม "${sub.title}" สำเร็จ! เปิดตั๋วนัดพบแล้ว 🎟️`);
+      showToast(`ขอแจมกลุ่ม "${sub.title}" สำเร็จ เปิดตั๋วนัดพบแล้ว`);
     }
   };
 
@@ -426,7 +441,7 @@ export default function FairDetailPage() {
         localStorage.setItem('joinedSubActivities', JSON.stringify(existingSubs));
       } catch {}
     }
-    showToast(`เปิดกลุ่มนัดเดินงาน "${newSub.title}" สำเร็จแล้ว! 👥✨`);
+    showToast(`เปิดกลุ่มนัดเดินงาน "${newSub.title}" สำเร็จแล้ว`);
   };
 
   // Keyboard navigation for lightbox
@@ -532,14 +547,14 @@ export default function FairDetailPage() {
           onOpenCreateEvent={() => setIsCreateEventModalOpen(true)}
         />
         <main className="flex-1 max-w-4xl mx-auto px-4 py-20 text-center space-y-4">
-          <div className="w-16 h-16 bg-sky-50 text-sky-600 rounded-2xl flex items-center justify-center mx-auto text-2xl">
-            🏛️
+          <div className="w-16 h-16 bg-sky-50 text-sky-600 rounded-2xl flex items-center justify-center mx-auto">
+            <Building2 className="w-8 h-8 text-[#2B527A]" />
           </div>
           <h1 className="text-2xl font-black text-slate-900">ไม่พบข้อมูลงานอีเวนต์หรือนิทรรศการนี้</h1>
           <p className="text-sm text-slate-600">งานนี้อาจสิ้นสุดลงแล้วหรือถูกย้ายออกจากระบบ</p>
           <Link
             href="/fairs"
-            className="inline-flex items-center gap-2 bg-[#2B527A] hover:bg-[#1E3B59] text-white px-6 py-2.5 rounded-full font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer"
+            className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-full font-bold text-xs sm:text-sm shadow-sm transition-all cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>กลับสู่หน้างามหกรรม & เอ็กซ์โป</span>
@@ -563,7 +578,7 @@ export default function FairDetailPage() {
         isAuthReady={isAuthReady}
         setIsLoggedIn={handleSetIsLoggedIn}
         onOpenLogin={() => setIsAuthModalOpen(true)}
-        onOpenLogout={() => setIsLogoutModalOpen(false)}
+        onOpenLogout={() => setIsLogoutModalOpen(true)}
         onOpenCreateEvent={() => setIsCreateEventModalOpen(true)}
       />
 
@@ -622,7 +637,7 @@ export default function FairDetailPage() {
               {isCopied ? (
                 <>
                   <Check className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="text-emerald-600 font-extrabold">คัดลอกลิงก์แล้ว!</span>
+                  <span className="text-emerald-600 font-extrabold">คัดลอกลิงก์แล้ว</span>
                 </>
               ) : (
                 <>
@@ -705,7 +720,7 @@ export default function FairDetailPage() {
           </div>
 
           <div className="flex items-center justify-between text-xs text-slate-500 px-1 font-medium">
-            <span>💡 แตะที่รูปเพื่อเปิดดูภาพบรรยากาศขนาดใหญ่ (Fullscreen Lightbox)</span>
+            <span>แตะที่รูปเพื่อเปิดดูภาพบรรยากาศขนาดใหญ่ (Fullscreen Lightbox)</span>
             <span className="hidden sm:inline">คลังภาพนิทรรศการและบูท {galleryImages.length} มุมมอง</span>
           </div>
 
@@ -729,7 +744,7 @@ export default function FairDetailPage() {
 
                 {isEnded ? (
                   <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-                    🏁 งานสิ้นสุดลงแล้ว
+                    งานสิ้นสุดลงแล้ว
                   </span>
                 ) : (
                   <span className="text-xs font-black px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5">
@@ -774,8 +789,8 @@ export default function FairDetailPage() {
             {/* 3. Official Partner Card */}
             <div className="p-4 sm:p-5 rounded-3xl bg-[#FAF7F2] border border-[#E8E2D8] flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 shadow-2xs">
               <div className="flex items-center gap-3.5 min-w-0">
-                <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex items-center justify-center text-2xl shrink-0">
-                  🏛️
+                <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex items-center justify-center shrink-0">
+                  <Building2 className="w-6 h-6 text-[#2B527A]" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
@@ -928,12 +943,14 @@ export default function FairDetailPage() {
                     type="button"
                     onClick={() => {
                       if (!isLoggedIn) {
-                        setIsAuthModalOpen(true);
+                        setMembershipActionTitle('เพื่อสร้างกลุ่มนัดเดินงาน');
+                        setPendingAction('create_sub_trip');
+                        setIsRequireMembershipOpen(true);
                       } else {
                         setIsFairBuddyModalOpen(true);
                       }
                     }}
-                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#2B527A] hover:bg-[#1E3B59] text-white text-xs font-extrabold shadow-md shadow-sky-900/20 transition-all cursor-pointer active:scale-95 shrink-0"
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold shadow-sm transition-all cursor-pointer active:scale-95 shrink-0"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>สร้างกลุ่มนัดเดินงาน</span>
@@ -959,8 +976,9 @@ export default function FairDetailPage() {
                     >
                       <div className="space-y-2">
                         <div className="flex items-center justify-between gap-2 text-[11px]">
-                          <span className="font-black text-sky-800 bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200 truncate">
-                            📍 {sub.meetupPoint}
+                          <span className="inline-flex items-center gap-1 font-black text-sky-800 bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200 truncate">
+                            <MapPin className="w-3 h-3 text-sky-700 shrink-0" />
+                            <span>{sub.meetupPoint}</span>
                           </span>
                           <span className={`font-bold shrink-0 px-2 py-0.5 rounded-full text-[10px] ${
                             isFull
@@ -1005,7 +1023,7 @@ export default function FairDetailPage() {
                               ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
                               : isFull
                               ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                              : 'bg-[#2B527A] hover:bg-[#1E3B59] text-white shadow-2xs'
+                              : 'bg-slate-900 hover:bg-slate-800 text-white shadow-2xs'
                           }`}
                           disabled={(isFull && !isJoined) || (isEnded && !isJoined)}
                         >
@@ -1047,7 +1065,7 @@ export default function FairDetailPage() {
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <span className="text-xs font-bold text-slate-500">ค่าเข้าชมนิทรรศการ</span>
                 <span className="text-lg font-black text-slate-900">
-                  {eventData.price && !eventData.price.includes('ฟรี') ? eventData.price : '🎉 เข้าชมฟรี'}
+                  {eventData.price && !eventData.price.includes('ฟรี') ? eventData.price : 'เข้าชมฟรี'}
                 </span>
               </div>
 
@@ -1086,7 +1104,7 @@ export default function FairDetailPage() {
                   className={`group w-full py-3.5 px-4 rounded-2xl font-black text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer ${
                     isFav
                       ? 'bg-sky-50 text-[#2B527A] border border-sky-300 shadow-sky-900/10 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200'
-                      : 'bg-[#2B527A] hover:bg-[#1E3B59] text-white shadow-sky-900/20'
+                      : 'bg-slate-900 hover:bg-slate-800 text-white shadow-sm'
                   }`}
                 >
                   {isFav ? (
@@ -1113,7 +1131,7 @@ export default function FairDetailPage() {
                     href="/myhub?type=public_venue"
                     className="text-center text-[11px] font-bold text-sky-800 hover:underline block pt-0.5"
                   >
-                    <span>{isEnded ? 'ดูงานในคลัง MyHub ของคุณ →' : 'ดูงานที่บันทึกไว้ใน MyHub ของคุณ →'}</span>
+                    <span>{isEnded ? 'ดูงานในคลัง MyHub ของคุณ' : 'ดูงานที่บันทึกไว้ใน MyHub ของคุณ'}</span>
                   </Link>
                 )}
               </div>
@@ -1235,13 +1253,58 @@ export default function FairDetailPage() {
       )}
 
       {/* Modals */}
-      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onLoginSuccess={() => handleSetIsLoggedIn(true)} />
-      <LogoutConfirmModal isOpen={isLogoutModalOpen} onClose={() => setIsLogoutModalOpen(false)} onConfirmLogout={() => handleSetIsLoggedIn(false)} />
+      <RequireMembershipModal
+        isOpen={isRequireMembershipOpen}
+        onClose={() => {
+          setIsRequireMembershipOpen(false);
+          setPendingAction(null);
+        }}
+        onOpenLogin={() => {
+          setIsRequireMembershipOpen(false);
+          setIsAuthModalOpen(true);
+        }}
+        actionTitle={membershipActionTitle}
+      />
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          setPendingAction(null);
+        }}
+        onLoginSuccess={(name) => {
+          handleSetIsLoggedIn(true);
+          showToast(`ยินดีต้อนรับ ${name}! เข้าสู่ระบบเรียบร้อย`);
+          if (pendingAction === 'create_sub_trip') {
+            setIsFairBuddyModalOpen(true);
+          } else if (pendingAction && pendingAction.startsWith('favorite:')) {
+            const targetId = pendingAction.split(':')[1];
+            if (targetId) toggleFavorite(targetId);
+          } else if (pendingAction && pendingAction.startsWith('join_sub:')) {
+            const subId = pendingAction.split(':')[1];
+            const subObj = fairSubActivities.find((s) => s.id === subId);
+            if (subObj) handleJoinSubActivity(subObj);
+          }
+          setPendingAction(null);
+        }}
+      />
+
+      <LogoutConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirmLogout={() => {
+          handleSetIsLoggedIn(false);
+          setIsLogoutModalOpen(false);
+          setIsFairBuddyModalOpen(false);
+          showToast('ออกจากระบบเรียบร้อยแล้ว');
+        }}
+      />
+
       <CreateEventModal
         isOpen={isCreateEventModalOpen}
         onClose={() => setIsCreateEventModalOpen(false)}
         onCreateSuccess={(newEvent) => {
-          showToast(`สร้างงาน "${newEvent.title}" สำเร็จแล้ว! 🎉`);
+          showToast(`สร้างงาน "${newEvent.title}" สำเร็จแล้ว`);
           setIsCreateEventModalOpen(false);
         }}
       />

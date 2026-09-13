@@ -1,8 +1,178 @@
 {
   "version": "2.0.0",
-  "lastUpdated": "2026-09-12T16:42:47.923Z",
+  "lastUpdated": "2026-09-13T15:12:12.182Z",
   "autoPublish": true,
   "events": [
+    {
+      "title": "E2E Verified Buddy Circle at Erawan",
+      "description": "ทริปทดสอบระบบ E2E เพื่อตรวจสอบความสมบูรณ์ของระบบบันทึกและการแสดงผล",
+      "date": "2026-09-25",
+      "time": "08:00",
+      "location": "น้ำตกเอราวัณ 7 ชั้น",
+      "province": "กาญจนบุรี",
+      "district": "ศรีสวัสดิ์",
+      "category": "chill",
+      "eventType": "community",
+      "maxParticipants": 6,
+      "spotId": "spot-kan-2",
+      "spotTitle": "น้ำตกเอราวัณ 7 ชั้น (Erawan Waterfall)",
+      "meetingPoint": "หน้าศูนย์บริการนักท่องเที่ยว",
+      "hostName": "ระบบทดสอบ E2E",
+      "id": "user-event-1789271291431",
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "createdAt": "2026-09-13T03:48:11.431Z",
+      "participantsCount": 2,
+      "status": "recruiting",
+      "createdAtTimestamp": 1789271291449
+    },
+    {
+      "id": "spot-buddy-1789270985748",
+      "title": "ชวนไป สวนป่าเบญจกิติ (Forest Park & Skywalk)",
+      "hostName": "นภัสสร รักษ์ธรรมชาติ",
+      "hostAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
+      "hostBadge": "Super Admin",
+      "date": "2026-09-01",
+      "time": "06:30 - 08:30 น.",
+      "participantsCount": 1,
+      "maxParticipants": 6,
+      "description": "<p><strong>ภาพรวมกิจกรรม:</strong></p><p>ชวนเพื่อนสายเดียวกันไปเที่ยวหรือเปิดทริปฮีลใจยามว่างด้วยกันอย่างเป็นกันเอง ใครมาคนเดียวไม่ต้องเกร็ง ยินดีต้อนรับทุกคนครับ</p>",
+      "tag": "กิจกรรมชวนเที่ยว",
+      "meetingPoint": "หน้าจุดนัดหมายหลัก / หน้าร้าน สวนป่าเบญจกิติ (Forest Park & Skywalk)",
+      "targetGender": "all",
+      "targetAge": "ไม่จำกัดอายุ",
+      "price": "ฟรี",
+      "image": "https://images.unsplash.com/photo-1519331379826-f10be5486c6f?auto=format&fit=crop&w=800&q=80",
+      "whatToBring": [
+        "ขวดน้ำดื่มส่วนตัว",
+        "รองเท้าวิ่ง / ผ้าใบ"
+      ],
+      "transportation": "พบกัน ณ จุดนัดพบ (เดินทางอิสระ)",
+      "itinerary": [
+        {
+          "time": "06:30 น.",
+          "title": "รวมตัวกันหน้าจุดนัดพบ"
+        },
+        {
+          "time": "07:00 น.",
+          "title": "เริ่มกิจกรรมหลักร่วมกัน"
+        },
+        {
+          "time": "08:15 น.",
+          "title": "แวะจิบกาแฟ & นั่งคุยผ่อนคลาย"
+        }
+      ],
+      "eventType": "community",
+      "category": "chill",
+      "province": "กรุงเทพฯ",
+      "location": "สวนป่าเบญจกิติ (Forest Park & Skywalk)",
+      "spotId": "spot-bkk-1",
+      "spotTitle": "สวนป่าเบญจกิติ (Forest Park & Skywalk)",
+      "hostId": "user-me",
+      "status": "recruiting",
+      "createdAtTimestamp": 1789270985748,
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "createdAt": "2026-09-13T03:43:05.801Z"
+    },
+    {
+      "title": "เทสเปิดตี้เที่ยวน้ำตกเอราวัณ",
+      "description": "ทดสอบการสร้างตี้เพื่อยืนยันว่าระบบทำงานและบันทึกข้อมูลได้จริง",
+      "date": "2026-09-20",
+      "time": "09:00",
+      "location": "น้ำตกเอราวัณ 7 ชั้น (Erawan Waterfall)",
+      "province": "กาญจนบุรี",
+      "district": "ศรีสวัสดิ์",
+      "category": "chill",
+      "eventType": "community",
+      "maxParticipants": 8,
+      "spotId": "spot-kan-2",
+      "spotTitle": "น้ำตกเอราวัณ 7 ชั้น",
+      "meetingPoint": "ศูนย์บริการนักท่องเที่ยว",
+      "hostName": "ผู้ใช้ทดสอบ",
+      "id": "user-event-1789270621342",
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "createdAt": "2026-09-13T03:37:01.342Z",
+      "participantsCount": 1,
+      "status": "recruiting",
+      "createdAtTimestamp": 1789270621375
+    },
+    {
+      "title": "เทสเปิดตี้เที่ยวน้ำตกเอราวัณ",
+      "description": "ทดสอบการสร้างตี้เพื่อยืนยันว่าระบบทำงานและบันทึกข้อมูลได้จริง",
+      "date": "2026-09-20",
+      "time": "09:00",
+      "location": "น้ำตกเอราวัณ 7 ชั้น (Erawan Waterfall)",
+      "province": "กาญจนบุรี",
+      "district": "ศรีสวัสดิ์",
+      "category": "chill",
+      "eventType": "community",
+      "maxParticipants": 8,
+      "spotId": "spot-kan-2",
+      "spotTitle": "น้ำตกเอราวัณ 7 ชั้น",
+      "meetingPoint": "ศูนย์บริการนักท่องเที่ยว",
+      "hostName": "ผู้ใช้ทดสอบ",
+      "id": "user-event-1789270621342",
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "createdAt": "2026-09-13T03:37:01.342Z",
+      "galleryImages": [
+        null
+      ],
+      "subActivities": []
+    },
+    {
+      "id": "spot-buddy-1789269672563",
+      "title": "ชวนไป น้ำตกเอราวัณ 7 ชั้น (Erawan Waterfall)",
+      "hostName": "นภัสสร รักษ์ธรรมชาติ",
+      "hostAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
+      "hostBadge": "Super Admin",
+      "date": "2026-09-01",
+      "time": "06:30 - 08:30 น.",
+      "participantsCount": 1,
+      "maxParticipants": 6,
+      "description": "<p><strong>ภาพรวม & บรรยากาศทริป:</strong></p>\n<p>นัดเจอพูดคุยบรรยากาศสบายๆ ที่ น้ำตกเอราวัณ 7 ชั้น (Erawan Waterfall) ใครมาคนเดียวไม่ต้องเกร็ง ยินดีต้อนรับทุกคนครับ</p>\n<p><br></p>\n<p><strong>สไตล์ทริป & สิ่งที่จะทำด้วยกัน:</strong></p>\n<ul>\n  <li>เน้นเดินชิลล์ ถ่ายรูปมุมสวยๆ และเสพความสงบของสถานที่</li>\n  <li>แวะจิบกาแฟ/เครื่องดื่ม พูดคุยแลกเปลี่ยนประสบการณ์กันแบบเป็นกันเอง</li>\n  <li>ไม่เร่งรีบ สบายๆ ปลอดภัย และเป็นมิตรกับทุกคน</li>\n</ul>\n<p><br></p>\n<p><strong>คำแนะนำสำหรับผู้ร่วมทริป:</strong></p>\n<p>สามารถเช็คจุดนัดพบ เวลา และสิ่งที่ควรเตรียมมาได้ที่แถบข้อมูลด้านขวา แล้วเจอกันวันนัดหมายนะครับ!</p>",
+      "tag": "กิจกรรมชวนเที่ยว",
+      "meetingPoint": "หน้าจุดนัดหมายหลัก / หน้าร้าน น้ำตกเอราวัณ 7 ชั้น (Erawan Waterfall)",
+      "targetGender": "all",
+      "targetAge": "ไม่จำกัดอายุ",
+      "price": "ฟรี",
+      "image": "https://images.unsplash.com/photo-1546587348-d12660c30c50?auto=format&fit=crop&w=800&q=80",
+      "whatToBring": [
+        "ขวดน้ำดื่มส่วนตัว",
+        "รองเท้าวิ่ง / ผ้าใบ"
+      ],
+      "transportation": "พบกัน ณ จุดนัดพบ (เดินทางอิสระ)",
+      "itinerary": [
+        {
+          "time": "06:30 น.",
+          "title": "รวมตัวกันหน้าจุดนัดพบ"
+        },
+        {
+          "time": "07:00 น.",
+          "title": "เริ่มกิจกรรมหลักร่วมกัน"
+        },
+        {
+          "time": "08:15 น.",
+          "title": "แวะจิบกาแฟ & นั่งคุยผ่อนคลาย"
+        }
+      ],
+      "eventType": "community",
+      "category": "chill",
+      "province": "กาญจนบุรี",
+      "location": "น้ำตกเอราวัณ 7 ชั้น (Erawan Waterfall)",
+      "spotId": "spot-kan-2",
+      "spotTitle": "น้ำตกเอราวัณ 7 ชั้น (Erawan Waterfall)",
+      "hostId": "user-me",
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "createdAt": "2026-09-13T03:21:12.621Z",
+      "galleryImages": [
+        "https://images.unsplash.com/photo-1546587348-d12660c30c50?auto=format&fit=crop&w=800&q=80"
+      ],
+      "subActivities": []
+    },
     {
       "id": "live-agg-1",
       "title": "Cat Expo 2026: เทศกาลดนตรีและศิลปะอินดี้ที่ใหญ่ที่สุดในไทย",
@@ -29,11 +199,11 @@
       "status": "active",
       "isNew": true,
       "createdAtTimestamp": 1788278059344,
-      "externalUrl": "https://www.theconcert.com/concert/cat-expo-2026",
-      "link": "https://www.theconcert.com/concert/cat-expo-2026",
+      "externalUrl": "https://www.bitec.co.th/gallery",
+      "link": "https://www.bitec.co.th/gallery",
       "approvalStatus": "approved",
       "source": "The Concert",
-      "sourceUrl": "https://www.theconcert.com/concert/cat-expo-2026",
+      "sourceUrl": "https://www.bitec.co.th/gallery",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -544,11 +714,11 @@
       "status": "active",
       "isNew": true,
       "createdAtTimestamp": 1788278059358,
-      "externalUrl": "https://www.bitec.co.th/events/photo-fair-2026",
-      "link": "https://www.bitec.co.th/events/photo-fair-2026",
+      "externalUrl": "https://www.bitec.co.th/gallery",
+      "link": "https://www.bitec.co.th/gallery",
       "approvalStatus": "approved",
       "source": "BITEC Events",
-      "sourceUrl": "https://www.bitec.co.th/events/photo-fair-2026",
+      "sourceUrl": "https://www.bitec.co.th/gallery",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1637,11 +1807,11 @@
       "status": "active",
       "isNew": true,
       "createdAtTimestamp": 1788278059386,
-      "externalUrl": "https://www.bitec.co.th/events/bangkok-comic-con-2026",
-      "link": "https://www.bitec.co.th/events/bangkok-comic-con-2026",
+      "externalUrl": "https://www.bitec.co.th/gallery",
+      "link": "https://www.bitec.co.th/gallery",
       "approvalStatus": "approved",
       "source": "BITEC Events",
-      "sourceUrl": "https://www.bitec.co.th/events/bangkok-comic-con-2026",
+      "sourceUrl": "https://www.bitec.co.th/gallery",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1670,11 +1840,11 @@
       "status": "active",
       "isNew": true,
       "createdAtTimestamp": 1788278059387,
-      "externalUrl": "https://moneyexpo.net/bangkok-year-end-2026",
-      "link": "https://moneyexpo.net/bangkok-year-end-2026",
+      "externalUrl": "https://www.qsncc.com/en/whats-on/event-calendar",
+      "link": "https://www.qsncc.com/en/whats-on/event-calendar",
       "approvalStatus": "approved",
       "source": "Money Expo",
-      "sourceUrl": "https://moneyexpo.net/bangkok-year-end-2026",
+      "sourceUrl": "https://www.qsncc.com/en/whats-on/event-calendar",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1703,11 +1873,11 @@
       "status": "active",
       "isNew": true,
       "createdAtTimestamp": 1788278059388,
-      "externalUrl": "https://www.bitec.co.th/events/coffee-expo-2027",
-      "link": "https://www.bitec.co.th/events/coffee-expo-2027",
+      "externalUrl": "https://www.bitec.co.th/gallery",
+      "link": "https://www.bitec.co.th/gallery",
       "approvalStatus": "approved",
       "source": "BITEC Events",
-      "sourceUrl": "https://www.bitec.co.th/events/coffee-expo-2027",
+      "sourceUrl": "https://www.bitec.co.th/gallery",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1736,11 +1906,11 @@
       "status": "active",
       "isNew": true,
       "createdAtTimestamp": 1788278059390,
-      "externalUrl": "https://www.bitec.co.th/events/motor-sale-2027",
-      "link": "https://www.bitec.co.th/events/motor-sale-2027",
+      "externalUrl": "https://www.bitec.co.th/gallery",
+      "link": "https://www.bitec.co.th/gallery",
       "approvalStatus": "approved",
       "source": "BITEC Events",
-      "sourceUrl": "https://www.bitec.co.th/events/motor-sale-2027",
+      "sourceUrl": "https://www.bitec.co.th/gallery",
       "province": "กรุงเทพมหานคร"
     },
     {

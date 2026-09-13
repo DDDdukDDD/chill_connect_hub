@@ -399,23 +399,52 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                     : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                 }`}>
                   {isPublicVenue ? (
-                    '🏛️ อีเวนต์ & งานแฟร์'
+                    'อีเวนต์ & งานแฟร์'
                   ) : (
                     <>
-                      <span className="inline sm:hidden">🌿 Chill & Connect</span>
-                      <span className="hidden sm:inline">🌿 Chill & Connect Community</span>
+                      <span className="inline sm:hidden">คอมมูนิตี้</span>
+                      <span className="hidden sm:inline">กิจกรรมคอมมูนิตี้</span>
                     </>
                   )}
                 </span>
 
-                {/* 🏷️ Prominent Price Pill (Free vs Paid) */}
+                {/* Frosted Trust Micro-Pills (Perks) */}
+                {!isPublicVenue && (() => {
+                  const isOnline = event.province === 'ออนไลน์' || event.locationType === 'online' || event.location?.includes('ออนไลน์') || event.location?.toLowerCase().includes('online');
+                  return (
+                    <>
+                      {!isOnline && event.isSoloFriendly !== false && (
+                        <span className="text-[11px] font-medium text-slate-600 bg-slate-100/90 px-2.5 py-0.5 rounded-full border border-slate-200/60">
+                          มาคนเดียวได้
+                        </span>
+                      )}
+                      {!isOnline && event.isPetFriendly && (
+                        <span className="text-[11px] font-medium text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200/60">
+                          สัตว์เลี้ยงร่วมได้
+                        </span>
+                      )}
+                      {event.isBeginnerFriendly && (
+                        <span className="text-[11px] font-medium text-slate-600 bg-slate-100/90 px-2.5 py-0.5 rounded-full border border-slate-200/60">
+                          เหมาะกับมือใหม่
+                        </span>
+                      )}
+                      {isOnline && (
+                        <span className="text-[11px] font-medium text-sky-700 bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200/60">
+                          รวมตัวออนไลน์
+                        </span>
+                      )}
+                    </>
+                  );
+                })()}
+
+                {/* Prominent Price Pill (Free vs Paid) */}
                 {event.price && (
-                  <span className={`text-[11px] sm:text-xs font-black px-2.5 py-0.5 rounded-full border shadow-2xs inline-block ${
+                  <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border inline-block ${
                     event.price.includes('ฟรี')
-                      ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                      : 'bg-amber-50 text-amber-900 border-amber-300'
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                      : 'bg-slate-100 text-slate-800 border-slate-200'
                   }`}>
-                    {event.price.includes('ฟรี') ? '🎉 เข้าร่วมฟรี!' : `🏷️ ${event.price}`}
+                    {event.price.includes('ฟรี') ? 'เข้าร่วมฟรี' : event.price}
                   </span>
                 )}
               </div>
@@ -430,12 +459,12 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                 {copied ? (
                   <>
                     <Check className="w-3 h-3 text-emerald-600" />
-                    <span className="text-emerald-600 font-extrabold">คัดลอกลิงก์แล้ว!</span>
+                    <span className="text-emerald-600 font-extrabold">คัดลอกแล้ว</span>
                   </>
                 ) : (
                   <>
                     <Share2 className="w-3 h-3 text-slate-500" />
-                    <span>แชร์กิจกรรม</span>
+                    <span>แชร์</span>
                   </>
                 )}
               </button>
@@ -446,7 +475,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             </h2>
           </div>
 
-          {/* Location with Clean Google Maps Link */}
+          {/* Location with Clean Google Maps Link & Cancellation Terms */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs bg-slate-50/90 p-3.5 rounded-2xl border border-slate-200/80">
             <div className="flex items-center gap-2">
               <Calendar className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
@@ -458,36 +487,60 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               <span className="font-semibold text-[#1E293B] truncate">{event.time}</span>
             </div>
 
-            {/* Location with Clean Google Maps Link (Wrapped & size matches date/time) */}
-            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:col-span-3 pt-2.5 border-t border-slate-200/60">
-              <div className="flex items-start gap-2 min-w-0 flex-1">
-                <MapPin className="w-3.5 h-3.5 text-[#F26430] shrink-0 mt-0.5" />
-                <span className="font-bold text-[#1E293B] text-xs leading-relaxed break-words">{event.location}</span>
+            <div className="flex items-center gap-2">
+              <Users className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
+              <span className="font-semibold text-[#1E293B] truncate">
+                {event.eventType === 'public_venue'
+                  ? 'เข้าชมอิสระ'
+                  : `เปิดรับ ${event.participantsCount || 0}/${event.maxParticipants || 10} คน`}
+              </span>
+            </div>
+
+            {/* Location & Cancellation Sub-Row */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:col-span-3 pt-2.5 border-t border-slate-200/60">
+              <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                <MapPin className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
+                <span className="font-bold text-[#1E293B] text-xs leading-relaxed truncate">{event.location}</span>
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-0.5 text-[11px] font-bold text-blue-600 hover:text-blue-800 underline ml-1 shrink-0"
+                  title="เปิดดูตำแหน่งบน Google Maps"
+                >
+                  <span>แผนที่</span>
+                  <ExternalLink className="w-2.5 h-2.5" />
+                </a>
               </div>
-              <a
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-xl bg-white hover:bg-orange-50 text-[#1E293B] hover:text-[#F26430] border border-slate-200 hover:border-orange-300 text-xs font-bold shadow-2xs transition-all shrink-0 active:scale-95 cursor-pointer self-start sm:self-auto"
-                title="เปิดดูตำแหน่งและเส้นทางบน Google Maps"
-              >
-                <span>เปิด Google Maps</span>
-                <ExternalLink className="w-3 h-3 text-slate-400" />
-              </a>
+
+              {!isPublicVenue && (
+                <div className="flex items-center gap-1.5 text-xs shrink-0 text-slate-600">
+                  <span className="text-slate-500 font-medium">การยกเลิก:</span>
+                  <span className="font-bold text-slate-800">
+                    {event.cancellationPolicy === 'free_anytime'
+                      ? 'ยกเลิกฟรีตลอดเวลา'
+                      : event.cancellationPolicy === 'free_48h'
+                      ? 'ยกเลิกฟรีก่อน 48 ชม.'
+                      : event.cancellationPolicy === 'chat_notice'
+                      ? 'แจ้งในกลุ่มแชท'
+                      : 'ยกเลิกฟรีก่อน 24 ชม.'}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Participant Criteria & Vibe Badges */}
-          {(event.targetGender || event.targetAge || event.energyLevel || (event.maxParticipants && event.eventType !== 'public_venue')) && (
+          {(event.targetGender || event.targetAge || event.energyLevel) && (
             <div className="flex items-center gap-2 flex-wrap text-xs pt-0.5">
               {event.targetGender && (
                 <span className="px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold border border-slate-200/80 flex items-center gap-1">
-                  <span>{event.targetGender === 'female_only' ? '👩 เฉพาะผู้หญิง' : event.targetGender === 'male_only' ? '👨 เฉพาะผู้ชาย' : '👥 เปิดรับทุกเพศ'}</span>
+                  <span>{event.targetGender === 'female_only' ? 'เฉพาะผู้หญิง' : event.targetGender === 'male_only' ? 'เฉพาะผู้ชาย' : 'เปิดรับทุกเพศ'}</span>
                 </span>
               )}
               {event.targetAge && (
                 <span className="px-3 py-1 rounded-xl bg-amber-50 text-amber-800 font-bold border border-amber-200/80 flex items-center gap-1">
-                  <span>🎂 {event.targetAge}</span>
+                  <span>{event.targetAge}</span>
                 </span>
               )}
               {event.energyLevel && (
@@ -496,12 +549,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                     ? 'bg-orange-50 text-orange-800 border-orange-200'
                     : 'bg-emerald-50 text-emerald-800 border-emerald-200'
                 }`}>
-                  <span>{event.energyLevel === 'active' ? '🔥 สายลุย / Active' : '🌿 ชิลล์ / สโลว์ไลฟ์'}</span>
-                </span>
-              )}
-              {event.maxParticipants > 0 && event.eventType !== 'public_venue' && (
-                <span className="px-3 py-1 rounded-xl bg-sky-50 text-sky-800 font-bold border border-sky-200 flex items-center gap-1">
-                  <span>👥 รับสูงสุด {event.maxParticipants} คน</span>
+                  <span>{event.energyLevel === 'active' ? 'สายลุย / Active' : 'ชิลล์ / สโลว์ไลฟ์'}</span>
                 </span>
               )}
             </div>

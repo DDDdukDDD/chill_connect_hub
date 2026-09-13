@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/useAuth';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { EventItem } from '@/data/mockData';
 import { BrandLogo } from '@/components/BrandLogo';
+import { LifestyleJourneyCards } from '@/components/LifestyleJourneyCards';
 import {
   Sprout,
   Heart,
@@ -73,13 +74,6 @@ export default function AboutPage() {
         <section className="bg-white py-10 sm:py-14 border-b border-slate-100 relative overflow-hidden">
           <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4 relative z-10">
             
-            {/* Editorial Badge */}
-            <div className="flex justify-center">
-              <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase bg-[#EBF3ED] text-[#2D5A3C] border border-[#A3CEB0]/60 shadow-2xs">
-                <Sparkles className="w-3.5 h-3.5 text-[#4A7C59]" />
-                Our Vision & Architecture
-              </span>
-            </div>
 
             {/* Main Headline */}
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-snug max-w-3xl mx-auto">
@@ -94,22 +88,26 @@ export default function AboutPage() {
               <strong>Chill & Connect Hub</strong> คือศูนย์กลางที่รวมสถานที่เที่ยว & จุดฮีลใจ, กิจกรรมและอีเวนต์, และเพื่อนร่วมทางคอเดียวกันเข้าไว้ในที่เดียว เพื่อให้ทุกวันหยุดของคุณมีความหมายและเติมเต็มพลังบวกได้ทุกวัน
             </p>
 
-            {/* Impact Stats Banner */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-4xl mx-auto pt-3">
-              {[
-                { label: 'ผู้ใช้งานต่อวัน', val: '10,000+', icon: <Users className="w-4 h-4 text-[#F26430]" /> },
-                { label: 'สถานที่ & อีเวนต์', val: '1,000+', icon: <Compass className="w-4 h-4 text-[#4A7C59]" /> },
-                { label: 'มิตรภาพ & ตี้กลุ่มย่อย', val: '3,500+', icon: <Sparkles className="w-4 h-4 text-[#2B527A]" /> },
-                { label: 'Safe Space Community', val: '100%', icon: <ShieldCheck className="w-4 h-4 text-emerald-600" /> },
-              ].map((stat, idx) => (
-                <div key={idx} className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs text-center space-y-0.5">
-                  <div className="flex items-center justify-center gap-1.5 text-xs font-medium text-slate-500">
-                    {stat.icon}
-                    <span>{stat.label}</span>
-                  </div>
-                  <p className="text-xl sm:text-2xl font-bold text-slate-900">{stat.val}</p>
+            {/* Impact Stats: Integrated Frosted Horizon Bar */}
+            <div className="max-w-4xl mx-auto pt-3">
+              <div className="bg-gradient-to-r from-slate-50/80 via-white/90 to-slate-50/80 backdrop-blur-md rounded-2xl sm:rounded-3xl border border-slate-200/80 p-2 sm:p-3 shadow-xs">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center divide-y sm:divide-y-0 sm:divide-x divide-slate-200/60">
+                  {[
+                    { label: 'ผู้ใช้งานต่อวัน', val: '10,000+', icon: <Users className="w-3.5 h-3.5 text-[#F26430]" /> },
+                    { label: 'สถานที่ & อีเวนต์', val: '1,000+', icon: <Compass className="w-3.5 h-3.5 text-[#4A7C59]" /> },
+                    { label: 'มิตรภาพ & ตี้กลุ่มย่อย', val: '3,500+', icon: <Sparkles className="w-3.5 h-3.5 text-[#7C3AED]" /> },
+                    { label: 'Safe Space Community', val: '100%', icon: <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> },
+                  ].map((stat, idx) => (
+                    <div key={idx} className="p-2 sm:p-2.5 space-y-0.5">
+                      <div className="flex items-center justify-center gap-1.5 text-[11px] sm:text-xs font-semibold text-slate-500">
+                        {stat.icon}
+                        <span>{stat.label}</span>
+                      </div>
+                      <p className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight">{stat.val}</p>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
 
           </div>
@@ -122,511 +120,442 @@ export default function AboutPage() {
           
           <div className="text-center space-y-2 max-w-3xl mx-auto">
             <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">
-              เส้นทางการใช้งานที่เชื่อมโยงทุกฟังก์ชันอย่างไร้รอยต่อ
+              4 สเต็ปง่ายๆ ออกไปใช้ชีวิตในแบบที่คุณรัก
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-xl mx-auto">
-              ตั้งแต่การค้นหาสถานที่ จนถึงการออกไปเจอเพื่อนและสะสมรางวัล เป็นเรื่องง่ายและสนุก
+              ตั้งแต่ค้นหาพิกัดใจฟู ชวนเพื่อนรู้ใจ ไปจนถึงรับรางวัลพิเศษ ให้ทุกการพักผ่อนมีความหมาย
             </p>
           </div>
 
-          {/* 4-Step Connected Infographic Journey Container */}
-          <div className="relative">
-            
-            {/* Desktop Connecting Track Behind Cards */}
-            <div className="hidden lg:block absolute top-1/2 left-10 right-10 h-1 bg-gradient-to-r from-orange-200 via-emerald-200 via-blue-200 to-purple-200 -translate-y-12 z-0" />
+          {/* 4-Step Connected Infographic Journey in Unified Lifestyle Canvas */}
+          <div className="bg-gradient-to-b from-white via-slate-50/40 to-white rounded-3xl sm:rounded-[2.5rem] border border-slate-200/80 shadow-[0_4px_30px_-8px_rgba(0,0,0,0.04)] p-5 sm:p-7 lg:p-8 relative overflow-hidden">
+            {/* Soft Ambient Corner Glows */}
+            <div className="absolute -top-20 -left-20 w-64 h-64 bg-emerald-100/30 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -top-20 right-1/4 w-64 h-64 bg-purple-100/25 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-blue-100/30 rounded-full blur-3xl pointer-events-none" />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 relative z-10">
-              
-              {/* STEP 1: DISCOVER */}
-              <div className="bg-white rounded-3xl p-5 border-2 border-orange-100 hover:border-[#F26430] shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between group hover:-translate-y-1 relative overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-orange-400 to-[#F26430]" />
-                
-                <div className="space-y-3">
-                  {/* Header: Step + Icon + Tag */}
-                  <div className="flex items-center justify-between pt-0.5">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-7 h-7 rounded-xl bg-orange-500 text-white font-black text-xs flex items-center justify-center shadow-xs">
-                        01
-                      </span>
-                      <span className="w-7 h-7 rounded-xl bg-orange-50 text-[#F26430] flex items-center justify-center border border-orange-200/80">
-                        <Compass className="w-3.5 h-3.5" />
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-black tracking-wider uppercase text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200/80">
-                      Where & What
-                    </span>
-                  </div>
-
-                  {/* Title & Description */}
-                  <div className="space-y-1">
-                    <h3 className="text-sm sm:text-base font-black text-slate-900">
-                      1. ค้นพบสถานที่ & อีเวนต์
-                    </h3>
-                    <p className="text-xs text-slate-600 leading-relaxed">
-                      ค้นหาจุดฮีลใจและพิกัดชาร์จพลังทั่วไทย ปักหมุดที่เที่ยวใกล้ตัว พร้อมเช็คระยะทางได้ทันที
-                    </p>
-                  </div>
-
-                  {/* Micro Feature Badges */}
-                  <div className="space-y-1.5 pt-0.5">
-                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-200/80">
-                      <MapPin className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
-                      <span>77 จังหวัดทั่วประเทศไทย</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-200/80">
-                      <Sparkles className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
-                      <span>คัดสรรเฉพาะอีเวนต์คุณภาพ</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bottom Action Link */}
-                <div className="pt-3 mt-3 border-t border-slate-100">
-                  <Link
-                    href="/spots"
-                    className="w-full bg-orange-50 hover:bg-[#F26430] text-[#F26430] hover:text-white py-1.5 px-3 rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-1.5 group/btn"
-                  >
-                    <span>สำรวจสถานที่ & อีเวนต์</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* STEP 2: CONNECT */}
-              <div className="bg-white rounded-3xl p-5 border-2 border-emerald-100 hover:border-[#4A7C59] shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between group hover:-translate-y-1 relative overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-400 to-[#4A7C59]" />
-                
-                <div className="space-y-3">
-                  {/* Header: Step + Icon + Tag */}
-                  <div className="flex items-center justify-between pt-0.5">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-7 h-7 rounded-xl bg-[#4A7C59] text-white font-black text-xs flex items-center justify-center shadow-xs">
-                        02
-                      </span>
-                      <span className="w-7 h-7 rounded-xl bg-emerald-50 text-[#4A7C59] flex items-center justify-center border border-emerald-200/80">
-                        <Users className="w-3.5 h-3.5" />
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-black tracking-wider uppercase text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/80">
-                      Who to go with
-                    </span>
-                  </div>
-
-                  {/* Title & Description */}
-                  <div className="space-y-1">
-                    <h3 className="text-sm sm:text-base font-black text-slate-900">
-                      2. รวมตี้ & บัดดี้คอเดียวกัน
-                    </h3>
-                    <p className="text-xs text-slate-600 leading-relaxed">
-                      เปิดตี้หรือจอยกลุ่มกิจกรรม เช่น กาแฟ, วิ่ง, บอร์ดเกม บรรยากาศเป็นกันเอง ปลอดภัย สบายใจแม้เป็น Introvert
-                    </p>
-                  </div>
-
-                  {/* Micro Feature Badges */}
-                  <div className="space-y-1.5 pt-0.5">
-                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-200/80">
-                      <ShieldCheck className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
-                      <span>100% Introvert-Friendly</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-200/80">
-                      <MessageCircle className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
-                      <span>ห้องแชตกลุ่มเตรียมนัดพบ</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bottom Action Link */}
-                <div className="pt-3 mt-3 border-t border-slate-100">
-                  <Link
-                    href="/community"
-                    className="w-full bg-emerald-50 hover:bg-[#4A7C59] text-[#4A7C59] hover:text-white py-1.5 px-3 rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-1.5 group/btn"
-                  >
-                    <span>ค้นหาตี้และเพื่อนร่วมทาง</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* STEP 3: ENGAGE & QUESTS */}
-              <div className="bg-white rounded-3xl p-5 border-2 border-blue-100 hover:border-[#2B527A] shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between group hover:-translate-y-1 relative overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-400 to-[#2B527A]" />
-                
-                <div className="space-y-3">
-                  {/* Header: Step + Icon + Tag */}
-                  <div className="flex items-center justify-between pt-0.5">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-7 h-7 rounded-xl bg-[#2B527A] text-white font-black text-xs flex items-center justify-center shadow-xs">
-                        03
-                      </span>
-                      <span className="w-7 h-7 rounded-xl bg-blue-50 text-[#2B527A] flex items-center justify-center border border-blue-200/80">
-                        <Trophy className="w-3.5 h-3.5" />
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-black tracking-wider uppercase text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200/80">
-                      Gamification
-                    </span>
-                  </div>
-
-                  {/* Title & Description */}
-                  <div className="space-y-1">
-                    <h3 className="text-sm sm:text-base font-black text-slate-900">
-                      3. ทำเควสต์ & เช็คอิน E-Ticket
-                    </h3>
-                    <p className="text-xs text-slate-600 leading-relaxed">
-                      แตะรับภารกิจชาเลนจ์ เช็คอินด้วย QR E-Ticket หน้างาน รับเหรียญตรา Badge และสะสมแต้ม <strong>💎 XP</strong>
-                    </p>
-                  </div>
-
-                  {/* Micro Feature Badges */}
-                  <div className="space-y-1.5 pt-0.5">
-                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-200/80">
-                      <QrCode className="w-3.5 h-3.5 text-[#2B527A] shrink-0" />
-                      <span>สแกนตั๋ว QR Code เช็คอิน</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-200/80">
-                      <Award className="w-3.5 h-3.5 text-[#2B527A] shrink-0" />
-                      <span>สะสมเหรียญ Badges & XP</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bottom Action Link */}
-                <div className="pt-3 mt-3 border-t border-slate-100">
-                  <Link
-                    href="/challenges"
-                    className="w-full bg-blue-50 hover:bg-[#2B527A] text-[#2B527A] hover:text-white py-1.5 px-3 rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-1.5 group/btn"
-                  >
-                    <span>ดูเควสต์ & ชาเลนจ์</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* STEP 4: SHARE & REWARDS */}
-              <div className="bg-white rounded-3xl p-5 border-2 border-purple-100 hover:border-purple-600 shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between group hover:-translate-y-1 relative overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-purple-400 to-purple-600" />
-                
-                <div className="space-y-3">
-                  {/* Header: Step + Icon + Tag */}
-                  <div className="flex items-center justify-between pt-0.5">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-7 h-7 rounded-xl bg-purple-600 text-white font-black text-xs flex items-center justify-center shadow-xs">
-                        04
-                      </span>
-                      <span className="w-7 h-7 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-200/80">
-                        <Gift className="w-3.5 h-3.5" />
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-black tracking-wider uppercase text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200/80">
-                      Share & Perks
-                    </span>
-                  </div>
-
-                  {/* Title & Description */}
-                  <div className="space-y-1">
-                    <h3 className="text-sm sm:text-base font-black text-slate-900">
-                      4. แชร์โมเมนต์ & แลกรางวัล
-                    </h3>
-                    <p className="text-xs text-slate-600 leading-relaxed">
-                      โพสต์ภาพความประทับใจลง <strong>Moments Feed</strong> และนำแต้ม XP ไปแลกรับเวาเชอร์ส่วนลดเครื่องดื่มใน <strong>MyHub</strong>
-                    </p>
-                  </div>
-
-                  {/* Micro Feature Badges */}
-                  <div className="space-y-1.5 pt-0.5">
-                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-200/80">
-                      <Camera className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                      <span>Moments โซเชียลฟีดจริง</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-200/80">
-                      <Gift className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                      <span>แลกรับของรางวัลและส่วนลด</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bottom Action Link */}
-                <div className="pt-3 mt-3 border-t border-slate-100">
-                  <Link
-                    href="/moments"
-                    className="w-full bg-purple-50 hover:bg-purple-600 text-purple-700 hover:text-white py-1.5 px-3 rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-1.5 group/btn"
-                  >
-                    <span>เปิดดู Moments ฟีด</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
-                  </Link>
-                </div>
-              </div>
-
+            <div className="relative z-10">
+              <LifestyleJourneyCards />
             </div>
-
           </div>
 
         </section>
 
         {/* =========================================================================
-            SECTION 3: 3 CORE PILLARS (Editorial Visual Showcase)
+            SECTION 3: 3 CORE PILLARS (The Unified Lifestyle Canvas - Organic Panoramic Stage)
            ========================================================================= */}
-        <section className="bg-[#F8FAFC] py-12 sm:py-16 border-y border-slate-200/80">
-          <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-            
-            <div className="text-center space-y-2 max-w-3xl mx-auto">
-              <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">
-                คำตอบครบทุกมิติของการออกไปใช้ชีวิต
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal max-w-xl mx-auto">
-                ตอบ 3 คำถามสำคัญ เพื่อให้การวางแผนวันหยุดและการออกไปเปิดประสบการณ์ใหม่ของคุณง่ายและมีความสุขที่สุด
-              </p>
-            </div>
+        <section className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 space-y-8">
+          
+          {/* Header */}
+          <div className="text-center space-y-2 max-w-3xl mx-auto">
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">
+              คำตอบครบทุกมิติของการออกไปใช้ชีวิต
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-xl mx-auto">
+              ตอบ 3 คำถามสำคัญ เพื่อให้การวางแผนวันหยุดและการออกไปเปิดประสบการณ์ใหม่ของคุณง่ายและมีความสุขที่สุด
+            </p>
+          </div>
 
-            {/* 3 Editorial Showcase Cards with Visual Imagery */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+          {/* The Unified Lifestyle Canvas (Organic Panoramic Stage) */}
+          <div className="bg-gradient-to-b from-white via-slate-50/40 to-white rounded-3xl sm:rounded-[2.5rem] border border-slate-200/80 shadow-[0_4px_30px_-8px_rgba(0,0,0,0.04)] p-5 sm:p-7 lg:p-9 relative overflow-hidden">
+            
+            {/* Soft Ambient Corner Glows */}
+            <div className="absolute -top-20 -left-20 w-80 h-80 bg-emerald-100/35 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-100/25 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-orange-100/35 rounded-full blur-3xl pointer-events-none" />
+
+            {/* 3 Borderless Columns Architecture */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-0 relative z-10">
               
-              {/* Pillar 1: Where to go */}
-              <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden group hover:-translate-y-1">
-                <div>
-                  {/* Visual Cover */}
-                  <div className="relative h-44 sm:h-48 w-full overflow-hidden bg-slate-100">
+              {/* PILLAR 1: WHERE TO GO (Spots) -> Forest Green */}
+              <div className="flex flex-col justify-between space-y-4 lg:border-r border-slate-200/60 lg:pr-7 lg:pl-2 group">
+                <div className="space-y-4">
+                  
+                  {/* Panoramic Visual Window */}
+                  <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-slate-100 shadow-xs">
                     <img
                       src="https://images.unsplash.com/photo-1519331379826-f10be5486c6f?auto=format&fit=crop&w=800&q=80"
                       alt="Lifestyle Spots & Parks"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/25 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-slate-900/20 to-transparent" />
                     
-                    {/* Floating Badge */}
-                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-2.5 py-0.5 rounded-full shadow-xs text-[11px] font-black text-[#4A7C59] border border-white/50">
+                    {/* Floating Pill */}
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-2.5 py-0.5 rounded-full shadow-xs text-[10px] font-black text-[#4A7C59] border border-white/60">
                       <MapPin className="w-3 h-3 text-[#4A7C59]" />
                       <span>WHERE TO GO</span>
                     </div>
 
-                    {/* Bottom Title on Image */}
+                    {/* Bottom Title inside Image */}
                     <div className="absolute bottom-3 left-3.5 right-3.5 text-white">
-                      <div className="text-base sm:text-lg font-black tracking-tight">1. สถานที่เที่ยว & จุดฮีลใจ</div>
-                      <div className="text-[11px] text-slate-200 font-medium">ไม่รู้จะไปไหน ให้เราช่วยคัดสรรพิกัดที่ดีที่สุด</div>
+                      <p className="text-sm sm:text-base font-black tracking-tight">1. สถานที่เที่ยว & จุดฮีลใจ</p>
+                      <p className="text-[11px] text-slate-200 font-medium">ไม่รู้จะไปไหน ให้เราช่วยคัดสรรพิกัดที่ดีที่สุด</p>
                     </div>
                   </div>
 
-                  {/* Content */}
-                  <div className="p-5 space-y-3">
+                  {/* Headline & Description */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="w-6 h-6 rounded-lg bg-emerald-50 text-[#4A7C59] border border-emerald-200 text-xs font-black flex items-center justify-center shrink-0">
+                        01
+                      </span>
+                      <h3 className="text-base font-black text-slate-900 group-hover:text-[#4A7C59] transition-colors">
+                        พิกัดชาร์จพลัง 77 จังหวัดทั่วไทย
+                      </h3>
+                    </div>
                     <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                      ค้นพบมุมสงบและพิกัดชาร์จพลังที่ใช่สำหรับคุณ รวบรวมตั้งแต่คาเฟ่ลับ สวนสีเขียว ไปจนถึงอาร์ตสเปซ <strong>77 จังหวัดทั่วไทย</strong> พร้อมข้อมูลอัปเดตจริงที่วางใจได้
+                      ค้นพบมุมสงบและพิกัดชาร์จพลังที่ใช่ รวบรวมตั้งแต่คาเฟ่ลับ สเปซสีเขียว ไปจนถึงอาร์ตสเปซทั่วไทย พร้อมข้อมูลอัปเดตตรงปก
                     </p>
+                  </div>
 
-                    <div className="space-y-1.5 pt-0.5">
-                      <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-700 bg-emerald-50/60 p-2 rounded-xl border border-emerald-100/80">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
-                        <span>ปักหมุดพิกัดชิลล์ใกล้ตัว ค้นหาง่ายแค่ปลายนิ้ว</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-700 bg-emerald-50/60 p-2 rounded-xl border border-emerald-100/80">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
-                        <span>ภาพบรรยากาศจริง ฟีลตรงปก มั่นใจได้ทุกการเดินทาง</span>
-                      </div>
+                  {/* Borderless Micro Features Stream */}
+                  <div className="space-y-2 pt-1 text-slate-600">
+                    <div className="flex items-center gap-2 text-[12px] font-medium">
+                      <MapPin className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
+                      <span>ปักหมุดพิกัดชิลล์ใกล้ตัว ค้นหาง่ายแค่ปลายนิ้ว</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[12px] font-medium">
+                      <Sparkles className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
+                      <span>ภาพบรรยากาศจริง ฟีลตรงปก มั่นใจได้ทุกการเดินทาง</span>
                     </div>
                   </div>
+
                 </div>
 
-                <div className="p-5 pt-0">
+                {/* Editorial Action Link */}
+                <div className="pt-3 border-t border-slate-100">
                   <Link
                     href="/spots"
-                    className="w-full bg-[#4A7C59] hover:bg-[#3B6447] text-white py-2.5 px-3 rounded-xl font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 group/btn cursor-pointer active:scale-[0.98]"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-[#4A7C59] hover:text-[#3B6447] group/btn cursor-pointer transition-all hover:gap-2.5"
                   >
                     <span>สำรวจจุดฮีลใจ 77 จังหวัด</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
+                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
                   </Link>
                 </div>
               </div>
 
-              {/* Pillar 2: What to do */}
-              <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden group hover:-translate-y-1">
-                <div>
-                  {/* Visual Cover */}
-                  <div className="relative h-44 sm:h-48 w-full overflow-hidden bg-slate-100">
+              {/* PILLAR 2: WHAT TO DO (Fairs & Events) -> Slate Blue */}
+              <div className="flex flex-col justify-between space-y-4 lg:border-r border-slate-200/60 lg:px-7 group">
+                <div className="space-y-4">
+                  
+                  {/* Panoramic Visual Window */}
+                  <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-slate-100 shadow-xs">
                     <img
                       src="https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=800&q=80"
                       alt="Events & Workshops"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/25 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-slate-900/20 to-transparent" />
                     
-                    {/* Floating Badge */}
-                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-2.5 py-0.5 rounded-full shadow-xs text-[11px] font-black text-[#2B527A] border border-white/50">
+                    {/* Floating Pill */}
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-2.5 py-0.5 rounded-full shadow-xs text-[10px] font-black text-[#2B527A] border border-white/60">
                       <Calendar className="w-3 h-3 text-[#2B527A]" />
                       <span>WHAT TO DO</span>
                     </div>
 
-                    {/* Bottom Title on Image */}
+                    {/* Bottom Title inside Image */}
                     <div className="absolute bottom-3 left-3.5 right-3.5 text-white">
-                      <div className="text-base sm:text-lg font-black tracking-tight">2. กิจกรรมและงานมหกรรมสดใหม่</div>
-                      <div className="text-[11px] text-slate-200 font-medium">วันหยุดนี้ไม่มีเบื่อ รวมทุกงานแฟร์ & เวิร์กช็อป</div>
+                      <p className="text-sm sm:text-base font-black tracking-tight">2. กิจกรรมและงานมหกรรมสดใหม่</p>
+                      <p className="text-[11px] text-slate-200 font-medium">วันหยุดนี้ไม่มีเบื่อ รวมทุกงานแฟร์ & เวิร์กช็อป</p>
                     </div>
                   </div>
 
-                  {/* Content */}
-                  <div className="p-5 space-y-3">
+                  {/* Headline & Description */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="w-6 h-6 rounded-lg bg-blue-50 text-[#2B527A] border border-blue-200 text-xs font-black flex items-center justify-center shrink-0">
+                        02
+                      </span>
+                      <h3 className="text-base font-black text-slate-900 group-hover:text-[#2B527A] transition-colors">
+                        งานแฟร์ นิทรรศการ & เทศกาลสดใหม่
+                      </h3>
+                    </div>
                     <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                      เปลี่ยนวันว่างให้มีสีสัน รวมทุกเทศกาล งานแฟร์ คอนเสิร์ต และเวิร์กช็อปน่าลอง <strong>คัดเฉพาะงานคุณภาพ</strong> อัปเดตสดใหม่ทุกสัปดาห์ ให้คุณไม่พลาดทุกเทรนด์ฮิต
+                      เปลี่ยนวันว่างให้มีสีสัน รวมทุกเทศกาล งานแฟร์ คอนเสิร์ต และเวิร์กช็อปน่าลอง คัดเฉพาะงานคุณภาพ อัปเดตสดใหม่สม่ำเสมอ
                     </p>
+                  </div>
 
-                    <div className="space-y-1.5 pt-0.5">
-                      <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-700 bg-blue-50/60 p-2 rounded-xl border border-blue-100/80">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#2B527A] shrink-0" />
-                        <span>คัดเฉพาะงานน่าไป กรองงานซ้ำ หมดปัญหาข้อมูลล้น</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-700 bg-blue-50/60 p-2 rounded-xl border border-blue-100/80">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#2B527A] shrink-0" />
-                        <span>บันทึกงานโปรด พร้อมรับบัตรเข้างานทันทีบนมือถือ</span>
-                      </div>
+                  {/* Borderless Micro Features Stream */}
+                  <div className="space-y-2 pt-1 text-slate-600">
+                    <div className="flex items-center gap-2 text-[12px] font-medium">
+                      <Calendar className="w-3.5 h-3.5 text-[#2B527A] shrink-0" />
+                      <span>คัดเฉพาะงานน่าไป กรองงานซ้ำ หมดปัญหาข้อมูลล้น</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[12px] font-medium">
+                      <QrCode className="w-3.5 h-3.5 text-[#2B527A] shrink-0" />
+                      <span>บันทึกงานโปรด พร้อมรับบัตรเข้างานทันทีบนมือถือ</span>
                     </div>
                   </div>
+
                 </div>
 
-                <div className="p-5 pt-0">
+                {/* Editorial Action Link */}
+                <div className="pt-3 border-t border-slate-100">
                   <Link
                     href="/fairs"
-                    className="w-full bg-[#2B527A] hover:bg-[#1F3D5C] text-white py-2.5 px-3 rounded-xl font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 group/btn cursor-pointer active:scale-[0.98]"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-[#2B527A] hover:text-[#1F3D5C] group/btn cursor-pointer transition-all hover:gap-2.5"
                   >
                     <span>ค้นหากิจกรรมและงานแฟร์</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
+                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
                   </Link>
                 </div>
               </div>
 
-              {/* Pillar 3: Who to go with */}
-              <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden group hover:-translate-y-1">
-                <div>
-                  {/* Visual Cover */}
-                  <div className="relative h-44 sm:h-48 w-full overflow-hidden bg-slate-100">
+              {/* PILLAR 3: WHO TO GO WITH (Community) -> Sunset Amber */}
+              <div className="flex flex-col justify-between space-y-4 lg:pl-7 lg:pr-2 group">
+                <div className="space-y-4">
+                  
+                  {/* Panoramic Visual Window */}
+                  <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-slate-100 shadow-xs">
                     <img
                       src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=800&q=80"
                       alt="Community & Friends"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/25 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-slate-900/20 to-transparent" />
                     
-                    {/* Floating Badge */}
-                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-2.5 py-0.5 rounded-full shadow-xs text-[11px] font-black text-[#F26430] border border-white/50">
+                    {/* Floating Pill */}
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-2.5 py-0.5 rounded-full shadow-xs text-[10px] font-black text-[#F26430] border border-white/60">
                       <Users className="w-3 h-3 text-[#F26430]" />
                       <span>WHO TO GO WITH</span>
                     </div>
 
-                    {/* Bottom Title on Image */}
+                    {/* Bottom Title inside Image */}
                     <div className="absolute bottom-3 left-3.5 right-3.5 text-white">
-                      <div className="text-base sm:text-lg font-black tracking-tight">3. เพื่อนและคอมมูนิตี้คอเดียวกัน</div>
-                      <div className="text-[11px] text-slate-200 font-medium">ไม่ต้องไปคนเดียว ชวนเพื่อนใหม่ในเซฟสเปซ</div>
+                      <p className="text-sm sm:text-base font-black tracking-tight">3. เพื่อนและคอมมูนิตี้คอเดียวกัน</p>
+                      <p className="text-[11px] text-slate-200 font-medium">ไม่ต้องไปคนเดียว ชวนเพื่อนใหม่ในเซฟสเปซ</p>
                     </div>
                   </div>
 
-                  {/* Content */}
-                  <div className="p-5 space-y-3">
+                  {/* Headline & Description */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="w-6 h-6 rounded-lg bg-orange-50 text-[#F26430] border border-orange-200 text-xs font-black flex items-center justify-center shrink-0">
+                        03
+                      </span>
+                      <h3 className="text-base font-black text-slate-900 group-hover:text-[#F26430] transition-colors">
+                        ตี้เพื่อนรู้ใจ ในพื้นที่ปลอดภัย 100%
+                      </h3>
+                    </div>
                     <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                      เจอเพื่อนใหม่คอเดียวกันในพื้นที่สบายใจ ไม่ว่าจะเป็นสายกาแฟ ชวนวิ่ง หรือบอร์ดเกม จะมาเดี่ยวหรือมาชิลล์ก็อบอุ่น เพราะทุกคนพร้อม <strong>เปิดรับมิตรภาพใหม่</strong>
+                      เจอเพื่อนใหม่คอเดียวกันในพื้นที่สบายใจ ไม่ว่าจะเป็นสายกาแฟ วิ่ง หรือบอร์ดเกม ทุกคนพร้อมเปิดรับมิตรภาพใหม่อย่างอบอุ่น
                     </p>
+                  </div>
 
-                    <div className="space-y-1.5 pt-0.5">
-                      <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-700 bg-orange-50/60 p-2 rounded-xl border border-orange-100/80">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
-                        <span>บรรยากาศเป็นกันเอง ปลอดภัย สบายใจแม้เป็น Introvert</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-700 bg-orange-50/60 p-2 rounded-xl border border-orange-100/80">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
-                        <span>ยิ่งออกไปใช้ชีวิต ยิ่งสะสมแต้มแลกรับของรางวัลพิเศษ</span>
-                      </div>
+                  {/* Borderless Micro Features Stream */}
+                  <div className="space-y-2 pt-1 text-slate-600">
+                    <div className="flex items-center gap-2 text-[12px] font-medium">
+                      <ShieldCheck className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
+                      <span>บรรยากาศเป็นกันเอง ปลอดภัย สบายใจแม้เป็น Introvert</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[12px] font-medium">
+                      <Gift className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
+                      <span>ยิ่งออกไปใช้ชีวิต ยิ่งสะสมแต้มแลกรับของรางวัลพิเศษ</span>
                     </div>
                   </div>
+
                 </div>
 
-                <div className="p-5 pt-0">
+                {/* Editorial Action Link */}
+                <div className="pt-3 border-t border-slate-100">
                   <Link
                     href="/community"
-                    className="w-full bg-[#F26430] hover:bg-[#D95322] text-white py-2.5 px-3 rounded-xl font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 group/btn cursor-pointer active:scale-[0.98]"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-[#F26430] hover:text-[#D95322] group/btn cursor-pointer transition-all hover:gap-2.5"
                   >
                     <span>หาตี้และเพื่อนร่วมทาง</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
+                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
                   </Link>
                 </div>
               </div>
 
             </div>
 
+            {/* Stage Horizon Guarantee Bar */}
+            <div className="mt-8 pt-6 border-t border-slate-200/70 relative z-10">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center divide-y sm:divide-y-0 sm:divide-x divide-slate-200/60">
+                <div className="flex items-center justify-center gap-2 py-1 text-xs font-semibold text-slate-600">
+                  <CheckCircle2 className="w-4 h-4 text-[#4A7C59]" />
+                  <span>คัดสรรคุณภาพ 77 จังหวัดทั่วไทย</span>
+                </div>
+                <div className="flex items-center justify-center gap-2 py-1 text-xs font-semibold text-slate-600">
+                  <CheckCircle2 className="w-4 h-4 text-[#2B527A]" />
+                  <span>อัปเดตงานสดใหม่ ไร้ข้อมูลซ้ำซ้อน</span>
+                </div>
+                <div className="flex items-center justify-center gap-2 py-1 text-xs font-semibold text-slate-600">
+                  <CheckCircle2 className="w-4 h-4 text-[#F26430]" />
+                  <span>เซฟสเปซ อบอุ่น สบายใจ ปลอดภัย 100%</span>
+                </div>
+              </div>
+            </div>
+
           </div>
+
         </section>
 
         {/* =========================================================================
-            SECTION 4: ALL-IN-ONE LIFESTYLE ADVANTAGES (Spots + Activities + Community)
+            SECTION 4: GAMIFICATION & LIFESTYLE PERKS (Connected Value Progression Flow)
            ========================================================================= */}
-        <section className="bg-white py-10 sm:py-14 border-b border-slate-100">
-          <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-7">
+        <section className="bg-[#FAF9F6] py-12 sm:py-16 border-y border-slate-200/80">
+          <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             
-            <div className="max-w-3xl mx-auto text-center space-y-2">
+            <div className="max-w-3xl mx-auto text-center space-y-2.5">
               <h2 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-slate-900">
-                "หาสถานที่โดนใจ สร้างกิจกรรมสุดมันส์ พบเพื่อนใหม่คอเดียวกัน"
+                พิชิตเป้าหมายสนุกๆ สะสมแต้ม HubXP แลกรับสิทธิพิเศษเพื่อคุณ
               </h2>
-              <p className="text-xs sm:text-sm text-slate-600 max-w-xl mx-auto">
-                ไม่ว่าจะอยากเที่ยวคนเดียวชิลๆ ชวนกลุ่มเพื่อนสนิท หรือเปิดตี้หากลุ่มเพื่อนใหม่ Chill & Connect Hub พร้อมตอบโจทย์ทุกไลฟ์สไตล์อย่างลงตัว:
+              <p className="text-xs sm:text-sm text-slate-600 max-w-2xl mx-auto leading-relaxed">
+                เปลี่ยนทุกวันหยุดและการออกไปเปิดประสบการณ์ใหม่ให้มีความหมายยิ่งขึ้น ด้วยภารกิจไลฟ์สไตล์สนุกๆ สะสมเหรียญตรา และแลกรับของรางวัลพิเศษ
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-5xl mx-auto">
-              {[
-                { 
-                  title: 'ค้นพบสถานที่ & จุดฮีลใจ 77 จังหวัด', 
-                  desc: 'ค้นพบพิกัดลับ คาเฟ่ Slow Bar สวนสีเขียว และอาร์ตสเปซทั่วไทย ปักหมุดที่เที่ยวใกล้ตัว พร้อมข้อมูลอัปเดตจริงตรงปก',
-                  icon: <MapPin className="w-5 h-5 text-[#4A7C59]" />,
-                  bg: 'bg-emerald-50 border-emerald-100',
-                  hover: 'hover:border-emerald-300',
-                  tag: 'Where to go',
-                  tagColor: 'text-[#4A7C59] bg-emerald-50 border-emerald-200/60'
-                },
-                { 
-                  title: 'สร้าง & จอยกิจกรรมหลากหลายสุดสนุก', 
-                  desc: 'รวมทุกเทศกาล คอนเสิร์ต งานแฟร์ และเวิร์กช็อปน่าลอง คัดเฉพาะงานคุณภาพ อัปเดตสดใหม่ ให้คุณเลือกจอยได้ไม่รู้จบ',
-                  icon: <Sparkles className="w-5 h-5 text-[#2B527A]" />,
-                  bg: 'bg-blue-50 border-blue-100',
-                  hover: 'hover:border-blue-300',
-                  tag: 'What to do',
-                  tagColor: 'text-[#2B527A] bg-blue-50 border-blue-200/60'
-                },
-                { 
-                  title: 'พบเพื่อนใหม่ & คอมมูนิตี้ที่อบอุ่น', 
-                  desc: 'เจอเพื่อนใหม่คอเดียวกันในพื้นที่สบายใจ ไม่ว่าจะมาเดี่ยวหรือชวนเพื่อนมา ก็อบอุ่นเป็นกันเอง ไร้ความกดดันแม้เป็น Introvert',
-                  icon: <Users className="w-5 h-5 text-[#F26430]" />,
-                  bg: 'bg-orange-50 border-orange-100',
-                  hover: 'hover:border-orange-300',
-                  tag: 'Who to go with',
-                  tagColor: 'text-[#F26430] bg-orange-50 border-orange-200/60'
-                },
-              ].map((item, idx) => (
-                <div key={idx} className={`bg-white p-5 rounded-2xl border border-slate-200/90 ${item.hover} shadow-xs hover:shadow-md transition-all space-y-2.5 relative overflow-hidden group`}>
-                  <div className="flex items-center justify-between">
-                    <div className={`w-9 h-9 rounded-xl ${item.bg} flex items-center justify-center border group-hover:scale-105 transition-transform`}>
-                      {item.icon}
+            {/* Connected Progression Stage Canvas */}
+            <div className="bg-white rounded-3xl sm:rounded-[2.5rem] border border-slate-200/80 shadow-[0_4px_30px_-8px_rgba(0,0,0,0.04)] p-6 sm:p-8 lg:p-9 relative overflow-hidden">
+              
+              {/* Soft Ambient Glows */}
+              <div className="absolute top-0 right-0 w-80 h-80 bg-purple-100/30 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-80 h-80 bg-blue-100/30 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+                
+                {/* Step 1: Quests */}
+                <div className="flex flex-col justify-between space-y-4 pt-4 md:pt-0 md:pr-6 group">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="w-9 h-9 rounded-2xl bg-purple-50 text-[#7C3AED] border border-purple-200/80 font-black text-xs flex items-center justify-center shadow-xs group-hover:scale-105 group-hover:bg-[#7C3AED] group-hover:text-white transition-all duration-300">
+                        01
+                      </span>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200/80">
+                        Lifestyle Quests
+                      </span>
                     </div>
-                    <span className={`text-[10px] font-bold ${item.tagColor} px-2 py-0.5 rounded-full border uppercase tracking-wider`}>
-                      {item.tag}
-                    </span>
+                    <div>
+                      <h3 className="text-base font-black text-slate-900 group-hover:text-[#7C3AED] transition-colors">
+                        1. พิชิตภารกิจชาเลนจ์สนุกๆ
+                      </h3>
+                      <p className="text-xs text-slate-600 leading-relaxed mt-1.5 font-normal">
+                        ร่วมสนุกกับเควสต์หลากหลายธีม เช่น วิ่งรับลมเช้า ตะลุยคาเฟ่ลับ หรือเช็คอินงานอาร์ตสเปซ พร้อมรับเหรียญตรา Badges แทนความทรงจำ
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 text-[12px] font-medium text-slate-600 pt-1">
+                      <Target className="w-3.5 h-3.5 text-[#7C3AED] shrink-0" />
+                      <span>มีภารกิจอัปเดตใหม่ทุกสัปดาห์</span>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900">{item.title}</h3>
-                    <p className="text-xs text-slate-600 leading-relaxed mt-1">{item.desc}</p>
+                  <div className="pt-3 border-t border-slate-100">
+                    <Link
+                      href="/challenges"
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-[#7C3AED] hover:text-[#6D28D9] group/btn transition-all hover:gap-2"
+                    >
+                      <span>ดูภารกิจชาเลนจ์</span>
+                      <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
+                    </Link>
                   </div>
                 </div>
-              ))}
+
+                {/* Step 2: HubXP */}
+                <div className="flex flex-col justify-between space-y-4 pt-6 md:pt-0 md:px-6 group">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="w-9 h-9 rounded-2xl bg-blue-50 text-[#2B527A] border border-blue-200/80 font-black text-xs flex items-center justify-center shadow-xs group-hover:scale-105 group-hover:bg-[#2B527A] group-hover:text-white transition-all duration-300">
+                        02
+                      </span>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200/80">
+                        HubXP Points
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="text-base font-black text-slate-900 group-hover:text-[#2B527A] transition-colors">
+                        2. สะสมแต้ม HubXP อัปเลเวล
+                      </h3>
+                      <p className="text-xs text-slate-600 leading-relaxed mt-1.5 font-normal">
+                        ทุกการเช็คอินเข้างาน จอยตี้เพื่อนใหม่ หรือแชร์โมเมนต์ความสุข จะถูกแปลงเป็นคะแนน HubXP เพื่อไต่อันดับและปลดล็อกสถานะสมาชิกพิเศษ
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 text-[12px] font-medium text-slate-600 pt-1">
+                      <Zap className="w-3.5 h-3.5 text-[#2B527A] shrink-0" />
+                      <span>รับแต้มอัตโนมัติเมื่อร่วมกิจกรรมจริง</span>
+                    </div>
+                  </div>
+                  <div className="pt-3 border-t border-slate-100">
+                    <Link
+                      href="/myhub"
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-[#2B527A] hover:text-[#1F3D5C] group/btn transition-all hover:gap-2"
+                    >
+                      <span>เช็คคะแนนและระดับสมาชิก</span>
+                      <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Step 3: Perks */}
+                <div className="flex flex-col justify-between space-y-4 pt-6 md:pt-0 md:pl-6 group">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="w-9 h-9 rounded-2xl bg-orange-50 text-[#F26430] border border-orange-200/80 font-black text-xs flex items-center justify-center shadow-xs group-hover:scale-105 group-hover:bg-[#F26430] group-hover:text-white transition-all duration-300">
+                        03
+                      </span>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-[#C2410C] bg-orange-50 px-2.5 py-0.5 rounded-full border border-orange-200/80">
+                        Lifestyle Perks
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="text-base font-black text-slate-900 group-hover:text-[#F26430] transition-colors">
+                        3. แลกรับสิทธิ์พิเศษ & ส่วนลด
+                      </h3>
+                      <p className="text-xs text-slate-600 leading-relaxed mt-1.5 font-normal">
+                        นำแต้ม HubXP ที่สะสมได้ไปแลกรับเวาเชอร์ส่วนลดคาเฟ่ สิทธิ์เข้างานนิทรรศการรอบพิเศษ และของรางวัลจากพาร์ทเนอร์ชั้นนำมากมาย
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 text-[12px] font-medium text-slate-600 pt-1">
+                      <Gift className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
+                      <span>แลกใช้งานได้จริงผ่านแอป MyHub</span>
+                    </div>
+                  </div>
+                  <div className="pt-3 border-t border-slate-100">
+                    <Link
+                      href="/myhub"
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-[#F26430] hover:text-[#D95322] group/btn transition-all hover:gap-2"
+                    >
+                      <span>สำรวจรางวัลไลฟ์สไตล์</span>
+                      <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
+                    </Link>
+                  </div>
+                </div>
+
+              </div>
             </div>
 
           </div>
         </section>
 
         {/* =========================================================================
-            SECTION 5: CALL TO ACTION (CTA BANNER)
+            SECTION 5: CALL TO ACTION (The Luminous Finale Stage - Option 1)
            ========================================================================= */}
-        <section className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-          <div className="bg-gradient-to-r from-[#4A7C59] via-[#3B6347] to-[#2B527A] rounded-3xl p-7 sm:p-10 text-white text-center space-y-4 shadow-md relative overflow-hidden">
+        <section className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
+          <div className="bg-gradient-to-b from-white via-slate-50/50 to-white rounded-3xl sm:rounded-[2.5rem] border border-slate-200/80 p-8 sm:p-14 text-center space-y-6 shadow-[0_8px_35px_-10px_rgba(0,0,0,0.04)] relative overflow-hidden">
             
-            <div className="space-y-1.5 relative z-10 max-w-2xl mx-auto">
-              <h2 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight">
+            {/* Soft Ambient Aurora Corner Glows */}
+            <div className="absolute -top-20 -left-20 w-72 h-72 bg-emerald-100/40 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-20 -right-20 w-72 h-72 bg-orange-100/35 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-blue-100/25 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="space-y-3 relative z-10 max-w-4xl mx-auto">
+              
+              {/* Trust Micro-Pills */}
+              <div className="flex items-center justify-center gap-2 flex-wrap pb-1">
+                <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-3 py-1 rounded-full text-xs font-semibold shadow-2xs">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#4A7C59]" />
+                  <span>Safe Space 100%</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 bg-orange-50 text-orange-800 border border-orange-200/80 px-3 py-1 rounded-full text-xs font-semibold shadow-2xs">
+                  <Sparkles className="w-3.5 h-3.5 text-[#F26430]" />
+                  <span>สมัครฟรี ไม่มีค่าใช้จ่าย</span>
+                </span>
+              </div>
+
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-slate-900 sm:whitespace-nowrap">
                 พร้อมเริ่มออกไปค้นพบความสุขใหม่ๆ หรือยัง?
               </h2>
-              <p className="text-xs sm:text-sm text-emerald-100 font-normal leading-relaxed">
+              <p className="text-xs sm:text-sm md:text-base text-slate-600 font-normal leading-relaxed max-w-2xl mx-auto">
                 เลือกจุดฮีลใจใกล้ตัว ค้นหากิจกรรมที่คุณชอบ หรือชวนเพื่อนคอเดียวกันไปเปิดประสบการณ์ใหม่ แล้วปล่อยให้พลังบวกเกิดขึ้นเอง!
               </p>
             </div>
@@ -634,10 +563,10 @@ export default function AboutPage() {
             <div className="pt-2 relative z-10 flex justify-center">
               <Link
                 href="/"
-                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-8 py-3 rounded-full font-black text-sm sm:text-base transition-all shadow-lg shadow-blue-600/30 hover:shadow-xl hover:scale-102 active:scale-98 flex items-center gap-2.5 cursor-pointer group"
+                className="bg-slate-900 hover:bg-slate-800 text-white px-8 py-3.5 rounded-full font-black text-sm sm:text-base transition-all shadow-lg hover:shadow-xl hover:scale-102 active:scale-98 flex items-center gap-2.5 cursor-pointer group"
               >
                 <span>เริ่มความสนุกกับ Chill & Connect Hub กันเลย</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform" />
               </Link>
             </div>
 
