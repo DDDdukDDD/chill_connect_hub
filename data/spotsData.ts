@@ -1573,7 +1573,7 @@ export function getSpotById(id: string): LifestyleSpotItem | undefined {
   return MOCK_SPOTS.find((s) => s.id === id || encodeURIComponent(s.id) === id);
 }
 
-function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+export function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   if (!lat1 || !lon1 || !lat2 || !lon2) return 999999;
   const R = 6371; // Earth radius in km
   const dLat = (lat2 - lat1) * (Math.PI / 180);
