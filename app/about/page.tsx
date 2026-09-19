@@ -66,7 +66,7 @@ export default function AboutPage() {
       />
 
       {/* Main Content Body */}
-      <main className="flex-1">
+      <main className="flex-1 pb-28 sm:pb-12">
         
         {/* =========================================================================
             SECTION 1: HERO STORY BANNER (Balanced & Punchy)

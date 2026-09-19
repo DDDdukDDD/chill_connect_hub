@@ -26,6 +26,7 @@ import { useAuth } from '@/lib/useAuth';
 import { MOCK_EVENTS, EventItem } from '@/data/mockData';
 import { isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp } from '@/lib/dateUtils';
 import { FairCategoryRail, NATIONWIDE_FAIR_CATEGORIES } from '@/components/FairCategoryRail';
+import { TopVenuesRail } from '@/components/TopVenuesRail';
 import { ALL_THAI_PROVINCES } from '@/data/spotsData';
 
 import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
@@ -175,7 +176,17 @@ function FairsPageContent() {
         const vLower = selectedVenue.toLowerCase();
         const loc = (ev.location || '').toLowerCase();
         const vTag = (ev.venueTag || '').toLowerCase();
-        if (!loc.includes(vLower) && !vTag.includes(vLower)) return false;
+        const title = (ev.title || '').toLowerCase();
+        const text = `${vTag} ${loc} ${title}`;
+
+        if (vLower === 'qsncc' && !text.includes('สิริกิติ์') && !text.includes('qsncc')) return false;
+        else if (vLower === 'bitec' && !text.includes('ไบเทค') && !text.includes('bitec')) return false;
+        else if (vLower === 'impact' && !text.includes('อิมแพ็ค') && !text.includes('impact') && !text.includes('เมืองทอง')) return false;
+        else if (vLower === 'paragon' && !text.includes('paragon') && !text.includes('พารากอน') && !text.includes('iconsiam') && !text.includes('ไอคอนสยาม') && !text.includes('สยาม')) return false;
+        else if (vLower === 'bacc' && !text.includes('bacc') && !text.includes('หอศิลป') && !text.includes('เจริญกรุง') && !text.includes('ปทุมวัน')) return false;
+        else if (vLower === 'park' && !text.includes('สวน') && !text.includes('park') && !text.includes('สนามหลวง')) return false;
+        else if (vLower === 'regional' && !text.includes('kice') && !text.includes('ขอนแก่น') && !text.includes('cmecc') && !text.includes('เชียงใหม่') && !text.includes('สงขลา') && !text.includes('ภูเก็ต')) return false;
+        else if (!['qsncc', 'bitec', 'impact', 'paragon', 'bacc', 'park', 'regional'].includes(vLower) && !loc.includes(vLower) && !vTag.includes(vLower)) return false;
       }
       if (sortBy === 'favorites' && !favorites.includes(ev.id)) return false;
       if (priceFilter === 'free' && (!ev.price || !ev.price.includes('ฟรี'))) return false;
@@ -260,7 +271,7 @@ function FairsPageContent() {
         }}
       />
 
-      <main className="flex-1 max-w-7xl 2xl:max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <main className="flex-1 max-w-7xl 2xl:max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-28 sm:pb-12 space-y-6">
         
         {/* Header Bar with Breadcrumb */}
         <div className="space-y-3">
@@ -301,6 +312,16 @@ function FairsPageContent() {
             </button>
           </div>
         </div>
+
+        {/* Top Venues Rail (Major Convention Centres & Hubs) */}
+        <TopVenuesRail
+          selectedVenue={selectedVenue === 'all' ? null : selectedVenue}
+          onSelectVenue={(v) => {
+            setSelectedVenue(v || 'all');
+            setCurrentPage(1);
+          }}
+          eventsList={eventsList}
+        />
 
         {/* Dynamic Category Rail (Nationwide Fairs) */}
         <FairCategoryRail

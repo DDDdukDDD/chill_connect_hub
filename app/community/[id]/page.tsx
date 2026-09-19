@@ -438,7 +438,7 @@ export default function CommunityDetailPage() {
       />
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 pt-1.5 pb-5 sm:pt-2 sm:pb-6 space-y-3 sm:space-y-4">
+      <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 pt-1.5 pb-28 sm:pt-2 sm:pb-12 space-y-3 sm:space-y-4">
         
         {/* =========================================================================
             TOP BREADCRUMBS & ACTION BAR
@@ -446,19 +446,19 @@ export default function CommunityDetailPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1.5 border-b border-slate-100">
           
           {/* Left: Clean Breadcrumbs */}
-          <nav className="text-xs text-slate-500 font-medium truncate flex items-center gap-1.5">
-            <Link href="/" className="hover:text-slate-900 transition-colors font-semibold py-2 px-1">หน้าแรก</Link>
-            <span className="py-2">/</span>
+          <nav className="text-xs text-slate-500 font-medium overflow-x-auto whitespace-nowrap scrollbar-none flex items-center gap-1.5 py-1 min-w-0">
+            <Link href="/" className="hover:text-slate-900 transition-colors font-semibold py-1 px-1">หน้าแรก</Link>
+            <span>/</span>
             <Link
               href="/community"
-              className="hover:text-[#F26430] transition-colors py-2 px-1 font-semibold text-slate-800"
+              className="hover:text-[#F26430] transition-colors py-1 px-1 font-semibold text-slate-800"
             >
               กิจกรรมคอมมูนิตี้
             </Link>
-            <span className="py-2">/</span>
-            <span className="text-slate-700 font-semibold py-2 px-1">{cleanText(catStyle.label)}</span>
-            <span className="py-2">/</span>
-            <span className="text-slate-900 font-bold truncate py-2 px-1">{cleanText(eventData.title)}</span>
+            <span>/</span>
+            <span className="text-slate-700 font-semibold py-1 px-1">{cleanText(catStyle.label)}</span>
+            <span>/</span>
+            <span className="text-slate-900 font-bold truncate max-w-[180px] sm:max-w-[280px] py-1 px-1">{cleanText(eventData.title)}</span>
           </nav>
 
           {/* Right: Favorite, Share & Report Buttons */}
@@ -466,14 +466,15 @@ export default function CommunityDetailPage() {
             <button
               type="button"
               onClick={() => toggleFavorite(eventData.id)}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-2xs border cursor-pointer active:scale-95 ${
+              className={`inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-2xs border cursor-pointer active:scale-95 ${
                 isFav
                   ? 'bg-orange-50 text-[#F26430] border-orange-200'
                   : 'bg-white text-slate-700 border-slate-200 hover:bg-orange-50 hover:text-[#F26430]'
               }`}
             >
               <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-[#F26430] text-[#F26430]' : 'text-slate-500'}`} />
-              <span>{isFav ? 'บันทึกใน MyHub แล้ว' : isEnded ? 'เพิ่มเข้าคลังเพื่อติดตามรอบถัดไป' : 'บันทึกกิจกรรม'}</span>
+              <span className="hidden sm:inline">{isFav ? 'บันทึกใน MyHub แล้ว' : isEnded ? 'ติดตามรอบถัดไป' : 'บันทึกกิจกรรม'}</span>
+              <span className="sm:hidden">{isFav ? 'บันทึกแล้ว' : isEnded ? 'ติดตาม' : 'บันทึก'}</span>
             </button>
 
             <button
@@ -641,7 +642,7 @@ export default function CommunityDetailPage() {
                 )}
               </div>
 
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight break-words">
                 {cleanText(eventData.title)}
               </h1>
 
@@ -1355,7 +1356,7 @@ export default function CommunityDetailPage() {
           onClick={() => setIsConfirmJoinModalOpen(false)}
         >
           <div
-            className="bg-white rounded-3xl p-6 sm:p-7 max-w-lg sm:max-w-xl w-full shadow-2xl border border-slate-200 text-left space-y-5 animate-scale-up relative overflow-hidden"
+            className="bg-white rounded-3xl p-5 sm:p-7 max-w-lg sm:max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200 text-left space-y-5 animate-scale-up relative"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Top Bar: Category Pill & Close Button */}
@@ -1456,7 +1457,7 @@ export default function CommunityDetailPage() {
                 onClick={handleExecuteJoin}
                 className="w-full py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold shadow-2xs hover:shadow-md transition-all active:scale-98 cursor-pointer flex items-center justify-center gap-2"
               >
-                <span>ยืนยันและรับตั๋ว</span>
+                <span>ยืนยันการเข้าร่วม</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -1473,9 +1474,11 @@ export default function CommunityDetailPage() {
             ticketId={`TICK-${eventData.id}`}
             isCheckedIn={isCheckedIn}
             onCheckIn={() => {
-              setIsCheckedIn(true);
-              showToast('เช็คอินหน้างานเรียบร้อย ยินดีต้อนรับค่ะ! 🎉');
+              const nextCheckedIn = !isCheckedIn;
+              setIsCheckedIn(nextCheckedIn);
+              showToast(nextCheckedIn ? 'เช็คอินหน้างานเรียบร้อย ยินดีต้อนรับค่ะ! 🎉' : 'ยกเลิกการจำลองเช็คอินเรียบร้อย');
             }}
+            onOpenChat={() => setIsChatOpen(true)}
           />
           <GroupChatModal isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} event={eventData} />
           <CancelTicketModal

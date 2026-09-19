@@ -21,7 +21,7 @@ export default function SafetyPage() {
         isAuthReady={isAuthReady}
       />
 
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-8">
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 pt-8 pb-28 sm:py-12 space-y-8">
         
         {/* Back Link */}
         <div>

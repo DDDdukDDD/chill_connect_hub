@@ -62,7 +62,7 @@ export const CancelTicketModal: React.FC<CancelTicketModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-[480px] bg-white rounded-[28px] sm:rounded-[32px] shadow-2xl overflow-hidden border border-slate-200/90 animate-scale-up p-6 sm:p-7 space-y-5 text-[#1E293B]"
+        className="relative w-full max-w-[480px] max-h-[90vh] overflow-y-auto bg-white rounded-[28px] sm:rounded-[32px] shadow-2xl border border-slate-200/90 animate-scale-up p-6 sm:p-7 space-y-5 text-[#1E293B]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}

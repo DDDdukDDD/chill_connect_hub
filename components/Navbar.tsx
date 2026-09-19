@@ -21,7 +21,6 @@ import {
   Heart,
   Bot,
   Zap,
-  LayoutTemplate,
   Gift
 } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
@@ -55,15 +54,25 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close profile dropdown when clicking outside
+  // Close profile dropdown or drawer when clicking outside or pressing Escape
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsProfileDropdownOpen(false);
       }
     };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsProfileDropdownOpen(false);
+        setIsMobileMenuOpen(false);
+      }
+    };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   const navItems = [
@@ -95,29 +104,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               </p>
             </div>
           </Link>
-
-          {/* Center: Desktop Dynamic Pill Navigation Links (Floating Glass Pill Strip) */}
-          <nav className="hidden lg:flex items-center bg-slate-100/80 backdrop-blur-md p-1 rounded-2xl border border-slate-200/60 shadow-2xs">
-            {navItems.map((item) => {
-              const isActive = activeTab === item.id;
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`text-xs font-bold transition-all duration-200 px-4 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer select-none relative ${
-                    isActive
-                      ? 'bg-white text-[#4A7C59] shadow-xs ring-1 ring-slate-200/50'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
-                  }`}
-                >
-                  <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#4A7C59]' : 'text-slate-400'}`} />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
 
           {/* Right: Actions */}
           <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
@@ -212,44 +198,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <span>ของรางวัล & สิทธิพิเศษ</span>
                       </Link>
 
-                      {/* Home Layout Mode Switcher */}
-                      <div className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-2 mt-1">
-                        <div className="flex items-center gap-2">
-                          <LayoutTemplate className="w-3.5 h-3.5 text-slate-500" />
-                          <span className="text-[11px] text-slate-600 font-bold">มุมมองหน้าแรก</span>
-                        </div>
-                        <div className="inline-flex items-center p-0.5 rounded-lg bg-slate-200/70 text-[10px] font-bold">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (typeof window !== 'undefined') {
-                                localStorage.setItem('chill_hero_version', 'editorial');
-                                const url = new URL(window.location.href);
-                                url.searchParams.set('hero', 'editorial');
-                                window.location.href = url.toString();
-                              }
-                            }}
-                            className="px-2 py-0.5 rounded-md bg-white text-[#4A7C59] shadow-2xs cursor-pointer font-extrabold"
-                          >
-                            Compact
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (typeof window !== 'undefined') {
-                                localStorage.setItem('chill_hero_version', 'classic');
-                                const url = new URL(window.location.href);
-                                url.searchParams.set('hero', 'classic');
-                                window.location.href = url.toString();
-                              }
-                            }}
-                            className="px-2 py-0.5 rounded-md text-slate-600 hover:text-slate-900 cursor-pointer"
-                          >
-                            Classic
-                          </button>
-                        </div>
-                      </div>
-
                       {/* Role Switcher (Test / Preview Environment) */}
                       <div className="px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5 mt-1">
                         <div className="flex items-center justify-between text-[11px]">
@@ -308,23 +256,26 @@ export const Navbar: React.FC<NavbarProps> = ({
             ) : (
               <button 
                 onClick={() => onOpenLogin ? onOpenLogin() : setIsLoggedIn?.(true)}
-                className="hidden lg:flex rounded-full bg-[#1E293B] hover:bg-[#0F172A] text-white px-5 py-2 text-xs font-semibold transition-all shadow-sm items-center gap-2 active:scale-95 cursor-pointer"
+                className="rounded-full bg-[#1E293B] hover:bg-[#0F172A] text-white px-3.5 sm:px-5 py-2 text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95 cursor-pointer shrink-0"
                 title="คลิกเพื่อเข้าสู่ระบบ / สมัครสมาชิก"
               >
-                <LogIn className="w-4 h-4 text-emerald-400" />
+                <LogIn className="w-3.5 h-3.5 text-emerald-400" />
                 <span>เข้าสู่ระบบ</span>
               </button>
             )}
 
-            {/* Mobile / iPad: Hamburger Menu Button (ปุ่ม 3 ขีด ☰) */}
+            {/* Universal Luxury Hamburger / Menu Button (Active on Mobile, iPad, and Desktop) */}
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(true)}
-              className="lg:hidden w-10 h-10 rounded-2xl bg-white border border-[#E8E2D8] text-[#1E293B] flex items-center justify-center shadow-2xs hover:bg-slate-50 active:scale-95 cursor-pointer"
+              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-200/90 shadow-2xs transition-all duration-200 active:scale-95 cursor-pointer select-none group shrink-0"
               title="เปิดเมนูนำทาง"
               aria-label="Toggle Navigation Menu"
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-4.5 h-4.5 text-slate-700 group-hover:text-slate-900 transition-colors" />
+              <span className="hidden sm:inline text-xs font-bold text-slate-700 group-hover:text-slate-900">
+                เมนู
+              </span>
             </button>
 
           </div>
@@ -332,9 +283,9 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </header>
 
-      {/* Slide-out Mobile & Tablet Hamburger Drawer */}
+      {/* Slide-out Universal Luxury Drawer (Active across all screen sizes: Mobile, Tablet & Desktop) */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden flex justify-end">
+        <div className="fixed inset-0 z-50 flex justify-end">
           {/* Backdrop Blur Overlay */}
           <div 
             className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity animate-fade-in"
@@ -342,7 +293,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           />
 
           {/* Drawer Content Panel */}
-          <div className="relative w-[300px] sm:w-[340px] bg-white h-full shadow-2xl flex flex-col justify-between p-6 z-10 animate-slide-left border-l border-slate-200 overflow-y-auto">
+          <div className="relative w-[300px] sm:w-[340px] md:w-[360px] bg-white h-full shadow-2xl flex flex-col justify-between p-6 z-10 animate-slide-left border-l border-slate-200 overflow-y-auto">
             
             {/* Top Drawer Header */}
             <div className="space-y-6">
@@ -362,9 +313,9 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {/* User Status Card */}
               {isLoggedIn ? (
-                <div className="bg-white rounded-2xl p-4 border border-[#E8E2D8] shadow-2xs space-y-3">
+                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-full bg-[#EBF3ED] border-2 border-[#4A7C59] overflow-hidden shrink-0">
+                    <div className="w-11 h-11 rounded-full bg-slate-100 border-2 border-slate-700 overflow-hidden shrink-0">
                       <img 
                         src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" 
                         alt={userName}
@@ -374,39 +325,22 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1">
                         <p className="text-sm font-extrabold text-[#1E293B] truncate" title={userName}>{userName}</p>
-                        <ShieldCheck className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
+                        <ShieldCheck className="w-3.5 h-3.5 text-slate-700 shrink-0" />
                       </div>
-                      <p className="text-xs text-[#4A7C59] font-semibold">● สมาชิก Chill & Connect</p>
+                      <p className="text-xs text-slate-500 font-medium">● สมาชิก Chill & Connect</p>
                     </div>
                   </div>
 
-                  {/* Profile & Logout Action Buttons inside User Card */}
-                  <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                  {/* Profile Action Button inside User Card (Clean single full-width button) */}
+                  <div className="pt-2 border-t border-slate-100">
                     <Link
                       href="/profile?id=me"
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex-1 text-center py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
+                      className="w-full text-center py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs"
                     >
-                      <User className="w-3.5 h-3.5 text-[#4A7C59]" />
-                      <span>ดูโปรไฟล์</span>
+                      <User className="w-3.5 h-3.5 text-slate-300" />
+                      <span>ดูโปรไฟล์ส่วนตัว</span>
                     </Link>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsMobileMenuOpen(false);
-                        if (onOpenLogout) {
-                          onOpenLogout();
-                        } else if (setIsLoggedIn) {
-                          setIsLoggedIn(false);
-                          if (typeof window !== 'undefined') localStorage.setItem('isLoggedIn', 'false');
-                        }
-                      }}
-                      className="py-2 px-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer border border-slate-200"
-                      title="ออกจากระบบ"
-                    >
-                      <LogOut className="w-3.5 h-3.5 text-slate-500" />
-                      <span>ออก</span>
-                    </button>
                   </div>
                 </div>
               ) : (
@@ -427,52 +361,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
               )}
 
-              {/* Home Layout Mode Switcher in Drawer */}
-              <div className="p-3 bg-slate-100/80 rounded-2xl border border-slate-200/80 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <LayoutTemplate className="w-4 h-4 text-[#4A7C59]" />
-                  <span className="text-xs font-bold text-slate-700">มุมมองหน้าแรก</span>
-                </div>
-                <div className="inline-flex items-center p-0.5 rounded-xl bg-slate-200/70 text-xs font-bold">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (typeof window !== 'undefined') {
-                        localStorage.setItem('chill_hero_version', 'editorial');
-                        const url = new URL(window.location.href);
-                        url.searchParams.set('hero', 'editorial');
-                        window.location.href = url.toString();
-                      }
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-white text-[#4A7C59] shadow-2xs font-extrabold"
-                  >
-                    Compact
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (typeof window !== 'undefined') {
-                        localStorage.setItem('chill_hero_version', 'classic');
-                        const url = new URL(window.location.href);
-                        url.searchParams.set('hero', 'classic');
-                        window.location.href = url.toString();
-                      }
-                    }}
-                    className="px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900"
-                  >
-                    Classic
-                  </button>
-                </div>
-              </div>
-
               {/* Role Switcher in Mobile Drawer */}
               <div className="p-3 bg-slate-100/80 rounded-2xl border border-slate-200/80 space-y-2">
                 <div className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-[#4A7C59]" />
+                    <ShieldCheck className="w-4 h-4 text-slate-700" />
                     <span className="font-bold text-slate-700">สลับบทบาท (Role)</span>
                   </div>
-                  <span className="font-extrabold text-[#4A7C59] bg-white px-2 py-0.5 rounded-lg border border-slate-200 text-[11px]">
+                  <span className="font-extrabold text-slate-800 bg-white px-2 py-0.5 rounded-lg border border-slate-200 text-[11px]">
                     {userProfile.role}
                   </span>
                 </div>
@@ -499,7 +395,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {/* Navigation Links */}
               <div className="space-y-1">
-                <p className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider px-2 mb-2">
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-2 mb-2">
                   การนำทาง
                 </p>
                 {navItems.map((item) => {
@@ -515,8 +411,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                       }}
                       className={`flex items-center justify-between p-3 rounded-2xl text-sm font-semibold transition-all ${
                         isActive
-                          ? 'bg-[#4A7C59] text-white shadow-xs'
-                          : 'text-[#334155] hover:bg-white'
+                          ? 'bg-slate-900 text-white shadow-xs font-bold'
+                          : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/90'
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -538,7 +434,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       setIsMobileMenuOpen(false);
                       onOpenCreateEvent();
                     }}
-                    className="w-full bg-[#4A7C59] hover:bg-[#3B6347] text-white py-3 rounded-2xl text-sm font-bold shadow-md flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"
+                    className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-2xl text-sm font-bold shadow-md flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"
                   >
                     <PlusCircle className="w-4 h-4" />
                     <span>สร้างกิจกรรมใหม่</span>
@@ -549,7 +445,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Bottom Drawer Logout CTA */}
             {isLoggedIn && (
-              <div className="pt-4 mt-2 border-t border-[#E8E2D8]">
+              <div className="pt-4 mt-2 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={() => {
@@ -561,7 +457,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       if (typeof window !== 'undefined') localStorage.setItem('isLoggedIn', 'false');
                     }
                   }}
-                  className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 py-3 rounded-2xl text-xs font-extrabold flex items-center justify-center gap-2 transition-colors shadow-2xs cursor-pointer active:scale-95"
+                  className="w-full bg-slate-50 hover:bg-rose-50 hover:text-rose-700 text-slate-700 border border-slate-200 hover:border-rose-200 py-3 rounded-2xl text-xs font-extrabold flex items-center justify-center gap-2 transition-colors shadow-2xs cursor-pointer active:scale-95"
                 >
                   <LogOut className="w-4 h-4 text-slate-500" />
                   <span>ออกจากระบบ (Logout)</span>

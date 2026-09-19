@@ -289,7 +289,7 @@ export default function ChallengesDiscoveryPage() {
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] mx-auto px-3.5 sm:px-6 lg:px-8 py-2.5 sm:py-4 space-y-3 sm:space-y-4 w-full">
+      <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] mx-auto px-3.5 sm:px-6 lg:px-8 pt-2.5 pb-28 sm:pt-4 sm:pb-12 space-y-3 sm:space-y-4 w-full">
         
         {/* Header Bar with Breadcrumb */}
         <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">

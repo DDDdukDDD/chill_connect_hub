@@ -45,8 +45,6 @@ import {
 } from '@/data/masterHub';
 import Link from 'next/link';
 
-export type HeroVersion = 'editorial' | 'classic';
-
 export interface HeroSlideItem {
   id: string;
   pillar: 'spots' | 'community' | 'fairs' | 'challenges';
@@ -108,8 +106,6 @@ interface HeroSectionProps {
   setSelectedProvince?: (province: string) => void;
   onSearchSubmit?: () => void;
   onOpenSurpriseModal?: (mode?: 'all' | 'spots' | 'community' | 'fairs') => void;
-  initialVersion?: HeroVersion;
-  onVersionChange?: (version: HeroVersion) => void;
   onJoinQuest?: (questTitle: string) => void;
   joinedQuestTitles?: string[];
   onCancelQuest?: (questTitle: string) => void;
@@ -163,8 +159,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   setSelectedProvince,
   onSearchSubmit,
   onOpenSurpriseModal,
-  initialVersion = 'editorial',
-  onVersionChange,
   onJoinQuest,
   joinedQuestTitles = [],
   onCancelQuest,
@@ -177,7 +171,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   onClearCustomDate,
 }) => {
   const { isLoggedIn } = useAuth();
-  const [version, setVersion] = useState<HeroVersion>(initialVersion);
   const [isFocused, setIsFocused] = useState(false);
   const [selectedQuestForModal, setSelectedQuestForModal] = useState<ChallengeQuest | null>(null);
   const [activeModeTab, setActiveModeTab] = useState<'all' | 'spots' | 'community' | 'fairs'>('all');
@@ -193,23 +186,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   const handleProvinceChange = (prov: string) => {
     if (setSelectedProvince) setSelectedProvince(prov);
   };
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlHero = urlParams.get('hero');
-      if (urlHero === 'editorial' || urlHero === 'classic') {
-        setVersion(urlHero);
-        if (onVersionChange) onVersionChange(urlHero);
-        return;
-      }
-      const savedVersion = localStorage.getItem('chill_hero_version') as HeroVersion | null;
-      if (savedVersion === 'editorial' || savedVersion === 'classic') {
-        setVersion(savedVersion);
-        if (onVersionChange) onVersionChange(savedVersion);
-      }
-    }
-  }, []);
 
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isHeroHovered, setIsHeroHovered] = useState(false);
@@ -261,17 +237,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
-    }
-  };
-
-  const handleSwitchVersion = (newVersion: HeroVersion) => {
-    setVersion(newVersion);
-    if (onVersionChange) onVersionChange(newVersion);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('chill_hero_version', newVersion);
-      const url = new URL(window.location.href);
-      url.searchParams.set('hero', newVersion);
-      window.history.replaceState({}, '', url.toString());
     }
   };
 
@@ -873,14 +838,13 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     <section className="relative z-30 pt-1 sm:pt-2 pb-1">
       <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 relative space-y-2">
 
-        {version === 'editorial' && (
-          <div 
-            onMouseEnter={() => setIsHeroHovered(true)}
-            onMouseLeave={() => setIsHeroHovered(false)}
-            className="group relative transition-all duration-300"
-          >
-            {/* 1. Immersive Panoramic Lifestyle Carousel Window (Bright Luxury View - Fixed Equal Height) */}
-            <div className="relative rounded-3xl overflow-hidden border border-slate-200/90 shadow-md h-[320px] sm:h-[350px] md:h-[370px] pb-24 sm:pb-28 md:pb-32 pt-6 sm:pt-8 px-4 sm:px-8 flex flex-col justify-start text-center">
+        <div 
+          onMouseEnter={() => setIsHeroHovered(true)}
+          onMouseLeave={() => setIsHeroHovered(false)}
+          className="group relative transition-all duration-300"
+        >
+            {/* 1. Immersive Panoramic Lifestyle Carousel Window (Bright Luxury View - Compact on Mobile, Rich on Desktop) */}
+            <div className="relative rounded-3xl overflow-hidden border border-slate-200/90 shadow-md h-[225px] sm:h-[350px] md:h-[370px] pb-12 sm:pb-28 md:pb-32 pt-4 sm:pt-8 px-3 sm:px-8 flex flex-col justify-start text-center">
               
               {/* Background Photos with Cross-fade */}
               <div className="absolute inset-0 z-0 pointer-events-none">
@@ -908,25 +872,25 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               <button
                 type="button"
                 onClick={goToPrevSlide}
-                className="absolute left-2 sm:left-4 top-1/3 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/30 hover:bg-black/60 text-white/90 hover:text-white backdrop-blur-md flex items-center justify-center transition-all cursor-pointer shadow-md active:scale-90 border border-white/20"
+                className="absolute left-1.5 sm:left-4 top-[38%] -translate-y-1/2 z-20 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-black/30 hover:bg-black/60 text-white/90 hover:text-white backdrop-blur-md flex items-center justify-center transition-all cursor-pointer shadow-md active:scale-90 border border-white/20"
                 aria-label="สไลด์ก่อนหน้า"
               >
-                <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                <ChevronLeft className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
               </button>
 
               <button
                 type="button"
                 onClick={goToNextSlide}
-                className="absolute right-2 sm:right-4 top-1/3 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/30 hover:bg-black/60 text-white/90 hover:text-white backdrop-blur-md flex items-center justify-center transition-all cursor-pointer shadow-md active:scale-90 border border-white/20"
+                className="absolute right-1.5 sm:right-4 top-[38%] -translate-y-1/2 z-20 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-black/30 hover:bg-black/60 text-white/90 hover:text-white backdrop-blur-md flex items-center justify-center transition-all cursor-pointer shadow-md active:scale-90 border border-white/20"
                 aria-label="สไลด์ถัดไป"
               >
-                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                <ChevronRight className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
               </button>
 
               {/* Centerpiece Content */}
-              <div className="relative z-10 text-center space-y-2 sm:space-y-3 max-w-3xl mx-auto w-full">
+              <div className="relative z-10 text-center space-y-1.5 sm:space-y-3 max-w-3xl mx-auto w-full">
                 {/* Headline (Crisp Bold White with Bright Accent) */}
-                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight [text-shadow:_0_2px_14px_rgba(0,0,0,0.85),_0_1px_3px_rgba(0,0,0,0.9)]">
+                <h1 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight [text-shadow:_0_2px_14px_rgba(0,0,0,0.85),_0_1px_3px_rgba(0,0,0,0.9)]">
                   {displayTitleLead}{' '}
                   <span className="text-[#FFD166] inline-block transition-all duration-300">
                     {displayTitleHighlight}
@@ -934,16 +898,18 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 </h1>
 
                 {/* Subtitle */}
-                <p className="text-xs sm:text-sm md:text-base text-white font-medium max-w-xl mx-auto [text-shadow:_0_1px_8px_rgba(0,0,0,0.85)]">
+                <p className="text-[11px] sm:text-sm md:text-base text-white font-medium max-w-xl mx-auto line-clamp-1 sm:line-clamp-none [text-shadow:_0_1px_8px_rgba(0,0,0,0.85)]">
                   {displaySubtitle}
                 </p>
 
                 {/* Micro Trust Bar (Luxury Frosted Glass Capsules - Dynamically synced with Active Tab) */}
-                <div className="flex items-center justify-center gap-2 sm:gap-3 flex-wrap pt-1 text-[11px] sm:text-xs font-bold text-white transition-all duration-300">
-                  {heroTrustBadges.map((badge) => (
+                <div className="flex items-center justify-center gap-1.5 sm:gap-3 flex-wrap pt-0.5 sm:pt-1 text-[10px] sm:text-xs font-bold text-white transition-all duration-300">
+                  {heroTrustBadges.map((badge, idx) => (
                     <span
                       key={`${activeModeTab}-${badge.id}`}
-                      className="inline-flex items-center gap-1.5 bg-black/35 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 shadow-xs animate-fade-in"
+                      className={`items-center gap-1 sm:gap-1.5 bg-black/35 backdrop-blur-md px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full border border-white/20 shadow-xs animate-fade-in ${
+                        idx > 1 ? 'hidden sm:inline-flex' : 'inline-flex'
+                      }`}
                     >
                       {badge.icon}
                       <span>{badge.text}</span>
@@ -953,7 +919,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               </div>
 
               {/* Dots Indicator */}
-              <div className="absolute top-4 right-4 sm:top-5 sm:right-6 z-20 flex items-center gap-1.5">
+              <div className="absolute top-3 right-3 sm:top-5 sm:right-6 z-20 flex items-center gap-1.5">
                 {HERO_SLIDES.map((slide, idx) => (
                   <button
                     key={`dot-${slide.id}`}
@@ -961,7 +927,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     onClick={() => setCurrentSlideIndex(idx)}
                     className={`transition-all duration-300 rounded-full cursor-pointer ${
                       currentSlideIndex === idx
-                        ? 'w-6 h-1.5 bg-white shadow-sm'
+                        ? 'w-5 sm:w-6 h-1.5 bg-white shadow-sm'
                         : 'w-1.5 h-1.5 bg-white/40 hover:bg-white/80'
                     }`}
                     aria-label={`ไปที่สไลด์ ${idx + 1}`}
@@ -970,29 +936,29 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               </div>
             </div>
 
-            {/* 2. Floating All-in-One Lifestyle Search Console (Trip.com Luxury Booking Portal Style) */}
-            <div className="relative -mt-[92px] sm:-mt-[106px] md:-mt-[116px] lg:-mt-[120px] z-50 w-[95%] sm:w-[92%] md:w-[90%] lg:w-full max-w-5xl xl:max-w-6xl 2xl:max-w-[1200px] mx-auto px-2 sm:px-4">
-              <div className="relative z-50 bg-white rounded-3xl p-3.5 sm:p-4 md:p-5 pb-2.5 sm:pb-3 md:pb-3.5 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.18),0_4px_16px_rgba(15,23,42,0.04)] border border-slate-200/90 space-y-3 sm:space-y-3.5">
+            {/* 2. Floating All-in-One Lifestyle Search Console (Trip.com Luxury Booking Portal Style - Compact on Mobile) */}
+            <div className="relative -mt-[52px] sm:-mt-[106px] md:-mt-[116px] lg:-mt-[120px] z-50 w-[96%] sm:w-[92%] md:w-[90%] lg:w-full max-w-5xl xl:max-w-6xl 2xl:max-w-[1200px] mx-auto px-1.5 sm:px-4">
+              <div className="relative z-50 bg-white rounded-2xl sm:rounded-3xl p-2.5 sm:p-4 md:p-5 pb-2 sm:pb-3 md:pb-3.5 shadow-[0_20px_50px_-15px_rgba(15,23,42,0.15),0_4px_16px_rgba(15,23,42,0.04)] border border-slate-200/90 space-y-2.5 sm:space-y-3.5">
                 
                 {/* Trip.com Signature Navigation Tabs: Icon Above Label with Active Underline Bar */}
-                <div className="flex items-end justify-between border-b border-slate-200/90 px-1 sm:px-2 overflow-x-auto overflow-y-hidden no-scrollbar gap-4 sm:gap-8 select-none">
-                  <div className="flex items-end gap-4 sm:gap-8 shrink-0">
+                <div className="flex items-end justify-between border-b border-slate-200/90 px-1 sm:px-2 overflow-x-auto overflow-y-hidden no-scrollbar gap-2.5 sm:gap-8 select-none">
+                  <div className="flex items-end gap-2.5 sm:gap-8 shrink-0">
                     {/* Tab 1: ทั้งหมด */}
                     <button
                       type="button"
                       onClick={() => handleTabClick('all')}
-                      className="flex flex-col items-center gap-1.5 pt-1 pb-3 sm:pb-3.5 relative group cursor-pointer transition-all shrink-0"
+                      className="flex flex-col items-center gap-1 sm:gap-1.5 pt-0.5 sm:pt-1 pb-2 sm:pb-3.5 relative group cursor-pointer transition-all shrink-0"
                     >
-                      <Sparkles className={`w-5 h-5 sm:w-6 sm:h-6 transition-colors ${
+                      <Sparkles className={`w-4.5 h-4.5 sm:w-6 sm:h-6 transition-colors ${
                         activeModeTab === 'all' ? 'text-[#2563EB]' : 'text-slate-400 group-hover:text-slate-600'
                       }`} />
-                      <span className={`text-xs sm:text-sm whitespace-nowrap transition-colors ${
+                      <span className={`text-[11px] sm:text-sm whitespace-nowrap transition-colors ${
                         activeModeTab === 'all' ? 'font-black text-[#2563EB]' : 'font-semibold text-slate-500 group-hover:text-slate-800'
                       }`}>
                         ทั้งหมด
                       </span>
                       {activeModeTab === 'all' && (
-                        <span className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#2563EB] rounded-full" />
+                        <span className="absolute bottom-0 left-0 right-0 h-[2.5px] sm:h-[3px] bg-[#2563EB] rounded-full" />
                       )}
                     </button>
 
@@ -1000,18 +966,18 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     <button
                       type="button"
                       onClick={() => handleTabClick('community')}
-                      className="flex flex-col items-center gap-1.5 pt-1 pb-3 sm:pb-3.5 relative group cursor-pointer transition-all shrink-0"
+                      className="flex flex-col items-center gap-1 sm:gap-1.5 pt-0.5 sm:pt-1 pb-2 sm:pb-3.5 relative group cursor-pointer transition-all shrink-0"
                     >
-                      <Users className={`w-5 h-5 sm:w-6 sm:h-6 transition-colors ${
+                      <Users className={`w-4.5 h-4.5 sm:w-6 sm:h-6 transition-colors ${
                         activeModeTab === 'community' ? 'text-[#F26430]' : 'text-slate-400 group-hover:text-slate-600'
                       }`} />
-                      <span className={`text-xs sm:text-sm whitespace-nowrap transition-colors ${
+                      <span className={`text-[11px] sm:text-sm whitespace-nowrap transition-colors ${
                         activeModeTab === 'community' ? 'font-black text-[#F26430]' : 'font-semibold text-slate-500 group-hover:text-slate-800'
                       }`}>
                         กิจกรรมคอมมูนิตี้
                       </span>
                       {activeModeTab === 'community' && (
-                        <span className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#F26430] rounded-full" />
+                        <span className="absolute bottom-0 left-0 right-0 h-[2.5px] sm:h-[3px] bg-[#F26430] rounded-full" />
                       )}
                     </button>
 
@@ -1019,18 +985,18 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     <button
                       type="button"
                       onClick={() => handleTabClick('fairs')}
-                      className="flex flex-col items-center gap-1.5 pt-1 pb-3 sm:pb-3.5 relative group cursor-pointer transition-all shrink-0"
+                      className="flex flex-col items-center gap-1 sm:gap-1.5 pt-0.5 sm:pt-1 pb-2 sm:pb-3.5 relative group cursor-pointer transition-all shrink-0"
                     >
-                      <Building2 className={`w-5 h-5 sm:w-6 sm:h-6 transition-colors ${
+                      <Building2 className={`w-4.5 h-4.5 sm:w-6 sm:h-6 transition-colors ${
                         activeModeTab === 'fairs' ? 'text-[#2B527A]' : 'text-slate-400 group-hover:text-slate-600'
                       }`} />
-                      <span className={`text-xs sm:text-sm whitespace-nowrap transition-colors ${
+                      <span className={`text-[11px] sm:text-sm whitespace-nowrap transition-colors ${
                         activeModeTab === 'fairs' ? 'font-black text-[#2B527A]' : 'font-semibold text-slate-500 group-hover:text-slate-800'
                       }`}>
                         งานมหกรรม & เอ็กซ์โป
                       </span>
                       {activeModeTab === 'fairs' && (
-                        <span className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#2B527A] rounded-full" />
+                        <span className="absolute bottom-0 left-0 right-0 h-[2.5px] sm:h-[3px] bg-[#2B527A] rounded-full" />
                       )}
                     </button>
 
@@ -1038,18 +1004,18 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     <button
                       type="button"
                       onClick={() => handleTabClick('spots')}
-                      className="flex flex-col items-center gap-1.5 pt-1 pb-3 sm:pb-3.5 relative group cursor-pointer transition-all shrink-0"
+                      className="flex flex-col items-center gap-1 sm:gap-1.5 pt-0.5 sm:pt-1 pb-2 sm:pb-3.5 relative group cursor-pointer transition-all shrink-0"
                     >
-                      <Compass className={`w-5 h-5 sm:w-6 sm:h-6 transition-colors ${
+                      <Compass className={`w-4.5 h-4.5 sm:w-6 sm:h-6 transition-colors ${
                         activeModeTab === 'spots' ? 'text-[#2D5A3C]' : 'text-slate-400 group-hover:text-slate-600'
                       }`} />
-                      <span className={`text-xs sm:text-sm whitespace-nowrap transition-colors ${
+                      <span className={`text-[11px] sm:text-sm whitespace-nowrap transition-colors ${
                         activeModeTab === 'spots' ? 'font-black text-[#2D5A3C]' : 'font-semibold text-slate-500 group-hover:text-slate-800'
                       }`}>
                         พิกัดเที่ยว & จุดฮีลใจ
                       </span>
                       {activeModeTab === 'spots' && (
-                        <span className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#2D5A3C] rounded-full" />
+                        <span className="absolute bottom-0 left-0 right-0 h-[2.5px] sm:h-[3px] bg-[#2D5A3C] rounded-full" />
                       )}
                     </button>
                   </div>
@@ -1059,20 +1025,20 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     <button
                       type="button"
                       onClick={() => onOpenSurpriseModal(activeModeTab === 'all' && currentSlideIndex === 3 ? 'all' : activeModeTab)}
-                      className="flex flex-col items-center gap-1.5 pt-1 pb-3 sm:pb-3.5 relative group cursor-pointer transition-all shrink-0 text-amber-700 hover:text-amber-800"
+                      className="flex flex-col items-center gap-1 sm:gap-1.5 pt-0.5 sm:pt-1 pb-2 sm:pb-3.5 relative group cursor-pointer transition-all shrink-0 text-amber-700 hover:text-amber-800"
                     >
-                      <Dices className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600 group-hover:rotate-180 transition-transform duration-500" />
-                      <span className="text-xs sm:text-sm font-bold whitespace-nowrap">
+                      <Dices className="w-4.5 h-4.5 sm:w-6 sm:h-6 text-amber-600 group-hover:rotate-180 transition-transform duration-500" />
+                      <span className="text-[11px] sm:text-sm font-bold whitespace-nowrap">
                         สุ่มให้ฉันที
                       </span>
                     </button>
                   )}
                 </div>
 
-                {/* Console Search Inputs (Luxury Booking Portal Responsive Layout - 20% Compact Height) */}
+                {/* Console Search Inputs (Compact 2-Column Subgrid on Mobile, 12-Col on iPad, Flex Row on Desktop) */}
                 <div className="relative grid grid-cols-1 md:grid-cols-12 lg:flex lg:flex-row items-stretch bg-white border border-slate-200/90 hover:border-slate-300 rounded-2xl p-1 sm:p-1.5 transition-all focus-within:ring-4 focus-within:ring-[#2563EB]/10 focus-within:border-[#2563EB] divide-y md:divide-y-0 lg:divide-x divide-slate-200 shadow-2xs">
                   
-                  {/* Column 1: Keyword Input (Full width on iPad md, flexible on lg desktop) */}
+                  {/* Column 1: Keyword Input (Full width on Mobile & iPad md, flexible on lg desktop) */}
                   <div className="flex items-center gap-2.5 sm:gap-3 px-3 sm:px-3.5 py-2 sm:py-2.5 md:col-span-12 lg:flex-1 lg:min-w-[280px] md:border-b md:border-slate-200 lg:border-b-0">
                     <Search className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-slate-400 shrink-0" />
                     <div className="flex-1 min-w-0 text-left">
@@ -1101,103 +1067,106 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     )}
                   </div>
 
-                  {/* Column 2: Province / Area (5 cols on iPad md, reduced 10% on desktop) */}
-                  <div className="flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-2 sm:py-2.5 md:col-span-5 lg:w-[195px] xl:w-[225px] shrink-0 text-left md:border-r md:border-slate-200 lg:border-r-0">
-                    <MapPin className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-[#4A7C59] shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <label className="text-[9.5px] sm:text-[10px] font-bold text-slate-400 block uppercase tracking-wider leading-none mb-0.5">
-                        จุดหมาย / จังหวัด
-                      </label>
-                      <select
-                        value={selectedProvince}
-                        onChange={(e) => handleProvinceChange(e.target.value)}
-                        className="w-full bg-transparent text-xs sm:text-sm font-bold text-slate-900 focus:outline-none cursor-pointer truncate appearance-none leading-normal"
-                      >
-                        <option value="all">ทุกจังหวัด (ทั่วไทย)</option>
-                        <option value="ออนไลน์">ออนไลน์ (ไม่จำกัดสถานที่)</option>
-                        <optgroup label="ยอดนิยม">
-                          <option value="กรุงเทพฯ">กรุงเทพมหานคร</option>
-                          <option value="นนทบุรี">นนทบุรี</option>
-                          <option value="เชียงใหม่">เชียงใหม่</option>
-                          <option value="ชลบุรี">ชลบุรี</option>
-                          <option value="ภูเก็ต">ภูเก็ต</option>
-                          <option value="ประจวบคีรีขันธ์">ประจวบคีรีขันธ์</option>
-                          <option value="ขอนแก่น">ขอนแก่น</option>
-                        </optgroup>
-                        <optgroup label="ทั้งหมด 77 จังหวัด">
-                          {ALL_THAI_PROVINCES.map((prov) => (
-                            <option key={prov} value={prov}>{prov}</option>
-                          ))}
-                        </optgroup>
-                      </select>
+                  {/* Subgrid: Columns 2 & 3 Side-by-Side on Mobile (50% each), normal cols on iPad/Desktop */}
+                  <div className="grid grid-cols-2 divide-x divide-slate-200 md:contents">
+                    {/* Column 2: Province / Area (5 cols on iPad md, reduced 10% on desktop) */}
+                    <div className="flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-3 py-1.5 sm:py-2.5 md:col-span-5 lg:w-[195px] xl:w-[225px] shrink-0 text-left md:border-r md:border-slate-200 lg:border-r-0">
+                      <MapPin className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-[#4A7C59] shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <label className="text-[9px] sm:text-[10px] font-bold text-slate-400 block uppercase tracking-wider leading-none mb-0.5">
+                          จุดหมาย
+                        </label>
+                        <select
+                          value={selectedProvince}
+                          onChange={(e) => handleProvinceChange(e.target.value)}
+                          className="w-full bg-transparent text-xs sm:text-sm font-bold text-slate-900 focus:outline-none cursor-pointer truncate appearance-none leading-normal"
+                        >
+                          <option value="all">ทุกจังหวัด</option>
+                          <option value="ออนไลน์">ออนไลน์</option>
+                          <optgroup label="ยอดนิยม">
+                            <option value="กรุงเทพฯ">กรุงเทพฯ</option>
+                            <option value="นนทบุรี">นนทบุรี</option>
+                            <option value="เชียงใหม่">เชียงใหม่</option>
+                            <option value="ชลบุรี">ชลบุรี</option>
+                            <option value="ภูเก็ต">ภูเก็ต</option>
+                            <option value="ประจวบคีรีขันธ์">หัวหิน/ประจวบฯ</option>
+                            <option value="ขอนแก่น">ขอนแก่น</option>
+                          </optgroup>
+                          <optgroup label="ทั้งหมด 77 จังหวัด">
+                            {ALL_THAI_PROVINCES.map((prov) => (
+                              <option key={prov} value={prov}>{prov}</option>
+                            ))}
+                          </optgroup>
+                        </select>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Column 3: Time Filter (4 cols on iPad md, reduced 10% on desktop) */}
-                  <div className="flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-2 sm:py-2.5 md:col-span-4 lg:w-[185px] xl:w-[205px] shrink-0 text-left md:border-r md:border-slate-200 lg:border-r-0">
-                    <Calendar className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-[#2B527A] shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <label className="text-[9.5px] sm:text-[10px] font-bold text-slate-400 block uppercase tracking-wider leading-none mb-0.5">
-                        ช่วงเวลา
-                      </label>
-                      {timeFilter === 'custom' && startDate ? (
-                        <div className="flex items-center justify-between gap-1">
-                          <button
-                            type="button"
-                            onClick={onOpenDatePicker}
-                            className="text-xs sm:text-sm font-bold text-[#2B527A] truncate hover:underline text-left cursor-pointer"
-                            title="คลิกเพื่อเปลี่ยนวันที่"
-                          >
-                            {formatDateDisplay(startDate, endDate)}
-                          </button>
-                          {onClearCustomDate && (
+                    {/* Column 3: Time Filter (4 cols on iPad md, reduced 10% on desktop) */}
+                    <div className="flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-3 py-1.5 sm:py-2.5 md:col-span-4 lg:w-[185px] xl:w-[205px] shrink-0 text-left md:border-r md:border-slate-200 lg:border-r-0">
+                      <Calendar className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-[#2B527A] shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <label className="text-[9px] sm:text-[10px] font-bold text-slate-400 block uppercase tracking-wider leading-none mb-0.5">
+                          ช่วงเวลา
+                        </label>
+                        {timeFilter === 'custom' && startDate ? (
+                          <div className="flex items-center justify-between gap-1">
                             <button
                               type="button"
-                              onClick={onClearCustomDate}
-                              className="p-0.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 cursor-pointer shrink-0"
+                              onClick={onOpenDatePicker}
+                              className="text-xs sm:text-sm font-bold text-[#2B527A] truncate hover:underline text-left cursor-pointer"
+                              title="คลิกเพื่อเปลี่ยนวันที่"
                             >
-                              <X className="w-3.5 h-3.5" />
+                              {formatDateDisplay(startDate, endDate)}
                             </button>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-between gap-1">
-                          <select
-                            value={activeTime}
-                            onChange={(e) => {
-                              if (e.target.value === 'custom') {
-                                if (onOpenDatePicker) onOpenDatePicker();
-                              } else {
-                                handleTimeChange(e.target.value);
-                                if (onClearCustomDate) onClearCustomDate();
-                              }
-                            }}
-                            className="w-full bg-transparent text-xs sm:text-sm font-bold text-slate-900 focus:outline-none cursor-pointer truncate appearance-none leading-normal"
-                          >
-                            <option value="all">ทุกช่วงเวลา</option>
-                            <option value="today">วันนี้</option>
-                            <option value="tomorrow">พรุ่งนี้</option>
-                            <option value="weekend">สุดสัปดาห์นี้</option>
-                            <option value="next_month">เดือนนี้</option>
-                            <option value="custom">ระบุวันที่เอง...</option>
-                          </select>
-                          {activeTime === 'weekend' && (
-                            <span className="text-[9.5px] font-black text-[#2B527A] bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 shrink-0">
-                              ส.-อา.
-                            </span>
-                          )}
-                          {activeTime === 'today' && (
-                            <span className="text-[9.5px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 shrink-0">
-                              วันนี้
-                            </span>
-                          )}
-                          {activeTime === 'tomorrow' && (
-                            <span className="text-[9.5px] font-black text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 shrink-0">
-                              พรุ่งนี้
-                            </span>
-                          )}
-                        </div>
-                      )}
+                            {onClearCustomDate && (
+                              <button
+                                type="button"
+                                onClick={onClearCustomDate}
+                                className="p-0.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 cursor-pointer shrink-0"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between gap-1">
+                            <select
+                              value={activeTime}
+                              onChange={(e) => {
+                                if (e.target.value === 'custom') {
+                                  if (onOpenDatePicker) onOpenDatePicker();
+                                } else {
+                                  handleTimeChange(e.target.value);
+                                  if (onClearCustomDate) onClearCustomDate();
+                                }
+                              }}
+                              className="w-full bg-transparent text-xs sm:text-sm font-bold text-slate-900 focus:outline-none cursor-pointer truncate appearance-none leading-normal"
+                            >
+                              <option value="all">ทุกช่วงเวลา</option>
+                              <option value="today">วันนี้</option>
+                              <option value="tomorrow">พรุ่งนี้</option>
+                              <option value="weekend">สุดสัปดาห์</option>
+                              <option value="next_month">เดือนนี้</option>
+                              <option value="custom">ระบุวัน...</option>
+                            </select>
+                            {activeTime === 'weekend' && (
+                              <span className="text-[9px] font-black text-[#2B527A] bg-blue-50 px-1 py-0.5 rounded border border-blue-100 shrink-0">
+                                ส.-อา.
+                              </span>
+                            )}
+                            {activeTime === 'today' && (
+                              <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-100 shrink-0">
+                                วันนี้
+                              </span>
+                            )}
+                            {activeTime === 'tomorrow' && (
+                              <span className="text-[9px] font-black text-amber-700 bg-amber-50 px-1 py-0.5 rounded border border-amber-100 shrink-0">
+                                พรุ่งนี้
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -1238,16 +1207,21 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               </div>
             </div>
 
-            {/* 3. New User Exclusive & Privilege Ticket Strip (Compact & Refined Luxury Ticket Bar) */}
-            <div className="mt-2.5 sm:mt-3.5 w-full space-y-2.5">
+            {/* 3. New User Exclusive & Privilege Ticket Strip (Compact & Refined Luxury Ticket Bar - Horizontal Scroll on Mobile) */}
+            <div className="mt-2 sm:mt-3.5 w-full space-y-2 sm:space-y-2.5">
               
               {/* Section Header */}
-              <div className="flex items-end justify-between gap-3 px-1 flex-wrap">
+              <div className="flex items-center justify-between gap-2 px-1 flex-wrap">
                 <div className="space-y-0.5">
-                  <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-                    Member Privileges
-                  </h2>
-                  <p className="text-[11px] sm:text-xs font-medium text-slate-500">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-sm sm:text-lg font-black text-slate-900 tracking-tight">
+                      Member Privileges
+                    </h2>
+                    <span className="sm:hidden text-[9px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full border border-blue-100/80">
+                      ปัดซ้าย-ขวา ↔
+                    </span>
+                  </div>
+                  <p className="text-[10px] sm:text-xs font-medium text-slate-500 line-clamp-1">
                     สิทธิประโยชน์ และของรางวัลไลฟ์สไตล์ เพื่อการออกไปใช้ชีวิตอย่างมีความหมาย
                   </p>
                 </div>
@@ -1257,7 +1231,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowcaseTab('vouchers')}
-                    className={`px-3 py-1 rounded-lg font-extrabold text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-2.5 sm:px-3 py-1 rounded-lg font-extrabold text-[10.5px] sm:text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
                       showcaseTab === 'vouchers'
                         ? 'bg-white text-slate-900 shadow-xs'
                         : 'text-slate-500 hover:text-slate-900'
@@ -1269,7 +1243,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowcaseTab('rewards')}
-                    className={`px-3 py-1 rounded-lg font-extrabold text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-2.5 sm:px-3 py-1 rounded-lg font-extrabold text-[10.5px] sm:text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
                       showcaseTab === 'rewards'
                         ? 'bg-white text-slate-900 shadow-xs'
                         : 'text-slate-500 hover:text-slate-900'
@@ -1281,12 +1255,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 </div>
               </div>
 
-              {/* TAB 1: New User Exclusive Real Perforated Ticket Vouchers */}
+              {/* TAB 1: New User Exclusive Real Perforated Ticket Vouchers (Horizontal Scroll on Mobile, Grid on sm+) */}
               {showcaseTab === 'vouchers' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5 animate-fade-in">
+                <div className="flex sm:grid overflow-x-auto sm:overflow-visible no-scrollbar sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5 animate-fade-in pb-1.5 sm:pb-0 -mx-1 px-1 sm:mx-0 sm:px-0 snap-x snap-mandatory sm:snap-none">
                   
                   {/* Card 1: Trip.com Promo Callout Banner Card (Compact) */}
-                  <div className="relative rounded-xl bg-gradient-to-br from-blue-50/90 via-sky-50/40 to-indigo-50/70 border border-blue-100/90 p-2.5 sm:p-3 flex flex-col justify-between shadow-2xs group hover:border-blue-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 min-h-[92px] sm:min-h-[98px]">
+                  <div className="relative rounded-xl bg-gradient-to-br from-blue-50/90 via-sky-50/40 to-indigo-50/70 border border-blue-100/90 p-2.5 sm:p-3 flex flex-col justify-between shadow-2xs group hover:border-blue-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 min-h-[88px] sm:min-h-[98px] min-w-[245px] max-w-[265px] sm:min-w-0 sm:max-w-none shrink-0 sm:shrink snap-start">
                     <div className="flex items-start justify-between gap-2">
                       <div className="space-y-0.5 min-w-0">
                         <span className="text-[9px] font-black text-blue-700 uppercase tracking-wider block leading-none">
@@ -1316,7 +1290,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   </div>
 
                   {/* Card 2: 10% off Specialty Coffee (Compact Perforated Ticket) */}
-                  <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[92px] sm:min-h-[98px]">
+                  <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[88px] sm:min-h-[98px] min-w-[245px] max-w-[265px] sm:min-w-0 sm:max-w-none shrink-0 sm:shrink snap-start">
                     <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-1.5">
@@ -1358,7 +1332,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   </div>
 
                   {/* Card 3: Free Community Meetup Pass (Compact Perforated Ticket) */}
-                  <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[92px] sm:min-h-[98px]">
+                  <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[88px] sm:min-h-[98px] min-w-[245px] max-w-[265px] sm:min-w-0 sm:max-w-none shrink-0 sm:shrink snap-start">
                     <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-1.5">
@@ -1400,7 +1374,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   </div>
 
                   {/* Card 4: 15% off Craft Workshop (Compact Perforated Ticket) */}
-                  <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[92px] sm:min-h-[98px]">
+                  <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[88px] sm:min-h-[98px] min-w-[245px] max-w-[265px] sm:min-w-0 sm:max-w-none shrink-0 sm:shrink snap-start">
                     <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-1.5">
@@ -1444,12 +1418,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 </div>
               )}
 
-              {/* TAB 2: XP Store Rewards Real Perforated Ticket Vouchers */}
+              {/* TAB 2: XP Store Rewards Real Perforated Ticket Vouchers (Horizontal Scroll on Mobile, Grid on sm+) */}
               {showcaseTab === 'rewards' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5 animate-fade-in">
+                <div className="flex sm:grid overflow-x-auto sm:overflow-visible no-scrollbar sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5 animate-fade-in pb-1.5 sm:pb-0 -mx-1 px-1 sm:mx-0 sm:px-0 snap-x snap-mandatory sm:snap-none">
                   
                   {/* Card 1: XP Store Callout Banner Card (Compact) */}
-                  <div className="relative rounded-xl bg-gradient-to-br from-blue-50/90 via-sky-50/40 to-indigo-50/70 border border-blue-100/90 p-2.5 sm:p-3 flex flex-col justify-between shadow-2xs group hover:border-blue-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 min-h-[92px] sm:min-h-[98px]">
+                  <div className="relative rounded-xl bg-gradient-to-br from-blue-50/90 via-sky-50/40 to-indigo-50/70 border border-blue-100/90 p-2.5 sm:p-3 flex flex-col justify-between shadow-2xs group hover:border-blue-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 min-h-[88px] sm:min-h-[98px] min-w-[245px] max-w-[265px] sm:min-w-0 sm:max-w-none shrink-0 sm:shrink snap-start">
                     <div className="flex items-start justify-between gap-2">
                       <div className="space-y-0.5 min-w-0">
                         <span className="text-[9px] font-black text-blue-700 uppercase tracking-wider block leading-none">
@@ -1479,7 +1453,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   </div>
 
                   {/* Card 2: ฿50 Specialty Coffee (150 XP - Compact) */}
-                  <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[92px] sm:min-h-[98px]">
+                  <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[88px] sm:min-h-[98px] min-w-[245px] max-w-[265px] sm:min-w-0 sm:max-w-none shrink-0 sm:shrink snap-start">
                     <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-1.5">
@@ -1521,7 +1495,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   </div>
 
                   {/* Card 3: Free Board Game Day Pass (250 XP - Compact) */}
-                  <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[92px] sm:min-h-[98px]">
+                  <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[88px] sm:min-h-[98px] min-w-[245px] max-w-[265px] sm:min-w-0 sm:max-w-none shrink-0 sm:shrink snap-start">
                     <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-1.5">
@@ -1563,7 +1537,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   </div>
 
                   {/* Card 4: 15% off Craft Workshop (350 XP - Compact) */}
-                  <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[92px] sm:min-h-[98px]">
+                  <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[88px] sm:min-h-[98px] min-w-[245px] max-w-[265px] sm:min-w-0 sm:max-w-none shrink-0 sm:shrink snap-start">
                     <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-1.5">
@@ -1610,108 +1584,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             </div>
 
           </div>
-        )}
 
-        {/* ================================================================ */}
-        {/* OPTION 2: Classic Banner Hero                                    */}
-        {/* ================================================================ */}
-        {version === 'classic' && (
-          <div className="relative rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-md min-h-[150px] sm:min-h-[195px] md:min-h-[225px] flex items-center justify-center transition-all duration-300 z-30">
-
-            {/* Background */}
-            <div className="absolute inset-0 z-0 pointer-events-none rounded-2xl sm:rounded-3xl overflow-hidden">
-              <img
-                src={HERO_SLIDES[currentSlideIndex].imageUrl}
-                alt="Chill & Connect Bangkok Lifestyle Community"
-                className="w-full h-full object-cover object-center"
-              />
-              <div className="absolute inset-0 bg-slate-900/35" />
-              <div className="absolute inset-0 bg-gradient-to-r from-slate-900/40 via-slate-900/20 to-slate-900/40" />
-              <div className="absolute inset-0 bg-gradient-to-b from-slate-900/30 via-transparent to-slate-900/40" />
-            </div>
-
-            {/* Content */}
-            <div className="relative z-10 text-center space-y-2 sm:space-y-3 max-w-3xl mx-auto px-3.5 sm:px-4 py-3 sm:py-4 md:py-5 w-full">
-
-              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.75)]">
-                วันหยุดนี้... <span className="text-[#FFA07A] inline-block hover:scale-105 transition-transform cursor-default drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">ทำอะไรดี?</span>
-              </h1>
-
-              <p className="text-[11px] sm:text-xs md:text-sm text-white font-bold max-w-2xl mx-auto drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">
-                ค้นหากิจกรรมฮีลใจ ที่เที่ยวสุดชิลล์ และหาเพื่อนใหม่ทั่วไทย ✨
-              </p>
-
-              {/* Search Bar */}
-              <div className="pt-1 max-w-2xl mx-auto relative z-30">
-                <div className="relative flex items-center bg-white rounded-full p-1 sm:p-1.5 shadow-2xl shadow-black/35 border-2 border-white/95 focus-within:border-[#F26430] focus-within:ring-4 focus-within:ring-[#F26430]/25 transition-all z-20">
-                  <div className="pl-3 sm:pl-3.5 pr-1.5 text-slate-400">
-                    <Search className="w-4 h-4" />
-                  </div>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setTimeout(() => setIsFocused(false), 250)}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="ค้นหากิจกรรม, สถานที่เที่ยว หรือแท็ก..."
-                    className="w-full bg-transparent text-xs sm:text-sm md:text-base text-[#1E293B] placeholder-slate-400 focus:outline-none pr-2 font-medium"
-                  />
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery('')}
-                      className="p-1 text-slate-400 hover:text-slate-600 mr-1 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsFocused(false);
-                      if (onSearchSubmit) onSearchSubmit();
-                    }}
-                    className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-3.5 sm:px-5 md:px-6 py-1.5 sm:py-2 rounded-full font-black text-xs sm:text-sm transition-all shadow-md shadow-blue-600/25 flex items-center justify-center gap-1.5 shrink-0 active:scale-95 cursor-pointer"
-                  >
-                    <Search className="w-3.5 h-3.5 sm:hidden" />
-                    <span className="hidden sm:inline">ค้นหาเลย</span>
-                    <span className="sm:hidden text-xs font-bold">ค้นหา</span>
-                  </button>
-                </div>
-
-                {/* Auto-Suggest Dropdown (Dynamic Predictive & 3 Discovery Pillars Directory) */}
-                {renderSearchSuggestions()}
-              </div>
-
-              {/* Surprise Me */}
-              {onOpenSurpriseModal && (
-                <div className="pt-0.5 sm:pt-1 flex items-center justify-center">
-                  <button
-                    type="button"
-                    onClick={() => onOpenSurpriseModal(activeModeTab)}
-                    className="text-[10px] sm:text-xs font-extrabold px-3.5 sm:px-4 py-1 sm:py-1.5 rounded-full bg-white/95 hover:bg-white text-slate-700 hover:text-[#F26430] border border-slate-200 hover:border-[#F26430]/40 shadow-xs hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 group"
-                  >
-                    <Dices className="w-3.5 h-3.5 text-[#F26430] group-hover:rotate-180 transition-transform duration-500" />
-                    <span>
-                      คิดไม่ออก?{' '}
-                      <span className="text-[#F26430] underline underline-offset-2">
-                        {activeModeTab === 'spots' && 'สุ่มพิกัดเที่ยวให้ฉัน'}
-                        {activeModeTab === 'community' && 'สุ่มตี้กิจกรรมให้ฉัน'}
-                        {activeModeTab === 'fairs' && 'สุ่มงานแฟร์ให้ฉัน'}
-                        {activeModeTab === 'all' && 'สุ่มกิจกรรมให้ฉัน'}
-                      </span>{' '}
-                      ✨
-                    </span>
-                  </button>
-                </div>
-              )}
-
-            </div>
-          </div>
-        )}
-
-      </div>
+        </div>
 
       {/* Detail & Confirmation Modal for Quest Selected from Hero Ticker */}
       <JoinChallengeModal

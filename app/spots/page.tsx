@@ -167,16 +167,30 @@ function SpotsPageContent() {
         }
       }
 
-      // Province Filter with Bangkok alias tolerance
+      // Province Filter with smart city matching (Hat Yai <-> Songkhla, Hua Hin <-> Prachuap, Pattaya <-> Chonburi)
       if (selectedProvince !== 'all') {
         const isBangkok = selectedProvince === 'กรุงเทพฯ' || selectedProvince === 'กรุงเทพมหานคร';
         const spotProv = (spot.province || '').trim();
+        const spotDistrict = (spot.district || '').trim();
+        const spotTitle = spot.title || '';
+        const spotVibes = (spot.vibeTags || []).join(' ');
+        const fullText = `${spotProv} ${spotDistrict} ${spotTitle} ${spotVibes}`.toLowerCase();
+
         if (isBangkok) {
           if (!spotProv.includes('กรุงเทพ')) return false;
         } else {
           const pLower = selectedProvince.toLowerCase();
           const sLower = spotProv.toLowerCase();
-          if (!sLower.includes(pLower) && !pLower.includes(sLower)) return false;
+          const isMatch =
+            sLower.includes(pLower) ||
+            pLower.includes(sLower) ||
+            (pLower.includes('หาดใหญ่') && fullText.includes('หาดใหญ่')) ||
+            (pLower.includes('หัวหิน') && fullText.includes('หัวหิน')) ||
+            (pLower.includes('พัทยา') && fullText.includes('พัทยา')) ||
+            (pLower.includes('ชลบุรี') && fullText.includes('ชลบุรี')) ||
+            (pLower.includes('ประจวบ') && (fullText.includes('ประจวบ') || fullText.includes('หัวหิน'))) ||
+            (pLower.includes('สงขลา') && (fullText.includes('สงขลา') || fullText.includes('หาดใหญ่')));
+          if (!isMatch) return false;
         }
       }
 
@@ -271,7 +285,7 @@ function SpotsPageContent() {
         }}
       />
 
-      <main className="flex-1 max-w-7xl 2xl:max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <main className="flex-1 max-w-7xl 2xl:max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-28 sm:pb-12 space-y-6">
         
         {/* Header Bar with Breadcrumb */}
         <div className="space-y-3">

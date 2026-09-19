@@ -583,7 +583,7 @@ export default function FairDetailPage() {
       />
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 pt-1.5 pb-5 sm:pt-2 sm:pb-6 space-y-3 sm:space-y-4">
+      <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 pt-1.5 pb-28 sm:pt-2 sm:pb-12 space-y-3 sm:space-y-4">
         
         {/* =========================================================================
             TOP BREADCRUMBS & ACTION BAR
@@ -591,19 +591,19 @@ export default function FairDetailPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1.5 border-b border-slate-100">
           
           {/* Left: Clean Breadcrumbs */}
-          <nav className="text-xs text-slate-500 font-medium truncate flex items-center gap-1.5">
-            <Link href="/" className="hover:text-[#2B527A] transition-colors font-semibold py-2 px-1">หน้าแรก</Link>
-            <span className="py-2">/</span>
+          <nav className="text-xs text-slate-500 font-medium overflow-x-auto whitespace-nowrap scrollbar-none flex items-center gap-1.5 py-1 min-w-0">
+            <Link href="/" className="hover:text-[#2B527A] transition-colors font-semibold py-1 px-1">หน้าแรก</Link>
+            <span>/</span>
             <Link
               href="/fairs"
-              className="hover:text-[#2B527A] transition-colors py-2 px-1 font-semibold text-sky-800"
+              className="hover:text-[#2B527A] transition-colors py-1 px-1 font-semibold text-sky-800"
             >
               งานมหกรรม & เอ็กซ์โป
             </Link>
-            <span className="py-2">/</span>
-            <span className="text-slate-700 font-semibold py-2 px-1">{cleanText(venueOrganizerName)}</span>
-            <span className="py-2">/</span>
-            <span className="text-slate-900 font-bold truncate py-2 px-1">{cleanText(eventData.title)}</span>
+            <span>/</span>
+            <span className="text-slate-700 font-semibold py-1 px-1">{cleanText(venueOrganizerName)}</span>
+            <span>/</span>
+            <span className="text-slate-900 font-bold truncate max-w-[180px] sm:max-w-[280px] py-1 px-1">{cleanText(eventData.title)}</span>
           </nav>
 
           {/* Right: Favorite & Share Buttons */}
@@ -611,14 +611,14 @@ export default function FairDetailPage() {
             <button
               type="button"
               onClick={() => toggleFavorite(eventData.id)}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-2xs border cursor-pointer active:scale-95 ${
+              className={`inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-2xs border cursor-pointer active:scale-95 ${
                 isFav
                   ? 'bg-sky-50 text-[#2B527A] border-sky-200'
                   : 'bg-white text-slate-700 border-slate-200 hover:bg-sky-50 hover:text-[#2B527A]'
               }`}
             >
               <BookMarked className={`w-3.5 h-3.5 ${isFav ? 'text-[#2B527A]' : 'text-slate-500'}`} />
-              <span>
+              <span className="hidden sm:inline">
                 {isFav
                   ? isEnded
                     ? 'บันทึกในคลัง MyHub แล้ว'
@@ -626,6 +626,9 @@ export default function FairDetailPage() {
                   : isEnded
                   ? 'ติดตามรอบถัดไป'
                   : 'บันทึกงานนี้'}
+              </span>
+              <span className="sm:hidden">
+                {isFav ? 'บันทึกแล้ว' : isEnded ? 'ติดตาม' : 'บันทึก'}
               </span>
             </button>
 
@@ -754,7 +757,7 @@ export default function FairDetailPage() {
                 )}
               </div>
 
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight break-words">
                 {cleanText(eventData.title)}
               </h1>
 

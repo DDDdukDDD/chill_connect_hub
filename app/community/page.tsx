@@ -357,7 +357,7 @@ function CommunityPageContent() {
         }}
       />
 
-      <main className="flex-1 max-w-7xl 2xl:max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <main className="flex-1 max-w-7xl 2xl:max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-28 sm:pb-12 space-y-6">
         
         {/* Header Bar with Breadcrumb */}
         <div className="space-y-3">

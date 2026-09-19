@@ -5,6 +5,7 @@ import { isEventEnded } from '@/lib/dateUtils';
 import { X, Calendar, MapPin, Users, Heart, Share2, CheckCircle2, ShieldCheck, Clock, ExternalLink, Ticket, AlertCircle, Bell, Navigation2, MessageCircle, Check, Copy, Sparkles, Flag, ShieldAlert, Lock, AlertTriangle, Plus, ChevronDown, ChevronUp, Image as ImageIcon, HelpCircle, CheckSquare, Star, User, QrCode, ArrowRight } from 'lucide-react';
 import { ReportSafetyModal } from './ReportSafetyModal';
 import { ProfileModal } from './ProfileModal';
+import { ETicketModal } from './ETicketModal';
 import { getConnectedUserIds, toggleUserConnect } from '@/data/profilesData';
 
 interface EventDetailModalProps {
@@ -46,6 +47,8 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [isFollowingHost, setIsFollowingHost] = useState(false);
+  const [isETicketModalOpen, setIsETicketModalOpen] = useState(false);
+  const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [showConfirmJoinModal, setShowConfirmJoinModal] = useState(false);
   const [showConfirmCancelModal, setShowConfirmCancelModal] = useState(false);
   const [showSubForm, setShowSubForm] = useState(false);
@@ -378,13 +381,15 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                 </span>
               </span>
               {!isPublicVenue && (
-                <Link
-                  href="/myhub"
-                  onClick={onClose}
-                  className="text-[11px] text-emerald-700 bg-emerald-100/80 hover:bg-emerald-200 px-2.5 py-1 rounded-full border border-emerald-300 font-extrabold shrink-0"
+                <button
+                  type="button"
+                  onClick={() => setIsETicketModalOpen(true)}
+                  className="inline-flex items-center gap-1 text-[11px] text-slate-800 bg-white hover:bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200 font-extrabold shadow-2xs shrink-0 cursor-pointer transition-all active:scale-95"
                 >
-                  ดูตั๋ว ➔
-                </Link>
+                  <Ticket className="w-3 h-3 text-slate-600" />
+                  <span>ดูตั๋ว E-Ticket</span>
+                  <ArrowRight className="w-3 h-3 text-slate-400" />
+                </button>
               )}
             </div>
           )}
@@ -393,6 +398,9 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
           <div className="space-y-2.5">
             <div className="flex items-center justify-between gap-2 flex-wrap pb-0.5">
               <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-full border border-slate-200/80 shadow-2xs">
+                  {isPublicVenue ? 'MAJOR FAIRS & PUBLIC EXPOS' : 'MEETUPS & CIRCLES'}
+                </span>
                 <span className={`text-[11px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full border inline-block ${
                   isPublicVenue
                     ? 'bg-sky-50 text-sky-700 border-sky-200'
@@ -1214,7 +1222,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             /* When Event Has Ended: Display clean Ended Badge */
             <div className="flex items-center justify-center sm:justify-end gap-2 w-full">
               <span className="px-5 py-2 rounded-full font-extrabold text-xs sm:text-sm bg-slate-100 text-slate-600 border border-slate-300/80 flex items-center gap-1.5 shadow-2xs">
-                <span>🏁 งานนี้จัดเสร็จสิ้นแล้ว</span>
+                <span>งานนี้จัดเสร็จสิ้นแล้ว</span>
               </span>
             </div>
           ) : isJoined ? (
@@ -1230,30 +1238,32 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                 </button>
               )}
 
-              <Link
-                href="/myhub"
-                onClick={onClose}
-                className="bg-[#4A7C59] hover:bg-[#3B6447] text-white px-4 sm:px-5 py-2 rounded-full font-bold text-xs sm:text-sm transition-all shadow-xs flex items-center gap-1.5 active:scale-95 ml-auto cursor-pointer"
-              >
-                {isPublicVenue ? (
-                  <>
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>ดูตารางนัดหมาย</span>
-                  </>
-                ) : (
-                  <>
-                    <Ticket className="w-3.5 h-3.5" />
-                    <span>ดูตั๋วกิจกรรมของฉัน</span>
-                  </>
-                )}
-              </Link>
+              {isPublicVenue ? (
+                <Link
+                  href="/myhub?type=public_venue"
+                  onClick={onClose}
+                  className="bg-slate-900 hover:bg-slate-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl font-bold text-xs sm:text-sm transition-all shadow-2xs flex items-center gap-1.5 active:scale-95 ml-auto cursor-pointer"
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>ดูตารางนัดหมายใน MyHub</span>
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsETicketModalOpen(true)}
+                  className="bg-slate-900 hover:bg-slate-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl font-bold text-xs sm:text-sm transition-all shadow-2xs flex items-center gap-1.5 active:scale-95 ml-auto cursor-pointer"
+                >
+                  <Ticket className="w-3.5 h-3.5" />
+                  <span>ดูตั๋ว E-Ticket</span>
+                </button>
+              )}
             </div>
           ) : (
             /* When Not Joined: Confirm to Register / Save Schedule */
             <div className="flex items-center justify-end gap-2 w-full">
               <button
                 onClick={handleOpenJoinConfirm}
-                className="w-full sm:w-auto px-6 sm:px-8 py-2.5 rounded-full font-bold text-xs sm:text-sm text-white transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer bg-[#F26430] hover:bg-[#D95322] shadow-[#F26430]/25 active:scale-95"
+                className="w-full sm:w-auto px-6 sm:px-8 py-2.5 rounded-2xl font-bold text-xs sm:text-sm text-white transition-all shadow-2xs hover:shadow-md flex items-center justify-center gap-2 cursor-pointer bg-slate-900 hover:bg-slate-800 active:scale-95"
               >
                 {isPublicVenue ? (
                   <>
@@ -1385,13 +1395,9 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               <button
                 type="button"
                 onClick={handleExecuteJoin}
-                className={`w-full py-3.5 rounded-2xl text-white text-sm font-black shadow-lg transition-all active:scale-98 cursor-pointer flex items-center justify-center gap-2 ${
-                  isPublicVenue
-                    ? 'bg-[#2B527A] hover:bg-[#1F3C5C] shadow-sky-900/25'
-                    : 'bg-[#4A7C59] hover:bg-[#3B6347] shadow-[#4A7C59]/25'
-                }`}
+                className="w-full py-3.5 rounded-2xl text-white text-sm font-black shadow-2xs hover:shadow-md transition-all active:scale-98 cursor-pointer flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800"
               >
-                <span>{isPublicVenue ? 'บันทึกลงตาราง' : 'ยืนยันและรับตั๋ว'}</span>
+                <span>{isPublicVenue ? 'บันทึกลงตาราง' : 'ยืนยันการเข้าร่วม'}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -1479,6 +1485,22 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             />
           </div>
         </div>
+      )}
+
+      {/* Direct E-Ticket Modal Viewer */}
+      {event && !isPublicVenue && (
+        <ETicketModal
+          isOpen={isETicketModalOpen}
+          onClose={() => setIsETicketModalOpen(false)}
+          event={event}
+          ticketId={`CCH-${(event.id || '2026').replace(/\D/g, '').padStart(4, '0')}-TKT`}
+          isCheckedIn={isCheckedIn}
+          onCheckIn={() => setIsCheckedIn(!isCheckedIn)}
+          onOpenCancel={() => {
+            setIsETicketModalOpen(false);
+            setShowConfirmCancelModal(true);
+          }}
+        />
       )}
 
     </div>

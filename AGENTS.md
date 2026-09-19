@@ -100,6 +100,18 @@ The platform is strictly organized into 3 discovery pillars + 1 community engage
 6. **Ultra-Minimal Slim Scrollbar Design**:
    - Modals and scroll containers must use ultra-slim 6px scrollbars (`scrollbar-width: thin`) with a transparent track and soft slate rounded pill thumb (`border-radius: 9999px`).
 
+7. **Platform Typographic Scale Standard (มาตรฐานขนาดตัวอักษรของ Platform)**:
+   - Every text element must strictly follow this balanced hierarchy to maintain readability and global luxury rhythm across devices:
+     | Hierarchy Level | Tailwind Classes | Actual Size (Mobile ➔ Desktop) | Use Case & Standard |
+     | :--- | :--- | :--- | :--- |
+     | **Page H1 (Hero Title)** | `text-2xl sm:text-3xl md:text-4xl font-black` | 24px ➔ 36px | Homepage hero, detail page primary titles (`/spots/[id]`, `/community/[id]`, `/fairs/[id]`) |
+     | **Section H2** | `text-xl sm:text-2xl font-black` | 20px ➔ 24px | Pillar headers (Section 01, 02, 03) and primary subpage section titles |
+     | **Modal / Pass Title** | `text-lg sm:text-xl md:text-2xl font-black` | 18px ➔ 24px | Primary event title in `ETicketModal`, `ExpoMeetupPassModal`, and confirmation dialogs |
+     | **Card / List Title** | `text-sm sm:text-base font-extrabold` | 14px ➔ 16px | Card titles in feeds (`EventGrid`, `SpotCard`), strictly using `line-clamp-2 min-h-[2.5rem]` |
+     | **Key Info / Values** | `text-xs sm:text-sm font-bold` | 12px ➔ 14px | Key specs (dates, times, locations, price tags, ticket IDs) |
+     | **Field Labels** | `text-[11px] sm:text-xs font-semibold` | 11px ➔ 12px | Input/spec labels (`วันที่จัดกิจกรรม:`, `จุดนัดพบ:`) with slate-500 tone (never < 11px) |
+     | **Micro Badges / Pills** | `text-[10px] sm:text-xs font-extrabold` | 10px ➔ 12px | Signature English Capsule Badges, trust pills, and category tags |
+
 ---
 
 ## 💾 5. Data Integrity & Persistence Rules

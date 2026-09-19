@@ -149,7 +149,7 @@ function ProfileContent() {
         onOpenLogout={() => setIsLogoutModalOpen(true)}
       />
 
-      <main className="flex-1 pb-20">
+      <main className="flex-1 pb-28 sm:pb-16">
         {/* Top Back Navigation Bar & Demo Switcher */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
           <div className="flex items-center justify-between gap-3 mb-3">

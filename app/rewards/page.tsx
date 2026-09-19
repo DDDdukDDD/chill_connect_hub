@@ -183,7 +183,7 @@ export default function RewardsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] flex flex-col selection:bg-[#4A7C59] selection:text-white pb-20 md:pb-12">
+    <div className="min-h-screen bg-[#FDFBF7] flex flex-col selection:bg-[#4A7C59] selection:text-white pb-28 md:pb-16">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 backdrop-blur-md text-white text-xs sm:text-sm font-bold py-3 px-6 rounded-2xl shadow-xl border border-slate-700 animate-fade-in flex items-center gap-2.5">

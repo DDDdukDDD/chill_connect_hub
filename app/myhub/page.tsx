@@ -442,6 +442,10 @@ export default function MyHubPage() {
       setCheckedInTicketIds((prev) => [...prev, ticketId]);
       setUserXp((prev) => prev + 50);
       showToast('เช็คอินสำเร็จ! คุณได้รับ +50 XP และปลดล็อกความคืบหน้า Badge แล้ว');
+    } else {
+      setCheckedInTicketIds((prev) => prev.filter((id) => id !== ticketId));
+      setUserXp((prev) => Math.max(0, prev - 50));
+      showToast('ยกเลิกการจำลองเช็คอินแล้ว');
     }
   };
 
@@ -2648,7 +2652,10 @@ export default function MyHubPage() {
         isCheckedIn={checkedInTicketIds.includes(selectedTicketId)}
         onCheckIn={(tId) => {
           handleCheckIn(tId);
-          setIsETicketModalOpen(false);
+        }}
+        onOpenChat={(ev) => {
+          setChatTargetEvent(ev);
+          setIsChatModalOpen(true);
         }}
       />
 
