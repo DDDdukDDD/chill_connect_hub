@@ -26,6 +26,7 @@ import { useAuth } from '@/lib/useAuth';
 import { MOCK_EVENTS, EventItem } from '@/data/mockData';
 import { isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp } from '@/lib/dateUtils';
 import { FairCategoryRail, NATIONWIDE_FAIR_CATEGORIES } from '@/components/FairCategoryRail';
+import { getFairEventCategory } from '@/data/masterHub';
 import { TopVenuesRail } from '@/components/TopVenuesRail';
 import { ALL_THAI_PROVINCES } from '@/data/spotsData';
 
@@ -149,14 +150,9 @@ function FairsPageContent() {
       if (statusFilter === 'upcoming' && ended) return false;
       if (statusFilter === 'ended' && !ended) return false;
 
-      // Category Rail Filter
+      // Category Rail Filter (1 Card = 1 Category)
       if (selectedCategory && selectedCategory !== 'all') {
-        const catDef = NATIONWIDE_FAIR_CATEGORIES.find((c) => c.id === selectedCategory);
-        if (catDef) {
-          const text = `${ev.title} ${ev.description || ''} ${ev.tag || ''} ${ev.location || ''} ${ev.venueTag || ''}`.toLowerCase();
-          const matches = catDef.keywords.some((kw) => text.includes(kw.toLowerCase()));
-          if (!matches) return false;
-        }
+        if (getFairEventCategory(ev) !== selectedCategory) return false;
       }
 
       if (selectedProvince !== 'all') {
@@ -212,17 +208,38 @@ function FairsPageContent() {
     });
   }, [eventsList, statusFilter, selectedCategory, selectedProvince, selectedVenue, priceFilter, sortBy, favorites, searchQuery, customStartDate, customEndDate]);
 
+  // Dynamic fair counts (supports selectedVenue filter context)
   const fairCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    const baseFairs = eventsList.filter((ev) => ev.eventType === 'public_venue' && (statusFilter === 'all' || (statusFilter === 'upcoming' ? !isEventEnded(ev) : isEventEnded(ev))));
+    const baseFairs = eventsList.filter((ev) => {
+      if (ev.eventType !== 'public_venue') return false;
+      if (statusFilter === 'upcoming' && isEventEnded(ev)) return false;
+      if (statusFilter === 'ended' && !isEventEnded(ev)) return false;
+      if (selectedVenue !== 'all') {
+        const vLower = selectedVenue.toLowerCase();
+        const loc = (ev.location || '').toLowerCase();
+        const vTag = (ev.venueTag || '').toLowerCase();
+        const title = (ev.title || '').toLowerCase();
+        const text = `${vTag} ${loc} ${title}`;
+
+        if (vLower === 'qsncc' && !text.includes('สิริกิติ์') && !text.includes('qsncc')) return false;
+        else if (vLower === 'bitec' && !text.includes('ไบเทค') && !text.includes('bitec')) return false;
+        else if (vLower === 'impact' && !text.includes('อิมแพ็ค') && !text.includes('impact') && !text.includes('เมืองทอง')) return false;
+        else if (vLower === 'paragon' && !text.includes('paragon') && !text.includes('พารากอน') && !text.includes('iconsiam') && !text.includes('ไอคอนสยาม') && !text.includes('สยาม')) return false;
+        else if (vLower === 'bacc' && !text.includes('bacc') && !text.includes('หอศิลป') && !text.includes('เจริญกรุง') && !text.includes('ปทุมวัน')) return false;
+        else if (vLower === 'park' && !text.includes('สวน') && !text.includes('park') && !text.includes('สนามหลวง')) return false;
+        else if (vLower === 'regional' && !text.includes('kice') && !text.includes('ขอนแก่น') && !text.includes('cmecc') && !text.includes('เชียงใหม่') && !text.includes('สงขลา') && !text.includes('ภูเก็ต')) return false;
+        else if (!['qsncc', 'bitec', 'impact', 'paragon', 'bacc', 'park', 'regional'].includes(vLower) && !loc.includes(vLower) && !vTag.includes(vLower)) return false;
+      }
+      return true;
+    });
+
+    counts['all'] = baseFairs.length;
     for (const cat of NATIONWIDE_FAIR_CATEGORIES) {
-      counts[cat.id] = baseFairs.filter((ev) => {
-        const text = `${ev.title} ${ev.description || ''} ${ev.tag || ''} ${ev.location || ''} ${ev.venueTag || ''}`.toLowerCase();
-        return cat.keywords.some((kw) => text.includes(kw.toLowerCase()));
-      }).length;
+      counts[cat.id] = baseFairs.filter((ev) => getFairEventCategory(ev) === cat.id).length;
     }
     return counts;
-  }, [eventsList, statusFilter]);
+  }, [eventsList, statusFilter, selectedVenue]);
 
   const totalPages = Math.ceil(filteredEvents.length / itemsPerPage) || 1;
 
@@ -318,6 +335,7 @@ function FairsPageContent() {
           selectedVenue={selectedVenue === 'all' ? null : selectedVenue}
           onSelectVenue={(v) => {
             setSelectedVenue(v || 'all');
+            setSelectedCategory(null);
             setCurrentPage(1);
           }}
           eventsList={eventsList}

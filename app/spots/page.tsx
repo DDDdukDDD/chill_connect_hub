@@ -24,6 +24,7 @@ import { CreateEventModal } from '@/components/CreateEventModal';
 import { useAuth } from '@/lib/useAuth';
 import { MOCK_SPOTS, ALL_THAI_PROVINCES, LifestyleSpotItem, getSpotVibeCategory } from '@/data/spotsData';
 import { SpotCategoryRail, NATIONWIDE_SPOT_CATEGORIES } from '@/components/SpotCategoryRail';
+import { TopDestinationsRail } from '@/components/TopDestinationsRail';
 import { EventItem } from '@/data/mockData';
 import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
 
@@ -232,13 +233,39 @@ function SpotsPageContent() {
     return result;
   }, [selectedCategory, selectedProvince, priceFilter, sortBy, sortByNearMe, userLocation, favoriteSpots, searchQuery]);
 
+  // Calculate dynamic spot counts per vibe category (supports selectedProvince filter context)
   const spotCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: MOCK_SPOTS.length };
-    for (const cat of NATIONWIDE_SPOT_CATEGORIES) {
-      counts[cat.id] = MOCK_SPOTS.filter((spot) => getSpotVibeCategory(spot) === cat.id).length;
-    }
+    const counts: Record<string, number> = {};
+    const baseSpots = MOCK_SPOTS.filter((spot) => {
+      if (selectedProvince !== 'all') {
+        const pLower = selectedProvince.toLowerCase();
+        const spotProv = spot.province.toLowerCase();
+        const spotDistrict = (spot.district || '').toLowerCase();
+        const spotTitle = spot.title.toLowerCase();
+        const spotVibe = (spot.vibeTags || []).join(' ').toLowerCase();
+        const fullSpotText = `${spotProv} ${spotDistrict} ${spotTitle} ${spotVibe}`;
+
+        const isMatch =
+          spotProv.includes(pLower) ||
+          pLower.includes(spotProv) ||
+          (pLower.includes('หาดใหญ่') && fullSpotText.includes('หาดใหญ่')) ||
+          (pLower.includes('หัวหิน') && fullSpotText.includes('หัวหิน')) ||
+          (pLower.includes('พัทยา') && fullSpotText.includes('พัทยา')) ||
+          (pLower.includes('ชลบุรี') && fullSpotText.includes('ชลบุรี')) ||
+          (pLower.includes('ประจวบ') && (fullSpotText.includes('ประจวบ') || fullSpotText.includes('หัวหิน'))) ||
+          (pLower.includes('สงขลา') && (fullSpotText.includes('สงขลา') || fullSpotText.includes('หาดใหญ่')));
+
+        if (!isMatch) return false;
+      }
+      return true;
+    });
+
+    counts['all'] = baseSpots.length;
+    NATIONWIDE_SPOT_CATEGORIES.forEach((cat) => {
+      counts[cat.id] = baseSpots.filter((spot) => getSpotVibeCategory(spot) === cat.id).length;
+    });
     return counts;
-  }, []);
+  }, [selectedProvince]);
 
   const totalPages = Math.ceil(filteredSpots.length / itemsPerPage) || 1;
 
@@ -325,6 +352,16 @@ function SpotsPageContent() {
             </button>
           </div>
         </div>
+
+        {/* Top Destinations in Thailand Visual Rail */}
+        <TopDestinationsRail
+          selectedProvince={selectedProvince}
+          onSelectProvince={(prov) => {
+            setSelectedProvince(prov);
+            setSelectedCategory('all');
+            setCurrentPage(1);
+          }}
+        />
 
         {/* Nationwide Spot Category Rail */}
         <SpotCategoryRail

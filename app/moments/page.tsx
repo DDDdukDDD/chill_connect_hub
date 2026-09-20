@@ -38,7 +38,9 @@ import {
   LogIn,
   MapPin,
   ArrowLeft,
+  Bookmark,
 } from 'lucide-react';
+import { MomentsStoriesRail } from '@/components/MomentsStoriesRail';
 
 function MomentsContent() {
   const searchParams = useSearchParams();
@@ -54,9 +56,14 @@ function MomentsContent() {
   const urlLocation = searchParams.get('location') || '';
   const urlTab = searchParams.get('tab');
   const [locationFilter, setLocationFilter] = useState<string>(urlLocation);
-  const [activeTabFilter, setActiveTabFilter] = useState<'all' | 'popular' | 'mine'>(
+  const [activeTabFilter, setActiveTabFilter] = useState<'all' | 'popular' | 'saved' | 'mine'>(
     urlTab === 'mine' ? 'mine' : urlTab === 'popular' ? 'popular' : 'all'
   );
+
+  // Instagram-Grade Micro-Interactions States
+  const [savedPostIds, setSavedPostIds] = useState<string[]>(['1', '3']);
+  const [doubleTapPostId, setDoubleTapPostId] = useState<string | null>(null);
+  const [postCheers, setPostCheers] = useState<Record<string, string[]>>({});
 
   // Sync if URL location changes
   useEffect(() => {
@@ -160,6 +167,76 @@ function MomentsContent() {
         return post;
       })
     );
+  };
+
+  // Double-Tap Image to Like (Instagram Style)
+  const handleDoubleTapLike = (postId: string) => {
+    if (!isLoggedIn) {
+      setMembershipActionTitle('เพื่อส่งหัวใจและกำลังใจให้เพื่อนๆ');
+      setIsRequireMembershipOpen(true);
+      return;
+    }
+
+    // Trigger visual bursting heart animation
+    setDoubleTapPostId(postId);
+    setTimeout(() => {
+      setDoubleTapPostId((prev) => (prev === postId ? null : prev));
+    }, 750);
+
+    // Like post if not already liked
+    setPosts((prevPosts) =>
+      prevPosts.map((p) => {
+        if (p.id === postId) {
+          if (p.isLiked) return p;
+          showToast('ส่งหัวใจฮีลใจเรียบร้อย! ❤️');
+          return {
+            ...p,
+            isLiked: true,
+            likesCount: p.likesCount + 1,
+          };
+        }
+        return p;
+      })
+    );
+  };
+
+  // Toggle Save / Bookmark to Personal Collection (Instagram Style)
+  const handleToggleSave = (postId: string) => {
+    if (!isLoggedIn) {
+      setMembershipActionTitle('เพื่อบันทึกโมเมนต์ลงคอลเลกชันส่วนตัว');
+      setIsRequireMembershipOpen(true);
+      return;
+    }
+
+    setSavedPostIds((prev) => {
+      const isSaved = prev.includes(postId);
+      if (isSaved) {
+        showToast('ยกเลิกการบันทึกโมเมนต์');
+        return prev.filter((id) => id !== postId);
+      } else {
+        showToast('บันทึกโมเมนต์ลงคอลเลกชันส่วนตัวแล้ว 🔖');
+        return [...prev, postId];
+      }
+    });
+  };
+
+  // Quick Positive Cheer Reaction
+  const handleQuickCheer = (postId: string, reaction: string) => {
+    if (!isLoggedIn) {
+      setMembershipActionTitle('เพื่อร่วมส่งพลังบวกให้เพื่อนๆ');
+      setIsRequireMembershipOpen(true);
+      return;
+    }
+
+    setPostCheers((prev) => {
+      const existing = prev[postId] || [];
+      return {
+        ...prev,
+        [postId]: [...existing, reaction],
+      };
+    });
+
+    showToast(`ส่งความรู้สึก "${reaction}" เรียบร้อยแล้ว ✨`);
   };
 
   // Copy Share Link & Increment Share Count (Multi-platform & Mobile Web Share API support)
@@ -387,6 +464,9 @@ function MomentsContent() {
     if (activeTabFilter === 'popular') {
       return list.sort((a, b) => b.likesCount - a.likesCount);
     }
+    if (activeTabFilter === 'saved') {
+      return list.filter((p) => savedPostIds.includes(p.id));
+    }
     if (activeTabFilter === 'mine') {
       if (!isLoggedIn) return [];
       return list.filter((p) => p.userName.includes('คุณส้ม'));
@@ -454,14 +534,6 @@ function MomentsContent() {
                   <span className="text-[10px] font-black text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200/80 uppercase tracking-wider">
                     COMMUNITY STORIES • REAL MOMENTS
                   </span>
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50/90 border border-emerald-200/80 px-2.5 py-0.5 rounded-full shadow-2xs">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                    <span>ภาพถ่ายจริง 100% จากชาวฮับ</span>
-                  </span>
-                  <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white/90 border border-slate-200/80 px-2.5 py-0.5 rounded-full shadow-2xs">
-                    <ShieldCheck className="w-3 h-3 text-blue-600" />
-                    <span>คอมมูนิตี้ปลอดภัย</span>
-                  </span>
                 </div>
                 <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-tight">
                   โมเมนต์ & บรรยากาศจริงจากชุมชน
@@ -471,63 +543,50 @@ function MomentsContent() {
                 </p>
               </div>
 
-              {/* Action Button & Community Stats */}
-              <div className="flex items-center gap-3.5 flex-wrap pt-0.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!isLoggedIn) {
-                      setMembershipActionTitle('เพื่อแชร์ภาพและแบ่งปันโมเมนต์กับชาวฮับ');
-                      setIsRequireMembershipOpen(true);
-                    } else {
-                      setIsCreateModalOpen(true);
-                    }
-                  }}
-                  className="inline-flex items-center justify-center gap-2 px-4.5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-2xs hover:shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
-                >
-                  <Camera className="w-4 h-4" />
-                  <span>แชร์โมเมนต์ของคุณ</span>
-                </button>
-
-                <span className="text-xs text-slate-400 flex items-center gap-2">
-                  <span className="font-semibold text-slate-700">{posts.length} โมเมนต์ที่แบ่งปัน</span>
-                  <span>•</span>
-                  <span>42+ พิกัดเช็คอิน</span>
-                  <span>•</span>
-                  <span>100% ภาพถ่ายจริง</span>
-                </span>
+              {/* Community Stats (Clean & Informative) */}
+              <div className="flex items-center gap-2 text-xs text-slate-500 pt-0.5 font-medium flex-wrap">
+                <span className="font-bold text-slate-800">{posts.length} โมเมนต์ที่แบ่งปัน</span>
+                <span>•</span>
+                <span>42+ พิกัดเช็คอินทั่วไทย</span>
+                <span>•</span>
+                <span>ภาพถ่ายจริงจากผู้ร่วมทริป</span>
               </div>
             </div>
 
-            {/* Right (5-cols): Visual Snapshot Collage Teaser */}
-            <div className="lg:col-span-5 bg-gradient-to-br from-slate-50/90 via-emerald-50/30 to-amber-50/20 p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between gap-3">
-              <div className="space-y-1.5 min-w-0">
-                <span className="text-[10px] font-black text-slate-700 bg-white/90 px-2.5 py-0.5 rounded-full border border-slate-200 uppercase tracking-wider shadow-2xs">
-                  Community Snapshots
+            {/* Right (5-cols): Single Beautiful Snapshot Photo */}
+            <div className="lg:col-span-5 relative rounded-2xl overflow-hidden shadow-sm border border-slate-200/80 h-[150px] sm:h-[175px] group">
+              <img
+                src="https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1000&q=85"
+                alt="Community Lifestyle Moment"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-[0.97]"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent pointer-events-none" />
+              <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between text-white">
+                <span className="text-[11px] font-bold text-white/95 flex items-center gap-1.5 [text-shadow:_0_1px_4px_rgba(0,0,0,0.8)]">
+                  <Camera className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Snapshot of the Week</span>
                 </span>
-                <h3 className="font-bold text-xs sm:text-[13px] text-slate-900 truncate">
-                  ภาพบรรยากาศล่าสุดสัปดาห์นี้
-                </h3>
-                <p className="text-[10.5px] text-slate-500 leading-snug">
-                  เช็คอินคาเฟ่ • เวิร์กช็อปเซรามิก • ซาวด์บาธฮีลใจ
-                </p>
-              </div>
-
-              {/* Overlapping Mini Photos Teaser */}
-              <div className="flex items-center -space-x-3 shrink-0">
-                <div className="w-12 h-14 rounded-lg overflow-hidden border-2 border-white shadow-sm -rotate-6">
-                  <img src="https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=200&q=80" alt="Cafe" className="w-full h-full object-cover" />
-                </div>
-                <div className="w-12 h-14 rounded-lg overflow-hidden border-2 border-white shadow-md rotate-2 z-10">
-                  <img src="https://images.unsplash.com/photo-1545205597-3d9d02c29597?w=200&q=80" alt="Sound bath" className="w-full h-full object-cover" />
-                </div>
-                <div className="w-12 h-14 rounded-lg overflow-hidden border-2 border-white shadow-sm rotate-8">
-                  <img src="https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=200&q=80" alt="Books" className="w-full h-full object-cover" />
-                </div>
+                <span className="text-[10px] text-white/80 font-medium [text-shadow:_0_1px_3px_rgba(0,0,0,0.8)]">
+                  สวนเบญจกิติ, กรุงเทพฯ
+                </span>
               </div>
             </div>
           </div>
         </section>
+
+        {/* 1.5 Moments Stories & Highlights Rail (Instagram-Style Stories & Pulse) */}
+        <MomentsStoriesRail
+          onAddStory={() => {
+            if (!isLoggedIn) {
+              setMembershipActionTitle('เพื่อแชร์สตอรี่โมเมนต์ของคุณ');
+              setIsRequireMembershipOpen(true);
+            } else {
+              setIsCreateModalOpen(true);
+            }
+          }}
+          isLoggedIn={isLoggedIn}
+          onOpenTargetLocation={(locName) => setLocationFilter(locName)}
+        />
 
         {/* 2. Main Grid: 2 Columns */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -580,7 +639,8 @@ function MomentsContent() {
               <div className="bg-slate-100/90 p-1 rounded-xl flex items-center gap-1 border border-slate-200/70">
                 {[
                   { id: 'all', label: 'ฟีดทั้งหมด' },
-                  { id: 'popular', label: 'ยอดนิยม (ส่งใจสูงสุด)' },
+                  { id: 'popular', label: 'ยอดนิยม' },
+                  { id: 'saved', label: `ที่บันทึกไว้ (${savedPostIds.length})` },
                   { id: 'mine', label: 'โมเมนต์ของฉัน' },
                 ].map((tab) => {
                   const isActive = activeTabFilter === tab.id;
@@ -695,23 +755,25 @@ function MomentsContent() {
                             {post.userName}
                           </h3>
 
-                          {/* Sub-text: User badge & Destination Tag Link (Clean & Privacy-first) */}
-                          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-medium truncate">
-                            <span className="truncate">{post.userBadge}</span>
-                            {targetTitle && (
-                              <>
-                                <span>•</span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenTarget(post)}
-                                  className="text-slate-700 hover:text-slate-900 hover:underline font-bold truncate transition-colors cursor-pointer text-left"
-                                  title="คลิกเพื่อดูข้อมูลสถานที่หรือกิจกรรมนี้"
-                                >
-                                  @{targetTitle}
-                                </button>
-                              </>
-                            )}
-                          </div>
+                          {/* Sub-text: Destination Tag Link (Interactive POI Pill) */}
+                          {targetTitle && (
+                            <div className="flex items-center gap-1 text-[11px] font-semibold mt-1">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenTarget(post)}
+                                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200/90 text-slate-700 hover:text-slate-900 border border-slate-200/80 transition-all cursor-pointer group/poi shadow-2xs active:scale-95"
+                                title="คลิกเพื่อดูข้อมูลสถานที่หรือกิจกรรมนี้"
+                              >
+                                <MapPin className="w-3 h-3 text-[#F26430] group-hover/poi:scale-110 transition-transform" />
+                                <span className="truncate max-w-[180px] sm:max-w-[260px] font-bold">
+                                  {targetTitle}
+                                </span>
+                                <span className="text-[10px] text-slate-400 group-hover/poi:text-slate-600">
+                                  ดูข้อมูล ↗
+                                </span>
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -720,44 +782,62 @@ function MomentsContent() {
                       </span>
                     </div>
 
-                    {/* Multi-Photo Collage Grid Layout (Social Media Style - Exact Match to Reference) */}
-                    <div className="w-full bg-slate-100 overflow-hidden">
-                      {/* Case 1: Single Image */}
+                    {/* Multi-Photo Collage Grid Layout (Facebook-Style Responsive Photo Engine + Double-Tap Like) */}
+                    <div
+                      className="w-full bg-slate-100 overflow-hidden relative select-none"
+                      onDoubleClick={() => handleDoubleTapLike(post.id)}
+                    >
+                      {/* Instagram Bursting Heart Animation on Double-Tap */}
+                      {doubleTapPostId === post.id && (
+                        <div className="absolute inset-0 z-40 pointer-events-none flex items-center justify-center animate-fade-in">
+                          <div className="p-4 rounded-full bg-black/40 backdrop-blur-xs shadow-2xl animate-scale-up">
+                            <Heart className="w-16 h-16 sm:w-20 sm:h-20 text-rose-500 fill-rose-500 drop-shadow-[0_4px_24px_rgba(244,63,94,0.95)]" />
+                          </div>
+                        </div>
+                      )}
+                      {/* Case 1: Single Image (Flexible dynamic height, ambient backdrop blur, never cropped) */}
                       {count === 1 && (
                         <div
-                          className="relative aspect-[16/9] sm:aspect-[16/10] max-h-[320px] sm:max-h-[340px] w-full overflow-hidden cursor-pointer group"
+                          className="relative w-full bg-slate-950 flex items-center justify-center min-h-[260px] max-h-[520px] sm:max-h-[580px] overflow-hidden cursor-pointer group"
                           onClick={() => openLightbox(images, 0, post.caption)}
                         >
+                          {/* Ambient blurred backdrop for vertical/square photos so borders are never harsh */}
+                          <img
+                            src={images[0]}
+                            alt=""
+                            className="absolute inset-0 w-full h-full object-cover filter blur-2xl opacity-35 scale-110 pointer-events-none"
+                            aria-hidden="true"
+                          />
                           <img
                             src={images[0]}
                             alt={post.caption}
-                            className="w-full h-full object-cover group-hover:scale-101 transition-transform duration-300"
+                            className="relative z-10 w-auto h-auto max-h-[520px] sm:max-h-[580px] max-w-full object-contain mx-auto group-hover:scale-[1.01] transition-transform duration-300"
                           />
                         </div>
                       )}
 
-                      {/* Case 2: Exactly 2 Images (Side by Side Equal Columns) */}
+                      {/* Case 2: Exactly 2 Images (Side by Side Equal Columns with generous height) */}
                       {count === 2 && (
-                        <div className="grid grid-cols-2 gap-1 h-[260px] sm:h-[300px] w-full">
+                        <div className="grid grid-cols-2 gap-1.5 h-[300px] sm:h-[380px] w-full">
                           {images.slice(0, 2).map((img, idx) => (
                             <div
                               key={idx}
-                              className="relative h-full overflow-hidden cursor-pointer group"
+                              className="relative h-full w-full overflow-hidden cursor-pointer group"
                               onClick={() => openLightbox(images, idx, post.caption)}
                             >
                               <img
                                 src={img}
                                 alt={`รูปที่ ${idx + 1}`}
-                                className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               />
                             </div>
                           ))}
                         </div>
                       )}
 
-                      {/* Case 3: Exactly 3 Images (1 Large Left + 2 Stacked Right with equal 50/50 heights) */}
+                      {/* Case 3: Exactly 3 Images (1 Large Left 7-cols + 2 Equal Stacked Right 5-cols) */}
                       {count === 3 && (
-                        <div className="grid grid-cols-12 gap-1.5 h-[300px] sm:h-[350px] w-full">
+                        <div className="grid grid-cols-12 gap-1.5 h-[340px] sm:h-[420px] w-full">
                           {/* Left: 1 Large Image */}
                           <div
                             className="col-span-7 h-full overflow-hidden cursor-pointer group relative"
@@ -769,7 +849,7 @@ function MomentsContent() {
                               className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
                             />
                           </div>
-                          {/* Right: 2 Stacked Images (strictly equal 50/50 heights) */}
+                          {/* Right: 2 Stacked Images (50/50 heights with good visibility) */}
                           <div className="col-span-5 flex flex-col gap-1.5 h-full">
                             {images.slice(1, 3).map((img, idx) => (
                               <div
@@ -780,7 +860,7 @@ function MomentsContent() {
                                 <img
                                   src={img}
                                   alt={`รูปย่อย ${idx + 1}`}
-                                  className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                 />
                               </div>
                             ))}
@@ -788,58 +868,42 @@ function MomentsContent() {
                         </div>
                       )}
 
-                      {/* Case 4: 4 or more Images (1 Large Vertical Left + 3 Stacked Right with equal 33.3% heights) */}
+                      {/* Case 4: 4 or more Images (Facebook Classic 2x2 Grid with +X overlay on 4th cell) */}
                       {count >= 4 && (
-                        <div className="grid grid-cols-12 gap-1.5 h-[320px] sm:h-[380px] w-full">
-                          {/* Left: 1 Large Vertical Image (col-span-7) */}
-                          <div
-                            className="col-span-7 h-full overflow-hidden cursor-pointer group relative"
-                            onClick={() => openLightbox(images, 0, post.caption)}
-                          >
-                            <img
-                              src={images[0]}
-                              alt="รูปหลัก"
-                              className="w-full h-full object-cover group-hover:scale-101 transition-transform duration-300"
-                            />
-                          </div>
+                        <div className="grid grid-cols-2 gap-1.5 h-[340px] sm:h-[420px] w-full">
+                          {images.slice(0, 4).map((img, idx) => {
+                            const isFourth = idx === 3;
+                            const moreCount = count - 4;
 
-                          {/* Right: 3 Stacked Images (strictly equal 33.3% heights) */}
-                          <div className="col-span-5 flex flex-col gap-1.5 h-full">
-                            {images.slice(1, 4).map((img, idx) => {
-                              const photoIdx = idx + 1;
-                              const isThirdRight = idx === 2;
-                              const moreCount = count - 4;
-
-                              return (
-                                <div
-                                  key={idx}
-                                  className="relative flex-1 min-h-0 w-full overflow-hidden cursor-pointer group"
-                                  onClick={() => openLightbox(images, photoIdx, post.caption)}
-                                >
-                                  <img
-                                    src={img}
-                                    alt={`รูปย่อย ${idx + 1}`}
-                                    className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
-                                  />
-                                  {/* Overlay badge on the 3rd right image if there are more than 4 images */}
-                                  {isThirdRight && moreCount > 0 && (
-                                    <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center text-white font-black text-lg sm:text-xl group-hover:bg-black/75 transition-colors">
-                                      +{moreCount + 1}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
+                            return (
+                              <div
+                                key={idx}
+                                className="relative h-full w-full overflow-hidden cursor-pointer group"
+                                onClick={() => openLightbox(images, idx, post.caption)}
+                              >
+                                <img
+                                  src={img}
+                                  alt={`รูปที่ ${idx + 1}`}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                />
+                                {/* Facebook-style +X Overlay on 4th image if more than 4 */}
+                                {isFourth && moreCount > 0 && (
+                                  <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center text-white font-black text-xl sm:text-2xl group-hover:bg-black/75 transition-colors">
+                                    +{moreCount + 1}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
 
-                    {/* Bottom Body: Action Bar + Caption */}
+                    {/* Bottom Body: Action Bar + Caption + Quick Cheers */}
                     <div className="p-4 space-y-3">
-                      {/* Action Bar: Heart (Number only) + Share (Icon + Number only, NO text) */}
+                      {/* Action Bar: Heart + Share on left, Bookmark / Save on right (Instagram-Style) */}
                       <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                        <div className="flex items-center gap-2.5">
+                        <div className="flex items-center gap-2">
                           {/* Heart / Like Cheer Button (Numbers only, NO text) */}
                           <button
                             type="button"
@@ -871,12 +935,71 @@ function MomentsContent() {
                             <span>{post.sharesCount || 0}</span>
                           </button>
                         </div>
+
+                        {/* Right: Instagram-Style Bookmark / Save to Collection Button */}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleSave(post.id)}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                            savedPostIds.includes(post.id)
+                              ? 'bg-amber-50 text-amber-800 border border-amber-300 shadow-2xs'
+                              : 'bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200'
+                          }`}
+                          title={savedPostIds.includes(post.id) ? 'บันทึกแล้ว' : 'บันทึกเก็บไว้ดู'}
+                        >
+                          <Bookmark
+                            className={`w-4 h-4 transition-transform active:scale-125 ${
+                              savedPostIds.includes(post.id) ? 'fill-amber-500 text-amber-500' : 'text-slate-400'
+                            }`}
+                          />
+                          <span className="hidden sm:inline">
+                            {savedPostIds.includes(post.id) ? 'บันทึกแล้ว' : 'บันทึก'}
+                          </span>
+                        </button>
                       </div>
 
                       {/* Caption Text */}
                       <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-normal">
                         {post.caption}
                       </p>
+
+                      {/* Positive Cheer / Quick Emoji Reactions Bar */}
+                      <div className="pt-1 flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">
+                          ส่งกำลังใจ:
+                        </span>
+                        {[
+                          { emoji: '❤️', text: 'สวยมาก' },
+                          { emoji: '✨', text: 'ชิลล์สุดๆ' },
+                          { emoji: '☕', text: 'น่าไปตาม' },
+                          { emoji: '🙌', text: 'ปังมาก' },
+                          { emoji: '🔥', text: 'อยากไปจอย' },
+                        ].map((rx) => (
+                          <button
+                            key={rx.text}
+                            type="button"
+                            onClick={() => handleQuickCheer(post.id, `${rx.emoji} ${rx.text}`)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200/80 text-[11px] font-medium transition-all active:scale-95 cursor-pointer"
+                          >
+                            <span>{rx.emoji}</span>
+                            <span>{rx.text}</span>
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Display Any Added Positive Cheers */}
+                      {postCheers[post.id] && postCheers[post.id].length > 0 && (
+                        <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                          {postCheers[post.id].map((cheer, cIdx) => (
+                            <span
+                              key={cIdx}
+                              className="text-[10.5px] font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/80 animate-fade-in shadow-2xs"
+                            >
+                              {cheer}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </article>
                 );
@@ -1128,39 +1251,72 @@ function MomentsContent() {
         }}
       />
 
-      {/* Modal 4: Create Moment Modal (Multi-Photo up to 6 images) */}
+      {/* Modal 4: Create Moment Modal (Multi-Photo up to 6 images - Luxury Global Standard) */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div
-            className="bg-white rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto p-5 sm:p-6 space-y-4 shadow-2xl relative animate-scale-up border border-slate-200"
+            className="bg-white rounded-3xl max-w-xl sm:max-w-2xl w-full max-h-[90vh] overflow-y-auto no-scrollbar p-6 sm:p-7 space-y-5 shadow-2xl relative animate-scale-up border border-slate-200/90"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-500" />
-                <span>แชร์โมเมนต์ความประทับใจ</span>
-              </h3>
+            {/* Modal Header: Clean Typography (NO icons on top per user request) */}
+            <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+              <div className="space-y-1">
+                <h3 className="font-black text-lg sm:text-xl text-slate-900 tracking-tight">
+                  แชร์โมเมนต์ความประทับใจ
+                </h3>
+                <p className="text-xs text-slate-500 font-normal">
+                  แบ่งปันภาพถ่ายจริงและบรรยากาศดีๆ ให้เพื่อนๆ ในคอมมูนิตี้
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={() => setIsCreateModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-900 cursor-pointer"
+                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 transition-colors flex items-center justify-center cursor-pointer shrink-0"
+                title="ปิด (Esc)"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreatePost} className="space-y-4">
+            {/* Creator Persona Bar (Facebook & Threads Composer Style) */}
+            <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50/80 border border-slate-200/80">
+              <img
+                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80"
+                alt="User avatar"
+                className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-2xs shrink-0"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                  คุณส้ม (Som_Chill)
+                </p>
+                <p className="text-[11px] text-slate-500 flex items-center gap-1.5 font-medium">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>โพสต์สาธารณะ • ชุมชนชาวฮับ 77 จังหวัด</span>
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleCreatePost} className="space-y-4 sm:space-y-5">
               {/* Pillar Selector Tabs */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-800">
-                  เลือกหมวดหมู่ที่ต้องการแชร์:
+                <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                  <span>เลือกหมวดหมู่ที่ต้องการแชร์:</span>
+                  <span className="text-[11px] font-semibold text-slate-400">
+                    {createTargetType === 'spot'
+                      ? 'พิกัดเที่ยว & จุดฮีลใจ'
+                      : createTargetType === 'community'
+                      ? 'กิจกรรมคอมมูนิตี้'
+                      : createTargetType === 'fair'
+                      ? 'งานมหกรรม & เอ็กซ์โป'
+                      : 'ภารกิจชาเลนจ์'}
+                  </span>
                 </label>
-                <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-100 rounded-xl">
+                <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80">
                   {[
-                    { id: 'spot', label: 'พิกัดเที่ยว' },
-                    { id: 'community', label: 'กิจกรรม' },
-                    { id: 'fair', label: 'งานแฟร์' },
-                    { id: 'challenge', label: 'ชาเลนจ์' },
+                    { id: 'spot', label: 'พิกัดเที่ยว', activeClass: 'bg-white text-emerald-800 shadow-2xs font-black border border-emerald-200' },
+                    { id: 'community', label: 'กิจกรรม', activeClass: 'bg-white text-amber-800 shadow-2xs font-black border border-amber-200' },
+                    { id: 'fair', label: 'งานแฟร์', activeClass: 'bg-white text-blue-800 shadow-2xs font-black border border-blue-200' },
+                    { id: 'challenge', label: 'ชาเลนจ์', activeClass: 'bg-white text-purple-800 shadow-2xs font-black border border-purple-200' },
                   ].map((p) => (
                     <button
                       key={p.id}
@@ -1180,10 +1336,10 @@ function MomentsContent() {
                           setCreateTargetId(comm.id);
                         }
                       }}
-                      className={`py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                         createTargetType === p.id
-                          ? 'bg-white text-slate-900 shadow-2xs font-extrabold'
-                          : 'text-slate-500 hover:text-slate-900'
+                          ? p.activeClass
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
                       }`}
                     >
                       <span>{p.label}</span>
@@ -1192,136 +1348,194 @@ function MomentsContent() {
                 </div>
               </div>
 
-              {/* Dynamic Target Dropdown (Clean Plain Text per Rule 7) */}
-              <div className="space-y-1">
+              {/* Dynamic Target Dropdown with MapPin */}
+              <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-800">
                   {createTargetType === 'spot'
-                    ? 'เลือกสถานที่/พิกัดที่ไปมา:'
+                    ? 'เลือกสถานที่ / พิกัดที่ไปมา:'
                     : createTargetType === 'challenge'
-                    ? 'เลือกภารกิจที่ทำสำเร็จ:'
+                    ? 'เลือกภารกิจชาเลนจ์ที่ทำสำเร็จ:'
                     : createTargetType === 'fair'
-                    ? 'เลือกงานมหกรรม/เอ็กซ์โป:'
+                    ? 'เลือกงานมหกรรม / เอ็กซ์โป:'
                     : 'เลือกกิจกรรมคอมมูนิตี้:'}
                 </label>
-                <select
-                  value={createTargetId}
-                  onChange={(e) => setCreateTargetId(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:border-slate-400"
-                >
-                  {createTargetType === 'spot' &&
-                    MOCK_SPOTS.slice(0, 30).map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.title} ({s.district}, {s.province})
-                      </option>
-                    ))}
+                <div className="relative flex items-center">
+                  <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
+                  <select
+                    value={createTargetId}
+                    onChange={(e) => setCreateTargetId(e.target.value)}
+                    className="w-full bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white border border-slate-200 rounded-2xl pl-10 pr-9 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all cursor-pointer truncate"
+                  >
+                    {createTargetType === 'spot' &&
+                      MOCK_SPOTS.slice(0, 30).map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.title} ({s.district}, {s.province})
+                        </option>
+                      ))}
 
-                  {createTargetType === 'challenge' &&
-                    MOCK_CHALLENGES.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.title}
-                      </option>
-                    ))}
+                    {createTargetType === 'challenge' &&
+                      MOCK_CHALLENGES.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.title}
+                        </option>
+                      ))}
 
-                  {createTargetType === 'fair' &&
-                    MOCK_EVENTS.filter((e) => e.eventType === 'public_venue').map((f) => (
-                      <option key={f.id} value={f.id}>
-                        {f.title} ({f.location})
-                      </option>
-                    ))}
+                    {createTargetType === 'fair' &&
+                      MOCK_EVENTS.filter((e) => e.eventType === 'public_venue').map((f) => (
+                        <option key={f.id} value={f.id}>
+                          {f.title} ({f.location})
+                        </option>
+                      ))}
 
-                  {createTargetType === 'community' &&
-                    MOCK_EVENTS.filter((e) => e.eventType === 'community').map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.title} ({c.location})
-                      </option>
-                    ))}
-                </select>
+                    {createTargetType === 'community' &&
+                      MOCK_EVENTS.filter((e) => e.eventType === 'community').map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.title} ({c.location})
+                        </option>
+                      ))}
+                  </select>
+                </div>
               </div>
 
-              {/* Caption Text Area */}
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-800">
-                  ความรู้สึก / บรรยากาศประทับใจ:
-                </label>
+              {/* Caption Text Area + Quick Mood Tags */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-800">
+                  <label>ความรู้สึก & บรรยากาศประทับใจ:</label>
+                  <span className="text-[11px] font-medium text-slate-400">
+                    {captionInput.length}/500 ตัวอักษร
+                  </span>
+                </div>
                 <textarea
-                  rows={3}
+                  rows={4}
                   value={captionInput}
+                  maxLength={500}
                   onChange={(e) => setCaptionInput(e.target.value)}
-                  placeholder="เช่น บรรยากาศสงบ กาแฟดริปหอมละมุน หรือฝึกซ้อมผ่านสถานีสำเร็จ..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-800 focus:outline-none focus:border-slate-400"
+                  placeholder="เล่าความประทับใจ กลิ่นกาแฟ ผู้คน บรรยากาศรอบตัว หรือมุมถ่ายรูปที่ไม่อยากให้เพื่อนๆ พลาด..."
+                  className="w-full bg-slate-50/80 hover:bg-slate-100/50 focus:bg-white border border-slate-200 rounded-2xl p-3.5 text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all resize-none leading-relaxed placeholder:text-slate-400"
                   required
                 />
+
+                {/* Quick Vibe Chips to append to caption */}
+                <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    แท็กอารมณ์:
+                  </span>
+                  {[
+                    '☕ กาแฟดริปดีมาก',
+                    '🌿 ธรรมชาติฮีลใจ',
+                    '📸 มุมถ่ายรูปปัง',
+                    '🏃 สดชื่นได้เหงื่อ',
+                    '✨ บรรยากาศสงบ',
+                  ].map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() =>
+                        setCaptionInput((prev) => (prev ? `${prev} ${tag}` : tag))
+                      }
+                      className="text-[10.5px] font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-0.5 rounded-full border border-slate-200 transition-colors cursor-pointer active:scale-95"
+                    >
+                      + {tag}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Multi-Photo Upload Section (Up to 6 images) */}
-              <div className="space-y-2 pt-1 border-t border-slate-100">
+              <div className="space-y-2.5 pt-1 border-t border-slate-100">
                 <div className="flex items-center justify-between text-xs font-bold text-slate-800">
-                  <span>รูปภาพโมเมนต์บรรยากาศ ({uploadedPostImages.length}/6 รูป):</span>
-                  <span className="text-[10px] text-slate-500 font-semibold">อัปโหลดได้สูงสุด 6 รูป</span>
+                  <div className="flex items-center gap-2">
+                    <Camera className="w-4 h-4 text-slate-500" />
+                    <span>รูปภาพโมเมนต์บรรยากาศ ({uploadedPostImages.length}/6 รูป)</span>
+                  </div>
+                  <span className="text-[11px] text-slate-500 font-medium">
+                    อัปโหลดได้สูงสุด 6 รูป
+                  </span>
                 </div>
 
                 {/* Uploaded Thumbnails Grid */}
-                {uploadedPostImages.length > 0 && (
-                  <div className="grid grid-cols-3 gap-2">
-                    {uploadedPostImages.map((img, idx) => (
-                      <div
-                        key={idx}
-                        className="relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-200 group"
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  {uploadedPostImages.map((img, idx) => (
+                    <div
+                      key={idx}
+                      className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/90 group shadow-2xs"
+                    >
+                      <img src={img} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
+                      {idx === 0 && (
+                        <span className="absolute bottom-1.5 left-1.5 bg-black/70 text-white text-[9.5px] font-black px-2 py-0.5 rounded-md backdrop-blur-xs">
+                          ภาพหน้าปก
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(idx)}
+                        className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/75 hover:bg-rose-600 text-white flex items-center justify-center text-xs transition-colors cursor-pointer shadow-md"
+                        title="ลบรูปนี้"
                       >
-                        <img src={img} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveImage(idx)}
-                          className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 hover:bg-rose-600 text-white flex items-center justify-center text-[10px] transition-colors cursor-pointer"
-                          title="ลบรูปนี้"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                        ✕
+                      </button>
+                    </div>
+                  ))}
 
-                {/* File Picker Trigger (if < 6 photos) */}
-                {uploadedPostImages.length < 6 && (
-                  <label className="p-3 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-200 hover:border-slate-400 transition-colors text-center cursor-pointer flex flex-col items-center justify-center space-y-1">
-                    <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-slate-600 shadow-2xs border border-slate-200">
-                      <ImageIcon className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-800">
-                        คลิกเพื่อเพิ่มรูปภาพ (เลือกได้หลายรูป)
-                      </p>
-                      <p className="text-[10px] text-slate-500">
-                        รองรับ JPG, PNG, WEBP (เหลือที่ว่างอีก {6 - uploadedPostImages.length} รูป)
-                      </p>
-                    </div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageFilesChange}
-                      className="hidden"
-                    />
-                  </label>
-                )}
+                  {/* Add More Photos Slot (if < 6) */}
+                  {uploadedPostImages.length < 6 && (
+                    <label
+                      className={`${
+                        uploadedPostImages.length === 0
+                          ? 'col-span-2 sm:col-span-3 py-6 px-4'
+                          : 'aspect-[4/3]'
+                      } rounded-2xl bg-slate-50 hover:bg-slate-100/80 border-2 border-dashed border-slate-300 hover:border-slate-500 transition-all text-center cursor-pointer flex flex-col items-center justify-center gap-1.5 group`}
+                    >
+                      <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-slate-500 group-hover:text-slate-900 group-hover:scale-105 shadow-2xs border border-slate-200 transition-all">
+                        <ImageIcon className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-800">
+                          {uploadedPostImages.length === 0
+                            ? 'คลิกเพื่อเพิ่มรูปภาพ หรือลากไฟล์มาวาง'
+                            : '+ เพิ่มรูปภาพ'}
+                        </p>
+                        <p className="text-[10.5px] text-slate-500">
+                          {uploadedPostImages.length === 0
+                            ? `รองรับ JPG, PNG, WEBP (เหลืออีก 6 รูป)`
+                            : `เหลืออีก ${6 - uploadedPostImages.length} รูป`}
+                        </p>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageFilesChange}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
-                >
-                  ยกเลิก
-                </button>
-                <button
-                  type="submit"
-                  className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold text-xs transition-all shadow-2xs active:scale-95 cursor-pointer"
-                >
-                  โพสต์โมเมนต์เลย
-                </button>
+              {/* Action Buttons: Signature Royal Blue Main CTA */}
+              <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                <span className="text-[11px] text-slate-400 font-medium">
+                  {uploadedPostImages.length === 0
+                    ? '💡 ใส่รูปภาพอย่างน้อย 1 รูป เพื่อให้เพื่อนๆ เห็นบรรยากาศ'
+                    : 'พร้อมแชร์ลงฟีดคอมมูนิตี้แล้ว'}
+                </span>
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+                  >
+                    ยกเลิก
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!captionInput.trim()}
+                    className="bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-40 disabled:pointer-events-none text-white px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm hover:shadow-md active:scale-95 cursor-pointer"
+                  >
+                    โพสต์โมเมนต์เลย
+                  </button>
+                </div>
               </div>
             </form>
           </div>

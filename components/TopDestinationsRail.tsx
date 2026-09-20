@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, MapPin, Check, Sparkles, Compass } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MapPin, Check, Sparkles, Compass, X } from 'lucide-react';
 import { MOCK_SPOTS } from '@/data/spotsData';
 
 export interface TopDestinationItem {
@@ -199,10 +199,11 @@ export const TopDestinationsRail: React.FC<TopDestinationsRailProps> = ({
           <button
             type="button"
             onClick={() => onSelectProvince('all')}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-all cursor-pointer shadow-xs active:scale-95 shrink-0"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 group/clear"
+            title="คลิกเพื่อล้างตัวกรองและแสดงพิกัดทั่วประเทศทั้งหมด"
           >
-            <span>ดูครบ 77 จังหวัด</span>
-            <span className="text-slate-300 font-normal">({totalAllSpots})</span>
+            <X className="w-3.5 h-3.5 text-slate-300 group-hover/clear:text-white transition-colors" />
+            <span>ล้างตัวกรอง (ดูครบ 77 จังหวัด {totalAllSpots})</span>
           </button>
         )}
       </div>
@@ -237,7 +238,7 @@ export const TopDestinationsRail: React.FC<TopDestinationsRailProps> = ({
         {/* Horizontal Scroll Track */}
         <div
           ref={scrollContainerRef}
-          className="flex items-stretch gap-3 sm:gap-4 overflow-x-auto scrollbar-none scroll-smooth pb-2 pt-1 px-0.5"
+          className="flex items-stretch gap-3 sm:gap-4 overflow-x-auto scrollbar-none scroll-smooth pt-3 pb-2.5 px-1.5"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {TOP_DESTINATIONS.map((dest) => {

@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useRef, useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, X } from 'lucide-react';
 import { EventItem, MOCK_EVENTS } from '@/data/mockData';
+import { isEventEnded } from '@/lib/dateUtils';
 
 export interface TopVenueItem {
   id: string;
@@ -100,7 +101,7 @@ export const TopVenuesRail: React.FC<TopVenuesRailProps> = ({
   // Compute actual counts for active public venue events
   const { countsMap, totalAllFairs } = useMemo(() => {
     const counts: Record<string, number> = {};
-    const activePublic = eventsList.filter((e) => e.eventType === 'public_venue' && e.status !== 'ended');
+    const activePublic = eventsList.filter((e) => e.eventType === 'public_venue' && !isEventEnded(e));
 
     TOP_VENUES.forEach((v) => {
       const matchCount = activePublic.filter((ev) => {
@@ -171,10 +172,11 @@ export const TopVenuesRail: React.FC<TopVenuesRailProps> = ({
           <button
             type="button"
             onClick={() => onSelectVenue(null)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-all cursor-pointer shadow-xs active:scale-95 shrink-0"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 group/clear"
+            title="คลิกเพื่อล้างตัวกรองและแสดงงานมหกรรมทั้งหมด"
           >
-            <span>ดูครบทุกศูนย์จัดงาน</span>
-            <span className="text-slate-300 font-normal">({totalAllFairs})</span>
+            <X className="w-3.5 h-3.5 text-slate-300 group-hover/clear:text-white transition-colors" />
+            <span>ล้างตัวกรอง (ดูทั้งหมด {totalAllFairs})</span>
           </button>
         )}
       </div>
@@ -208,7 +210,7 @@ export const TopVenuesRail: React.FC<TopVenuesRailProps> = ({
         {/* Horizontal Scroll Track */}
         <div
           ref={scrollContainerRef}
-          className="flex items-stretch gap-3 sm:gap-4 overflow-x-auto scrollbar-none scroll-smooth pb-2 pt-1 px-0.5"
+          className="flex items-stretch gap-3 sm:gap-4 overflow-x-auto scrollbar-none scroll-smooth pt-3 pb-2.5 px-1.5"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {TOP_VENUES.map((venue) => {

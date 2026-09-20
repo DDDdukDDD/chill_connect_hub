@@ -32,7 +32,8 @@ import { TopVenuesRail } from '@/components/TopVenuesRail';
 import { FairCategoryRail, NATIONWIDE_FAIR_CATEGORIES } from '@/components/FairCategoryRail';
 import { Pagination } from '@/components/Pagination';
 import { BrandLogo } from '@/components/BrandLogo';
-import { MOCK_SPOTS, SPOT_CATEGORIES, ALL_THAI_PROVINCES, LifestyleSpotItem } from '@/data/spotsData';
+import { MOCK_SPOTS, SPOT_CATEGORIES, ALL_THAI_PROVINCES, LifestyleSpotItem, getSpotVibeCategory } from '@/data/spotsData';
+import { getCommunityEventCategory, getFairEventCategory } from '@/data/masterHub';
 import { SpotCard } from '@/components/SpotCard';
 import { isEventEnded, isEventNew, parseEventDateToTimestamp, parseEventEndDateToTimestamp, isEventEndedByDate, isEventMatchingTimeFilter } from '@/lib/dateUtils';
 import { useAuth } from '@/lib/useAuth';
@@ -648,27 +649,13 @@ function HomeContent() {
 
       const eventText = `${event.title} ${event.description} ${event.tag} ${event.badgeText || ''} ${event.location} ${event.hostName || ''} ${event.category} ${event.zone || ''}`.toLowerCase();
 
-      // Category filter for Community Stream
+      // Category filter for Community Stream (1 Card = 1 Category)
       if (selectedCategory !== null) {
         const cat = selectedCategory as string;
         if (cat === 'heal' || cat === 'move' || cat === 'chill' || cat === 'learn') {
           if (event.category !== cat) return false;
-        } else if (cat === 'running_fitness') {
-          if (!['วิ่ง', 'running', 'marathon', 'hyrox', 'fitness', 'กีฬา', 'sport', 'climbing', 'ปีน', 'badminton'].some(k => eventText.includes(k))) return false;
-        } else if (cat === 'wellness_mind') {
-          if (!['sound bath', 'soundbath', 'yoga', 'โยคะ', 'สมาธิ', 'mindfulness', 'heal', 'ฮีลใจ', 'บำบัด', 'introvert'].some(k => eventText.includes(k))) return false;
-        } else if (cat === 'cafe_social') {
-          if (!['cafe', 'คาเฟ่', 'coffee', 'กาแฟ', 'slow bar', 'hangout', 'จิบกาแฟ', 'พูดคุย', 'อาหาร', 'tea', 'ชา', 'มัทฉะ'].some(k => eventText.includes(k))) return false;
-        } else if (cat === 'boardgames_party') {
-          if (!['board game', 'boardgame', 'บอร์ดเกม', 'เกม', 'catan', 'quiz', 'party', 'เกมกลุ่ม', 'เพื่อนใหม่'].some(k => eventText.includes(k))) return false;
-        } else if (cat === 'arts_crafts') {
-          if (!['workshop', 'เวิร์กช็อป', 'art', 'ศิลปะ', 'craft', 'คราฟต์', 'เซรามิก', 'pottery', 'ปั้นดิน', 'painting', 'สีน้ำ', 'เทียน', 'candle', 'ภาพวาด'].some(k => eventText.includes(k))) return false;
-        } else if (cat === 'travel_outdoor') {
-          if (!['outdoor', 'เอาต์ดอร์', 'camping', 'กางเต็นท์', 'เดินป่า', 'คายัค', 'sup board', 'ซับบอร์ด', 'ธรรมชาติ', 'photowalk', 'ถ่ายรูป'].some(k => eventText.includes(k))) return false;
-        } else if (cat === 'tech_skills') {
-          if (!['tech', 'ai', 'coding', 'developer', 'startup', 'business', 'networking', 'หนังสือ', 'book', 'talk', 'เสวนา'].some(k => eventText.includes(k))) return false;
-        } else if (cat === 'pets_family') {
-          if (!['pet', 'สัตว์เลี้ยง', 'หมา', 'แมว', 'dog', 'cat', 'family', 'ครอบครัว', 'เด็ก', 'kids'].some(k => eventText.includes(k))) return false;
+        } else {
+          if (getCommunityEventCategory(event) !== cat) return false;
         }
       }
 
@@ -683,7 +670,9 @@ function HomeContent() {
 
       if (searchQuery.trim() !== '') {
         const q = searchQuery.toLowerCase().trim();
-        if (!eventText.includes(q)) return false;
+        const isCoffee = q.includes('slow bar') || q.includes('สโลว์บาร์') || q.includes('coffee') || q.includes('กาแฟ') || q.includes('drip') || q.includes('ดริป');
+        const matches = eventText.includes(q) || (isCoffee && (eventText.includes('กาแฟ') || eventText.includes('coffee') || eventText.includes('สโลว์บาร์') || eventText.includes('slow bar') || eventText.includes('ดริป')));
+        if (!matches) return false;
       }
 
       // Time filter for Community Stream
@@ -697,20 +686,42 @@ function HomeContent() {
     });
   }, [eventsList, selectedCategory, selectedCommunityClub, searchQuery, timeFilter, startDate, endDate]);
 
+  // Dynamic community category counts (supports club filter context from TopCommunityRail)
+  const communityCategoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    const baseEvents = eventsList.filter((event) => {
+      if ((event.eventType || 'community') !== 'community') return false;
+      if (isEventEnded(event)) return false;
+
+      // Filter by selected community club if active
+      if (selectedCommunityClub && selectedCommunityClub !== 'all') {
+        const clubDef = TOP_COMMUNITY_CLUBS.find((c) => c.clubKey === selectedCommunityClub);
+        if (clubDef) {
+          const eventText = `${event.title} ${event.description} ${event.tag || ''} ${event.badgeText || ''} ${event.location} ${event.hostName || ''} ${event.category || ''} ${event.zone || ''}`.toLowerCase();
+          const matches = clubDef.keywords.some((kw) => eventText.includes(kw.toLowerCase()));
+          if (!matches) return false;
+        }
+      }
+      return true;
+    });
+
+    counts['all'] = baseEvents.length;
+    COMMUNITY_LIFESTYLE_CATEGORIES.forEach((cat) => {
+      counts[cat.id] = baseEvents.filter((event) => getCommunityEventCategory(event) === cat.id).length;
+    });
+
+    return counts;
+  }, [eventsList, selectedCommunityClub]);
+
   const streamPublicEvents = useMemo(() => {
     return eventsList.filter((event) => {
       if (event.eventType !== 'public_venue') return false;
       // Auto-hide ended events on homepage
       if (isEventEnded(event)) return false;
 
-      // Category Rail Filter for Fairs Stream
+      // Category Rail Filter for Fairs Stream (1 Card = 1 Category)
       if (selectedFairRailCategory && selectedFairRailCategory !== 'all') {
-        const catDef = NATIONWIDE_FAIR_CATEGORIES.find((c) => c.id === selectedFairRailCategory);
-        if (catDef) {
-          const text = `${event.title} ${event.description} ${event.tag} ${event.location} ${event.hostName || ''} ${event.venueTag || ''}`.toLowerCase();
-          const matches = catDef.keywords.some((kw) => text.includes(kw.toLowerCase()));
-          if (!matches) return false;
-        }
+        if (getFairEventCategory(event) !== selectedFairRailCategory) return false;
       }
 
       // Independent Venue filter for Fairs Stream (supports venueTag, location name, and keywords)
@@ -734,8 +745,18 @@ function HomeContent() {
 
       if (searchQuery.trim() !== '') {
         const q = searchQuery.toLowerCase().trim();
-        const eventText = `${event.title} ${event.description} ${event.tag} ${event.location} ${event.hostName}`.toLowerCase();
-        if (!eventText.includes(q)) return false;
+        const eventText = `${event.title} ${event.description} ${event.tag} ${event.location} ${event.hostName} ${event.venueTag || ''}`.toLowerCase();
+        const isCoffee = q.includes('slow bar') || q.includes('สโลว์บาร์') || q.includes('coffee') || q.includes('กาแฟ');
+        const isQsncc = q.includes('qsncc') || q.includes('สิริกิติ์');
+        const isBitec = q.includes('bitec') || q.includes('ไบเทค');
+        const isImpact = q.includes('impact') || q.includes('อิมแพ็ค');
+        const matches =
+          eventText.includes(q) ||
+          (isCoffee && (eventText.includes('กาแฟ') || eventText.includes('coffee'))) ||
+          (isQsncc && (eventText.includes('qsncc') || eventText.includes('สิริกิติ์'))) ||
+          (isBitec && (eventText.includes('bitec') || eventText.includes('ไบเทค'))) ||
+          (isImpact && (eventText.includes('impact') || eventText.includes('อิมแพ็ค')));
+        if (!matches) return false;
       }
 
       // Time filter for Fairs Stream
@@ -776,10 +797,7 @@ function HomeContent() {
 
     counts['all'] = baseEvents.length;
     NATIONWIDE_FAIR_CATEGORIES.forEach((cat) => {
-      counts[cat.id] = baseEvents.filter((ev) => {
-        const text = `${ev.title} ${ev.description} ${ev.tag} ${ev.location} ${ev.hostName || ''} ${ev.venueTag || ''}`.toLowerCase();
-        return cat.keywords.some((kw) => text.includes(kw.toLowerCase()));
-      }).length;
+      counts[cat.id] = baseEvents.filter((ev) => getFairEventCategory(ev) === cat.id).length;
     });
     return counts;
   }, [eventsList, selectedVenueFilter]);
@@ -787,14 +805,9 @@ function HomeContent() {
   // Filtered Lifestyle Spots (พิกัดเที่ยว & จุดฮีลใจ ทั่วประเทศ)
   const filteredSpots = useMemo(() => {
     const result = MOCK_SPOTS.filter((spot) => {
-      // 0. Spot Category Rail Filter
+      // 0. Spot Category Rail Filter (1 Card = 1 Category)
       if (selectedSpotRailCategory && selectedSpotRailCategory !== 'all') {
-        const catDef = NATIONWIDE_SPOT_CATEGORIES.find((c) => c.id === selectedSpotRailCategory);
-        if (catDef) {
-          const text = `${spot.title} ${spot.category} ${spot.categoryLabel} ${spot.description} ${spot.province} ${(spot.vibeTags || []).join(' ')} ${(spot.highlights || []).join(' ')}`.toLowerCase();
-          const matches = catDef.keywords.some((kw) => text.includes(kw.toLowerCase()));
-          if (!matches) return false;
-        }
+        if (getSpotVibeCategory(spot) !== selectedSpotRailCategory) return false;
       }
 
       // 1. Category Filter
@@ -841,12 +854,24 @@ function HomeContent() {
       // 5. Search Query Filter
       if (searchQuery.trim() !== '') {
         const q = searchQuery.toLowerCase().trim();
+        const isCoffee = q.includes('slow bar') || q.includes('สโลว์บาร์') || q.includes('coffee') || q.includes('กาแฟ');
         const matchTitle = spot.title.toLowerCase().includes(q);
         const matchDesc = spot.description.toLowerCase().includes(q);
         const matchProv = spot.province.toLowerCase().includes(q);
         const matchDist = spot.district.toLowerCase().includes(q);
         const matchTag = spot.vibeTags.some((t) => t.toLowerCase().includes(q));
-        if (!matchTitle && !matchDesc && !matchProv && !matchDist && !matchTag) {
+        const matchCat = (spot.categoryLabel || '').toLowerCase().includes(q);
+        const matchHighlights = (spot.highlights || []).some((h) => h.toLowerCase().includes(q));
+        const matchSynonym = isCoffee && (
+          spot.title.toLowerCase().includes('กาแฟ') ||
+          spot.title.toLowerCase().includes('coffee') ||
+          spot.title.toLowerCase().includes('สโลว์บาร์') ||
+          spot.description.toLowerCase().includes('กาแฟ') ||
+          (spot.categoryLabel || '').toLowerCase().includes('กาแฟ') ||
+          spot.vibeTags.some((t) => t.toLowerCase().includes('กาแฟ') || t.toLowerCase().includes('slow bar'))
+        );
+
+        if (!matchTitle && !matchDesc && !matchProv && !matchDist && !matchTag && !matchCat && !matchHighlights && !matchSynonym) {
           return false;
         }
       }
@@ -905,10 +930,7 @@ function HomeContent() {
 
     counts['all'] = baseSpots.length;
     NATIONWIDE_SPOT_CATEGORIES.forEach((cat) => {
-      counts[cat.id] = baseSpots.filter((spot) => {
-        const text = `${spot.title} ${spot.category} ${spot.categoryLabel} ${spot.description} ${spot.province} ${(spot.vibeTags || []).join(' ')} ${(spot.highlights || []).join(' ')}`.toLowerCase();
-        return cat.keywords.some((kw) => text.includes(kw.toLowerCase()));
-      }).length;
+      counts[cat.id] = baseSpots.filter((spot) => getSpotVibeCategory(spot) === cat.id).length;
     });
     return counts;
   }, [selectedSpotProvince]);
@@ -993,20 +1015,25 @@ function HomeContent() {
     setCurrentFairPage(1);
     setCurrentSpotPage(1);
 
-    // Scroll to the targeted section based on the active scope tab
-    if (activeScopeTab === 'community') {
-      const el = document.getElementById('section-community');
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } else if (activeScopeTab === 'fairs') {
-      const el = document.getElementById('section-fairs');
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } else if (activeScopeTab === 'spots') {
-      const el = document.getElementById('section-spots');
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } else {
-      const el = document.getElementById('catalog-section');
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
-    }
+    // Scroll down to the search cards display section based on the active scope tab
+    const performScroll = () => {
+      let targetId = 'catalog-section';
+      if (activeScopeTab === 'community') {
+        targetId = 'section-community-cards';
+      } else if (activeScopeTab === 'fairs') {
+        targetId = 'section-fairs-cards';
+      } else if (activeScopeTab === 'spots') {
+        targetId = 'section-spots-cards';
+      }
+
+      const el = document.getElementById(targetId) || document.getElementById('catalog-section');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    };
+
+    performScroll();
+    setTimeout(performScroll, 60);
   };
 
   // AI Search & Google Events Rich Results Schema (GEO / Generative Engine Optimization)
@@ -1370,6 +1397,8 @@ function HomeContent() {
                       selectedClub={selectedCommunityClub}
                       onSelectClub={(clubKey) => {
                         setSelectedCommunityClub(clubKey);
+                        setSelectedCategory(null);
+                        setSelectedSubCategory(null);
                         if (typeof window !== 'undefined' && window.innerWidth < 640) {
                           const el = document.getElementById('section-community-cards');
                           if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1387,12 +1416,13 @@ function HomeContent() {
                         setSelectedCategory(catId as any);
                         setSelectedSubCategory(null);
                       }}
+                      eventCounts={communityCategoryCounts}
                       variant="rail"
                     />
                   </div>
 
                   {/* Community Events Grid (10 items across all screen sizes with dynamic responsive columns) */}
-                  <div id="section-community-cards">
+                  <div id="section-community-cards" className="scroll-mt-24">
                     <EventGrid
                       events={streamCommunityEvents}
                       limit={10}
@@ -1484,6 +1514,7 @@ function HomeContent() {
                       selectedVenue={selectedVenueFilter}
                       onSelectVenue={(venueKey) => {
                         setSelectedVenueFilter(venueKey);
+                        setSelectedFairRailCategory(null);
                         if (typeof window !== 'undefined' && window.innerWidth < 640) {
                           const el = document.getElementById('section-fairs-cards');
                           if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1505,7 +1536,7 @@ function HomeContent() {
                   </div>
 
                   {/* Public Venue Events Grid (10 items across all screen sizes with dynamic responsive columns) */}
-                  <div id="section-fairs-cards">
+                  <div id="section-fairs-cards" className="scroll-mt-24">
                     <EventGrid
                       events={streamPublicEvents}
                       limit={10}
@@ -1557,6 +1588,7 @@ function HomeContent() {
                       selectedProvince={selectedSpotProvince}
                       onSelectProvince={(prov) => {
                         setSelectedSpotProvince(prov);
+                        setSelectedSpotRailCategory(null);
                         if (typeof window !== 'undefined' && window.innerWidth < 640) {
                           const el = document.getElementById('section-spots-cards');
                           if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1577,7 +1609,7 @@ function HomeContent() {
                   </div>
 
                   {/* Spot Cards Grid: 10 items across all screen sizes */}
-                  <div id="section-spots-cards">
+                  <div id="section-spots-cards" className="scroll-mt-24">
                     {filteredSpots.length > 0 ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
                         {filteredSpots.slice(0, 10).map((spot) => (
@@ -1720,6 +1752,7 @@ function HomeContent() {
                       setSelectedSubCategory(null);
                       setCurrentCommunityPage(1);
                     }}
+                    eventCounts={communityCategoryCounts}
                     variant="rail"
                   />
                 </div>

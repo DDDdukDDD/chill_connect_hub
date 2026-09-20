@@ -597,3 +597,218 @@ export const MASTER_QUEST_CATEGORIES: MasterQuestCategory[] = [
   { id: 'badge_only', name: 'สะสม Badge' },
   { id: 'exp_badge', name: 'สะสม EXP + Badge' },
 ];
+
+// =========================================================================
+// 6. 🎯 DETERMINISTIC SINGLE-CATEGORY CLASSIFIERS (1 Card = Exactly 1 Category)
+// =========================================================================
+
+/**
+ * Maps any community event to EXACTLY ONE of the 8 Community Lifestyle Categories.
+ * Guarantees zero multi-category bleeding and ensures category rail counts sum to 100% of cards.
+ */
+export function getCommunityEventCategory(event: {
+  lifestyleCategory?: string;
+  tag?: string;
+  title?: string;
+  description?: string;
+  location?: string;
+  category?: string;
+}): string {
+  if (event.lifestyleCategory) return event.lifestyleCategory;
+
+  const tag = (event.tag || '').toLowerCase();
+  const title = (event.title || '').toLowerCase();
+
+  // Priority 1: High-specificity indicators in title or tag
+  if (
+    tag.includes('เทคโนโลยี') ||
+    tag.includes('ai') ||
+    title.includes('ai') ||
+    title.includes('hack night') ||
+    title.includes('coding') ||
+    title.includes('developer')
+  ) {
+    return 'tech_skills';
+  }
+  if (
+    title.includes('ทาสแมว') ||
+    title.includes('หมา') ||
+    title.includes('สัตว์เลี้ยง') ||
+    title.includes('pet ') ||
+    title.includes('cat cafe') ||
+    tag.includes('pet')
+  ) {
+    return 'pets_family';
+  }
+  if (
+    tag.includes('บอร์ดเกม') ||
+    tag.includes('boardgame') ||
+    tag.includes('#boardgame') ||
+    title.includes('บอร์ดเกม') ||
+    tag.includes('#pubquiz')
+  ) {
+    return 'boardgames_party';
+  }
+  if (
+    tag.includes('วิ่ง') ||
+    title.includes('วิ่ง') ||
+    title.includes('jogging') ||
+    tag.includes('bouldering') ||
+    tag.includes('ปีนผา') ||
+    title.includes('ปีนผา') ||
+    tag.includes('ฟิตเนส') ||
+    tag.includes('ออกกำลังกาย') ||
+    tag.includes('#badminton') ||
+    tag.includes('#pilates') ||
+    tag.includes('hyrox') ||
+    title.includes('surf skate')
+  ) {
+    return 'running_fitness';
+  }
+  if (
+    tag.includes('เวิร์กช็อป') ||
+    tag.includes('#workshop') ||
+    tag.includes('#art') ||
+    tag.includes('เซรามิก') ||
+    title.includes('เซรามิก') ||
+    title.includes('pottery') ||
+    title.includes('วาดภาพ') ||
+    title.includes('เทียนหอม') ||
+    tag.includes('#candle') ||
+    title.includes('อบคุกกี้') ||
+    tag.includes('#baking') ||
+    title.includes('แหวนเงิน') ||
+    tag.includes('#leatherwork')
+  ) {
+    return 'arts_crafts';
+  }
+  if (
+    tag.includes('ซับบอร์ด') ||
+    title.includes('ซับบอร์ด') ||
+    title.includes('sup board') ||
+    tag.includes('แคมป์') ||
+    title.includes('เดินป่า') ||
+    tag.includes('#streetphoto') ||
+    title.includes('photo walk')
+  ) {
+    return 'travel_outdoor';
+  }
+  if (
+    tag.includes('ฮีลใจ') ||
+    tag.includes('บำบัด') ||
+    tag.includes('สมาธิ') ||
+    tag.includes('sound bath') ||
+    tag.includes('soundbath') ||
+    title.includes('sound bath') ||
+    title.includes('มัทฉะ') ||
+    tag.includes('#mindfulness') ||
+    tag.includes('#aromatherapy') ||
+    tag.includes('โยคะ') ||
+    tag.includes('#introvert')
+  ) {
+    return 'wellness_mind';
+  }
+  if (
+    tag.includes('กาแฟ') ||
+    tag.includes('คาเฟ่') ||
+    tag.includes('slow bar') ||
+    tag.includes('นัดชิลล์') ||
+    tag.includes('#coffeelover') ||
+    tag.includes('#matchalover') ||
+    tag.includes('#vinylculture') ||
+    title.includes('กาแฟ') ||
+    title.includes('drip') ||
+    title.includes('ชิมกาแฟ') ||
+    title.includes('ค็อกเทล') ||
+    title.includes('จิบชา') ||
+    title.includes('ดูหนัง') ||
+    title.includes('เดี่ยวไมโครโฟน') ||
+    title.includes('guitar') ||
+    title.includes('ดนตรี') ||
+    title.includes('ฝึกภาษา') ||
+    title.includes('coworking')
+  ) {
+    return 'cafe_social';
+  }
+
+  // Fallback by legacy coreMood category
+  if (event.category === 'move') return 'running_fitness';
+  if (event.category === 'heal') return 'wellness_mind';
+  if (event.category === 'learn') return 'arts_crafts';
+  return 'cafe_social';
+}
+
+/**
+ * Maps any major fair or public venue event to EXACTLY ONE of the Master Fair Categories.
+ * Guarantees zero multi-category bleeding and ensures category rail counts sum to 100% of cards.
+ */
+export function getFairEventCategory(event: {
+  fairCategory?: string;
+  tag?: string;
+  title?: string;
+  description?: string;
+  venueTag?: string;
+  location?: string;
+}): string {
+  if (event.fairCategory) return event.fairCategory;
+  const tag = (event.tag || '').toLowerCase();
+  const title = (event.title || '').toLowerCase();
+  const venueTag = (event.venueTag || '').toLowerCase();
+  const text = `${title} ${tag}`;
+
+  if (
+    text.includes('วิ่ง') ||
+    text.includes('marathon') ||
+    text.includes('มาราธอน') ||
+    text.includes('กีฬา') ||
+    text.includes('sport') ||
+    venueTag === 'marathon'
+  ) {
+    return 'marathon_sports';
+  }
+  if (
+    venueTag === 'park' ||
+    text.includes('ดนตรีในสวน') ||
+    text.includes('open air') ||
+    text.includes('ลานคนเมือง') ||
+    text.includes('สนามหลวง')
+  ) {
+    return 'parks_openair';
+  }
+  if (
+    text.includes('ประเพณี') ||
+    text.includes('กาชาด') ||
+    text.includes('เกษตรแฟร์') ||
+    text.includes('งานวัด') ||
+    text.includes('heritage') ||
+    text.includes('วัฒนธรรม')
+  ) {
+    return 'heritage_local';
+  }
+  if (
+    text.includes('design week') ||
+    text.includes('biennale') ||
+    text.includes('art') ||
+    text.includes('ศิลปะ') ||
+    text.includes('creative') ||
+    text.includes('นิทรรศการ') ||
+    text.includes('gallery') ||
+    venueTag === 'bacc'
+  ) {
+    return 'art_festivals';
+  }
+  if (
+    text.includes('craft') ||
+    text.includes('คราฟต์') ||
+    text.includes('ตลาดนัด') ||
+    text.includes('flea market') ||
+    text.includes('art toy') ||
+    text.includes('อาร์ตทอย') ||
+    text.includes('book') ||
+    text.includes('หนังสือ')
+  ) {
+    return 'craft_market';
+  }
+  return 'convention_centers';
+}
+

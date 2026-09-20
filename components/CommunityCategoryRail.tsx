@@ -75,30 +75,40 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
             const Icon = cat.icon;
             const isSelected = selectedCategoryId === cat.id;
             const count = eventCounts[cat.id] ?? 0;
+            const isDisabled = count === 0;
 
             return (
               <button
                 key={cat.id}
                 type="button"
-                onClick={() => onSelectCategory(isSelected ? null : cat.id)}
-                className={`p-3.5 rounded-2xl border transition-all duration-200 text-left flex flex-col justify-between gap-2.5 cursor-pointer relative group ${
-                  isSelected
-                    ? 'bg-[#FFF4EE] border-[#F26430] ring-2 ring-[#F26430]/25 shadow-sm'
-                    : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200/80 hover:border-slate-300 shadow-2xs hover:shadow-xs'
+                disabled={isDisabled}
+                onClick={() => {
+                  if (isDisabled) return;
+                  onSelectCategory(isSelected ? null : cat.id);
+                }}
+                title={isDisabled ? `${cat.name} (ยังไม่มีกิจกรรมในหมวดนี้)` : `${cat.name} (${count} ตี้กิจกรรม)`}
+                className={`p-3.5 rounded-2xl border transition-all duration-200 text-left flex flex-col justify-between gap-2.5 select-none relative ${
+                  isDisabled
+                    ? 'opacity-40 bg-slate-50/70 border-slate-200/50 text-slate-400 cursor-not-allowed shadow-none'
+                    : isSelected
+                    ? 'bg-[#FFF4EE] border-[#F26430] ring-2 ring-[#F26430]/25 shadow-sm cursor-pointer'
+                    : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200/80 hover:border-slate-300 shadow-2xs hover:shadow-xs cursor-pointer group'
                 }`}
               >
                 <div className="flex items-center justify-between w-full">
                   <div
-                    className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
-                      isSelected
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-transform ${
+                      isDisabled
+                        ? 'bg-slate-100 text-slate-400'
+                        : isSelected
                         ? 'bg-[#F26430] text-white shadow-xs'
-                        : `${cat.colorScheme.iconBg} ${cat.colorScheme.iconColor}`
+                        : `${cat.colorScheme.iconBg} ${cat.colorScheme.iconColor} group-hover:scale-105`
                     }`}
                   >
                     <Icon className="w-4 h-4" />
                   </div>
 
-                  {count > 0 && (
+                  {count > 0 ? (
                     <span
                       className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                         isSelected ? 'bg-orange-200/70 text-[#D04A1B]' : 'bg-slate-100 text-slate-600'
@@ -106,17 +116,21 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
                     >
                       {count}
                     </span>
+                  ) : (
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100/80 text-slate-400">
+                      0
+                    </span>
                   )}
                 </div>
 
                 <div className="space-y-0.5 w-full">
                   <span className={`font-bold text-xs sm:text-sm truncate block leading-snug ${
-                    isSelected ? 'text-[#D04A1B]' : 'text-slate-900'
+                    isDisabled ? 'text-slate-400' : isSelected ? 'text-[#D04A1B]' : 'text-slate-900'
                   }`}>
                     {cat.name}
                   </span>
                   <p className={`text-[11px] font-medium truncate leading-normal ${
-                    isSelected ? 'text-[#F26430]' : 'text-slate-400'
+                    isDisabled ? 'text-slate-400/80' : isSelected ? 'text-[#F26430]' : 'text-slate-400'
                   }`}>
                     {cat.nameEn}
                   </p>
@@ -188,6 +202,15 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
             }`}>
               <Compass className="w-4 h-4" />
             </div>
+            {eventCounts['all'] !== undefined && (
+              <span
+                className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                  selectedCategoryId === null ? 'bg-orange-200/70 text-[#D04A1B]' : 'bg-slate-100 text-slate-600'
+                }`}
+              >
+                {eventCounts['all']}
+              </span>
+            )}
           </div>
           <div className="text-left leading-tight">
             <span className={`block text-xs font-bold ${
@@ -208,31 +231,41 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
           const Icon = cat.icon;
           const isSelected = selectedCategoryId === cat.id;
           const count = eventCounts[cat.id] ?? 0;
+          const isDisabled = count === 0;
 
           return (
             <button
               key={cat.id}
               type="button"
-              onClick={() => onSelectCategory(isSelected ? null : cat.id)}
-              className={`shrink-0 2xl:flex-1 h-[82px] min-w-[145px] sm:min-w-[155px] 2xl:min-w-0 p-3 rounded-2xl border transition-all duration-200 flex flex-col justify-between cursor-pointer group relative select-none active:scale-98 ${
-                isSelected
-                  ? 'bg-[#FFF4EE] border-[#F26430] ring-2 ring-[#F26430]/25 shadow-xs'
-                  : 'bg-white hover:bg-slate-50/90 text-slate-800 border-slate-200/80 hover:border-slate-300 shadow-2xs'
+              disabled={isDisabled}
+              onClick={() => {
+                if (isDisabled) return;
+                onSelectCategory(isSelected ? null : cat.id);
+              }}
+              title={isDisabled ? `${cat.name} (ยังไม่มีกิจกรรมในหมวดนี้)` : `${cat.name} (${count} ตี้กิจกรรม)`}
+              className={`shrink-0 2xl:flex-1 h-[82px] min-w-[145px] sm:min-w-[155px] 2xl:min-w-0 p-3 rounded-2xl border transition-all duration-200 flex flex-col justify-between select-none ${
+                isDisabled
+                  ? 'opacity-40 bg-slate-50/70 border-slate-200/50 text-slate-400 cursor-not-allowed shadow-none hover:bg-slate-50/70 hover:border-slate-200/50'
+                  : isSelected
+                  ? 'bg-[#FFF4EE] border-[#F26430] ring-2 ring-[#F26430]/25 shadow-xs cursor-pointer active:scale-98'
+                  : 'bg-white hover:bg-slate-50/90 text-slate-800 border-slate-200/80 hover:border-slate-300 shadow-2xs cursor-pointer active:scale-98'
               }`}
             >
               <div className="flex items-center justify-between w-full">
                 <div
-                  className={`w-7 h-7 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105 ${
-                    isSelected
+                  className={`w-7 h-7 rounded-xl flex items-center justify-center transition-transform ${
+                    isDisabled
+                      ? 'bg-slate-100 text-slate-400'
+                      : isSelected
                       ? 'bg-[#F26430] text-white shadow-xs'
-                      : `${cat.colorScheme.iconBg} ${cat.colorScheme.iconColor}`
+                      : `${cat.colorScheme.iconBg} ${cat.colorScheme.iconColor} group-hover:scale-105`
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  {count > 0 && (
+                  {count > 0 ? (
                     <span
                       className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                         isSelected ? 'bg-orange-200/70 text-[#D04A1B]' : 'bg-slate-100 text-slate-600'
@@ -240,19 +273,23 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
                     >
                       {count}
                     </span>
+                  ) : (
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-slate-100/80 text-slate-400">
+                      0
+                    </span>
                   )}
                 </div>
               </div>
 
               <div className="text-left w-full pr-1 space-y-0.5">
                 <span className={`block text-xs font-bold truncate leading-snug ${
-                  isSelected ? 'text-[#D04A1B]' : 'text-slate-900'
+                  isDisabled ? 'text-slate-400' : isSelected ? 'text-[#D04A1B]' : 'text-slate-900'
                 }`}>
                   {cat.name}
                 </span>
                 <span
                   className={`block text-[10px] font-medium truncate leading-normal ${
-                    isSelected ? 'text-[#F26430]' : 'text-slate-400'
+                    isDisabled ? 'text-slate-400/80' : isSelected ? 'text-[#F26430]' : 'text-slate-400'
                   }`}
                 >
                   {cat.nameEn}

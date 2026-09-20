@@ -22,6 +22,8 @@ import { MobileNav } from '@/components/MobileNav';
 import { EventGrid } from '@/components/EventGrid';
 import { Pagination } from '@/components/Pagination';
 import { CommunityCategoryRail, COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
+import { TopCommunityRail, TOP_COMMUNITY_CLUBS } from '@/components/TopCommunityRail';
+import { getCommunityEventCategory } from '@/data/masterHub';
 import { CustomDatePickerModal } from '@/components/CustomDatePickerModal';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
@@ -42,6 +44,7 @@ function CommunityPageContent() {
 
   const [activeNavTab, setActiveNavTab] = useState('explore');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const [selectedClub, setSelectedClub] = useState<string | null>(searchParams.get('club') || null);
   const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('category') || 'all');
   const [selectedProvince, setSelectedProvince] = useState<string>(searchParams.get('province') || 'all');
   const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'tomorrow' | 'weekend' | 'custom'>('all');
@@ -168,26 +171,22 @@ function CommunityPageContent() {
 
       const eventText = `${ev.title} ${ev.description || ''} ${ev.tag || ''} ${ev.location || ''} ${ev.hostName || ''} ${ev.province || ''}`.toLowerCase();
 
+      // Filter by selected community club if active
+      if (selectedClub && selectedClub !== 'all') {
+        const clubDef = TOP_COMMUNITY_CLUBS.find((c) => c.clubKey === selectedClub);
+        if (clubDef) {
+          const eventText = `${ev.title} ${ev.description || ''} ${ev.tag || ''} ${ev.badgeText || ''} ${ev.location} ${ev.hostName || ''} ${ev.category || ''} ${ev.zone || ''}`.toLowerCase();
+          const matches = clubDef.keywords.some((kw) => eventText.includes(kw.toLowerCase()));
+          if (!matches) return false;
+        }
+      }
+
       if (selectedCategory !== 'all') {
         const cat = selectedCategory;
         if (cat === 'heal' || cat === 'move' || cat === 'chill' || cat === 'learn') {
           if (ev.category !== cat) return false;
-        } else if (cat === 'running_fitness') {
-          if (!['วิ่ง', 'running', 'marathon', 'hyrox', 'fitness', 'กีฬา', 'sport', 'climbing', 'ปีน', 'badminton'].some(k => eventText.includes(k))) return false;
-        } else if (cat === 'wellness_mind') {
-          if (!['sound bath', 'soundbath', 'yoga', 'โยคะ', 'สมาธิ', 'mindfulness', 'heal', 'ฮีลใจ', 'บำบัด', 'introvert'].some(k => eventText.includes(k))) return false;
-        } else if (cat === 'cafe_social') {
-          if (!['cafe', 'คาเฟ่', 'coffee', 'กาแฟ', 'slow bar', 'hangout', 'จิบกาแฟ', 'พูดคุย', 'อาหาร', 'tea', 'ชา', 'มัทฉะ'].some(k => eventText.includes(k))) return false;
-        } else if (cat === 'boardgames_party') {
-          if (!['board game', 'boardgame', 'บอร์ดเกม', 'เกม', 'catan', 'quiz', 'party', 'เกมกลุ่ม', 'เพื่อนใหม่'].some(k => eventText.includes(k))) return false;
-        } else if (cat === 'arts_crafts') {
-          if (!['workshop', 'เวิร์กช็อป', 'art', 'ศิลปะ', 'craft', 'คราฟต์', 'เซรามิก', 'pottery', 'ปั้นดิน', 'painting', 'สีน้ำ', 'เทียน', 'candle', 'ภาพวาด'].some(k => eventText.includes(k))) return false;
-        } else if (cat === 'travel_outdoor') {
-          if (!['outdoor', 'เอาต์ดอร์', 'camping', 'กางเต็นท์', 'เดินป่า', 'คายัค', 'sup board', 'ซับบอร์ด', 'ธรรมชาติ', 'photowalk', 'ถ่ายรูป'].some(k => eventText.includes(k))) return false;
-        } else if (cat === 'tech_skills') {
-          if (!['tech', 'ai', 'coding', 'developer', 'startup', 'business', 'networking', 'หนังสือ', 'book', 'talk', 'เสวนา'].some(k => eventText.includes(k))) return false;
-        } else if (cat === 'pets_family') {
-          if (!['pet', 'สัตว์เลี้ยง', 'หมา', 'แมว', 'dog', 'cat', 'family', 'ครอบครัว', 'เด็ก', 'kids'].some(k => eventText.includes(k))) return false;
+        } else {
+          if (getCommunityEventCategory(ev) !== cat) return false;
         }
       }
 
@@ -289,23 +288,35 @@ function CommunityPageContent() {
       // Default: newest
       return (b.createdAtTimestamp || 0) - (a.createdAtTimestamp || 0);
     });
-  }, [eventsList, statusFilter, selectedCategory, selectedProvince, activeVibeFilter, priceFilter, sortBy, favorites, searchQuery, customStartDate, customEndDate]);
+  }, [eventsList, statusFilter, selectedClub, selectedCategory, selectedProvince, activeVibeFilter, priceFilter, sortBy, favorites, searchQuery, customStartDate, customEndDate]);
 
-  // Calculate event counts per lifestyle category for Luma-style badge display
+  // Calculate dynamic event counts per lifestyle category (supports selectedClub filter context)
   const categoryEventCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    const communityEvents = eventsList.filter((e) => (e.eventType || 'community') === 'community');
+    const communityEvents = eventsList.filter((event) => {
+      if ((event.eventType || 'community') !== 'community') return false;
+      if (statusFilter === 'upcoming' && isEventEnded(event)) return false;
+      if (statusFilter === 'ended' && !isEventEnded(event)) return false;
 
+      // Filter by selected community club if active
+      if (selectedClub && selectedClub !== 'all') {
+        const clubDef = TOP_COMMUNITY_CLUBS.find((c) => c.clubKey === selectedClub);
+        if (clubDef) {
+          const eventText = `${event.title} ${event.description || ''} ${event.tag || ''} ${event.badgeText || ''} ${event.location} ${event.hostName || ''} ${event.category || ''} ${event.zone || ''}`.toLowerCase();
+          const matches = clubDef.keywords.some((kw) => eventText.includes(kw.toLowerCase()));
+          if (!matches) return false;
+        }
+      }
+      return true;
+    });
+
+    counts['all'] = communityEvents.length;
     COMMUNITY_LIFESTYLE_CATEGORIES.forEach((cat) => {
-      const matchCount = communityEvents.filter((ev) => {
-        const text = `${ev.title} ${ev.description} ${ev.tag} ${ev.location} ${ev.hostName}`.toLowerCase();
-        return cat.keywords.some((k) => text.includes(k));
-      }).length;
-      counts[cat.id] = matchCount;
+      counts[cat.id] = communityEvents.filter((ev) => getCommunityEventCategory(ev) === cat.id).length;
     });
 
     return counts;
-  }, [eventsList]);
+  }, [eventsList, statusFilter, selectedClub]);
 
   const totalPages = Math.ceil(filteredEvents.length / itemsPerPage) || 1;
 
@@ -323,6 +334,7 @@ function CommunityPageContent() {
 
   const handleResetAll = () => {
     setSearchQuery('');
+    setSelectedClub(null);
     setSelectedCategory('all');
     setSelectedProvince('all');
     setActiveVibeFilter('all');
@@ -398,6 +410,17 @@ function CommunityPageContent() {
             </button>
           </div>
         </div>
+
+        {/* Top Community Flagship Circles & Clubs Visual Rail */}
+        <TopCommunityRail
+          selectedClub={selectedClub}
+          onSelectClub={(clubKey) => {
+            setSelectedClub(clubKey);
+            setSelectedCategory('all');
+            setCurrentPage(1);
+          }}
+          eventsList={eventsList}
+        />
 
         {/* Harmonious Horizontal Category Rail (Same as Homepage) */}
         <div className="bg-slate-50/60 p-2.5 sm:p-3 rounded-2xl border border-slate-200/70 shadow-2xs">

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Check, Users, Sparkles, ShieldCheck } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Users, Sparkles, ShieldCheck, X } from 'lucide-react';
 import { EventItem, MOCK_EVENTS } from '@/data/mockData';
 import { isEventEnded } from '@/lib/dateUtils';
 
@@ -198,10 +198,11 @@ export const TopCommunityRail: React.FC<TopCommunityRailProps> = ({
           <button
             type="button"
             onClick={() => onSelectClub(null)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-all cursor-pointer shadow-xs active:scale-95 shrink-0"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 group/clear"
+            title="คลิกเพื่อล้างตัวกรองและแสดงกิจกรรมทั้งหมด"
           >
-            <span>ดูครบทุกคลับคอมมูนิตี้</span>
-            <span className="text-slate-300 font-normal">({totalAllCommunity})</span>
+            <X className="w-3.5 h-3.5 text-slate-300 group-hover/clear:text-white transition-colors" />
+            <span>ล้างตัวกรอง (ดูทั้งหมด {totalAllCommunity})</span>
           </button>
         )}
       </div>
@@ -235,7 +236,7 @@ export const TopCommunityRail: React.FC<TopCommunityRailProps> = ({
         {/* Horizontal Scroll Track */}
         <div
           ref={scrollContainerRef}
-          className="flex items-stretch gap-3 sm:gap-4 overflow-x-auto scrollbar-none scroll-smooth pb-2 pt-1 px-0.5 select-none"
+          className="flex items-stretch gap-3 sm:gap-4 overflow-x-auto scrollbar-none scroll-smooth pt-3 pb-2.5 px-1.5 select-none"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {TOP_COMMUNITY_CLUBS.map((club) => {

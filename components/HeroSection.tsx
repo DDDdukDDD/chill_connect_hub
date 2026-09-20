@@ -104,9 +104,37 @@ export const POPULAR_DISCOVERY_TAGS = [
   { label: 'บอร์ดเกม', query: 'บอร์ดเกม' },
   { label: 'สัปดาห์หนังสือ', query: 'หนังสือ' },
   { label: 'BITEC / QSNCC', query: 'QSNCC' },
-  { label: 'Slow Bar', query: 'slow bar' },
+  { label: 'Slow Bar & กาแฟ', query: 'กาแฟ' },
   { label: 'ธรรมชาติใกล้กรุง', query: 'ธรรมชาติ' },
 ];
+
+export const TAB_POPULAR_TAGS: Record<string, Array<{ label: string; query: string }>> = {
+  all: POPULAR_DISCOVERY_TAGS,
+  community: [
+    { label: 'วิ่งสวนเบญ', query: 'วิ่ง' },
+    { label: 'บอร์ดเกมสยาม', query: 'บอร์ดเกม' },
+    { label: 'ดริปกาแฟ & ชิลล์', query: 'กาแฟ' },
+    { label: 'เวิร์กช็อปเซรามิก', query: 'เซรามิก' },
+    { label: 'ปีนผา Bouldering', query: 'ปีนผา' },
+    { label: 'เดินถ่ายรูป', query: 'ถ่ายรูป' },
+  ],
+  fairs: [
+    { label: 'สัปดาห์หนังสือ', query: 'หนังสือ' },
+    { label: 'QSNCC ศูนย์สิริกิติ์', query: 'สิริกิติ์' },
+    { label: 'BITEC บางนา', query: 'BITEC' },
+    { label: 'IMPACT เมืองทอง', query: 'IMPACT' },
+    { label: 'เทศกาลกาแฟ', query: 'กาแฟ' },
+    { label: 'มาราธอน & งานวิ่ง', query: 'วิ่ง' },
+  ],
+  spots: [
+    { label: 'สโลว์บาร์ & คาเฟ่', query: 'กาแฟ' },
+    { label: 'ธรรมชาติ & ป่าไม้', query: 'ธรรมชาติ' },
+    { label: 'เชียงใหม่ นิมมาน', query: 'เชียงใหม่' },
+    { label: 'จุดชมวิวดอย & หมอก', query: 'ดอย' },
+    { label: 'ทะเล & เกาะ', query: 'ทะเล' },
+    { label: 'เมืองเก่า & วัด', query: 'เมืองเก่า' },
+  ],
+};
 
 interface HeroSectionProps {
   searchQuery: string;
@@ -1116,11 +1144,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                           <Flame className="w-3 h-3 text-amber-500" />
                           <span>คำค้นยอดนิยม:</span>
                         </span>
-                        {POPULAR_DISCOVERY_TAGS.map((tag) => (
+                        {(TAB_POPULAR_TAGS[activeModeTab] || POPULAR_DISCOVERY_TAGS).map((tag) => (
                           <button
                             key={tag.label}
                             type="button"
                             onClick={() => {
+                              setIsFocused(false);
                               setSearchQuery(tag.query);
                               if (onSearchSubmit) setTimeout(onSearchSubmit, 50);
                             }}
@@ -1300,15 +1329,36 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
                     </div>
 
-                    {/* Under Search Box: Right-aligned Link under Search Button */}
-                    <div className="flex justify-end pt-0 px-1 -mt-0.5 -mb-0.5">
+                    {/* Under Search Box: Popular Tags & Link in Deep Dive Console */}
+                    <div className="flex items-center justify-between gap-2 px-1 pt-0.5 overflow-x-auto no-scrollbar select-none -mt-0.5">
+                      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 overflow-x-auto no-scrollbar py-0.5">
+                        <span className="text-[10px] sm:text-xs font-bold text-slate-400 shrink-0 uppercase tracking-wider flex items-center gap-1">
+                          <Flame className="w-3 h-3 text-amber-500" />
+                          <span>คำค้นยอดนิยม:</span>
+                        </span>
+                        {(TAB_POPULAR_TAGS[activeModeTab] || POPULAR_DISCOVERY_TAGS).map((tag) => (
+                          <button
+                            key={tag.label}
+                            type="button"
+                            onClick={() => {
+                              setIsFocused(false);
+                              setSearchQuery(tag.query);
+                              if (onSearchSubmit) setTimeout(onSearchSubmit, 50);
+                            }}
+                            className="inline-flex items-center text-[11px] sm:text-xs font-medium px-2.5 py-1 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200/80 transition-all cursor-pointer hover:border-slate-300 shrink-0 active:scale-95"
+                          >
+                            <span>{tag.label}</span>
+                          </button>
+                        ))}
+                      </div>
+
                       <a
                         href="#why-chill-and-connect"
                         onClick={handleScrollToWhySection}
-                        className="inline-flex items-center gap-1.5 text-xs sm:text-[12.5px] font-semibold text-slate-500 hover:text-[#2563EB] transition-colors group cursor-pointer"
+                        className="hidden md:inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-[#2563EB] transition-colors group cursor-pointer shrink-0 ml-auto"
                       >
                         <span className="hover:underline underline-offset-4 decoration-slate-300 group-hover:decoration-[#2563EB]">
-                          ทำไมต้อง Chill & Connect Hub?
+                          ทำไมต้องเรา?
                         </span>
                         <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#2563EB] group-hover:translate-y-0.5 transition-transform duration-200" />
                       </a>

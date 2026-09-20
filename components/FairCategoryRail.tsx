@@ -102,7 +102,7 @@ export const FairCategoryRail: React.FC<FairCategoryRailProps> = ({
             }`}>
               <Compass className="w-4 h-4" />
             </div>
-            {fairCounts['all'] !== undefined && fairCounts['all'] > 0 && (
+            {fairCounts['all'] !== undefined && (
               <span
                 className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                   selectedCategoryId === null || selectedCategoryId === 'all' ? 'bg-blue-200/70 text-[#1F3D5C]' : 'bg-slate-100 text-slate-600'
@@ -131,31 +131,41 @@ export const FairCategoryRail: React.FC<FairCategoryRailProps> = ({
           const Icon = cat.icon;
           const isSelected = selectedCategoryId === cat.id;
           const count = fairCounts[cat.id] ?? 0;
+          const isDisabled = count === 0;
 
           return (
             <button
               key={cat.id}
               type="button"
-              onClick={() => onSelectCategory(isSelected ? null : cat.id)}
-              className={`shrink-0 2xl:flex-1 h-[82px] min-w-[145px] sm:min-w-[160px] 2xl:min-w-0 p-3 rounded-2xl border transition-all duration-200 flex flex-col justify-between cursor-pointer group relative select-none active:scale-98 ${
-                isSelected
-                  ? 'bg-[#EEF4FA] border-[#2B527A] ring-2 ring-[#2B527A]/25 shadow-xs'
-                  : 'bg-white hover:bg-slate-50/90 text-slate-800 border-slate-200/80 hover:border-slate-300 shadow-2xs'
+              disabled={isDisabled}
+              onClick={() => {
+                if (isDisabled) return;
+                onSelectCategory(isSelected ? null : cat.id);
+              }}
+              title={isDisabled ? `${cat.name} (ยังไม่มีงานมหกรรมในหมวดนี้)` : `${cat.name} (${count} งานมหกรรม)`}
+              className={`shrink-0 2xl:flex-1 h-[82px] min-w-[145px] sm:min-w-[160px] 2xl:min-w-0 p-3 rounded-2xl border transition-all duration-200 flex flex-col justify-between select-none ${
+                isDisabled
+                  ? 'opacity-40 bg-slate-50/70 border-slate-200/50 text-slate-400 cursor-not-allowed shadow-none hover:bg-slate-50/70 hover:border-slate-200/50'
+                  : isSelected
+                  ? 'bg-[#EEF4FA] border-[#2B527A] ring-2 ring-[#2B527A]/25 shadow-xs cursor-pointer active:scale-98'
+                  : 'bg-white hover:bg-slate-50/90 text-slate-800 border-slate-200/80 hover:border-slate-300 shadow-2xs cursor-pointer active:scale-98'
               }`}
             >
               <div className="flex items-center justify-between w-full">
                 <div
-                  className={`w-7 h-7 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105 ${
-                    isSelected
+                  className={`w-7 h-7 rounded-xl flex items-center justify-center transition-transform ${
+                    isDisabled
+                      ? 'bg-slate-100 text-slate-400'
+                      : isSelected
                       ? 'bg-[#2B527A] text-white shadow-xs'
-                      : `${cat.colorScheme.iconBg} ${cat.colorScheme.iconColor}`
+                      : `${cat.colorScheme.iconBg} ${cat.colorScheme.iconColor} group-hover:scale-105`
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  {count > 0 && (
+                  {count > 0 ? (
                     <span
                       className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                         isSelected ? 'bg-blue-200/70 text-[#1F3D5C]' : 'bg-slate-100 text-slate-600'
@@ -163,19 +173,23 @@ export const FairCategoryRail: React.FC<FairCategoryRailProps> = ({
                     >
                       {count}
                     </span>
+                  ) : (
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-slate-100/80 text-slate-400">
+                      0
+                    </span>
                   )}
                 </div>
               </div>
 
               <div className="text-left w-full pr-1 space-y-0.5">
                 <span className={`block text-xs font-bold truncate leading-snug ${
-                  isSelected ? 'text-[#1F3D5C]' : 'text-slate-900'
+                  isDisabled ? 'text-slate-400' : isSelected ? 'text-[#1F3D5C]' : 'text-slate-900'
                 }`}>
                   {cat.name}
                 </span>
                 <span
                   className={`block text-[10px] font-medium truncate leading-normal ${
-                    isSelected ? 'text-[#2B527A]' : 'text-slate-400'
+                    isDisabled ? 'text-slate-400/80' : isSelected ? 'text-[#2B527A]' : 'text-slate-400'
                   }`}
                 >
                   {cat.nameEn}
