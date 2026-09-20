@@ -11,6 +11,11 @@ interface TrendingCarouselProps {
   onSelectEvent: (event: EventItem) => void;
   favorites: string[];
   toggleFavorite: (id: string) => void;
+  title?: string;
+  subtitle?: string;
+  badgeText?: string;
+  badgeColor?: string;
+  mode?: 'all' | 'community' | 'fairs' | 'spots';
 }
 
 export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
@@ -18,6 +23,11 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
   onSelectEvent,
   favorites,
   toggleFavorite,
+  title = 'Trending Lifestyle Agenda',
+  subtitle = 'คัดสรรกิจกรรมและงานอีเวนต์ที่มีผู้ให้ความสนใจสูงสุดประจำสัปดาห์นี้',
+  badgeText = 'ยอดนิยม',
+  badgeColor,
+  mode = 'all',
 }) => {
   const router = useRouter();
   const [isPaused, setIsPaused] = useState(false);
@@ -131,14 +141,16 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
         <div className="min-w-0 flex-1 space-y-0.5">
           <div className="flex items-center gap-2">
             <h2 className="text-sm sm:text-base font-black text-[#1E293B] tracking-tight truncate">
-              Trending Lifestyle Agenda
+              {title}
             </h2>
-            <span className="text-[9.5px] font-extrabold bg-rose-50 text-rose-600 border border-rose-200/80 px-2 py-0.5 rounded-full shadow-2xs shrink-0 tracking-wider">
-              ยอดนิยม
+            <span className={`text-[9.5px] font-extrabold px-2 py-0.5 rounded-full shadow-2xs shrink-0 tracking-wider ${
+              badgeColor || 'bg-rose-50 text-rose-600 border border-rose-200/80'
+            }`}>
+              {badgeText}
             </span>
           </div>
           <p className="text-[11px] sm:text-xs font-medium text-slate-500 truncate hidden sm:block">
-            คัดสรรกิจกรรมและงานอีเวนต์ที่มีผู้ให้ความสนใจสูงสุดประจำสัปดาห์นี้
+            {subtitle}
           </p>
         </div>
 
@@ -202,7 +214,9 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
                 key={`trending-${event.id}`}
                 onClick={() => {
                   if (!hasMoved) {
-                    const targetPath = event.eventType === 'public_venue'
+                    const targetPath = (event.eventType as any) === 'spots'
+                      ? `/spots/${encodeURIComponent(event.id)}`
+                      : event.eventType === 'public_venue'
                       ? `/fairs/${encodeURIComponent(event.id)}`
                       : `/community/${encodeURIComponent(event.id)}`;
                     router.push(targetPath);

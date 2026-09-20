@@ -15,6 +15,7 @@ interface EventGridProps {
   joinedEventIds?: string[];
   onResetFilters?: () => void;
   isFavoritesOnly?: boolean;
+  limit?: number;
   responsiveLimit?: { mobile: number; desktop: number };
   columns?: 4 | 5;
   dynamicResponsiveGrid?: boolean;
@@ -35,6 +36,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
   joinedEventIds = [],
   onResetFilters,
   isFavoritesOnly = false,
+  limit,
   responsiveLimit,
   columns = 5,
   dynamicResponsiveGrid = false,
@@ -72,8 +74,10 @@ export const EventGrid: React.FC<EventGridProps> = ({
     );
   }
 
-  // Determine items to display based on responsiveLimit
-  const displayedEvents = responsiveLimit
+  // Determine items to display based on limit or responsiveLimit
+  const displayedEvents = limit
+    ? events.slice(0, limit)
+    : responsiveLimit
     ? events.slice(0, responsiveLimit.desktop)
     : events;
 
@@ -93,22 +97,6 @@ export const EventGrid: React.FC<EventGridProps> = ({
           const isAlmostFull = fillRatio >= 0.8;
           const catStyle = CATEGORY_COLORS[event.category] || CATEGORY_COLORS.heal;
 
-          // Responsive visibility to prevent incomplete/hanging rows
-          let responsiveVisibilityClass = 'block';
-          if (dynamicResponsiveGrid || (responsiveLimit && responsiveLimit.desktop === 10)) {
-            if (idx >= 8) {
-              responsiveVisibilityClass = 'hidden 2xl:block'; // 5 cols (2xl) shows 10 (2 rows of 5)
-            } else if (idx >= 6) {
-              responsiveVisibilityClass = 'hidden lg:block';  // 4 cols (lg/xl) shows 8 (2 rows of 4)
-            } else if (idx >= 4) {
-              responsiveVisibilityClass = 'hidden sm:block';  // 2/3 cols (sm/md) shows 6 (2 rows of 3, 3 rows of 2)
-            } else {
-              responsiveVisibilityClass = 'block';            // mobile shows 4
-            }
-          } else if (responsiveLimit && idx >= responsiveLimit.mobile) {
-            responsiveVisibilityClass = 'hidden sm:block';
-          }
-
           const detailHref = event.eventType === 'public_venue'
             ? `/fairs/${encodeURIComponent(event.id)}`
             : `/community/${encodeURIComponent(event.id)}`;
@@ -120,7 +108,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: Math.min(idx, 10) * 0.04 }}
-              className={responsiveVisibilityClass}
+              className="block"
             >
               <Link
                 href={detailHref}

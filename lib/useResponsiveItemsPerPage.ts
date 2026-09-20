@@ -12,12 +12,12 @@ export interface ResponsiveItemsConfig {
 }
 
 const DEFAULT_PAGINATION_CONFIG: Required<ResponsiveItemsConfig> = {
-  mobile: 8,   // 8 rows of 1 col
-  sm: 10,      // 5 rows of 2 cols
-  md: 12,      // 4 rows of 3 cols
-  lg: 16,      // 4 rows of 4 cols
-  xl2: 20,     // 4 rows of 5 cols
-  defaultItems: 16, // Safe SSR default
+  mobile: 12,   // 12 rows of 1 col
+  sm: 12,      // 6 rows of 2 cols
+  md: 18,      // 6 rows of 3 cols
+  lg: 24,      // 6 rows of 4 cols (Standard 24 cards per page)
+  xl2: 25,     // 5 rows of 5 cols
+  defaultItems: 24, // Safe SSR default
 };
 
 /**

@@ -102,17 +102,26 @@ export const FairCategoryRail: React.FC<FairCategoryRailProps> = ({
             }`}>
               <Compass className="w-4 h-4" />
             </div>
+            {fairCounts['all'] !== undefined && fairCounts['all'] > 0 && (
+              <span
+                className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                  selectedCategoryId === null || selectedCategoryId === 'all' ? 'bg-blue-200/70 text-[#1F3D5C]' : 'bg-slate-100 text-slate-600'
+                }`}
+              >
+                {fairCounts['all']}
+              </span>
+            )}
           </div>
           <div className="text-left leading-tight">
             <span className={`block text-xs font-bold ${
               selectedCategoryId === null || selectedCategoryId === 'all' ? 'text-[#1F3D5C]' : 'text-slate-900'
             }`}>
-              ทุกงานแฟร์
+              ทั้งหมด
             </span>
             <span className={`block text-[10px] font-medium ${
               selectedCategoryId === null || selectedCategoryId === 'all' ? 'text-[#2B527A]' : 'text-slate-400'
             }`}>
-              All Events
+              All
             </span>
           </div>
         </button>

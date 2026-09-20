@@ -116,12 +116,12 @@ export const SpotCategoryRail: React.FC<SpotCategoryRailProps> = ({
             <span className={`block text-xs font-bold ${
               selectedCategoryId === null || selectedCategoryId === 'all' ? 'text-[#2D5A3C]' : 'text-slate-900'
             }`}>
-              ทั่วประเทศ
+              ทั้งหมด
             </span>
             <span className={`block text-[10px] font-medium ${
               selectedCategoryId === null || selectedCategoryId === 'all' ? 'text-[#4A7C59]' : 'text-slate-400'
             }`}>
-              All Thailand
+              All
             </span>
           </div>
         </button>

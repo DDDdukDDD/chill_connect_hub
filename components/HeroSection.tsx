@@ -99,6 +99,15 @@ export const HERO_SLIDES: HeroSlideItem[] = [
   },
 ];
 
+export const POPULAR_DISCOVERY_TAGS = [
+  { label: 'วิ่งสวนเบญ', query: 'วิ่ง' },
+  { label: 'บอร์ดเกม', query: 'บอร์ดเกม' },
+  { label: 'สัปดาห์หนังสือ', query: 'หนังสือ' },
+  { label: 'BITEC / QSNCC', query: 'QSNCC' },
+  { label: 'Slow Bar', query: 'slow bar' },
+  { label: 'ธรรมชาติใกล้กรุง', query: 'ธรรมชาติ' },
+];
+
 interface HeroSectionProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -109,6 +118,7 @@ interface HeroSectionProps {
   onJoinQuest?: (questTitle: string) => void;
   joinedQuestTitles?: string[];
   onCancelQuest?: (questTitle: string) => void;
+  activeTab?: 'all' | 'spots' | 'community' | 'fairs';
   onSelectDiscoveryTab?: (tab: 'all' | 'spots' | 'community' | 'fairs') => void;
   timeFilter?: string;
   setTimeFilter?: (time: any) => void;
@@ -163,6 +173,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   joinedQuestTitles = [],
   onCancelQuest,
   onSelectDiscoveryTab,
+  activeTab,
   timeFilter = 'all',
   setTimeFilter,
   startDate,
@@ -173,10 +184,21 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   const { isLoggedIn } = useAuth();
   const [isFocused, setIsFocused] = useState(false);
   const [selectedQuestForModal, setSelectedQuestForModal] = useState<ChallengeQuest | null>(null);
-  const [activeModeTab, setActiveModeTab] = useState<'all' | 'spots' | 'community' | 'fairs'>('all');
+  const [activeModeTab, setActiveModeTab] = useState<'all' | 'spots' | 'community' | 'fairs'>(activeTab || 'all');
   const [showcaseTab, setShowcaseTab] = useState<'vouchers' | 'rewards'>('vouchers');
   const [internalTimeFilter, setInternalTimeFilter] = useState('all');
   const activeTime = timeFilter !== undefined ? timeFilter : internalTimeFilter;
+
+  // Sync activeModeTab with parent activeTab
+  useEffect(() => {
+    if (activeTab && activeTab !== activeModeTab) {
+      setActiveModeTab(activeTab);
+      if (activeTab === 'community') setCurrentSlideIndex(0);
+      else if (activeTab === 'fairs') setCurrentSlideIndex(1);
+      else if (activeTab === 'spots') setCurrentSlideIndex(2);
+      else if (activeTab === 'all') setCurrentSlideIndex(0);
+    }
+  }, [activeTab]);
 
   const handleTimeChange = (t: string) => {
     setInternalTimeFilter(t);
@@ -256,7 +278,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       case 'fairs':
         return 'ค้นหางานสัปดาห์หนังสือ งานกาแฟ งานสัตว์เลี้ยง QSNCC BITEC...';
       default:
-        return 'ค้นหาพิกัดฮีลใจ, ตี้วิ่ง, บอร์ดเกม, งานแฟร์ทั่วไทย...';
+        return 'ค้นหาทุกกิจกรรม งานแฟร์ และพิกัดฮีลใจทั่วไทย... (เช่น บอร์ดเกม, สวนเบญจกิติ, BITEC)';
     }
   };
 
@@ -1035,171 +1057,264 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   )}
                 </div>
 
-                {/* Console Search Inputs (Compact 2-Column Subgrid on Mobile, 12-Col on iPad, Flex Row on Desktop) */}
-                <div className="relative grid grid-cols-1 md:grid-cols-12 lg:flex lg:flex-row items-stretch bg-white border border-slate-200/90 hover:border-slate-300 rounded-2xl p-1 sm:p-1.5 transition-all focus-within:ring-4 focus-within:ring-[#2563EB]/10 focus-within:border-[#2563EB] divide-y md:divide-y-0 lg:divide-x divide-slate-200 shadow-2xs">
-                  
-                  {/* Column 1: Keyword Input (Full width on Mobile & iPad md, flexible on lg desktop) */}
-                  <div className="flex items-center gap-2.5 sm:gap-3 px-3 sm:px-3.5 py-2 sm:py-2.5 md:col-span-12 lg:flex-1 lg:min-w-[280px] md:border-b md:border-slate-200 lg:border-b-0">
-                    <Search className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-slate-400 shrink-0" />
-                    <div className="flex-1 min-w-0 text-left">
-                      <label className="text-[9.5px] sm:text-[10px] font-bold text-slate-400 block uppercase tracking-wider leading-none mb-0.5">
-                        ค้นหาอะไรดี?
-                      </label>
-                      <input
-                        type="text"
-                        value={searchQuery}
-                        onFocus={() => setIsFocused(true)}
-                        onBlur={() => setTimeout(() => setIsFocused(false), 250)}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder={getSearchPlaceholder()}
-                        className="w-full bg-transparent text-sm sm:text-base font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-normal focus:outline-none truncate leading-normal"
-                      />
-                    </div>
-                    {searchQuery && (
-                      <button
-                        type="button"
-                        onClick={() => setSearchQuery('')}
-                        className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Subgrid: Columns 2 & 3 Side-by-Side on Mobile (50% each), normal cols on iPad/Desktop */}
-                  <div className="grid grid-cols-2 divide-x divide-slate-200 md:contents">
-                    {/* Column 2: Province / Area (5 cols on iPad md, reduced 10% on desktop) */}
-                    <div className="flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-3 py-1.5 sm:py-2.5 md:col-span-5 lg:w-[195px] xl:w-[225px] shrink-0 text-left md:border-r md:border-slate-200 lg:border-r-0">
-                      <MapPin className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-[#4A7C59] shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <label className="text-[9px] sm:text-[10px] font-bold text-slate-400 block uppercase tracking-wider leading-none mb-0.5">
-                          จุดหมาย
-                        </label>
-                        <select
-                          value={selectedProvince}
-                          onChange={(e) => handleProvinceChange(e.target.value)}
-                          className="w-full bg-transparent text-xs sm:text-sm font-bold text-slate-900 focus:outline-none cursor-pointer truncate appearance-none leading-normal"
-                        >
-                          <option value="all">ทุกจังหวัด</option>
-                          <option value="ออนไลน์">ออนไลน์</option>
-                          <optgroup label="ยอดนิยม">
-                            <option value="กรุงเทพฯ">กรุงเทพฯ</option>
-                            <option value="นนทบุรี">นนทบุรี</option>
-                            <option value="เชียงใหม่">เชียงใหม่</option>
-                            <option value="ชลบุรี">ชลบุรี</option>
-                            <option value="ภูเก็ต">ภูเก็ต</option>
-                            <option value="ประจวบคีรีขันธ์">หัวหิน/ประจวบฯ</option>
-                            <option value="ขอนแก่น">ขอนแก่น</option>
-                          </optgroup>
-                          <optgroup label="ทั้งหมด 77 จังหวัด">
-                            {ALL_THAI_PROVINCES.map((prov) => (
-                              <option key={prov} value={prov}>{prov}</option>
-                            ))}
-                          </optgroup>
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Column 3: Time Filter (4 cols on iPad md, reduced 10% on desktop) */}
-                    <div className="flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-3 py-1.5 sm:py-2.5 md:col-span-4 lg:w-[185px] xl:w-[205px] shrink-0 text-left md:border-r md:border-slate-200 lg:border-r-0">
-                      <Calendar className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-[#2B527A] shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <label className="text-[9px] sm:text-[10px] font-bold text-slate-400 block uppercase tracking-wider leading-none mb-0.5">
-                          ช่วงเวลา
-                        </label>
-                        {timeFilter === 'custom' && startDate ? (
-                          <div className="flex items-center justify-between gap-1">
-                            <button
-                              type="button"
-                              onClick={onOpenDatePicker}
-                              className="text-xs sm:text-sm font-bold text-[#2B527A] truncate hover:underline text-left cursor-pointer"
-                              title="คลิกเพื่อเปลี่ยนวันที่"
-                            >
-                              {formatDateDisplay(startDate, endDate)}
-                            </button>
-                            {onClearCustomDate && (
-                              <button
-                                type="button"
-                                onClick={onClearCustomDate}
-                                className="p-0.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 cursor-pointer shrink-0"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-between gap-1">
-                            <select
-                              value={activeTime}
-                              onChange={(e) => {
-                                if (e.target.value === 'custom') {
-                                  if (onOpenDatePicker) onOpenDatePicker();
-                                } else {
-                                  handleTimeChange(e.target.value);
-                                  if (onClearCustomDate) onClearCustomDate();
-                                }
-                              }}
-                              className="w-full bg-transparent text-xs sm:text-sm font-bold text-slate-900 focus:outline-none cursor-pointer truncate appearance-none leading-normal"
-                            >
-                              <option value="all">ทุกช่วงเวลา</option>
-                              <option value="today">วันนี้</option>
-                              <option value="tomorrow">พรุ่งนี้</option>
-                              <option value="weekend">สุดสัปดาห์</option>
-                              <option value="next_month">เดือนนี้</option>
-                              <option value="custom">ระบุวัน...</option>
-                            </select>
-                            {activeTime === 'weekend' && (
-                              <span className="text-[9px] font-black text-[#2B527A] bg-blue-50 px-1 py-0.5 rounded border border-blue-100 shrink-0">
-                                ส.-อา.
-                              </span>
-                            )}
-                            {activeTime === 'today' && (
-                              <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-100 shrink-0">
-                                วันนี้
-                              </span>
-                            )}
-                            {activeTime === 'tomorrow' && (
-                              <span className="text-[9px] font-black text-amber-700 bg-amber-50 px-1 py-0.5 rounded border border-amber-100 shrink-0">
-                                พรุ่งนี้
-                              </span>
-                            )}
-                          </div>
+                {/* Search Console: Option C Hybrid Luxury Omni-Bar */}
+                {activeModeTab === 'all' ? (
+                  /* ========================================================================= */
+                  /* 🌟 HYBRID LUXURY OMNI-BAR (FOR "ทั้งหมด" SHOWROOM OVERVIEW)                */
+                  /* ========================================================================= */
+                  <div className="space-y-2.5 sm:space-y-3">
+                    {/* Omni-Bar Container */}
+                    <div className="relative flex items-center bg-white border border-slate-200/90 hover:border-slate-300 focus-within:border-[#2563EB] focus-within:ring-4 focus-within:ring-[#2563EB]/10 rounded-2xl sm:rounded-full p-1 sm:p-1.5 pl-3 sm:pl-4 transition-all shadow-2xs">
+                      {/* Left Icon + Search Input */}
+                      <div className="flex items-center gap-2.5 sm:gap-3 flex-1 min-w-0">
+                        <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 shrink-0" />
+                        <div className="flex-1 min-w-0 text-left">
+                          <label className="sr-only">ค้นหาทุกกิจกรรม งานแฟร์ และพิกัดฮีลใจทั่วไทย</label>
+                          <input
+                            type="text"
+                            value={searchQuery}
+                            onFocus={() => setIsFocused(true)}
+                            onBlur={() => setTimeout(() => setIsFocused(false), 250)}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder={getSearchPlaceholder()}
+                            className="w-full bg-transparent text-xs sm:text-sm md:text-base font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-normal focus:outline-none truncate leading-normal"
+                          />
+                        </div>
+                        {searchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setSearchQuery('')}
+                            className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
+                            title="ล้างคำค้นหา"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
                         )}
                       </div>
+
+                      {/* Right CTA Button: Royal Blue */}
+                      <div className="pl-1.5 sm:pl-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsFocused(false);
+                            if (onSearchSubmit) onSearchSubmit();
+                          }}
+                          className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-5 sm:px-8 py-2 sm:py-2.5 rounded-xl sm:rounded-full font-extrabold text-xs sm:text-sm md:text-base transition-all shadow-sm flex items-center justify-center gap-1.5 sm:gap-2 shrink-0 active:scale-95 cursor-pointer leading-normal"
+                        >
+                          <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          <span>ค้นหา</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Luxury Quick Discovery Chips & Anchor Link */}
+                    <div className="flex items-center justify-between gap-2 px-1 pt-0.5 overflow-x-auto no-scrollbar select-none">
+                      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 overflow-x-auto no-scrollbar py-0.5">
+                        <span className="text-[10px] sm:text-xs font-bold text-slate-400 shrink-0 uppercase tracking-wider flex items-center gap-1">
+                          <Flame className="w-3 h-3 text-amber-500" />
+                          <span>คำค้นยอดนิยม:</span>
+                        </span>
+                        {POPULAR_DISCOVERY_TAGS.map((tag) => (
+                          <button
+                            key={tag.label}
+                            type="button"
+                            onClick={() => {
+                              setSearchQuery(tag.query);
+                              if (onSearchSubmit) setTimeout(onSearchSubmit, 50);
+                            }}
+                            className="inline-flex items-center text-[11px] sm:text-xs font-medium px-2.5 py-1 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200/80 transition-all cursor-pointer hover:border-slate-300 shrink-0 active:scale-95"
+                          >
+                            <span>{tag.label}</span>
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Right-aligned Link under Search Button */}
+                      <a
+                        href="#why-chill-and-connect"
+                        onClick={handleScrollToWhySection}
+                        className="hidden md:inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-[#2563EB] transition-colors group cursor-pointer shrink-0 ml-auto"
+                      >
+                        <span className="hover:underline underline-offset-4 decoration-slate-300 group-hover:decoration-[#2563EB]">
+                          ทำไมต้องเรา?
+                        </span>
+                        <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#2563EB] group-hover:translate-y-0.5 transition-transform" />
+                      </a>
                     </div>
                   </div>
+                ) : (
+                  /* ========================================================================= */
+                  /* 🎯 FULL DEEP-DIVE CONSOLE (FOR DEDICATED PILLAR FILTERING)                 */
+                  /* ========================================================================= */
+                  <>
+                    <div className="relative grid grid-cols-1 md:grid-cols-12 lg:flex lg:flex-row items-stretch bg-white border border-slate-200/90 hover:border-slate-300 rounded-2xl p-1 sm:p-1.5 transition-all focus-within:ring-4 focus-within:ring-[#2563EB]/10 focus-within:border-[#2563EB] divide-y md:divide-y-0 lg:divide-x divide-slate-200 shadow-2xs">
+                      
+                      {/* Column 1: Keyword Input (Full width on Mobile & iPad md, flexible on lg desktop) */}
+                      <div className="flex items-center gap-2.5 sm:gap-3 px-3 sm:px-3.5 py-2 sm:py-2.5 md:col-span-12 lg:flex-1 lg:min-w-[280px] md:border-b md:border-slate-200 lg:border-b-0">
+                        <Search className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-slate-400 shrink-0" />
+                        <div className="flex-1 min-w-0 text-left">
+                          <label className="text-[9.5px] sm:text-[10px] font-bold text-slate-400 block uppercase tracking-wider leading-none mb-0.5">
+                            ค้นหาอะไรดี?
+                          </label>
+                          <input
+                            type="text"
+                            value={searchQuery}
+                            onFocus={() => setIsFocused(true)}
+                            onBlur={() => setTimeout(() => setIsFocused(false), 250)}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder={getSearchPlaceholder()}
+                            className="w-full bg-transparent text-sm sm:text-base font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-normal focus:outline-none truncate leading-normal"
+                          />
+                        </div>
+                        {searchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setSearchQuery('')}
+                            className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
 
-                  {/* Column 4: Primary Action Search Button (3 cols on iPad md) */}
-                  <div className="p-1 md:col-span-3 lg:w-auto shrink-0 flex items-center justify-center">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsFocused(false);
-                        if (onSearchSubmit) onSearchSubmit();
-                      }}
-                      className="w-full lg:w-auto bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-6 sm:px-8 py-2 sm:py-2.5 rounded-xl font-extrabold text-sm sm:text-base transition-all shadow-sm flex items-center justify-center gap-2 shrink-0 active:scale-95 cursor-pointer leading-normal"
-                    >
-                      <Search className="w-4 h-4" />
-                      <span>ค้นหา</span>
-                    </button>
-                  </div>
+                      {/* Subgrid: Columns 2 & 3 Side-by-Side on Mobile (50% each), normal cols on iPad/Desktop */}
+                      <div className="grid grid-cols-2 divide-x divide-slate-200 md:contents">
+                        {/* Column 2: Province / Area (5 cols on iPad md, reduced 10% on desktop) */}
+                        <div className="flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-3 py-1.5 sm:py-2.5 md:col-span-5 lg:w-[195px] xl:w-[225px] shrink-0 text-left md:border-r md:border-slate-200 lg:border-r-0">
+                          <MapPin className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-[#4A7C59] shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <label className="text-[9px] sm:text-[10px] font-bold text-slate-400 block uppercase tracking-wider leading-none mb-0.5">
+                              จุดหมาย
+                            </label>
+                            <select
+                              value={selectedProvince}
+                              onChange={(e) => handleProvinceChange(e.target.value)}
+                              className="w-full bg-transparent text-xs sm:text-sm font-bold text-slate-900 focus:outline-none cursor-pointer truncate appearance-none leading-normal"
+                            >
+                              <option value="all">ทุกจังหวัด</option>
+                              <option value="ออนไลน์">ออนไลน์</option>
+                              <optgroup label="ยอดนิยม">
+                                <option value="กรุงเทพฯ">กรุงเทพฯ</option>
+                                <option value="นนทบุรี">นนทบุรี</option>
+                                <option value="เชียงใหม่">เชียงใหม่</option>
+                                <option value="ชลบุรี">ชลบุรี</option>
+                                <option value="ภูเก็ต">ภูเก็ต</option>
+                                <option value="ประจวบคีรีขันธ์">หัวหิน/ประจวบฯ</option>
+                                <option value="ขอนแก่น">ขอนแก่น</option>
+                              </optgroup>
+                              <optgroup label="ทั้งหมด 77 จังหวัด">
+                                {ALL_THAI_PROVINCES.map((prov) => (
+                                  <option key={prov} value={prov}>{prov}</option>
+                                ))}
+                              </optgroup>
+                            </select>
+                          </div>
+                        </div>
 
-                </div>
+                        {/* Column 3: Time Filter (4 cols on iPad md, reduced 10% on desktop) */}
+                        <div className="flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-3 py-1.5 sm:py-2.5 md:col-span-4 lg:w-[185px] xl:w-[205px] shrink-0 text-left md:border-r md:border-slate-200 lg:border-r-0">
+                          <Calendar className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-[#2B527A] shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <label className="text-[9px] sm:text-[10px] font-bold text-slate-400 block uppercase tracking-wider leading-none mb-0.5">
+                              ช่วงเวลา
+                            </label>
+                            {timeFilter === 'custom' && startDate ? (
+                              <div className="flex items-center justify-between gap-1">
+                                <button
+                                  type="button"
+                                  onClick={onOpenDatePicker}
+                                  className="text-xs sm:text-sm font-bold text-[#2B527A] truncate hover:underline text-left cursor-pointer"
+                                  title="คลิกเพื่อเปลี่ยนวันที่"
+                                >
+                                  {formatDateDisplay(startDate, endDate)}
+                                </button>
+                                {onClearCustomDate && (
+                                  <button
+                                    type="button"
+                                    onClick={onClearCustomDate}
+                                    className="p-0.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 cursor-pointer shrink-0"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-between gap-1">
+                                <select
+                                  value={activeTime}
+                                  onChange={(e) => {
+                                    if (e.target.value === 'custom') {
+                                      if (onOpenDatePicker) onOpenDatePicker();
+                                    } else {
+                                      handleTimeChange(e.target.value);
+                                      if (onClearCustomDate) onClearCustomDate();
+                                    }
+                                  }}
+                                  className="w-full bg-transparent text-xs sm:text-sm font-bold text-slate-900 focus:outline-none cursor-pointer truncate appearance-none leading-normal"
+                                >
+                                  <option value="all">ทุกช่วงเวลา</option>
+                                  <option value="today">วันนี้</option>
+                                  <option value="tomorrow">พรุ่งนี้</option>
+                                  <option value="weekend">สุดสัปดาห์</option>
+                                  <option value="next_month">เดือนนี้</option>
+                                  <option value="custom">ระบุวัน...</option>
+                                </select>
+                                {activeTime === 'weekend' && (
+                                  <span className="text-[9px] font-black text-[#2B527A] bg-blue-50 px-1 py-0.5 rounded border border-blue-100 shrink-0">
+                                    ส.-อา.
+                                  </span>
+                                )}
+                                {activeTime === 'today' && (
+                                  <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-100 shrink-0">
+                                    วันนี้
+                                  </span>
+                                )}
+                                {activeTime === 'tomorrow' && (
+                                  <span className="text-[9px] font-black text-amber-700 bg-amber-50 px-1 py-0.5 rounded border border-amber-100 shrink-0">
+                                    พรุ่งนี้
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
 
-                {/* Under Search Box: Right-aligned Link under Search Button */}
-                <div className="flex justify-end pt-0 px-1 -mt-0.5 -mb-0.5">
-                  <a
-                    href="#why-chill-and-connect"
-                    onClick={handleScrollToWhySection}
-                    className="inline-flex items-center gap-1.5 text-xs sm:text-[12.5px] font-semibold text-slate-500 hover:text-[#2563EB] transition-colors group cursor-pointer"
-                  >
-                    <span className="hover:underline underline-offset-4 decoration-slate-300 group-hover:decoration-[#2563EB]">
-                      ทำไมต้อง Chill & Connect Hub?
-                    </span>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#2563EB] group-hover:translate-y-0.5 transition-transform duration-200" />
-                  </a>
-                </div>
+                      {/* Column 4: Primary Action Search Button (3 cols on iPad md) */}
+                      <div className="p-1 md:col-span-3 lg:w-auto shrink-0 flex items-center justify-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsFocused(false);
+                            if (onSearchSubmit) onSearchSubmit();
+                          }}
+                          className="w-full lg:w-auto bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-6 sm:px-8 py-2 sm:py-2.5 rounded-xl font-extrabold text-sm sm:text-base transition-all shadow-sm flex items-center justify-center gap-2 shrink-0 active:scale-95 cursor-pointer leading-normal"
+                        >
+                          <Search className="w-4 h-4" />
+                          <span>ค้นหา</span>
+                        </button>
+                      </div>
+
+                    </div>
+
+                    {/* Under Search Box: Right-aligned Link under Search Button */}
+                    <div className="flex justify-end pt-0 px-1 -mt-0.5 -mb-0.5">
+                      <a
+                        href="#why-chill-and-connect"
+                        onClick={handleScrollToWhySection}
+                        className="inline-flex items-center gap-1.5 text-xs sm:text-[12.5px] font-semibold text-slate-500 hover:text-[#2563EB] transition-colors group cursor-pointer"
+                      >
+                        <span className="hover:underline underline-offset-4 decoration-slate-300 group-hover:decoration-[#2563EB]">
+                          ทำไมต้อง Chill & Connect Hub?
+                        </span>
+                        <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#2563EB] group-hover:translate-y-0.5 transition-transform duration-200" />
+                      </a>
+                    </div>
+                  </>
+                )}
 
                 {/* Suggestions Dropdown (Positioned cleanly relative to console) */}
                 {renderSearchSuggestions()}
@@ -1207,8 +1322,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               </div>
             </div>
 
-            {/* 3. New User Exclusive & Privilege Ticket Strip (Compact & Refined Luxury Ticket Bar - Horizontal Scroll on Mobile) */}
-            <div className="mt-2 sm:mt-3.5 w-full space-y-2 sm:space-y-2.5">
+            {/* 3. New User Exclusive & Privilege Ticket Strip (Exclusively in Showroom Mode 'all' to maintain uncluttered focus in pillar discovery modes) */}
+            {activeModeTab === 'all' && (
+              <div className="mt-2 sm:mt-3.5 w-full space-y-2 sm:space-y-2.5">
               
               {/* Section Header */}
               <div className="flex items-center justify-between gap-2 px-1 flex-wrap">
@@ -1581,7 +1697,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 </div>
               )}
 
-            </div>
+              </div>
+            )}
 
           </div>
 

@@ -563,45 +563,19 @@ function FairsPageContent() {
             />
 
             {/* Standard Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 pt-6 pb-2">
-                <button
-                  type="button"
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-2xs"
-                >
-                  ก่อนหน้า
-                </button>
-
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
-                    const isCurrent = p === currentPage;
-                    return (
-                      <button
-                        key={p}
-                        type="button"
-                        onClick={() => setCurrentPage(p)}
-                        className={`w-8 h-8 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                          isCurrent
-                            ? 'bg-slate-900 text-white shadow-2xs'
-                            : 'text-slate-600 hover:bg-slate-100'
-                        }`}
-                      >
-                        {p}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  className="px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-2xs"
-                >
-                  ถัดไป
-                </button>
+            {filteredEvents.length > itemsPerPage && (
+              <div className="pt-4">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={(page) => {
+                    setCurrentPage(page);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  totalItems={filteredEvents.length}
+                  itemsPerPage={itemsPerPage}
+                  itemUnit="งานมหกรรม"
+                />
               </div>
             )}
           </>

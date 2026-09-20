@@ -10,6 +10,7 @@ interface PaginationProps {
   totalItems: number;
   itemsPerPage?: number;
   itemUnit?: string;
+  scrollTargetId?: string;
 }
 
 export const Pagination: React.FC<PaginationProps> = ({
@@ -19,21 +20,23 @@ export const Pagination: React.FC<PaginationProps> = ({
   totalItems,
   itemsPerPage = 24,
   itemUnit = 'กิจกรรม',
+  scrollTargetId,
 }) => {
   if (totalPages <= 1) return null;
 
-  // Handle smooth scroll up to the filter bar & first card of the new page
+  // Handle smooth scroll up to the targeted cards section / filter bar of the new page
   const handlePageSelect = (page: number) => {
     if (page < 1 || page > totalPages || page === currentPage) return;
     onPageChange(page);
 
-    // Smooth scroll up to the catalog section and filter bar
+    // Smooth scroll up to the specified target section or fallback to catalog-section
     if (typeof window !== 'undefined') {
-      const el = document.getElementById('catalog-section');
+      const targetId = scrollTargetId || 'catalog-section';
+      const el = document.getElementById(targetId);
       if (el) {
-        const yOffset = -75; // Leave comfortable space for sticky navbar
+        const yOffset = -80; // Leave comfortable space for sticky navbar
         const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
-        window.scrollTo({ top: y, behavior: 'smooth' });
+        window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
       } else {
         window.scrollTo({ top: 380, behavior: 'smooth' });
       }
