@@ -147,6 +147,7 @@ export interface PostComment {
   userName: string;
   userAvatar: string;
   text: string;
+  content?: string;
   timeAgo: string;
 }
 
@@ -4661,11 +4662,28 @@ export const MOCK_POSTS: CommunityPost[] = [
     caption: 'เดินรับลมยามเย็นบน Skywalk สวนป่าเบญจกิติ แสงสีทองกระทบผิวน้ำสวยจนลืมความเหนื่อยล้าทั้งสัปดาห์เลย แนะนำมาช่วง 17:30 น. นะครับ 🌅🌿',
     location: 'สวนป่าเบญจกิติ, คลองเตย',
     likesCount: 84,
-    commentsCount: 0,
+    commentsCount: 2,
     sharesCount: 14,
     timeAgo: '2 ชั่วโมงที่แล้ว',
     isLiked: true,
-    comments: [],
+    comments: [
+      {
+        id: 'c-spot-1',
+        userName: 'แจน (Jan Specialty)',
+        userAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80',
+        text: 'แสงสวยมากเลยค่ะ ไปช่วงเย็นลมพัดสบายจริง',
+        content: 'แสงสวยมากเลยค่ะ ไปช่วงเย็นลมพัดสบายจริง',
+        timeAgo: '1 ชั่วโมงที่แล้ว',
+      },
+      {
+        id: 'c-spot-2',
+        userName: 'บาส (Bas Running)',
+        userAvatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80',
+        text: 'ตี้วิ่งเช้าก็ผ่านเส้นนี้ บรรยากาศดีมากๆ ครับ',
+        content: 'ตี้วิ่งเช้าก็ผ่านเส้นนี้ บรรยากาศดีมากๆ ครับ',
+        timeAgo: '30 นาทีที่แล้ว',
+      },
+    ],
   },
   {
     id: 'post-fair-1',
@@ -4684,11 +4702,20 @@ export const MOCK_POSTS: CommunityPost[] = [
     caption: 'แวะมาเดินงาน Cat Expo ได้ยินเสียงดนตรีสดและได้ซื้อผลงานภาพพิมพ์จากศิลปินหน้าใหม่กลับบ้านด้วย มู้ดงานดีมาก คนเยอะแต่พลังงานบวกสุดๆ 🎶✨',
     location: 'ศูนย์ประชุมแห่งชาติสิริกิติ์ (QSNCC)',
     likesCount: 76,
-    commentsCount: 0,
+    commentsCount: 1,
     sharesCount: 9,
     timeAgo: '4 ชั่วโมงที่แล้ว',
     isLiked: false,
-    comments: [],
+    comments: [
+      {
+        id: 'c-fair-1',
+        userName: 'วิน (Win Trekker)',
+        userAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
+        text: 'งานนี้จัดถึงกี่โมงเหรอครับ กำลังเล็งว่าจะแวะไปช่วงค่ำ',
+        content: 'งานนี้จัดถึงกี่โมงเหรอครับ กำลังเล็งว่าจะแวะไปช่วงค่ำ',
+        timeAgo: '2 ชั่วโมงที่แล้ว',
+      },
+    ],
   },
   {
     id: 'post-4',
@@ -4708,11 +4735,20 @@ export const MOCK_POSTS: CommunityPost[] = [
     caption: 'ขึ้นทรงแก้วกาแฟใบแรกในชีวิตสำเร็จแล้ว! ดินสัมผัสนุ่มละมุน สมาธิอยู่กับมือทุกวินาที รอลุ้นผลงานหลังเข้าเตาอบสัปดาห์หน้าเลย ☕✨',
     location: 'อารีย์ สตูดิโอ คราฟต์',
     likesCount: 64,
-    commentsCount: 0,
+    commentsCount: 1,
     sharesCount: 12,
     timeAgo: '8 ชั่วโมงที่แล้ว',
     isLiked: true,
-    comments: [],
+    comments: [
+      {
+        id: 'c-craft-1',
+        userName: 'กล้า (Kla Active)',
+        userAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
+        text: 'แก้วสวยมากเลยครับ ดูเนื้อดินละเอียดมาก',
+        content: 'แก้วสวยมากเลยครับ ดูเนื้อดินละเอียดมาก',
+        timeAgo: '5 ชั่วโมงที่แล้ว',
+      },
+    ],
   },
   {
     id: 'post-challenge-1',

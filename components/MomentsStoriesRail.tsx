@@ -11,6 +11,7 @@ import {
   Camera,
   Sparkles,
   Share2,
+  ArrowRight,
 } from 'lucide-react';
 
 export interface StorySlide {
@@ -273,6 +274,31 @@ export const MomentsStoriesRail: React.FC<MomentsStoriesRailProps> = ({
     );
   };
 
+  const handleShareCurrentStory = async () => {
+    if (!activeStory) return;
+    const currentSlide = activeStory.slides[currentSlideIndex];
+    if (typeof window !== 'undefined') {
+      const shareUrl = `${window.location.origin}/moments?location=${encodeURIComponent(
+        currentSlide.locationName || activeStory.title
+      )}`;
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: `${activeStory.title} บน Chill & Connect Hub`,
+            text: currentSlide.caption,
+            url: shareUrl,
+          });
+          return;
+        } catch {
+          // User aborted share
+        }
+      }
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(shareUrl);
+      }
+    }
+  };
+
   return (
     <>
       {/* Stories Rail Container */}
@@ -280,7 +306,7 @@ export const MomentsStoriesRail: React.FC<MomentsStoriesRailProps> = ({
         <div className="flex items-center gap-3 sm:gap-4 overflow-x-auto no-scrollbar py-0.5 select-none">
           {/* User's "Add Story" Button */}
           <div className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group" onClick={onAddStory}>
-            <div className="relative w-15 h-15 sm:w-16 sm:h-16 rounded-full p-[2px] border-2 border-dashed border-slate-300 group-hover:border-slate-800 transition-colors flex items-center justify-center bg-slate-50">
+            <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full p-[2px] border-2 border-dashed border-slate-300 group-hover:border-slate-800 transition-colors flex items-center justify-center bg-slate-50">
               <div className="w-full h-full rounded-full overflow-hidden relative">
                 {isLoggedIn ? (
                   <img
@@ -318,7 +344,7 @@ export const MomentsStoriesRail: React.FC<MomentsStoriesRailProps> = ({
               >
                 {/* Glowing Gradient Ring Container */}
                 <div
-                  className={`w-15 h-15 sm:w-16 sm:h-16 rounded-full p-[2.5px] transition-all duration-300 group-hover:scale-105 ${
+                  className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full p-[2.5px] transition-all duration-300 group-hover:scale-105 ${
                     isViewed
                       ? 'bg-slate-300'
                       : `bg-gradient-to-tr ${story.ringGradient} shadow-xs group-hover:shadow-md`
@@ -449,12 +475,26 @@ export const MomentsStoriesRail: React.FC<MomentsStoriesRailProps> = ({
 
             {/* Bottom Caption & Interactive Cheer Bar */}
             <div className="relative z-20 p-4 space-y-3">
-              {/* Location Tag */}
+              {/* Clickable Location Tag */}
               {activeStory.slides[currentSlideIndex].locationName && (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/50 backdrop-blur-md text-white text-[11px] font-bold border border-white/20 shadow-md">
-                  <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  <span className="truncate">{activeStory.slides[currentSlideIndex].locationName}</span>
-                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onOpenTargetLocation) {
+                      onOpenTargetLocation(activeStory.slides[currentSlideIndex].locationName);
+                      setActiveStory(null);
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 hover:bg-white hover:text-slate-900 backdrop-blur-md text-white text-[11px] font-bold border border-white/25 shadow-md transition-all cursor-pointer group/loc active:scale-95"
+                  title="คลิกเพื่อดูกิจกรรมและพิกัดนี้"
+                >
+                  <MapPin className="w-3.5 h-3.5 text-amber-400 group-hover/loc:text-[#F26430] shrink-0 transition-colors" />
+                  <span className="truncate max-w-[200px] sm:max-w-[260px]">
+                    {activeStory.slides[currentSlideIndex].locationName}
+                  </span>
+                  <ArrowRight className="w-3 h-3 text-white/70 group-hover/loc:text-slate-900 group-hover/loc:translate-x-0.5 transition-all shrink-0" />
+                </button>
               )}
 
               {/* Caption Text */}
@@ -462,24 +502,36 @@ export const MomentsStoriesRail: React.FC<MomentsStoriesRailProps> = ({
                 {activeStory.slides[currentSlideIndex].caption}
               </p>
 
-              {/* Action Cheer Bar */}
+              {/* Action Cheer & Share Bar */}
               <div className="flex items-center justify-between pt-1 border-t border-white/15">
-                <button
-                  type="button"
-                  onClick={handleCheerCurrentStory}
-                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    cheeredStories.includes(activeStory.id)
-                      ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30'
-                      : 'bg-white/20 hover:bg-white/30 text-white backdrop-blur-md'
-                  }`}
-                >
-                  <Heart
-                    className={`w-4 h-4 ${
-                      cheeredStories.includes(activeStory.id) ? 'fill-white' : 'text-white'
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCheerCurrentStory}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      cheeredStories.includes(activeStory.id)
+                        ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30'
+                        : 'bg-white/20 hover:bg-white/30 text-white backdrop-blur-md'
                     }`}
-                  />
-                  <span>{cheeredStories.includes(activeStory.id) ? 'ส่งใจแล้ว ❤️' : 'ส่งหัวใจ'}</span>
-                </button>
+                  >
+                    <Heart
+                      className={`w-4 h-4 ${
+                        cheeredStories.includes(activeStory.id) ? 'fill-white' : 'text-white'
+                      }`}
+                    />
+                    <span>{cheeredStories.includes(activeStory.id) ? 'ส่งใจแล้ว ❤️' : 'ส่งหัวใจ'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleShareCurrentStory}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-white/20 hover:bg-white/30 text-white backdrop-blur-md transition-all cursor-pointer"
+                    title="แชร์สตอรี่นี้"
+                  >
+                    <Share2 className="w-4 h-4 text-white" />
+                    <span>แชร์</span>
+                  </button>
+                </div>
 
                 <span className="text-[11px] text-white/60 font-medium">
                   {currentSlideIndex + 1} / {activeStory.slides.length}

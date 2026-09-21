@@ -38,9 +38,56 @@ import {
   LogIn,
   MapPin,
   ArrowLeft,
+  ArrowRight,
   Bookmark,
+  MessageCircle,
+  Send,
 } from 'lucide-react';
 import { MomentsStoriesRail } from '@/components/MomentsStoriesRail';
+
+// 5 Feel-Good Curated Moments for Snapshot of the Week Gallery
+const SNAPSHOT_FEEL_GOOD_GALLERY = [
+  {
+    id: 'snap-1',
+    title: 'สวนเบญจกิติ, กรุงเทพฯ',
+    subtitle: 'สูดอากาศบริสุทธิ์และนั่งคุยกันยามเย็น',
+    url: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1000&q=85',
+    caption: 'มิตรภาพและรอยยิ้มใต้ร่มไม้ สวนเบญจกิติ กรุงเทพฯ',
+    tag: 'Community Vibe',
+  },
+  {
+    id: 'snap-2',
+    title: 'ซอยอารีย์, กรุงเทพฯ',
+    subtitle: 'กลิ่นหอมกาแฟดริปยามเช้า',
+    url: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80',
+    caption: 'กลิ่นหอมกาแฟดริปยามเช้าและความเงียบสงบในซอยอารีย์',
+    tag: 'Slow Bar',
+  },
+  {
+    id: 'snap-3',
+    title: 'เขาใหญ่, นครราชสีมา',
+    subtitle: 'สูดโอโซนฮีลใจใต้ทิวไม้',
+    url: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=800&q=80',
+    caption: 'แสงแดดอ่อนๆ ลอดผ่านทิวไม้ สูดโอโซนธรรมชาติเขาใหญ่',
+    tag: 'Nature Healing',
+  },
+  {
+    id: 'snap-4',
+    title: 'สตูดิโอคราฟต์, เชียงใหม่',
+    subtitle: 'สมาธิและสัมผัสนุ่มละมุนของเนื้อดิน',
+    url: 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=800&q=80',
+    caption: 'ช่วงเวลาที่สมาธิอยู่กับฝ่ามือและเนื้อดิน ละเมียดละไมในสตูดิโอปั้นดิน เชียงใหม่',
+    tag: 'Artisan Craft',
+  },
+  {
+    id: 'snap-5',
+    title: 'หาดกะตะ, ภูเก็ต',
+    subtitle: 'รับลมทะเลและแสงทไวไลท์สีพีช',
+    url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
+    caption: 'เสียงคลื่นกระทบฝั่งและแสงทไวไลท์สีพีช ปิดท้ายวันอย่างมีความสุขที่หาดกะตะ ภูเก็ต',
+    tag: 'Ocean Sunset',
+  },
+];
 
 function MomentsContent() {
   const searchParams = useSearchParams();
@@ -63,7 +110,8 @@ function MomentsContent() {
   // Instagram-Grade Micro-Interactions States
   const [savedPostIds, setSavedPostIds] = useState<string[]>(['1', '3']);
   const [doubleTapPostId, setDoubleTapPostId] = useState<string | null>(null);
-  const [postCheers, setPostCheers] = useState<Record<string, string[]>>({});
+  const [expandedCommentPostIds, setExpandedCommentPostIds] = useState<string[]>(['post-spot-1']);
+  const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
 
   // Sync if URL location changes
   useEffect(() => {
@@ -220,23 +268,52 @@ function MomentsContent() {
     });
   };
 
-  // Quick Positive Cheer Reaction
-  const handleQuickCheer = (postId: string, reaction: string) => {
+
+  // Toggle Comments Drawer
+  const handleToggleCommentsDrawer = (postId: string) => {
+    setExpandedCommentPostIds((prev) =>
+      prev.includes(postId) ? prev.filter((id) => id !== postId) : [...prev, postId]
+    );
+  };
+
+  // Submit Comment
+  const handleSubmitComment = (postId: string, e: React.FormEvent) => {
+    e.preventDefault();
+    const text = (commentInputs[postId] || '').trim();
+    if (!text) return;
+
     if (!isLoggedIn) {
-      setMembershipActionTitle('เพื่อร่วมส่งพลังบวกให้เพื่อนๆ');
+      setMembershipActionTitle('เพื่อร่วมแสดงความคิดเห็นและส่งพลังบวก');
       setIsRequireMembershipOpen(true);
       return;
     }
 
-    setPostCheers((prev) => {
-      const existing = prev[postId] || [];
-      return {
-        ...prev,
-        [postId]: [...existing, reaction],
-      };
-    });
+    const newComment = {
+      id: `c-${Date.now()}`,
+      userName: 'คุณส้ม (Som_Chill)',
+      userAvatar:
+        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+      text: text,
+      content: text,
+      timeAgo: 'เมื่อสักครู่นี้',
+    };
 
-    showToast(`ส่งความรู้สึก "${reaction}" เรียบร้อยแล้ว ✨`);
+    setPosts((prev) =>
+      prev.map((p) => {
+        if (p.id === postId) {
+          const existing = p.comments || [];
+          return {
+            ...p,
+            comments: [...existing, newComment],
+            commentsCount: (p.commentsCount || existing.length) + 1,
+          };
+        }
+        return p;
+      })
+    );
+
+    setCommentInputs((prev) => ({ ...prev, [postId]: '' }));
+    showToast('ส่งความคิดเห็นเรียบร้อยแล้ว! 💬');
   };
 
   // Copy Share Link & Increment Share Count (Multi-platform & Mobile Web Share API support)
@@ -479,17 +556,48 @@ function MomentsContent() {
     return filteredPosts.slice(0, visibleCount);
   }, [filteredPosts, visibleCount]);
 
-  // Trending Spots for Sidebar
-  const trendingSpots = useMemo(
-    () => [
-      { title: 'สวนป่าเบญจกิติ', count: '128 โมเมนต์' },
-      { title: 'ศูนย์ประชุมแห่งชาติสิริกิติ์ (QSNCC)', count: '94 โมเมนต์' },
-      { title: 'ตลาดน้อย - เจริญกรุง', count: '87 โมเมนต์' },
-      { title: 'HYROX Studio', count: '65 โมเมนต์' },
-      { title: 'อารีย์ สตูดิโอ คราฟต์', count: '52 โมเมนต์' },
-    ],
-    []
-  );
+  // Trending Spots for Sidebar (Dynamic from posts state)
+  const trendingSpots = useMemo(() => {
+    const locMap: Record<string, number> = {};
+
+    posts.forEach((p) => {
+      const loc = p.targetTitle || p.location;
+      if (loc) {
+        locMap[loc] = (locMap[loc] || 0) + 1;
+      }
+    });
+
+    const calculated = Object.entries(locMap)
+      .map(([title, cnt]) => ({
+        title,
+        count: `${cnt} โมเมนต์`,
+        numericCount: cnt,
+      }))
+      .sort((a, b) => b.numericCount - a.numericCount);
+
+    if (calculated.length >= 5) {
+      return calculated.slice(0, 5);
+    }
+
+    // Default fallbacks to guarantee 5 spots
+    const defaults = [
+      { title: 'สวนป่าเบญจกิติ', count: '128 โมเมนต์', numericCount: 128 },
+      { title: 'ศูนย์ประชุมแห่งชาติสิริกิติ์ (QSNCC)', count: '94 โมเมนต์', numericCount: 94 },
+      { title: 'ตลาดน้อย - เจริญกรุง', count: '87 โมเมนต์', numericCount: 87 },
+      { title: 'HYROX Studio', count: '65 โมเมนต์', numericCount: 65 },
+      { title: 'อารีย์ สตูดิโอ คราฟต์', count: '52 โมเมนต์', numericCount: 52 },
+    ];
+
+    const existing = new Set(calculated.map((c) => c.title));
+    const merged = [...calculated];
+    for (const d of defaults) {
+      if (!existing.has(d.title)) {
+        merged.push(d);
+        if (merged.length >= 5) break;
+      }
+    }
+    return merged.slice(0, 5);
+  }, [posts]);
 
   return (
     <div className="min-h-screen bg-[#FCFBF9] text-[#1E293B] flex flex-col font-sans selection:bg-slate-800 selection:text-white">
@@ -527,8 +635,8 @@ function MomentsContent() {
         {/* 1. Moments Signature Hero Banner (Full-Width Editorial Header) */}
         <section className="relative rounded-2xl bg-white p-4 sm:p-5 shadow-2xs border border-slate-200/80 overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-center">
-            {/* Left (7-cols): Headline, Description & Actions */}
-            <div className="lg:col-span-7 space-y-3">
+            {/* Left (6-cols): Headline, Description & Actions */}
+            <div className="lg:col-span-6 space-y-3">
               <div className="space-y-2">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[10px] font-black text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200/80 uppercase tracking-wider">
@@ -553,22 +661,90 @@ function MomentsContent() {
               </div>
             </div>
 
-            {/* Right (5-cols): Single Beautiful Snapshot Photo */}
-            <div className="lg:col-span-5 relative rounded-2xl overflow-hidden shadow-sm border border-slate-200/80 h-[150px] sm:h-[175px] group">
-              <img
-                src="https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1000&q=85"
-                alt="Community Lifestyle Moment"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-[0.97]"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent pointer-events-none" />
-              <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between text-white">
-                <span className="text-[11px] font-bold text-white/95 flex items-center gap-1.5 [text-shadow:_0_1px_4px_rgba(0,0,0,0.8)]">
-                  <Camera className="w-3.5 h-3.5 text-amber-300" />
-                  <span>Snapshot of the Week</span>
+            {/* Right (6-cols): 5-Photo Feel-Good Moments Gallery (Aesthetic, Compact & Clickable) */}
+            <div className="lg:col-span-6 space-y-1.5">
+              <div className="flex items-center justify-between px-0.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-xs font-black text-slate-800 tracking-tight">
+                    Snapshot of the Week
+                  </span>
+                </div>
+                <span className="text-[10.5px] font-semibold text-slate-400">
+                  5 Feel-Good Moments • คลิกเพื่อดูรูปเต็ม
                 </span>
-                <span className="text-[10px] text-white/80 font-medium [text-shadow:_0_1px_3px_rgba(0,0,0,0.8)]">
-                  สวนเบญจกิติ, กรุงเทพฯ
-                </span>
+              </div>
+
+              {/* 5-Photo Mosaic Gallery Grid (Compact & Proportionate) */}
+              <div className="grid grid-cols-4 grid-rows-2 gap-1.5 h-[155px] sm:h-[175px] rounded-2xl overflow-hidden p-1 bg-slate-50 border border-slate-200/80 shadow-2xs">
+                {/* Image 1: Main Feature (2 cols x 2 rows) */}
+                <button
+                  type="button"
+                  onClick={() =>
+                    openLightbox(
+                      SNAPSHOT_FEEL_GOOD_GALLERY.map((s) => s.url),
+                      0,
+                      `${SNAPSHOT_FEEL_GOOD_GALLERY[0].title} — ${SNAPSHOT_FEEL_GOOD_GALLERY[0].caption}`
+                    )
+                  }
+                  className="col-span-2 row-span-2 relative rounded-xl overflow-hidden group cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-slate-900/20"
+                  title={`${SNAPSHOT_FEEL_GOOD_GALLERY[0].title} (คลิกดูภาพขยาย)`}
+                >
+                  <img
+                    src={SNAPSHOT_FEEL_GOOD_GALLERY[0].url}
+                    alt={SNAPSHOT_FEEL_GOOD_GALLERY[0].title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent pointer-events-none" />
+                  <div className="absolute top-2 left-2">
+                    <span className="text-[9px] font-extrabold text-white bg-black/60 px-2 py-0.5 rounded-md backdrop-blur-xs shadow-2xs">
+                      {SNAPSHOT_FEEL_GOOD_GALLERY[0].tag}
+                    </span>
+                  </div>
+                  <div className="absolute bottom-2 left-2.5 right-2 text-white">
+                    <p className="text-[11px] sm:text-xs font-bold truncate [text-shadow:_0_1px_3px_rgba(0,0,0,0.8)]">
+                      {SNAPSHOT_FEEL_GOOD_GALLERY[0].title}
+                    </p>
+                    <p className="text-[9.5px] text-white/85 font-medium line-clamp-1">
+                      {SNAPSHOT_FEEL_GOOD_GALLERY[0].subtitle}
+                    </p>
+                  </div>
+                </button>
+
+                {/* Images 2 to 5: 4 Companion Thumbnails (1 col x 1 row each) */}
+                {SNAPSHOT_FEEL_GOOD_GALLERY.slice(1).map((item, idx) => {
+                  const actualIndex = idx + 1;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() =>
+                        openLightbox(
+                          SNAPSHOT_FEEL_GOOD_GALLERY.map((s) => s.url),
+                          actualIndex,
+                          `${item.title} — ${item.caption}`
+                        )
+                      }
+                      className="relative rounded-xl overflow-hidden group cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-slate-900/20"
+                      title={`${item.title} (คลิกดูภาพขยาย)`}
+                    >
+                      <img
+                        src={item.url}
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-black/10 group-hover:bg-black/35 transition-colors" />
+                      <div className="absolute inset-0 p-1 flex flex-col justify-between opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                        <span className="self-start text-[8px] font-bold text-white bg-black/65 px-1.5 py-0.5 rounded backdrop-blur-xs">
+                          {item.tag}
+                        </span>
+                        <span className="text-[8.5px] font-bold text-white bg-black/70 px-1 py-0.5 rounded truncate backdrop-blur-xs">
+                          {item.title}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -682,6 +858,53 @@ function MomentsContent() {
               )}
             </div>
 
+            {/* Contextual Empty State for "ที่บันทึกไว้" (Saved Posts) */}
+            {displayedPosts.length === 0 && activeTabFilter === 'saved' && (
+              <div className="bg-amber-50/40 rounded-3xl p-8 border border-dashed border-amber-200/90 text-center space-y-3.5 animate-fade-in my-4">
+                <div className="w-12 h-12 rounded-full bg-amber-100/80 text-amber-600 flex items-center justify-center mx-auto shadow-2xs border border-amber-200/60">
+                  <Bookmark className="w-6 h-6 fill-amber-500/20" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-bold text-sm text-slate-900">
+                    ยังไม่มีโมเมนต์ที่คุณบันทึกไว้
+                  </h3>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+                    พบภาพถ่ายบรรยากาศหรือพิกัดที่ถูกใจ? กดปุ่ม <strong>"บันทึก 🔖"</strong> ที่มุมขวาล่างของโพสต์ เพื่อเก็บไว้ในคอลเลกชันส่วนตัวของคุณ
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTabFilter('all')}
+                  className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs"
+                >
+                  สำรวจโมเมนต์ทั้งหมด
+                </button>
+              </div>
+            )}
+
+            {/* Standard Empty State for other tabs */}
+            {displayedPosts.length === 0 && activeTabFilter !== 'saved' && (activeTabFilter !== 'mine' || isLoggedIn) && (
+              <div className="bg-slate-50/80 rounded-2xl p-5 border border-dashed border-slate-200 text-center space-y-3">
+                <p className="text-sm font-semibold text-slate-700">
+                  {locationFilter
+                    ? `ไม่พบโมเมนต์ที่ตรงกับการค้นหา "${locationFilter}"`
+                    : activeTabFilter === 'mine'
+                    ? 'คุณยังไม่ได้แชร์โมเมนต์เลย ออกไปใช้ชีวิตแล้วมาแบ่งปันรูปสวยๆ กันนะ'
+                    : 'ยังไม่มีโมเมนต์ในหมวดนี้'}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLocationFilter('');
+                    setActiveTabFilter('all');
+                  }}
+                  className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs"
+                >
+                  ดูโมเมนต์ทั้งหมด
+                </button>
+              </div>
+            )}
+
             {/* Guest State for "โมเมนต์ของฉัน" when Logged Out */}
             {activeTabFilter === 'mine' && !isLoggedIn && (
               <div className="bg-white rounded-2xl p-8 border border-slate-200/80 text-center space-y-3.5 animate-fade-in shadow-xs">
@@ -707,29 +930,6 @@ function MomentsContent() {
               </div>
             )}
 
-            {/* Empty State */}
-            {displayedPosts.length === 0 && (activeTabFilter !== 'mine' || isLoggedIn) && (
-              <div className="bg-slate-50/80 rounded-2xl p-5 border border-dashed border-slate-200 text-center space-y-3">
-                <p className="text-sm font-semibold text-slate-700">
-                  {locationFilter
-                    ? `ไม่พบโมเมนต์ที่ตรงกับการค้นหา "${locationFilter}"`
-                    : activeTabFilter === 'mine'
-                    ? 'คุณยังไม่ได้แชร์โมเมนต์เลย ออกไปใช้ชีวิตแล้วมาแบ่งปันรูปสวยๆ กันนะ'
-                    : 'ยังไม่มีโมเมนต์ในหมวดนี้'}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLocationFilter('');
-                    setActiveTabFilter('all');
-                  }}
-                  className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs"
-                >
-                  ดูโมเมนต์ทั้งหมด
-                </button>
-              </div>
-            )}
-
             {/* Feed Posts List */}
             <div className="space-y-5">
               {displayedPosts.map((post) => {
@@ -740,10 +940,10 @@ function MomentsContent() {
                 return (
                   <article
                     key={post.id}
-                    className="bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all duration-300 overflow-hidden"
+                    className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs overflow-hidden transition-all duration-300 hover:shadow-md"
                   >
-                    {/* Header: User Profile, Destination Link & Time */}
-                    <div className="p-3.5 sm:p-4 flex items-center justify-between border-b border-slate-100">
+                    {/* Post Author Bar */}
+                    <div className="p-4 sm:p-5 flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
                         <img
                           src={post.userAvatar}
@@ -768,8 +968,9 @@ function MomentsContent() {
                                 <span className="truncate max-w-[180px] sm:max-w-[260px] font-bold">
                                   {targetTitle}
                                 </span>
-                                <span className="text-[10px] text-slate-400 group-hover/poi:text-slate-600">
-                                  ดูข้อมูล ↗
+                                <span className="text-[10px] text-slate-400 group-hover/poi:text-slate-600 inline-flex items-center gap-0.5">
+                                  <span>ดูข้อมูล</span>
+                                  <ArrowRight className="w-2.5 h-2.5 group-hover/poi:translate-x-0.5 transition-transform" />
                                 </span>
                               </button>
                             </div>
@@ -923,6 +1124,22 @@ function MomentsContent() {
                             <span>{post.likesCount}</span>
                           </button>
 
+                          {/* Comment Drawer Toggle Button */}
+                          <button
+                            type="button"
+                            onClick={() => handleToggleCommentsDrawer(post.id)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                              expandedCommentPostIds.includes(post.id)
+                                ? 'bg-blue-50 text-blue-600 border border-blue-200 shadow-2xs'
+                                : 'bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200'
+                            }`}
+                            title="ความคิดเห็น"
+                            aria-label="ความคิดเห็น"
+                          >
+                            <MessageCircle className="w-4 h-4 text-slate-500" />
+                            <span>{(post.comments && post.comments.length) || post.commentsCount || 0}</span>
+                          </button>
+
                           {/* Share Button (Icon + Shares Count, NO text word per user request) */}
                           <button
                             type="button"
@@ -963,41 +1180,71 @@ function MomentsContent() {
                         {post.caption}
                       </p>
 
-                      {/* Positive Cheer / Quick Emoji Reactions Bar */}
-                      <div className="pt-1 flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">
-                          ส่งกำลังใจ:
-                        </span>
-                        {[
-                          { emoji: '❤️', text: 'สวยมาก' },
-                          { emoji: '✨', text: 'ชิลล์สุดๆ' },
-                          { emoji: '☕', text: 'น่าไปตาม' },
-                          { emoji: '🙌', text: 'ปังมาก' },
-                          { emoji: '🔥', text: 'อยากไปจอย' },
-                        ].map((rx) => (
-                          <button
-                            key={rx.text}
-                            type="button"
-                            onClick={() => handleQuickCheer(post.id, `${rx.emoji} ${rx.text}`)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200/80 text-[11px] font-medium transition-all active:scale-95 cursor-pointer"
-                          >
-                            <span>{rx.emoji}</span>
-                            <span>{rx.text}</span>
-                          </button>
-                        ))}
-                      </div>
+                      {/* Expandable Inline Comments Section */}
+                      {expandedCommentPostIds.includes(post.id) && (
+                        <div className="pt-3 border-t border-slate-100 space-y-2.5 animate-fade-in">
+                          {/* Comments List */}
+                          {post.comments && post.comments.length > 0 ? (
+                            <div className="space-y-2 max-h-48 overflow-y-auto no-scrollbar pr-1">
+                              {post.comments.map((comment) => (
+                                <div
+                                  key={comment.id}
+                                  className="flex items-start gap-2.5 text-xs bg-slate-50/80 p-2.5 rounded-xl border border-slate-100"
+                                >
+                                  <img
+                                    src={comment.userAvatar}
+                                    alt={comment.userName}
+                                    className="w-6 h-6 rounded-full object-cover shrink-0 mt-0.5 border border-slate-200"
+                                  />
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center justify-between gap-1">
+                                      <span className="font-bold text-slate-800 text-[11px] truncate">
+                                        {comment.userName}
+                                      </span>
+                                      <span className="text-[10px] text-slate-400 shrink-0">
+                                        {comment.timeAgo}
+                                      </span>
+                                    </div>
+                                    <p className="text-slate-600 text-xs mt-0.5 leading-relaxed">
+                                      {comment.content || comment.text}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-[11px] text-slate-400 py-1 text-center">
+                              ยังไม่มีความคิดเห็น ร่วมเป็นคนแรกที่ส่งพลังบวกกันนะ ✨
+                            </p>
+                          )}
 
-                      {/* Display Any Added Positive Cheers */}
-                      {postCheers[post.id] && postCheers[post.id].length > 0 && (
-                        <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                          {postCheers[post.id].map((cheer, cIdx) => (
-                            <span
-                              key={cIdx}
-                              className="text-[10.5px] font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/80 animate-fade-in shadow-2xs"
+                          {/* Inline Comment Input Box */}
+                          <form
+                            onSubmit={(e) => handleSubmitComment(post.id, e)}
+                            className="flex items-center gap-2 pt-1"
+                          >
+                            <input
+                              type="text"
+                              value={commentInputs[post.id] || ''}
+                              onChange={(e) =>
+                                setCommentInputs((prev) => ({ ...prev, [post.id]: e.target.value }))
+                              }
+                              placeholder={
+                                isLoggedIn
+                                  ? 'เขียนความคิดเห็นหรือส่งพลังบวก...'
+                                  : 'เข้าสู่ระบบเพื่อแสดงความคิดเห็น...'
+                              }
+                              className="flex-1 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 transition-colors"
+                            />
+                            <button
+                              type="submit"
+                              disabled={!(commentInputs[post.id] || '').trim()}
+                              className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 disabled:opacity-40 disabled:pointer-events-none text-white rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer flex items-center gap-1 shrink-0"
                             >
-                              {cheer}
-                            </span>
-                          ))}
+                              <Send className="w-3 h-3" />
+                              <span>ส่ง</span>
+                            </button>
+                          </form>
                         </div>
                       )}
                     </div>
@@ -1360,11 +1607,10 @@ function MomentsContent() {
                     : 'เลือกกิจกรรมคอมมูนิตี้:'}
                 </label>
                 <div className="relative flex items-center">
-                  <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
                   <select
                     value={createTargetId}
                     onChange={(e) => setCreateTargetId(e.target.value)}
-                    className="w-full bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white border border-slate-200 rounded-2xl pl-10 pr-9 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all cursor-pointer truncate"
+                    className="w-full bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white border border-slate-200 rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all cursor-pointer truncate"
                   >
                     {createTargetType === 'spot' &&
                       MOCK_SPOTS.slice(0, 30).map((s) => (
@@ -1415,17 +1661,18 @@ function MomentsContent() {
                   required
                 />
 
-                {/* Quick Vibe Chips to append to caption */}
+                {/* Quick Vibe Chips to append to caption (# Format, No Emojis) */}
                 <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                     แท็กอารมณ์:
                   </span>
                   {[
-                    '☕ กาแฟดริปดีมาก',
-                    '🌿 ธรรมชาติฮีลใจ',
-                    '📸 มุมถ่ายรูปปัง',
-                    '🏃 สดชื่นได้เหงื่อ',
-                    '✨ บรรยากาศสงบ',
+                    '#กาแฟดริปดีมาก',
+                    '#ธรรมชาติฮีลใจ',
+                    '#มุมถ่ายรูปปัง',
+                    '#สดชื่นได้เหงื่อ',
+                    '#บรรยากาศสงบ',
+                    '#มู้ดดีฮีลใจ',
                   ].map((tag) => (
                     <button
                       key={tag}
@@ -1433,9 +1680,9 @@ function MomentsContent() {
                       onClick={() =>
                         setCaptionInput((prev) => (prev ? `${prev} ${tag}` : tag))
                       }
-                      className="text-[10.5px] font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-0.5 rounded-full border border-slate-200 transition-colors cursor-pointer active:scale-95"
+                      className="text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 px-2.5 py-1 rounded-full border border-slate-200 transition-all cursor-pointer active:scale-95"
                     >
-                      + {tag}
+                      {tag}
                     </button>
                   ))}
                 </div>
@@ -1444,10 +1691,7 @@ function MomentsContent() {
               {/* Multi-Photo Upload Section (Up to 6 images) */}
               <div className="space-y-2.5 pt-1 border-t border-slate-100">
                 <div className="flex items-center justify-between text-xs font-bold text-slate-800">
-                  <div className="flex items-center gap-2">
-                    <Camera className="w-4 h-4 text-slate-500" />
-                    <span>รูปภาพโมเมนต์บรรยากาศ ({uploadedPostImages.length}/6 รูป)</span>
-                  </div>
+                  <span>รูปภาพโมเมนต์บรรยากาศ ({uploadedPostImages.length}/6 รูป)</span>
                   <span className="text-[11px] text-slate-500 font-medium">
                     อัปโหลดได้สูงสุด 6 รูป
                   </span>
@@ -1517,7 +1761,7 @@ function MomentsContent() {
               <div className="flex items-center justify-between pt-3 border-t border-slate-100">
                 <span className="text-[11px] text-slate-400 font-medium">
                   {uploadedPostImages.length === 0
-                    ? '💡 ใส่รูปภาพอย่างน้อย 1 รูป เพื่อให้เพื่อนๆ เห็นบรรยากาศ'
+                    ? 'ใส่รูปภาพอย่างน้อย 1 รูป เพื่อให้เพื่อนๆ เห็นบรรยากาศ'
                     : 'พร้อมแชร์ลงฟีดคอมมูนิตี้แล้ว'}
                 </span>
                 <div className="flex items-center gap-2.5">
