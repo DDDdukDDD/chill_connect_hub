@@ -30,6 +30,13 @@ import {
   MessageCircle,
   Clock,
   ArrowRight,
+  ArrowLeft,
+  Crown,
+  AlertTriangle,
+  Flame,
+  Coffee,
+  Footprints,
+  Medal,
   QrCode,
   CalendarDays,
   Check,
@@ -431,8 +438,8 @@ export default function MyHubPage() {
 
     showToast(
       cancelTargetEvent.eventType === 'public_venue'
-        ? `✔️ ลบ "${cancelTargetEvent.title}" ออกจากนัดหมายแล้ว`
-        : `✔️ ยกเลิกตั๋ว ${ticketId} สำเร็จ (คืนที่นั่งให้เพื่อนสมาชิกแล้ว)`
+        ? `ลบ "${cancelTargetEvent.title}" ออกจากนัดหมายแล้ว`
+        : `ยกเลิกตั๋ว ${ticketId} สำเร็จ (คืนที่นั่งให้เพื่อนสมาชิกแล้ว)`
     );
     setIsCancelModalOpen(false);
   };
@@ -490,10 +497,10 @@ export default function MyHubPage() {
         badgeBorder: 'border-[#B8D1E8]',
         cardHover: 'hover:border-[#B8D1E8]',
         titleHover: 'group-hover:text-[#2B527A]',
-        btnBg: 'bg-[#EEF4FA]',
-        btnHover: 'hover:bg-[#DEEBF7]',
-        btnText: 'text-[#2B527A]',
-        btnBorder: 'border-[#B8D1E8]/70',
+        btnBg: 'bg-slate-900',
+        btnHover: 'hover:bg-slate-800',
+        btnText: 'text-white',
+        btnBorder: 'border-slate-900',
         passLabel: 'Expo Pass',
       };
     }
@@ -507,10 +514,10 @@ export default function MyHubPage() {
         badgeBorder: 'border-purple-200',
         cardHover: 'hover:border-purple-300',
         titleHover: 'group-hover:text-purple-700',
-        btnBg: 'bg-purple-50',
-        btnHover: 'hover:bg-purple-100',
-        btnText: 'text-purple-700',
-        btnBorder: 'border-purple-200/80',
+        btnBg: 'bg-slate-900',
+        btnHover: 'hover:bg-slate-800',
+        btnText: 'text-white',
+        btnBorder: 'border-slate-900',
         passLabel: 'Quest Pass',
       };
     }
@@ -524,10 +531,10 @@ export default function MyHubPage() {
         badgeBorder: 'border-[#FCD5C5]',
         cardHover: 'hover:border-[#FCD5C5]',
         titleHover: 'group-hover:text-[#D04A1B]',
-        btnBg: 'bg-[#FEF3EE]',
-        btnHover: 'hover:bg-[#FDE6DB]',
-        btnText: 'text-[#D04A1B]',
-        btnBorder: 'border-[#FCD5C5]/70',
+        btnBg: 'bg-slate-900',
+        btnHover: 'hover:bg-slate-800',
+        btnText: 'text-white',
+        btnBorder: 'border-slate-900',
         passLabel: 'Buddy Pass',
       };
     }
@@ -540,10 +547,10 @@ export default function MyHubPage() {
       badgeBorder: 'border-[#A3CEB0]',
       cardHover: 'hover:border-[#A3CEB0]',
       titleHover: 'group-hover:text-[#2D5A3C]',
-      btnBg: 'bg-[#EBF3ED]',
-      btnHover: 'hover:bg-[#DCECE0]',
-      btnText: 'text-[#2D5A3C]',
-      btnBorder: 'border-[#A3CEB0]/70',
+      btnBg: 'bg-slate-900',
+      btnHover: 'hover:bg-slate-800',
+      btnText: 'text-white',
+      btnBorder: 'border-slate-900',
       passLabel: 'E-Ticket',
     };
   };
@@ -840,9 +847,10 @@ export default function MyHubPage() {
               <button
                 type="button"
                 onClick={() => setCalendarCategoryFilter('all')}
-                className="text-xs font-bold text-purple-700 hover:text-purple-950 bg-white hover:bg-purple-50 px-3 py-1.5 rounded-xl border border-purple-200 shadow-2xs shrink-0 cursor-pointer transition-all self-start sm:self-auto"
+                className="text-xs font-bold text-slate-700 hover:text-slate-950 bg-white hover:bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs shrink-0 cursor-pointer transition-all self-start sm:self-auto inline-flex items-center gap-1.5"
               >
-                ← มุมมองรวมทั้งหมด
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>มุมมองรวมทั้งหมด</span>
               </button>
             </div>
           )}
@@ -928,9 +936,9 @@ export default function MyHubPage() {
                         isSelected
                           ? 'bg-slate-900 text-white shadow-2xs'
                           : isToday
-                          ? 'bg-[#2D5A3C] text-white shadow-2xs'
+                          ? 'bg-slate-900 text-white shadow-2xs'
                           : isQuestDeadlineDay && isQuestMode
-                          ? 'bg-purple-700 text-white shadow-2xs'
+                          ? 'bg-slate-900 text-white shadow-2xs'
                           : eventsOnDay.length > 0
                           ? 'text-slate-900 font-black'
                           : 'text-slate-400'
@@ -952,7 +960,7 @@ export default function MyHubPage() {
                                 ? 'bg-purple-400'
                                 : 'bg-[#7C3AED]'
                             }`}
-                            title={isQuestDeadlineDay ? '🚨 กำหนดส่งเควสต์วันสุดท้าย' : 'ช่วงทำเควสต์'}
+                            title={isQuestDeadlineDay ? 'กำหนดส่งเควสต์วันสุดท้าย' : 'ช่วงทำเควสต์'}
                           />
                         )}
                       </div>
@@ -976,7 +984,7 @@ export default function MyHubPage() {
                             }`}
                             title={ev.title}
                           >
-                            {isQuest && isDeadline ? `🚨 เดดไลน์: ${ev.title}` : isQuest ? `⚡ ${ev.title}` : ev.title}
+                            {isQuest && isDeadline ? `เดดไลน์: ${ev.title}` : ev.title}
                           </div>
                         );
                       })}
@@ -1041,7 +1049,7 @@ export default function MyHubPage() {
                 <button
                   type="button"
                   onClick={() => setCalendarCategoryFilter('quests')}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold shadow-2xs shrink-0 cursor-pointer transition-all active:scale-95"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-2xs shrink-0 cursor-pointer transition-all active:scale-95"
                 >
                   <span>เปิดดูตารางเควสต์</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -1113,8 +1121,9 @@ export default function MyHubPage() {
                             {meta.label}
                           </span>
                           {(ev.isHost || userCreatedEvents.some((u) => u.id === ev.id)) && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white shadow-xs">
-                              👑 โฮสต์
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white shadow-xs inline-flex items-center gap-1">
+                              <Crown className="w-3 h-3 text-white" />
+                              <span>โฮสต์</span>
                             </span>
                           )}
                         </div>
@@ -1122,8 +1131,9 @@ export default function MyHubPage() {
                         {/* Top-Right Badge: Urgent Due Date for Quests only */}
                         {meta.pillar === 'quests' && (ev as any).questDeadlineDay === selectedCalDay && (
                           <div className="absolute top-2.5 right-2.5 z-10">
-                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-600 text-white shadow-xs animate-pulse">
-                              🚨 เดดไลน์วันนี้
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-600 text-white shadow-xs animate-pulse inline-flex items-center gap-1">
+                              <AlertTriangle className="w-3 h-3 text-white" />
+                              <span>เดดไลน์วันนี้</span>
                             </span>
                           </div>
                         )}
@@ -1196,14 +1206,14 @@ export default function MyHubPage() {
                                   const q = myChallenges.find((item) => item.id === rawQuestId) || myChallenges[0];
                                   if (q) setSelectedQuestForVerifyModal(q);
                                 }}
-                                className="flex-1 py-1.5 px-2.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
+                                className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
                               >
                                 <CheckCircle2 className="w-3.5 h-3.5" />
                                 <span>ส่งหลักฐาน</span>
                               </button>
                               <Link
                                 href="/challenges"
-                                className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-purple-50 text-purple-700 border border-purple-200 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 shadow-2xs"
+                                className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 shadow-2xs"
                                 title="ดูรายละเอียดภารกิจทั้งหมดในหน้าชาเลนจ์"
                               >
                                 <ExternalLink className="w-3.5 h-3.5" />
@@ -1278,7 +1288,7 @@ export default function MyHubPage() {
           onOpenCreateEvent={() => {
             if (!isLoggedIn) {
               setIsAuthModalOpen(true);
-              showToast('🔒 กรุณาเข้าสู่ระบบก่อนสร้างกิจกรรมหรือเปิดตี้ใหม่');
+              showToast('กรุณาเข้าสู่ระบบก่อนสร้างกิจกรรมหรือเปิดตี้ใหม่');
             } else {
               setIsCreateEventModalOpen(true);
             }
@@ -1513,9 +1523,10 @@ export default function MyHubPage() {
             <div className="text-center pt-1">
               <Link
                 href="/"
-                className="text-xs font-bold text-slate-400 hover:text-[#4A7C59] transition-colors"
+                className="text-xs font-bold text-slate-400 hover:text-slate-700 transition-colors inline-flex items-center gap-1.5"
               >
-                ← กลับไปสำรวจกิจกรรมในหน้าแรก
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>กลับไปสำรวจกิจกรรมในหน้าแรก</span>
               </Link>
             </div>
           </div>
@@ -1531,22 +1542,28 @@ export default function MyHubPage() {
                     
                     {/* User Identity Info */}
                     <div className="space-y-2.5 min-w-0">
-                      <div className="flex items-center gap-2.5 flex-wrap">
-                        <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-slate-900 truncate">
-                          มายฮับส่วนตัว (My Hub: Personal Lifestyle Hub)
-                        </h1>
-                        <span className="text-[11px] font-bold px-3 py-0.5 rounded-full bg-[#EBF3ED] text-[#2D5A3C] border border-[#A3CEB0] flex items-center gap-1.5 shadow-2xs">
-                          <ShieldCheck className="w-3.5 h-3.5 text-[#2D5A3C]" />
-                          <span>Verified Explorer</span>
+                      <div>
+                        <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[10px] sm:text-[11px] font-extrabold tracking-wide uppercase bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs mb-2">
+                          <Sparkles className="w-3 h-3 text-slate-500" />
+                          Personal Lifestyle Hub
                         </span>
-                        <Link
-                          href="/challenges"
-                          className="text-[11px] font-bold px-3 py-0.5 rounded-full bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
-                          title="ดูระดับแรงก์และชาเลนจ์ทั้งหมด"
-                        >
-                          <Zap className="w-3.5 h-3.5 text-purple-600 fill-purple-600" />
-                          <span>Level 4 Explorer</span>
-                        </Link>
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-slate-900 truncate">
+                            มายฮับส่วนตัว (My Hub)
+                          </h1>
+                          <span className="text-[11px] font-bold px-3 py-0.5 rounded-full bg-[#EBF3ED] text-[#2D5A3C] border border-[#A3CEB0] flex items-center gap-1.5 shadow-2xs">
+                            <ShieldCheck className="w-3.5 h-3.5 text-[#2D5A3C]" />
+                            <span>Verified Explorer</span>
+                          </span>
+                          <Link
+                            href="/challenges"
+                            className="text-[11px] font-bold px-3 py-0.5 rounded-full bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                            title="ดูระดับแรงก์และชาเลนจ์ทั้งหมด"
+                          >
+                            <Zap className="w-3.5 h-3.5 text-purple-600 fill-purple-600" />
+                            <span>Level 4 Explorer</span>
+                          </Link>
+                        </div>
                       </div>
 
                       <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-xl">
@@ -1801,8 +1818,9 @@ export default function MyHubPage() {
                               {/* Host status badge if user is host */}
                               {(event.isHost || userCreatedEvents.some((u) => u.id === event.id)) && (
                                 <div className="absolute top-2.5 left-2.5 z-10">
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white shadow-xs">
-                                    👑 โฮสต์
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white shadow-xs inline-flex items-center gap-1">
+                                    <Crown className="w-3 h-3 text-white" />
+                                    <span>โฮสต์</span>
                                   </span>
                                 </div>
                               )}
@@ -1870,7 +1888,7 @@ export default function MyHubPage() {
                                       setSelectedTicketId(ticketId);
                                       setIsETicketModalOpen(true);
                                     }}
-                                    className="flex-1 py-1.5 px-2.5 rounded-xl bg-[#2D5A3C] hover:bg-[#1E3F29] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
+                                    className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
                                   >
                                     <QrCode className="w-3.5 h-3.5 shrink-0" />
                                     <span>ดูบัตร</span>
@@ -1972,7 +1990,7 @@ export default function MyHubPage() {
                         onClick={() => setEventViewMode('upcoming')}
                         className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                           eventViewMode === 'upcoming'
-                            ? 'bg-[#2B527A] text-white shadow-2xs'
+                            ? 'bg-slate-900 text-white shadow-2xs'
                             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                         }`}
                       >
@@ -1983,7 +2001,7 @@ export default function MyHubPage() {
                         onClick={() => setEventViewMode('past')}
                         className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                           eventViewMode === 'past'
-                            ? 'bg-[#1E3B59] text-white shadow-2xs'
+                            ? 'bg-slate-900 text-white shadow-2xs'
                             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                         }`}
                       >
@@ -1997,24 +2015,26 @@ export default function MyHubPage() {
                   </div>
 
                   {filteredExpoEvents.length === 0 ? (
-                    /* Clean Empty State */
-                    <div className="bg-white rounded-3xl p-8 sm:p-12 border border-dashed border-slate-200/90 text-center space-y-4 max-w-md mx-auto my-6 shadow-2xs">
-                      <div className="w-14 h-14 rounded-2xl bg-[#EEF4FA] text-[#2B527A] flex items-center justify-center mx-auto shadow-2xs border border-[#B8D1E8]/70">
-                        <Calendar className="w-7 h-7 text-[#2B527A]" />
-                      </div>
-                      <div className="space-y-1.5">
-                        <h4 className="text-base font-black text-slate-900">
-                          {eventViewMode === 'upcoming' ? 'ยังไม่มีงานแฟร์ที่คุณบันทึกนัดไว้' : 'ไม่มีประวัติงานแฟร์ที่ผ่านมา'}
-                        </h4>
-                        <p className="text-xs text-slate-500 leading-relaxed">
-                          อัปเดตงานอีเวนต์ใหญ่ นิทรรศการ งานหนังสือ เทศกาลกาแฟ และเอ็กซ์โปทั่วประเทศ
-                        </p>
+                    /* Clean Compact Empty State */
+                    <div className="bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-white text-slate-600 flex items-center justify-center shrink-0 border border-slate-200 shadow-2xs">
+                          <Calendar className="w-5 h-5 text-slate-500" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-slate-800">
+                            {eventViewMode === 'upcoming' ? 'ยังไม่มีงานแฟร์ที่คุณบันทึกนัดไว้' : 'ไม่มีประวัติงานแฟร์ที่ผ่านมา'}
+                          </h4>
+                          <p className="text-xs text-slate-500">
+                            อัปเดตงานอีเวนต์ใหญ่ นิทรรศการ งานหนังสือ เทศกาลกาแฟ และเอ็กซ์โปทั่วประเทศ
+                          </p>
+                        </div>
                       </div>
                       <Link
                         href="/fairs"
-                        className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-2xl bg-[#2B527A] hover:bg-[#1E3B59] text-white text-xs font-bold shadow-2xs transition-all cursor-pointer active:scale-95"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-2xs transition-all shrink-0 cursor-pointer active:scale-95"
                       >
-                        <span>สำรวจงานแฟร์ & นิทรรศการ</span>
+                        <span>สำรวจงานแฟร์</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </Link>
                     </div>
@@ -2096,7 +2116,7 @@ export default function MyHubPage() {
                               <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5 mt-auto">
                                 <Link
                                   href={`/fairs/${encodeURIComponent(event.id)}`}
-                                  className="flex-1 py-1.5 px-2.5 rounded-xl bg-[#2B527A] hover:bg-[#1E3B59] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
+                                  className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
                                 >
                                   <span>ดูข้อมูลงาน</span>
                                   <ArrowRight className="w-3.5 h-3.5" />
@@ -2191,7 +2211,7 @@ export default function MyHubPage() {
 
                     <Link
                       href="/spots"
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#EBF3ED] hover:bg-[#DCECE0] text-[#2D5A3C] text-xs font-bold border border-[#A3CEB0]/60 transition-all cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 transition-all cursor-pointer"
                     >
                       <Compass className="w-3.5 h-3.5" />
                       <span>สำรวจพิกัดเพิ่ม</span>
@@ -2200,23 +2220,26 @@ export default function MyHubPage() {
 
                   {/* Spots Grid or Empty State */}
                   {savedSpotsList.length === 0 ? (
-                    <div className="bg-white rounded-3xl p-8 sm:p-12 border border-dashed border-slate-200/90 text-center space-y-4 max-w-md mx-auto my-6 shadow-2xs">
-                      <div className="w-14 h-14 rounded-2xl bg-[#EBF3ED] text-[#2D5A3C] flex items-center justify-center mx-auto shadow-2xs border border-[#A3CEB0]/60">
-                        <Compass className="w-7 h-7 text-[#2D5A3C]" />
-                      </div>
-                      <div className="space-y-1.5">
-                        <h4 className="text-base font-black text-slate-900">
-                          ยังไม่มีพิกัดในสมุดบันทึกสถานที่เที่ยว
-                        </h4>
-                        <p className="text-xs text-slate-500 leading-relaxed">
-                          เมื่อคุณพบสถานที่ท่องเที่ยวหรือจุดฮีลใจที่น่าสนใจในหน้าพิกัดเที่ยว ให้กดปุ่มบันทึกลงสมุด เพื่อรวบรวมไว้ที่นี่
-                        </p>
+                    /* Clean Compact Empty State */
+                    <div className="bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-white text-slate-600 flex items-center justify-center shrink-0 border border-slate-200 shadow-2xs">
+                          <Compass className="w-5 h-5 text-slate-500" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-slate-800">
+                            ยังไม่มีพิกัดในสมุดบันทึกสถานที่เที่ยว
+                          </h4>
+                          <p className="text-xs text-slate-500">
+                            เมื่อคุณพบสถานที่ท่องเที่ยวหรือจุดฮีลใจที่น่าสนใจ ให้กดปุ่มบันทึกลงสมุดเพื่อรวบรวมไว้ที่นี่
+                          </p>
+                        </div>
                       </div>
                       <Link
                         href="/spots"
-                        className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-2xl bg-[#2D5A3C] hover:bg-[#1E3F29] text-white text-xs font-bold shadow-2xs transition-all cursor-pointer active:scale-95"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-2xs transition-all shrink-0 cursor-pointer active:scale-95"
                       >
-                        <span>สำรวจพิกัดเที่ยว 77 จังหวัด</span>
+                        <span>สำรวจพิกัด 77 จังหวัด</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </Link>
                     </div>
@@ -2293,7 +2316,7 @@ export default function MyHubPage() {
                               <button
                                 type="button"
                                 onClick={() => handleOpenSpotBuddy(spotItem)}
-                                className="flex-1 py-1.5 px-2.5 rounded-xl bg-[#2D5A3C] hover:bg-[#1E3F29] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
+                                className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
                                 title="เปิดตี้ชวนเพื่อนไปที่นี่"
                               >
                                 <Users className="w-3.5 h-3.5 shrink-0" />
@@ -2302,7 +2325,7 @@ export default function MyHubPage() {
 
                               <Link
                                 href={`/spots/${encodeURIComponent(spotItem.id)}`}
-                                className="py-1.5 px-2.5 rounded-xl bg-[#EBF3ED] hover:bg-[#DCECE0] text-[#2D5A3C] border border-[#A3CEB0]/60 text-xs font-bold transition-all flex items-center justify-center gap-1 shrink-0 shadow-2xs"
+                                className="py-1.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-bold transition-all flex items-center justify-center gap-1 shrink-0 shadow-2xs"
                                 title="เปิดดูพิกัดสถานที่"
                               >
                                 <span>ดูพิกัด</span>
@@ -2361,7 +2384,7 @@ export default function MyHubPage() {
                       <button
                         type="button"
                         onClick={() => setIsCreateChallengeModalOpen(true)}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold shadow-2xs transition-all cursor-pointer active:scale-95"
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-2xs transition-all cursor-pointer active:scale-95"
                       >
                         <PlusCircle className="w-4 h-4" />
                         <span>สร้างชาเลนจ์ใหม่</span>
@@ -2402,8 +2425,16 @@ export default function MyHubPage() {
                         >
                           {/* Top Row: Icon + Badges & XP */}
                           <div className="flex items-start gap-3">
-                            <div className="w-11 h-11 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-xl shrink-0 group-hover/card:scale-105 transition-transform shadow-2xs">
-                              {quest.badgeIcon || (quest.iconName === 'Flame' ? '🔥' : quest.iconName === 'Coffee' ? '☕' : quest.iconName === 'Footprints' ? '👟' : '🏅')}
+                            <div className="w-11 h-11 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0 group-hover/card:scale-105 transition-transform shadow-2xs">
+                              {quest.iconName === 'Flame' ? (
+                                <Flame className="w-5 h-5 text-rose-500" />
+                              ) : quest.iconName === 'Coffee' ? (
+                                <Coffee className="w-5 h-5 text-amber-600" />
+                              ) : quest.iconName === 'Footprints' ? (
+                                <Footprints className="w-5 h-5 text-indigo-500" />
+                              ) : (
+                                <Medal className="w-5 h-5 text-purple-600" />
+                              )}
                             </div>
 
                             <div className="min-w-0 flex-1 space-y-1">
@@ -2479,9 +2510,9 @@ export default function MyHubPage() {
                               <button
                                 type="button"
                                 onClick={() => setSelectedQuestForVerifyModal(quest)}
-                                className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs active:scale-98"
+                                className="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs active:scale-98"
                               >
-                                <CheckCircle2 className="w-3.5 h-3.5 text-purple-200" />
+                                <CheckCircle2 className="w-3.5 h-3.5 text-slate-300" />
                                 <span>ส่งหลักฐานเช็คอิน</span>
                               </button>
                             )}
@@ -2539,24 +2570,24 @@ export default function MyHubPage() {
                       </div>
 
                       {redeemedRewardIds.length === 0 ? (
-                        <div className="bg-white rounded-2xl p-5 border border-dashed border-slate-200 text-center space-y-2">
+                        <div className="bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
                           <p className="text-xs text-slate-500">
                             ยังไม่มีคูปองที่แลกไว้ สามารถนำแต้ม {userXp} XP ไปแลกรับส่วนลดคาเฟ่หรือตั๋วบอร์ดเกมได้ทันที
                           </p>
                           <Link
                             href="/rewards"
-                            className="inline-flex items-center gap-1 text-xs font-bold text-[#D04A1B] hover:underline"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-2xs shrink-0"
                           >
-                            <span>เลือกดูของรางวัลทั้งหมด</span>
-                            <ArrowRight className="w-3 h-3" />
+                            <span>ดูของรางวัล</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
                           </Link>
                         </div>
                       ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                        <div className="flex flex-wrap gap-3 sm:gap-4">
                           {REWARD_SHOP_ITEMS.filter((item) => redeemedRewardIds.includes(item.id)).map((item) => (
                             <div
                               key={item.id}
-                              className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-4 flex flex-col justify-between gap-3"
+                              className="w-full sm:w-auto sm:max-w-[270px] min-h-[105px] bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-3.5 flex flex-col justify-between gap-2.5"
                             >
                               <div className="space-y-1">
                                 <span className="text-[10px] font-bold text-[#D04A1B] bg-[#FEF3EE] px-2 py-0.5 rounded-md border border-[#FCD5C5]/70">
@@ -2565,20 +2596,20 @@ export default function MyHubPage() {
                                 <h5 className="font-bold text-xs sm:text-sm text-slate-900 truncate">
                                   {item.title}
                                 </h5>
-                                <p className="text-[11px] text-[#2D5A3C] font-semibold flex items-center gap-1">
-                                  <Tag className="w-3 h-3" />
+                                <p className="text-[11px] text-slate-500 font-semibold flex items-center gap-1">
+                                  <Tag className="w-3 h-3 text-slate-400" />
                                   <span className="truncate">{item.partner}</span>
                                 </p>
                               </div>
 
-                              <div className="bg-[#EBF3ED]/70 rounded-xl border border-dashed border-[#A3CEB0] p-2 flex items-center justify-between gap-2">
+                              <div className="bg-slate-50 rounded-xl border border-dashed border-slate-200 p-2 flex items-center justify-between gap-2">
                                 <span className="font-mono text-xs font-black text-slate-900 tracking-wider">
                                   {item.voucherCode}
                                 </span>
                                 <button
                                   type="button"
                                   onClick={() => handleCopyVoucher(item.voucherCode)}
-                                  className="px-2 py-1 rounded-lg bg-white hover:bg-emerald-50 text-[#2D5A3C] border border-[#A3CEB0] text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                                  className="px-2 py-1 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
                                 >
                                   <Copy className="w-3 h-3" />
                                   <span>คัดลอก</span>
@@ -2639,7 +2670,7 @@ export default function MyHubPage() {
         onLeaveSuccess={(id) => {
           setJoinedEventIds((prev) => prev.filter((eId) => eId !== id));
           setDetailModalEvent(null);
-          showToast('✔️ ยกเลิกการเข้าร่วมกิจกรรมเรียบร้อยแล้ว');
+          showToast('ยกเลิกการเข้าร่วมกิจกรรมเรียบร้อยแล้ว');
         }}
       />
 
@@ -2682,7 +2713,7 @@ export default function MyHubPage() {
         event={tipTargetEvent}
         onTipSubmit={(_rating, _review, amount) => {
           setUserXp((prev) => prev + 20);
-          showToast(`☕ ส่งทิป ฿${amount} ให้ ${tipTargetEvent?.hostName} เรียบร้อยแล้ว! ได้รับ +20 XP 🌟`);
+          showToast(`ส่งทิป ฿${amount} ให้ ${tipTargetEvent?.hostName} เรียบร้อยแล้ว ได้รับ +20 XP`);
           setIsTipModalOpen(false);
         }}
       />
@@ -2701,7 +2732,7 @@ export default function MyHubPage() {
         onClose={() => setIsCreateChallengeModalOpen(false)}
         onCreateSuccess={(newQuest) => {
           setMyChallenges([newQuest, ...myChallenges]);
-          showToast(`🎉 สร้างชาเลนจ์ "${newQuest.title}" สำเร็จ!`);
+          showToast(`สร้างชาเลนจ์ "${newQuest.title}" สำเร็จ`);
         }}
       />
 
@@ -2712,7 +2743,7 @@ export default function MyHubPage() {
         onCreateSuccess={(newEvent) => {
           setUserCreatedEvents((prev) => [newEvent, ...prev]);
           setJoinedEventIds((prev) => [newEvent.id, ...prev]);
-          showToast(`🎉 สร้างกิจกรรม "${newEvent.title}" สำเร็จ!`);
+          showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จ`);
         }}
       />
 
@@ -2767,7 +2798,7 @@ export default function MyHubPage() {
           setIsSpotBuddyModalOpen(false);
           setSelectedSpotForBuddy(null);
           setActiveSubTab('community');
-          showToast(`🎉 เปิดตี้ชวนเพื่อนไป "${newTrip.title}" เรียบร้อยแล้ว!`);
+          showToast(`เปิดตี้ชวนเพื่อนไป "${newTrip.title}" เรียบร้อยแล้ว`);
         }}
       />
 

@@ -14,7 +14,8 @@ import {
   LocateFixed,
   Loader2,
   ShieldCheck,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Lightbulb
 } from 'lucide-react';
 import { ChallengeQuest } from '@/data/mockData';
 
@@ -59,7 +60,7 @@ export const VerifyQuestModal: React.FC<VerifyQuestModalProps> = ({
     setTimeout(() => {
       setIsLocating(false);
       setGpsVerified(true);
-      setLocationName('📍 สวนเบญจกิติ / สวนลุมพินี (ยืนยันพิกัดเรียบร้อย)');
+      setLocationName('สวนเบญจกิติ / สวนลุมพินี (ยืนยันพิกัดเรียบร้อย)');
     }, 1200);
   };
 
@@ -71,7 +72,7 @@ export const VerifyQuestModal: React.FC<VerifyQuestModalProps> = ({
       setIsSubmitting(false);
       onVerificationSuccess(quest.id, {
         type: activeMethod,
-        caption: caption || `ทำภารกิจ "${quest.title}" สำเร็จอีก 1 ครั้ง! 🏃✨`,
+        caption: caption || `ทำภารกิจ "${quest.title}" สำเร็จอีก 1 ครั้ง!`,
         imageUrl: activeMethod === 'photo' ? selectedPhoto : undefined,
         location: locationName,
       });
@@ -195,7 +196,7 @@ export const VerifyQuestModal: React.FC<VerifyQuestModalProps> = ({
                 <textarea
                   value={caption}
                   onChange={(e) => setCaption(e.target.value)}
-                  placeholder="เช่น มาวิ่งเช้าสวนลุมพินีครบ 5K แล้ว อากาศสดชื่นมากครับ 🏃💨"
+                  placeholder="เช่น มาวิ่งเช้าสวนลุมพินีครบ 5K แล้ว อากาศสดชื่นมากครับ"
                   rows={2}
                   className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#4A7C59] outline-none"
                 />
@@ -215,7 +216,7 @@ export const VerifyQuestModal: React.FC<VerifyQuestModalProps> = ({
                   type="button"
                   onClick={handleGpsCheck}
                   disabled={isLocating}
-                  className="bg-[#4A7C59] hover:bg-[#3B6347] text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+                  className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all"
                 >
                   {isLocating ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -250,9 +251,10 @@ export const VerifyQuestModal: React.FC<VerifyQuestModalProps> = ({
                   className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#4A7C59] outline-none font-mono"
                 />
               </div>
-              <p className="text-[11px] text-slate-500 leading-relaxed bg-indigo-50/70 p-3 rounded-xl border border-indigo-100">
-                💡 <strong>เคล็ดลับ:</strong> เมื่อคุณให้โฮสต์สแกนตั๋วหน้างาน ระบบจะอัปเดตความคืบหน้านี้ให้อัตโนมัติอยู่แล้ว หรือจะกรอกเลขตั๋วเองที่นี่ก็ได้ครับ
-              </p>
+              <div className="text-[11px] text-slate-600 leading-relaxed bg-indigo-50/70 p-3 rounded-xl border border-indigo-100 flex items-start gap-2">
+                <Lightbulb className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+                <span><strong>เคล็ดลับ:</strong> เมื่อคุณให้โฮสต์สแกนตั๋วหน้างาน ระบบจะอัปเดตความคืบหน้านี้ให้อัตโนมัติอยู่แล้ว หรือจะกรอกเลขตั๋วเองที่นี่ก็ได้ครับ</span>
+              </div>
             </div>
           )}
 
@@ -268,7 +270,7 @@ export const VerifyQuestModal: React.FC<VerifyQuestModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 bg-gradient-to-r from-[#4A7C59] to-emerald-600 hover:from-[#3B6347] hover:to-emerald-500 text-white font-extrabold text-xs py-3 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+              className="flex-1 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-extrabold text-xs py-3 rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
             >
               {isSubmitting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

@@ -102,10 +102,10 @@ export const TipHostModal: React.FC<TipHostModalProps> = ({
               ))}
             </div>
             <p className="text-[11px] font-bold text-amber-800">
-              {rating === 5 && '🌟 ประทับใจมากที่สุด! สนุกและอบอุ่นมาก'}
-              {rating === 4 && '😊 ประทับใจมาก กิจกรรมดี'}
-              {rating === 3 && '👍 ปานกลาง พอใช้ได้'}
-              {rating <= 2 && '🙏 ควรปรับปรุง'}
+              {rating === 5 && 'ประทับใจมากที่สุด! สนุกและอบอุ่นมาก'}
+              {rating === 4 && 'ประทับใจมาก กิจกรรมดี'}
+              {rating === 3 && 'ปานกลาง พอใช้ได้'}
+              {rating <= 2 && 'ควรปรับปรุง'}
             </p>
           </div>
 
@@ -205,7 +205,7 @@ export const TipHostModal: React.FC<TipHostModalProps> = ({
             </button>
             <button
               type="submit"
-              className="flex-1 bg-gradient-to-r from-[#F26430] to-orange-500 hover:from-[#E05320] hover:to-orange-600 text-white font-extrabold text-xs py-3 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+              className="flex-1 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-extrabold text-xs py-3 rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
             >
               <Heart className="w-4 h-4 fill-white" />
               <span>ส่งรีวิว & ทิปโฮสต์</span>
