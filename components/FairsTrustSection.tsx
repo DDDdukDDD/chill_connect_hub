@@ -11,11 +11,7 @@ import {
   Sparkles
 } from 'lucide-react';
 
-interface FairsTrustSectionProps {
-  // Pure trust & safety section
-}
-
-export const FairsTrustSection: React.FC<FairsTrustSectionProps> = () => {
+export const FairsTrustSection: React.FC = () => {
   const pillars = [
     {
       id: 'venues',

@@ -215,6 +215,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   const [activeModeTab, setActiveModeTab] = useState<'all' | 'spots' | 'community' | 'fairs'>(activeTab || 'all');
   const [showcaseTab, setShowcaseTab] = useState<'vouchers' | 'rewards'>('vouchers');
   const [internalTimeFilter, setInternalTimeFilter] = useState('all');
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [isHeroHovered, setIsHeroHovered] = useState(false);
   const activeTime = timeFilter !== undefined ? timeFilter : internalTimeFilter;
 
   // Sync activeModeTab with parent activeTab
@@ -236,9 +238,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   const handleProvinceChange = (prov: string) => {
     if (setSelectedProvince) setSelectedProvince(prov);
   };
-
-  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
-  const [isHeroHovered, setIsHeroHovered] = useState(false);
 
   // Klook-Style Auto-slide every 5.5s, pauses gracefully on hover or search focus
   useEffect(() => {

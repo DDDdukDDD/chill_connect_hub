@@ -11,11 +11,7 @@ import {
   Coffee
 } from 'lucide-react';
 
-interface CommunityTrustSectionProps {
-  // Pure trust & safety section
-}
-
-export const CommunityTrustSection: React.FC<CommunityTrustSectionProps> = () => {
+export const CommunityTrustSection: React.FC = () => {
   const pillars = [
     {
       id: 'safety',

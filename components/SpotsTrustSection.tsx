@@ -11,11 +11,7 @@ import {
   Trees
 } from 'lucide-react';
 
-interface SpotsTrustSectionProps {
-  // Pure trust & safety section
-}
-
-export const SpotsTrustSection: React.FC<SpotsTrustSectionProps> = () => {
+export const SpotsTrustSection: React.FC = () => {
   const pillars = [
     {
       id: 'locals',

@@ -349,10 +349,7 @@ export default function CommunityDetailPage() {
 
 
   // Related Community Activities
-  const relatedActivities = useMemo(() => {
-    if (!eventData) return [];
-    return getRelatedEvents(eventData, 4);
-  }, [eventData]);
+  const relatedActivities = eventData ? getRelatedEvents(eventData, 4) : [];
 
   if (isLoading) {
     return (

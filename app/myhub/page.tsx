@@ -278,7 +278,7 @@ export default function MyHubPage() {
           eventType: sub.eventType || 'public_venue',
           participantsCount: sub.participantsCount || 4,
           maxParticipants: sub.maxParticipants || 10,
-          createdAtTimestamp: Date.now(),
+          createdAtTimestamp: 1726000000000,
         });
         addedIds.add(sub.eventId);
       }
@@ -311,7 +311,7 @@ export default function MyHubPage() {
           eventType: 'challenge' as any,
           participantsCount: q.participantsCount || 300,
           maxParticipants: 1000,
-          createdAtTimestamp: Date.now(),
+          createdAtTimestamp: 1726000000000,
           // Quest Span Metadata for Option C
           questStartDay: startDay,
           questDeadlineDay: targetDay,

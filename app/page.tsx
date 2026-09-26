@@ -954,7 +954,7 @@ function HomeContent() {
       rating: spot.rating || 4.9,
       reviewsCount: spot.reviewsCount || 10,
       isNew: spot.isNew,
-      createdAtTimestamp: Date.now(),
+      createdAtTimestamp: 1726000000000,
     }));
   }, []);
 

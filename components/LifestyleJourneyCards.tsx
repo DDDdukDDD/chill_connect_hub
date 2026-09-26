@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import {
   MapPin,
   Sparkles,
@@ -80,14 +81,14 @@ export const LifestyleJourneyCards: React.FC = () => {
 
           {/* Action Link -> Refined Editorial Link */}
           <div className="pt-3 mt-3 border-t border-slate-100">
-            <a
+            <Link
               href="/#section-spots"
               onClick={(e) => handleScrollTo(e, 'section-spots')}
               className="inline-flex items-center gap-1.5 text-xs font-bold text-[#4A7C59] hover:text-[#3B6447] group/btn cursor-pointer transition-all hover:gap-2.5"
             >
               <span>เริ่มค้นหาพิกัดที่ใช่</span>
               <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
-            </a>
+            </Link>
           </div>
         </div>
 
@@ -132,14 +133,14 @@ export const LifestyleJourneyCards: React.FC = () => {
 
           {/* Action Link -> Refined Editorial Link */}
           <div className="pt-3 mt-3 border-t border-slate-100">
-            <a
+            <Link
               href="/#section-community"
               onClick={(e) => handleScrollTo(e, 'section-community')}
               className="inline-flex items-center gap-1.5 text-xs font-bold text-[#F26430] hover:text-[#D95322] group/btn cursor-pointer transition-all hover:gap-2.5"
             >
               <span>หาเพื่อนร่วมทางรู้ใจ</span>
               <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
-            </a>
+            </Link>
           </div>
         </div>
 
@@ -184,14 +185,14 @@ export const LifestyleJourneyCards: React.FC = () => {
 
           {/* Action Link -> Refined Editorial Link */}
           <div className="pt-3 mt-3 border-t border-slate-100">
-            <a
+            <Link
               href="/#section-challenges"
               onClick={(e) => handleScrollTo(e, 'section-challenges')}
               className="inline-flex items-center gap-1.5 text-xs font-bold text-[#7C3AED] hover:text-[#6D28D9] group/btn cursor-pointer transition-all hover:gap-2.5"
             >
               <span>ดูภารกิจชาเลนจ์ทั้งหมด</span>
               <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
-            </a>
+            </Link>
           </div>
         </div>
 
@@ -236,14 +237,14 @@ export const LifestyleJourneyCards: React.FC = () => {
 
           {/* Action Link -> Refined Editorial Link */}
           <div className="pt-3 mt-3 border-t border-slate-100">
-            <a
+            <Link
               href="/#section-moments"
               onClick={(e) => handleScrollTo(e, 'section-moments')}
               className="inline-flex items-center gap-1.5 text-xs font-bold text-[#2B527A] hover:text-[#1F3D5C] group/btn cursor-pointer transition-all hover:gap-2.5"
             >
               <span>เปิดดูโมเมนต์ชุมชน</span>
               <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
-            </a>
+            </Link>
           </div>
         </div>
 

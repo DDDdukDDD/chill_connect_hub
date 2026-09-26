@@ -242,6 +242,7 @@ function CommunityPageContent() {
           : (['มือใหม่', 'beginner', 'เวิร์กช็อป', 'workshop', 'ปั้นดิน', 'บอร์ดเกม', 'ชิลล์', 'วิ่งเบาๆ', 'jogging', 'โยคะ', 'yoga'].some((k) => eventText.includes(k)) || ev.category === 'learn' || ev.category === 'chill');
         if (!isBeginner) return false;
       } else if (activeVibeFilter === 'soon') {
+        // eslint-disable-next-line react-hooks/purity
         const now = Date.now();
         const evTs = parseEventDateToTimestamp(ev.date);
         const diffDays = (evTs - now) / (1000 * 60 * 60 * 24);

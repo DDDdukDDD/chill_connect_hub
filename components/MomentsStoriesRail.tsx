@@ -208,32 +208,6 @@ export const MomentsStoriesRail: React.FC<MomentsStoriesRailProps> = ({
     };
   }, [activeStory, isPaused]);
 
-  // Keyboard navigation for Story Viewer
-  useEffect(() => {
-    if (!activeStory) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setActiveStory(null);
-      } else if (e.key === 'ArrowLeft') {
-        handlePrevSlide();
-      } else if (e.key === 'ArrowRight') {
-        handleNextSlide();
-      } else if (e.key === ' ') {
-        setIsPaused((p) => !p);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeStory]);
-
-  const handleOpenStory = (story: MomentStoryItem) => {
-    setActiveStory(story);
-    setCurrentSlideIndex(0);
-    setViewedStoryIds((prev) => Array.from(new Set([...prev, story.id])));
-  };
-
   const handlePrevSlide = () => {
     if (!activeStory) return;
     if (currentSlideIndex > 0) {
@@ -265,6 +239,32 @@ export const MomentsStoriesRail: React.FC<MomentsStoriesRailProps> = ({
         setActiveStory(null);
       }
     }
+  };
+
+  // Keyboard navigation for Story Viewer
+  useEffect(() => {
+    if (!activeStory) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setActiveStory(null);
+      } else if (e.key === 'ArrowLeft') {
+        handlePrevSlide();
+      } else if (e.key === 'ArrowRight') {
+        handleNextSlide();
+      } else if (e.key === ' ') {
+        setIsPaused((p) => !p);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeStory, currentSlideIndex]);
+
+  const handleOpenStory = (story: MomentStoryItem) => {
+    setActiveStory(story);
+    setCurrentSlideIndex(0);
+    setViewedStoryIds((prev) => Array.from(new Set([...prev, story.id])));
   };
 
   const handleCheerCurrentStory = () => {

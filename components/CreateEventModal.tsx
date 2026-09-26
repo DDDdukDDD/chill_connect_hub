@@ -2456,6 +2456,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                         ) : null}
                         {(() => {
                           try {
+                            // eslint-disable-next-line react-hooks/purity
                             const diff = (new Date(communityDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
                             if (diff >= 0 && diff <= 7) {
                               return (
