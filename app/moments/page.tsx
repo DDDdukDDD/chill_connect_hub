@@ -45,47 +45,47 @@ import {
 } from 'lucide-react';
 import { MomentsStoriesRail } from '@/components/MomentsStoriesRail';
 
-// 5 Feel-Good Curated Moments for Snapshot of the Week Gallery
+// 5 Feel-Good Curated Moments for Snapshot of the Week Gallery (Hero Set across 5 Pillars)
 const SNAPSHOT_FEEL_GOOD_GALLERY = [
   {
     id: 'snap-1',
-    title: 'สวนเบญจกิติ, กรุงเทพฯ',
-    subtitle: 'สูดอากาศบริสุทธิ์และนั่งคุยกันยามเย็น',
-    url: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1000&q=85',
-    caption: 'มิตรภาพและรอยยิ้มใต้ร่มไม้ สวนเบญจกิติ กรุงเทพฯ',
-    tag: 'Community Vibe',
+    title: 'สวนสาธารณะริมทะเลสาบ, กรุงเทพฯ',
+    subtitle: 'วิ่งออกกำลังกายและคอมมูนิตี้เพื่อนใหม่ยามเย็น',
+    url: '/hero-bkk-community-golden.jpg',
+    caption: 'วิ่งออกกำลังกายและคอมมูนิตี้ริมทะเลสาบสวนสาธารณะกรุงเทพฯ ท่ามกลางแสงแดดสีทองอบอุ่น',
+    tag: 'Community Meetup',
   },
   {
     id: 'snap-2',
-    title: 'ซอยอารีย์, กรุงเทพฯ',
-    subtitle: 'กลิ่นหอมกาแฟดริปยามเช้า',
-    url: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80',
-    caption: 'กลิ่นหอมกาแฟดริปยามเช้าและความเงียบสงบในซอยอารีย์',
-    tag: 'Slow Bar',
+    title: 'อาร์ตสเปซ & นิทรรศการ, กรุงเทพฯ',
+    subtitle: 'เดินชมนิทรรศการศิลปะและแรงบันดาลใจสร้างสรรค์',
+    url: 'https://images.unsplash.com/photo-1518998053901-5348d3961a04?auto=format&fit=crop&w=1200&q=85',
+    caption: 'งานนิทรรศการ อาร์ตสเปซ และงานเอ็กซ์โปทั่วไทย',
+    tag: 'Art & Expo',
   },
   {
     id: 'snap-3',
-    title: 'เขาใหญ่, นครราชสีมา',
-    subtitle: 'สูดโอโซนฮีลใจใต้ทิวไม้',
-    url: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=800&q=80',
-    caption: 'แสงแดดอ่อนๆ ลอดผ่านทิวไม้ สูดโอโซนธรรมชาติเขาใหญ่',
-    tag: 'Nature Healing',
+    title: 'สวนเบญจกิติ, กรุงเทพฯ',
+    subtitle: 'พื้นที่สีเขียวฮีลใจและวิวเมืองริมน้ำ',
+    url: '/hero-bkk-park-sunny.jpg',
+    caption: 'สวนสาธารณะใจกลางกรุงเทพฯ ท้องฟ้าโปร่ง แสงแดดสดใส วิวเมืองและทะเลสาบฮีลใจ',
+    tag: 'Curated Spot',
   },
   {
     id: 'snap-4',
-    title: 'สตูดิโอคราฟต์, เชียงใหม่',
-    subtitle: 'สมาธิและสัมผัสนุ่มละมุนของเนื้อดิน',
-    url: 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=800&q=80',
-    caption: 'ช่วงเวลาที่สมาธิอยู่กับฝ่ามือและเนื้อดิน ละเมียดละไมในสตูดิโอปั้นดิน เชียงใหม่',
-    tag: 'Artisan Craft',
+    title: 'อ่าวมาหยา เกาะพีพี, กระบี่',
+    subtitle: 'น้ำทะเลมรกตใสและเช็กลิสต์เควสต์ทะเล 77 จังหวัด',
+    url: '/hero-koh-phi-phi.jpg',
+    caption: 'ทะเลเกาะพีพี อ่าวมาหยา น้ำทะเลสีมรกตใส เรือหางยาวและหน้าผาหินปูน',
+    tag: 'Island Quest',
   },
   {
     id: 'snap-5',
-    title: 'หาดกะตะ, ภูเก็ต',
-    subtitle: 'รับลมทะเลและแสงทไวไลท์สีพีช',
-    url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
-    caption: 'เสียงคลื่นกระทบฝั่งและแสงทไวไลท์สีพีช ปิดท้ายวันอย่างมีความสุขที่หาดกะตะ ภูเก็ต',
-    tag: 'Ocean Sunset',
+    title: 'ซอยอารีย์, กรุงเทพฯ',
+    subtitle: 'มุมกาแฟดริปยามเช้าและความสงบสบายใจ',
+    url: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=1200&q=80',
+    caption: 'กลิ่นหอมกาแฟดริปยามเช้าและมุมโต๊ะไม้พักผ่อนสบายๆ ในซอยอารีย์',
+    tag: 'Slow Bar',
   },
 ];
 
@@ -661,22 +661,25 @@ function MomentsContent() {
               </div>
             </div>
 
-            {/* Right (6-cols): 5-Photo Feel-Good Moments Gallery (Aesthetic, Compact & Clickable) */}
-            <div className="lg:col-span-6 space-y-1.5">
+            {/* Right (6-cols): 5-Photo Feel-Good Moments Static Gallery (Editorial & Clickable) */}
+            <div className="lg:col-span-6 space-y-2">
               <div className="flex items-center justify-between px-0.5">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-xs font-black text-slate-800 tracking-tight">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-900" />
+                  <span className="text-xs sm:text-sm font-black text-slate-900 tracking-tight">
                     Snapshot of the Week
                   </span>
+                  <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200 shadow-2xs">
+                    Static Gallery
+                  </span>
                 </div>
-                <span className="text-[10.5px] font-semibold text-slate-400">
+                <span className="text-[10.5px] font-medium text-slate-400">
                   5 Feel-Good Moments • คลิกเพื่อดูรูปเต็ม
                 </span>
               </div>
 
-              {/* 5-Photo Mosaic Gallery Grid (Compact & Proportionate) */}
-              <div className="grid grid-cols-4 grid-rows-2 gap-1.5 h-[155px] sm:h-[175px] rounded-2xl overflow-hidden p-1 bg-slate-50 border border-slate-200/80 shadow-2xs">
+              {/* 5-Photo Mosaic Gallery Grid (Proportionate, Spacious & High Clarity) */}
+              <div className="grid grid-cols-4 grid-rows-2 gap-2 h-[215px] sm:h-[240px] rounded-2xl overflow-hidden p-1.5 bg-slate-50/80 border border-slate-200/90 shadow-2xs">
                 {/* Image 1: Main Feature (2 cols x 2 rows) */}
                 <button
                   type="button"
@@ -733,13 +736,13 @@ function MomentsContent() {
                         alt={item.title}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
-                      <div className="absolute inset-0 bg-black/10 group-hover:bg-black/35 transition-colors" />
-                      <div className="absolute inset-0 p-1 flex flex-col justify-between opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                        <span className="self-start text-[8px] font-bold text-white bg-black/65 px-1.5 py-0.5 rounded backdrop-blur-xs">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent opacity-60 group-hover:opacity-85 transition-opacity" />
+                      <div className="absolute inset-0 p-1.5 flex flex-col justify-between">
+                        <span className="self-start text-[8px] font-bold text-white bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs shadow-2xs">
                           {item.tag}
                         </span>
-                        <span className="text-[8.5px] font-bold text-white bg-black/70 px-1 py-0.5 rounded truncate backdrop-blur-xs">
-                          {item.title}
+                        <span className="text-[9px] font-bold text-white truncate [text-shadow:_0_1px_2px_rgba(0,0,0,0.8)]">
+                          {item.title.split(',')[0]}
                         </span>
                       </div>
                     </button>
