@@ -367,9 +367,6 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
             </span>
             <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
               <span>ภารกิจไลฟ์สไตล์ & ชาเลนจ์</span>
-              <span className="text-[10px] font-black text-purple-900 bg-purple-100/80 px-2 py-0.5 rounded-full border border-purple-300/80">
-                Lifestyle Quests
-              </span>
             </h2>
           </div>
           <p className="text-xs text-slate-500 mt-1 font-medium pl-8">

@@ -116,12 +116,13 @@ export default function MyHubPage() {
   // View Mode: Cards List vs Calendar
   const [hubViewMode, setHubViewMode] = useState<'list' | 'calendar'>('list');
   // Upcoming vs Past Filter
-  const [eventViewMode, setEventViewMode] = useState<'upcoming' | 'past'>('upcoming');
+  const [eventViewMode, setEventViewMode] = useState<'all' | 'upcoming' | 'past'>('all');
 
   // Calendar Navigation State
   const [calYear, setCalYear] = useState<number>(2026);
-  const [calMonth, setCalMonth] = useState<number>(7); // 0 = Jan, 7 = Aug
+  const [calMonth, setCalMonth] = useState<number>(8); // 0 = Jan, 8 = Sep
   const [selectedCalDay, setSelectedCalDay] = useState<number | null>(null);
+  const [calendarTimeScope, setCalendarTimeScope] = useState<'month' | 'all'>('month');
 
   // Modals State
   const [detailModalEvent, setDetailModalEvent] = useState<EventItem | null>(null);
@@ -285,15 +286,15 @@ export default function MyHubPage() {
     });
 
     // 3. From active quests / challenges (Gamified Lifestyle Quests)
-    const questDeadlineDays = [20, 25, 28, 31];
+    const questDeadlineDays = [20, 25, 28, 30];
     const questStartDays = [1, 1, 5, 10];
     myChallenges.forEach((q, idx) => {
       const questId = `quest-${q.id}`;
       if (!addedIds.has(questId)) {
         const targetDay = questDeadlineDays[idx % questDeadlineDays.length];
         const startDay = questStartDays[idx % questStartDays.length];
-        const questRangeDate = `${startDay} - ${targetDay} ส.ค. 2026`;
-        const deadlineDate = `${targetDay} ส.ค. 2026`;
+        const questRangeDate = `${startDay} - ${targetDay} ก.ย. 2026`;
+        const deadlineDate = `${targetDay} ก.ย. 2026`;
 
         list.push({
           id: questId,
@@ -311,7 +312,7 @@ export default function MyHubPage() {
           eventType: 'challenge' as any,
           participantsCount: q.participantsCount || 300,
           maxParticipants: 1000,
-          createdAtTimestamp: 1726000000000,
+          createdAtTimestamp: 1788278059344,
           // Quest Span Metadata for Option C
           questStartDay: startDay,
           questDeadlineDay: targetDay,
@@ -333,32 +334,24 @@ export default function MyHubPage() {
     return allJoinedEvents.filter((e) => e.eventType === 'public_venue' && (e.eventType as any) !== 'challenge');
   }, [allJoinedEvents]);
 
-  // Filtered lists based on Upcoming vs Past
+  // Filtered lists based on All vs Upcoming vs Past
   const filteredCommunityEvents = useMemo(() => {
     return communityEvents.filter((ev) => {
       const isEnded = isEventEnded(ev);
       if (eventViewMode === 'upcoming' && isEnded) return false;
       if (eventViewMode === 'past' && !isEnded) return false;
-      if (selectedCalDay !== null) {
-        const dStr = ev.date || '';
-        if (!dStr.includes(selectedCalDay.toString())) return false;
-      }
       return true;
     });
-  }, [communityEvents, eventViewMode, selectedCalDay]);
+  }, [communityEvents, eventViewMode]);
 
   const filteredExpoEvents = useMemo(() => {
     return expoEvents.filter((ev) => {
       const isEnded = isEventEnded(ev);
       if (eventViewMode === 'upcoming' && isEnded) return false;
       if (eventViewMode === 'past' && !isEnded) return false;
-      if (selectedCalDay !== null) {
-        const dStr = ev.date || '';
-        if (!dStr.includes(selectedCalDay.toString())) return false;
-      }
       return true;
     });
-  }, [expoEvents, eventViewMode, selectedCalDay]);
+  }, [expoEvents, eventViewMode]);
 
   // Saved Lifestyle Spots for Scrapbook
   const savedSpotsList: LifestyleSpotItem[] = useMemo(() => {
@@ -408,7 +401,7 @@ export default function MyHubPage() {
       const d = new Date(ev.createdAtTimestamp);
       if (d.getFullYear() === year && d.getMonth() === monthIdx) return true;
     }
-    return monthIdx === 7 && year === 2026 && dateStr.includes('ส.ค.');
+    return monthIdx === 8 && year === 2026 && dateStr.includes('ก.ย.');
   };
 
   // Cancel Event / Remove from MyHub
@@ -640,29 +633,41 @@ export default function MyHubPage() {
     return dStr.includes(` ${day} `) || dStr.startsWith(`${day} `) || dStr.includes(`${day}`);
   };
 
-  // Master Calendar filtered dataset
-  const filteredMasterEvents = useMemo(() => {
-    if (calendarCategoryFilter === 'all') return allJoinedEvents;
-    return allJoinedEvents.filter((ev) => {
-      const meta = getEventPillarMeta(ev);
-      return meta.pillar === calendarCategoryFilter;
-    });
-  }, [allJoinedEvents, calendarCategoryFilter, joinedSubActivities]);
+  // Active scope events for current calendar view (either selected day, or the current month, or all-time)
+  const scopedCalendarEvents = useMemo(() => {
+    if (calendarTimeScope === 'all') {
+      return allJoinedEvents;
+    }
+    if (selectedCalDay !== null) {
+      return allJoinedEvents.filter((ev) => isEventOnDay(ev, selectedCalDay, calMonth, calYear, 'all'));
+    }
+    return allJoinedEvents.filter((ev) => isEventInCalMonth(ev, calMonth, calYear));
+  }, [allJoinedEvents, calendarTimeScope, selectedCalDay, calMonth, calYear]);
 
+  // Master Category Counts strictly matching the active calendar scope
   const masterCategoryCounts = useMemo(() => {
     let community = 0;
     let fairs = 0;
     let spots = 0;
     let quests = 0;
-    allJoinedEvents.forEach((ev) => {
+    scopedCalendarEvents.forEach((ev) => {
       const meta = getEventPillarMeta(ev);
       if (meta.pillar === 'fairs') fairs++;
       else if (meta.pillar === 'spots') spots++;
       else if (meta.pillar === 'quests') quests++;
       else community++;
     });
-    return { all: allJoinedEvents.length, community, fairs, spots, quests };
-  }, [allJoinedEvents, joinedSubActivities]);
+    return { all: scopedCalendarEvents.length, community, fairs, spots, quests };
+  }, [scopedCalendarEvents]);
+
+  // Master Calendar filtered dataset (used for calendar day cells and dots)
+  const filteredMasterEvents = useMemo(() => {
+    if (calendarCategoryFilter === 'all') return allJoinedEvents;
+    return allJoinedEvents.filter((ev) => {
+      const meta = getEventPillarMeta(ev);
+      return meta.pillar === calendarCategoryFilter;
+    });
+  }, [allJoinedEvents, calendarCategoryFilter]);
 
   // Find ongoing quests for selected day when in 'all' view
   const ongoingQuestsForSelectedDay = useMemo(() => {
@@ -670,19 +675,19 @@ export default function MyHubPage() {
     return allJoinedEvents.filter((ev) => {
       if ((ev as any).eventType !== 'challenge' && !ev.id.startsWith('quest-')) return false;
       const qStart = (ev as any).questStartDay || 1;
-      const qEnd = (ev as any).questDeadlineDay || 31;
+      const qEnd = (ev as any).questDeadlineDay || 30;
       return selectedCalDay >= qStart && selectedCalDay < qEnd;
     });
   }, [allJoinedEvents, selectedCalDay, calendarCategoryFilter]);
 
-  // Daily agenda events
+  // Daily agenda events: exactly equals scopedCalendarEvents filtered by category
   const dailyAgendaEvents = useMemo(() => {
-    if (selectedCalDay !== null) {
-      return filteredMasterEvents.filter((ev) => isEventOnDay(ev, selectedCalDay, calMonth, calYear, calendarCategoryFilter));
-    }
-    // If no day selected, return all events in this month
-    return filteredMasterEvents.filter((ev) => isEventInCalMonth(ev, calMonth, calYear));
-  }, [filteredMasterEvents, selectedCalDay, calMonth, calYear, calendarCategoryFilter]);
+    if (calendarCategoryFilter === 'all') return scopedCalendarEvents;
+    return scopedCalendarEvents.filter((ev) => {
+      const meta = getEventPillarMeta(ev);
+      return meta.pillar === calendarCategoryFilter;
+    });
+  }, [scopedCalendarEvents, calendarCategoryFilter]);
 
   // Helper to render Master Schedule Calendar (Unified Multi-Category Life Calendar)
   const renderMasterCalendarView = () => {
@@ -690,7 +695,7 @@ export default function MyHubPage() {
 
     return (
       <div className="space-y-6 animate-fade-in">
-        <div className="bg-white rounded-3xl p-4 sm:p-6 lg:p-7 border border-slate-200/90 shadow-2xs space-y-5">
+        <div className="bg-white rounded-2xl p-3.5 sm:p-5 lg:p-6 border border-slate-200/90 shadow-2xs space-y-4">
           {/* Header Controls: Month Navigator & Category Filter Chips */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-2 border-b border-slate-100">
             {/* Month & Year Navigator */}
@@ -706,6 +711,7 @@ export default function MyHubPage() {
                       setCalMonth((p) => p - 1);
                     }
                     setSelectedCalDay(null);
+                    setCalendarTimeScope('month');
                   }}
                   className="p-1.5 rounded-xl hover:bg-white text-slate-700 transition-colors cursor-pointer"
                   title="เดือนก่อนหน้า"
@@ -728,6 +734,7 @@ export default function MyHubPage() {
                       setCalMonth((p) => p + 1);
                     }
                     setSelectedCalDay(null);
+                    setCalendarTimeScope('month');
                   }}
                   className="p-1.5 rounded-xl hover:bg-white text-slate-700 transition-colors cursor-pointer"
                   title="เดือนถัดไป"
@@ -741,21 +748,54 @@ export default function MyHubPage() {
                 type="button"
                 onClick={() => {
                   setCalYear(2026);
-                  setCalMonth(7);
-                  setSelectedCalDay(22);
+                  setCalMonth(8);
+                  setSelectedCalDay(26);
+                  setCalendarTimeScope('month');
                 }}
                 className="text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200/70 transition-all cursor-pointer"
               >
                 วันนี้
               </button>
 
+              {/* Scope Switcher: Month vs All-Time */}
+              <div className="flex items-center gap-1 bg-slate-100/90 p-1 rounded-2xl border border-slate-200/80">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCalendarTimeScope('month');
+                    setSelectedCalDay(null);
+                  }}
+                  className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    calendarTimeScope === 'month' && selectedCalDay === null
+                      ? 'bg-white text-slate-900 shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  เดือนนี้
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCalendarTimeScope('all');
+                    setSelectedCalDay(null);
+                  }}
+                  className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    calendarTimeScope === 'all'
+                      ? 'bg-white text-slate-900 shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  ตลอดทั้งปี ({allJoinedEvents.length})
+                </button>
+              </div>
+
               {selectedCalDay !== null && (
                 <button
                   type="button"
                   onClick={() => setSelectedCalDay(null)}
-                  className="text-xs font-bold text-slate-500 hover:text-slate-900 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 transition-all cursor-pointer"
+                  className="text-xs font-bold text-slate-500 hover:text-slate-900 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 transition-all cursor-pointer inline-flex items-center gap-1.5"
                 >
-                  แสดงทุกวันในเดือนนี้
+                  <span>แสดงทุกวันในเดือนนี้</span>
                 </button>
               )}
             </div>
@@ -840,7 +880,7 @@ export default function MyHubPage() {
                     โหมดช่วงเวลาภารกิจ (Active Quest Span View)
                   </span>
                   <span className="text-[11.5px] text-purple-800/80 block truncate">
-                    ไฮไลต์ช่วงระยะเวลาที่เควสต์เปิดรับส่ง (1 - 31 ส.ค.) และเน้นจุดสีม่วงเข้มในวันเดดไลน์ส่งหลักฐาน
+                    ไฮไลต์ช่วงระยะเวลาที่เควสต์เปิดรับส่ง (1 - 30 ก.ย.) และเน้นจุดสีม่วงเข้มในวันเดดไลน์ส่งหลักฐาน
                   </span>
                 </div>
               </div>
@@ -902,7 +942,7 @@ export default function MyHubPage() {
 
               {[...Array(daysInMonth)].map((_, idx) => {
                 const day = idx + 1;
-                const isToday = calMonth === 7 && calYear === 2026 && day === 22;
+                const isToday = calMonth === 8 && calYear === 2026 && day === 26;
                 const isSelected = selectedCalDay === day;
                 const eventsOnDay = filteredMasterEvents.filter((ev) => isEventOnDay(ev, day, calMonth, calYear, calendarCategoryFilter));
 
@@ -1010,7 +1050,9 @@ export default function MyHubPage() {
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-[#2D5A3C]" />
                 <h3 className="text-sm sm:text-base font-black text-slate-900">
-                  {selectedCalDay !== null
+                  {calendarTimeScope === 'all'
+                    ? 'กำหนดการทั้งหมดตลอดทั้งปี'
+                    : selectedCalDay !== null
                     ? `กำหนดการวัน${getDayOfWeekName(calYear, calMonth, selectedCalDay)}ที่ ${selectedCalDay} ${THAI_MONTH_NAMES[calMonth]} ${calYear + 543}`
                     : `กำหนดการทั้งหมดในเดือน${THAI_MONTH_NAMES[calMonth]} ${calYear + 543}`}
                 </h3>
@@ -1106,7 +1148,7 @@ export default function MyHubPage() {
                       {/* Card Image Banner */}
                       <div
                         onClick={() => setDetailModalEvent(ev)}
-                        className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100 shrink-0 cursor-pointer"
+                        className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 shrink-0 cursor-pointer"
                       >
                         <img
                           src={ev.image || fallbackImg}
@@ -1305,13 +1347,9 @@ export default function MyHubPage() {
 
         {/* Guest Guard: Requires Login (Global Showcase Teaser) */}
         {!isLoggedIn ? (
-          <div className="max-w-4xl mx-auto px-4 py-12 sm:py-16 space-y-8 animate-fade-in">
+          <div className="max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-6 animate-fade-in">
             {/* Teaser Header */}
             <div className="text-center space-y-3 max-w-xl mx-auto">
-              <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase bg-[#EBF3ED] text-[#2D5A3C] border border-[#A3CEB0]/60 shadow-2xs">
-                <Sparkles className="w-3.5 h-3.5 text-[#4A7C59]" />
-                Personal Lifestyle Hub
-              </span>
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
                 มายฮับส่วนตัว (My Hub: Personal Lifestyle Hub)
               </h2>
@@ -1324,7 +1362,7 @@ export default function MyHubPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
               
               {/* Pillar 1: Digital E-Ticket & Group Chat (Forest Green) */}
-              <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4 flex flex-col justify-between hover:border-[#4A7C59]/40 hover:shadow-xs transition-all duration-300">
+              <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3.5 flex flex-col justify-between hover:border-[#4A7C59]/40 hover:shadow-xs transition-all duration-300">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between gap-2">
                     <div className="w-12 h-12 rounded-2xl bg-[#EBF3ED] text-[#2D5A3C] flex items-center justify-center border border-[#A3CEB0]/60 shadow-2xs">
@@ -1357,7 +1395,7 @@ export default function MyHubPage() {
               </div>
 
               {/* Pillar 2: Master Lifestyle Calendar (Slate Blue) */}
-              <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4 flex flex-col justify-between hover:border-[#2B527A]/40 hover:shadow-xs transition-all duration-300">
+              <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3.5 flex flex-col justify-between hover:border-[#2B527A]/40 hover:shadow-xs transition-all duration-300">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between gap-2">
                     <div className="w-12 h-12 rounded-2xl bg-[#F0F4F8] text-[#2B527A] flex items-center justify-center border border-[#CBD5E1]/60 shadow-2xs">
@@ -1390,7 +1428,7 @@ export default function MyHubPage() {
               </div>
 
               {/* Pillar 3: Travel Scrapbook & Buddy (Warm Amber) */}
-              <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4 flex flex-col justify-between hover:border-[#F26430]/40 hover:shadow-xs transition-all duration-300">
+              <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3.5 flex flex-col justify-between hover:border-[#F26430]/40 hover:shadow-xs transition-all duration-300">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between gap-2">
                     <div className="w-12 h-12 rounded-2xl bg-[#FFF7ED] text-[#F26430] flex items-center justify-center border border-[#FED7AA]/60 shadow-2xs">
@@ -1423,7 +1461,7 @@ export default function MyHubPage() {
               </div>
 
               {/* Pillar 4: Explorer Quests & Rewards (Royal Violet) */}
-              <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4 flex flex-col justify-between hover:border-[#7C3AED]/40 hover:shadow-xs transition-all duration-300">
+              <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3.5 flex flex-col justify-between hover:border-[#7C3AED]/40 hover:shadow-xs transition-all duration-300">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between gap-2">
                     <div className="w-12 h-12 rounded-2xl bg-[#F5F3FF] text-[#7C3AED] flex items-center justify-center border border-[#DDD6FE]/60 shadow-2xs">
@@ -1458,7 +1496,7 @@ export default function MyHubPage() {
             </div>
 
             {/* 3-Step Infographic Journey Strip (Soft Organic Tints) */}
-            <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-3.5">
+            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3.5">
               <h4 className="text-sm sm:text-base font-black text-slate-900">
                 3 ขั้นตอนง่ายๆ ในการเริ่มต้นใช้งาน My Hub
               </h4>
@@ -1535,18 +1573,14 @@ export default function MyHubPage() {
             {/* ========================================================================= */}
             {/* 1. MEMBER KEYCARD PASSPORT (Clean Minimal White Header)                   */}
             {/* ========================================================================= */}
-            <section className="bg-white border-b border-slate-200/80 pt-6 pb-6 sm:pt-8 sm:pb-8">
+            <section className="bg-white border-b border-slate-200/80 pt-3 pb-3 sm:pt-4 sm:pb-4">
               <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="bg-white rounded-3xl p-5 sm:p-7 text-slate-900 border border-slate-200/90 shadow-2xs relative overflow-hidden">
+                <div className="bg-white rounded-2xl p-4 sm:p-5 text-slate-900 border border-slate-200/90 shadow-2xs relative overflow-hidden">
                   <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                     
                     {/* User Identity Info */}
                     <div className="space-y-2.5 min-w-0">
                       <div>
-                        <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[10px] sm:text-[11px] font-extrabold tracking-wide uppercase bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs mb-2">
-                          <Sparkles className="w-3 h-3 text-slate-500" />
-                          Personal Lifestyle Hub
-                        </span>
                         <div className="flex items-center gap-2.5 flex-wrap">
                           <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-slate-900 truncate">
                             มายฮับส่วนตัว (My Hub)
@@ -1622,7 +1656,10 @@ export default function MyHubPage() {
                   <div className="inline-flex items-center p-1 bg-slate-100/90 rounded-2xl border border-slate-200/90 shadow-2xs">
                     <button
                       type="button"
-                      onClick={() => setHubMainMode('categories')}
+                      onClick={() => {
+                        setHubMainMode('categories');
+                        setSelectedCalDay(null);
+                      }}
                       className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                         hubMainMode === 'categories'
                           ? 'bg-white text-slate-900 shadow-2xs'
@@ -1673,7 +1710,7 @@ export default function MyHubPage() {
                       }`}
                     >
                       <Users className={`w-4 h-4 ${activeSubTab === 'community' ? 'text-[#F26430]' : 'text-slate-400'}`} />
-                      <span>ตี้กิจกรรมคอมมูนิตี้ ({communityEvents.length})</span>
+                      <span>ตี้กิจกรรมคอมมูนิตี้ ({eventViewMode === 'all' ? communityEvents.length : filteredCommunityEvents.length})</span>
                     </button>
 
                     {/* Tab 2: Fairs & Expos */}
@@ -1687,7 +1724,7 @@ export default function MyHubPage() {
                       }`}
                     >
                       <Calendar className={`w-4 h-4 ${activeSubTab === 'fairs' ? 'text-[#2B527A]' : 'text-slate-400'}`} />
-                      <span>งานแฟร์ & นิทรรศการ ({expoEvents.length})</span>
+                      <span>งานแฟร์ & นิทรรศการ ({eventViewMode === 'all' ? expoEvents.length : filteredExpoEvents.length})</span>
                     </button>
 
                     {/* Tab 3: Travel Scrapbook */}
@@ -1741,6 +1778,17 @@ export default function MyHubPage() {
                     <div className="flex items-center gap-1.5">
                       <button
                         type="button"
+                        onClick={() => setEventViewMode('all')}
+                        className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          eventViewMode === 'all'
+                            ? 'bg-slate-900 text-white shadow-2xs'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                        }`}
+                      >
+                        ทั้งหมด ({communityEvents.length})
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => setEventViewMode('upcoming')}
                         className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                           eventViewMode === 'upcoming'
@@ -1755,7 +1803,7 @@ export default function MyHubPage() {
                         onClick={() => setEventViewMode('past')}
                         className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                           eventViewMode === 'past'
-                            ? 'bg-slate-800 text-white shadow-2xs'
+                            ? 'bg-slate-900 text-white shadow-2xs'
                             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                         }`}
                       >
@@ -1806,7 +1854,7 @@ export default function MyHubPage() {
                             {/* Card Image */}
                             <div
                               onClick={() => setDetailModalEvent(event)}
-                              className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100 shrink-0 cursor-pointer"
+                              className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 shrink-0 cursor-pointer"
                             >
                               <img
                                 src={event.image}
@@ -1987,6 +2035,17 @@ export default function MyHubPage() {
                     <div className="flex items-center gap-1.5">
                       <button
                         type="button"
+                        onClick={() => setEventViewMode('all')}
+                        className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          eventViewMode === 'all'
+                            ? 'bg-slate-900 text-white shadow-2xs'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                        }`}
+                      >
+                        ทั้งหมด ({expoEvents.length})
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => setEventViewMode('upcoming')}
                         className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                           eventViewMode === 'upcoming'
@@ -2053,7 +2112,7 @@ export default function MyHubPage() {
                             {/* Card Image */}
                             <div
                               onClick={() => setDetailModalEvent(event)}
-                              className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100 shrink-0 cursor-pointer"
+                              className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 shrink-0 cursor-pointer"
                             >
                               <img
                                 src={event.image}
@@ -2251,7 +2310,7 @@ export default function MyHubPage() {
                           className="group bg-white rounded-2xl border border-slate-200/80 hover:border-slate-300 shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between overflow-hidden relative transform hover:-translate-y-1"
                         >
                           {/* Spot Image */}
-                          <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100 shrink-0">
+                          <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 shrink-0">
                             <img
                               src={resolveSpotImage(spotItem)}
                               alt={spotItem.title}

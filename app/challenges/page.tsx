@@ -590,7 +590,7 @@ export default function ChallengesDiscoveryPage() {
                         </div>
 
                         {/* 2. Full Inner Image Banner with Floating Glass Medal Badge */}
-                        <div className="relative h-28 sm:h-32 w-full rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 group-hover/card:border-purple-300/50 transition-colors">
+                        <div className="relative h-[135px] sm:h-[154px] w-full rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 group-hover/card:border-purple-300/50 transition-colors">
                           <img
                             src={quest.image || 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80'}
                             alt={quest.title}

@@ -21,9 +21,6 @@ export const CommunityMomentsStrip: React.FC = () => {
             </span>
             <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
               <span>โมเมนต์ & บรรยากาศจริงจากชุมชน</span>
-              <span className="text-[10px] font-black text-amber-900 bg-amber-100/80 px-2 py-0.5 rounded-full border border-amber-300/80">
-                Community Moments
-              </span>
             </h2>
           </div>
           <p className="text-xs text-slate-500 mt-1 font-medium pl-8">

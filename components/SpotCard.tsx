@@ -93,7 +93,7 @@ export const SpotCard: React.FC<SpotCardProps> = ({
       }`}
     >
       {/* Image */}
-      <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100 shrink-0">
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 shrink-0">
         <img
           src={spot.image}
           alt={spot.title}

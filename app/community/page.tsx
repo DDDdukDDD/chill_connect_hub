@@ -383,8 +383,8 @@ function CommunityPageContent() {
             <span className="text-slate-900 font-bold">กิจกรรมคอมมูนิตี้</span>
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 bg-gradient-to-r from-orange-50/70 via-slate-50/40 to-transparent p-4 sm:p-6 rounded-3xl border border-orange-100/80 shadow-2xs">
-            <div className="space-y-1.5 max-w-2xl">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4 bg-gradient-to-r from-orange-50/70 via-slate-50/40 to-transparent p-3.5 sm:p-4.5 rounded-2xl border border-orange-100/80 shadow-2xs">
+            <div className="space-y-1 max-w-2xl">
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight">
                 กิจกรรมคอมมูนิตี้
               </h1>
@@ -404,7 +404,7 @@ function CommunityPageContent() {
                   setIsCreateEventModalOpen(true);
                 }
               }}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-2xs hover:shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-2xs hover:shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
             >
               <Plus className="w-4 h-4 stroke-[2.5]" />
               <span>เปิดตี้ / สร้างกิจกรรมใหม่</span>

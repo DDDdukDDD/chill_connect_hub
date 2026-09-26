@@ -289,18 +289,6 @@ export default function SpotDetailPage() {
       {/* Main Container */}
       <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 pt-1.5 pb-28 sm:pt-2 sm:pb-12 space-y-3 sm:space-y-4">
         
-        {/* Editorial Capsule Badge & Trust Signal */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EBF3ED] text-[#2D5A3C] text-[11px] font-black tracking-wider uppercase border border-[#C5DEC9]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#4A7C59]" />
-            <span>Curated Lifestyle Spaces • 77 Provinces</span>
-          </div>
-
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 backdrop-blur-xs border border-slate-200/90 text-slate-600 text-[11px] font-bold shadow-2xs">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#2D5A3C]" />
-            <span>พิกัดคัดสรรมาตรฐานวิถีชีวิตไทย 77 จังหวัด</span>
-          </div>
-        </div>
 
         {/* =========================================================================
             TOP BREADCRUMBS & ACTION BAR
@@ -459,6 +447,11 @@ export default function SpotDetailPage() {
                 {/* Category Badge - Forest Green */}
                 <span className="text-xs font-black px-3 py-1 rounded-full bg-[#EBF3ED] text-[#2D5A3C] border border-emerald-200">
                   {spot.categoryLabel}
+                </span>
+
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold shadow-2xs">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#2D5A3C]" />
+                  <span>พิกัดคัดสรรมาตรฐานวิถีชีวิตไทย 77 จังหวัด</span>
                 </span>
 
                 {/* Star Rating & Reviews */}
@@ -836,10 +829,6 @@ export default function SpotDetailPage() {
           <section className="pt-8 sm:pt-10 border-t border-slate-100 space-y-4 sm:space-y-5">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
               <div className="space-y-1">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#EBF3ED] text-[#2D5A3C] text-[10.5px] font-black uppercase tracking-wider border border-[#C5DEC9]">
-                  <Compass className="w-3 h-3 text-[#2D5A3C]" />
-                  <span>Nearby Exploration • {spot.province}</span>
-                </div>
                 <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight pt-0.5">
                   {recommendation.sectionTitle}
                 </h2>

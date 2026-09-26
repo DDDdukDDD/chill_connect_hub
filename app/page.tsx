@@ -1346,11 +1346,11 @@ function HomeContent() {
                         </span>
                         <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
                           <span>กิจกรรมคอมมูนิตี้</span>
-                          <span className="text-[10px] font-black text-[#F26430] bg-[#FFF4EE] px-2 py-0.5 rounded-full border border-orange-200">
-                            {selectedCommunityClub ? (
-                              TOP_COMMUNITY_CLUBS.find((c) => c.clubKey === selectedCommunityClub)?.nameTh || selectedCommunityClub
-                            ) : 'Community Circles'}
-                          </span>
+                          {selectedCommunityClub && (
+                            <span className="text-[10px] font-black text-[#F26430] bg-[#FFF4EE] px-2 py-0.5 rounded-full border border-orange-200">
+                              {TOP_COMMUNITY_CLUBS.find((c) => c.clubKey === selectedCommunityClub)?.nameTh || selectedCommunityClub}
+                            </span>
+                          )}
                         </h2>
                         {timeFilter !== 'all' && (
                           <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-orange-950 bg-orange-100/90 px-2.5 py-0.5 rounded-full border border-orange-200 shadow-2xs">
@@ -1703,19 +1703,16 @@ function HomeContent() {
             {activeScopeTab === 'community' && (
               <div className="space-y-8 sm:space-y-10 animate-fade-in">
                 {/* Community Pillar Header */}
-                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-orange-50/60 via-slate-50/40 to-transparent p-4 sm:p-5 rounded-2xl border border-orange-100/70 shadow-2xs">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-orange-50/60 via-slate-50/40 to-transparent p-3.5 sm:p-4 rounded-2xl border border-orange-100/70 shadow-2xs">
                   <div>
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className="text-[10px] sm:text-xs font-black tracking-wider text-[#F26430] uppercase bg-[#FFF4EE] px-2.5 py-0.5 rounded-full border border-orange-200">
-                        Community Meetups • Bangkok & Urban Circles
-                      </span>
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                        กิจกรรมคอมมูนิตี้ & ตี้เพื่อนใหม่
+                      </h1>
                       <span className="text-[10px] sm:text-xs font-bold text-slate-600 bg-white px-2.5 py-0.5 rounded-full border border-slate-200/80 shadow-2xs">
                         {streamCommunityEvents.length} กิจกรรมที่เปิดรับสมัคร
                       </span>
                     </div>
-                    <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                      กิจกรรมคอมมูนิตี้ & ตี้เพื่อนใหม่
-                    </h1>
                     <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
                       เชื่อมต่อมิตรภาพผ่านกิจกรรมสร้างสรรค์ ขนาดกลุ่มอบอุ่น 4-10 คน บรรยากาศปลอดภัย เป็นกันเอง และไร้แรงกดดัน
                     </p>
@@ -1796,19 +1793,16 @@ function HomeContent() {
             {activeScopeTab === 'fairs' && (
               <div className="space-y-8 sm:space-y-10 animate-fade-in">
                 {/* Fairs Pillar Header */}
-                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-blue-50/60 via-slate-50/40 to-transparent p-4 sm:p-5 rounded-2xl border border-blue-100/70 shadow-2xs">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-blue-50/60 via-slate-50/40 to-transparent p-3.5 sm:p-4 rounded-2xl border border-blue-100/70 shadow-2xs">
                   <div>
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className="text-[10px] sm:text-xs font-black tracking-wider text-[#2B527A] uppercase bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
-                        Major Fairs & Public Expos • Nationwide
-                      </span>
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                        งานมหกรรม นิทรรศการ & เอ็กซ์โป
+                      </h1>
                       <span className="text-[10px] sm:text-xs font-bold text-slate-600 bg-white px-2.5 py-0.5 rounded-full border border-slate-200/80 shadow-2xs">
                         {streamPublicEvents.length} งานมหกรรมทั่วไทย
                       </span>
                     </div>
-                    <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                      งานมหกรรม นิทรรศการ & เอ็กซ์โป
-                    </h1>
                     <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
                       ปฏิทินงานมหกรรม คอนเวนชัน และเอ็กซ์โประดับประเทศ ณ ศูนย์การประชุมและแลนด์มาร์กชั้นนำทั่วไทย
                     </p>
@@ -1887,19 +1881,16 @@ function HomeContent() {
             {activeScopeTab === 'spots' && (
               <div className="space-y-8 sm:space-y-10 animate-fade-in">
                 {/* Spots Pillar Header */}
-                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-emerald-50/60 via-slate-50/40 to-transparent p-4 sm:p-5 rounded-2xl border border-emerald-100/70 shadow-2xs">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-emerald-50/60 via-slate-50/40 to-transparent p-3.5 sm:p-4 rounded-2xl border border-emerald-100/70 shadow-2xs">
                   <div>
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className="text-[10px] sm:text-xs font-black tracking-wider text-[#4A7C59] uppercase bg-[#EBF3ED] px-2.5 py-0.5 rounded-full border border-emerald-200">
-                        Curated Spots & Healing Spaces • 77 Provinces
-                      </span>
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                        พิกัดเที่ยว & จุดฮีลใจ 77 จังหวัด
+                      </h1>
                       <span className="text-[10px] sm:text-xs font-bold text-slate-600 bg-white px-2.5 py-0.5 rounded-full border border-slate-200/80 shadow-2xs">
                         {filteredSpots.length} พิกัดคัดสรรทั่วไทย
                       </span>
                     </div>
-                    <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                      พิกัดเที่ยว & จุดฮีลใจ 77 จังหวัด
-                    </h1>
                     <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
                       พื้นที่ชาร์จพลัง คาเฟ่รักษ์โลก และจุดพักผ่อนธรรมชาติที่ผ่านการคัดสรรโดยคนท้องถิ่น ทั่วประเทศไทย
                     </p>

@@ -48,12 +48,9 @@ export const SpotsTrustSection: React.FC = () => {
   ];
 
   return (
-    <section className="space-y-6 pt-4 scroll-mt-24">
+    <section className="space-y-4 pt-2 scroll-mt-24">
       {/* Header */}
-      <div className="space-y-1.5 text-left">
-        <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-[10px] sm:text-xs font-black text-[#4A7C59] uppercase tracking-wider">
-          <span>Nationwide Lifestyle & Healing Spaces</span>
-        </div>
+      <div className="space-y-1 text-left">
         <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
           ทำไมต้องค้นหาพิกัดเที่ยวกับเรา?
         </h2>
@@ -63,17 +60,17 @@ export const SpotsTrustSection: React.FC = () => {
       </div>
 
       {/* 4 Trust Pillars Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {pillars.map((item) => {
           const Icon = item.icon;
           return (
             <div
               key={item.id}
-              className="bg-white rounded-2xl sm:rounded-3xl p-5 border border-slate-200/80 shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between space-y-3"
+              className="bg-white rounded-2xl p-4 sm:p-4.5 border border-slate-200/80 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between space-y-2.5"
             >
-              <div className="space-y-3">
-                <div className={`w-10 h-10 rounded-2xl ${item.iconBg} border flex items-center justify-center ${item.iconColor} shadow-2xs`}>
-                  <Icon className="w-5 h-5" />
+              <div className="space-y-2.5">
+                <div className={`w-9 h-9 rounded-xl ${item.iconBg} border flex items-center justify-center ${item.iconColor} shadow-2xs`}>
+                  <Icon className="w-4.5 h-4.5" />
                 </div>
                 <h3 className="font-black text-sm sm:text-base text-slate-900 leading-snug">
                   {item.title}

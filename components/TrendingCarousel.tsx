@@ -226,7 +226,7 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
                 className="min-w-[260px] sm:min-w-[290px] max-w-[290px] bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col shrink-0 relative"
               >
                 {/* Image Banner */}
-                <div className="relative h-32 w-full bg-slate-100 overflow-hidden">
+                <div className="relative h-[154px] sm:h-[160px] w-full bg-slate-100 overflow-hidden">
                   <img
                     src={event.image}
                     alt={event.title}

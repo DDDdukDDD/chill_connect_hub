@@ -206,8 +206,8 @@ export default function RewardsPage() {
       {/* ========================================================================= */}
       {/* 1. HERO & REWARDS IDENTITY BANNER                                         */}
       {/* ========================================================================= */}
-      <section className="bg-gradient-to-b from-white via-white/80 to-[#FDFBF7] border-b border-slate-200/80 pt-8 pb-10 sm:pt-12 sm:pb-12">
-        <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+      <section className="bg-gradient-to-b from-white via-white/80 to-[#FDFBF7] border-b border-slate-200/80 pt-4 pb-6 sm:pt-6 sm:pb-7">
+        <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
           
           {/* Breadcrumb Navigation */}
           <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
@@ -218,12 +218,8 @@ export default function RewardsPage() {
             <span className="text-slate-900 font-bold">ศูนย์สิทธิพิเศษ & ของรางวัลไลฟ์สไตล์</span>
           </div>
 
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            <div className="space-y-3 max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FEF3EE] border border-[#FCD5C5] text-[#D04A1B] text-xs font-bold shadow-2xs">
-                <Gift className="w-3.5 h-3.5" />
-                <span>Member Privileges & Rewards</span>
-              </div>
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6">
+            <div className="space-y-1.5 max-w-2xl">
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-tight">
                 ศูนย์สิทธิพิเศษ & ของรางวัลไลฟ์สไตล์
               </h1>
@@ -236,14 +232,14 @@ export default function RewardsPage() {
             <div className="flex items-center gap-2.5 flex-wrap">
               <Link
                 href="/challenges"
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-200/90 text-xs font-bold shadow-2xs transition-all active:scale-95 cursor-pointer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-200/90 text-xs font-bold shadow-2xs transition-all active:scale-95 cursor-pointer"
               >
                 <Zap className="w-4 h-4 text-amber-500" />
                 <span>ทำภารกิจสะสมแต้ม XP</span>
               </Link>
               <Link
                 href="/myhub"
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-2xs transition-all active:scale-95 cursor-pointer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-2xs transition-all active:scale-95 cursor-pointer"
               >
                 <Ticket className="w-4 h-4" />
                 <span>มายฮับ & นัดหมายของฉัน</span>
@@ -254,14 +250,14 @@ export default function RewardsPage() {
           {/* ========================================================================= */}
           {/* 2. USER XP WALLET CARD (Interactive Member Status)                         */}
           {/* ========================================================================= */}
-          <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-2xs relative overflow-hidden">
+          <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs relative overflow-hidden">
             <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-amber-500/10 via-emerald-500/5 to-transparent rounded-full blur-2xl pointer-events-none" />
 
-            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5 sm:gap-6">
               {/* Left: XP Status */}
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-[#F26430] flex items-center justify-center text-white shadow-md shadow-orange-500/20 shrink-0">
-                  <Award className="w-7 h-7 sm:w-8 sm:h-8" />
+              <div className="flex items-center gap-3.5 sm:gap-4">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-[#F26430] flex items-center justify-center text-white shadow-md shadow-orange-500/20 shrink-0">
+                  <Award className="w-6 h-6 sm:w-7 sm:h-7" />
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">

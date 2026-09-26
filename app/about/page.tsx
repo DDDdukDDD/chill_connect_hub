@@ -172,7 +172,7 @@ export default function AboutPage() {
                 <div className="space-y-4">
                   
                   {/* Panoramic Visual Window */}
-                  <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-slate-100 shadow-xs">
+                  <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden bg-slate-100 shadow-xs">
                     <img
                       src="https://images.unsplash.com/photo-1519331379826-f10be5486c6f?auto=format&fit=crop&w=800&q=80"
                       alt="Lifestyle Spots & Parks"
@@ -239,7 +239,7 @@ export default function AboutPage() {
                 <div className="space-y-4">
                   
                   {/* Panoramic Visual Window */}
-                  <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-slate-100 shadow-xs">
+                  <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden bg-slate-100 shadow-xs">
                     <img
                       src="https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=800&q=80"
                       alt="Events & Workshops"
@@ -306,7 +306,7 @@ export default function AboutPage() {
                 <div className="space-y-4">
                   
                   {/* Panoramic Visual Window */}
-                  <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-slate-100 shadow-xs">
+                  <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden bg-slate-100 shadow-xs">
                     <img
                       src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=800&q=80"
                       alt="Community & Friends"

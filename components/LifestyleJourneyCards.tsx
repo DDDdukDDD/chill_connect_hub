@@ -51,9 +51,6 @@ export const LifestyleJourneyCards: React.FC = () => {
                 </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-[#4A7C59] ring-2 ring-emerald-100" />
               </div>
-              <span className="text-[10px] font-black tracking-wider uppercase text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/80">
-                Where & What
-              </span>
             </div>
 
             {/* Title & Description */}
@@ -95,7 +92,7 @@ export const LifestyleJourneyCards: React.FC = () => {
         {/* STEP 2: WHO TO GO WITH (Community) -> Sunset Amber */}
         <div className="flex flex-col justify-between p-3.5 sm:p-4 rounded-2xl hover:bg-white/95 hover:shadow-lg transition-all duration-300 group lg:border-r border-slate-200/50 last:border-r-0 lg:pr-5 lg:pl-3">
           <div className="space-y-3">
-            {/* Header: Milestone Node + Tag */}
+            {/* Header: Milestone Node */}
             <div className="flex items-center justify-between relative">
               <div className="flex items-center gap-2 relative z-10">
                 <span className="w-8 h-8 rounded-xl bg-white text-[#F26430] border-2 border-orange-400 font-black text-xs flex items-center justify-center shadow-xs ring-4 ring-white group-hover:scale-110 group-hover:bg-[#F26430] group-hover:text-white group-hover:border-[#F26430] transition-all duration-300">
@@ -103,9 +100,6 @@ export const LifestyleJourneyCards: React.FC = () => {
                 </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-[#F26430] ring-2 ring-orange-100" />
               </div>
-              <span className="text-[10px] font-black tracking-wider uppercase text-[#C2410C] bg-orange-50 px-2.5 py-0.5 rounded-full border border-orange-200/80">
-                Who to go with
-              </span>
             </div>
 
             {/* Title & Description */}
@@ -147,7 +141,7 @@ export const LifestyleJourneyCards: React.FC = () => {
         {/* STEP 3: LIFESTYLE QUESTS (Quests & Challenges) -> Royal Violet */}
         <div className="flex flex-col justify-between p-3.5 sm:p-4 rounded-2xl hover:bg-white/95 hover:shadow-lg transition-all duration-300 group lg:border-r border-slate-200/50 last:border-r-0 lg:pr-5 lg:pl-3">
           <div className="space-y-3">
-            {/* Header: Milestone Node + Tag */}
+            {/* Header: Milestone Node */}
             <div className="flex items-center justify-between relative">
               <div className="flex items-center gap-2 relative z-10">
                 <span className="w-8 h-8 rounded-xl bg-white text-[#7C3AED] border-2 border-purple-400 font-black text-xs flex items-center justify-center shadow-xs ring-4 ring-white group-hover:scale-110 group-hover:bg-[#7C3AED] group-hover:text-white group-hover:border-[#7C3AED] transition-all duration-300">
@@ -155,9 +149,6 @@ export const LifestyleJourneyCards: React.FC = () => {
                 </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-[#7C3AED] ring-2 ring-purple-100" />
               </div>
-              <span className="text-[10px] font-black tracking-wider uppercase text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200/80">
-                Lifestyle Quests
-              </span>
             </div>
 
             {/* Title & Description */}
@@ -199,7 +190,7 @@ export const LifestyleJourneyCards: React.FC = () => {
         {/* STEP 4: SHARE & REWARDS (Moments & Perks) -> Slate Blue */}
         <div className="flex flex-col justify-between p-3.5 sm:p-4 rounded-2xl hover:bg-white/95 hover:shadow-lg transition-all duration-300 group lg:pl-3">
           <div className="space-y-3">
-            {/* Header: Milestone Node + Tag */}
+            {/* Header: Milestone Node */}
             <div className="flex items-center justify-between relative">
               <div className="flex items-center gap-2 relative z-10">
                 <span className="w-8 h-8 rounded-xl bg-white text-[#2B527A] border-2 border-blue-400 font-black text-xs flex items-center justify-center shadow-xs ring-4 ring-white group-hover:scale-110 group-hover:bg-[#2B527A] group-hover:text-white group-hover:border-[#2B527A] transition-all duration-300">
@@ -207,9 +198,6 @@ export const LifestyleJourneyCards: React.FC = () => {
                 </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-[#2B527A] ring-2 ring-blue-100" />
               </div>
-              <span className="text-[10px] font-black tracking-wider uppercase text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200/80">
-                Share & Rewards
-              </span>
             </div>
 
             {/* Title & Description */}

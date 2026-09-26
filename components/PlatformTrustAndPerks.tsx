@@ -28,7 +28,7 @@ export const PlatformTrustAndPerks: React.FC<PlatformTrustAndPerksProps> = () =>
       </div>
 
       {/* The Unified Lifestyle Canvas (Organic Panoramic Stage - Direction 1) */}
-      <div className="bg-gradient-to-b from-white via-slate-50/40 to-white rounded-3xl sm:rounded-[2.5rem] border border-slate-200/80 shadow-[0_4px_30px_-8px_rgba(0,0,0,0.04)] p-5 sm:p-7 lg:p-8 relative overflow-hidden">
+      <div className="bg-gradient-to-b from-white via-slate-50/40 to-white rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-[0_4px_30px_-8px_rgba(0,0,0,0.04)] p-4 sm:p-5.5 lg:p-6 relative overflow-hidden">
         
         {/* Soft Ambient Corner Glows */}
         <div className="absolute -top-20 -left-20 w-64 h-64 bg-emerald-100/30 rounded-full blur-3xl pointer-events-none" />
@@ -41,7 +41,7 @@ export const PlatformTrustAndPerks: React.FC<PlatformTrustAndPerksProps> = () =>
         </div>
 
         {/* Integrated Trust & Community Stats Horizon Strip */}
-        <div className="mt-7 sm:mt-9 pt-6 sm:pt-7 border-t border-slate-200/70 relative z-10">
+        <div className="mt-5 sm:mt-6 pt-4 sm:pt-5 border-t border-slate-200/70 relative z-10">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-center divide-y sm:divide-y-0 sm:divide-x divide-slate-200/60">
             
             <div className="p-2 space-y-1">
