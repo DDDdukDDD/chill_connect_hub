@@ -21,13 +21,11 @@ For a complete system blueprint, mental model (3-4-3), and usage guide, see [ARC
 
 Chill & Connect Hub employs a **Global Luxury & Minimal Editorial** aesthetic—combining the clarity of international lifestyle curation (e.g. Monocle, Apple, Airbnb, Klook) with warm, organic Thai hospitality:
 
-1. **Hierarchy via English Capsule Badges**:
-   - Every page header and major section begins with a compact, uppercase English category pill (e.g. `Curated Spaces • 77 Provinces`, `Meetups & Circles`, `Major Fairs & Public Expos`, `Personal Lifestyle Hub`, `Our Vision & Architecture`).
-2. **Frosted Trust Micro-Pills**:
+1. **Frosted Trust Micro-Pills**:
    - Headers feature floating frosted white pills (`bg-white/90 border shadow-2xs`) displaying key quality signals and safety assurances (e.g. `✓ คัดสรรคุณภาพ 77 จังหวัด`, `ShieldCheck คอมมูนิตี้ปลอดภัย`).
-3. **High-Clarity Hero Imagery**:
+2. **High-Clarity Hero Imagery**:
    - Hero media uses sunny, high-saturation, crisp landscape and city imagery (vibrant green Bangkok parks, turquoise Andaman waters) with subtle gradients and balanced auto-cycling.
-4. **Voucher & Privilege Cards**:
+3. **Voucher & Privilege Cards**:
    - New member vouchers and privilege cards must remain compact, elegant, and proportionate (`max-w-[270px]`, `min-h-[105px]`), never oversized or dominating the card grid below.
 
 ---
@@ -110,7 +108,7 @@ The platform is strictly organized into 3 discovery pillars + 1 community engage
      | **Card / List Title** | `text-sm sm:text-base font-extrabold` | 14px ➔ 16px | Card titles in feeds (`EventGrid`, `SpotCard`), strictly using `line-clamp-2 min-h-[2.5rem]` |
      | **Key Info / Values** | `text-xs sm:text-sm font-bold` | 12px ➔ 14px | Key specs (dates, times, locations, price tags, ticket IDs) |
      | **Field Labels** | `text-[11px] sm:text-xs font-semibold` | 11px ➔ 12px | Input/spec labels (`วันที่จัดกิจกรรม:`, `จุดนัดพบ:`) with slate-500 tone (never < 11px) |
-     | **Micro Badges / Pills** | `text-[10px] sm:text-xs font-extrabold` | 10px ➔ 12px | Signature English Capsule Badges, trust pills, and category tags |
+     | **Micro Badges / Pills** | `text-[10px] sm:text-xs font-extrabold` | 10px ➔ 12px | Trust pills, quality signals, and category tags |
 
 ---
 

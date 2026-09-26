@@ -632,122 +632,67 @@ function MomentsContent() {
           <span className="text-slate-900 font-bold">โมเมนต์ & บรรยากาศจริงจากชุมชน (Community Stories)</span>
         </div>
 
-        {/* 1. Moments Signature Hero Banner (Full-Width Editorial Header) */}
-        <section className="relative rounded-2xl bg-white p-4 sm:p-5 shadow-2xs border border-slate-200/80 overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-center">
-            {/* Left (6-cols): Headline, Description & Actions */}
-            <div className="lg:col-span-6 space-y-3">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] font-black text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200/80 uppercase tracking-wider">
-                    COMMUNITY STORIES • REAL MOMENTS
-                  </span>
-                </div>
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-tight">
-                  โมเมนต์ & บรรยากาศจริงจากชุมชน
-                </h1>
-                <p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed font-normal max-w-xl">
-                  ภาพถ่ายจริงและบรรยากาศจากพิกัดเที่ยว กิจกรรมคอมมูนิตี้ งานมหกรรม และภารกิจชาเลนจ์ทั่วประเทศ
-                </p>
-              </div>
-
-              {/* Community Stats (Clean & Informative) */}
-              <div className="flex items-center gap-2 text-xs text-slate-500 pt-0.5 font-medium flex-wrap">
-                <span className="font-bold text-slate-800">{posts.length} โมเมนต์ที่แบ่งปัน</span>
+        {/* 1. Moments Signature Hero Banner (Compact & Editorial Header) */}
+        <section className="relative rounded-2xl bg-white p-3.5 sm:p-4 shadow-2xs border border-slate-200/80 overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 lg:gap-5 items-center">
+            {/* Left (6-cols): Headline & Subtitle */}
+            <div className="lg:col-span-6 space-y-1.5">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-snug">
+                โมเมนต์ & บรรยากาศจริงจากชุมชน
+              </h1>
+              <p className="text-xs sm:text-[13px] text-slate-500 leading-relaxed font-normal max-w-lg">
+                ภาพถ่ายจริงและบรรยากาศจากพิกัดเที่ยว กิจกรรมคอมมูนิตี้ งานมหกรรม และภารกิจชาเลนจ์ทั่วประเทศ
+              </p>
+              <div className="flex items-center gap-2 text-[11px] text-slate-400 font-medium pt-0.5">
+                <span className="font-bold text-slate-700">{posts.length} โมเมนต์ที่แบ่งปัน</span>
                 <span>•</span>
                 <span>42+ พิกัดเช็คอินทั่วไทย</span>
-                <span>•</span>
-                <span>ภาพถ่ายจริงจากผู้ร่วมทริป</span>
               </div>
             </div>
 
-            {/* Right (6-cols): 5-Photo Feel-Good Moments Static Gallery (Editorial & Clickable) */}
-            <div className="lg:col-span-6 space-y-2">
+            {/* Right (6-cols): 5-Photo Feel-Good Moments (Sleek, Compact & Clickable Strip) */}
+            <div className="lg:col-span-6 space-y-1.5">
               <div className="flex items-center justify-between px-0.5">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-slate-900" />
-                  <span className="text-xs sm:text-sm font-black text-slate-900 tracking-tight">
+                  <span className="text-xs font-bold text-slate-900 tracking-tight">
                     Snapshot of the Week
                   </span>
-                  <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200 shadow-2xs">
-                    Static Gallery
-                  </span>
                 </div>
-                <span className="text-[10.5px] font-medium text-slate-400">
-                  5 Feel-Good Moments • คลิกเพื่อดูรูปเต็ม
+                <span className="text-[10px] text-slate-400">
+                  5 ไฮไลต์สัปดาห์นี้ • คลิกเพื่อดูรูปเต็ม
                 </span>
               </div>
 
-              {/* 5-Photo Mosaic Gallery Grid (Proportionate, Spacious & High Clarity) */}
-              <div className="grid grid-cols-4 grid-rows-2 gap-2 h-[215px] sm:h-[240px] rounded-2xl overflow-hidden p-1.5 bg-slate-50/80 border border-slate-200/90 shadow-2xs">
-                {/* Image 1: Main Feature (2 cols x 2 rows) */}
-                <button
-                  type="button"
-                  onClick={() =>
-                    openLightbox(
-                      SNAPSHOT_FEEL_GOOD_GALLERY.map((s) => s.url),
-                      0,
-                      `${SNAPSHOT_FEEL_GOOD_GALLERY[0].title} — ${SNAPSHOT_FEEL_GOOD_GALLERY[0].caption}`
-                    )
-                  }
-                  className="col-span-2 row-span-2 relative rounded-xl overflow-hidden group cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-slate-900/20"
-                  title={`${SNAPSHOT_FEEL_GOOD_GALLERY[0].title} (คลิกดูภาพขยาย)`}
-                >
-                  <img
-                    src={SNAPSHOT_FEEL_GOOD_GALLERY[0].url}
-                    alt={SNAPSHOT_FEEL_GOOD_GALLERY[0].title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent pointer-events-none" />
-                  <div className="absolute top-2 left-2">
-                    <span className="text-[9px] font-extrabold text-white bg-black/60 px-2 py-0.5 rounded-md backdrop-blur-xs shadow-2xs">
-                      {SNAPSHOT_FEEL_GOOD_GALLERY[0].tag}
-                    </span>
-                  </div>
-                  <div className="absolute bottom-2 left-2.5 right-2 text-white">
-                    <p className="text-[11px] sm:text-xs font-bold truncate [text-shadow:_0_1px_3px_rgba(0,0,0,0.8)]">
-                      {SNAPSHOT_FEEL_GOOD_GALLERY[0].title}
-                    </p>
-                    <p className="text-[9.5px] text-white/85 font-medium line-clamp-1">
-                      {SNAPSHOT_FEEL_GOOD_GALLERY[0].subtitle}
-                    </p>
-                  </div>
-                </button>
-
-                {/* Images 2 to 5: 4 Companion Thumbnails (1 col x 1 row each) */}
-                {SNAPSHOT_FEEL_GOOD_GALLERY.slice(1).map((item, idx) => {
-                  const actualIndex = idx + 1;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() =>
-                        openLightbox(
-                          SNAPSHOT_FEEL_GOOD_GALLERY.map((s) => s.url),
-                          actualIndex,
-                          `${item.title} — ${item.caption}`
-                        )
-                      }
-                      className="relative rounded-xl overflow-hidden group cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-slate-900/20"
-                      title={`${item.title} (คลิกดูภาพขยาย)`}
-                    >
-                      <img
-                        src={item.url}
-                        alt={item.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent opacity-60 group-hover:opacity-85 transition-opacity" />
-                      <div className="absolute inset-0 p-1.5 flex flex-col justify-between">
-                        <span className="self-start text-[8px] font-bold text-white bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs shadow-2xs">
-                          {item.tag}
-                        </span>
-                        <span className="text-[9px] font-bold text-white truncate [text-shadow:_0_1px_2px_rgba(0,0,0,0.8)]">
-                          {item.title.split(',')[0]}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
+              {/* 5-Photo Mini Strip (Clean, Compact, and Fast to Browse) */}
+              <div className="grid grid-cols-5 gap-1.5 h-[80px] sm:h-[92px] rounded-xl overflow-hidden p-1 bg-slate-50/80 border border-slate-200/80 shadow-2xs">
+                {SNAPSHOT_FEEL_GOOD_GALLERY.map((item, idx) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() =>
+                      openLightbox(
+                        SNAPSHOT_FEEL_GOOD_GALLERY.map((s) => s.url),
+                        idx,
+                        `${item.title} — ${item.caption}`
+                      )
+                    }
+                    className="relative rounded-lg overflow-hidden group cursor-pointer text-left focus:outline-none focus:ring-1 focus:ring-slate-900/30"
+                    title={`${item.title} (คลิกดูภาพขยาย)`}
+                  >
+                    <img
+                      src={item.url}
+                      alt={item.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent pointer-events-none" />
+                    <div className="absolute bottom-1 left-1 right-1 text-white pointer-events-none">
+                      <p className="text-[9px] font-bold truncate [text-shadow:_0_1px_2px_rgba(0,0,0,0.8)]">
+                        {item.title.split(',')[0]}
+                      </p>
+                    </div>
+                  </button>
+                ))}
               </div>
             </div>
           </div>
