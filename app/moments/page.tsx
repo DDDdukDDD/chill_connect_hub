@@ -42,50 +42,72 @@ import {
   Bookmark,
   MessageCircle,
   Send,
+  Calendar,
+  Users,
+  UserPlus,
+  Search,
+  Navigation,
+  Check,
 } from 'lucide-react';
 import { MomentsStoriesRail } from '@/components/MomentsStoriesRail';
 
-// 5 Feel-Good Curated Moments for Snapshot of the Week Gallery (Hero Set across 5 Pillars)
-const SNAPSHOT_FEEL_GOOD_GALLERY = [
+// Popular Lifestyle Check-In Locations for Facebook-Style Check-In
+const POPULAR_CHECKIN_SPOTS = [
+  { name: 'สวนป่าเบญจกิติ', location: 'คลองเตย, กรุงเทพฯ', category: 'สวนสาธารณะ' },
+  { name: 'ซอยอารีย์', location: 'พญาไท, กรุงเทพฯ', category: 'ย่านไลฟ์สไตล์ & คาเฟ่' },
+  { name: 'ถนนทรงวาด - ตลาดน้อย', location: 'สัมพันธวงศ์, กรุงเทพฯ', category: 'ย่านเมืองเก่า' },
+  { name: 'สยามสแควร์', location: 'ปทุมวัน, กรุงเทพฯ', category: 'แหล่งแฮงเอาท์' },
+  { name: 'ศูนย์การประชุมแห่งชาติสิริกิติ์ (QSNCC)', location: 'คลองเตย, กรุงเทพฯ', category: 'งานเอ็กซ์โป & นิทรรศการ' },
+  { name: 'บางกระเจ้า (คุ้งบางกะเจ้า)', location: 'พระประแดง, สมุทรปราการ', category: 'ธรรมชาติ & ปั่นจักรยาน' },
+  { name: 'อ่างแก้ว มหาวิทยาลัยเชียงใหม่', location: 'เมือง, เชียงใหม่', category: 'วิวธรรมชาติ & พระอาทิตย์ตก' },
+  { name: 'หาดยะนุ้ย - แหลมพรหมเทพ', location: 'เมือง, ภูเก็ต', category: 'ชายหาด & ชมวิว' },
+  { name: 'เขาใหญ่ (อุทยานแห่งชาติเขาใหญ่)', location: 'ปากช่อง, นครราชสีมา', category: 'ภูเขา & แคมป์ปิ้ง' },
+  { name: 'เจริญกรุง - ครีเอทีฟ ดิสทริกต์', location: 'บางรัก, กรุงเทพฯ', category: 'ศิลปะ & แกลเลอรี' },
+  { name: 'เอ็มสเฟียร์ (EMSPHERE)', location: 'คลองเตย, กรุงเทพฯ', category: 'ห้าง & แฮงเอาท์' },
+  { name: 'สวนลุมพินี', location: 'ปทุมวัน, กรุงเทพฯ', category: 'สวนสาธารณะ & วิ่ง' },
+];
+
+// Curated active community members for "Suggested for you"
+const SUGGESTED_MEMBERS = [
   {
-    id: 'snap-1',
-    title: 'สวนสาธารณะริมทะเลสาบ, กรุงเทพฯ',
-    subtitle: 'วิ่งออกกำลังกายและคอมมูนิตี้เพื่อนใหม่ยามเย็น',
-    url: '/hero-bkk-community-golden.jpg',
-    caption: 'วิ่งออกกำลังกายและคอมมูนิตี้ริมทะเลสาบสวนสาธารณะกรุงเทพฯ ท่ามกลางแสงแดดสีทองอบอุ่น',
-    tag: 'Community Meetup',
+    id: 'user-praew',
+    name: 'คุณแพรว',
+    handle: '@praew_art',
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80',
+    vibe: 'สายอาร์ต นิทรรศการ & เอ็กซ์โป',
+    badge: 'Art Explorer',
   },
   {
-    id: 'snap-2',
-    title: 'อาร์ตสเปซ & นิทรรศการ, กรุงเทพฯ',
-    subtitle: 'เดินชมนิทรรศการศิลปะและแรงบันดาลใจสร้างสรรค์',
-    url: 'https://images.unsplash.com/photo-1518998053901-5348d3961a04?auto=format&fit=crop&w=1200&q=85',
-    caption: 'งานนิทรรศการ อาร์ตสเปซ และงานเอ็กซ์โปทั่วไทย',
-    tag: 'Art & Expo',
+    id: 'user-kee',
+    name: 'คุณกี้',
+    handle: '@kee_explorer',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
+    vibe: 'สวนป่า จุดฮีลใจ & เดินทาง 77 จว.',
+    badge: 'Nature Lover',
   },
   {
-    id: 'snap-3',
-    title: 'สวนเบญจกิติ, กรุงเทพฯ',
-    subtitle: 'พื้นที่สีเขียวฮีลใจและวิวเมืองริมน้ำ',
-    url: '/hero-bkk-park-sunny.jpg',
-    caption: 'สวนสาธารณะใจกลางกรุงเทพฯ ท้องฟ้าโปร่ง แสงแดดสดใส วิวเมืองและทะเลสาบฮีลใจ',
-    tag: 'Curated Spot',
+    id: 'user-mook',
+    name: 'คุณมุก',
+    handle: '@mook_slowbar',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+    vibe: 'Slow Bar & Specialty Coffee',
+    badge: 'Coffee Hopper',
   },
   {
-    id: 'snap-4',
-    title: 'อ่าวมาหยา เกาะพีพี, กระบี่',
-    subtitle: 'น้ำทะเลมรกตใสและเช็กลิสต์เควสต์ทะเล 77 จังหวัด',
-    url: '/hero-koh-phi-phi.jpg',
-    caption: 'ทะเลเกาะพีพี อ่าวมาหยา น้ำทะเลสีมรกตใส เรือหางยาวและหน้าผาหินปูน',
-    tag: 'Island Quest',
+    id: 'user-bas',
+    name: 'คุณบาส',
+    handle: '@bas_runner',
+    avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80',
+    vibe: 'City Run & Hyrox Bootcamp',
+    badge: 'Urban Runner',
   },
   {
-    id: 'snap-5',
-    title: 'ซอยอารีย์, กรุงเทพฯ',
-    subtitle: 'มุมกาแฟดริปยามเช้าและความสงบสบายใจ',
-    url: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=1200&q=80',
-    caption: 'กลิ่นหอมกาแฟดริปยามเช้าและมุมโต๊ะไม้พักผ่อนสบายๆ ในซอยอารีย์',
-    tag: 'Slow Bar',
+    id: 'user-nont',
+    name: 'คุณนนท์',
+    handle: '@nont_boardgame',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
+    vibe: 'Board Game & ตี้เพื่อนใหม่',
+    badge: 'Game Master',
   },
 ];
 
@@ -109,6 +131,7 @@ function MomentsContent() {
 
   // Instagram-Grade Micro-Interactions States
   const [savedPostIds, setSavedPostIds] = useState<string[]>(['1', '3']);
+  const [followedUserIds, setFollowedUserIds] = useState<string[]>(['user-praew']);
   const [doubleTapPostId, setDoubleTapPostId] = useState<string | null>(null);
   const [expandedCommentPostIds, setExpandedCommentPostIds] = useState<string[]>(['post-spot-1']);
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
@@ -154,16 +177,122 @@ function MomentsContent() {
   const [selectedSpot, setSelectedSpot] = useState<LifestyleSpotItem | null>(null);
   const [selectedChallenge, setSelectedChallenge] = useState<ChallengeQuest | null>(null);
   const [eventFavorites, setEventFavorites] = useState<string[]>(['1', '7']);
-  const [spotFavorites, setSpotFavorites] = useState<string[]>([]);
+  const [spotFavorites, setSpotFavorites] = useState<string[]>(['spot-bkk-1', 'spot-cnx-1']);
 
   // Create Moment Form State
-  const [createTargetType, setCreateTargetType] = useState<'spot' | 'community' | 'fair' | 'challenge'>('spot');
-  const [createTargetId, setCreateTargetId] = useState<string>(MOCK_SPOTS[0]?.id || '');
+  const [createTargetType, setCreateTargetType] = useState<
+    'general' | 'spot' | 'community' | 'fair' | 'challenge'
+  >('general');
+  const [createTargetId, setCreateTargetId] = useState<string>('');
+  const [customLocationInput, setCustomLocationInput] = useState<string>('');
   const [captionInput, setCaptionInput] = useState<string>('');
+
+  // Facebook-Style Check-In States for General tab
+  const [isCheckInPopoverOpen, setIsCheckInPopoverOpen] = useState<boolean>(false);
+  const [checkInSearchQuery, setCheckInSearchQuery] = useState<string>('');
+  const [isLocating, setIsLocating] = useState<boolean>(false);
+
+  // User's booked/favorited community & fair events from MyHub
+  const myBookedEvents = useMemo(() => {
+    return MOCK_EVENTS.filter(
+      (e) =>
+        e.id === '1' ||
+        e.id === '3' ||
+        e.id === '4' ||
+        e.id === 'live-agg-1' ||
+        eventFavorites.includes(e.id)
+    );
+  }, [eventFavorites]);
+
+  const myBookedCommunityEvents = useMemo(() => {
+    return myBookedEvents.filter((e) => e.eventType === 'community' || e.id.startsWith('comm-'));
+  }, [myBookedEvents]);
+
+  const myBookedFairEvents = useMemo(() => {
+    return myBookedEvents.filter((e) => e.eventType === 'public_venue' || !e.id.startsWith('comm-'));
+  }, [myBookedEvents]);
+
+  // User's saved spots in MyHub
+  const mySavedSpots = useMemo(() => {
+    const savedIds = new Set(['spot-bkk-1', 'spot-cnx-1', 'spot-bkk-2', ...spotFavorites]);
+    return MOCK_SPOTS.filter((s) => savedIds.has(s.id));
+  }, [spotFavorites]);
+
+  // User's active quests
+  const myQuests = useMemo(() => {
+    return MOCK_CHALLENGES.slice(0, 4);
+  }, []);
+
+  // Filtered Check-in Places for Facebook-style Check-in
+  const filteredCheckInPlaces = useMemo(() => {
+    const query = checkInSearchQuery.trim().toLowerCase();
+    const spotsAsCheckIn = MOCK_SPOTS.slice(0, 40).map((s) => ({
+      name: s.title,
+      location: `${s.district}, ${s.province}`,
+      category: s.category || 'พิกัดเที่ยว',
+    }));
+    const all = [...POPULAR_CHECKIN_SPOTS, ...spotsAsCheckIn];
+
+    const seen = new Set<string>();
+    const unique = all.filter((item) => {
+      const key = item.name.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    if (!query) return unique.slice(0, 8);
+    return unique
+      .filter(
+        (item) =>
+          item.name.toLowerCase().includes(query) ||
+          item.location.toLowerCase().includes(query) ||
+          (item.category && item.category.toLowerCase().includes(query))
+      )
+      .slice(0, 8);
+  }, [checkInSearchQuery]);
+
+  // Handle HTML5 Geolocation Check-In
+  const handleUseCurrentLocation = () => {
+    if (typeof window === 'undefined') return;
+    if (!navigator.geolocation) {
+      showToast('เบราว์เซอร์ไม่รองรับการระบุพิกัด GPS');
+      return;
+    }
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      () => {
+        setIsLocating(false);
+        setCustomLocationInput('ตำแหน่งปัจจุบันของฉัน (GPS)');
+        setIsCheckInPopoverOpen(false);
+        showToast('ระบุพิกัดตำแหน่งปัจจุบันเรียบร้อย 📍');
+      },
+      () => {
+        setIsLocating(false);
+        setCustomLocationInput('กรุงเทพมหานคร (พิกัดใกล้ฉัน)');
+        setIsCheckInPopoverOpen(false);
+        showToast('ระบุพิกัดพื้นที่ใกล้เคียงเรียบร้อย 📍');
+      },
+      { timeout: 5000 }
+    );
+  };
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  // Open Create Moment Modal with Clean Reset
+  const handleOpenCreateModal = () => {
+    setCreateTargetType('general');
+    setCreateTargetId('');
+    setCustomLocationInput('');
+    setCheckInSearchQuery('');
+    setIsCheckInPopoverOpen(false);
+    setIsLocating(false);
+    setCaptionInput('');
+    setUploadedPostImages([]);
+    setIsCreateModalOpen(true);
   };
 
   // Keyboard navigation for Lightbox
@@ -375,11 +504,38 @@ function MomentsContent() {
       }
     }
   };
+ 
+  // Toggle Connect Member (Suggested for you)
+  const handleToggleFollow = (member: (typeof SUGGESTED_MEMBERS)[number]) => {
+    if (!isLoggedIn) {
+      setMembershipActionTitle(`เพื่อ Connect กับ ${member.name} และรับการแจ้งเตือนโมเมนต์ใหม่`);
+      setIsRequireMembershipOpen(true);
+      return;
+    }
+
+    setFollowedUserIds((prev) => {
+      const isFollowing = prev.includes(member.id);
+      if (isFollowing) {
+        showToast(`ยกเลิก Connect กับ ${member.name} เรียบร้อย`);
+        return prev.filter((id) => id !== member.id);
+      } else {
+        showToast(`Connect กับ ${member.name} สำเร็จ! ✨`);
+        return [...prev, member.id];
+      }
+    });
+  };
 
   // Click on Target Tag Link
   const handleOpenTarget = (post: CommunityPost) => {
     const targetType = post.targetType || 'community';
     const targetId = post.targetId || post.eventId;
+
+    if (targetType === 'general') {
+      if (post.location && post.location !== 'ไลฟ์สไตล์ทั่วไป') {
+        setLocationFilter(post.location);
+      }
+      return;
+    }
 
     if (targetType === 'spot') {
       const matched =
@@ -445,18 +601,41 @@ function MomentsContent() {
     let targetTitle = '';
     let resolvedLocation = '';
 
-    if (createTargetType === 'spot') {
-      const spot = MOCK_SPOTS.find((s) => s.id === createTargetId) || MOCK_SPOTS[0];
-      targetTitle = spot.title;
-      resolvedLocation = spot.title;
+    if (createTargetType === 'general') {
+      resolvedLocation = customLocationInput.trim() || 'ไลฟ์สไตล์ทั่วไป';
+      targetTitle = resolvedLocation;
+    } else if (createTargetType === 'spot') {
+      if (createTargetId === 'custom' || !createTargetId) {
+        resolvedLocation = customLocationInput.trim() || 'พิกัดเที่ยว';
+        targetTitle = resolvedLocation;
+      } else {
+        const spot = MOCK_SPOTS.find((s) => s.id === createTargetId) || mySavedSpots[0];
+        targetTitle = spot ? spot.title : (customLocationInput.trim() || 'พิกัดเที่ยว');
+        resolvedLocation = targetTitle;
+      }
     } else if (createTargetType === 'challenge') {
-      const quest = MOCK_CHALLENGES.find((c) => c.id === createTargetId) || MOCK_CHALLENGES[0];
-      targetTitle = quest.title;
-      resolvedLocation = quest.title;
+      const quest = MOCK_CHALLENGES.find((c) => c.id === createTargetId) || myQuests[0] || MOCK_CHALLENGES[0];
+      targetTitle = quest ? quest.title : 'ภารกิจไลฟ์สไตล์';
+      resolvedLocation = targetTitle;
+    } else if (createTargetType === 'fair') {
+      if (createTargetId === 'custom' || !createTargetId) {
+        resolvedLocation = customLocationInput.trim() || 'งานมหกรรม & เอ็กซ์โป';
+        targetTitle = resolvedLocation;
+      } else {
+        const ev = MOCK_EVENTS.find((item) => item.id === createTargetId) || myBookedFairEvents[0];
+        targetTitle = ev ? ev.title : 'งานเอ็กซ์โป';
+        resolvedLocation = ev ? ev.location || ev.title : targetTitle;
+      }
     } else {
-      const ev = MOCK_EVENTS.find((item) => item.id === createTargetId) || MOCK_EVENTS[0];
-      targetTitle = ev.title;
-      resolvedLocation = ev.title;
+      // Community
+      if (createTargetId === 'custom' || !createTargetId) {
+        resolvedLocation = customLocationInput.trim() || 'กิจกรรมคอมมูนิตี้';
+        targetTitle = resolvedLocation;
+      } else {
+        const ev = MOCK_EVENTS.find((item) => item.id === createTargetId) || myBookedCommunityEvents[0];
+        targetTitle = ev ? ev.title : 'กิจกรรมคอมมูนิตี้';
+        resolvedLocation = ev ? ev.location || ev.title : targetTitle;
+      }
     }
 
     const finalImages =
@@ -471,11 +650,16 @@ function MomentsContent() {
       userName: 'คุณส้ม (Som_Chill)',
       userAvatar:
         'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
-      userBadge: createTargetType === 'challenge' ? '🏆 Quest Hunter' : '🌿 Life Explorer',
+      userBadge:
+        createTargetType === 'challenge'
+          ? 'Quest Hunter'
+          : createTargetType === 'general'
+          ? 'Daily Chiller'
+          : 'Life Explorer',
       targetType: createTargetType,
-      targetId: createTargetId,
+      targetId: createTargetId || `custom-${Date.now()}`,
       targetTitle,
-      eventId: createTargetId,
+      eventId: createTargetId || `custom-${Date.now()}`,
       eventTitle: targetTitle,
       category: 'chill',
       images: finalImages,
@@ -491,6 +675,7 @@ function MomentsContent() {
 
     setPosts([createdPost, ...posts]);
     setCaptionInput('');
+    setCustomLocationInput('');
     setUploadedPostImages([]);
     setIsCreateModalOpen(false);
     showToast('แชร์โมเมนต์ของคุณเรียบร้อยแล้ว! 🎉');
@@ -556,48 +741,20 @@ function MomentsContent() {
     return filteredPosts.slice(0, visibleCount);
   }, [filteredPosts, visibleCount]);
 
-  // Trending Spots for Sidebar (Dynamic from posts state)
-  const trendingSpots = useMemo(() => {
-    const locMap: Record<string, number> = {};
+  // Curated Recommended Events for Sidebar (Meetups & Fairs)
+  const recommendedEvents = useMemo(() => {
+    const valid = MOCK_EVENTS.filter((e) => e.status !== 'ended');
+    const community = valid.filter((e) => e.eventType === 'community' || e.id.startsWith('comm-'));
+    const fairs = valid.filter((e) => e.eventType === 'public_venue' || !e.id.startsWith('comm-'));
 
-    posts.forEach((p) => {
-      const loc = p.targetTitle || p.location;
-      if (loc) {
-        locMap[loc] = (locMap[loc] || 0) + 1;
-      }
-    });
+    const list: EventItem[] = [];
+    if (community[0]) list.push(community[0]);
+    if (fairs[0]) list.push(fairs[0]);
+    if (community[1]) list.push(community[1]);
+    if (fairs[1]) list.push(fairs[1]);
 
-    const calculated = Object.entries(locMap)
-      .map(([title, cnt]) => ({
-        title,
-        count: `${cnt} โมเมนต์`,
-        numericCount: cnt,
-      }))
-      .sort((a, b) => b.numericCount - a.numericCount);
-
-    if (calculated.length >= 5) {
-      return calculated.slice(0, 5);
-    }
-
-    // Default fallbacks to guarantee 5 spots
-    const defaults = [
-      { title: 'สวนป่าเบญจกิติ', count: '128 โมเมนต์', numericCount: 128 },
-      { title: 'ศูนย์ประชุมแห่งชาติสิริกิติ์ (QSNCC)', count: '94 โมเมนต์', numericCount: 94 },
-      { title: 'ตลาดน้อย - เจริญกรุง', count: '87 โมเมนต์', numericCount: 87 },
-      { title: 'HYROX Studio', count: '65 โมเมนต์', numericCount: 65 },
-      { title: 'อารีย์ สตูดิโอ คราฟต์', count: '52 โมเมนต์', numericCount: 52 },
-    ];
-
-    const existing = new Set(calculated.map((c) => c.title));
-    const merged = [...calculated];
-    for (const d of defaults) {
-      if (!existing.has(d.title)) {
-        merged.push(d);
-        if (merged.length >= 5) break;
-      }
-    }
-    return merged.slice(0, 5);
-  }, [posts]);
+    return list.length > 0 ? list : valid.slice(0, 4);
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#FCFBF9] text-[#1E293B] flex flex-col font-sans selection:bg-slate-800 selection:text-white">
@@ -622,81 +779,8 @@ function MomentsContent() {
       {/* Main Container */}
       <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] w-full mx-auto px-3.5 sm:px-6 lg:px-8 pt-2.5 pb-28 sm:pt-4 sm:pb-12 space-y-3 sm:space-y-4">
         
-        {/* Header Bar with Breadcrumb */}
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-          <Link href="/" className="hover:text-slate-900 transition-colors flex items-center gap-1">
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>หน้าแรก</span>
-          </Link>
-          <span>/</span>
-          <span className="text-slate-900 font-bold">โมเมนต์ & บรรยากาศจริงจากชุมชน (Community Stories)</span>
-        </div>
-
-        {/* 1. Moments Signature Hero Banner (Compact & Editorial Header) */}
-        <section className="relative rounded-2xl bg-white p-3.5 sm:p-4 shadow-2xs border border-slate-200/80 overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 lg:gap-5 items-center">
-            {/* Left (6-cols): Headline & Subtitle */}
-            <div className="lg:col-span-6 space-y-1.5">
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-snug">
-                โมเมนต์ & บรรยากาศจริงจากชุมชน
-              </h1>
-              <p className="text-xs sm:text-[13px] text-slate-500 leading-relaxed font-normal max-w-lg">
-                ภาพถ่ายจริงและบรรยากาศจากพิกัดเที่ยว กิจกรรมคอมมูนิตี้ งานมหกรรม และภารกิจชาเลนจ์ทั่วประเทศ
-              </p>
-              <div className="flex items-center gap-2 text-[11px] text-slate-400 font-medium pt-0.5">
-                <span className="font-bold text-slate-700">{posts.length} โมเมนต์ที่แบ่งปัน</span>
-                <span>•</span>
-                <span>42+ พิกัดเช็คอินทั่วไทย</span>
-              </div>
-            </div>
-
-            {/* Right (6-cols): 5-Photo Feel-Good Moments (Sleek, Compact & Clickable Strip) */}
-            <div className="lg:col-span-6 space-y-1.5">
-              <div className="flex items-center justify-between px-0.5">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-900" />
-                  <span className="text-xs font-bold text-slate-900 tracking-tight">
-                    Snapshot of the Week
-                  </span>
-                </div>
-                <span className="text-[10px] text-slate-400">
-                  5 ไฮไลต์สัปดาห์นี้ • คลิกเพื่อดูรูปเต็ม
-                </span>
-              </div>
-
-              {/* 5-Photo Mini Strip (Clean, Compact, and Fast to Browse) */}
-              <div className="grid grid-cols-5 gap-1.5 h-[80px] sm:h-[92px] rounded-xl overflow-hidden p-1 bg-slate-50/80 border border-slate-200/80 shadow-2xs">
-                {SNAPSHOT_FEEL_GOOD_GALLERY.map((item, idx) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() =>
-                      openLightbox(
-                        SNAPSHOT_FEEL_GOOD_GALLERY.map((s) => s.url),
-                        idx,
-                        `${item.title} — ${item.caption}`
-                      )
-                    }
-                    className="relative rounded-lg overflow-hidden group cursor-pointer text-left focus:outline-none focus:ring-1 focus:ring-slate-900/30"
-                    title={`${item.title} (คลิกดูภาพขยาย)`}
-                  >
-                    <img
-                      src={item.url}
-                      alt={item.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent pointer-events-none" />
-                    <div className="absolute bottom-1 left-1 right-1 text-white pointer-events-none">
-                      <p className="text-[9px] font-bold truncate [text-shadow:_0_1px_2px_rgba(0,0,0,0.8)]">
-                        {item.title.split(',')[0]}
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* Hidden SEO/A11y H1 */}
+        <h1 className="sr-only">โมเมนต์และบรรยากาศจริงจากชุมชน Chill & Connect Hub</h1>
 
         {/* 1.5 Moments Stories & Highlights Rail (Instagram-Style Stories & Pulse) */}
         <MomentsStoriesRail
@@ -705,7 +789,7 @@ function MomentsContent() {
               setMembershipActionTitle('เพื่อแชร์สตอรี่โมเมนต์ของคุณ');
               setIsRequireMembershipOpen(true);
             } else {
-              setIsCreateModalOpen(true);
+              handleOpenCreateModal();
             }
           }}
           isLoggedIn={isLoggedIn}
@@ -739,7 +823,7 @@ function MomentsContent() {
                       setMembershipActionTitle('เพื่อแชร์ภาพและแบ่งปันโมเมนต์กับชาวฮับ');
                       setIsRequireMembershipOpen(true);
                     } else {
-                      setIsCreateModalOpen(true);
+                      handleOpenCreateModal();
                     }
                   }}
                   className="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-500 text-xs sm:text-sm font-medium px-4 py-2.5 rounded-xl text-left transition-colors flex items-center justify-between cursor-pointer border border-slate-200"
@@ -899,12 +983,30 @@ function MomentsContent() {
                           className="w-10 h-10 rounded-full object-cover shrink-0 border border-slate-200"
                         />
                         <div className="min-w-0">
-                          <h3 className="font-bold text-sm text-slate-900 truncate">
-                            {post.userName}
-                          </h3>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h3 className="font-bold text-sm text-slate-900 truncate">
+                              {post.userName}
+                            </h3>
 
-                          {/* Sub-text: Destination Tag Link (Interactive POI Pill) */}
-                          {targetTitle && (
+                            {/* Facebook-Style Check-In Tag in Author Line */}
+                            {post.targetType === 'general' && post.location && post.location !== 'ไลฟ์สไตล์ทั่วไป' && (
+                              <span className="text-xs text-slate-500 font-normal flex items-center gap-1">
+                                <span>— อยู่ที่</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setLocationFilter(post.location)}
+                                  className="font-bold text-slate-800 hover:text-[#2563EB] hover:underline cursor-pointer inline-flex items-center gap-0.5"
+                                  title="คลิกเพื่อกรองโพสต์ในสถานที่นี้"
+                                >
+                                  <MapPin className="w-3 h-3 text-[#F26430] shrink-0" />
+                                  <span className="max-w-[150px] sm:max-w-[220px] truncate">{post.location}</span>
+                                </button>
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Sub-text: Destination Tag Link (Interactive POI Pill) for non-general posts */}
+                          {post.targetType !== 'general' && targetTitle && (
                             <div className="flex items-center gap-1 text-[11px] font-semibold mt-1">
                               <button
                                 type="button"
@@ -921,6 +1023,13 @@ function MomentsContent() {
                                   <ArrowRight className="w-2.5 h-2.5 group-hover/poi:translate-x-0.5 transition-transform" />
                                 </span>
                               </button>
+                            </div>
+                          )}
+                          {post.targetType === 'general' && (!post.location || post.location === 'ไลฟ์สไตล์ทั่วไป') && (
+                            <div className="flex items-center gap-1 text-[11px] font-semibold mt-0.5">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200/80 text-[10px] font-medium">
+                                <span>ไลฟ์สไตล์ทั่วไป</span>
+                              </span>
                             </div>
                           )}
                         </div>
@@ -1226,7 +1335,7 @@ function MomentsContent() {
                       setMembershipActionTitle('เพื่อแชร์ภาพและแบ่งปันโมเมนต์กับชาวฮับ');
                       setIsRequireMembershipOpen(true);
                     } else {
-                      setIsCreateModalOpen(true);
+                      handleOpenCreateModal();
                     }
                   }}
                   className="mt-1 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2 rounded-xl font-bold text-xs shadow-2xs transition-colors cursor-pointer"
@@ -1239,46 +1348,131 @@ function MomentsContent() {
 
           {/* Right Column (4-cols): Sticky Sidebar */}
           <aside className="lg:col-span-4 space-y-4 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto no-scrollbar pb-6 shrink-0">
-            {/* Widget: Trending Spots (พิกัด & จุดเช็คอินยอดฮิต) */}
-            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-3">
-              <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-                <Flame className="w-4 h-4 text-[#F26430]" />
-                <span>พิกัดเช็คอินยอดฮิต</span>
-              </h3>
+            {/* Widget 1: Suggested for you (แนะนำเพื่อนใหม่) */}
+            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-3.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-xl bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0">
+                    <Users className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-sm text-slate-900 leading-none">Suggested for you</h3>
+                    <p className="text-[11px] text-slate-400 font-medium mt-0.5">เพื่อนใหม่ที่มีไลฟ์สไตล์ตรงกัน</p>
+                  </div>
+                </div>
+              </div>
 
-              <div className="space-y-1.5">
-                {trendingSpots.map((spot, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => setLocationFilter(spot.title)}
-                    className="w-full text-left p-2.5 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200/80 group flex items-center justify-between cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="text-[10px] font-mono font-bold text-slate-400 group-hover:text-slate-700 transition-colors w-4">
-                        {String(idx + 1).padStart(2, '0')}
-                      </span>
-                      <p className="text-xs font-bold text-slate-800 group-hover:text-slate-900 truncate transition-colors">
-                        {spot.title}
-                      </p>
+              <div className="space-y-3 pt-1">
+                {SUGGESTED_MEMBERS.map((member) => {
+                  const isFollowing = followedUserIds.includes(member.id);
+                  return (
+                    <div key={member.id} className="flex items-center justify-between gap-2.5">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="relative shrink-0">
+                          <img
+                            src={member.avatar}
+                            alt={member.name}
+                            className="w-10 h-10 rounded-full object-cover border border-slate-100"
+                          />
+                          <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-slate-900 truncate">{member.name}</span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 truncate">{member.vibe}</p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleToggleFollow(member)}
+                        className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+                          isFollowing
+                            ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/80'
+                            : 'bg-slate-900 hover:bg-slate-800 text-white shadow-2xs'
+                        }`}
+                      >
+                        {isFollowing ? 'Connected' : 'Connect'}
+                      </button>
                     </div>
-                    <span className="text-[10px] font-bold text-slate-600 bg-slate-100 group-hover:bg-slate-200/80 px-2 py-0.5 rounded-full shrink-0 transition-colors">
-                      {spot.count}
-                    </span>
-                  </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
-            {/* Privacy & Safe Space Note */}
-            <div className="p-4 rounded-2xl bg-white/90 border border-slate-200/80 shadow-2xs space-y-1.5">
-              <div className="flex items-center gap-1.5 font-bold text-slate-900 text-xs">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                <span>พื้นที่ปลอดภัย & ความเป็นส่วนตัว</span>
+            {/* Widget 2: กิจกรรมแนะนำ (Recommended Activities) */}
+            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-3.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-xl bg-orange-50 text-[#F26430] flex items-center justify-center shrink-0">
+                    <Calendar className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-sm text-slate-900 leading-none">กิจกรรมแนะนำ</h3>
+                    <p className="text-[11px] text-slate-400 font-medium mt-0.5">เปิดรับสมัคร & น่าสนใจ</p>
+                  </div>
+                </div>
+                <Link
+                  href="/community"
+                  className="text-xs font-bold text-[#2563EB] hover:text-blue-700 flex items-center gap-1 transition-colors group"
+                >
+                  <span>ดูทั้งหมด</span>
+                  <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                </Link>
               </div>
-              <p className="text-[11px] text-slate-500 leading-relaxed font-normal">
-                ทุกโมเมนต์เน้นส่งต่อพลังบวกและบันทึกความสุข ระบบไม่เปิดเผยพิกัดที่อยู่ส่วนตัว เพื่อความปลอดภัยสูงสุดของสมาชิกทุกคน
-              </p>
+
+              <div className="space-y-2 pt-1">
+                {recommendedEvents.map((ev) => {
+                  const isCommunity = ev.eventType === 'community' || ev.id.startsWith('comm-');
+                  return (
+                    <div
+                      key={ev.id}
+                      onClick={() => setSelectedEvent(ev)}
+                      className="group flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-200/80 cursor-pointer"
+                    >
+                      <div className="relative w-13 h-13 rounded-xl overflow-hidden shrink-0 bg-slate-100">
+                        <img
+                          src={ev.image}
+                          alt={ev.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span
+                            className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md ${
+                              isCommunity
+                                ? 'bg-[#FFF4EE] text-[#D04A1B]'
+                                : 'bg-[#EEF4FA] text-[#1F3D5C]'
+                            }`}
+                          >
+                            {isCommunity ? 'กิจกรรมชุมชน' : 'งานเอ็กซ์โป'}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-medium truncate">
+                            {ev.date}
+                          </span>
+                        </div>
+                        <h4 className="text-xs font-bold text-slate-800 group-hover:text-[#2563EB] truncate transition-colors">
+                          {ev.title}
+                        </h4>
+                        <div className="flex items-center justify-between text-[11px] text-slate-500 mt-0.5">
+                          <span className="truncate max-w-[110px]">{ev.location}</span>
+                          {isCommunity ? (
+                            <span className="text-[10px] font-bold text-emerald-600 shrink-0">
+                              {ev.participantsCount}/{ev.maxParticipants} คน
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold text-slate-500 shrink-0">
+                              Walk-in
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </aside>
         </div>
@@ -1473,41 +1667,26 @@ function MomentsContent() {
               </button>
             </div>
 
-            {/* Creator Persona Bar (Facebook & Threads Composer Style) */}
-            <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50/80 border border-slate-200/80">
-              <img
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80"
-                alt="User avatar"
-                className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-2xs shrink-0"
-              />
-              <div className="min-w-0 flex-1">
-                <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
-                  คุณส้ม (Som_Chill)
-                </p>
-                <p className="text-[11px] text-slate-500 flex items-center gap-1.5 font-medium">
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span>โพสต์สาธารณะ • ชุมชนชาวฮับ 77 จังหวัด</span>
-                </p>
-              </div>
-            </div>
-
             <form onSubmit={handleCreatePost} className="space-y-4 sm:space-y-5">
               {/* Pillar Selector Tabs */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
-                  <span>เลือกหมวดหมู่ที่ต้องการแชร์:</span>
+                  <span>เลือกประเภทการแชร์:</span>
                   <span className="text-[11px] font-semibold text-slate-400">
-                    {createTargetType === 'spot'
-                      ? 'พิกัดเที่ยว & จุดฮีลใจ'
+                    {createTargetType === 'general'
+                      ? 'ไลฟ์สไตล์ทั่วไป'
+                      : createTargetType === 'spot'
+                      ? 'พิกัดเที่ยวที่คุณเซฟไว้'
                       : createTargetType === 'community'
-                      ? 'กิจกรรมคอมมูนิตี้'
+                      ? 'กิจกรรมที่คุณมีตั๋ว'
                       : createTargetType === 'fair'
-                      ? 'งานมหกรรม & เอ็กซ์โป'
+                      ? 'งานแฟร์ที่คุณไปมา'
                       : 'ภารกิจชาเลนจ์'}
                   </span>
                 </label>
-                <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80">
+                <div className="grid grid-cols-5 gap-1 p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80">
                   {[
+                    { id: 'general', label: 'ทั่วไป', activeClass: 'bg-white text-slate-900 shadow-2xs font-black border border-slate-200' },
                     { id: 'spot', label: 'พิกัดเที่ยว', activeClass: 'bg-white text-emerald-800 shadow-2xs font-black border border-emerald-200' },
                     { id: 'community', label: 'กิจกรรม', activeClass: 'bg-white text-amber-800 shadow-2xs font-black border border-amber-200' },
                     { id: 'fair', label: 'งานแฟร์', activeClass: 'bg-white text-blue-800 shadow-2xs font-black border border-blue-200' },
@@ -1519,19 +1698,19 @@ function MomentsContent() {
                       onClick={() => {
                         const newType = p.id as any;
                         setCreateTargetType(newType);
-                        if (newType === 'spot') setCreateTargetId(MOCK_SPOTS[0]?.id || '');
-                        else if (newType === 'challenge') setCreateTargetId(MOCK_CHALLENGES[0]?.id || '');
-                        else if (newType === 'fair') {
-                          const fair =
-                            MOCK_EVENTS.find((e) => e.eventType === 'public_venue') || MOCK_EVENTS[0];
-                          setCreateTargetId(fair.id);
-                        } else {
-                          const comm =
-                            MOCK_EVENTS.find((e) => e.eventType === 'community') || MOCK_EVENTS[0];
-                          setCreateTargetId(comm.id);
+                        if (newType === 'general') {
+                          setCreateTargetId('');
+                        } else if (newType === 'spot') {
+                          setCreateTargetId(mySavedSpots[0]?.id || 'custom');
+                        } else if (newType === 'community') {
+                          setCreateTargetId(myBookedCommunityEvents[0]?.id || 'custom');
+                        } else if (newType === 'fair') {
+                          setCreateTargetId(myBookedFairEvents[0]?.id || 'custom');
+                        } else if (newType === 'challenge') {
+                          setCreateTargetId(myQuests[0]?.id || '');
                         }
                       }}
-                      className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      className={`py-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer text-center ${
                         createTargetType === p.id
                           ? p.activeClass
                           : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
@@ -1543,53 +1722,321 @@ function MomentsContent() {
                 </div>
               </div>
 
-              {/* Dynamic Target Dropdown with MapPin */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-800">
-                  {createTargetType === 'spot'
-                    ? 'เลือกสถานที่ / พิกัดที่ไปมา:'
-                    : createTargetType === 'challenge'
-                    ? 'เลือกภารกิจชาเลนจ์ที่ทำสำเร็จ:'
-                    : createTargetType === 'fair'
-                    ? 'เลือกงานมหกรรม / เอ็กซ์โป:'
-                    : 'เลือกกิจกรรมคอมมูนิตี้:'}
-                </label>
-                <div className="relative flex items-center">
+              {/* Dynamic Target Input: Facebook-Style Check-In for General Tab */}
+              {createTargetType === 'general' ? (
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-[#F26430]" />
+                      <span>เช็คอินสถานที่ (Check-in):</span>
+                    </span>
+                    <span className="text-[11px] font-normal text-slate-400">
+                      {customLocationInput ? 'เช็คอินแล้ว' : 'ไม่บังคับ (ระบุหรือไม่ก็ได้)'}
+                    </span>
+                  </label>
+
+                  {customLocationInput ? (
+                    /* Checked-In Active Badge (Facebook Style) */
+                    <div className="flex items-center justify-between p-3 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-amber-900 transition-all animate-fade-in shadow-2xs">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-[#D04A1B] flex items-center justify-center shrink-0">
+                          <MapPin className="w-4 h-4 text-[#F26430]" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-[10.5px] text-amber-700/80 font-medium">กำลังเช็คอินที่:</div>
+                          <div className="text-xs sm:text-sm font-black text-slate-900 truncate">
+                            {customLocationInput}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsCheckInPopoverOpen(true);
+                            setCheckInSearchQuery('');
+                          }}
+                          className="px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:text-slate-900 bg-white/80 hover:bg-white rounded-lg border border-slate-200/80 transition-colors cursor-pointer"
+                        >
+                          เปลี่ยน
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCustomLocationInput('');
+                            setIsCheckInPopoverOpen(false);
+                          }}
+                          className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-rose-600 rounded-lg hover:bg-white/80 transition-colors cursor-pointer"
+                          title="ลบการเช็คอิน"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Check-In Trigger Button */
+                    <div className="relative">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsCheckInPopoverOpen(!isCheckInPopoverOpen)}
+                          className="flex-1 bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white border border-slate-200 rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 flex items-center justify-between transition-all cursor-pointer group text-left"
+                        >
+                          <div className="flex items-center gap-2 min-w-0 truncate">
+                            <MapPin className="w-4 h-4 text-[#F26430] group-hover:scale-110 transition-transform shrink-0" />
+                            <span className="text-slate-500 font-normal">
+                              คลิกเพื่อค้นหาสถานที่ หรือเช็คอินพิกัด...
+                            </span>
+                          </div>
+                          <span className="text-[11px] font-bold text-slate-700 bg-white border border-slate-200/80 px-2.5 py-0.5 rounded-lg shrink-0 shadow-2xs">
+                            เช็คอิน
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleUseCurrentLocation}
+                          disabled={isLocating}
+                          className="shrink-0 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 px-3 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                          title="ใช้ตำแหน่งปัจจุบันของคุณ"
+                        >
+                          <Navigation className={`w-3.5 h-3.5 text-blue-600 ${isLocating ? 'animate-spin' : ''}`} />
+                          <span className="hidden sm:inline">ตำแหน่งปัจจุบัน</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Facebook Check-In Search Dropdown / Popover */}
+                  {isCheckInPopoverOpen && (
+                    <div className="p-3 bg-white rounded-2xl border border-slate-200/90 shadow-lg space-y-2.5 animate-scale-up">
+                      <div className="relative">
+                        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          autoFocus
+                          value={checkInSearchQuery}
+                          onChange={(e) => setCheckInSearchQuery(e.target.value)}
+                          placeholder="ค้นหาสถานที่ คาเฟ่ ย่านท่องเที่ยว หรือพิมพ์ระบุเอง..."
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-8 py-2 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all placeholder:text-slate-400 placeholder:font-normal"
+                        />
+                        {checkInSearchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setCheckInSearchQuery('')}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* GPS Action Shortcut */}
+                      <button
+                        type="button"
+                        onClick={handleUseCurrentLocation}
+                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-blue-50/70 text-blue-700 text-xs font-bold transition-colors cursor-pointer text-left"
+                      >
+                        <div className="w-6 h-6 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                          <Navigation className={`w-3 h-3 text-blue-600 ${isLocating ? 'animate-spin' : ''}`} />
+                        </div>
+                        <span>ใช้ตำแหน่ง GPS ปัจจุบันของฉัน</span>
+                      </button>
+
+                      {/* Suggestions list */}
+                      <div className="max-h-48 overflow-y-auto no-scrollbar space-y-1 divide-y divide-slate-100">
+                        {/* Custom typed option if user typed something */}
+                        {checkInSearchQuery.trim() && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCustomLocationInput(checkInSearchQuery.trim());
+                              setIsCheckInPopoverOpen(false);
+                            }}
+                            className="w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 text-left transition-colors cursor-pointer group"
+                          >
+                            <div className="w-7 h-7 rounded-lg bg-orange-100 text-[#F26430] flex items-center justify-center shrink-0">
+                              <MapPin className="w-3.5 h-3.5" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="text-xs font-bold text-slate-900 truncate group-hover:text-[#2563EB]">
+                                เช็คอินที่ "{checkInSearchQuery.trim()}"
+                              </div>
+                              <div className="text-[10.5px] text-slate-400">ระบุพิกัดนี้</div>
+                            </div>
+                          </button>
+                        )}
+
+                        {/* Filtered suggestions */}
+                        {filteredCheckInPlaces.map((place, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              setCustomLocationInput(place.name + (place.location ? `, ${place.location}` : ''));
+                              setIsCheckInPopoverOpen(false);
+                            }}
+                            className="w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 text-left transition-colors cursor-pointer group"
+                          >
+                            <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 group-hover:bg-amber-100 group-hover:text-amber-800 flex items-center justify-center shrink-0 transition-colors">
+                              <MapPin className="w-3.5 h-3.5" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="text-xs font-bold text-slate-900 truncate group-hover:text-[#2563EB]">
+                                {place.name}
+                              </div>
+                              <div className="text-[10.5px] text-slate-400 truncate">
+                                {place.location} {place.category ? `• ${place.category}` : ''}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="pt-1 flex items-center justify-between border-t border-slate-100">
+                        <span className="text-[10.5px] text-slate-400">
+                          เลือกสถานที่หรือพิมพ์ชื่อเพื่อเช็คอิน
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setIsCheckInPopoverOpen(false)}
+                          className="text-[11px] font-bold text-slate-500 hover:text-slate-800 cursor-pointer"
+                        >
+                          ปิด
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : createTargetType === 'spot' ? (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                    <span>เลือกพิกัดเที่ยวที่คุณบันทึกไว้ใน MyHub:</span>
+                    <span className="text-[11px] font-semibold text-emerald-600">
+                      {mySavedSpots.length} พิกัดที่บันทึก
+                    </span>
+                  </label>
                   <select
                     value={createTargetId}
                     onChange={(e) => setCreateTargetId(e.target.value)}
                     className="w-full bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white border border-slate-200 rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all cursor-pointer truncate"
                   >
-                    {createTargetType === 'spot' &&
-                      MOCK_SPOTS.slice(0, 30).map((s) => (
+                    {mySavedSpots.length === 0 ? (
+                      <option value="" disabled>
+                        ยังไม่มีพิกัดที่บันทึกไว้ใน MyHub
+                      </option>
+                    ) : (
+                      mySavedSpots.map((s) => (
                         <option key={s.id} value={s.id}>
-                          {s.title} ({s.district}, {s.province})
+                          {s.title} ({s.district}, {s.province}) [บันทึกไว้]
                         </option>
-                      ))}
-
-                    {createTargetType === 'challenge' &&
-                      MOCK_CHALLENGES.map((c) => (
+                      ))
+                    )}
+                    <option value="custom">+ พิมพ์ระบุพิกัดอื่นด้วยตนเอง</option>
+                  </select>
+                  {createTargetId === 'custom' && (
+                    <input
+                      type="text"
+                      value={customLocationInput}
+                      onChange={(e) => setCustomLocationInput(e.target.value)}
+                      placeholder="พิมพ์ชื่อพิกัดหรือสถานที่ท่องเที่ยวที่ไปมา..."
+                      className="mt-2 w-full bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white border border-slate-200 rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all placeholder:text-slate-400 placeholder:font-normal"
+                    />
+                  )}
+                </div>
+              ) : createTargetType === 'community' ? (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                    <span>เลือกกิจกรรมที่คุณลงทะเบียน / มีตั๋ว:</span>
+                    <span className="text-[11px] font-semibold text-amber-600">
+                      {myBookedCommunityEvents.length} กิจกรรมที่มีตั๋ว
+                    </span>
+                  </label>
+                  <select
+                    value={createTargetId}
+                    onChange={(e) => setCreateTargetId(e.target.value)}
+                    className="w-full bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white border border-slate-200 rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all cursor-pointer truncate"
+                  >
+                    {myBookedCommunityEvents.length === 0 ? (
+                      <option value="" disabled>
+                        ยังไม่มีกิจกรรมที่คุณมีตั๋วใน MyHub
+                      </option>
+                    ) : (
+                      myBookedCommunityEvents.map((c) => (
                         <option key={c.id} value={c.id}>
-                          {c.title}
+                          {c.title} ({c.location}) [มีตั๋วแล้ว]
                         </option>
-                      ))}
-
-                    {createTargetType === 'fair' &&
-                      MOCK_EVENTS.filter((e) => e.eventType === 'public_venue').map((f) => (
+                      ))
+                    )}
+                    <option value="custom">+ พิมพ์ระบุกิจกรรมอื่นด้วยตนเอง</option>
+                  </select>
+                  {createTargetId === 'custom' && (
+                    <input
+                      type="text"
+                      value={customLocationInput}
+                      onChange={(e) => setCustomLocationInput(e.target.value)}
+                      placeholder="พิมพ์ชื่อกิจกรรมคอมมูนิตี้ที่ไปร่วมมา..."
+                      className="mt-2 w-full bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white border border-slate-200 rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all placeholder:text-slate-400 placeholder:font-normal"
+                    />
+                  )}
+                </div>
+              ) : createTargetType === 'fair' ? (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                    <span>เลือกงานมหกรรม / เอ็กซ์โปที่คุณไปมา:</span>
+                    <span className="text-[11px] font-semibold text-blue-600">
+                      {myBookedFairEvents.length} งานที่บันทึก
+                    </span>
+                  </label>
+                  <select
+                    value={createTargetId}
+                    onChange={(e) => setCreateTargetId(e.target.value)}
+                    className="w-full bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white border border-slate-200 rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all cursor-pointer truncate"
+                  >
+                    {myBookedFairEvents.length === 0 ? (
+                      <option value="" disabled>
+                        ยังไม่มีงานแฟร์ที่คุณบันทึกไว้ใน MyHub
+                      </option>
+                    ) : (
+                      myBookedFairEvents.map((f) => (
                         <option key={f.id} value={f.id}>
-                          {f.title} ({f.location})
+                          {f.title} ({f.location}) [งานที่ไปมา]
                         </option>
-                      ))}
-
-                    {createTargetType === 'community' &&
-                      MOCK_EVENTS.filter((e) => e.eventType === 'community').map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.title} ({c.location})
-                        </option>
-                      ))}
+                      ))
+                    )}
+                    <option value="custom">+ พิมพ์ชื่องานแฟร์อื่นด้วยตนเอง</option>
+                  </select>
+                  {createTargetId === 'custom' && (
+                    <input
+                      type="text"
+                      value={customLocationInput}
+                      onChange={(e) => setCustomLocationInput(e.target.value)}
+                      placeholder="พิมพ์ชื่องานมหกรรม เช่น Book Expo, QSNCC..."
+                      className="mt-2 w-full bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white border border-slate-200 rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all placeholder:text-slate-400 placeholder:font-normal"
+                    />
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                    <span>เลือกภารกิจชาเลนจ์ที่คุณทำสำเร็จ:</span>
+                    <span className="text-[11px] font-semibold text-purple-600">
+                      {myQuests.length} ภารกิจที่ทำ
+                    </span>
+                  </label>
+                  <select
+                    value={createTargetId}
+                    onChange={(e) => setCreateTargetId(e.target.value)}
+                    className="w-full bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white border border-slate-200 rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all cursor-pointer truncate"
+                  >
+                    {myQuests.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.title} [ภารกิจที่ทำ]
+                      </option>
+                    ))}
                   </select>
                 </div>
-              </div>
+              )}
 
               {/* Caption Text Area + Quick Mood Tags */}
               <div className="space-y-1.5">

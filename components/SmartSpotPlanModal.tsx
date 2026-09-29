@@ -95,10 +95,7 @@ export const SmartSpotPlanModal: React.FC<SmartSpotPlanModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
       <div
         className="relative w-full max-w-lg bg-gradient-to-b from-[#FAFBF9] via-white to-[#F4F8F5] rounded-3xl shadow-2xl border border-[#DFE8E1] overflow-hidden flex flex-col max-h-[82vh]"
         onClick={(e) => e.stopPropagation()}

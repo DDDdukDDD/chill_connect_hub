@@ -60,10 +60,7 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-sm animate-fade-in font-sans select-none"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-sm animate-fade-in font-sans select-none">
       <div
         className="bg-white rounded-[28px] sm:rounded-[32px] max-w-lg w-full p-5 sm:p-7 space-y-5 shadow-2xl relative animate-scale-up border border-slate-200 max-h-[92vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}

@@ -57,10 +57,7 @@ export const CancelTicketModal: React.FC<CancelTicketModalProps> = ({
       : 'ยกเลิกฟรีก่อน 24 ชม.';
 
   return (
-    <div
-      className="fixed inset-0 z-[100003] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in font-sans select-none"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-[100003] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in font-sans select-none">
       <div
         className="relative w-full max-w-[480px] max-h-[90vh] overflow-y-auto bg-white rounded-[28px] sm:rounded-[32px] shadow-2xl border border-slate-200/90 animate-scale-up p-6 sm:p-7 space-y-5 text-[#1E293B]"
         onClick={(e) => e.stopPropagation()}

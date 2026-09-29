@@ -10,7 +10,6 @@ import {
   Users, 
   Target, 
   ArrowRight,
-  ArrowLeft,
   Crown, 
   Compass, 
   ChevronRight, 
@@ -291,15 +290,6 @@ export default function ChallengesDiscoveryPage() {
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] mx-auto px-3.5 sm:px-6 lg:px-8 pt-2.5 pb-28 sm:pt-4 sm:pb-12 space-y-3 sm:space-y-4 w-full">
         
-        {/* Header Bar with Breadcrumb */}
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-          <Link href="/" className="hover:text-slate-900 transition-colors flex items-center gap-1">
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>หน้าแรก</span>
-          </Link>
-          <span>/</span>
-          <span className="text-slate-900 font-bold">ภารกิจไลฟ์สไตล์ & ชาเลนจ์</span>
-        </div>
 
         {/* 1. Unified Compact Hero with Integrated Spotlight Quest (Single Clean Banner) */}
         <section className="relative rounded-2xl bg-white p-4 sm:p-5 shadow-2xs border border-slate-200/80 overflow-hidden">

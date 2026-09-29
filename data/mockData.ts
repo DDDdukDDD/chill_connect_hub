@@ -168,7 +168,7 @@ export interface CommunityPost {
   timeAgo: string;
   isLiked?: boolean;
   comments: PostComment[];
-  targetType?: 'spot' | 'community' | 'fair' | 'challenge';
+  targetType?: 'spot' | 'community' | 'fair' | 'challenge' | 'general';
   targetId?: string;
   targetTitle?: string;
 }
@@ -4682,6 +4682,36 @@ export const MOCK_POSTS: CommunityPost[] = [
         text: 'ตี้วิ่งเช้าก็ผ่านเส้นนี้ บรรยากาศดีมากๆ ครับ',
         content: 'ตี้วิ่งเช้าก็ผ่านเส้นนี้ บรรยากาศดีมากๆ ครับ',
         timeAgo: '30 นาทีที่แล้ว',
+      },
+    ],
+  },
+  {
+    id: 'post-general-1',
+    userName: 'คุณมิ้นท์ (Mint_Vibes)',
+    userAvatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80',
+    userBadge: 'Daily Chiller',
+    targetType: 'general',
+    targetTitle: 'ซอยอารีย์',
+    location: 'ซอยอารีย์',
+    category: 'chill',
+    images: [
+      'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80',
+    ],
+    caption: 'วันหยุดสบายๆ แวะมาเดินเล่นจิบกาแฟแถวอารีย์ แดดอุ่นๆ ลมพัดเย็นดีมาก ใครอยู่แถวนี้แวะมาทักทายกันได้นะ #กาแฟดริปดีมาก #มู้ดดีฮีลใจ',
+    likesCount: 52,
+    commentsCount: 2,
+    sharesCount: 8,
+    timeAgo: '3 ชั่วโมงที่แล้ว',
+    isLiked: false,
+    comments: [
+      {
+        id: 'c-gen-1',
+        userName: 'แพรวา (Praewa)',
+        userAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80',
+        text: 'ร้านน่ารักมาก กาแฟรสชาติดีไหมคะ',
+        content: 'ร้านน่ารักมาก กาแฟรสชาติดีไหมคะ',
+        timeAgo: '1 ชั่วโมงที่แล้ว',
       },
     ],
   },

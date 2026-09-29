@@ -1286,10 +1286,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
       {/* POPUP 1: Double Confirm Join Modal (สำหรับกิจกรรมหลัก) */}
       {showConfirmJoinModal && (
-        <div 
-          className="fixed inset-0 z-60 flex items-center justify-center p-4 sm:p-6 bg-slate-950/70 backdrop-blur-md animate-fade-in"
-          onClick={() => setShowConfirmJoinModal(false)}
-        >
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 sm:p-6 bg-slate-950/70 backdrop-blur-md animate-fade-in">
           <div 
             className="bg-white rounded-[36px] p-6 sm:p-8 max-w-lg sm:max-w-xl w-full shadow-2xl border border-[#E8E2D8] text-left space-y-5 animate-scale-up relative overflow-hidden"
             onClick={(e) => e.stopPropagation()}

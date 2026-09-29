@@ -198,41 +198,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <span>ของรางวัล & สิทธิพิเศษ</span>
                       </Link>
 
-                      {/* Role Switcher (Test / Preview Environment) */}
-                      <div className="px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5 mt-1">
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="text-slate-500 font-bold flex items-center gap-1">
-                            <ShieldCheck className="w-3 h-3 text-[#4A7C59]" />
-                            <span>สลับบทบาท (Role)</span>
-                          </span>
-                          <span className="font-extrabold text-[#4A7C59] bg-[#EBF3ED] px-1.5 py-0.5 rounded text-[10px]">
-                            {userProfile.role}
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-1">
-                          {(['member', 'host', 'organizer', 'venue_owner', 'admin'] as const).map((r) => (
-                            <button
-                              key={r}
-                              type="button"
-                              onClick={() => handleSetRole(r)}
-                              className={`py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer text-center ${
-                                userProfile.role === r
-                                  ? 'bg-slate-900 text-white shadow-2xs'
-                                  : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-200'
-                              }`}
-                            >
-                              {r === 'member' ? 'Member' :
-                               r === 'host' ? 'Host' :
-                               r === 'organizer' ? 'Organizer' :
-                               r === 'venue_owner' ? 'Space' : 'Admin'}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
                     </div>
 
-                    {/* Divider & Logout Button */}
-                    <div className="pt-1.5 mt-1 border-t border-slate-100 px-2">
+                    {/* Divider, Logout Button & Dev Role Switcher */}
+                    <div className="pt-1.5 mt-1 border-t border-slate-100 px-2 space-y-2">
                       <button
                         type="button"
                         onClick={() => {
@@ -248,6 +217,38 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <LogOut className="w-4 h-4 text-slate-400" />
                         <span>ออกจากระบบ (Log out)</span>
                       </button>
+
+                      {/* Role Switcher (Test / Preview Tool - Placed Below Logout) */}
+                      <div className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5">
+                        <div className="flex items-center justify-between text-[10.5px]">
+                          <span className="text-slate-500 font-bold flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3 text-slate-500" />
+                            <span>สลับบทบาททดสอบ (Role)</span>
+                          </span>
+                          <span className="font-extrabold text-slate-700 bg-slate-200/60 px-1.5 py-0.5 rounded text-[9.5px]">
+                            {userProfile.role}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-1">
+                          {(['member', 'host', 'organizer', 'venue_owner', 'admin'] as const).map((r) => (
+                            <button
+                              key={r}
+                              type="button"
+                              onClick={() => handleSetRole(r)}
+                              className={`py-1 rounded-lg text-[9.5px] font-bold transition-all cursor-pointer text-center ${
+                                userProfile.role === r
+                                  ? 'bg-slate-900 text-white shadow-2xs'
+                                  : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-200'
+                              }`}
+                            >
+                              {r === 'member' ? 'Member' :
+                               r === 'host' ? 'Host' :
+                               r === 'organizer' ? 'Organizer' :
+                               r === 'venue_owner' ? 'Space' : 'Admin'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
 
                   </div>
@@ -361,38 +362,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
               )}
 
-              {/* Role Switcher in Mobile Drawer */}
-              <div className="p-3 bg-slate-100/80 rounded-2xl border border-slate-200/80 space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-slate-700" />
-                    <span className="font-bold text-slate-700">สลับบทบาท (Role)</span>
-                  </div>
-                  <span className="font-extrabold text-slate-800 bg-white px-2 py-0.5 rounded-lg border border-slate-200 text-[11px]">
-                    {userProfile.role}
-                  </span>
-                </div>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {(['member', 'host', 'organizer', 'venue_owner', 'admin'] as const).map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => handleSetRole(r)}
-                      className={`py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer text-center ${
-                        userProfile.role === r
-                          ? 'bg-slate-900 text-white shadow-2xs'
-                          : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-200'
-                      }`}
-                    >
-                      {r === 'member' ? 'Member' :
-                       r === 'host' ? 'Host' :
-                       r === 'organizer' ? 'Organizer' :
-                       r === 'venue_owner' ? 'Space' : 'Admin'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* Navigation Links */}
               <div className="space-y-1">
                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-2 mb-2">
@@ -424,28 +393,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                   );
                 })}
               </div>
-
-              {/* Create Event CTA Button in Drawer (Only for Logged-in Users) */}
-              {isLoggedIn && onOpenCreateEvent && (
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      onOpenCreateEvent();
-                    }}
-                    className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-2xl text-sm font-bold shadow-md flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"
-                  >
-                    <PlusCircle className="w-4 h-4" />
-                    <span>สร้างกิจกรรมใหม่</span>
-                  </button>
-                </div>
-              )}
             </div>
 
-            {/* Bottom Drawer Logout CTA */}
-            {isLoggedIn && (
-              <div className="pt-4 mt-2 border-t border-slate-200">
+            {/* Bottom Drawer Actions */}
+            <div className="pt-4 mt-2 border-t border-slate-200 space-y-3">
+              {isLoggedIn && (
                 <button
                   type="button"
                   onClick={() => {
@@ -462,8 +414,40 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <LogOut className="w-4 h-4 text-slate-500" />
                   <span>ออกจากระบบ (Logout)</span>
                 </button>
+              )}
+
+              {/* Role Switcher in Mobile Drawer (Dev / Test Tool - Placed Below Logout) */}
+              <div className="p-3 bg-slate-100/70 rounded-2xl border border-slate-200/80 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-slate-600" />
+                    <span className="font-bold text-slate-600 text-[11px]">สลับบทบาททดสอบ (Role)</span>
+                  </div>
+                  <span className="font-bold text-slate-700 bg-white px-2 py-0.5 rounded-lg border border-slate-200 text-[10px]">
+                    {userProfile.role}
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {(['member', 'host', 'organizer', 'venue_owner', 'admin'] as const).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => handleSetRole(r)}
+                      className={`py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer text-center ${
+                        userProfile.role === r
+                          ? 'bg-slate-900 text-white shadow-2xs'
+                          : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-200'
+                      }`}
+                    >
+                      {r === 'member' ? 'Member' :
+                       r === 'host' ? 'Host' :
+                       r === 'organizer' ? 'Organizer' :
+                       r === 'venue_owner' ? 'Space' : 'Admin'}
+                    </button>
+                  ))}
+                </div>
               </div>
-            )}
+            </div>
 
           </div>
         </div>
