@@ -1,11 +1,21 @@
 import fs from 'fs/promises';
 import path from 'path';
+import os from 'os';
 import { MOCK_EVENTS } from '@/data/mockData';
 import { AdminEventItem } from './eventsStore';
 import { EventDataSource } from './sourcesStore';
 
 const DB_DIR = path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DB_DIR, 'chill_database.json');
+export const TMP_DB_FILE = path.join(os.tmpdir(), 'chill_database.json');
+
+// Detect serverless environment (e.g. Vercel, AWS Lambda, Netlify) where /var/task is read-only
+export const IS_SERVERLESS = Boolean(
+  process.env.VERCEL ||
+  process.env.AWS_LAMBDA_FUNCTION_NAME ||
+  process.env.LAMBDA_TASK_ROOT ||
+  process.env.NETLIFY
+);
 
 export interface DatabaseSchema {
   version: string;
@@ -121,6 +131,7 @@ const INITIAL_DATABASE: DatabaseSchema = {
 
 // Ensure data directory and database file exist
 async function ensureDbExists(): Promise<void> {
+  if (IS_SERVERLESS) return;
   try {
     await fs.mkdir(DB_DIR, { recursive: true });
     try {
@@ -129,30 +140,67 @@ async function ensureDbExists(): Promise<void> {
       // Create initial DB file
       await fs.writeFile(DB_FILE, JSON.stringify(INITIAL_DATABASE, null, 2), 'utf-8');
     }
-  } catch (err) {
-    console.error('Error ensuring DB exists:', err);
+  } catch (err: unknown) {
+    const error = err as { code?: string; message?: string };
+    if (error?.code !== 'EROFS') {
+      console.warn('Notice: Could not initialize local DB directory:', error?.message);
+    }
   }
 }
 
-// Read entire database from disk
+// Read entire database from disk (supports Serverless /tmp and bundled read-only)
 export async function readDatabase(): Promise<DatabaseSchema> {
+  // 1. If in serverless and an updated copy was written to /tmp in this instance, read it
+  if (IS_SERVERLESS) {
+    try {
+      const tmpData = await fs.readFile(TMP_DB_FILE, 'utf-8');
+      return JSON.parse(tmpData) as DatabaseSchema;
+    } catch {
+      // tmp file does not exist yet; fall through to read bundled database
+    }
+  }
+
   await ensureDbExists();
   try {
     const data = await fs.readFile(DB_FILE, 'utf-8');
     return JSON.parse(data) as DatabaseSchema;
   } catch (err) {
-    console.error('Error reading database file, returning fallback:', err);
+    console.warn('Reading database file from disk failed, returning fallback seed:', err);
     return INITIAL_DATABASE;
   }
 }
 
-// Write entire database to disk
+// Write entire database to disk (safe against EROFS on Vercel/AWS Lambda)
 export async function writeDatabase(db: DatabaseSchema): Promise<void> {
-  await ensureDbExists();
   db.lastUpdated = new Date().toISOString();
+  const jsonContent = JSON.stringify(db, null, 2);
+
+  // In serverless environments, /var/task is read-only; use /tmp directly
+  if (IS_SERVERLESS) {
+    try {
+      await fs.writeFile(TMP_DB_FILE, jsonContent, 'utf-8');
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      console.warn('Notice: Failed writing to /tmp database:', error?.message);
+    }
+    return;
+  }
+
+  // Local development or stateful server:
+  await ensureDbExists();
   try {
-    await fs.writeFile(DB_FILE, JSON.stringify(db, null, 2), 'utf-8');
-  } catch (err) {
+    await fs.writeFile(DB_FILE, jsonContent, 'utf-8');
+  } catch (err: unknown) {
+    const error = err as { code?: string; message?: string };
+    if (error?.code === 'EROFS') {
+      // Fallback to /tmp if environment was not automatically detected as serverless
+      try {
+        await fs.writeFile(TMP_DB_FILE, jsonContent, 'utf-8');
+      } catch {
+        // Retained safely in memory
+      }
+      return;
+    }
     console.error('Error writing database to disk:', err);
   }
 }

@@ -55,29 +55,60 @@ export class LocalStorageAdapter implements IMediaStorage {
     }
 
     const folder = (options.folder || 'general').replace(/[^a-zA-Z0-9_-]/g, '');
-    const targetDir = path.join(this.baseUploadDir, folder);
-    await fs.mkdir(targetDir, { recursive: true });
-
-    // Determine safe extension
     const ext = this.getExtensionFromMime(mimeType, originalName);
     const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const safeFilename = options.filename
       ? `${options.filename.replace(/[^a-zA-Z0-9_-]/g, '')}-${uniqueSuffix}.${ext}`
       : `${uniqueSuffix}.${ext}`;
 
-    const filePath = path.join(targetDir, safeFilename);
-    await fs.writeFile(filePath, fileBuffer);
-
     const relativeKey = `${folder}/${safeFilename}`;
-    const publicUrl = `${this.publicPrefix}/${relativeKey}`;
 
-    return {
-      url: publicUrl,
-      key: relativeKey,
-      size: fileBuffer.length,
-      mimeType,
-      originalName,
-    };
+    // If running in Serverless (Vercel/AWS Lambda) where public/uploads is read-only,
+    // fallback gracefully to a compact Data URI (client compressor already reduced WebP to < 200KB)
+    const isServerless = Boolean(
+      process.env.VERCEL ||
+      process.env.AWS_LAMBDA_FUNCTION_NAME ||
+      process.env.LAMBDA_TASK_ROOT ||
+      process.env.NETLIFY
+    );
+
+    if (isServerless) {
+      return {
+        url: `data:${mimeType};base64,${fileBuffer.toString('base64')}`,
+        key: relativeKey,
+        size: fileBuffer.length,
+        mimeType,
+        originalName,
+      };
+    }
+
+    try {
+      const targetDir = path.join(this.baseUploadDir, folder);
+      await fs.mkdir(targetDir, { recursive: true });
+      const filePath = path.join(targetDir, safeFilename);
+      await fs.writeFile(filePath, fileBuffer);
+
+      const publicUrl = `${this.publicPrefix}/${relativeKey}`;
+      return {
+        url: publicUrl,
+        key: relativeKey,
+        size: fileBuffer.length,
+        mimeType,
+        originalName,
+      };
+    } catch (err: unknown) {
+      const error = err as { code?: string };
+      if (error?.code === 'EROFS') {
+        return {
+          url: `data:${mimeType};base64,${fileBuffer.toString('base64')}`,
+          key: relativeKey,
+          size: fileBuffer.length,
+          mimeType,
+          originalName,
+        };
+      }
+      throw err;
+    }
   }
 
   public async delete(key: string): Promise<boolean> {

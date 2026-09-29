@@ -1,5 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
+import os from 'os';
 import { EventItem, MOCK_EVENTS, ChallengeQuest, MOCK_CHALLENGES } from '@/data/mockData';
 import { LifestyleSpotItem, MOCK_SPOTS } from '@/data/spotsData';
 import { IDataRepository } from '../repository';
@@ -30,6 +31,13 @@ import {
 
 const DB_DIR = path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DB_DIR, 'chill_database.json');
+const TMP_DB_FILE = path.join(os.tmpdir(), 'chill_database.json');
+const IS_SERVERLESS = Boolean(
+  process.env.VERCEL ||
+  process.env.AWS_LAMBDA_FUNCTION_NAME ||
+  process.env.LAMBDA_TASK_ROOT ||
+  process.env.NETLIFY
+);
 
 /**
  * High-Performance JSON & Memory Adapter
@@ -53,14 +61,25 @@ export class JsonFileAdapter implements IDataRepository {
       if (this.isInitialized) return;
 
       try {
-        await fs.mkdir(DB_DIR, { recursive: true });
         let dbData: { events?: EventItem[]; [key: string]: unknown } | null = null;
 
-        try {
-          const raw = await fs.readFile(DB_FILE, 'utf-8');
-          dbData = JSON.parse(raw);
-        } catch {
-          // No file yet
+        // In serverless, check if /tmp has updated state first
+        if (IS_SERVERLESS) {
+          try {
+            const rawTmp = await fs.readFile(TMP_DB_FILE, 'utf-8');
+            dbData = JSON.parse(rawTmp);
+          } catch {
+            // Not in /tmp yet, read bundled file below
+          }
+        }
+
+        if (!dbData) {
+          try {
+            const raw = await fs.readFile(DB_FILE, 'utf-8');
+            dbData = JSON.parse(raw);
+          } catch {
+            // No file yet
+          }
         }
 
         if (dbData && Array.isArray(dbData.events) && dbData.events.length > 0) {
@@ -75,7 +94,7 @@ export class JsonFileAdapter implements IDataRepository {
 
         this.isInitialized = true;
       } catch (err) {
-        console.error('JsonFileAdapter init failed, falling back to mock memory:', err);
+        console.warn('JsonFileAdapter init notice, using memory store:', err);
         this.events = [...MOCK_EVENTS];
         this.spots = [...MOCK_SPOTS];
         this.quests = [...MOCK_CHALLENGES];
@@ -85,21 +104,40 @@ export class JsonFileAdapter implements IDataRepository {
   }
 
   private async persistEvents(): Promise<void> {
+    const targetFile = IS_SERVERLESS ? TMP_DB_FILE : DB_FILE;
     try {
       let existingData: Record<string, unknown> = {};
       try {
-        const raw = await fs.readFile(DB_FILE, 'utf-8');
+        const raw = await fs.readFile(targetFile, 'utf-8');
         existingData = JSON.parse(raw);
       } catch {
-        // file might not exist
+        try {
+          const rawPrimary = await fs.readFile(DB_FILE, 'utf-8');
+          existingData = JSON.parse(rawPrimary);
+        } catch {
+          // ignore
+        }
       }
 
       existingData.lastUpdated = new Date().toISOString();
       existingData.events = this.events;
 
-      await fs.writeFile(DB_FILE, JSON.stringify(existingData, null, 2), 'utf-8');
-    } catch (err) {
-      console.error('Failed to persist database file:', err);
+      await fs.writeFile(targetFile, JSON.stringify(existingData, null, 2), 'utf-8');
+    } catch (err: unknown) {
+      const error = err as { code?: string; message?: string };
+      if (error?.code === 'EROFS') {
+        try {
+          await fs.writeFile(
+            TMP_DB_FILE,
+            JSON.stringify({ events: this.events, lastUpdated: new Date().toISOString() }, null, 2),
+            'utf-8'
+          );
+        } catch {
+          // Kept safely in memory
+        }
+        return;
+      }
+      console.warn('Notice: Could not persist database file to disk:', error?.message);
     }
   }
 

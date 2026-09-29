@@ -114,7 +114,11 @@ export async function loadCache(): Promise<AdminEventItem[]> {
 
   if (hasUpdated || dbEvents.length === 0) {
     db.events = finalEvents;
-    await writeDatabase(db);
+    try {
+      await writeDatabase(db);
+    } catch {
+      // In serverless/read-only environments, MEMORY_CACHE is already set
+    }
   }
 
   return MEMORY_CACHE;
