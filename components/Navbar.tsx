@@ -79,7 +79,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'explore', label: 'ค้นพบ', href: '/', icon: Compass },
     { id: 'moments', label: 'โมเมนต์', href: '/moments', icon: Camera },
     { id: 'challenges', label: 'ชาเลนจ์', href: '/challenges', icon: Zap },
-    { id: 'myhub', label: 'มาฮับ', href: '/myhub', icon: Ticket },
+    { id: 'myhub', label: 'มายฮับ', href: '/myhub', icon: Ticket },
     { id: 'about', label: 'เกี่ยวกับเรา', href: '/about', icon: Info },
   ];
 
@@ -312,39 +312,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </button>
               </div>
 
-              {/* User Status Card */}
-              {isLoggedIn ? (
-                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-full bg-slate-100 border-2 border-slate-700 overflow-hidden shrink-0">
-                      <img 
-                        src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" 
-                        alt={userName}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1">
-                        <p className="text-sm font-extrabold text-[#1E293B] truncate" title={userName}>{userName}</p>
-                        <ShieldCheck className="w-3.5 h-3.5 text-slate-700 shrink-0" />
-                      </div>
-                      <p className="text-xs text-slate-500 font-medium">● สมาชิก Chill & Connect</p>
-                    </div>
-                  </div>
-
-                  {/* Profile Action Button inside User Card (Clean single full-width button) */}
-                  <div className="pt-2 border-t border-slate-100">
-                    <Link
-                      href="/profile?id=me"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="w-full text-center py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs"
-                    >
-                      <User className="w-3.5 h-3.5 text-slate-300" />
-                      <span>ดูโปรไฟล์ส่วนตัว</span>
-                    </Link>
-                  </div>
-                </div>
-              ) : (
+              {/* Login CTA only when guest */}
+              {!isLoggedIn && (
                 <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200 text-center space-y-2">
                   <p className="text-xs text-amber-800 font-medium">เข้าสู่ระบบเพื่อบันทึกและจัดการกิจกรรม</p>
                   <button
@@ -395,58 +364,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             </div>
 
-            {/* Bottom Drawer Actions */}
-            <div className="pt-4 mt-2 border-t border-slate-200 space-y-3">
-              {isLoggedIn && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    if (onOpenLogout) {
-                      onOpenLogout();
-                    } else if (setIsLoggedIn) {
-                      setIsLoggedIn(false);
-                      if (typeof window !== 'undefined') localStorage.setItem('isLoggedIn', 'false');
-                    }
-                  }}
-                  className="w-full bg-slate-50 hover:bg-rose-50 hover:text-rose-700 text-slate-700 border border-slate-200 hover:border-rose-200 py-3 rounded-2xl text-xs font-extrabold flex items-center justify-center gap-2 transition-colors shadow-2xs cursor-pointer active:scale-95"
-                >
-                  <LogOut className="w-4 h-4 text-slate-500" />
-                  <span>ออกจากระบบ (Logout)</span>
-                </button>
-              )}
-
-              {/* Role Switcher in Mobile Drawer (Dev / Test Tool - Placed Below Logout) */}
-              <div className="p-3 bg-slate-100/70 rounded-2xl border border-slate-200/80 space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-slate-600" />
-                    <span className="font-bold text-slate-600 text-[11px]">สลับบทบาททดสอบ (Role)</span>
-                  </div>
-                  <span className="font-bold text-slate-700 bg-white px-2 py-0.5 rounded-lg border border-slate-200 text-[10px]">
-                    {userProfile.role}
-                  </span>
-                </div>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {(['member', 'host', 'organizer', 'venue_owner', 'admin'] as const).map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => handleSetRole(r)}
-                      className={`py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer text-center ${
-                        userProfile.role === r
-                          ? 'bg-slate-900 text-white shadow-2xs'
-                          : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-200'
-                      }`}
-                    >
-                      {r === 'member' ? 'Member' :
-                       r === 'host' ? 'Host' :
-                       r === 'organizer' ? 'Organizer' :
-                       r === 'venue_owner' ? 'Space' : 'Admin'}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            {/* Minimal Brand Footer */}
+            <div className="pt-4 mt-6 border-t border-slate-100 text-center">
+              <p className="text-[11px] text-slate-400 font-medium">© 2026 Chill & Connect Hub</p>
             </div>
 
           </div>

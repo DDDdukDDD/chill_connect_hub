@@ -334,7 +334,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     : currentSlide.titleHighlight;
 
   const displaySubtitle = activeModeTab === 'all'
-    ? 'รวมจุดพักใจ คาเฟ่ ตี้เพื่อนใหม่ เวิร์กช็อป และงานอีเวนต์ทั่วไทย ครบจบในที่เดียว'
+    ? 'แหล่งรวมกิจกรรม และคอมมูนิตี้สำหรับคนชอบออกไปใช้ชีวิต'
     : activeModeTab === 'community'
     ? 'หาเพื่อนใหม่กลุ่มย่อย วิ่ง บอร์ดเกม เวิร์กช็อป ตี้กาแฟ ในคอมมูนิตี้ที่ปลอดภัยไร้แรงกดดัน'
     : activeModeTab === 'fairs'

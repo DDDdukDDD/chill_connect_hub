@@ -62,6 +62,9 @@ import {
   Share2,
   Ticket,
   Layers,
+  Camera,
+  X,
+  AlertCircle,
 } from 'lucide-react';
 
 const THAI_MONTH_NAMES = [
@@ -117,6 +120,12 @@ export default function MyHubPage() {
   const [hubViewMode, setHubViewMode] = useState<'list' | 'calendar'>('list');
   // Upcoming vs Past Filter
   const [eventViewMode, setEventViewMode] = useState<'all' | 'upcoming' | 'past'>('all');
+  // Past Events Sub-filter: all vs attended vs not_attended (missed or cancelled)
+  const [pastSubFilter, setPastSubFilter] = useState<'all' | 'attended' | 'not_attended'>('all');
+  // Past Events Tracking Lists: cancelled, missed, reviewed
+  const [cancelledEventIds, setCancelledEventIds] = useState<string[]>([]);
+  const [missedEventIds, setMissedEventIds] = useState<string[]>([]);
+  const [reviewedEventIds, setReviewedEventIds] = useState<string[]>([]);
 
   // Calendar Navigation State
   const [calYear, setCalYear] = useState<number>(2026);
@@ -156,8 +165,43 @@ export default function MyHubPage() {
       // 1. Sync Joined Events & Sub-activities
       const storedJoinedIds: string[] = JSON.parse(localStorage.getItem('joined_event_ids') || '[]');
       const storedFairSubIds: string[] = JSON.parse(localStorage.getItem('joined_fair_sub_ids') || '[]');
-      const allJoinedIds = Array.from(new Set([...storedJoinedIds, ...storedFairSubIds]));
+      let allJoinedIds = Array.from(new Set([...storedJoinedIds, ...storedFairSubIds]));
+      
+      // Default fallback mock events if empty so user has realistic rich demo data immediately
+      if (allJoinedIds.length === 0) {
+        allJoinedIds = [
+          'comm-16', // Upcoming
+          'comm-17', // Upcoming
+          'live-agg-1', // Upcoming
+          'comm-benjakitti-morning-run', // Ended (Attended)
+          'comm-1', // Ended (Attended)
+          'comm-ai-1', // Ended (Missed)
+          'live-agg-3', // Ended (Cancelled)
+        ];
+      }
       setJoinedEventIds(allJoinedIds);
+
+      // Sync Cancelled, Missed & Reviewed States
+      const storedCancelled: string[] = JSON.parse(localStorage.getItem('myhub_cancelled_event_ids') || '[]');
+      if (Array.isArray(storedCancelled) && storedCancelled.length > 0) {
+        setCancelledEventIds(storedCancelled);
+      } else {
+        setCancelledEventIds(['live-agg-3']); // Initial sample cancelled event
+      }
+
+      const storedMissed: string[] = JSON.parse(localStorage.getItem('myhub_missed_event_ids') || '[]');
+      if (Array.isArray(storedMissed) && storedMissed.length > 0) {
+        setMissedEventIds(storedMissed);
+      } else {
+        setMissedEventIds(['comm-ai-1']); // Initial sample missed event
+      }
+
+      const storedReviewed: string[] = JSON.parse(localStorage.getItem('myhub_reviewed_event_ids') || '[]');
+      if (Array.isArray(storedReviewed) && storedReviewed.length > 0) {
+        setReviewedEventIds(storedReviewed);
+      } else {
+        setReviewedEventIds(['comm-1']); // Initial sample already-reviewed event
+      }
 
       const storedSubs = JSON.parse(localStorage.getItem('joinedSubActivities') || '{}');
       setJoinedSubActivities(storedSubs);
@@ -334,24 +378,63 @@ export default function MyHubPage() {
     return allJoinedEvents.filter((e) => e.eventType === 'public_venue' && (e.eventType as any) !== 'challenge');
   }, [allJoinedEvents]);
 
-  // Filtered lists based on All vs Upcoming vs Past
+  // Attendance Status Resolver: 'upcoming' | 'attended' | 'cancelled' | 'missed'
+  const getEventAttendanceStatus = (ev: EventItem): 'upcoming' | 'attended' | 'cancelled' | 'missed' => {
+    if (cancelledEventIds.includes(ev.id)) return 'cancelled';
+    const ended = isEventEnded(ev);
+    if (!ended) return 'upcoming';
+    if (missedEventIds.includes(ev.id)) return 'missed';
+    return 'attended';
+  };
+
+  const pastCommunityEvents = useMemo(() => {
+    return communityEvents.filter((e) => getEventAttendanceStatus(e) !== 'upcoming');
+  }, [communityEvents, cancelledEventIds, missedEventIds]);
+
+  const upcomingCommunityEvents = useMemo(() => {
+    return communityEvents.filter((e) => getEventAttendanceStatus(e) === 'upcoming');
+  }, [communityEvents, cancelledEventIds]);
+
+  const pastExpoEvents = useMemo(() => {
+    return expoEvents.filter((e) => getEventAttendanceStatus(e) !== 'upcoming');
+  }, [expoEvents, cancelledEventIds, missedEventIds]);
+
+  const upcomingExpoEvents = useMemo(() => {
+    return expoEvents.filter((e) => getEventAttendanceStatus(e) === 'upcoming');
+  }, [expoEvents, cancelledEventIds]);
+
+  // Filtered lists based on All vs Upcoming vs Past + Sub-filter
   const filteredCommunityEvents = useMemo(() => {
     return communityEvents.filter((ev) => {
-      const isEnded = isEventEnded(ev);
-      if (eventViewMode === 'upcoming' && isEnded) return false;
-      if (eventViewMode === 'past' && !isEnded) return false;
+      const status = getEventAttendanceStatus(ev);
+      if (eventViewMode === 'upcoming') {
+        return status === 'upcoming';
+      }
+      if (eventViewMode === 'past') {
+        if (status === 'upcoming') return false;
+        if (pastSubFilter === 'attended' && status !== 'attended') return false;
+        if (pastSubFilter === 'not_attended' && status === 'attended') return false;
+        return true;
+      }
       return true;
     });
-  }, [communityEvents, eventViewMode]);
+  }, [communityEvents, eventViewMode, pastSubFilter, cancelledEventIds, missedEventIds]);
 
   const filteredExpoEvents = useMemo(() => {
     return expoEvents.filter((ev) => {
-      const isEnded = isEventEnded(ev);
-      if (eventViewMode === 'upcoming' && isEnded) return false;
-      if (eventViewMode === 'past' && !isEnded) return false;
+      const status = getEventAttendanceStatus(ev);
+      if (eventViewMode === 'upcoming') {
+        return status === 'upcoming';
+      }
+      if (eventViewMode === 'past') {
+        if (status === 'upcoming') return false;
+        if (pastSubFilter === 'attended' && status !== 'attended') return false;
+        if (pastSubFilter === 'not_attended' && status === 'attended') return false;
+        return true;
+      }
       return true;
     });
-  }, [expoEvents, eventViewMode]);
+  }, [expoEvents, eventViewMode, pastSubFilter, cancelledEventIds, missedEventIds]);
 
   // Saved Lifestyle Spots for Scrapbook
   const savedSpotsList: LifestyleSpotItem[] = useMemo(() => {
@@ -404,37 +487,71 @@ export default function MyHubPage() {
     return monthIdx === 8 && year === 2026 && dateStr.includes('ก.ย.');
   };
 
-  // Cancel Event / Remove from MyHub
+  // Cancel Event (Marks as cancelled in history rather than wiping out)
   const handleConfirmCancel = (ticketId: string, _reason: string) => {
     if (!cancelTargetEvent) return;
     const targetId = cancelTargetEvent.id;
 
-    // Update state
-    setJoinedEventIds((prev) => prev.filter((id) => id !== targetId));
-
-    if (typeof window !== 'undefined') {
-      try {
-        const currentJoinedIds: string[] = JSON.parse(localStorage.getItem('joined_event_ids') || '[]');
-        localStorage.setItem('joined_event_ids', JSON.stringify(currentJoinedIds.filter((id) => id !== targetId)));
-
-        const currentFairIds: string[] = JSON.parse(localStorage.getItem('joined_fair_sub_ids') || '[]');
-        localStorage.setItem('joined_fair_sub_ids', JSON.stringify(currentFairIds.filter((id) => id !== targetId)));
-
-        const storedSubs = JSON.parse(localStorage.getItem('joinedSubActivities') || '{}');
-        delete storedSubs[targetId];
-        localStorage.setItem('joinedSubActivities', JSON.stringify(storedSubs));
-        setJoinedSubActivities(storedSubs);
-      } catch (e) {
-        console.error(e);
+    // Track in cancelledEventIds
+    setCancelledEventIds((prev) => {
+      const updated = Array.from(new Set([...prev, targetId]));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('myhub_cancelled_event_ids', JSON.stringify(updated));
       }
-    }
+      return updated;
+    });
 
     showToast(
       cancelTargetEvent.eventType === 'public_venue'
-        ? `ลบ "${cancelTargetEvent.title}" ออกจากนัดหมายแล้ว`
+        ? `ยกเลิกการเข้าร่วม "${cancelTargetEvent.title}" เรียบร้อย (ย้ายไปยังประวัติที่ยกเลิก)`
         : `ยกเลิกตั๋ว ${ticketId} สำเร็จ (คืนที่นั่งให้เพื่อนสมาชิกแล้ว)`
     );
     setIsCancelModalOpen(false);
+  };
+
+  // Permanent Remove from history
+  const handlePermanentRemove = (eventId: string, title: string) => {
+    setJoinedEventIds((prev) => prev.filter((id) => id !== eventId));
+    setCancelledEventIds((prev) => prev.filter((id) => id !== eventId));
+    setMissedEventIds((prev) => prev.filter((id) => id !== eventId));
+    if (typeof window !== 'undefined') {
+      const currentJoined: string[] = JSON.parse(localStorage.getItem('joined_event_ids') || '[]');
+      localStorage.setItem('joined_event_ids', JSON.stringify(currentJoined.filter((id) => id !== eventId)));
+      const currentCancelled: string[] = JSON.parse(localStorage.getItem('myhub_cancelled_event_ids') || '[]');
+      localStorage.setItem('myhub_cancelled_event_ids', JSON.stringify(currentCancelled.filter((id) => id !== eventId)));
+    }
+    showToast(`ลบ "${title}" ออกจากประวัติเรียบร้อยแล้ว`);
+  };
+
+  // Mark as Missed (User did not attend)
+  const handleMarkMissed = (eventId: string, title: string) => {
+    setMissedEventIds((prev) => {
+      const updated = Array.from(new Set([...prev, eventId]));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('myhub_missed_event_ids', JSON.stringify(updated));
+      }
+      return updated;
+    });
+    showToast(`บันทึกสถานะว่าไม่ได้ไปร่วม "${title}" แล้ว`);
+  };
+
+  // Mark as Attended (User did attend)
+  const handleMarkAttended = (eventId: string, title: string) => {
+    setMissedEventIds((prev) => {
+      const updated = prev.filter((id) => id !== eventId);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('myhub_missed_event_ids', JSON.stringify(updated));
+      }
+      return updated;
+    });
+    setCancelledEventIds((prev) => {
+      const updated = prev.filter((id) => id !== eventId);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('myhub_cancelled_event_ids', JSON.stringify(updated));
+      }
+      return updated;
+    });
+    showToast(`บันทึกสถานะว่าได้เข้าร่วม "${title}" สำเร็จแล้ว`);
   };
 
   const handleCheckIn = (ticketId: string) => {
@@ -1139,11 +1256,22 @@ export default function MyHubPage() {
                     ? `CCH-FAIR-${(idx + 201).toString().padStart(4, '0')}`
                     : `CCH-2026-${(idx + 101).toString().padStart(4, '0')}`;
                   const fallbackImg = 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80';
+                  const status = getEventAttendanceStatus(ev);
+                  const isCancelled = status === 'cancelled';
+                  const isMissed = status === 'missed';
+                  const isAttended = status === 'attended';
+                  const isReviewed = reviewedEventIds.includes(ev.id);
 
                   return (
                     <div
                       key={ev.id}
-                      className={`group bg-white rounded-2xl border border-slate-200/80 hover:border-slate-300 shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between overflow-hidden relative transform hover:-translate-y-1`}
+                      className={`group bg-white rounded-2xl border transition-all duration-300 flex flex-col justify-between overflow-hidden relative transform hover:-translate-y-1 shadow-2xs hover:shadow-md ${
+                        isCancelled
+                          ? 'opacity-85 hover:opacity-100 border-rose-200/70 bg-rose-50/15'
+                          : isMissed
+                          ? 'border-amber-200/70 bg-amber-50/10'
+                          : 'border-slate-200/80 hover:border-slate-300'
+                      }`}
                     >
                       {/* Card Image Banner */}
                       <div
@@ -1153,15 +1281,39 @@ export default function MyHubPage() {
                         <img
                           src={ev.image || fallbackImg}
                           alt={ev.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${
+                            isCancelled ? 'grayscale-40' : ''
+                          }`}
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent opacity-60" />
 
-                        {/* Top-Left Badges: Pillar Tag + Host Badge */}
+                        {/* Top-Left Badges: Status or Pillar Tag + Host Badge */}
                         <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 flex-wrap">
-                          <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border shadow-xs backdrop-blur-md ${meta.badgeBg} ${meta.badgeText} ${meta.badgeBorder}`}>
-                            {meta.label}
-                          </span>
+                          {meta.pillar === 'quests' ? (
+                            <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border shadow-xs backdrop-blur-md ${meta.badgeBg} ${meta.badgeText} ${meta.badgeBorder}`}>
+                              {meta.label}
+                            </span>
+                          ) : isCancelled ? (
+                            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-rose-600/95 text-white shadow-xs backdrop-blur-md inline-flex items-center gap-1">
+                              <X className="w-3 h-3 stroke-[2.5]" />
+                              <span>ยกเลิก</span>
+                            </span>
+                          ) : isMissed ? (
+                            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-600/95 text-white shadow-xs backdrop-blur-md inline-flex items-center gap-1">
+                              <AlertCircle className="w-3 h-3" />
+                              <span>ไม่ได้ไปร่วม</span>
+                            </span>
+                          ) : isAttended ? (
+                            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-600/95 text-white shadow-xs backdrop-blur-md inline-flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>เข้าร่วมแล้ว</span>
+                            </span>
+                          ) : (
+                            <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border shadow-xs backdrop-blur-md ${meta.badgeBg} ${meta.badgeText} ${meta.badgeBorder}`}>
+                              {meta.label}
+                            </span>
+                          )}
+
                           {(ev.isHost || userCreatedEvents.some((u) => u.id === ev.id)) && (
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white shadow-xs inline-flex items-center gap-1">
                               <Crown className="w-3 h-3 text-white" />
@@ -1262,7 +1414,76 @@ export default function MyHubPage() {
                                 <span className="hidden sm:inline">ดูเควสต์</span>
                               </Link>
                             </>
+                          ) : isCancelled ? (
+                            /* Cancelled Event: NO share, NO review */
+                            <button
+                              type="button"
+                              onClick={() => setDetailModalEvent(ev)}
+                              className="w-full py-1.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-2xs cursor-pointer truncate"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
+                              <span>ดูข้อมูลงาน (ยกเลิกแล้ว)</span>
+                            </button>
+                          ) : isMissed ? (
+                            /* Missed Event: NO review, view moments */
+                            <Link
+                              href="/moments"
+                              className="w-full py-1.5 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-2xs cursor-pointer truncate active:scale-95"
+                              title="ดูภาพบรรยากาศจากเพื่อนคนอื่นในคอมมูนิตี้"
+                            >
+                              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                              <span>ดูบรรยากาศงาน</span>
+                            </Link>
+                          ) : isAttended ? (
+                            /* Attended Event: Share Moment + Review/Info */
+                            <>
+                              <Link
+                                href={`/moments?createForEvent=${encodeURIComponent(ev.id)}&eventTitle=${encodeURIComponent(ev.title)}&location=${encodeURIComponent(ev.location)}&image=${encodeURIComponent(ev.image || '')}`}
+                                className="flex-1 py-1.5 px-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
+                                title="แชร์ภาพและความรู้สึก"
+                              >
+                                <Camera className="w-3.5 h-3.5 shrink-0" />
+                                <span>แชร์โมเมนต์</span>
+                              </Link>
+
+                              {ev.eventType !== 'public_venue' ? (
+                                isReviewed ? (
+                                  <button
+                                    type="button"
+                                    disabled
+                                    className="py-1.5 px-2 rounded-xl bg-amber-50 text-amber-800 border border-amber-200/80 text-xs font-bold flex items-center justify-center gap-1 shrink-0 cursor-default"
+                                    title="คุณได้รีวิวและให้คะแนนแล้ว (+50 XP เรียบร้อย)"
+                                  >
+                                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                                    <span>รีวิวแล้ว</span>
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setTipTargetEvent(ev);
+                                      setIsTipModalOpen(true);
+                                    }}
+                                    className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-amber-50 text-slate-700 hover:text-amber-800 border border-slate-200 hover:border-amber-300 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 shadow-2xs"
+                                    title="ให้คะแนนและรีวิวโฮสต์ รับ +50 XP"
+                                  >
+                                    <Star className="w-3.5 h-3.5 text-amber-500" />
+                                    <span>รีวิวโฮสต์</span>
+                                  </button>
+                                )
+                              ) : (
+                                <Link
+                                  href={`/fairs/${encodeURIComponent(ev.id)}`}
+                                  className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-[#EEF4FA] text-[#2B527A] border border-slate-200 hover:border-[#B8D1E8] text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 shadow-2xs"
+                                  title="ดูข้อมูลงาน"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5 text-[#2B527A]" />
+                                  <span>ข้อมูลงาน</span>
+                                </Link>
+                              )}
+                            </>
                           ) : (
+                            /* Upcoming Event */
                             <>
                               <button
                                 type="button"
@@ -1349,13 +1570,10 @@ export default function MyHubPage() {
         {!isLoggedIn ? (
           <div className="max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-6 animate-fade-in">
             {/* Teaser Header */}
-            <div className="text-center space-y-3 max-w-xl mx-auto">
+            <div className="text-center space-y-2 max-w-xl mx-auto">
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
                 มายฮับส่วนตัว (My Hub: Personal Lifestyle Hub)
               </h2>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-lg mx-auto">
-                ศูนย์รวมกำหนดการนัดหมาย ตั๋วดิจิทัล สมุดบันทึกพิกัดเที่ยว 77 จังหวัด และกระเป๋าแต้มสะสมส่วนตัวในที่เดียว
-              </p>
             </div>
 
             {/* 4 Feature Showcase Infographic Cards (Clean White Editorial with Brand Organic Accents) */}
@@ -1585,35 +1803,27 @@ export default function MyHubPage() {
                           <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-slate-900 truncate">
                             มายฮับส่วนตัว (My Hub)
                           </h1>
-                          <span className="text-[11px] font-bold px-3 py-0.5 rounded-full bg-[#EBF3ED] text-[#2D5A3C] border border-[#A3CEB0] flex items-center gap-1.5 shadow-2xs">
-                            <ShieldCheck className="w-3.5 h-3.5 text-[#2D5A3C]" />
-                            <span>Verified Explorer</span>
-                          </span>
                           <Link
                             href="/challenges"
-                            className="text-[11px] font-bold px-3 py-0.5 rounded-full bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                            className="text-[11px] font-bold px-3 py-0.5 rounded-full bg-amber-50 text-amber-900 hover:bg-amber-100 border border-amber-200/90 flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
                             title="ดูระดับแรงก์และชาเลนจ์ทั้งหมด"
                           >
-                            <Zap className="w-3.5 h-3.5 text-purple-600 fill-purple-600" />
+                            <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                             <span>Level 4 Explorer</span>
                           </Link>
                         </div>
                       </div>
 
-                      <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-xl">
-                        ศูนย์รวมกำหนดการนัดหมาย ตั๋วดิจิทัล สมุดบันทึกพิกัดเที่ยว 77 จังหวัด และกระเป๋าแต้มสะสมส่วนตัวในที่เดียว
-                      </p>
-
                       {/* XP Progress Bar to Next Level */}
                       <div className="flex items-center gap-2.5 pt-0.5 max-w-md">
                         <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200/80">
                           <div
-                            className="bg-gradient-to-r from-purple-500 to-indigo-600 h-full rounded-full transition-all duration-500"
+                            className="bg-gradient-to-r from-amber-500 to-[#F26430] h-full rounded-full transition-all duration-500"
                             style={{ width: `${Math.min(100, (userXp / 1000) * 100)}%` }}
                           />
                         </div>
                         <span className="text-[10.5px] font-semibold text-slate-500 shrink-0">
-                          {userXp}/1,000 XP สู่ <strong className="text-purple-700">Lv.5 Trailblazer</strong>
+                          {userXp}/1,000 XP สู่ <strong className="text-amber-800 font-bold">Lv.5 Trailblazer</strong>
                         </span>
                       </div>
                     </div>
@@ -1636,12 +1846,20 @@ export default function MyHubPage() {
                         </div>
                         <Link
                           href="/rewards"
-                          className="px-3 py-1.5 text-center group/xp hover:bg-amber-50 rounded-xl transition-colors cursor-pointer"
-                          title="ไปที่ศูนย์ของรางวัลเพื่อแลกสิทธิพิเศษ"
+                          className="px-3 py-1.5 text-center group/xp hover:bg-amber-50/90 hover:border-amber-300/80 rounded-xl transition-all cursor-pointer flex flex-col items-center justify-center border border-transparent active:scale-95 shadow-2xs"
+                          title="คลิกเพื่อไปหน้าแลกของรางวัล & สิทธิพิเศษ"
                         >
-                          <span className="text-[10px] uppercase font-bold text-slate-400 group-hover/xp:text-amber-700 block">แต้มสะสม</span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] uppercase font-bold text-slate-400 group-hover/xp:text-amber-700 block">
+                              แต้มสะสม
+                            </span>
+                            <ArrowRight className="w-2.5 h-2.5 text-[#D04A1B] opacity-70 group-hover/xp:translate-x-0.5 transition-transform" />
+                          </div>
                           <span className="text-base sm:text-lg font-black text-slate-900 group-hover/xp:text-[#D04A1B]">
                             {userXp}
+                          </span>
+                          <span className="text-[9.5px] font-extrabold text-[#D04A1B] bg-amber-100/90 group-hover/xp:bg-amber-200 px-1.5 py-0.2 rounded-md mt-0.5 transition-colors">
+                            แลกรางวัล
                           </span>
                         </Link>
                       </div>
@@ -1652,8 +1870,21 @@ export default function MyHubPage() {
 
                 {/* Master View Switcher (Top-Level Dual Mode) */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-6 border-t border-slate-200/80 mt-6">
-                  {/* Dual Mode Switcher */}
+                  {/* Dual Mode Switcher - Calendar Tab First as Requested */}
                   <div className="inline-flex items-center p-1 bg-slate-100/90 rounded-2xl border border-slate-200/90 shadow-2xs">
+                    <button
+                      type="button"
+                      onClick={() => setHubMainMode('calendar')}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                        hubMainMode === 'calendar'
+                          ? 'bg-white text-slate-900 shadow-2xs font-extrabold'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      <CalendarDays className={`w-4 h-4 ${hubMainMode === 'calendar' ? 'text-slate-900' : 'text-slate-400'}`} />
+                      <span>ปฏิทินรวมกิจกรรม ({allJoinedEvents.length})</span>
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => {
@@ -1662,25 +1893,12 @@ export default function MyHubPage() {
                       }}
                       className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                         hubMainMode === 'categories'
-                          ? 'bg-white text-slate-900 shadow-2xs'
+                          ? 'bg-white text-slate-900 shadow-2xs font-extrabold'
                           : 'text-slate-600 hover:text-slate-900'
                       }`}
                     >
                       <Layers className={`w-4 h-4 ${hubMainMode === 'categories' ? 'text-slate-900' : 'text-slate-400'}`} />
                       <span>แยกตามหมวดหมู่</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setHubMainMode('calendar')}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                        hubMainMode === 'calendar'
-                          ? 'bg-[#EBF3ED] text-[#2D5A3C] shadow-2xs font-black'
-                          : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      <CalendarDays className={`w-4 h-4 ${hubMainMode === 'calendar' ? 'text-[#2D5A3C]' : 'text-slate-400'}`} />
-                      <span>ปฏิทินรวมกิจกรรม ({allJoinedEvents.length})</span>
                     </button>
                   </div>
 
@@ -1774,46 +1992,90 @@ export default function MyHubPage() {
               {activeSubTab === 'community' && (
                 <div className="space-y-6">
                   {/* Smart Control Bar */}
-                  <div className="flex items-center justify-between gap-3 flex-wrap bg-white p-2.5 rounded-2xl border border-slate-200/90 shadow-2xs">
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setEventViewMode('all')}
-                        className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                          eventViewMode === 'all'
-                            ? 'bg-slate-900 text-white shadow-2xs'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                        }`}
-                      >
-                        ทั้งหมด ({communityEvents.length})
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEventViewMode('upcoming')}
-                        className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                          eventViewMode === 'upcoming'
-                            ? 'bg-slate-900 text-white shadow-2xs'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                        }`}
-                      >
-                        กำลังจะมาถึง ({communityEvents.filter((e) => !isEventEnded(e)).length})
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEventViewMode('past')}
-                        className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                          eventViewMode === 'past'
-                            ? 'bg-slate-900 text-white shadow-2xs'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                        }`}
-                      >
-                        กิจกรรมที่ผ่านมา ({communityEvents.filter((e) => isEventEnded(e)).length})
-                      </button>
+                  <div className="space-y-2.5 bg-white p-2.5 rounded-2xl border border-slate-200/90 shadow-2xs">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => setEventViewMode('all')}
+                          className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                            eventViewMode === 'all'
+                              ? 'bg-slate-900 text-white shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                          }`}
+                        >
+                          ทั้งหมด ({communityEvents.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEventViewMode('upcoming')}
+                          className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                            eventViewMode === 'upcoming'
+                              ? 'bg-slate-900 text-white shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                          }`}
+                        >
+                          กำลังจะมาถึง ({upcomingCommunityEvents.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEventViewMode('past')}
+                          className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                            eventViewMode === 'past'
+                              ? 'bg-slate-900 text-white shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                          }`}
+                        >
+                          กิจกรรมที่ผ่านมา ({pastCommunityEvents.length})
+                        </button>
+                      </div>
+
+                      <div className="text-xs text-slate-500 font-medium">
+                        <span>แสดง {filteredCommunityEvents.length} ตี้</span>
+                      </div>
                     </div>
 
-                    <div className="text-xs text-slate-500 font-medium">
-                      <span>แสดง {filteredCommunityEvents.length} ตี้</span>
-                    </div>
+                    {/* Sub-filters for Past Events: Attended vs Not Attended / Cancelled */}
+                    {eventViewMode === 'past' && (
+                      <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-slate-100 animate-fade-in">
+                        <span className="text-[11px] text-slate-400 font-bold mr-1">แยกตามสถานะจริง:</span>
+                        <button
+                          type="button"
+                          onClick={() => setPastSubFilter('all')}
+                          className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                            pastSubFilter === 'all'
+                              ? 'bg-slate-800 text-white shadow-2xs'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          ทั้งหมดที่ผ่านมา ({pastCommunityEvents.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPastSubFilter('attended')}
+                          className={`px-3 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                            pastSubFilter === 'attended'
+                              ? 'bg-emerald-700 text-white shadow-2xs'
+                              : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200/60'
+                          }`}
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>เข้าร่วมสำเร็จแล้ว ({pastCommunityEvents.filter((e) => getEventAttendanceStatus(e) === 'attended').length})</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPastSubFilter('not_attended')}
+                          className={`px-3 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                            pastSubFilter === 'not_attended'
+                              ? 'bg-slate-700 text-white shadow-2xs'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200/60'
+                          }`}
+                        >
+                          <X className="w-3.5 h-3.5 text-rose-500" />
+                          <span>ไม่ได้ไป / ยกเลิก ({pastCommunityEvents.filter((e) => getEventAttendanceStatus(e) !== 'attended').length})</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {filteredCommunityEvents.length === 0 ? (
@@ -1824,7 +2086,13 @@ export default function MyHubPage() {
                       </div>
                       <div className="space-y-1.5">
                         <h4 className="text-base font-black text-slate-900">
-                          {eventViewMode === 'upcoming' ? 'ยังไม่มีตี้กิจกรรมที่คุณเข้าร่วม' : 'ไม่มีประวัติกิจกรรมที่ผ่านมา'}
+                          {eventViewMode === 'upcoming'
+                            ? 'ยังไม่มีตี้กิจกรรมที่คุณเข้าร่วม'
+                            : pastSubFilter === 'attended'
+                            ? 'ยังไม่มีกิจกรรมที่เข้าร่วมสำเร็จ'
+                            : pastSubFilter === 'not_attended'
+                            ? 'ไม่มีรายการที่ยกเลิกหรือไม่ไปเข้าร่วม'
+                            : 'ไม่มีประวัติกิจกรรมที่ผ่านมา'}
                         </h4>
                         <p className="text-xs text-slate-500 leading-relaxed">
                           หาเพื่อนใหม่ วิ่ง บอร์ดเกม เวิร์กช็อป ตี้กาแฟ ในคอมมูนิตี้ที่ปลอดภัยไร้แรงกดดัน
@@ -1845,11 +2113,22 @@ export default function MyHubPage() {
                         const ticketId = `CCH-2026-${(idx + 101).toString().padStart(4, '0')}`;
                         const isMenuOpen = activeMenuId === event.id;
                         const moodTheme = getCommunityMoodTheme(event.category);
+                        const status = getEventAttendanceStatus(event);
+                        const isCancelled = status === 'cancelled';
+                        const isMissed = status === 'missed';
+                        const isAttended = status === 'attended';
+                        const isReviewed = reviewedEventIds.includes(event.id);
 
                         return (
                           <div
                             key={event.id}
-                            className={`group bg-white rounded-2xl border border-slate-200/80 hover:border-slate-300 shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between overflow-hidden relative transform hover:-translate-y-1`}
+                            className={`group bg-white rounded-2xl border transition-all duration-300 flex flex-col justify-between overflow-hidden relative transform hover:-translate-y-1 shadow-2xs hover:shadow-md ${
+                              isCancelled
+                                ? 'opacity-85 hover:opacity-100 border-rose-200/70 bg-rose-50/15'
+                                : isMissed
+                                ? 'border-amber-200/70 bg-amber-50/10'
+                                : 'border-slate-200/80 hover:border-slate-300'
+                            }`}
                           >
                             {/* Card Image */}
                             <div
@@ -1859,19 +2138,39 @@ export default function MyHubPage() {
                               <img
                                 src={event.image}
                                 alt={event.title}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${
+                                  isCancelled ? 'grayscale-40' : ''
+                                }`}
                               />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60" />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent opacity-60" />
 
-                              {/* Host status badge if user is host */}
-                              {(event.isHost || userCreatedEvents.some((u) => u.id === event.id)) && (
-                                <div className="absolute top-2.5 left-2.5 z-10">
+                              {/* Status Badges */}
+                              <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 flex-wrap">
+                                {isCancelled ? (
+                                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-rose-600/95 text-white shadow-xs backdrop-blur-md inline-flex items-center gap-1">
+                                    <X className="w-3 h-3 stroke-[2.5]" />
+                                    <span>ยกเลิกการเข้าร่วม</span>
+                                  </span>
+                                ) : isMissed ? (
+                                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-600/95 text-white shadow-xs backdrop-blur-md inline-flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3" />
+                                    <span>ไม่ได้ไปเข้าร่วม</span>
+                                  </span>
+                                ) : isAttended ? (
+                                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-600/95 text-white shadow-xs backdrop-blur-md inline-flex items-center gap-1">
+                                    <CheckCircle2 className="w-3 h-3" />
+                                    <span>เข้าร่วมสำเร็จแล้ว</span>
+                                  </span>
+                                ) : null}
+
+                                {/* Host status badge if user is host */}
+                                {(event.isHost || userCreatedEvents.some((u) => u.id === event.id)) && (
                                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white shadow-xs inline-flex items-center gap-1">
                                     <Crown className="w-3 h-3 text-white" />
                                     <span>โฮสต์</span>
                                   </span>
-                                </div>
-                              )}
+                                )}
+                              </div>
                             </div>
 
                             {/* Card Body */}
@@ -1889,17 +2188,17 @@ export default function MyHubPage() {
                                       {event.hostName}
                                     </span>
                                   </div>
-                                    {event.price && (
-                                      <span
-                                        className={`text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
-                                          event.price.includes('ฟรี')
-                                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/60'
-                                            : 'bg-slate-100 text-slate-700 border border-slate-200/60'
-                                        }`}
-                                      >
-                                        {event.price.includes('ฟรี') ? 'ฟรี' : event.price.replace(/\s*\([^)]*\)/g, '').trim()}
-                                      </span>
-                                    )}
+                                  {event.price && (
+                                    <span
+                                      className={`text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
+                                        event.price.includes('ฟรี')
+                                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/60'
+                                          : 'bg-slate-100 text-slate-700 border border-slate-200/60'
+                                      }`}
+                                    >
+                                      {event.price.includes('ฟรี') ? 'ฟรี' : event.price.replace(/\s*\([^)]*\)/g, '').trim()}
+                                    </span>
+                                  )}
                                 </div>
 
                                 {/* Title */}
@@ -1926,35 +2225,115 @@ export default function MyHubPage() {
                                 </div>
                               </div>
 
-                              {/* Action Buttons Area */}
+                              {/* Action Buttons Area: Dynamically changes based on attendance */}
                               <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5 mt-auto">
-                                <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setSelectedTicketEvent(event);
-                                      setSelectedTicketId(ticketId);
-                                      setIsETicketModalOpen(true);
-                                    }}
-                                    className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
-                                  >
-                                    <QrCode className="w-3.5 h-3.5 shrink-0" />
-                                    <span>ดูบัตร</span>
-                                  </button>
+                                {isCancelled ? (
+                                  /* Cancelled State: NO review, NO share moment */
+                                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => setDetailModalEvent(event)}
+                                      className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-2xs cursor-pointer truncate"
+                                    >
+                                      <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
+                                      <span>ดูข้อมูลงาน</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleMarkAttended(event.id, event.title)}
+                                      className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 text-xs font-semibold transition-all shrink-0 cursor-pointer"
+                                      title="เปลี่ยนสถานะเป็นไปร่วมจริง"
+                                    >
+                                      <span>ไปร่วมจริง</span>
+                                    </button>
+                                  </div>
+                                ) : isMissed ? (
+                                  /* Missed State: NO review, can view others' moments */
+                                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                    <Link
+                                      href="/moments"
+                                      className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-2xs cursor-pointer truncate active:scale-95"
+                                      title="ดูภาพบรรยากาศจากเพื่อนคนอื่นในคอมมูนิตี้"
+                                    >
+                                      <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                                      <span>ดูบรรยากาศ</span>
+                                    </Link>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleMarkAttended(event.id, event.title)}
+                                      className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-emerald-50 text-emerald-700 border border-slate-200 hover:border-emerald-300 text-xs font-semibold transition-all shrink-0 cursor-pointer"
+                                      title="คลิกหากคุณได้ไปร่วมจริง เพื่อเปิดให้รีวิวและแชร์โมเมนต์"
+                                    >
+                                      <span>ฉันไปร่วมจริง</span>
+                                    </button>
+                                  </div>
+                                ) : isAttended ? (
+                                  /* Attended State: Share Moments + Review & Rate Host (+50 XP) */
+                                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                    <Link
+                                      href={`/moments?createForEvent=${encodeURIComponent(event.id)}&eventTitle=${encodeURIComponent(event.title)}&location=${encodeURIComponent(event.location)}&image=${encodeURIComponent(event.image)}`}
+                                      className="flex-1 py-1.5 px-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
+                                      title="แชร์รูปภาพและโมเมนต์ความประทับใจลงคอมมูนิตี้"
+                                    >
+                                      <Camera className="w-3.5 h-3.5 shrink-0" />
+                                      <span>แชร์โมเมนต์</span>
+                                    </Link>
 
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setChatTargetEvent(event);
-                                      setIsChatModalOpen(true);
-                                    }}
-                                    className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-[#EBF3ED] text-slate-700 hover:text-[#2D5A3C] border border-slate-200 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 shadow-2xs"
-                                    title="เปิดห้องแชตกลุ่ม"
-                                  >
-                                    <MessageCircle className="w-3.5 h-3.5 text-slate-500" />
-                                    <span>แชต</span>
-                                  </button>
-                                </div>
+                                    {isReviewed ? (
+                                      <button
+                                        type="button"
+                                        disabled
+                                        className="py-1.5 px-2 rounded-xl bg-amber-50 text-amber-800 border border-amber-200/80 text-xs font-bold flex items-center justify-center gap-1 shrink-0 cursor-default"
+                                        title="คุณได้รีวิวและให้คะแนนแล้ว (+50 XP เรียบร้อย)"
+                                      >
+                                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                                        <span>รีวิวแล้ว</span>
+                                      </button>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setTipTargetEvent(event);
+                                          setIsTipModalOpen(true);
+                                        }}
+                                        className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-amber-50 text-slate-700 hover:text-amber-800 border border-slate-200 hover:border-amber-300 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 shadow-2xs"
+                                        title="ให้คะแนนและรีวิวโฮสต์ รับ +50 XP"
+                                      >
+                                        <Star className="w-3.5 h-3.5 text-amber-500" />
+                                        <span>รีวิวโฮสต์</span>
+                                      </button>
+                                    )}
+                                  </div>
+                                ) : (
+                                  /* Upcoming State: Normal E-Ticket + Chat */
+                                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedTicketEvent(event);
+                                        setSelectedTicketId(ticketId);
+                                        setIsETicketModalOpen(true);
+                                      }}
+                                      className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
+                                    >
+                                      <QrCode className="w-3.5 h-3.5 shrink-0" />
+                                      <span>ดูบัตร</span>
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setChatTargetEvent(event);
+                                        setIsChatModalOpen(true);
+                                      }}
+                                      className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-[#EBF3ED] text-slate-700 hover:text-[#2D5A3C] border border-slate-200 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 shadow-2xs"
+                                      title="เปิดห้องแชตกลุ่ม"
+                                    >
+                                      <MessageCircle className="w-3.5 h-3.5 text-slate-500" />
+                                      <span>แชต</span>
+                                    </button>
+                                  </div>
+                                )}
 
                                 {/* Context Menu Button */}
                                 <div className="relative shrink-0">
@@ -1973,7 +2352,7 @@ export default function MyHubPage() {
                                   {isMenuOpen && (
                                     <div
                                       onClick={(e) => e.stopPropagation()}
-                                      className="absolute right-0 bottom-full mb-1.5 w-44 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-30 animate-fade-in"
+                                      className="absolute right-0 bottom-full mb-1.5 w-48 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-30 animate-fade-in"
                                     >
                                       <button
                                         type="button"
@@ -1997,20 +2376,100 @@ export default function MyHubPage() {
                                         <Share2 className="w-3.5 h-3.5 text-slate-400" />
                                         <span>แชร์นัดหมาย</span>
                                       </button>
+
                                       <div className="my-1 border-t border-slate-100" />
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setActiveMenuId(null);
-                                          setCancelTargetEvent(event);
-                                          setCancelTargetTicketId(ticketId);
-                                          setIsCancelModalOpen(true);
-                                        }}
-                                        className="w-full px-3 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-                                        <span>ยกเลิกการเข้าร่วม</span>
-                                      </button>
+
+                                      {/* Context actions depending on attendance status */}
+                                      {isAttended ? (
+                                        <>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setActiveMenuId(null);
+                                              handleMarkMissed(event.id, event.title);
+                                            }}
+                                            className="w-full px-3 py-2 text-left text-xs font-semibold text-amber-700 hover:bg-amber-50 flex items-center gap-2 cursor-pointer"
+                                          >
+                                            <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+                                            <span>แจ้งว่าไม่ได้ไปร่วมจริง</span>
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setActiveMenuId(null);
+                                              handlePermanentRemove(event.id, event.title);
+                                            }}
+                                            className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-600 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5 text-slate-400" />
+                                            <span>ลบออกจากประวัติ</span>
+                                          </button>
+                                        </>
+                                      ) : isMissed ? (
+                                        <>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setActiveMenuId(null);
+                                              handleMarkAttended(event.id, event.title);
+                                            }}
+                                            className="w-full px-3 py-2 text-left text-xs font-semibold text-emerald-700 hover:bg-emerald-50 flex items-center gap-2 cursor-pointer"
+                                          >
+                                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                                            <span>เปลี่ยนเป็นเข้าร่วมสำเร็จ</span>
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setActiveMenuId(null);
+                                              handlePermanentRemove(event.id, event.title);
+                                            }}
+                                            className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-600 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5 text-slate-400" />
+                                            <span>ลบออกจากประวัติ</span>
+                                          </button>
+                                        </>
+                                      ) : isCancelled ? (
+                                        <>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setActiveMenuId(null);
+                                              handleMarkAttended(event.id, event.title);
+                                            }}
+                                            className="w-full px-3 py-2 text-left text-xs font-semibold text-emerald-700 hover:bg-emerald-50 flex items-center gap-2 cursor-pointer"
+                                          >
+                                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                                            <span>กู้คืนเป็นไปร่วมงาน</span>
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setActiveMenuId(null);
+                                              handlePermanentRemove(event.id, event.title);
+                                            }}
+                                            className="w-full px-3 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                                            <span>ลบออกจากประวัติถาวร</span>
+                                          </button>
+                                        </>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setActiveMenuId(null);
+                                            setCancelTargetEvent(event);
+                                            setCancelTargetTicketId(ticketId);
+                                            setIsCancelModalOpen(true);
+                                          }}
+                                          className="w-full px-3 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                                          <span>ยกเลิกการเข้าร่วม</span>
+                                        </button>
+                                      )}
                                     </div>
                                   )}
                                 </div>
@@ -2031,46 +2490,90 @@ export default function MyHubPage() {
               {activeSubTab === 'fairs' && (
                 <div className="space-y-6">
                   {/* Smart Control Bar */}
-                  <div className="flex items-center justify-between gap-3 flex-wrap bg-white p-2.5 rounded-2xl border border-slate-200/90 shadow-2xs">
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setEventViewMode('all')}
-                        className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                          eventViewMode === 'all'
-                            ? 'bg-slate-900 text-white shadow-2xs'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                        }`}
-                      >
-                        ทั้งหมด ({expoEvents.length})
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEventViewMode('upcoming')}
-                        className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                          eventViewMode === 'upcoming'
-                            ? 'bg-slate-900 text-white shadow-2xs'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                        }`}
-                      >
-                        กำลังจะมาถึง ({expoEvents.filter((e) => !isEventEnded(e)).length})
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEventViewMode('past')}
-                        className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                          eventViewMode === 'past'
-                            ? 'bg-slate-900 text-white shadow-2xs'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                        }`}
-                      >
-                        งานที่ผ่านไปแล้ว ({expoEvents.filter((e) => isEventEnded(e)).length})
-                      </button>
+                  <div className="space-y-2.5 bg-white p-2.5 rounded-2xl border border-slate-200/90 shadow-2xs">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => setEventViewMode('all')}
+                          className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                            eventViewMode === 'all'
+                              ? 'bg-slate-900 text-white shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                          }`}
+                        >
+                          ทั้งหมด ({expoEvents.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEventViewMode('upcoming')}
+                          className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                            eventViewMode === 'upcoming'
+                              ? 'bg-slate-900 text-white shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                          }`}
+                        >
+                          กำลังจะมาถึง ({upcomingExpoEvents.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEventViewMode('past')}
+                          className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                            eventViewMode === 'past'
+                              ? 'bg-slate-900 text-white shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                          }`}
+                        >
+                          งานที่ผ่านไปแล้ว ({pastExpoEvents.length})
+                        </button>
+                      </div>
+
+                      <div className="text-xs text-slate-500 font-medium">
+                        <span>แสดง {filteredExpoEvents.length} งาน</span>
+                      </div>
                     </div>
 
-                    <div className="text-xs text-slate-500 font-medium">
-                      <span>แสดง {filteredExpoEvents.length} งาน</span>
-                    </div>
+                    {/* Sub-filters for Past Fairs: Attended vs Not Attended / Cancelled */}
+                    {eventViewMode === 'past' && (
+                      <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-slate-100 animate-fade-in">
+                        <span className="text-[11px] text-slate-400 font-bold mr-1">แยกตามสถานะจริง:</span>
+                        <button
+                          type="button"
+                          onClick={() => setPastSubFilter('all')}
+                          className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                            pastSubFilter === 'all'
+                              ? 'bg-slate-800 text-white shadow-2xs'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          ทั้งหมดที่ผ่านมา ({pastExpoEvents.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPastSubFilter('attended')}
+                          className={`px-3 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                            pastSubFilter === 'attended'
+                              ? 'bg-emerald-700 text-white shadow-2xs'
+                              : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200/60'
+                          }`}
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>ไปร่วมงานแล้ว ({pastExpoEvents.filter((e) => getEventAttendanceStatus(e) === 'attended').length})</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPastSubFilter('not_attended')}
+                          className={`px-3 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                            pastSubFilter === 'not_attended'
+                              ? 'bg-slate-700 text-white shadow-2xs'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200/60'
+                          }`}
+                        >
+                          <X className="w-3.5 h-3.5 text-rose-500" />
+                          <span>ไม่ได้ไป / ยกเลิก ({pastExpoEvents.filter((e) => getEventAttendanceStatus(e) !== 'attended').length})</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {filteredExpoEvents.length === 0 ? (
@@ -2082,7 +2585,13 @@ export default function MyHubPage() {
                         </div>
                         <div>
                           <h4 className="text-sm font-bold text-slate-800">
-                            {eventViewMode === 'upcoming' ? 'ยังไม่มีงานแฟร์ที่คุณบันทึกนัดไว้' : 'ไม่มีประวัติงานแฟร์ที่ผ่านมา'}
+                            {eventViewMode === 'upcoming'
+                              ? 'ยังไม่มีงานแฟร์ที่คุณบันทึกนัดไว้'
+                              : pastSubFilter === 'attended'
+                              ? 'ยังไม่มีงานแฟร์ที่ไปร่วมงานแล้ว'
+                              : pastSubFilter === 'not_attended'
+                              ? 'ไม่มีรายการที่ยกเลิกหรือไม่ไปเข้าร่วม'
+                              : 'ไม่มีประวัติงานแฟร์ที่ผ่านมา'}
                           </h4>
                           <p className="text-xs text-slate-500">
                             อัปเดตงานอีเวนต์ใหญ่ นิทรรศการ งานหนังสือ เทศกาลกาแฟ และเอ็กซ์โปทั่วประเทศ
@@ -2103,11 +2612,21 @@ export default function MyHubPage() {
                       {filteredExpoEvents.map((event, idx) => {
                         const ticketId = `CCH-FAIR-${(idx + 201).toString().padStart(4, '0')}`;
                         const isMenuOpen = activeMenuId === event.id;
+                        const status = getEventAttendanceStatus(event);
+                        const isCancelled = status === 'cancelled';
+                        const isMissed = status === 'missed';
+                        const isAttended = status === 'attended';
 
                         return (
                           <div
                             key={event.id}
-                            className="group bg-white rounded-2xl border border-slate-200/80 hover:border-slate-300 shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between overflow-hidden relative transform hover:-translate-y-1"
+                            className={`group bg-white rounded-2xl border transition-all duration-300 flex flex-col justify-between overflow-hidden relative transform hover:-translate-y-1 shadow-2xs hover:shadow-md ${
+                              isCancelled
+                                ? 'opacity-85 hover:opacity-100 border-rose-200/70 bg-rose-50/15'
+                                : isMissed
+                                ? 'border-amber-200/70 bg-amber-50/10'
+                                : 'border-slate-200/80 hover:border-slate-300'
+                            }`}
                           >
                             {/* Card Image */}
                             <div
@@ -2117,15 +2636,35 @@ export default function MyHubPage() {
                               <img
                                 src={event.image}
                                 alt={event.title}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${
+                                  isCancelled ? 'grayscale-40' : ''
+                                }`}
                               />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60" />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent opacity-60" />
 
-                              <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5">
-                                <span className="text-[10px] font-bold bg-[#EEF4FA]/95 backdrop-blur-md text-[#2B527A] border border-[#B8D1E8] px-2.5 py-0.5 rounded-full shadow-xs flex items-center gap-1">
-                                  <Check className="w-3.5 h-3.5 text-[#2B527A] stroke-[2.5]" />
-                                  <span>บันทึกแล้ว</span>
-                                </span>
+                              {/* Status Badges */}
+                              <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 flex-wrap">
+                                {isCancelled ? (
+                                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-rose-600/95 text-white shadow-xs backdrop-blur-md inline-flex items-center gap-1">
+                                    <X className="w-3 h-3 stroke-[2.5]" />
+                                    <span>ยกเลิกการเข้าร่วม</span>
+                                  </span>
+                                ) : isMissed ? (
+                                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-600/95 text-white shadow-xs backdrop-blur-md inline-flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3" />
+                                    <span>ไม่ได้ไปเข้าร่วม</span>
+                                  </span>
+                                ) : isAttended ? (
+                                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-600/95 text-white shadow-xs backdrop-blur-md inline-flex items-center gap-1">
+                                    <CheckCircle2 className="w-3 h-3" />
+                                    <span>ไปร่วมงานแล้ว</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] font-bold bg-[#EEF4FA]/95 backdrop-blur-md text-[#2B527A] border border-[#B8D1E8] px-2.5 py-0.5 rounded-full shadow-xs flex items-center gap-1">
+                                    <Check className="w-3.5 h-3.5 text-[#2B527A] stroke-[2.5]" />
+                                    <span>บันทึกแล้ว</span>
+                                  </span>
+                                )}
                               </div>
                             </div>
 
@@ -2171,28 +2710,93 @@ export default function MyHubPage() {
                                 </div>
                               </div>
 
-                              {/* Action Buttons */}
+                              {/* Action Buttons: Dynamically changes based on attendance */}
                               <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5 mt-auto">
-                                <Link
-                                  href={`/fairs/${encodeURIComponent(event.id)}`}
-                                  className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
-                                >
-                                  <span>ดูข้อมูลงาน</span>
-                                  <ArrowRight className="w-3.5 h-3.5" />
-                                </Link>
+                                {isCancelled ? (
+                                  /* Cancelled State: NO share moment */
+                                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                    <Link
+                                      href={`/fairs/${encodeURIComponent(event.id)}`}
+                                      className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-2xs cursor-pointer truncate"
+                                    >
+                                      <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
+                                      <span>ดูข้อมูลงาน</span>
+                                    </Link>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleMarkAttended(event.id, event.title)}
+                                      className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 text-xs font-semibold transition-all shrink-0 cursor-pointer"
+                                      title="เปลี่ยนสถานะเป็นไปร่วมจริง"
+                                    >
+                                      <span>ไปร่วมจริง</span>
+                                    </button>
+                                  </div>
+                                ) : isMissed ? (
+                                  /* Missed State: NO share moment */
+                                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                    <Link
+                                      href="/moments"
+                                      className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-2xs cursor-pointer truncate active:scale-95"
+                                      title="ดูภาพบรรยากาศจากเพื่อนคนอื่นในคอมมูนิตี้"
+                                    >
+                                      <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                                      <span>ดูบรรยากาศ</span>
+                                    </Link>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleMarkAttended(event.id, event.title)}
+                                      className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-emerald-50 text-emerald-700 border border-slate-200 hover:border-emerald-300 text-xs font-semibold transition-all shrink-0 cursor-pointer"
+                                      title="คลิกหากคุณได้ไปร่วมจริง เพื่อเปิดให้แชร์โมเมนต์"
+                                    >
+                                      <span>ฉันไปร่วมจริง</span>
+                                    </button>
+                                  </div>
+                                ) : isAttended ? (
+                                  /* Attended State: Share Moments + View Details */
+                                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                    <Link
+                                      href={`/moments?createForEvent=${encodeURIComponent(event.id)}&eventTitle=${encodeURIComponent(event.title)}&location=${encodeURIComponent(event.location)}&image=${encodeURIComponent(event.image)}`}
+                                      className="flex-1 py-1.5 px-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
+                                      title="แชร์รูปภาพและโมเมนต์ความประทับใจลงคอมมูนิตี้"
+                                    >
+                                      <Camera className="w-3.5 h-3.5 shrink-0" />
+                                      <span>แชร์โมเมนต์</span>
+                                    </Link>
 
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setChatTargetEvent(event);
-                                    setIsChatModalOpen(true);
-                                  }}
-                                  className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-[#EEF4FA] text-[#2B527A] border border-slate-200 hover:border-[#B8D1E8] text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 shadow-2xs"
-                                  title="ชวนเพื่อนเดินงาน"
-                                >
-                                  <MessageCircle className="w-3.5 h-3.5 text-[#2B527A]" />
-                                  <span>แชต</span>
-                                </button>
+                                    <Link
+                                      href={`/fairs/${encodeURIComponent(event.id)}`}
+                                      className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-[#EEF4FA] text-[#2B527A] border border-slate-200 hover:border-[#B8D1E8] text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 shadow-2xs"
+                                      title="ดูข้อมูลงาน"
+                                    >
+                                      <ExternalLink className="w-3.5 h-3.5 text-[#2B527A]" />
+                                      <span>ข้อมูลงาน</span>
+                                    </Link>
+                                  </div>
+                                ) : (
+                                  /* Upcoming State */
+                                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                    <Link
+                                      href={`/fairs/${encodeURIComponent(event.id)}`}
+                                      className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
+                                    >
+                                      <span>ดูข้อมูลงาน</span>
+                                      <ArrowRight className="w-3.5 h-3.5" />
+                                    </Link>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setChatTargetEvent(event);
+                                        setIsChatModalOpen(true);
+                                      }}
+                                      className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-[#EEF4FA] text-[#2B527A] border border-slate-200 hover:border-[#B8D1E8] text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 shadow-2xs"
+                                      title="ชวนเพื่อนเดินงาน"
+                                    >
+                                      <MessageCircle className="w-3.5 h-3.5 text-[#2B527A]" />
+                                      <span>แชต</span>
+                                    </button>
+                                  </div>
+                                )}
 
                                 {/* Context Menu Button */}
                                 <div className="relative shrink-0">
@@ -2211,8 +2815,15 @@ export default function MyHubPage() {
                                   {isMenuOpen && (
                                     <div
                                       onClick={(e) => e.stopPropagation()}
-                                      className="absolute right-0 bottom-full mb-1.5 w-44 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-30 animate-fade-in"
+                                      className="absolute right-0 bottom-full mb-1.5 w-48 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-30 animate-fade-in"
                                     >
+                                      <Link
+                                        href={`/fairs/${encodeURIComponent(event.id)}`}
+                                        className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                                      >
+                                        <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                                        <span>ดูข้อมูลงาน</span>
+                                      </Link>
                                       <button
                                         type="button"
                                         onClick={() => {
@@ -2224,23 +2835,104 @@ export default function MyHubPage() {
                                         <Share2 className="w-3.5 h-3.5 text-slate-400" />
                                         <span>แชร์งานอีเวนต์</span>
                                       </button>
+
                                       <div className="my-1 border-t border-slate-100" />
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setActiveMenuId(null);
-                                          setCancelTargetEvent(event);
-                                          setCancelTargetTicketId(ticketId);
-                                          setIsCancelModalOpen(true);
-                                        }}
-                                        className="w-full px-3 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-                                        <span>นำออกจากนัดหมาย</span>
-                                      </button>
+
+                                      {/* Context actions depending on attendance status */}
+                                      {isAttended ? (
+                                        <>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setActiveMenuId(null);
+                                              handleMarkMissed(event.id, event.title);
+                                            }}
+                                            className="w-full px-3 py-2 text-left text-xs font-semibold text-amber-700 hover:bg-amber-50 flex items-center gap-2 cursor-pointer"
+                                          >
+                                            <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+                                            <span>แจ้งว่าไม่ได้ไปร่วมจริง</span>
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setActiveMenuId(null);
+                                              handlePermanentRemove(event.id, event.title);
+                                            }}
+                                            className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-600 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5 text-slate-400" />
+                                            <span>นำออกจากประวัติ</span>
+                                          </button>
+                                        </>
+                                      ) : isMissed ? (
+                                        <>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setActiveMenuId(null);
+                                              handleMarkAttended(event.id, event.title);
+                                            }}
+                                            className="w-full px-3 py-2 text-left text-xs font-semibold text-emerald-700 hover:bg-emerald-50 flex items-center gap-2 cursor-pointer"
+                                          >
+                                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                                            <span>เปลี่ยนเป็นไปร่วมงานแล้ว</span>
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setActiveMenuId(null);
+                                              handlePermanentRemove(event.id, event.title);
+                                            }}
+                                            className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-600 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5 text-slate-400" />
+                                            <span>นำออกจากประวัติ</span>
+                                          </button>
+                                        </>
+                                      ) : isCancelled ? (
+                                        <>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setActiveMenuId(null);
+                                              handleMarkAttended(event.id, event.title);
+                                            }}
+                                            className="w-full px-3 py-2 text-left text-xs font-semibold text-emerald-700 hover:bg-emerald-50 flex items-center gap-2 cursor-pointer"
+                                          >
+                                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                                            <span>กู้คืนเป็นไปร่วมงาน</span>
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setActiveMenuId(null);
+                                              handlePermanentRemove(event.id, event.title);
+                                            }}
+                                            className="w-full px-3 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                                            <span>ลบออกจากประวัติถาวร</span>
+                                          </button>
+                                        </>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setActiveMenuId(null);
+                                            setCancelTargetEvent(event);
+                                            setCancelTargetTicketId(ticketId);
+                                            setIsCancelModalOpen(true);
+                                          }}
+                                          className="w-full px-3 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                                          <span>ยกเลิกการเข้าร่วม</span>
+                                        </button>
+                                      )}
                                     </div>
                                   )}
                                 </div>
+
                               </div>
                             </div>
                           </div>
@@ -2771,8 +3463,21 @@ export default function MyHubPage() {
         onClose={() => setIsTipModalOpen(false)}
         event={tipTargetEvent}
         onTipSubmit={(_rating, _review, amount) => {
-          setUserXp((prev) => prev + 20);
-          showToast(`ส่งทิป ฿${amount} ให้ ${tipTargetEvent?.hostName} เรียบร้อยแล้ว ได้รับ +20 XP`);
+          if (tipTargetEvent) {
+            setReviewedEventIds((prev) => {
+              const updated = Array.from(new Set([...prev, tipTargetEvent.id]));
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('myhub_reviewed_event_ids', JSON.stringify(updated));
+              }
+              return updated;
+            });
+          }
+          setUserXp((prev) => prev + 50);
+          showToast(
+            amount > 0
+              ? `ส่งรีวิวและทิป ฿${amount} ให้ ${tipTargetEvent?.hostName} สำเร็จ ได้รับ +50 XP! ⭐`
+              : `ส่งรีวิวและให้คะแนน ${tipTargetEvent?.hostName} เรียบร้อยแล้ว ได้รับ +50 XP! ⭐`
+          );
           setIsTipModalOpen(false);
         }}
       />

@@ -192,6 +192,22 @@ function MomentsContent() {
   const [checkInSearchQuery, setCheckInSearchQuery] = useState<string>('');
   const [isLocating, setIsLocating] = useState<boolean>(false);
 
+  // Auto-open Create Moment modal if directed from MyHub with an event
+  useEffect(() => {
+    const eventToShare = searchParams.get('createForEvent');
+    const titleToShare = searchParams.get('eventTitle');
+    const locToShare = searchParams.get('location');
+    const imgToShare = searchParams.get('image');
+    if (eventToShare) {
+      setCreateTargetType('community');
+      setCreateTargetId(eventToShare);
+      if (locToShare) setCustomLocationInput(locToShare);
+      if (titleToShare) setCaptionInput(`แชร์ความประทับใจจากกิจกรรม "${titleToShare}" ✨\n`);
+      if (imgToShare) setUploadedPostImages([imgToShare]);
+      setIsCreateModalOpen(true);
+    }
+  }, [searchParams]);
+
   // User's booked/favorited community & fair events from MyHub
   const myBookedEvents = useMemo(() => {
     return MOCK_EVENTS.filter(

@@ -19,7 +19,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
     { id: 'explore', label: 'ค้นพบ', href: '/', icon: Compass },
     { id: 'moments', label: 'โมเมนต์', href: '/moments', icon: Camera },
     { id: 'challenges', label: 'ชาเลนจ์', href: '/challenges', icon: Zap },
-    { id: 'myhub', label: 'มาฮับ', href: '/myhub', icon: Ticket },
+    { id: 'myhub', label: 'มายฮับ', href: '/myhub', icon: Ticket },
     { id: 'about', label: 'เกี่ยวกับเรา', href: '/about', icon: Info },
   ];
 
