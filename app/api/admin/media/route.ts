@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminApiAccess } from '@/lib/adminApiAuth';
 import { mediaStorage } from '@/lib/media';
-import { MOCK_EVENTS } from '@/data/mockData';
+import { MOCK_EVENTS, ChallengeQuest } from '@/data/mockData';
 import { MOCK_SPOTS, LifestyleSpotItem } from '@/data/spotsData';
 import { db } from '@/lib/db';
 
-async function getAllStoredSpots(): Promise<LifestyleSpotItem[]> {
-  const firstPage = await db.findSpots({ page: 1, limit: 100, includeDrafts: true });
-  const spots = [...firstPage.items];
+// Repository pages are capped at 100 items, so walk every page
+async function collectAllPages<T>(fetchPage: (page: number) => Promise<{ items: T[]; totalPages: number }>): Promise<T[]> {
+  const firstPage = await fetchPage(1);
+  const items = [...firstPage.items];
   for (let page = 2; page <= firstPage.totalPages; page += 1) {
-    spots.push(...(await db.findSpots({ page, limit: 100, includeDrafts: true })).items);
+    items.push(...(await fetchPage(page)).items);
   }
-  return spots;
+  return items;
 }
 
 // Helper to gather all referenced images across the platform
@@ -26,8 +27,8 @@ async function getAllReferencedImageUrls(): Promise<Set<string>> {
   // Seed catalogs plus every stored record (all moderation / publication states)
   const [storedEvents, storedSpots, storedQuests] = await Promise.all([
     db.listAllEvents(),
-    getAllStoredSpots(),
-    db.findQuests({ page: 1, limit: 1000, includeDrafts: true, status: 'all' }),
+    collectAllPages<LifestyleSpotItem>((page) => db.findSpots({ page, limit: 100, includeDrafts: true })),
+    collectAllPages<ChallengeQuest>((page) => db.findQuests({ page, limit: 100, includeDrafts: true, status: 'all' })),
   ]);
 
   for (const s of [...MOCK_SPOTS, ...storedSpots]) {
@@ -36,7 +37,7 @@ async function getAllReferencedImageUrls(): Promise<Set<string>> {
   for (const e of [...MOCK_EVENTS, ...storedEvents]) {
     addAll([e.image, e.hostAvatar, ...(e.galleryImages || [])]);
   }
-  for (const q of storedQuests.items) {
+  for (const q of storedQuests) {
     addAll([q.badgeCoverImg, q.creatorAvatar]);
   }
 

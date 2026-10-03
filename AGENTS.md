@@ -13,7 +13,42 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 # 🌿 Chill & Connect Hub: Mandatory Architecture & Design Concept (Global Luxury 9.8+)
 
 This document defines the strict, permanent architecture, design system, and editorial standards for **Chill & Connect Hub**. Every agent working on this codebase **MUST** strictly adhere to these conventions.
-For a complete system blueprint, mental model (3-4-3), and usage guide, see [ARCHITECTURE.md](file:///c:/Users/Asus/.gemini/antigravity-ide/scratch/chill-and-connect-hub/ARCHITECTURE.md).
+For a complete system blueprint, mental model (3-4-3), and usage guide, see [ARCHITECTURE.md](ARCHITECTURE.md).
+
+---
+
+## 🤝 0. Multi-Agent Collaboration (Read First)
+
+Two AI tools build this project in parallel. Each one owns one side of the codebase and coordinates with the other through shared files in this repo — never through assumptions about the other side's code.
+
+| Agent | Role | Works on branch | Owns (may edit freely) |
+| :--- | :--- | :--- | :--- |
+| **Antigravity IDE (Gemini)** | Frontend | `main` | `app/**/page.tsx`, `app/**/layout.tsx`, `app/globals.css`, `components/**`, `public/**` (except uploads), client-only helpers (`lib/useAuth.ts`, `lib/useResponsiveItemsPerPage.ts`, `lib/media/compressor.ts`), `DESIGN_SYSTEM.md` |
+| **Claude Code** | Backend | `claude` | `app/api/**`, all other `lib/**`, `data/**` stores and datasets, `docs/API.md`, `BACKEND_IMPLEMENTATION_LOG.md` |
+
+Ownership is about **editing**, not importing: the frontend may import anything from `lib/` and `data/` (types, `contentClient`, `dateUtils`, image resolvers). Shared utilities used by both sides (`lib/dateUtils.ts`, `lib/spotImageResolver.ts`, `lib/eventImageResolver.ts`, `lib/contentClient.ts`) are backend-owned; behavior changes to them must be announced in `docs/HANDOFF.md`.
+
+Shared (either may edit, keep changes minimal and announce them in `docs/HANDOFF.md`): `AGENTS.md`, `ARCHITECTURE.md`, `docs/HANDOFF.md`, `package.json`, config files.
+
+**The project owner merges `claude` into `main`.** Agents never push to the other agent's branch and never merge branches themselves unless the owner asks.
+
+**Each agent works in its own local clone** of `github.com/DDDdukDDD/chill_connect_hub`; the clones share nothing except GitHub. The other agent's work only becomes visible after it is pushed (and, for backend work, merged into `main`) and you pull. Never reference files by absolute local paths (e.g. `file:///c:/Users/...`) in docs or code — always use repo-relative paths, which resolve correctly in every clone and on GitHub.
+
+### Session checklist (every agent, every session)
+1. `git pull` before starting (Frontend: `main`; Backend: `claude`, then merge in new `main` commits if any). Push when you finish so the other clone can see your work.
+2. Read **[docs/HANDOFF.md](docs/HANDOFF.md)** and handle open items addressed to you.
+3. Frontend: read **[docs/API.md](docs/API.md)** before calling or changing any API usage. Backend: keep it accurate.
+4. Commit in small, focused commits with clear messages so the other agent can follow `git log`.
+
+### Rules across the boundary
+- **Do not edit files the other agent owns.** If you need a change there, write a request in `docs/HANDOFF.md` (what, why, and the exact file/area).
+  - Frontend needs a new endpoint, field, or filter → `FE-###` request; do **not** add code under `app/api/` or `lib/`.
+  - Backend changes a response shape or behavior the UI relies on → update `docs/API.md` in the same commit and post a `BE-###` note with the required frontend action.
+- **`docs/API.md` is the contract.** Build UI against it, not against guesses from mock data. Report mismatches in `docs/HANDOFF.md`.
+- **Use shared types, never copies:** `EventItem` / `ChallengeQuest` from `@/data/mockData`, `LifestyleSpotItem` from `@/data/spotsData`, query and pagination types from `@/lib/db/types`.
+- **Never send roles or permissions from the client.** The server decides admin access from its own session (`/api/auth/admin`).
+- **Mutable runtime data** (`data/chill_database.json`, `data/discovery_content.json`) is written by the backend at runtime. Do not hand-edit it to change UI behavior; ask for a data or API change instead.
+- The project is a **prototype** (seed data, no real users). Prefer clear, simple solutions over production-scale infrastructure.
 
 ---
 

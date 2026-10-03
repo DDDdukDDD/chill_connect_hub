@@ -83,6 +83,7 @@ The Discovery & Content work includes backend contracts and the admin control pl
 
 ## Handoff Notes
 
+- Collaboration: Antigravity IDE (Gemini) owns the frontend on `main`; Claude Code owns the backend on `claude`. Rules are in AGENTS.md section 0. Keep `docs/API.md` in sync with every response-shape change, and post cross-side changes or requests in `docs/HANDOFF.md`.
 - Keep events and fairs on the shared `/api/events` resource and filter by `type`; avoid a duplicate community events API unless the community data model becomes distinct.
 - The current APIs expose prototype seed data, not a production database or verified third-party feed.
 - Check `AGENTS.md` and the installed Next.js documentation under `node_modules/next/dist/docs/` before changing route handlers or backend architecture.

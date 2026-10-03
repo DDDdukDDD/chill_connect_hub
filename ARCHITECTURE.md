@@ -40,9 +40,14 @@
   - รูปจะถูกบีบอัดทันทีด้วย [`lib/media/compressor.ts`](lib/media/compressor.ts) (Canvas API) ให้กลายเป็น `.webp` ขนาดเล็ก (< 200KB) ก่อนส่งขึ้น Server
 
 ### 🔹 Layer 2: API & Edge Caching (`app/api/`)
-- [`app/api/events/route.ts`](app/api/events/route.ts): API กิจกรรมคอมมูนิตี้และงานแฟร์ (รองรับ Pagination, Atomic Join, และ HTTP Cache `s-maxage=30`)
-- [`app/api/spots/route.ts`](app/api/spots/route.ts): API พิกัดเที่ยว 77 จังหวัด (รองรับ Pagination, Fuzzy Search, และ HTTP Cache `s-maxage=60`)
-- [`app/api/upload/route.ts`](app/api/upload/route.ts): Endpoint รับอัปโหลดรูปภาพ ตรวจสอบความปลอดภัยและส่งเข้า Media Storage
+> 📜 สัญญา request/response ฉบับเต็มของทุก endpoint อยู่ที่ [`docs/API.md`](docs/API.md) — หน้าบ้านต้องอ้างอิงไฟล์นี้
+
+- [`app/api/events/route.ts`](app/api/events/route.ts): กิจกรรมคอมมูนิตี้และงานแฟร์ (เฉพาะที่อนุมัติแล้ว, Pagination, Atomic Join, สร้างกิจกรรม, HTTP Cache `s-maxage=30`)
+- [`app/api/spots/route.ts`](app/api/spots/route.ts): พิกัดเที่ยว 77 จังหวัด (ซ่อน draft, Pagination, Fuzzy Search, `s-maxage=60`) + [`spots/[id]/nearby-dining`](app/api/spots/[id]/nearby-dining/route.ts)
+- [`app/api/quests/route.ts`](app/api/quests/route.ts): ชาเลนจ์ (ซ่อน draft/private, Pagination)
+- [`app/api/upload/route.ts`](app/api/upload/route.ts): อัปโหลดรูป JPEG/PNG/WebP/AVIF ตรวจ signature ของไฟล์ แล้วส่งเข้า Media Storage
+- [`app/api/auth/admin/route.ts`](app/api/auth/admin/route.ts): login/logout ผู้ดูแลระบบ (session cookie ที่ sign ด้วย HMAC)
+- [`app/api/admin/*`](app/api/admin/): events, spots, quests, sources, scrape, cache, media — ทุก route ผ่าน `requireAdminApiAccess()`
 
 ### 🔹 Layer 3: Application Core Engines (`lib/`)
 นี่คือหัวใจของระบบหลังบ้าน แบ่งเป็น 3 ส่วนหลักที่จำได้ง่ายมาก:
@@ -52,13 +57,19 @@
 | **🗄️ Database (DAO)** | [`lib/db/`](lib/db/) | ควบคุมการอ่าน/เขียนข้อมูล, ค้นหา 77 จังหวัด, ป้องกันการจองชนกัน | `import { db } from '@/lib/db'` |
 | **⚡ Multi-Tier Cache** | [`lib/cache/`](lib/cache/) | แคชผลลัพธ์ใน RAM พร้อมระบบ TTL และ Tag Invalidation | `import { cacheManager } from '@/lib/cache'` |
 | **📷 Media Storage** | [`lib/media/`](lib/media/) | บันทึกรูปภาพลง Local หรือ Cloud CDN | `import { mediaStorage } from '@/lib/media'` |
+| **🔐 Admin Auth** | [`lib/adminApiAuth.ts`](lib/adminApiAuth.ts), [`lib/adminSession.ts`](lib/adminSession.ts) | ตรวจสิทธิ์ผู้ดูแลจาก session cookie หรือ Bearer token (ไม่เชื่อ role จาก client) | `requireAdminApiAccess(request)` |
+| **🛰️ Ingestion** | [`lib/eventsStore.ts`](lib/eventsStore.ts), [`lib/spotScraper.ts`](lib/spotScraper.ts), [`lib/structuredDataScraper.ts`](lib/structuredDataScraper.ts), [`lib/sourcesStore.ts`](lib/sourcesStore.ts) | ดึงข้อมูลจากแหล่งภายนอก (JSON-LD), ตัดข้อมูลซ้ำ, ส่งเข้าคิว moderation | ผ่าน `/api/admin/scrape` |
+
+**กฎสำคัญของชั้นข้อมูล:** อีเวนต์มีเจ้าของเดียวคือ repository (`db`) — ห้ามเขียน `events` ลงไฟล์ตรงๆ จากที่อื่น และการเขียน `chill_database.json` ทุกครั้งต้องผ่าน `updateDatabase()` ใน [`lib/db/databaseFile.ts`](lib/db/databaseFile.ts) เพื่อไม่ให้แต่ละส่วนเขียนทับข้อมูลของกัน
 
 ### 🔹 Layer 4: Data Storage & Persistence (`data/`, `database/`, `public/uploads/`)
 - **โหมดพัฒนา (Local Dev)**:
-  - ฐานข้อมูล: บันทึกและอ่านจากไฟล์ [`data/chill_database.json`](data/chill_database.json) (มี In-Memory Cache + Async Mutex ล็อกการเขียนไฟล์)
+  - [`data/chill_database.json`](data/chill_database.json): events, participants, sources, autoPublish (In-Memory + Async Mutex, เขียนผ่าน `updateDatabase()`)
+  - `data/discovery_content.json`: spots, quests, ความคืบหน้าชาเลนจ์ (สร้างตอนรันครั้งแรก, อยู่ใน `.gitignore`)
+  - Seed เริ่มต้น: [`data/mockData.ts`](data/mockData.ts), [`data/spotsData.ts`](data/spotsData.ts)
   - รูปภาพ: บันทึกเก็บในโฟลเดอร์ [`public/uploads/`](public/uploads/)
-- **โหมดโปรดักชัน (Production Ready)**:
-  - ไฟล์ SQL DDL และ Stored Procedures พร้อมรันบน Supabase / PostgreSQL ทันที:
+- **โหมดโปรดักชัน (ร่างไว้ ยังไม่ได้เชื่อมต่อ)**: ตอนนี้ [`lib/db/index.ts`](lib/db/index.ts) ใช้ `JsonFileAdapter` เสมอ — ระบบยังเป็น prototype
+  - ร่าง SQL DDL และ Stored Procedures สำหรับ Supabase / PostgreSQL (ยังไม่มี `PostgresAdapter`):
     - [`database/schema.sql`](database/schema.sql) (PostGIS รัศมี 77 จังหวัด, GIN Tags)
     - [`database/atomic_functions.sql`](database/atomic_functions.sql) (`join_event_atomic` ล็อกแถวด้วย `SELECT ... FOR UPDATE`)
     - [`database/seed.sql`](database/seed.sql) (ข้อมูลเริ่มต้น)
