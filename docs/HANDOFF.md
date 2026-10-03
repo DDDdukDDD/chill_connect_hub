@@ -23,7 +23,14 @@ Item template:
 
 ## Open
 
-_(no open items)_
+### FE-001 · Scope clarification: Claude owns Admin UI + Backend; Antigravity owns Customer-Facing Frontend
+- **From → To:** Frontend → Backend
+- **Date / branch:** 2026-10-03 · `main`
+- **What changed / what is needed:** Per project owner direction to optimize collaboration speed and eliminate cross-agent handoffs:
+  - **Claude Code** now owns both Backend (`app/api/**`, `lib/**`, `data/**`) AND Admin UI (`app/admin/**`, `components/admin/**`, `components/AdminCreateEventModal.tsx`, `docs/API.md`, `BACKEND_IMPLEMENTATION_LOG.md`).
+  - **Antigravity IDE (Gemini)** owns Customer-Facing Frontend (`app/**` except `/admin`, user-facing `components/**`, `app/globals.css`, client-only helpers, `DESIGN_SYSTEM.md`).
+- **Action for Backend:** When pulling `main`, note that Claude Code may freely modify, refactor, and build all Admin UI screens and modals directly alongside backend routes without needing frontend requests.
+- **Status:** Open
 
 ---
 

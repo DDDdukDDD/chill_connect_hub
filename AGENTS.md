@@ -23,8 +23,8 @@ Two AI tools build this project in parallel. Each one owns one side of the codeb
 
 | Agent | Role | Works on branch | Owns (may edit freely) |
 | :--- | :--- | :--- | :--- |
-| **Antigravity IDE (Gemini)** | Frontend | `main` | `app/**/page.tsx`, `app/**/layout.tsx`, `app/globals.css`, `components/**`, `public/**` (except uploads), client-only helpers (`lib/useAuth.ts`, `lib/useResponsiveItemsPerPage.ts`, `lib/media/compressor.ts`), `DESIGN_SYSTEM.md` |
-| **Claude Code** | Backend | `claude` | `app/api/**`, all other `lib/**`, `data/**` stores and datasets, `docs/API.md`, `BACKEND_IMPLEMENTATION_LOG.md` |
+| **Antigravity IDE (Gemini)** | Frontend (User-Facing UI) | `main` | All user-facing pages: `app/**/page.tsx`, `app/**/layout.tsx` (except `app/admin/**`), `app/globals.css`, user-facing components in `components/**` (except `components/admin/**` and `components/AdminCreateEventModal.tsx`), `public/**` (except uploads), client-only helpers (`lib/useAuth.ts`, `lib/useResponsiveItemsPerPage.ts`, `lib/media/compressor.ts`), `DESIGN_SYSTEM.md` |
+| **Claude Code** | Backend & Admin Console | `claude` | Admin UI: `app/admin/**`, `components/admin/**`, `components/AdminCreateEventModal.tsx`; Backend: `app/api/**`, all other `lib/**`, `data/**` stores and datasets, `docs/API.md`, `BACKEND_IMPLEMENTATION_LOG.md` |
 
 Ownership is about **editing**, not importing: the frontend may import anything from `lib/` and `data/` (types, `contentClient`, `dateUtils`, image resolvers). Shared utilities used by both sides (`lib/dateUtils.ts`, `lib/spotImageResolver.ts`, `lib/eventImageResolver.ts`, `lib/contentClient.ts`) are backend-owned; behavior changes to them must be announced in `docs/HANDOFF.md`.
 
@@ -42,7 +42,7 @@ Shared (either may edit, keep changes minimal and announce them in `docs/HANDOFF
 
 ### Rules across the boundary
 - **Do not edit files the other agent owns.** If you need a change there, write a request in `docs/HANDOFF.md` (what, why, and the exact file/area).
-  - Frontend needs a new endpoint, field, or filter → `FE-###` request; do **not** add code under `app/api/` or `lib/`.
+  - Frontend needs a new endpoint, field, or filter → `FE-###` request; do **not** add code under `app/api/`, `lib/`, or `app/admin/`.
   - Backend changes a response shape or behavior the UI relies on → update `docs/API.md` in the same commit and post a `BE-###` note with the required frontend action.
 - **`docs/API.md` is the contract.** Build UI against it, not against guesses from mock data. Report mismatches in `docs/HANDOFF.md`.
 - **Use shared types, never copies:** `EventItem` / `ChallengeQuest` from `@/data/mockData`, `LifestyleSpotItem` from `@/data/spotsData`, query and pagination types from `@/lib/db/types`.
