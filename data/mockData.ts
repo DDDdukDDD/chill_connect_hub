@@ -3841,6 +3841,7 @@ export const MOCK_EVENTS: EventItem[] = [
   },
   {
     "id": "2",
+    "eventType": "community",
     "title": "City Run Morning วิ่งเช้าในเมือง",
     "date": "13 ส.ค. 2026",
     "time": "06:00 - 08:00 น.",
@@ -3873,6 +3874,7 @@ export const MOCK_EVENTS: EventItem[] = [
   },
   {
     "id": "3",
+    "eventType": "community",
     "title": "Board Game Night Asoke คืนบอร์ดเกม อโศก",
     "date": "23 ส.ค. 2026",
     "time": "18:30 - 21:30 น.",
@@ -3919,6 +3921,7 @@ export const MOCK_EVENTS: EventItem[] = [
   },
   {
     "id": "4",
+    "eventType": "community",
     "title": "Pottery & Ceramic Workshop สตูดิโอปั้นดิน",
     "date": "28 ส.ค. 2026",
     "time": "10:00 - 13:00 น.",
@@ -3949,6 +3952,7 @@ export const MOCK_EVENTS: EventItem[] = [
   },
   {
     "id": "5",
+    "eventType": "community",
     "title": "Acoustic Coffee Session กาแฟ & ดนตรีสด",
     "date": "30 ส.ค. 2026",
     "time": "15:00 - 17:30 น.",
@@ -3978,6 +3982,7 @@ export const MOCK_EVENTS: EventItem[] = [
   },
   {
     "id": "6",
+    "eventType": "community",
     "title": "Sunset Park Yoga สวนลุมพินี",
     "date": "02 ก.ย. 2026",
     "time": "17:00 - 18:30 น.",

@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db, paginateArray } from '@/lib/db';
+import { checkImages, getImageStatus } from '@/lib/imageHealth';
 import { requireAdminApiAccess } from '@/lib/adminApiAuth';
 import { LifestyleSpotItem } from '@/data/spotsData';
-import { autoEnrichSpotImages, isValidImageUrl } from '@/lib/spotImageResolver';
+import { autoEnrichSpotImages } from '@/lib/spotImageResolver';
 
 const SPOT_CATEGORY_IDS = new Set<LifestyleSpotItem['category']>([
   'park', 'art', 'cafe', 'oldtown', 'workspace', 'viewpoint', 'nature',
@@ -70,8 +71,14 @@ export async function GET(request: Request) {
       );
     }
 
-    if (filter === 'missing_image') {
-      filtered = filtered.filter((s) => !isValidImageUrl(s.image));
+    // image=missing | broken | problem (missing or broken); legacy filter=missing_image
+    const imageFilter = searchParams.get('image') || (filter === 'missing_image' ? 'missing' : null);
+    if (imageFilter === 'missing') {
+      filtered = filtered.filter((s) => getImageStatus(s.image) === 'missing');
+    } else if (imageFilter === 'broken') {
+      filtered = filtered.filter((s) => getImageStatus(s.image) === 'broken');
+    } else if (imageFilter === 'problem') {
+      filtered = filtered.filter((s) => ['missing', 'broken'].includes(getImageStatus(s.image)));
     }
 
     if (publicationStatus === 'draft') {
@@ -80,15 +87,38 @@ export async function GET(request: Request) {
       filtered = filtered.filter((spot) => spot.publicationStatus !== 'draft');
     }
 
-    const missingImagesCount = allSpots.filter((s) => !isValidImageUrl(s.image)).length;
+    const imageStatuses = allSpots.map((s) => getImageStatus(s.image));
+    const missingImagesCount = imageStatuses.filter((status) => status === 'missing').length;
+    const brokenImagesCount = imageStatuses.filter((status) => status === 'broken').length;
+    const uncheckedImagesCount = imageStatuses.filter((status) => status === 'unchecked').length;
+    const draftCount = allSpots.filter((s) => s.publicationStatus === 'draft').length;
     const distinctProvinces = new Set(allSpots.map((s) => s.province)).size;
+    const withImageStatus = (spot: LifestyleSpotItem) => ({ ...spot, imageStatus: getImageStatus(spot.image) });
+
+    // Paginated mode (admin Spots module); without `page` the full filtered list is returned
+    const pageParam = searchParams.get('page');
+    const page = pageParam ? paginateArray(filtered, Number.parseInt(pageParam, 10) || 1, Number.parseInt(searchParams.get('limit') || '', 10) || 20) : null;
 
     return NextResponse.json({
       success: true,
-      spots: filtered,
+      spots: (page ? page.items : filtered).map(withImageStatus),
       totalCount: allSpots.length,
+      filteredCount: filtered.length,
+      draftCount,
       missingImagesCount,
+      brokenImagesCount,
+      uncheckedImagesCount,
       distinctProvinces,
+      ...(page && {
+        pagination: {
+          totalCount: page.totalCount,
+          page: page.page,
+          limit: page.limit,
+          totalPages: page.totalPages,
+          hasNextPage: page.hasNextPage,
+          hasPrevPage: page.hasPrevPage,
+        },
+      }),
     });
   } catch (error) {
     console.error('Error fetching admin spots:', error);
@@ -103,6 +133,17 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { action } = body;
+
+    // Action 0: Verify that every stored image URL actually loads
+    if (action === 'check_images') {
+      const allSpots = await getAllSpots();
+      const result = await checkImages(allSpots.map((s) => s.image));
+      return NextResponse.json({
+        success: true,
+        message: `ตรวจรูป ${result.checked} รายการ: ใช้ได้ ${result.ok}, เสีย ${result.broken}`,
+        ...result,
+      });
+    }
 
     // Action 1: Auto Enrich Missing Images
     if (action === 'auto_enrich_images') {

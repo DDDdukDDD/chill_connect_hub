@@ -82,7 +82,7 @@ export function VenuesManagerView() {
             <Building2 size={17} className="text-[#2B527A]" />
             <h1 className="text-xl font-bold text-slate-800">Venue Master Hub</h1>
           </div>
-          <p className="text-slate-500 text-sm">ศูนย์ประชุม ฮอลล์จัดงาน และสถานที่สาธารณะขนาดใหญ่ที่ใช้บ่อย</p>
+          <p className="text-slate-500 text-sm">ศูนย์ประชุม ฮอลล์จัดงาน และสถานที่สาธารณะขนาดใหญ่ที่ใช้บ่อย (ดูได้อย่างเดียว · ข้อมูลจากไฟล์ในโค้ด)</p>
         </div>
         <span className="px-3 py-1.5 bg-sky-50 border border-sky-200 text-[#2B527A] rounded-xl text-xs font-semibold">
           {VENUE_DETAILS.length} Venues
