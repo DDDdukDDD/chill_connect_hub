@@ -21,6 +21,7 @@ import {
   Undo2,
   EyeOff,
 } from 'lucide-react';
+import { AdminPageHeader, adminButton } from './AdminUI';
 import { handleAdminUnauthorized } from './adminAuthUtils';
 import { AdminPagination, AdminPaginationState } from './AdminPagination';
 import { AdminEventItem } from '@/lib/eventsStore';
@@ -211,7 +212,7 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
   };
 
   const segmentClass = (active: boolean) =>
-    `px-3 py-1 rounded-lg text-xs font-semibold transition-all ${active ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-700'}`;
+    `whitespace-nowrap px-3 py-1 rounded-lg text-xs font-semibold transition-all ${active ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-700'}`;
 
   return (
     <div className="space-y-6">
@@ -222,49 +223,34 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
         </div>
       )}
 
-      {/* Header */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <div className="flex items-center gap-2.5 mb-1">
-            <div
-              className={`w-8 h-8 rounded-xl flex items-center justify-center border ${
-                isCommunity ? 'bg-[#FDF0EB] text-[#F26430] border-[#F26430]/20' : 'bg-sky-50 text-[#2B527A] border-sky-100'
-              }`}
-            >
-              {isCommunity ? <Users size={16} /> : <Trophy size={16} />}
-            </div>
-            <h1 className="text-xl font-bold text-slate-800">
-              {isCommunity ? 'Community Meetups Moderation' : 'Major Fairs & Expos Moderation'}
-            </h1>
-          </div>
-          <p className="text-slate-500 text-sm">
-            {isCommunity
-              ? 'ตรวจกิจกรรมคอมมูนิตี้ นัดประจำ และความปลอดภัยของลิงก์ห้องประชุมออนไลน์'
-              : 'ตรวจงานแฟร์ นิทรรศการ และเอ็กซ์โปที่มาจาก Scraper หรือผู้ใช้ส่งเข้ามา'}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2.5">
-          {counts.pending > 0 && (
-            <button
-              onClick={() => runAction(null, { action: 'approve_all' }, `อนุมัติรายการที่รอทั้งหมดแล้ว`)}
-              disabled={busyId !== null}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-[#4A7C59] hover:bg-[#3B6347] text-white rounded-xl text-xs font-bold transition-all shadow-xs disabled:opacity-60"
-              title="อนุมัติทุกรายการที่รอตรวจในทุก pillar"
-            >
-              <CheckCheck size={13} />
-              อนุมัติทั้งหมดที่รอ
+      <AdminPageHeader
+        icon={isCommunity ? Users : Trophy}
+        title={isCommunity ? 'Community Meetups' : 'Fairs & Expos'}
+        description={
+          isCommunity
+            ? 'ตรวจกิจกรรมคอมมูนิตี้ นัดประจำ และความปลอดภัยของลิงก์ห้องประชุมออนไลน์'
+            : 'ตรวจงานแฟร์ นิทรรศการ และเอ็กซ์โปที่มาจาก Scraper หรือผู้ใช้ส่งเข้ามา'
+        }
+        actions={
+          <>
+            <button onClick={refresh} className={adminButton.secondary}>
+              <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+              รีเฟรช
             </button>
-          )}
-          <button
-            onClick={refresh}
-            className="flex items-center gap-1.5 px-3 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 rounded-xl text-xs font-semibold transition-all"
-          >
-            <RefreshCw size={12} className={isLoading ? 'animate-spin' : ''} />
-            รีเฟรช
-          </button>
-        </div>
-      </div>
+            {counts.pending > 0 && (
+              <button
+                onClick={() => runAction(null, { action: 'approve_all' }, 'อนุมัติรายการที่รอทั้งหมดแล้ว')}
+                disabled={busyId !== null}
+                className={adminButton.dark}
+                title="อนุมัติทุกรายการที่รอตรวจในทุก pillar"
+              >
+                <CheckCheck size={14} />
+                อนุมัติทั้งหมดที่รอ
+              </button>
+            )}
+          </>
+        }
+      />
 
       {/* Status summary (click to filter) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -301,14 +287,14 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
           />
         </div>
 
-        <div className="flex gap-1 bg-slate-100 p-1 rounded-xl" role="group" aria-label="กรองรูปแบบกิจกรรม">
+        <div className="flex gap-1 bg-slate-100 p-1 rounded-xl max-w-full overflow-x-auto" role="group" aria-label="กรองรูปแบบกิจกรรม">
           <button onClick={() => changeFormatFilter('all')} className={segmentClass(formatFilter === 'all')}>ทุกรูปแบบ</button>
           <button onClick={() => changeFormatFilter('recurring')} className={segmentClass(formatFilter === 'recurring')}>นัดประจำ ({counts.recurring})</button>
           <button onClick={() => changeFormatFilter('online')} className={segmentClass(formatFilter === 'online')}>ออนไลน์ ({counts.online})</button>
           <button onClick={() => changeFormatFilter('physical')} className={segmentClass(formatFilter === 'physical')}>สถานที่จริง</button>
         </div>
 
-        <div className="flex gap-1 bg-slate-100 p-1 rounded-xl" role="group" aria-label="กรองสถานะการตรวจ">
+        <div className="flex gap-1 bg-slate-100 p-1 rounded-xl max-w-full overflow-x-auto" role="group" aria-label="กรองสถานะการตรวจ">
           {(['pending', 'all', 'approved', 'rejected'] as const).map((st) => (
             <button key={st} onClick={() => changeStatusFilter(st)} className={segmentClass(statusFilter === st)}>
               {{ all: 'ทุกสถานะ', pending: `รอตรวจ (${counts.pending})`, approved: 'อนุมัติแล้ว', rejected: 'ปฏิเสธ' }[st]}
@@ -321,7 +307,7 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
       {loadError ? (
         <div className="flex items-center justify-between gap-3 bg-rose-50 border border-rose-200 rounded-2xl p-4">
           <p className="text-xs sm:text-sm font-bold text-rose-700">{loadError}</p>
-          <button onClick={refresh} className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold">ลองอีกครั้ง</button>
+          <button onClick={refresh} className={adminButton.dark}>ลองอีกครั้ง</button>
         </div>
       ) : isLoading && events.length === 0 ? (
         <div className="flex items-center justify-center py-16">
@@ -338,7 +324,7 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
               changeFormatFilter('all');
               changeStatusFilter('all');
             }}
-            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold"
+            className={adminButton.secondarySm}
           >
             ดูทั้งหมด
           </button>
@@ -361,7 +347,7 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
                   status === 'pending' ? 'border-amber-200' : 'border-slate-200/80 hover:border-slate-300'
                 }`}
               >
-                <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                   <div className="flex items-start gap-4 min-w-0 flex-1">
                     <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-100">
                       {ev.image ? (
@@ -432,13 +418,13 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
                   </div>
 
                   {/* Actions depend on the moderation state */}
-                  <div className="flex items-center gap-2 shrink-0 self-center sm:self-start">
+                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-start">
                     {status === 'pending' && (
                       <>
                         <button
                           onClick={() => updateStatus(ev, 'approved')}
                           disabled={isBusy}
-                          className="flex items-center gap-1 px-3 py-1.5 bg-[#4A7C59] hover:bg-[#3B6347] text-white rounded-xl text-xs font-bold transition-all disabled:opacity-60"
+                          className={adminButton.primarySm}
                         >
                           <CheckCircle2 size={12} />
                           อนุมัติ
@@ -446,7 +432,7 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
                         <button
                           onClick={() => updateStatus(ev, 'rejected')}
                           disabled={isBusy}
-                          className="flex items-center gap-1 px-3 py-1.5 bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 rounded-xl text-xs font-semibold transition-all disabled:opacity-60"
+                          className={adminButton.dangerSm}
                         >
                           <XCircle size={12} />
                           ปฏิเสธ
@@ -458,7 +444,7 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
                         onClick={() => updateStatus(ev, 'pending')}
                         disabled={isBusy}
                         title="ซ่อนจากหน้าเว็บและย้ายกลับไปรอตรวจ"
-                        className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-all disabled:opacity-60"
+                        className={adminButton.secondarySm}
                       >
                         <EyeOff size={12} />
                         ถอนการเผยแพร่
@@ -468,7 +454,7 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
                       <button
                         onClick={() => updateStatus(ev, 'pending')}
                         disabled={isBusy}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-all disabled:opacity-60"
+                        className={adminButton.secondarySm}
                       >
                         <Undo2 size={12} />
                         กลับไปรอตรวจ
@@ -478,7 +464,7 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
                     <Link
                       href={isCommunity ? `/community/${ev.id}` : `/fairs/${ev.id}`}
                       target="_blank"
-                      className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors"
+                      className={adminButton.icon}
                       title="ดูหน้าเว็บจริง"
                     >
                       <ExternalLink size={13} />

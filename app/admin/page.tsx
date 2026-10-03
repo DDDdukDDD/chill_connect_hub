@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ALL_THAI_PROVINCES, SPOT_CATEGORIES, LifestyleSpotItem } from '@/data/spotsData';
 import { AdminSidebar, AdminModuleId } from '@/components/admin/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
@@ -25,8 +25,36 @@ import {
 // ─────────────────────────────────────────────────────────────
 // MAIN ADMIN PAGE
 // ─────────────────────────────────────────────────────────────
+const ADMIN_MODULE_IDS: readonly AdminModuleId[] = [
+  'dashboard', 'taxonomy', 'provinces', 'venues', 'spots', 'community', 'fairs',
+  'quests', 'rbac', 'scraper', 'backup', 'media', 'cache',
+];
+
+// The active module lives in the URL (?m=spots) so refresh, shared links and back/forward work
+function readModuleFromUrl(): AdminModuleId {
+  if (typeof window === 'undefined') return 'dashboard';
+  const requested = new URLSearchParams(window.location.search).get('m');
+  return ADMIN_MODULE_IDS.find((id) => id === requested) ?? 'dashboard';
+}
+
 function AdminConsole() {
-  const [activeModule, setActiveModule] = useState<AdminModuleId>('dashboard');
+  // Rendered only on the client after AdminAuthGate has verified the session
+  const [activeModule, setActiveModuleState] = useState<AdminModuleId>(readModuleFromUrl);
+
+  const setActiveModule = useCallback((module: AdminModuleId) => {
+    setActiveModuleState(module);
+    const params = new URLSearchParams(window.location.search);
+    if (module === 'dashboard') params.delete('m');
+    else params.set('m', module);
+    const query = params.toString();
+    window.history.pushState(null, '', query ? `?${query}` : window.location.pathname);
+  }, []);
+
+  useEffect(() => {
+    const syncFromUrl = () => setActiveModuleState(readModuleFromUrl());
+    window.addEventListener('popstate', syncFromUrl);
+    return () => window.removeEventListener('popstate', syncFromUrl);
+  }, []);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // ── Spots: list lives in SpotsManagerView; this page owns the create/edit modals ──

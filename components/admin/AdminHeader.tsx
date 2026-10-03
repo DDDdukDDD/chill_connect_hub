@@ -14,16 +14,16 @@ interface AdminHeaderProps {
 }
 
 const MODULE_BREADCRUMBS: Record<AdminModuleId, { parent: string; label: string }> = {
-  dashboard:  { parent: 'Chill & Connect Hub', label: 'แดชบอร์ด' },
-  taxonomy:   { parent: 'Governance & Master', label: 'Master Taxonomy Hub' },
+  dashboard:  { parent: 'Overview', label: 'ภาพรวมเนื้อหา' },
+  taxonomy:   { parent: 'Governance & Master', label: 'Master Taxonomy' },
   provinces:  { parent: 'Governance & Master', label: '77 จังหวัด & โซน' },
-  venues:     { parent: 'Governance & Master', label: 'Venue Master Hub' },
+  venues:     { parent: 'Governance & Master', label: 'Venues' },
   spots:      { parent: 'Discovery & Content', label: 'Lifestyle Spots' },
   community:  { parent: 'Discovery & Content', label: 'Community Meetups' },
   fairs:      { parent: 'Discovery & Content', label: 'Fairs & Expos' },
-  quests:     { parent: 'Discovery & Content', label: 'Quests & Badges Engine' },
+  quests:     { parent: 'Discovery & Content', label: 'Quests & Badges' },
   rbac:       { parent: 'System & Operations', label: 'Users & Permissions' },
-  scraper:    { parent: 'System & Operations', label: 'Scraper & Aggregator' },
+  scraper:    { parent: 'System & Operations', label: 'Scraper Engine' },
   media:      { parent: 'System & Operations', label: 'Media & Image Hub' },
   cache:      { parent: 'System & Operations', label: 'Cache & Performance' },
   backup:     { parent: 'System & Operations', label: 'Backup & Audit Logs' },

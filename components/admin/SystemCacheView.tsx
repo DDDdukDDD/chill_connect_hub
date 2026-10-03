@@ -6,14 +6,11 @@ import {
   RefreshCw,
   Trash2,
   Activity,
-  Server,
-  Layers,
-  CheckCircle2,
   Clock,
   ShieldCheck,
-  AlertCircle,
   Database,
 } from 'lucide-react';
+import { AdminPageHeader, adminButton } from './AdminUI';
 import { CacheStats } from '@/lib/cache/types';
 import { handleAdminUnauthorized } from './adminAuthUtils';
 
@@ -125,36 +122,23 @@ export function SystemCacheView() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Zap size={20} className="text-[#4A7C59]" />
-            <h1 className="text-xl font-bold text-slate-800">Cache & Performance Engine</h1>
-          </div>
-          <p className="text-slate-500 text-sm">
-            จัดการระบบ L1 In-Memory Cache อัตรา Hit/Miss และเครื่องมือ 1-Click Flush รายหมวดหมู่
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={fetchCacheData}
-            disabled={isLoading}
-            className="flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors shadow-xs"
-          >
-            <RefreshCw size={14} className={isLoading ? 'animate-spin text-[#4A7C59]' : ''} />
-            รีเฟรชสถานะ
-          </button>
-          <button
-            onClick={handleFlushAll}
-            disabled={flushingTag === 'all'}
-            className="flex items-center gap-2 px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm disabled:opacity-50"
-          >
-            <Trash2 size={14} />
-            {flushingTag === 'all' ? 'กำลังล้าง...' : '⚡ เคลียร์แคชทั้งหมด (Flush All)'}
-          </button>
-        </div>
-      </div>
+      <AdminPageHeader
+        icon={Zap}
+        title="Cache & Performance"
+        description="แคช L1 ในหน่วยความจำของ server: อัตรา hit/miss และการล้างแคชรายหมวด"
+        actions={
+          <>
+            <button onClick={fetchCacheData} disabled={isLoading} className={adminButton.secondary}>
+              <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+              รีเฟรช
+            </button>
+            <button onClick={handleFlushAll} disabled={flushingTag === 'all'} className={adminButton.danger}>
+              <Trash2 size={14} />
+              {flushingTag === 'all' ? 'กำลังล้าง...' : 'ล้างแคชทั้งหมด'}
+            </button>
+          </>
+        }
+      />
 
       {/* KPI Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

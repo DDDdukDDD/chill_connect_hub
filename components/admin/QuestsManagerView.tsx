@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { AlertCircle, Check, Clock3, Pencil, Plus, RefreshCw, Search, Trash2, Trophy, X, Zap } from 'lucide-react';
+import { AdminPageHeader, adminButton } from './AdminUI';
 import { ChallengeQuest } from '@/data/mockData';
 import { handleAdminUnauthorized } from './adminAuthUtils';
 
@@ -193,21 +194,22 @@ export function QuestsManagerView() {
 
   return (
     <div className="space-y-6">
-      <section className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <p className="text-xs font-semibold uppercase text-slate-500">Discovery & Content / Gamification</p>
-          <h1 className="mt-1 text-2xl font-bold text-slate-950">Quests & Badges</h1>
-          <p className="mt-1 text-sm text-slate-600">จัดการภารกิจ รางวัล XP และเหรียญตราจากข้อมูลจริง</p>
-        </div>
-        <div className="flex gap-2">
-          <button type="button" onClick={loadQuests} disabled={isLoading} aria-label="รีเฟรชรายการภารกิจ" className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50">
-            <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-          </button>
-          <button type="button" onClick={openCreate} className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#2563EB] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[#1D4ED8]">
-            <Plus size={16} /> สร้างภารกิจ
-          </button>
-        </div>
-      </section>
+      <AdminPageHeader
+        icon={Zap}
+        title="Quests & Badges"
+        description="จัดการภารกิจ รางวัล XP และเหรียญตรา"
+        actions={
+          <>
+            <button type="button" onClick={loadQuests} disabled={isLoading} className={adminButton.secondary}>
+              <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+              รีเฟรช
+            </button>
+            <button type="button" onClick={openCreate} className={adminButton.primary}>
+              <Plus size={14} /> สร้างภารกิจ
+            </button>
+          </>
+        }
+      />
 
       <section aria-label="Quest summary" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
@@ -242,8 +244,8 @@ export function QuestsManagerView() {
         {error && <div role="alert" className="flex items-start gap-2 border-l-2 border-rose-500 bg-rose-50 px-3 py-2 text-sm text-rose-800"><AlertCircle size={16} className="mt-0.5 shrink-0" />{error}</div>}
 
         <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-          <div className="hidden grid-cols-[minmax(0,1fr)_130px_120px_150px] gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3 text-[11px] font-semibold uppercase text-slate-500 md:grid">
-            <span>ภารกิจ</span><span>หมวดหมู่</span><span>XP / Badge</span><span className="text-right">สถานะ / จัดการ</span>
+          <div className="hidden grid-cols-[minmax(0,1fr)_96px_minmax(140px,180px)_104px_168px] gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3 text-[11px] font-semibold text-slate-500 md:grid">
+            <span>ภารกิจ</span><span>หมวดหมู่</span><span>รางวัล</span><span>สถานะ</span><span className="text-right">จัดการ</span>
           </div>
           {isLoading ? (
             <div className="space-y-px" aria-label="กำลังโหลดภารกิจ">
@@ -257,7 +259,7 @@ export function QuestsManagerView() {
           ) : filteredQuests.map((quest) => {
             const status = getStatus(quest);
             return (
-              <article key={quest.id} className="grid gap-3 border-b border-slate-100 px-4 py-4 last:border-b-0 md:grid-cols-[minmax(0,1fr)_130px_120px_150px] md:items-center md:gap-4">
+              <article key={quest.id} className="grid gap-3 border-b border-slate-100 px-4 py-4 last:border-b-0 md:grid-cols-[minmax(0,1fr)_96px_minmax(140px,180px)_104px_168px] md:items-center md:gap-4">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <Zap size={14} className="shrink-0 text-amber-600" />
@@ -266,22 +268,21 @@ export function QuestsManagerView() {
                   <p className="mt-1 line-clamp-2 pl-[22px] text-xs leading-5 text-slate-600">{quest.targetGoal || 'ยังไม่มีคำอธิบายเป้าหมาย'}</p>
                 </div>
                 <span className="text-xs font-medium capitalize text-slate-700">{quest.category || 'ไม่ระบุ'}</span>
-                <div className="flex items-center gap-2 text-xs text-slate-700">
-                  <span className="tabular-nums">{quest.rewardPoints || 0} XP</span>
-                  <span className="text-slate-300">/</span>
-                  <span className="truncate">{quest.badgeLabel}</span>
+                <div className="min-w-0 text-xs text-slate-700">
+                  <p className="font-bold tabular-nums">{quest.rewardPoints || 0} XP</p>
+                  <p className="text-slate-500 line-clamp-2" title={quest.badgeLabel}>{quest.badgeLabel}</p>
                 </div>
-                <div className="flex items-center justify-between gap-2 md:justify-end">
-                  <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-semibold ${STATUS_STYLES[status]}`}>
+                <div>
+                  <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-md border px-2 py-1 text-[11px] font-semibold ${STATUS_STYLES[status]}`}>
                     {status === 'draft' ? <Clock3 size={12} /> : status === 'active' ? <Check size={12} /> : <Trophy size={12} />}
                     {STATUS_LABELS[status]}
                   </span>
-                  <div className="flex items-center gap-1">
-                    {status === 'draft' && <button type="button" onClick={() => setQuestStatus(quest, 'active')} title="เผยแพร่ภารกิจ" aria-label={`เผยแพร่ ${quest.title}`} className="rounded-md px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-50">เผยแพร่</button>}
-                    {status === 'active' && <button type="button" onClick={() => setQuestStatus(quest, 'ended')} title="สิ้นสุดภารกิจ" aria-label={`สิ้นสุด ${quest.title}`} className="rounded-md px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-100">สิ้นสุด</button>}
+                </div>
+                <div className="flex items-center justify-end gap-1">
+                    {status === 'draft' && <button type="button" onClick={() => setQuestStatus(quest, 'active')} title="เผยแพร่ภารกิจ" aria-label={`เผยแพร่ ${quest.title}`} className="whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white hover:bg-slate-800">เผยแพร่</button>}
+                    {status === 'active' && <button type="button" onClick={() => setQuestStatus(quest, 'ended')} title="สิ้นสุดภารกิจ" aria-label={`สิ้นสุด ${quest.title}`} className="whitespace-nowrap rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200">ปิดภารกิจ</button>}
                     <button type="button" onClick={() => openEdit(quest)} title="แก้ไขภารกิจ" aria-label={`แก้ไข ${quest.title}`} className="rounded-md p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-950"><Pencil size={14} /></button>
                     <button type="button" onClick={() => deleteQuest(quest)} title="ลบภารกิจ" aria-label={`ลบ ${quest.title}`} className="rounded-md p-2 text-slate-500 hover:bg-rose-50 hover:text-rose-700"><Trash2 size={14} /></button>
-                  </div>
                 </div>
               </article>
             );

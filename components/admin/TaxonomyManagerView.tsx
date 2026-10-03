@@ -7,6 +7,7 @@ import {
   ChevronUp,
   Tag,
 } from 'lucide-react';
+import { AdminPageHeader, AdminBadge } from './AdminUI';
 import {
   MASTER_SPOT_CATEGORIES,
   MASTER_COMMUNITY_LIFESTYLE_CATEGORIES,
@@ -87,21 +88,12 @@ export function TaxonomyManagerView() {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <FolderTree size={17} className="text-[#4A7C59]" />
-            <h1 className="text-xl font-bold text-slate-800">Master Taxonomy Hub</h1>
-          </div>
-          <p className="text-slate-500 text-sm">
-            หมวดหมู่หลักของทุก Pillar ที่ทั้งระบบใช้ร่วมกัน (ดูได้อย่างเดียว)
-          </p>
-        </div>
-        <span className="px-3 py-1.5 bg-[#EBF3ED] border border-[#4A7C59]/20 text-[#2D5A3C] rounded-xl text-xs font-semibold">
-          อ่านอย่างเดียว
-        </span>
-      </div>
+      <AdminPageHeader
+        icon={FolderTree}
+        title="Master Taxonomy"
+        description="หมวดหมู่หลักของทุก pillar ที่ทั้งระบบใช้ร่วมกัน"
+        badge={<AdminBadge>อ่านอย่างเดียว</AdminBadge>}
+      />
 
       {/* Info Banner */}
       <div className="flex items-start gap-3 bg-slate-50 border border-slate-200/70 rounded-xl px-4 py-3">

@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { MapPin, Search, ChevronDown, Globe, Sparkles, Compass, Users } from 'lucide-react';
-import { MASTER_77_PROVINCES, MASTER_POPULAR_PROVINCE_TAGS } from '@/data/masterHub';
+import { MapPin, Search, ChevronDown, Globe, Sparkles } from 'lucide-react';
+import { AdminPageHeader, AdminBadge } from './AdminUI';
+import { MASTER_77_PROVINCES } from '@/data/masterHub';
 import { BANGKOK_ZONES, EventItem } from '@/data/mockData';
 import { LifestyleSpotItem } from '@/data/spotsData';
 import { handleAdminUnauthorized } from './adminAuthUtils';
@@ -135,26 +136,12 @@ export function ProvincesManagerView() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <MapPin size={18} className="text-[#4A7C59]" />
-            <h1 className="text-xl font-bold text-slate-800">77 จังหวัด & โซน (Regional Density Hub)</h1>
-          </div>
-          <p className="text-slate-500 text-sm">
-            รายชื่อจังหวัดและโซน (อ่านอย่างเดียว) พร้อมจำนวนเนื้อหาจริงที่เผยแพร่ในแต่ละพื้นที่
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="px-3 py-1.5 bg-[#EBF3ED] border border-[#4A7C59]/20 text-[#2D5A3C] rounded-xl text-xs font-semibold">
-            {MASTER_77_PROVINCES.length} จังหวัด
-          </span>
-          <span className="px-3 py-1.5 bg-sky-50 border border-sky-200 text-[#2B527A] rounded-xl text-xs font-semibold">
-            🌐 {onlineEvents.length} กิจกรรมออนไลน์
-          </span>
-        </div>
-      </div>
+      <AdminPageHeader
+        icon={MapPin}
+        title="77 จังหวัด & โซน"
+        description="รายชื่อจังหวัดและโซน พร้อมจำนวนเนื้อหาจริงที่เผยแพร่ในแต่ละพื้นที่"
+        badge={<AdminBadge>อ่านอย่างเดียว</AdminBadge>}
+      />
 
       {loadState === 'error' && (
         <div className="px-4 py-3 rounded-2xl border border-rose-200 bg-rose-50 text-xs sm:text-sm font-bold text-rose-700">

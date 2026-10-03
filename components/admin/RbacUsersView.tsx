@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { ShieldCheck, Crown, Search, Check } from 'lucide-react';
+import { AdminPageHeader, AdminBadge } from './AdminUI';
 import { AdminPreviewNotice } from './AdminPreviewNotice';
 
 export type UserRole = 'Super Admin' | 'Content Editor' | 'Moderator' | 'Organizer' | 'Member';
@@ -79,31 +80,29 @@ export function RbacUsersView() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <ShieldCheck size={17} className="text-[#4A7C59]" />
-            <h1 className="text-xl font-bold text-slate-800">Users & Permissions</h1>
+      <AdminPageHeader
+        icon={ShieldCheck}
+        title="Users & Permissions"
+        description="บัญชีผู้ใช้และระดับสิทธิ์ (RBAC 5 ระดับ)"
+        badge={<AdminBadge tone="amber">ตัวอย่าง</AdminBadge>}
+        actions={
+          <div className="flex gap-1 bg-slate-100 p-1 rounded-xl" role="tablist">
+            {(['users', 'roles'] as const).map((tab) => (
+              <button
+                key={tab}
+                role="tab"
+                aria-selected={activeTab === tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === tab ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {{ users: 'ผู้ใช้', roles: 'ตารางสิทธิ์' }[tab]}
+              </button>
+            ))}
           </div>
-          <p className="text-slate-500 text-sm">จัดการระดับสิทธิ์ผู้ใช้ 5 ขั้น (RBAC) ตามมาตรฐาน Enterprise</p>
-        </div>
-        <div className="flex gap-2">
-          {(['users', 'roles'] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
-                activeTab === tab
-                  ? 'bg-[#4A7C59] text-white shadow-sm shadow-[#4A7C59]/20'
-                  : 'bg-white text-slate-500 hover:text-slate-700 border border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              {{ users: '👥 Users', roles: '🛡️ Role Matrix' }[tab]}
-            </button>
-          ))}
-        </div>
-      </div>
+        }
+      />
 
       <AdminPreviewNotice>
         รายชื่อผู้ใช้และบทบาทในหน้านี้เป็นตัวอย่างดีไซน์ ระบบยังไม่มีบัญชีผู้ใช้จริง ตอนนี้สิทธิ์ผู้ดูแลมีแบบเดียวคือเข้าสู่ระบบด้วย ADMIN_PASSWORD

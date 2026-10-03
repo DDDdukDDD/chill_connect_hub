@@ -7,7 +7,6 @@ import {
   ExternalLink,
   Clock,
   CheckCircle2,
-  AlertTriangle,
   Radio,
   Activity,
   Plus,
@@ -18,6 +17,7 @@ import {
   X,
   Compass,
 } from 'lucide-react';
+import { AdminPageHeader, AdminBadge, adminButton } from './AdminUI';
 import { EventDataSource } from '@/lib/sourcesStore';
 import { handleAdminUnauthorized } from './adminAuthUtils';
 
@@ -312,55 +312,48 @@ export function ScraperEngineView() {
         </div>
       )}
 
-      {/* Header Banner */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <div className="flex items-center gap-2.5 mb-1.5">
-            <div className="w-8 h-8 rounded-xl bg-sky-50 flex items-center justify-center text-[#2B527A] border border-sky-100">
-              <Bot size={17} />
-            </div>
-            <h1 className="text-xl font-bold text-slate-800">Source ingestion</h1>
-            <span className="px-2.5 py-0.5 bg-slate-50 text-slate-700 border border-slate-200 rounded-md text-[11px] font-semibold">
-              Schema.org JSON-LD
-            </span>
-          </div>
-          <p className="text-slate-500 text-sm">
-            นำเข้าข้อมูล Event และ Spot แยกตามชนิด พร้อมตรวจ robots.txt, คัดกรองข้อมูลไม่ครบ และป้องกันรายการซ้ำ
-          </p>
-        </div>
-
-        {/* Target-specific actions */}
-        <div className="flex items-center gap-2.5 flex-wrap">
-          {sourceTypeFilter === 'spots' && <button
-            onClick={handleEnrichSpotImages}
-            disabled={isEnrichingSpots}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-50 hover:bg-[#EBF3ED] border border-slate-200 hover:border-[#4A7C59]/30 text-slate-600 hover:text-[#2D5A3C] rounded-xl text-xs font-semibold transition-all disabled:opacity-50"
-            title="เติมภาพให้ Spot ที่นำเข้าแล้วโดยไม่ดึงข้อมูลแหล่งใหม่"
-          >
-            <Compass size={13} className={isEnrichingSpots ? 'animate-spin' : 'text-[#4A7C59]'} />
-            {isEnrichingSpots ? 'กำลังเติมรูป...' : 'เติมรูปภาพ Spot'}
-          </button>}
-
-          {sourceTypeFilter === 'events' && <button
-            onClick={handleResetAndSeed}
-            disabled={isResetting || isScraping}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 rounded-xl text-xs font-semibold transition-all disabled:opacity-50"
-            title="รีเซ็ตชุด Event ตัวอย่างแบบคัดสรร (ไม่ใช่การดึงจากเว็บ)"
-          >
-            <Database size={13} className={isResetting ? 'animate-spin text-amber-600' : 'text-amber-600'} />
-            {isResetting ? 'กำลังโหลด...' : 'โหลดชุด Event ตัวอย่าง'}
-          </button>}
-
-          <button
-            onClick={() => handleTriggerScrape(sourceTypeFilter)}
-            disabled={isScraping || isResetting}
-            className="flex items-center gap-2 px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-lg text-xs font-bold transition-all shadow-sm disabled:opacity-50"
-          >
-            <Radio size={13} className={isScraping && !scrapingSourceId ? 'animate-pulse text-sky-200' : ''} />
-            {isScraping && !scrapingSourceId ? `กำลังสแกน ${sourceTypeFilter === 'spots' ? 'Spots' : 'Events'}...` : `สแกน ${sourceTypeFilter === 'spots' ? 'Spot sources' : 'Event sources'}`}
-          </button>
-        </div>
-      </div>
+      <AdminPageHeader
+        icon={Bot}
+        title="Scraper Engine"
+        description="นำเข้า Event และ Spot จากแหล่งข้อมูลภายนอก พร้อมตรวจ robots.txt คัดข้อมูลไม่ครบ และกันรายการซ้ำ"
+        badge={<AdminBadge>Schema.org JSON-LD</AdminBadge>}
+        actions={
+          <>
+            {sourceTypeFilter === 'spots' && (
+              <button
+                onClick={handleEnrichSpotImages}
+                disabled={isEnrichingSpots}
+                className={adminButton.secondary}
+                title="ใส่รูปตามหมวดหมู่ให้ Spot ที่ยังไม่มีรูป โดยไม่ดึงข้อมูลแหล่งใหม่"
+              >
+                <Compass size={14} className={isEnrichingSpots ? 'animate-spin' : ''} />
+                {isEnrichingSpots ? 'กำลังเติมรูป...' : 'เติมรูปที่ขาด'}
+              </button>
+            )}
+            {sourceTypeFilter === 'events' && (
+              <button
+                onClick={handleResetAndSeed}
+                disabled={isResetting || isScraping}
+                className={adminButton.secondary}
+                title="รีเซ็ตชุด Event ตัวอย่างแบบคัดสรร (ไม่ใช่การดึงจากเว็บ)"
+              >
+                <Database size={14} className={isResetting ? 'animate-spin' : ''} />
+                {isResetting ? 'กำลังโหลด...' : 'โหลดชุด Event ตัวอย่าง'}
+              </button>
+            )}
+            <button
+              onClick={() => handleTriggerScrape(sourceTypeFilter)}
+              disabled={isScraping || isResetting}
+              className={adminButton.primary}
+            >
+              <Radio size={14} className={isScraping && !scrapingSourceId ? 'animate-pulse' : ''} />
+              {isScraping && !scrapingSourceId
+                ? `กำลังสแกน ${sourceTypeFilter === 'spots' ? 'Spots' : 'Events'}...`
+                : `สแกน ${sourceTypeFilter === 'spots' ? 'Spot sources' : 'Event sources'}`}
+            </button>
+          </>
+        }
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -476,10 +469,10 @@ export function ScraperEngineView() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#4A7C59] hover:bg-[#3B6347] text-white rounded-xl text-xs font-semibold transition-colors shadow-xs"
+            className={adminButton.dark}
           >
-            <Plus size={13} />
-            เพิ่มแหล่งข้อมูลใหม่ (Custom Source)
+            <Plus size={14} />
+            เพิ่มแหล่งข้อมูล
           </button>
         </div>
       </div>
@@ -808,7 +801,7 @@ export function ScraperEngineView() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 bg-[#4A7C59] hover:bg-[#3B6347] text-white rounded-xl text-xs font-semibold transition-colors shadow-xs"
+                  className={`flex-1 ${adminButton.primary}`}
                 >
                   บันทึกแหล่งข้อมูล
                 </button>

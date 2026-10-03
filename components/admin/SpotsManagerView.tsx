@@ -14,6 +14,7 @@ import {
   Search,
   Trash2,
 } from 'lucide-react';
+import { AdminPageHeader, adminButton } from './AdminUI';
 import { ALL_THAI_PROVINCES, SPOT_CATEGORIES, LifestyleSpotItem } from '@/data/spotsData';
 import { handleAdminUnauthorized } from './adminAuthUtils';
 import { AdminPagination, AdminPaginationState } from './AdminPagination';
@@ -165,43 +166,37 @@ export function SpotsManagerView({ onEditSpot, onAddSpot, reloadToken, showToast
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Compass size={18} className="text-[#4A7C59]" />
-            <h1 className="text-xl font-bold text-slate-800">Lifestyle Spots</h1>
-          </div>
-          <p className="text-slate-500 text-sm">จัดการข้อมูลสถานที่เที่ยวและจุดฮีลใจทั่ว 77 จังหวัด</p>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <button
-            onClick={() => postAction('check', { action: 'check_images' })}
-            disabled={busyAction !== null}
-            title="เปิดรูปของทุกสถานที่จริงเพื่อหารูปที่เสีย"
-            className="flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
-          >
-            <ScanSearch size={14} />
-            {busyAction === 'check' ? 'กำลังตรวจรูป...' : 'ตรวจรูปภาพ'}
-          </button>
-          <button
-            onClick={() => postAction('enrich', { action: 'auto_enrich_images' })}
-            disabled={busyAction !== null}
-            title="ใส่รูปตามหมวดหมู่ให้สถานที่ที่ยังไม่มีรูป"
-            className="flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
-          >
-            <ImageIcon size={14} />
-            {busyAction === 'enrich' ? 'กำลังเติมรูป...' : 'เติมรูปที่ขาด'}
-          </button>
-          <button
-            onClick={onAddSpot}
-            className="flex items-center gap-2 px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl text-sm font-semibold transition-colors shadow-sm"
-          >
-            <Plus size={14} />
-            เพิ่มสถานที่
-          </button>
-        </div>
-      </div>
+      <AdminPageHeader
+        icon={Compass}
+        title="Lifestyle Spots"
+        description="สถานที่เที่ยวและจุดฮีลใจทั่ว 77 จังหวัด"
+        actions={
+          <>
+            <button
+              onClick={() => postAction('check', { action: 'check_images' })}
+              disabled={busyAction !== null}
+              title="เปิดรูปของทุกสถานที่จริงเพื่อหารูปที่เสีย"
+              className={adminButton.secondary}
+            >
+              <ScanSearch size={14} />
+              {busyAction === 'check' ? 'กำลังตรวจรูป...' : 'ตรวจรูปภาพ'}
+            </button>
+            <button
+              onClick={() => postAction('enrich', { action: 'auto_enrich_images' })}
+              disabled={busyAction !== null}
+              title="ใส่รูปตามหมวดหมู่ให้สถานที่ที่ยังไม่มีรูป"
+              className={adminButton.secondary}
+            >
+              <ImageIcon size={14} />
+              {busyAction === 'enrich' ? 'กำลังเติมรูป...' : 'เติมรูปที่ขาด'}
+            </button>
+            <button onClick={onAddSpot} className={adminButton.primary}>
+              <Plus size={14} />
+              เพิ่มสถานที่
+            </button>
+          </>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

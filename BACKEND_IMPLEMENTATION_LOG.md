@@ -56,6 +56,9 @@ The Discovery & Content work includes backend contracts and the admin control pl
 - Admin lists step 2 (2026-10-03): `/api/admin/events` and `/api/admin/spots` support server-side pagination (only when `page` is passed, so full-list callers keep working). Moderation views open on the pending queue (falling back to "all" when it is empty), sort pending-first, and show state-dependent actions: pending → approve/reject, approved → unpublish (back to pending), rejected → back to pending. The Spots module moved out of `app/admin/page.tsx` into `components/admin/SpotsManagerView.tsx`.
 - `lib/imageHealth.ts` + `check_images` action: actually loads every stored image URL (public HTTPS only, via the scraper's SSRF guard; local `/public` paths via the filesystem). Spots carry `imageStatus` (ok/broken/missing/unchecked). Results are cached in process memory for 6h — not persisted, so a restart shows "unchecked" until the next check. First run: 48 distinct URLs, 4 broken, affecting 10 spots.
 
+- Admin design consistency (2026-10-03): every module uses `AdminPageHeader` and the shared `adminButton` styles from `components/admin/AdminUI.tsx` (primary = Royal Blue, dark/secondary = slate, danger = rose outline; no pillar colors on buttons, per AGENTS.md). Sidebar labels match page titles, decorative badges were replaced by real pending counts for Community/Fairs, the Quests table has fixed columns, and moderation rows stack on mobile.
+- Admin modules are addressable by URL (`/admin?m=spots`) using the native History API (refresh, shared links, back/forward).
+
 ## Verification
 
 - Editor diagnostics reported no errors for the changed route, client helper, and consuming pages.

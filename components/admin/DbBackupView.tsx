@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Database, Download, RefreshCw, CheckCircle2, AlertTriangle, Clock, Server } from 'lucide-react';
+import { AdminPageHeader, AdminBadge, adminButton } from './AdminUI';
 import { AdminPreviewNotice } from './AdminPreviewNotice';
 
 const BACKUP_FILES = [
@@ -38,20 +39,18 @@ const ACTION_STYLES: Record<string, string> = {
 export function DbBackupView() {
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Database size={17} className="text-slate-600" />
-            <h1 className="text-xl font-bold text-slate-800">Backup & Audit Logs</h1>
-          </div>
-          <p className="text-slate-500 text-sm">จัดการ Backup ฐานข้อมูล ดูบันทึกการทำงานของระบบ</p>
-        </div>
-        <button title="ยังไม่เชื่อมต่อระบบจริง" disabled className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-xl text-sm font-semibold opacity-50 cursor-not-allowed">
-          <Database size={13} />
-          สร้าง Backup ตอนนี้
-        </button>
-      </div>
+      <AdminPageHeader
+        icon={Database}
+        title="Backup & Audit Logs"
+        description="สำรองฐานข้อมูลและบันทึกการทำงานของระบบ"
+        badge={<AdminBadge tone="amber">ตัวอย่าง</AdminBadge>}
+        actions={
+          <button title="ยังไม่เชื่อมต่อระบบจริง" disabled className={adminButton.dark}>
+            <Database size={13} />
+            สร้าง Backup ตอนนี้
+          </button>
+        }
+      />
 
       <AdminPreviewNotice>
         ไฟล์ backup, สถานะฐานข้อมูล และ audit trail ในหน้านี้เป็นตัวอย่างดีไซน์ ระบบยังไม่มีการ backup หรือบันทึก audit จริง ปุ่มต่างๆ จึงยังใช้งานไม่ได้

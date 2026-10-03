@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   LayoutDashboard,
@@ -13,7 +13,6 @@ import {
   ShieldCheck,
   Bot,
   Database,
-  ChevronRight,
   Zap,
   Home,
   Image as ImageIcon,
@@ -55,34 +54,34 @@ const SIDEBAR_GROUPS: SidebarGroup[] = [
   {
     groupLabel: 'OVERVIEW',
     modules: [
-      { id: 'dashboard', label: 'แดชบอร์ด', labelEn: 'Dashboard', icon: LayoutDashboard },
+      { id: 'dashboard', label: 'ภาพรวมเนื้อหา', labelEn: 'Dashboard', icon: LayoutDashboard },
     ],
   },
   {
     groupLabel: 'GOVERNANCE & MASTER',
     modules: [
-      { id: 'taxonomy', label: 'Master Taxonomy Hub', labelEn: 'Categories & Tags', icon: FolderTree },
+      { id: 'taxonomy', label: 'Master Taxonomy', labelEn: 'หมวดหมู่ & แท็ก', icon: FolderTree },
       { id: 'provinces', label: '77 จังหวัด & โซน', labelEn: 'Provinces & Zones', icon: MapPin },
-      { id: 'venues', label: 'Venue Master Hub', labelEn: 'Convention Centers', icon: Building2 },
+      { id: 'venues', label: 'Venues', labelEn: 'ศูนย์ประชุม & ฮอลล์', icon: Building2 },
     ],
   },
   {
     groupLabel: 'DISCOVERY & CONTENT',
     modules: [
-      { id: 'spots', label: 'Lifestyle Spots', labelEn: '77 Provinces', icon: Leaf, badge: 'Content' },
-      { id: 'community', label: 'Community Meetups', labelEn: 'กิจกรรมชุมชน', icon: Users, badge: 'Moderation' },
+      { id: 'spots', label: 'Lifestyle Spots', labelEn: 'พิกัดเที่ยว 77 จังหวัด', icon: Leaf },
+      { id: 'community', label: 'Community Meetups', labelEn: 'กิจกรรมชุมชน', icon: Users },
       { id: 'fairs', label: 'Fairs & Expos', labelEn: 'งานมหกรรม', icon: Trophy },
-      { id: 'quests', label: 'Quests & Badges', labelEn: 'ชาเลนจ์ & EXP', icon: Zap },
+      { id: 'quests', label: 'Quests & Badges', labelEn: 'ชาเลนจ์ & XP', icon: Zap },
     ],
   },
   {
     groupLabel: 'SYSTEM & OPERATIONS',
     modules: [
-      { id: 'media', label: 'Media & Image Hub', labelEn: 'Asset Storage', icon: ImageIcon, badge: 'Storage' },
-      { id: 'cache', label: 'Cache & Performance', labelEn: 'Memory Engine', icon: Zap, badge: 'L1' },
-      { id: 'rbac', label: 'Users & Permissions', labelEn: 'Role Management', icon: ShieldCheck, preview: true },
-      { id: 'scraper', label: 'Scraper Engine', labelEn: 'Aggregator & Bots', icon: Bot },
-      { id: 'backup', label: 'Backup & Audit Logs', labelEn: 'Database & Logs', icon: Database, preview: true },
+      { id: 'media', label: 'Media & Image Hub', labelEn: 'ไฟล์รูปภาพ', icon: ImageIcon },
+      { id: 'cache', label: 'Cache & Performance', labelEn: 'แคชหน่วยความจำ', icon: Zap },
+      { id: 'rbac', label: 'Users & Permissions', labelEn: 'บัญชี & สิทธิ์', icon: ShieldCheck, preview: true },
+      { id: 'scraper', label: 'Scraper Engine', labelEn: 'นำเข้าข้อมูลภายนอก', icon: Bot },
+      { id: 'backup', label: 'Backup & Audit Logs', labelEn: 'สำรองข้อมูล & บันทึก', icon: Database, preview: true },
     ],
   },
 ];
@@ -92,7 +91,35 @@ interface AdminSidebarProps {
   onModuleChange: (module: AdminModuleId) => void;
 }
 
+// Real pending counts for the moderation pillars (refreshed when the active module changes)
+function usePendingCounts(activeModule: AdminModuleId) {
+  const [pending, setPending] = useState<Partial<Record<AdminModuleId, number>>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async (type: 'community' | 'public_venue') => {
+      const res = await fetch(`/api/admin/events?page=1&limit=1&type=${type}`, { cache: 'no-store' });
+      if (!res.ok) return 0;
+      const data = await res.json();
+      return Number(data.counts?.pending) || 0;
+    };
+    Promise.all([load('community'), load('public_venue')])
+      .then(([community, fairs]) => {
+        if (!cancelled) setPending({ community, fairs });
+      })
+      .catch(() => {
+        // Counts are a hint only; the moderation view shows the authoritative numbers
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeModule]);
+
+  return pending;
+}
+
 export function AdminSidebar({ activeModule, onModuleChange }: AdminSidebarProps) {
+  const pendingCounts = usePendingCounts(activeModule);
 
   return (
     <aside className="flex flex-col w-64 shrink-0 bg-white border-r border-slate-200/80 h-screen sticky top-0 overflow-y-auto shadow-sm">
@@ -150,6 +177,14 @@ export function AdminSidebar({ activeModule, onModuleChange }: AdminSidebarProps
                           {mod.labelEn}
                         </p>
                       </div>
+                      {(pendingCounts[mod.id] ?? 0) > 0 && (
+                        <span
+                          title="รายการรอตรวจ"
+                          className="min-w-[20px] text-center text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-amber-500 text-white shrink-0 tabular-nums"
+                        >
+                          {pendingCounts[mod.id]}
+                        </span>
+                      )}
                       {mod.preview && (
                         <span
                           title="ข้อมูลตัวอย่าง ยังไม่เชื่อมต่อระบบจริง"
