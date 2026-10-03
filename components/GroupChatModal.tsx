@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Send, Users, ShieldCheck, Sparkles, MessageCircle, MapPin, Calendar, Smile, Flag, ShieldAlert, Lock, AlertTriangle } from 'lucide-react';
+import { X, Send, Users, ShieldCheck, Sparkles, MessageCircle, MapPin, Calendar, Smile, Flag, ShieldAlert, Lock, AlertTriangle, Camera, Loader2 } from 'lucide-react';
 import { EventItem } from '@/data/mockData';
+import { compressImageToDataUrl } from '@/lib/media/compressor';
 import { ReportSafetyModal } from './ReportSafetyModal';
 import { ProfileModal } from './ProfileModal';
 
@@ -14,6 +15,7 @@ interface ChatMessage {
   isMe?: boolean;
   time: string;
   text: string;
+  imageUrl?: string;
 }
 
 interface GroupChatModalProps {
@@ -29,6 +31,9 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({
 }) => {
   const [inputText, setInputText] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [pendingImage, setPendingImage] = useState<string | null>(null);
+  const [isCompressingChatImage, setIsCompressingChatImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reportToast, setReportToast] = useState<string | null>(null);
   const [selectedProfileQuery, setSelectedProfileQuery] = useState<string | null>(null);
@@ -88,9 +93,32 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({
 
   if (!isOpen || !event) return null;
 
+  const handleChatPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsCompressingChatImage(true);
+      const result = await compressImageToDataUrl(file, {
+        maxWidth: 1200,
+        maxHeight: 1200,
+        quality: 0.80,
+        targetMimeType: 'image/webp',
+      });
+      setPendingImage(result.dataUrl);
+    } catch (err) {
+      console.error('Chat photo upload error:', err);
+    } finally {
+      setIsCompressingChatImage(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim()) return;
+    if (!inputText.trim() && !pendingImage) return;
 
     const now = new Date();
     const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} น.`;
@@ -102,10 +130,12 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({
       isMe: true,
       time: timeStr,
       text: inputText.trim(),
+      imageUrl: pendingImage || undefined,
     };
 
     setMessages((prev) => [...prev, newMsg]);
     setInputText('');
+    setPendingImage(null);
   };
 
   const handleQuickPrompt = (prompt: string) => {
@@ -243,7 +273,16 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({
                       : 'bg-white text-slate-800 border border-slate-200/90 rounded-tl-xs shadow-xs'
                   }`}
                 >
-                  {msg.text}
+                  {msg.imageUrl && (
+                    <div className="mb-2 rounded-xl overflow-hidden max-w-[220px]">
+                      <img
+                        src={msg.imageUrl}
+                        alt="Chat photo"
+                        className="w-full h-auto max-h-[200px] object-cover rounded-xl border border-white/20 shadow-xs"
+                      />
+                    </div>
+                  )}
+                  {msg.text && <p>{msg.text}</p>}
                 </div>
               </div>
             </div>
@@ -269,11 +308,71 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({
           ))}
         </div>
 
+        {/* Pending Image Attachment Bar */}
+        {(pendingImage || isCompressingChatImage) && (
+          <div className="px-3 py-2 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0 animate-fade-in">
+            <div className="flex items-center gap-2">
+              {isCompressingChatImage ? (
+                <div className="flex items-center gap-2 text-xs text-slate-500 font-bold">
+                  <Loader2 className="w-4 h-4 animate-spin text-[#2563EB]" />
+                  <span>กำลังบีบอัดรูปภาพเป็น WebP...</span>
+                </div>
+              ) : (
+                pendingImage && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-10 h-10 rounded-lg overflow-hidden border border-slate-300 shrink-0">
+                      <img src={pendingImage} alt="Attachment" className="w-full h-full object-cover" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-slate-800 block">แนบรูปภาพแล้ว</span>
+                      <span className="text-[10px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.2 rounded">WebP Auto-Compressed ⚡</span>
+                    </div>
+                  </div>
+                )
+              )}
+            </div>
+
+            {pendingImage && !isCompressingChatImage && (
+              <button
+                type="button"
+                onClick={() => setPendingImage(null)}
+                className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
+                title="ลบรูปภาพที่แนบ"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Chat Input Bar */}
         <form
           onSubmit={handleSendMessage}
           className="p-3 bg-white border-t border-slate-200 flex items-center gap-2 shrink-0"
         >
+          <label
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+              isCompressingChatImage
+                ? 'bg-slate-200 text-slate-400'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 active:scale-95'
+            }`}
+            title="แนบรูปภาพพิกัดหรือบรรยากาศ (WebP Auto-Compress)"
+          >
+            {isCompressingChatImage ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Camera className="w-4 h-4" />
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              disabled={isCompressingChatImage}
+              onChange={handleChatPhotoUpload}
+              className="hidden"
+            />
+          </label>
+
           <input
             type="text"
             value={inputText}
@@ -284,7 +383,7 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({
 
           <button
             type="submit"
-            disabled={!inputText.trim()}
+            disabled={(!inputText.trim() && !pendingImage) || isCompressingChatImage}
             className="w-10 h-10 rounded-full bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-white flex items-center justify-center transition-all shadow-2xs hover:shadow-md active:scale-95 cursor-pointer shrink-0"
             title="ส่งข้อความ"
           >

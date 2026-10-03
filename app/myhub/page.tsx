@@ -129,7 +129,7 @@ export default function MyHubPage() {
 
   // Calendar Navigation State
   const [calYear, setCalYear] = useState<number>(2026);
-  const [calMonth, setCalMonth] = useState<number>(8); // 0 = Jan, 8 = Sep
+  const [calMonth, setCalMonth] = useState<number>(9); // 0 = Jan, 9 = Oct (October 2026)
   const [selectedCalDay, setSelectedCalDay] = useState<number | null>(null);
   const [calendarTimeScope, setCalendarTimeScope] = useState<'month' | 'all'>('month');
 
@@ -167,17 +167,29 @@ export default function MyHubPage() {
       const storedFairSubIds: string[] = JSON.parse(localStorage.getItem('joined_fair_sub_ids') || '[]');
       let allJoinedIds = Array.from(new Set([...storedJoinedIds, ...storedFairSubIds]));
       
-      // Default fallback mock events if empty so user has realistic rich demo data immediately
+      const octoberUpcomingMockIds = [
+        'comm-16', // 03 ต.ค. 2026: Silver Ring Crafting (Today)
+        'comm-18', // 04 ต.ค. 2026: English & Cultural Exchange (Tomorrow)
+        'comm-19', // 10 ต.ค. 2026: Acoustic Guitar Jam
+        'comm-20', // 11 ต.ค. 2026: Cat Cafe Meetup
+        'fair-book-expo-2026', // 15 - 26 ต.ค. 2026: Book Expo Thailand QSNCC
+        'comm-oct-special-1', // 17 ต.ค. 2026: Sunset Rooftop Acoustic อารีย์
+      ];
+
+      // Default fallback mock events if empty or missing active October events
       if (allJoinedIds.length === 0) {
         allJoinedIds = [
-          'comm-16', // Upcoming
-          'comm-17', // Upcoming
-          'live-agg-1', // Upcoming
+          ...octoberUpcomingMockIds,
           'comm-benjakitti-morning-run', // Ended (Attended)
           'comm-1', // Ended (Attended)
           'comm-ai-1', // Ended (Missed)
           'live-agg-3', // Ended (Cancelled)
         ];
+      } else {
+        const hasOctEvent = allJoinedIds.some((id) => octoberUpcomingMockIds.includes(id));
+        if (!hasOctEvent) {
+          allJoinedIds = Array.from(new Set([...octoberUpcomingMockIds, ...allJoinedIds]));
+        }
       }
       setJoinedEventIds(allJoinedIds);
 
@@ -402,6 +414,39 @@ export default function MyHubPage() {
   const upcomingExpoEvents = useMemo(() => {
     return expoEvents.filter((e) => getEventAttendanceStatus(e) === 'upcoming');
   }, [expoEvents, cancelledEventIds]);
+
+  // Total counts for Passport Header Metrics (Lifecycle: Upcoming -> Attended -> XP)
+  const upcomingEventsTotalCount = useMemo(() => {
+    return upcomingCommunityEvents.length + upcomingExpoEvents.length;
+  }, [upcomingCommunityEvents, upcomingExpoEvents]);
+
+  const attendedEventsTotalCount = useMemo(() => {
+    const attendedComm = communityEvents.filter((e) => getEventAttendanceStatus(e) === 'attended').length;
+    const attendedExpo = expoEvents.filter((e) => getEventAttendanceStatus(e) === 'attended').length;
+    return attendedComm + attendedExpo;
+  }, [communityEvents, expoEvents, cancelledEventIds, missedEventIds]);
+
+  // Quick Navigation Handlers for Metric Cards
+  const handleQuickFilterUpcoming = () => {
+    setHubMainMode('categories');
+    setEventViewMode('upcoming');
+    if (activeSubTab !== 'community' && activeSubTab !== 'fairs') {
+      setActiveSubTab('community');
+    }
+    const el = document.getElementById('hub-content-section');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleQuickFilterAttended = () => {
+    setHubMainMode('categories');
+    setEventViewMode('past');
+    setPastSubFilter('attended');
+    if (activeSubTab !== 'community' && activeSubTab !== 'fairs') {
+      setActiveSubTab('community');
+    }
+    const el = document.getElementById('hub-content-section');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  };
 
   // Filtered lists based on All vs Upcoming vs Past + Sub-filter
   const filteredCommunityEvents = useMemo(() => {
@@ -1059,7 +1104,8 @@ export default function MyHubPage() {
 
               {[...Array(daysInMonth)].map((_, idx) => {
                 const day = idx + 1;
-                const isToday = calMonth === 8 && calYear === 2026 && day === 26;
+                const todayDate = new Date();
+                const isToday = calMonth === todayDate.getMonth() && calYear === todayDate.getFullYear() && day === todayDate.getDate();
                 const isSelected = selectedCalDay === day;
                 const eventsOnDay = filteredMasterEvents.filter((ev) => isEventOnDay(ev, day, calMonth, calYear, calendarCategoryFilter));
 
@@ -1274,9 +1320,16 @@ export default function MyHubPage() {
                       }`}
                     >
                       {/* Card Image Banner */}
-                      <div
-                        onClick={() => setDetailModalEvent(ev)}
-                        className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 shrink-0 cursor-pointer"
+                      <Link
+                        href={
+                          meta.pillar === 'quests'
+                            ? '/challenges'
+                            : ev.eventType === 'public_venue' || meta.pillar === 'fairs'
+                            ? `/fairs/${encodeURIComponent(ev.id)}`
+                            : `/community/${encodeURIComponent(ev.id)}`
+                        }
+                        className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 shrink-0 block cursor-pointer"
+                        title={`ดูรายละเอียด ${ev.title}`}
                       >
                         <img
                           src={ev.image || fallbackImg}
@@ -1331,7 +1384,7 @@ export default function MyHubPage() {
                             </span>
                           </div>
                         )}
-                      </div>
+                      </Link>
 
                       {/* Card Body */}
                       <div className="p-3.5 flex flex-col justify-between flex-1 gap-2.5">
@@ -1366,13 +1419,23 @@ export default function MyHubPage() {
                           </div>
 
                           {/* Title */}
-                          <h3
-                            onClick={() => setDetailModalEvent(ev)}
-                            className={`font-bold text-[13px] sm:text-sm text-slate-900 line-clamp-2 min-h-[2.5rem] sm:min-h-[2.6rem] ${meta.titleHover} transition-colors leading-[1.3] tracking-tight cursor-pointer`}
-                            title={ev.title}
+                          <Link
+                            href={
+                              meta.pillar === 'quests'
+                                ? '/challenges'
+                                : ev.eventType === 'public_venue' || meta.pillar === 'fairs'
+                                ? `/fairs/${encodeURIComponent(ev.id)}`
+                                : `/community/${encodeURIComponent(ev.id)}`
+                            }
+                            className="block group/title"
                           >
-                            {ev.title}
-                          </h3>
+                            <h3
+                              className={`font-bold text-[13px] sm:text-sm text-slate-900 line-clamp-2 min-h-[2.5rem] sm:min-h-[2.6rem] ${meta.titleHover} transition-colors leading-[1.3] tracking-tight cursor-pointer`}
+                              title={ev.title}
+                            >
+                              {ev.title}
+                            </h3>
+                          </Link>
 
                           {/* Meta: Date & Location */}
                           <div className="space-y-1 text-xs text-slate-500">
@@ -1415,15 +1478,18 @@ export default function MyHubPage() {
                               </Link>
                             </>
                           ) : isCancelled ? (
-                            /* Cancelled Event: NO share, NO review */
-                            <button
-                              type="button"
-                              onClick={() => setDetailModalEvent(ev)}
+                            /* Cancelled Event: Link to fullpage */
+                            <Link
+                              href={
+                                ev.eventType === 'public_venue' || meta.pillar === 'fairs'
+                                  ? `/fairs/${encodeURIComponent(ev.id)}`
+                                  : `/community/${encodeURIComponent(ev.id)}`
+                              }
                               className="w-full py-1.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-2xs cursor-pointer truncate"
                             >
                               <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
                               <span>ดูข้อมูลงาน (ยกเลิกแล้ว)</span>
-                            </button>
+                            </Link>
                           ) : isMissed ? (
                             /* Missed Event: NO review, view moments */
                             <Link
@@ -1828,26 +1894,49 @@ export default function MyHubPage() {
                       </div>
                     </div>
 
-                    {/* Passport Metrics */}
+                    {/* Passport Metrics (Upcoming -> Attended History -> Rewards XP) */}
                     <div className="flex items-center self-stretch lg:self-auto">
                       {/* Metric Chips */}
-                      <div className="grid grid-cols-3 gap-2 bg-slate-50 p-2 rounded-2xl border border-slate-200/80 w-full sm:w-auto">
-                        <div className="px-3 py-1.5 text-center">
+                      <div className="grid grid-cols-3 gap-1 sm:gap-2 bg-slate-50 p-2 rounded-2xl border border-slate-200/80 w-full sm:w-auto">
+                        {/* 1. นัดหมาย (Upcoming) */}
+                        <button
+                          type="button"
+                          onClick={handleQuickFilterUpcoming}
+                          className={`px-3 py-1.5 text-center rounded-xl transition-all cursor-pointer border ${
+                            hubMainMode === 'categories' && eventViewMode === 'upcoming'
+                              ? 'bg-white border-blue-500/80 shadow-2xs'
+                              : 'border-transparent hover:bg-white/80'
+                          }`}
+                          title={`คลิกเพื่อดูนัดหมายที่กำลังจะมาถึง (${upcomingEventsTotalCount} รายการ)`}
+                        >
                           <span className="text-[10px] uppercase font-bold text-slate-400 block">นัดหมาย</span>
-                          <span className="text-base sm:text-lg font-black text-slate-900">
-                            {communityEvents.length + expoEvents.length}
+                          <span className="text-base sm:text-lg font-black text-slate-900 block leading-tight">
+                            {upcomingEventsTotalCount}
                           </span>
-                        </div>
-                        <div className="px-3 py-1.5 text-center border-x border-slate-200">
-                          <span className="text-[10px] uppercase font-bold text-slate-400 block">พิกัดเซฟ</span>
-                          <span className="text-base sm:text-lg font-black text-slate-900">
-                            {savedSpotsList.length}
+                        </button>
+
+                        {/* 2. ที่เคยเข้าร่วม (Attended History) */}
+                        <button
+                          type="button"
+                          onClick={handleQuickFilterAttended}
+                          className={`px-3 py-1.5 text-center rounded-xl transition-all cursor-pointer border border-x border-slate-200 ${
+                            hubMainMode === 'categories' && eventViewMode === 'past'
+                              ? 'bg-white border-emerald-500/80 shadow-2xs'
+                              : 'border-transparent hover:bg-white/80'
+                          }`}
+                          title={`คลิกเพื่อดูประวัติกิจกรรมที่เคยเข้าร่วม (${attendedEventsTotalCount} รายการ)`}
+                        >
+                          <span className="text-[10px] uppercase font-bold text-slate-400 block">ที่เคยเข้าร่วม</span>
+                          <span className="text-base sm:text-lg font-black text-slate-900 block leading-tight">
+                            {attendedEventsTotalCount}
                           </span>
-                        </div>
+                        </button>
+
+                        {/* 3. แต้มสะสม (Rewards XP) */}
                         <Link
                           href="/rewards"
                           className="px-3 py-1.5 text-center group/xp hover:bg-amber-50/90 hover:border-amber-300/80 rounded-xl transition-all cursor-pointer flex flex-col items-center justify-center border border-transparent active:scale-95 shadow-2xs"
-                          title="คลิกเพื่อไปหน้าแลกของรางวัล & สิทธิพิเศษ"
+                          title={`คลิกเพื่อไปหน้าแลกของรางวัล & สิทธิพิเศษ (${userXp} XP)`}
                         >
                           <div className="flex items-center gap-1">
                             <span className="text-[10px] uppercase font-bold text-slate-400 group-hover/xp:text-amber-700 block">
@@ -1855,7 +1944,7 @@ export default function MyHubPage() {
                             </span>
                             <ArrowRight className="w-2.5 h-2.5 text-[#D04A1B] opacity-70 group-hover/xp:translate-x-0.5 transition-transform" />
                           </div>
-                          <span className="text-base sm:text-lg font-black text-slate-900 group-hover/xp:text-[#D04A1B]">
+                          <span className="text-base sm:text-lg font-black text-slate-900 group-hover/xp:text-[#D04A1B] block leading-tight">
                             {userXp}
                           </span>
                           <span className="text-[9.5px] font-extrabold text-[#D04A1B] bg-amber-100/90 group-hover/xp:bg-amber-200 px-1.5 py-0.2 rounded-md mt-0.5 transition-colors">
@@ -1980,7 +2069,7 @@ export default function MyHubPage() {
             {/* ========================================================================= */}
             {/* 2. MAIN CONTENT AREA                                                      */}
             {/* ========================================================================= */}
-            <main className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+            <main id="hub-content-section" className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
               {hubMainMode === 'calendar' ? (
                 renderMasterCalendarView()
               ) : (
@@ -2131,9 +2220,10 @@ export default function MyHubPage() {
                             }`}
                           >
                             {/* Card Image */}
-                            <div
-                              onClick={() => setDetailModalEvent(event)}
-                              className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 shrink-0 cursor-pointer"
+                            <Link
+                              href={`/community/${encodeURIComponent(event.id)}`}
+                              className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 shrink-0 block cursor-pointer"
+                              title={`ดูรายละเอียด ${event.title}`}
                             >
                               <img
                                 src={event.image}
@@ -2171,7 +2261,7 @@ export default function MyHubPage() {
                                   </span>
                                 )}
                               </div>
-                            </div>
+                            </Link>
 
                             {/* Card Body */}
                             <div className="p-3.5 flex flex-col justify-between flex-1 gap-2.5">
@@ -2202,13 +2292,17 @@ export default function MyHubPage() {
                                 </div>
 
                                 {/* Title */}
-                                <h3
-                                  onClick={() => setDetailModalEvent(event)}
-                                  className={`font-bold text-[13px] sm:text-sm text-slate-900 line-clamp-2 min-h-[2.5rem] sm:min-h-[2.6rem] ${moodTheme.titleHover} transition-colors leading-[1.3] tracking-tight cursor-pointer`}
-                                  title={event.title}
+                                <Link
+                                  href={`/community/${encodeURIComponent(event.id)}`}
+                                  className="block group/title"
                                 >
-                                  {event.title}
-                                </h3>
+                                  <h3
+                                    className={`font-bold text-[13px] sm:text-sm text-slate-900 line-clamp-2 min-h-[2.5rem] sm:min-h-[2.6rem] ${moodTheme.titleHover} transition-colors leading-[1.3] tracking-tight cursor-pointer`}
+                                    title={event.title}
+                                  >
+                                    {event.title}
+                                  </h3>
+                                </Link>
 
                                 {/* Meta Info */}
                                 <div className="space-y-1 text-xs text-slate-500">
@@ -2228,16 +2322,15 @@ export default function MyHubPage() {
                               {/* Action Buttons Area: Dynamically changes based on attendance */}
                               <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5 mt-auto">
                                 {isCancelled ? (
-                                  /* Cancelled State: NO review, NO share moment */
+                                  /* Cancelled State: Link to fullpage */
                                   <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                                    <button
-                                      type="button"
-                                      onClick={() => setDetailModalEvent(event)}
+                                    <Link
+                                      href={`/community/${encodeURIComponent(event.id)}`}
                                       className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-2xs cursor-pointer truncate"
                                     >
                                       <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
                                       <span>ดูข้อมูลงาน</span>
-                                    </button>
+                                    </Link>
                                     <button
                                       type="button"
                                       onClick={() => handleMarkAttended(event.id, event.title)}
@@ -2354,17 +2447,14 @@ export default function MyHubPage() {
                                       onClick={(e) => e.stopPropagation()}
                                       className="absolute right-0 bottom-full mb-1.5 w-48 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-30 animate-fade-in"
                                     >
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setActiveMenuId(null);
-                                          setDetailModalEvent(event);
-                                        }}
+                                      <Link
+                                        href={`/community/${encodeURIComponent(event.id)}`}
+                                        onClick={() => setActiveMenuId(null)}
                                         className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
                                       >
                                         <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
                                         <span>ดูรายละเอียดงาน</span>
-                                      </button>
+                                      </Link>
                                       <button
                                         type="button"
                                         onClick={() => {
@@ -2629,9 +2719,10 @@ export default function MyHubPage() {
                             }`}
                           >
                             {/* Card Image */}
-                            <div
-                              onClick={() => setDetailModalEvent(event)}
-                              className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 shrink-0 cursor-pointer"
+                            <Link
+                              href={`/fairs/${encodeURIComponent(event.id)}`}
+                              className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 shrink-0 block cursor-pointer"
+                              title={`ดูรายละเอียด ${event.title}`}
                             >
                               <img
                                 src={event.image}
@@ -2666,7 +2757,7 @@ export default function MyHubPage() {
                                   </span>
                                 )}
                               </div>
-                            </div>
+                            </Link>
 
                             {/* Card Body */}
                             <div className="p-3.5 flex flex-col justify-between flex-1 gap-2.5">
@@ -2688,13 +2779,17 @@ export default function MyHubPage() {
                                   )}
                                 </div>
 
-                                <h3
-                                  onClick={() => setDetailModalEvent(event)}
-                                  className="font-bold text-[13px] sm:text-sm text-slate-900 line-clamp-2 min-h-[2.5rem] sm:min-h-[2.6rem] group-hover:text-[#2B527A] transition-colors leading-[1.3] tracking-tight cursor-pointer"
-                                  title={event.title}
+                                <Link
+                                  href={`/fairs/${encodeURIComponent(event.id)}`}
+                                  className="block group/title"
                                 >
-                                  {event.title}
-                                </h3>
+                                  <h3
+                                    className="font-bold text-[13px] sm:text-sm text-slate-900 line-clamp-2 min-h-[2.5rem] sm:min-h-[2.6rem] group-hover:text-[#2B527A] transition-colors leading-[1.3] tracking-tight cursor-pointer"
+                                    title={event.title}
+                                  >
+                                    {event.title}
+                                  </h3>
+                                </Link>
 
                                 <div className="space-y-1 text-xs text-slate-500">
                                   <div className="flex items-center gap-1.5">

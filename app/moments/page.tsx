@@ -50,6 +50,7 @@ import {
   Check,
 } from 'lucide-react';
 import { MomentsStoriesRail } from '@/components/MomentsStoriesRail';
+import { compressImage } from '@/lib/media/compressor';
 
 // Popular Lifestyle Check-In Locations for Facebook-Style Check-In
 const POPULAR_CHECKIN_SPOTS = [
@@ -124,10 +125,12 @@ function MomentsContent() {
   // Filter & Search States
   const urlLocation = searchParams.get('location') || '';
   const urlTab = searchParams.get('tab');
+  const urlMomentId = searchParams.get('momentId');
   const [locationFilter, setLocationFilter] = useState<string>(urlLocation);
   const [activeTabFilter, setActiveTabFilter] = useState<'all' | 'popular' | 'saved' | 'mine'>(
     urlTab === 'mine' ? 'mine' : urlTab === 'popular' ? 'popular' : 'all'
   );
+  const [highlightedPostId, setHighlightedPostId] = useState<string | null>(null);
 
   // Instagram-Grade Micro-Interactions States
   const [savedPostIds, setSavedPostIds] = useState<string[]>(['1', '3']);
@@ -144,13 +147,70 @@ function MomentsContent() {
   }, [urlLocation]);
 
   // Posts State
+  const MAX_MOMENT_IMAGES = 10;
   const [posts, setPosts] = useState<CommunityPost[]>(MOCK_POSTS);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [uploadedPostImages, setUploadedPostImages] = useState<string[]>([]);
+  const [isCompressingImages, setIsCompressingImages] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState<number>(6);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  // Hydrate user-created posts and saved bookmarks from localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const savedUserMoments = localStorage.getItem('chill_user_moments');
+      if (savedUserMoments) {
+        const parsed = JSON.parse(savedUserMoments);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setPosts((prev) => {
+            const existingIds = new Set(parsed.map((p: any) => p.id));
+            const rest = prev.filter((p) => !existingIds.has(p.id));
+            return [...parsed, ...rest];
+          });
+        }
+      }
+      const savedBookmarks = localStorage.getItem('chill_saved_moments');
+      if (savedBookmarks) {
+        const parsedBookmarks = JSON.parse(savedBookmarks);
+        if (Array.isArray(parsedBookmarks)) {
+          setSavedPostIds(parsedBookmarks);
+        }
+      }
+    } catch (e) {
+      console.error('Error hydrating moments from localStorage:', e);
+    }
+  }, []);
+
+  // Handle direct link to shared moment (?momentId=...)
+  useEffect(() => {
+    if (!urlMomentId) return;
+    setActiveTabFilter('all');
+    setLocationFilter('');
+
+    const timer = setTimeout(() => {
+      const el = document.getElementById(`moment-${urlMomentId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setHighlightedPostId(urlMomentId);
+        showToast('เปิดและเน้นโมเมนต์ที่แชร์เรียบร้อย 📍');
+        const clearTimer = setTimeout(() => {
+          setHighlightedPostId(null);
+        }, 4000);
+        return () => clearTimeout(clearTimer);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [urlMomentId, posts]);
+
+  // Derive user's latest post thumbnail for Story Rail
+  const userStoryThumbnail = useMemo(() => {
+    const userPost = posts.find((p) => p.userName.includes('คุณส้ม') && p.images && p.images.length > 0);
+    return userPost?.images?.[0] || null;
+  }, [posts]);
 
   // Dynamic responsive initial count based on screen size (4 mobile, 6 tablet, 8 desktop)
   useEffect(() => {
@@ -403,16 +463,40 @@ function MomentsContent() {
 
     setSavedPostIds((prev) => {
       const isSaved = prev.includes(postId);
+      const next = isSaved ? prev.filter((id) => id !== postId) : [...prev, postId];
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('chill_saved_moments', JSON.stringify(next));
+        } catch (e) {
+          console.error('Error saving bookmark to localStorage:', e);
+        }
+      }
       if (isSaved) {
         showToast('ยกเลิกการบันทึกโมเมนต์');
-        return prev.filter((id) => id !== postId);
       } else {
         showToast('บันทึกโมเมนต์ลงคอลเลกชันส่วนตัวแล้ว 🔖');
-        return [...prev, postId];
       }
+      return next;
     });
   };
 
+  // Delete User's Own Post
+  const handleDeletePost = (postId: string) => {
+    setPosts((prev) => {
+      const next = prev.filter((p) => p.id !== postId);
+      if (typeof window !== 'undefined') {
+        try {
+          const existingLocal = JSON.parse(localStorage.getItem('chill_user_moments') || '[]');
+          const updatedLocal = existingLocal.filter((p: any) => p.id !== postId);
+          localStorage.setItem('chill_user_moments', JSON.stringify(updatedLocal));
+        } catch (e) {
+          console.error('Error deleting user moment:', e);
+        }
+      }
+      return next;
+    });
+    showToast('ลบโมเมนต์ของคุณเรียบร้อยแล้ว');
+  };
 
   // Toggle Comments Drawer
   const handleToggleCommentsDrawer = (postId: string) => {
@@ -461,7 +545,7 @@ function MomentsContent() {
     showToast('ส่งความคิดเห็นเรียบร้อยแล้ว! 💬');
   };
 
-  // Copy Share Link & Increment Share Count (Multi-platform & Mobile Web Share API support)
+  // Copy Share Link & Increment Share Count (Direct moment link & copy toast)
   const handleShareMoment = async (post: CommunityPost) => {
     // Increment share count
     setPosts((prev) =>
@@ -474,9 +558,7 @@ function MomentsContent() {
     );
 
     if (typeof window !== 'undefined') {
-      const shareUrl = `${window.location.origin}/moments?location=${encodeURIComponent(
-        post.targetTitle || post.location || ''
-      )}`;
+      const shareUrl = `${window.location.origin}/moments?momentId=${encodeURIComponent(post.id)}`;
 
       // 1. If mobile browser supports native Web Share API (iOS Safari / Android)
       if (navigator.share) {
@@ -502,7 +584,7 @@ function MomentsContent() {
             showToast('คัดลอกลิงก์โมเมนต์เรียบร้อยแล้ว! 🔗');
           })
           .catch(() => {
-            showToast('แชร์โมเมนต์สำเร็จ! 🌟');
+            showToast('คัดลอกลิงก์โมเมนต์เรียบร้อยแล้ว! 🔗');
           });
       } else {
         // Fallback for older browsers
@@ -578,31 +660,56 @@ function MomentsContent() {
     setSelectedEvent(matched);
   };
 
-  // Handle Multi-Image Upload (Max 6)
-  const handleImageFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle Multi-Image Upload (Max 10 with Automatic WebP Compression & Canvas Scaling)
+  const handleImageFilesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const remainingSlots = 6 - uploadedPostImages.length;
+    const remainingSlots = MAX_MOMENT_IMAGES - uploadedPostImages.length;
     if (remainingSlots <= 0) {
-      showToast('สามารถแชร์ได้สูงสุดไม่เกิน 6 รูปต่อโพสต์ครับ');
+      showToast(`สามารถแชร์ได้สูงสุดไม่เกิน ${MAX_MOMENT_IMAGES} รูปต่อโพสต์ครับ`);
       return;
     }
 
     const filesToProcess = Array.from(files).slice(0, remainingSlots);
+    setIsCompressingImages(true);
 
-    filesToProcess.forEach((file) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setUploadedPostImages((prev) => {
-            if (prev.length >= 6) return prev;
-            return [...prev, reader.result as string];
-          });
-        }
-      };
-      reader.readAsDataURL(file);
-    });
+    try {
+      const processedDataUrls: string[] = [];
+
+      for (const file of filesToProcess) {
+        // 1. Client-Side HTML5 Canvas Resize & Convert to .webp (Max 1600x1600, quality 0.82)
+        const compressedFile = await compressImage(file, {
+          maxWidth: 1600,
+          maxHeight: 1600,
+          quality: 0.82,
+          targetMimeType: 'image/webp',
+        });
+
+        // 2. Read as Lightweight WebP Data URL
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(compressedFile);
+        });
+
+        processedDataUrls.push(dataUrl);
+      }
+
+      setUploadedPostImages((prev) => {
+        const next = [...prev, ...processedDataUrls].slice(0, MAX_MOMENT_IMAGES);
+        return next;
+      });
+
+      showToast(`แปลงเป็น WebP และปรับขนาดสำเร็จ (${processedDataUrls.length} รูป) ⚡`);
+    } catch (err) {
+      console.error('Error compressing images:', err);
+      showToast('เกิดข้อผิดพลาดในการประมวลผลรูปภาพ');
+    } finally {
+      setIsCompressingImages(false);
+      e.target.value = '';
+    }
   };
 
   const handleRemoveImage = (indexToRemove: number) => {
@@ -689,7 +796,18 @@ function MomentsContent() {
       comments: [],
     };
 
-    setPosts([createdPost, ...posts]);
+    setPosts((prev) => {
+      const updated = [createdPost, ...prev];
+      if (typeof window !== 'undefined') {
+        try {
+          const existingLocal = JSON.parse(localStorage.getItem('chill_user_moments') || '[]');
+          localStorage.setItem('chill_user_moments', JSON.stringify([createdPost, ...existingLocal]));
+        } catch (err) {
+          console.error('Error saving user moment:', err);
+        }
+      }
+      return updated;
+    });
     setCaptionInput('');
     setCustomLocationInput('');
     setUploadedPostImages([]);
@@ -810,6 +928,8 @@ function MomentsContent() {
           }}
           isLoggedIn={isLoggedIn}
           onOpenTargetLocation={(locName) => setLocationFilter(locName)}
+          onShowToast={showToast}
+          userStoryThumbnail={userStoryThumbnail}
         />
 
         {/* 2. Main Grid: 2 Columns */}
@@ -988,7 +1108,12 @@ function MomentsContent() {
                 return (
                   <article
                     key={post.id}
-                    className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs overflow-hidden transition-all duration-300 hover:shadow-md"
+                    id={`moment-${post.id}`}
+                    className={`bg-white rounded-3xl border border-slate-200/90 shadow-2xs overflow-hidden transition-all duration-500 hover:shadow-md ${
+                      highlightedPostId === post.id
+                        ? 'ring-4 ring-[#2563EB]/40 bg-blue-50/15 shadow-xl scale-[1.01]'
+                        : ''
+                    }`}
                   >
                     {/* Post Author Bar */}
                     <div className="p-4 sm:p-5 flex items-center justify-between gap-3">
@@ -1051,9 +1176,21 @@ function MomentsContent() {
                         </div>
                       </div>
 
-                      <span className="text-xs text-slate-400 font-medium shrink-0">
-                        {post.timeAgo}
-                      </span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs text-slate-400 font-medium">
+                          {post.timeAgo}
+                        </span>
+                        {post.userName.includes('คุณส้ม') && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeletePost(post.id)}
+                            className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                            title="ลบโมเมนต์นี้"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     {/* Multi-Photo Collage Grid Layout (Facebook-Style Responsive Photo Engine + Double-Tap Like) */}
@@ -2099,17 +2236,30 @@ function MomentsContent() {
                 </div>
               </div>
 
-              {/* Multi-Photo Upload Section (Up to 6 images) */}
+              {/* Multi-Photo Upload Section (Up to 10 images with Auto WebP Compression) */}
               <div className="space-y-2.5 pt-1 border-t border-slate-100">
                 <div className="flex items-center justify-between text-xs font-bold text-slate-800">
-                  <span>รูปภาพโมเมนต์บรรยากาศ ({uploadedPostImages.length}/6 รูป)</span>
+                  <span className="flex items-center gap-1.5">
+                    <span>รูปภาพโมเมนต์บรรยากาศ ({uploadedPostImages.length}/{MAX_MOMENT_IMAGES} รูป)</span>
+                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-blue-50 text-[#2563EB] border border-blue-200">
+                      Auto WebP
+                    </span>
+                  </span>
                   <span className="text-[11px] text-slate-500 font-medium">
-                    อัปโหลดได้สูงสุด 6 รูป
+                    {isCompressingImages ? 'กำลังประมวลผล WebP...' : `อัปโหลดได้สูงสุด ${MAX_MOMENT_IMAGES} รูป`}
                   </span>
                 </div>
 
+                {/* Uploading / Compressing state banner */}
+                {isCompressingImages && (
+                  <div className="p-3 bg-blue-50/80 border border-blue-200/80 rounded-2xl flex items-center gap-2.5 text-xs text-blue-800 font-semibold animate-fade-in">
+                    <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin shrink-0" />
+                    <span>กำลังย่อขนาดและแปลงไฟล์เป็น .WebP เพื่อความคมชัดและโหลดเร็วที่สุด...</span>
+                  </div>
+                )}
+
                 {/* Uploaded Thumbnails Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                   {uploadedPostImages.map((img, idx) => (
                     <div
                       key={idx}
@@ -2132,12 +2282,12 @@ function MomentsContent() {
                     </div>
                   ))}
 
-                  {/* Add More Photos Slot (if < 6) */}
-                  {uploadedPostImages.length < 6 && (
+                  {/* Add More Photos Slot (if < MAX_MOMENT_IMAGES) */}
+                  {uploadedPostImages.length < MAX_MOMENT_IMAGES && (
                     <label
                       className={`${
                         uploadedPostImages.length === 0
-                          ? 'col-span-2 sm:col-span-3 py-6 px-4'
+                          ? 'col-span-2 sm:col-span-4 py-6 px-4'
                           : 'aspect-[4/3]'
                       } rounded-2xl bg-slate-50 hover:bg-slate-100/80 border-2 border-dashed border-slate-300 hover:border-slate-500 transition-all text-center cursor-pointer flex flex-col items-center justify-center gap-1.5 group`}
                     >
@@ -2152,14 +2302,15 @@ function MomentsContent() {
                         </p>
                         <p className="text-[10.5px] text-slate-500">
                           {uploadedPostImages.length === 0
-                            ? `รองรับ JPG, PNG, WEBP (เหลืออีก 6 รูป)`
-                            : `เหลืออีก ${6 - uploadedPostImages.length} รูป`}
+                            ? `รองรับ JPG, PNG, WEBP (สูงสุด ${MAX_MOMENT_IMAGES} รูป)`
+                            : `เหลืออีก ${MAX_MOMENT_IMAGES - uploadedPostImages.length} รูป`}
                         </p>
                       </div>
                       <input
                         type="file"
                         accept="image/*"
                         multiple
+                        disabled={isCompressingImages}
                         onChange={handleImageFilesChange}
                         className="hidden"
                       />
@@ -2185,10 +2336,10 @@ function MomentsContent() {
                   </button>
                   <button
                     type="submit"
-                    disabled={!captionInput.trim()}
+                    disabled={!captionInput.trim() || isCompressingImages}
                     className="bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-40 disabled:pointer-events-none text-white px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm hover:shadow-md active:scale-95 cursor-pointer"
                   >
-                    โพสต์โมเมนต์เลย
+                    {isCompressingImages ? 'กำลังประมวลผลรูป...' : 'โพสต์โมเมนต์เลย'}
                   </button>
                 </div>
               </div>

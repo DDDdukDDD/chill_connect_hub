@@ -54,6 +54,7 @@ import {
   Loader2,
   Info,
 } from 'lucide-react';
+import { compressImage } from '@/lib/media/compressor';
 
 // Expanded 6 Choices for Members (Participants) - 100% Unique Icons
 const MEMBER_GOALS = [
@@ -418,6 +419,7 @@ export default function OnboardingPage() {
     'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=80',
     'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=500&auto=format&fit=crop&q=80',
   ]);
+  const [isCompressingPhotos, setIsCompressingPhotos] = useState<boolean>(false);
   const [formError, setFormError] = useState<string>('');
 
   // Step 3 Hangout Styles (12 Styles) & Living Province
@@ -458,24 +460,51 @@ export default function OnboardingPage() {
     }
   };
 
-  // Upload Photo handler (Supports Camera / Gallery / PC File Picker)
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Upload Photo handler with Client-Side WebP Compression (Supports Camera / Gallery / PC File Picker)
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    Array.from(files).forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setUploadedPhotos((prev) => {
-            const updated = [...prev, event.target!.result as string].slice(0, 6);
-            if (updated.length >= 3) setFormError('');
-            return updated;
-          });
-        }
-      };
-      reader.readAsDataURL(file);
-    });
+    const remainingSlots = 6 - uploadedPhotos.length;
+    if (remainingSlots <= 0) return;
+
+    const filesToProcess = Array.from(files).slice(0, remainingSlots);
+    setIsCompressingPhotos(true);
+
+    try {
+      const compressedUrls: string[] = [];
+
+      for (const file of filesToProcess) {
+        // 1. Client-Side HTML5 Canvas Resize & Convert to .webp (Max 1200x1200px, quality 0.82)
+        const compressedFile = await compressImage(file, {
+          maxWidth: 1200,
+          maxHeight: 1200,
+          quality: 0.82,
+          targetMimeType: 'image/webp',
+        });
+
+        // 2. Read as Lightweight WebP Data URL
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(compressedFile);
+        });
+
+        compressedUrls.push(dataUrl);
+      }
+
+      setUploadedPhotos((prev) => {
+        const updated = [...prev, ...compressedUrls].slice(0, 6);
+        if (updated.length >= 3) setFormError('');
+        return updated;
+      });
+    } catch (err) {
+      console.error('Error compressing profile photos:', err);
+    } finally {
+      setIsCompressingPhotos(false);
+      e.target.value = '';
+    }
   };
 
   // Remove Photo handler
@@ -899,19 +928,39 @@ export default function OnboardingPage() {
                   <div>
                     <label
                       htmlFor="photo-upload-batch"
-                      className="w-full py-2.5 px-4 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-300 text-slate-700 text-xs font-black shadow-2xs flex items-center justify-center gap-2 cursor-pointer active:scale-98 transition-all"
+                      className={`w-full py-2.5 px-4 rounded-xl border text-xs font-black shadow-2xs flex items-center justify-center gap-2 cursor-pointer active:scale-98 transition-all ${
+                        isCompressingPhotos
+                          ? 'bg-blue-50 border-blue-200 text-blue-700 pointer-events-none'
+                          : 'bg-slate-50 hover:bg-slate-100 border-slate-300 text-slate-700'
+                      }`}
                     >
-                      <Upload className="w-4 h-4 text-[#4A7C59]" />
-                      <span>อัปโหลดรูปจากเครื่อง / คลังภาพมือถือ</span>
+                      {isCompressingPhotos ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                      ) : (
+                        <Upload className="w-4 h-4 text-[#4A7C59]" />
+                      )}
+                      <span>
+                        {isCompressingPhotos
+                          ? 'กำลังย่อขนาดและแปลงเป็น .WebP...'
+                          : 'อัปโหลดรูปจากเครื่อง / คลังภาพมือถือ (Auto WebP)'}
+                      </span>
                       <input
                         id="photo-upload-batch"
                         type="file"
                         accept="image/*"
                         multiple
+                        disabled={isCompressingPhotos}
                         onChange={handlePhotoUpload}
                         className="hidden"
                       />
                     </label>
+
+                    {isCompressingPhotos && (
+                      <div className="mt-2.5 p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-xs font-bold flex items-center gap-2 animate-fade-in">
+                        <div className="w-3.5 h-3.5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin shrink-0" />
+                        <span>กำลังย่อขนาดและแปลงไฟล์เป็น .WebP เพื่อความคมชัดและประหยัดพื้นที่...</span>
+                      </div>
+                    )}
 
                     {formError && (
                       <div className="mt-2.5 p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-1.5 animate-shake">
@@ -1150,11 +1199,21 @@ export default function OnboardingPage() {
                 </button>
                 <button
                   type="button"
+                  disabled={isCompressingPhotos}
                   onClick={handleProceedStep2}
-                  className="bg-gradient-to-r from-[#4A7C59] via-emerald-600 to-teal-600 hover:from-[#3B6347] hover:to-emerald-700 text-white px-8 py-3.5 rounded-2xl font-black text-sm sm:text-base shadow-lg shadow-emerald-900/25 active:scale-95 transition-all flex items-center gap-2.5 cursor-pointer"
+                  className="bg-gradient-to-r from-[#4A7C59] via-emerald-600 to-teal-600 hover:from-[#3B6347] hover:to-emerald-700 disabled:opacity-50 disabled:pointer-events-none text-white px-8 py-3.5 rounded-2xl font-black text-sm sm:text-base shadow-lg shadow-emerald-900/25 active:scale-95 transition-all flex items-center gap-2.5 cursor-pointer"
                 >
-                  <span>ถัดไป: สไตล์ & พื้นที่พักอาศัย</span>
-                  <ArrowRight className="w-5 h-5" />
+                  {isCompressingPhotos ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                      <span>กำลังประมวลผลรูป...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>ถัดไป: สไตล์ & พื้นที่พักอาศัย</span>
+                      <ArrowRight className="w-5 h-5" />
+                    </>
+                  )}
                 </button>
               </div>
             </div>

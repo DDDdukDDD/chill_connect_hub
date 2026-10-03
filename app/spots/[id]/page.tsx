@@ -22,6 +22,7 @@ import { resolveSpotGallery, resolveSpotImage } from '@/lib/spotImageResolver';
 import { renderDescriptionContent } from '@/components/RichTextEditor';
 import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import { SmartSpotPlanCard } from '@/components/SmartSpotPlanCard';
+import { NearbyDiningSection } from '@/components/NearbyDiningSection';
 import {
   MapPin,
   Clock,
@@ -100,7 +101,7 @@ export default function SpotDetailPage() {
   // Nearby spots recommendation info (smart zonal & distance proximity)
   const recommendation = useMemo(() => {
     if (!spot) return { spots: [], sectionTitle: '', sectionSubtitle: '', zoneName: '' };
-    return getNearbyRecommendationInfo(spot, 4);
+    return getNearbyRecommendationInfo(spot, 5);
   }, [spot]);
 
   const nearbySpots = recommendation.spots;
@@ -449,11 +450,6 @@ export default function SpotDetailPage() {
                   {spot.categoryLabel}
                 </span>
 
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold shadow-2xs">
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#2D5A3C]" />
-                  <span>พิกัดคัดสรรมาตรฐานวิถีชีวิตไทย 77 จังหวัด</span>
-                </span>
-
                 {/* Star Rating & Reviews */}
                 <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-2xs ml-auto sm:ml-0">
                   <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
@@ -466,14 +462,9 @@ export default function SpotDetailPage() {
                 {cleanText(spot.title)}
               </h1>
 
-              {/* Location & District */}
-              <p className="text-xs sm:text-sm text-slate-500 font-medium">
-                {spot.district}, จังหวัด{spot.province}
-              </p>
-
               {/* Vibe Tags */}
               {spot.vibeTags && spot.vibeTags.length > 0 && (
-                <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
                   {spot.vibeTags.map((vibe, idx) => (
                     <span
                       key={idx}
@@ -486,40 +477,7 @@ export default function SpotDetailPage() {
               )}
             </div>
 
-            {/* 2. Sleek Inline Metadata Ribbon (Organic Frosted Ribbon) */}
-            <div className="py-3 px-4 sm:px-5 rounded-2xl bg-gradient-to-r from-[#FAFBF9] via-white to-[#F4F8F5] border border-[#DFE8E1] shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 text-xs sm:text-sm text-slate-700">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-[#EBF3ED] text-[#2D5A3C] flex items-center justify-center shrink-0">
-                  <Clock className="w-3.5 h-3.5" />
-                </div>
-                <div className="flex items-baseline gap-1.5 min-w-0">
-                  <span className="text-slate-500 font-medium text-xs">เวลาทำการ:</span>
-                  <span className="font-bold text-slate-900 truncate">{cleanText(spot.openHours) || 'เปิดทุกวัน'}</span>
-                </div>
-              </div>
-              <span className="hidden sm:inline text-[#DFE8E1] font-light">|</span>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-3.5 h-3.5" />
-                </div>
-                <div className="flex items-baseline gap-1.5 min-w-0">
-                  <span className="text-slate-500 font-medium text-xs">ช่วงเวลาแนะนำ:</span>
-                  <span className="font-bold text-slate-900 truncate">{cleanText(spot.bestTime) || '16:30 - 18:30 น.'}</span>
-                </div>
-              </div>
-              <span className="hidden sm:inline text-[#DFE8E1] font-light">|</span>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-emerald-50 text-[#2D5A3C] flex items-center justify-center shrink-0">
-                  <Ticket className="w-3.5 h-3.5" />
-                </div>
-                <div className="flex items-baseline gap-1.5 min-w-0">
-                  <span className="text-slate-500 font-medium text-xs">ค่าเข้าชม:</span>
-                  <span className="font-bold text-slate-900 truncate">{cleanText(spot.price) || 'เข้าฟรี'}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 3. About / Story Section (Clean Editorial Paragraphs & Rich Content) */}
+            {/* About / Story Section (Clean Editorial Paragraphs & Rich Content) */}
             <div className="space-y-3 pt-1">
               <h2 className="text-lg font-black text-slate-900 tracking-tight">
                 เกี่ยวกับสถานที่นี้
@@ -625,6 +583,9 @@ export default function SpotDetailPage() {
               </div>
             </div>
 
+            {/* 7. Nearby Popular Cafes & Restaurants (Fills blank space with high-value dining) */}
+            <NearbyDiningSection spot={spot} />
+
           </div>
 
           {/* RIGHT COLUMN: STICKY PLACE SUMMARY & DIRECTIONS CARD (1 Col) */}
@@ -648,20 +609,41 @@ export default function SpotDetailPage() {
                 </span>
               </div>
 
-              {/* Operating Hours Summary */}
-              <div className="space-y-1">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-                  เวลาทำการ
-                </span>
-                <p className="text-sm font-black text-slate-900">{cleanText(spot.openHours)}</p>
-              </div>
+              {/* Spot Specs Summary */}
+              <div className="space-y-3 text-xs">
+                <div className="flex items-start gap-2.5">
+                  <Clock className="w-4 h-4 text-[#4A7C59] shrink-0 mt-0.5" />
+                  <div>
+                    <span className="text-slate-400 text-[10px] block font-bold">เวลาทำการ</span>
+                    <span className="font-bold text-slate-900">{cleanText(spot.openHours) || 'เปิดทุกวัน'}</span>
+                  </div>
+                </div>
 
-              {/* Location Address */}
-              <div className="space-y-1">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-                  ที่ตั้ง & ย่าน
-                </span>
-                <p className="text-xs font-semibold text-slate-900 leading-relaxed">{spot.district}, จังหวัด{spot.province}</p>
+                <div className="flex items-start gap-2.5">
+                  <Ticket className="w-4 h-4 text-[#4A7C59] shrink-0 mt-0.5" />
+                  <div>
+                    <span className="text-slate-400 text-[10px] block font-bold">ค่าเข้าชม</span>
+                    <span className="font-bold text-slate-900">{cleanText(spot.price) || 'เข้าฟรี'}</span>
+                  </div>
+                </div>
+
+                {spot.bestTime && (
+                  <div className="flex items-start gap-2.5">
+                    <Sparkles className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="text-slate-400 text-[10px] block font-bold">ช่วงเวลาแนะนำ</span>
+                      <span className="font-bold text-slate-900">{cleanText(spot.bestTime)}</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-start gap-2.5">
+                  <MapPin className="w-4 h-4 text-[#4A7C59] shrink-0 mt-0.5" />
+                  <div>
+                    <span className="text-slate-400 text-[10px] block font-bold">ที่ตั้ง & ย่าน</span>
+                    <span className="font-bold text-slate-900 leading-snug">{spot.district}, จังหวัด{spot.province}</span>
+                  </div>
+                </div>
               </div>
 
               {/* Centralized Two-Tier Button System */}
@@ -846,7 +828,7 @@ export default function SpotDetailPage() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
               {nearbySpots.map((item) => (
                 <SpotCard
                   key={item.id}

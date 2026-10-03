@@ -18,21 +18,54 @@ const DEFAULT_OPTIONS: CompressionOptions = {
   targetMimeType: 'image/webp',
 };
 
+export interface CompressedResult {
+  file: File;
+  dataUrl: string;
+  width: number;
+  height: number;
+  originalSize: number;
+  compressedSize: number;
+  compressionRatio: number; // e.g. 85 for 85% reduction
+}
+
 /**
- * Compresses an image file in-browser using HTML5 Canvas
+ * Compresses an image file in-browser using HTML5 Canvas and returns both File and DataURL
  */
-export async function compressImage(
+export async function compressImageToDataUrl(
   file: File,
   options: CompressionOptions = {}
-): Promise<File> {
-  // If file is SVG or already very small (< 100KB), return as-is
-  if (file.type === 'image/svg+xml' || file.size < 100 * 1024) {
-    return file;
+): Promise<CompressedResult> {
+  // SVG bypass
+  if (file.type === 'image/svg+xml') {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        resolve({
+          file,
+          dataUrl: reader.result as string,
+          width: 0,
+          height: 0,
+          originalSize: file.size,
+          compressedSize: file.size,
+          compressionRatio: 0,
+        });
+      };
+      reader.onerror = () => reject(new Error('ไม่สามารถอ่านไฟล์ SVG ได้'));
+      reader.readAsDataURL(file);
+    });
   }
 
   // Safety check for browser environment
   if (typeof window === 'undefined') {
-    return file;
+    return {
+      file,
+      dataUrl: '',
+      width: 0,
+      height: 0,
+      originalSize: file.size,
+      compressedSize: file.size,
+      compressionRatio: 0,
+    };
   }
 
   const { maxWidth, maxHeight, quality, targetMimeType } = {
@@ -67,7 +100,16 @@ export async function compressImage(
 
           const ctx = canvas.getContext('2d');
           if (!ctx) {
-            return resolve(file); // Fallback if 2d context unavailable
+            const fallbackUrl = typeof event.target?.result === 'string' ? event.target.result : '';
+            return resolve({
+              file,
+              dataUrl: fallbackUrl,
+              width: img.width,
+              height: img.height,
+              originalSize: file.size,
+              compressedSize: file.size,
+              compressionRatio: 0,
+            });
           }
 
           // Use high quality image smoothing
@@ -76,43 +118,97 @@ export async function compressImage(
           ctx.drawImage(img, 0, 0, width, height);
 
           const mime = targetMimeType || 'image/webp';
+          let dataUrl = '';
+          try {
+            dataUrl = canvas.toDataURL(mime, quality);
+          } catch {
+            dataUrl = canvas.toDataURL('image/jpeg', quality);
+          }
+
           canvas.toBlob(
             (blob) => {
               if (!blob) {
-                return resolve(file);
+                return resolve({
+                  file,
+                  dataUrl,
+                  width,
+                  height,
+                  originalSize: file.size,
+                  compressedSize: file.size,
+                  compressionRatio: 0,
+                });
               }
 
               // Determine output filename
               const originalBase = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
               const outputExt = mime === 'image/webp' ? 'webp' : 'jpg';
               const compressedFile = new File([blob], `${originalBase}.${outputExt}`, {
-                type: mime,
+                type: blob.type || mime,
                 lastModified: Date.now(),
               });
 
-              // If for any reason compressed version is larger (rare), keep original
-              if (compressedFile.size > file.size) {
-                resolve(file);
-              } else {
-                resolve(compressedFile);
-              }
+              const originalSize = file.size;
+              const compressedSize = compressedFile.size;
+              const compressionRatio = Math.max(
+                0,
+                Math.round(((originalSize - compressedSize) / originalSize) * 100)
+              );
+
+              resolve({
+                file: compressedSize < originalSize ? compressedFile : file,
+                dataUrl,
+                width,
+                height,
+                originalSize,
+                compressedSize,
+                compressionRatio,
+              });
             },
             mime,
             quality
           );
         } catch {
           // Fallback to original file on any canvas error
-          resolve(file);
+          const fallbackUrl = typeof event.target?.result === 'string' ? event.target.result : '';
+          resolve({
+            file,
+            dataUrl: fallbackUrl,
+            width: img.width,
+            height: img.height,
+            originalSize: file.size,
+            compressedSize: file.size,
+            compressionRatio: 0,
+          });
         }
       };
 
       if (typeof event.target?.result === 'string') {
         img.src = event.target.result;
       } else {
-        resolve(file);
+        resolve({
+          file,
+          dataUrl: '',
+          width: 0,
+          height: 0,
+          originalSize: file.size,
+          compressedSize: file.size,
+          compressionRatio: 0,
+        });
       }
     };
 
     reader.readAsDataURL(file);
   });
 }
+
+/**
+ * Compresses an image file in-browser using HTML5 Canvas (Returns File only)
+ */
+export async function compressImage(
+  file: File,
+  options: CompressionOptions = {}
+): Promise<File> {
+  const result = await compressImageToDataUrl(file, options);
+  return result.file;
+}
+

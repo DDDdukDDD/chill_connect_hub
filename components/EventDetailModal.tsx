@@ -394,65 +394,30 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             </div>
           )}
 
-          {/* Main Title & Tags (Clean Optical Spacing) */}
-          <div className="space-y-2.5">
+          {/* Main Title & Minimal Tags (Global Luxury 9.8+ Standard) */}
+          <div className="space-y-2">
             <div className="flex items-center justify-between gap-2 flex-wrap pb-0.5">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-full border border-slate-200/80 shadow-2xs">
-                  {isPublicVenue ? 'MAJOR FAIRS & PUBLIC EXPOS' : 'MEETUPS & CIRCLES'}
-                </span>
-                <span className={`text-[11px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full border inline-block ${
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* 1. Primary Pillar / Type Badge */}
+                <span className={`text-[11px] font-extrabold px-3 py-1 rounded-full border shadow-2xs ${
                   isPublicVenue
-                    ? 'bg-sky-50 text-sky-700 border-sky-200'
-                    : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    ? 'bg-[#EEF4FA] text-[#1F3D5C] border-[#2B527A]/25'
+                    : 'bg-[#FFF4EE] text-[#D04A1B] border-[#F26430]/25'
                 }`}>
-                  {isPublicVenue ? (
-                    'อีเวนต์ & งานแฟร์'
-                  ) : (
-                    <>
-                      <span className="inline sm:hidden">คอมมูนิตี้</span>
-                      <span className="hidden sm:inline">กิจกรรมคอมมูนิตี้</span>
-                    </>
-                  )}
+                  {isPublicVenue ? 'งานเอ็กซ์โป & นิทรรศการ' : 'กิจกรรมคอมมูนิตี้'}
                 </span>
 
-                {/* Frosted Trust Micro-Pills (Perks) */}
-                {!isPublicVenue && (() => {
-                  const isOnline = event.province === 'ออนไลน์' || event.locationType === 'online' || event.location?.includes('ออนไลน์') || event.location?.toLowerCase().includes('online');
-                  return (
-                    <>
-                      {!isOnline && event.isSoloFriendly !== false && (
-                        <span className="text-[11px] font-medium text-slate-600 bg-slate-100/90 px-2.5 py-0.5 rounded-full border border-slate-200/60">
-                          มาคนเดียวได้
-                        </span>
-                      )}
-                      {!isOnline && event.isPetFriendly && (
-                        <span className="text-[11px] font-medium text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200/60">
-                          สัตว์เลี้ยงร่วมได้
-                        </span>
-                      )}
-                      {event.isBeginnerFriendly && (
-                        <span className="text-[11px] font-medium text-slate-600 bg-slate-100/90 px-2.5 py-0.5 rounded-full border border-slate-200/60">
-                          เหมาะกับมือใหม่
-                        </span>
-                      )}
-                      {isOnline && (
-                        <span className="text-[11px] font-medium text-sky-700 bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200/60">
-                          รวมตัวออนไลน์
-                        </span>
-                      )}
-                    </>
-                  );
-                })()}
-
-                {/* Prominent Price Pill (Free vs Paid) */}
+                {/* 2. Clean Price Pill */}
                 {event.price && (
-                  <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border inline-block ${
-                    event.price.includes('ฟรี')
-                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                      : 'bg-slate-100 text-slate-800 border-slate-200'
-                  }`}>
+                  <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs">
                     {event.price.includes('ฟรี') ? 'เข้าร่วมฟรี' : event.price}
+                  </span>
+                )}
+
+                {/* 3. Single Key Trust Pill (If applicable) */}
+                {!isPublicVenue && event.isSoloFriendly !== false && (
+                  <span className="text-[11px] font-medium text-slate-600 bg-white/90 px-2.5 py-1 rounded-full border border-slate-200/80 shadow-2xs">
+                    มาคนเดียวได้
                   </span>
                 )}
               </div>
@@ -478,26 +443,26 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               </button>
             </div>
 
-            <h2 className="text-base sm:text-lg font-extrabold text-[#1E293B] mt-1 leading-snug">
+            <h2 className="text-base sm:text-xl font-black text-slate-900 leading-snug tracking-tight">
               {event.title}
             </h2>
           </div>
 
           {/* Location with Clean Google Maps Link & Cancellation Terms */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs bg-slate-50/90 p-3.5 rounded-2xl border border-slate-200/80">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs bg-slate-50/80 p-3.5 sm:p-4 rounded-2xl border border-slate-200/80">
             <div className="flex items-center gap-2">
-              <Calendar className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
-              <span className="font-semibold text-[#1E293B] truncate">{event.date}</span>
+              <Calendar className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+              <span className="font-semibold text-slate-800 truncate">{event.date}</span>
             </div>
 
             <div className="flex items-center gap-2">
-              <Clock className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
-              <span className="font-semibold text-[#1E293B] truncate">{event.time}</span>
+              <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+              <span className="font-semibold text-slate-800 truncate">{event.time}</span>
             </div>
 
             <div className="flex items-center gap-2">
-              <Users className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
-              <span className="font-semibold text-[#1E293B] truncate">
+              <Users className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+              <span className="font-semibold text-slate-800 truncate">
                 {event.eventType === 'public_venue'
                   ? 'เข้าชมอิสระ'
                   : `เปิดรับ ${event.participantsCount || 0}/${event.maxParticipants || 10} คน`}
@@ -507,13 +472,13 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             {/* Location & Cancellation Sub-Row */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:col-span-3 pt-2.5 border-t border-slate-200/60">
               <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                <MapPin className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
-                <span className="font-bold text-[#1E293B] text-xs leading-relaxed truncate">{event.location}</span>
+                <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                <span className="font-bold text-slate-900 text-xs leading-relaxed truncate">{event.location}</span>
                 <a
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-0.5 text-[11px] font-bold text-blue-600 hover:text-blue-800 underline ml-1 shrink-0"
+                  className="inline-flex items-center gap-0.5 text-[11px] font-bold text-slate-700 hover:text-slate-950 underline ml-1 shrink-0"
                   title="เปิดดูตำแหน่งบน Google Maps"
                 >
                   <span>แผนที่</span>
@@ -523,8 +488,8 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
               {!isPublicVenue && (
                 <div className="flex items-center gap-1.5 text-xs shrink-0 text-slate-600">
-                  <span className="text-slate-500 font-medium">การยกเลิก:</span>
-                  <span className="font-bold text-slate-800">
+                  <span className="text-slate-400 font-medium">การยกเลิก:</span>
+                  <span className="font-bold text-slate-700">
                     {event.cancellationPolicy === 'free_anytime'
                       ? 'ยกเลิกฟรีตลอดเวลา'
                       : event.cancellationPolicy === 'free_48h'
@@ -538,26 +503,22 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             </div>
           </div>
 
-          {/* Participant Criteria & Vibe Badges */}
+          {/* Participant Criteria Badges (Clean Neutral Palette) */}
           {(event.targetGender || event.targetAge || event.energyLevel) && (
-            <div className="flex items-center gap-2 flex-wrap text-xs pt-0.5">
+            <div className="flex items-center gap-1.5 flex-wrap text-xs pt-0.5">
               {event.targetGender && (
-                <span className="px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold border border-slate-200/80 flex items-center gap-1">
-                  <span>{event.targetGender === 'female_only' ? 'เฉพาะผู้หญิง' : event.targetGender === 'male_only' ? 'เฉพาะผู้ชาย' : 'เปิดรับทุกเพศ'}</span>
+                <span className="px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700 font-semibold text-[11px] border border-slate-200/80">
+                  {event.targetGender === 'female_only' ? 'เฉพาะผู้หญิง' : event.targetGender === 'male_only' ? 'เฉพาะผู้ชาย' : 'เปิดรับทุกเพศ'}
                 </span>
               )}
               {event.targetAge && (
-                <span className="px-3 py-1 rounded-xl bg-amber-50 text-amber-800 font-bold border border-amber-200/80 flex items-center gap-1">
-                  <span>{event.targetAge}</span>
+                <span className="px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700 font-semibold text-[11px] border border-slate-200/80">
+                  {event.targetAge}
                 </span>
               )}
               {event.energyLevel && (
-                <span className={`px-3 py-1 rounded-xl font-bold border flex items-center gap-1 ${
-                  event.energyLevel === 'active'
-                    ? 'bg-orange-50 text-orange-800 border-orange-200'
-                    : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                }`}>
-                  <span>{event.energyLevel === 'active' ? 'สายลุย / Active' : 'ชิลล์ / สโลว์ไลฟ์'}</span>
+                <span className="px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700 font-semibold text-[11px] border border-slate-200/80">
+                  {event.energyLevel === 'active' ? 'สายลุย / Active' : 'ชิลล์ / สโลว์ไลฟ์'}
                 </span>
               )}
             </div>
@@ -612,15 +573,15 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             </div>
           )}
 
-          {/* 📋 Guidelines, Rules & What to Bring (Exclusively for Community Meetups) */}
+          {/* Guidelines, Rules & What to Bring (Clean Unified Container) */}
           {!isPublicVenue && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
               {/* What to Bring */}
-              <div className="p-3 bg-emerald-50/60 rounded-2xl border border-emerald-200/80 space-y-1.5 text-xs text-slate-700">
-                <h5 className="font-extrabold text-[#1E293B] flex items-center gap-1.5 text-xs">
-                  <span>🎒 สิ่งที่ควรเตรียมมา</span>
+              <div className="p-3.5 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-1.5 text-xs text-slate-700">
+                <h5 className="font-extrabold text-slate-900 flex items-center gap-1.5 text-xs">
+                  <span>สิ่งที่ควรเตรียมมา</span>
                 </h5>
-                <ul className="space-y-1 text-[11px] text-[#334155] list-disc list-inside leading-relaxed">
+                <ul className="space-y-1 text-[11px] text-slate-600 list-disc list-inside leading-relaxed">
                   <li>แต่งกายตามสะดวก สบายๆ ตามสไตล์กิจกรรม</li>
                   <li>เตรียมกระบอกน้ำหรือของใช้ส่วนตัว</li>
                   <li>เปิดใจ พร้อมร่วมสนุกและทำความรู้จักเพื่อนใหม่</li>
@@ -628,12 +589,12 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               </div>
 
               {/* Community Rules & Safety */}
-              <div className="p-3 bg-slate-50/90 rounded-2xl border border-slate-200/80 space-y-1.5 text-xs text-slate-700">
-                <h5 className="font-extrabold text-[#1E293B] flex items-center gap-1.5 text-xs">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <div className="p-3.5 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-1.5 text-xs text-slate-700">
+                <h5 className="font-extrabold text-slate-900 flex items-center gap-1.5 text-xs">
+                  <ShieldCheck className="w-3.5 h-3.5 text-slate-700" />
                   <span>กฎระเบียบ & ความปลอดภัย</span>
                 </h5>
-                <ul className="space-y-1 text-[11px] text-[#334155] list-disc list-inside leading-relaxed">
+                <ul className="space-y-1 text-[11px] text-slate-600 list-disc list-inside leading-relaxed">
                   <li>ตรงต่อเวลา (ควรถึงก่อนเวลานัด 10-15 นาที)</li>
                   <li>ให้เกียรติและเคารพความเป็นส่วนตัวของทุกคน</li>
                   <li>ห้ามขายตรง / ชวนลงทุน / คุกคาม 100%</li>
@@ -642,31 +603,31 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             </div>
           )}
 
-          {/* Host Info Box with Official Source Link */}
-          <div className="p-2.5 sm:p-3 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:border-[#4A7C59]/40 transition-all">
+          {/* Host Info Box */}
+          <div className="p-3 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
             <div className="flex items-center justify-between gap-2">
               <div 
                 onClick={() => !isPublicVenue && setSelectedProfileQuery(event.hostName)}
-                className={`flex items-center gap-2 min-w-0 ${!isPublicVenue ? 'cursor-pointer group' : ''}`}
+                className={`flex items-center gap-2.5 min-w-0 ${!isPublicVenue ? 'cursor-pointer group' : ''}`}
                 title={!isPublicVenue ? 'คลิกเพื่อดูโปรไฟล์โฮสต์' : undefined}
               >
                 <img
                   src={event.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
                   alt={event.hostName}
-                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border-2 border-white shadow-2xs shrink-0 group-hover:scale-105 transition-transform"
+                  className="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0 group-hover:scale-105 transition-transform"
                 />
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-extrabold text-xs sm:text-sm text-[#1E293B] group-hover:text-[#4A7C59] transition-colors truncate">
+                    <span className="font-extrabold text-xs sm:text-sm text-slate-900 group-hover:text-blue-600 transition-colors truncate">
                       {event.hostName}
                     </span>
-                    <CheckCircle2 className="w-3.5 h-3.5 text-blue-500 fill-blue-50 shrink-0" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                   </div>
-                  <div className="flex items-center gap-1.5 flex-wrap text-[10px] sm:text-[11px] text-[#64748B]">
+                  <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-slate-500">
                     <span>
                       {isPublicVenue
-                        ? '🏛️ ผู้จัดงานทางการ / ศูนย์จัดแสดง'
-                        : '🌿 โฮสต์ Chill & Connect'}
+                        ? 'ผู้จัดงานทางการ'
+                        : 'โฮสต์คอมมูนิตี้'}
                     </span>
                     {!isPublicVenue && (
                       <>
@@ -675,7 +636,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                           <Star className="w-3 h-3 fill-amber-400 text-amber-500" />
                           <span>{event.hostRating || event.rating || 4.9}</span>
                         </span>
-                        <span className="text-slate-500">
+                        <span className="text-slate-400">
                           ({event.hostReviewsCount || event.reviewsCount || (event.reviews?.length || 8)} รีวิว)
                         </span>
                       </>
@@ -684,7 +645,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                 </div>
               </div>
 
-              {/* Official Source Link (Direct Search Query / Verified Venue Link) or Connect Button */}
+              {/* Action Button: Slate-100 */}
               {isPublicVenue ? (
                 (() => {
                   const googleSearchQuery = `https://www.google.com/search?q=${encodeURIComponent(`${event.title} ${event.location || ''}`.trim())}`;
@@ -700,11 +661,11 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                       href={finalUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[10px] sm:text-[11px] font-bold px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 flex items-center gap-1 shrink-0 transition-colors shadow-2xs cursor-pointer active:scale-95"
-                      title="เปิดค้นหาข้อมูลทางการ แผนผังงาน และช่องทางซื้อบัตร"
+                      className="text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1 shrink-0 transition-colors shadow-2xs active:scale-95"
+                      title="เปิดดูข้อมูลทางการ แผนผังงาน และช่องทางซื้อบัตร"
                     >
                       <span>ดูข้อมูลเพิ่มเติม</span>
-                      <ExternalLink className="w-3 h-3 text-sky-600" />
+                      <ExternalLink className="w-3 h-3 text-slate-500" />
                     </a>
                   );
                 })()
@@ -712,7 +673,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedProfileQuery(event.hostName)}
-                  className="text-[10px] sm:text-[11px] font-bold px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-[#4A7C59] border border-slate-200 shadow-2xs cursor-pointer transition-colors flex items-center gap-1 shrink-0 active:scale-95"
+                  className="text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 shadow-2xs transition-colors flex items-center gap-1 shrink-0 active:scale-95"
                 >
                   <span>ดูโปรไฟล์</span>
                   <ExternalLink className="w-3 h-3 text-slate-400" />
@@ -721,23 +682,23 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             </div>
           </div>
 
-          {/* Public Venue Sub-Activities & Buddy Matcher (Collapsible - Hide if Event has Ended) */}
+          {/* Public Venue Sub-Activities & Buddy Matcher (Clean Editorial Standard) */}
           {isPublicVenue && !isEnded && (
-            <div className="rounded-2xl bg-amber-50/80 border border-amber-200 shadow-2xs overflow-hidden transition-all">
+            <div className="rounded-2xl bg-slate-50/80 border border-slate-200/80 shadow-2xs overflow-hidden transition-all">
               {/* Collapsible Header */}
               <div
                 onClick={() => setIsBuddyBoxOpen(!isBuddyBoxOpen)}
-                className="p-3.5 sm:p-4 flex items-center justify-between gap-2 cursor-pointer hover:bg-amber-100/50 transition-colors select-none"
+                className="p-3.5 sm:p-4 flex items-center justify-between gap-2 cursor-pointer hover:bg-slate-100/60 transition-colors select-none"
               >
                 <div className="space-y-0.5 min-w-0 flex-1">
-                  <h4 className="font-extrabold text-xs sm:text-sm text-[#1E293B] flex items-center gap-1.5 truncate">
-                    <Users className="w-4 h-4 text-[#F26430] shrink-0" />
+                  <h4 className="font-extrabold text-xs sm:text-sm text-slate-900 flex items-center gap-1.5 truncate">
+                    <Users className="w-4 h-4 text-slate-600 shrink-0" />
                     <span>ชวนเพื่อนทำกิจกรรมในงาน ({subActivities.length})</span>
-                    <span className="text-[10px] font-bold text-amber-800 bg-amber-200/80 px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] font-bold text-slate-700 bg-slate-200/80 px-2 py-0.5 rounded-full">
                       {isBuddyBoxOpen ? 'แตะเพื่อย่อ' : 'แตะเพื่อเปิดดู'}
                     </span>
                   </h4>
-                  <p className="text-[10px] sm:text-[11px] text-[#64748B] truncate">
+                  <p className="text-[10px] sm:text-[11px] text-slate-500 truncate">
                     {isBuddyBoxOpen
                       ? 'หาเพื่อนร่วมเดินดูงาน หรือสร้างนัดหมายกลุ่มย่อยของคุณ'
                       : `มี ${subActivities.length} นัดหมายกลุ่มย่อยกำลังรอเพื่อนร่วมเดินงาน • คลิกเพื่อเปิดดูกลุ่ม`}
@@ -760,7 +721,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                     className={`text-[11px] font-bold px-3 py-1.5 rounded-full shadow-2xs transition-all active:scale-95 shrink-0 cursor-pointer flex items-center gap-1 ${
                       showSubForm
                         ? 'bg-slate-200 hover:bg-slate-300 text-slate-700'
-                        : 'bg-[#4A7C59] hover:bg-[#3d6849] text-white shadow-[#4A7C59]/20'
+                        : 'bg-slate-900 hover:bg-slate-800 text-white'
                     }`}
                   >
                     <Plus className="w-3.5 h-3.5" />
@@ -992,13 +953,13 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                     <button
                       type="button"
                       onClick={() => setShowSubForm(false)}
-                      className="px-3.5 py-1.5 rounded-full text-xs font-bold text-[#64748B] hover:bg-slate-100 transition-colors cursor-pointer"
+                      className="px-3.5 py-1.5 rounded-full text-xs font-bold text-slate-500 hover:bg-slate-100 transition-colors cursor-pointer"
                     >
                       ยกเลิก
                     </button>
                     <button
                       type="submit"
-                      className="bg-[#4A7C59] hover:bg-[#3B6447] text-white text-xs font-bold px-5 py-2 rounded-full shadow-md transition-all active:scale-95 cursor-pointer"
+                      className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-5 py-2 rounded-full shadow-2xs transition-all active:scale-95 cursor-pointer"
                     >
                       <span>ยืนยันสร้างกลุ่มชวนเพื่อน</span>
                     </button>
@@ -1019,18 +980,18 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                       className={`bg-white rounded-xl overflow-hidden shadow-2xs transition-all border ${
                         isSubJoined
                           ? 'border-emerald-400 ring-2 ring-emerald-400/20'
-                          : 'border-amber-200/80 hover:border-amber-300'
+                          : 'border-slate-200/90 hover:border-slate-300'
                       }`}
                     >
                       {/* Sub-activity Header Bar with Date before Time */}
                       <div 
                         onClick={() => setExpandedSubId(isExpanded ? null : sub.id)}
-                        className="p-2.5 sm:p-3 space-y-2 cursor-pointer hover:bg-amber-50/40 transition-colors"
+                        className="p-2.5 sm:p-3 space-y-2 cursor-pointer hover:bg-slate-50/70 transition-colors"
                       >
                         {/* Row 1: Full-width Title + Expand Icon & Report Button */}
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-xs sm:text-sm font-bold text-[#1E293B] leading-snug flex items-center gap-1 flex-1">
-                            <span>🎯 {sub.title}</span>
+                          <p className="text-xs sm:text-sm font-bold text-slate-900 leading-snug flex items-center gap-1 flex-1">
+                            <span>{sub.title}</span>
                           </p>
                           <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
                             <button
@@ -1051,34 +1012,34 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                         </div>
 
                         {/* Row 2: Host, Date, Time & Members Count */}
-                        <div className="flex items-center gap-1.5 flex-wrap text-[10px] sm:text-[11px] text-[#64748B]">
+                        <div className="flex items-center gap-1.5 flex-wrap text-[10px] sm:text-[11px] text-slate-500">
                           <span className="flex items-center gap-1">
-                            <span>จัดโดย <strong className="text-[#1E293B]">{sub.creatorName}</strong></span>
+                            <span>จัดโดย <strong className="text-slate-900">{sub.creatorName}</strong></span>
                             <span className="inline-flex items-center gap-0.5 text-[9px] font-extrabold px-1.5 py-0.2 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
                               <ShieldCheck className="w-2.5 h-2.5 text-emerald-600" />
                               <span>ยืนยันตัวตน</span>
                             </span>
                           </span>
                           <span>•</span>
-                          <span className="text-[#4A7C59] font-medium">📅 {sub.date || event.date}</span>
+                          <span className="text-slate-700 font-medium">{sub.date || event.date}</span>
                           <span>•</span>
-                          <span className="text-slate-600 font-medium">⏰ {sub.time}</span>
+                          <span className="text-slate-600 font-medium">{sub.time}</span>
                           <span>•</span>
-                          <span className="text-amber-700 font-bold">({sub.membersCount})</span>
+                          <span className="text-slate-900 font-bold">({sub.membersCount})</span>
                         </div>
 
                         {/* Row 3: Criteria Badges (Left) & Action Buttons (Right) */}
-                        <div className="flex items-center justify-between gap-2 pt-1 border-t border-amber-100/60 flex-wrap">
+                        <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 flex-wrap">
                           {/* Left: Criteria Badges */}
                           <div className="flex items-center gap-1 flex-wrap">
                             {sub.targetGender && (
                               <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
-                                {sub.targetGender === 'female_only' ? '👩 เฉพาะผู้หญิง' : sub.targetGender === 'male_only' ? '👨 เฉพาะผู้ชาย' : '👥 ทุกเพศ'}
+                                {sub.targetGender === 'female_only' ? 'เฉพาะผู้หญิง' : sub.targetGender === 'male_only' ? 'เฉพาะผู้ชาย' : 'ทุกเพศ'}
                               </span>
                             )}
                             {sub.targetAge && sub.targetAge !== 'ไม่จำกัดอายุ' && (
-                              <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
-                                🎂 {sub.targetAge}
+                              <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                                {sub.targetAge}
                               </span>
                             )}
                           </div>
@@ -1086,12 +1047,12 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                           {/* Right: Action Buttons */}
                           <div className="flex items-center gap-1.5 shrink-0 ml-auto">
                             {isCreator ? (
-                              <span className="text-[10px] sm:text-[11px] font-bold px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs select-none">
+                              <span className="text-[10px] sm:text-[11px] font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs select-none">
                                 คุณเป็นผู้สร้าง
                               </span>
                             ) : isSubJoined ? (
                               <div className="flex items-center gap-1.5">
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 select-none">
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 select-none">
                                   เข้าร่วมแล้ว
                                 </span>
                                 <button
@@ -1109,10 +1070,10 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                                 <Link
                                   href={`/myhub?chatSubId=${sub.id}&eventId=${event.id}`}
                                   onClick={onClose}
-                                  className="text-[10px] sm:text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 transition-all shrink-0 flex items-center gap-1 shadow-2xs"
+                                  className="text-[10px] sm:text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-slate-900 hover:bg-slate-800 text-white transition-all shrink-0 flex items-center gap-1 shadow-2xs"
                                   title="เปิดห้องแชตคุยกับโฮสต์และเพื่อนๆ ที่หน้ามายฮับ"
                                 >
-                                  <span>💬 คุยในแชต ➔</span>
+                                  <span>คุยในแชต ➔</span>
                                 </Link>
                               </div>
                             ) : joinedSubIds.length > 0 ? (
@@ -1131,7 +1092,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                                   e.stopPropagation();
                                   handleJoinSubActivity(sub.id);
                                 }}
-                                className="text-[10px] sm:text-[11px] font-bold px-3.5 py-1 rounded-full border bg-[#4A7C59] hover:bg-[#3B6447] text-white border-[#4A7C59] shadow-xs transition-all active:scale-95 cursor-pointer"
+                                className="text-[10px] sm:text-[11px] font-bold px-3.5 py-1 rounded-full bg-slate-900 hover:bg-slate-800 text-white shadow-2xs transition-all active:scale-95 cursor-pointer"
                               >
                                 เข้าร่วม
                               </button>
@@ -1142,14 +1103,14 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
                       {/* Expandable Details Body */}
                       {isExpanded && (
-                        <div className="p-3 bg-amber-50/40 border-t border-amber-100 space-y-2 text-xs text-[#475569] animate-fade-in text-left">
+                        <div className="p-3 bg-slate-50/70 border-t border-slate-100 space-y-2 text-xs text-slate-600 animate-fade-in text-left">
                           <div className="space-y-1.5">
-                            <p className="font-bold text-[#1E293B] flex items-center gap-1.5">
-                              <MapPin className="w-3.5 h-3.5 text-[#F26430] shrink-0" />
+                            <p className="font-bold text-slate-900 flex items-center gap-1.5">
+                              <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                               <span>{sub.meetupPoint || 'จุดนัดพบ: ล็อบบี้ทางเข้าหน้างาน'}</span>
                             </p>
-                            <p className="text-[11px] text-slate-600 bg-white p-2.5 rounded-xl border border-amber-200/50 leading-relaxed">
-                              💬 โน้ตจากโฮสต์: {sub.note || 'ยินดีต้อนรับทุกคนครับ มาเดินทำกิจกรรมด้วยกันสบายๆ'}
+                            <p className="text-[11px] text-slate-600 bg-white p-2.5 rounded-xl border border-slate-200 leading-relaxed">
+                              โน้ตจากโฮสต์: {sub.note || 'ยินดีต้อนรับทุกคนครับ มาเดินทำกิจกรรมด้วยกันสบายๆ'}
                             </p>
                           </div>
                         </div>

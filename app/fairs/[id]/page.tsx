@@ -61,7 +61,10 @@ import {
   Layers,
   Plus,
   Compass,
-  CalendarPlus
+  CalendarPlus,
+  Ticket,
+  CheckCircle2,
+  MessageCircle
 } from 'lucide-react';
 
 // Helper to strip rogue emojis for clean, editorial typography
@@ -142,15 +145,17 @@ export default function FairDetailPage() {
   ]);
 
   const [joinedSubIds, setJoinedSubIds] = useState<string[]>([]);
+  const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
   const [selectedPassData, setSelectedPassData] = useState<ExpoMeetupPassData | null>(null);
   const [isPassModalOpen, setIsPassModalOpen] = useState(false);
 
-  // Joined Sub IDs from localStorage (Only active when logged in)
+  // Joined Sub IDs & Event IDs from localStorage (Only active when logged in)
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     if (!isLoggedIn) {
       setJoinedSubIds([]);
+      setJoinedEventIds([]);
       return;
     }
 
@@ -158,6 +163,13 @@ export default function FairDetailPage() {
       const savedJoinedSubs = localStorage.getItem('joined_fair_sub_ids');
       if (savedJoinedSubs) {
         setJoinedSubIds(JSON.parse(savedJoinedSubs));
+      }
+    } catch {}
+
+    try {
+      const savedJoinedEvents = localStorage.getItem('joined_event_ids');
+      if (savedJoinedEvents) {
+        setJoinedEventIds(JSON.parse(savedJoinedEvents));
       }
     } catch {}
   }, [isLoggedIn]);
@@ -509,7 +521,7 @@ export default function FairDetailPage() {
   // Related Fairs
   const relatedFairs = useMemo(() => {
     if (!eventData) return [];
-    return getRelatedEvents(eventData, 4);
+    return getRelatedEvents(eventData, 5);
   }, [eventData]);
 
   if (isLoading) {
@@ -566,6 +578,7 @@ export default function FairDetailPage() {
 
   const isFav = isLoggedIn && favorites.includes(eventData.id);
   const isEnded = isEventEnded(eventData);
+  const isJoined = isLoggedIn && (joinedEventIds.includes(eventData.id) || fairSubActivities.some((sub) => joinedSubIds.includes(sub.id)));
 
   return (
     <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans selection:bg-[#2B527A] selection:text-white">
@@ -654,6 +667,86 @@ export default function FairDetailPage() {
         </div>
 
         {/* =========================================================================
+            ACTIVE PASS / APPOINTMENT BANNER (For Joined / Saved Fair)
+           ========================================================================= */}
+        {isJoined && (
+          <div className="bg-gradient-to-r from-slate-900 via-[#1F3D5C] to-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-700/60 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-fade-in relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-72 h-72 bg-sky-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+            
+            <div className="flex items-start sm:items-center gap-3.5 relative z-10 min-w-0">
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-sky-500/20 border border-sky-400/30 flex items-center justify-center shrink-0 text-sky-400">
+                <Ticket className="w-5 h-5 stroke-[2.2]" />
+              </div>
+              <div className="space-y-0.5 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[11px] sm:text-xs font-bold tracking-wide px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 inline-flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                    <span>บันทึกกำหนดการใน My Hub แล้ว</span>
+                  </span>
+                  <span className="text-xs text-sky-200/80 font-mono">
+                    Pass #CCH-FAIR-0205
+                  </span>
+                </div>
+                <p className="text-sm sm:text-base font-bold text-white tracking-tight truncate">
+                  {eventData.date} • {eventData.time || '10:00 - 21:00 น.'}
+                </p>
+                <p className="text-xs text-slate-300 flex items-center gap-1.5 truncate">
+                  <MapPin className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                  <span className="truncate">{eventData.location}</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 relative z-10 flex-wrap">
+              <button
+                type="button"
+                onClick={() => {
+                  const targetSub = fairSubActivities.find((s) => joinedSubIds.includes(s.id)) || fairSubActivities[0];
+                  setSelectedPassData({
+                    id: targetSub.id,
+                    fairTitle: cleanText(eventData.title),
+                    fairLocation: cleanText(eventData.location),
+                    fairDate: cleanText(eventData.date),
+                    groupTitle: targetSub.title,
+                    meetupPoint: targetSub.meetupPoint,
+                    time: targetSub.time,
+                    creatorName: targetSub.creatorName,
+                    creatorAvatar: targetSub.creatorAvatar,
+                    contactChannel: targetSub.contactChannel,
+                    note: targetSub.note,
+                    currentMembers: targetSub.currentMembers,
+                    maxMembers: targetSub.maxMembers
+                  });
+                  setIsPassModalOpen(true);
+                }}
+                className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer active:scale-95"
+              >
+                <Ticket className="w-3.5 h-3.5" />
+                <span>ดู Expo Pass</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsFairBuddyModalOpen(true)}
+                className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white border border-white/15 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer backdrop-blur-md active:scale-95"
+              >
+                <MessageCircle className="w-3.5 h-3.5 text-sky-300" />
+                <span>ชวนเพื่อนเดินงาน</span>
+              </button>
+
+              <Link
+                href="/myhub?tab=fairs"
+                className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-semibold transition-all flex items-center justify-center gap-1 cursor-pointer"
+                title="กลับสู่ My Hub เพื่อดูตารางและงานที่บันทึกไว้"
+              >
+                <span>จัดการใน My Hub</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* =========================================================================
             EDITORIAL 5-PHOTO MOSAIC GALLERY (Expos & Fairs)
            ========================================================================= */}
         <section className="space-y-2">
@@ -737,12 +830,11 @@ export default function FairDetailPage() {
           {/* LEFT COLUMN: PRIMARY DETAILS (2 Cols) */}
           <div className="lg:col-span-2 space-y-7">
             
-            {/* 1. Title, Venue Tag & Official Status */}
+            {/* 1. Title, Category Tag & Status */}
             <div className="space-y-3 pb-4 border-b border-slate-100">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-black px-3 py-1 rounded-full bg-sky-50 text-sky-800 border border-sky-200 flex items-center gap-1.5">
-                  <Building2 className="w-3.5 h-3.5 text-sky-600" />
-                  <span>{venueOrganizerName}</span>
+                <span className="text-xs font-black px-3 py-1 rounded-full bg-sky-50 text-sky-800 border border-sky-200">
+                  {cleanText(eventData.tag) || 'งานมหกรรม & งานแฟร์'}
                 </span>
 
                 {isEnded ? (
@@ -760,36 +852,9 @@ export default function FairDetailPage() {
               <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight break-words">
                 {cleanText(eventData.title)}
               </h1>
-
-              <p className="text-xs sm:text-sm text-slate-500 font-medium flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-[#2B527A] shrink-0" />
-                <span>
-                  {eventData.province && !eventData.location.includes(eventData.province)
-                    ? `${eventData.province} • ${cleanText(eventData.location)}`
-                    : cleanText(eventData.location)}
-                </span>
-              </p>
             </div>
 
-            {/* 2. Inline Metadata Ribbon */}
-            <div className="py-3.5 px-5 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs sm:text-sm text-slate-700">
-              <div className="flex items-center gap-2">
-                <span className="text-slate-500 font-medium">วันที่จัดแสดง:</span>
-                <span className="font-bold text-slate-900">{cleanText(eventData.date)}</span>
-              </div>
-              <span className="hidden sm:inline text-slate-300">|</span>
-              <div className="flex items-center gap-2">
-                <span className="text-slate-500 font-medium">เวลาเปิด-ปิด:</span>
-                <span className="font-bold text-slate-900">{cleanText(eventData.time)}</span>
-              </div>
-              <span className="hidden sm:inline text-slate-300">|</span>
-              <div className="flex items-center gap-2">
-                <span className="text-slate-500 font-medium">ประเภท:</span>
-                <span className="font-bold text-slate-900">มหกรรม & งานแฟร์ระดับชาติ</span>
-              </div>
-            </div>
-
-            {/* 3. Official Partner Card */}
+            {/* Official Partner Card */}
             <div className="p-4 sm:p-5 rounded-3xl bg-[#FAF7F2] border border-[#E8E2D8] flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 shadow-2xs">
               <div className="flex items-center gap-3.5 min-w-0">
                 <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex items-center justify-center shrink-0">
@@ -1097,6 +1162,14 @@ export default function FairDetailPage() {
                     <span className="font-bold text-slate-900 leading-snug">{cleanText(eventData.location)}</span>
                   </div>
                 </div>
+
+                <div className="flex items-start gap-2.5">
+                  <Layers className="w-4 h-4 text-[#2B527A] shrink-0 mt-0.5" />
+                  <div>
+                    <span className="text-slate-400 text-[10px] block font-bold">ประเภทงาน</span>
+                    <span className="font-bold text-slate-900">{cleanText(eventData.tag) || 'มหกรรม & งานแฟร์ระดับชาติ'}</span>
+                  </div>
+                </div>
               </div>
 
               {/* Action Buttons: Pure Retention Hero CTA */}
@@ -1174,7 +1247,7 @@ export default function FairDetailPage() {
               favorites={favorites}
               toggleFavorite={toggleFavorite}
               onSelectEvent={() => {}}
-              columns={4}
+              columns={5}
             />
           </section>
         )}

@@ -165,12 +165,16 @@ interface MomentsStoriesRailProps {
   onAddStory: () => void;
   isLoggedIn: boolean;
   onOpenTargetLocation?: (locationName: string) => void;
+  onShowToast?: (message: string) => void;
+  userStoryThumbnail?: string | null;
 }
 
 export const MomentsStoriesRail: React.FC<MomentsStoriesRailProps> = ({
   onAddStory,
   isLoggedIn,
   onOpenTargetLocation,
+  onShowToast,
+  userStoryThumbnail,
 }) => {
   const [activeStory, setActiveStory] = useState<MomentStoryItem | null>(null);
   const [currentSlideIndex, setCurrentSlideIndex] = useState<number>(0);
@@ -206,7 +210,7 @@ export const MomentsStoriesRail: React.FC<MomentsStoriesRailProps> = ({
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [activeStory, isPaused]);
+  }, [activeStory, isPaused, currentSlideIndex]);
 
   const handlePrevSlide = () => {
     if (!activeStory) return;
@@ -269,9 +273,13 @@ export const MomentsStoriesRail: React.FC<MomentsStoriesRailProps> = ({
 
   const handleCheerCurrentStory = () => {
     if (!activeStory) return;
+    const isNowCheered = !cheeredStories.includes(activeStory.id);
     setCheeredStories((prev) =>
-      prev.includes(activeStory.id) ? prev.filter((id) => id !== activeStory.id) : [...prev, activeStory.id]
+      isNowCheered ? [...prev, activeStory.id] : prev.filter((id) => id !== activeStory.id)
     );
+    if (isNowCheered) {
+      onShowToast?.('ส่งหัวใจให้สตอรี่นี้แล้ว ❤️');
+    }
   };
 
   const handleShareCurrentStory = async () => {
@@ -288,27 +296,55 @@ export const MomentsStoriesRail: React.FC<MomentsStoriesRailProps> = ({
             text: currentSlide.caption,
             url: shareUrl,
           });
+          onShowToast?.('แชร์สตอรี่เรียบร้อยแล้ว ✨');
           return;
         } catch {
           // User aborted share
         }
       }
       if (navigator.clipboard) {
-        navigator.clipboard.writeText(shareUrl);
+        navigator.clipboard
+          .writeText(shareUrl)
+          .then(() => {
+            onShowToast?.('คัดลอกลิงก์สตอรี่แล้ว 📋');
+          })
+          .catch(() => {
+            onShowToast?.('คัดลอกลิงก์สตอรี่แล้ว 📋');
+          });
       }
     }
   };
 
   return (
     <>
+      {/* Dynamic Keyframes for smooth Instagram story progress */}
+      <style>{`
+        @keyframes storyProgress {
+          from { width: 0%; }
+          to { width: 100%; }
+        }
+      `}</style>
+
       {/* Stories Rail Container */}
       <section className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-2xs">
         <div className="flex items-center gap-3 sm:gap-4 overflow-x-auto no-scrollbar py-0.5 select-none">
           {/* User's "Add Story" Button */}
           <div className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group" onClick={onAddStory}>
-            <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full p-[2px] border-2 border-dashed border-slate-300 group-hover:border-slate-800 transition-colors flex items-center justify-center bg-slate-50">
-              <div className="w-full h-full rounded-full overflow-hidden relative">
-                {isLoggedIn ? (
+            <div
+              className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-full transition-all flex items-center justify-center ${
+                userStoryThumbnail
+                  ? 'bg-gradient-to-tr from-[#2563EB] via-indigo-500 to-teal-400 p-[2.5px] shadow-xs group-hover:shadow-md'
+                  : 'p-[2px] border-2 border-dashed border-slate-300 group-hover:border-slate-800 bg-slate-50'
+              }`}
+            >
+              <div className="w-full h-full rounded-full overflow-hidden relative bg-white p-[1px]">
+                {userStoryThumbnail ? (
+                  <img
+                    src={userStoryThumbnail}
+                    alt="My Story"
+                    className="w-full h-full rounded-full object-cover group-hover:scale-105 transition-transform"
+                  />
+                ) : isLoggedIn ? (
                   <img
                     src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80"
                     alt="My Avatar"
@@ -325,7 +361,7 @@ export const MomentsStoriesRail: React.FC<MomentsStoriesRailProps> = ({
               </div>
             </div>
             <span className="text-[11px] font-bold text-slate-700 max-w-[68px] truncate text-center group-hover:text-slate-900">
-              แชร์สตอรี่
+              {userStoryThumbnail ? 'สตอรี่ของคุณ' : 'แชร์สตอรี่'}
             </span>
           </div>
 
@@ -404,15 +440,18 @@ export const MomentsStoriesRail: React.FC<MomentsStoriesRailProps> = ({
                   return (
                     <div key={sIdx} className="flex-1 h-1 rounded-full bg-white/30 overflow-hidden">
                       <div
-                        className={`h-full rounded-full transition-all ${
-                          isDone
-                            ? 'w-full bg-white'
-                            : isCurrent
-                            ? isPaused
-                              ? 'w-1/2 bg-white'
-                              : 'w-full bg-white transition-[width] duration-[5000ms] ease-linear'
-                            : 'w-0 bg-white'
+                        key={`${activeStory.id}-${currentSlideIndex}-${sIdx}`}
+                        className={`h-full rounded-full bg-white ${
+                          isDone ? 'w-full' : isCurrent ? '' : 'w-0'
                         }`}
+                        style={
+                          isCurrent
+                            ? {
+                                animation: 'storyProgress 5000ms linear forwards',
+                                animationPlayState: isPaused ? 'paused' : 'running',
+                              }
+                            : undefined
+                        }
                       />
                     </div>
                   );

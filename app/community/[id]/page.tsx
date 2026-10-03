@@ -50,7 +50,8 @@ import {
   ChevronLeft,
   ChevronRight,
   CheckSquare,
-  CheckCircle2
+  CheckCircle2,
+  Ticket
 } from 'lucide-react';
 
 // Helper to strip rogue emojis for clean typography
@@ -102,9 +103,16 @@ export default function CommunityDetailPage() {
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
-  // Dynamic Event State
-  const [eventData, setEventData] = useState<EventItem | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Dynamic Event State (Immediate sync for SSR & instant load)
+  const [eventData, setEventData] = useState<EventItem | null>(() => {
+    if (!decodedId) return null;
+    return getEventById(decodedId) || MOCK_EVENTS.find((e) => e.id === decodedId || e.title === decodedId) || null;
+  });
+  const [isLoading, setIsLoading] = useState(() => {
+    if (!decodedId) return false;
+    const found = getEventById(decodedId) || MOCK_EVENTS.find((e) => e.id === decodedId || e.title === decodedId);
+    return !found;
+  });
 
   // Retrieve event from both local mock and live API database
   useEffect(() => {
@@ -349,7 +357,7 @@ export default function CommunityDetailPage() {
 
 
   // Related Community Activities
-  const relatedActivities = eventData ? getRelatedEvents(eventData, 4) : [];
+  const relatedActivities = eventData ? getRelatedEvents(eventData, 5) : [];
 
   if (isLoading) {
     return (
@@ -505,6 +513,68 @@ export default function CommunityDetailPage() {
         </div>
 
         {/* =========================================================================
+            ACTIVE TICKET / APPOINTMENT BANNER (For Joined Member)
+           ========================================================================= */}
+        {isJoined && (
+          <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-sm border border-blue-900/60 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-fade-in relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+            
+            <div className="flex items-start sm:items-center gap-3.5 relative z-10 min-w-0">
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center shrink-0 text-blue-400">
+                <Ticket className="w-5 h-5 stroke-[2.2]" />
+              </div>
+              <div className="space-y-0.5 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[11px] sm:text-xs font-bold tracking-wide px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 inline-flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                    <span>คุณมีนัดหมายกิจกรรมนี้แล้ว</span>
+                  </span>
+                  <span className="text-xs text-blue-200/80 font-mono">
+                    Ticket #CCH-2026-0089
+                  </span>
+                </div>
+                <p className="text-sm sm:text-base font-bold text-white tracking-tight truncate">
+                  {eventData.date} • {eventData.time}
+                </p>
+                <p className="text-xs text-slate-300 flex items-center gap-1.5 truncate">
+                  <MapPin className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                  <span className="truncate">{eventData.location}</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 relative z-10 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setIsETicketOpen(true)}
+                className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer active:scale-95"
+              >
+                <QrCode className="w-3.5 h-3.5" />
+                <span>ดู E-Ticket</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsChatOpen(true)}
+                className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white border border-white/15 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer backdrop-blur-md active:scale-95"
+              >
+                <MessageCircle className="w-3.5 h-3.5 text-blue-300" />
+                <span>ห้องแชตกลุ่ม</span>
+              </button>
+
+              <Link
+                href="/myhub"
+                className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-semibold transition-all flex items-center justify-center gap-1 cursor-pointer"
+                title="กลับสู่ My Hub เพื่อดูนัดหมายทั้งหมด"
+              >
+                <span>จัดการใน My Hub</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* =========================================================================
             EDITORIAL 5-PHOTO MOSAIC GALLERY (Community Vibe)
            ========================================================================= */}
         <section className="space-y-2">
@@ -642,26 +712,6 @@ export default function CommunityDetailPage() {
               <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight break-words">
                 {cleanText(eventData.title)}
               </h1>
-
-              <p className="text-xs sm:text-sm text-slate-500 font-medium flex items-center gap-1.5">
-                {eventData.locationType === 'online' || eventData.province === 'ออนไลน์' ? (
-                  <>
-                    <Globe className="w-4 h-4 text-sky-500 shrink-0" />
-                    <span className="text-sky-700 font-semibold">
-                      ออนไลน์ • {eventData.onlinePlatform ? eventData.onlinePlatform.toUpperCase() : 'Virtual Gathering'}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <MapPin className="w-4 h-4 text-[#F26430] shrink-0" />
-                    <span>
-                      {eventData.province && eventData.province !== 'ออนไลน์' && !eventData.location.includes(eventData.province)
-                        ? `${eventData.province} • ${cleanText(eventData.location)}`
-                        : cleanText(eventData.location)}
-                    </span>
-                  </>
-                )}
-              </p>
             </div>
 
             {/* Linked Spot Pill / Card */}
@@ -692,87 +742,7 @@ export default function CommunityDetailPage() {
               </div>
             )}
 
-            {/* 2. Inline Metadata Ribbon */}
-            <div className="py-3.5 px-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5 text-xs sm:text-sm text-slate-700">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  {eventData.scheduleType === 'recurring' ? (
-                    <>
-                      <Repeat className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span className="text-slate-500 font-medium">กำหนดการประจำ:</span>
-                      <span className="font-bold text-slate-900">
-                        {eventData.recurrence?.customSummary || cleanText(eventData.date)}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-slate-500 font-medium">วันที่จัดกิจกรรม:</span>
-                      <span className="font-bold text-slate-900">{cleanText(eventData.date)}</span>
-                    </>
-                  )}
-                </div>
-                <span className="hidden sm:inline text-slate-300">|</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-500 font-medium">เวลา:</span>
-                  <span className="font-bold text-slate-900">{cleanText(eventData.time)}</span>
-                </div>
-                <span className="hidden sm:inline text-slate-300">|</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-500 font-medium">จำนวนผู้ร่วมตี้:</span>
-                  <span className="font-bold text-slate-900">{eventData.participantsCount} / {eventData.maxParticipants} คน</span>
-                </div>
-              </div>
-
-              <div className="pt-2.5 border-t border-slate-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
-                <div className="flex items-center gap-1.5 text-slate-700">
-                  <span className="font-semibold text-slate-500">จุดนัดพบเจาะจง:</span>
-                  <span className="font-bold text-slate-900">
-                    {cleanText(eventData.meetingPoint) || cleanText(eventData.location)}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-1.5 sm:text-right shrink-0">
-                  <span className="text-slate-500 font-medium">เงื่อนไขการยกเลิก:</span>
-                  <span className="font-bold text-slate-800">
-                    {eventData.cancellationPolicy === 'free_anytime'
-                      ? 'ยกเลิกฟรีตลอดเวลา'
-                      : eventData.cancellationPolicy === 'free_48h'
-                      ? 'ยกเลิกฟรีก่อน 48 ชม.'
-                      : eventData.cancellationPolicy === 'chat_notice'
-                      ? 'แจ้งในกลุ่มแชท'
-                      : 'ยกเลิกฟรีก่อน 24 ชม.'}
-                  </span>
-                </div>
-              </div>
-
-              {(eventData.transportation || eventData.contactChannel) && (
-                <div className="pt-2 border-t border-slate-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                  {eventData.transportation && (
-                    <div className="flex items-center gap-1.5 text-slate-600">
-                      <span className="font-medium text-slate-500">การเดินทาง:</span>
-                      <span className="font-bold text-slate-800">{eventData.transportation}</span>
-                    </div>
-                  )}
-
-                  {eventData.contactChannel && (
-                    <div className="flex items-center gap-1.5 text-slate-600">
-                      <span className="font-medium text-slate-500">ช่องทางติดต่อกลุ่ม:</span>
-                      {isJoined ? (
-                        <span className="font-bold text-[#D04A1B] bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200">
-                          {eventData.contactChannel}
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 italic">
-                          เปิดเผยเมื่อลงทะเบียนเข้าร่วม
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* 3. Verified Host Card (Community Core) */}
+            {/* Verified Host Card (Community Core) */}
             <div className="p-4 sm:p-5 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 shadow-2xs">
               <Link
                 href={profileHref}
@@ -1065,15 +1035,48 @@ export default function CommunityDetailPage() {
                   )}
                   <div>
                     <span className="text-slate-400 text-[10px] block font-bold">
-                      {eventData.locationType === 'online' || eventData.province === 'ออนไลน์' ? 'ช่องทาง' : 'จุดนัดพบ'}
+                      {eventData.locationType === 'online' || eventData.province === 'ออนไลน์' ? 'ช่องทาง' : 'สถานที่จัด & จุดนัดพบ'}
                     </span>
                     <span className="font-bold text-slate-900 leading-snug">
                       {eventData.locationType === 'online' || eventData.province === 'ออนไลน์'
                         ? `ออนไลน์ (${eventData.onlinePlatform?.toUpperCase() || 'Virtual'})`
                         : cleanText(eventData.location)}
                     </span>
+                    {eventData.meetingPoint && cleanText(eventData.meetingPoint) !== cleanText(eventData.location) && (
+                      <p className="text-[11px] text-slate-600 font-medium mt-0.5">
+                        <span className="font-semibold text-slate-700">จุดนัดพบเจาะจง:</span> {cleanText(eventData.meetingPoint)}
+                      </p>
+                    )}
                   </div>
                 </div>
+
+                {eventData.transportation && (
+                  <div className="flex items-start gap-2.5">
+                    <Navigation className="w-4 h-4 text-[#F26430] shrink-0 mt-0.5" />
+                    <div>
+                      <span className="text-slate-400 text-[10px] block font-bold">การเดินทาง</span>
+                      <span className="font-bold text-slate-900 leading-snug">{cleanText(eventData.transportation)}</span>
+                    </div>
+                  </div>
+                )}
+
+                {eventData.contactChannel && (
+                  <div className="flex items-start gap-2.5">
+                    <MessageCircle className="w-4 h-4 text-[#F26430] shrink-0 mt-0.5" />
+                    <div>
+                      <span className="text-slate-400 text-[10px] block font-bold">ช่องทางติดต่อกลุ่ม</span>
+                      {isJoined ? (
+                        <span className="font-bold text-[#D04A1B] bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200 inline-block mt-0.5">
+                          {cleanText(eventData.contactChannel)}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 italic text-[11px] block mt-0.5">
+                          เปิดเผยเมื่อลงทะเบียนเข้าร่วม
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Trust Signal & Cancellation Policy in Sidebar */}
@@ -1194,7 +1197,7 @@ export default function CommunityDetailPage() {
               toggleFavorite={toggleFavorite}
               joinedEventIds={isLoggedIn ? joinedEventIds : []}
               onSelectEvent={() => {}}
-              columns={4}
+              columns={5}
             />
           </section>
         )}

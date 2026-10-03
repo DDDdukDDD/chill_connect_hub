@@ -21,8 +21,11 @@ import {
   Clock,
   Check,
   AlignLeft,
+  UploadCloud,
+  Loader2,
 } from 'lucide-react';
 import { RichTextEditor } from './RichTextEditor';
+import { compressImageToDataUrl } from '@/lib/media/compressor';
 
 interface AdminCreateEventModalProps {
   isOpen: boolean;
@@ -119,8 +122,34 @@ export const AdminCreateEventModal: React.FC<AdminCreateEventModalProps> = ({
 
   // Loading State
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCompressingBanner, setIsCompressingBanner] = useState(false);
+  const [bannerStats, setBannerStats] = useState<{ ratio: number; sizeKb: number } | null>(null);
 
   if (!isOpen) return null;
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsCompressingBanner(true);
+      const result = await compressImageToDataUrl(file, {
+        maxWidth: 1600,
+        maxHeight: 1600,
+        quality: 0.82,
+        targetMimeType: 'image/webp',
+      });
+      setCoverImage(result.dataUrl);
+      setBannerStats({
+        ratio: result.compressionRatio,
+        sizeKb: Math.round(result.compressedSize / 1024),
+      });
+    } catch (err) {
+      console.error('Error compressing banner:', err);
+    } finally {
+      setIsCompressingBanner(false);
+    }
+  };
 
   // Insert Formatting Snippet without raw HTML tags
   const handleInsertSnippet = (snippet: string) => {
@@ -666,6 +695,34 @@ export const AdminCreateEventModal: React.FC<AdminCreateEventModalProps> = ({
               ))}
             </div>
 
+            {/* Direct Banner Upload Card */}
+            <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-2xl flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 text-xs font-bold transition-all cursor-pointer">
+                  {isCompressingBanner ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+                  ) : (
+                    <UploadCloud className="w-3.5 h-3.5 text-emerald-400" />
+                  )}
+                  <span>{isCompressingBanner ? 'กำลังแปลงเป็น WebP...' : 'อัปโหลดภาพปก (WebP Auto-Compress)'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={isCompressingBanner}
+                    onChange={handleBannerUpload}
+                    className="hidden"
+                  />
+                </label>
+
+                {bannerStats && (
+                  <span className="text-[11px] text-emerald-400 font-bold bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-800">
+                    ✓ บีบอัดแล้ว ({bannerStats.sizeKb} KB, ลดลง {bannerStats.ratio}%)
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] text-slate-500 font-medium">1600x1600 WebP • ประหยัด 80-95%</span>
+            </div>
+
             <div className="space-y-1">
               <label className="block text-[11px] font-bold text-slate-400">หรือระบุ URL รูปภาพกำหนดเอง:</label>
               <input
@@ -690,11 +747,11 @@ export const AdminCreateEventModal: React.FC<AdminCreateEventModalProps> = ({
 
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isCompressingBanner}
               className="bg-gradient-to-r from-[#4A7C59] to-emerald-600 hover:from-[#3B6347] hover:to-emerald-500 text-white px-6 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm shadow-lg shadow-emerald-950/40 active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>{isSubmitting ? 'กำลังบันทึกกิจกรรม...' : '🚀 บันทึกและเผยแพร่กิจกรรมทันที'}</span>
+              <span>{isCompressingBanner ? 'กำลังประมวลผลรูป...' : isSubmitting ? 'กำลังบันทึกกิจกรรม...' : '🚀 บันทึกและเผยแพร่กิจกรรมทันที'}</span>
             </button>
           </div>
 

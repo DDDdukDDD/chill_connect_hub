@@ -39,7 +39,11 @@ import {
   Save,
   Check,
   ArrowRight,
+  Camera,
+  Loader2,
+  UploadCloud,
 } from 'lucide-react';
+import { compressImageToDataUrl } from '@/lib/media/compressor';
 
 function ProfileContent() {
   const searchParams = useSearchParams();
@@ -51,6 +55,7 @@ function ProfileContent() {
   const [connectsCount, setConnectsCount] = useState<number>(profile.connectsCount);
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isCompressingAvatar, setIsCompressingAvatar] = useState(false);
   const [editForm, setEditForm] = useState<Partial<UserProfile>>({});
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -98,6 +103,7 @@ function ProfileContent() {
   const handleOpenEdit = () => {
     setEditForm({
       name: profile.name,
+      avatar: profile.avatar,
       bio: profile.bio,
       location: profile.location,
       hometown: profile.hometown || '',
@@ -112,16 +118,42 @@ function ProfileContent() {
     setIsEditModalOpen(true);
   };
 
+  // Avatar Upload with client-side WebP compression (800x800)
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsCompressingAvatar(true);
+      const result = await compressImageToDataUrl(file, {
+        maxWidth: 800,
+        maxHeight: 800,
+        quality: 0.85,
+        targetMimeType: 'image/webp',
+      });
+      setEditForm((prev) => ({ ...prev, avatar: result.dataUrl }));
+      showToast(`บีบอัดรูปโปรไฟล์เป็น WebP สำเร็จ (ประหยัดพื้นที่ ${result.compressionRatio}%)`);
+    } catch {
+      showToast('ไม่สามารถประมวลผลรูปภาพได้');
+    } finally {
+      setIsCompressingAvatar(false);
+    }
+  };
+
   // Save Edit Form
   const handleSaveEdit = (e: React.FormEvent) => {
     e.preventDefault();
     const updated = { ...profile, ...editForm };
     setProfile(updated as UserProfile);
     if (typeof window !== 'undefined' && profile.id === 'me') {
-      localStorage.setItem('userCustomProfile', JSON.stringify(editForm));
+      try {
+        localStorage.setItem('userCustomProfile', JSON.stringify(editForm));
+      } catch (err) {
+        console.error('Storage error:', err);
+      }
     }
     setIsEditModalOpen(false);
-    showToast('อัปเดตข้อมูลโปรไฟล์เรียบร้อยแล้ว');
+    showToast('อัปเดตข้อมูลโปรไฟล์และรูปภาพเรียบร้อยแล้ว');
   };
 
   // Filter hosted events for this profile
@@ -712,6 +744,41 @@ function ProfileContent() {
             </div>
 
             <form onSubmit={handleSaveEdit} className="space-y-3.5 text-xs">
+              {/* Profile Avatar Upload with Auto-WebP Compression */}
+              <div>
+                <label className="block font-bold text-slate-700 mb-1.5">รูปภาพโปรไฟล์ (Avatar)</label>
+                <div className="flex items-center gap-3.5 p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+                  <div className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-white shadow-sm shrink-0 bg-slate-200">
+                    <img
+                      src={editForm.avatar || profile.avatar}
+                      alt="Avatar Preview"
+                      className="w-full h-full object-cover"
+                    />
+                    {isCompressingAvatar && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold shadow-2xs transition-all cursor-pointer">
+                      <Camera className="w-3.5 h-3.5 text-blue-600" />
+                      <span>{isCompressingAvatar ? 'กำลังแปลงเป็น WebP...' : 'เปลี่ยนรูปโปรไฟล์'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={isCompressingAvatar}
+                        onChange={handleAvatarChange}
+                        className="hidden"
+                      />
+                    </label>
+                    <p className="text-[11px] text-slate-400">
+                      ระบบบีบอัดและแปลงเป็น WebP (800x800px) อัตโนมัติ • คมชัด ไม่เปลือง Storage
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block font-bold text-slate-700 mb-1">ชื่อที่แสดง (Display Name)</label>
                 <input
@@ -855,10 +922,20 @@ function ProfileContent() {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-extrabold shadow-md shadow-blue-500/25 flex items-center gap-1.5 cursor-pointer active:scale-95"
+                  disabled={isCompressingAvatar}
+                  className="px-6 py-2 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-50 text-white font-extrabold shadow-md shadow-blue-500/25 flex items-center gap-1.5 cursor-pointer active:scale-95"
                 >
-                  <Save className="w-4 h-4" />
-                  <span>บันทึกข้อมูล</span>
+                  {isCompressingAvatar ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>กำลังประมวลผลรูปภาพ...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      <span>บันทึกข้อมูล</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>

@@ -18,6 +18,7 @@ import {
   Lightbulb
 } from 'lucide-react';
 import { ChallengeQuest } from '@/data/mockData';
+import { compressImageToDataUrl } from '@/lib/media/compressor';
 
 interface VerifyQuestModalProps {
   isOpen: boolean;
@@ -47,6 +48,9 @@ export const VerifyQuestModal: React.FC<VerifyQuestModalProps> = ({
   const [activeMethod, setActiveMethod] = useState<'photo' | 'gps' | 'ticket'>('photo');
   const [caption, setCaption] = useState('');
   const [selectedPhoto, setSelectedPhoto] = useState(PRESET_SAMPLE_PHOTOS[0]);
+  const [userUploadedPhoto, setUserUploadedPhoto] = useState<string | null>(null);
+  const [isCompressingPhoto, setIsCompressingPhoto] = useState(false);
+  const [compressionStats, setCompressionStats] = useState<{ ratio: number; sizeKb: number } | null>(null);
   const [locationName, setLocationName] = useState('สวนลุมพินี / อารีย์');
   const [ticketCode, setTicketCode] = useState('');
   const [isLocating, setIsLocating] = useState(false);
@@ -54,6 +58,31 @@ export const VerifyQuestModal: React.FC<VerifyQuestModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen || !quest) return null;
+
+  const handleProofPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsCompressingPhoto(true);
+      const result = await compressImageToDataUrl(file, {
+        maxWidth: 1200,
+        maxHeight: 1200,
+        quality: 0.82,
+        targetMimeType: 'image/webp',
+      });
+      setUserUploadedPhoto(result.dataUrl);
+      setSelectedPhoto(result.dataUrl);
+      setCompressionStats({
+        ratio: result.compressionRatio,
+        sizeKb: Math.round(result.compressedSize / 1024),
+      });
+    } catch (err) {
+      console.error('Error compressing proof photo:', err);
+    } finally {
+      setIsCompressingPhoto(false);
+    }
+  };
 
   const handleGpsCheck = () => {
     setIsLocating(true);
@@ -162,9 +191,52 @@ export const VerifyQuestModal: React.FC<VerifyQuestModalProps> = ({
           {/* TAB 1: Photo Proof */}
           {activeMethod === 'photo' && (
             <div className="space-y-3 animate-fade-in">
+              {/* Real Photo Upload with Auto-WebP Compression */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Camera className="w-3.5 h-3.5 text-[#2563EB]" />
+                    <span>อัปโหลดหรือถ่ายภาพจริงของคุณ:</span>
+                  </label>
+                  <span className="text-[10px] font-extrabold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                    Auto-WebP ⚡
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold shadow-2xs transition-all cursor-pointer">
+                    <UploadCloud className="w-4 h-4 text-[#2563EB]" />
+                    <span>{isCompressingPhoto ? 'กำลังแปลงเป็น WebP...' : 'ถ่ายภาพ / เลือกไฟล์รูป'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      disabled={isCompressingPhoto}
+                      onChange={handleProofPhotoUpload}
+                      className="hidden"
+                    />
+                  </label>
+
+                  {userUploadedPhoto && (
+                    <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-xl border border-emerald-200">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>ภาพถ่ายของคุณ ({compressionStats?.sizeKb || 120} KB, ประหยัด {compressionStats?.ratio || 80}%)</span>
+                    </div>
+                  )}
+                </div>
+
+                {userUploadedPhoto && (
+                  <div className="relative w-24 h-24 rounded-xl overflow-hidden border-2 border-[#2563EB] shadow-xs mt-1">
+                    <img src={userUploadedPhoto} alt="Uploaded Proof" className="w-full h-full object-cover" />
+                    <div className="absolute top-1 right-1 bg-[#2563EB] text-white p-0.5 rounded-md">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1.5">
-                  เลือกรูปภาพหลักฐานการทำกิจกรรม:
+                <label className="text-[11px] font-bold text-slate-500 block mb-1.5">
+                  หรือเลือกจากภาพตัวอย่างกิจกรรมทดสอบ:
                 </label>
                 <div className="grid grid-cols-4 gap-2">
                   {PRESET_SAMPLE_PHOTOS.map((imgUrl, i) => (
@@ -173,14 +245,14 @@ export const VerifyQuestModal: React.FC<VerifyQuestModalProps> = ({
                       type="button"
                       onClick={() => setSelectedPhoto(imgUrl)}
                       className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
-                        selectedPhoto === imgUrl
-                          ? 'border-[#4A7C59] ring-2 ring-[#4A7C59]/30 scale-95'
+                        selectedPhoto === imgUrl && !userUploadedPhoto
+                          ? 'border-[#2563EB] ring-2 ring-[#2563EB]/30 scale-95'
                           : 'border-transparent opacity-70 hover:opacity-100'
                       }`}
                     >
                       <img src={imgUrl} alt="proof" className="w-full h-full object-cover" />
-                      {selectedPhoto === imgUrl && (
-                        <div className="absolute inset-0 bg-[#4A7C59]/40 flex items-center justify-center text-white">
+                      {selectedPhoto === imgUrl && !userUploadedPhoto && (
+                        <div className="absolute inset-0 bg-[#2563EB]/40 flex items-center justify-center text-white">
                           <CheckCircle2 className="w-5 h-5 drop-shadow" />
                         </div>
                       )}
@@ -198,7 +270,7 @@ export const VerifyQuestModal: React.FC<VerifyQuestModalProps> = ({
                   onChange={(e) => setCaption(e.target.value)}
                   placeholder="เช่น มาวิ่งเช้าสวนลุมพินีครบ 5K แล้ว อากาศสดชื่นมากครับ"
                   rows={2}
-                  className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#4A7C59] outline-none"
+                  className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#2563EB] outline-none"
                 />
               </div>
             </div>
@@ -269,15 +341,15 @@ export const VerifyQuestModal: React.FC<VerifyQuestModalProps> = ({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="flex-1 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-extrabold text-xs py-3 rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+              disabled={isSubmitting || isCompressingPhoto}
+              className="flex-1 bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-50 text-white font-extrabold text-xs py-3 rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
             >
-              {isSubmitting ? (
+              {isSubmitting || isCompressingPhoto ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Sparkles className="w-4 h-4 text-amber-300" />
               )}
-              <span>{isSubmitting ? 'กำลังส่งหลักฐาน...' : 'ยืนยันความคืบหน้า (+XP)'}</span>
+              <span>{isCompressingPhoto ? 'กำลังแปลงเป็น WebP...' : isSubmitting ? 'กำลังส่งหลักฐาน...' : 'ยืนยันความคืบหน้า (+XP)'}</span>
             </button>
           </div>
 
