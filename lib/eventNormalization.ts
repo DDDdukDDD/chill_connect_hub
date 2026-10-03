@@ -7,12 +7,26 @@ const BITEC_GALLERY_URL = 'https://www.bitec.co.th/gallery';
 
 // Helper: Get all protected core community events from mockData
 export function getCoreCommunityEvents(): AdminEventItem[] {
-  return MOCK_EVENTS.map((ev) => ({
-    ...ev,
-    eventType: ev.id.startsWith('comm-') ? 'community' : 'public_venue',
-    approvalStatus: 'approved' as const,
-    source: ev.id.startsWith('comm-') ? 'Chill & Connect Community' : 'Chill & Connect Official',
-  }));
+  return MOCK_EVENTS.map((ev) => {
+    const eventType = ev.eventType ?? (ev.id.startsWith('comm-') ? 'community' : 'public_venue');
+    return {
+      ...ev,
+      eventType,
+      approvalStatus: 'approved' as const,
+      source: ev.source ?? (eventType === 'community' ? 'Chill & Connect Community' : 'Chill & Connect Official'),
+    };
+  });
+}
+
+const SEED_EVENT_TYPES = new Map(MOCK_EVENTS.filter((ev) => ev.eventType).map((ev) => [ev.id, ev.eventType]));
+
+// Every event must belong to a pillar; otherwise it is invisible in both admin moderation views
+function inferEventType(ev: AdminEventItem): 'community' | 'public_venue' {
+  const seedType = SEED_EVENT_TYPES.get(ev.id);
+  if (seedType) return seedType;
+  if (ev.id?.startsWith('comm-')) return 'community';
+  if (ev.venueTag || (ev.maxParticipants ?? 0) > 100) return 'public_venue';
+  return 'community';
 }
 
 function withSourceUrl(ev: AdminEventItem, url: string): AdminEventItem {
@@ -51,6 +65,8 @@ function normalizeEvent(ev: AdminEventItem): AdminEventItem {
     }
   } else if (next.id?.startsWith('pub-') || next.id?.startsWith('live-agg-')) {
     if (next.eventType !== 'public_venue') next = { ...next, eventType: 'public_venue' };
+  } else if (!next.eventType) {
+    next = { ...next, eventType: inferEventType(next) };
   }
   return next;
 }

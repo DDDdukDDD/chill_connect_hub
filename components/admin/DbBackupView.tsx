@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Database, Download, RefreshCw, CheckCircle2, AlertTriangle, Clock, Server } from 'lucide-react';
+import { AdminPreviewNotice } from './AdminPreviewNotice';
 
 const BACKUP_FILES = [
   { id: 'b001', filename: 'cch_backup_2026-08-31_18-00.json', size: '4.2 MB', type: 'AUTO', createdAt: '2026-08-31 18:00', status: 'ok' },
@@ -35,13 +36,6 @@ const ACTION_STYLES: Record<string, string> = {
 };
 
 export function DbBackupView() {
-  const [downloaded, setDownloaded] = useState<Record<string, boolean>>({});
-
-  const handleDownload = (id: string) => {
-    setDownloaded((prev) => ({ ...prev, [id]: true }));
-    setTimeout(() => setDownloaded((prev) => ({ ...prev, [id]: false })), 3000);
-  };
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -53,11 +47,15 @@ export function DbBackupView() {
           </div>
           <p className="text-slate-500 text-sm">จัดการ Backup ฐานข้อมูล ดูบันทึกการทำงานของระบบ</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-sm font-semibold transition-colors">
+        <button title="ยังไม่เชื่อมต่อระบบจริง" disabled className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-xl text-sm font-semibold opacity-50 cursor-not-allowed">
           <Database size={13} />
           สร้าง Backup ตอนนี้
         </button>
       </div>
+
+      <AdminPreviewNotice>
+        ไฟล์ backup, สถานะฐานข้อมูล และ audit trail ในหน้านี้เป็นตัวอย่างดีไซน์ ระบบยังไม่มีการ backup หรือบันทึก audit จริง ปุ่มต่างๆ จึงยังใช้งานไม่ได้
+      </AdminPreviewNotice>
 
       {/* System Status */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -98,15 +96,11 @@ export function DbBackupView() {
                 </div>
               </div>
               <button
-                onClick={() => handleDownload(file.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors shrink-0 ${
-                  downloaded[file.id]
-                    ? 'bg-[#EBF3ED] text-[#4A7C59] border-[#4A7C59]/20'
-                    : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-700'
-                }`}
+                title="ยังไม่เชื่อมต่อระบบจริง" disabled
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border shrink-0 bg-white text-slate-400 border-slate-200 opacity-60 cursor-not-allowed"
               >
-                {downloaded[file.id] ? <CheckCircle2 size={11} /> : <Download size={11} />}
-                {downloaded[file.id] ? 'Downloaded' : 'Download'}
+                <Download size={11} />
+                Download
               </button>
             </div>
           ))}
@@ -117,7 +111,7 @@ export function DbBackupView() {
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Audit Trail — Today</h2>
-          <button className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-[#4A7C59] transition-colors">
+          <button title="ยังไม่เชื่อมต่อระบบจริง" disabled className="flex items-center gap-1.5 text-xs text-slate-300 cursor-not-allowed">
             <RefreshCw size={11} />
             Refresh
           </button>

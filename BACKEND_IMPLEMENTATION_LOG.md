@@ -50,6 +50,12 @@ The Discovery & Content work includes backend contracts and the admin control pl
 - Split the Scraper Engine panel into Event and Spot source tabs, with target-specific run actions, counters, empty states, source status, and import errors. The curated reset action is now explicitly labeled as sample data.
 - Event normalization now avoids random participant/review values, assumed-free pricing, fabricated host avatars, and guessed central-Bangkok coordinates; source end dates, province, times, and valid source coordinates are preserved.
 
+- Admin honesty pass (2026-10-03): removed the client-side role simulator and the notification bell; the header and sidebar now show the real server session (`useAdminSession()` from `AdminAuthGate`) with logout. Users & Permissions and Backup & Audit Logs are labeled as sample screens (`AdminPreviewNotice`), and their non-functional actions are disabled. Taxonomy and Venues are labeled read-only. 77 Provinces counts come from `/api/admin/spots?status=published` and approved events from `/api/admin/events` instead of mock arrays.
+- Seed meetups `2`–`6` in `MOCK_EVENTS` had no `eventType`, which hid them from both moderation views. They are now `community`, and normalization infers a missing `eventType` (seed value → `comm-` prefix → venue/capacity heuristic).
+
+- Admin lists step 2 (2026-10-03): `/api/admin/events` and `/api/admin/spots` support server-side pagination (only when `page` is passed, so full-list callers keep working). Moderation views open on the pending queue (falling back to "all" when it is empty), sort pending-first, and show state-dependent actions: pending → approve/reject, approved → unpublish (back to pending), rejected → back to pending. The Spots module moved out of `app/admin/page.tsx` into `components/admin/SpotsManagerView.tsx`.
+- `lib/imageHealth.ts` + `check_images` action: actually loads every stored image URL (public HTTPS only, via the scraper's SSRF guard; local `/public` paths via the filesystem). Spots carry `imageStatus` (ok/broken/missing/unchecked). Results are cached in process memory for 6h — not persisted, so a restart shows "unchecked" until the next check. First run: 48 distinct URLs, 4 broken, affecting 10 spots.
+
 ## Verification
 
 - Editor diagnostics reported no errors for the changed route, client helper, and consuming pages.

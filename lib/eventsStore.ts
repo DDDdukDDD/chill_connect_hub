@@ -2,7 +2,7 @@ import { EventItem } from '@/data/mockData';
 import { processRawEventWithAI } from './aiTagger';
 import { fetchLiveRawEvents } from './eventScraper';
 import { isDuplicateEvent } from './deduplication';
-import { db, readDatabase, updateDatabase } from './db';
+import { db, readDatabase, updateDatabase, paginateArray } from './db';
 import { getCoreCommunityEvents } from './eventNormalization';
 import { getAllDataSources, recordSourceScrape } from './sourcesStore';
 import { scrapeEventSource } from './structuredDataScraper';
@@ -181,4 +181,71 @@ export async function createAdminEvent(eventData: Omit<AdminEventItem, 'id'> & {
     subActivities: eventData.subActivities || [],
   });
   return created as AdminEventItem;
+}
+
+// ── Admin moderation queries (server-side filtering & pagination) ──
+
+export type AdminEventFormat = 'recurring' | 'online' | 'physical' | 'all';
+
+export interface AdminEventQuery {
+  type?: 'community' | 'public_venue' | 'all';
+  status?: 'pending' | 'approved' | 'rejected' | 'all';
+  format?: AdminEventFormat;
+  q?: string | null;
+  page?: number;
+  limit?: number;
+}
+
+export interface AdminEventCounts {
+  total: number;
+  pending: number;
+  approved: number;
+  rejected: number;
+  recurring: number;
+  online: number;
+}
+
+export function isOnlineEvent(ev: EventItem): boolean {
+  return ev.locationType === 'online' || ev.province === 'ออนไลน์' || Boolean(ev.onlineJoinUrl);
+}
+
+export function isRecurringEvent(ev: EventItem): boolean {
+  return ev.scheduleType === 'recurring' || Boolean(ev.recurrence);
+}
+
+const APPROVAL_ORDER: Record<string, number> = { pending: 0, approved: 1, rejected: 2 };
+
+/**
+ * Moderation list for one pillar: counts cover the whole pillar, items are filtered,
+ * sorted pending-first (then newest) and paginated.
+ */
+export async function queryAdminEvents(query: AdminEventQuery) {
+  const { type = 'all', status = 'all', format = 'all', q, page = 1, limit = 20 } = query;
+  const scope = (await listAdminEvents()).filter((ev) => type === 'all' || ev.eventType === type);
+
+  const counts: AdminEventCounts = {
+    total: scope.length,
+    pending: scope.filter((ev) => ev.approvalStatus === 'pending').length,
+    approved: scope.filter((ev) => ev.approvalStatus === 'approved').length,
+    rejected: scope.filter((ev) => ev.approvalStatus === 'rejected').length,
+    recurring: scope.filter(isRecurringEvent).length,
+    online: scope.filter(isOnlineEvent).length,
+  };
+
+  const search = q?.trim().toLowerCase();
+  const filtered = scope
+    .filter((ev) => status === 'all' || ev.approvalStatus === status)
+    .filter((ev) => {
+      if (format === 'recurring') return isRecurringEvent(ev);
+      if (format === 'online') return isOnlineEvent(ev);
+      if (format === 'physical') return !isOnlineEvent(ev);
+      return true;
+    })
+    .filter((ev) => !search || [ev.title, ev.location, ev.hostName, ev.tag]
+      .some((field) => field?.toLowerCase().includes(search)))
+    .sort((a, b) =>
+      (APPROVAL_ORDER[a.approvalStatus] ?? 3) - (APPROVAL_ORDER[b.approvalStatus] ?? 3) ||
+      (b.createdAtTimestamp || 0) - (a.createdAtTimestamp || 0));
+
+  return { ...paginateArray(filtered, page, limit), counts };
 }

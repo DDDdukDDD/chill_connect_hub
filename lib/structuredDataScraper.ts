@@ -50,6 +50,11 @@ function isPrivateAddress(address: string): boolean {
     normalized.startsWith('::ffff:10.') || normalized.startsWith('::ffff:192.168.');
 }
 
+/** Accepts only public HTTPS URLs whose host resolves to public addresses (SSRF guard). */
+export async function validatePublicHttpsUrl(value: string): Promise<URL> {
+  return validateSourceUrl(value);
+}
+
 async function validateSourceUrl(value: string): Promise<URL> {
   const url = new URL(value);
   if (url.protocol !== 'https:' || url.username || url.password || url.port && url.port !== '443') {

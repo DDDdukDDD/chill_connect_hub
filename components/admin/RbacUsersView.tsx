@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ShieldCheck, Crown, Edit3, Search, Check } from 'lucide-react';
+import { ShieldCheck, Crown, Search, Check } from 'lucide-react';
+import { AdminPreviewNotice } from './AdminPreviewNotice';
 
 export type UserRole = 'Super Admin' | 'Content Editor' | 'Moderator' | 'Organizer' | 'Member';
 
@@ -104,6 +105,10 @@ export function RbacUsersView() {
         </div>
       </div>
 
+      <AdminPreviewNotice>
+        รายชื่อผู้ใช้และบทบาทในหน้านี้เป็นตัวอย่างดีไซน์ ระบบยังไม่มีบัญชีผู้ใช้จริง ตอนนี้สิทธิ์ผู้ดูแลมีแบบเดียวคือเข้าสู่ระบบด้วย ADMIN_PASSWORD
+      </AdminPreviewNotice>
+
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
         {ROLES_CONFIG.map((rc) => {
@@ -175,11 +180,7 @@ export function RbacUsersView() {
                       {user.status === 'active' ? '● Active' : '○ Inactive'}
                     </span>
                   </div>
-                  <div className="col-span-1 flex items-center justify-end">
-                    <button className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-300 hover:text-slate-500 transition-colors opacity-0 group-hover:opacity-100">
-                      <Edit3 size={12} />
-                    </button>
-                  </div>
+                  <div className="col-span-1" />
                 </div>
               );
             })}

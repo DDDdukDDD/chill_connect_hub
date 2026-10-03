@@ -15,11 +15,10 @@ import {
   Database,
   ChevronRight,
   Zap,
-  Crown,
-  Settings,
   Home,
   Image as ImageIcon,
 } from 'lucide-react';
+import { AdminSessionStatus } from './AdminSessionStatus';
 
 export type AdminModuleId =
   | 'dashboard'
@@ -43,6 +42,8 @@ interface SidebarModule {
   icon: React.ElementType;
   badge?: string;
   badgeColor?: string;
+  /** Sample-data screen with no backend yet */
+  preview?: boolean;
 }
 
 interface SidebarGroup {
@@ -79,9 +80,9 @@ const SIDEBAR_GROUPS: SidebarGroup[] = [
     modules: [
       { id: 'media', label: 'Media & Image Hub', labelEn: 'Asset Storage', icon: ImageIcon, badge: 'Storage' },
       { id: 'cache', label: 'Cache & Performance', labelEn: 'Memory Engine', icon: Zap, badge: 'L1' },
-      { id: 'rbac', label: 'Users & Permissions', labelEn: 'Role Management', icon: ShieldCheck },
+      { id: 'rbac', label: 'Users & Permissions', labelEn: 'Role Management', icon: ShieldCheck, preview: true },
       { id: 'scraper', label: 'Scraper Engine', labelEn: 'Aggregator & Bots', icon: Bot },
-      { id: 'backup', label: 'Backup & Audit Logs', labelEn: 'Database & Logs', icon: Database },
+      { id: 'backup', label: 'Backup & Audit Logs', labelEn: 'Database & Logs', icon: Database, preview: true },
     ],
   },
 ];
@@ -89,20 +90,9 @@ const SIDEBAR_GROUPS: SidebarGroup[] = [
 interface AdminSidebarProps {
   activeModule: AdminModuleId;
   onModuleChange: (module: AdminModuleId) => void;
-  currentRole: string;
-  onRoleChange?: () => void;
 }
 
-const ROLE_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
-  'Super Admin':    { bg: 'bg-sage/10',           text: 'text-[#2D5A3C]',  dot: 'bg-[#4A7C59]' },
-  'Content Editor': { bg: 'bg-sky-50',             text: 'text-sky-700',    dot: 'bg-sky-500' },
-  'Moderator':      { bg: 'bg-amber-50',           text: 'text-amber-700',  dot: 'bg-amber-500' },
-  'Organizer':      { bg: 'bg-emerald-50',         text: 'text-emerald-700',dot: 'bg-emerald-500' },
-  'Member':         { bg: 'bg-slate-100',          text: 'text-slate-500',  dot: 'bg-slate-400' },
-};
-
-export function AdminSidebar({ activeModule, onModuleChange, currentRole, onRoleChange }: AdminSidebarProps) {
-  const roleStyle = ROLE_COLORS[currentRole] || ROLE_COLORS['Member'];
+export function AdminSidebar({ activeModule, onModuleChange }: AdminSidebarProps) {
 
   return (
     <aside className="flex flex-col w-64 shrink-0 bg-white border-r border-slate-200/80 h-screen sticky top-0 overflow-y-auto shadow-sm">
@@ -160,6 +150,14 @@ export function AdminSidebar({ activeModule, onModuleChange, currentRole, onRole
                           {mod.labelEn}
                         </p>
                       </div>
+                      {mod.preview && (
+                        <span
+                          title="ข้อมูลตัวอย่าง ยังไม่เชื่อมต่อระบบจริง"
+                          className="text-[9px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 bg-amber-50 text-amber-700 border-amber-200"
+                        >
+                          ตัวอย่าง
+                        </span>
+                      )}
                       {mod.badge && (
                         <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 ${
                           isActive
@@ -183,23 +181,7 @@ export function AdminSidebar({ activeModule, onModuleChange, currentRole, onRole
 
       {/* Profile / Role Badge */}
       <div className="px-3 py-4 border-t border-slate-100">
-        <button
-          onClick={onRoleChange}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors group"
-          title="Switch Role"
-        >
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shrink-0 border border-slate-200">
-            <Crown size={13} className="text-amber-500" />
-          </div>
-          <div className="flex-1 min-w-0 text-left">
-            <p className="text-[12px] font-semibold text-slate-700 truncate">Admin Preview</p>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <div className={`w-1.5 h-1.5 rounded-full ${roleStyle.dot}`} />
-              <p className={`text-[10px] font-semibold ${roleStyle.text}`}>{currentRole}</p>
-            </div>
-          </div>
-          <Settings size={13} className="text-slate-300 group-hover:text-slate-500 shrink-0 transition-colors" />
-        </button>
+        <AdminSessionStatus variant="sidebar" />
         <div className="mt-1">
           <Link
             href="/"

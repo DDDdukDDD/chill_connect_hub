@@ -1,14 +1,28 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Lock, LogOut, Loader2 } from 'lucide-react';
+import { Lock, Loader2 } from 'lucide-react';
 
-interface AdminSessionState {
+export interface AdminSessionState {
   authenticated: boolean;
   hasSession: boolean;
   authRequired: boolean;
   loginAvailable: boolean;
+}
+
+interface AdminSessionContextValue {
+  session: AdminSessionState;
+  logout: () => Promise<void>;
+}
+
+const AdminSessionContext = createContext<AdminSessionContextValue | null>(null);
+
+/** Real, server-verified admin session for components inside AdminAuthGate. */
+export function useAdminSession(): AdminSessionContextValue {
+  const value = useContext(AdminSessionContext);
+  if (!value) throw new Error('useAdminSession must be used inside AdminAuthGate');
+  return value;
 }
 
 async function fetchAdminSession(): Promise<AdminSessionState | Error> {
@@ -81,18 +95,9 @@ export function AdminAuthGate({ children }: { children: React.ReactNode }) {
 
   if (session?.authenticated) {
     return (
-      <>
+      <AdminSessionContext.Provider value={{ session, logout: handleLogout }}>
         {children}
-        {session.hasSession && (
-          <button
-            onClick={handleLogout}
-            className="fixed bottom-4 right-4 z-50 flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold shadow-2xs transition-colors"
-          >
-            <LogOut size={14} />
-            ออกจากระบบผู้ดูแล
-          </button>
-        )}
-      </>
+      </AdminSessionContext.Provider>
     );
   }
 
