@@ -13,12 +13,11 @@ import { ETicketModal } from '@/components/ETicketModal';
 import { CancelTicketModal } from '@/components/CancelTicketModal';
 import { GroupChatModal } from '@/components/GroupChatModal';
 import { TipHostModal } from '@/components/TipHostModal';
-import { EventDetailModal } from '@/components/EventDetailModal';
 import { SpotBuddyGatheringModal, SpotBuddyPostItem } from '@/components/SpotBuddyGatheringModal';
 import { MOCK_CHALLENGES, ChallengeQuest, EventItem, MOCK_EVENTS } from '@/data/mockData';
 import { isEventEnded } from '@/lib/dateUtils';
 import { BrandLogo } from '@/components/BrandLogo';
-import { MOCK_SPOTS, LifestyleSpotItem } from '@/data/spotsData';
+import { MOCK_SPOTS, LifestyleSpotItem, getSpotVibeCategory } from '@/data/spotsData';
 import { resolveSpotImage } from '@/lib/spotImageResolver';
 import { formatSpotBadgePrice } from '@/components/SpotCard';
 import {
@@ -65,6 +64,7 @@ import {
   Camera,
   X,
   AlertCircle,
+  Search,
 } from 'lucide-react';
 
 const THAI_MONTH_NAMES = [
@@ -98,11 +98,13 @@ export default function MyHubPage() {
   const [myChallenges, setMyChallenges] = useState<ChallengeQuest[]>(MOCK_CHALLENGES);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Travel Scrapbook state
+  // Travel Scrapbook state & quick filters
   const [savedSpotIds, setSavedSpotIds] = useState<string[]>([]);
+  const [scrapbookSearch, setScrapbookSearch] = useState('');
+  const [scrapbookVibeFilter, setScrapbookVibeFilter] = useState<string>('all');
 
-  // User XP & Rewards
-  const [userXp, setUserXp] = useState<number>(450);
+  // User XP & Rewards (Synced with rewardsData)
+  const [userXp, setUserXp] = useState<number>(() => getStoredUserXp());
   const [redeemedRewardIds, setRedeemedRewardIds] = useState<string[]>([]);
   const [checkedInTicketIds, setCheckedInTicketIds] = useState<string[]>([]);
 
@@ -134,7 +136,6 @@ export default function MyHubPage() {
   const [calendarTimeScope, setCalendarTimeScope] = useState<'month' | 'all'>('month');
 
   // Modals State
-  const [detailModalEvent, setDetailModalEvent] = useState<EventItem | null>(null);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [isETicketModalOpen, setIsETicketModalOpen] = useState(false);
   const [selectedTicketEvent, setSelectedTicketEvent] = useState<EventItem | null>(null);
@@ -234,6 +235,19 @@ export default function MyHubPage() {
       const storedFavs = JSON.parse(localStorage.getItem('favorites') || '[]');
       if (Array.isArray(storedFavs)) {
         setFavorites(storedFavs);
+      }
+
+      // 3.1 Sync My Challenges Progress
+      try {
+        const storedChallenges = localStorage.getItem('cch_my_challenges');
+        if (storedChallenges) {
+          const parsed = JSON.parse(storedChallenges);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setMyChallenges(parsed);
+          }
+        }
+      } catch (e) {
+        console.error('Error syncing myChallenges:', e);
       }
 
       // 4. Sync User XP & Redeemed Rewards
@@ -481,10 +495,23 @@ export default function MyHubPage() {
     });
   }, [expoEvents, eventViewMode, pastSubFilter, cancelledEventIds, missedEventIds]);
 
-  // Saved Lifestyle Spots for Scrapbook
+  // Saved Lifestyle Spots for Scrapbook (Filterable by search and vibe)
   const savedSpotsList: LifestyleSpotItem[] = useMemo(() => {
-    return MOCK_SPOTS.filter((s) => savedSpotIds.includes(s.id));
-  }, [savedSpotIds]);
+    let list = MOCK_SPOTS.filter((s) => savedSpotIds.includes(s.id));
+    if (scrapbookSearch.trim()) {
+      const q = scrapbookSearch.toLowerCase().trim();
+      list = list.filter(
+        (s) =>
+          s.title.toLowerCase().includes(q) ||
+          s.province.toLowerCase().includes(q) ||
+          s.district.toLowerCase().includes(q)
+      );
+    }
+    if (scrapbookVibeFilter !== 'all') {
+      list = list.filter((s) => (getSpotVibeCategory(s) as string) === scrapbookVibeFilter || (s.category as string) === scrapbookVibeFilter);
+    }
+    return list;
+  }, [savedSpotIds, scrapbookSearch, scrapbookVibeFilter]);
 
   const handleRemoveFromScrapbook = (spotId: string, spotTitle: string) => {
     const updated = savedSpotIds.filter((id) => id !== spotId);
@@ -599,20 +626,44 @@ export default function MyHubPage() {
     showToast(`บันทึกสถานะว่าได้เข้าร่วม "${title}" สำเร็จแล้ว`);
   };
 
+  // Helper to persist and update User XP
+  const updateUserXp = (delta: number) => {
+    setUserXp((prev) => {
+      const nextXp = Math.max(0, prev + delta);
+      setStoredUserXp(nextXp);
+      return nextXp;
+    });
+  };
+
+  // Helper to persist and update Challenges/Quests
+  const updateChallenges = (updater: (prev: ChallengeQuest[]) => ChallengeQuest[]) => {
+    setMyChallenges((prev) => {
+      const updated = updater(prev);
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('cch_my_challenges', JSON.stringify(updated));
+        } catch (e) {
+          console.error('Error saving challenges to localStorage:', e);
+        }
+      }
+      return updated;
+    });
+  };
+
   const handleCheckIn = (ticketId: string) => {
     if (!checkedInTicketIds.includes(ticketId)) {
       setCheckedInTicketIds((prev) => [...prev, ticketId]);
-      setUserXp((prev) => prev + 50);
+      updateUserXp(50);
       showToast('เช็คอินสำเร็จ! คุณได้รับ +50 XP และปลดล็อกความคืบหน้า Badge แล้ว');
     } else {
       setCheckedInTicketIds((prev) => prev.filter((id) => id !== ticketId));
-      setUserXp((prev) => Math.max(0, prev - 50));
+      updateUserXp(-50);
       showToast('ยกเลิกการจำลองเช็คอินแล้ว');
     }
   };
 
   const handleVerifySuccess = (questId: string) => {
-    setMyChallenges((prev) =>
+    updateChallenges((prev) =>
       prev.map((q) => {
         if (q.id === questId) {
           const currentCount = parseInt(q.current || '0', 10) + 1;
@@ -628,7 +679,7 @@ export default function MyHubPage() {
         return q;
       })
     );
-    setUserXp((prev) => prev + 50);
+    updateUserXp(50);
     showToast(`ยืนยันหลักฐานสำเร็จ! ความคืบหน้าเพิ่มขึ้น +50 XP`);
   };
 
@@ -1307,6 +1358,8 @@ export default function MyHubPage() {
                   const isMissed = status === 'missed';
                   const isAttended = status === 'attended';
                   const isReviewed = reviewedEventIds.includes(ev.id);
+                  const isHost = Boolean(ev.isHost || userCreatedEvents.some((u) => u.id === ev.id));
+                  const isMenuOpen = activeMenuId === `cal-${ev.id}`;
 
                   return (
                     <div
@@ -1478,31 +1531,51 @@ export default function MyHubPage() {
                               </Link>
                             </>
                           ) : isCancelled ? (
-                            /* Cancelled Event: Link to fullpage */
-                            <Link
-                              href={
-                                ev.eventType === 'public_venue' || meta.pillar === 'fairs'
-                                  ? `/fairs/${encodeURIComponent(ev.id)}`
-                                  : `/community/${encodeURIComponent(ev.id)}`
-                              }
-                              className="w-full py-1.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-2xs cursor-pointer truncate"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
-                              <span>ดูข้อมูลงาน (ยกเลิกแล้ว)</span>
-                            </Link>
+                            /* Cancelled Event: Link to fullpage + restore button */
+                            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                              <Link
+                                href={
+                                  ev.eventType === 'public_venue' || meta.pillar === 'fairs'
+                                    ? `/fairs/${encodeURIComponent(ev.id)}`
+                                    : `/community/${encodeURIComponent(ev.id)}`
+                                }
+                                className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-2xs cursor-pointer truncate"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
+                                <span>ดูข้อมูลงาน</span>
+                              </Link>
+                              <button
+                                type="button"
+                                onClick={() => handleMarkAttended(ev.id, ev.title)}
+                                className="py-1.5 px-2 rounded-xl bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 text-xs font-semibold transition-all shrink-0 cursor-pointer"
+                                title="เปลี่ยนสถานะเป็นไปร่วมจริง"
+                              >
+                                <span>ไปร่วมจริง</span>
+                              </button>
+                            </div>
                           ) : isMissed ? (
-                            /* Missed Event: NO review, view moments */
-                            <Link
-                              href="/moments"
-                              className="w-full py-1.5 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-2xs cursor-pointer truncate active:scale-95"
-                              title="ดูภาพบรรยากาศจากเพื่อนคนอื่นในคอมมูนิตี้"
-                            >
-                              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                              <span>ดูบรรยากาศงาน</span>
-                            </Link>
+                            /* Missed Event: View moments + restore button */
+                            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                              <Link
+                                href="/moments"
+                                className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-2xs cursor-pointer truncate active:scale-95"
+                                title="ดูภาพบรรยากาศจากเพื่อนคนอื่นในคอมมูนิตี้"
+                              >
+                                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                                <span>ดูบรรยากาศ</span>
+                              </Link>
+                              <button
+                                type="button"
+                                onClick={() => handleMarkAttended(ev.id, ev.title)}
+                                className="py-1.5 px-2 rounded-xl bg-white hover:bg-emerald-50 text-emerald-700 border border-slate-200 hover:border-emerald-300 text-xs font-semibold transition-all shrink-0 cursor-pointer"
+                                title="คลิกหากคุณได้ไปร่วมจริง เพื่อเปิดให้แชร์โมเมนต์"
+                              >
+                                <span>ฉันไปร่วมจริง</span>
+                              </button>
+                            </div>
                           ) : isAttended ? (
                             /* Attended Event: Share Moment + Review/Info */
-                            <>
+                            <div className="flex items-center gap-1.5 flex-1 min-w-0">
                               <Link
                                 href={`/moments?createForEvent=${encodeURIComponent(ev.id)}&eventTitle=${encodeURIComponent(ev.title)}&location=${encodeURIComponent(ev.location)}&image=${encodeURIComponent(ev.image || '')}`}
                                 className="flex-1 py-1.5 px-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
@@ -1547,22 +1620,33 @@ export default function MyHubPage() {
                                   <span>ข้อมูลงาน</span>
                                 </Link>
                               )}
-                            </>
+                            </div>
                           ) : (
                             /* Upcoming Event */
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setSelectedTicketEvent(ev);
-                                  setSelectedTicketId(ticketId);
-                                  setIsETicketModalOpen(true);
-                                }}
-                                className={`flex-1 py-1.5 px-2.5 rounded-xl ${meta.btnBg} ${meta.btnHover} ${meta.btnText} border ${meta.btnBorder} text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95`}
-                              >
-                                <Ticket className={`w-3.5 h-3.5 ${meta.btnText}`} />
-                                <span>ดูบัตร</span>
-                              </button>
+                            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                              {isHost ? (
+                                <Link
+                                  href={`/community/${encodeURIComponent(ev.id)}`}
+                                  className="flex-1 py-1.5 px-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
+                                  title="ไปที่หน้ารายละเอียดเพื่อดูแลตี้และตรวจสอบสมาชิก"
+                                >
+                                  <Crown className="w-3.5 h-3.5 shrink-0 text-white" />
+                                  <span>จัดการตี้</span>
+                                </Link>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedTicketEvent(ev);
+                                    setSelectedTicketId(ticketId);
+                                    setIsETicketModalOpen(true);
+                                  }}
+                                  className={`flex-1 py-1.5 px-2.5 rounded-xl ${meta.btnBg} ${meta.btnHover} ${meta.btnText} border ${meta.btnBorder} text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95`}
+                                >
+                                  <Ticket className={`w-3.5 h-3.5 ${meta.btnText}`} />
+                                  <span>ดูบัตร</span>
+                                </button>
+                              )}
 
                               {ev.eventType !== 'public_venue' ? (
                                 <button
@@ -1572,10 +1656,10 @@ export default function MyHubPage() {
                                     setIsChatModalOpen(true);
                                   }}
                                   className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 shadow-2xs"
-                                  title="เปิดห้องแชทกลุ่ม"
+                                  title={isHost ? 'เปิดห้องแชตคุยกับลูกทีม' : 'เปิดห้องแชทกลุ่ม'}
                                 >
                                   <MessageCircle className="w-3.5 h-3.5 text-slate-500" />
-                                  <span>แชท</span>
+                                  <span>{isHost ? 'แชตลูกทีม' : 'แชต'}</span>
                                 </button>
                               ) : (
                                 <Link
@@ -1587,7 +1671,157 @@ export default function MyHubPage() {
                                   <span className="hidden sm:inline">งานแฟร์</span>
                                 </Link>
                               )}
-                            </>
+                            </div>
+                          )}
+
+                          {/* Context Menu Button for Calendar Cards */}
+                          {meta.pillar !== 'quests' && (
+                            <div className="relative shrink-0">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveMenuId(isMenuOpen ? null : `cal-${ev.id}`);
+                                }}
+                                className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
+                                title="ตัวเลือกเพิ่มเติม"
+                              >
+                                <MoreHorizontal className="w-4 h-4" />
+                              </button>
+
+                              {isMenuOpen && (
+                                <div
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="absolute right-0 bottom-full mb-1.5 w-48 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-30 animate-fade-in text-slate-700"
+                                >
+                                  <Link
+                                    href={
+                                      ev.eventType === 'public_venue' || meta.pillar === 'fairs'
+                                        ? `/fairs/${encodeURIComponent(ev.id)}`
+                                        : `/community/${encodeURIComponent(ev.id)}`
+                                    }
+                                    onClick={() => setActiveMenuId(null)}
+                                    className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                                    <span>ดูรายละเอียดงาน</span>
+                                  </Link>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveMenuId(null);
+                                      showToast(`คัดลอกลิงก์กิจกรรม ${ev.title} แล้ว!`);
+                                    }}
+                                    className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <Share2 className="w-3.5 h-3.5 text-slate-400" />
+                                    <span>แชร์นัดหมาย</span>
+                                  </button>
+
+                                  <div className="my-1 border-t border-slate-100" />
+
+                                  {isAttended ? (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setActiveMenuId(null);
+                                          handleMarkMissed(ev.id, ev.title);
+                                        }}
+                                        className="w-full px-3 py-2 text-left text-xs font-semibold text-amber-700 hover:bg-amber-50 flex items-center gap-2 cursor-pointer"
+                                      >
+                                        <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+                                        <span>แจ้งว่าไม่ได้ไปร่วมจริง</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setActiveMenuId(null);
+                                          handlePermanentRemove(ev.id, ev.title);
+                                        }}
+                                        className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-600 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5 text-slate-400" />
+                                        <span>ลบออกจากประวัติ</span>
+                                      </button>
+                                    </>
+                                  ) : isMissed ? (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setActiveMenuId(null);
+                                          handleMarkAttended(ev.id, ev.title);
+                                        }}
+                                        className="w-full px-3 py-2 text-left text-xs font-semibold text-emerald-700 hover:bg-emerald-50 flex items-center gap-2 cursor-pointer"
+                                      >
+                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                                        <span>เปลี่ยนเป็นเข้าร่วมสำเร็จ</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setActiveMenuId(null);
+                                          handlePermanentRemove(ev.id, ev.title);
+                                        }}
+                                        className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-600 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5 text-slate-400" />
+                                        <span>ลบออกจากประวัติ</span>
+                                      </button>
+                                    </>
+                                  ) : isCancelled ? (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setActiveMenuId(null);
+                                          handleMarkAttended(ev.id, ev.title);
+                                        }}
+                                        className="w-full px-3 py-2 text-left text-xs font-semibold text-emerald-700 hover:bg-emerald-50 flex items-center gap-2 cursor-pointer"
+                                      >
+                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                                        <span>กู้คืนเป็นไปร่วมงาน</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setActiveMenuId(null);
+                                          handlePermanentRemove(ev.id, ev.title);
+                                        }}
+                                        className="w-full px-3 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                                        <span>ลบออกจากประวัติถาวร</span>
+                                      </button>
+                                    </>
+                                  ) : isHost ? (
+                                    <Link
+                                      href={`/community/${encodeURIComponent(ev.id)}`}
+                                      onClick={() => setActiveMenuId(null)}
+                                      className="w-full px-3 py-2 text-left text-xs font-semibold text-amber-700 hover:bg-amber-50 flex items-center gap-2 cursor-pointer"
+                                    >
+                                      <Crown className="w-3.5 h-3.5 text-amber-500" />
+                                      <span>จัดการและปิดรับสมัคร</span>
+                                    </Link>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setActiveMenuId(null);
+                                        setCancelTargetEvent(ev);
+                                        setCancelTargetTicketId(ticketId);
+                                        setIsCancelModalOpen(true);
+                                      }}
+                                      className="w-full px-3 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                                      <span>ยกเลิกการเข้าร่วม</span>
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>
@@ -2207,6 +2441,7 @@ export default function MyHubPage() {
                         const isMissed = status === 'missed';
                         const isAttended = status === 'attended';
                         const isReviewed = reviewedEventIds.includes(event.id);
+                        const isHost = Boolean(event.isHost || userCreatedEvents.some((u) => u.id === event.id));
 
                         return (
                           <div
@@ -2398,20 +2633,31 @@ export default function MyHubPage() {
                                     )}
                                   </div>
                                 ) : (
-                                  /* Upcoming State: Normal E-Ticket + Chat */
+                                  /* Upcoming State: Normal E-Ticket + Chat OR Host Management */
                                   <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setSelectedTicketEvent(event);
-                                        setSelectedTicketId(ticketId);
-                                        setIsETicketModalOpen(true);
-                                      }}
-                                      className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
-                                    >
-                                      <QrCode className="w-3.5 h-3.5 shrink-0" />
-                                      <span>ดูบัตร</span>
-                                    </button>
+                                    {isHost ? (
+                                      <Link
+                                        href={`/community/${encodeURIComponent(event.id)}`}
+                                        className="flex-1 py-1.5 px-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
+                                        title="ไปที่หน้ารายละเอียดกิจกรรมเพื่อดูแลตี้และตรวจสอบสมาชิก"
+                                      >
+                                        <Crown className="w-3.5 h-3.5 shrink-0 text-white" />
+                                        <span>จัดการตี้</span>
+                                      </Link>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setSelectedTicketEvent(event);
+                                          setSelectedTicketId(ticketId);
+                                          setIsETicketModalOpen(true);
+                                        }}
+                                        className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
+                                      >
+                                        <QrCode className="w-3.5 h-3.5 shrink-0" />
+                                        <span>ดูบัตร</span>
+                                      </button>
+                                    )}
 
                                     <button
                                       type="button"
@@ -2420,10 +2666,10 @@ export default function MyHubPage() {
                                         setIsChatModalOpen(true);
                                       }}
                                       className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-[#EBF3ED] text-slate-700 hover:text-[#2D5A3C] border border-slate-200 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 shadow-2xs"
-                                      title="เปิดห้องแชตกลุ่ม"
+                                      title={isHost ? 'เปิดห้องแชตคุยกับลูกทีม' : 'เปิดห้องแชตกลุ่ม'}
                                     >
                                       <MessageCircle className="w-3.5 h-3.5 text-slate-500" />
-                                      <span>แชต</span>
+                                      <span>{isHost ? 'แชตลูกทีม' : 'แชต'}</span>
                                     </button>
                                   </div>
                                 )}
@@ -2545,6 +2791,15 @@ export default function MyHubPage() {
                                             <span>ลบออกจากประวัติถาวร</span>
                                           </button>
                                         </>
+                                      ) : isHost ? (
+                                        <Link
+                                          href={`/community/${encodeURIComponent(event.id)}`}
+                                          onClick={() => setActiveMenuId(null)}
+                                          className="w-full px-3 py-2 text-left text-xs font-semibold text-amber-700 hover:bg-amber-50 flex items-center gap-2 cursor-pointer"
+                                        >
+                                          <Crown className="w-3.5 h-3.5 text-amber-500" />
+                                          <span>จัดการและปิดรับสมัคร</span>
+                                        </Link>
                                       ) : (
                                         <button
                                           type="button"
@@ -3064,9 +3319,64 @@ export default function MyHubPage() {
                     </Link>
                   </div>
 
+                  {/* Search & Vibe Filters (Shown when user has saved spots) */}
+                  {savedSpotIds.length > 0 && (
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs">
+                      {/* Search Input */}
+                      <div className="relative flex-1 min-w-[200px]">
+                        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <input
+                          type="text"
+                          placeholder="ค้นหาชื่อพิกัด, จังหวัด, อำเภอ..."
+                          value={scrapbookSearch}
+                          onChange={(e) => setScrapbookSearch(e.target.value)}
+                          className="w-full pl-9 pr-8 py-2 text-xs rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2D5A3C]/20 focus:border-[#2D5A3C] transition-all text-slate-800 placeholder:text-slate-400"
+                        />
+                        {scrapbookSearch && (
+                          <button
+                            type="button"
+                            onClick={() => setScrapbookSearch('')}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-200/60 cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Vibe Chips (Horizontal Scrollable) */}
+                      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none text-xs">
+                        {[
+                          { id: 'all', label: 'ทั้งหมด' },
+                          { id: 'cafe_slowbar', label: 'คาเฟ่' },
+                          { id: 'nature_camping', label: 'ธรรมชาติ' },
+                          { id: 'mountain_mist', label: 'ขุนเขา' },
+                          { id: 'sea_island', label: 'ทะเล' },
+                          { id: 'art_creative', label: 'ศิลปะ' },
+                          { id: 'oldtown_culture', label: 'ย่านเก่า' },
+                        ].map((vibe) => {
+                          const active = scrapbookVibeFilter === vibe.id;
+                          return (
+                            <button
+                              key={vibe.id}
+                              type="button"
+                              onClick={() => setScrapbookVibeFilter(vibe.id)}
+                              className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all text-xs cursor-pointer ${
+                                active
+                                  ? 'bg-slate-900 text-white shadow-2xs'
+                                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                              }`}
+                            >
+                              {vibe.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Spots Grid or Empty State */}
-                  {savedSpotsList.length === 0 ? (
-                    /* Clean Compact Empty State */
+                  {savedSpotIds.length === 0 ? (
+                    /* Initial Empty State */
                     <div className="bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-white text-slate-600 flex items-center justify-center shrink-0 border border-slate-200 shadow-2xs">
@@ -3088,6 +3398,33 @@ export default function MyHubPage() {
                         <span>สำรวจพิกัด 77 จังหวัด</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </Link>
+                    </div>
+                  ) : savedSpotsList.length === 0 ? (
+                    /* Search / Filter Empty State */
+                    <div className="bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-white text-slate-600 flex items-center justify-center shrink-0 border border-slate-200 shadow-2xs">
+                          <Search className="w-5 h-5 text-slate-400" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-slate-800">
+                            ไม่พบพิกัดที่ตรงกับเงื่อนไขการค้นหา
+                          </h4>
+                          <p className="text-xs text-slate-500">
+                            ลองเปลี่ยนคำค้นหา หรือรีเซ็ตตัวกรองเพื่อดูสถานที่ทั้งหมดในสมุดบันทึก
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setScrapbookSearch('');
+                          setScrapbookVibeFilter('all');
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-2xs transition-all shrink-0 cursor-pointer"
+                      >
+                        <span>ล้างตัวกรอง</span>
+                      </button>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
@@ -3436,16 +3773,31 @@ export default function MyHubPage() {
                               className="w-full sm:w-auto sm:max-w-[270px] min-h-[105px] bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-3.5 flex flex-col justify-between gap-2.5"
                             >
                               <div className="space-y-1">
-                                <span className="text-[10px] font-bold text-[#D04A1B] bg-[#FEF3EE] px-2 py-0.5 rounded-md border border-[#FCD5C5]/70">
-                                  {item.discountValue}
-                                </span>
+                                <div className="flex items-center justify-between gap-1">
+                                  <span className="text-[10px] font-bold text-[#D04A1B] bg-[#FEF3EE] px-2 py-0.5 rounded-md border border-[#FCD5C5]/70">
+                                    {item.discountValue}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 font-medium">
+                                    ถึง {item.validUntil}
+                                  </span>
+                                </div>
                                 <h5 className="font-bold text-xs sm:text-sm text-slate-900 truncate">
                                   {item.title}
                                 </h5>
-                                <p className="text-[11px] text-slate-500 font-semibold flex items-center gap-1">
-                                  <Tag className="w-3 h-3 text-slate-400" />
-                                  <span className="truncate">{item.partner}</span>
-                                </p>
+                                <div className="flex items-center justify-between gap-1 text-[11px] text-slate-500 font-semibold">
+                                  <span className="flex items-center gap-1 truncate">
+                                    <Tag className="w-3 h-3 text-slate-400 shrink-0" />
+                                    <span className="truncate">{item.partner}</span>
+                                  </span>
+                                  <Link
+                                    href={item.category === 'cafe' ? '/spots?vibe=cafe_slowbar' : '/community?category=chill'}
+                                    className="text-[10px] font-bold text-[#2D5A3C] hover:underline flex items-center gap-0.5 shrink-0"
+                                    title="ดูพิกัดร้านที่ร่วมรายการ"
+                                  >
+                                    <span>ดูพิกัด</span>
+                                    <ArrowRight className="w-2.5 h-2.5" />
+                                  </Link>
+                                </div>
                               </div>
 
                               <div className="bg-slate-50 rounded-xl border border-dashed border-slate-200 p-2 flex items-center justify-between gap-2">
@@ -3500,27 +3852,7 @@ export default function MyHubPage() {
       {/* MODALS                                                        */}
       {/* ============================================================= */}
 
-      {/* 1. Event Detail Modal */}
-      <EventDetailModal
-        event={detailModalEvent}
-        onClose={() => setDetailModalEvent(null)}
-        isFavorite={detailModalEvent ? favorites.includes(detailModalEvent.id) : false}
-        onToggleFavorite={(id) => {
-          setFavorites((prev) =>
-            prev.includes(id) ? prev.filter((favId) => favId !== id) : [...prev, id]
-          );
-        }}
-        isJoined={true}
-        isLoggedIn={isLoggedIn}
-        onJoinSuccess={() => {}}
-        onLeaveSuccess={(id) => {
-          setJoinedEventIds((prev) => prev.filter((eId) => eId !== id));
-          setDetailModalEvent(null);
-          showToast('ยกเลิกการเข้าร่วมกิจกรรมเรียบร้อยแล้ว');
-        }}
-      />
-
-      {/* 2. E-Ticket Modal */}
+      {/* 1. E-Ticket Modal */}
       <ETicketModal
         isOpen={isETicketModalOpen}
         onClose={() => setIsETicketModalOpen(false)}
@@ -3536,14 +3868,14 @@ export default function MyHubPage() {
         }}
       />
 
-      {/* 3. Group Chat Modal */}
+      {/* 2. Group Chat Modal */}
       <GroupChatModal
         isOpen={isChatModalOpen}
         onClose={() => setIsChatModalOpen(false)}
         event={chatTargetEvent}
       />
 
-      {/* 4. Cancel Ticket Modal */}
+      {/* 3. Cancel Ticket Modal */}
       <CancelTicketModal
         isOpen={isCancelModalOpen}
         onClose={() => setIsCancelModalOpen(false)}
@@ -3552,7 +3884,7 @@ export default function MyHubPage() {
         onConfirmCancel={handleConfirmCancel}
       />
 
-      {/* 5. Tip Host Modal */}
+      {/* 4. Tip Host Modal */}
       <TipHostModal
         isOpen={isTipModalOpen}
         onClose={() => setIsTipModalOpen(false)}
@@ -3567,7 +3899,7 @@ export default function MyHubPage() {
               return updated;
             });
           }
-          setUserXp((prev) => prev + 50);
+          updateUserXp(50);
           showToast(
             amount > 0
               ? `ส่งรีวิวและทิป ฿${amount} ให้ ${tipTargetEvent?.hostName} สำเร็จ ได้รับ +50 XP! ⭐`
@@ -3577,7 +3909,7 @@ export default function MyHubPage() {
         }}
       />
 
-      {/* 6. Quest Verify Modal */}
+      {/* 5. Quest Verify Modal */}
       <VerifyQuestModal
         isOpen={!!selectedQuestForVerifyModal}
         onClose={() => setSelectedQuestForVerifyModal(null)}
@@ -3585,12 +3917,12 @@ export default function MyHubPage() {
         onVerificationSuccess={handleVerifySuccess}
       />
 
-      {/* 7. Create Challenge Modal */}
+      {/* 6. Create Challenge Modal */}
       <CreateChallengeModal
         isOpen={isCreateChallengeModalOpen}
         onClose={() => setIsCreateChallengeModalOpen(false)}
         onCreateSuccess={(newQuest) => {
-          setMyChallenges([newQuest, ...myChallenges]);
+          updateChallenges((prev) => [newQuest, ...prev]);
           showToast(`สร้างชาเลนจ์ "${newQuest.title}" สำเร็จ`);
         }}
       />
