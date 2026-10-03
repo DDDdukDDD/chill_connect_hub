@@ -29,6 +29,15 @@ export interface IDataRepository {
   updateEvent(id: string, data: UpdateEventDTO): Promise<EventItem | null>;
   deleteEvent(id: string): Promise<boolean>;
 
+  /** Every event in every moderation state, unpaginated (admin / ingestion use only). */
+  listAllEvents(): Promise<EventItem[]>;
+  /** Prepends several events in one write (e.g. scraper imports). */
+  createEvents(data: CreateEventDTO[]): Promise<EventItem[]>;
+  /** Applies several partial updates in one write. Returns how many events were updated. */
+  bulkUpdateEvents(updates: Array<{ id: string; data: UpdateEventDTO }>): Promise<number>;
+  /** Replaces the whole event catalog (admin reset & reseed). */
+  replaceAllEvents(events: EventItem[]): Promise<number>;
+
   /**
    * Atomic capacity-checked meetup joining
    * Guarantees prevention of race conditions / overbooking even under high concurrency
@@ -41,6 +50,7 @@ export interface IDataRepository {
   findSpotById(id: string): Promise<LifestyleSpotItem | null>;
   createSpot(data: CreateSpotDTO): Promise<LifestyleSpotItem>;
   updateSpot(id: string, data: UpdateSpotDTO): Promise<LifestyleSpotItem | null>;
+  bulkUpdateSpots(spots: LifestyleSpotItem[]): Promise<number>;
   deleteSpot(id: string): Promise<boolean>;
 
   // ── Community Quests & Challenges ──
@@ -48,6 +58,7 @@ export interface IDataRepository {
   findQuestById(id: string): Promise<ChallengeQuest | null>;
   createQuest(data: CreateQuestDTO): Promise<ChallengeQuest>;
   updateQuest(id: string, data: UpdateQuestDTO): Promise<ChallengeQuest | null>;
+  deleteQuest(id: string): Promise<boolean>;
 
   /**
    * Atomic quest progress / completion

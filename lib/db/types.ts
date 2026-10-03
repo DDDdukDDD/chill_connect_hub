@@ -34,6 +34,8 @@ export interface EventQueryParams extends PaginationParams {
   searchQuery?: string | null;
   status?: 'recruiting' | 'full' | 'ended' | 'all';
   includeEnded?: boolean;
+  /** Moderation state to return. Defaults to 'approved' so public reads never leak pending/rejected events. */
+  approvalStatus?: 'approved' | 'pending' | 'rejected' | 'all';
 }
 
 export interface SpotQueryParams extends PaginationParams {
@@ -42,6 +44,7 @@ export interface SpotQueryParams extends PaginationParams {
   vibeTag?: string | null;
   searchQuery?: string | null;
   hasImageOnly?: boolean;
+  includeDrafts?: boolean;
 }
 
 export interface QuestQueryParams extends PaginationParams {
@@ -49,6 +52,8 @@ export interface QuestQueryParams extends PaginationParams {
   difficulty?: 'easy' | 'medium' | 'hard' | 'all';
   isPopular?: boolean;
   searchQuery?: string | null;
+  status?: 'draft' | 'active' | 'ended' | 'all';
+  includeDrafts?: boolean;
 }
 
 // ── Atomic Operation Payloads ──

@@ -50,6 +50,9 @@ export interface LifestyleSpotItem {
   reviewsCount: number;
   latitude: number;
   longitude: number;
+  publicationStatus?: 'draft' | 'published';
+  sourceName?: string;
+  sourceUrl?: string;
   zone?: string;
   isTrending?: boolean;
   isNew?: boolean;

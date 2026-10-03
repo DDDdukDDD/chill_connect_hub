@@ -88,9 +88,15 @@ export function filterEvents(
     status,
     includeEnded = false,
     sortBy = 'newest',
+    approvalStatus = 'approved',
   } = params;
 
   const filtered = events.filter((ev) => {
+    // 0. Moderation state (public reads only ever see approved events)
+    if (approvalStatus !== 'all' && ev.approvalStatus !== approvalStatus) {
+      return false;
+    }
+
     // 1. Ended Events auto-hide unless explicitly requested
     if (!includeEnded && isEventEnded(ev)) {
       return false;
@@ -210,10 +216,15 @@ export function filterSpots(
     vibeTag,
     searchQuery,
     hasImageOnly = false,
+    includeDrafts = false,
     sortBy = 'popular',
   } = params;
 
   const filtered = spots.filter((spot) => {
+    if (!includeDrafts && spot.publicationStatus === 'draft') {
+      return false;
+    }
+
     // 1. Category filter
     if (category && category !== 'all' && spot.category !== category) {
       return false;
@@ -279,9 +290,15 @@ export function filterQuests(
   quests: ChallengeQuest[],
   params: QuestQueryParams = {}
 ): ChallengeQuest[] {
-  const { category, searchQuery } = params;
+  const { category, searchQuery, status, includeDrafts = false } = params;
 
   return quests.filter((q) => {
+    if (!includeDrafts && (q.status === 'draft' || q.visibility === 'private')) {
+      return false;
+    }
+    if (status && status !== 'all' && q.status !== status) {
+      return false;
+    }
     if (category && category !== 'all' && q.category !== category) {
       return false;
     }

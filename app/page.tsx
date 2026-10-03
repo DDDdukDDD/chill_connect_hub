@@ -37,6 +37,7 @@ import { getCommunityEventCategory, getFairEventCategory } from '@/data/masterHu
 import { SpotCard } from '@/components/SpotCard';
 import { isEventEnded, isEventNew, parseEventDateToTimestamp, parseEventEndDateToTimestamp, isEventEndedByDate, isEventMatchingTimeFilter } from '@/lib/dateUtils';
 import { useAuth } from '@/lib/useAuth';
+import { fetchAllContentPages } from '@/lib/contentClient';
 import {
   Heart,
   Sprout,
@@ -113,6 +114,7 @@ function HomeContent() {
   const [isLocating, setIsLocating] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [eventsList, setEventsList] = useState<EventItem[]>(MOCK_EVENTS);
+  const [spotsList, setSpotsList] = useState<LifestyleSpotItem[]>(MOCK_SPOTS);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
@@ -362,6 +364,19 @@ function HomeContent() {
       }
     };
     loadLiveEvents();
+  }, []);
+
+  React.useEffect(() => {
+    let isActive = true;
+    fetchAllContentPages<LifestyleSpotItem>('/api/spots', 'spots')
+      .then((spots) => {
+        if (isActive && spots.length > 0) setSpotsList(spots);
+      })
+      .catch((err) => console.warn('Using default mock spots fallback:', err));
+
+    return () => {
+      isActive = false;
+    };
   }, []);
 
 
@@ -804,7 +819,7 @@ function HomeContent() {
 
   // Filtered Lifestyle Spots (พิกัดเที่ยว & จุดฮีลใจ ทั่วประเทศ)
   const filteredSpots = useMemo(() => {
-    const result = MOCK_SPOTS.filter((spot) => {
+    const result = spotsList.filter((spot) => {
       // 0. Spot Category Rail Filter (1 Card = 1 Category)
       if (selectedSpotRailCategory && selectedSpotRailCategory !== 'all') {
         if (getSpotVibeCategory(spot) !== selectedSpotRailCategory) return false;
@@ -900,12 +915,12 @@ function HomeContent() {
     }
 
     return result;
-  }, [selectedSpotRailCategory, selectedSpotCategory, selectedSpotProvince, priceFilter, sortBy, sortByNearMe, userLocation, favoriteSpots, searchQuery]);
+  }, [spotsList, selectedSpotRailCategory, selectedSpotCategory, selectedSpotProvince, priceFilter, sortBy, sortByNearMe, userLocation, favoriteSpots, searchQuery]);
 
   // Dynamic spot category counts (supports province context)
   const spotCategoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    const baseSpots = MOCK_SPOTS.filter((spot) => {
+    const baseSpots = spotsList.filter((spot) => {
       if (selectedSpotProvince !== 'all') {
         const pLower = selectedSpotProvince.toLowerCase();
         const spotProv = spot.province.toLowerCase();
@@ -933,10 +948,10 @@ function HomeContent() {
       counts[cat.id] = baseSpots.filter((spot) => getSpotVibeCategory(spot) === cat.id).length;
     });
     return counts;
-  }, [selectedSpotProvince]);
+  }, [spotsList, selectedSpotProvince]);
 
   const trendingSpotsAsEvents: EventItem[] = useMemo(() => {
-    return MOCK_SPOTS.slice(0, 10).map((spot) => ({
+    return spotsList.slice(0, 10).map((spot) => ({
       id: spot.id,
       title: spot.title,
       description: spot.description,
@@ -956,7 +971,7 @@ function HomeContent() {
       isNew: spot.isNew,
       createdAtTimestamp: 1726000000000,
     }));
-  }, []);
+  }, [spotsList]);
 
   const trendingCarouselProps = useMemo(() => {
     switch (activeScopeTab) {
@@ -2285,7 +2300,7 @@ function HomeContent() {
         mode={surpriseModalMode}
         onClose={() => setIsSurpriseModalOpen(false)}
         events={eventsList}
-        spots={MOCK_SPOTS}
+        spots={spotsList}
         onSelectTarget={({ type, id }) => {
           setIsSurpriseModalOpen(false);
           if (type === 'spot') {

@@ -1,190 +1,8 @@
 {
   "version": "2.0.0",
-  "lastUpdated": "2026-10-03T01:35:33.718Z",
-  "autoPublish": true,
+  "lastUpdated": "2026-10-03T14:45:43.153Z",
+  "autoPublish": false,
   "events": [
-    {
-      "id": "comm-ai-1",
-      "title": "AI Agent & Generative Tech Hack Night จิบกาแฟแชร์ไอเดีย สามย่าน",
-      "date": "18 ก.ย. 2026",
-      "time": "18:30 - 21:00 น.",
-      "location": "Samyan Mitrtown Co-Learning Space ชั้น 2",
-      "tag": "🤖 เทคโนโลยี & AI",
-      "category": "learn",
-      "image": "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 7,
-      "maxParticipants": 10,
-      "hostName": "ภูมิ AI & Tech Builders",
-      "hostAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
-      "hostHostedCount": 16,
-      "hostRating": 5,
-      "hostBadgeTier": "superhost",
-      "price": "ฟรี (สั่งเครื่องดื่มคนละ 1 แก้ว)",
-      "description": "มีทอัปพบปะสำหรับสาย Tech, Developers, Product Managers และผู้สนใจ Generative AI & AI Agents มาร่วมแชร์ Use Case สนุกๆ แลกเปลี่ยนประสบการณ์สร้างโปรเจกต์จริง บรรยากาศเป็นกันเอง ไร้พิธีรีตอง เหมาะสำหรับหา Co-founder และเพื่อนคุยสายเทคครับ!",
-      "isTrending": true,
-      "isNew": true,
-      "rating": 5,
-      "reviewsCount": 19,
-      "badgeText": "AI & Tech Meetup",
-      "createdAtTimestamp": 1788171673947,
-      "eventType": "community",
-      "status": "active",
-      "latitude": 13.7336,
-      "longitude": 100.5283,
-      "zone": "siam",
-      "approvalStatus": "approved",
-      "source": "Chill & Connect Community",
-      "sourceUrl": "https://chill-connect-hub.vercel.app",
-      "province": "กรุงเทพมหานคร"
-    },
-    {
-      "id": "comm-fitness-1",
-      "title": "HYROX Community Workout & Functional Bootcamp สุขุมวิท 39",
-      "date": "19 ก.ย. 2026",
-      "time": "08:00 - 09:30 น.",
-      "location": "HYROX Training Ground, สุขุมวิท 39 (BTS พร้อมพงษ์)",
-      "tag": "🏋️ ออกกำลังกาย & ฟิตเนส",
-      "category": "move",
-      "image": "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 8,
-      "maxParticipants": 10,
-      "hostName": "โค้ชแม็กซ์ HYROX Coach",
-      "hostAvatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80",
-      "hostHostedCount": 28,
-      "hostRating": 5,
-      "hostBadgeTier": "superhost",
-      "price": "฿250 (รวมโค้ชเทรนและเกลือแร่)",
-      "description": "คลาสออกกำลังกายแบบ Functional Fitness & HYROX Simulation ซ้อม 4 สถานีหลัก (SkiErg, Sled Push, Burpee Broad Jumps, Wall Balls) ไม่จำเป็นต้องฟิตระดับนักกีฬา โค้ชปรับสเกลความหนักให้เหมาะกับทุกคน เน้นสนุก ได้เหงื่อ และพลังกลุ่มที่คึกคัก!",
-      "isTrending": true,
-      "isNew": true,
-      "rating": 4.9,
-      "reviewsCount": 22,
-      "badgeText": "ฟิตเนส & HYROX บูทแคมป์",
-      "createdAtTimestamp": 1788171683947,
-      "eventType": "community",
-      "status": "active",
-      "latitude": 13.7365,
-      "longitude": 100.5701,
-      "zone": "sukhumvit",
-      "approvalStatus": "approved",
-      "source": "Chill & Connect Community",
-      "sourceUrl": "https://chill-connect-hub.vercel.app",
-      "province": "กรุงเทพมหานคร"
-    },
-    {
-      "id": "comm-climb-1",
-      "title": "ก๊วนปีนผาจำลอง Bouldering สำหรับมือใหม่ สุขุมวิท 49",
-      "date": "20 ก.ย. 2026",
-      "time": "14:00 - 17:00 น.",
-      "location": "Stonegoat Bouldering Gym, สุขุมวิท 49",
-      "tag": "🧗 ออกกำลังกาย & ผจญภัย",
-      "category": "move",
-      "image": "https://images.unsplash.com/photo-1522163182402-834f871fd851?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 5,
-      "maxParticipants": 6,
-      "hostName": "กานต์ นักปีนผา",
-      "hostAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
-      "hostHostedCount": 19,
-      "hostRating": 4.9,
-      "hostBadgeTier": "verified",
-      "price": "฿450 (รวมค่าเข้ายิม & รองเท้าปีนผา)",
-      "description": "ชวนคนอยากลองปีนผาจำลองระดับเริ่มต้น (V0 - V2) มาเปิดประสบการณ์ใหม่ด้วยกัน! มีเพื่อนคอยบอกจุดจับ สอนการลงน้ำหนักเท้า และเชียร์อัปตลอดเส้นทาง บรรยากาศอบอุ่น ไม่กดดัน เล่นเสร็จไปหาของอร่อยกินต่อครับ!",
-      "isNew": true,
-      "rating": 4.9,
-      "reviewsCount": 15,
-      "badgeText": "ปีนผาจำลองมือใหม่",
-      "createdAtTimestamp": 1788171693947,
-      "eventType": "community",
-      "status": "active",
-      "latitude": 13.7382,
-      "longitude": 100.5784,
-      "zone": "sukhumvit",
-      "approvalStatus": "approved",
-      "source": "Chill & Connect Community",
-      "sourceUrl": "https://chill-connect-hub.vercel.app",
-      "province": "กรุงเทพมหานคร"
-    },
-    {
-      "id": "fair-paragon-luxury-art-2026",
-      "title": "Bangkok International Art & Collectibles Expo 2026",
-      "date": "24 ต.ค. - 28 ต.ค. 2026",
-      "time": "11:00 - 21:00 น.",
-      "location": "รอยัล พารากอน ฮอลล์ (Royal Paragon Hall ชั้น 5 สยามพารากอน)",
-      "tag": "งานมหกรรม",
-      "category": "learn",
-      "image": "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 0,
-      "maxParticipants": 9999,
-      "hostName": "Siam Paragon & Art Curator Thailand",
-      "hostAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
-      "price": "เข้าชมฟรี",
-      "description": "<p><strong>งานแสดงผลงานศิลปะร่วมสมัยและของสะสมระดับพรีเมียมใจกลางเมือง:</strong></p><p>รวบรวมชิ้นงานประติมากรรม ภาพวาดคลาสสิก และ Art Toy ระดับมาสเตอร์พีซ พร้อมการประมูลเพื่อการกุศลและห้องจัดแสดงแบบ Immersive Exhibition</p>",
-      "isNew": true,
-      "isTrending": true,
-      "badgeText": "พารากอน ฮอลล์",
-      "createdAtTimestamp": 1788171680000,
-      "eventType": "public_venue",
-      "externalUrl": "https://www.royalparagonhall.com",
-      "transportation": "BTS สยาม ทางออก 5 เชื่อมตรงเข้าสู่สยามพารากอน",
-      "approvalStatus": "approved",
-      "source": "Chill & Connect Official",
-      "sourceUrl": "https://chill-connect-hub.vercel.app",
-      "province": "กรุงเทพมหานคร",
-      "zone": "siam"
-    },
-    {
-      "id": "fair-kice-isan-expo-2026",
-      "title": "Isan Innovation & Agro-Tech Mega Expo 2026: มหกรรมนวัตกรรมเกษตรและอาหารอีสาน",
-      "date": "14 พ.ย. - 17 พ.ย. 2026",
-      "time": "09:30 - 19:30 น.",
-      "location": "ศูนย์การประชุมและแสดงสินค้านานาชาติ ขอนแก่น (KICE Hall 1-2)",
-      "tag": "งานมหกรรม",
-      "category": "learn",
-      "image": "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 0,
-      "maxParticipants": 9999,
-      "hostName": "KICE & หอการค้าจังหวัดขอนแก่น",
-      "hostAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
-      "price": "เข้าชมฟรี",
-      "description": "<p><strong>มหกรรมแสดงสินค้าและเทคโนโลยีที่ใหญ่ที่สุดในภาคตะวันออกเฉียงเหนือ:</strong></p><p>รวมสุดยอดเทคโนโลยี Smart Farming สินค้า OTOP พรีเมียม และเวทีจับคู่ธุรกิจระหว่างประเทศ ณ ศูนย์ประชุมนานาชาติ KICE ขอนแก่น</p>",
-      "isNew": true,
-      "badgeText": "KICE ขอนแก่น",
-      "createdAtTimestamp": 1788171685000,
-      "eventType": "public_venue",
-      "externalUrl": "https://www.kice-center.com",
-      "transportation": "เดินทางสะดวกบนถนนมิตรภาพ มีที่จอดรถรองรับกว่า 1,500 คัน",
-      "approvalStatus": "approved",
-      "source": "Chill & Connect Official",
-      "sourceUrl": "https://chill-connect-hub.vercel.app",
-      "province": "ขอนแก่น"
-    },
-    {
-      "id": "fair-cmecc-coffee-craft-2026",
-      "title": "Northern Craft & Specialty Coffee Fest 2026: เทศกาลกาแฟและงานคราฟต์ล้านนา",
-      "date": "05 ธ.ค. - 08 ธ.ค. 2026",
-      "time": "10:00 - 20:00 น.",
-      "location": "ศูนย์ประชุมและแสดงสินค้านานาชาติฯ เชียงใหม่ (CMECC ฮอลล์ 1)",
-      "tag": "งานมหกรรม",
-      "category": "chill",
-      "image": "https://images.unsplash.com/photo-1442512595331-e89e73853f31?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 0,
-      "maxParticipants": 9999,
-      "hostName": "Chiang Mai Coffee Association & CMECC",
-      "hostAvatar": "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=150&q=80",
-      "price": "เข้าชมฟรี",
-      "description": "<p><strong>เทศกาลกาแฟพิเศษและงานคราฟต์ที่ใหญ่ที่สุดในภาคเหนือ:</strong></p><p>พบกับบาริสต้าระดับแชมป์โลก เมล็ดกาแฟซิงเกิลออริจินจากยอดดอย งานเซรามิกทำมือ และเวิร์กช็อปร่วมสมัยท่ามกลางลมหนาวเชียงใหม่</p>",
-      "isNew": true,
-      "isTrending": true,
-      "badgeText": "CMECC เชียงใหม่",
-      "createdAtTimestamp": 1788171690000,
-      "eventType": "public_venue",
-      "externalUrl": "https://www.cmecc-tat.com",
-      "transportation": "ตั้งอยู่บนถนนเลียบคลองชลประทาน อ.เมืองเชียงใหม่ มีรถรับส่ง Shuttle Bus บริการฟรี",
-      "approvalStatus": "approved",
-      "source": "Chill & Connect Official",
-      "sourceUrl": "https://chill-connect-hub.vercel.app",
-      "province": "เชียงใหม่"
-    },
     {
       "id": "live-agg-1",
       "title": "Cat Expo 2026: เทศกาลดนตรีและศิลปะอินดี้ที่ใหญ่ที่สุดในไทย",
@@ -214,7 +32,7 @@
       "externalUrl": "https://www.theconcert.com/concert/cat-expo-2026",
       "link": "https://www.theconcert.com/concert/cat-expo-2026",
       "approvalStatus": "approved",
-      "source": "The Concert",
+      "source": "Chill & Connect Official",
       "sourceUrl": "https://www.theconcert.com/concert/cat-expo-2026",
       "province": "กรุงเทพมหานคร"
     },
@@ -246,8 +64,8 @@
       "externalUrl": "https://www.ticketmelon.com/mahorasop/2026",
       "link": "https://www.ticketmelon.com/mahorasop/2026",
       "approvalStatus": "approved",
-      "source": "Ticketmelon",
-      "sourceUrl": "https://www.ticketmelon.com/mahorasop/2026",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "ปทุมธานี"
     },
     {
@@ -279,8 +97,8 @@
       "externalUrl": "https://www.eventpop.me/e/bkk-jazz-park",
       "link": "https://www.eventpop.me/e/bkk-jazz-park",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/bkk-jazz-park",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -312,8 +130,8 @@
       "externalUrl": "https://www.theconcert.com/concert/tpop-super-stage",
       "link": "https://www.theconcert.com/concert/tpop-super-stage",
       "approvalStatus": "approved",
-      "source": "The Concert",
-      "sourceUrl": "https://www.theconcert.com/concert/tpop-super-stage",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "นนทบุรี"
     },
     {
@@ -344,8 +162,8 @@
       "externalUrl": "https://www.ticketmelon.com/rooftop/folk-night",
       "link": "https://www.ticketmelon.com/rooftop/folk-night",
       "approvalStatus": "approved",
-      "source": "Ticketmelon",
-      "sourceUrl": "https://www.ticketmelon.com/rooftop/folk-night",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -376,8 +194,8 @@
       "externalUrl": "https://www.eventpop.me/e/siam-indie-live",
       "link": "https://www.eventpop.me/e/siam-indie-live",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/siam-indie-live",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -408,8 +226,8 @@
       "externalUrl": "https://www.theconcert.com/concert/tpo-stars",
       "link": "https://www.theconcert.com/concert/tpo-stars",
       "approvalStatus": "approved",
-      "source": "The Concert",
-      "sourceUrl": "https://www.theconcert.com/concert/tpo-stars",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "นครปฐม"
     },
     {
@@ -440,8 +258,8 @@
       "externalUrl": "https://www.ticketmelon.com/neon/synthwave-fest",
       "link": "https://www.ticketmelon.com/neon/synthwave-fest",
       "approvalStatus": "approved",
-      "source": "Ticketmelon",
-      "sourceUrl": "https://www.ticketmelon.com/neon/synthwave-fest",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -472,8 +290,8 @@
       "externalUrl": "https://www.eventpop.me/e/vinyl-club-thonglor",
       "link": "https://www.eventpop.me/e/vinyl-club-thonglor",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/vinyl-club-thonglor",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -504,8 +322,8 @@
       "externalUrl": "https://www.theconcert.com/concert/ghibli-orchestra",
       "link": "https://www.theconcert.com/concert/ghibli-orchestra",
       "approvalStatus": "approved",
-      "source": "The Concert",
-      "sourceUrl": "https://www.theconcert.com/concert/ghibli-orchestra",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -536,8 +354,8 @@
       "externalUrl": "https://www.eventpop.me/e/yaowarat-photowalk",
       "link": "https://www.eventpop.me/e/yaowarat-photowalk",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/yaowarat-photowalk",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -568,8 +386,8 @@
       "externalUrl": "https://www.bacc.or.th/event/photo-biennale",
       "link": "https://www.bacc.or.th/event/photo-biennale",
       "approvalStatus": "approved",
-      "source": "BMA Events",
-      "sourceUrl": "https://www.bacc.or.th/event/photo-biennale",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -600,8 +418,8 @@
       "externalUrl": "https://www.eventpop.me/e/analog-darkroom",
       "link": "https://www.eventpop.me/e/analog-darkroom",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/analog-darkroom",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -632,8 +450,8 @@
       "externalUrl": "https://www.eventpop.me/e/golden-hour-chaophraya",
       "link": "https://www.eventpop.me/e/golden-hour-chaophraya",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/golden-hour-chaophraya",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -664,8 +482,8 @@
       "externalUrl": "https://www.eventpop.me/e/bangrak-architecture",
       "link": "https://www.eventpop.me/e/bangrak-architecture",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/bangrak-architecture",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -696,8 +514,8 @@
       "externalUrl": "https://www.eventpop.me/e/portrait-lighting",
       "link": "https://www.eventpop.me/e/portrait-lighting",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/portrait-lighting",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -729,7 +547,7 @@
       "externalUrl": "https://www.bitec.co.th/events/photo-fair-2026",
       "link": "https://www.bitec.co.th/events/photo-fair-2026",
       "approvalStatus": "approved",
-      "source": "BITEC Events",
+      "source": "Chill & Connect Official",
       "sourceUrl": "https://www.bitec.co.th/events/photo-fair-2026",
       "province": "กรุงเทพมหานคร"
     },
@@ -761,8 +579,8 @@
       "externalUrl": "https://www.eventpop.me/e/sathorn-nightscape",
       "link": "https://www.eventpop.me/e/sathorn-nightscape",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/sathorn-nightscape",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -793,8 +611,8 @@
       "externalUrl": "https://race.thai.run/bmm2026",
       "link": "https://race.thai.run/bmm2026",
       "approvalStatus": "approved",
-      "source": "ThaiRun",
-      "sourceUrl": "https://race.thai.run/bmm2026",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -826,8 +644,8 @@
       "externalUrl": "https://race.thai.run/benchakitti10k",
       "link": "https://race.thai.run/benchakitti10k",
       "approvalStatus": "approved",
-      "source": "ThaiRun",
-      "sourceUrl": "https://race.thai.run/benchakitti10k",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -859,8 +677,8 @@
       "externalUrl": "https://www.eventpop.me/e/hyrox-bkk",
       "link": "https://www.eventpop.me/e/hyrox-bkk",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/hyrox-bkk",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -891,8 +709,8 @@
       "externalUrl": "https://www.eventpop.me/e/skylane-meetup",
       "link": "https://www.eventpop.me/e/skylane-meetup",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/skylane-meetup",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "สมุทรปราการ"
     },
     {
@@ -923,8 +741,8 @@
       "externalUrl": "https://race.thai.run/cityrun-night",
       "link": "https://race.thai.run/cityrun-night",
       "approvalStatus": "approved",
-      "source": "ThaiRun",
-      "sourceUrl": "https://race.thai.run/cityrun-night",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -956,8 +774,8 @@
       "externalUrl": "https://race.thai.run/lumpini-run",
       "link": "https://race.thai.run/lumpini-run",
       "approvalStatus": "approved",
-      "source": "ThaiRun",
-      "sourceUrl": "https://race.thai.run/lumpini-run",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -988,8 +806,8 @@
       "externalUrl": "https://www.eventpop.me/e/ari-badminton",
       "link": "https://www.eventpop.me/e/ari-badminton",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/ari-badminton",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1020,8 +838,8 @@
       "externalUrl": "https://www.eventpop.me/e/urban-climbing",
       "link": "https://www.eventpop.me/e/urban-climbing",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/urban-climbing",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1052,8 +870,8 @@
       "externalUrl": "https://race.thai.run/chularun2026",
       "link": "https://race.thai.run/chularun2026",
       "approvalStatus": "approved",
-      "source": "ThaiRun",
-      "sourceUrl": "https://race.thai.run/chularun2026",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1084,8 +902,8 @@
       "externalUrl": "https://race.thai.run/rama8-run",
       "link": "https://race.thai.run/rama8-run",
       "approvalStatus": "approved",
-      "source": "ThaiRun",
-      "sourceUrl": "https://race.thai.run/rama8-run",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1116,8 +934,8 @@
       "externalUrl": "https://race.thai.run/atmbkk2026",
       "link": "https://race.thai.run/atmbkk2026",
       "approvalStatus": "approved",
-      "source": "ThaiRun",
-      "sourceUrl": "https://race.thai.run/atmbkk2026",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1148,8 +966,8 @@
       "externalUrl": "https://www.eventpop.me/e/pickleball-sukhumvit",
       "link": "https://www.eventpop.me/e/pickleball-sukhumvit",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/pickleball-sukhumvit",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1180,8 +998,8 @@
       "externalUrl": "https://www.eventpop.me/e/muaythai-thonglor",
       "link": "https://www.eventpop.me/e/muaythai-thonglor",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/muaythai-thonglor",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1213,8 +1031,8 @@
       "externalUrl": "https://race.thai.run/suanluang-flora",
       "link": "https://race.thai.run/suanluang-flora",
       "approvalStatus": "approved",
-      "source": "ThaiRun",
-      "sourceUrl": "https://race.thai.run/suanluang-flora",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1245,8 +1063,8 @@
       "externalUrl": "https://race.thai.run/chularun2027",
       "link": "https://race.thai.run/chularun2027",
       "approvalStatus": "approved",
-      "source": "ThaiRun",
-      "sourceUrl": "https://race.thai.run/chularun2027",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1277,8 +1095,8 @@
       "externalUrl": "https://www.eventpop.me/e/reformer-pilates",
       "link": "https://www.eventpop.me/e/reformer-pilates",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/reformer-pilates",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1309,8 +1127,8 @@
       "externalUrl": "https://www.eventpop.me/e/soundbath-ari",
       "link": "https://www.eventpop.me/e/soundbath-ari",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/soundbath-ari",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1341,8 +1159,8 @@
       "externalUrl": "https://www.eventpop.me/e/ceramic-pottery",
       "link": "https://www.eventpop.me/e/ceramic-pottery",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/ceramic-pottery",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1373,8 +1191,8 @@
       "externalUrl": "https://www.eventpop.me/e/sourdough-baking",
       "link": "https://www.eventpop.me/e/sourdough-baking",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/sourdough-baking",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1405,8 +1223,8 @@
       "externalUrl": "https://www.eventpop.me/e/watercolor-botanical",
       "link": "https://www.eventpop.me/e/watercolor-botanical",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/watercolor-botanical",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1437,8 +1255,8 @@
       "externalUrl": "https://www.eventpop.me/e/silver-ring-craft",
       "link": "https://www.eventpop.me/e/silver-ring-craft",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/silver-ring-craft",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1469,8 +1287,8 @@
       "externalUrl": "https://www.eventpop.me/e/soy-candle-making",
       "link": "https://www.eventpop.me/e/soy-candle-making",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/soy-candle-making",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1501,8 +1319,8 @@
       "externalUrl": "https://www.eventpop.me/e/tufting-rug",
       "link": "https://www.eventpop.me/e/tufting-rug",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/tufting-rug",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1533,8 +1351,8 @@
       "externalUrl": "https://www.eventpop.me/e/leather-craft",
       "link": "https://www.eventpop.me/e/leather-craft",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/leather-craft",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1565,8 +1383,8 @@
       "externalUrl": "https://www.eventpop.me/e/matcha-ceremony",
       "link": "https://www.eventpop.me/e/matcha-ceremony",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/matcha-ceremony",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1597,8 +1415,8 @@
       "externalUrl": "https://www.eventpop.me/e/terrarium-moss",
       "link": "https://www.eventpop.me/e/terrarium-moss",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/terrarium-moss",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1629,8 +1447,8 @@
       "externalUrl": "https://www.eventpop.me/e/siam-boardgame-night",
       "link": "https://www.eventpop.me/e/siam-boardgame-night",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/siam-boardgame-night",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1661,8 +1479,8 @@
       "externalUrl": "https://www.eventpop.me/e/ari-coffee-cupping",
       "link": "https://www.eventpop.me/e/ari-coffee-cupping",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/ari-coffee-cupping",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1693,8 +1511,8 @@
       "externalUrl": "https://www.eventpop.me/e/silent-book-club",
       "link": "https://www.eventpop.me/e/silent-book-club",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/silent-book-club",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1725,8 +1543,8 @@
       "externalUrl": "https://www.set.or.th/event/young-investor-2026",
       "link": "https://www.set.or.th/event/young-investor-2026",
       "approvalStatus": "approved",
-      "source": "SET_Thailand",
-      "sourceUrl": "https://www.set.or.th/event/young-investor-2026",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1757,8 +1575,8 @@
       "externalUrl": "https://www.eventpop.me/e/rooftop-cinema",
       "link": "https://www.eventpop.me/e/rooftop-cinema",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/rooftop-cinema",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1789,8 +1607,8 @@
       "externalUrl": "https://www.eventpop.me/e/comedy-open-mic",
       "link": "https://www.eventpop.me/e/comedy-open-mic",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/comedy-open-mic",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -1822,7 +1640,7 @@
       "externalUrl": "https://www.bitec.co.th/events/bangkok-comic-con-2026",
       "link": "https://www.bitec.co.th/events/bangkok-comic-con-2026",
       "approvalStatus": "approved",
-      "source": "BITEC Events",
+      "source": "Chill & Connect Official",
       "sourceUrl": "https://www.bitec.co.th/events/bangkok-comic-con-2026",
       "province": "กรุงเทพมหานคร"
     },
@@ -1855,7 +1673,7 @@
       "externalUrl": "https://moneyexpo.net/bangkok-year-end-2026",
       "link": "https://moneyexpo.net/bangkok-year-end-2026",
       "approvalStatus": "approved",
-      "source": "Money Expo",
+      "source": "Chill & Connect Official",
       "sourceUrl": "https://moneyexpo.net/bangkok-year-end-2026",
       "province": "กรุงเทพมหานคร"
     },
@@ -1888,7 +1706,7 @@
       "externalUrl": "https://www.bitec.co.th/events/coffee-expo-2027",
       "link": "https://www.bitec.co.th/events/coffee-expo-2027",
       "approvalStatus": "approved",
-      "source": "BITEC Events",
+      "source": "Chill & Connect Official",
       "sourceUrl": "https://www.bitec.co.th/events/coffee-expo-2027",
       "province": "กรุงเทพมหานคร"
     },
@@ -1921,7 +1739,7 @@
       "externalUrl": "https://www.bitec.co.th/events/motor-sale-2027",
       "link": "https://www.bitec.co.th/events/motor-sale-2027",
       "approvalStatus": "approved",
-      "source": "BITEC Events",
+      "source": "Chill & Connect Official",
       "sourceUrl": "https://www.bitec.co.th/events/motor-sale-2027",
       "province": "กรุงเทพมหานคร"
     },
@@ -1954,8 +1772,8 @@
       "externalUrl": "https://www.homepro.co.th",
       "link": "https://www.homepro.co.th",
       "approvalStatus": "approved",
-      "source": "IMPACT Exhibition",
-      "sourceUrl": "https://www.homepro.co.th",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "นนทบุรี"
     },
     {
@@ -1987,8 +1805,8 @@
       "externalUrl": "https://www.motorexpo.co.th",
       "link": "https://www.motorexpo.co.th",
       "approvalStatus": "approved",
-      "source": "IMPACT Exhibition",
-      "sourceUrl": "https://www.motorexpo.co.th",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "นนทบุรี"
     },
     {
@@ -2020,8 +1838,8 @@
       "externalUrl": "https://www.cdd.go.th",
       "link": "https://www.cdd.go.th",
       "approvalStatus": "approved",
-      "source": "IMPACT Exhibition",
-      "sourceUrl": "https://www.cdd.go.th",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "นนทบุรี"
     },
     {
@@ -2053,8 +1871,8 @@
       "externalUrl": "https://www.thailandcoffee.net",
       "link": "https://www.thailandcoffee.net",
       "approvalStatus": "approved",
-      "source": "IMPACT Exhibition",
-      "sourceUrl": "https://www.thailandcoffee.net",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "นนทบุรี"
     },
     {
@@ -2086,8 +1904,8 @@
       "externalUrl": "https://www.impact.co.th/index.php/visitor/event/th",
       "link": "https://www.impact.co.th/index.php/visitor/event/th",
       "approvalStatus": "approved",
-      "source": "IMPACT Exhibition",
-      "sourceUrl": "https://www.impact.co.th/index.php/visitor/event/th",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "นนทบุรี"
     },
     {
@@ -2119,8 +1937,8 @@
       "externalUrl": "https://www.motorshow.in.th",
       "link": "https://www.motorshow.in.th",
       "approvalStatus": "approved",
-      "source": "IMPACT Exhibition",
-      "sourceUrl": "https://www.motorshow.in.th",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "นนทบุรี"
     },
     {
@@ -2152,8 +1970,8 @@
       "externalUrl": "https://thaifex-anuga.com",
       "link": "https://thaifex-anuga.com",
       "approvalStatus": "approved",
-      "source": "IMPACT Exhibition",
-      "sourceUrl": "https://thaifex-anuga.com",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "นนทบุรี"
     },
     {
@@ -2185,8 +2003,8 @@
       "externalUrl": "https://www.babykid-bestbuy.com",
       "link": "https://www.babykid-bestbuy.com",
       "approvalStatus": "approved",
-      "source": "IMPACT Exhibition",
-      "sourceUrl": "https://www.babykid-bestbuy.com",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "นนทบุรี"
     },
     {
@@ -2218,8 +2036,8 @@
       "externalUrl": "https://www.thailandsmartcityexpo.com",
       "link": "https://www.thailandsmartcityexpo.com",
       "approvalStatus": "approved",
-      "source": "IMPACT Exhibition",
-      "sourceUrl": "https://www.thailandsmartcityexpo.com",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "นนทบุรี"
     },
     {
@@ -2251,8 +2069,8 @@
       "externalUrl": "https://www.cosmoprofcbeasean.com",
       "link": "https://www.cosmoprofcbeasean.com",
       "approvalStatus": "approved",
-      "source": "IMPACT Exhibition",
-      "sourceUrl": "https://www.cosmoprofcbeasean.com",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "นนทบุรี"
     },
     {
@@ -2284,8 +2102,8 @@
       "externalUrl": "https://digitechasean.com",
       "link": "https://digitechasean.com",
       "approvalStatus": "approved",
-      "source": "IMPACT Exhibition",
-      "sourceUrl": "https://digitechasean.com",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "นนทบุรี"
     },
     {
@@ -2317,8 +2135,8 @@
       "externalUrl": "https://www.thailandfranchising.com",
       "link": "https://www.thailandfranchising.com",
       "approvalStatus": "approved",
-      "source": "IMPACT Exhibition",
-      "sourceUrl": "https://www.thailandfranchising.com",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "นนทบุรี"
     },
     {
@@ -2350,8 +2168,8 @@
       "externalUrl": "https://www.trafs.net",
       "link": "https://www.trafs.net",
       "approvalStatus": "approved",
-      "source": "IMPACT Exhibition",
-      "sourceUrl": "https://www.trafs.net",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "นนทบุรี"
     },
     {
@@ -2383,8 +2201,8 @@
       "externalUrl": "https://www.propakasia.com",
       "link": "https://www.propakasia.com",
       "approvalStatus": "approved",
-      "source": "IMPACT Exhibition",
-      "sourceUrl": "https://www.propakasia.com",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "นนทบุรี"
     },
     {
@@ -2416,8 +2234,8 @@
       "externalUrl": "https://thailandhalalassembly.com",
       "link": "https://thailandhalalassembly.com",
       "approvalStatus": "approved",
-      "source": "IMPACT Exhibition",
-      "sourceUrl": "https://thailandhalalassembly.com",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "นนทบุรี"
     },
     {
@@ -2449,8 +2267,8 @@
       "externalUrl": "https://www.nsm.or.th",
       "link": "https://www.nsm.or.th",
       "approvalStatus": "approved",
-      "source": "IMPACT Exhibition",
-      "sourceUrl": "https://www.nsm.or.th",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "นนทบุรี"
     },
     {
@@ -2482,8 +2300,8 @@
       "externalUrl": "https://www.ledexpothailand.com",
       "link": "https://www.ledexpothailand.com",
       "approvalStatus": "approved",
-      "source": "IMPACT Exhibition",
-      "sourceUrl": "https://www.ledexpothailand.com",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "นนทบุรี"
     },
     {
@@ -2515,8 +2333,8 @@
       "externalUrl": "https://www.theconcert.com",
       "link": "https://www.theconcert.com",
       "approvalStatus": "approved",
-      "source": "IMPACT Exhibition",
-      "sourceUrl": "https://www.theconcert.com",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "นนทบุรี"
     },
     {
@@ -2548,8 +2366,8 @@
       "externalUrl": "https://race.thai.run/pride2026",
       "link": "https://race.thai.run/pride2026",
       "approvalStatus": "approved",
-      "source": "ThaiRun",
-      "sourceUrl": "https://race.thai.run/pride2026",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -2581,8 +2399,8 @@
       "externalUrl": "https://pr-bangkok.com/music-in-park-july",
       "link": "https://pr-bangkok.com/music-in-park-july",
       "approvalStatus": "approved",
-      "source": "BMA Events",
-      "sourceUrl": "https://pr-bangkok.com/music-in-park-july",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -2614,8 +2432,8 @@
       "externalUrl": "https://www.eventpop.me/e/coffee-fest-july",
       "link": "https://www.eventpop.me/e/coffee-fest-july",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/coffee-fest-july",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "นนทบุรี"
     },
     {
@@ -2647,8 +2465,8 @@
       "externalUrl": "https://race.thai.run/rotfai-july",
       "link": "https://race.thai.run/rotfai-july",
       "approvalStatus": "approved",
-      "source": "ThaiRun",
-      "sourceUrl": "https://race.thai.run/rotfai-july",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -2679,8 +2497,8 @@
       "externalUrl": "https://www.eventpop.me/e/ari-craft-august",
       "link": "https://www.eventpop.me/e/ari-craft-august",
       "approvalStatus": "approved",
-      "source": "Eventpop",
-      "sourceUrl": "https://www.eventpop.me/e/ari-craft-august",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร"
     },
     {
@@ -2747,6 +2565,117 @@
       "zone": "silom"
     },
     {
+      "id": "fair-paragon-luxury-art-2026",
+      "title": "Bangkok International Art & Collectibles Expo 2026",
+      "date": "24 ต.ค. - 28 ต.ค. 2026",
+      "time": "11:00 - 21:00 น.",
+      "location": "รอยัล พารากอน ฮอลล์ (Royal Paragon Hall ชั้น 5 สยามพารากอน)",
+      "tag": "งานมหกรรม",
+      "category": "learn",
+      "image": "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=800&q=80",
+      "participantsCount": 0,
+      "maxParticipants": 9999,
+      "hostName": "Siam Paragon & Art Curator Thailand",
+      "hostAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
+      "price": "เข้าชมฟรี",
+      "description": "<p><strong>งานแสดงผลงานศิลปะร่วมสมัยและของสะสมระดับพรีเมียมใจกลางเมือง:</strong></p><p>รวบรวมชิ้นงานประติมากรรม ภาพวาดคลาสสิก และ Art Toy ระดับมาสเตอร์พีซ พร้อมการประมูลเพื่อการกุศลและห้องจัดแสดงแบบ Immersive Exhibition</p>",
+      "isNew": true,
+      "isTrending": true,
+      "badgeText": "พารากอน ฮอลล์",
+      "createdAtTimestamp": 1788171680000,
+      "eventType": "public_venue",
+      "externalUrl": "https://www.royalparagonhall.com",
+      "transportation": "BTS สยาม ทางออก 5 เชื่อมตรงเข้าสู่สยามพารากอน",
+      "approvalStatus": "approved",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
+      "province": "กรุงเทพมหานคร",
+      "zone": "siam"
+    },
+    {
+      "id": "fair-book-expo-2026",
+      "title": "มหกรรมหนังสือระดับชาติ ครั้งที่ 31 (Book Expo Thailand 2026)",
+      "date": "15 ต.ค. - 26 ต.ค. 2026",
+      "time": "10:00 - 21:00 น.",
+      "location": "ศูนย์การประชุมแห่งชาติสิริกิติ์ (QSNCC Hall 5-7 ชั้น LG)",
+      "tag": "งานมหกรรม",
+      "category": "learn",
+      "image": "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=800&q=80",
+      "participantsCount": 0,
+      "maxParticipants": 9999,
+      "hostName": "สมาคมผู้จัดพิมพ์และผู้จำหน่ายหนังสือแห่งประเทศไทย (PUBAT)",
+      "hostAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
+      "price": "เข้าชมฟรี",
+      "description": "<p><strong>เทศกาลหนังสือที่ทุกคนรอคอย:</strong></p><p>รวมกว่า 300 สำนักพิมพ์ชั้นนำทั่วประเทศ พร้อมกิจกรรมเสวนาเปิดตัวหนังสือใหม่ นิทรรศการวรรณกรรมสร้างสรรค์ และโปรโมชั่นลดราคาพิเศษตลอด 12 วันเต็ม</p>",
+      "isNew": true,
+      "isTrending": true,
+      "badgeText": "ศูนย์ฯ สิริกิติ์",
+      "createdAtTimestamp": 1788258000000,
+      "eventType": "public_venue",
+      "venueTag": "qsncc",
+      "externalUrl": "https://www.qsncc.com/en/whats-on/event-calendar",
+      "transportation": "MRT ศูนย์การประชุมแห่งชาติสิริกิติ์ ทางออก 3 เดินเชื่อมเข้าสู่อาคารโดยตรง",
+      "approvalStatus": "approved",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://www.qsncc.com/en/whats-on/event-calendar",
+      "province": "กรุงเทพมหานคร",
+      "zone": "silom",
+      "link": "https://www.qsncc.com/en/whats-on/event-calendar"
+    },
+    {
+      "id": "fair-kice-isan-expo-2026",
+      "title": "Isan Innovation & Agro-Tech Mega Expo 2026: มหกรรมนวัตกรรมเกษตรและอาหารอีสาน",
+      "date": "14 พ.ย. - 17 พ.ย. 2026",
+      "time": "09:30 - 19:30 น.",
+      "location": "ศูนย์การประชุมและแสดงสินค้านานาชาติ ขอนแก่น (KICE Hall 1-2)",
+      "tag": "งานมหกรรม",
+      "category": "learn",
+      "image": "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80",
+      "participantsCount": 0,
+      "maxParticipants": 9999,
+      "hostName": "KICE & หอการค้าจังหวัดขอนแก่น",
+      "hostAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+      "price": "เข้าชมฟรี",
+      "description": "<p><strong>มหกรรมแสดงสินค้าและเทคโนโลยีที่ใหญ่ที่สุดในภาคตะวันออกเฉียงเหนือ:</strong></p><p>รวมสุดยอดเทคโนโลยี Smart Farming สินค้า OTOP พรีเมียม และเวทีจับคู่ธุรกิจระหว่างประเทศ ณ ศูนย์ประชุมนานาชาติ KICE ขอนแก่น</p>",
+      "isNew": true,
+      "badgeText": "KICE ขอนแก่น",
+      "createdAtTimestamp": 1788171685000,
+      "eventType": "public_venue",
+      "externalUrl": "https://www.kice-center.com",
+      "transportation": "เดินทางสะดวกบนถนนมิตรภาพ มีที่จอดรถรองรับกว่า 1,500 คัน",
+      "approvalStatus": "approved",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
+      "province": "ขอนแก่น"
+    },
+    {
+      "id": "fair-cmecc-coffee-craft-2026",
+      "title": "Northern Craft & Specialty Coffee Fest 2026: เทศกาลกาแฟและงานคราฟต์ล้านนา",
+      "date": "05 ธ.ค. - 08 ธ.ค. 2026",
+      "time": "10:00 - 20:00 น.",
+      "location": "ศูนย์ประชุมและแสดงสินค้านานาชาติฯ เชียงใหม่ (CMECC ฮอลล์ 1)",
+      "tag": "งานมหกรรม",
+      "category": "chill",
+      "image": "https://images.unsplash.com/photo-1442512595331-e89e73853f31?auto=format&fit=crop&w=800&q=80",
+      "participantsCount": 0,
+      "maxParticipants": 9999,
+      "hostName": "Chiang Mai Coffee Association & CMECC",
+      "hostAvatar": "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=150&q=80",
+      "price": "เข้าชมฟรี",
+      "description": "<p><strong>เทศกาลกาแฟพิเศษและงานคราฟต์ที่ใหญ่ที่สุดในภาคเหนือ:</strong></p><p>พบกับบาริสต้าระดับแชมป์โลก เมล็ดกาแฟซิงเกิลออริจินจากยอดดอย งานเซรามิกทำมือ และเวิร์กช็อปร่วมสมัยท่ามกลางลมหนาวเชียงใหม่</p>",
+      "isNew": true,
+      "isTrending": true,
+      "badgeText": "CMECC เชียงใหม่",
+      "createdAtTimestamp": 1788171690000,
+      "eventType": "public_venue",
+      "externalUrl": "https://www.cmecc-tat.com",
+      "transportation": "ตั้งอยู่บนถนนเลียบคลองชลประทาน อ.เมืองเชียงใหม่ มีรถรับส่ง Shuttle Bus บริการฟรี",
+      "approvalStatus": "approved",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
+      "province": "เชียงใหม่"
+    },
+    {
       "id": "pub-football-rajamangala",
       "title": "ศึกฟุตบอลทีมชาติไทย (ช้างศึก) ฟุตบอลกระชับมิตรนานาชาติ FIFA International Match",
       "date": "22 ส.ค. 2026",
@@ -2807,7 +2736,7 @@
       "zone": "sukhumvit",
       "approvalStatus": "approved",
       "source": "Chill & Connect Official",
-      "sourceUrl": "https://www.qsncc.com/en/whats-on/event-calendar",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
       "link": "https://www.qsncc.com/en/whats-on/event-calendar",
       "province": "กรุงเทพมหานคร"
     },
@@ -2931,10 +2860,111 @@
       "badgeText": "บอร์ดเกมกระชับมิตร",
       "createdAtTimestamp": 1788171663947,
       "eventType": "community",
-      "status": "recruiting",
+      "status": "active",
       "latitude": 13.7445,
       "longitude": 100.5332,
       "zone": "siam",
+      "approvalStatus": "approved",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
+      "province": "กรุงเทพมหานคร"
+    },
+    {
+      "id": "comm-ai-1",
+      "title": "AI Agent & Generative Tech Hack Night จิบกาแฟแชร์ไอเดีย สามย่าน",
+      "date": "18 ก.ย. 2026",
+      "time": "18:30 - 21:00 น.",
+      "location": "Samyan Mitrtown Co-Learning Space ชั้น 2",
+      "tag": "🤖 เทคโนโลยี & AI",
+      "category": "learn",
+      "image": "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=800&q=80",
+      "participantsCount": 7,
+      "maxParticipants": 10,
+      "hostName": "ภูมิ AI & Tech Builders",
+      "hostAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
+      "hostHostedCount": 16,
+      "hostRating": 5,
+      "hostBadgeTier": "superhost",
+      "price": "ฟรี (สั่งเครื่องดื่มคนละ 1 แก้ว)",
+      "description": "มีทอัปพบปะสำหรับสาย Tech, Developers, Product Managers และผู้สนใจ Generative AI & AI Agents มาร่วมแชร์ Use Case สนุกๆ แลกเปลี่ยนประสบการณ์สร้างโปรเจกต์จริง บรรยากาศเป็นกันเอง ไร้พิธีรีตอง เหมาะสำหรับหา Co-founder และเพื่อนคุยสายเทคครับ!",
+      "isTrending": true,
+      "isNew": true,
+      "rating": 5,
+      "reviewsCount": 19,
+      "badgeText": "AI & Tech Meetup",
+      "createdAtTimestamp": 1788171673947,
+      "eventType": "community",
+      "status": "active",
+      "latitude": 13.7336,
+      "longitude": 100.5283,
+      "zone": "siam",
+      "approvalStatus": "approved",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
+      "province": "กรุงเทพมหานคร"
+    },
+    {
+      "id": "comm-fitness-1",
+      "title": "HYROX Community Workout & Functional Bootcamp สุขุมวิท 39",
+      "date": "19 ก.ย. 2026",
+      "time": "08:00 - 09:30 น.",
+      "location": "HYROX Training Ground, สุขุมวิท 39 (BTS พร้อมพงษ์)",
+      "tag": "🏋️ ออกกำลังกาย & ฟิตเนส",
+      "category": "move",
+      "image": "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80",
+      "participantsCount": 8,
+      "maxParticipants": 10,
+      "hostName": "โค้ชแม็กซ์ HYROX Coach",
+      "hostAvatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80",
+      "hostHostedCount": 28,
+      "hostRating": 5,
+      "hostBadgeTier": "superhost",
+      "price": "฿250 (รวมโค้ชเทรนและเกลือแร่)",
+      "description": "คลาสออกกำลังกายแบบ Functional Fitness & HYROX Simulation ซ้อม 4 สถานีหลัก (SkiErg, Sled Push, Burpee Broad Jumps, Wall Balls) ไม่จำเป็นต้องฟิตระดับนักกีฬา โค้ชปรับสเกลความหนักให้เหมาะกับทุกคน เน้นสนุก ได้เหงื่อ และพลังกลุ่มที่คึกคัก!",
+      "isTrending": true,
+      "isNew": true,
+      "rating": 4.9,
+      "reviewsCount": 22,
+      "badgeText": "ฟิตเนส & HYROX บูทแคมป์",
+      "createdAtTimestamp": 1788171683947,
+      "eventType": "community",
+      "status": "active",
+      "latitude": 13.7365,
+      "longitude": 100.5701,
+      "zone": "sukhumvit",
+      "approvalStatus": "approved",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
+      "province": "กรุงเทพมหานคร"
+    },
+    {
+      "id": "comm-climb-1",
+      "title": "ก๊วนปีนผาจำลอง Bouldering สำหรับมือใหม่ สุขุมวิท 49",
+      "date": "20 ก.ย. 2026",
+      "time": "14:00 - 17:00 น.",
+      "location": "Stonegoat Bouldering Gym, สุขุมวิท 49",
+      "tag": "🧗 ออกกำลังกาย & ผจญภัย",
+      "category": "move",
+      "image": "https://images.unsplash.com/photo-1522163182402-834f871fd851?auto=format&fit=crop&w=800&q=80",
+      "participantsCount": 5,
+      "maxParticipants": 6,
+      "hostName": "กานต์ นักปีนผา",
+      "hostAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+      "hostHostedCount": 19,
+      "hostRating": 4.9,
+      "hostBadgeTier": "verified",
+      "price": "฿450 (รวมค่าเข้ายิม & รองเท้าปีนผา)",
+      "description": "ชวนคนอยากลองปีนผาจำลองระดับเริ่มต้น (V0 - V2) มาเปิดประสบการณ์ใหม่ด้วยกัน! มีเพื่อนคอยบอกจุดจับ สอนการลงน้ำหนักเท้า และเชียร์อัปตลอดเส้นทาง บรรยากาศอบอุ่น ไม่กดดัน เล่นเสร็จไปหาของอร่อยกินต่อครับ!",
+      "isNew": true,
+      "rating": 4.9,
+      "reviewsCount": 15,
+      "badgeText": "ปีนผาจำลองมือใหม่",
+      "createdAtTimestamp": 1788171693947,
+      "eventType": "community",
+      "status": "active",
+      "latitude": 13.7382,
+      "longitude": 100.5784,
+      "zone": "sukhumvit",
       "approvalStatus": "approved",
       "source": "Chill & Connect Official",
       "sourceUrl": "https://chill-connect-hub.vercel.app",
@@ -2965,7 +2995,7 @@
       "badgeText": "กาแฟดริปสเปเชียลตี้",
       "createdAtTimestamp": 1788171653947,
       "eventType": "community",
-      "status": "recruiting",
+      "status": "active",
       "latitude": 13.7797,
       "longitude": 100.5428,
       "zone": "ari",
@@ -2998,7 +3028,7 @@
       "badgeText": "วิ่งเบาๆ รับลมเย็น",
       "createdAtTimestamp": 1788171643947,
       "eventType": "community",
-      "status": "recruiting",
+      "status": "active",
       "latitude": 13.7297,
       "longitude": 100.5583,
       "zone": "sukhumvit",
@@ -3030,7 +3060,7 @@
       "badgeText": "พักผ่อนฮีลใจ",
       "createdAtTimestamp": 1788171633947,
       "eventType": "community",
-      "status": "recruiting",
+      "status": "active",
       "latitude": 13.7314,
       "longitude": 100.5414,
       "zone": "silom",
@@ -3062,7 +3092,7 @@
       "badgeText": "คราฟต์พรมแฮนด์เมด",
       "createdAtTimestamp": 1788171623947,
       "eventType": "community",
-      "status": "recruiting",
+      "status": "active",
       "latitude": 13.7345,
       "longitude": 100.5824,
       "zone": "thonglor",
@@ -3094,7 +3124,7 @@
       "badgeText": "แบดมินตันสายสนุก",
       "createdAtTimestamp": 1788171613947,
       "eventType": "community",
-      "status": "recruiting",
+      "status": "active",
       "latitude": 13.7583,
       "longitude": 100.5732,
       "zone": "ladprao",
@@ -3126,7 +3156,7 @@
       "badgeText": "ปั้นเซรามิกสร้างสรรค์",
       "createdAtTimestamp": 1788171603947,
       "eventType": "community",
-      "status": "recruiting",
+      "status": "active",
       "latitude": 13.7276,
       "longitude": 100.5855,
       "zone": "thonglor",
@@ -3158,7 +3188,7 @@
       "badgeText": "สนทนาหนังสือเล่มโปรด",
       "createdAtTimestamp": 1788171593947,
       "eventType": "community",
-      "status": "recruiting",
+      "status": "active",
       "latitude": 13.7301,
       "longitude": 100.5695,
       "zone": "sukhumvit",
@@ -3190,7 +3220,7 @@
       "badgeText": "เบเกอรี่โฮมเมด",
       "createdAtTimestamp": 1788171583947,
       "eventType": "community",
-      "status": "recruiting",
+      "status": "active",
       "latitude": 13.7258,
       "longitude": 100.5312,
       "zone": "silom",
@@ -3222,7 +3252,7 @@
       "badgeText": "วิถีชามัทฉะฮีลใจ",
       "createdAtTimestamp": 1788171573947,
       "eventType": "community",
-      "status": "recruiting",
+      "status": "active",
       "latitude": 13.7392,
       "longitude": 100.5604,
       "zone": "sukhumvit",
@@ -3254,7 +3284,7 @@
       "badgeText": "ดูหนังอินดี้ในโกดัง",
       "createdAtTimestamp": 1788171563947,
       "eventType": "community",
-      "status": "recruiting",
+      "status": "active",
       "latitude": 13.7388,
       "longitude": 100.5097,
       "zone": "silom",
@@ -3286,7 +3316,7 @@
       "badgeText": "โฟโต้วอล์กสตรีท",
       "createdAtTimestamp": 1788171553947,
       "eventType": "community",
-      "status": "recruiting",
+      "status": "active",
       "latitude": 13.7329,
       "longitude": 100.5135,
       "zone": "silom",
@@ -3318,7 +3348,7 @@
       "badgeText": "เทียนหอมอโรมาบำบัด",
       "createdAtTimestamp": 1788171543947,
       "eventType": "community",
-      "status": "recruiting",
+      "status": "active",
       "latitude": 13.8052,
       "longitude": 100.5694,
       "zone": "ladprao",
@@ -3350,7 +3380,7 @@
       "badgeText": "หัวเราะคลายเครียด",
       "createdAtTimestamp": 1788171533947,
       "eventType": "community",
-      "status": "recruiting",
+      "status": "active",
       "latitude": 13.7365,
       "longitude": 100.5701,
       "zone": "sukhumvit",
@@ -3382,7 +3412,7 @@
       "badgeText": "ไถบอร์ดรับลมเย็น",
       "createdAtTimestamp": 1788171523947,
       "eventType": "community",
-      "status": "recruiting",
+      "status": "active",
       "latitude": 13.7388,
       "longitude": 100.5235,
       "zone": "siam",
@@ -3414,7 +3444,7 @@
       "badgeText": "แหวนเงินแท้แฮนด์เมด",
       "createdAtTimestamp": 1788171513947,
       "eventType": "community",
-      "status": "recruiting",
+      "status": "active",
       "latitude": 13.7548,
       "longitude": 100.5012,
       "zone": "silom",
@@ -3446,7 +3476,7 @@
       "badgeText": "คลาสอาหารสุขภาพ",
       "createdAtTimestamp": 1788171503947,
       "eventType": "community",
-      "status": "recruiting",
+      "status": "active",
       "latitude": 13.7628,
       "longitude": 100.5372,
       "zone": "siam",
@@ -3478,7 +3508,7 @@
       "badgeText": "สนทนาภาษาอังกฤษ",
       "createdAtTimestamp": 1788171493947,
       "eventType": "community",
-      "status": "recruiting",
+      "status": "active",
       "latitude": 13.7142,
       "longitude": 100.5928,
       "zone": "sukhumvit",
@@ -3510,7 +3540,7 @@
       "badgeText": "แจมดนตรีริมน้ำ",
       "createdAtTimestamp": 1788171483947,
       "eventType": "community",
-      "status": "recruiting",
+      "status": "active",
       "latitude": 13.7225,
       "longitude": 100.4728,
       "zone": "silom",
@@ -3542,10 +3572,42 @@
       "badgeText": "มีตติ้งทาสแมวฮีลใจ",
       "createdAtTimestamp": 1788171473947,
       "eventType": "community",
-      "status": "recruiting",
+      "status": "active",
       "latitude": 13.7668,
       "longitude": 100.5694,
       "zone": "ladprao",
+      "approvalStatus": "approved",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
+      "province": "กรุงเทพมหานคร"
+    },
+    {
+      "id": "comm-oct-special-1",
+      "title": "Sunset Rooftop Acoustic & Specialty Coffee จิบกาแฟฟังเพลงชิลล์ อารีย์",
+      "date": "17 ต.ค. 2026",
+      "time": "16:30 - 19:30 น.",
+      "location": "Yellow Rooftop Garden Cafe, ซอยอารีย์ 4 (พหลโยธิน 7)",
+      "tag": "☕ นัดชิลล์",
+      "category": "chill",
+      "image": "https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&w=800&q=80",
+      "participantsCount": 6,
+      "maxParticipants": 8,
+      "hostName": "แพรวา กาแฟดริป",
+      "hostAvatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80",
+      "hostHostedCount": 14,
+      "hostRating": 4.95,
+      "hostBadgeTier": "superhost",
+      "price": "฿250 (รวม Dirty Coffee 1 แก้ว + ขนม Canelé)",
+      "description": "มีตติ้งยามเย็นบนรูฟท็อปสวนสีเขียว ดริปกาแฟชิมเมล็ด Specialty พร้อมเพื่อนเล่นกีตาร์โปร่งอะคูสติกบรรยากาศอบอุ่นเป็นกันเอง",
+      "rating": 4.95,
+      "reviewsCount": 18,
+      "badgeText": "รูฟท็อปอะคูสติก",
+      "createdAtTimestamp": 1788258000000,
+      "eventType": "community",
+      "status": "active",
+      "latitude": 13.7802,
+      "longitude": 100.5448,
+      "zone": "ari",
       "approvalStatus": "approved",
       "source": "Chill & Connect Official",
       "sourceUrl": "https://chill-connect-hub.vercel.app",
@@ -4173,7 +4235,9 @@
       "status": "recruiting",
       "isNew": true,
       "createdAtTimestamp": 1788597016632,
-      "approvalStatus": "approved"
+      "approvalStatus": "approved",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app"
     },
     {
       "id": "regional-chon-1",
@@ -4201,7 +4265,9 @@
       "status": "recruiting",
       "isNew": true,
       "createdAtTimestamp": 1788597016632,
-      "approvalStatus": "approved"
+      "approvalStatus": "approved",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app"
     },
     {
       "id": "regional-online-1",
@@ -4230,7 +4296,9 @@
       "status": "recruiting",
       "isNew": true,
       "createdAtTimestamp": 1788597016632,
-      "approvalStatus": "approved"
+      "approvalStatus": "approved",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app"
     },
     {
       "id": "regional-online-2",
@@ -4259,7 +4327,9 @@
       "status": "recruiting",
       "isNew": true,
       "createdAtTimestamp": 1788597016633,
-      "approvalStatus": "approved"
+      "approvalStatus": "approved",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app"
     },
     {
       "id": "regional-online-3",
@@ -4296,7 +4366,9 @@
       "status": "recruiting",
       "isNew": true,
       "createdAtTimestamp": 1788597016634,
-      "approvalStatus": "approved"
+      "approvalStatus": "approved",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app"
     },
     {
       "id": "regional-online-4",
@@ -4325,7 +4397,9 @@
       "status": "recruiting",
       "isNew": true,
       "createdAtTimestamp": 1788597016635,
-      "approvalStatus": "approved"
+      "approvalStatus": "approved",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app"
     },
     {
       "id": "regional-cm-fair-1",
@@ -4353,69 +4427,9 @@
       "status": "active",
       "isNew": true,
       "createdAtTimestamp": 1788597016632,
-      "approvalStatus": "approved"
-    },
-    {
-      "id": "fair-book-expo-2026",
-      "title": "มหกรรมหนังสือระดับชาติ ครั้งที่ 31 (Book Expo Thailand 2026)",
-      "date": "15 ต.ค. - 26 ต.ค. 2026",
-      "time": "10:00 - 21:00 น.",
-      "location": "ศูนย์การประชุมแห่งชาติสิริกิติ์ (QSNCC Hall 5-7 ชั้น LG)",
-      "tag": "งานมหกรรม",
-      "category": "learn",
-      "image": "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 0,
-      "maxParticipants": 9999,
-      "hostName": "สมาคมผู้จัดพิมพ์และผู้จำหน่ายหนังสือแห่งประเทศไทย (PUBAT)",
-      "hostAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
-      "price": "เข้าชมฟรี",
-      "description": "<p><strong>เทศกาลหนังสือที่ทุกคนรอคอย:</strong></p><p>รวมกว่า 300 สำนักพิมพ์ชั้นนำทั่วประเทศ พร้อมกิจกรรมเสวนาเปิดตัวหนังสือใหม่ นิทรรศการวรรณกรรมสร้างสรรค์ และโปรโมชั่นลดราคาพิเศษตลอด 12 วันเต็ม</p>",
-      "isNew": true,
-      "isTrending": true,
-      "badgeText": "ศูนย์ฯ สิริกิติ์",
-      "createdAtTimestamp": 1788258000000,
-      "eventType": "public_venue",
-      "venueTag": "qsncc",
-      "externalUrl": "https://www.qsncc.com/en/whats-on/event-calendar",
-      "transportation": "MRT ศูนย์การประชุมแห่งชาติสิริกิติ์ ทางออก 3 เดินเชื่อมเข้าสู่อาคารโดยตรง",
-      "approvalStatus": "approved",
-      "source": "ศูนย์การประชุมแห่งชาติสิริกิติ์ (QSNCC)",
-      "sourceUrl": "https://www.qsncc.com/en/whats-on/event-calendar",
-      "province": "กรุงเทพมหานคร",
-      "zone": "silom",
-      "link": "https://www.qsncc.com/en/whats-on/event-calendar"
-    },
-    {
-      "id": "comm-oct-special-1",
-      "title": "Sunset Rooftop Acoustic & Specialty Coffee จิบกาแฟฟังเพลงชิลล์ อารีย์",
-      "date": "17 ต.ค. 2026",
-      "time": "16:30 - 19:30 น.",
-      "location": "Yellow Rooftop Garden Cafe, ซอยอารีย์ 4 (พหลโยธิน 7)",
-      "tag": "☕ นัดชิลล์",
-      "category": "chill",
-      "image": "https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 6,
-      "maxParticipants": 8,
-      "hostName": "แพรวา กาแฟดริป",
-      "hostAvatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80",
-      "hostHostedCount": 14,
-      "hostRating": 4.95,
-      "hostBadgeTier": "superhost",
-      "price": "฿250 (รวม Dirty Coffee 1 แก้ว + ขนม Canelé)",
-      "description": "มีตติ้งยามเย็นบนรูฟท็อปสวนสีเขียว ดริปกาแฟชิมเมล็ด Specialty พร้อมเพื่อนเล่นกีตาร์โปร่งอะคูสติกบรรยากาศอบอุ่นเป็นกันเอง",
-      "rating": 4.95,
-      "reviewsCount": 18,
-      "badgeText": "รูฟท็อปอะคูสติก",
-      "createdAtTimestamp": 1788258000000,
-      "eventType": "community",
-      "status": "active",
-      "latitude": 13.7802,
-      "longitude": 100.5448,
-      "zone": "ari",
       "approvalStatus": "approved",
       "source": "Chill & Connect Official",
-      "sourceUrl": "https://chill-connect-hub.vercel.app",
-      "province": "กรุงเทพมหานคร"
+      "sourceUrl": "https://chill-connect-hub.vercel.app"
     }
   ],
   "tickets": [
@@ -4425,7 +4439,7 @@
       "userId": "user-default",
       "userName": "กวินท์ (Nut)",
       "isCheckedIn": false,
-      "createdAt": "2026-08-31T10:21:13.952Z"
+      "createdAt": "2026-10-03T04:46:04.321Z"
     },
     {
       "ticketId": "CCH-2026-0002",
@@ -4433,7 +4447,7 @@
       "userId": "user-default",
       "userName": "กวินท์ (Nut)",
       "isCheckedIn": false,
-      "createdAt": "2026-08-31T10:21:13.952Z"
+      "createdAt": "2026-10-03T04:46:04.321Z"
     }
   ],
   "hostWallet": {
@@ -4486,9 +4500,19 @@
       "categoryLabel": "⚽ กีฬา & บอลไทยราชมังฯ",
       "icon": "⚽",
       "status": "active",
-      "eventsCount": 4,
-      "lastScraped": "วันนี้ 22:54 น.",
-      "description": "ดึงแมตช์ฟุตบอลทีมชาติไทย, ฟุตบอลไทยลีก, และอีเวนต์กีฬาใหญ่ระดับประเทศ"
+      "eventsCount": 0,
+      "description": "ดึงแมตช์ฟุตบอลทีมชาติไทย, ฟุตบอลไทยลีก, และอีเวนต์กีฬาใหญ่ระดับประเทศ",
+      "targetType": "events",
+      "spotsCount": 0,
+      "lastScraped": "3/10/2569 12:39:52",
+      "lastRunAt": "2026-10-03T05:39:52.395Z",
+      "lastRunStatus": "failed",
+      "lastRunScanned": 0,
+      "lastRunImported": 0,
+      "lastRunDuplicates": 0,
+      "lastRunErrors": [
+        "No Schema.org Event JSON-LD found on this page"
+      ]
     },
     {
       "id": "eventpop",
@@ -4498,9 +4522,19 @@
       "categoryLabel": "🎟️ เวิร์กช็อป & ไลฟ์สไตล์",
       "icon": "🎟️",
       "status": "active",
-      "eventsCount": 51,
-      "lastScraped": "วันนี้ 22:54 น.",
-      "description": "ฮับเวิร์กช็อปศิลปะ คลาสทำอาหาร สัมมนา และปาร์ตี้คอมมูนิตี้กรุงเทพฯ"
+      "eventsCount": 0,
+      "description": "ฮับเวิร์กช็อปศิลปะ คลาสทำอาหาร สัมมนา และปาร์ตี้คอมมูนิตี้กรุงเทพฯ",
+      "targetType": "events",
+      "spotsCount": 0,
+      "lastScraped": "3/10/2569 12:40:01",
+      "lastRunAt": "2026-10-03T05:40:01.741Z",
+      "lastRunStatus": "failed",
+      "lastRunScanned": 0,
+      "lastRunImported": 0,
+      "lastRunDuplicates": 0,
+      "lastRunErrors": [
+        "No Schema.org Event JSON-LD found on this page"
+      ]
     },
     {
       "id": "ticketmelon",
@@ -4510,9 +4544,19 @@
       "categoryLabel": "🎫 มิวสิคเฟส & งานสร้างสรรค์",
       "icon": "🎫",
       "status": "active",
-      "eventsCount": 11,
-      "lastScraped": "วันนี้ 22:54 น.",
-      "description": "เทศกาลดนตรีอินดี้ระดับสากล นิทรรศการศิลปะ และงานดีเจสุดล้ำ"
+      "eventsCount": 0,
+      "description": "เทศกาลดนตรีอินดี้ระดับสากล นิทรรศการศิลปะ และงานดีเจสุดล้ำ",
+      "targetType": "events",
+      "spotsCount": 0,
+      "lastScraped": "3/10/2569 12:40:03",
+      "lastRunAt": "2026-10-03T05:40:03.556Z",
+      "lastRunStatus": "failed",
+      "lastRunScanned": 0,
+      "lastRunImported": 0,
+      "lastRunDuplicates": 0,
+      "lastRunErrors": [
+        "No Schema.org Event JSON-LD found on this page"
+      ]
     },
     {
       "id": "theconcert",
@@ -4522,9 +4566,10 @@
       "categoryLabel": "🎵 คอนเสิร์ต & การแสดงสด",
       "icon": "🎵",
       "status": "active",
-      "eventsCount": 11,
-      "lastScraped": "วันนี้ 22:54 น.",
-      "description": "คอนเสิร์ตศิลปิน T-POP / K-POP และ Live House ทั่วกรุงเทพฯ"
+      "eventsCount": 0,
+      "description": "คอนเสิร์ตศิลปิน T-POP / K-POP และ Live House ทั่วกรุงเทพฯ",
+      "targetType": "events",
+      "spotsCount": 0
     },
     {
       "id": "qsncc",
@@ -4534,9 +4579,10 @@
       "categoryLabel": "🏛️ มหกรรมเอ็กซ์โป & สัปดาห์หนังสือ",
       "icon": "🏛️",
       "status": "active",
-      "eventsCount": 20,
-      "lastScraped": "วันนี้ 11:30 น.",
-      "description": "งานแสดงสินค้าขนาดใหญ่ สัปดาห์หนังสือแห่งชาติ Sustainability Expo, Thailand Coffee Fest, Pet Expo และ Tech Summit"
+      "eventsCount": 0,
+      "description": "งานแสดงสินค้าขนาดใหญ่ สัปดาห์หนังสือแห่งชาติ Sustainability Expo, Thailand Coffee Fest, Pet Expo และ Tech Summit",
+      "targetType": "events",
+      "spotsCount": 0
     },
     {
       "id": "bitec",
@@ -4546,9 +4592,10 @@
       "categoryLabel": "🏢 งานแสดงสินค้า & เทรดแฟร์",
       "icon": "🏢",
       "status": "active",
-      "eventsCount": 5,
-      "lastScraped": "2 วันที่แล้ว",
-      "description": "งานแสดงสินค้านานาชาติ มอเตอร์โชว์ Cat Expo และมหกรรมเกมคอมมูนิตี้"
+      "eventsCount": 0,
+      "description": "งานแสดงสินค้านานาชาติ มอเตอร์โชว์ Cat Expo และมหกรรมเกมคอมมูนิตี้",
+      "targetType": "events",
+      "spotsCount": 0
     },
     {
       "id": "impact",
@@ -4558,9 +4605,19 @@
       "categoryLabel": "🎪 คอนเวนชัน & งานแฟร์ใหญ่",
       "icon": "🎪",
       "status": "active",
-      "eventsCount": 30,
-      "lastScraped": "วันนี้ 09:45 น.",
-      "description": "งานแฟร์ของแต่งบ้าน มอเตอร์โชว์ มหกรรมอาหารระดับโลก คอนเสิร์ตใหญ่ และเทศกาลอาร์ตทอย"
+      "eventsCount": 0,
+      "description": "งานแฟร์ของแต่งบ้าน มอเตอร์โชว์ มหกรรมอาหารระดับโลก คอนเสิร์ตใหญ่ และเทศกาลอาร์ตทอย",
+      "targetType": "events",
+      "spotsCount": 0,
+      "lastScraped": "3/10/2569 12:40:15",
+      "lastRunAt": "2026-10-03T05:40:15.008Z",
+      "lastRunStatus": "failed",
+      "lastRunScanned": 0,
+      "lastRunImported": 0,
+      "lastRunDuplicates": 0,
+      "lastRunErrors": [
+        "No Schema.org Event JSON-LD found on this page"
+      ]
     },
     {
       "id": "thairun",
@@ -4570,9 +4627,10 @@
       "categoryLabel": "🏃 งานวิ่ง & มาราธอนทั่วกรุง",
       "icon": "🏃",
       "status": "active",
-      "eventsCount": 19,
-      "lastScraped": "วันนี้ 22:54 น.",
-      "description": "ปฏิทินงานวิ่งมาราธอน ซิตี้รัน มินิมาราธอน และวิ่งเทรลในกรุงเทพฯ"
+      "eventsCount": 0,
+      "description": "ปฏิทินงานวิ่งมาราธอน ซิตี้รัน มินิมาราธอน และวิ่งเทรลในกรุงเทพฯ",
+      "targetType": "events",
+      "spotsCount": 0
     },
     {
       "id": "set",
@@ -4582,9 +4640,10 @@
       "categoryLabel": "📈 สัมมนาการเงิน & การลงทุน",
       "icon": "📈",
       "status": "active",
-      "eventsCount": 4,
-      "lastScraped": "3 วันที่แล้ว",
-      "description": "งานสัมมนาวางแผนการเงิน เวิร์กช็อปหุ้น กองทุน และพัฒนาทักษะธุรกิจ"
+      "eventsCount": 0,
+      "description": "งานสัมมนาวางแผนการเงิน เวิร์กช็อปหุ้น กองทุน และพัฒนาทักษะธุรกิจ",
+      "targetType": "events",
+      "spotsCount": 0
     },
     {
       "id": "bma",
@@ -4594,9 +4653,11 @@
       "categoryLabel": "🌿 ดนตรีในสวน & เทศกาล กทม.",
       "icon": "🌿",
       "status": "active",
-      "eventsCount": 6,
-      "lastScraped": "วันนี้ 22:54 น.",
-      "description": "กิจกรรมดนตรีในสวนสาธารณะ เทศกาลภาพยนตร์กรุงเทพฯ และตลาดนัดชุมชน"
+      "eventsCount": 0,
+      "description": "กิจกรรมดนตรีในสวนสาธารณะ เทศกาลภาพยนตร์กรุงเทพฯ และตลาดนัดชุมชน",
+      "targetType": "events",
+      "spotsCount": 0
     }
-  ]
+  ],
+  "participants": {}
 }

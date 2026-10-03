@@ -13,22 +13,20 @@ import {
   Plus,
   Trash2,
   Power,
-  Sparkles,
   Database,
-  Layers,
   Search,
   X,
-  Check,
   Compass,
-  ArrowRight,
 } from 'lucide-react';
 import { EventDataSource } from '@/lib/sourcesStore';
 
 interface ScrapeResultData {
+  targetType: 'events' | 'spots';
   totalScanned: number;
   newCount: number;
   duplicateCount: number;
   duplicateDetails?: { rawTitle: string; reason: string }[];
+  sourceResults: Array<{ sourceId: string; sourceName: string; scanned: number; imported: number; duplicates: number; error?: string }>;
 }
 
 export function ScraperEngineView() {
@@ -36,6 +34,7 @@ export function ScraperEngineView() {
   const [isLoadingSources, setIsLoadingSources] = useState(true);
   const [isScraping, setIsScraping] = useState(false);
   const [scrapingSourceId, setScrapingSourceId] = useState<string | null>(null);
+  const [sourceTypeFilter, setSourceTypeFilter] = useState<'events' | 'spots'>('events');
   const [isEnrichingSpots, setIsEnrichingSpots] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [autoPublish, setAutoPublish] = useState(false);
@@ -49,6 +48,7 @@ export function ScraperEngineView() {
   const [newSource, setNewSource] = useState({
     name: '',
     url: '',
+    targetType: 'events' as EventDataSource['targetType'],
     category: 'lifestyle' as EventDataSource['category'],
     categoryLabel: '🎟️ เวิร์กช็อป & ไลฟ์สไตล์',
     icon: '🌐',
@@ -95,30 +95,36 @@ export function ScraperEngineView() {
   }, []);
 
   // ── Trigger Scrape ──
-  const handleTriggerScrape = async (sourceName?: string, sourceId?: string) => {
+  const handleTriggerScrape = async (targetType: EventDataSource['targetType'], source?: EventDataSource) => {
     try {
       setIsScraping(true);
-      if (sourceId) setScrapingSourceId(sourceId);
+      if (source) setScrapingSourceId(source.id);
 
       const res = await fetch('/api/admin/scrape', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sourceName }),
+        body: JSON.stringify({ targetType, sourceId: source?.id }),
       });
       const data = await res.json();
 
-      if (data.success) {
+      if (res.ok && data.success) {
+        const sourceResults = data.sourceResults || [];
+        const failedSources = sourceResults.filter((result: ScrapeResultData['sourceResults'][number]) => result.error).length;
         setScrapeResult({
+          targetType,
           totalScanned: data.totalScanned || (data.newCount + data.duplicateCount),
           newCount: data.newCount,
           duplicateCount: data.duplicateCount,
           duplicateDetails: data.duplicateDetails || [],
+          sourceResults,
         });
         fetchSources();
         showToast(
-          data.newCount > 0
-            ? `🎉 สแกนสำเร็จ: พบอีเวนต์ใหม่ ${data.newCount} รายการ!`
-            : `✅ สแกนสำเร็จ: ข้อมูลเป็นปัจจุบันแล้ว (ข้ามที่ซ้ำ ${data.duplicateCount} รายการ)`
+          failedSources > 0
+            ? `สแกนเสร็จ แต่มี ${failedSources} แหล่งที่อ่านไม่ได้ ดูรายละเอียดด้านล่าง`
+            : data.newCount > 0
+            ? `นำเข้า${targetType === 'spots' ? 'สถานที่' : 'อีเวนต์'}ใหม่ ${data.newCount} รายการ`
+            : `สแกนเสร็จ: พบซ้ำ ${data.duplicateCount} รายการ`
         );
       } else {
         showToast(`❌ เกิดข้อผิดพลาด: ${data.error || 'ไม่สามารถสแกนได้'}`);
@@ -171,6 +177,7 @@ export function ScraperEngineView() {
         setNewSource({
           name: '',
           url: '',
+          targetType: 'events',
           category: 'lifestyle',
           categoryLabel: '🎟️ เวิร์กช็อป & ไลฟ์สไตล์',
           icon: '🌐',
@@ -275,11 +282,15 @@ export function ScraperEngineView() {
       s.url.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (s.description && s.description.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesStatus = statusFilter === 'all' || s.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus && s.targetType === sourceTypeFilter;
   });
 
-  const totalEventsCount = sources.reduce((acc, s) => acc + (s.eventsCount || 0), 0);
-  const activeSourcesCount = sources.filter((s) => s.status === 'active').length;
+  const eventSources = sources.filter((source) => source.targetType === 'events');
+  const spotSources = sources.filter((source) => source.targetType === 'spots');
+  const activeSources = sources.filter((source) => source.status === 'active' && source.targetType === sourceTypeFilter);
+  const totalContentCount = sources
+    .filter((source) => source.targetType === sourceTypeFilter)
+    .reduce((total, source) => total + (sourceTypeFilter === 'spots' ? source.spotsCount || 0 : source.eventsCount || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -298,45 +309,45 @@ export function ScraperEngineView() {
             <div className="w-8 h-8 rounded-xl bg-sky-50 flex items-center justify-center text-[#2B527A] border border-sky-100">
               <Bot size={17} />
             </div>
-            <h1 className="text-xl font-bold text-slate-800">Scraper & Aggregator Engine</h1>
-            <span className="px-2.5 py-0.5 bg-[#EBF3ED] text-[#2D5A3C] border border-[#4A7C59]/20 rounded-full text-xs font-semibold">
-              Live Engine
+            <h1 className="text-xl font-bold text-slate-800">Source ingestion</h1>
+            <span className="px-2.5 py-0.5 bg-slate-50 text-slate-700 border border-slate-200 rounded-md text-[11px] font-semibold">
+              Schema.org JSON-LD
             </span>
           </div>
           <p className="text-slate-500 text-sm">
-            ระบบดูดข้อมูลอัตโนมัติจาก Ticket Hubs, Exhibition Centers, และปฏิทินเมือง พร้อม Smart Deduplication และ AI Classification
+            นำเข้าข้อมูล Event และ Spot แยกตามชนิด พร้อมตรวจ robots.txt, คัดกรองข้อมูลไม่ครบ และป้องกันรายการซ้ำ
           </p>
         </div>
 
-        {/* Global Action Buttons */}
+        {/* Target-specific actions */}
         <div className="flex items-center gap-2.5 flex-wrap">
-          <button
+          {sourceTypeFilter === 'spots' && <button
             onClick={handleEnrichSpotImages}
             disabled={isEnrichingSpots}
             className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-50 hover:bg-[#EBF3ED] border border-slate-200 hover:border-[#4A7C59]/30 text-slate-600 hover:text-[#2D5A3C] rounded-xl text-xs font-semibold transition-all disabled:opacity-50"
-            title="สแกนและเติมรูปภาพสถานที่เที่ยวแบบ AI ความละเอียดสูง"
+            title="เติมภาพให้ Spot ที่นำเข้าแล้วโดยไม่ดึงข้อมูลแหล่งใหม่"
           >
             <Compass size={13} className={isEnrichingSpots ? 'animate-spin' : 'text-[#4A7C59]'} />
-            {isEnrichingSpots ? 'กำลังเติมรูป Spot...' : 'AI เติมรูปสถานที่ (77 จว.)'}
-          </button>
+            {isEnrichingSpots ? 'กำลังเติมรูป...' : 'เติมรูปภาพ Spot'}
+          </button>}
 
-          <button
+          {sourceTypeFilter === 'events' && <button
             onClick={handleResetAndSeed}
             disabled={isResetting || isScraping}
             className="flex items-center gap-1.5 px-3.5 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 rounded-xl text-xs font-semibold transition-all disabled:opacity-50"
-            title="รีเซ็ตและโหลดอีเวนต์ชุดเต็ม 80+ รายการ"
+            title="รีเซ็ตชุด Event ตัวอย่างแบบคัดสรร (ไม่ใช่การดึงจากเว็บ)"
           >
             <Database size={13} className={isResetting ? 'animate-spin text-amber-600' : 'text-amber-600'} />
-            {isResetting ? 'กำลังโหลด...' : 'รีเซ็ต & ดูด 80+ Events'}
-          </button>
+            {isResetting ? 'กำลังโหลด...' : 'โหลดชุด Event ตัวอย่าง'}
+          </button>}
 
           <button
-            onClick={() => handleTriggerScrape()}
+            onClick={() => handleTriggerScrape(sourceTypeFilter)}
             disabled={isScraping || isResetting}
-            className="flex items-center gap-2 px-4 py-2 bg-[#2B527A] hover:bg-[#203e5c] text-white rounded-xl text-xs font-bold transition-all shadow-sm shadow-[#2B527A]/20 disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-lg text-xs font-bold transition-all shadow-sm disabled:opacity-50"
           >
-            <Radio size={13} className={isScraping ? 'animate-pulse text-sky-300' : ''} />
-            {isScraping ? 'กำลังสแกนทุกแหล่ง...' : 'Run All Scrapers'}
+            <Radio size={13} className={isScraping && !scrapingSourceId ? 'animate-pulse text-sky-200' : ''} />
+            {isScraping && !scrapingSourceId ? `กำลังสแกน ${sourceTypeFilter === 'spots' ? 'Spots' : 'Events'}...` : `สแกน ${sourceTypeFilter === 'spots' ? 'Spot sources' : 'Event sources'}`}
           </button>
         </div>
       </div>
@@ -344,15 +355,20 @@ export function ScraperEngineView() {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'Sources ทั้งหมด', value: sources.length, unit: 'แห่ง', style: 'bg-sky-50 border-sky-100 text-[#2B527A]' },
-          { label: 'Active Sources', value: activeSourcesCount, unit: `/${sources.length}`, style: 'bg-[#EBF3ED] border-[#4A7C59]/15 text-[#4A7C59]' },
-          { label: 'Events สะสมในระบบ', value: totalEventsCount, unit: 'รายการ', style: 'bg-amber-50 border-amber-100 text-amber-700' },
-          {
+          { label: 'แหล่งข้อมูล', value: sourceTypeFilter === 'spots' ? spotSources.length : eventSources.length, unit: 'แห่ง', style: 'bg-sky-50 border-sky-100 text-[#2B527A]' },
+          { label: 'กำลังใช้งาน', value: activeSources.length, unit: `/${sourceTypeFilter === 'spots' ? spotSources.length : eventSources.length}`, style: 'bg-[#EBF3ED] border-[#4A7C59]/15 text-[#4A7C59]' },
+          { label: sourceTypeFilter === 'spots' ? 'Spots ที่นำเข้า' : 'Events ที่นำเข้า', value: totalContentCount, unit: 'รายการ', style: 'bg-amber-50 border-amber-100 text-amber-700' },
+          ...(sourceTypeFilter === 'events' ? [{
             label: 'Auto-Publish Mode',
             value: autoPublish ? 'ON (อัตโนมัติ)' : 'OFF (รอตรวจ)',
             unit: '',
             style: autoPublish ? 'bg-[#EBF3ED] border-[#4A7C59]/20 text-[#2D5A3C]' : 'bg-slate-50 border-slate-200 text-slate-600',
-          },
+          }] : [{
+            label: 'สถานะนำเข้า',
+            value: 'Draft first',
+            unit: '',
+            style: 'bg-amber-50 border-amber-200 text-amber-800',
+          }]),
         ].map((s) => (
           <div key={s.label} className={`border rounded-xl p-3.5 ${s.style}`}>
             <p className="text-2xl font-bold">
@@ -375,7 +391,7 @@ export function ScraperEngineView() {
 
           <div className="flex items-center gap-2.5 mb-3">
             <CheckCircle2 size={20} className="text-[#4A7C59]" />
-            <h3 className="text-base font-bold text-slate-800">ผลการสแกนข้อมูลล่าสุด (Scrape Summary)</h3>
+            <h3 className="text-base font-bold text-slate-800">ผลสแกน {scrapeResult.targetType === 'spots' ? 'Spot sources' : 'Event sources'}</h3>
           </div>
 
           <div className="grid grid-cols-3 gap-3 mb-4">
@@ -384,7 +400,7 @@ export function ScraperEngineView() {
               <p className="text-xl font-bold text-slate-700">{scrapeResult.totalScanned}</p>
             </div>
             <div className="bg-[#EBF3ED] border border-[#4A7C59]/20 rounded-xl p-3 text-center">
-              <p className="text-[#4A7C59] text-[11px] font-semibold uppercase">✨ กิจกรรมใหม่</p>
+              <p className="text-[#4A7C59] text-[11px] font-semibold uppercase">นำเข้าใหม่</p>
               <p className="text-xl font-bold text-[#2D5A3C]">+{scrapeResult.newCount}</p>
             </div>
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-center">
@@ -392,6 +408,19 @@ export function ScraperEngineView() {
               <p className="text-xl font-bold text-amber-800">{scrapeResult.duplicateCount}</p>
             </div>
           </div>
+
+          {scrapeResult.sourceResults.length > 0 && (
+            <div className="space-y-1.5">
+              {scrapeResult.sourceResults.map((result) => (
+                <div key={result.sourceId} className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 py-2 text-xs last:border-0">
+                  <span className="font-semibold text-slate-700">{result.sourceName}</span>
+                  <span className={result.error ? 'text-rose-700' : 'text-slate-500'}>
+                    {result.error ? `ผิดพลาด · ${result.error}` : `พบ ${result.scanned} · ใหม่ ${result.imported} · ซ้ำ ${result.duplicates}`}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
 
           {scrapeResult.duplicateDetails && scrapeResult.duplicateDetails.length > 0 && (
             <div className="mt-2">
@@ -416,7 +445,7 @@ export function ScraperEngineView() {
 
       {/* Engine Controls & Settings Bar */}
       <div className="bg-white border border-slate-200/70 rounded-2xl p-4 shadow-xs flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
+        {sourceTypeFilter === 'events' && <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <Activity size={15} className="text-[#2B527A]" />
             <span className="text-slate-700 text-xs font-bold">Auto-Publish Mode:</span>
@@ -432,7 +461,7 @@ export function ScraperEngineView() {
             <Power size={11} className={autoPublish ? 'text-[#4A7C59]' : 'text-slate-400'} />
             {autoPublish ? 'เปิดใช้งาน (Auto-Approve)' : 'ปิด (Moderate First)'}
           </button>
-        </div>
+        </div>}
 
         <div className="flex items-center gap-2">
           <button
@@ -458,6 +487,24 @@ export function ScraperEngineView() {
           />
         </div>
 
+        <div className="flex gap-1 rounded-lg bg-slate-100 p-1" role="tablist" aria-label="ประเภทแหล่งข้อมูล">
+          {([
+            { id: 'events', label: `Events (${eventSources.length})` },
+            { id: 'spots', label: `Spots (${spotSources.length})` },
+          ] as const).map((target) => (
+            <button
+              key={target.id}
+              type="button"
+              role="tab"
+              aria-selected={sourceTypeFilter === target.id}
+              onClick={() => setSourceTypeFilter(target.id)}
+              className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-semibold ${sourceTypeFilter === target.id ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+            >
+              {target.label}
+            </button>
+          ))}
+        </div>
+
         <div className="flex gap-1.5 bg-slate-100 p-1 rounded-xl">
           {(['all', 'active', 'inactive'] as const).map((st) => (
             <button
@@ -479,8 +526,22 @@ export function ScraperEngineView() {
           <div className="w-8 h-8 border-2 border-[#4A7C59]/30 border-t-[#4A7C59] rounded-full animate-spin" />
         </div>
       ) : filteredSources.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-200">
-          <p className="text-slate-400 text-sm">ไม่พบแหล่งข้อมูลที่ตรงกับเงื่อนไขการค้นหา</p>
+        <div className="flex flex-wrap items-center justify-between gap-4 border-l-2 border-slate-300 bg-white px-4 py-5">
+          <div>
+            <p className="text-sm font-semibold text-slate-800">
+              {sourceTypeFilter === 'spots' && !spotSources.length ? 'ยังไม่มีแหล่งข้อมูล Spot' : 'ไม่พบแหล่งข้อมูลที่ตรงกับเงื่อนไข'}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              {sourceTypeFilter === 'spots' && !spotSources.length
+                ? 'เพิ่มหน้าเว็บที่มี Schema.org Place JSON-LD และอนุญาตการเก็บข้อมูลตาม robots.txt'
+                : 'ลองเปลี่ยนคำค้นหาหรือสถานะ'}
+            </p>
+          </div>
+          {sourceTypeFilter === 'spots' && !spotSources.length && (
+            <button type="button" onClick={() => setShowAddModal(true)} className="inline-flex items-center gap-2 rounded-lg bg-[#2563EB] px-3 py-2 text-xs font-semibold text-white hover:bg-[#1D4ED8]">
+              <Plus size={14} /> เพิ่ม Spot source
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-3">
@@ -519,6 +580,9 @@ export function ScraperEngineView() {
                             Custom Source
                           </span>
                         )}
+                        <span className={`rounded-md border px-1.5 py-0.5 text-[10px] font-semibold ${source.targetType === 'spots' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-sky-200 bg-sky-50 text-sky-800'}`}>
+                          {source.targetType === 'spots' ? 'Spot source' : 'Event source'}
+                        </span>
                       </div>
 
                       <p className="text-slate-500 text-xs leading-relaxed mb-2">
@@ -537,8 +601,9 @@ export function ScraperEngineView() {
                         </a>
                         <span className="text-slate-300">·</span>
                         <span className="text-slate-400 text-[11px] flex items-center gap-1">
-                          <Clock size={10} /> สแกนล่าสุด: {source.lastScraped || 'ยังไม่เคยสแกน'}
+                          <Clock size={10} /> {source.lastRunAt ? `สแกนล่าสุด ${new Date(source.lastRunAt).toLocaleString('th-TH')}` : 'ยังไม่เคยสแกน'}
                         </span>
+                        {source.lastRunStatus && <span className={`text-[11px] font-semibold ${source.lastRunStatus === 'failed' ? 'text-rose-700' : source.lastRunStatus === 'partial' ? 'text-amber-700' : 'text-emerald-700'}`}>{source.lastRunStatus}</span>}
                       </div>
                     </div>
                   </div>
@@ -546,7 +611,9 @@ export function ScraperEngineView() {
                   {/* Actions & Metrics */}
                   <div className="flex items-center gap-4 shrink-0 self-center sm:self-start">
                     <div className="text-right">
-                      <p className="text-xs font-bold text-slate-700">{source.eventsCount || 0} Events</p>
+                      <p className="text-xs font-bold text-slate-700">
+                        {source.targetType === 'spots' ? source.spotsCount || 0 : source.eventsCount || 0} {source.targetType === 'spots' ? 'Spots' : 'Events'}
+                      </p>
                       <p className="text-[10px] text-slate-400">ในระบบ</p>
                     </div>
 
@@ -564,13 +631,13 @@ export function ScraperEngineView() {
                       </button>
 
                       <button
-                        onClick={() => handleTriggerScrape(source.name, source.id)}
+                        onClick={() => handleTriggerScrape(source.targetType, source)}
                         disabled={isScraping || !isActive}
                         className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-50 hover:bg-[#EBF3ED] border border-slate-200 hover:border-[#4A7C59]/30 text-slate-600 hover:text-[#2D5A3C] rounded-xl text-xs font-semibold transition-all disabled:opacity-40"
                         title="สั่งดึงข้อมูลจากแหล่งนี้เดี๋ยวนี้"
                       >
                         <RefreshCw size={11} className={isThisScraping ? 'animate-spin text-[#4A7C59]' : ''} />
-                        {isThisScraping ? 'กำลังสแกน...' : 'Scrape Now'}
+                        {isThisScraping ? 'กำลังสแกน...' : 'สแกน'}
                       </button>
 
                       {source.isCustom && (
@@ -627,19 +694,44 @@ export function ScraperEngineView() {
                 <input
                   type="url"
                   required
-                  placeholder="https://www.example.com"
+                  placeholder={newSource.targetType === 'spots' ? 'https://... (Place JSON-LD)' : 'https://... (Event JSON-LD)'}
                   value={newSource.url}
                   onChange={(e) => setNewSource({ ...newSource, url: e.target.value })}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-xs focus:outline-none focus:border-[#4A7C59]/50"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-bold text-slate-600 uppercase tracking-wide mb-1.5 block">
+                  ประเภทข้อมูลที่ต้องการนำเข้า
+                </label>
+                <select
+                  aria-label="ประเภทข้อมูลที่ต้องการนำเข้า"
+                  value={newSource.targetType}
+                  onChange={(e) => {
+                    const targetType = e.target.value as EventDataSource['targetType'];
+                    setNewSource({
+                      ...newSource,
+                      targetType,
+                      categoryLabel: targetType === 'spots' ? 'สถานที่ท่องเที่ยวและจุดแวะพัก' : '🎟️ เวิร์กช็อป & ไลฟ์สไตล์',
+                    });
+                  }}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-xs focus:outline-none focus:border-[#4A7C59]/50"
+                >
+                  <option value="events">Events / meetups / fairs</option>
+                  <option value="spots">Spots / places</option>
+                </select>
+                <p className="mt-1 text-[11px] text-slate-500">รองรับหน้าเว็บที่เปิดเผย Schema.org JSON-LD และอนุญาตตาม robots.txt</p>
+              </div>
+
+              <div className={`grid gap-3 ${newSource.targetType === 'events' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                {newSource.targetType === 'events' && (
                 <div>
                   <label className="text-xs font-bold text-slate-600 uppercase tracking-wide mb-1.5 block">
-                    หมวดหมู่อีเวนต์
+                    หมวดหมู่ Event
                   </label>
                   <select
+                    aria-label="หมวดหมู่ Event"
                     value={newSource.category}
                     onChange={(e) => {
                       const cat = e.target.value as EventDataSource['category'];
@@ -667,6 +759,7 @@ export function ScraperEngineView() {
                     <option value="finance">📈 การเงิน & สัมมนา</option>
                   </select>
                 </div>
+                )}
 
                 <div>
                   <label className="text-xs font-bold text-slate-600 uppercase tracking-wide mb-1.5 block">

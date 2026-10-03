@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { EventItem } from '@/data/mockData';
 
 export interface ScrapedRawEvent {
@@ -5,11 +6,15 @@ export interface ScrapedRawEvent {
   sourceUrl?: string;
   rawTitle: string;
   rawDate: string;
+  rawEndDate?: string;
   rawTime?: string;
   rawLocation: string;
+  rawProvince?: string;
   rawPrice?: string;
   rawDescription?: string;
   rawImage: string;
+  rawLatitude?: number;
+  rawLongitude?: number;
 }
 
 // Bangkok Known Venues & Landmarks Coordinate Database
@@ -87,7 +92,7 @@ const VENUE_COORDINATES: Record<string, { lat: number; lng: number; zone: string
   'ท่ามหาราช': { lat: 13.7554, lng: 100.4889, zone: 'rattanakosin' },
 };
 
-export function resolveLocationAndZone(rawLocation: string): { lat: number; lng: number; zone: string; formattedLocation: string } {
+export function resolveLocationAndZone(rawLocation: string): { lat: number; lng: number; zone: string; formattedLocation: string; matched: boolean } {
   const locLower = rawLocation.toLowerCase();
 
   for (const [key, val] of Object.entries(VENUE_COORDINATES)) {
@@ -97,6 +102,7 @@ export function resolveLocationAndZone(rawLocation: string): { lat: number; lng:
         lng: val.lng,
         zone: val.zone,
         formattedLocation: rawLocation,
+        matched: true,
       };
     }
   }
@@ -107,6 +113,7 @@ export function resolveLocationAndZone(rawLocation: string): { lat: number; lng:
     lng: 100.5349,
     zone: 'siam',
     formattedLocation: rawLocation || 'กรุงเทพมหานคร',
+    matched: false,
   };
 }
 
@@ -274,7 +281,7 @@ export function processRawEventWithAI(raw: ScrapedRawEvent, idSuffix: number): E
   const classification = classifyEventCategoryAndTags(raw.rawTitle, raw.rawDescription || '');
   const locationInfo = resolveLocationAndZone(raw.rawLocation);
 
-  const priceClean = raw.rawPrice ? raw.rawPrice.trim() : 'ฟรี!';
+  const priceClean = raw.rawPrice ? raw.rawPrice.trim() : 'ไม่ระบุราคา';
 
   const titleLower = raw.rawTitle.toLowerCase();
   const descLower = (raw.rawDescription || '').toLowerCase();
@@ -283,11 +290,17 @@ export function processRawEventWithAI(raw: ScrapedRawEvent, idSuffix: number): E
   const eventType = 'public_venue' as const;
   const isEnded = titleLower.includes('งานที่ผ่านมา') || descLower.includes('จัดเสร็จสิ้นแล้ว');
 
-  const maxParticipants = 500;
-  const participantsCount = Math.floor(Math.random() * 80) + 40;
+  const hasSourceCoordinates = Number.isFinite(raw.rawLatitude) && Number.isFinite(raw.rawLongitude);
+  const hasKnownVenueCoordinates = locationInfo.matched;
+  const startTime = raw.rawTime?.trim();
+  const endTime = raw.rawEndDate?.includes('T')
+    ? new Date(raw.rawEndDate).toLocaleTimeString('th-TH', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit' })
+    : '';
 
   return {
-    id: `live-agg-${idSuffix}`,
+    id: raw.sourceUrl
+      ? `live-agg-${createHash('sha256').update(raw.sourceUrl).digest('hex').slice(0, 20)}`
+      : `live-agg-${idSuffix}`,
     title: raw.rawTitle.trim(),
     category: classification.category,
     eventType: eventType,
@@ -295,7 +308,8 @@ export function processRawEventWithAI(raw: ScrapedRawEvent, idSuffix: number): E
     badgeText: isEnded ? '🏁 สิ้นสุดแล้ว' : classification.badgeText,
     tag: classification.tag,
     date: raw.rawDate.trim(),
-    time: raw.rawTime?.trim() || '10:00 - 18:00 น.',
+    endDate: raw.rawEndDate?.trim(),
+    time: [startTime, endTime].filter(Boolean).join(' - ') || 'ไม่ระบุเวลา',
     location: locationInfo.formattedLocation,
     venueTag: raw.rawLocation.toLowerCase().includes('qsncc') || raw.rawLocation.includes('สิริกิติ์')
       ? 'qsncc'
@@ -306,25 +320,17 @@ export function processRawEventWithAI(raw: ScrapedRawEvent, idSuffix: number): E
       : raw.rawLocation.includes('สวน')
       ? 'park'
       : undefined,
-    latitude: locationInfo.lat,
-    longitude: locationInfo.lng,
-    zone: locationInfo.zone,
-    hostName: (raw.source === 'ThaiRun' ? 'ThaiRun ฮับคนรักการวิ่ง' :
-         raw.source === 'SET_Thailand' ? 'ตลาดหลักทรัพย์แห่งประเทศไทย (SET)' :
-         raw.source === 'The Concert' ? 'The Concert Live' :
-         raw.source === 'Ticketmelon' ? 'Ticketmelon Hub' :
-         raw.source === 'Eventpop' ? 'Eventpop Official' :
-         raw.source === 'QSNCC Events' || raw.source === 'QSNCC' ? 'QSNCC Bangkok' :
-         raw.source === 'BITEC Events' || raw.source === 'BITEC' ? 'BITEC Bangkok' : 'BMA Event กทม.'),
-    hostAvatar: (raw.source === 'SET_Thailand' ? 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=150&q=80' :
-         raw.source === 'ThaiRun' ? 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=150&q=80' :
-         'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'),
-    participantsCount: isEnded ? maxParticipants : participantsCount,
-    maxParticipants: maxParticipants,
-    description: raw.rawDescription?.trim() || `งานกิจกรรมน่าสนใจจัดที่ ${raw.rawLocation} มาผ่อนคลายและเชื่อมต่อกับเพื่อนใหม่ในวันหยุดสุดสัปดาห์นี้`,
+        latitude: hasSourceCoordinates ? raw.rawLatitude : hasKnownVenueCoordinates ? locationInfo.lat : undefined,
+        longitude: hasSourceCoordinates ? raw.rawLongitude : hasKnownVenueCoordinates ? locationInfo.lng : undefined,
+        zone: hasKnownVenueCoordinates ? locationInfo.zone : undefined,
+        province: raw.rawProvince,
+        hostName: raw.source || 'แหล่งข้อมูลภายนอก',
+        participantsCount: 0,
+        maxParticipants: 0,
+    description: raw.rawDescription?.trim() || 'ยังไม่มีรายละเอียดจากแหล่งข้อมูล โปรดตรวจสอบก่อนเผยแพร่',
     price: priceClean,
-    rating: 4.8 + Math.round(Math.random() * 2) / 10,
-    reviewsCount: Math.floor(Math.random() * 50) + 10,
+    rating: 0,
+    reviewsCount: 0,
     status: isEnded ? 'ended' : 'active',
     isNew: !isEnded,
     createdAtTimestamp: Date.now(),

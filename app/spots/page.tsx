@@ -22,6 +22,7 @@ import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { useAuth } from '@/lib/useAuth';
+import { fetchAllContentPages } from '@/lib/contentClient';
 import { MOCK_SPOTS, ALL_THAI_PROVINCES, LifestyleSpotItem, getSpotVibeCategory } from '@/data/spotsData';
 import { SpotCategoryRail, NATIONWIDE_SPOT_CATEGORIES } from '@/components/SpotCategoryRail';
 import { TopDestinationsRail } from '@/components/TopDestinationsRail';
@@ -58,9 +59,23 @@ function SpotsPageContent() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [spotsList, setSpotsList] = useState<LifestyleSpotItem[]>(MOCK_SPOTS);
   const [favoriteSpots, setFavoriteSpots] = useState<string[]>([]);
   const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isActive = true;
+    fetchAllContentPages<LifestyleSpotItem>('/api/spots', 'spots')
+      .then((spots) => {
+        if (isActive && spots.length > 0) setSpotsList(spots);
+      })
+      .catch((error) => console.warn('Using default mock spots fallback:', error));
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   // Load favorite spots and joined events from localStorage (Only active when user is logged in)
   useEffect(() => {
@@ -157,7 +172,7 @@ function SpotsPageContent() {
   };
 
   const filteredSpots = useMemo(() => {
-    const result = MOCK_SPOTS.filter((spot) => {
+    const result = spotsList.filter((spot) => {
       // Unified Category Filter (Synchronized with Category Rail and Dropdown)
       if (selectedCategory && selectedCategory !== 'all') {
         const catDef = NATIONWIDE_SPOT_CATEGORIES.find((c) => c.id === selectedCategory);
@@ -231,12 +246,12 @@ function SpotsPageContent() {
     }
 
     return result;
-  }, [selectedCategory, selectedProvince, priceFilter, sortBy, sortByNearMe, userLocation, favoriteSpots, searchQuery]);
+  }, [spotsList, selectedCategory, selectedProvince, priceFilter, sortBy, sortByNearMe, userLocation, favoriteSpots, searchQuery]);
 
   // Calculate dynamic spot counts per vibe category (supports selectedProvince filter context)
   const spotCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    const baseSpots = MOCK_SPOTS.filter((spot) => {
+    const baseSpots = spotsList.filter((spot) => {
       if (selectedProvince !== 'all') {
         const pLower = selectedProvince.toLowerCase();
         const spotProv = spot.province.toLowerCase();
@@ -265,7 +280,7 @@ function SpotsPageContent() {
       counts[cat.id] = baseSpots.filter((spot) => getSpotVibeCategory(spot) === cat.id).length;
     });
     return counts;
-  }, [selectedProvince]);
+  }, [spotsList, selectedProvince]);
 
   const totalPages = Math.ceil(filteredSpots.length / itemsPerPage) || 1;
 

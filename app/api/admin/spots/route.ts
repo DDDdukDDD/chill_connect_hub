@@ -1,19 +1,56 @@
 import { NextResponse } from 'next/server';
-import { MOCK_SPOTS, LifestyleSpotItem } from '@/data/spotsData';
+import { db } from '@/lib/db';
+import { requireAdminApiAccess } from '@/lib/adminApiAuth';
+import { LifestyleSpotItem } from '@/data/spotsData';
 import { autoEnrichSpotImages, isValidImageUrl } from '@/lib/spotImageResolver';
 
-// In-memory / dynamic store for spots (seeded from MOCK_SPOTS)
-let SPOTS_STORE: LifestyleSpotItem[] = [...MOCK_SPOTS];
+const SPOT_CATEGORY_IDS = new Set<LifestyleSpotItem['category']>([
+  'park', 'art', 'cafe', 'oldtown', 'workspace', 'viewpoint', 'nature',
+  'temple', 'beach', 'market', 'museum', 'bar', 'coworking',
+]);
+const MUTABLE_SPOT_FIELDS = new Set<keyof LifestyleSpotItem>([
+  'title', 'category', 'categoryLabel', 'province', 'district', 'transitInfo',
+  'image', 'galleryImages', 'openHours', 'price', 'bestTime', 'vibeTags',
+  'description', 'highlights', 'facilities', 'googleMapsUrl', 'rating',
+  'reviewsCount', 'latitude', 'longitude', 'publicationStatus', 'sourceName',
+  'sourceUrl', 'zone',
+]);
+
+async function getAllSpots(): Promise<LifestyleSpotItem[]> {
+  const firstPage = await db.findSpots({ page: 1, limit: 100, includeDrafts: true });
+  const spots = [...firstPage.items];
+
+  for (let page = 2; page <= firstPage.totalPages; page += 1) {
+    const result = await db.findSpots({ page, limit: 100, includeDrafts: true });
+    spots.push(...result.items);
+  }
+
+  return spots;
+}
+
+function getSpotValidationError(spot: Partial<LifestyleSpotItem>): string | null {
+  if (typeof spot.title !== 'string' || spot.title.trim().length < 5) return 'ชื่อสถานที่ต้องมีอย่างน้อย 5 ตัวอักษร';
+  if (typeof spot.province !== 'string' || !spot.province.trim()) return 'กรุณาระบุจังหวัด';
+  if (typeof spot.category !== 'string' || !SPOT_CATEGORY_IDS.has(spot.category)) return 'หมวดหมู่สถานที่ไม่ถูกต้อง';
+  if (typeof spot.description !== 'string' || spot.description.trim().length < 15) return 'รายละเอียดต้องมีอย่างน้อย 15 ตัวอักษร';
+  if (typeof spot.openHours !== 'string' || !spot.openHours.trim()) return 'กรุณาระบุเวลาเปิดให้บริการ';
+  return null;
+}
 
 export async function GET(request: Request) {
+  const denied = requireAdminApiAccess(request);
+  if (denied) return denied;
+
   try {
     const { searchParams } = new URL(request.url);
     const province = searchParams.get('province');
     const category = searchParams.get('category');
     const query = searchParams.get('q');
     const filter = searchParams.get('filter'); // 'missing_image' | 'all'
+    const publicationStatus = searchParams.get('status');
 
-    let filtered = [...SPOTS_STORE];
+    const allSpots = await getAllSpots();
+    let filtered = [...allSpots];
 
     if (province && province !== 'all') {
       filtered = filtered.filter((s) => s.province.includes(province) || province.includes(s.province));
@@ -37,13 +74,19 @@ export async function GET(request: Request) {
       filtered = filtered.filter((s) => !isValidImageUrl(s.image));
     }
 
-    const missingImagesCount = SPOTS_STORE.filter((s) => !isValidImageUrl(s.image)).length;
-    const distinctProvinces = new Set(SPOTS_STORE.map((s) => s.province)).size;
+    if (publicationStatus === 'draft') {
+      filtered = filtered.filter((spot) => spot.publicationStatus === 'draft');
+    } else if (publicationStatus === 'published') {
+      filtered = filtered.filter((spot) => spot.publicationStatus !== 'draft');
+    }
+
+    const missingImagesCount = allSpots.filter((s) => !isValidImageUrl(s.image)).length;
+    const distinctProvinces = new Set(allSpots.map((s) => s.province)).size;
 
     return NextResponse.json({
       success: true,
       spots: filtered,
-      totalCount: SPOTS_STORE.length,
+      totalCount: allSpots.length,
       missingImagesCount,
       distinctProvinces,
     });
@@ -54,36 +97,42 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const denied = requireAdminApiAccess(request);
+  if (denied) return denied;
+
   try {
     const body = await request.json();
     const { action } = body;
 
     // Action 1: Auto Enrich Missing Images
     if (action === 'auto_enrich_images') {
-      const { enrichedSpots, fixedCount } = autoEnrichSpotImages(SPOTS_STORE);
-      SPOTS_STORE = enrichedSpots;
+      const allSpots = await getAllSpots();
+      const { enrichedSpots, fixedCount } = autoEnrichSpotImages(allSpots);
+      await db.bulkUpdateSpots(enrichedSpots);
       return NextResponse.json({
         success: true,
         message: `สแกนและเติมรูปภาพความละเอียดสูงสำเร็จ ${fixedCount} รายการ`,
         fixedCount,
-        spots: SPOTS_STORE,
+        spots: await getAllSpots(),
       });
     }
 
     // Action 2: Create New Spot
     if (action === 'create') {
-      const { newSpot } = body;
-      if (!newSpot || !newSpot.title || !newSpot.province) {
-        return NextResponse.json({ success: false, error: 'กรุณากรอกชื่อและจังหวัดของสถานที่' }, { status: 400 });
+      const newSpot = body.newSpot as Partial<LifestyleSpotItem> | null;
+      const validationError = newSpot ? getSpotValidationError(newSpot) : 'ข้อมูลสถานที่ไม่ครบถ้วน';
+      if (!newSpot || validationError) {
+        return NextResponse.json({ success: false, error: validationError }, { status: 400 });
       }
 
-      const spotId = `spot-custom-${Date.now()}`;
+      const latitude = Number(newSpot.latitude);
+      const longitude = Number(newSpot.longitude);
       const createdSpot: LifestyleSpotItem = {
-        id: spotId,
-        title: newSpot.title,
-        category: newSpot.category || 'nature',
+        id: `spot-custom-${Date.now()}`,
+        title: newSpot.title!.trim(),
+        category: newSpot.category as LifestyleSpotItem['category'],
         categoryLabel: newSpot.categoryLabel || '🌿 สวน & ธรรมชาติ',
-        province: newSpot.province,
+        province: newSpot.province!.trim(),
         district: newSpot.district || 'เมือง',
         image: newSpot.image || '',
         openHours: newSpot.openHours || 'เปิดทุกวัน: 08:00 - 18:00 น.',
@@ -96,51 +145,61 @@ export async function POST(request: Request) {
         googleMapsUrl: newSpot.googleMapsUrl || `https://maps.google.com/?q=${encodeURIComponent(newSpot.title + ' ' + newSpot.province)}`,
         rating: 4.8,
         reviewsCount: 1,
-        latitude: Number(newSpot.latitude) || 13.7563,
-        longitude: Number(newSpot.longitude) || 100.5018,
+        latitude: Number.isFinite(latitude) && latitude >= -90 && latitude <= 90 ? latitude : 13.7563,
+        longitude: Number.isFinite(longitude) && longitude >= -180 && longitude <= 180 ? longitude : 100.5018,
+        publicationStatus: newSpot.publicationStatus === 'published' ? 'published' : 'draft',
       };
 
       // Enrich image if empty
       const { enrichedSpots } = autoEnrichSpotImages([createdSpot]);
-      SPOTS_STORE.unshift(enrichedSpots[0]);
+      const savedSpot = await db.createSpot(enrichedSpots[0]);
 
       return NextResponse.json({
         success: true,
         message: 'เพิ่มข้อมูลสถานที่ใหม่เรียบร้อยแล้ว',
-        spot: enrichedSpots[0],
-        spots: SPOTS_STORE,
+        spot: savedSpot,
+        spots: await getAllSpots(),
       });
     }
 
     // Action 3: Update Existing Spot
     if (action === 'update') {
-      const { spotId, updatedFields } = body;
-      const index = SPOTS_STORE.findIndex((s) => s.id === spotId);
-      if (index === -1) {
+      const { spotId, updatedFields } = body as { spotId?: string; updatedFields?: Record<string, unknown> };
+      if (!spotId || !updatedFields || typeof updatedFields !== 'object') {
+        return NextResponse.json({ success: false, error: 'ข้อมูลอัปเดตไม่ถูกต้อง' }, { status: 400 });
+      }
+
+      const existing = await db.findSpotById(spotId);
+      if (!existing) {
         return NextResponse.json({ success: false, error: 'ไม่พบสถานที่ที่ระบุ' }, { status: 404 });
       }
 
-      SPOTS_STORE[index] = {
-        ...SPOTS_STORE[index],
-        ...updatedFields,
-      };
+      const safeFields = Object.fromEntries(
+        Object.entries(updatedFields).filter(([key]) => MUTABLE_SPOT_FIELDS.has(key as keyof LifestyleSpotItem))
+      ) as Partial<LifestyleSpotItem>;
+      const validationError = getSpotValidationError({ ...existing, ...safeFields });
+      if (validationError) return NextResponse.json({ success: false, error: validationError }, { status: 400 });
+
+      const updatedSpot = await db.updateSpot(spotId, safeFields);
 
       return NextResponse.json({
         success: true,
         message: 'อัปเดตข้อมูลสถานที่เรียบร้อยแล้ว',
-        spot: SPOTS_STORE[index],
-        spots: SPOTS_STORE,
+        spot: updatedSpot,
+        spots: await getAllSpots(),
       });
     }
 
     // Action 4: Delete Spot
     if (action === 'delete') {
-      const { spotId } = body;
-      SPOTS_STORE = SPOTS_STORE.filter((s) => s.id !== spotId);
+      const { spotId } = body as { spotId?: string };
+      if (!spotId) return NextResponse.json({ success: false, error: 'กรุณาระบุสถานที่' }, { status: 400 });
+      const deleted = await db.deleteSpot(spotId);
+      if (!deleted) return NextResponse.json({ success: false, error: 'ไม่พบสถานที่ที่ระบุ' }, { status: 404 });
       return NextResponse.json({
         success: true,
         message: 'ลบสถานที่ออกจากระบบเรียบร้อยแล้ว',
-        spots: SPOTS_STORE,
+        spots: await getAllSpots(),
       });
     }
 

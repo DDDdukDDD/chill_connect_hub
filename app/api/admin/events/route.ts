@@ -1,19 +1,22 @@
 import { NextResponse } from 'next/server';
+import { requireAdminApiAccess } from '@/lib/adminApiAuth';
 import {
-  loadCache,
+  listAdminEvents,
   updateEventApproval,
   approveAllPendingEvents,
   deleteEvent,
   updateAdminEvent,
   createAdminEvent,
   setAutoPublish,
-  isAutoPublishEnabled,
+  getAutoPublish,
   resetAndSeedAllEvents,
 } from '@/lib/eventsStore';
 
-export async function GET() {
-  const events = await loadCache();
-  const autoPublish = isAutoPublishEnabled();
+export async function GET(request: Request) {
+  const denied = requireAdminApiAccess(request);
+  if (denied) return denied;
+
+  const [events, autoPublish] = await Promise.all([listAdminEvents(), getAutoPublish()]);
   return NextResponse.json({
     success: true,
     total: events.length,
@@ -23,12 +26,16 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const denied = requireAdminApiAccess(req);
+  if (denied) return denied;
+
   try {
     const body = await req.json();
     const { action, id, status, updatedFields, autoPublish, eventData } = body;
 
     if (action === 'create' && eventData) {
-      const updated = await createAdminEvent(eventData);
+      await createAdminEvent(eventData);
+      const updated = await listAdminEvents();
       return NextResponse.json({
         success: true,
         message: `สร้างกิจกรรม "${eventData.title}" สำเร็จเรียบร้อย!`,
@@ -73,6 +80,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
   } catch (error) {
     console.error('ADMIN EVENTS API ERROR:', error);
-    return NextResponse.json({ success: false, error: (error as Error).message, stack: (error as Error).stack }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Failed to process event action' }, { status: 500 });
   }
 }

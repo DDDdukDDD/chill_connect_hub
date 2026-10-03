@@ -1,191 +1,182 @@
 'use client';
 
-import React from 'react';
-import {
-  LayoutDashboard,
-  Leaf,
-  Users,
-  Trophy,
-  Zap,
-  TrendingUp,
-  Activity,
-  ArrowUpRight,
-} from 'lucide-react';
-import { MASTER_SPOT_CATEGORIES, MASTER_COMMUNITY_LIFESTYLE_CATEGORIES, MASTER_FAIR_CATEGORIES } from '@/data/masterHub';
-
-const STAT_CARDS = [
-  {
-    label: 'Lifestyle Spots',
-    value: '1,247',
-    delta: '+18 ใหม่',
-    icon: Leaf,
-    iconColor: 'text-[#4A7C59]',
-    iconBg: 'bg-[#EBF3ED]',
-    border: 'border-[#4A7C59]/15',
-    deltaColor: 'text-[#4A7C59]',
-  },
-  {
-    label: 'Community Events',
-    value: '342',
-    delta: '+34 ใหม่',
-    icon: Users,
-    iconColor: 'text-[#F26430]',
-    iconBg: 'bg-[#FDF0EB]',
-    border: 'border-[#F26430]/15',
-    deltaColor: 'text-[#F26430]',
-  },
-  {
-    label: 'Fairs & Expos',
-    value: '89',
-    delta: '+7 ใหม่',
-    icon: Trophy,
-    iconColor: 'text-[#2B527A]',
-    iconBg: 'bg-sky-50',
-    border: 'border-sky-100',
-    deltaColor: 'text-sky-600',
-  },
-  {
-    label: 'Active Quests',
-    value: '24',
-    delta: '+2 ใหม่',
-    icon: Zap,
-    iconColor: 'text-amber-600',
-    iconBg: 'bg-amber-50',
-    border: 'border-amber-100',
-    deltaColor: 'text-amber-600',
-  },
-];
-
-const RECENT_ACTIONS = [
-  { action: 'Spot อนุมัติแล้ว', name: 'Doi Inthanon Sunrise Point', time: '5 นาทีที่แล้ว', dot: 'bg-[#4A7C59]', textColor: 'text-[#4A7C59]' },
-  { action: 'Event รออนุมัติ', name: 'งานวิ่ง Charity Run 2026', time: '22 นาทีที่แล้ว', dot: 'bg-amber-400', textColor: 'text-amber-600' },
-  { action: 'Fair ถูกสร้างใหม่', name: 'Bangkok Design Week 2027', time: '1 ชั่วโมงที่แล้ว', dot: 'bg-[#2B527A]', textColor: 'text-[#2B527A]' },
-  { action: 'Quest เสร็จสิ้น', name: '7-Day Fitness Streak — 210 คนสำเร็จ', time: '3 ชั่วโมงที่แล้ว', dot: 'bg-amber-500', textColor: 'text-amber-600' },
-  { action: 'Scraper ดึงข้อมูลสำเร็จ', name: 'eventpop.me — 12 events ใหม่', time: '5 ชั่วโมงที่แล้ว', dot: 'bg-teal-500', textColor: 'text-teal-600' },
-];
+import React, { useEffect, useState } from 'react';
+import { Activity, AlertCircle, ArrowRight, CheckCircle2, Clock3, Leaf, RefreshCw, Trophy, Users, Zap } from 'lucide-react';
+import { AdminModuleId } from './AdminSidebar';
+import { AdminEventItem } from '@/lib/eventsStore';
+import { LifestyleSpotItem } from '@/data/spotsData';
+import { ChallengeQuest } from '@/data/mockData';
 
 interface AdminDashboardViewProps {
-  onNavigate: (module: any) => void;
+  onNavigate: (module: AdminModuleId) => void;
+}
+
+interface DashboardData {
+  spots: LifestyleSpotItem[];
+  events: AdminEventItem[];
+  quests: ChallengeQuest[];
+  missingImages: number;
+}
+
+async function fetchDashboardData(): Promise<DashboardData> {
+  const responses = await Promise.all([
+    fetch('/api/admin/spots', { cache: 'no-store' }),
+    fetch('/api/admin/events', { cache: 'no-store' }),
+    fetch('/api/admin/quests?limit=100', { cache: 'no-store' }),
+  ]);
+  const [spotsData, eventsData, questsData] = await Promise.all(responses.map((response) => response.json()));
+  const failedResponse = responses.find((response) => !response.ok);
+  if (failedResponse || !spotsData.success || !eventsData.success || !questsData.success) {
+    throw new Error('ไม่สามารถโหลดข้อมูลจาก Admin API ได้');
+  }
+  return {
+    spots: spotsData.spots,
+    events: eventsData.events,
+    quests: questsData.quests,
+    missingImages: spotsData.missingImagesCount || 0,
+  };
 }
 
 export function AdminDashboardView({ onNavigate }: AdminDashboardViewProps) {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      setData(await fetchDashboardData());
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let isActive = true;
+    fetchDashboardData()
+      .then((result) => { if (isActive) setData(result); })
+      .catch((loadError) => { if (isActive) setError(loadError instanceof Error ? loadError.message : 'เกิดข้อผิดพลาดในการโหลดข้อมูล'); })
+      .finally(() => { if (isActive) setIsLoading(false); });
+    return () => { isActive = false; };
+  }, []);
+
+  const communityEvents = data?.events.filter((event) => event.eventType === 'community') || [];
+  const fairs = data?.events.filter((event) => event.eventType === 'public_venue') || [];
+  const pendingEvents = data?.events.filter((event) => event.approvalStatus === 'pending') || [];
+  const draftSpots = data?.spots.filter((spot) => spot.publicationStatus === 'draft') || [];
+  const activeQuests = data?.quests.filter((quest) => quest.status !== 'draft' && quest.status !== 'ended' && quest.visibility !== 'private') || [];
+  const draftQuests = data?.quests.filter((quest) => quest.status === 'draft' || quest.visibility === 'private') || [];
+
+  const metrics = [
+    { label: 'Lifestyle spots', value: data?.spots.length, detail: `${draftSpots.length} แบบร่าง`, icon: Leaf, color: 'text-emerald-800', module: 'spots' as const },
+    { label: 'Community meetups', value: communityEvents.length, detail: `${pendingEvents.filter((event) => event.eventType === 'community').length} รอตรวจ`, icon: Users, color: 'text-orange-800', module: 'community' as const },
+    { label: 'Fairs & expos', value: fairs.length, detail: `${pendingEvents.filter((event) => event.eventType === 'public_venue').length} รอตรวจ`, icon: Trophy, color: 'text-sky-800', module: 'fairs' as const },
+    { label: 'Active quests', value: activeQuests.length, detail: `${draftQuests.length} แบบร่าง`, icon: Zap, color: 'text-amber-800', module: 'quests' as const },
+  ];
+
+  const reviewItems = [
+    ...pendingEvents.map((event) => ({ title: event.title, type: event.eventType === 'community' ? 'Community' : 'Fair', module: event.eventType === 'community' ? 'community' as const : 'fairs' as const })),
+    ...draftSpots.map((spot) => ({ title: spot.title, type: 'Spot draft', module: 'spots' as const })),
+    ...draftQuests.map((quest) => ({ title: quest.title, type: 'Quest draft', module: 'quests' as const })),
+  ].slice(0, 7);
+
   return (
     <div className="space-y-6">
-      {/* Welcome Banner */}
-      <div className="bg-gradient-to-br from-[#EBF3ED] to-white border border-[#4A7C59]/15 rounded-2xl p-5 flex items-center justify-between gap-4 flex-wrap">
+      <section className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <LayoutDashboard size={16} className="text-[#4A7C59]" />
-            <h1 className="text-lg font-bold text-slate-800">แดชบอร์ดหลัก</h1>
-          </div>
-          <p className="text-slate-500 text-sm">
-            ยินดีต้อนรับสู่ Chill & Connect Hub Admin Console · Production v2.1
-          </p>
+          <p className="text-xs font-semibold uppercase text-slate-500">Chill & Connect / Content operations</p>
+          <h1 className="mt-1 text-2xl font-bold text-slate-950">Discovery overview</h1>
+          <p className="mt-1 text-sm text-slate-600">ภาพรวมเนื้อหาและรายการที่ต้องดำเนินการ</p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-[#4A7C59]" />
-          <span className="text-[#4A7C59] text-xs font-semibold">ระบบทำงานปกติ</span>
-        </div>
-      </div>
+        <button type="button" onClick={refresh} disabled={isLoading} aria-label="รีเฟรชข้อมูลแดชบอร์ด" className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+          <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
+        </button>
+      </section>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {STAT_CARDS.map((s) => {
-          const Icon = s.icon;
+      {error && <div role="alert" className="flex items-start gap-2 border-l-2 border-rose-500 bg-rose-50 px-3 py-2 text-sm text-rose-800"><AlertCircle size={16} className="mt-0.5 shrink-0" />{error}</div>}
+
+      <section aria-label="Discovery content counts" className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        {metrics.map((metric) => {
+          const Icon = metric.icon;
           return (
-            <div
-              key={s.label}
-              className={`bg-white border ${s.border} rounded-2xl p-4 hover:shadow-sm transition-all`}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className={`w-9 h-9 rounded-xl ${s.iconBg} flex items-center justify-center`}>
-                  <Icon size={16} className={s.iconColor} />
-                </div>
-                <div className={`flex items-center gap-1 text-[11px] font-semibold ${s.deltaColor}`}>
-                  <TrendingUp size={10} />
-                  {s.delta}
-                </div>
+            <button key={metric.label} type="button" onClick={() => onNavigate(metric.module)} className="group flex min-h-28 items-start justify-between rounded-lg border border-slate-200 bg-white p-4 text-left shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50">
+              <div>
+                <p className="text-xs font-semibold text-slate-500">{metric.label}</p>
+                <p className={`mt-2 text-3xl font-bold tabular-nums ${metric.color}`}>{isLoading ? '—' : metric.value}</p>
+                <p className="mt-1 text-xs text-slate-500">{isLoading ? 'กำลังโหลด' : metric.detail}</p>
               </div>
-              <p className="text-2xl font-bold text-slate-800">{s.value}</p>
-              <p className="text-slate-400 text-xs mt-0.5">{s.label}</p>
-            </div>
+              <Icon size={18} className={`${metric.color} opacity-80`} />
+            </button>
           );
         })}
-      </div>
+      </section>
 
-      {/* 2-Column: Recent Activity + Quick Navigation */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Recent Activity */}
-        <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-xs">
-          <div className="flex items-center gap-2 mb-4">
-            <Activity size={14} className="text-slate-400" />
-            <h2 className="text-slate-700 font-bold text-sm">กิจกรรมล่าสุดในระบบ</h2>
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(300px,0.7fr)]">
+        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+            <div className="flex items-center gap-2">
+              <Clock3 size={16} className="text-slate-500" />
+              <h2 className="text-sm font-bold text-slate-950">Review queue</h2>
+            </div>
+            <span className="text-xs font-semibold tabular-nums text-slate-500">{isLoading ? '—' : reviewItems.length}</span>
           </div>
-          <div className="space-y-3">
-            {RECENT_ACTIONS.map((a, i) => (
-              <div key={i} className="flex items-start gap-3 border-b border-slate-50 pb-3 last:border-0 last:pb-0">
-                <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${a.dot}`} />
-                <div className="flex-1 min-w-0">
-                  <p className={`text-xs font-semibold ${a.textColor}`}>{a.action}</p>
-                  <p className="text-slate-500 text-xs truncate">{a.name}</p>
-                </div>
-                <p className="text-slate-300 text-[11px] shrink-0">{a.time}</p>
+          {isLoading ? (
+            <div className="space-y-px" aria-label="กำลังโหลดคิวตรวจสอบ">{[1, 2, 3].map((item) => <div key={item} className="h-14 animate-pulse border-b border-slate-100 bg-slate-50/50" />)}</div>
+          ) : reviewItems.length === 0 ? (
+            <div className="space-y-4 px-4 py-5">
+              <div className="flex items-center gap-3 text-sm text-slate-600"><CheckCircle2 size={18} className="text-emerald-700" />ไม่มีเนื้อหารอตรวจสอบ</div>
+              <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+                {[
+                  { label: 'ตรวจสอบ meetups', module: 'community' as const },
+                  { label: 'จัดการ spots', module: 'spots' as const },
+                  { label: 'จัดการ quests', module: 'quests' as const },
+                ].map((action) => (
+                  <button key={action.module} type="button" onClick={() => onNavigate(action.module)} className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50">
+                    {action.label}<ArrowRight size={13} />
+                  </button>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          ) : (
+            <ul>
+              {reviewItems.map((item, index) => (
+                <li key={`${item.module}-${item.title}-${index}`} className="flex items-center gap-3 border-b border-slate-100 px-4 py-3 last:border-0">
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-amber-500" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-slate-900">{item.title}</p>
+                    <p className="mt-0.5 text-xs text-slate-500">{item.type}</p>
+                  </div>
+                  <button type="button" onClick={() => onNavigate(item.module)} aria-label={`เปิด ${item.type}`} className="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"><ArrowRight size={15} /></button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
-        {/* Quick Navigation */}
-        <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-xs">
-          <div className="flex items-center gap-2 mb-4">
-            <ArrowUpRight size={14} className="text-slate-400" />
-            <h2 className="text-slate-700 font-bold text-sm">ทางลัดสำคัญ</h2>
+        <div className="rounded-lg border border-slate-200 bg-white p-4">
+          <div className="mb-4 flex items-center gap-2">
+            <Activity size={16} className="text-slate-500" />
+            <h2 className="text-sm font-bold text-slate-950">Content health</h2>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-4">
             {[
-              { label: 'Master Taxonomy', emoji: '🗂️', module: 'taxonomy' },
-              { label: '77 จังหวัด & โซน', emoji: '📍', module: 'provinces' },
-              { label: 'Lifestyle Spots', emoji: '🌲', module: 'spots' },
-              { label: 'Community Events', emoji: '👥', module: 'community' },
-              { label: 'Fairs & Expos', emoji: '🏛️', module: 'fairs' },
-              { label: 'Media & Image Hub', emoji: '🖼️', module: 'media' },
-              { label: 'Cache & Speed', emoji: '⚡', module: 'cache' },
-              { label: 'Scraper Engine', emoji: '🤖', module: 'scraper' },
-              { label: 'Users & RBAC', emoji: '🛡️', module: 'rbac' },
-              { label: 'Backup & Logs', emoji: '💾', module: 'backup' },
+              { label: 'Spots with images', value: data ? `${Math.max(0, data.spots.length - data.missingImages)} / ${data.spots.length}` : '—', detail: `${data?.missingImages ?? 0} missing`, module: 'spots' as const },
+              { label: 'Community approvals', value: data ? `${communityEvents.filter((event) => event.approvalStatus === 'approved').length} / ${communityEvents.length}` : '—', detail: 'approved', module: 'community' as const },
+              { label: 'Fair approvals', value: data ? `${fairs.filter((event) => event.approvalStatus === 'approved').length} / ${fairs.length}` : '—', detail: 'approved', module: 'fairs' as const },
+              { label: 'Quest publication', value: data ? `${activeQuests.length} / ${data.quests.length}` : '—', detail: `${draftQuests.length} drafts`, module: 'quests' as const },
             ].map((item) => (
-              <button
-                key={item.module}
-                onClick={() => onNavigate(item.module)}
-                className="flex items-center gap-2.5 bg-slate-50 hover:bg-[#EBF3ED] border border-slate-100 hover:border-[#4A7C59]/20 rounded-xl px-3 py-2.5 text-left transition-all group"
-              >
-                <span className="text-base">{item.emoji}</span>
-                <span className="text-slate-600 group-hover:text-[#2D5A3C] text-xs font-semibold truncate transition-colors">{item.label}</span>
+              <button key={item.label} type="button" onClick={() => onNavigate(item.module)} className="flex w-full items-center justify-between gap-3 border-b border-slate-100 pb-3 text-left last:border-0 last:pb-0">
+                <div><p className="text-xs font-semibold text-slate-700">{item.label}</p><p className="mt-0.5 text-[11px] text-slate-500">{isLoading ? 'กำลังโหลด' : item.detail}</p></div>
+                <span className="text-sm font-bold tabular-nums text-slate-950">{isLoading ? '—' : item.value}</span>
               </button>
             ))}
           </div>
+          <p className="mt-5 border-t border-slate-200 pt-3 text-[11px] text-slate-500">Data source: repository APIs · local JSON adapter</p>
         </div>
-      </div>
-
-      {/* System Health Summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {[
-          { label: 'Spot Categories', count: MASTER_SPOT_CATEGORIES.length, unit: 'Vibe Types', emoji: '🌲' },
-          { label: 'Community Sub-Types', count: MASTER_COMMUNITY_LIFESTYLE_CATEGORIES.length, unit: 'Lifestyle Tags', emoji: '👥' },
-          { label: 'Fair Event Types', count: MASTER_FAIR_CATEGORIES.length, unit: 'Categories', emoji: '🏛️' },
-        ].map((s) => (
-          <div key={s.label} className="bg-white border border-slate-100 rounded-xl p-4 flex items-center gap-3 shadow-xs">
-            <span className="text-xl">{s.emoji}</span>
-            <div>
-              <p className="text-slate-400 text-xs">{s.label}</p>
-              <p className="text-slate-800 font-bold">
-                {s.count} <span className="text-slate-400 font-normal text-xs">{s.unit}</span>
-              </p>
-            </div>
-            <div className="ml-auto w-2 h-2 rounded-full bg-[#4A7C59]" title="OK" />
-          </div>
-        ))}
-      </div>
+      </section>
     </div>
   );
 }

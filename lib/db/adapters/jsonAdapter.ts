@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import { EventItem, MOCK_EVENTS, ChallengeQuest, MOCK_CHALLENGES } from '@/data/mockData';
+import { EventItem, ChallengeQuest, MOCK_CHALLENGES } from '@/data/mockData';
 import { LifestyleSpotItem, MOCK_SPOTS } from '@/data/spotsData';
 import { IDataRepository } from '../repository';
 import {
@@ -20,6 +20,9 @@ import {
   UpdateQuestDTO,
 } from '../types';
 import { AsyncMutex } from '../mutex';
+import { readDatabase, updateDatabase } from '../databaseFile';
+import { normalizeStoredEvents } from '../../eventNormalization';
+import type { AdminEventItem } from '../../eventsStore';
 import { cacheManager } from '../../cache';
 import {
   filterEvents,
@@ -30,8 +33,8 @@ import {
 } from '../queryEngine';
 
 const DB_DIR = path.join(process.cwd(), 'data');
-const DB_FILE = path.join(DB_DIR, 'chill_database.json');
-const TMP_DB_FILE = path.join(os.tmpdir(), 'chill_database.json');
+const DISCOVERY_DB_FILE = path.join(DB_DIR, 'discovery_content.json');
+const TMP_DISCOVERY_DB_FILE = path.join(os.tmpdir(), 'discovery_content.json');
 const IS_SERVERLESS = Boolean(
   process.env.VERCEL ||
   process.env.AWS_LAMBDA_FUNCTION_NAME ||
@@ -61,84 +64,100 @@ export class JsonFileAdapter implements IDataRepository {
       if (this.isInitialized) return;
 
       try {
-        let dbData: { events?: EventItem[]; [key: string]: unknown } | null = null;
+        // Events & participants: this adapter is the only writer of these keys in chill_database.json
+        const dbData = await readDatabase();
+        const storedEvents = Array.isArray(dbData.events) ? dbData.events : [];
+        const { events, changed } = normalizeStoredEvents(storedEvents);
+        this.events = events;
+        this.participants = dbData.participants || {};
+        if (changed || storedEvents.length === 0) {
+          await this.persistEvents();
+        }
 
-        // In serverless, check if /tmp has updated state first
-        if (IS_SERVERLESS) {
+        let contentData: {
+          spots?: LifestyleSpotItem[];
+          quests?: ChallengeQuest[];
+          userQuests?: Record<string, Record<string, number>>;
+        } | null = null;
+        const contentFiles = IS_SERVERLESS
+          ? [TMP_DISCOVERY_DB_FILE, DISCOVERY_DB_FILE]
+          : [DISCOVERY_DB_FILE];
+
+        for (const contentFile of contentFiles) {
           try {
-            const rawTmp = await fs.readFile(TMP_DB_FILE, 'utf-8');
-            dbData = JSON.parse(rawTmp);
+            const raw = await fs.readFile(contentFile, 'utf-8');
+            contentData = JSON.parse(raw);
+            break;
           } catch {
-            // Not in /tmp yet, read bundled file below
+            // Try the next content file or use seeded defaults.
           }
         }
 
-        if (!dbData) {
-          try {
-            const raw = await fs.readFile(DB_FILE, 'utf-8');
-            dbData = JSON.parse(raw);
-          } catch {
-            // No file yet
-          }
-        }
-
-        if (dbData && Array.isArray(dbData.events) && dbData.events.length > 0) {
-          this.events = dbData.events;
-        } else {
-          this.events = [...MOCK_EVENTS];
-        }
-
-        // Initialize spots & quests
-        this.spots = [...MOCK_SPOTS];
-        this.quests = [...MOCK_CHALLENGES];
+        this.spots = Array.isArray(contentData?.spots) ? contentData.spots : [...MOCK_SPOTS];
+        this.quests = Array.isArray(contentData?.quests) ? contentData.quests : [...MOCK_CHALLENGES];
+        this.userQuests = contentData?.userQuests || {};
 
         this.isInitialized = true;
       } catch (err) {
         console.warn('JsonFileAdapter init notice, using memory store:', err);
-        this.events = [...MOCK_EVENTS];
+        this.events = normalizeStoredEvents([]).events;
+        this.participants = {};
         this.spots = [...MOCK_SPOTS];
         this.quests = [...MOCK_CHALLENGES];
+        this.userQuests = {};
         this.isInitialized = true;
       }
     });
   }
 
+  private async persistDiscoveryContent(
+    spots: LifestyleSpotItem[] = this.spots,
+    quests: ChallengeQuest[] = this.quests,
+    userQuests: Record<string, Record<string, number>> = this.userQuests
+  ): Promise<void> {
+    const targetFile = IS_SERVERLESS ? TMP_DISCOVERY_DB_FILE : DISCOVERY_DB_FILE;
+    await fs.mkdir(DB_DIR, { recursive: true });
+    await fs.writeFile(
+      targetFile,
+      JSON.stringify({
+        version: '1.0.0',
+        lastUpdated: new Date().toISOString(),
+        spots,
+        quests,
+        userQuests,
+      }, null, 2),
+      'utf-8'
+    );
+  }
+
+  /**
+   * Writes only the keys this adapter owns (events, participants); other keys such as
+   * sources and autoPublish are preserved by the shared serialized file update.
+   */
   private async persistEvents(): Promise<void> {
-    const targetFile = IS_SERVERLESS ? TMP_DB_FILE : DB_FILE;
     try {
-      let existingData: Record<string, unknown> = {};
-      try {
-        const raw = await fs.readFile(targetFile, 'utf-8');
-        existingData = JSON.parse(raw);
-      } catch {
-        try {
-          const rawPrimary = await fs.readFile(DB_FILE, 'utf-8');
-          existingData = JSON.parse(rawPrimary);
-        } catch {
-          // ignore
-        }
-      }
-
-      existingData.lastUpdated = new Date().toISOString();
-      existingData.events = this.events;
-
-      await fs.writeFile(targetFile, JSON.stringify(existingData, null, 2), 'utf-8');
+      await updateDatabase((dbData) => {
+        dbData.events = this.events as AdminEventItem[];
+        dbData.participants = this.participants;
+      });
     } catch (err: unknown) {
-      const error = err as { code?: string; message?: string };
-      if (error?.code === 'EROFS') {
-        try {
-          await fs.writeFile(
-            TMP_DB_FILE,
-            JSON.stringify({ events: this.events, lastUpdated: new Date().toISOString() }, null, 2),
-            'utf-8'
-          );
-        } catch {
-          // Kept safely in memory
-        }
-        return;
-      }
-      console.warn('Notice: Could not persist database file to disk:', error?.message);
+      const error = err as { message?: string };
+      console.warn('Notice: Could not persist events to disk:', error?.message);
     }
+  }
+
+  private buildEvent(data: CreateEventDTO, takenIds: Set<string>): EventItem {
+    const requestedId = data.id && !takenIds.has(data.id) ? data.id : undefined;
+    const newId = requestedId || `ev-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    takenIds.add(newId);
+    return {
+      ...data,
+      id: newId,
+      participantsCount: data.participantsCount ?? 1,
+      maxParticipants: data.maxParticipants ?? (data.eventType === 'community' ? 10 : 500),
+      status: data.status || 'recruiting',
+      createdAtTimestamp: data.createdAtTimestamp || Date.now(),
+    };
   }
 
   // ── Events ──
@@ -170,15 +189,7 @@ export class JsonFileAdapter implements IDataRepository {
   public async createEvent(data: CreateEventDTO): Promise<EventItem> {
     await this.ensureInitialized();
     return this.mutex.runExclusive(async () => {
-      const newId = data.id || `ev-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-      const newEvent: EventItem = {
-        ...data,
-        id: newId,
-        participantsCount: data.participantsCount ?? 1,
-        maxParticipants: data.maxParticipants ?? (data.eventType === 'community' ? 10 : 500),
-        status: data.status || 'recruiting',
-        createdAtTimestamp: data.createdAtTimestamp || Date.now(),
-      };
+      const newEvent = this.buildEvent(data, new Set(this.events.map((e) => e.id)));
 
       this.events.unshift(newEvent);
       await this.persistEvents();
@@ -212,10 +223,63 @@ export class JsonFileAdapter implements IDataRepository {
       this.events = this.events.filter((e) => e.id !== id);
       const deleted = this.events.length < initLen;
       if (deleted) {
+        delete this.participants[id];
         await this.persistEvents();
         cacheManager.invalidateTags(['events', `event:${id}`]);
       }
       return deleted;
+    });
+  }
+
+  public async listAllEvents(): Promise<EventItem[]> {
+    await this.ensureInitialized();
+    return [...this.events];
+  }
+
+  public async createEvents(data: CreateEventDTO[]): Promise<EventItem[]> {
+    await this.ensureInitialized();
+    if (data.length === 0) return [];
+    return this.mutex.runExclusive(async () => {
+      const takenIds = new Set(this.events.map((e) => e.id));
+      const created = data.map((item) => this.buildEvent(item, takenIds));
+      this.events = [...created, ...this.events];
+      await this.persistEvents();
+      cacheManager.invalidateTag('events');
+      return created;
+    });
+  }
+
+  public async bulkUpdateEvents(updates: Array<{ id: string; data: UpdateEventDTO }>): Promise<number> {
+    await this.ensureInitialized();
+    if (updates.length === 0) return 0;
+    return this.mutex.runExclusive(async () => {
+      const updatesById = new Map(updates.map((u) => [u.id, u.data]));
+      let updatedCount = 0;
+      this.events = this.events.map((ev) => {
+        const data = updatesById.get(ev.id);
+        if (!data) return ev;
+        updatedCount += 1;
+        return { ...ev, ...data };
+      });
+      if (updatedCount > 0) {
+        await this.persistEvents();
+        cacheManager.invalidateTag('events');
+      }
+      return updatedCount;
+    });
+  }
+
+  public async replaceAllEvents(events: EventItem[]): Promise<number> {
+    await this.ensureInitialized();
+    return this.mutex.runExclusive(async () => {
+      this.events = [...events];
+      const remainingIds = new Set(events.map((e) => e.id));
+      this.participants = Object.fromEntries(
+        Object.entries(this.participants).filter(([eventId]) => remainingIds.has(eventId))
+      );
+      await this.persistEvents();
+      cacheManager.invalidateTag('events');
+      return this.events.length;
     });
   }
 
@@ -345,7 +409,9 @@ export class JsonFileAdapter implements IDataRepository {
         ...data,
         id: data.id || `spot-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       };
-      this.spots.unshift(newSpot);
+      const updatedSpots = [newSpot, ...this.spots];
+      await this.persistDiscoveryContent(updatedSpots);
+      this.spots = updatedSpots;
       cacheManager.invalidateTag('spots');
       return newSpot;
     });
@@ -357,9 +423,32 @@ export class JsonFileAdapter implements IDataRepository {
       const idx = this.spots.findIndex((s) => s.id === id);
       if (idx === -1) return null;
       const updated = { ...this.spots[idx], ...data };
-      this.spots[idx] = updated;
+      const updatedSpots = [...this.spots];
+      updatedSpots[idx] = updated;
+      await this.persistDiscoveryContent(updatedSpots);
+      this.spots = updatedSpots;
       cacheManager.invalidateTags(['spots', `spot:${id}`]);
       return updated;
+    });
+  }
+
+  public async bulkUpdateSpots(spots: LifestyleSpotItem[]): Promise<number> {
+    await this.ensureInitialized();
+    return this.mutex.runExclusive(async () => {
+      const updates = new Map(spots.map((spot) => [spot.id, spot]));
+      let updatedCount = 0;
+      const updatedSpots = this.spots.map((spot) => {
+        const update = updates.get(spot.id);
+        if (!update) return spot;
+        updatedCount += 1;
+        return { ...spot, ...update };
+      });
+
+      if (updatedCount === 0) return 0;
+      await this.persistDiscoveryContent(updatedSpots);
+      this.spots = updatedSpots;
+      cacheManager.invalidateTag('spots');
+      return updatedCount;
     });
   }
 
@@ -367,9 +456,11 @@ export class JsonFileAdapter implements IDataRepository {
     await this.ensureInitialized();
     return this.mutex.runExclusive(async () => {
       const initLen = this.spots.length;
-      this.spots = this.spots.filter((s) => s.id !== id);
-      const deleted = this.spots.length < initLen;
+      const updatedSpots = this.spots.filter((s) => s.id !== id);
+      const deleted = updatedSpots.length < initLen;
       if (deleted) {
+        await this.persistDiscoveryContent(updatedSpots);
+        this.spots = updatedSpots;
         cacheManager.invalidateTags(['spots', `spot:${id}`]);
       }
       return deleted;
@@ -409,7 +500,9 @@ export class JsonFileAdapter implements IDataRepository {
         ...data,
         id: data.id || `quest-${Date.now()}`,
       };
-      this.quests.unshift(newQuest);
+      const updatedQuests = [newQuest, ...this.quests];
+      await this.persistDiscoveryContent(this.spots, updatedQuests);
+      this.quests = updatedQuests;
       cacheManager.invalidateTag('quests');
       return newQuest;
     });
@@ -421,9 +514,24 @@ export class JsonFileAdapter implements IDataRepository {
       const idx = this.quests.findIndex((q) => q.id === id);
       if (idx === -1) return null;
       const updated = { ...this.quests[idx], ...data };
-      this.quests[idx] = updated;
+      const updatedQuests = [...this.quests];
+      updatedQuests[idx] = updated;
+      await this.persistDiscoveryContent(this.spots, updatedQuests);
+      this.quests = updatedQuests;
       cacheManager.invalidateTags(['quests', `quest:${id}`]);
       return updated;
+    });
+  }
+
+  public async deleteQuest(id: string): Promise<boolean> {
+    await this.ensureInitialized();
+    return this.mutex.runExclusive(async () => {
+      const updatedQuests = this.quests.filter((quest) => quest.id !== id);
+      if (updatedQuests.length === this.quests.length) return false;
+      await this.persistDiscoveryContent(this.spots, updatedQuests);
+      this.quests = updatedQuests;
+      cacheManager.invalidateTags(['quests', `quest:${id}`]);
+      return true;
     });
   }
 
@@ -437,7 +545,12 @@ export class JsonFileAdapter implements IDataRepository {
       const cur = this.userQuests[userId][questId] || 0;
       const target = parseInt(quest.total || '3', 10) || 3;
       const next = Math.min(target, cur + increment);
-      this.userQuests[userId][questId] = next;
+      const updatedUserQuests = {
+        ...this.userQuests,
+        [userId]: { ...this.userQuests[userId], [questId]: next },
+      };
+      await this.persistDiscoveryContent(this.spots, this.quests, updatedUserQuests);
+      this.userQuests = updatedUserQuests;
 
       const isCompleted = next >= target;
       cacheManager.invalidateTags(['quests', `quest:${questId}`]);

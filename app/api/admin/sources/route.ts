@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { requireAdminApiAccess } from '@/lib/adminApiAuth';
 import {
   getAllDataSources,
   addCustomDataSource,
@@ -6,7 +7,10 @@ import {
   deleteCustomDataSource,
 } from '@/lib/sourcesStore';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const denied = requireAdminApiAccess(request);
+  if (denied) return denied;
+
   try {
     const sources = await getAllDataSources();
     return NextResponse.json({ success: true, sources });
@@ -16,17 +20,32 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const denied = requireAdminApiAccess(req);
+  if (denied) return denied;
+
   try {
     const body = await req.json();
     const { name, url, category, categoryLabel, icon, description } = body;
+    const targetType = body.targetType === 'spots' ? 'spots' : body.targetType === 'events' || !body.targetType ? 'events' : null;
 
-    if (!name || !url) {
-      return NextResponse.json({ success: false, error: 'กรุณาระบุชื่อและ URL ของแหล่งข้อมูล' }, { status: 400 });
+    if (!name || !url || !targetType) {
+      return NextResponse.json({ success: false, error: 'กรุณาระบุชื่อ URL และประเภทข้อมูลของแหล่งข้อมูล' }, { status: 400 });
+    }
+
+    let normalizedUrl: URL;
+    try {
+      normalizedUrl = new URL(url.trim());
+    } catch {
+      return NextResponse.json({ success: false, error: 'URL ของแหล่งข้อมูลไม่ถูกต้อง' }, { status: 400 });
+    }
+    if (normalizedUrl.protocol !== 'https:' || normalizedUrl.username || normalizedUrl.password) {
+      return NextResponse.json({ success: false, error: 'รองรับเฉพาะ URL สาธารณะผ่าน HTTPS' }, { status: 400 });
     }
 
     const updatedSources = await addCustomDataSource({
       name: name.trim(),
-      url: url.trim(),
+      url: normalizedUrl.toString(),
+      targetType,
       category: category || 'lifestyle',
       categoryLabel: categoryLabel || '🌐 เว็บไซต์อีเวนต์ทั่วไป',
       icon: icon || '🌐',
@@ -45,6 +64,9 @@ export async function POST(req: Request) {
 }
 
 export async function PATCH(req: Request) {
+  const denied = requireAdminApiAccess(req);
+  if (denied) return denied;
+
   try {
     const body = await req.json();
     const { id, status } = body;
@@ -65,6 +87,9 @@ export async function PATCH(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+  const denied = requireAdminApiAccess(req);
+  if (denied) return denied;
+
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');

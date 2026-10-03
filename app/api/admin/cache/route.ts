@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdminApiAccess } from '@/lib/adminApiAuth';
 import { cacheManager } from '@/lib/cache';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const denied = requireAdminApiAccess(request);
+  if (denied) return denied;
+
   try {
     const stats = cacheManager.getStats();
     const activeTags = cacheManager.getActiveTags ? cacheManager.getActiveTags() : [];
@@ -29,6 +33,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const denied = requireAdminApiAccess(request);
+  if (denied) return denied;
+
   try {
     const body = await request.json();
     const { action, tag, tags } = body;

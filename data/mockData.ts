@@ -22,6 +22,7 @@ export interface EventItem {
   id: string;
   title: string;
   date: string;
+  endDate?: string;
   time: string;
   location: string;
   tag: string;
@@ -140,6 +141,7 @@ export interface ChallengeQuest {
   startDate?: string;
   endDate?: string;
   daysRemaining?: number;
+  status?: 'draft' | 'active' | 'ended';
 }
 
 export interface PostComment {

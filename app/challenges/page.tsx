@@ -42,6 +42,7 @@ import { BrandLogo } from '@/components/BrandLogo';
 import { ChallengeQuest, MOCK_CHALLENGES } from '@/data/mockData';
 import { COMMUNITY_PUBLIC_QUESTS } from '@/components/CommunityChallengeBar';
 import { getStoredUserXp } from '@/data/rewardsData';
+import { fetchAllContentPages } from '@/lib/contentClient';
 
 // Extended Quest Interface with Date, Duration & Image
 export interface QuestWithDuration extends ChallengeQuest {
@@ -186,8 +187,31 @@ export default function ChallengesDiscoveryPage() {
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
   const [isExpandedAllQuests, setIsExpandedAllQuests] = useState(false);
+  const [questList, setQuestList] = useState<QuestWithDuration[]>(ALL_QUESTS);
 
+  useEffect(() => {
+    let isActive = true;
+    fetchAllContentPages<ChallengeQuest>('/api/quests', 'quests')
+      .then((quests) => {
+        if (!isActive) return;
+        const existingTitles = new Set(ALL_QUESTS.map((quest) => quest.title.trim().toLowerCase()));
+        const additions = quests
+          .filter((quest) => !existingTitles.has(quest.title.trim().toLowerCase()))
+          .map((quest) => ({
+            ...quest,
+            startDate: quest.startDate || '',
+            endDate: quest.endDate || '',
+            daysRemaining: quest.daysRemaining ?? 0,
+            image: quest.badgeCoverImg,
+          }));
+        setQuestList([...ALL_QUESTS, ...additions]);
+      })
+      .catch((error) => console.warn('Using default challenge catalog fallback:', error));
 
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   // User XP State
   const [userXp, setUserXp] = useState<number>(450);
@@ -236,7 +260,7 @@ export default function ChallengesDiscoveryPage() {
 
   // Filtered Quests
   const filteredQuests = useMemo(() => {
-    return ALL_QUESTS.filter((quest) => {
+    return questList.filter((quest) => {
       // Category match
       if (selectedCategory !== 'all' && quest.category !== selectedCategory) {
         return false;
@@ -256,7 +280,7 @@ export default function ChallengesDiscoveryPage() {
       }
       return true;
     });
-  }, [selectedCategory, selectedType, searchQuery]);
+  }, [questList, selectedCategory, selectedType, searchQuery]);
 
   return (
     <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans selection:bg-purple-600 selection:text-white">
@@ -342,7 +366,7 @@ export default function ChallengesDiscoveryPage() {
 
               {/* Editorial Meta */}
               <div className="flex items-center gap-2 text-xs text-slate-400 pt-0.5">
-                <span className="font-semibold text-slate-600">{ALL_QUESTS.length} ภารกิจเปิดรับ</span>
+                <span className="font-semibold text-slate-600">{questList.length} ภารกิจเปิดรับ</span>
                 <span>•</span>
                 <span>1,400+ ผู้เข้าร่วม</span>
                 <span>•</span>

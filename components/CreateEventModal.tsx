@@ -805,7 +805,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
         const res = await fetch('/api/events', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ eventData: communityPayload, userRole: userProfile.role }),
+          body: JSON.stringify({ eventData: communityPayload }),
         });
         const data = await res.json();
 
@@ -860,7 +860,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
         const res = await fetch('/api/events', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ eventData: fairPayload, userRole: userProfile.role }),
+          body: JSON.stringify({ eventData: fairPayload }),
         });
         const data = await res.json();
 

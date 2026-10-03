@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MOCK_SPOTS } from '@/data/spotsData';
+import { db } from '@/lib/db';
 import { getNearbyDining } from '@/lib/nearbyDiningService';
 
 export const dynamic = 'force-dynamic';
@@ -12,8 +12,8 @@ export async function GET(
     const { id } = await context.params;
     const decodedId = decodeURIComponent(id);
 
-    const spot = MOCK_SPOTS.find((s) => s.id === decodedId);
-    if (!spot) {
+    const spot = await db.findSpotById(decodedId);
+    if (!spot || spot.publicationStatus === 'draft') {
       return NextResponse.json({ error: 'Spot not found' }, { status: 404 });
     }
 

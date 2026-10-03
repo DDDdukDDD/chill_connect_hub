@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { ChallengeQuest } from '@/data/mockData';
 import { JoinChallengeModal } from '@/components/JoinChallengeModal';
+import { fetchAllContentPages } from '@/lib/contentClient';
 
 interface CommunityChallengeBarProps {
   onJoinQuest?: (questTitle: string) => void;
@@ -255,11 +256,32 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
 }) => {
   const [joinedList, setJoinedList] = useState<string[]>(joinedQuestTitles);
   const [selectedQuestForModal, setSelectedQuestForModal] = useState<ChallengeQuest | null>(null);
+  const [questItems, setQuestItems] = useState(COMMUNITY_PUBLIC_QUESTS);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    let isActive = true;
+    fetchAllContentPages<ChallengeQuest>('/api/quests', 'quests')
+      .then((quests) => {
+        if (!isActive) return;
+        setQuestItems((current) => {
+          const titles = new Set(current.map((quest) => quest.title.trim().toLowerCase()));
+          const additions = quests
+            .filter((quest) => !titles.has(quest.title.trim().toLowerCase()))
+            .map((quest) => ({ ...quest, image: quest.badgeCoverImg }));
+          return [...current, ...additions];
+        });
+      })
+      .catch((error) => console.warn('Using default community quests fallback:', error));
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   const checkScrollability = () => {
     if (scrollContainerRef.current) {
@@ -270,7 +292,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
       const firstCard = scrollContainerRef.current.firstElementChild as HTMLElement | null;
       const cardWidth = firstCard ? firstCard.offsetWidth + 16 : 320;
       const index = Math.round(scrollLeft / cardWidth);
-      setActiveIndex(Math.min(Math.max(0, index), COMMUNITY_PUBLIC_QUESTS.length - 1));
+      setActiveIndex(Math.min(Math.max(0, index), questItems.length - 1));
     }
   };
 
@@ -278,7 +300,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
     checkScrollability();
     window.addEventListener('resize', checkScrollability);
     return () => window.removeEventListener('resize', checkScrollability);
-  }, []);
+  }, [questItems.length]);
 
   const handleScroll = (direction: 'left' | 'right') => {
     if (scrollContainerRef.current) {
@@ -379,7 +401,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
           href="/challenges"
           className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-purple-900 text-purple-900 hover:text-white border border-purple-200/90 hover:border-purple-900 rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
         >
-          <span>ดูภารกิจทั้งหมด ({COMMUNITY_PUBLIC_QUESTS.length})</span>
+          <span>ดูภารกิจทั้งหมด ({questItems.length})</span>
           <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
         </Link>
       </div>
@@ -417,7 +439,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
           className="flex gap-3.5 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory py-2 px-1 -mx-1 scroll-smooth"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {COMMUNITY_PUBLIC_QUESTS.map((quest) => {
+          {questItems.map((quest) => {
             const isJoined = joinedList.includes(quest.title);
             const isDone = completedList.includes(quest.title);
             const targetTotal = parseInt(quest.total || '3', 10) || 3;
@@ -536,7 +558,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
 
         {/* Pagination Dots Indicator for all 7 Quests */}
         <div className="flex items-center justify-center gap-1.5 pt-1">
-          {COMMUNITY_PUBLIC_QUESTS.map((quest, idx) => (
+          {questItems.map((quest, idx) => (
             <button
               key={quest.id}
               type="button"

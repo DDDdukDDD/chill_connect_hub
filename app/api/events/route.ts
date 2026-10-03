@@ -1,15 +1,26 @@
 import { NextResponse } from 'next/server';
-import { loadCache, createAdminEvent } from '@/lib/eventsStore';
+import { createAdminEvent } from '@/lib/eventsStore';
 import { db } from '@/lib/db';
+import { hasAdminCredentials } from '@/lib/adminApiAuth';
+
+function parsePositiveInteger(value: string | null, fallback: number, max?: number): number {
+  if (!value) return fallback;
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed < 1) return fallback;
+  return max ? Math.min(parsed, max) : parsed;
+}
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const hasFilterParams = searchParams.has('page') || searchParams.has('limit') || searchParams.has('province') || searchParams.has('type') || searchParams.has('category') || searchParams.has('q') || searchParams.has('zone');
+    const hasFilterParams = [
+      'page', 'limit', 'province', 'type', 'category', 'q', 'zone',
+      'venueTag', 'status', 'includeEnded', 'sortBy',
+    ].some((param) => searchParams.has(param));
 
     if (hasFilterParams) {
-      const page = parseInt(searchParams.get('page') || '1', 10);
-      const limit = parseInt(searchParams.get('limit') || '50', 10);
+      const page = parsePositiveInteger(searchParams.get('page'), 1);
+      const limit = parsePositiveInteger(searchParams.get('limit'), 50, 100);
       const eventType = searchParams.get('type') as 'community' | 'public_venue' | 'all' | null;
       const category = searchParams.get('category');
       const province = searchParams.get('province');
@@ -17,6 +28,8 @@ export async function GET(request: Request) {
       const venueTag = searchParams.get('venueTag');
       const searchQuery = searchParams.get('q');
       const status = searchParams.get('status') as 'recruiting' | 'full' | 'ended' | null;
+      const sortBy = searchParams.get('sortBy') as 'newest' | 'oldest' | 'popular' | 'date' | 'rating' | null;
+      const includeEnded = searchParams.get('includeEnded') === 'true' || status === 'ended';
 
       const result = await db.findEvents({
         page,
@@ -28,6 +41,9 @@ export async function GET(request: Request) {
         venueTag,
         searchQuery,
         status: status || 'all',
+        sortBy: sortBy || 'newest',
+        includeEnded,
+        approvalStatus: 'approved',
       });
 
       return NextResponse.json(
@@ -54,7 +70,7 @@ export async function GET(request: Request) {
     }
 
     // Default backward-compatible fallback
-    const events = await loadCache();
+    const events = await db.listAllEvents();
     const approved = events.filter((ev) => ev.approvalStatus === 'approved');
     return NextResponse.json(
       {
@@ -111,7 +127,7 @@ export async function POST(req: Request) {
     }
 
     // ── Action: Create Event ──
-    const { eventData, userRole } = body;
+    const { eventData } = body;
 
     if (!eventData || !eventData.title || !eventData.location) {
       return NextResponse.json(
@@ -131,36 +147,28 @@ export async function POST(req: Request) {
       );
     }
 
-    // Determine Approval Status based on Role and Event Type
-    const isAdmin = userRole === 'admin';
+    // Role comes only from a server-verified admin session / token, never from the request body
+    const isAdmin = hasAdminCredentials(req);
     const isPublicVenue = eventData.eventType === 'public_venue';
-    
+
     // Community events by regular members or verified hosts auto-publish
     // Public Fairs by non-admins enter pending review for safety
     const approvalStatus = (isAdmin || !isPublicVenue) ? 'approved' : 'pending';
 
-    const newEventToSave = {
+    const savedEvent = await createAdminEvent({
       ...eventData,
       id: eventData.id || `user-event-${Date.now()}`,
       approvalStatus,
       source: isAdmin ? 'Chill & Connect Official' : 'Community Member',
       createdAt: new Date().toISOString(),
-    };
-
-    const updatedEvents = await createAdminEvent(newEventToSave);
-    try {
-      await db.createEvent(newEventToSave);
-    } catch (dbErr) {
-      console.error('Failed to create in db adapter:', dbErr);
-    }
+    });
 
     return NextResponse.json({
       success: true,
-      message: approvalStatus === 'approved' 
-        ? 'สร้างกิจกรรมสำเร็จและเผยแพร่บนหน้าแรกเรียบร้อยแล้ว!' 
+      message: approvalStatus === 'approved'
+        ? 'สร้างกิจกรรมสำเร็จและเผยแพร่บนหน้าแรกเรียบร้อยแล้ว!'
         : 'ส่งคำขอสร้างกิจกรรมเรียบร้อยแล้ว! ข้อมูลจะแสดงผลหลังผ่านการตรวจสอบจากทีมงาน',
-      event: newEventToSave,
-      events: updatedEvents,
+      event: savedEvent,
     });
   } catch (error) {
     console.error('Error in /api/events POST:', error);

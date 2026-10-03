@@ -8,6 +8,7 @@ import {
   Shield,
   Server,
   RefreshCw,
+  Menu,
 } from 'lucide-react';
 import { AdminModuleId } from './AdminSidebar';
 
@@ -18,6 +19,7 @@ interface AdminHeaderProps {
   searchQuery?: string;
   onSearchChange?: (q: string) => void;
   showSearch?: boolean;
+  onOpenNavigation?: () => void;
 }
 
 const MODULE_BREADCRUMBS: Record<AdminModuleId, { parent: string; label: string }> = {
@@ -59,13 +61,22 @@ export function AdminHeader({
   searchQuery = '',
   onSearchChange,
   showSearch = false,
+  onOpenNavigation,
 }: AdminHeaderProps) {
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
   const crumb = MODULE_BREADCRUMBS[activeModule];
   const roleStyle = ROLE_STYLES[currentRole] || ROLE_STYLES['Member'];
 
   return (
-    <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200/70 px-6 py-3 flex items-center gap-4">
+    <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-slate-200/70 bg-white/95 px-3 py-3 backdrop-blur-md sm:gap-4 sm:px-6">
+      <button
+        type="button"
+        onClick={onOpenNavigation}
+        aria-label="เปิดเมนูผู้ดูแลระบบ"
+        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 lg:hidden"
+      >
+        <Menu size={16} />
+      </button>
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 flex-1 min-w-0">
         <span className="text-slate-400 text-xs font-medium hidden sm:block truncate">{crumb.parent}</span>
@@ -90,23 +101,27 @@ export function AdminHeader({
       {/* Environment Badge */}
       <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#EBF3ED] border border-[#4A7C59]/20 rounded-lg">
         <Server size={11} className="text-[#4A7C59]" />
-        <span className="text-[10px] font-bold text-[#2D5A3C] tracking-wide hidden sm:block">Production v2.1</span>
+        <span className="text-[10px] font-bold text-[#2D5A3C] tracking-wide hidden sm:block">
+          {process.env.NODE_ENV === 'production' ? 'Production' : 'Development'}
+        </span>
       </div>
 
       {/* Role Simulator */}
       <div className="relative">
         <button
           onClick={() => setRoleDropdownOpen((v) => !v)}
+          title="Preview role only; server access is controlled separately"
+          aria-label={`Preview role: ${currentRole}`}
           className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${roleStyle.bg} ${roleStyle.text} ${roleStyle.border}`}
         >
           <Shield size={11} />
-          <span className="hidden sm:block">{currentRole}</span>
+          <span className="hidden sm:block">Preview · {currentRole}</span>
           <RefreshCw size={10} className="opacity-50" />
         </button>
         {roleDropdownOpen && (
           <div className="absolute right-0 top-full mt-2 w-44 bg-white border border-slate-200 rounded-2xl shadow-lg shadow-slate-200/60 overflow-hidden z-50">
             <div className="px-3 py-2 border-b border-slate-100">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Role Simulator</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Preview role · local only</p>
             </div>
             {AVAILABLE_ROLES.map((role) => {
               const rs = ROLE_STYLES[role];

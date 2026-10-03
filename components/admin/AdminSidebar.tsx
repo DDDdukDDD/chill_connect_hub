@@ -192,7 +192,7 @@ export function AdminSidebar({ activeModule, onModuleChange, currentRole, onRole
             <Crown size={13} className="text-amber-500" />
           </div>
           <div className="flex-1 min-w-0 text-left">
-            <p className="text-[12px] font-semibold text-slate-700 truncate">Admin User</p>
+            <p className="text-[12px] font-semibold text-slate-700 truncate">Admin Preview</p>
             <div className="flex items-center gap-1.5 mt-0.5">
               <div className={`w-1.5 h-1.5 rounded-full ${roleStyle.dot}`} />
               <p className={`text-[10px] font-semibold ${roleStyle.text}`}>{currentRole}</p>

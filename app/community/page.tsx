@@ -29,6 +29,7 @@ import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { useAuth } from '@/lib/useAuth';
+import { fetchAllContentPages } from '@/lib/contentClient';
 import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
 import { MOCK_EVENTS, EventItem } from '@/data/mockData';
 import { ALL_THAI_PROVINCES } from '@/data/spotsData';
@@ -90,11 +91,8 @@ function CommunityPageContent() {
     const loadLiveEvents = async () => {
       let baseList = MOCK_EVENTS;
       try {
-        const res = await fetch('/api/events');
-        const data = await res.json();
-        if (data.success && Array.isArray(data.events) && data.events.length > 0) {
-          baseList = data.events;
-        }
+        const communityEvents = await fetchAllContentPages<EventItem>('/api/events?type=community', 'events');
+        if (communityEvents.length > 0) baseList = communityEvents;
       } catch (err) {
         console.log('Using default mock events fallback:', err);
       }

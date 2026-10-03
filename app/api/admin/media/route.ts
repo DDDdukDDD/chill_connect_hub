@@ -1,53 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdminApiAccess } from '@/lib/adminApiAuth';
 import { mediaStorage } from '@/lib/media';
 import { MOCK_EVENTS } from '@/data/mockData';
-import { MOCK_SPOTS } from '@/data/spotsData';
-import fs from 'fs/promises';
-import path from 'path';
+import { MOCK_SPOTS, LifestyleSpotItem } from '@/data/spotsData';
+import { db } from '@/lib/db';
+
+async function getAllStoredSpots(): Promise<LifestyleSpotItem[]> {
+  const firstPage = await db.findSpots({ page: 1, limit: 100, includeDrafts: true });
+  const spots = [...firstPage.items];
+  for (let page = 2; page <= firstPage.totalPages; page += 1) {
+    spots.push(...(await db.findSpots({ page, limit: 100, includeDrafts: true })).items);
+  }
+  return spots;
+}
 
 // Helper to gather all referenced images across the platform
 async function getAllReferencedImageUrls(): Promise<Set<string>> {
   const referenced = new Set<string>();
+  const addAll = (values: Array<string | undefined>) => {
+    values.forEach((value) => {
+      if (value) referenced.add(value);
+    });
+  };
 
-  // 1. From MOCK_SPOTS
-  for (const s of MOCK_SPOTS) {
-    if (s.image) referenced.add(s.image);
-    if (s.galleryImages) {
-      s.galleryImages.forEach((img) => referenced.add(img));
-    }
+  // Seed catalogs plus every stored record (all moderation / publication states)
+  const [storedEvents, storedSpots, storedQuests] = await Promise.all([
+    db.listAllEvents(),
+    getAllStoredSpots(),
+    db.findQuests({ page: 1, limit: 1000, includeDrafts: true, status: 'all' }),
+  ]);
+
+  for (const s of [...MOCK_SPOTS, ...storedSpots]) {
+    addAll([s.image, ...(s.galleryImages || [])]);
   }
-
-  // 2. From MOCK_EVENTS
-  for (const e of MOCK_EVENTS) {
-    if (e.image) referenced.add(e.image);
-    if (e.galleryImages) {
-      e.galleryImages.forEach((img) => referenced.add(img));
-    }
-    if (e.hostAvatar) referenced.add(e.hostAvatar);
+  for (const e of [...MOCK_EVENTS, ...storedEvents]) {
+    addAll([e.image, e.hostAvatar, ...(e.galleryImages || [])]);
   }
-
-  // 3. From chill_database.json if exists
-  try {
-    const dbPath = path.join(process.cwd(), 'data', 'chill_database.json');
-    const raw = await fs.readFile(dbPath, 'utf-8');
-    const data = JSON.parse(raw);
-    if (Array.isArray(data.events)) {
-      for (const e of data.events) {
-        if (e.image) referenced.add(e.image);
-        if (e.galleryImages) {
-          e.galleryImages.forEach((img: string) => referenced.add(img));
-        }
-        if (e.hostAvatar) referenced.add(e.hostAvatar);
-      }
-    }
-  } catch {
-    // ignore if not present
+  for (const q of storedQuests.items) {
+    addAll([q.badgeCoverImg, q.creatorAvatar]);
   }
 
   return referenced;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const denied = requireAdminApiAccess(request);
+  if (denied) return denied;
+
   try {
     const files = mediaStorage.listFiles ? await mediaStorage.listFiles() : [];
     const stats = mediaStorage.getStats ? await mediaStorage.getStats() : {
@@ -89,6 +88,9 @@ export async function GET() {
 }
 
 export async function DELETE(request: NextRequest) {
+  const denied = requireAdminApiAccess(request);
+  if (denied) return denied;
+
   try {
     const { searchParams } = new URL(request.url);
     const key = searchParams.get('key');
@@ -119,6 +121,9 @@ export async function DELETE(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const denied = requireAdminApiAccess(request);
+  if (denied) return denied;
+
   try {
     const body = await request.json();
     const action = body.action;

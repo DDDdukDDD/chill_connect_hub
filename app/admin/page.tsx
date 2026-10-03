@@ -21,6 +21,7 @@ import { DbBackupView } from '@/components/admin/DbBackupView';
 import { EventsModerationView } from '@/components/admin/EventsModerationView';
 import { MediaManagerView } from '@/components/admin/MediaManagerView';
 import { SystemCacheView } from '@/components/admin/SystemCacheView';
+import { AdminAuthGate } from '@/components/admin/AdminAuthGate';
 import {
   Bot,
   Sparkles,
@@ -115,6 +116,9 @@ interface SpotsModuleProps {
   onCategoryChange: (c: string) => void;
   imageFilter: 'all' | 'missing_image';
   onImageFilterChange: (f: 'all' | 'missing_image') => void;
+  publicationFilter: 'all' | 'draft' | 'published';
+  onPublicationFilterChange: (status: 'all' | 'draft' | 'published') => void;
+  onToggleSpotPublication: (spot: LifestyleSpotItem) => void;
 }
 
 function SpotsModule({
@@ -122,6 +126,7 @@ function SpotsModule({
   onDeleteSpot, onEditSpot, onAddSpot,
   searchQuery, onSearchChange, provinceFilter, onProvinceChange,
   categoryFilter, onCategoryChange, imageFilter, onImageFilterChange,
+  publicationFilter, onPublicationFilterChange, onToggleSpotPublication,
 }: SpotsModuleProps) {
   const filteredSpots = useMemo(() => {
     return spots.filter((s) => {
@@ -130,13 +135,16 @@ function SpotsModule({
       const matchesProvince = provinceFilter === 'all' || s.province === provinceFilter;
       const matchesCategory = categoryFilter === 'all' || s.category === categoryFilter;
       const matchesImage = imageFilter === 'all' || !isValidImageUrl(s.image);
-      return matchesSearch && matchesProvince && matchesCategory && matchesImage;
+      const status = s.publicationStatus === 'draft' ? 'draft' : 'published';
+      const matchesPublication = publicationFilter === 'all' || status === publicationFilter;
+      return matchesSearch && matchesProvince && matchesCategory && matchesImage && matchesPublication;
     });
-  }, [spots, searchQuery, provinceFilter, categoryFilter, imageFilter]);
+  }, [spots, searchQuery, provinceFilter, categoryFilter, imageFilter, publicationFilter]);
 
   const spotStats = useMemo(() => {
     const missingImages = spots.filter((s) => !isValidImageUrl(s.image)).length;
-    return { total: spots.length, missing: missingImages, shown: filteredSpots.length };
+    const drafts = spots.filter((spot) => spot.publicationStatus === 'draft').length;
+    return { total: spots.length, missing: missingImages, shown: filteredSpots.length, drafts };
   }, [spots, filteredSpots]);
 
   return (
@@ -161,7 +169,7 @@ function SpotsModule({
           </button>
           <button
             onClick={onAddSpot}
-            className="flex items-center gap-2 px-4 py-2 bg-[#4A7C59] hover:bg-[#3B6347] text-white rounded-xl text-sm font-semibold transition-colors shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-lg text-sm font-semibold transition-colors shadow-sm"
           >
             <Plus size={14} />
             เพิ่มสถานที่
@@ -170,15 +178,16 @@ function SpotsModule({
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
-          { label: 'สถานที่ทั้งหมด', value: spotStats.total, color: 'text-emerald-300 bg-emerald-900/20 border-emerald-700/30' },
-          { label: 'แสดงอยู่', value: spotStats.shown, color: 'text-sky-300 bg-sky-900/20 border-sky-700/30' },
-          { label: 'รูปภาพขาดหาย', value: spotStats.missing, color: 'text-amber-300 bg-amber-900/20 border-amber-700/30' },
+          { label: 'สถานที่ทั้งหมด', value: spotStats.total, color: 'text-slate-950 border-slate-200' },
+          { label: 'รายการที่แสดง', value: spotStats.shown, color: 'text-blue-900 border-blue-100' },
+          { label: 'แบบร่าง', value: spotStats.drafts, color: 'text-amber-900 border-amber-200' },
+          { label: 'รูปภาพขาดหาย', value: spotStats.missing, color: 'text-rose-900 border-rose-200' },
         ].map((s) => (
-          <div key={s.label} className={`border rounded-xl p-3 ${s.color}`}>
-            <p className="text-xl font-bold">{s.value}</p>
-            <p className="text-slate-400 text-xs mt-0.5">{s.label}</p>
+          <div key={s.label} className={`border-l-2 bg-white py-1 pl-3 ${s.color}`}>
+            <p className="text-xl font-bold tabular-nums">{s.value}</p>
+            <p className="mt-0.5 text-xs text-slate-500">{s.label}</p>
           </div>
         ))}
       </div>
@@ -211,6 +220,16 @@ function SpotsModule({
           <option value="all">ทุกจังหวัด</option>
           {ALL_THAI_PROVINCES.map((p) => <option key={p} value={p}>{p}</option>)}
         </select>
+        <select
+          value={publicationFilter}
+          onChange={(e) => onPublicationFilterChange(e.target.value as 'all' | 'draft' | 'published')}
+          aria-label="กรองสถานะการเผยแพร่"
+          className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-600 text-sm focus:outline-none focus:border-[#4A7C59]/50 shadow-xs"
+        >
+          <option value="all">ทุกสถานะ</option>
+          <option value="published">เผยแพร่แล้ว</option>
+          <option value="draft">แบบร่าง</option>
+        </select>
         <button
           onClick={() => onImageFilterChange(imageFilter === 'all' ? 'missing_image' : 'all')}
           className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-colors ${
@@ -240,7 +259,7 @@ function SpotsModule({
               return (
                 <div
                   key={spot.id}
-                  className="flex items-center gap-4 bg-white border border-slate-200/70 rounded-xl px-4 py-3 hover:shadow-sm hover:border-[#4A7C59]/20 transition-all group shadow-xs"
+                  className="grid grid-cols-[48px_minmax(0,1fr)] gap-x-3 gap-y-2 border-b border-slate-200 bg-white px-3 py-3 last:border-b-0 sm:flex sm:items-center sm:gap-4 sm:px-4"
                 >
                   {/* Thumbnail */}
                   <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-slate-100">
@@ -268,30 +287,43 @@ function SpotsModule({
                   </div>
 
                   {/* Image Status */}
-                  <div className="shrink-0" title={hasImage ? 'มีรูปภาพ' : 'ไม่มีรูปภาพ'}>
+                  <div className="col-span-2 flex items-center justify-between gap-2 border-t border-slate-100 pt-2 sm:ml-auto sm:col-span-auto sm:border-0 sm:pt-0">
+                    <div className="flex items-center gap-2">
+                      <span className={`rounded-md border px-1.5 py-0.5 text-[10px] font-semibold ${spot.publicationStatus === 'draft' ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>
+                        {spot.publicationStatus === 'draft' ? 'แบบร่าง' : 'เผยแพร่'}
+                      </span>
+                      <span className="text-[11px] text-slate-500">รูป</span>
                     {hasImage ? (
                       <CheckCircle2 size={14} className="text-emerald-500" />
                     ) : (
                       <AlertTriangle size={14} className="text-amber-400" />
                     )}
-                  </div>
+                    </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                     <button
-                      onClick={() => onEditSpot(spot)}
-                      className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-300 hover:text-slate-600 transition-colors"
-                      title="แก้ไข"
+                      onClick={() => onToggleSpotPublication(spot)}
+                      className="rounded-md px-2 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-50"
+                      aria-label={spot.publicationStatus === 'draft' ? `เผยแพร่ ${spot.title}` : `ถอนเผยแพร่ ${spot.title}`}
                     >
-                      <Edit3 size={13} />
+                      {spot.publicationStatus === 'draft' ? 'เผยแพร่' : 'ถอนเผยแพร่'}
                     </button>
-                    <button
-                      onClick={() => onDeleteSpot(spot.id)}
-                      className="p-1.5 rounded-lg hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition-colors"
-                      title="ลบ"
-                    >
-                      <Trash2 size={13} />
-                    </button>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => onEditSpot(spot)}
+                        className="p-1.5 rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+                        title="แก้ไข"
+                      >
+                        <Edit3 size={14} />
+                      </button>
+                      <button
+                        onClick={() => onDeleteSpot(spot.id)}
+                        className="p-1.5 rounded-md text-slate-500 hover:bg-rose-50 hover:text-rose-700 transition-colors"
+                        title="ลบ"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -308,10 +340,11 @@ function SpotsModule({
 // ─────────────────────────────────────────────────────────────
 // MAIN ADMIN PAGE
 // ─────────────────────────────────────────────────────────────
-export default function AdminPage() {
+function AdminConsole() {
   const [activeModule, setActiveModule] = useState<AdminModuleId>('dashboard');
   const [currentRole, setCurrentRole] = useState<string>('Super Admin');
   const [headerSearch, setHeaderSearch] = useState('');
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // ── Spots State ──
   const [spots, setSpots] = useState<LifestyleSpotItem[]>([]);
@@ -320,6 +353,7 @@ export default function AdminPage() {
   const [spotProvinceFilter, setSpotProvinceFilter] = useState<string>('all');
   const [spotCategoryFilter, setSpotCategoryFilter] = useState<string>('all');
   const [spotImageFilter, setSpotImageFilter] = useState<'all' | 'missing_image'>('all');
+  const [spotPublicationFilter, setSpotPublicationFilter] = useState<'all' | 'draft' | 'published'>('all');
   const [isEnrichingImages, setIsEnrichingImages] = useState<boolean>(false);
   const [editingSpot, setEditingSpot] = useState<LifestyleSpotItem | null>(null);
   const [showAddSpotModal, setShowAddSpotModal] = useState<boolean>(false);
@@ -400,7 +434,7 @@ export default function AdminPage() {
       const res = await fetch('/api/admin/spots', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'create', newSpot: newSpotForm }),
+        body: JSON.stringify({ action: 'create', newSpot: { ...newSpotForm, publicationStatus: 'draft' } }),
       });
       const data = await res.json();
       if (data.success) {
@@ -453,6 +487,23 @@ export default function AdminPage() {
     }
   };
 
+  const handleToggleSpotPublication = async (spot: LifestyleSpotItem) => {
+    const publicationStatus = spot.publicationStatus === 'draft' ? 'published' : 'draft';
+    try {
+      const res = await fetch('/api/admin/spots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update', spotId: spot.id, updatedFields: { publicationStatus } }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Unable to update spot status');
+      setSpots(data.spots);
+      showToast(publicationStatus === 'published' ? 'เผยแพร่สถานที่แล้ว' : 'ย้ายสถานที่เป็นแบบร่างแล้ว');
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการเปลี่ยนสถานะ');
+    }
+  };
+
   // ── Access Guard — Member role blocked ──
   const isBlocked = currentRole === 'Member';
 
@@ -495,6 +546,9 @@ export default function AdminPage() {
             onCategoryChange={setSpotCategoryFilter}
             imageFilter={spotImageFilter}
             onImageFilterChange={setSpotImageFilter}
+            publicationFilter={spotPublicationFilter}
+            onPublicationFilterChange={setSpotPublicationFilter}
+            onToggleSpotPublication={handleToggleSpotPublication}
           />
         );
       case 'community':
@@ -523,37 +577,50 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex" style={{ fontFamily: "'Inter', 'Prompt', 'Outfit', sans-serif" }}>
-      {/* Left Sidebar */}
-      <AdminSidebar
-        activeModule={activeModule}
-        onModuleChange={setActiveModule}
-        currentRole={currentRole}
-        onRoleChange={() => {
-          const roles = ['Super Admin', 'Content Editor', 'Moderator', 'Organizer', 'Member'];
-          const currentIdx = roles.indexOf(currentRole);
-          setCurrentRole(roles[(currentIdx + 1) % roles.length]);
-        }}
-      />
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-h-screen min-w-0">
-        {/* Top Header */}
-        <AdminHeader
-          activeModule={activeModule}
-          currentRole={currentRole}
-          onRoleChange={setCurrentRole}
-          searchQuery={headerSearch}
-          onSearchChange={setHeaderSearch}
-          showSearch={activeModule === 'spots'}
+    <div className="min-h-screen bg-[#F6F8F7]" style={{ fontFamily: "'IBM Plex Sans Thai', 'Plus Jakarta Sans', sans-serif" }}>
+      {isMobileSidebarOpen && (
+        <button
+          type="button"
+          aria-label="ปิดเมนูผู้ดูแลระบบ"
+          onClick={() => setIsMobileSidebarOpen(false)}
+          className="fixed inset-0 z-40 bg-slate-950/40 lg:hidden"
         />
+      )}
+      <div className="flex min-h-screen">
+        <div className={`fixed inset-y-0 left-0 z-50 w-64 transition-transform duration-200 lg:static lg:z-auto lg:translate-x-0 ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          <AdminSidebar
+            activeModule={activeModule}
+            onModuleChange={(module) => {
+              setActiveModule(module);
+              setIsMobileSidebarOpen(false);
+            }}
+            currentRole={currentRole}
+            onRoleChange={() => {
+              const roles = ['Super Admin', 'Content Editor', 'Moderator', 'Organizer', 'Member'];
+              const currentIdx = roles.indexOf(currentRole);
+              setCurrentRole(roles[(currentIdx + 1) % roles.length]);
+            }}
+          />
+        </div>
 
-        {/* Page Content */}
-        <main className="flex-1 p-6 overflow-auto">
-          <div className="max-w-6xl mx-auto">
-            {renderModule()}
-          </div>
-        </main>
+        {/* Main Content Area */}
+        <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+          <AdminHeader
+            activeModule={activeModule}
+            currentRole={currentRole}
+            onRoleChange={setCurrentRole}
+            searchQuery={headerSearch}
+            onSearchChange={setHeaderSearch}
+            showSearch={activeModule === 'spots'}
+            onOpenNavigation={() => setIsMobileSidebarOpen(true)}
+          />
+
+          <main className="min-w-0 flex-1 overflow-auto p-3 sm:p-5 lg:p-6">
+            <div className="mx-auto w-full max-w-7xl">
+              {renderModule()}
+            </div>
+          </main>
+        </div>
       </div>
 
       {/* Toast Notification */}
@@ -704,5 +771,13 @@ export default function AdminPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AdminPage() {
+  return (
+    <AdminAuthGate>
+      <AdminConsole />
+    </AdminAuthGate>
   );
 }
