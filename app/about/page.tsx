@@ -610,7 +610,11 @@ export default function AboutPage() {
         isOpen={isCreateEventModalOpen}
         onClose={() => setIsCreateEventModalOpen(false)}
         onCreateSuccess={(newEvent: EventItem) => {
-          showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จเรียบร้อย! 🎉`);
+          if (newEvent.approvalStatus === 'pending') {
+            showToast(`ส่งข้อมูล "${newEvent.title}" เรียบร้อยแล้ว (รอตรวจสอบและอนุมัติโดยทีมงาน)`);
+          } else {
+            showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จเรียบร้อย! 🎉`);
+          }
         }}
       />
 

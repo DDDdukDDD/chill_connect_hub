@@ -2308,7 +2308,7 @@ function MomentsContent() {
                       </div>
                       <input
                         type="file"
-                        accept="image/*"
+                        accept="image/jpeg,image/png,image/webp,image/avif"
                         multiple
                         disabled={isCompressingImages}
                         onChange={handleImageFilesChange}
@@ -2353,7 +2353,11 @@ function MomentsContent() {
         isOpen={isCreateEventModalOpen}
         onClose={() => setIsCreateEventModalOpen(false)}
         onCreateSuccess={(newEvent) => {
-          showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จเรียบร้อย! 🎉`);
+          if (newEvent.approvalStatus === 'pending') {
+            showToast(`ส่งข้อมูล "${newEvent.title}" เรียบร้อยแล้ว (รอตรวจสอบและอนุมัติโดยทีมงาน)`);
+          } else {
+            showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จเรียบร้อย! 🎉`);
+          }
         }}
       />
 

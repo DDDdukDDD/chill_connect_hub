@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { AlertCircle, Check, Clock3, Pencil, Plus, RefreshCw, Search, Trash2, Trophy, X, Zap } from 'lucide-react';
 import { ChallengeQuest } from '@/data/mockData';
+import { handleAdminUnauthorized } from './adminAuthUtils';
 
 type QuestStatus = 'draft' | 'active' | 'ended';
 type QuestCategory = 'heal' | 'move' | 'chill' | 'learn';
@@ -39,6 +40,9 @@ const STATUS_STYLES: Record<QuestStatus, string> = {
 
 async function fetchQuests(): Promise<ChallengeQuest[]> {
   const response = await fetch('/api/admin/quests?limit=100', { cache: 'no-store' });
+  if (handleAdminUnauthorized(response)) {
+    throw new Error('เซสชันผู้ดูแลหมดอายุ กำลังนำทางไปหน้าเข้าสู่ระบบ...');
+  }
   const data = await response.json();
   if (!response.ok || !data.success || !Array.isArray(data.quests)) {
     throw new Error(data.error || 'Unable to load quests');
@@ -133,6 +137,7 @@ export function QuestsManagerView() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+      if (handleAdminUnauthorized(response)) return;
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.error || 'Unable to save quest');
       setNotice(editingId ? 'บันทึกการแก้ไขแล้ว' : 'สร้างแบบร่างภารกิจแล้ว');
@@ -153,6 +158,7 @@ export function QuestsManagerView() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'set_status', id: quest.id, status }),
       });
+      if (handleAdminUnauthorized(response)) return;
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.error || 'Unable to update status');
       setNotice(`เปลี่ยนสถานะเป็น ${STATUS_LABELS[status]} แล้ว`);
@@ -171,6 +177,7 @@ export function QuestsManagerView() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'delete', id: quest.id }),
       });
+      if (handleAdminUnauthorized(response)) return;
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.error || 'Unable to delete quest');
       setNotice('ลบภารกิจแล้ว');

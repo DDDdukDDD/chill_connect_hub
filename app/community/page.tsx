@@ -741,7 +741,11 @@ function CommunityPageContent() {
         onClose={() => setIsCreateEventModalOpen(false)}
         onCreateSuccess={(newEvent: EventItem) => {
           setEventsList([newEvent, ...eventsList]);
-          showToast(`เปิดตี้กิจกรรม "${newEvent.title}" สำเร็จ! 🎉`);
+          if (newEvent.approvalStatus === 'pending') {
+            showToast(`ส่งข้อมูล "${newEvent.title}" เรียบร้อยแล้ว (รอตรวจสอบและอนุมัติโดยทีมงาน)`);
+          } else {
+            showToast(`เปิดตี้กิจกรรม "${newEvent.title}" สำเร็จ! 🎉`);
+          }
         }}
       />
 

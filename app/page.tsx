@@ -2248,7 +2248,11 @@ function HomeContent() {
         onClose={() => setIsCreateEventModalOpen(false)}
         onCreateSuccess={(newEvent: EventItem) => {
           setEventsList([newEvent, ...eventsList]);
-          showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จเรียบร้อย! 🎉`);
+          if (newEvent.approvalStatus === 'pending') {
+            showToast(`ส่งข้อมูลงาน "${newEvent.title}" เรียบร้อยแล้ว (รอตรวจสอบและอนุมัติโดยทีมงาน)`);
+          } else {
+            showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จเรียบร้อย! 🎉`);
+          }
         }}
       />
 
@@ -2320,7 +2324,11 @@ function HomeContent() {
         onClose={() => setIsCreateEventModalOpen(false)}
         onCreateSuccess={(newEvent: EventItem) => {
           setEventsList((prev) => [newEvent, ...prev]);
-          showToast(`สร้าง "${newEvent.title}" เรียบร้อยแล้ว! 🎉`);
+          if (newEvent.approvalStatus === 'pending') {
+            showToast(`ส่งข้อมูล "${newEvent.title}" เรียบร้อยแล้ว (รอตรวจสอบและอนุมัติโดยทีมงาน)`);
+          } else {
+            showToast(`สร้าง "${newEvent.title}" เรียบร้อยแล้ว! 🎉`);
+          }
         }}
       />
 

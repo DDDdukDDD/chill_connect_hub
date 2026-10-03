@@ -24,6 +24,7 @@ import {
   AlertTriangle,
   Radio,
 } from 'lucide-react';
+import { handleAdminUnauthorized } from './adminAuthUtils';
 import { AdminEventItem } from '@/lib/eventsStore';
 import { stripHtmlToPlainText } from '@/components/RichTextEditor';
 
@@ -48,6 +49,7 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
     try {
       setIsLoading(true);
       const res = await fetch('/api/admin/events');
+      if (handleAdminUnauthorized(res)) return;
       const data = await res.json();
       if (data.success && Array.isArray(data.events)) {
         setEvents(data.events);
@@ -70,6 +72,7 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'update_status', id, status: newStatus }),
       });
+      if (handleAdminUnauthorized(res)) return;
       const data = await res.json();
       if (data.success) {
         setEvents(data.events);
@@ -87,6 +90,7 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'approve_all' }),
       });
+      if (handleAdminUnauthorized(res)) return;
       const data = await res.json();
       if (data.success) {
         setEvents(data.events);
@@ -105,6 +109,7 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'delete', id }),
       });
+      if (handleAdminUnauthorized(res)) return;
       const data = await res.json();
       if (data.success) {
         setEvents(data.events);

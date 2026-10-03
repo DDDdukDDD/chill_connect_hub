@@ -766,7 +766,7 @@ function ProfileContent() {
                       <span>{isCompressingAvatar ? 'กำลังแปลงเป็น WebP...' : 'เปลี่ยนรูปโปรไฟล์'}</span>
                       <input
                         type="file"
-                        accept="image/*"
+                        accept="image/jpeg,image/png,image/webp,image/avif"
                         disabled={isCompressingAvatar}
                         onChange={handleAvatarChange}
                         className="hidden"

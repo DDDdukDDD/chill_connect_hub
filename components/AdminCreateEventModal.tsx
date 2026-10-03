@@ -24,6 +24,7 @@ import {
   UploadCloud,
   Loader2,
 } from 'lucide-react';
+import { handleAdminUnauthorized } from './admin/adminAuthUtils';
 import { RichTextEditor } from './RichTextEditor';
 import { compressImageToDataUrl } from '@/lib/media/compressor';
 
@@ -314,6 +315,7 @@ export const AdminCreateEventModal: React.FC<AdminCreateEventModalProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'create', eventData }),
       });
+      if (handleAdminUnauthorized(res)) return;
 
       const data = await res.json();
       if (data.success) {
@@ -707,7 +709,7 @@ export const AdminCreateEventModal: React.FC<AdminCreateEventModalProps> = ({
                   <span>{isCompressingBanner ? 'กำลังแปลงเป็น WebP...' : 'อัปโหลดภาพปก (WebP Auto-Compress)'}</span>
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp,image/avif"
                     disabled={isCompressingBanner}
                     onChange={handleBannerUpload}
                     className="hidden"

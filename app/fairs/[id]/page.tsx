@@ -1380,7 +1380,11 @@ export default function FairDetailPage() {
         isOpen={isCreateEventModalOpen}
         onClose={() => setIsCreateEventModalOpen(false)}
         onCreateSuccess={(newEvent) => {
-          showToast(`สร้างงาน "${newEvent.title}" สำเร็จแล้ว`);
+          if (newEvent.approvalStatus === 'pending') {
+            showToast(`ส่งข้อมูลงาน "${newEvent.title}" เรียบร้อยแล้ว (รอตรวจสอบและอนุมัติโดยทีมงาน)`);
+          } else {
+            showToast(`สร้างงาน "${newEvent.title}" สำเร็จแล้ว`);
+          }
           setIsCreateEventModalOpen(false);
         }}
       />

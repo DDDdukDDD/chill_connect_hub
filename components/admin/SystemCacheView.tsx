@@ -15,6 +15,7 @@ import {
   Database,
 } from 'lucide-react';
 import { CacheStats } from '@/lib/cache/types';
+import { handleAdminUnauthorized } from './adminAuthUtils';
 
 interface TagInfo {
   tag: string;
@@ -53,6 +54,7 @@ export function SystemCacheView() {
     try {
       setIsLoading(true);
       const res = await fetch('/api/admin/cache');
+      if (handleAdminUnauthorized(res)) return;
       const data: CacheApiResponse = await res.json();
       if (data.success) {
         setStats(data.stats);
@@ -82,6 +84,7 @@ export function SystemCacheView() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'flush_all' }),
       });
+      if (handleAdminUnauthorized(res)) return;
       const data = await res.json();
       if (data.success) {
         showToast(data.message);
@@ -105,6 +108,7 @@ export function SystemCacheView() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'flush_tag', tag }),
       });
+      if (handleAdminUnauthorized(res)) return;
       const data = await res.json();
       if (data.success) {
         showToast(data.message);

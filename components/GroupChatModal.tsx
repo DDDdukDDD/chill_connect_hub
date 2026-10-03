@@ -366,7 +366,7 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp,image/avif"
               disabled={isCompressingChatImage}
               onChange={handleChatPhotoUpload}
               className="hidden"

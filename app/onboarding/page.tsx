@@ -913,7 +913,7 @@ export default function OnboardingPage() {
                               <input
                                 id={`photo-upload-${slotIdx}`}
                                 type="file"
-                                accept="image/*"
+                                accept="image/jpeg,image/png,image/webp,image/avif"
                                 onChange={handlePhotoUpload}
                                 className="hidden"
                               />
@@ -947,7 +947,7 @@ export default function OnboardingPage() {
                       <input
                         id="photo-upload-batch"
                         type="file"
-                        accept="image/*"
+                        accept="image/jpeg,image/png,image/webp,image/avif"
                         multiple
                         disabled={isCompressingPhotos}
                         onChange={handlePhotoUpload}

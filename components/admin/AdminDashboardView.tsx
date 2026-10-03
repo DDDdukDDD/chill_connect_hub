@@ -6,6 +6,7 @@ import { AdminModuleId } from './AdminSidebar';
 import { AdminEventItem } from '@/lib/eventsStore';
 import { LifestyleSpotItem } from '@/data/spotsData';
 import { ChallengeQuest } from '@/data/mockData';
+import { handleAdminUnauthorized } from './adminAuthUtils';
 
 interface AdminDashboardViewProps {
   onNavigate: (module: AdminModuleId) => void;
@@ -24,6 +25,11 @@ async function fetchDashboardData(): Promise<DashboardData> {
     fetch('/api/admin/events', { cache: 'no-store' }),
     fetch('/api/admin/quests?limit=100', { cache: 'no-store' }),
   ]);
+  const unauthorized = responses.find((response) => response.status === 401);
+  if (unauthorized) {
+    handleAdminUnauthorized(unauthorized);
+    throw new Error('เซสชันผู้ดูแลหมดอายุ กำลังนำทางไปหน้าเข้าสู่ระบบ...');
+  }
   const [spotsData, eventsData, questsData] = await Promise.all(responses.map((response) => response.json()));
   const failedResponse = responses.find((response) => !response.ok);
   if (failedResponse || !spotsData.success || !eventsData.success || !questsData.success) {

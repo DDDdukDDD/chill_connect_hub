@@ -22,6 +22,7 @@ import { EventsModerationView } from '@/components/admin/EventsModerationView';
 import { MediaManagerView } from '@/components/admin/MediaManagerView';
 import { SystemCacheView } from '@/components/admin/SystemCacheView';
 import { AdminAuthGate } from '@/components/admin/AdminAuthGate';
+import { handleAdminUnauthorized } from '@/components/admin/adminAuthUtils';
 import {
   Bot,
   Sparkles,
@@ -394,6 +395,7 @@ function AdminConsole() {
   const fetchSpots = useCallback(async () => {
     try {
       const res = await fetch('/api/admin/spots');
+      if (handleAdminUnauthorized(res)) return;
       const data = await res.json();
       if (data.success) setSpots(data.spots);
     } catch (err) {
@@ -416,6 +418,7 @@ function AdminConsole() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'auto_enrich_images' }),
       });
+      if (handleAdminUnauthorized(res)) return;
       const data = await res.json();
       if (data.success) {
         setSpots(data.spots);
@@ -436,6 +439,7 @@ function AdminConsole() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'create', newSpot: { ...newSpotForm, publicationStatus: 'draft' } }),
       });
+      if (handleAdminUnauthorized(res)) return;
       const data = await res.json();
       if (data.success) {
         setSpots(data.spots);
@@ -458,6 +462,7 @@ function AdminConsole() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'update', spotId: editingSpot.id, updatedFields: editingSpot }),
       });
+      if (handleAdminUnauthorized(res)) return;
       const data = await res.json();
       if (data.success) {
         setSpots(data.spots);
@@ -477,6 +482,7 @@ function AdminConsole() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'delete', spotId }),
       });
+      if (handleAdminUnauthorized(res)) return;
       const data = await res.json();
       if (data.success) {
         setSpots(data.spots);
@@ -495,6 +501,7 @@ function AdminConsole() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'update', spotId: spot.id, updatedFields: { publicationStatus } }),
       });
+      if (handleAdminUnauthorized(res)) return;
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || 'Unable to update spot status');
       setSpots(data.spots);

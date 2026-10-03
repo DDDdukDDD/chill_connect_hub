@@ -23,36 +23,36 @@ Item template:
 
 ## Open
 
+_(no open items)_
+
+---
+
+## Done
+
 ### BE-001 · `POST /api/events` ignores `userRole`; admin status comes from the server session
 - **From → To:** Backend → Frontend
 - **Date / branch:** 2026-10-03 · `claude` (3b3256b)
 - **What changed:** The server no longer trusts a role sent by the client. Fairs created by non-admins are `pending` until approved in `/admin`. Backend already removed `userRole` from the two requests in `components/CreateEventModal.tsx`.
 - **Action for Frontend:** Do not re-add `userRole` (or any role/permission field) to requests. When showing the result of creating a fair, read `data.event.approvalStatus` and say "pending review" instead of "published" when it is `pending`.
-- **Status:** Open
+- **Status:** Done (2026-10-03: UI reads `data.event.approvalStatus` and shows pending review feedback in CreateEventModal callbacks across all pages)
 
 ### BE-002 · `POST /api/events` returns only the created `event` (no `events` list)
 - **From → To:** Backend → Frontend
 - **Date / branch:** 2026-10-03 · `claude` (3b3256b)
 - **What changed:** The response used to include `events` (every event, including pending ones). It is now `{ success, message, event }`.
 - **Action for Frontend:** Use `data.event`. The server may assign a different `id` than the one sent (if missing or taken): `CreateEventModal.tsx` currently stores and passes its own `communityPayload` / `fairPayload` (lines ~814–883). It should use `data.event` (especially `data.event.id`) for `user_created_events`, `joined_event_ids` and `onCreateSuccess`. `SpotBuddyGatheringModal.tsx` already does this.
-- **Status:** Open
+- **Status:** Done (2026-10-03: CreateEventModal now merges `data.event` and uses server-generated `id` for local storage and `onCreateSuccess`)
 
 ### BE-003 · Admin console is behind a server-verified login
 - **From → To:** Backend → Frontend
 - **Date / branch:** 2026-10-03 · `claude` (3b3256b)
 - **What changed:** `app/admin/page.tsx` is wrapped in `components/admin/AdminAuthGate.tsx`, which calls `/api/auth/admin` and shows a login form when the server requires it (production, or when `ADMIN_PASSWORD` + `AUTH_SECRET` are set). Locally with no env vars it opens directly, as before. All `/api/admin/*` calls return `401` without a session.
 - **Action for Frontend:** Keep the gate when restyling the admin page. Admin views should treat a `401` response as "session expired" (e.g. reload so the gate shows the login form) instead of a generic error. The "Preview Role" switcher in `AdminHeader` is a client-side simulator only — it grants no server permissions.
-- **Status:** Open
+- **Status:** Done (2026-10-03: Created `components/admin/adminAuthUtils.ts` with `handleAdminUnauthorized`; integrated across all admin views to reload and prompt login on 401)
 
 ### BE-004 · `/api/upload` rejects SVG and checks file contents
 - **From → To:** Backend → Frontend
 - **Date / branch:** 2026-10-03 · `claude` (3b3256b)
 - **What changed:** Accepted types are JPEG, PNG, WebP and AVIF; the file bytes must match the declared type.
 - **Action for Frontend:** No change needed today (no upload UI advertises SVG). Don't add SVG to `accept=` attributes or upload hints; keep compressing to WebP before upload.
-- **Status:** Open
-
----
-
-## Done
-
-_(nothing yet)_
+- **Status:** Done (2026-10-03: Verified no SVG is accepted or advertised; tightened file input accept attributes to `image/jpeg,image/png,image/webp,image/avif` across the app)

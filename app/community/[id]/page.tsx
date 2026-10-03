@@ -1344,7 +1344,11 @@ export default function CommunityDetailPage() {
         isOpen={isCreateEventModalOpen}
         onClose={() => setIsCreateEventModalOpen(false)}
         onCreateSuccess={(newEvent) => {
-          showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จแล้ว! 🎉`);
+          if (newEvent.approvalStatus === 'pending') {
+            showToast(`ส่งข้อมูล "${newEvent.title}" เรียบร้อยแล้ว (รอตรวจสอบและอนุมัติโดยทีมงาน)`);
+          } else {
+            showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จแล้ว! 🎉`);
+          }
           setIsCreateEventModalOpen(false);
         }}
       />

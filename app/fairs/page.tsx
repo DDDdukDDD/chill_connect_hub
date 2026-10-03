@@ -642,7 +642,11 @@ function FairsPageContent() {
         onClose={() => setIsCreateEventModalOpen(false)}
         onCreateSuccess={(newEvent: EventItem) => {
           setEventsList([newEvent, ...eventsList]);
-          showToast(`สร้างงานมหกรรม "${newEvent.title}" สำเร็จ`);
+          if (newEvent.approvalStatus === 'pending') {
+            showToast(`ส่งข้อมูลงาน "${newEvent.title}" เรียบร้อยแล้ว (รอตรวจสอบและอนุมัติโดยทีมงาน)`);
+          } else {
+            showToast(`สร้างงานมหกรรม "${newEvent.title}" สำเร็จ`);
+          }
         }}
       />
 

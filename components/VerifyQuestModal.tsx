@@ -209,7 +209,7 @@ export const VerifyQuestModal: React.FC<VerifyQuestModalProps> = ({
                     <span>{isCompressingPhoto ? 'กำลังแปลงเป็น WebP...' : 'ถ่ายภาพ / เลือกไฟล์รูป'}</span>
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/webp,image/avif"
                       disabled={isCompressingPhoto}
                       onChange={handleProofPhotoUpload}
                       className="hidden"

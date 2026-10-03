@@ -19,6 +19,7 @@ import {
   Compass,
 } from 'lucide-react';
 import { EventDataSource } from '@/lib/sourcesStore';
+import { handleAdminUnauthorized } from './adminAuthUtils';
 
 interface ScrapeResultData {
   targetType: 'events' | 'spots';
@@ -65,6 +66,7 @@ export function ScraperEngineView() {
     try {
       setIsLoadingSources(true);
       const res = await fetch('/api/admin/sources');
+      if (handleAdminUnauthorized(res)) return;
       const data = await res.json();
       if (data.success && Array.isArray(data.sources)) {
         setSources(data.sources);
@@ -80,6 +82,7 @@ export function ScraperEngineView() {
   const fetchEventsConfig = async () => {
     try {
       const res = await fetch('/api/admin/events');
+      if (handleAdminUnauthorized(res)) return;
       const data = await res.json();
       if (data.success && typeof data.autoPublish === 'boolean') {
         setAutoPublish(data.autoPublish);
@@ -105,6 +108,7 @@ export function ScraperEngineView() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ targetType, sourceId: source?.id }),
       });
+      if (handleAdminUnauthorized(res)) return;
       const data = await res.json();
 
       if (res.ok && data.success) {
@@ -146,6 +150,7 @@ export function ScraperEngineView() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, status: nextStatus }),
       });
+      if (handleAdminUnauthorized(res)) return;
       const data = await res.json();
       if (data.success) {
         setSources(data.sources);
@@ -170,6 +175,7 @@ export function ScraperEngineView() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newSource),
       });
+      if (handleAdminUnauthorized(res)) return;
       const data = await res.json();
       if (data.success) {
         setSources(data.sources);
@@ -199,6 +205,7 @@ export function ScraperEngineView() {
       const res = await fetch(`/api/admin/sources?id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
       });
+      if (handleAdminUnauthorized(res)) return;
       const data = await res.json();
       if (data.success) {
         setSources(data.sources);
@@ -218,6 +225,7 @@ export function ScraperEngineView() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'toggle_auto_publish', autoPublish: nextVal }),
       });
+      if (handleAdminUnauthorized(res)) return;
       const data = await res.json();
       if (data.success) {
         setAutoPublish(nextVal);
@@ -242,6 +250,7 @@ export function ScraperEngineView() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'reset_and_seed' }),
       });
+      if (handleAdminUnauthorized(res)) return;
       const data = await res.json();
       if (data.success) {
         fetchSources();
@@ -263,6 +272,7 @@ export function ScraperEngineView() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'auto_enrich_images' }),
       });
+      if (handleAdminUnauthorized(res)) return;
       const data = await res.json();
       if (data.success) {
         showToast(`✨ ${data.message}`);

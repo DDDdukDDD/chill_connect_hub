@@ -3602,7 +3602,11 @@ export default function MyHubPage() {
         onCreateSuccess={(newEvent) => {
           setUserCreatedEvents((prev) => [newEvent, ...prev]);
           setJoinedEventIds((prev) => [newEvent.id, ...prev]);
-          showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จ`);
+          if (newEvent.approvalStatus === 'pending') {
+            showToast(`ส่งข้อมูล "${newEvent.title}" เรียบร้อยแล้ว (รอตรวจสอบและอนุมัติโดยทีมงาน)`);
+          } else {
+            showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จ`);
+          }
         }}
       />
 

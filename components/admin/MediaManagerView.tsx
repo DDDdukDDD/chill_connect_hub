@@ -18,6 +18,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { StoredMediaFile, MediaStorageStats } from '@/lib/media/types';
+import { handleAdminUnauthorized } from './adminAuthUtils';
 
 interface MediaFileWithOrphan extends StoredMediaFile {
   isOrphan?: boolean;
@@ -52,6 +53,7 @@ export function MediaManagerView() {
     try {
       setIsLoading(true);
       const res = await fetch('/api/admin/media');
+      if (handleAdminUnauthorized(res)) return;
       const data: MediaApiResponse = await res.json();
       if (data.success) {
         setFiles(data.files);
@@ -84,6 +86,7 @@ export function MediaManagerView() {
       const res = await fetch(`/api/admin/media?key=${encodeURIComponent(key)}`, {
         method: 'DELETE',
       });
+      if (handleAdminUnauthorized(res)) return;
       const data = await res.json();
       if (data.success) {
         showToast(`ลบไฟล์ ${key} สำเร็จ`);
@@ -105,6 +108,7 @@ export function MediaManagerView() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'clean_orphans' }),
       });
+      if (handleAdminUnauthorized(res)) return;
       const data = await res.json();
       if (data.success) {
         showToast(data.message);

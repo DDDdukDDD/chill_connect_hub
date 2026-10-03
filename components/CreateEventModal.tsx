@@ -809,24 +809,30 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
         });
         const data = await res.json();
 
+        if (!res.ok && data?.message) {
+          setErrorMessage(data.message);
+          setIsSubmitting(false);
+          return;
+        }
+
+        const savedCommunityEvent: EventItem = data?.success && data?.event
+          ? { ...communityPayload, ...data.event }
+          : communityPayload;
+
         if (typeof window !== 'undefined') {
           try {
             const currentCreated = JSON.parse(localStorage.getItem('user_created_events') || '[]');
-            localStorage.setItem('user_created_events', JSON.stringify([communityPayload, ...currentCreated]));
+            localStorage.setItem('user_created_events', JSON.stringify([savedCommunityEvent, ...currentCreated]));
             const currentJoined = JSON.parse(localStorage.getItem('joined_event_ids') || '[]');
-            if (!currentJoined.includes(communityPayload.id)) {
-              localStorage.setItem('joined_event_ids', JSON.stringify([communityPayload.id, ...currentJoined]));
+            if (!currentJoined.includes(savedCommunityEvent.id)) {
+              localStorage.setItem('joined_event_ids', JSON.stringify([savedCommunityEvent.id, ...currentJoined]));
             }
           } catch (e) {
             console.error('Error saving created event to local storage', e);
           }
         }
 
-        if (data.success) {
-          onCreateSuccess(communityPayload);
-        } else {
-          onCreateSuccess(communityPayload);
-        }
+        onCreateSuccess(savedCommunityEvent);
       } else if (entityType === 'fair') {
         const venueObj = VENUE_OPTIONS.find(v => v.id === fairVenueId);
         const formattedStart = formatThaiDate(fairStartDate);
@@ -864,24 +870,30 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
         });
         const data = await res.json();
 
+        if (!res.ok && data?.message) {
+          setErrorMessage(data.message);
+          setIsSubmitting(false);
+          return;
+        }
+
+        const savedFairEvent: EventItem = data?.success && data?.event
+          ? { ...fairPayload, ...data.event }
+          : fairPayload;
+
         if (typeof window !== 'undefined') {
           try {
             const currentCreated = JSON.parse(localStorage.getItem('user_created_events') || '[]');
-            localStorage.setItem('user_created_events', JSON.stringify([fairPayload, ...currentCreated]));
+            localStorage.setItem('user_created_events', JSON.stringify([savedFairEvent, ...currentCreated]));
             const currentJoined = JSON.parse(localStorage.getItem('joined_event_ids') || '[]');
-            if (!currentJoined.includes(fairPayload.id)) {
-              localStorage.setItem('joined_event_ids', JSON.stringify([fairPayload.id, ...currentJoined]));
+            if (!currentJoined.includes(savedFairEvent.id)) {
+              localStorage.setItem('joined_event_ids', JSON.stringify([savedFairEvent.id, ...currentJoined]));
             }
           } catch (e) {
             console.error('Error saving created fair to local storage', e);
           }
         }
 
-        if (data.success) {
-          onCreateSuccess(fairPayload);
-        } else {
-          onCreateSuccess(fairPayload);
-        }
+        onCreateSuccess(savedFairEvent);
       } else if (entityType === 'spot') {
         const spotPayload: EventItem = {
           id: `spot-user-${Date.now()}`,
