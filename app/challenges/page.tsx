@@ -27,7 +27,7 @@ import {
   ShieldCheck,
   Check,
   Sprout,
-  PlusCircle,
+  Plus,
   Gift,
 } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
@@ -469,8 +469,8 @@ export default function ChallengesDiscoveryPage() {
                 }}
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer leading-none"
               >
-                <PlusCircle className="w-3.5 h-3.5 text-purple-300" />
-                <span>+ สร้างชาเลนจ์ใหม่</span>
+                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>สร้างชาเลนจ์ใหม่</span>
               </button>
             </div>
           </div>
