@@ -41,7 +41,7 @@ import { BrandLogo } from '@/components/BrandLogo';
 import { Pagination } from '@/components/Pagination';
 import { ChallengeQuest, MOCK_CHALLENGES } from '@/data/mockData';
 import { COMMUNITY_PUBLIC_QUESTS } from '@/components/CommunityChallengeBar';
-import { getStoredUserXp } from '@/data/rewardsData';
+import { getStoredUserXp, setStoredUserXp } from '@/data/rewardsData';
 import { fetchAllContentPages } from '@/lib/contentClient';
 
 // Extended Quest Interface with Date, Duration & Image
@@ -133,7 +133,7 @@ export default function ChallengesDiscoveryPage() {
   const [searchQuery, setSearchQuery] = useState('');
   
   // Auth state
-  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
+  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn, userProfile } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
@@ -167,23 +167,54 @@ export default function ChallengesDiscoveryPage() {
   }, []);
 
   // User XP State
-  const [userXp, setUserXp] = useState<number>(450);
+  const [userXp, setUserXp] = useState<number>(() => getStoredUserXp());
 
-  // Joined Quest state
+  // Joined Quest state synchronized with localStorage ('cch_my_challenges')
   const [joinedQuestIds, setJoinedQuestIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setUserXp(getStoredUserXp());
     }
+
     if (isLoggedIn) {
-      setJoinedQuestIds(['comm-quest-1', 'comm-quest-2']);
+      if (typeof window !== 'undefined') {
+        try {
+          const raw = localStorage.getItem('cch_my_challenges');
+          if (raw) {
+            const parsed: ChallengeQuest[] = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setJoinedQuestIds(parsed.map((q) => q.id));
+              return;
+            }
+          }
+          // Default initial challenges synced with MOCK_CHALLENGES
+          const initial = MOCK_CHALLENGES;
+          localStorage.setItem('cch_my_challenges', JSON.stringify(initial));
+          setJoinedQuestIds(initial.map((q) => q.id));
+        } catch (e) {
+          console.error('Error syncing challenges with localStorage:', e);
+          setJoinedQuestIds(['1', '2', 'comm-quest-1', 'comm-quest-2']);
+        }
+      }
     } else {
       setJoinedQuestIds([]);
     }
   }, [isLoggedIn]);
 
-  
+  // Deep-linking: Support opening quest modal from URL (e.g. /challenges?quest=comm-quest-1)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const questId = params.get('quest');
+    if (questId && questList.length > 0) {
+      const matched = questList.find((q) => q.id === questId);
+      if (matched) {
+        setQuestToJoin(matched);
+      }
+    }
+  }, [questList]);
+
   // Confirmation Modal states
   const [questToJoin, setQuestToJoin] = useState<QuestWithDuration | null>(null);
   const [questToCancel, setQuestToCancel] = useState<QuestWithDuration | null>(null);
@@ -194,21 +225,136 @@ export default function ChallengesDiscoveryPage() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleConfirmJoin = () => {
-    if (questToJoin && !joinedQuestIds.includes(questToJoin.id)) {
-      setJoinedQuestIds((prev) => [...prev, questToJoin.id]);
-      showToast(`🎉 รับภารกิจ "${questToJoin.title}" สำเร็จ! สามารถดูได้ใน "ฮับของฉัน"`);
+  const handleConfirmJoin = (targetQuest?: QuestWithDuration | ChallengeQuest | null) => {
+    const quest = targetQuest || questToJoin;
+    if (!quest) return;
+
+    const questToAdd: ChallengeQuest = {
+      id: quest.id,
+      title: quest.title,
+      iconName: quest.iconName || 'Trophy',
+      progressPercent: quest.progressPercent || 0,
+      current: quest.current || '0',
+      total: quest.total || '3',
+      badgeLabel: quest.badgeLabel,
+      badgeIcon: quest.badgeIcon || '🏅',
+      completedCountInfo: quest.completedCountInfo || `0/${quest.total || '3'} ครั้ง`,
+      category: quest.category,
+      targetGoal: quest.targetGoal,
+      objective: quest.objective,
+      steps: quest.steps,
+      verificationMethod: quest.verificationMethod,
+      rewardsText: quest.rewardsText,
+      participantsCount: (quest.participantsCount || 0) + 1,
+      rewardPoints: quest.rewardPoints || 250,
+      isOfficial: quest.isOfficial,
+      badgeCoverImg: (quest as any).image || quest.badgeCoverImg,
+      startDate: (quest as any).startDate,
+      endDate: (quest as any).endDate,
+      daysRemaining: (quest as any).daysRemaining,
+    };
+
+    setJoinedQuestIds((prev) => Array.from(new Set([...prev, quest.id])));
+
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('cch_my_challenges');
+        let currentList: ChallengeQuest[] = raw ? JSON.parse(raw) : [...MOCK_CHALLENGES];
+        if (!currentList.some((q) => q.id === quest.id || q.title.trim() === quest.title.trim())) {
+          currentList = [questToAdd, ...currentList];
+          localStorage.setItem('cch_my_challenges', JSON.stringify(currentList));
+        }
+      } catch (e) {
+        console.error('Error saving quest to cch_my_challenges:', e);
+      }
+    }
+
+    showToast(`🎉 รับภารกิจ "${quest.title}" สำเร็จ! สามารถดูและส่งความคืบหน้าได้ใน "ฮับของฉัน"`);
+    setQuestToJoin(null);
+  };
+
+  const handleConfirmCancel = (targetQuest?: QuestWithDuration | ChallengeQuest | null) => {
+    const quest = targetQuest || questToCancel;
+    if (!quest) return;
+
+    setJoinedQuestIds((prev) => prev.filter((id) => id !== quest.id));
+
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('cch_my_challenges');
+        if (raw) {
+          const currentList: ChallengeQuest[] = JSON.parse(raw);
+          const filtered = currentList.filter((q) => q.id !== quest.id && q.title.trim() !== quest.title.trim());
+          localStorage.setItem('cch_my_challenges', JSON.stringify(filtered));
+        }
+      } catch (e) {
+        console.error('Error updating cch_my_challenges on cancel:', e);
+      }
+    }
+
+    showToast(`ยกเลิกภารกิจ "${quest.title}" เรียบร้อยแล้ว`);
+    setQuestToCancel(null);
+    if (questToJoin?.id === quest.id) {
       setQuestToJoin(null);
     }
   };
 
-  const handleConfirmCancel = () => {
-    if (questToCancel) {
-      setJoinedQuestIds((prev) => prev.filter((id) => id !== questToCancel.id));
-      showToast(`ยกเลิกภารกิจ "${questToCancel.title}" เรียบร้อยแล้ว`);
-      setQuestToCancel(null);
+  const handleSubmitProgress = (quest: ChallengeQuest, newCurrent: number) => {
+    const targetTotal = parseInt(quest.total || '3', 10) || 3;
+    const isDone = newCurrent >= targetTotal;
+    const progressPercent = Math.min(100, Math.round((newCurrent / targetTotal) * 100));
+
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('cch_my_challenges');
+        if (raw) {
+          const currentList: ChallengeQuest[] = JSON.parse(raw);
+          const updated = currentList.map((q) => {
+            if (q.id === quest.id || q.title.trim() === quest.title.trim()) {
+              return {
+                ...q,
+                current: String(newCurrent),
+                progressPercent,
+                completedCountInfo: isDone ? `ทำสำเร็จครบ ${targetTotal}/${targetTotal} แล้ว!` : `ทำสำเร็จแล้ว ${newCurrent}/${targetTotal}`,
+              };
+            }
+            return q;
+          });
+          localStorage.setItem('cch_my_challenges', JSON.stringify(updated));
+        }
+        
+        // If completed, award XP!
+        if (isDone && quest.rewardPoints) {
+          const currentXp = getStoredUserXp();
+          const nextXp = currentXp + quest.rewardPoints;
+          setStoredUserXp(nextXp);
+          setUserXp(nextXp);
+        }
+      } catch (e) {
+        console.error('Error saving progress to cch_my_challenges:', e);
+      }
     }
   };
+
+  // Check if currently viewed quest is completed
+  const isQuestCompleted = useMemo(() => {
+    if (!questToJoin) return false;
+    try {
+      if (typeof window !== 'undefined') {
+        const raw = localStorage.getItem('cch_my_challenges');
+        if (raw) {
+          const list: ChallengeQuest[] = JSON.parse(raw);
+          const found = list.find((q) => q.id === questToJoin.id || q.title.trim() === questToJoin.title.trim());
+          if (found) {
+            return (found.progressPercent ?? 0) >= 100 || (parseInt(found.current || '0', 10) >= parseInt(found.total || '3', 10));
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Error checking isQuestCompleted:', e);
+    }
+    return false;
+  }, [questToJoin, joinedQuestIds]);
 
   // Filtered Quests
   const filteredQuests = useMemo(() => {
@@ -310,6 +456,22 @@ export default function ChallengesDiscoveryPage() {
                   <ArrowRight className="w-3 h-3 text-purple-600" />
                 </button>
               )}
+
+              {/* Create Challenge CTA */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isLoggedIn) {
+                    setIsRequireMembershipOpen(true);
+                    return;
+                  }
+                  setIsCreateEventModalOpen(true);
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer leading-none"
+              >
+                <PlusCircle className="w-3.5 h-3.5 text-purple-300" />
+                <span>+ สร้างชาเลนจ์ใหม่</span>
+              </button>
             </div>
           </div>
         </section>
@@ -549,11 +711,18 @@ export default function ChallengesDiscoveryPage() {
                         </div>
 
                         {/* 4. Duration & Attendees */}
-                        <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
-                          <span>{quest.startDate} - {quest.endDate}</span>
-                          <span className={isUrgent ? 'text-rose-600 font-semibold' : ''}>
-                            เหลือ {quest.daysRemaining} วัน
-                          </span>
+                        <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+                          <span className="text-slate-400">{quest.startDate} - {quest.endDate}</span>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="flex items-center gap-1 text-slate-500 font-medium">
+                              <Users className="w-3 h-3 text-slate-400" />
+                              <span>{quest.participantsCount} คน</span>
+                            </span>
+                            <span className="text-slate-300">•</span>
+                            <span className={isUrgent ? 'text-rose-600 font-semibold' : 'text-slate-400'}>
+                              เหลือ {quest.daysRemaining} วัน
+                            </span>
+                          </div>
                         </div>
 
                         {/* 5. Footer Meta & Action Bar */}
@@ -600,9 +769,9 @@ export default function ChallengesDiscoveryPage() {
                                     setQuestToJoin(quest);
                                   }
                                 }}
-                                className="text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200/80 text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 active:scale-95 cursor-pointer shrink-0 shadow-2xs"
+                                className="text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200/80 text-[11px] font-bold px-3 py-1 rounded-lg transition-all flex items-center gap-1 active:scale-95 cursor-pointer shrink-0 shadow-2xs"
                               >
-                                <span>{quest.participantsCount} คน</span>
+                                <span>รับภารกิจ</span>
                                 <ArrowRight className="w-3.5 h-3.5 text-purple-600" />
                               </button>
                             )}
@@ -651,16 +820,17 @@ export default function ChallengesDiscoveryPage() {
         isOpen={!!questToJoin}
         onClose={() => setQuestToJoin(null)}
         quest={questToJoin}
-        onConfirmJoin={() => {
+        onConfirmJoin={(q) => {
           if (!isLoggedIn) {
             setIsRequireMembershipOpen(true);
             return;
           }
-          if (questToJoin) {
-            handleConfirmJoin();
-          }
+          handleConfirmJoin(q || questToJoin);
         }}
         isAlreadyJoined={questToJoin ? joinedQuestIds.includes(questToJoin.id) : false}
+        onCancelQuest={(q) => handleConfirmCancel(q || questToJoin)}
+        onSubmitProgress={(q, newCurrent) => handleSubmitProgress(q, newCurrent)}
+        isCompleted={isQuestCompleted}
       />
 
       {/* 🛡️ 4. POPUP 2: Confirm Cancel Quest Modal (Double Confirm) */}
@@ -696,7 +866,7 @@ export default function ChallengesDiscoveryPage() {
               </button>
               <button
                 type="button"
-                onClick={handleConfirmCancel}
+                onClick={() => handleConfirmCancel()}
                 className="w-full py-2.5 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold shadow-md shadow-rose-600/25 active:scale-95 cursor-pointer"
               >
                 ยืนยันยกเลิก
@@ -715,6 +885,48 @@ export default function ChallengesDiscoveryPage() {
         initialType="challenge"
         onClose={() => setIsCreateEventModalOpen(false)}
         onCreateSuccess={(newEvent) => {
+          const newQuest: QuestWithDuration = {
+            id: newEvent.id,
+            title: newEvent.title,
+            iconName: 'Trophy',
+            progressPercent: 0,
+            current: '0',
+            total: '3',
+            badgeLabel: 'New Quest',
+            badgeIcon: '🏅',
+            completedCountInfo: '0/3 ครั้ง',
+            category: (newEvent.category as any) || 'chill',
+            targetGoal: newEvent.description || newEvent.title,
+            objective: newEvent.description,
+            steps: newEvent.rules || ['เช็คอินถ่ายภาพหรือส่งหลักฐาน', 'ทำภารกิจตามกติกาให้ครบ'],
+            verificationMethod: 'อัปโหลดรูปถ่ายหรือเช็คอินพิกัด',
+            rewardsText: newEvent.badgeText || '+250 XP',
+            participantsCount: 1,
+            rewardPoints: 250,
+            isOfficial: false,
+            badgeCoverImg: newEvent.image,
+            image: newEvent.image,
+            startDate: newEvent.date?.split(' - ')[0] || '',
+            endDate: newEvent.date?.split(' - ')[1] || '',
+            daysRemaining: 14,
+            creatorName: userProfile.name || 'ฉัน',
+            creatorAvatar: userProfile.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
+          };
+
+          setQuestList((prev) => [newQuest, ...prev]);
+          setJoinedQuestIds((prev) => Array.from(new Set([newQuest.id, ...prev])));
+
+          if (typeof window !== 'undefined') {
+            try {
+              const raw = localStorage.getItem('cch_my_challenges');
+              const list: ChallengeQuest[] = raw ? JSON.parse(raw) : [];
+              localStorage.setItem('cch_my_challenges', JSON.stringify([newQuest, ...list]));
+            } catch (e) {
+              console.error('Error saving new challenge:', e);
+            }
+          }
+
+          setIsCreateEventModalOpen(false);
           showToast(`สร้างชาเลนจ์ "${newEvent.title}" เรียบร้อยแล้ว! ⚡`);
         }}
       />
