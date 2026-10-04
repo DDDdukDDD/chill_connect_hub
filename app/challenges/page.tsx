@@ -48,6 +48,8 @@ export interface QuestWithDuration extends ChallengeQuest {
   endDate: string;
   daysRemaining: number;
   image?: string;
+  status?: 'draft' | 'active' | 'ended';
+  brandReward?: any;
 }
 
 // Extended Catalog of Official & Community Quests with rich gamification metadata
@@ -57,6 +59,7 @@ const ALL_QUESTS: QuestWithDuration[] = [
     startDate: (q as any).startDate || '1 มี.ค. 2026',
     endDate: (q as any).endDate || '31 มี.ค. 2026',
     daysRemaining: (q as any).daysRemaining !== undefined ? (q as any).daysRemaining : 10,
+    status: (q as any).status || 'active',
     image: q.image,
   })),
   {
@@ -77,6 +80,7 @@ const ALL_QUESTS: QuestWithDuration[] = [
     participantsCount: 412,
     rewardPoints: 200,
     isOfficial: true,
+    status: 'active',
     targetGoal: 'เข้าร่วมงานสัปดาห์หนังสือ ณ ศูนย์ฯ สิริกิติ์ และแบ่งปันหนังสือเล่มโปรดลงคอมมูนิตี้',
     objective: 'สนับสนุนวัฒนธรรมการอ่านหนังสือ พบปะนักเขียน และแลกเปลี่ยนมุมมองความคิดสร้างสรรค์กับเพื่อนหนอนหนังสือ',
     steps: [
@@ -108,6 +112,7 @@ const ALL_QUESTS: QuestWithDuration[] = [
     participantsCount: 198,
     rewardPoints: 280,
     isOfficial: true,
+    status: 'active',
     targetGoal: 'เข้าร่วมกิจกรรมบำบัดด้วยคลื่นเสียงหรือฝึกสมาธิกลุ่มครบ 3 ครั้ง',
     objective: 'ผ่อนคลายสมองจากความเหนื่อยล้า บำบัดความเครียดด้วยคลื่นเสียง Tibetan Bowls และปรับสมดุลจิตใจ',
     steps: [
@@ -121,6 +126,77 @@ const ALL_QUESTS: QuestWithDuration[] = [
     endDate: '10 เม.ย. 2026',
     daysRemaining: 20,
   },
+  {
+    id: 'quest-ended-1',
+    title: 'Winter Park Run: วิ่งรับลมหนาวสวนวชิรเบญจทัศ',
+    image: 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=600&q=80',
+    iconName: 'Footprints',
+    category: 'move',
+    badgeLabel: 'Winter Runner',
+    badgeIcon: '🏃',
+    completedCountInfo: '0/30 กม.',
+    progressPercent: 0,
+    current: '0',
+    total: '30',
+    visibility: 'public',
+    creatorName: 'ทีมงาน Chill & Connect',
+    creatorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
+    participantsCount: 520,
+    rewardPoints: 250,
+    isOfficial: true,
+    status: 'ended',
+    targetGoal: 'วิ่งสะสมระยะทางครบ 30 กม. ในสวนวชิรเบญจทัศช่วงฤดูหนาว',
+    objective: 'กระตุ้นให้คอมมูนิตี้คนรักสุขภาพออกกำลังกายรับอากาศสดชื่นยามเช้า',
+    steps: ['วิ่งในสวนรถไฟหรือสวนจตุจักร', 'บันทึกสถิติระยะทาง', 'ส่งสถิติวิ่ง'],
+    verificationMethod: 'วิ่งสะสมระยะทางผ่านแอปพลิเคชัน',
+    rewardsText: '🏅 เหรียญ "Winter Runner" + ⚡ 250 XP',
+    startDate: '1 ธ.ค. 2025',
+    endDate: '31 ม.ค. 2026',
+    daysRemaining: 0,
+    brandReward: {
+      type: 'brand_partner',
+      title: 'ส่วนลด 20% รองเท้าวิ่ง Ari Running',
+      partnerName: 'Ari Running',
+      voucherCodePrefix: 'ARI-RUN-',
+      exclusiveNotice: 'สิทธิ์เฉพาะหน้าร้าน Ari Running ทุกสาขาเท่านั้น',
+      terms: 'สิ้นสุดการแจกสิทธิ์แล้ว',
+    },
+  },
+  {
+    id: 'quest-ended-2',
+    title: 'Bangkok Art Biennale: ตะลุย 5 แกลเลอรีริมเจ้าพระยา',
+    image: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=600&q=80',
+    iconName: 'Sparkles',
+    category: 'learn',
+    badgeLabel: 'Art Collector',
+    badgeIcon: '🎨',
+    completedCountInfo: '0/5 ที่',
+    progressPercent: 0,
+    current: '0',
+    total: '5',
+    visibility: 'public',
+    creatorName: 'ทีมงาน Chill & Connect',
+    creatorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80',
+    participantsCount: 680,
+    rewardPoints: 300,
+    isOfficial: true,
+    status: 'ended',
+    targetGoal: 'เช็คอินและชมนิทรรศการศิลปะริมแม่น้ำเจ้าพระยาครบ 5 แห่ง',
+    objective: 'เปิดมุมมองศิลปะร่วมสมัยและสัมผัสเสน่ห์ย่านเมืองเก่าริมแม่น้ำเจ้าพระยา',
+    steps: ['เยือนแกลเลอรีที่กำหนด', 'ถ่ายภาพชิ้นงานศิลปะ', 'เช็คอินครบ 5 แห่ง'],
+    verificationMethod: 'เช็คอินพร้อมภาพถ่ายนิทรรศการ',
+    rewardsText: '🏅 เหรียญ "Art Collector" + ⚡ 300 XP',
+    startDate: '15 พ.ย. 2025',
+    endDate: '15 ม.ค. 2026',
+    daysRemaining: 0,
+    brandReward: {
+      type: 'hub_central',
+      title: 'แต้มสะสมอิสระ + ปลดล็อกของรางวัลใน Hub Rewards',
+      partnerName: 'Chill & Connect Hub',
+      hubRewardNote: 'ภารกิจสิ้นสุดระยะเวลาแล้ว',
+      terms: 'กิจกรรมสิ้นสุดแล้ว',
+    },
+  },
 ];
 
 
@@ -128,6 +204,7 @@ export default function ChallengesDiscoveryPage() {
   const [activeTab, setActiveTab] = useState('challenges');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<'all' | 'hub_central' | 'brand_partner'>('all');
+  const [statusFilter, setStatusFilter] = useState<'active' | 'ended'>('active');
   const [searchQuery, setSearchQuery] = useState('');
   
   // Auth state
@@ -353,13 +430,41 @@ export default function ChallengesDiscoveryPage() {
     return false;
   }, [questToJoin, joinedQuestIds]);
 
-  // Type counts for quick filter
-  const hubCount = useMemo(() => questList.filter((q) => getQuestBrandReward(q).type === 'hub_central').length, [questList]);
-  const partnerCount = useMemo(() => questList.filter((q) => getQuestBrandReward(q).type === 'brand_partner').length, [questList]);
+  // Status and type counts
+  const activeQuestsCount = useMemo(
+    () => questList.filter((q) => q.status !== 'ended' && (q.daysRemaining === undefined || q.daysRemaining > 0)).length,
+    [questList]
+  );
+  const endedQuestsCount = useMemo(
+    () => questList.filter((q) => q.status === 'ended' || (q.daysRemaining !== undefined && q.daysRemaining <= 0)).length,
+    [questList]
+  );
+
+  const relevantQuestsByStatus = useMemo(() => {
+    return questList.filter((q) => {
+      const isEnded = q.status === 'ended' || (q.daysRemaining !== undefined && q.daysRemaining <= 0);
+      return statusFilter === 'active' ? !isEnded : isEnded;
+    });
+  }, [questList, statusFilter]);
+
+  const hubCount = useMemo(
+    () => relevantQuestsByStatus.filter((q) => getQuestBrandReward(q).type === 'hub_central').length,
+    [relevantQuestsByStatus]
+  );
+  const partnerCount = useMemo(
+    () => relevantQuestsByStatus.filter((q) => getQuestBrandReward(q).type === 'brand_partner').length,
+    [relevantQuestsByStatus]
+  );
 
   // Filtered Quests
   const filteredQuests = useMemo(() => {
     return questList.filter((quest) => {
+      const isQuestEnded = quest.status === 'ended' || (quest.daysRemaining !== undefined && quest.daysRemaining <= 0);
+
+      // Status match (Active vs Ended)
+      if (statusFilter === 'active' && isQuestEnded) return false;
+      if (statusFilter === 'ended' && !isQuestEnded) return false;
+
       const reward = getQuestBrandReward(quest);
 
       // Quick Filter by type
@@ -380,7 +485,7 @@ export default function ChallengesDiscoveryPage() {
       }
       return true;
     });
-  }, [questList, selectedType, selectedCategory, searchQuery]);
+  }, [questList, statusFilter, selectedType, selectedCategory, searchQuery]);
 
   // Pagination calculation
   const totalPages = Math.ceil(filteredQuests.length / itemsPerPage);
@@ -617,14 +722,46 @@ export default function ChallengesDiscoveryPage() {
 
           {/* Quests Main Section (Full Width) */}
           <div id="catalog-section" className="space-y-3 sm:space-y-4">
-            <div className="flex items-center justify-between pb-0.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <h2 className="text-sm sm:text-base font-bold text-slate-900">
-                  คลังภารกิจ
+                  {statusFilter === 'active' ? 'ภารกิจที่เปิดรับสมัคร' : 'คลังภารกิจที่สิ้นสุดแล้ว'}
                 </h2>
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-slate-400 font-medium">
                   ({filteredQuests.length} ภารกิจ{totalPages > 1 ? ` • หน้า ${currentPage}/${totalPages}` : ''})
                 </span>
+              </div>
+
+              {/* Status Switcher: Active vs Ended Archive */}
+              <div className="flex items-center gap-1 bg-slate-100/90 p-0.5 rounded-xl border border-slate-200/70 self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter('active');
+                    setCurrentPage(1);
+                  }}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    statusFilter === 'active'
+                      ? 'bg-white text-slate-900 shadow-2xs'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  เปิดรับสมัคร ({activeQuestsCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter('ended');
+                    setCurrentPage(1);
+                  }}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    statusFilter === 'ended'
+                      ? 'bg-white text-slate-900 shadow-2xs'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  สิ้นสุดแล้ว ({endedQuestsCount})
+                </button>
               </div>
             </div>
 
@@ -660,179 +797,203 @@ export default function ChallengesDiscoveryPage() {
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {paginatedQuests.map((quest) => {
+                    const isEnded = quest.status === 'ended' || (quest.daysRemaining !== undefined && quest.daysRemaining <= 0);
                     const isJoined = joinedQuestIds.includes(quest.id);
-                    const isUrgent = quest.daysRemaining <= 5;
+                    const isUrgent = !isEnded && quest.daysRemaining <= 5;
                     const brandReward = getQuestBrandReward(quest);
 
                     return (
                       <div key={quest.id}>
                         <div
                           onClick={() => setQuestToJoin(quest)}
-                        className={`group/card bg-white rounded-2xl p-3.5 sm:p-4 border transition-all duration-300 flex flex-col justify-between space-y-3 relative overflow-hidden shadow-2xs hover:shadow-xl hover:border-purple-300/80 hover:-translate-y-0.5 cursor-pointer ${
-                          isJoined 
-                            ? 'border-purple-300 bg-purple-50/15 ring-1 ring-purple-200' 
-                            : 'border-slate-200/80'
-                        }`}
-                      >
-                        {/* Official Quest Top Accent Stripe */}
-                        <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${brandReward.type === 'brand_partner' ? 'from-amber-500 via-amber-400 to-orange-400' : 'from-purple-600 via-indigo-400 to-purple-400'}`} />
+                          className={`group/card bg-white rounded-2xl p-3.5 sm:p-4 border transition-all duration-300 flex flex-col justify-between space-y-3 relative overflow-hidden shadow-2xs hover:shadow-xl cursor-pointer ${
+                            isEnded
+                              ? 'opacity-80 bg-slate-50/40 border-slate-200 hover:border-slate-300'
+                              : isJoined 
+                                ? 'border-purple-300 bg-purple-50/15 ring-1 ring-purple-200 hover:border-purple-400' 
+                                : 'border-slate-200/80 hover:border-purple-300/80 hover:-translate-y-0.5'
+                          }`}
+                        >
+                          {/* Official Quest Top Accent Stripe */}
+                          <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${
+                            isEnded
+                              ? 'from-slate-300 to-slate-400'
+                              : brandReward.type === 'brand_partner' 
+                                ? 'from-amber-500 via-amber-400 to-orange-400' 
+                                : 'from-purple-600 via-indigo-400 to-purple-400'
+                          }`} />
 
-                        {/* 1. Top Badges Row: Brand Partner vs Central Hub Badge */}
-                        <div className="flex items-center justify-between gap-1.5 pt-0.5">
-                          {brandReward.type === 'brand_partner' ? (
-                            <span
-                              title={`ภารกิจพาร์ทเนอร์ทางการ: ${brandReward.partnerName}`}
-                              className="text-[10px] font-black text-amber-950 bg-amber-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-amber-300/80 truncate max-w-[210px]"
-                            >
-                              <Crown className="w-2.5 h-2.5 text-amber-600 fill-amber-500 shrink-0" />
-                              <span className="truncate">Official • {brandReward.partnerName}</span>
-                            </span>
-                          ) : (
-                            <span
-                              title="ภารกิจกิจกรรมกลางของ Chill & Connect Hub (สะสมแต้มแลกรางวัลอิสระ)"
-                              className="text-[10px] font-black text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-purple-300/80 truncate max-w-[210px]"
-                            >
-                              <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500 shrink-0" />
-                              <span className="truncate">Official • Chill & Connect</span>
-                            </span>
-                          )}
-
-                          <span className="text-[10px] font-black text-purple-800 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200/90 px-2 py-0.5 rounded-md flex items-center gap-0.5 shrink-0 shadow-2xs">
-                            <Zap className="w-3 h-3 text-purple-600 fill-purple-500" />
-                            <span>+{quest.rewardPoints} XP</span>
-                          </span>
-                        </div>
-
-                        {/* 2. Full Inner Image Banner with Floating Glass Medal Badge */}
-                        <div className="relative h-[135px] sm:h-[154px] w-full rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 group-hover/card:border-purple-300/50 transition-colors">
-                          <img
-                            src={quest.image || 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80'}
-                            alt={quest.title}
-                            className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500"
-                          />
-                          
-                          {/* Ambient Dark Gradient */}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
-
-                          {/* Bottom-Left Floating Glass Medal Badge */}
-                          <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
-                            <div className="inline-flex items-center gap-1.5 text-[10.5px] font-black text-white bg-slate-900/85 backdrop-blur-md px-2.5 py-1 rounded-xl border border-white/20 shadow-md truncate max-w-full">
-                              <Award className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                              <span className="truncate">เหรียญ {quest.badgeLabel}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* 3. Title & Target Description */}
-                        <div className="space-y-1.5 flex-1">
-                          <h3
-                            title={quest.title}
-                            className="font-black text-xs sm:text-[13px] text-slate-900 group-hover/card:text-purple-700 transition-colors leading-snug line-clamp-1"
-                          >
-                            {quest.title}
-                          </h3>
-                          <p
-                            title={quest.targetGoal}
-                            className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed font-medium"
-                          >
-                            {quest.targetGoal}
-                          </p>
-
-                          {/* Reward Privilege Pill: Brand Exclusive vs Hub Universal Points */}
-                          {brandReward.type === 'brand_partner' ? (
-                            <div 
-                              title={`สิทธิพิเศษเฉพาะแบรนด์ ${brandReward.partnerName}: ${brandReward.title}`}
-                              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-50/90 border border-amber-200/90 text-amber-950 text-[10.5px] font-bold shadow-2xs"
-                            >
-                              <Ticket className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                              <span className="truncate">{brandReward.title}</span>
-                            </div>
-                          ) : (
-                            <div 
-                              title="รับแต้มสะสมพิเศษเพื่อนำไปเลือกแลกของรางวัลในศูนย์กลาง (/rewards)"
-                              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-purple-50/90 border border-purple-200/90 text-purple-950 text-[10.5px] font-bold shadow-2xs"
-                            >
-                              <Gift className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                              <span className="truncate">แต้มสะสมอิสระ แลกของรางวัลใน Hub Rewards</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* 4. Duration & Attendees */}
-                        <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
-                          <span className="text-slate-400">{quest.startDate} - {quest.endDate}</span>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <span className="flex items-center gap-1 text-slate-500 font-medium">
-                              <Users className="w-3 h-3 text-slate-400" />
-                              <span>{quest.participantsCount} คน</span>
-                            </span>
-                            <span className="text-slate-300">•</span>
-                            <span className={isUrgent ? 'text-rose-600 font-semibold' : 'text-slate-400'}>
-                              เหลือ {quest.daysRemaining} วัน
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* 5. Footer Meta & Action Bar */}
-                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 text-[11px] text-slate-500">
-                          <div className="flex items-center gap-1.5 truncate max-w-[140px]" title={brandReward.type === 'brand_partner' ? `พาร์ทเนอร์ทางการ: ${brandReward.partnerName}` : 'กิจกรรมกลางของ Hub'}>
-                            {brandReward.type === 'brand_partner' ? (
-                              <>
-                                <ShieldCheck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                                <span className="truncate text-slate-700 font-semibold">{brandReward.partnerName}</span>
-                              </>
+                          {/* 1. Top Badges Row: Brand Partner vs Central Hub Badge vs Ended */}
+                          <div className="flex items-center justify-between gap-1.5 pt-0.5">
+                            {isEnded ? (
+                              <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200 shrink-0">
+                                สิ้นสุดภารกิจแล้ว
+                              </span>
+                            ) : brandReward.type === 'brand_partner' ? (
+                              <span
+                                title={`ภารกิจพาร์ทเนอร์ทางการ: ${brandReward.partnerName}`}
+                                className="text-[10px] font-black text-amber-950 bg-amber-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-amber-300/80 truncate max-w-[210px]"
+                              >
+                                <Crown className="w-2.5 h-2.5 text-amber-600 fill-amber-500 shrink-0" />
+                                <span className="truncate">Official • {brandReward.partnerName}</span>
+                              </span>
                             ) : (
-                              <>
-                                <Sparkles className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                                <span className="truncate text-slate-700 font-semibold">Chill & Connect Hub</span>
-                              </>
+                              <span
+                                title="ภารกิจกิจกรรมกลางของ Chill & Connect Hub (สะสมแต้มแลกรางวัลอิสระ)"
+                                className="text-[10px] font-black text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-purple-300/80 truncate max-w-[210px]"
+                              >
+                                <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500 shrink-0" />
+                                <span className="truncate">Official • Chill & Connect</span>
+                              </span>
                             )}
+
+                            <span className={`text-[10px] font-black border px-2 py-0.5 rounded-md flex items-center gap-0.5 shrink-0 shadow-2xs ${
+                              isEnded
+                                ? 'text-slate-600 bg-slate-100 border-slate-200'
+                                : 'text-purple-800 bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200/90'
+                            }`}>
+                              <Zap className={`w-3 h-3 ${isEnded ? 'text-slate-400 fill-slate-400' : 'text-purple-600 fill-purple-500'}`} />
+                              <span>+{quest.rewardPoints} XP</span>
+                            </span>
                           </div>
 
-                          <div className="flex items-center gap-2">
-                            {isJoined ? (
-                              <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-                                <Link
-                                  href="/myhub?tab=quests_rewards"
-                                  className="bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 shadow-2xs cursor-pointer group/btn"
-                                  title="ไปที่ My Hub เพื่อส่งรูปถ่ายยืนยันภารกิจ"
-                                >
-                                  <CheckCircle2 className="w-3 h-3" />
-                                  <span>กำลังทำ</span>
-                                  <ArrowRight className="w-3 h-3 opacity-75 group-hover/btn:translate-x-0.5 transition-transform" />
-                                </Link>
-                                
-                                <button
-                                  type="button"
-                                  onClick={() => setQuestToCancel(quest)}
-                                  className="text-slate-400 hover:text-rose-600 p-1 rounded-md hover:bg-rose-50 transition-colors cursor-pointer"
-                                  title="ยกเลิกภารกิจนี้"
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                </button>
+                          {/* 2. Full Inner Image Banner with Floating Glass Medal Badge */}
+                          <div className={`relative h-[135px] sm:h-[154px] w-full rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 transition-colors ${isEnded ? 'grayscale-[25%]' : 'group-hover/card:border-purple-300/50'}`}>
+                            <img
+                              src={quest.image || 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80'}
+                              alt={quest.title}
+                              className={`w-full h-full object-cover transition-transform duration-500 ${isEnded ? '' : 'group-hover/card:scale-105'}`}
+                            />
+                            
+                            {/* Ambient Dark Gradient */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+
+                            {/* Bottom-Left Floating Glass Medal Badge */}
+                            <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
+                              <div className="inline-flex items-center gap-1.5 text-[10.5px] font-black text-white bg-slate-900/85 backdrop-blur-md px-2.5 py-1 rounded-xl border border-white/20 shadow-md truncate max-w-full">
+                                <Award className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                <span className="truncate">เหรียญ {quest.badgeLabel}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 3. Title & Target Description */}
+                          <div className="space-y-1.5 flex-1">
+                            <h3
+                              title={quest.title}
+                              className={`font-black text-xs sm:text-[13px] leading-snug line-clamp-1 transition-colors ${
+                                isEnded ? 'text-slate-700' : 'text-slate-900 group-hover/card:text-purple-700'
+                              }`}
+                            >
+                              {quest.title}
+                            </h3>
+                            <p
+                              title={quest.targetGoal}
+                              className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed font-medium"
+                            >
+                              {quest.targetGoal}
+                            </p>
+
+                            {/* Reward Privilege Pill */}
+                            {brandReward.type === 'brand_partner' ? (
+                              <div 
+                                title={`สิทธิพิเศษเฉพาะแบรนด์ ${brandReward.partnerName}: ${brandReward.title}`}
+                                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10.5px] font-bold shadow-2xs ${
+                                  isEnded
+                                    ? 'bg-slate-100 text-slate-600 border border-slate-200'
+                                    : 'bg-amber-50/90 border border-amber-200/90 text-amber-950'
+                                }`}
+                              >
+                                <Ticket className={`w-3.5 h-3.5 shrink-0 ${isEnded ? 'text-slate-400' : 'text-amber-600'}`} />
+                                <span className="truncate">{brandReward.title}</span>
                               </div>
                             ) : (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (!isLoggedIn) {
-                                    setIsRequireMembershipOpen(true);
-                                  } else {
-                                    setQuestToJoin(quest);
-                                  }
-                                }}
-                                className="text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200/80 text-[11px] font-bold px-3 py-1 rounded-lg transition-all flex items-center gap-1 active:scale-95 cursor-pointer shrink-0 shadow-2xs"
+                              <div 
+                                title="รับแต้มสะสมพิเศษเพื่อนำไปเลือกแลกของรางวัลในศูนย์กลาง (/rewards)"
+                                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10.5px] font-bold shadow-2xs ${
+                                  isEnded
+                                    ? 'bg-slate-100 text-slate-600 border border-slate-200'
+                                    : 'bg-purple-50/90 border border-purple-200/90 text-purple-950'
+                                }`}
                               >
-                                <span>รับภารกิจ</span>
-                                <ArrowRight className="w-3.5 h-3.5 text-purple-600" />
-                              </button>
+                                <Gift className={`w-3.5 h-3.5 shrink-0 ${isEnded ? 'text-slate-400' : 'text-purple-600'}`} />
+                                <span className="truncate">{isEnded ? 'ภารกิจสิ้นสุดระยะเวลาจัดกิจกรรม' : 'แต้มสะสมอิสระ แลกของรางวัลใน Hub Rewards'}</span>
+                              </div>
                             )}
+                          </div>
+
+                          {/* 4. Duration & Attendees (Icon Hygiene applied - clean typography) */}
+                          <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+                            <span className="text-slate-400">{quest.startDate} - {quest.endDate}</span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span className="text-slate-500 font-medium">
+                                {quest.participantsCount} คนร่วมทำ
+                              </span>
+                              <span className="text-slate-300">•</span>
+                              {isEnded ? (
+                                <span className="text-slate-400 font-medium">ปิดรับแล้ว</span>
+                              ) : (
+                                <span className={isUrgent ? 'text-rose-600 font-semibold' : 'text-slate-400'}>
+                                  เหลือ {quest.daysRemaining} วัน
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* 5. Footer Meta & Action Bar (Clean, no redundant duplicate icons) */}
+                          <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 text-[11px] text-slate-500">
+                            <div className="truncate max-w-[150px]" title={brandReward.type === 'brand_partner' ? `พาร์ทเนอร์ทางการ: ${brandReward.partnerName}` : 'กิจกรรมกลางของ Hub'}>
+                              <span className="truncate text-slate-600 font-semibold">
+                                {brandReward.type === 'brand_partner' ? brandReward.partnerName : 'Chill & Connect Hub'}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              {isEnded ? (
+                                <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                                  ดูสรุปภารกิจ
+                                </span>
+                              ) : isJoined ? (
+                                <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                  <Link
+                                    href="/myhub?tab=quests_rewards"
+                                    className="bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 shadow-2xs cursor-pointer group/btn"
+                                    title="ไปที่ My Hub เพื่อส่งรูปถ่ายยืนยันภารกิจ"
+                                  >
+                                    <span>กำลังทำ</span>
+                                    <ArrowRight className="w-3 h-3 opacity-75 group-hover/btn:translate-x-0.5 transition-transform" />
+                                  </Link>
+                                  
+                                  <button
+                                    type="button"
+                                    onClick={() => setQuestToCancel(quest)}
+                                    className="text-slate-400 hover:text-rose-600 p-1 rounded-md hover:bg-rose-50 transition-colors cursor-pointer"
+                                    title="ยกเลิกภารกิจนี้"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (!isLoggedIn) {
+                                      setIsRequireMembershipOpen(true);
+                                    } else {
+                                      setQuestToJoin(quest);
+                                    }
+                                  }}
+                                  className="bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold px-3 py-1 rounded-lg transition-all shadow-2xs cursor-pointer active:scale-95"
+                                >
+                                  <span>รับภารกิจ</span>
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  );
+                    );
                   })}
                 </div>
 

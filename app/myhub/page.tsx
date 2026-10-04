@@ -150,6 +150,7 @@ export default function MyHubPage() {
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
   const [selectedQuestForVoucherModal, setSelectedQuestForVoucherModal] = useState<ChallengeQuest | null>(null);
   const [selectedQuestForVerifyModal, setSelectedQuestForVerifyModal] = useState<ChallengeQuest | null>(null);
+  const [questStatusFilter, setQuestStatusFilter] = useState<'all' | 'in_progress' | 'completed' | 'expired'>('all');
 
   // Spot Buddy Gathering Modal from Scrapbook
   const [isSpotBuddyModalOpen, setIsSpotBuddyModalOpen] = useState(false);
@@ -3548,207 +3549,296 @@ export default function MyHubPage() {
               {activeSubTab === 'quests_rewards' && (
                 <div className="space-y-8">
                   {/* Section 1: Active Quests Header Bar */}
-                  <div className="flex items-center justify-between gap-3 flex-wrap bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center border border-purple-200 shrink-0">
-                        <Trophy className="w-4 h-4 text-purple-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-sm sm:text-base text-slate-900 flex items-center gap-2">
-                          <span>ภารกิจที่คุณกำลังทำอยู่ (Active Quests)</span>
-                          <span className="text-xs text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full font-bold border border-purple-200/80">
-                            {myChallenges.length} ภารกิจ
-                          </span>
-                        </h4>
-                        <p className="text-xs text-slate-500">
-                          สะสมแต้ม XP และปลดล็อกเข็มกลัดเกียรติยศลงบนโปรไฟล์ของคุณ
-                        </p>
-                      </div>
-                    </div>
+                  {(() => {
+                    const inProgressQuests = myChallenges.filter((q) => q.progressPercent < 100 && (q as any).status !== 'ended' && ((q as any).daysRemaining === undefined || (q as any).daysRemaining > 0));
+                    const completedQuests = myChallenges.filter((q) => q.progressPercent >= 100);
+                    const expiredQuests = myChallenges.filter((q) => q.progressPercent < 100 && ((q as any).status === 'ended' || ((q as any).daysRemaining !== undefined && (q as any).daysRemaining <= 0)));
 
-                    <div className="flex items-center gap-2">
-                      <Link
-                        href="/challenges"
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
-                      >
-                        <Compass className="w-3.5 h-3.5 text-slate-500" />
-                        <span>สำรวจเควสต์เพิ่ม</span>
-                      </Link>
-                    </div>
-                  </div>
+                    const filteredMyChallenges = myChallenges.filter((q) => {
+                      const isDone = q.progressPercent >= 100;
+                      const isEnded = (q as any).status === 'ended' || ((q as any).daysRemaining !== undefined && (q as any).daysRemaining <= 0);
+                      if (questStatusFilter === 'in_progress') return !isDone && !isEnded;
+                      if (questStatusFilter === 'completed') return isDone;
+                      if (questStatusFilter === 'expired') return !isDone && isEnded;
+                      return true;
+                    });
 
-                  {/* Quests Grid (Matched with Discovery Aesthetics & Strava / Nike Partner Model) */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
-                    {myChallenges.map((quest) => {
-                      const isCompleted = quest.progressPercent >= 100;
-                      const isUrgent = (quest.daysRemaining || 10) <= 5;
-                      const brandReward = getQuestBrandReward(quest);
-                      
-                      // Category theme helper
-                      const getCatTheme = (cat?: string) => {
-                        switch (cat) {
-                          case 'move':
-                            return { label: 'Move', bg: 'bg-rose-50 text-rose-800 border-rose-200', text: 'text-rose-700' };
-                          case 'heal':
-                            return { label: 'Heal', bg: 'bg-emerald-50 text-emerald-800 border-emerald-200', text: 'text-emerald-700' };
-                          case 'learn':
-                            return { label: 'Learn', bg: 'bg-sky-50 text-sky-800 border-sky-200', text: 'text-sky-700' };
-                          case 'chill':
-                          default:
-                            return { label: 'Chill', bg: 'bg-amber-50 text-amber-800 border-amber-200', text: 'text-amber-800' };
-                        }
-                      };
-                      const catTheme = getCatTheme(quest.category);
+                    return (
+                      <>
+                        <div className="flex items-center justify-between gap-3 flex-wrap bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center border border-purple-200 shrink-0">
+                              <Trophy className="w-4 h-4 text-purple-600" />
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-sm sm:text-base text-slate-900 flex items-center gap-2">
+                                <span>ภารกิจของคุณ (My Quests)</span>
+                                <span className="text-xs text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full font-bold border border-purple-200/80">
+                                  {myChallenges.length} ภารกิจ
+                                </span>
+                              </h4>
+                              <p className="text-xs text-slate-500">
+                                สะสมแต้ม XP และปลดล็อกเข็มกลัดเกียรติยศลงบนโปรไฟล์ของคุณ
+                              </p>
+                            </div>
+                          </div>
 
-                      return (
-                        <div
-                          key={quest.id}
-                          className={`group/card bg-white rounded-2xl p-3.5 sm:p-4 border transition-all duration-300 flex flex-col justify-between space-y-3 relative overflow-hidden shadow-2xs hover:shadow-xs hover:-translate-y-0.5 ${
-                            isCompleted
-                              ? 'border-emerald-300 ring-1 ring-emerald-500/20 bg-emerald-50/10'
-                              : 'border-slate-200/90 hover:border-purple-300'
-                          }`}
-                        >
-                          {/* Top Row: Icon + Badges & XP */}
-                          <div className="flex items-start gap-3">
-                            <div className="w-11 h-11 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0 group-hover/card:scale-105 transition-transform shadow-2xs">
-                              {quest.iconName === 'Flame' ? (
-                                <Flame className="w-5 h-5 text-rose-500" />
-                              ) : quest.iconName === 'Coffee' ? (
-                                <Coffee className="w-5 h-5 text-amber-600" />
-                              ) : quest.iconName === 'Footprints' ? (
-                                <Footprints className="w-5 h-5 text-indigo-500" />
-                              ) : (
-                                <Medal className="w-5 h-5 text-purple-600" />
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {/* Filter Chips */}
+                            <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl">
+                              <button
+                                type="button"
+                                onClick={() => setQuestStatusFilter('all')}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                  questStatusFilter === 'all'
+                                    ? 'bg-white text-slate-900 shadow-2xs'
+                                    : 'text-slate-600 hover:text-slate-900'
+                                }`}
+                              >
+                                ทั้งหมด ({myChallenges.length})
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setQuestStatusFilter('in_progress')}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                  questStatusFilter === 'in_progress'
+                                    ? 'bg-white text-purple-700 shadow-2xs'
+                                    : 'text-slate-600 hover:text-slate-900'
+                                }`}
+                              >
+                                กำลังทำ ({inProgressQuests.length})
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setQuestStatusFilter('completed')}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                  questStatusFilter === 'completed'
+                                    ? 'bg-white text-emerald-700 shadow-2xs'
+                                    : 'text-slate-600 hover:text-slate-900'
+                                }`}
+                              >
+                                พิชิตแล้ว ({completedQuests.length})
+                              </button>
+                              {expiredQuests.length > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setQuestStatusFilter('expired')}
+                                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                    questStatusFilter === 'expired'
+                                      ? 'bg-white text-slate-700 shadow-2xs'
+                                      : 'text-slate-500 hover:text-slate-800'
+                                  }`}
+                                >
+                                  หมดเวลา ({expiredQuests.length})
+                                </button>
                               )}
                             </div>
 
-                            <div className="min-w-0 flex-1 space-y-1">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${catTheme.bg}`}>
-                                  {catTheme.label}
-                                </span>
-                                {brandReward.type === 'brand_partner' ? (
-                                  <span 
-                                    title={`ภารกิจพาร์ทเนอร์ทางการ: ${brandReward.partnerName}`}
-                                    className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-950 border border-amber-200 shrink-0 truncate max-w-[140px] inline-flex items-center gap-1"
-                                  >
-                                    <Crown className="w-2.5 h-2.5 text-amber-600 fill-amber-500 shrink-0" />
-                                    <span className="truncate">Official • {brandReward.partnerName}</span>
-                                  </span>
-                                ) : (
-                                  <span 
-                                    title="ภารกิจกิจกรรมกลางของ Chill & Connect Hub"
-                                    className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-900 border border-purple-200 shrink-0 truncate max-w-[200px] inline-flex items-center gap-1"
-                                  >
-                                    <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500 shrink-0" />
-                                    <span className="truncate">Official • Chill & Connect</span>
-                                  </span>
-                                )}
-                                <span className="text-[10px] font-black text-purple-700 bg-purple-50 border border-purple-200/80 px-2 py-0.5 rounded-md flex items-center gap-0.5 ml-auto shadow-2xs">
-                                  <Zap className="w-3 h-3 text-purple-600 fill-purple-600" />
-                                  <span>+{quest.rewardPoints} XP</span>
-                                </span>
-                              </div>
-
-                              <h5 className="font-bold text-xs sm:text-sm text-slate-900 group-hover/card:text-purple-700 transition-colors leading-snug line-clamp-1">
-                                {quest.title}
-                              </h5>
-                            </div>
-                          </div>
-
-                          {/* Goal Box & Brand Privilege Pill */}
-                          <div className="space-y-1.5 bg-slate-50 p-2.5 rounded-2xl border border-slate-100 text-xs">
-                            <div className="font-semibold text-slate-800 flex items-center gap-1">
-                              <Award className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                              <span className="truncate">เหรียญ: {quest.badgeLabel}</span>
-                            </div>
-                            <p className="text-slate-500 line-clamp-2 leading-relaxed text-[11.5px]">
-                              {quest.targetGoal}
-                            </p>
-
-                            {/* Reward Privilege Pill: Brand Exclusive vs Hub Universal Points */}
-                            {brandReward.type === 'brand_partner' ? (
-                              <div 
-                                title={`สิทธิพิเศษเฉพาะแบรนด์ ${brandReward.partnerName}: ${brandReward.title}`}
-                                className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-amber-50/90 border border-amber-200/90 text-amber-950 text-[10px] font-bold shadow-2xs mt-1"
-                              >
-                                <Ticket className="w-3 h-3 text-amber-600 shrink-0" />
-                                <span className="truncate">{brandReward.title}</span>
-                              </div>
-                            ) : (
-                              <div 
-                                title="รับแต้มสะสมพิเศษเพื่อนำไปเลือกแลกของรางวัลในศูนย์กลาง (/rewards)"
-                                className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-purple-50/90 border border-purple-200/90 text-purple-950 text-[10px] font-bold shadow-2xs mt-1"
-                              >
-                                <Gift className="w-3 h-3 text-purple-600 shrink-0" />
-                                <span className="truncate">แต้มสะสมอิสระ แลกของรางวัลใน Hub Rewards</span>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Progress & Duration */}
-                          <div className="space-y-2 pt-0.5">
-                            <div className="flex items-center justify-between text-xs font-bold text-slate-700">
-                              <span className="text-[11px] text-slate-500">ความคืบหน้า</span>
-                              <span className="text-[11px] font-bold text-purple-700">
-                                {quest.completedCountInfo} ({quest.progressPercent}%)
-                              </span>
-                            </div>
-                            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200/80">
-                              <div
-                                className={`h-full rounded-full transition-all duration-500 ${
-                                  isCompleted ? 'bg-emerald-600' : 'bg-gradient-to-r from-purple-600 to-indigo-600'
-                                }`}
-                                style={{ width: `${quest.progressPercent}%` }}
-                              />
-                            </div>
-
-                            <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5 font-medium">
-                              <span>{quest.startDate} - {quest.endDate}</span>
-                              <span className={isUrgent ? 'text-rose-600 font-bold' : ''}>
-                                เหลืออีก {quest.daysRemaining || 10} วัน
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Action Button: In Strava/Nike model, completed quests give instant access to Brand Voucher / Hub Achievement */}
-                          <div className="pt-2.5 border-t border-slate-100 mt-auto">
-                            {isCompleted ? (
-                              brandReward.type === 'brand_partner' ? (
-                                <button
-                                  type="button"
-                                  onClick={() => setSelectedQuestForVoucherModal(quest)}
-                                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-bold py-2 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs active:scale-98"
-                                >
-                                  <Ticket className="w-3.5 h-3.5 text-white" />
-                                  <span>ดูบัตรกำนัล & QR Code</span>
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => setSelectedQuestForVoucherModal(quest)}
-                                  className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold py-2 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs active:scale-98"
-                                >
-                                  <Trophy className="w-3.5 h-3.5 text-amber-300" />
-                                  <span>ดูความสำเร็จ & แลกรางวัล</span>
-                                </button>
-                              )
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => setSelectedQuestForVerifyModal(quest)}
-                                className="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs active:scale-98"
-                              >
-                                <CheckCircle2 className="w-3.5 h-3.5 text-slate-300" />
-                                <span>ส่งหลักฐานเช็คอิน</span>
-                              </button>
-                            )}
+                            <Link
+                              href="/challenges"
+                              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+                            >
+                              <Compass className="w-3.5 h-3.5 text-slate-500" />
+                              <span>สำรวจเพิ่ม</span>
+                            </Link>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
+
+                        {/* Quests Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
+                          {filteredMyChallenges.length === 0 ? (
+                            <div className="col-span-full bg-slate-50/80 rounded-2xl p-8 border border-dashed border-slate-200 text-center text-xs text-slate-500 font-medium">
+                              ไม่มีภารกิจในหมวดหมู่นี้
+                            </div>
+                          ) : (
+                            filteredMyChallenges.map((quest) => {
+                              const isCompleted = quest.progressPercent >= 100;
+                              const isEnded = !isCompleted && ((quest as any).status === 'ended' || ((quest as any).daysRemaining !== undefined && (quest as any).daysRemaining <= 0));
+                              const isUrgent = !isCompleted && !isEnded && (quest.daysRemaining || 10) <= 5;
+                              const brandReward = getQuestBrandReward(quest);
+                              
+                              // Category theme helper
+                              const getCatTheme = (cat?: string) => {
+                                switch (cat) {
+                                  case 'move':
+                                    return { label: 'Move', bg: 'bg-rose-50 text-rose-800 border-rose-200' };
+                                  case 'heal':
+                                    return { label: 'Heal', bg: 'bg-emerald-50 text-emerald-800 border-emerald-200' };
+                                  case 'learn':
+                                    return { label: 'Learn', bg: 'bg-sky-50 text-sky-800 border-sky-200' };
+                                  case 'chill':
+                                  default:
+                                    return { label: 'Chill', bg: 'bg-amber-50 text-amber-800 border-amber-200' };
+                                }
+                              };
+                              const catTheme = getCatTheme(quest.category);
+
+                              return (
+                                <div
+                                  key={quest.id}
+                                  className={`group/card bg-white rounded-2xl p-3.5 sm:p-4 border transition-all duration-300 flex flex-col justify-between space-y-3 relative overflow-hidden shadow-2xs hover:shadow-xs hover:-translate-y-0.5 ${
+                                    isCompleted
+                                      ? 'border-emerald-300 ring-1 ring-emerald-500/20 bg-emerald-50/10'
+                                      : isEnded
+                                      ? 'border-slate-200 bg-slate-50/50 opacity-85'
+                                      : 'border-slate-200/90 hover:border-purple-300'
+                                  }`}
+                                >
+                                  {/* Top Row: Icon + Badges & XP */}
+                                  <div className="flex items-start gap-3">
+                                    <div className="w-11 h-11 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0 group-hover/card:scale-105 transition-transform shadow-2xs">
+                                      {quest.iconName === 'Flame' ? (
+                                        <Flame className="w-5 h-5 text-rose-500" />
+                                      ) : quest.iconName === 'Coffee' ? (
+                                        <Coffee className="w-5 h-5 text-amber-600" />
+                                      ) : quest.iconName === 'Footprints' ? (
+                                        <Footprints className="w-5 h-5 text-indigo-500" />
+                                      ) : (
+                                        <Medal className="w-5 h-5 text-purple-600" />
+                                      )}
+                                    </div>
+
+                                    <div className="min-w-0 flex-1 space-y-1">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${catTheme.bg}`}>
+                                          {catTheme.label}
+                                        </span>
+                                        {brandReward.type === 'brand_partner' ? (
+                                          <span 
+                                            title={`ภารกิจพาร์ทเนอร์ทางการ: ${brandReward.partnerName}`}
+                                            className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-950 border border-amber-200 shrink-0 truncate max-w-[140px] inline-flex items-center gap-1"
+                                          >
+                                            <Crown className="w-2.5 h-2.5 text-amber-600 fill-amber-500 shrink-0" />
+                                            <span className="truncate">Official • {brandReward.partnerName}</span>
+                                          </span>
+                                        ) : (
+                                          <span 
+                                            title="ภารกิจกิจกรรมกลางของ Chill & Connect Hub"
+                                            className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-900 border border-purple-200 shrink-0 truncate max-w-[200px] inline-flex items-center gap-1"
+                                          >
+                                            <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500 shrink-0" />
+                                            <span className="truncate">Official • Chill & Connect</span>
+                                          </span>
+                                        )}
+                                        <span className="text-[10px] font-black text-purple-700 bg-purple-50 border border-purple-200/80 px-2 py-0.5 rounded-md flex items-center gap-0.5 ml-auto shadow-2xs">
+                                          <Zap className="w-3 h-3 text-purple-600 fill-purple-600" />
+                                          <span>+{quest.rewardPoints} XP</span>
+                                        </span>
+                                      </div>
+
+                                      <h5 className="font-bold text-xs sm:text-sm text-slate-900 group-hover/card:text-purple-700 transition-colors leading-snug line-clamp-1">
+                                        {quest.title}
+                                      </h5>
+                                    </div>
+                                  </div>
+
+                                  {/* Goal Box & Brand Privilege Pill */}
+                                  <div className="space-y-1.5 bg-slate-50 p-2.5 rounded-2xl border border-slate-100 text-xs">
+                                    <div className="font-semibold text-slate-800 flex items-center gap-1">
+                                      <Award className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                                      <span className="truncate">เหรียญ: {quest.badgeLabel}</span>
+                                    </div>
+                                    <p className="text-slate-500 line-clamp-2 leading-relaxed text-[11.5px]">
+                                      {quest.targetGoal}
+                                    </p>
+
+                                    {/* Reward Privilege Pill: Brand Exclusive vs Hub Universal Points */}
+                                    {brandReward.type === 'brand_partner' ? (
+                                      <div 
+                                        title={`สิทธิพิเศษเฉพาะแบรนด์ ${brandReward.partnerName}: ${brandReward.title}`}
+                                        className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-amber-50/90 border border-amber-200/90 text-amber-950 text-[10px] font-bold shadow-2xs mt-1"
+                                      >
+                                        <Ticket className="w-3 h-3 text-amber-600 shrink-0" />
+                                        <span className="truncate">{brandReward.title}</span>
+                                      </div>
+                                    ) : (
+                                      <div 
+                                        title="รับแต้มสะสมพิเศษเพื่อนำไปเลือกแลกของรางวัลในศูนย์กลาง (/rewards)"
+                                        className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-purple-50/90 border border-purple-200/90 text-purple-950 text-[10px] font-bold shadow-2xs mt-1"
+                                      >
+                                        <Gift className="w-3 h-3 text-purple-600 shrink-0" />
+                                        <span className="truncate">แต้มสะสมอิสระ แลกของรางวัลใน Hub Rewards</span>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Progress & Duration */}
+                                  <div className="space-y-2 pt-0.5">
+                                    <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                                      <span className="text-[11px] text-slate-500">ความคืบหน้า</span>
+                                      <span className="text-[11px] font-bold text-purple-700">
+                                        {quest.completedCountInfo} ({quest.progressPercent}%)
+                                      </span>
+                                    </div>
+                                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200/80">
+                                      <div
+                                        className={`h-full rounded-full transition-all duration-500 ${
+                                          isCompleted ? 'bg-emerald-600' : isEnded ? 'bg-slate-400' : 'bg-gradient-to-r from-purple-600 to-indigo-600'
+                                        }`}
+                                        style={{ width: `${quest.progressPercent}%` }}
+                                      />
+                                    </div>
+
+                                    <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5 font-medium">
+                                      <span>{quest.startDate} - {quest.endDate}</span>
+                                      {isEnded ? (
+                                        <span className="text-slate-400 font-medium">ปิดรับแล้ว</span>
+                                      ) : (
+                                        <span className={isUrgent ? 'text-rose-600 font-bold' : ''}>
+                                          เหลืออีก {quest.daysRemaining || 10} วัน
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Action Button */}
+                                  <div className="pt-2.5 border-t border-slate-100 mt-auto">
+                                    {isCompleted ? (
+                                      brandReward.type === 'brand_partner' ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => setSelectedQuestForVoucherModal(quest)}
+                                          className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-bold py-2 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs active:scale-98"
+                                        >
+                                          <Ticket className="w-3.5 h-3.5 text-white" />
+                                          <span>ดูบัตรกำนัล & QR Code</span>
+                                        </button>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          onClick={() => setSelectedQuestForVoucherModal(quest)}
+                                          className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold py-2 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs active:scale-98"
+                                        >
+                                          <Trophy className="w-3.5 h-3.5 text-amber-300" />
+                                          <span>ดูความสำเร็จ & แลกรางวัล</span>
+                                        </button>
+                                      )
+                                    ) : isEnded ? (
+                                      <button
+                                        type="button"
+                                        disabled
+                                        className="w-full bg-slate-100 text-slate-400 text-xs font-bold py-2.5 rounded-xl border border-slate-200 cursor-not-allowed"
+                                      >
+                                        ภารกิจสิ้นสุดระยะเวลาแล้ว
+                                      </button>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={() => setSelectedQuestForVerifyModal(quest)}
+                                        className="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs active:scale-98"
+                                      >
+                                        <span>ส่งหลักฐานเช็คอิน</span>
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </>
+                    );
+                  })()}
 
                   {/* Section 2: Rewards Catalog Gateway & Active Voucher Locker */}
                   <div className="space-y-5 pt-4">

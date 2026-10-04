@@ -303,6 +303,8 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
     return stripped;
   })();
 
+  const isEnded = (quest as any)?.status === 'ended' || ((quest as any)?.daysRemaining !== undefined && (quest as any)?.daysRemaining <= 0);
+
   return createPortal(
     <div className="fixed inset-0 z-[99999] overflow-y-auto flex items-center justify-center p-3.5 sm:p-5 md:p-6 bg-slate-950/75 backdrop-blur-xs animate-fade-in font-sans">
       <div
@@ -328,7 +330,11 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
               </span>
 
               {/* Status Badge */}
-              {localCompleted ? (
+              {isEnded ? (
+                <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-slate-200 text-slate-800 shadow-xs">
+                  สิ้นสุดภารกิจแล้ว
+                </span>
+              ) : localCompleted ? (
                 <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-amber-300 text-amber-950 shadow-xs flex items-center gap-1">
                   <Trophy className="w-3.5 h-3.5" />
                   <span>พิชิตภารกิจแล้ว</span>
@@ -376,13 +382,12 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                 {quest.daysRemaining !== undefined && (
                   <span className="flex items-center gap-1 bg-white/15 px-2.5 py-0.5 rounded-lg border border-white/20">
                     <Clock className="w-3.5 h-3.5 text-purple-200" />
-                    <span>เหลือ {quest.daysRemaining} วัน</span>
+                    <span>{isEnded ? 'ปิดรับแล้ว' : `เหลือ ${quest.daysRemaining} วัน`}</span>
                   </span>
                 )}
 
-                <span className="flex items-center gap-1 bg-white/15 px-2.5 py-0.5 rounded-lg border border-white/20">
-                  <Users className="w-3.5 h-3.5 text-purple-200" />
-                  <span>{quest.participantsCount || 150}+ คนร่วมทำ</span>
+                <span className="bg-white/15 px-2.5 py-0.5 rounded-lg border border-white/20 font-medium">
+                  {quest.participantsCount || 150}+ คนร่วมทำ
                 </span>
               </div>
             </div>
@@ -409,6 +414,16 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
 
         {/* Scrollable Content Body */}
         <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1 bg-white">
+
+          {/* Archived / Ended Quest Notice Banner */}
+          {isEnded && !localCompleted && (
+            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between gap-3 text-xs text-slate-600 font-medium">
+              <span>ภารกิจนี้สิ้นสุดระยะเวลาจัดกิจกรรมแล้ว ข้อมูลด้านล่างเป็นบันทึกสรุปและของรางวัลย้อนหลัง</span>
+              <span className="text-[10px] font-extrabold px-2.5 py-1 bg-slate-200 text-slate-700 rounded-lg shrink-0">
+                คลังย้อนหลัง
+              </span>
+            </div>
+          )}
 
           {/* 🎉 Unlocked Brand Voucher Pass (When Completed - Brand Partner Quest) */}
           {(localCompleted || isCompleted) && brandReward && brandReward.type === 'brand_partner' && (
@@ -792,9 +807,8 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                       <h5 className="font-black text-xs sm:text-sm text-slate-900">
                         {brandReward.title}
                       </h5>
-                      <p className="text-[11px] text-amber-900 font-semibold flex items-center gap-1">
-                        <span>🔒</span>
-                        <span>{brandReward.exclusiveNotice}</span>
+                      <p className="text-[11px] text-amber-900 font-semibold">
+                        {brandReward.exclusiveNotice}
                       </p>
                       {brandReward.terms && (
                         <p className="text-[10.5px] text-slate-500 pt-0.5">
@@ -830,8 +844,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                       <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
                         {brandReward.hubRewardNote}
                       </p>
-                      <div className="pt-1 flex items-center gap-1.5 text-[10.5px] text-purple-800 font-semibold">
-                        <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      <div className="pt-1 text-[10.5px] text-purple-800 font-semibold">
                         <span>อิสระเต็มที่: นำแต้มไปเลือกของรางวัลใดก็ได้ในหน้ารวม /rewards ไม่ติดเงื่อนไขแบรนด์</span>
                       </div>
                     </div>
@@ -870,7 +883,15 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
 
           {/* Action Buttons depending on State */}
           <div className="flex items-center gap-2">
-            {localCompleted ? (
+            {isEnded && !localCompleted ? (
+              <button
+                type="button"
+                disabled
+                className="px-6 sm:px-8 py-2.5 rounded-xl bg-slate-200 text-slate-500 font-bold text-xs sm:text-sm cursor-not-allowed"
+              >
+                ภารกิจสิ้นสุดระยะเวลาแล้ว
+              </button>
+            ) : localCompleted ? (
               brandReward?.type === 'brand_partner' ? (
                 <Link
                   href="/myhub?tab=quests_rewards"

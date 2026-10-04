@@ -261,10 +261,15 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
   const [questItems, setQuestItems] = useState(COMMUNITY_PUBLIC_QUESTS);
   const [filterType, setFilterType] = useState<'all' | 'hub_central' | 'brand_partner'>('all');
 
-  const hubCount = questItems.filter((q) => getQuestBrandReward(q).type === 'hub_central').length;
-  const partnerCount = questItems.filter((q) => getQuestBrandReward(q).type === 'brand_partner').length;
+  const activeQuests = questItems.filter((q) => {
+    const isEnded = (q as any).status === 'ended' || ((q as any).daysRemaining !== undefined && (q as any).daysRemaining <= 0);
+    return !isEnded;
+  });
 
-  const displayQuests = questItems.filter((q) => {
+  const hubCount = activeQuests.filter((q) => getQuestBrandReward(q).type === 'hub_central').length;
+  const partnerCount = activeQuests.filter((q) => getQuestBrandReward(q).type === 'brand_partner').length;
+
+  const displayQuests = activeQuests.filter((q) => {
     if (filterType === 'all') return true;
     return getQuestBrandReward(q).type === filterType;
   });
@@ -421,7 +426,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
           href="/challenges"
           className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-purple-900 text-purple-900 hover:text-white border border-purple-200/90 hover:border-purple-900 rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
         >
-          <span>ดูภารกิจทั้งหมด ({questItems.length})</span>
+          <span>ดูภารกิจทั้งหมด ({activeQuests.length})</span>
           <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
         </Link>
       </div>
@@ -615,18 +620,10 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
 
                 {/* 4. Meta Row: Partner & Participant count + Status Indicator (Clean, No Button) */}
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                  <div className="flex items-center gap-1.5 truncate max-w-[130px]" title={brandReward.type === 'brand_partner' ? `พาร์ทเนอร์ทางการ: ${brandReward.partnerName}` : 'กิจกรรมกลางของ Hub'}>
-                    {brandReward.type === 'brand_partner' ? (
-                      <>
-                        <ShieldCheck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                        <span className="truncate text-slate-700 font-semibold">{brandReward.partnerName}</span>
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                        <span className="truncate text-slate-700 font-semibold">Chill & Connect Hub</span>
-                      </>
-                    )}
+                  <div className="truncate max-w-[130px]" title={brandReward.type === 'brand_partner' ? `พาร์ทเนอร์ทางการ: ${brandReward.partnerName}` : 'กิจกรรมกลางของ Hub'}>
+                    <span className="truncate text-slate-600 font-semibold text-[11px]">
+                      โดย {brandReward.type === 'brand_partner' ? brandReward.partnerName : 'Chill & Connect Hub'}
+                    </span>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -641,9 +638,8 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                         <span>{currentProg}/{targetTotal}</span>
                       </span>
                     ) : (
-                      <span className="font-bold text-slate-600 flex items-center gap-1 text-[10.5px]">
-                        <Users className="w-3 h-3 text-purple-600" />
-                        <span>{quest.participantsCount} คน</span>
+                      <span className="font-semibold text-slate-500 text-[10.5px]">
+                        {quest.participantsCount} คนร่วมทำ
                       </span>
                     )}
 
