@@ -30,6 +30,9 @@ import {
   ChevronDown,
   PlusCircle,
   Gift,
+  Coffee,
+  Dices,
+  Palette,
 } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
 import { Navbar } from '@/components/Navbar';
@@ -125,54 +128,6 @@ const ALL_QUESTS: QuestWithDuration[] = [
   },
 ];
 
-// Top 5 Weekly Leaderboard Hunters
-const WEEKLY_LEADERBOARD = [
-  {
-    rank: 1,
-    name: 'คุณนนท์ (Nont Runner)',
-    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
-    level: 14,
-    xp: 2450,
-    badges: 12,
-    tag: '⚡ สายสปีด วิ่งครบ 3 สวน',
-  },
-  {
-    rank: 2,
-    name: 'คุณแพรว (Praew Zen)',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80',
-    level: 12,
-    xp: 1980,
-    badges: 9,
-    tag: '🌿 Sound Bath & Yoga Lover',
-  },
-  {
-    rank: 3,
-    name: 'คุณเต้ (Tae Cafe Hunter)',
-    avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=120&q=80',
-    level: 11,
-    xp: 1720,
-    badges: 8,
-    tag: '☕ เช็คอินคาเฟ่ครบ 10 แห่ง',
-  },
-  {
-    rank: 4,
-    name: 'คุณมายด์ (Mild Art)',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
-    level: 9,
-    xp: 1350,
-    badges: 6,
-    tag: '🎨 เวิร์กช็อปเซรามิก & วาดรูป',
-  },
-  {
-    rank: 5,
-    name: 'คุณกอล์ฟ (Golf HYROX)',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80',
-    level: 8,
-    xp: 1180,
-    badges: 5,
-    tag: '🔥 HYROX Training Finisher',
-  },
-];
 
 export default function ChallengesDiscoveryPage() {
   const [activeTab, setActiveTab] = useState('challenges');
@@ -212,6 +167,9 @@ export default function ChallengesDiscoveryPage() {
       isActive = false;
     };
   }, []);
+
+  // Member Privileges showcase tab
+  const [showcaseTab, setShowcaseTab] = useState<'vouchers' | 'rewards'>('rewards');
 
   // User XP State
   const [userXp, setUserXp] = useState<number>(450);
@@ -315,117 +273,410 @@ export default function ChallengesDiscoveryPage() {
       <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] mx-auto px-3.5 sm:px-6 lg:px-8 pt-2.5 pb-28 sm:pt-4 sm:pb-12 space-y-3 sm:space-y-4 w-full">
         
 
-        {/* 1. Unified Compact Hero with Integrated Spotlight Quest (Single Clean Banner) */}
-        <section className="relative rounded-2xl bg-white p-4 sm:p-5 shadow-2xs border border-slate-200/80 overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-center">
-            
-            {/* Left Side (7 Cols): Hero Headline, Description & Actions */}
-            <div className="lg:col-span-7 space-y-2.5">
-              <div className="space-y-1">
-                <h1 className="text-lg sm:text-xl md:text-2xl font-black text-slate-900 tracking-tight leading-tight">
-                  ภารกิจไลฟ์สไตล์ & ชาเลนจ์
-                </h1>
-                <p className="text-xs sm:text-[13px] text-slate-500 leading-relaxed font-normal max-w-xl">
-                  รับภารกิจ ออกไปวิ่ง เช็คอินคาเฟ่ หรือฮีลใจ สะสมเหรียญรางวัล Badges และส่งหลักฐานเพื่อรับแต้ม XP พิเศษเมื่อทำสำเร็จ
+        {/* 1. Header Hero Banner with Member Privileges */}
+        <section className="relative rounded-2xl bg-white p-4 sm:p-5 shadow-2xs border border-slate-200/80 overflow-hidden space-y-4">
+          
+          {/* Top Row: Page Title, Level/XP status, and Meta */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div className="space-y-1">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-black text-slate-900 tracking-tight leading-tight">
+                ภารกิจไลฟ์สไตล์ & ชาเลนจ์
+              </h1>
+              <p className="text-xs sm:text-[13px] text-slate-500 leading-relaxed font-normal max-w-xl">
+                รับภารกิจ ออกไปวิ่ง เช็คอินคาเฟ่ หรือฮีลใจ สะสมเหรียญรางวัล Badges และส่งหลักฐานเพื่อรับแต้ม XP พิเศษเมื่อทำสำเร็จ
+              </p>
+            </div>
+
+            {/* Action Status & Level */}
+            <div className="flex items-center gap-2 flex-wrap shrink-0">
+              {isLoggedIn ? (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold shadow-2xs">
+                    <span>Lv.{userLevel}</span>
+                    <span className="text-slate-300">•</span>
+                    <span className="text-purple-700 font-mono">{userXp} XP</span>
+                  </span>
+                  {joinedQuestIds.length > 0 && (
+                    <Link
+                      href="/myhub?tab=quests_rewards"
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-700 hover:text-purple-900 bg-purple-50 px-3 py-1.5 rounded-xl border border-purple-200/80 hover:bg-purple-100 transition-colors shadow-2xs"
+                    >
+                      <Zap className="w-3.5 h-3.5 text-purple-600 fill-purple-500" />
+                      <span>กำลังทำ {joinedQuestIds.length} ภารกิจ</span>
+                      <ArrowRight className="w-3 h-3 text-purple-600" />
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-purple-50 text-purple-800 text-xs font-bold border border-purple-200/80 hover:bg-purple-100 transition-colors cursor-pointer shadow-2xs active:scale-95"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
+                  <span>เข้าสู่ระบบสะสมแต้มก้อนแรก +100 XP ฟรี</span>
+                  <ArrowRight className="w-3 h-3 text-purple-600" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Member Privileges Ticket Strip (Matching Homepage) */}
+          <div className="w-full space-y-2 sm:space-y-2.5">
+            {/* Section Header */}
+            <div className="flex items-center justify-between gap-2 px-0.5 flex-wrap">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm sm:text-base font-black text-slate-900 tracking-tight">
+                    Member Privileges
+                  </h2>
+                  <span className="sm:hidden text-[9px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full border border-blue-100/80">
+                    ปัดซ้าย-ขวา ↔
+                  </span>
+                </div>
+                <p className="text-[10px] sm:text-xs font-medium text-slate-500 line-clamp-1">
+                  สิทธิประโยชน์ และของรางวัลไลฟ์สไตล์ เพื่อการออกไปใช้ชีวิตอย่างมีความหมาย
                 </p>
               </div>
 
-              {/* Action Status & Level */}
-              <div className="flex items-center gap-2 flex-wrap pt-0.5">
-                {/* Logged in vs Guest Status Hook */}
-                {isLoggedIn ? (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold shadow-2xs">
-                      <span>Lv.{userLevel}</span>
-                      <span className="text-slate-300">•</span>
-                      <span className="text-purple-700 font-mono">{userXp} XP</span>
-                    </span>
-                    {joinedQuestIds.length > 0 && (
-                      <Link
-                        href="/myhub?tab=quests_rewards"
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-700 hover:text-purple-900 bg-purple-50 px-3 py-1.5 rounded-xl border border-purple-200/80 hover:bg-purple-100 transition-colors shadow-2xs"
-                      >
-                        <Zap className="w-3.5 h-3.5 text-purple-600 fill-purple-500" />
-                        <span>กำลังทำ {joinedQuestIds.length} ภารกิจ</span>
-                        <ArrowRight className="w-3 h-3 text-purple-600" />
-                      </Link>
-                    )}
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setIsAuthModalOpen(true)}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-purple-50 text-purple-800 text-xs font-bold border border-purple-200/80 hover:bg-purple-100 transition-colors cursor-pointer shadow-2xs active:scale-95"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
-                    <span>เข้าสู่ระบบสะสมแต้มก้อนแรก +100 XP ฟรี</span>
-                    <ArrowRight className="w-3 h-3 text-purple-600" />
-                  </button>
-                )}
-              </div>
-
-              {/* Editorial Meta */}
-              <div className="flex items-center gap-2 text-xs text-slate-400 pt-0.5">
-                <span className="font-semibold text-slate-600">{questList.length} ภารกิจเปิดรับ</span>
-                <span>•</span>
-                <span>1,400+ ผู้เข้าร่วม</span>
-                <span>•</span>
-                <span>อัปเดตแต้มรายสัปดาห์</span>
-              </div>
-            </div>
-
-            {/* Right Side (5 Cols): ศูนย์ของรางวัล (Rewards Hub Widget) */}
-            <div className="lg:col-span-5 bg-gradient-to-br from-amber-50/80 via-orange-50/40 to-slate-50/80 p-3.5 sm:p-4 rounded-xl border border-amber-200/80 shadow-2xs space-y-2.5">
-              <div className="flex items-center justify-between gap-1.5">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-amber-100 text-[#B45309] flex items-center justify-center shrink-0 shadow-2xs">
-                    <Gift className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-xs sm:text-[13px] text-slate-900">
-                      ศูนย์ของรางวัล
-                    </h3>
-                    <p className="text-[10.5px] text-slate-500">สะสม XP แลกสิทธิพิเศษ & ของรางวัล</p>
-                  </div>
-                </div>
-                <Link
-                  href="/rewards"
-                  className="text-[11px] font-bold text-[#B45309] hover:text-[#92400E] bg-amber-100/90 hover:bg-amber-200/80 px-2.5 py-1 rounded-lg border border-amber-200 transition-colors flex items-center gap-1 shadow-2xs"
+              {/* Tab Switcher (Compact Segmented Control) */}
+              <div className="inline-flex items-center p-0.5 rounded-xl bg-slate-100/90 border border-slate-200/80 text-xs shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => setShowcaseTab('vouchers')}
+                  className={`px-2.5 sm:px-3 py-1 rounded-lg font-extrabold text-[10.5px] sm:text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
+                    showcaseTab === 'vouchers'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
                 >
-                  <span>ดูของรางวัล</span>
-                  <ArrowRight className="w-3 h-3" />
-                </Link>
+                  <Gift className="w-3 h-3 text-blue-600" />
+                  <span>สิทธิ์ต้อนรับ</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowcaseTab('rewards')}
+                  className={`px-2.5 sm:px-3 py-1 rounded-lg font-extrabold text-[10.5px] sm:text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
+                    showcaseTab === 'rewards'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  <Award className="w-3 h-3 text-blue-600" />
+                  <span>XP แลกรางวัล</span>
+                </button>
               </div>
-
-              {/* Rewards Highlights */}
-              <div className="grid grid-cols-2 gap-1.5">
-                <div className="flex items-center gap-2 p-1.5 sm:p-2 rounded-lg bg-white/95 border border-amber-100/80 shadow-2xs">
-                  <span className="text-base shrink-0">☕</span>
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-semibold text-slate-800 truncate">กาแฟ Specialty</p>
-                    <p className="text-[10px] font-bold text-[#B45309] font-mono">500 XP</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 p-1.5 sm:p-2 rounded-lg bg-white/95 border border-amber-100/80 shadow-2xs">
-                  <span className="text-base shrink-0">🎟️</span>
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-semibold text-slate-800 truncate">ส่วนลดงานแฟร์</p>
-                    <p className="text-[10px] font-bold text-[#B45309] font-mono">300 XP</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Button */}
-              <Link
-                href="/rewards"
-                className="w-full py-1.5 sm:py-2 rounded-lg bg-gradient-to-r from-[#F26430] to-[#E0531E] hover:from-[#E0531E] hover:to-[#C84312] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer"
-              >
-                <Gift className="w-3.5 h-3.5" />
-                <span>{isLoggedIn ? `แลกสิทธิ์ด้วยแต้มสะสม (${userXp} XP)` : 'สำรวจของรางวัลทั้งหมด'}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
             </div>
 
+            {/* TAB 1: New User Exclusive Real Perforated Ticket Vouchers */}
+            {showcaseTab === 'vouchers' && (
+              <div className="flex sm:grid overflow-x-auto sm:overflow-visible no-scrollbar sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5 animate-fade-in pb-1.5 sm:pb-0 -mx-1 px-1 sm:mx-0 sm:px-0 snap-x snap-mandatory sm:snap-none">
+                {/* Card 1: Welcome Privilege Callout Banner Card */}
+                <div className="relative rounded-xl bg-gradient-to-br from-blue-50/90 via-sky-50/40 to-indigo-50/70 border border-blue-100/90 p-2.5 sm:p-3 flex flex-col justify-between shadow-2xs group hover:border-blue-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 min-h-[88px] sm:min-h-[98px] min-w-[245px] max-w-[265px] sm:min-w-0 sm:max-w-none shrink-0 sm:shrink snap-start">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="space-y-0.5 min-w-0">
+                      <span className="text-[9px] font-black text-blue-700 uppercase tracking-wider block leading-none">
+                        Welcome Privilege
+                      </span>
+                      <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 leading-snug truncate">
+                        สิทธิ์พิเศษสำหรับ สมาชิก
+                      </h3>
+                      <p className="text-[10px] text-slate-500 truncate mt-0.5">
+                        สร้างโปรไฟล์ สมัครสมาชิกฟรี เพื่อปลดล็อกสิทธิ์พิเศษมากมาย
+                      </p>
+                    </div>
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white text-blue-600 shadow-xs flex items-center justify-center shrink-0 border border-blue-100 group-hover:scale-105 transition-transform">
+                      <Gift className="w-4 h-4 text-blue-600" />
+                    </div>
+                  </div>
+
+                  <div className="pt-1.5">
+                    <Link
+                      href={isLoggedIn ? '/rewards' : '/onboarding'}
+                      className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer gap-1 leading-none"
+                    >
+                      <span>{isLoggedIn ? 'ดูสิทธิ์ของคุณ' : 'เข้าสู่ระบบเพื่อรับสิทธิ์'}</span>
+                      <ArrowRight className="w-2.5 h-2.5" />
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Card 2: 10% off Specialty Coffee */}
+                <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[88px] sm:min-h-[98px] min-w-[245px] max-w-[265px] sm:min-w-0 sm:max-w-none shrink-0 sm:shrink snap-start">
+                  <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
+                          ลด 10%
+                        </span>
+                        <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded leading-none">
+                          เครื่องดื่ม
+                        </span>
+                      </div>
+                      <p className="text-[11px] font-medium text-slate-600 truncate mt-0.5">
+                        Specialty Coffee 77 จังหวัด
+                      </p>
+                    </div>
+
+                    <div className="pt-1.5">
+                      <Link
+                        href="/rewards"
+                        className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
+                      >
+                        เก็บสิทธิ์
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div className="relative flex flex-col justify-between items-center w-0 shrink-0">
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_-1px_2px_rgba(0,0,0,0.04)]" />
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]" />
+                  </div>
+
+                  <div className="w-14 sm:w-16 shrink-0 flex flex-col items-center justify-center p-2 bg-amber-50/70 rounded-r-xl border-l border-dashed border-slate-200">
+                    <Coffee className="w-4 h-4 sm:w-5 sm:h-5 text-amber-700 group-hover:scale-105 transition-transform" />
+                    <span className="text-[9.5px] font-bold text-amber-800 mt-1 text-center truncate">
+                      คาเฟ่
+                    </span>
+                  </div>
+                </div>
+
+                {/* Card 3: Free Community Meetup Pass */}
+                <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[88px] sm:min-h-[98px] min-w-[245px] max-w-[265px] sm:min-w-0 sm:max-w-none shrink-0 sm:shrink snap-start">
+                  <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
+                          จอยตี้ฟรี
+                        </span>
+                        <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded leading-none">
+                          ตี้แรก
+                        </span>
+                      </div>
+                      <p className="text-[11px] font-medium text-slate-600 truncate mt-0.5">
+                        คอมมูนิตี้ & เพื่อนใหม่
+                      </p>
+                    </div>
+
+                    <div className="pt-1.5">
+                      <Link
+                        href="/community"
+                        className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
+                      >
+                        เก็บสิทธิ์
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div className="relative flex flex-col justify-between items-center w-0 shrink-0">
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_-1px_2px_rgba(0,0,0,0.04)]" />
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]" />
+                  </div>
+
+                  <div className="w-14 sm:w-16 shrink-0 flex flex-col items-center justify-center p-2 bg-orange-50/70 rounded-r-xl border-l border-dashed border-slate-200">
+                    <Ticket className="w-4 h-4 sm:w-5 sm:h-5 text-orange-700 group-hover:scale-105 transition-transform" />
+                    <span className="text-[9.5px] font-bold text-orange-800 mt-1 text-center truncate">
+                      มีตอัป
+                    </span>
+                  </div>
+                </div>
+
+                {/* Card 4: 15% off Craft Workshop */}
+                <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[88px] sm:min-h-[98px] min-w-[245px] max-w-[265px] sm:min-w-0 sm:max-w-none shrink-0 sm:shrink snap-start">
+                  <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
+                          ลด 15%
+                        </span>
+                        <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded leading-none">
+                          เวิร์กช็อป
+                        </span>
+                      </div>
+                      <p className="text-[11px] font-medium text-slate-600 truncate mt-0.5">
+                        คราฟต์ & ศิลปะเซรามิก
+                      </p>
+                    </div>
+
+                    <div className="pt-1.5">
+                      <Link
+                        href="/rewards"
+                        className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
+                      >
+                        เก็บสิทธิ์
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div className="relative flex flex-col justify-between items-center w-0 shrink-0">
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_-1px_2px_rgba(0,0,0,0.04)]" />
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]" />
+                  </div>
+
+                  <div className="w-14 sm:w-16 shrink-0 flex flex-col items-center justify-center p-2 bg-emerald-50/70 rounded-r-xl border-l border-dashed border-slate-200">
+                    <Palette className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-700 group-hover:scale-105 transition-transform" />
+                    <span className="text-[9.5px] font-bold text-emerald-800 mt-1 text-center truncate">
+                      เวิร์กช็อป
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: XP Store Rewards Real Perforated Ticket Vouchers */}
+            {showcaseTab === 'rewards' && (
+              <div className="flex sm:grid overflow-x-auto sm:overflow-visible no-scrollbar sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5 animate-fade-in pb-1.5 sm:pb-0 -mx-1 px-1 sm:mx-0 sm:px-0 snap-x snap-mandatory sm:snap-none">
+                {/* Card 1: XP Store Callout Banner Card */}
+                <div className="relative rounded-xl bg-gradient-to-br from-blue-50/90 via-sky-50/40 to-indigo-50/70 border border-blue-100/90 p-2.5 sm:p-3 flex flex-col justify-between shadow-2xs group hover:border-blue-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 min-h-[88px] sm:min-h-[98px] min-w-[245px] max-w-[265px] sm:min-w-0 sm:max-w-none shrink-0 sm:shrink snap-start">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="space-y-0.5 min-w-0">
+                      <span className="text-[9px] font-black text-blue-700 uppercase tracking-wider block leading-none">
+                        XP Rewards Hub
+                      </span>
+                      <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 leading-snug truncate">
+                        รวมของรางวัลไลฟ์สไตล์
+                      </h3>
+                      <p className="text-[10px] text-slate-500 truncate mt-0.5">
+                        สะสมแต้ม XP จากชาเลนจ์มาแลกรับสิทธิ์
+                      </p>
+                    </div>
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white text-blue-600 shadow-xs flex items-center justify-center shrink-0 border border-blue-100 group-hover:scale-105 transition-transform">
+                      <Award className="w-4 h-4 text-blue-600" />
+                    </div>
+                  </div>
+
+                  <div className="pt-1.5">
+                    <Link
+                      href="/rewards"
+                      className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer gap-1 leading-none"
+                    >
+                      <span>ดูของรางวัลทั้งหมด</span>
+                      <ArrowRight className="w-2.5 h-2.5" />
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Card 2: ฿50 Specialty Coffee (150 XP) */}
+                <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[88px] sm:min-h-[98px] min-w-[245px] max-w-[265px] sm:min-w-0 sm:max-w-none shrink-0 sm:shrink snap-start">
+                  <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
+                          ลด ฿50
+                        </span>
+                        <span className="text-[10px] font-extrabold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded leading-none border border-blue-100">
+                          150 XP
+                        </span>
+                      </div>
+                      <p className="text-[11px] font-medium text-slate-600 truncate mt-0.5">
+                        Specialty Coffee อารีย์ & สุขุมวิท
+                      </p>
+                    </div>
+
+                    <div className="pt-1.5">
+                      <Link
+                        href="/rewards"
+                        className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
+                      >
+                        ใช้สิทธิ์
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div className="relative flex flex-col justify-between items-center w-0 shrink-0">
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_-1px_2px_rgba(0,0,0,0.04)]" />
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]" />
+                  </div>
+
+                  <div className="w-14 sm:w-16 shrink-0 flex flex-col items-center justify-center p-2 bg-amber-50/70 rounded-r-xl border-l border-dashed border-slate-200">
+                    <Coffee className="w-4 h-4 sm:w-5 sm:h-5 text-amber-700 group-hover:scale-105 transition-transform" />
+                    <span className="text-[9.5px] font-bold text-amber-800 mt-1 text-center truncate">
+                      กาแฟ
+                    </span>
+                  </div>
+                </div>
+
+                {/* Card 3: Free Board Game Day Pass (250 XP) */}
+                <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[88px] sm:min-h-[98px] min-w-[245px] max-w-[265px] sm:min-w-0 sm:max-w-none shrink-0 sm:shrink snap-start">
+                  <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
+                          เล่นฟรี 1 วัน
+                        </span>
+                        <span className="text-[10px] font-extrabold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded leading-none border border-blue-100">
+                          250 XP
+                        </span>
+                      </div>
+                      <p className="text-[11px] font-medium text-slate-600 truncate mt-0.5">
+                        Siam Board Game Lounge
+                      </p>
+                    </div>
+
+                    <div className="pt-1.5">
+                      <Link
+                        href="/rewards"
+                        className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
+                      >
+                        ใช้สิทธิ์
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div className="relative flex flex-col justify-between items-center w-0 shrink-0">
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_-1px_2px_rgba(0,0,0,0.04)]" />
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]" />
+                  </div>
+
+                  <div className="w-14 sm:w-16 shrink-0 flex flex-col items-center justify-center p-2 bg-blue-50/70 rounded-r-xl border-l border-dashed border-slate-200">
+                    <Dices className="w-4 h-4 sm:w-5 sm:h-5 text-blue-700 group-hover:scale-105 transition-transform" />
+                    <span className="text-[9.5px] font-bold text-blue-800 mt-1 text-center truncate">
+                      บอร์ดเกม
+                    </span>
+                  </div>
+                </div>
+
+                {/* Card 4: 15% off Craft Workshop (350 XP) */}
+                <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[88px] sm:min-h-[98px] min-w-[245px] max-w-[265px] sm:min-w-0 sm:max-w-none shrink-0 sm:shrink snap-start">
+                  <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
+                          ลด 15%
+                        </span>
+                        <span className="text-[10px] font-extrabold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded leading-none border border-blue-100">
+                          350 XP
+                        </span>
+                      </div>
+                      <p className="text-[11px] font-medium text-slate-600 truncate mt-0.5">
+                        Clay & Craft Studio สุขุมวิท
+                      </p>
+                    </div>
+
+                    <div className="pt-1.5">
+                      <Link
+                        href="/rewards"
+                        className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
+                      >
+                        ใช้สิทธิ์
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div className="relative flex flex-col justify-between items-center w-0 shrink-0">
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_-1px_2px_rgba(0,0,0,0.04)]" />
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]" />
+                  </div>
+
+                  <div className="w-14 sm:w-16 shrink-0 flex flex-col items-center justify-center p-2 bg-emerald-50/70 rounded-r-xl border-l border-dashed border-slate-200">
+                    <Palette className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-700 group-hover:scale-105 transition-transform" />
+                    <span className="text-[9.5px] font-bold text-emerald-800 mt-1 text-center truncate">
+                      เวิร์กช็อป
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
@@ -505,19 +756,16 @@ export default function ChallengesDiscoveryPage() {
 
           </div>
 
-          {/* 2-Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6 items-start">
-            
-            {/* Left: Quests Grid */}
-            <div className="lg:col-span-2 space-y-3">
-              <div className="flex items-center justify-between pb-0.5">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-sm sm:text-base font-bold text-slate-900">
-                    คลังภารกิจ
-                  </h2>
-                  <span className="text-xs text-slate-400">({filteredQuests.length})</span>
-                </div>
+          {/* Quests Main Section (Full Width) */}
+          <div className="space-y-3 sm:space-y-4">
+            <div className="flex items-center justify-between pb-0.5">
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm sm:text-base font-bold text-slate-900">
+                  คลังภารกิจ
+                </h2>
+                <span className="text-xs text-slate-400">({filteredQuests.length})</span>
               </div>
+            </div>
 
               {filteredQuests.length === 0 ? (
                 <div className="w-full bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200/90 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
@@ -549,17 +797,16 @@ export default function ChallengesDiscoveryPage() {
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {filteredQuests.map((quest, idx) => {
                     const isJoined = joinedQuestIds.includes(quest.id);
                     const isUrgent = quest.daysRemaining <= 5;
 
-                    // Dynamic responsive complete rows: 2xl: 10 (5x2), lg/xl: 8 (4x2), md: 6 (3x2), mobile: 4 (4x1)
+                    // Dynamic responsive complete rows: desktop: 6 (2 rows of 3), tablet: 6 (3 rows of 2), mobile: 4 (4 rows of 1)
                     const responsiveVisibilityClass =
-                      idx >= 8 ? 'hidden 2xl:block' : // 2xl shows 10 (5 rows of 2)
-                      idx >= 6 ? 'hidden lg:block' :  // lg/xl shows 8 (4 rows of 2)
-                      idx >= 4 ? 'hidden md:block' :  // md shows 6 (3 rows of 2)
-                      'block';                        // mobile shows 4 (4 rows of 1)
+                      idx >= 6 ? 'hidden' :
+                      idx >= 4 ? 'hidden sm:block' :
+                      'block';
 
                     return (
                       <div
@@ -706,7 +953,7 @@ export default function ChallengesDiscoveryPage() {
                 </div>
 
                 {/* Expand / Collapse Toggle Button */}
-                {filteredQuests.length > 4 && (
+                {filteredQuests.length > 6 && (
                   <div className="pt-2 text-center">
                     <button
                       type="button"
@@ -720,166 +967,6 @@ export default function ChallengesDiscoveryPage() {
                 )}
               </>
             )}
-            </div>
-
-            {/* Right: Sidebar (Rewards & Community Challengers) */}
-            <div className="space-y-3">
-              
-              {/* 1. XP Rewards Bridge Card (Placed at the top for immediate tangible user benefit) */}
-              <div className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-2xs space-y-3">
-                <div className="flex items-center justify-between pb-1 border-b border-slate-100">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
-                    <Gift className="w-3.5 h-3.5 text-purple-600" />
-                    <span>แลกรับสิทธิ์ด้วย XP</span>
-                  </div>
-                  <Link
-                    href="/rewards"
-                    className="text-[10.5px] font-bold text-purple-700 hover:text-purple-900 bg-purple-50 px-2 py-0.5 rounded border border-purple-200/60 flex items-center gap-0.5"
-                  >
-                    <span>ศูนย์ของรางวัล</span>
-                    <ArrowRight className="w-2.5 h-2.5" />
-                  </Link>
-                </div>
-
-                {/* XP Status: Personalized for Member vs General for Guest */}
-                {isLoggedIn ? (
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[11px] bg-purple-50/70 px-2.5 py-1 rounded-lg border border-purple-100">
-                      <span className="text-slate-600">แต้มสะสมของคุณ:</span>
-                      <span className="font-bold text-purple-700 font-mono">{userXp} XP</span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 leading-relaxed font-normal">
-                      {userXp >= 500
-                        ? '🎉 คุณมีแต้มเพียงพอแลกกาแฟ Specialty ฟรี 1 แก้วได้แล้ว!'
-                        : `สะสมอีกเพียง ${Math.max(0, 500 - userXp)} XP จะแลกกาแฟ Specialty ฟรีแก้วแรกได้!`}
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-[11px] text-slate-500 leading-relaxed font-normal">
-                    สะสมแต้มจากการทำภารกิจ นำมาแลกรับเครื่องดื่มฟรี ส่วนลดงานแฟร์ หรือคูปองเวิร์กช็อป
-                  </p>
-                )}
-
-                <div className="space-y-1.5 pt-0.5">
-                  <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50/80 border border-slate-100 text-xs">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-sm shrink-0">☕</span>
-                      <span className="text-slate-700 text-[11px] font-medium truncate">กาแฟ Specialty ฟรี 1 แก้ว</span>
-                    </div>
-                    <span className="text-purple-700 font-bold text-[11px] shrink-0 font-mono pl-1">500 XP</span>
-                  </div>
-
-                  <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50/80 border border-slate-100 text-xs">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-sm shrink-0">🎟️</span>
-                      <span className="text-slate-700 text-[11px] font-medium truncate">ส่วนลดงานแฟร์ 100 บาท</span>
-                    </div>
-                    <span className="text-purple-700 font-bold text-[11px] shrink-0 font-mono pl-1">300 XP</span>
-                  </div>
-                </div>
-
-                <Link
-                  href="/rewards"
-                  className="w-full py-2 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200/80 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-95 shadow-2xs"
-                >
-                  <span>สำรวจศูนย์ของรางวัลทั้งหมด</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-              </div>
-
-              {/* 2. Community Hall of Fame (เพื่อนร่วมทางฮีลใจสัปดาห์นี้ - Non-toxic, Inspiring & Friendly) */}
-              <div className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-2xs space-y-3">
-                <div className="flex items-center justify-between pb-1 border-b border-slate-100">
-                  <div>
-                    <h3 className="font-bold text-xs sm:text-sm text-slate-900 flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
-                      <span>เพื่อนร่วมทางฮีลใจสัปดาห์นี้</span>
-                    </h3>
-                    <p className="text-[10.5px] text-slate-400">สร้างแรงบันดาลใจ & แชร์ช่วงเวลาดีๆ</p>
-                  </div>
-                  <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200/70">
-                    Hall of Fame
-                  </span>
-                </div>
-
-                {/* Community Spotlights List */}
-                <div className="space-y-1.5 pt-0.5">
-                  {WEEKLY_LEADERBOARD.map((user, idx) => (
-                    <div
-                      key={user.name}
-                      className="flex items-center justify-between p-2 rounded-lg bg-slate-50/70 hover:bg-slate-50 transition-colors border border-slate-100/90"
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="relative">
-                          <img
-                            src={user.avatar}
-                            alt={user.name}
-                            className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0"
-                          />
-                          <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-white flex items-center justify-center text-[9px] shadow-2xs border border-slate-100">
-                            {idx === 0 ? '🌟' : idx === 1 ? '🌿' : idx === 2 ? '☕' : idx === 3 ? '🎨' : '🔥'}
-                          </span>
-                        </div>
-
-                        <div className="min-w-0">
-                          <p className="text-xs font-bold text-slate-800 truncate">
-                            {user.name}
-                          </p>
-                          <p className="text-[10px] text-slate-500 truncate font-medium">
-                            {user.tag}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="text-right shrink-0 pl-1">
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-purple-700 bg-purple-50/80 px-2 py-0.5 rounded border border-purple-200/60 font-mono">
-                          <Award className="w-2.5 h-2.5 text-amber-500" />
-                          <span>{user.badges} เหรียญ</span>
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Personal Progress / Community Participation Box */}
-                {isLoggedIn ? (
-                  <div className="mt-2.5 p-2.5 rounded-xl bg-purple-50/70 border border-purple-200/70 space-y-1 shadow-2xs">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-purple-950 flex items-center gap-1.5">
-                        <Zap className="w-3 h-3 text-purple-600 fill-purple-500" />
-                        <span>ความก้าวหน้าของคุณ</span>
-                      </span>
-                      <span className="font-bold text-purple-800 font-mono text-[11px]">Lv.{userLevel} • {userXp} XP</span>
-                    </div>
-                    <p className="text-[11px] text-purple-700 leading-relaxed font-normal">
-                      {joinedQuestIds.length > 0
-                        ? `กำลังพิชิต ${joinedQuestIds.length} ภารกิจ — สู้ๆ นะ ขอให้มีความสุขกับทุกก้าว!`
-                        : 'สะสมแต้มและเหรียญรางวัลในสไตล์คุณได้ตามสบาย ไร้แรงกดดัน'}
-                    </p>
-                    <Link
-                      href="/myhub?tab=quests_rewards"
-                      className="inline-flex items-center gap-1 text-[11px] font-bold text-purple-700 hover:text-purple-900 hover:underline pt-0.5"
-                    >
-                      <span>ดูภารกิจของคุณใน My Hub ↗</span>
-                    </Link>
-                  </div>
-                ) : (
-                  <div
-                    onClick={() => setIsAuthModalOpen(true)}
-                    className="mt-2.5 p-2.5 rounded-xl bg-purple-50/70 border border-dashed border-purple-200 text-center cursor-pointer hover:bg-purple-100/70 transition-colors group/guestRank shadow-2xs"
-                  >
-                    <p className="text-[11px] font-bold text-purple-900 group-hover/guestRank:text-purple-950">
-                      ✨ ร่วมเป็นหนึ่งในเพื่อนร่วมทางฮีลใจ
-                    </p>
-                    <p className="text-[10px] text-purple-600">
-                      เข้าสู่ระบบเพื่อสะสมเหรียญรางวัลและบันทึกความทรงจำ
-                    </p>
-                  </div>
-                )}
-              </div>
-
-            </div>
-
           </div>
 
         </section>
