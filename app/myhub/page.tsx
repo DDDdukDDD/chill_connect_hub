@@ -3628,12 +3628,21 @@ export default function MyHubPage() {
                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${catTheme.bg}`}>
                                   {catTheme.label}
                                 </span>
-                                <span 
-                                  title={`ภารกิจพาร์ทเนอร์ทางการ: ${brandReward.partnerName}`}
-                                  className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-900 border border-purple-200 shrink-0 truncate max-w-[140px]"
-                                >
-                                  Official • {brandReward.partnerName}
-                                </span>
+                                {brandReward.type === 'brand_partner' ? (
+                                  <span 
+                                    title={`ภารกิจพาร์ทเนอร์ทางการ: ${brandReward.partnerName}`}
+                                    className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-900 border border-purple-200 shrink-0 truncate max-w-[140px]"
+                                  >
+                                    Official • {brandReward.partnerName}
+                                  </span>
+                                ) : (
+                                  <span 
+                                    title="ภารกิจกิจกรรมกลางของ Chill & Connect Hub"
+                                    className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 shrink-0 truncate max-w-[140px]"
+                                  >
+                                    Hub Challenge • กิจกรรมกลาง
+                                  </span>
+                                )}
                                 <span className="text-[10px] font-black text-purple-700 bg-purple-50 border border-purple-200/80 px-2 py-0.5 rounded-md flex items-center gap-0.5 ml-auto shadow-2xs">
                                   <Zap className="w-3 h-3 text-purple-600 fill-purple-600" />
                                   <span>+{quest.rewardPoints} XP</span>
@@ -3656,14 +3665,24 @@ export default function MyHubPage() {
                               {quest.targetGoal}
                             </p>
 
-                            {/* Brand-Exclusive Privilege Pill (Strava / Nike Model) */}
-                            <div 
-                              title={`สิทธิพิเศษเฉพาะแบรนด์ ${brandReward.partnerName}: ${brandReward.title}`}
-                              className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-amber-50/90 border border-amber-200/90 text-amber-950 text-[10px] font-bold shadow-2xs mt-1"
-                            >
-                              <Ticket className="w-3 h-3 text-amber-600 shrink-0" />
-                              <span className="truncate">{brandReward.title}</span>
-                            </div>
+                            {/* Reward Privilege Pill: Brand Exclusive vs Hub Universal Points */}
+                            {brandReward.type === 'brand_partner' ? (
+                              <div 
+                                title={`สิทธิพิเศษเฉพาะแบรนด์ ${brandReward.partnerName}: ${brandReward.title}`}
+                                className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-amber-50/90 border border-amber-200/90 text-amber-950 text-[10px] font-bold shadow-2xs mt-1"
+                              >
+                                <Ticket className="w-3 h-3 text-amber-600 shrink-0" />
+                                <span className="truncate">{brandReward.title}</span>
+                              </div>
+                            ) : (
+                              <div 
+                                title="รับแต้มสะสมพิเศษเพื่อนำไปเลือกแลกของรางวัลในศูนย์กลาง (/rewards)"
+                                className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-purple-50/90 border border-purple-200/90 text-purple-950 text-[10px] font-bold shadow-2xs mt-1"
+                              >
+                                <Gift className="w-3 h-3 text-purple-600 shrink-0" />
+                                <span className="truncate">แต้มสะสมอิสระ แลกของรางวัลใน Hub Rewards</span>
+                              </div>
+                            )}
                           </div>
 
                           {/* Progress & Duration */}
@@ -3691,17 +3710,28 @@ export default function MyHubPage() {
                             </div>
                           </div>
 
-                          {/* Action Button: In Strava/Nike model, completed quests give instant access to Brand Voucher */}
+                          {/* Action Button: In Strava/Nike model, completed quests give instant access to Brand Voucher / Hub Achievement */}
                           <div className="pt-2.5 border-t border-slate-100 mt-auto">
                             {isCompleted ? (
-                              <button
-                                type="button"
-                                onClick={() => setSelectedQuestForVoucherModal(quest)}
-                                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-bold py-2 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs active:scale-98"
-                              >
-                                <Ticket className="w-3.5 h-3.5 text-white" />
-                                <span>ดูบัตรกำนัล & QR Code</span>
-                              </button>
+                              brandReward.type === 'brand_partner' ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedQuestForVoucherModal(quest)}
+                                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-bold py-2 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs active:scale-98"
+                                >
+                                  <Ticket className="w-3.5 h-3.5 text-white" />
+                                  <span>ดูบัตรกำนัล & QR Code</span>
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedQuestForVoucherModal(quest)}
+                                  className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold py-2 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs active:scale-98"
+                                >
+                                  <Trophy className="w-3.5 h-3.5 text-amber-300" />
+                                  <span>ดูความสำเร็จ & แลกรางวัล</span>
+                                </button>
+                              )
                             ) : (
                               <button
                                 type="button"

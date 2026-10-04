@@ -18,26 +18,35 @@ import {
   Check,
   Share2,
   Crown,
-  Ticket
+  Ticket,
+  Gift,
+  Sparkles,
+  ArrowRight
 } from 'lucide-react';
 import { ChallengeQuest } from '@/data/mockData';
 
-export interface BrandVoucherReward {
+export interface QuestRewardProfile {
+  type: 'brand_partner' | 'hub_central';
   title: string;
   partnerName: string;
-  voucherCodePrefix: string;
-  exclusiveNotice: string;
+  voucherCodePrefix?: string;
+  exclusiveNotice?: string;
   terms?: string;
+  hubRewardNote?: string;
 }
 
-export function getQuestBrandReward(quest: any): BrandVoucherReward {
+export type BrandVoucherReward = QuestRewardProfile;
+
+export function getQuestBrandReward(quest: any): QuestRewardProfile {
   if (quest?.brandReward) return quest.brandReward;
 
   const id = quest?.id || '';
   const title = quest?.title || '';
 
+  // 1. Brand Partner Quest: Ari Specialty Coffee Club
   if (id === 'comm-quest-1' || title.includes('Coffee') || title.includes('กาแฟ') || title.includes('อารีย์')) {
     return {
+      type: 'brand_partner',
       title: 'ฟรี Signature Cold Brew 1 แก้ว (มูลค่า 140.-)',
       partnerName: 'Ari Specialty Coffee Club',
       voucherCodePrefix: 'ARI-BREW-',
@@ -45,8 +54,11 @@ export function getQuestBrandReward(quest: any): BrandVoucherReward {
       terms: 'แสดง QR Code หน้าร้านก่อนสั่งเครื่องดื่ม จำกัด 1 สิทธิ์/ท่าน มีอายุ 30 วันหลังพิชิตภารกิจ',
     };
   }
+
+  // 2. Brand Partner Quest: BMA Sports Hub
   if (id === 'comm-quest-2' || title.includes('Park Run') || title.includes('สวน')) {
     return {
+      type: 'brand_partner',
       title: 'สิทธิ์วิ่งฟรี BMA City Mini Marathon 2026 พร้อมเสื้อ Finisher',
       partnerName: 'BMA Sports Hub (สำนักการกีฬา กทม.)',
       voucherCodePrefix: 'BMA-RUN-',
@@ -54,8 +66,11 @@ export function getQuestBrandReward(quest: any): BrandVoucherReward {
       terms: 'ใช้รหัสลงทะเบียนผ่านเว็บไซต์งานวิ่ง BMA Marathon ภายในวันที่กำหนด',
     };
   }
+
+  // 3. Brand Partner Quest: HYROX Thailand
   if (id === 'comm-quest-3' || title.includes('HYROX')) {
     return {
+      type: 'brand_partner',
       title: 'ส่วนลด 20% อุปกรณ์ซ้อม HYROX Official Training Gear',
       partnerName: 'HYROX Thailand',
       voucherCodePrefix: 'HYROX-GEAR-',
@@ -63,26 +78,33 @@ export function getQuestBrandReward(quest: any): BrandVoucherReward {
       terms: 'กรอกรหัสส่วนลดตอน Checkout หรือแสดงบาร์โค้ดที่ Pop-up Store',
     };
   }
+
+  // 4. Hub Central Challenge: Morning Yoga (กิจกรรมกลางของ Hub)
   if (id === 'comm-quest-4' || title.includes('Yoga') || title.includes('โยคะ')) {
     return {
-      title: 'ฟรี คลาส Sound Bath & Yoga Therapy 1 ครั้ง (มูลค่า 650.-)',
-      partnerName: 'Mindful Yoga & Wellness Hub',
-      voucherCodePrefix: 'ZEN-YOGA-',
-      exclusiveNotice: 'ใช้ได้เฉพาะที่สตูดิโอ Mindful Yoga & Wellness Hub เท่านั้น',
-      terms: 'จองรอบคลาสล่วงหน้าอย่างน้อย 24 ชั่วโมงผ่านช่องทางของสตูดิโอ',
+      type: 'hub_central',
+      title: 'แต้มสะสมอิสระ + ปลดล็อกของรางวัลใน Hub Rewards',
+      partnerName: 'Chill & Connect Hub',
+      hubRewardNote: 'รับแต้ม Boosted XP ก้อนใหญ่สำหรับยกระดับเลเวลบัญชี และนำแต้มไปเลือกแลกของรางวัลในศูนย์กลาง (/rewards) ได้อย่างอิสระตามใจชอบ',
+      terms: 'สามารถนำแต้ม XP สะสมไปแลกรับของรางวัลที่ร่วมรายการในหน้าศูนย์ของรางวัล (/rewards) ได้ทันที',
     };
   }
+
+  // 5. Hub Central Challenge: Digital Detox (กิจกรรมกลางของ Hub)
   if (id === 'comm-quest-5' || title.includes('Detox') || title.includes('มือถือ')) {
     return {
-      title: 'เซ็ตชาสมุนไพรออร์แกนิกและเค้กโฮมเมด ฟรี 1 เซ็ต (มูลค่า 220.-)',
-      partnerName: 'Digital Detox Society',
-      voucherCodePrefix: 'DETOX-TEA-',
-      exclusiveNotice: 'สิทธิ์เฉพาะคาเฟ่พาร์ทเนอร์โครงการ Digital Detox ที่ร่วมรายการเท่านั้น',
-      terms: 'แสดงบัตรสิทธิ์แก่บาริสต้าที่ร้านพาร์ทเนอร์ที่ร่วมรายการ',
+      type: 'hub_central',
+      title: 'แต้มสะสมอิสระ + ปลดล็อกของรางวัลใน Hub Rewards',
+      partnerName: 'Chill & Connect Hub',
+      hubRewardNote: 'รับแต้มพิเศษอัปเลเวลโปรไฟล์ พร้อมสิทธิ์เลือกแลกเซ็ตชาหรือเครื่องดื่มฟรีในคลังของรางวัลกลาง',
+      terms: 'นำแต้ม XP ที่ได้รับไปแลกรับสิทธิ์ที่หน้าศูนย์ของรางวัล (/rewards)',
     };
   }
+
+  // 6. Brand Partner Quest: River City Bangkok
   if (id === 'comm-quest-6' || title.includes('Gallery') || title.includes('ศิลปะ') || title.includes('แกลเลอรี')) {
     return {
+      type: 'brand_partner',
       title: 'บัตรเข้าชม Exclusive Art Exhibition ฟรี 1 ใบ (มูลค่า 350.-)',
       partnerName: 'River City Bangkok',
       voucherCodePrefix: 'RCB-ART-',
@@ -90,8 +112,11 @@ export function getQuestBrandReward(quest: any): BrandVoucherReward {
       terms: 'ยื่นรับบัตรเข้าชมนิทรรศการพิเศษได้ที่เคาน์เตอร์ Information ริเวอร์ ซิตี้ แบงค็อก',
     };
   }
+
+  // 7. Brand Partner Quest: Thailand Board Game Club
   if (id === 'comm-quest-7' || title.includes('Board Game') || title.includes('บอร์ดเกม')) {
     return {
+      type: 'brand_partner',
       title: 'ฟรี ชั่วโมงเล่นบอร์ดเกม 2 ชั่วโมง หรือส่วนลดซื้อบอร์ดเกม 15%',
       partnerName: 'Thailand Board Game Club',
       voucherCodePrefix: 'TBG-PLAY-',
@@ -99,8 +124,11 @@ export function getQuestBrandReward(quest: any): BrandVoucherReward {
       terms: 'แสดงหน้าบัตรก่อนเริ่มเปิดโต๊ะเล่นเกม',
     };
   }
+
+  // 8. Brand Partner Quest: PUBAT Bookworm (งานสัปดาห์หนังสือแห่งชาติ)
   if (id === 'quest-off-3' || title.includes('Book') || title.includes('หนังสือ')) {
     return {
+      type: 'brand_partner',
       title: 'คูปองเงินสด 100 บาท ใช้ซื้อหนังสือในงานสัปดาห์หนังสือแห่งชาติ QSNCC',
       partnerName: 'PUBAT Thailand (สมาคมผู้จัดพิมพ์ฯ)',
       voucherCodePrefix: 'PUBAT-BOOK-',
@@ -108,22 +136,25 @@ export function getQuestBrandReward(quest: any): BrandVoucherReward {
       terms: 'แสดงบาร์โค้ดต่อพนักงานแคชเชียร์ก่อนชำระเงิน',
     };
   }
+
+  // 9. Hub Central Challenge: Sound Bath & Zen Inner Peace (กิจกรรมกลางของ Hub)
   if (id === 'quest-off-4' || title.includes('Sound Bath') || title.includes('สมาธิ')) {
     return {
-      title: 'ฟรี เซ็ตชาสมุนไพรนำเข้า + ส่วนลด 30% คอร์ส Sound Healing',
-      partnerName: 'Tibetan Bowls Healing Center',
-      voucherCodePrefix: 'TBH-HEAL-',
-      exclusiveNotice: 'สิทธิ์เฉพาะที่ศูนย์ Tibetan Bowls Healing Center เท่านั้น',
-      terms: 'แสดงบัตรสิทธิ์แก่เจ้าหน้าที่ต้อนรับของศูนย์',
+      type: 'hub_central',
+      title: 'เหรียญตราทองเกียรติยศ + แต้มสะสมอิสระ Hub Rewards',
+      partnerName: 'Chill & Connect Hub',
+      hubRewardNote: 'ปลดล็อกเหรียญทอง Zen Inner Peace ลงบนโปรไฟล์ และรับแต้มสะสมเลือกของรางวัลในศูนย์กลาง',
+      terms: 'นำแต้ม XP ไปแลกรับสิทธิ์เวิร์กช็อปหรือของพรีเมียมในศูนย์ของรางวัล',
     };
   }
 
+  // Fallback: Hub Central Challenge
   return {
-    title: `บัตรสิทธิพิเศษเฉพาะแบรนด์พาร์ทเนอร์ (มูลค่า 200.-)`,
-    partnerName: quest?.creatorName || 'ทีมงาน Chill & Connect',
-    voucherCodePrefix: 'CCH-PARTNER-',
-    exclusiveNotice: `สิทธิ์เฉพาะหน้าร้าน/จุดบริการของ ${quest?.creatorName || 'พาร์ทเนอร์ทางการ'} เท่านั้น`,
-    terms: 'แสดงรหัสสิทธิ์แก่เจ้าหน้าที่ ณ จุดให้บริการเพื่อรับสิทธิ์',
+    type: 'hub_central',
+    title: 'แต้มสะสมอิสระ + ปลดล็อกของรางวัลใน Hub Rewards',
+    partnerName: 'Chill & Connect Hub',
+    hubRewardNote: 'ภารกิจกิจกรรมกลางของระบบ รับแต้มสะสมอิสระเพื่อนำไปเลือกแลกของรางวัลในหน้า /rewards',
+    terms: 'นำแต้ม XP ไปเลือกของรางวัลที่ต้องการได้ตลอดเวลา',
   };
 }
 
@@ -379,8 +410,8 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
         {/* Scrollable Content Body */}
         <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1 bg-white">
 
-          {/* 🎉 Unlocked Brand Voucher Pass (When Completed) */}
-          {(localCompleted || isCompleted) && brandReward && (
+          {/* 🎉 Unlocked Brand Voucher Pass (When Completed - Brand Partner Quest) */}
+          {(localCompleted || isCompleted) && brandReward && brandReward.type === 'brand_partner' && (
             <div className="p-4 sm:p-5 bg-gradient-to-br from-amber-50 via-purple-50/40 to-amber-50/60 rounded-3xl border-2 border-amber-300 shadow-md space-y-3 animate-fade-in">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
@@ -419,7 +450,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                   <div className="space-y-0.5">
                     <span className="text-[10px] text-slate-400 font-bold block">รหัสสิทธิ์สำหรับใช้หน้าร้าน:</span>
                     <span className="font-mono font-black text-xs sm:text-sm text-[#7C3AED] tracking-wider select-all">
-                      {brandReward.voucherCodePrefix}88492
+                      {brandReward.voucherCodePrefix || 'CCH-'}88492
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700 bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 shrink-0 shadow-2xs">
@@ -430,6 +461,63 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
 
                 <div className="p-2 rounded-xl bg-amber-50/80 border border-amber-200 text-[10.5px] text-amber-900 font-medium leading-relaxed">
                   <strong>🔒 ข้อกำหนดการใช้สิทธิ์:</strong> {brandReward.exclusiveNotice}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 🏆 Unlocked Hub Central Achievement Pass (When Completed - Hub Central Challenge) */}
+          {(localCompleted || isCompleted) && brandReward && brandReward.type === 'hub_central' && (
+            <div className="p-4 sm:p-5 bg-gradient-to-br from-purple-50 via-indigo-50/40 to-emerald-50/30 rounded-3xl border-2 border-purple-300 shadow-md space-y-3 animate-fade-in">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center font-black text-sm shadow-xs">
+                    🏆
+                  </span>
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-purple-900 bg-purple-200/80 px-2 py-0.5 rounded-md">
+                      Hub Official Achievement
+                    </span>
+                    <h4 className="text-sm sm:text-base font-black text-slate-900">
+                      คุณพิชิตภารกิจกลางของระบบสำเร็จ!
+                    </h4>
+                  </div>
+                </div>
+                <span className="text-[11px] font-extrabold text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-full border border-emerald-300 shrink-0">
+                  ✓ สำเร็จเรียบร้อย
+                </span>
+              </div>
+
+              <div className="p-3.5 bg-white rounded-2xl border border-purple-200 shadow-2xs space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold block">รางวัลความสำเร็จของคุณ:</span>
+                    <h5 className="font-black text-xs sm:text-sm text-purple-950">
+                      {brandReward.title}
+                    </h5>
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 shrink-0">
+                    Chill & Connect Hub
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                  {brandReward.hubRewardNote || 'คุณได้รับคะแนน XP ก้อนใหญ่เรียบร้อยแล้ว! สามารถนำแต้มสะสมทั้งหมดในบัญชีไปเลือกแลกรับของรางวัลที่ชอบในศูนย์ของรางวัลกลางได้ทันที'}
+                </p>
+
+                <div className="pt-1 flex items-center justify-between gap-2 flex-wrap">
+                  <Link
+                    href="/rewards"
+                    onClick={onClose}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer"
+                  >
+                    <Gift className="w-3.5 h-3.5 text-amber-400" />
+                    <span>ไปเลือกของรางวัลใน Rewards Center</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                  <span className="text-[11px] font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200">
+                    +{quest.rewardPoints || 300} XP ได้รับแล้ว
+                  </span>
                 </div>
               </div>
             </div>
@@ -682,8 +770,8 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                   </div>
                 </div>
 
-                {/* 3. Brand-Exclusive Privilege Block (Strava / Nike Model) */}
-                {brandReward && (
+                {/* 3. Brand-Exclusive Privilege Block (Strava / Nike Model - Brand Partner Quest) */}
+                {brandReward && brandReward.type === 'brand_partner' && (
                   <div className="p-3.5 bg-gradient-to-r from-amber-500/10 via-purple-500/10 to-amber-500/5 rounded-2xl border border-amber-300/80 space-y-2 relative overflow-hidden">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
@@ -712,6 +800,38 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                           เงื่อนไข: {brandReward.terms}
                         </p>
                       )}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Universal Hub Rewards Block (For Central Platform Challenges) */}
+                {brandReward && brandReward.type === 'hub_central' && (
+                  <div className="p-3.5 bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-emerald-500/5 rounded-2xl border border-purple-300/80 space-y-2 relative overflow-hidden">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-lg bg-purple-600 text-white flex items-center justify-center text-xs font-black shrink-0 shadow-2xs">
+                          🎁
+                        </span>
+                        <span className="text-xs font-black text-slate-900">
+                          สิทธิ์แลกของรางวัลศูนย์กลาง (Universal Hub Rewards)
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
+                        Official Hub Challenge
+                      </span>
+                    </div>
+
+                    <div className="bg-white/95 backdrop-blur-xs p-3 rounded-xl border border-purple-200/80 space-y-1">
+                      <h5 className="font-black text-xs sm:text-sm text-purple-950">
+                        {brandReward.title}
+                      </h5>
+                      <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                        {brandReward.hubRewardNote}
+                      </p>
+                      <div className="pt-1 flex items-center gap-1.5 text-[10.5px] text-purple-800 font-semibold">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                        <span>อิสระเต็มที่: นำแต้มไปเลือกของรางวัลใดก็ได้ในหน้ารวม /rewards ไม่ติดเงื่อนไขแบรนด์</span>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -749,14 +869,25 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
           {/* Action Buttons depending on State */}
           <div className="flex items-center gap-2">
             {localCompleted ? (
-              <Link
-                href="/myhub?tab=quests_rewards"
-                onClick={onClose}
-                className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-amber-950 font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer"
-              >
-                <Ticket className="w-4 h-4" />
-                <span>ดูบัตรกำนัลใน MyHub</span>
-              </Link>
+              brandReward?.type === 'brand_partner' ? (
+                <Link
+                  href="/myhub?tab=quests_rewards"
+                  onClick={onClose}
+                  className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-amber-950 font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer"
+                >
+                  <Ticket className="w-4 h-4" />
+                  <span>ดูบัตรกำนัลใน MyHub</span>
+                </Link>
+              ) : (
+                <Link
+                  href="/rewards"
+                  onClick={onClose}
+                  className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer"
+                >
+                  <Gift className="w-4 h-4 text-amber-300" />
+                  <span>เปิดศูนย์ของรางวัล (/rewards)</span>
+                </Link>
+              )
             ) : isAlreadyJoined ? (
               <div className="flex items-center gap-2">
                 {/* Abandon / Cancel Button */}
