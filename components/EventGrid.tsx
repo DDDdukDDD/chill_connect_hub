@@ -6,6 +6,7 @@ import { EventItem } from '@/data/mockData';
 import { Heart, Calendar, MapPin, Users, Star, RotateCcw, Search, Globe, Repeat, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { isEventEnded } from '@/lib/dateUtils';
+import { FloatingCarousel } from '@/components/FloatingCarousel';
 
 interface EventGridProps {
   events: EventItem[];
@@ -19,6 +20,7 @@ interface EventGridProps {
   responsiveLimit?: { mobile: number; desktop: number };
   columns?: 4 | 5;
   dynamicResponsiveGrid?: boolean;
+  layout?: 'grid' | 'carousel';
 }
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string; badgeBg: string }> = {
@@ -40,6 +42,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
   responsiveLimit,
   columns = 5,
   dynamicResponsiveGrid = false,
+  layout = 'grid',
 }) => {
   if (events.length === 0) {
     return (
@@ -85,32 +88,28 @@ export const EventGrid: React.FC<EventGridProps> = ({
     ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'
     : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4';
 
-  return (
-    <div className="space-y-4">
-      {/* GRID VIEW */}
-      <div className={`grid ${gridColsClass}`}>
-        {displayedEvents.map((event, idx) => {
-          const isFav = favorites.includes(event.id);
-          const isJoined = joinedEventIds.includes(event.id);
-          const isEnded = isEventEnded(event);
-          const fillRatio = event.participantsCount / event.maxParticipants;
-          const isAlmostFull = fillRatio >= 0.8;
-          const catStyle = CATEGORY_COLORS[event.category] || CATEGORY_COLORS.heal;
+  const renderCard = (event: EventItem, idx: number) => {
+    const isFav = favorites.includes(event.id);
+    const isJoined = joinedEventIds.includes(event.id);
+    const isEnded = isEventEnded(event);
+    const fillRatio = event.participantsCount / event.maxParticipants;
+    const isAlmostFull = fillRatio >= 0.8;
+    const catStyle = CATEGORY_COLORS[event.category] || CATEGORY_COLORS.heal;
 
-          const detailHref = event.eventType === 'public_venue'
-            ? `/fairs/${encodeURIComponent(event.id)}`
-            : `/community/${encodeURIComponent(event.id)}`;
+    const detailHref = event.eventType === 'public_venue'
+      ? `/fairs/${encodeURIComponent(event.id)}`
+      : `/community/${encodeURIComponent(event.id)}`;
 
-          return (
-            <motion.div
-              key={event.id}
-              id={`event-${event.id}`}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: Math.min(idx, 10) * 0.04 }}
-              className="block"
-            >
-              <Link
+    return (
+      <motion.div
+        key={event.id}
+        id={`event-${event.id}`}
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: Math.min(idx, 10) * 0.04 }}
+        className="block h-full"
+      >
+        <Link
                 href={detailHref}
                 onClick={() => {
                   if (typeof window !== 'undefined') {
@@ -291,8 +290,29 @@ export const EventGrid: React.FC<EventGridProps> = ({
                 </div>
               </Link>
             </motion.div>
-          );
-        })}
+    );
+  };
+
+  if (layout === 'carousel') {
+    return (
+      <FloatingCarousel>
+        {displayedEvents.map((event, idx) => (
+          <div
+            key={event.id}
+            className="w-[calc((100%-12px)/2)] sm:w-[calc((100%-2*14px)/3)] md:w-[calc((100%-3*14px)/4)] lg:w-[calc((100%-4*14px)/5)] shrink-0 snap-start flex flex-col h-full"
+          >
+            {renderCard(event, idx)}
+          </div>
+        ))}
+      </FloatingCarousel>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* GRID VIEW */}
+      <div className={`grid ${gridColsClass}`}>
+        {displayedEvents.map((event, idx) => renderCard(event, idx))}
       </div>
     </div>
   );

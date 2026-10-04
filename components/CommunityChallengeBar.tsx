@@ -29,6 +29,7 @@ interface CommunityChallengeBarProps {
   onJoinQuest?: (questTitle: string) => void;
   joinedQuestTitles?: string[];
   onOpenCreateModal?: () => void;
+  minimalHeader?: boolean;
 }
 
 export const COMMUNITY_PUBLIC_QUESTS: (ChallengeQuest & { image?: string })[] = [
@@ -255,6 +256,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
   onJoinQuest,
   joinedQuestTitles = ['Cafe Hunter 5', 'Step Count 30Days', 'Offline 3 Hours'],
   onOpenCreateModal,
+  minimalHeader = false,
 }) => {
   const [joinedList, setJoinedList] = useState<string[]>(joinedQuestTitles);
   const [selectedQuestForModal, setSelectedQuestForModal] = useState<ChallengeQuest | null>(null);
@@ -405,86 +407,103 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
   return (
     <section id="community-quests-section" className="space-y-4 relative scroll-mt-20">
       
-      {/* Header Strip: ⚡ Editorial Section 04 Banner (Royal Violet & Purple) */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-purple-50/70 via-indigo-50/30 to-transparent p-3.5 sm:p-4 rounded-2xl border border-purple-200/70 shadow-2xs">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="w-6 h-6 rounded-lg bg-purple-500/15 text-purple-900 flex items-center justify-center text-xs font-black shrink-0 border border-purple-500/30">
-              04
-            </span>
-            <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <span>Challenge & Lifestyle Hub</span>
-            </h2>
-          </div>
-          <p className="text-xs text-slate-500 mt-1 font-medium pl-8">
-            ภารกิจไลฟ์สไตล์ & ชาเลนจ์ กิจกรรมรับแต้ม XP และของรางวัล
-          </p>
+      {/* Header Strip: Editorial Banner or Minimal Unboxed Header */}
+      {minimalHeader ? (
+        <div className="flex items-center justify-between gap-4 pb-1 pt-2">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+            Challenge & Lifestyle Hub
+          </h2>
+          <Link
+            href="/challenges"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer active:scale-95 leading-none"
+          >
+            <span>ดูภารกิจทั้งหมด ({activeQuests.length})</span>
+            <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
+          </Link>
         </div>
+      ) : (
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-purple-50/70 via-indigo-50/30 to-transparent p-3.5 sm:p-4 rounded-2xl border border-purple-200/70 shadow-2xs">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-6 rounded-lg bg-purple-500/15 text-purple-900 flex items-center justify-center text-xs font-black shrink-0 border border-purple-500/30">
+                04
+              </span>
+              <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                <span>Challenge & Lifestyle Hub</span>
+              </h2>
+            </div>
+            <p className="text-xs text-slate-500 mt-1 font-medium pl-8">
+              ภารกิจไลฟ์สไตล์ & ชาเลนจ์ กิจกรรมรับแต้ม XP และของรางวัล
+            </p>
+          </div>
 
-        {/* Right Actions: Clean Glassmorphic Pill Link */}
-        <Link
-          href="/challenges"
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-purple-900 text-purple-900 hover:text-white border border-purple-200/90 hover:border-purple-900 rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
-        >
-          <span>ดูภารกิจทั้งหมด ({activeQuests.length})</span>
-          <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
-        </Link>
-      </div>
+          {/* Right Actions: Clean Glassmorphic Pill Link */}
+          <Link
+            href="/challenges"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-purple-900 text-purple-900 hover:text-white border border-purple-200/90 hover:border-purple-900 rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
+          >
+            <span>ดูภารกิจทั้งหมด ({activeQuests.length})</span>
+            <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
+          </Link>
+        </div>
+      )}
 
-      {/* Quick Filter: Quest Type Chips (Official Central vs Brand Partner) */}
-      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5">
-        <span className="text-[11px] font-bold text-slate-400 shrink-0 uppercase tracking-wider mr-0.5">
-          ตัวกรองด่วน:
-        </span>
-
-        {/* 1. All */}
-        <button
-          type="button"
-          onClick={() => setFilterType('all')}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shrink-0 shadow-2xs ${
-            filterType === 'all'
-              ? 'bg-slate-900 text-white shadow-xs'
-              : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200/80'
-          }`}
-        >
-          <span>ทั้งหมด</span>
-          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${filterType === 'all' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
-            {questItems.length}
+      {/* Quick Filter: Quest Type Chips (Official Central vs Brand Partner) - Hidden in minimal mode */}
+      {!minimalHeader && (
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5">
+          <span className="text-[11px] font-bold text-slate-400 shrink-0 uppercase tracking-wider mr-0.5">
+            ตัวกรองด่วน:
           </span>
-        </button>
 
-        {/* 2. Official • Chill & Connect */}
-        <button
-          type="button"
-          onClick={() => setFilterType(filterType === 'hub_central' ? 'all' : 'hub_central')}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 shadow-2xs border ${
-            filterType === 'hub_central'
-              ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-              : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200/80'
-          }`}
-        >
-          <span>Official • Chill & Connect</span>
-          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${filterType === 'hub_central' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
-            {hubCount}
-          </span>
-        </button>
+          {/* 1. All */}
+          <button
+            type="button"
+            onClick={() => setFilterType('all')}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shrink-0 shadow-2xs ${
+              filterType === 'all'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200/80'
+            }`}
+          >
+            <span>ทั้งหมด</span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${filterType === 'all' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+              {questItems.length}
+            </span>
+          </button>
 
-        {/* 3. Brand Partner */}
-        <button
-          type="button"
-          onClick={() => setFilterType(filterType === 'brand_partner' ? 'all' : 'brand_partner')}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 shadow-2xs border ${
-            filterType === 'brand_partner'
-              ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-              : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200/80'
-          }`}
-        >
-          <span>แบรนด์พาร์ทเนอร์</span>
-          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${filterType === 'brand_partner' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
-            {partnerCount}
-          </span>
-        </button>
-      </div>
+          {/* 2. Official • Chill & Connect */}
+          <button
+            type="button"
+            onClick={() => setFilterType(filterType === 'hub_central' ? 'all' : 'hub_central')}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 shadow-2xs border ${
+              filterType === 'hub_central'
+                ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200/80'
+            }`}
+          >
+            <span>Official • Chill & Connect</span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${filterType === 'hub_central' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+              {hubCount}
+            </span>
+          </button>
+
+          {/* 3. Brand Partner */}
+          <button
+            type="button"
+            onClick={() => setFilterType(filterType === 'brand_partner' ? 'all' : 'brand_partner')}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 shadow-2xs border ${
+              filterType === 'brand_partner'
+                ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200/80'
+            }`}
+          >
+            <span>แบรนด์พาร์ทเนอร์</span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${filterType === 'brand_partner' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+              {partnerCount}
+            </span>
+          </button>
+        </div>
+      )}
 
       {/* Horizontal Scrollable Carousel (Manual Swipe / Scroll / Floating Center Arrows, No Auto Slide) */}
       <div className="relative group/carousel">
@@ -516,7 +535,11 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
         <div
           ref={scrollContainerRef}
           onScroll={checkScrollability}
-          className="flex gap-3.5 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory py-2 px-1 -mx-1 scroll-smooth"
+          className={`flex ${
+            minimalHeader
+              ? 'gap-3 sm:gap-3.5 pb-2 pt-0.5 px-0.5 no-scrollbar'
+              : 'gap-3.5 sm:gap-4 scrollbar-none py-2 px-1 -mx-1'
+          } overflow-x-auto snap-x snap-mandatory scroll-smooth`}
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {displayQuests.map((quest) => {
@@ -525,6 +548,95 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
             const targetTotal = parseInt(quest.total || '3', 10) || 3;
             const currentProg = questProgressMap[quest.title] || (isJoined ? 1 : 0);
             const brandReward = getQuestBrandReward(quest);
+
+            if (minimalHeader) {
+              return (
+                <div
+                  key={quest.id}
+                  onClick={() => handleOpenDetailModal(quest)}
+                  className="w-[calc((100%-12px)/2)] sm:w-[calc((100%-2*14px)/3)] md:w-[calc((100%-3*14px)/4)] lg:w-[calc((100%-4*14px)/5)] shrink-0 snap-start"
+                >
+                  <div className="group relative block aspect-[4/5] rounded-2xl overflow-hidden bg-slate-900 shadow-2xs hover:shadow-xl transition-all duration-300 hover:-translate-y-1.5 cursor-pointer w-full select-none">
+                    {/* Full-bleed Photo */}
+                    <img
+                      src={quest.image || 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80'}
+                      alt={quest.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                      loading="lazy"
+                    />
+
+                    {/* Subtle Top Shadow for Badges */}
+                    <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/60 via-black/20 to-transparent pointer-events-none" />
+
+                    {/* Deep Bottom Shadow for Typography */}
+                    <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/90 via-black/55 to-transparent pointer-events-none" />
+
+                    {/* Top Badges Row */}
+                    <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between z-10 gap-1.5">
+                      {/* Left: Medal Badge */}
+                      <span className="inline-flex items-center gap-1 text-[10px] font-black text-white/95 bg-black/45 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-white/20 truncate max-w-[calc(100%-68px)]">
+                        <Award className="w-2.5 h-2.5 text-amber-400 shrink-0" />
+                        <span className="truncate">เหรียญ {quest.badgeLabel}</span>
+                      </span>
+
+                      {/* Right: XP Reward Pill */}
+                      <span className="inline-flex items-center gap-0.5 text-[10px] font-black text-amber-300 bg-black/45 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/20 shrink-0">
+                        <Zap className="w-2.5 h-2.5 text-amber-400 fill-amber-300" />
+                        <span>+{quest.rewardPoints} XP</span>
+                      </span>
+                    </div>
+
+                    {/* Bottom Overlaid Details (Pure Moments Style) */}
+                    <div className="absolute inset-x-0 bottom-0 p-3 sm:p-3.5 flex flex-col justify-end space-y-1.5 z-10">
+                      {/* Host / Partner Tag */}
+                      <div className="text-[10px] font-extrabold uppercase tracking-wider text-purple-300 drop-shadow-sm truncate">
+                        {brandReward.type === 'brand_partner' ? brandReward.partnerName : 'Official • Chill & Connect'}
+                      </div>
+
+                      {/* Title */}
+                      <h3 className="text-white text-xs sm:text-[13px] font-bold leading-snug line-clamp-2 drop-shadow-sm group-hover:text-amber-200 transition-colors">
+                        {quest.title}
+                      </h3>
+
+                      {/* Footer Meta Row with Top Divider */}
+                      <div className="pt-1.5 flex items-center justify-between text-white/90 border-t border-white/15 text-[10.5px]">
+                        {/* Left: Reward Title */}
+                        <div className="flex items-center gap-1 min-w-0">
+                          {brandReward.type === 'brand_partner' ? (
+                            <Ticket className="w-3 h-3 text-amber-400 shrink-0" />
+                          ) : (
+                            <Gift className="w-3 h-3 text-purple-400 shrink-0" />
+                          )}
+                          <span className="truncate text-white/85 font-medium text-[10.5px]">
+                            {brandReward.title || quest.badgeLabel}
+                          </span>
+                        </div>
+
+                        {/* Right: Status or Participants */}
+                        <div className="shrink-0 font-bold flex items-center gap-1">
+                          {isDone ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-black text-purple-200 bg-purple-900/60 backdrop-blur-sm px-2 py-0.5 rounded-full border border-purple-400/40">
+                              <Trophy className="w-2.5 h-2.5 text-purple-300" />
+                              <span>พิชิตแล้ว</span>
+                            </span>
+                          ) : isJoined ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-200 bg-emerald-900/60 backdrop-blur-sm px-2 py-0.5 rounded-full border border-emerald-400/40">
+                              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-300" />
+                              <span>{currentProg}/{targetTotal}</span>
+                            </span>
+                          ) : (
+                            <span className="text-white/85 text-[10px] font-medium flex items-center gap-1">
+                              <Users className="w-2.5 h-2.5 text-white/70" />
+                              <span>{quest.participantsCount} คน</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
 
             return (
               <div
@@ -652,23 +764,25 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
           })}
         </div>
 
-        {/* Pagination Dots Indicator */}
-        <div className="flex items-center justify-center gap-1.5 pt-1">
-          {displayQuests.map((quest, idx) => (
-            <button
-              key={quest.id}
-              type="button"
-              onClick={() => scrollToCard(idx)}
-              className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
-                idx === activeIndex
-                  ? 'w-6 bg-purple-600'
-                  : 'w-1.5 bg-slate-200 hover:bg-slate-300'
-              }`}
-              title={`ไปยังภารกิจที่ ${idx + 1}: ${quest.title}`}
-              aria-label={`Go to quest ${idx + 1}`}
-            />
-          ))}
-        </div>
+        {/* Pagination Dots Indicator - Hidden in minimal mode */}
+        {!minimalHeader && (
+          <div className="flex items-center justify-center gap-1.5 pt-1">
+            {displayQuests.map((quest, idx) => (
+              <button
+                key={quest.id}
+                type="button"
+                onClick={() => scrollToCard(idx)}
+                className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                  idx === activeIndex
+                    ? 'w-6 bg-purple-600'
+                    : 'w-1.5 bg-slate-200 hover:bg-slate-300'
+                }`}
+                title={`ไปยังภารกิจที่ ${idx + 1}: ${quest.title}`}
+                aria-label={`Go to quest ${idx + 1}`}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Detail & Confirmation Modal */}

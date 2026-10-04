@@ -19,6 +19,7 @@ import { StoryBar } from '@/components/StoryBar';
 import { TrendingCarousel } from '@/components/TrendingCarousel';
 import { CommunityChallengeBar } from '@/components/CommunityChallengeBar';
 import { CommunityMomentsStrip } from '@/components/CommunityMomentsStrip';
+import { FloatingCarousel } from '@/components/FloatingCarousel';
 import { PlatformTrustAndPerks } from '@/components/PlatformTrustAndPerks';
 import { CommunityTrustSection } from '@/components/CommunityTrustSection';
 import { FairsTrustSection } from '@/components/FairsTrustSection';
@@ -1436,11 +1437,11 @@ function HomeContent() {
                     />
                   </div>
 
-                  {/* Community Events Grid (10 items across all screen sizes with dynamic responsive columns) */}
+                  {/* Community Events Carousel (Single row with manual floating scroll) */}
                   <div id="section-community-cards" className="scroll-mt-24">
                     <EventGrid
                       events={streamCommunityEvents}
-                      limit={10}
+                      layout="carousel"
                       onSelectEvent={() => { }}
                       favorites={isLoggedIn ? favorites : []}
                       toggleFavorite={toggleFavorite}
@@ -1550,11 +1551,11 @@ function HomeContent() {
                     />
                   </div>
 
-                  {/* Public Venue Events Grid (10 items across all screen sizes with dynamic responsive columns) */}
+                  {/* Public Venue Events Carousel (Single row with manual floating scroll) */}
                   <div id="section-fairs-cards" className="scroll-mt-24">
                     <EventGrid
                       events={streamPublicEvents}
-                      limit={10}
+                      layout="carousel"
                       onSelectEvent={() => { }}
                       favorites={isLoggedIn ? favorites : []}
                       toggleFavorite={toggleFavorite}
@@ -1623,14 +1624,14 @@ function HomeContent() {
                     />
                   </div>
 
-                  {/* Spot Cards Grid: 10 items across all screen sizes */}
+                  {/* Spot Cards Carousel: 1 row with manual floating scroll */}
                   <div id="section-spots-cards" className="scroll-mt-24">
                     {filteredSpots.length > 0 ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
-                        {filteredSpots.slice(0, 10).map((spot) => (
+                      <FloatingCarousel>
+                        {filteredSpots.map((spot) => (
                           <div
                             key={spot.id}
-                            className="block"
+                            className="w-[calc((100%-12px)/2)] sm:w-[calc((100%-2*14px)/3)] md:w-[calc((100%-3*14px)/4)] lg:w-[calc((100%-4*14px)/5)] shrink-0 snap-start flex flex-col h-full"
                           >
                             <SpotCard
                               spot={spot}
@@ -1646,7 +1647,7 @@ function HomeContent() {
                             />
                           </div>
                         ))}
-                      </div>
+                      </FloatingCarousel>
                     ) : (
                       <div className="bg-slate-50/80 rounded-2xl p-5 border border-dashed border-slate-200 text-center space-y-3">
                         <p className="text-xs sm:text-sm font-bold text-slate-700">

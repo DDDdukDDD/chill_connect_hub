@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { 
   Sprout, 
   LogIn, 
@@ -49,6 +50,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   userName = 'Jirathitigorn Maneekord',
   isAuthReady,
 }) => {
+  const pathname = usePathname();
   const { userProfile, handleSetRole } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
@@ -330,6 +332,42 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </button>
                 </div>
               )}
+
+              {/* Mode Switcher Block inside Slide-over Menu */}
+              <div className="p-3 bg-gradient-to-r from-blue-50/80 to-purple-50/80 rounded-2xl border border-blue-200/60 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-slate-700">สลับโหมดหน้าแรก (Compare)</span>
+                  <span className="text-[9.5px] font-extrabold text-blue-700 bg-white px-1.5 py-0.5 rounded border border-blue-200">
+                    เปรียบเทียบ
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <Link
+                    href="/journey"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 ${
+                      pathname === '/journey'
+                        ? 'bg-slate-900 text-white shadow-xs'
+                        : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                    }`}
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Journey Mode</span>
+                  </Link>
+                  <Link
+                    href="/"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 ${
+                      pathname !== '/journey'
+                        ? 'bg-slate-900 text-white shadow-xs'
+                        : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                    }`}
+                  >
+                    <Compass className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Classic Mode</span>
+                  </Link>
+                </div>
+              </div>
 
               {/* Navigation Links */}
               <div className="space-y-1">

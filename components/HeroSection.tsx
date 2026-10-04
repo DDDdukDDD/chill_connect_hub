@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   Search, 
   X, 
@@ -154,6 +155,7 @@ interface HeroSectionProps {
   endDate?: string;
   onOpenDatePicker?: () => void;
   onClearCustomDate?: () => void;
+  hideSearchConsoleOnAllTab?: boolean;
 }
 
 const parseDateParts = (dateStr?: string) => {
@@ -208,16 +210,80 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   endDate,
   onOpenDatePicker,
   onClearCustomDate,
+  hideSearchConsoleOnAllTab = false,
 }) => {
+  const router = useRouter();
   const { isLoggedIn } = useAuth();
   const [isFocused, setIsFocused] = useState(false);
   const [selectedQuestForModal, setSelectedQuestForModal] = useState<ChallengeQuest | null>(null);
-  const [activeModeTab, setActiveModeTab] = useState<'all' | 'spots' | 'community' | 'fairs'>(activeTab || 'all');
+  const [activeModeTab, setActiveModeTab] = useState<'all' | 'spots' | 'community' | 'fairs' | 'challenges' | 'moments'>(activeTab || 'all');
+  const [activeJourneyPill, setActiveJourneyPill] = useState<'home' | 'community' | 'fairs' | 'spots' | 'challenges' | 'moments'>('home');
   const [showcaseTab, setShowcaseTab] = useState<'vouchers' | 'rewards'>('vouchers');
   const [internalTimeFilter, setInternalTimeFilter] = useState('all');
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isHeroHovered, setIsHeroHovered] = useState(false);
   const activeTime = timeFilter !== undefined ? timeFilter : internalTimeFilter;
+
+  const handleJourneyTabScroll = (tabKey: 'home' | 'community' | 'fairs' | 'spots' | 'challenges' | 'moments', elementId?: string) => {
+    setActiveJourneyPill(tabKey);
+    if (typeof window === 'undefined') return;
+
+    if (tabKey === 'home') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (elementId) {
+      const el = document.getElementById(elementId);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        router.push(
+          tabKey === 'community'
+            ? '/community'
+            : tabKey === 'fairs'
+            ? '/fairs'
+            : tabKey === 'spots'
+            ? '/spots'
+            : tabKey === 'challenges'
+            ? '/challenges'
+            : tabKey === 'moments'
+            ? '/moments'
+            : '/'
+        );
+      }
+    }
+  };
+
+  // Scroll spy to dynamically highlight active journey tab pill
+  useEffect(() => {
+    if (!hideSearchConsoleOnAllTab) return;
+    const handleScroll = () => {
+      const scrollPos = window.scrollY + 200;
+      const communityEl = document.getElementById('journey-community');
+      const fairsEl = document.getElementById('journey-fairs');
+      const spotsEl = document.getElementById('journey-spots');
+      const challengesEl = document.getElementById('journey-challenges');
+      const momentsEl = document.getElementById('journey-moments');
+
+      if (momentsEl && scrollPos >= momentsEl.offsetTop) {
+        setActiveJourneyPill('moments');
+      } else if (challengesEl && scrollPos >= challengesEl.offsetTop) {
+        setActiveJourneyPill('challenges');
+      } else if (spotsEl && scrollPos >= spotsEl.offsetTop) {
+        setActiveJourneyPill('spots');
+      } else if (fairsEl && scrollPos >= fairsEl.offsetTop) {
+        setActiveJourneyPill('fairs');
+      } else if (communityEl && scrollPos >= communityEl.offsetTop) {
+        setActiveJourneyPill('community');
+      } else {
+        setActiveJourneyPill('home');
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [hideSearchConsoleOnAllTab]);
 
   // Sync activeModeTab with parent activeTab
   useEffect(() => {
@@ -265,6 +331,33 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     }, 10000);
     return () => clearInterval(timer);
   }, []);
+
+  const handleScrollToSection = (tabKey: 'challenges' | 'moments', sectionId: string, fallbackUrl?: string) => {
+    setActiveModeTab(tabKey);
+    if (activeModeTab !== 'all' && activeModeTab !== 'challenges' && activeModeTab !== 'moments' && onSelectDiscoveryTab) {
+      onSelectDiscoveryTab('all');
+    }
+    setTimeout(() => {
+      const el = document.getElementById(sectionId) || (sectionId === 'section-challenges' ? document.getElementById('journey-challenges') : document.getElementById('journey-moments'));
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (fallbackUrl) {
+        router.push(fallbackUrl);
+      }
+    }, 100);
+  };
+
+  // Reset activeModeTab to 'all' if user scrolls back up near the top of the page
+  useEffect(() => {
+    if (activeModeTab !== 'challenges' && activeModeTab !== 'moments') return;
+    const handleScrollBackTop = () => {
+      if (window.scrollY < 350) {
+        setActiveModeTab('all');
+      }
+    };
+    window.addEventListener('scroll', handleScrollBackTop, { passive: true });
+    return () => window.removeEventListener('scroll', handleScrollBackTop);
+  }, [activeModeTab]);
 
   const handleScrollToQuests = () => {
     if (typeof window !== 'undefined') {
@@ -985,8 +1078,98 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               </div>
             </div>
 
-            {/* 2. Floating All-in-One Lifestyle Search Console (Trip.com Luxury Booking Portal Style - Compact on Mobile) */}
-            <div className="relative -mt-[52px] sm:-mt-[106px] md:-mt-[116px] lg:-mt-[120px] z-50 w-[96%] sm:w-[92%] md:w-[90%] lg:w-full max-w-5xl xl:max-w-6xl 2xl:max-w-[1200px] mx-auto px-1.5 sm:px-4">
+            {hideSearchConsoleOnAllTab && activeModeTab === 'all' ? (
+              /* Sleek Floating Pill Tabs Bar (Smooth in-page navigation anchors for /journey) */
+              <div className="relative -mt-6 sm:-mt-8 z-40 w-fit max-w-[98%] mx-auto px-2">
+                <div className="bg-white/95 backdrop-blur-md rounded-2xl sm:rounded-full px-2 sm:px-3 py-1.5 shadow-md border border-slate-200/90 flex items-center justify-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar select-none">
+                  {/* Tab 1: หน้าหลัก */}
+                  <button
+                    type="button"
+                    onClick={() => handleJourneyTabScroll('home')}
+                    className={`flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 rounded-full text-xs font-black transition-all cursor-pointer shrink-0 ${
+                      activeJourneyPill === 'home'
+                        ? 'bg-[#2563EB] text-white shadow-xs'
+                        : 'text-slate-600 hover:text-[#2563EB] hover:bg-blue-50/70'
+                    }`}
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>หน้าหลัก</span>
+                  </button>
+
+                  {/* Tab 2: กิจกรรมคอมมูนิตี้ */}
+                  <button
+                    type="button"
+                    onClick={() => handleJourneyTabScroll('community', 'journey-community')}
+                    className={`flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                      activeJourneyPill === 'community'
+                        ? 'bg-[#F26430] text-white shadow-xs'
+                        : 'text-slate-600 hover:text-[#F26430] hover:bg-orange-50/70'
+                    }`}
+                  >
+                    <Users className="w-3.5 h-3.5 text-[#F26430]" />
+                    <span>กิจกรรมคอมมูนิตี้</span>
+                  </button>
+
+                  {/* Tab 3: งานมหากรรม & เอ็กซ์โป */}
+                  <button
+                    type="button"
+                    onClick={() => handleJourneyTabScroll('fairs', 'journey-fairs')}
+                    className={`flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                      activeJourneyPill === 'fairs'
+                        ? 'bg-[#2B527A] text-white shadow-xs'
+                        : 'text-slate-600 hover:text-[#2B527A] hover:bg-blue-50/70'
+                    }`}
+                  >
+                    <Building2 className="w-3.5 h-3.5 text-[#2B527A]" />
+                    <span>งานมหากรรม & เอ็กซ์โป</span>
+                  </button>
+
+                  {/* Tab 4: พิกัดเที่ยว&ฮีลใจ */}
+                  <button
+                    type="button"
+                    onClick={() => handleJourneyTabScroll('spots', 'journey-spots')}
+                    className={`flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                      activeJourneyPill === 'spots'
+                        ? 'bg-[#4A7C59] text-white shadow-xs'
+                        : 'text-slate-600 hover:text-[#4A7C59] hover:bg-emerald-50/70'
+                    }`}
+                  >
+                    <Compass className="w-3.5 h-3.5 text-[#4A7C59]" />
+                    <span>พิกัดเที่ยว&ฮีลใจ</span>
+                  </button>
+
+                  {/* Tab 5: Challenge & Lifestyle Hub */}
+                  <button
+                    type="button"
+                    onClick={() => handleJourneyTabScroll('challenges', 'journey-challenges')}
+                    className={`flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                      activeJourneyPill === 'challenges'
+                        ? 'bg-[#7C3AED] text-white shadow-xs'
+                        : 'text-slate-600 hover:text-[#7C3AED] hover:bg-purple-50/70'
+                    }`}
+                  >
+                    <Trophy className="w-3.5 h-3.5 text-[#7C3AED]" />
+                    <span>Challenge & Lifestyle Hub</span>
+                  </button>
+
+                  {/* Tab 6: โมเมนต์ */}
+                  <button
+                    type="button"
+                    onClick={() => handleJourneyTabScroll('moments', 'journey-moments')}
+                    className={`flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                      activeJourneyPill === 'moments'
+                        ? 'bg-rose-500 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-rose-600 hover:bg-rose-50/70'
+                    }`}
+                  >
+                    <Camera className="w-3.5 h-3.5 text-rose-500" />
+                    <span>โมเมนต์</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* 2. Floating All-in-One Lifestyle Search Console (Trip.com Luxury Booking Portal Style - Compact on Mobile) */
+              <div className="relative -mt-[52px] sm:-mt-[106px] md:-mt-[116px] lg:-mt-[120px] z-50 w-[96%] sm:w-[92%] md:w-[90%] lg:w-full max-w-5xl xl:max-w-6xl 2xl:max-w-[1200px] mx-auto px-1.5 sm:px-4">
               <div className="relative z-50 bg-white rounded-2xl sm:rounded-3xl p-2.5 sm:p-4 md:p-5 pb-2 sm:pb-3 md:pb-3.5 shadow-[0_20px_50px_-15px_rgba(15,23,42,0.15),0_4px_16px_rgba(15,23,42,0.04)] border border-slate-200/90 space-y-2.5 sm:space-y-3.5">
                 
                 {/* Trip.com Signature Navigation Tabs: Icon Above Label with Active Underline Bar */}
@@ -1067,13 +1250,51 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                         <span className="absolute bottom-0 left-0 right-0 h-[2.5px] sm:h-[3px] bg-[#2D5A3C] rounded-full" />
                       )}
                     </button>
+
+                    {/* Tab 5: ชาเลนจ์ (Section 4) */}
+                    <button
+                      type="button"
+                      onClick={() => handleScrollToSection('challenges', 'section-challenges', '/challenges')}
+                      className="flex flex-col items-center gap-1 sm:gap-1.5 pt-0.5 sm:pt-1 pb-2 sm:pb-3.5 relative group cursor-pointer transition-all shrink-0"
+                    >
+                      <Trophy className={`w-4.5 h-4.5 sm:w-6 sm:h-6 transition-colors ${
+                        activeModeTab === 'challenges' ? 'text-[#7C3AED]' : 'text-slate-400 group-hover:text-slate-600'
+                      }`} />
+                      <span className={`text-[11px] sm:text-sm whitespace-nowrap transition-colors ${
+                        activeModeTab === 'challenges' ? 'font-black text-[#7C3AED]' : 'font-semibold text-slate-500 group-hover:text-slate-800'
+                      }`}>
+                        ชาเลนจ์
+                      </span>
+                      {activeModeTab === 'challenges' && (
+                        <span className="absolute bottom-0 left-0 right-0 h-[2.5px] sm:h-[3px] bg-[#7C3AED] rounded-full" />
+                      )}
+                    </button>
+
+                    {/* Tab 6: โมเมนต์ (Section 5) */}
+                    <button
+                      type="button"
+                      onClick={() => handleScrollToSection('moments', 'section-moments', '/moments')}
+                      className="flex flex-col items-center gap-1 sm:gap-1.5 pt-0.5 sm:pt-1 pb-2 sm:pb-3.5 relative group cursor-pointer transition-all shrink-0"
+                    >
+                      <Camera className={`w-4.5 h-4.5 sm:w-6 sm:h-6 transition-colors ${
+                        activeModeTab === 'moments' ? 'text-rose-500' : 'text-slate-400 group-hover:text-slate-600'
+                      }`} />
+                      <span className={`text-[11px] sm:text-sm whitespace-nowrap transition-colors ${
+                        activeModeTab === 'moments' ? 'font-black text-rose-500' : 'font-semibold text-slate-500 group-hover:text-slate-800'
+                      }`}>
+                        โมเมนต์
+                      </span>
+                      {activeModeTab === 'moments' && (
+                        <span className="absolute bottom-0 left-0 right-0 h-[2.5px] sm:h-[3px] bg-rose-500 rounded-full" />
+                      )}
+                    </button>
                   </div>
 
                   {/* Right Tab: สุ่มให้ฉันที */}
                   {onOpenSurpriseModal && (
                     <button
                       type="button"
-                      onClick={() => onOpenSurpriseModal(activeModeTab === 'all' && currentSlideIndex === 3 ? 'all' : activeModeTab)}
+                      onClick={() => onOpenSurpriseModal(activeModeTab === 'challenges' || activeModeTab === 'moments' || (activeModeTab === 'all' && currentSlideIndex === 3) ? 'all' : activeModeTab)}
                       className="flex flex-col items-center gap-1 sm:gap-1.5 pt-0.5 sm:pt-1 pb-2 sm:pb-3.5 relative group cursor-pointer transition-all shrink-0 text-amber-700 hover:text-amber-800"
                     >
                       <Dices className="w-4.5 h-4.5 sm:w-6 sm:h-6 text-amber-600 group-hover:rotate-180 transition-transform duration-500" />
@@ -1085,7 +1306,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 </div>
 
                 {/* Search Console: Option C Hybrid Luxury Omni-Bar */}
-                {activeModeTab === 'all' ? (
+                {activeModeTab === 'all' || activeModeTab === 'challenges' || activeModeTab === 'moments' ? (
                   /* ========================================================================= */
                   /* 🌟 HYBRID LUXURY OMNI-BAR (FOR "ทั้งหมด" SHOWROOM OVERVIEW)                */
                   /* ========================================================================= */
@@ -1370,9 +1591,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
               </div>
             </div>
+            )}
 
             {/* 3. New User Exclusive & Privilege Ticket Strip (Exclusively in Showroom Mode 'all' to maintain uncluttered focus in pillar discovery modes) */}
-            {activeModeTab === 'all' && (
+            {activeModeTab === 'all' && !hideSearchConsoleOnAllTab && (
               <div className="mt-2 sm:mt-3.5 w-full space-y-2 sm:space-y-2.5">
               
               {/* Section Header */}
@@ -1748,7 +1970,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
               </div>
             )}
-
           </div>
 
         </div>

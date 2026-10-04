@@ -23,6 +23,35 @@ Item template:
 
 ## Open
 
+### FE-003 · Classic Mode Single-Row Floating Carousels, HeroSection Search Console Tabs & Journey Mode UI
+- **From → To:** Frontend → Backend
+- **Date / branch:** 2026-10-04 · `main`
+- **What changed:**
+  1. **Classic Mode Single-Row Floating Carousels**:
+     - Converted Section 01 (Community Meetups), Section 02 (Fairs & Expos), and Section 03 (Lifestyle Spots) on `app/page.tsx` from static 2-row grids with page-limit cuts (`limit={10}`) to modern single-row horizontal snap carousels (`layout="carousel"`).
+     - Built `components/FloatingCarousel.tsx` with backdrop-blur floating left/right navigation pills, automatic boundary detection (`disabled:opacity-0 disabled:pointer-events-none`), and smooth snap-scrolling.
+     - Extended `components/EventGrid.tsx` with `layout?: 'grid' | 'carousel'` prop (defaults to `'grid'`). When `layout="carousel"`, cards render seamlessly inside `FloatingCarousel` without pagination/limit truncation, preserving the full filtered collection.
+  2. **Section 04 & 05 Parity (Challenges & Moments Carousels)**:
+     - Updated `components/CommunityChallengeBar.tsx` and `components/CommunityMomentsStrip.tsx` to utilize floating centered manual navigation arrows matching the exact same floating pill aesthetic.
+     - Standardized card sizing and height consistency across challenge quests and user moments strips.
+  3. **Hero Section Search Console Enhancements (`components/HeroSection.tsx`)**:
+     - Added two new tabs to the Search Console navigation in Classic Mode: `ชาเลนจ์` (`Trophy`) and `โมเมนต์` (`Camera`).
+     - Adhered strictly to `AGENTS.md` button/tab hygiene: neutral monochrome slate hover (`group-hover:text-slate-600` and `group-hover:text-slate-800`), eliminating rainbow colors on mouse hover.
+     - Color activation only triggers on click/active selection (`#7C3AED` royal violet for challenges, `rose-500` for moments).
+     - On click, smoothly scrolls down to `#section-challenges` and `#section-moments` respectively.
+     - Scroll spy / scroll reset listener automatically restores `activeModeTab` to `'all'` when the user scrolls back to the top of the page.
+  4. **Journey Mode Page & Navigation (`app/journey/page.tsx`, `components/HeroSection.tsx`, `components/Navbar.tsx`)**:
+     - Added dedicated `/journey` route presenting an editorial story-driven lifestyle stream with 6 curated rails: `Hot Activities`, `Popular Public Events`, `Top Traveling Destinations`, `Member Privileges`, `Active Quests`, and `Chill Moments`.
+     - Created `JourneySectionCarousel.tsx` and `JourneyMomentCard.tsx`.
+     - Updated Hero Section on Journey page to display 6 floating quick-access pills: `หน้าหลัก`, `กิจกรรมคอมมูนิตี้`, `งานมหกรรม & เอ็กซ์โป`, `พิกัดเที่ยว & จุดฮีลใจ`, `Challenge & Lifestyle Hub`, `โมเมนต์` with smooth scrolling and active-scroll detection.
+     - Fixed Hot Activities carousel initial scroll offset / boundary calculation to guarantee left floating arrow correctly starts at offset 0.
+     - Added "โหมดค้นหาแบบเจอร์นีย์" badge / navigation in `Navbar.tsx`.
+- **Action for Backend:**
+  - **No breaking API changes or backend migrations required.**
+  - `EventGrid` defaults to `layout="grid"` so admin and deep-dive subpages (`/community`, `/fairs`) continue working unchanged.
+  - When Claude works on search/filtering or event listings, these single-row carousel wrappers consume standard `EventItem[]` and `LifestyleSpotItem[]` lists seamlessly.
+- **Status:** Open (For Claude's visibility & awareness)
+
 ### BE-005 · Quests: use `brandReward` and the server-computed lifecycle from the API
 - **From → To:** Backend → Frontend
 - **Date / branch:** 2026-10-04 · `claude` (merge into `main` pending)
