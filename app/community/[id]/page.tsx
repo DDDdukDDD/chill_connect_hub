@@ -551,69 +551,7 @@ export default function CommunityDetailPage() {
 
         </div>
 
-        {/* =========================================================================
-            ACTIVE TICKET / APPOINTMENT BANNER (For Joined Member)
-           ========================================================================= */}
-        {isJoined && (
-          <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-sm border border-blue-900/60 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-fade-in relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
-            
-            <div className="flex items-start sm:items-center gap-3.5 relative z-10 min-w-0">
-              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center shrink-0 text-blue-400">
-                <Ticket className="w-5 h-5 stroke-[2.2]" />
-              </div>
-              <div className="space-y-0.5 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[11px] sm:text-xs font-bold tracking-wide px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 inline-flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                    <span>{isHost ? 'คุณเป็นโฮสต์ผู้สร้างกิจกรรมนี้' : 'คุณมีนัดหมายกิจกรรมนี้แล้ว'}</span>
-                  </span>
-                  <span className="text-xs text-blue-200/80 font-mono">
-                    Ticket #CCH-2026-0089
-                  </span>
-                </div>
-                <p className="text-sm sm:text-base font-bold text-white tracking-tight truncate">
-                  {eventData.date} • {eventData.time}
-                </p>
-                <p className="text-xs text-slate-300 flex items-center gap-1.5 truncate">
-                  <MapPin className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                  <span className="truncate">{eventData.location}</span>
-                </p>
-              </div>
-            </div>
 
-            <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 relative z-10 flex-wrap">
-              {!isHost && (
-                <button
-                  type="button"
-                  onClick={() => setIsETicketOpen(true)}
-                  className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer active:scale-95"
-                >
-                  <QrCode className="w-3.5 h-3.5" />
-                  <span>ดู E-Ticket</span>
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={() => setIsChatOpen(true)}
-                className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white border border-white/15 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer backdrop-blur-md active:scale-95"
-              >
-                <MessageCircle className="w-3.5 h-3.5 text-blue-300" />
-                <span>{isHost ? 'แชตลูกทีม' : 'ห้องแชตกลุ่ม'}</span>
-              </button>
-
-              <Link
-                href="/myhub"
-                className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-semibold transition-all flex items-center justify-center gap-1 cursor-pointer"
-                title="กลับสู่ My Hub เพื่อดูนัดหมายทั้งหมด"
-              >
-                <span>จัดการใน My Hub</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-          </div>
-        )}
 
         {/* =========================================================================
             EDITORIAL 5-PHOTO MOSAIC GALLERY (Community Vibe)
@@ -996,6 +934,19 @@ export default function CommunityDetailPage() {
             
             <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm space-y-5">
               
+              {/* Joined Status Badge */}
+              {isJoined && (
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-xs font-bold shadow-2xs">
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>{isHost ? 'คุณเป็นโฮสต์ผู้จัดตี้' : 'คุณลงทะเบียนเรียบร้อยแล้ว'}</span>
+                  </span>
+                  <span className="text-[11px] font-mono text-emerald-700/80 font-bold">
+                    #CCH-2026
+                  </span>
+                </div>
+              )}
+
               {/* Header Price */}
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <span className="text-xs font-bold text-slate-500">ค่าลงทะเบียน</span>
