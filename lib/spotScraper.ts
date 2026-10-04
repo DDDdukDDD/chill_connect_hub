@@ -2,6 +2,7 @@ import { db } from '@/lib/db';
 import { EventDataSource, getAllDataSources, recordSourceScrape } from '@/lib/sourcesStore';
 import { LifestyleSpotItem } from '@/data/spotsData';
 import { scrapeSpotSource, SourceScrapeResult } from '@/lib/structuredDataScraper';
+import type { SpotScrapeOptions } from '@/lib/scrapers/types';
 
 export interface SpotScrapeSummary {
   newCount: number;
@@ -41,16 +42,16 @@ function selectSources(sources: EventDataSource[], targetSource?: string): Event
   );
 }
 
-async function scrapeSource(source: EventDataSource): Promise<SourceScrapeResult<LifestyleSpotItem>> {
+async function scrapeSource(source: EventDataSource, options?: SpotScrapeOptions): Promise<SourceScrapeResult<LifestyleSpotItem>> {
   return scrapeSpotSource({
     id: source.id,
     name: source.name,
     url: source.url,
     targetType: 'spots',
-  });
+  }, options);
 }
 
-export async function runSpotScraper(targetSource?: string): Promise<SpotScrapeSummary> {
+export async function runSpotScraper(targetSource?: string, options?: SpotScrapeOptions): Promise<SpotScrapeSummary> {
   const sources = selectSources(await getAllDataSources(), targetSource);
   if (targetSource && sources.length === 0) throw new Error(`No active Spot source matches "${targetSource}"`);
   if (sources.length === 0) throw new Error('No active Spot sources are configured');
@@ -58,7 +59,7 @@ export async function runSpotScraper(targetSource?: string): Promise<SpotScrapeS
   const sourceResults: SourceScrapeResult<LifestyleSpotItem>[] = [];
   for (let index = 0; index < sources.length; index += 2) {
     const batch = sources.slice(index, index + 2);
-    sourceResults.push(...await Promise.all(batch.map(scrapeSource)));
+    sourceResults.push(...await Promise.all(batch.map((source) => scrapeSource(source, options))));
   }
 
   const existingSpots = await getAllSpots();
@@ -67,7 +68,7 @@ export async function runSpotScraper(targetSource?: string): Promise<SpotScrapeS
   const knownPlaces = new Set(existingSpots.map((spot) => `${normalizePlace(spot.title)}|${normalizePlace(spot.province)}`));
   const importedBySource = new Map<string, number>();
   const duplicatesBySource = new Map<string, number>();
-  const importedSpots: LifestyleSpotItem[] = [];
+  const toImport: LifestyleSpotItem[] = [];
 
   for (const sourceResult of sourceResults) {
     for (const spot of sourceResult.items) {
@@ -77,14 +78,16 @@ export async function runSpotScraper(targetSource?: string): Promise<SpotScrapeS
         continue;
       }
 
-      const saved = await db.createSpot({ ...spot, publicationStatus: 'draft' });
-      importedSpots.push(saved);
-      knownIds.add(saved.id);
-      if (saved.sourceUrl) knownSourceUrls.add(saved.sourceUrl);
+      toImport.push({ ...spot, publicationStatus: 'draft' });
+      knownIds.add(spot.id);
+      if (spot.sourceUrl) knownSourceUrls.add(spot.sourceUrl);
       knownPlaces.add(normalizedPlace);
       importedBySource.set(sourceResult.sourceId, (importedBySource.get(sourceResult.sourceId) || 0) + 1);
     }
   }
+
+  // One write for the whole run; per-spot writes rewrite the full content file each time
+  const importedSpots = await db.createSpots(toImport);
 
   await Promise.all(sourceResults.map((result) => recordSourceScrape(result.sourceId, {
     targetType: 'spots',

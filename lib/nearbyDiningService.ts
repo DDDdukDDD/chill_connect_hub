@@ -366,7 +366,8 @@ const CURATED_REAL_DINING: Array<Omit<NearbyDiningItem, 'distanceKm'> & { latitu
  */
 export async function getNearbyDining(
   spot: LifestyleSpotItem,
-  limit: number = 6
+  limit: number = 6,
+  pool: LifestyleSpotItem[] = MOCK_SPOTS
 ): Promise<NearbyDiningItem[]> {
   const apiKey = process.env.GOOGLE_PLACES_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
@@ -413,7 +414,7 @@ export async function getNearbyDining(
 
             const placeName = p.displayName?.text || 'ร้านอาหารยอดฮิตรอบย่าน';
             // Check if place matches an existing internal spot
-            const matchingSpot = MOCK_SPOTS.find(
+            const matchingSpot = pool.find(
               (s) => s.title.toLowerCase().includes(placeName.toLowerCase()) || placeName.toLowerCase().includes(s.title.toLowerCase())
             );
 
@@ -441,8 +442,11 @@ export async function getNearbyDining(
   }
 
   // 2. Curated & Internal Database Engine (Zero Latency, High Reliability)
-  return getNearbyDiningSync(spot, limit);
+  return getNearbyDiningSync(spot, limit, pool);
 }
+
+/** Only places within this distance count as "around the area" */
+const NEARBY_RADIUS_KM = 15;
 
 /**
  * Synchronous local calculation from curated Thai partners & internal spots
@@ -450,9 +454,11 @@ export async function getNearbyDining(
  */
 export function getNearbyDiningSync(
   spot: LifestyleSpotItem,
-  limit: number = 6
+  limit: number = 6,
+  pool: LifestyleSpotItem[] = MOCK_SPOTS
 ): NearbyDiningItem[] {
-  const internalCafes = MOCK_SPOTS.filter(
+  // pool = the live published catalog when available (imported cafes carry real coordinates)
+  const internalCafes = pool.filter(
     (s) => s.id !== spot.id && (s.category === 'cafe' || s.vibeTags?.some((v) => /กาแฟ|cafe|coffee|อาหาร|จิบกาแฟ/i.test(v)))
   ).map((s) => ({
     id: `spot-dining-${s.id}`,
@@ -460,10 +466,11 @@ export function getNearbyDiningSync(
     category: 'cafe' as const,
     categoryLabel: s.categoryLabel || 'คาเฟ่ & สโลว์บาร์',
     image: s.image,
-    rating: s.rating || 4.8,
-    reviewsCount: s.reviewsCount || 350,
-    openHours: s.openHours || '08:00 - 17:00 น.',
-    priceRange: s.price || '฿80 - ฿150',
+    // Real values only; imported spots have no ratings and many have no price
+    rating: s.rating || 0,
+    reviewsCount: s.reviewsCount || 0,
+    openHours: s.openHours || 'ไม่ระบุ',
+    priceRange: s.price || 'ไม่ระบุ',
     specialty: s.highlights?.[0] || s.description.slice(0, 50),
     latitude: s.latitude,
     longitude: s.longitude,
@@ -506,8 +513,8 @@ export function getNearbyDiningSync(
       score += 15;
     }
 
-    // High rating bonus
-    score += (item.rating || 4.5) * 5;
+    // Rating bonus (only when a real rating exists)
+    score += (item.rating || 0) * 5;
 
     return {
       item,
@@ -516,8 +523,9 @@ export function getNearbyDiningSync(
     };
   });
 
-  // Sort by score then distance
-  scored.sort((a, b) => {
+  // Sort by score then distance; places outside the radius are not "nearby"
+  const nearby = scored.filter((entry) => entry.distanceKm <= NEARBY_RADIUS_KM);
+  nearby.sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;
     return a.distanceKm - b.distanceKm;
   });
@@ -526,7 +534,7 @@ export function getNearbyDiningSync(
   const seenNames = new Set<string>();
   const results: NearbyDiningItem[] = [];
 
-  for (const entry of scored) {
+  for (const entry of nearby) {
     const normalizedName = entry.item.name.replace(/\s+/g, '').toLowerCase();
     if (seenNames.has(normalizedName)) continue;
     seenNames.add(normalizedName);
@@ -534,7 +542,7 @@ export function getNearbyDiningSync(
     // Auto-link to internal spot if matching
     let linkedSpotId = entry.item.spotId;
     if (!linkedSpotId) {
-      const match = MOCK_SPOTS.find(
+      const match = pool.find(
         (s) => s.id !== spot.id && (s.title.includes(entry.item.name) || entry.item.name.includes(s.title))
       );
       if (match) linkedSpotId = match.id;
@@ -548,7 +556,7 @@ export function getNearbyDiningSync(
       image: entry.item.image,
       rating: entry.item.rating,
       reviewsCount: entry.item.reviewsCount,
-      distanceKm: entry.distanceKm < 999 ? entry.distanceKm : 1.2,
+      distanceKm: entry.distanceKm,
       openHours: entry.item.openHours,
       priceRange: entry.item.priceRange,
       specialty: entry.item.specialty,
@@ -560,24 +568,6 @@ export function getNearbyDiningSync(
     if (results.length >= limit) break;
   }
 
-  // Fallback guarantee: if for a very remote province we got fewer than 2, provide generic local dining search
-  if (results.length === 0) {
-    results.push({
-      id: `fallback-cafe-${spot.id}`,
-      name: `ร้านกาแฟ & ร้านอร่อยชุมชน ย่าน${spot.district || spot.province}`,
-      category: 'cafe',
-      categoryLabel: 'Local Eatery & Coffee',
-      image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80',
-      rating: 4.8,
-      reviewsCount: 180,
-      distanceKm: 0.8,
-      openHours: '08:00 - 17:30 น.',
-      priceRange: '฿60 - ฿120',
-      specialty: `เครื่องดื่มและอาหารจานเด็ดประจำย่าน ${spot.district || spot.province}`,
-      googleMapsUrl: `https://www.google.com/maps/search/${encodeURIComponent('คาเฟ่ ร้านอาหาร')}/@${spot.latitude},${spot.longitude},15z`,
-      isPartner: false,
-    });
-  }
-
+  // No invented fallback: with nothing nearby the section hides itself (NearbyDiningSection returns null)
   return results;
 }

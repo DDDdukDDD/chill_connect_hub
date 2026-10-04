@@ -20,6 +20,7 @@ import {
 import { AdminPageHeader, AdminBadge, adminButton } from './AdminUI';
 import { EventDataSource } from '@/lib/sourcesStore';
 import { handleAdminUnauthorized } from './adminAuthUtils';
+import { MASTER_77_PROVINCES } from '@/data/masterHub';
 
 interface ScrapeResultData {
   targetType: 'events' | 'spots';
@@ -40,6 +41,9 @@ export function ScraperEngineView() {
   const [isResetting, setIsResetting] = useState(false);
   const [autoPublish, setAutoPublish] = useState(false);
   const [scrapeResult, setScrapeResult] = useState<ScrapeResultData | null>(null);
+  // Province-based spot sources import one province per run
+  const [spotProvince, setSpotProvince] = useState('');
+  const [spotLimit, setSpotLimit] = useState(30);
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -99,6 +103,10 @@ export function ScraperEngineView() {
 
   // ── Trigger Scrape ──
   const handleTriggerScrape = async (targetType: EventDataSource['targetType'], source?: EventDataSource) => {
+    if (targetType === 'spots' && !spotProvince) {
+      showToast('เลือกจังหวัดก่อนสแกน Spots');
+      return;
+    }
     try {
       setIsScraping(true);
       if (source) setScrapingSourceId(source.id);
@@ -106,7 +114,9 @@ export function ScraperEngineView() {
       const res = await fetch('/api/admin/scrape', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetType, sourceId: source?.id }),
+        body: JSON.stringify(targetType === 'spots'
+          ? { targetType, sourceId: source?.id, province: spotProvince, limit: spotLimit }
+          : { targetType, sourceId: source?.id }),
       });
       if (handleAdminUnauthorized(res)) return;
       const data = await res.json();
@@ -316,9 +326,36 @@ export function ScraperEngineView() {
         icon={Bot}
         title="Scraper Engine"
         description="นำเข้า Event และ Spot จากแหล่งข้อมูลภายนอก พร้อมตรวจ robots.txt คัดข้อมูลไม่ครบ และกันรายการซ้ำ"
-        badge={<AdminBadge>Schema.org JSON-LD</AdminBadge>}
+        badge={<AdminBadge>JSON-LD + ตัวอ่านเฉพาะเว็บ</AdminBadge>}
         actions={
           <>
+            {sourceTypeFilter === 'spots' && (
+              <>
+                <select
+                  value={spotProvince}
+                  onChange={(event) => setSpotProvince(event.target.value)}
+                  aria-label="จังหวัดที่จะสแกน"
+                  className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                >
+                  <option value="">เลือกจังหวัด</option>
+                  {MASTER_77_PROVINCES.map((province) => (
+                    <option key={province} value={province}>{province}</option>
+                  ))}
+                </select>
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                  สูงสุด
+                  <input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={spotLimit}
+                    onChange={(event) => setSpotLimit(Math.min(100, Math.max(1, Number(event.target.value) || 1)))}
+                    className="h-9 w-16 rounded-md border border-slate-300 px-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  />
+                  แห่ง
+                </label>
+              </>
+            )}
             {sourceTypeFilter === 'spots' && (
               <button
                 onClick={handleEnrichSpotImages}
@@ -343,13 +380,16 @@ export function ScraperEngineView() {
             )}
             <button
               onClick={() => handleTriggerScrape(sourceTypeFilter)}
-              disabled={isScraping || isResetting}
+              disabled={isScraping || isResetting || (sourceTypeFilter === 'spots' && !spotProvince)}
+              title={sourceTypeFilter === 'spots' && !spotProvince ? 'เลือกจังหวัดก่อน' : undefined}
               className={adminButton.primary}
             >
               <Radio size={14} className={isScraping && !scrapingSourceId ? 'animate-pulse' : ''} />
               {isScraping && !scrapingSourceId
                 ? `กำลังสแกน ${sourceTypeFilter === 'spots' ? 'Spots' : 'Events'}...`
-                : `สแกน ${sourceTypeFilter === 'spots' ? 'Spot sources' : 'Event sources'}`}
+                : sourceTypeFilter === 'spots'
+                ? `สแกน Spots${spotProvince ? ` · ${spotProvince}` : ''}`
+                : 'สแกน Event sources'}
             </button>
           </>
         }

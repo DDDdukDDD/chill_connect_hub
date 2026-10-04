@@ -68,6 +68,32 @@ The Discovery & Content work includes backend contracts and the admin control pl
   - **ThaiRun** `race.thai.run/`: the site's own GraphQL `listEvents` on `api.race.thai.run`. This API is undocumented. Only races open for registration are imported; virtual runs and races abroad (no Thai province) are skipped. English provinces are mapped to Thai (`thaiProvinces.ts`). 67 → 50.
   - **Visit Bangkok (BMA)** `visit.bangkok.go.th/th/festival-calendar`: the page and its CMS API need a key, so the adapter reads the CMS's public RSS feed (20 latest). Dates are parsed from the text (`parseThaiDateRange`), and items without a date are skipped because `pubDate` is only the listing date. The venue is taken only from an explicit `สถานที่:` / 📍 line. 20 → 15.
 - Scraped ISO dates are converted to the Thai display format (`lib/scrapers/dates.ts`) before deduplication and storage. Previously, ISO dates from JSON-LD sources were stored as-is, but `lib/dateUtils` cannot parse them and dedup compared them against Thai dates.
+- Spot scraper (2026-10-04): `lib/scrapers/tourismDirectory.ts` imports spots from the Department of Tourism's Thailand Tourism Directory, one province per run (`POST /api/admin/scrape {targetType:'spots', province, limit}`). It uses the site's own keyless search API (`api.thailandtourismdirectory.go.th/api/v2/maininfo/search`) to list attractions (MainTypeID 1) and keyword-matched cafes (MainTypeID 6), keeps the most viewed ones, and reads each place page's `__NEXT_DATA__`.
+  - **Mapped fields:** Thai name, description, district, coordinates, up to 8 photos, opening hours (grouped days, Bangkok time), entry fee, travel modes and remarks, facilities, activities, and contacts.
+  - **Categories:** rules on the place name first, then on the source types.
+  - **`bestTime`:** generic advice per category, because the source has no such field.
+  - **Import flow:** spots are imported as drafts and deduplicated by id, source URL, and title+province.
+  - **Test results:** Nan 34, Bangkok 36, Chiang Mai 35, Lampang 12 (limit 10), each in about 4–6 s.
+  - **Coverage gaps:** Bangkok has only ~51 attractions in the source, temple-heavy; cafes are thin (≤ ~10 per province). TAT Data API needs a key (declined); OSM and Wikidata were too sparse in Thailand; Google Places forbids storing its content.
+- `GET /api/spots/[id]` returns one published spot (needed by the detail page, see BE-006). `LifestyleSpotItem` gained optional `contact`, `entryFee`, and `popularity`.
+- Admin Scraper Engine, Spots tab: a province picker and a per-province limit. The scan stays disabled until a province is chosen.
+- Spot switch (2026-10-04, owner request): all 77 provinces imported at limit 20, 1,814 spots (about 24 per province incl. cafes, 2–3 s each). They are published with `set_publication {scope:'tourism_directory'}`; the 137 curated spots are drafts (`scope:'curated'`), not deleted.
+  - Imports are written once per run (`db.createSpots`, single file write). `bulkUpdateSpots` accepts partial updates.
+  - The source `Rating` (67 of 1,814, no vote count) is not imported.
+  - `getSpotVibeCategory` maps specific categories first. Final vibe counts: oldtown 816, nature 418, cafe 294, sea 132, mountain 71, art 61, wellness 22.
+  - `data/discovery_content.json` (7.3 MB) is tracked in git so snapshots reach Vercel.
+  - The owner approved Backend editing the frontend files listed in BE-006.
+- OSM + Wikidata spot source (2026-10-04): `lib/scrapers/osmWikidata.ts` adds notable big-city places from OpenStreetMap: malls, museums, galleries, parks, markets, zoos, aquariums and landmarks.
+  - **Selection:** one Overpass area query per province (`TH-xx`, `provinceIsoCode`), keeping only objects tagged with a Wikidata id.
+  - **Enrichment:** Wikidata supplies labels, the photo (P18), the district (P131) and the website (P856); the Wikipedia page summary supplies the description and photo.
+  - **Quality checks:** the OSM and Wikidata names must overlap, and the Wikipedia article title must match the place (sitelinks can redirect, e.g. Sea Life → Siam Paragon). Records without a photo or description, or with coordinates outside Thailand, are skipped.
+  - **Results:** Bangkok 24 → 120 spots; big cities +2 to +14 each. Published total is 2,040. Surat Thani's OSM run hit Overpass 504; rerun from admin.
+  - **robots.txt exemption (owner-approved):** Overpass `/api/interpreter`, Wikidata `/w/api.php` and Wikipedia `/api/rest_v1/page/summary/` disallow crawlers in robots.txt but are public APIs. They are listed in `DOCUMENTED_PUBLIC_APIS` in `structuredDataScraper.ts`, use a descriptive User-Agent, and requests are sequential; robots.txt still applies to every other URL. Overpass requests get a 70 s timeout.
+  - **Credit:** OSM (ODbL) and Wikipedia (CC BY-SA) content is credited via `sourceName` / `sourceUrl`.
+- `isThaiCoordinate`: imports require coordinates inside Thailand and latitude ≠ longitude. Two Tourism Directory records with broken coordinates were unpublished.
+- Event link bug fixed (2026-10-04): on every load, `normalizeEvent` replaced the detail-page link of any event at QSNCC or BITEC with a venue-wide page (BITEC: the retired `/gallery`), and could copy a fake seed URL onto events with a similar title. It now fills an official URL only for events that have none. The 21 damaged links (QSNCC 9, BITEC 12) were recovered from the id hash (`live-agg-` + sha256(sourceUrl)) and restored; a restart confirms they stay. The BITEC adapter still fails because the page no longer embeds its event list.
+- Nearby dining (`lib/nearbyDiningService.ts`) uses the live catalog within 15 km and no longer invents ratings, review counts, distances or a fallback restaurant.
+- Tourism Directory opening hours: a closed day (00:00-00:00) now reads "ปิด". Name rules: "หอศิลป" (without the final mark) → art; "พลาซ่า / มอลล์ / ห้างสรรพสินค้า" → market.
 - Content policy (`lib/scrapers/sourcePolicy.ts`): Meetup, Facebook, and aggregators that re-list their events (allevents.in, dev.events) are blocked. `POST /api/admin/sources` returns 400 for these hosts, fetches refuse them on every redirect hop, and JSON-LD items whose URL points to them are dropped. Community meetups come from our own members, so we never copy another platform's community content.
 
 ## Verification
@@ -98,7 +124,7 @@ The Discovery & Content work includes backend contracts and the admin control pl
 6. Add a backend API and persistence contract for Moments/posts if that feature is brought into the dynamic-content scope.
 7. Add focused route/repository tests for approval filtering, query parsing, pagination, persistence, and authorization.
 8. Ingestion supports Schema.org JSON-LD plus site adapters for QSNCC, IMPACT, BITEC, ThaiRun and Visit Bangkok. Site adapters break when a site changes its layout or internal API, and then fail with a clear per-source error. Still unsupported (live probe 2026-10-04): ThaiTicketMajor returns 403 (bot block); The Concert and Ticketmelon load listings client-side; Eventpop's listing page has no Event JSON-LD; SET and pr-bangkok are untested. A browser inspection confirmed Eventpop cards use `a[data-gtm-product-id][data-gtm-product-name]`, `.event-date`, `.event-title`, `.short-location`, and poster images; a Cheerio-based Eventpop listing adapter was started but not applied. First verify/install Cheerio, then add and test that adapter. Do not claim broad live-source coverage until this works.
-9. No Spot sources are configured by default. Add specific intended Spot source URLs and source-specific parsing rules; imported Places will remain drafts until reviewed.
+9. Spot sources: the Tourism Directory adapter covers attractions nationwide. Bangkok and cafes still need a second source. `data/discovery_content.json` (spots) is gitignored, so imported spots do not reach Vercel until that file is tracked or spots move to shared storage.
 10. The reset action still uses the curated event seed catalog and is not a live scrape.
 
 ## Handoff Notes

@@ -116,6 +116,11 @@ export function resolveSpotGallery(spot: Partial<LifestyleSpotItem>): string[] {
   const mainImage = resolveSpotImage(spot);
   const existingGallery = (spot.galleryImages || []).filter(isValidImageUrl);
 
+  // Spots imported from a real source show only their own photos; stock photos of other places would mislead
+  if (spot.sourceUrl && existingGallery.length > 0) {
+    return [...new Set([mainImage, ...existingGallery].filter(Boolean))];
+  }
+
   // If already has 5 or more distinct images, return them
   if (existingGallery.length >= 5) {
     return existingGallery;

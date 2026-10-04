@@ -6,7 +6,9 @@ import { ScrapedRawEvent } from '@/lib/aiTagger';
 import { bangkokTime, toThaiDisplayDate } from '@/lib/scrapers/dates';
 import { findSiteEventAdapter } from '@/lib/scrapers/siteAdapters';
 import { getBlockedSourceReason } from '@/lib/scrapers/sourcePolicy';
-import type { SiteAdapterContext } from '@/lib/scrapers/types';
+import { osmWikidataAdapter } from '@/lib/scrapers/osmWikidata';
+import { tourismDirectoryAdapter } from '@/lib/scrapers/tourismDirectory';
+import type { SiteAdapterContext, SiteSpotAdapter, SpotScrapeOptions } from '@/lib/scrapers/types';
 
 export type ScrapeTarget = 'events' | 'spots';
 
@@ -128,8 +130,29 @@ async function getRobotsRules(url: URL): Promise<string | null> {
 
 const PAGE_TYPES = ['text/html', 'application/ld+json'];
 
+/**
+ * Public APIs that are meant for programmatic use but whose robots.txt keeps crawlers out of the API path.
+ * Approved by the project owner (2026-10-04). Each is used under its own policy:
+ * - Overpass (OpenStreetMap): fair use, one query per province run (https://dev.overpass-api.de/overpass-doc/en/preface/commons.html)
+ * - Wikidata Action API and Wikipedia REST page summaries: Wikimedia API etiquette and User-Agent policy,
+ *   sequential requests (https://meta.wikimedia.org/wiki/User-Agent_policy)
+ * Content from these sources must be credited (OSM / Wikipedia) where it is shown.
+ */
+const DOCUMENTED_PUBLIC_APIS: Array<{ host: RegExp; path: RegExp }> = [
+  { host: /^(lz4\.|z\.)?overpass-api\.de$/, path: /^\/api\/interpreter$/ },
+  { host: /^www\.wikidata\.org$/, path: /^\/w\/api\.php$/ },
+  { host: /^(th|en)\.wikipedia\.org$/, path: /^\/api\/rest_v1\/page\/summary\// },
+];
+const API_USER_AGENT = 'ChillConnectHubBot/1.0 (prototype travel guide; https://github.com/DDDdukDDD/chill_connect_hub)';
+
+function isDocumentedPublicApi(url: URL): boolean {
+  return DOCUMENTED_PUBLIC_APIS.some((api) => api.host.test(url.hostname) && api.path.test(url.pathname));
+}
+
 interface GuardedRequest {
   acceptedTypes?: string[];
+  /** Overrides the default timeout (slow APIs such as Overpass area queries) */
+  timeoutMs?: number;
   method?: 'GET' | 'POST';
   body?: string;
   headers?: Record<string, string>;
@@ -146,9 +169,13 @@ async function fetchSourceDocument(value: string, request: GuardedRequest = {}, 
   // Checked on every hop so a redirect cannot lead into a blocked platform
   const blockedReason = getBlockedSourceReason(url);
   if (blockedReason) throw new Error(blockedReason);
-  const robotsRules = await getRobotsRules(url);
-  if (!pathAllowedByRobots(robotsRules, url.pathname)) {
-    throw new Error('Source path is disallowed by robots.txt');
+  // Documented public APIs are used under their own API policies; robots.txt still applies to every other URL
+  const documentedApi = isDocumentedPublicApi(url);
+  if (!documentedApi) {
+    const robotsRules = await getRobotsRules(url);
+    if (!pathAllowedByRobots(robotsRules, url.pathname)) {
+      throw new Error('Source path is disallowed by robots.txt');
+    }
   }
 
   const response = await fetch(url, {
@@ -156,11 +183,11 @@ async function fetchSourceDocument(value: string, request: GuardedRequest = {}, 
     body: request.body,
     headers: {
       Accept: acceptedTypes.join(', '),
-      'User-Agent': 'ChillConnectHubBot/1.0',
+      'User-Agent': documentedApi ? API_USER_AGENT : 'ChillConnectHubBot/1.0',
       ...request.headers,
     },
     redirect: 'manual',
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    signal: AbortSignal.timeout(request.timeoutMs ?? FETCH_TIMEOUT_MS),
   });
 
   if (response.status >= 300 && response.status < 400) {
@@ -183,7 +210,7 @@ async function fetchSourceDocument(value: string, request: GuardedRequest = {}, 
 }
 
 const adapterContext = (): SiteAdapterContext => ({
-  fetchText: (url, acceptedTypes) => fetchSourceDocument(url, { acceptedTypes }),
+  fetchText: (url, acceptedTypes, timeoutMs) => fetchSourceDocument(url, { acceptedTypes, timeoutMs }),
   postJson: async (url, body, headers) => {
     const { text } = await fetchSourceDocument(url, {
       method: 'POST',
@@ -391,8 +418,28 @@ function openingHoursValue(value: unknown): string {
   }).filter(Boolean).join('; ');
 }
 
-export async function scrapeSpotSource(source: ScrapeSource): Promise<SourceScrapeResult<LifestyleSpotItem>> {
+const SITE_SPOT_ADAPTERS: SiteSpotAdapter[] = [tourismDirectoryAdapter, osmWikidataAdapter];
+
+export function isProvinceSpotSource(sourceUrl: string): boolean {
   try {
+    const url = new URL(sourceUrl);
+    return SITE_SPOT_ADAPTERS.some((adapter) => adapter.matches(url));
+  } catch {
+    return false;
+  }
+}
+
+export async function scrapeSpotSource(source: ScrapeSource, options?: SpotScrapeOptions): Promise<SourceScrapeResult<LifestyleSpotItem>> {
+  try {
+    // Site adapters import one province per run
+    const sourceUrl = new URL(source.url);
+    const adapter = SITE_SPOT_ADAPTERS.find((candidate) => candidate.matches(sourceUrl));
+    if (adapter) {
+      if (!options?.province) throw new Error('เลือกจังหวัดก่อนสแกนแหล่งข้อมูลนี้');
+      const result = await adapter.scrape(sourceUrl, adapterContext(), options);
+      return { sourceId: source.id, sourceName: source.name, targetType: 'spots', scannedCount: result.scannedCount, items: result.items };
+    }
+
     const { url, text } = await fetchSourceDocument(source.url);
     const contentType = text.trimStart().startsWith('{') ? 'application/ld+json' : 'text/html';
     const records = extractRecords(text, contentType).filter(isPlaceNode);

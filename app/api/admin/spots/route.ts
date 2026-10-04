@@ -232,6 +232,39 @@ export async function POST(request: Request) {
     }
 
     // Action 4: Delete Spot
+    // Action: publish or unpublish many spots in one write, by explicit ids or by origin
+    // scopes: 'tourism_directory' (id "ttd-…"), 'osm' (id "osm-…"), 'imported' (both), 'curated' (everything else)
+    if (action === 'set_publication') {
+      const { spotIds, scope, status } = body as { spotIds?: unknown; scope?: unknown; status?: unknown };
+      if (status !== 'published' && status !== 'draft') {
+        return NextResponse.json({ success: false, error: 'status must be published or draft' }, { status: 400 });
+      }
+      const scopeMatchers: Record<string, (id: string) => boolean> = {
+        tourism_directory: (id) => id.startsWith('ttd-'),
+        osm: (id) => id.startsWith('osm-'),
+        imported: (id) => id.startsWith('ttd-') || id.startsWith('osm-'),
+        curated: (id) => !id.startsWith('ttd-') && !id.startsWith('osm-'),
+      };
+      if (scope !== undefined && (typeof scope !== 'string' || !scopeMatchers[scope])) {
+        return NextResponse.json({ success: false, error: 'scope must be tourism_directory, osm, imported or curated' }, { status: 400 });
+      }
+      const ids = Array.isArray(spotIds) ? spotIds.filter((id): id is string => typeof id === 'string') : null;
+      if (!ids && !scope) {
+        return NextResponse.json({ success: false, error: 'กรุณาระบุ spotIds หรือ scope' }, { status: 400 });
+      }
+      const idSet = ids ? new Set(ids) : null;
+      const inScope = typeof scope === 'string' ? scopeMatchers[scope] : () => true;
+      const targets = (await getAllSpots()).filter((spot) =>
+        (!idSet || idSet.has(spot.id)) && inScope(spot.id) && spot.publicationStatus !== status
+      );
+      const updated = await db.bulkUpdateSpots(targets.map((spot) => ({ id: spot.id, publicationStatus: status })));
+      return NextResponse.json({
+        success: true,
+        updated,
+        message: `${status === 'published' ? 'เผยแพร่' : 'ซ่อนเป็นร่าง'} ${updated} สถานที่`,
+      });
+    }
+
     if (action === 'delete') {
       const { spotId } = body as { spotId?: string };
       if (!spotId) return NextResponse.json({ success: false, error: 'กรุณาระบุสถานที่' }, { status: 400 });
