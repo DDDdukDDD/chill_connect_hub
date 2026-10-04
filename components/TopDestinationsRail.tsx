@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, MapPin, Check, Sparkles, Compass, X } from 'lucide-react';
-import { MOCK_SPOTS } from '@/data/spotsData';
+import { usePublishedSpots } from '@/lib/usePublishedSpots';
 
 export interface TopDestinationItem {
   id: string;
@@ -132,17 +132,18 @@ export const TopDestinationsRail: React.FC<TopDestinationsRailProps> = ({
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
-  // Compute actual counts for each province from MOCK_SPOTS
+  // Actual counts per province from the live published catalog
+  const { spots } = usePublishedSpots();
   const countsMap = React.useMemo(() => {
     const counts: Record<string, number> = {};
-    MOCK_SPOTS.forEach((spot) => {
+    spots.forEach((spot) => {
       const p = spot.province;
       counts[p] = (counts[p] || 0) + 1;
     });
     return counts;
-  }, []);
+  }, [spots]);
 
-  const totalAllSpots = MOCK_SPOTS.length;
+  const totalAllSpots = spots.length;
 
   const updateScrollButtons = () => {
     if (!scrollContainerRef.current) return;

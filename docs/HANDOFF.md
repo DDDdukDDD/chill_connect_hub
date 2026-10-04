@@ -23,6 +23,53 @@ Item template:
 
 ## Open
 
+### BE-006 · Spots switched to official data; Backend edited frontend files (owner-approved)
+- **From → To:** Backend → Frontend
+- **Date / branch:** 2026-10-04 · `claude` (merge into `main` pending)
+- **What changed (data):**
+  - Published spots are now **1,814 official places** from the Department of Tourism's Thailand Tourism Directory, about 24 per province across all 77 provinces. They were imported with the new admin Spot scraper.
+  - The 137 hand-written spots are **unpublished (draft), not deleted**. They stay in `MOCK_SPOTS` and in admin.
+  - `data/discovery_content.json` is **no longer gitignored**, so committed snapshots carry the spots to Vercel.
+  - New endpoint `GET /api/spots/[id]` → `{ success, spot }` (published only).
+  - `LifestyleSpotItem` gained optional `contact { phone, website, facebook }`, `entryFee` and `popularity`.
+  - Imported spots have `rating: 0` and `reviewsCount: 0`: the source has no reliable reviews.
+  - **Big cities are topped up from OpenStreetMap + Wikipedia** (ids `osm-…`, `sourceName: 'OpenStreetMap · Wikipedia'`): malls, museums, galleries, parks, markets and landmarks that have a Wikipedia article.
+    - Bangkok has 120 spots (was 24); the published total is 2,040.
+    - Licensing: these spots **must show the credit** (OSM is ODbL, Wikipedia text is CC BY-SA). The detail page credit added below already does this.
+    - Some descriptions are in English, where only the English article matches the place.
+    - These spots have a single photo.
+    - Malls use `category: 'market'` with the label "ห้างสรรพสินค้า & ไลฟ์สไตล์มอลล์". `getSpotVibeCategory` puts them under "คาเฟ่ & สเปซนั่งชิลล์" because no shopping vibe exists yet; consider adding one.
+  - Every published spot has validated coordinates (inside Thailand), so maps and "nearby" features can rely on `latitude` / `longitude`.
+- **Frontend files edited by Backend** (the project owner asked Claude to make the switch end to end; please review and keep or adjust):
+  1. `lib/usePublishedSpots.ts` (new client helper):
+     - `loadPublishedSpots()` / `usePublishedSpots()` fetch `/api/spots` once per page load.
+     - `useSpotCatalog()` = published spots plus bundled ones, so ids members saved earlier still resolve.
+  2. `app/spots/[id]/page.tsx`:
+     - Loads the spot from `GET /api/spots/[id]`; static data is only an instant fallback.
+     - Shows "กำลังโหลด..." until the API answers.
+     - "Nearby" suggestions use the live catalog.
+     - Adds phone, website/Facebook and a source credit ("ข้อมูล: กรมการท่องเที่ยว").
+     - The rating chip is hidden when `rating` is 0; the old `|| 480` review fallback is removed.
+  3. `components/SpotCard.tsx`: the rating badge is hidden when `rating` is 0.
+  4. `components/HeroSection.tsx`: spot search suggestions use the live catalog instead of `MOCK_SPOTS`.
+  5. `components/TopDestinationsRail.tsx`: province counts come from the live catalog.
+  6. `app/moments/page.tsx`, `app/myhub/page.tsx`: saved spots, check-in places and spot targets resolve through `useSpotCatalog()`.
+  7. `components/NearbyDiningSection.tsx` + `lib/nearbyDiningService.ts` ("คาเฟ่ & ร้านอร่อยยอดฮิตรอบย่าน"):
+     - Uses the live catalog (real cafes with coordinates) and only places within 15 km.
+     - No invented values: the 4.8 rating, "350 รีวิว", the 1.2 km distance and the made-up fallback restaurant are gone. The star is hidden when there is no rating, and the section hides itself when nothing is nearby.
+- **Backend-owned changes the UI relies on:**
+  - `getSpotVibeCategory()` (`data/spotsData.ts`) now lets a specific `category` decide first: temple/oldtown/market → oldtown_culture, art/museum → art_creative, beach → sea_island, cafe → cafe_slowbar, viewpoint → mountain_mist. Keywords only refine nature/park spots. Temple descriptions no longer inflate "หอศิลป์ & สเปซศิลปะ" (359 → 61).
+  - `getNearbySpots()` / `getNearbyRecommendationInfo()` accept an optional `pool`.
+  - `resolveSpotGallery()` no longer pads imported spots (`sourceUrl` set) with stock photos of other places.
+- **Suggested follow-ups for Frontend (not done):**
+  1. The detail page badge "เปิดให้บริการวันนี้" is hard-coded. With real `openHours`, show it only when actually open, or drop it.
+  2. `app/page.tsx`, `app/spots/page.tsx` and `app/journey/page.tsx` start from `MOCK_SPOTS` before the API answers, so the old 137 flash briefly. Start from `[]` with a skeleton, or use `usePublishedSpots()`.
+  3. These pages download the whole catalog (~1,800 spots, ~3.9 MB uncompressed). Consider paging or a lighter list if load time matters.
+  4. Default sorting is by `rating`, now 0 for imported spots. `popularity` is a better "ยอดนิยม" sort.
+- **Status:** Open (review of the edited files)
+
+---
+
 ### FE-003 · Classic Mode Single-Row Floating Carousels, HeroSection Search Console Tabs & Journey Mode UI
 - **From → To:** Frontend → Backend
 - **Date / branch:** 2026-10-04 · `main`
@@ -50,7 +97,7 @@ Item template:
   - **No breaking API changes or backend migrations required.**
   - `EventGrid` defaults to `layout="grid"` so admin and deep-dive subpages (`/community`, `/fairs`) continue working unchanged.
   - When Claude works on search/filtering or event listings, these single-row carousel wrappers consume standard `EventItem[]` and `LifestyleSpotItem[]` lists seamlessly.
-- **Status:** Open (For Claude's visibility & awareness)
+- **Status:** Acknowledged by Backend (2026-10-04): no backend action needed. Note that carousels now render the full approved list, so imported events and spots make the rails longer.
 
 ### BE-005 · Quests: use `brandReward` and the server-computed lifecycle from the API
 - **From → To:** Backend → Frontend

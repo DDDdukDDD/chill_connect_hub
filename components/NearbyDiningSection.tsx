@@ -1,26 +1,32 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Coffee, Star, ExternalLink, Clock, ArrowRight, Navigation, Sparkles } from 'lucide-react';
-import { LifestyleSpotItem } from '@/data/spotsData';
+import { LifestyleSpotItem, MOCK_SPOTS } from '@/data/spotsData';
 import { NearbyDiningItem, getNearbyDining, getNearbyDiningSync } from '@/lib/nearbyDiningService';
+import { usePublishedSpots } from '@/lib/usePublishedSpots';
 
 interface NearbyDiningSectionProps {
   spot: LifestyleSpotItem;
 }
 
 export const NearbyDiningSection: React.FC<NearbyDiningSectionProps> = ({ spot }) => {
-  const [diningItems, setDiningItems] = useState<NearbyDiningItem[]>(() => getNearbyDiningSync(spot, 6));
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  // Nearby cafes come from the live catalog (imported places carry real coordinates)
+  const { spots: publishedSpots } = usePublishedSpots();
+  const pool = publishedSpots.length > 0 ? publishedSpots : MOCK_SPOTS;
+  const localItems = useMemo(() => getNearbyDiningSync(spot, 6, pool), [spot, pool]);
+  const [liveItems, setLiveItems] = useState<NearbyDiningItem[] | null>(null);
+  const diningItems = liveItems ?? localItems;
+  const [isLoading] = useState<boolean>(false);
 
   useEffect(() => {
     let isMounted = true;
 
-    getNearbyDining(spot, 6)
+    getNearbyDining(spot, 6, pool)
       .then((items) => {
         if (isMounted && items && items.length > 0) {
-          setDiningItems(items);
+          setLiveItems(items);
         }
       })
       .catch((err) => {
@@ -30,7 +36,7 @@ export const NearbyDiningSection: React.FC<NearbyDiningSectionProps> = ({ spot }
     return () => {
       isMounted = false;
     };
-  }, [spot]);
+  }, [spot, pool]);
 
   const liveSearchUrl = `https://www.google.com/maps/search/${encodeURIComponent('คาเฟ่ ร้านอาหาร')}/@${spot.latitude},${spot.longitude},15z`;
 
@@ -108,10 +114,12 @@ export const NearbyDiningSection: React.FC<NearbyDiningSectionProps> = ({ spot }
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   loading="lazy"
                 />
-                <span className="absolute bottom-1 right-1 bg-black/75 backdrop-blur-xs text-white text-[9px] font-black px-1 py-0.2 rounded flex items-center gap-0.5 shadow-2xs">
-                  <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
-                  <span>{item.rating.toFixed(1)}</span>
-                </span>
+                {item.rating > 0 && (
+                  <span className="absolute bottom-1 right-1 bg-black/75 backdrop-blur-xs text-white text-[9px] font-black px-1 py-0.2 rounded flex items-center gap-0.5 shadow-2xs">
+                    <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                    <span>{item.rating.toFixed(1)}</span>
+                  </span>
+                )}
               </div>
 
               {/* Info Column (Compact & No top badge) */}
