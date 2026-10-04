@@ -326,17 +326,17 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-2 pt-3 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs py-3 rounded-xl transition-colors cursor-pointer"
+              className="sm:flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs py-3 rounded-xl transition-colors cursor-pointer text-center"
             >
               ยกเลิก
             </button>
             <button
               type="submit"
-              className="flex-1 bg-gradient-to-r from-[#581C87] to-[#7C3AED] hover:from-[#4C1D95] hover:to-[#6D28D9] text-white font-extrabold text-xs py-3 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+              className="sm:flex-1 bg-gradient-to-r from-[#581C87] to-[#7C3AED] hover:from-[#4C1D95] hover:to-[#6D28D9] text-white font-extrabold text-xs py-3 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 text-center"
             >
               <PlusCircle className="w-4 h-4" />
               <span>สร้างชาเลนจ์ทันที (+{rewardPoints} XP)</span>

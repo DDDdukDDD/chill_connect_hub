@@ -6,19 +6,18 @@ import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
-import { CreateChallengeModal } from '@/components/CreateChallengeModal';
+import { JoinChallengeModal, getQuestBrandReward } from '@/components/JoinChallengeModal';
 import { useAuth } from '@/lib/useAuth';
 import { VerifyQuestModal } from '@/components/VerifyQuestModal';
 import { ETicketModal } from '@/components/ETicketModal';
 import { CancelTicketModal } from '@/components/CancelTicketModal';
 import { GroupChatModal } from '@/components/GroupChatModal';
 import { TipHostModal } from '@/components/TipHostModal';
-import { EventDetailModal } from '@/components/EventDetailModal';
 import { SpotBuddyGatheringModal, SpotBuddyPostItem } from '@/components/SpotBuddyGatheringModal';
 import { MOCK_CHALLENGES, ChallengeQuest, EventItem, MOCK_EVENTS } from '@/data/mockData';
 import { isEventEnded } from '@/lib/dateUtils';
 import { BrandLogo } from '@/components/BrandLogo';
-import { MOCK_SPOTS, LifestyleSpotItem } from '@/data/spotsData';
+import { MOCK_SPOTS, LifestyleSpotItem, getSpotVibeCategory } from '@/data/spotsData';
 import { resolveSpotImage } from '@/lib/spotImageResolver';
 import { formatSpotBadgePrice } from '@/components/SpotCard';
 import {
@@ -65,6 +64,7 @@ import {
   Camera,
   X,
   AlertCircle,
+  Search,
 } from 'lucide-react';
 
 const THAI_MONTH_NAMES = [
@@ -98,11 +98,13 @@ export default function MyHubPage() {
   const [myChallenges, setMyChallenges] = useState<ChallengeQuest[]>(MOCK_CHALLENGES);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Travel Scrapbook state
+  // Travel Scrapbook state & quick filters
   const [savedSpotIds, setSavedSpotIds] = useState<string[]>([]);
+  const [scrapbookSearch, setScrapbookSearch] = useState('');
+  const [scrapbookVibeFilter, setScrapbookVibeFilter] = useState<string>('all');
 
-  // User XP & Rewards
-  const [userXp, setUserXp] = useState<number>(450);
+  // User XP & Rewards (Synced with rewardsData)
+  const [userXp, setUserXp] = useState<number>(() => getStoredUserXp());
   const [redeemedRewardIds, setRedeemedRewardIds] = useState<string[]>([]);
   const [checkedInTicketIds, setCheckedInTicketIds] = useState<string[]>([]);
 
@@ -134,7 +136,6 @@ export default function MyHubPage() {
   const [calendarTimeScope, setCalendarTimeScope] = useState<'month' | 'all'>('month');
 
   // Modals State
-  const [detailModalEvent, setDetailModalEvent] = useState<EventItem | null>(null);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [isETicketModalOpen, setIsETicketModalOpen] = useState(false);
   const [selectedTicketEvent, setSelectedTicketEvent] = useState<EventItem | null>(null);
@@ -147,8 +148,9 @@ export default function MyHubPage() {
   const [isTipModalOpen, setIsTipModalOpen] = useState(false);
   const [tipTargetEvent, setTipTargetEvent] = useState<EventItem | null>(null);
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
-  const [isCreateChallengeModalOpen, setIsCreateChallengeModalOpen] = useState(false);
+  const [selectedQuestForVoucherModal, setSelectedQuestForVoucherModal] = useState<ChallengeQuest | null>(null);
   const [selectedQuestForVerifyModal, setSelectedQuestForVerifyModal] = useState<ChallengeQuest | null>(null);
+  const [questStatusFilter, setQuestStatusFilter] = useState<'all' | 'in_progress' | 'completed' | 'expired'>('all');
 
   // Spot Buddy Gathering Modal from Scrapbook
   const [isSpotBuddyModalOpen, setIsSpotBuddyModalOpen] = useState(false);
@@ -192,6 +194,9 @@ export default function MyHubPage() {
         }
       }
       setJoinedEventIds(allJoinedIds);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('joined_event_ids', JSON.stringify(allJoinedIds));
+      }
 
       // Sync Cancelled, Missed & Reviewed States
       const storedCancelled: string[] = JSON.parse(localStorage.getItem('myhub_cancelled_event_ids') || '[]');
@@ -234,6 +239,19 @@ export default function MyHubPage() {
       const storedFavs = JSON.parse(localStorage.getItem('favorites') || '[]');
       if (Array.isArray(storedFavs)) {
         setFavorites(storedFavs);
+      }
+
+      // 3.1 Sync My Challenges Progress
+      try {
+        const storedChallenges = localStorage.getItem('cch_my_challenges');
+        if (storedChallenges) {
+          const parsed = JSON.parse(storedChallenges);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setMyChallenges(parsed);
+          }
+        }
+      } catch (e) {
+        console.error('Error syncing myChallenges:', e);
       }
 
       // 4. Sync User XP & Redeemed Rewards
@@ -481,10 +499,23 @@ export default function MyHubPage() {
     });
   }, [expoEvents, eventViewMode, pastSubFilter, cancelledEventIds, missedEventIds]);
 
-  // Saved Lifestyle Spots for Scrapbook
+  // Saved Lifestyle Spots for Scrapbook (Filterable by search and vibe)
   const savedSpotsList: LifestyleSpotItem[] = useMemo(() => {
-    return MOCK_SPOTS.filter((s) => savedSpotIds.includes(s.id));
-  }, [savedSpotIds]);
+    let list = MOCK_SPOTS.filter((s) => savedSpotIds.includes(s.id));
+    if (scrapbookSearch.trim()) {
+      const q = scrapbookSearch.toLowerCase().trim();
+      list = list.filter(
+        (s) =>
+          s.title.toLowerCase().includes(q) ||
+          s.province.toLowerCase().includes(q) ||
+          s.district.toLowerCase().includes(q)
+      );
+    }
+    if (scrapbookVibeFilter !== 'all') {
+      list = list.filter((s) => (getSpotVibeCategory(s) as string) === scrapbookVibeFilter || (s.category as string) === scrapbookVibeFilter);
+    }
+    return list;
+  }, [savedSpotIds, scrapbookSearch, scrapbookVibeFilter]);
 
   const handleRemoveFromScrapbook = (spotId: string, spotTitle: string) => {
     const updated = savedSpotIds.filter((id) => id !== spotId);
@@ -599,20 +630,44 @@ export default function MyHubPage() {
     showToast(`บันทึกสถานะว่าได้เข้าร่วม "${title}" สำเร็จแล้ว`);
   };
 
+  // Helper to persist and update User XP
+  const updateUserXp = (delta: number) => {
+    setUserXp((prev) => {
+      const nextXp = Math.max(0, prev + delta);
+      setStoredUserXp(nextXp);
+      return nextXp;
+    });
+  };
+
+  // Helper to persist and update Challenges/Quests
+  const updateChallenges = (updater: (prev: ChallengeQuest[]) => ChallengeQuest[]) => {
+    setMyChallenges((prev) => {
+      const updated = updater(prev);
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('cch_my_challenges', JSON.stringify(updated));
+        } catch (e) {
+          console.error('Error saving challenges to localStorage:', e);
+        }
+      }
+      return updated;
+    });
+  };
+
   const handleCheckIn = (ticketId: string) => {
     if (!checkedInTicketIds.includes(ticketId)) {
       setCheckedInTicketIds((prev) => [...prev, ticketId]);
-      setUserXp((prev) => prev + 50);
+      updateUserXp(50);
       showToast('เช็คอินสำเร็จ! คุณได้รับ +50 XP และปลดล็อกความคืบหน้า Badge แล้ว');
     } else {
       setCheckedInTicketIds((prev) => prev.filter((id) => id !== ticketId));
-      setUserXp((prev) => Math.max(0, prev - 50));
+      updateUserXp(-50);
       showToast('ยกเลิกการจำลองเช็คอินแล้ว');
     }
   };
 
   const handleVerifySuccess = (questId: string) => {
-    setMyChallenges((prev) =>
+    updateChallenges((prev) =>
       prev.map((q) => {
         if (q.id === questId) {
           const currentCount = parseInt(q.current || '0', 10) + 1;
@@ -628,7 +683,7 @@ export default function MyHubPage() {
         return q;
       })
     );
-    setUserXp((prev) => prev + 50);
+    updateUserXp(50);
     showToast(`ยืนยันหลักฐานสำเร็จ! ความคืบหน้าเพิ่มขึ้น +50 XP`);
   };
 
@@ -1206,10 +1261,11 @@ export default function MyHubPage() {
               ))}
             </div>
           </div>
+        </div>
 
-          {/* Interactive Daily Agenda Sheet */}
-          <div className="pt-5 border-t border-slate-200/80 space-y-4">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
+        {/* Interactive Daily Agenda Sheet (Full Canvas Width matching Category view) */}
+        <div className="space-y-4 pt-1">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-[#2D5A3C]" />
                 <h3 className="text-sm sm:text-base font-black text-slate-900">
@@ -1307,6 +1363,8 @@ export default function MyHubPage() {
                   const isMissed = status === 'missed';
                   const isAttended = status === 'attended';
                   const isReviewed = reviewedEventIds.includes(ev.id);
+                  const isHost = Boolean(ev.isHost || userCreatedEvents.some((u) => u.id === ev.id));
+                  const isMenuOpen = activeMenuId === `cal-${ev.id}`;
 
                   return (
                     <div
@@ -1478,31 +1536,51 @@ export default function MyHubPage() {
                               </Link>
                             </>
                           ) : isCancelled ? (
-                            /* Cancelled Event: Link to fullpage */
-                            <Link
-                              href={
-                                ev.eventType === 'public_venue' || meta.pillar === 'fairs'
-                                  ? `/fairs/${encodeURIComponent(ev.id)}`
-                                  : `/community/${encodeURIComponent(ev.id)}`
-                              }
-                              className="w-full py-1.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-2xs cursor-pointer truncate"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
-                              <span>ดูข้อมูลงาน (ยกเลิกแล้ว)</span>
-                            </Link>
+                            /* Cancelled Event: Link to fullpage + restore button */
+                            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                              <Link
+                                href={
+                                  ev.eventType === 'public_venue' || meta.pillar === 'fairs'
+                                    ? `/fairs/${encodeURIComponent(ev.id)}`
+                                    : `/community/${encodeURIComponent(ev.id)}`
+                                }
+                                className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-2xs cursor-pointer truncate"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
+                                <span>ดูข้อมูลงาน</span>
+                              </Link>
+                              <button
+                                type="button"
+                                onClick={() => handleMarkAttended(ev.id, ev.title)}
+                                className="py-1.5 px-2 rounded-xl bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 text-xs font-semibold transition-all shrink-0 cursor-pointer"
+                                title="เปลี่ยนสถานะเป็นไปร่วมจริง"
+                              >
+                                <span>ไปร่วมจริง</span>
+                              </button>
+                            </div>
                           ) : isMissed ? (
-                            /* Missed Event: NO review, view moments */
-                            <Link
-                              href="/moments"
-                              className="w-full py-1.5 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-2xs cursor-pointer truncate active:scale-95"
-                              title="ดูภาพบรรยากาศจากเพื่อนคนอื่นในคอมมูนิตี้"
-                            >
-                              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                              <span>ดูบรรยากาศงาน</span>
-                            </Link>
+                            /* Missed Event: View moments + restore button */
+                            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                              <Link
+                                href="/moments"
+                                className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-2xs cursor-pointer truncate active:scale-95"
+                                title="ดูภาพบรรยากาศจากเพื่อนคนอื่นในคอมมูนิตี้"
+                              >
+                                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                                <span>ดูบรรยากาศ</span>
+                              </Link>
+                              <button
+                                type="button"
+                                onClick={() => handleMarkAttended(ev.id, ev.title)}
+                                className="py-1.5 px-2 rounded-xl bg-white hover:bg-emerald-50 text-emerald-700 border border-slate-200 hover:border-emerald-300 text-xs font-semibold transition-all shrink-0 cursor-pointer"
+                                title="คลิกหากคุณได้ไปร่วมจริง เพื่อเปิดให้แชร์โมเมนต์"
+                              >
+                                <span>ฉันไปร่วมจริง</span>
+                              </button>
+                            </div>
                           ) : isAttended ? (
                             /* Attended Event: Share Moment + Review/Info */
-                            <>
+                            <div className="flex items-center gap-1.5 flex-1 min-w-0">
                               <Link
                                 href={`/moments?createForEvent=${encodeURIComponent(ev.id)}&eventTitle=${encodeURIComponent(ev.title)}&location=${encodeURIComponent(ev.location)}&image=${encodeURIComponent(ev.image || '')}`}
                                 className="flex-1 py-1.5 px-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
@@ -1547,22 +1625,33 @@ export default function MyHubPage() {
                                   <span>ข้อมูลงาน</span>
                                 </Link>
                               )}
-                            </>
+                            </div>
                           ) : (
                             /* Upcoming Event */
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setSelectedTicketEvent(ev);
-                                  setSelectedTicketId(ticketId);
-                                  setIsETicketModalOpen(true);
-                                }}
-                                className={`flex-1 py-1.5 px-2.5 rounded-xl ${meta.btnBg} ${meta.btnHover} ${meta.btnText} border ${meta.btnBorder} text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95`}
-                              >
-                                <Ticket className={`w-3.5 h-3.5 ${meta.btnText}`} />
-                                <span>ดูบัตร</span>
-                              </button>
+                            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                              {isHost ? (
+                                <Link
+                                  href={`/community/${encodeURIComponent(ev.id)}`}
+                                  className="flex-1 py-1.5 px-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
+                                  title="ไปที่หน้ารายละเอียดเพื่อดูแลตี้และตรวจสอบสมาชิก"
+                                >
+                                  <Crown className="w-3.5 h-3.5 shrink-0 text-white" />
+                                  <span>จัดการตี้</span>
+                                </Link>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedTicketEvent(ev);
+                                    setSelectedTicketId(ticketId);
+                                    setIsETicketModalOpen(true);
+                                  }}
+                                  className={`flex-1 py-1.5 px-2.5 rounded-xl ${meta.btnBg} ${meta.btnHover} ${meta.btnText} border ${meta.btnBorder} text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95`}
+                                >
+                                  <Ticket className={`w-3.5 h-3.5 ${meta.btnText}`} />
+                                  <span>ดูบัตร</span>
+                                </button>
+                              )}
 
                               {ev.eventType !== 'public_venue' ? (
                                 <button
@@ -1572,10 +1661,10 @@ export default function MyHubPage() {
                                     setIsChatModalOpen(true);
                                   }}
                                   className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 shadow-2xs"
-                                  title="เปิดห้องแชทกลุ่ม"
+                                  title={isHost ? 'เปิดห้องแชตคุยกับลูกทีม' : 'เปิดห้องแชทกลุ่ม'}
                                 >
                                   <MessageCircle className="w-3.5 h-3.5 text-slate-500" />
-                                  <span>แชท</span>
+                                  <span>{isHost ? 'แชตลูกทีม' : 'แชต'}</span>
                                 </button>
                               ) : (
                                 <Link
@@ -1587,7 +1676,157 @@ export default function MyHubPage() {
                                   <span className="hidden sm:inline">งานแฟร์</span>
                                 </Link>
                               )}
-                            </>
+                            </div>
+                          )}
+
+                          {/* Context Menu Button for Calendar Cards */}
+                          {meta.pillar !== 'quests' && (
+                            <div className="relative shrink-0">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveMenuId(isMenuOpen ? null : `cal-${ev.id}`);
+                                }}
+                                className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
+                                title="ตัวเลือกเพิ่มเติม"
+                              >
+                                <MoreHorizontal className="w-4 h-4" />
+                              </button>
+
+                              {isMenuOpen && (
+                                <div
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="absolute right-0 bottom-full mb-1.5 w-48 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-30 animate-fade-in text-slate-700"
+                                >
+                                  <Link
+                                    href={
+                                      ev.eventType === 'public_venue' || meta.pillar === 'fairs'
+                                        ? `/fairs/${encodeURIComponent(ev.id)}`
+                                        : `/community/${encodeURIComponent(ev.id)}`
+                                    }
+                                    onClick={() => setActiveMenuId(null)}
+                                    className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                                    <span>ดูรายละเอียดงาน</span>
+                                  </Link>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveMenuId(null);
+                                      showToast(`คัดลอกลิงก์กิจกรรม ${ev.title} แล้ว!`);
+                                    }}
+                                    className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <Share2 className="w-3.5 h-3.5 text-slate-400" />
+                                    <span>แชร์นัดหมาย</span>
+                                  </button>
+
+                                  <div className="my-1 border-t border-slate-100" />
+
+                                  {isAttended ? (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setActiveMenuId(null);
+                                          handleMarkMissed(ev.id, ev.title);
+                                        }}
+                                        className="w-full px-3 py-2 text-left text-xs font-semibold text-amber-700 hover:bg-amber-50 flex items-center gap-2 cursor-pointer"
+                                      >
+                                        <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+                                        <span>แจ้งว่าไม่ได้ไปร่วมจริง</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setActiveMenuId(null);
+                                          handlePermanentRemove(ev.id, ev.title);
+                                        }}
+                                        className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-600 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5 text-slate-400" />
+                                        <span>ลบออกจากประวัติ</span>
+                                      </button>
+                                    </>
+                                  ) : isMissed ? (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setActiveMenuId(null);
+                                          handleMarkAttended(ev.id, ev.title);
+                                        }}
+                                        className="w-full px-3 py-2 text-left text-xs font-semibold text-emerald-700 hover:bg-emerald-50 flex items-center gap-2 cursor-pointer"
+                                      >
+                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                                        <span>เปลี่ยนเป็นเข้าร่วมสำเร็จ</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setActiveMenuId(null);
+                                          handlePermanentRemove(ev.id, ev.title);
+                                        }}
+                                        className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-600 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5 text-slate-400" />
+                                        <span>ลบออกจากประวัติ</span>
+                                      </button>
+                                    </>
+                                  ) : isCancelled ? (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setActiveMenuId(null);
+                                          handleMarkAttended(ev.id, ev.title);
+                                        }}
+                                        className="w-full px-3 py-2 text-left text-xs font-semibold text-emerald-700 hover:bg-emerald-50 flex items-center gap-2 cursor-pointer"
+                                      >
+                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                                        <span>กู้คืนเป็นไปร่วมงาน</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setActiveMenuId(null);
+                                          handlePermanentRemove(ev.id, ev.title);
+                                        }}
+                                        className="w-full px-3 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                                        <span>ลบออกจากประวัติถาวร</span>
+                                      </button>
+                                    </>
+                                  ) : isHost ? (
+                                    <Link
+                                      href={`/community/${encodeURIComponent(ev.id)}`}
+                                      onClick={() => setActiveMenuId(null)}
+                                      className="w-full px-3 py-2 text-left text-xs font-semibold text-amber-700 hover:bg-amber-50 flex items-center gap-2 cursor-pointer"
+                                    >
+                                      <Crown className="w-3.5 h-3.5 text-amber-500" />
+                                      <span>จัดการและปิดรับสมัคร</span>
+                                    </Link>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setActiveMenuId(null);
+                                        setCancelTargetEvent(ev);
+                                        setCancelTargetTicketId(ticketId);
+                                        setIsCancelModalOpen(true);
+                                      }}
+                                      className="w-full px-3 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                                      <span>ยกเลิกการเข้าร่วม</span>
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>
@@ -1598,7 +1837,6 @@ export default function MyHubPage() {
             )}
           </div>
         </div>
-      </div>
     );
   };
 
@@ -1902,16 +2140,21 @@ export default function MyHubPage() {
                         <button
                           type="button"
                           onClick={handleQuickFilterUpcoming}
-                          className={`px-3 py-1.5 text-center rounded-xl transition-all cursor-pointer border ${
+                          className={`px-3 py-1.5 text-center rounded-xl transition-all cursor-pointer border flex flex-col items-center justify-start ${
                             hubMainMode === 'categories' && eventViewMode === 'upcoming'
                               ? 'bg-white border-blue-500/80 shadow-2xs'
                               : 'border-transparent hover:bg-white/80'
                           }`}
                           title={`คลิกเพื่อดูนัดหมายที่กำลังจะมาถึง (${upcomingEventsTotalCount} รายการ)`}
                         >
-                          <span className="text-[10px] uppercase font-bold text-slate-400 block">นัดหมาย</span>
-                          <span className="text-base sm:text-lg font-black text-slate-900 block leading-tight">
+                          <div className="h-4 flex items-center justify-center">
+                            <span className="text-[10px] uppercase font-bold text-slate-400 block">นัดหมาย</span>
+                          </div>
+                          <span className="text-base sm:text-lg font-black text-slate-900 block leading-tight mt-0.5">
                             {upcomingEventsTotalCount}
+                          </span>
+                          <span className="text-[9.5px] px-1.5 py-0.2 rounded-md mt-0.5 invisible select-none pointer-events-none" aria-hidden="true">
+                            แลกรางวัล
                           </span>
                         </button>
 
@@ -1919,32 +2162,37 @@ export default function MyHubPage() {
                         <button
                           type="button"
                           onClick={handleQuickFilterAttended}
-                          className={`px-3 py-1.5 text-center rounded-xl transition-all cursor-pointer border border-x border-slate-200 ${
+                          className={`px-3 py-1.5 text-center rounded-xl transition-all cursor-pointer border border-x border-slate-200 flex flex-col items-center justify-start ${
                             hubMainMode === 'categories' && eventViewMode === 'past'
                               ? 'bg-white border-emerald-500/80 shadow-2xs'
                               : 'border-transparent hover:bg-white/80'
                           }`}
                           title={`คลิกเพื่อดูประวัติกิจกรรมที่เคยเข้าร่วม (${attendedEventsTotalCount} รายการ)`}
                         >
-                          <span className="text-[10px] uppercase font-bold text-slate-400 block">ที่เคยเข้าร่วม</span>
-                          <span className="text-base sm:text-lg font-black text-slate-900 block leading-tight">
+                          <div className="h-4 flex items-center justify-center">
+                            <span className="text-[10px] uppercase font-bold text-slate-400 block">ที่เคยเข้าร่วม</span>
+                          </div>
+                          <span className="text-base sm:text-lg font-black text-slate-900 block leading-tight mt-0.5">
                             {attendedEventsTotalCount}
+                          </span>
+                          <span className="text-[9.5px] px-1.5 py-0.2 rounded-md mt-0.5 invisible select-none pointer-events-none" aria-hidden="true">
+                            แลกรางวัล
                           </span>
                         </button>
 
                         {/* 3. แต้มสะสม (Rewards XP) */}
                         <Link
                           href="/rewards"
-                          className="px-3 py-1.5 text-center group/xp hover:bg-amber-50/90 hover:border-amber-300/80 rounded-xl transition-all cursor-pointer flex flex-col items-center justify-center border border-transparent active:scale-95 shadow-2xs"
+                          className="px-3 py-1.5 text-center group/xp hover:bg-amber-50/90 hover:border-amber-300/80 rounded-xl transition-all cursor-pointer flex flex-col items-center justify-start border border-transparent active:scale-95 shadow-2xs"
                           title={`คลิกเพื่อไปหน้าแลกของรางวัล & สิทธิพิเศษ (${userXp} XP)`}
                         >
-                          <div className="flex items-center gap-1">
+                          <div className="h-4 flex items-center justify-center gap-1">
                             <span className="text-[10px] uppercase font-bold text-slate-400 group-hover/xp:text-amber-700 block">
                               แต้มสะสม
                             </span>
                             <ArrowRight className="w-2.5 h-2.5 text-[#D04A1B] opacity-70 group-hover/xp:translate-x-0.5 transition-transform" />
                           </div>
-                          <span className="text-base sm:text-lg font-black text-slate-900 group-hover/xp:text-[#D04A1B] block leading-tight">
+                          <span className="text-base sm:text-lg font-black text-slate-900 group-hover/xp:text-[#D04A1B] block leading-tight mt-0.5">
                             {userXp}
                           </span>
                           <span className="text-[9.5px] font-extrabold text-[#D04A1B] bg-amber-100/90 group-hover/xp:bg-amber-200 px-1.5 py-0.2 rounded-md mt-0.5 transition-colors">
@@ -1993,10 +2241,7 @@ export default function MyHubPage() {
 
                   <div className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
                     {hubMainMode === 'calendar' ? (
-                      <>
-                        <Sparkles className="w-3.5 h-3.5 text-[#2D5A3C]" />
-                        <span>ปฏิทินรวมนัดหมายทุกประเภทในที่เดียว</span>
-                      </>
+                      <span>ปฏิทินรวมนัดหมายทุกประเภทในที่เดียว</span>
                     ) : (
                       <span>เลือกดูตั๋วและบริหารจัดการตามประเภท</span>
                     )}
@@ -2207,6 +2452,7 @@ export default function MyHubPage() {
                         const isMissed = status === 'missed';
                         const isAttended = status === 'attended';
                         const isReviewed = reviewedEventIds.includes(event.id);
+                        const isHost = Boolean(event.isHost || userCreatedEvents.some((u) => u.id === event.id));
 
                         return (
                           <div
@@ -2398,20 +2644,31 @@ export default function MyHubPage() {
                                     )}
                                   </div>
                                 ) : (
-                                  /* Upcoming State: Normal E-Ticket + Chat */
+                                  /* Upcoming State: Normal E-Ticket + Chat OR Host Management */
                                   <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setSelectedTicketEvent(event);
-                                        setSelectedTicketId(ticketId);
-                                        setIsETicketModalOpen(true);
-                                      }}
-                                      className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
-                                    >
-                                      <QrCode className="w-3.5 h-3.5 shrink-0" />
-                                      <span>ดูบัตร</span>
-                                    </button>
+                                    {isHost ? (
+                                      <Link
+                                        href={`/community/${encodeURIComponent(event.id)}`}
+                                        className="flex-1 py-1.5 px-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
+                                        title="ไปที่หน้ารายละเอียดกิจกรรมเพื่อดูแลตี้และตรวจสอบสมาชิก"
+                                      >
+                                        <Crown className="w-3.5 h-3.5 shrink-0 text-white" />
+                                        <span>จัดการตี้</span>
+                                      </Link>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setSelectedTicketEvent(event);
+                                          setSelectedTicketId(ticketId);
+                                          setIsETicketModalOpen(true);
+                                        }}
+                                        className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
+                                      >
+                                        <QrCode className="w-3.5 h-3.5 shrink-0" />
+                                        <span>ดูบัตร</span>
+                                      </button>
+                                    )}
 
                                     <button
                                       type="button"
@@ -2420,10 +2677,10 @@ export default function MyHubPage() {
                                         setIsChatModalOpen(true);
                                       }}
                                       className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-[#EBF3ED] text-slate-700 hover:text-[#2D5A3C] border border-slate-200 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 shadow-2xs"
-                                      title="เปิดห้องแชตกลุ่ม"
+                                      title={isHost ? 'เปิดห้องแชตคุยกับลูกทีม' : 'เปิดห้องแชตกลุ่ม'}
                                     >
                                       <MessageCircle className="w-3.5 h-3.5 text-slate-500" />
-                                      <span>แชต</span>
+                                      <span>{isHost ? 'แชตลูกทีม' : 'แชต'}</span>
                                     </button>
                                   </div>
                                 )}
@@ -2545,6 +2802,15 @@ export default function MyHubPage() {
                                             <span>ลบออกจากประวัติถาวร</span>
                                           </button>
                                         </>
+                                      ) : isHost ? (
+                                        <Link
+                                          href={`/community/${encodeURIComponent(event.id)}`}
+                                          onClick={() => setActiveMenuId(null)}
+                                          className="w-full px-3 py-2 text-left text-xs font-semibold text-amber-700 hover:bg-amber-50 flex items-center gap-2 cursor-pointer"
+                                        >
+                                          <Crown className="w-3.5 h-3.5 text-amber-500" />
+                                          <span>จัดการและปิดรับสมัคร</span>
+                                        </Link>
                                       ) : (
                                         <button
                                           type="button"
@@ -3064,9 +3330,64 @@ export default function MyHubPage() {
                     </Link>
                   </div>
 
+                  {/* Search & Vibe Filters (Shown when user has saved spots) */}
+                  {savedSpotIds.length > 0 && (
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs">
+                      {/* Search Input */}
+                      <div className="relative flex-1 min-w-[200px]">
+                        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <input
+                          type="text"
+                          placeholder="ค้นหาชื่อพิกัด, จังหวัด, อำเภอ..."
+                          value={scrapbookSearch}
+                          onChange={(e) => setScrapbookSearch(e.target.value)}
+                          className="w-full pl-9 pr-8 py-2 text-xs rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2D5A3C]/20 focus:border-[#2D5A3C] transition-all text-slate-800 placeholder:text-slate-400"
+                        />
+                        {scrapbookSearch && (
+                          <button
+                            type="button"
+                            onClick={() => setScrapbookSearch('')}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-200/60 cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Vibe Chips (Horizontal Scrollable) */}
+                      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none text-xs">
+                        {[
+                          { id: 'all', label: 'ทั้งหมด' },
+                          { id: 'cafe_slowbar', label: 'คาเฟ่' },
+                          { id: 'nature_camping', label: 'ธรรมชาติ' },
+                          { id: 'mountain_mist', label: 'ขุนเขา' },
+                          { id: 'sea_island', label: 'ทะเล' },
+                          { id: 'art_creative', label: 'ศิลปะ' },
+                          { id: 'oldtown_culture', label: 'ย่านเก่า' },
+                        ].map((vibe) => {
+                          const active = scrapbookVibeFilter === vibe.id;
+                          return (
+                            <button
+                              key={vibe.id}
+                              type="button"
+                              onClick={() => setScrapbookVibeFilter(vibe.id)}
+                              className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all text-xs cursor-pointer ${
+                                active
+                                  ? 'bg-slate-900 text-white shadow-2xs'
+                                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                              }`}
+                            >
+                              {vibe.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Spots Grid or Empty State */}
-                  {savedSpotsList.length === 0 ? (
-                    /* Clean Compact Empty State */
+                  {savedSpotIds.length === 0 ? (
+                    /* Initial Empty State */
                     <div className="bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-white text-slate-600 flex items-center justify-center shrink-0 border border-slate-200 shadow-2xs">
@@ -3088,6 +3409,33 @@ export default function MyHubPage() {
                         <span>สำรวจพิกัด 77 จังหวัด</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </Link>
+                    </div>
+                  ) : savedSpotsList.length === 0 ? (
+                    /* Search / Filter Empty State */
+                    <div className="bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-white text-slate-600 flex items-center justify-center shrink-0 border border-slate-200 shadow-2xs">
+                          <Search className="w-5 h-5 text-slate-400" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-slate-800">
+                            ไม่พบพิกัดที่ตรงกับเงื่อนไขการค้นหา
+                          </h4>
+                          <p className="text-xs text-slate-500">
+                            ลองเปลี่ยนคำค้นหา หรือรีเซ็ตตัวกรองเพื่อดูสถานที่ทั้งหมดในสมุดบันทึก
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setScrapbookSearch('');
+                          setScrapbookVibeFilter('all');
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-2xs transition-all shrink-0 cursor-pointer"
+                      >
+                        <span>ล้างตัวกรอง</span>
+                      </button>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
@@ -3201,172 +3549,296 @@ export default function MyHubPage() {
               {activeSubTab === 'quests_rewards' && (
                 <div className="space-y-8">
                   {/* Section 1: Active Quests Header Bar */}
-                  <div className="flex items-center justify-between gap-3 flex-wrap bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center border border-purple-200 shrink-0">
-                        <Trophy className="w-4 h-4 text-purple-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-sm sm:text-base text-slate-900 flex items-center gap-2">
-                          <span>ภารกิจที่คุณกำลังทำอยู่ (Active Quests)</span>
-                          <span className="text-xs text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full font-bold border border-purple-200/80">
-                            {myChallenges.length} ภารกิจ
-                          </span>
-                        </h4>
-                        <p className="text-xs text-slate-500">
-                          สะสมแต้ม XP และปลดล็อกเข็มกลัดเกียรติยศลงบนโปรไฟล์ของคุณ
-                        </p>
-                      </div>
-                    </div>
+                  {(() => {
+                    const inProgressQuests = myChallenges.filter((q) => q.progressPercent < 100 && (q as any).status !== 'ended' && ((q as any).daysRemaining === undefined || (q as any).daysRemaining > 0));
+                    const completedQuests = myChallenges.filter((q) => q.progressPercent >= 100);
+                    const expiredQuests = myChallenges.filter((q) => q.progressPercent < 100 && ((q as any).status === 'ended' || ((q as any).daysRemaining !== undefined && (q as any).daysRemaining <= 0)));
 
-                    <div className="flex items-center gap-2">
-                      <Link
-                        href="/challenges"
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
-                      >
-                        <Compass className="w-3.5 h-3.5 text-slate-500" />
-                        <span>สำรวจเควสต์เพิ่ม</span>
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() => setIsCreateChallengeModalOpen(true)}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-2xs transition-all cursor-pointer active:scale-95"
-                      >
-                        <PlusCircle className="w-4 h-4" />
-                        <span>สร้างชาเลนจ์ใหม่</span>
-                      </button>
-                    </div>
-                  </div>
+                    const filteredMyChallenges = myChallenges.filter((q) => {
+                      const isDone = q.progressPercent >= 100;
+                      const isEnded = (q as any).status === 'ended' || ((q as any).daysRemaining !== undefined && (q as any).daysRemaining <= 0);
+                      if (questStatusFilter === 'in_progress') return !isDone && !isEnded;
+                      if (questStatusFilter === 'completed') return isDone;
+                      if (questStatusFilter === 'expired') return !isDone && isEnded;
+                      return true;
+                    });
 
-                  {/* Quests Grid (Matched with Discovery Aesthetics) */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
-                    {myChallenges.map((quest) => {
-                      const isCompleted = quest.progressPercent >= 100;
-                      const isUrgent = (quest.daysRemaining || 10) <= 5;
-                      
-                      // Category theme helper
-                      const getCatTheme = (cat?: string) => {
-                        switch (cat) {
-                          case 'move':
-                            return { label: 'Move', bg: 'bg-rose-50 text-rose-800 border-rose-200', text: 'text-rose-700' };
-                          case 'heal':
-                            return { label: 'Heal', bg: 'bg-emerald-50 text-emerald-800 border-emerald-200', text: 'text-emerald-700' };
-                          case 'learn':
-                            return { label: 'Learn', bg: 'bg-sky-50 text-sky-800 border-sky-200', text: 'text-sky-700' };
-                          case 'chill':
-                          default:
-                            return { label: 'Chill', bg: 'bg-amber-50 text-amber-800 border-amber-200', text: 'text-amber-800' };
-                        }
-                      };
-                      const catTheme = getCatTheme(quest.category);
+                    return (
+                      <>
+                        <div className="flex items-center justify-between gap-3 flex-wrap bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center border border-purple-200 shrink-0">
+                              <Trophy className="w-4 h-4 text-purple-600" />
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-sm sm:text-base text-slate-900 flex items-center gap-2">
+                                <span>ภารกิจของคุณ (My Quests)</span>
+                                <span className="text-xs text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full font-bold border border-purple-200/80">
+                                  {myChallenges.length} ภารกิจ
+                                </span>
+                              </h4>
+                              <p className="text-xs text-slate-500">
+                                สะสมแต้ม XP และปลดล็อกเข็มกลัดเกียรติยศลงบนโปรไฟล์ของคุณ
+                              </p>
+                            </div>
+                          </div>
 
-                      return (
-                        <div
-                          key={quest.id}
-                          className={`group/card bg-white rounded-2xl p-3.5 sm:p-4 border transition-all duration-300 flex flex-col justify-between space-y-3 relative overflow-hidden shadow-2xs hover:shadow-xs hover:-translate-y-0.5 ${
-                            isCompleted
-                              ? 'border-emerald-300 ring-1 ring-emerald-500/20 bg-emerald-50/10'
-                              : 'border-slate-200/90 hover:border-purple-300'
-                          }`}
-                        >
-                          {/* Top Row: Icon + Badges & XP */}
-                          <div className="flex items-start gap-3">
-                            <div className="w-11 h-11 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0 group-hover/card:scale-105 transition-transform shadow-2xs">
-                              {quest.iconName === 'Flame' ? (
-                                <Flame className="w-5 h-5 text-rose-500" />
-                              ) : quest.iconName === 'Coffee' ? (
-                                <Coffee className="w-5 h-5 text-amber-600" />
-                              ) : quest.iconName === 'Footprints' ? (
-                                <Footprints className="w-5 h-5 text-indigo-500" />
-                              ) : (
-                                <Medal className="w-5 h-5 text-purple-600" />
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {/* Filter Chips */}
+                            <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl">
+                              <button
+                                type="button"
+                                onClick={() => setQuestStatusFilter('all')}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                  questStatusFilter === 'all'
+                                    ? 'bg-white text-slate-900 shadow-2xs'
+                                    : 'text-slate-600 hover:text-slate-900'
+                                }`}
+                              >
+                                ทั้งหมด ({myChallenges.length})
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setQuestStatusFilter('in_progress')}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                  questStatusFilter === 'in_progress'
+                                    ? 'bg-white text-purple-700 shadow-2xs'
+                                    : 'text-slate-600 hover:text-slate-900'
+                                }`}
+                              >
+                                กำลังทำ ({inProgressQuests.length})
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setQuestStatusFilter('completed')}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                  questStatusFilter === 'completed'
+                                    ? 'bg-white text-emerald-700 shadow-2xs'
+                                    : 'text-slate-600 hover:text-slate-900'
+                                }`}
+                              >
+                                พิชิตแล้ว ({completedQuests.length})
+                              </button>
+                              {expiredQuests.length > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setQuestStatusFilter('expired')}
+                                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                    questStatusFilter === 'expired'
+                                      ? 'bg-white text-slate-700 shadow-2xs'
+                                      : 'text-slate-500 hover:text-slate-800'
+                                  }`}
+                                >
+                                  หมดเวลา ({expiredQuests.length})
+                                </button>
                               )}
                             </div>
 
-                            <div className="min-w-0 flex-1 space-y-1">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${catTheme.bg}`}>
-                                  {catTheme.label}
-                                </span>
-                                {quest.isOfficial ? (
-                                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 shrink-0">
-                                    Official
-                                  </span>
-                                ) : (
-                                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 shrink-0">
-                                    ชุมชน
-                                  </span>
-                                )}
-                                <span className="text-[10px] font-black text-purple-700 bg-purple-50 border border-purple-200/80 px-2 py-0.5 rounded-md flex items-center gap-0.5 ml-auto shadow-2xs">
-                                  <Zap className="w-3 h-3 text-purple-600 fill-purple-600" />
-                                  <span>+{quest.rewardPoints} XP</span>
-                                </span>
-                              </div>
-
-                              <h5 className="font-bold text-xs sm:text-sm text-slate-900 group-hover/card:text-purple-700 transition-colors leading-snug line-clamp-1">
-                                {quest.title}
-                              </h5>
-                            </div>
-                          </div>
-
-                          {/* Goal Box */}
-                          <div className="space-y-1 bg-slate-50 p-2.5 rounded-2xl border border-slate-100 text-xs">
-                            <div className="font-semibold text-slate-800 flex items-center gap-1">
-                              <Award className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                              <span className="truncate">เหรียญ: {quest.badgeLabel}</span>
-                            </div>
-                            <p className="text-slate-500 line-clamp-2 leading-relaxed text-[11.5px]">
-                              {quest.targetGoal}
-                            </p>
-                          </div>
-
-                          {/* Progress & Duration */}
-                          <div className="space-y-2 pt-0.5">
-                            <div className="flex items-center justify-between text-xs font-bold text-slate-700">
-                              <span className="text-[11px] text-slate-500">ความคืบหน้า</span>
-                              <span className="text-[11px] font-bold text-purple-700">
-                                {quest.completedCountInfo} ({quest.progressPercent}%)
-                              </span>
-                            </div>
-                            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200/80">
-                              <div
-                                className={`h-full rounded-full transition-all duration-500 ${
-                                  isCompleted ? 'bg-emerald-600' : 'bg-gradient-to-r from-purple-600 to-indigo-600'
-                                }`}
-                                style={{ width: `${quest.progressPercent}%` }}
-                              />
-                            </div>
-
-                            <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5 font-medium">
-                              <span>{quest.startDate} - {quest.endDate}</span>
-                              <span className={isUrgent ? 'text-rose-600 font-bold' : ''}>
-                                เหลืออีก {quest.daysRemaining || 10} วัน
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Action Button */}
-                          <div className="pt-2.5 border-t border-slate-100 mt-auto">
-                            {isCompleted ? (
-                              <div className="w-full bg-emerald-50 text-emerald-700 text-xs font-bold py-2.5 rounded-xl border border-emerald-200 flex items-center justify-center gap-1.5 shadow-2xs">
-                                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                                <span>สำเร็จภารกิจแล้ว</span>
-                              </div>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => setSelectedQuestForVerifyModal(quest)}
-                                className="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs active:scale-98"
-                              >
-                                <CheckCircle2 className="w-3.5 h-3.5 text-slate-300" />
-                                <span>ส่งหลักฐานเช็คอิน</span>
-                              </button>
-                            )}
+                            <Link
+                              href="/challenges"
+                              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+                            >
+                              <Compass className="w-3.5 h-3.5 text-slate-500" />
+                              <span>สำรวจเพิ่ม</span>
+                            </Link>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
+
+                        {/* Quests Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
+                          {filteredMyChallenges.length === 0 ? (
+                            <div className="col-span-full bg-slate-50/80 rounded-2xl p-8 border border-dashed border-slate-200 text-center text-xs text-slate-500 font-medium">
+                              ไม่มีภารกิจในหมวดหมู่นี้
+                            </div>
+                          ) : (
+                            filteredMyChallenges.map((quest) => {
+                              const isCompleted = quest.progressPercent >= 100;
+                              const isEnded = !isCompleted && ((quest as any).status === 'ended' || ((quest as any).daysRemaining !== undefined && (quest as any).daysRemaining <= 0));
+                              const isUrgent = !isCompleted && !isEnded && (quest.daysRemaining || 10) <= 5;
+                              const brandReward = getQuestBrandReward(quest);
+                              
+                              // Category theme helper
+                              const getCatTheme = (cat?: string) => {
+                                switch (cat) {
+                                  case 'move':
+                                    return { label: 'Move', bg: 'bg-rose-50 text-rose-800 border-rose-200' };
+                                  case 'heal':
+                                    return { label: 'Heal', bg: 'bg-emerald-50 text-emerald-800 border-emerald-200' };
+                                  case 'learn':
+                                    return { label: 'Learn', bg: 'bg-sky-50 text-sky-800 border-sky-200' };
+                                  case 'chill':
+                                  default:
+                                    return { label: 'Chill', bg: 'bg-amber-50 text-amber-800 border-amber-200' };
+                                }
+                              };
+                              const catTheme = getCatTheme(quest.category);
+
+                              return (
+                                <div
+                                  key={quest.id}
+                                  className={`group/card bg-white rounded-2xl p-3.5 sm:p-4 border transition-all duration-300 flex flex-col justify-between space-y-3 relative overflow-hidden shadow-2xs hover:shadow-xs hover:-translate-y-0.5 ${
+                                    isCompleted
+                                      ? 'border-emerald-300 ring-1 ring-emerald-500/20 bg-emerald-50/10'
+                                      : isEnded
+                                      ? 'border-slate-200 bg-slate-50/50 opacity-85'
+                                      : 'border-slate-200/90 hover:border-purple-300'
+                                  }`}
+                                >
+                                  {/* Top Row: Icon + Badges & XP */}
+                                  <div className="flex items-start gap-3">
+                                    <div className="w-11 h-11 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0 group-hover/card:scale-105 transition-transform shadow-2xs">
+                                      {quest.iconName === 'Flame' ? (
+                                        <Flame className="w-5 h-5 text-rose-500" />
+                                      ) : quest.iconName === 'Coffee' ? (
+                                        <Coffee className="w-5 h-5 text-amber-600" />
+                                      ) : quest.iconName === 'Footprints' ? (
+                                        <Footprints className="w-5 h-5 text-indigo-500" />
+                                      ) : (
+                                        <Medal className="w-5 h-5 text-purple-600" />
+                                      )}
+                                    </div>
+
+                                    <div className="min-w-0 flex-1 space-y-1">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${catTheme.bg}`}>
+                                          {catTheme.label}
+                                        </span>
+                                        {brandReward.type === 'brand_partner' ? (
+                                          <span 
+                                            title={`ภารกิจพาร์ทเนอร์ทางการ: ${brandReward.partnerName}`}
+                                            className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-950 border border-amber-200 shrink-0 truncate max-w-[140px] inline-flex items-center gap-1"
+                                          >
+                                            <Crown className="w-2.5 h-2.5 text-amber-600 fill-amber-500 shrink-0" />
+                                            <span className="truncate">Official • {brandReward.partnerName}</span>
+                                          </span>
+                                        ) : (
+                                          <span 
+                                            title="ภารกิจกิจกรรมกลางของ Chill & Connect Hub"
+                                            className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-900 border border-purple-200 shrink-0 truncate max-w-[calc(100%-65px)] inline-flex items-center gap-1"
+                                          >
+                                            <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500 shrink-0" />
+                                            <span className="truncate">Official • Chill & Connect</span>
+                                          </span>
+                                        )}
+                                        <span className="text-[10px] font-black text-purple-700 bg-purple-50 border border-purple-200/80 px-2 py-0.5 rounded-md flex items-center gap-0.5 ml-auto shadow-2xs">
+                                          <Zap className="w-3 h-3 text-purple-600 fill-purple-600" />
+                                          <span>+{quest.rewardPoints} XP</span>
+                                        </span>
+                                      </div>
+
+                                      <h5 className="font-bold text-xs sm:text-sm text-slate-900 group-hover/card:text-purple-700 transition-colors leading-snug line-clamp-2 min-h-[2.5rem]">
+                                        {quest.title}
+                                      </h5>
+                                    </div>
+                                  </div>
+
+                                  {/* Goal Box & Brand Privilege Pill */}
+                                  <div className="space-y-1.5 bg-slate-50 p-2.5 rounded-2xl border border-slate-100 text-xs">
+                                    <div className="font-semibold text-slate-800 flex items-center gap-1">
+                                      <Award className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                                      <span className="truncate">เหรียญ: {quest.badgeLabel}</span>
+                                    </div>
+                                    <p className="text-slate-500 line-clamp-2 leading-relaxed text-[11.5px] min-h-[2rem]">
+                                      {quest.targetGoal}
+                                    </p>
+
+                                    {/* Reward Privilege Pill: Brand Exclusive vs Hub Universal Points */}
+                                    {brandReward.type === 'brand_partner' ? (
+                                      <div 
+                                        title={`สิทธิพิเศษเฉพาะแบรนด์ ${brandReward.partnerName}: ${brandReward.title}`}
+                                        className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-amber-50/90 border border-amber-200/90 text-amber-950 text-[10px] font-bold shadow-2xs mt-1"
+                                      >
+                                        <Ticket className="w-3 h-3 text-amber-600 shrink-0" />
+                                        <span className="truncate">{brandReward.title}</span>
+                                      </div>
+                                    ) : (
+                                      <div 
+                                        title="รับแต้มสะสมพิเศษเพื่อนำไปเลือกแลกของรางวัลในศูนย์กลาง (/rewards)"
+                                        className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-purple-50/90 border border-purple-200/90 text-purple-950 text-[10px] font-bold shadow-2xs mt-1"
+                                      >
+                                        <Gift className="w-3 h-3 text-purple-600 shrink-0" />
+                                        <span className="truncate">แต้มสะสมอิสระ แลกของรางวัลใน Hub Rewards</span>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Progress & Duration */}
+                                  <div className="space-y-2 pt-0.5">
+                                    <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                                      <span className="text-[11px] text-slate-500">ความคืบหน้า</span>
+                                      <span className="text-[11px] font-bold text-purple-700">
+                                        {quest.completedCountInfo} ({quest.progressPercent}%)
+                                      </span>
+                                    </div>
+                                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200/80">
+                                      <div
+                                        className={`h-full rounded-full transition-all duration-500 ${
+                                          isCompleted ? 'bg-emerald-600' : isEnded ? 'bg-slate-400' : 'bg-gradient-to-r from-purple-600 to-indigo-600'
+                                        }`}
+                                        style={{ width: `${quest.progressPercent}%` }}
+                                      />
+                                    </div>
+
+                                    <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5 font-medium">
+                                      <span>{quest.startDate} - {quest.endDate}</span>
+                                      {isEnded ? (
+                                        <span className="text-slate-400 font-medium">ปิดรับแล้ว</span>
+                                      ) : (
+                                        <span className={isUrgent ? 'text-rose-600 font-bold' : ''}>
+                                          เหลืออีก {quest.daysRemaining || 10} วัน
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Action Button */}
+                                  <div className="pt-2.5 border-t border-slate-100 mt-auto">
+                                    {isCompleted ? (
+                                      brandReward.type === 'brand_partner' ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => setSelectedQuestForVoucherModal(quest)}
+                                          className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-bold py-2 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs active:scale-98"
+                                        >
+                                          <Ticket className="w-3.5 h-3.5 text-white" />
+                                          <span>ดูบัตรกำนัล & QR Code</span>
+                                        </button>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          onClick={() => setSelectedQuestForVoucherModal(quest)}
+                                          className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold py-2 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs active:scale-98"
+                                        >
+                                          <Trophy className="w-3.5 h-3.5 text-amber-300" />
+                                          <span>ดูความสำเร็จ & แลกรางวัล</span>
+                                        </button>
+                                      )
+                                    ) : isEnded ? (
+                                      <button
+                                        type="button"
+                                        disabled
+                                        className="w-full bg-slate-100 text-slate-400 text-xs font-bold py-2.5 rounded-xl border border-slate-200 cursor-not-allowed"
+                                      >
+                                        ภารกิจสิ้นสุดระยะเวลาแล้ว
+                                      </button>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={() => setSelectedQuestForVerifyModal(quest)}
+                                        className="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs active:scale-98"
+                                      >
+                                        <span>ส่งหลักฐานเช็คอิน</span>
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </>
+                    );
+                  })()}
 
                   {/* Section 2: Rewards Catalog Gateway & Active Voucher Locker */}
                   <div className="space-y-5 pt-4">
@@ -3436,16 +3908,31 @@ export default function MyHubPage() {
                               className="w-full sm:w-auto sm:max-w-[270px] min-h-[105px] bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-3.5 flex flex-col justify-between gap-2.5"
                             >
                               <div className="space-y-1">
-                                <span className="text-[10px] font-bold text-[#D04A1B] bg-[#FEF3EE] px-2 py-0.5 rounded-md border border-[#FCD5C5]/70">
-                                  {item.discountValue}
-                                </span>
+                                <div className="flex items-center justify-between gap-1">
+                                  <span className="text-[10px] font-bold text-[#D04A1B] bg-[#FEF3EE] px-2 py-0.5 rounded-md border border-[#FCD5C5]/70">
+                                    {item.discountValue}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 font-medium">
+                                    ถึง {item.validUntil}
+                                  </span>
+                                </div>
                                 <h5 className="font-bold text-xs sm:text-sm text-slate-900 truncate">
                                   {item.title}
                                 </h5>
-                                <p className="text-[11px] text-slate-500 font-semibold flex items-center gap-1">
-                                  <Tag className="w-3 h-3 text-slate-400" />
-                                  <span className="truncate">{item.partner}</span>
-                                </p>
+                                <div className="flex items-center justify-between gap-1 text-[11px] text-slate-500 font-semibold">
+                                  <span className="flex items-center gap-1 truncate">
+                                    <Tag className="w-3 h-3 text-slate-400 shrink-0" />
+                                    <span className="truncate">{item.partner}</span>
+                                  </span>
+                                  <Link
+                                    href={item.category === 'cafe' ? '/spots?vibe=cafe_slowbar' : '/community?category=chill'}
+                                    className="text-[10px] font-bold text-[#2D5A3C] hover:underline flex items-center gap-0.5 shrink-0"
+                                    title="ดูพิกัดร้านที่ร่วมรายการ"
+                                  >
+                                    <span>ดูพิกัด</span>
+                                    <ArrowRight className="w-2.5 h-2.5" />
+                                  </Link>
+                                </div>
                               </div>
 
                               <div className="bg-slate-50 rounded-xl border border-dashed border-slate-200 p-2 flex items-center justify-between gap-2">
@@ -3500,27 +3987,7 @@ export default function MyHubPage() {
       {/* MODALS                                                        */}
       {/* ============================================================= */}
 
-      {/* 1. Event Detail Modal */}
-      <EventDetailModal
-        event={detailModalEvent}
-        onClose={() => setDetailModalEvent(null)}
-        isFavorite={detailModalEvent ? favorites.includes(detailModalEvent.id) : false}
-        onToggleFavorite={(id) => {
-          setFavorites((prev) =>
-            prev.includes(id) ? prev.filter((favId) => favId !== id) : [...prev, id]
-          );
-        }}
-        isJoined={true}
-        isLoggedIn={isLoggedIn}
-        onJoinSuccess={() => {}}
-        onLeaveSuccess={(id) => {
-          setJoinedEventIds((prev) => prev.filter((eId) => eId !== id));
-          setDetailModalEvent(null);
-          showToast('ยกเลิกการเข้าร่วมกิจกรรมเรียบร้อยแล้ว');
-        }}
-      />
-
-      {/* 2. E-Ticket Modal */}
+      {/* 1. E-Ticket Modal */}
       <ETicketModal
         isOpen={isETicketModalOpen}
         onClose={() => setIsETicketModalOpen(false)}
@@ -3536,14 +4003,14 @@ export default function MyHubPage() {
         }}
       />
 
-      {/* 3. Group Chat Modal */}
+      {/* 2. Group Chat Modal */}
       <GroupChatModal
         isOpen={isChatModalOpen}
         onClose={() => setIsChatModalOpen(false)}
         event={chatTargetEvent}
       />
 
-      {/* 4. Cancel Ticket Modal */}
+      {/* 3. Cancel Ticket Modal */}
       <CancelTicketModal
         isOpen={isCancelModalOpen}
         onClose={() => setIsCancelModalOpen(false)}
@@ -3552,7 +4019,7 @@ export default function MyHubPage() {
         onConfirmCancel={handleConfirmCancel}
       />
 
-      {/* 5. Tip Host Modal */}
+      {/* 4. Tip Host Modal */}
       <TipHostModal
         isOpen={isTipModalOpen}
         onClose={() => setIsTipModalOpen(false)}
@@ -3567,7 +4034,7 @@ export default function MyHubPage() {
               return updated;
             });
           }
-          setUserXp((prev) => prev + 50);
+          updateUserXp(50);
           showToast(
             amount > 0
               ? `ส่งรีวิวและทิป ฿${amount} ให้ ${tipTargetEvent?.hostName} สำเร็จ ได้รับ +50 XP! ⭐`
@@ -3577,7 +4044,7 @@ export default function MyHubPage() {
         }}
       />
 
-      {/* 6. Quest Verify Modal */}
+      {/* 5. Quest Verify Modal */}
       <VerifyQuestModal
         isOpen={!!selectedQuestForVerifyModal}
         onClose={() => setSelectedQuestForVerifyModal(null)}
@@ -3585,14 +4052,13 @@ export default function MyHubPage() {
         onVerificationSuccess={handleVerifySuccess}
       />
 
-      {/* 7. Create Challenge Modal */}
-      <CreateChallengeModal
-        isOpen={isCreateChallengeModalOpen}
-        onClose={() => setIsCreateChallengeModalOpen(false)}
-        onCreateSuccess={(newQuest) => {
-          setMyChallenges([newQuest, ...myChallenges]);
-          showToast(`สร้างชาเลนจ์ "${newQuest.title}" สำเร็จ`);
-        }}
+      {/* 6. Brand Voucher & Quest Detail Modal */}
+      <JoinChallengeModal
+        isOpen={Boolean(selectedQuestForVoucherModal)}
+        onClose={() => setSelectedQuestForVoucherModal(null)}
+        quest={selectedQuestForVoucherModal}
+        isAlreadyJoined={true}
+        isCompleted={true}
       />
 
       {/* 8. Create Event Modal */}

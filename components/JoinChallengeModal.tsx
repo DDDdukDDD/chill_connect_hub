@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import {
@@ -17,15 +17,152 @@ import {
   UploadCloud,
   Check,
   Share2,
-  Crown
+  Crown,
+  Ticket,
+  Gift,
+  Sparkles,
+  ArrowRight
 } from 'lucide-react';
 import { ChallengeQuest } from '@/data/mockData';
+
+export interface QuestRewardProfile {
+  type: 'brand_partner' | 'hub_central';
+  title: string;
+  partnerName: string;
+  voucherCodePrefix?: string;
+  exclusiveNotice?: string;
+  terms?: string;
+  hubRewardNote?: string;
+}
+
+export type BrandVoucherReward = QuestRewardProfile;
+
+export function getQuestBrandReward(quest: any): QuestRewardProfile {
+  if (quest?.brandReward) return quest.brandReward;
+
+  const id = quest?.id || '';
+  const title = quest?.title || '';
+
+  // 1. Brand Partner Quest: Ari Specialty Coffee Club
+  if (id === 'comm-quest-1' || title.includes('Coffee') || title.includes('กาแฟ') || title.includes('อารีย์')) {
+    return {
+      type: 'brand_partner',
+      title: 'ฟรี Signature Cold Brew 1 แก้ว (มูลค่า 140.-)',
+      partnerName: 'Ari Specialty Coffee Club',
+      voucherCodePrefix: 'ARI-BREW-',
+      exclusiveNotice: 'สิทธิ์เฉพาะหน้าร้าน Ari Specialty Coffee Club ทุกสาขาเท่านั้น (แบรนด์อื่นไม่สามารถใช้ได้)',
+      terms: 'แสดง QR Code หน้าร้านก่อนสั่งเครื่องดื่ม จำกัด 1 สิทธิ์/ท่าน มีอายุ 30 วันหลังพิชิตภารกิจ',
+    };
+  }
+
+  // 2. Brand Partner Quest: BMA Sports Hub
+  if (id === 'comm-quest-2' || title.includes('Park Run') || title.includes('สวน')) {
+    return {
+      type: 'brand_partner',
+      title: 'สิทธิ์วิ่งฟรี BMA City Mini Marathon 2026 พร้อมเสื้อ Finisher',
+      partnerName: 'BMA Sports Hub (สำนักการกีฬา กทม.)',
+      voucherCodePrefix: 'BMA-RUN-',
+      exclusiveNotice: 'สิทธิ์เฉพาะงานวิ่งในสังกัด BMA Sports กรุงเทพมหานครเท่านั้น',
+      terms: 'ใช้รหัสลงทะเบียนผ่านเว็บไซต์งานวิ่ง BMA Marathon ภายในวันที่กำหนด',
+    };
+  }
+
+  // 3. Brand Partner Quest: HYROX Thailand
+  if (id === 'comm-quest-3' || title.includes('HYROX')) {
+    return {
+      type: 'brand_partner',
+      title: 'ส่วนลด 20% อุปกรณ์ซ้อม HYROX Official Training Gear',
+      partnerName: 'HYROX Thailand',
+      voucherCodePrefix: 'HYROX-GEAR-',
+      exclusiveNotice: 'สิทธิ์เฉพาะช่องทาง Official Store ของ HYROX Thailand เท่านั้น',
+      terms: 'กรอกรหัสส่วนลดตอน Checkout หรือแสดงบาร์โค้ดที่ Pop-up Store',
+    };
+  }
+
+  // 4. Hub Central Challenge: Morning Yoga (กิจกรรมกลางของ Hub)
+  if (id === 'comm-quest-4' || title.includes('Yoga') || title.includes('โยคะ')) {
+    return {
+      type: 'hub_central',
+      title: 'แต้มสะสมอิสระ + ปลดล็อกของรางวัลใน Hub Rewards',
+      partnerName: 'Chill & Connect Hub',
+      hubRewardNote: 'รับแต้ม Boosted XP ก้อนใหญ่สำหรับยกระดับเลเวลบัญชี และนำแต้มไปเลือกแลกของรางวัลในศูนย์กลาง (/rewards) ได้อย่างอิสระตามใจชอบ',
+      terms: 'สามารถนำแต้ม XP สะสมไปแลกรับของรางวัลที่ร่วมรายการในหน้าศูนย์ของรางวัล (/rewards) ได้ทันที',
+    };
+  }
+
+  // 5. Hub Central Challenge: Digital Detox (กิจกรรมกลางของ Hub)
+  if (id === 'comm-quest-5' || title.includes('Detox') || title.includes('มือถือ')) {
+    return {
+      type: 'hub_central',
+      title: 'แต้มสะสมอิสระ + ปลดล็อกของรางวัลใน Hub Rewards',
+      partnerName: 'Chill & Connect Hub',
+      hubRewardNote: 'รับแต้มพิเศษอัปเลเวลโปรไฟล์ พร้อมสิทธิ์เลือกแลกเซ็ตชาหรือเครื่องดื่มฟรีในคลังของรางวัลกลาง',
+      terms: 'นำแต้ม XP ที่ได้รับไปแลกรับสิทธิ์ที่หน้าศูนย์ของรางวัล (/rewards)',
+    };
+  }
+
+  // 6. Brand Partner Quest: River City Bangkok
+  if (id === 'comm-quest-6' || title.includes('Gallery') || title.includes('ศิลปะ') || title.includes('แกลเลอรี')) {
+    return {
+      type: 'brand_partner',
+      title: 'บัตรเข้าชม Exclusive Art Exhibition ฟรี 1 ใบ (มูลค่า 350.-)',
+      partnerName: 'River City Bangkok',
+      voucherCodePrefix: 'RCB-ART-',
+      exclusiveNotice: 'สิทธิ์เฉพาะที่ริเวอร์ ซิตี้ แบงค็อก (River City Bangkok) เท่านั้น',
+      terms: 'ยื่นรับบัตรเข้าชมนิทรรศการพิเศษได้ที่เคาน์เตอร์ Information ริเวอร์ ซิตี้ แบงค็อก',
+    };
+  }
+
+  // 7. Brand Partner Quest: Thailand Board Game Club
+  if (id === 'comm-quest-7' || title.includes('Board Game') || title.includes('บอร์ดเกม')) {
+    return {
+      type: 'brand_partner',
+      title: 'ฟรี ชั่วโมงเล่นบอร์ดเกม 2 ชั่วโมง หรือส่วนลดซื้อบอร์ดเกม 15%',
+      partnerName: 'Thailand Board Game Club',
+      voucherCodePrefix: 'TBG-PLAY-',
+      exclusiveNotice: 'ใช้ได้เฉพาะร้านบอร์ดเกมคาเฟ่ในเครือ Thailand Board Game Club เท่านั้น',
+      terms: 'แสดงหน้าบัตรก่อนเริ่มเปิดโต๊ะเล่นเกม',
+    };
+  }
+
+  // 8. Brand Partner Quest: PUBAT Bookworm (งานสัปดาห์หนังสือแห่งชาติ)
+  if (id === 'quest-off-3' || title.includes('Book') || title.includes('หนังสือ')) {
+    return {
+      type: 'brand_partner',
+      title: 'คูปองเงินสด 100 บาท ใช้ซื้อหนังสือในงานสัปดาห์หนังสือแห่งชาติ QSNCC',
+      partnerName: 'PUBAT Thailand (สมาคมผู้จัดพิมพ์ฯ)',
+      voucherCodePrefix: 'PUBAT-BOOK-',
+      exclusiveNotice: 'ใช้ได้เฉพาะบูธหนังสือที่ร่วมรายการ ณ ศูนย์ฯ สิริกิติ์ (QSNCC) เท่านั้น',
+      terms: 'แสดงบาร์โค้ดต่อพนักงานแคชเชียร์ก่อนชำระเงิน',
+    };
+  }
+
+  // 9. Hub Central Challenge: Sound Bath & Zen Inner Peace (กิจกรรมกลางของ Hub)
+  if (id === 'quest-off-4' || title.includes('Sound Bath') || title.includes('สมาธิ')) {
+    return {
+      type: 'hub_central',
+      title: 'เหรียญตราทองเกียรติยศ + แต้มสะสมอิสระ Hub Rewards',
+      partnerName: 'Chill & Connect Hub',
+      hubRewardNote: 'ปลดล็อกเหรียญทอง Zen Inner Peace ลงบนโปรไฟล์ และรับแต้มสะสมเลือกของรางวัลในศูนย์กลาง',
+      terms: 'นำแต้ม XP ไปแลกรับสิทธิ์เวิร์กช็อปหรือของพรีเมียมในศูนย์ของรางวัล',
+    };
+  }
+
+  // Fallback: Hub Central Challenge
+  return {
+    type: 'hub_central',
+    title: 'แต้มสะสมอิสระ + ปลดล็อกของรางวัลใน Hub Rewards',
+    partnerName: 'Chill & Connect Hub',
+    hubRewardNote: 'ภารกิจกิจกรรมกลางของระบบ รับแต้มสะสมอิสระเพื่อนำไปเลือกแลกของรางวัลในหน้า /rewards',
+    terms: 'นำแต้ม XP ไปเลือกของรางวัลที่ต้องการได้ตลอดเวลา',
+  };
+}
 
 interface JoinChallengeModalProps {
   isOpen: boolean;
   onClose: () => void;
   quest: ChallengeQuest | null;
-  onConfirmJoin: (quest: ChallengeQuest) => void;
+  onConfirmJoin?: (quest: ChallengeQuest) => void;
   isAlreadyJoined?: boolean;
   onCancelQuest?: (quest: ChallengeQuest) => void;
   onSubmitProgress?: (quest: ChallengeQuest, newCurrent: number) => void;
@@ -50,6 +187,8 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  const brandReward = useMemo(() => quest ? getQuestBrandReward(quest) : null, [quest]);
 
   // Journey States
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -164,6 +303,8 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
     return stripped;
   })();
 
+  const isEnded = (quest as any)?.status === 'ended' || ((quest as any)?.daysRemaining !== undefined && (quest as any)?.daysRemaining <= 0);
+
   return createPortal(
     <div className="fixed inset-0 z-[99999] overflow-y-auto flex items-center justify-center p-3.5 sm:p-5 md:p-6 bg-slate-950/75 backdrop-blur-xs animate-fade-in font-sans">
       <div
@@ -183,19 +324,17 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                 {getCategoryLabel(quest.category)}
               </span>
 
-              {quest.isOfficial ? (
-                <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-amber-400 text-slate-950 shadow-xs flex items-center gap-1">
-                  <Crown className="w-3.5 h-3.5 fill-slate-950 text-slate-950" />
-                  <span>Official Quest</span>
-                </span>
-              ) : (
-                <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-md text-white border border-white/20">
-                  ชุมชนสร้างสรรค์
-                </span>
-              )}
+              <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-amber-400 text-slate-950 shadow-xs flex items-center gap-1">
+                <Crown className="w-3.5 h-3.5 fill-slate-950 text-slate-950" />
+                <span>Official Quest</span>
+              </span>
 
               {/* Status Badge */}
-              {localCompleted ? (
+              {isEnded ? (
+                <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-slate-200 text-slate-800 shadow-xs">
+                  สิ้นสุดภารกิจแล้ว
+                </span>
+              ) : localCompleted ? (
                 <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-amber-300 text-amber-950 shadow-xs flex items-center gap-1">
                   <Trophy className="w-3.5 h-3.5" />
                   <span>พิชิตภารกิจแล้ว</span>
@@ -210,7 +349,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
 
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs"
+              className="w-8 h-8 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs shrink-0 self-start"
               title="ปิดหน้าต่าง"
             >
               <X className="w-4 h-4" />
@@ -243,13 +382,12 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                 {quest.daysRemaining !== undefined && (
                   <span className="flex items-center gap-1 bg-white/15 px-2.5 py-0.5 rounded-lg border border-white/20">
                     <Clock className="w-3.5 h-3.5 text-purple-200" />
-                    <span>เหลือ {quest.daysRemaining} วัน</span>
+                    <span>{isEnded ? 'ปิดรับแล้ว' : `เหลือ ${quest.daysRemaining} วัน`}</span>
                   </span>
                 )}
 
-                <span className="flex items-center gap-1 bg-white/15 px-2.5 py-0.5 rounded-lg border border-white/20">
-                  <Users className="w-3.5 h-3.5 text-purple-200" />
-                  <span>{quest.participantsCount || 150}+ คนร่วมทำ</span>
+                <span className="bg-white/15 px-2.5 py-0.5 rounded-lg border border-white/20 font-medium">
+                  {quest.participantsCount || 150}+ คนร่วมทำ
                 </span>
               </div>
             </div>
@@ -276,6 +414,129 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
 
         {/* Scrollable Content Body */}
         <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1 bg-white">
+
+          {/* Archived / Ended Quest Notice Banner */}
+          {isEnded && !localCompleted && (
+            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between gap-3 text-xs text-slate-600 font-medium">
+              <span>ภารกิจนี้สิ้นสุดระยะเวลาจัดกิจกรรมแล้ว ข้อมูลด้านล่างเป็นบันทึกสรุปและของรางวัลย้อนหลัง</span>
+              <span className="text-[10px] font-extrabold px-2.5 py-1 bg-slate-200 text-slate-700 rounded-lg shrink-0">
+                คลังย้อนหลัง
+              </span>
+            </div>
+          )}
+
+          {/* 🎉 Unlocked Brand Voucher Pass (When Completed - Brand Partner Quest) */}
+          {(localCompleted || isCompleted) && brandReward && brandReward.type === 'brand_partner' && (
+            <div className="p-4 sm:p-5 bg-gradient-to-br from-amber-50 via-purple-50/40 to-amber-50/60 rounded-3xl border-2 border-amber-300 shadow-md space-y-3 animate-fade-in">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-black text-sm shadow-xs">
+                    🎟️
+                  </span>
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-900 bg-amber-200/80 px-2 py-0.5 rounded-md">
+                      Brand Privilege Unlocked
+                    </span>
+                    <h4 className="text-sm sm:text-base font-black text-slate-900">
+                      คุณได้รับสิทธิพิเศษจาก {brandReward.partnerName}
+                    </h4>
+                  </div>
+                </div>
+                <span className="text-[11px] font-extrabold text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-full border border-emerald-300 shrink-0">
+                  ✓ พร้อมใช้งาน
+                </span>
+              </div>
+
+              <div className="p-3.5 bg-white rounded-2xl border border-amber-200 shadow-2xs space-y-2.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold block">รางวัลสิทธิ์พิเศษของคุณ:</span>
+                    <h5 className="font-black text-xs sm:text-sm text-slate-900">
+                      {brandReward.title}
+                    </h5>
+                  </div>
+                  <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200 shrink-0">
+                    {brandReward.partnerName}
+                  </span>
+                </div>
+                
+                {/* Voucher Code & QR simulation */}
+                <div className="p-3 bg-slate-50 rounded-xl border border-dashed border-slate-300 flex items-center justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] text-slate-400 font-bold block">รหัสสิทธิ์สำหรับใช้หน้าร้าน:</span>
+                    <span className="font-mono font-black text-xs sm:text-sm text-[#7C3AED] tracking-wider select-all">
+                      {brandReward.voucherCodePrefix || 'CCH-'}88492
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700 bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 shrink-0 shadow-2xs">
+                    <QrCode className="w-4 h-4 text-purple-600" />
+                    <span>แสดงสิทธิ์</span>
+                  </div>
+                </div>
+
+                <div className="p-2 rounded-xl bg-amber-50/80 border border-amber-200 text-[10.5px] text-amber-900 font-medium leading-relaxed">
+                  <strong>🔒 ข้อกำหนดการใช้สิทธิ์:</strong> {brandReward.exclusiveNotice}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 🏆 Unlocked Hub Central Achievement Pass (When Completed - Hub Central Challenge) */}
+          {(localCompleted || isCompleted) && brandReward && brandReward.type === 'hub_central' && (
+            <div className="p-4 sm:p-5 bg-gradient-to-br from-purple-50 via-indigo-50/40 to-emerald-50/30 rounded-3xl border-2 border-purple-300 shadow-md space-y-3 animate-fade-in">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center font-black text-sm shadow-xs">
+                    🏆
+                  </span>
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-purple-900 bg-purple-200/80 px-2 py-0.5 rounded-md">
+                      Hub Official Achievement
+                    </span>
+                    <h4 className="text-sm sm:text-base font-black text-slate-900">
+                      คุณพิชิตภารกิจกลางของระบบสำเร็จ!
+                    </h4>
+                  </div>
+                </div>
+                <span className="text-[11px] font-extrabold text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-full border border-emerald-300 shrink-0">
+                  ✓ สำเร็จเรียบร้อย
+                </span>
+              </div>
+
+              <div className="p-3.5 bg-white rounded-2xl border border-purple-200 shadow-2xs space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold block">รางวัลความสำเร็จของคุณ:</span>
+                    <h5 className="font-black text-xs sm:text-sm text-purple-950">
+                      {brandReward.title}
+                    </h5>
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 shrink-0">
+                    Chill & Connect Hub
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                  {brandReward.hubRewardNote || 'คุณได้รับคะแนน XP ก้อนใหญ่เรียบร้อยแล้ว! สามารถนำแต้มสะสมทั้งหมดในบัญชีไปเลือกแลกรับของรางวัลที่ชอบในศูนย์ของรางวัลกลางได้ทันที'}
+                </p>
+
+                <div className="pt-1 flex items-center justify-between gap-2 flex-wrap">
+                  <Link
+                    href="/rewards"
+                    onClick={onClose}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer"
+                  >
+                    <Gift className="w-3.5 h-3.5 text-amber-400" />
+                    <span>ไปเลือกของรางวัลใน Rewards Center</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                  <span className="text-[11px] font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200">
+                    +{quest.rewardPoints || 300} XP ได้รับแล้ว
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Submission Sheet Mode */}
           {showSubmitProof ? (
@@ -518,11 +779,77 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                       <Zap className="w-5 h-5 text-amber-600 fill-amber-500" />
                     </div>
                     <div className="min-w-0">
-                      <span className="text-[10px] font-bold text-slate-400 block">แต้มและคะแนน XP</span>
+                      <span className="text-[10px] font-bold text-slate-400 block">แต้มและคะแนน XP ส่วนกลาง</span>
                       <span className="text-xs sm:text-sm font-extrabold text-slate-800">+{quest.rewardPoints || 300} XP Points</span>
                     </div>
                   </div>
                 </div>
+
+                {/* 3. Brand-Exclusive Privilege Block (Strava / Nike Model - Brand Partner Quest) */}
+                {brandReward && brandReward.type === 'brand_partner' && (
+                  <div className="p-3.5 bg-gradient-to-r from-amber-500/10 via-purple-500/10 to-amber-500/5 rounded-2xl border border-amber-300/80 space-y-2 relative overflow-hidden">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center text-xs font-black shrink-0 shadow-2xs">
+                          🎟️
+                        </span>
+                        <span className="text-xs font-black text-slate-900">
+                          สิทธิพิเศษเฉพาะแบรนด์พาร์ทเนอร์ (Brand-Exclusive Privilege)
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-extrabold text-amber-950 bg-amber-100/90 px-2.5 py-0.5 rounded-full border border-amber-300/80 flex items-center gap-1 shadow-2xs">
+                        <Crown className="w-3 h-3 text-amber-600 fill-amber-500 shrink-0" />
+                        <span>Official • {brandReward.partnerName}</span>
+                      </span>
+                    </div>
+
+                    <div className="bg-white/95 backdrop-blur-xs p-3 rounded-xl border border-amber-200/80 space-y-1">
+                      <h5 className="font-black text-xs sm:text-sm text-slate-900">
+                        {brandReward.title}
+                      </h5>
+                      <p className="text-[11px] text-amber-900 font-semibold">
+                        {brandReward.exclusiveNotice}
+                      </p>
+                      {brandReward.terms && (
+                        <p className="text-[10.5px] text-slate-500 pt-0.5">
+                          เงื่อนไข: {brandReward.terms}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Universal Hub Rewards Block (For Central Platform Challenges) */}
+                {brandReward && brandReward.type === 'hub_central' && (
+                  <div className="p-3.5 bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-emerald-500/5 rounded-2xl border border-purple-300/80 space-y-2 relative overflow-hidden">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-lg bg-purple-600 text-white flex items-center justify-center text-xs font-black shrink-0 shadow-2xs">
+                          🎁
+                        </span>
+                        <span className="text-xs font-black text-slate-900">
+                          สิทธิ์แลกของรางวัลศูนย์กลาง (Universal Hub Rewards)
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-extrabold text-purple-900 bg-purple-100/90 px-2.5 py-0.5 rounded-full border border-purple-300/80 flex items-center gap-1 shadow-2xs">
+                        <Crown className="w-3 h-3 text-purple-700 shrink-0" />
+                        <span>Official • Chill & Connect</span>
+                      </span>
+                    </div>
+
+                    <div className="bg-white/95 backdrop-blur-xs p-3 rounded-xl border border-purple-200/80 space-y-1">
+                      <h5 className="font-black text-xs sm:text-sm text-purple-950">
+                        {brandReward.title}
+                      </h5>
+                      <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                        {brandReward.hubRewardNote}
+                      </p>
+                      <div className="pt-1 text-[10.5px] text-purple-800 font-semibold">
+                        <span>อิสระเต็มที่: นำแต้มไปเลือกของรางวัลใดก็ได้ในหน้ารวม /rewards ไม่ติดเงื่อนไขแบรนด์</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <p className="text-[11px] sm:text-xs text-slate-600 font-medium pt-0.5 leading-relaxed">
                   {formattedRewardsNote}
@@ -534,11 +861,11 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
         </div>
 
         {/* Modal Bottom Action Footer */}
-        <div className="p-3.5 sm:p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
+        <div className="p-3.5 sm:p-4 bg-slate-50 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 shrink-0">
           <button
             type="button"
             onClick={handleShare}
-            className="px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-2xs"
+            className="px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-2xs"
             title="แชร์ภารกิจให้เพื่อนๆ"
           >
             {copied ? (
@@ -555,23 +882,42 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
           </button>
 
           {/* Action Buttons depending on State */}
-          <div className="flex items-center gap-2">
-            {localCompleted ? (
-              <Link
-                href="/myhub?tab=badges"
-                onClick={onClose}
-                className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-amber-950 font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer"
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            {isEnded && !localCompleted ? (
+              <button
+                type="button"
+                disabled
+                className="px-6 sm:px-8 py-2.5 rounded-xl bg-slate-200 text-slate-500 font-bold text-xs sm:text-sm cursor-not-allowed text-center"
               >
-                <Trophy className="w-4 h-4" />
-                <span>ดูเหรียญตราใน MyHub</span>
-              </Link>
+                ภารกิจสิ้นสุดระยะเวลาแล้ว
+              </button>
+            ) : localCompleted ? (
+              brandReward?.type === 'brand_partner' ? (
+                <Link
+                  href="/myhub?tab=quests_rewards"
+                  onClick={onClose}
+                  className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-amber-950 font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer text-center"
+                >
+                  <Ticket className="w-4 h-4" />
+                  <span>ดูบัตรกำนัลใน MyHub</span>
+                </Link>
+              ) : (
+                <Link
+                  href="/rewards"
+                  onClick={onClose}
+                  className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer text-center"
+                >
+                  <Gift className="w-4 h-4 text-amber-300" />
+                  <span>เปิดศูนย์ของรางวัล (/rewards)</span>
+                </Link>
+              )
             ) : isAlreadyJoined ? (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-2">
                 {/* Abandon / Cancel Button */}
                 <button
                   type="button"
                   onClick={() => setShowCancelConfirm(true)}
-                  className="px-3 py-2.5 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 text-xs font-bold transition-all cursor-pointer"
+                  className="px-3 py-2.5 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 text-xs font-bold transition-all cursor-pointer text-center"
                   title="ยกเลิกการทำภารกิจนี้"
                 >
                   <span>ยกเลิกภารกิจ</span>
@@ -581,7 +927,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowSubmitProof(true)}
-                  className="px-5 sm:px-7 py-2.5 rounded-xl bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-extrabold text-xs sm:text-sm shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-2"
+                  className="px-5 sm:px-7 py-2.5 rounded-xl bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-extrabold text-xs sm:text-sm shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2 text-center"
                 >
                   <Camera className="w-4 h-4 text-purple-200" />
                   <span>ส่งผล / บันทึกความคืบหน้า</span>
@@ -592,10 +938,10 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  onConfirmJoin(quest);
+                  onConfirmJoin?.(quest);
                   onClose();
                 }}
-                className="px-7 sm:px-9 py-2.5 rounded-xl bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-extrabold text-xs sm:text-sm shadow-md transition-all active:scale-95 cursor-pointer"
+                className="px-7 sm:px-9 py-2.5 rounded-xl bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-extrabold text-xs sm:text-sm shadow-md transition-all active:scale-95 cursor-pointer text-center"
               >
                 <span>รับภารกิจท้าทายนี้</span>
               </button>

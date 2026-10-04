@@ -23,7 +23,24 @@ Item template:
 
 ## Open
 
-_(no open items)_
+### FE-002 · Quests & Challenges UI Standardization (Status Archive, Ended Quests, Typographic Scale, Clean Minimal Filter)
+- **From → To:** Frontend → Backend
+- **Date / branch:** 2026-10-04 · `main`
+- **What changed / what is needed:** Frontend completed a comprehensive UI/UX overhaul of the Quests & Challenges system:
+  1. **Badge Standardization**:
+     - Platform Central Quests: `Official • Chill & Connect` with soft royal purple theme (`bg-purple-100/90 text-purple-900 border-purple-300/80`).
+     - Brand Partner Quests: `Official • {partnerName}` with warm amber gold theme (`bg-amber-100/90 text-amber-950 border-amber-300/80`).
+  2. **Status Archive & Ended Handling**:
+     - Ended quests (`status === 'ended'` or `daysRemaining <= 0`) are now automatically filtered out of active carousels (`CommunityChallengeBar`) and archived into a dedicated "สิ้นสุดแล้ว" status tab in `/challenges`.
+     - In modals (`JoinChallengeModal`), ended quests display a muted slate banner, status pill "สิ้นสุดภารกิจแล้ว", and disabled CTA button "ภารกิจสิ้นสุดระยะเวลาแล้ว".
+  3. **Typography & Responsiveness**:
+     - Card titles strictly adhere to `AGENTS.md` typography standard (`line-clamp-2 min-h-[2.5rem]`).
+     - Modal footers adapt responsively (`flex-col-reverse` on mobile, `flex-row` on desktop).
+  4. **Filter & Button Hygiene**:
+     - Removed multi-color rainbow buttons and crown icons from filter chips.
+     - Single consolidated filter row on `/challenges` with neutral monochrome slate styling (`bg-slate-900 text-white`).
+- **Action for Backend:** When creating/updating quests in `/api/admin/quests` or `lib/db`, backend can safely set `status: 'ended'` or rely on `daysRemaining: 0` for expired quests. Ensure `brandReward` objects include `partnerName` and `title` when `type === 'brand_partner'`.
+- **Status:** Open
 
 ---
 

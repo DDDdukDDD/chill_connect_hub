@@ -17,10 +17,12 @@ import {
   ShieldCheck,
   Crown,
   ArrowRight,
-  Target
+  Target,
+  Ticket,
+  Gift
 } from 'lucide-react';
 import { ChallengeQuest } from '@/data/mockData';
-import { JoinChallengeModal } from '@/components/JoinChallengeModal';
+import { JoinChallengeModal, getQuestBrandReward } from '@/components/JoinChallengeModal';
 import { fetchAllContentPages } from '@/lib/contentClient';
 
 interface CommunityChallengeBarProps {
@@ -105,11 +107,11 @@ export const COMMUNITY_PUBLIC_QUESTS: (ChallengeQuest & { image?: string })[] = 
     current: '0',
     total: '4',
     visibility: 'public',
-    creatorName: 'Coach Mark',
+    creatorName: 'HYROX Thailand (พาร์ทเนอร์ทางการ)',
     creatorAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80',
     participantsCount: 142,
     rewardPoints: 250,
-    isOfficial: false,
+    isOfficial: true,
     targetGoal: 'วิ่งและออกกำลังกายกลุ่มครบ 4 ครั้งใน 14 วัน เตรียมความพร้อมสู่สนามแข่ง',
     objective: 'ฝึกความอดทนของกล้ามเนื้อและระบบหัวใจร่วมกับคอมมูนิตี้สายฟิตเนส',
     steps: [
@@ -136,11 +138,11 @@ export const COMMUNITY_PUBLIC_QUESTS: (ChallengeQuest & { image?: string })[] = 
     current: '0',
     total: '7',
     visibility: 'public',
-    creatorName: 'K. Mindy',
+    creatorName: 'Mindful Yoga & Wellness Hub',
     creatorAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80',
     participantsCount: 189,
     rewardPoints: 200,
-    isOfficial: false,
+    isOfficial: true,
     targetGoal: 'เล่นโยคะยามเช้าหรือฝึกสมาธิต่อเนื่อง 7 วัน เพื่อความสดชื่นและสมดุลจิตใจ',
     objective: 'ปรับสมดุลร่างกายและจิตใจ เริ่มต้นวันใหม่ด้วยสมาธิและความผ่อนคลาย',
     steps: [
@@ -167,11 +169,11 @@ export const COMMUNITY_PUBLIC_QUESTS: (ChallengeQuest & { image?: string })[] = 
     current: '0',
     total: '3',
     visibility: 'public',
-    creatorName: 'K. Ploy',
+    creatorName: 'Digital Detox Society',
     creatorAvatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=120&q=80',
     participantsCount: 95,
     rewardPoints: 180,
-    isOfficial: false,
+    isOfficial: true,
     targetGoal: 'พักสายตา วางจอมือถือ และเข้าร่วมกิจกรรมพบปะเพื่อนออฟไลน์ 3 ชม.',
     objective: 'ลดความเครียดจากการเสพสื่อดิจิทัล และเปิดรับบทสนทนาจริงกับผู้คนรอบข้าง',
     steps: [
@@ -229,11 +231,11 @@ export const COMMUNITY_PUBLIC_QUESTS: (ChallengeQuest & { image?: string })[] = 
     current: '0',
     total: '3',
     visibility: 'public',
-    creatorName: 'Boardgame Addict',
+    creatorName: 'Thailand Board Game Club (พาร์ทเนอร์ทางการ)',
     creatorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80',
     participantsCount: 114,
     rewardPoints: 220,
-    isOfficial: false,
+    isOfficial: true,
     targetGoal: 'ทดลองเล่นบอร์ดเกมประเภทวางแผนหรือปาร์ตี้เกมที่ไม่เคยเล่นมาก่อนครบ 3 เกม',
     objective: 'เปิดประสบการณ์การเล่นเกมใหม่ๆ ฝึกกระบวนการคิด และสร้างมิตรภาพผ่านโต๊ะบอร์ดเกม',
     steps: [
@@ -257,11 +259,34 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
   const [joinedList, setJoinedList] = useState<string[]>(joinedQuestTitles);
   const [selectedQuestForModal, setSelectedQuestForModal] = useState<ChallengeQuest | null>(null);
   const [questItems, setQuestItems] = useState(COMMUNITY_PUBLIC_QUESTS);
+  const [filterType, setFilterType] = useState<'all' | 'hub_central' | 'brand_partner'>('all');
+
+  const activeQuests = questItems.filter((q) => {
+    const isEnded = (q as any).status === 'ended' || ((q as any).daysRemaining !== undefined && (q as any).daysRemaining <= 0);
+    return !isEnded;
+  });
+
+  const hubCount = activeQuests.filter((q) => getQuestBrandReward(q).type === 'hub_central').length;
+  const partnerCount = activeQuests.filter((q) => getQuestBrandReward(q).type === 'brand_partner').length;
+
+  const displayQuests = activeQuests.filter((q) => {
+    if (filterType === 'all') return true;
+    return getQuestBrandReward(q).type === filterType;
+  });
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
+
+  // Reset scroll when filter changes
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+      setActiveIndex(0);
+      setTimeout(checkScrollability, 250);
+    }
+  }, [filterType]);
 
   useEffect(() => {
     let isActive = true;
@@ -388,11 +413,11 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
               04
             </span>
             <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <span>ภารกิจไลฟ์สไตล์ & ชาเลนจ์</span>
+              <span>Challenge & Lifestyle Hub</span>
             </h2>
           </div>
           <p className="text-xs text-slate-500 mt-1 font-medium pl-8">
-            พิชิตภารกิจสนุกๆ เพื่อสะสมเข็มกลัดเกียรติยศและคะแนน XP แลกรับสิทธิพิเศษทั่วไทย
+            ภารกิจไลฟ์สไตล์ & ชาเลนจ์ กิจกรรมรับแต้ม XP และของรางวัล
           </p>
         </div>
 
@@ -401,9 +426,64 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
           href="/challenges"
           className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-purple-900 text-purple-900 hover:text-white border border-purple-200/90 hover:border-purple-900 rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
         >
-          <span>ดูภารกิจทั้งหมด ({questItems.length})</span>
+          <span>ดูภารกิจทั้งหมด ({activeQuests.length})</span>
           <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
         </Link>
+      </div>
+
+      {/* Quick Filter: Quest Type Chips (Official Central vs Brand Partner) */}
+      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5">
+        <span className="text-[11px] font-bold text-slate-400 shrink-0 uppercase tracking-wider mr-0.5">
+          ตัวกรองด่วน:
+        </span>
+
+        {/* 1. All */}
+        <button
+          type="button"
+          onClick={() => setFilterType('all')}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shrink-0 shadow-2xs ${
+            filterType === 'all'
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200/80'
+          }`}
+        >
+          <span>ทั้งหมด</span>
+          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${filterType === 'all' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+            {questItems.length}
+          </span>
+        </button>
+
+        {/* 2. Official • Chill & Connect */}
+        <button
+          type="button"
+          onClick={() => setFilterType(filterType === 'hub_central' ? 'all' : 'hub_central')}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 shadow-2xs border ${
+            filterType === 'hub_central'
+              ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+              : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200/80'
+          }`}
+        >
+          <span>Official • Chill & Connect</span>
+          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${filterType === 'hub_central' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+            {hubCount}
+          </span>
+        </button>
+
+        {/* 3. Brand Partner */}
+        <button
+          type="button"
+          onClick={() => setFilterType(filterType === 'brand_partner' ? 'all' : 'brand_partner')}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 shadow-2xs border ${
+            filterType === 'brand_partner'
+              ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+              : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200/80'
+          }`}
+        >
+          <span>แบรนด์พาร์ทเนอร์</span>
+          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${filterType === 'brand_partner' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+            {partnerCount}
+          </span>
+        </button>
       </div>
 
       {/* Horizontal Scrollable Carousel (Manual Swipe / Scroll / Floating Center Arrows, No Auto Slide) */}
@@ -439,11 +519,12 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
           className="flex gap-3.5 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory py-2 px-1 -mx-1 scroll-smooth"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {questItems.map((quest) => {
+          {displayQuests.map((quest) => {
             const isJoined = joinedList.includes(quest.title);
             const isDone = completedList.includes(quest.title);
             const targetTotal = parseInt(quest.total || '3', 10) || 3;
             const currentProg = questProgressMap[quest.title] || (isJoined ? 1 : 0);
+            const brandReward = getQuestBrandReward(quest);
 
             return (
               <div
@@ -452,27 +533,27 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                 className="w-[80vw] sm:w-[calc(50%-0.625rem)] lg:w-[calc(25%-0.75rem)] shrink-0 snap-start bg-white rounded-3xl p-3.5 sm:p-4 border border-slate-200 shadow-2xs hover:shadow-xl hover:border-purple-500/40 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between space-y-3 relative overflow-hidden group/card cursor-pointer"
               >
                 {/* Official Quest Top Accent Stripe */}
-                {quest.isOfficial && (
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-600 via-indigo-400 to-purple-400" />
-                )}
+                <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${brandReward.type === 'brand_partner' ? 'from-amber-500 via-amber-400 to-orange-400' : 'from-purple-600 via-indigo-400 to-purple-400'}`} />
 
-                {/* 1. Top Badges Row: Official/Community + XP Token (Category badge CHILL/MOVE/HEAL removed) */}
+                {/* 1. Top Badges Row: Brand Partner vs Central Hub Badge */}
                 <div className="flex items-center justify-between gap-1.5 pt-0.5">
-                  <div className="flex items-center gap-1.5">
-                    {quest.isOfficial ? (
-                      <span
-                        title="ชาเลนจ์ทางการที่จัดทำโดย Chill & Connect Hub"
-                        className="text-[10px] font-black text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-purple-300/80"
-                      >
-                        <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500" />
-                        <span>Official</span>
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
-                        ชุมชน
-                      </span>
-                    )}
-                  </div>
+                  {brandReward.type === 'brand_partner' ? (
+                    <span
+                      title={`ภารกิจพาร์ทเนอร์ทางการ: ${brandReward.partnerName}`}
+                      className="text-[10px] font-black text-amber-950 bg-amber-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-amber-300/80 truncate max-w-[calc(100%-70px)]"
+                    >
+                      <Crown className="w-2.5 h-2.5 text-amber-600 fill-amber-500 shrink-0" />
+                      <span className="truncate">Official • {brandReward.partnerName}</span>
+                    </span>
+                  ) : (
+                    <span
+                      title="ภารกิจกิจกรรมกลางของ Chill & Connect Hub (สะสมแต้มแลกรางวัลอิสระ)"
+                      className="text-[10px] font-black text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-purple-300/80 truncate max-w-[calc(100%-70px)]"
+                    >
+                      <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500 shrink-0" />
+                      <span className="truncate">Official • Chill & Connect</span>
+                    </span>
+                  )}
 
                   <span className="text-[10px] font-black text-purple-800 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200/90 px-2 py-0.5 rounded-md flex items-center gap-0.5 shrink-0 shadow-2xs">
                     <Zap className="w-3 h-3 text-purple-600 fill-purple-500" />
@@ -501,30 +582,46 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                 </div>
 
                 {/* 3. Title & Target Description */}
-                <div className="space-y-1 flex-1">
+                <div className="space-y-1.5 flex-1">
                   <h3
                     title={quest.title}
-                    className="font-black text-xs sm:text-[13px] text-slate-900 group-hover/card:text-purple-700 transition-colors leading-snug line-clamp-1"
+                    className="font-black text-xs sm:text-[13px] text-slate-900 group-hover/card:text-purple-700 transition-colors leading-snug line-clamp-2 min-h-[2.25rem] sm:min-h-[2.5rem]"
                   >
                     {quest.title}
                   </h3>
                   <p
                     title={quest.targetGoal}
-                    className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed font-medium"
+                    className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed font-medium min-h-[2rem]"
                   >
                     {quest.targetGoal}
                   </p>
+
+                  {/* Reward Privilege Pill: Brand Exclusive vs Hub Universal Points */}
+                  {brandReward.type === 'brand_partner' ? (
+                    <div 
+                      title={`สิทธิพิเศษเฉพาะแบรนด์ ${brandReward.partnerName}: ${brandReward.title}`}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50/90 border border-amber-200/90 text-amber-950 text-[10.5px] font-bold shadow-2xs"
+                    >
+                      <Ticket className="w-3 h-3 text-amber-600 shrink-0" />
+                      <span className="truncate">{brandReward.title}</span>
+                    </div>
+                  ) : (
+                    <div 
+                      title="รับแต้มสะสมพิเศษเพื่อนำไปเลือกแลกของรางวัลในศูนย์กลาง (/rewards)"
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-50/90 border border-purple-200/90 text-purple-950 text-[10.5px] font-bold shadow-2xs"
+                    >
+                      <Gift className="w-3 h-3 text-purple-600 shrink-0" />
+                      <span className="truncate">แต้มสะสมอิสระ แลกของรางวัลใน Hub Rewards</span>
+                    </div>
+                  )}
                 </div>
 
-                {/* 4. Meta Row: Creator & Participant count + Status Indicator (Clean, No Button) */}
+                {/* 4. Meta Row: Partner & Participant count + Status Indicator (Clean, No Button) */}
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                  <div className="flex items-center gap-1.5 truncate max-w-[120px]">
-                    <img
-                      src={quest.creatorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80'}
-                      alt={quest.creatorName || ''}
-                      className="w-4 h-4 rounded-full object-cover border border-slate-200 shrink-0"
-                    />
-                    <span className="truncate text-slate-700 font-medium">{quest.creatorName}</span>
+                  <div className="min-w-0 flex-1 truncate" title={brandReward.type === 'brand_partner' ? `พาร์ทเนอร์ทางการ: ${brandReward.partnerName}` : 'กิจกรรมกลางของ Hub'}>
+                    <span className="truncate text-slate-600 font-semibold text-[11px]">
+                      โดย {brandReward.type === 'brand_partner' ? brandReward.partnerName : 'Chill & Connect Hub'}
+                    </span>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -539,9 +636,8 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                         <span>{currentProg}/{targetTotal}</span>
                       </span>
                     ) : (
-                      <span className="font-bold text-slate-600 flex items-center gap-1 text-[10.5px]">
-                        <Users className="w-3 h-3 text-purple-600" />
-                        <span>{quest.participantsCount} คน</span>
+                      <span className="font-semibold text-slate-500 text-[10.5px]">
+                        {quest.participantsCount} คนร่วมทำ
                       </span>
                     )}
 
@@ -556,16 +652,16 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
           })}
         </div>
 
-        {/* Pagination Dots Indicator for all 7 Quests */}
+        {/* Pagination Dots Indicator */}
         <div className="flex items-center justify-center gap-1.5 pt-1">
-          {questItems.map((quest, idx) => (
+          {displayQuests.map((quest, idx) => (
             <button
               key={quest.id}
               type="button"
               onClick={() => scrollToCard(idx)}
               className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
                 idx === activeIndex
-                  ? 'w-6 bg-[#4A7C59]'
+                  ? 'w-6 bg-purple-600'
                   : 'w-1.5 bg-slate-200 hover:bg-slate-300'
               }`}
               title={`ไปยังภารกิจที่ ${idx + 1}: ${quest.title}`}

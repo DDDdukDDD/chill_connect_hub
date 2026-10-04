@@ -27,8 +27,6 @@ import {
   ShieldCheck,
   Check,
   Sprout,
-  ChevronDown,
-  PlusCircle,
   Gift,
 } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
@@ -36,12 +34,12 @@ import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
-import { JoinChallengeModal } from '@/components/JoinChallengeModal';
-import { CreateEventModal } from '@/components/CreateEventModal';
+import { JoinChallengeModal, getQuestBrandReward } from '@/components/JoinChallengeModal';
 import { BrandLogo } from '@/components/BrandLogo';
+import { Pagination } from '@/components/Pagination';
 import { ChallengeQuest, MOCK_CHALLENGES } from '@/data/mockData';
 import { COMMUNITY_PUBLIC_QUESTS } from '@/components/CommunityChallengeBar';
-import { getStoredUserXp } from '@/data/rewardsData';
+import { getStoredUserXp, setStoredUserXp } from '@/data/rewardsData';
 import { fetchAllContentPages } from '@/lib/contentClient';
 
 // Extended Quest Interface with Date, Duration & Image
@@ -50,6 +48,8 @@ export interface QuestWithDuration extends ChallengeQuest {
   endDate: string;
   daysRemaining: number;
   image?: string;
+  status?: 'draft' | 'active' | 'ended';
+  brandReward?: any;
 }
 
 // Extended Catalog of Official & Community Quests with rich gamification metadata
@@ -59,6 +59,7 @@ const ALL_QUESTS: QuestWithDuration[] = [
     startDate: (q as any).startDate || '1 มี.ค. 2026',
     endDate: (q as any).endDate || '31 มี.ค. 2026',
     daysRemaining: (q as any).daysRemaining !== undefined ? (q as any).daysRemaining : 10,
+    status: (q as any).status || 'active',
     image: q.image,
   })),
   {
@@ -79,6 +80,7 @@ const ALL_QUESTS: QuestWithDuration[] = [
     participantsCount: 412,
     rewardPoints: 200,
     isOfficial: true,
+    status: 'active',
     targetGoal: 'เข้าร่วมงานสัปดาห์หนังสือ ณ ศูนย์ฯ สิริกิติ์ และแบ่งปันหนังสือเล่มโปรดลงคอมมูนิตี้',
     objective: 'สนับสนุนวัฒนธรรมการอ่านหนังสือ พบปะนักเขียน และแลกเปลี่ยนมุมมองความคิดสร้างสรรค์กับเพื่อนหนอนหนังสือ',
     steps: [
@@ -110,6 +112,7 @@ const ALL_QUESTS: QuestWithDuration[] = [
     participantsCount: 198,
     rewardPoints: 280,
     isOfficial: true,
+    status: 'active',
     targetGoal: 'เข้าร่วมกิจกรรมบำบัดด้วยคลื่นเสียงหรือฝึกสมาธิกลุ่มครบ 3 ครั้ง',
     objective: 'ผ่อนคลายสมองจากความเหนื่อยล้า บำบัดความเครียดด้วยคลื่นเสียง Tibetan Bowls และปรับสมดุลจิตใจ',
     steps: [
@@ -123,70 +126,93 @@ const ALL_QUESTS: QuestWithDuration[] = [
     endDate: '10 เม.ย. 2026',
     daysRemaining: 20,
   },
+  {
+    id: 'quest-ended-1',
+    title: 'Winter Park Run: วิ่งรับลมหนาวสวนวชิรเบญจทัศ',
+    image: 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=600&q=80',
+    iconName: 'Footprints',
+    category: 'move',
+    badgeLabel: 'Winter Runner',
+    badgeIcon: '🏃',
+    completedCountInfo: '0/30 กม.',
+    progressPercent: 0,
+    current: '0',
+    total: '30',
+    visibility: 'public',
+    creatorName: 'ทีมงาน Chill & Connect',
+    creatorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
+    participantsCount: 520,
+    rewardPoints: 250,
+    isOfficial: true,
+    status: 'ended',
+    targetGoal: 'วิ่งสะสมระยะทางครบ 30 กม. ในสวนวชิรเบญจทัศช่วงฤดูหนาว',
+    objective: 'กระตุ้นให้คอมมูนิตี้คนรักสุขภาพออกกำลังกายรับอากาศสดชื่นยามเช้า',
+    steps: ['วิ่งในสวนรถไฟหรือสวนจตุจักร', 'บันทึกสถิติระยะทาง', 'ส่งสถิติวิ่ง'],
+    verificationMethod: 'วิ่งสะสมระยะทางผ่านแอปพลิเคชัน',
+    rewardsText: '🏅 เหรียญ "Winter Runner" + ⚡ 250 XP',
+    startDate: '1 ธ.ค. 2025',
+    endDate: '31 ม.ค. 2026',
+    daysRemaining: 0,
+    brandReward: {
+      type: 'brand_partner',
+      title: 'ส่วนลด 20% รองเท้าวิ่ง Ari Running',
+      partnerName: 'Ari Running',
+      voucherCodePrefix: 'ARI-RUN-',
+      exclusiveNotice: 'สิทธิ์เฉพาะหน้าร้าน Ari Running ทุกสาขาเท่านั้น',
+      terms: 'สิ้นสุดการแจกสิทธิ์แล้ว',
+    },
+  },
+  {
+    id: 'quest-ended-2',
+    title: 'Bangkok Art Biennale: ตะลุย 5 แกลเลอรีริมเจ้าพระยา',
+    image: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=600&q=80',
+    iconName: 'Sparkles',
+    category: 'learn',
+    badgeLabel: 'Art Collector',
+    badgeIcon: '🎨',
+    completedCountInfo: '0/5 ที่',
+    progressPercent: 0,
+    current: '0',
+    total: '5',
+    visibility: 'public',
+    creatorName: 'ทีมงาน Chill & Connect',
+    creatorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80',
+    participantsCount: 680,
+    rewardPoints: 300,
+    isOfficial: true,
+    status: 'ended',
+    targetGoal: 'เช็คอินและชมนิทรรศการศิลปะริมแม่น้ำเจ้าพระยาครบ 5 แห่ง',
+    objective: 'เปิดมุมมองศิลปะร่วมสมัยและสัมผัสเสน่ห์ย่านเมืองเก่าริมแม่น้ำเจ้าพระยา',
+    steps: ['เยือนแกลเลอรีที่กำหนด', 'ถ่ายภาพชิ้นงานศิลปะ', 'เช็คอินครบ 5 แห่ง'],
+    verificationMethod: 'เช็คอินพร้อมภาพถ่ายนิทรรศการ',
+    rewardsText: '🏅 เหรียญ "Art Collector" + ⚡ 300 XP',
+    startDate: '15 พ.ย. 2025',
+    endDate: '15 ม.ค. 2026',
+    daysRemaining: 0,
+    brandReward: {
+      type: 'hub_central',
+      title: 'แต้มสะสมอิสระ + ปลดล็อกของรางวัลใน Hub Rewards',
+      partnerName: 'Chill & Connect Hub',
+      hubRewardNote: 'ภารกิจสิ้นสุดระยะเวลาแล้ว',
+      terms: 'กิจกรรมสิ้นสุดแล้ว',
+    },
+  },
 ];
 
-// Top 5 Weekly Leaderboard Hunters
-const WEEKLY_LEADERBOARD = [
-  {
-    rank: 1,
-    name: 'คุณนนท์ (Nont Runner)',
-    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
-    level: 14,
-    xp: 2450,
-    badges: 12,
-    tag: '⚡ สายสปีด วิ่งครบ 3 สวน',
-  },
-  {
-    rank: 2,
-    name: 'คุณแพรว (Praew Zen)',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80',
-    level: 12,
-    xp: 1980,
-    badges: 9,
-    tag: '🌿 Sound Bath & Yoga Lover',
-  },
-  {
-    rank: 3,
-    name: 'คุณเต้ (Tae Cafe Hunter)',
-    avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=120&q=80',
-    level: 11,
-    xp: 1720,
-    badges: 8,
-    tag: '☕ เช็คอินคาเฟ่ครบ 10 แห่ง',
-  },
-  {
-    rank: 4,
-    name: 'คุณมายด์ (Mild Art)',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
-    level: 9,
-    xp: 1350,
-    badges: 6,
-    tag: '🎨 เวิร์กช็อปเซรามิก & วาดรูป',
-  },
-  {
-    rank: 5,
-    name: 'คุณกอล์ฟ (Golf HYROX)',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80',
-    level: 8,
-    xp: 1180,
-    badges: 5,
-    tag: '🔥 HYROX Training Finisher',
-  },
-];
 
 export default function ChallengesDiscoveryPage() {
   const [activeTab, setActiveTab] = useState('challenges');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedType, setSelectedType] = useState<'all' | 'official' | 'community'>('all');
+  const [selectedType, setSelectedType] = useState<'all' | 'hub_central' | 'brand_partner'>('all');
+  const [statusFilter, setStatusFilter] = useState<'active' | 'ended'>('active');
   const [searchQuery, setSearchQuery] = useState('');
   
   // Auth state
-  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
+  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn, userProfile } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
-  const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
-  const [isExpandedAllQuests, setIsExpandedAllQuests] = useState(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 18;
   const [questList, setQuestList] = useState<QuestWithDuration[]>(ALL_QUESTS);
 
   useEffect(() => {
@@ -214,24 +240,54 @@ export default function ChallengesDiscoveryPage() {
   }, []);
 
   // User XP State
-  const [userXp, setUserXp] = useState<number>(450);
+  const [userXp, setUserXp] = useState<number>(() => getStoredUserXp());
 
-  // Joined Quest state
+  // Joined Quest state synchronized with localStorage ('cch_my_challenges')
   const [joinedQuestIds, setJoinedQuestIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setUserXp(getStoredUserXp());
     }
+
     if (isLoggedIn) {
-      setJoinedQuestIds(['comm-quest-1', 'comm-quest-2']);
+      if (typeof window !== 'undefined') {
+        try {
+          const raw = localStorage.getItem('cch_my_challenges');
+          if (raw) {
+            const parsed: ChallengeQuest[] = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setJoinedQuestIds(parsed.map((q) => q.id));
+              return;
+            }
+          }
+          // Default initial challenges synced with MOCK_CHALLENGES
+          const initial = MOCK_CHALLENGES;
+          localStorage.setItem('cch_my_challenges', JSON.stringify(initial));
+          setJoinedQuestIds(initial.map((q) => q.id));
+        } catch (e) {
+          console.error('Error syncing challenges with localStorage:', e);
+          setJoinedQuestIds(['1', '2', 'comm-quest-1', 'comm-quest-2']);
+        }
+      }
     } else {
       setJoinedQuestIds([]);
     }
   }, [isLoggedIn]);
 
-  const userLevel = Math.max(1, Math.floor(userXp / 150) + 1);
-  
+  // Deep-linking: Support opening quest modal from URL (e.g. /challenges?quest=comm-quest-1)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const questId = params.get('quest');
+    if (questId && questList.length > 0) {
+      const matched = questList.find((q) => q.id === questId);
+      if (matched) {
+        setQuestToJoin(matched);
+      }
+    }
+  }, [questList]);
+
   // Confirmation Modal states
   const [questToJoin, setQuestToJoin] = useState<QuestWithDuration | null>(null);
   const [questToCancel, setQuestToCancel] = useState<QuestWithDuration | null>(null);
@@ -242,45 +298,195 @@ export default function ChallengesDiscoveryPage() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleConfirmJoin = () => {
-    if (questToJoin && !joinedQuestIds.includes(questToJoin.id)) {
-      setJoinedQuestIds((prev) => [...prev, questToJoin.id]);
-      showToast(`🎉 รับภารกิจ "${questToJoin.title}" สำเร็จ! สามารถดูได้ใน "ฮับของฉัน"`);
+  const handleConfirmJoin = (targetQuest?: QuestWithDuration | ChallengeQuest | null) => {
+    const quest = targetQuest || questToJoin;
+    if (!quest) return;
+
+    const questToAdd: ChallengeQuest = {
+      id: quest.id,
+      title: quest.title,
+      iconName: quest.iconName || 'Trophy',
+      progressPercent: quest.progressPercent || 0,
+      current: quest.current || '0',
+      total: quest.total || '3',
+      badgeLabel: quest.badgeLabel,
+      badgeIcon: quest.badgeIcon || '🏅',
+      completedCountInfo: quest.completedCountInfo || `0/${quest.total || '3'} ครั้ง`,
+      category: quest.category,
+      targetGoal: quest.targetGoal,
+      objective: quest.objective,
+      steps: quest.steps,
+      verificationMethod: quest.verificationMethod,
+      rewardsText: quest.rewardsText,
+      participantsCount: (quest.participantsCount || 0) + 1,
+      rewardPoints: quest.rewardPoints || 250,
+      isOfficial: quest.isOfficial,
+      badgeCoverImg: (quest as any).image || quest.badgeCoverImg,
+      startDate: (quest as any).startDate,
+      endDate: (quest as any).endDate,
+      daysRemaining: (quest as any).daysRemaining,
+    };
+
+    setJoinedQuestIds((prev) => Array.from(new Set([...prev, quest.id])));
+
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('cch_my_challenges');
+        let currentList: ChallengeQuest[] = raw ? JSON.parse(raw) : [...MOCK_CHALLENGES];
+        if (!currentList.some((q) => q.id === quest.id || q.title.trim() === quest.title.trim())) {
+          currentList = [questToAdd, ...currentList];
+          localStorage.setItem('cch_my_challenges', JSON.stringify(currentList));
+        }
+      } catch (e) {
+        console.error('Error saving quest to cch_my_challenges:', e);
+      }
+    }
+
+    showToast(`🎉 รับภารกิจ "${quest.title}" สำเร็จ! สามารถดูและส่งความคืบหน้าได้ใน "ฮับของฉัน"`);
+    setQuestToJoin(null);
+  };
+
+  const handleConfirmCancel = (targetQuest?: QuestWithDuration | ChallengeQuest | null) => {
+    const quest = targetQuest || questToCancel;
+    if (!quest) return;
+
+    setJoinedQuestIds((prev) => prev.filter((id) => id !== quest.id));
+
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('cch_my_challenges');
+        if (raw) {
+          const currentList: ChallengeQuest[] = JSON.parse(raw);
+          const filtered = currentList.filter((q) => q.id !== quest.id && q.title.trim() !== quest.title.trim());
+          localStorage.setItem('cch_my_challenges', JSON.stringify(filtered));
+        }
+      } catch (e) {
+        console.error('Error updating cch_my_challenges on cancel:', e);
+      }
+    }
+
+    showToast(`ยกเลิกภารกิจ "${quest.title}" เรียบร้อยแล้ว`);
+    setQuestToCancel(null);
+    if (questToJoin?.id === quest.id) {
       setQuestToJoin(null);
     }
   };
 
-  const handleConfirmCancel = () => {
-    if (questToCancel) {
-      setJoinedQuestIds((prev) => prev.filter((id) => id !== questToCancel.id));
-      showToast(`ยกเลิกภารกิจ "${questToCancel.title}" เรียบร้อยแล้ว`);
-      setQuestToCancel(null);
+  const handleSubmitProgress = (quest: ChallengeQuest, newCurrent: number) => {
+    const targetTotal = parseInt(quest.total || '3', 10) || 3;
+    const isDone = newCurrent >= targetTotal;
+    const progressPercent = Math.min(100, Math.round((newCurrent / targetTotal) * 100));
+
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('cch_my_challenges');
+        if (raw) {
+          const currentList: ChallengeQuest[] = JSON.parse(raw);
+          const updated = currentList.map((q) => {
+            if (q.id === quest.id || q.title.trim() === quest.title.trim()) {
+              return {
+                ...q,
+                current: String(newCurrent),
+                progressPercent,
+                completedCountInfo: isDone ? `ทำสำเร็จครบ ${targetTotal}/${targetTotal} แล้ว!` : `ทำสำเร็จแล้ว ${newCurrent}/${targetTotal}`,
+              };
+            }
+            return q;
+          });
+          localStorage.setItem('cch_my_challenges', JSON.stringify(updated));
+        }
+        
+        // If completed, award XP!
+        if (isDone && quest.rewardPoints) {
+          const currentXp = getStoredUserXp();
+          const nextXp = currentXp + quest.rewardPoints;
+          setStoredUserXp(nextXp);
+          setUserXp(nextXp);
+        }
+      } catch (e) {
+        console.error('Error saving progress to cch_my_challenges:', e);
+      }
     }
   };
+
+  // Check if currently viewed quest is completed
+  const isQuestCompleted = useMemo(() => {
+    if (!questToJoin) return false;
+    try {
+      if (typeof window !== 'undefined') {
+        const raw = localStorage.getItem('cch_my_challenges');
+        if (raw) {
+          const list: ChallengeQuest[] = JSON.parse(raw);
+          const found = list.find((q) => q.id === questToJoin.id || q.title.trim() === questToJoin.title.trim());
+          if (found) {
+            return (found.progressPercent ?? 0) >= 100 || (parseInt(found.current || '0', 10) >= parseInt(found.total || '3', 10));
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Error checking isQuestCompleted:', e);
+    }
+    return false;
+  }, [questToJoin, joinedQuestIds]);
+
+  // Status and type counts
+  const activeQuestsCount = useMemo(
+    () => questList.filter((q) => q.status !== 'ended' && (q.daysRemaining === undefined || q.daysRemaining > 0)).length,
+    [questList]
+  );
+  const endedQuestsCount = useMemo(
+    () => questList.filter((q) => q.status === 'ended' || (q.daysRemaining !== undefined && q.daysRemaining <= 0)).length,
+    [questList]
+  );
+
+  const relevantQuestsByStatus = useMemo(() => {
+    return questList.filter((q) => {
+      const isEnded = q.status === 'ended' || (q.daysRemaining !== undefined && q.daysRemaining <= 0);
+      return statusFilter === 'active' ? !isEnded : isEnded;
+    });
+  }, [questList, statusFilter]);
+
+  const hubCount = useMemo(
+    () => relevantQuestsByStatus.filter((q) => getQuestBrandReward(q).type === 'hub_central').length,
+    [relevantQuestsByStatus]
+  );
+  const partnerCount = useMemo(
+    () => relevantQuestsByStatus.filter((q) => getQuestBrandReward(q).type === 'brand_partner').length,
+    [relevantQuestsByStatus]
+  );
 
   // Filtered Quests
   const filteredQuests = useMemo(() => {
     return questList.filter((quest) => {
-      // Category match
-      if (selectedCategory !== 'all' && quest.category !== selectedCategory) {
+      const isQuestEnded = quest.status === 'ended' || (quest.daysRemaining !== undefined && quest.daysRemaining <= 0);
+
+      // Status match (Active vs Ended)
+      if (statusFilter === 'active' && isQuestEnded) return false;
+      if (statusFilter === 'ended' && !isQuestEnded) return false;
+
+      const reward = getQuestBrandReward(quest);
+
+      // Quick Filter by type
+      if (selectedType !== 'all' && reward.type !== selectedType) {
         return false;
       }
-      // Type match (Official vs Community)
-      if (selectedType === 'official' && !quest.isOfficial) {
-        return false;
-      }
-      if (selectedType === 'community' && quest.isOfficial) {
-        return false;
-      }
+
       // Search query match
       if (searchQuery.trim() !== '') {
         const q = searchQuery.toLowerCase();
-        const text = `${quest.title} ${quest.targetGoal} ${quest.badgeLabel} ${quest.creatorName}`.toLowerCase();
+        const text = `${quest.title} ${quest.targetGoal} ${quest.badgeLabel} ${quest.creatorName} ${reward.partnerName} ${reward.title}`.toLowerCase();
         if (!text.includes(q)) return false;
       }
       return true;
     });
-  }, [questList, selectedCategory, selectedType, searchQuery]);
+  }, [questList, statusFilter, selectedType, searchQuery]);
+
+  // Pagination calculation
+  const totalPages = Math.ceil(filteredQuests.length / itemsPerPage);
+  const paginatedQuests = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredQuests.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredQuests, currentPage, itemsPerPage]);
 
   return (
     <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans selection:bg-purple-600 selection:text-white">
@@ -294,13 +500,6 @@ export default function ChallengesDiscoveryPage() {
         setIsLoggedIn={handleSetIsLoggedIn}
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}
-        onOpenCreateEvent={() => {
-          if (!isLoggedIn) {
-            setIsRequireMembershipOpen(true);
-          } else {
-            setIsCreateEventModalOpen(true);
-          }
-        }}
       />
 
       {/* Toast Notification */}
@@ -315,209 +514,194 @@ export default function ChallengesDiscoveryPage() {
       <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] mx-auto px-3.5 sm:px-6 lg:px-8 pt-2.5 pb-28 sm:pt-4 sm:pb-12 space-y-3 sm:space-y-4 w-full">
         
 
-        {/* 1. Unified Compact Hero with Integrated Spotlight Quest (Single Clean Banner) */}
+        {/* 1. Header Hero Banner */}
         <section className="relative rounded-2xl bg-white p-4 sm:p-5 shadow-2xs border border-slate-200/80 overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-center">
-            
-            {/* Left Side (7 Cols): Hero Headline, Description & Actions */}
-            <div className="lg:col-span-7 space-y-2.5">
-              <div className="space-y-1">
-                <h1 className="text-lg sm:text-xl md:text-2xl font-black text-slate-900 tracking-tight leading-tight">
-                  ภารกิจไลฟ์สไตล์ & ชาเลนจ์
-                </h1>
-                <p className="text-xs sm:text-[13px] text-slate-500 leading-relaxed font-normal max-w-xl">
-                  รับภารกิจ ออกไปวิ่ง เช็คอินคาเฟ่ หรือฮีลใจ สะสมเหรียญรางวัล Badges และส่งหลักฐานเพื่อรับแต้ม XP พิเศษเมื่อทำสำเร็จ
-                </p>
-              </div>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="space-y-1">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-black text-slate-900 tracking-tight leading-tight">
+                Challenge & Lifestyle Hub
+              </h1>
+              <p className="text-xs sm:text-[13px] text-slate-500 leading-relaxed font-normal max-w-xl">
+                ภารกิจไลฟ์สไตล์ & ชาเลนจ์ กิจกรรมรับแต้ม XP และของรางวัล
+              </p>
+            </div>
 
-              {/* Action Status & Level */}
-              <div className="flex items-center gap-2 flex-wrap pt-0.5">
-                {/* Logged in vs Guest Status Hook */}
-                {isLoggedIn ? (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold shadow-2xs">
-                      <span>Lv.{userLevel}</span>
-                      <span className="text-slate-300">•</span>
-                      <span className="text-purple-700 font-mono">{userXp} XP</span>
-                    </span>
-                    {joinedQuestIds.length > 0 && (
-                      <Link
-                        href="/myhub?tab=quests_rewards"
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-700 hover:text-purple-900 bg-purple-50 px-3 py-1.5 rounded-xl border border-purple-200/80 hover:bg-purple-100 transition-colors shadow-2xs"
-                      >
-                        <Zap className="w-3.5 h-3.5 text-purple-600 fill-purple-500" />
-                        <span>กำลังทำ {joinedQuestIds.length} ภารกิจ</span>
-                        <ArrowRight className="w-3 h-3 text-purple-600" />
-                      </Link>
-                    )}
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setIsAuthModalOpen(true)}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-purple-50 text-purple-800 text-xs font-bold border border-purple-200/80 hover:bg-purple-100 transition-colors cursor-pointer shadow-2xs active:scale-95"
+            {/* Action Status */}
+            <div className="flex items-center gap-2 flex-wrap shrink-0">
+              {isLoggedIn ? (
+                joinedQuestIds.length > 0 && (
+                  <Link
+                    href="/myhub?tab=quests_rewards"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-700 hover:text-purple-900 bg-purple-50 px-3 py-1.5 rounded-xl border border-purple-200/80 hover:bg-purple-100 transition-colors shadow-2xs"
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
-                    <span>เข้าสู่ระบบสะสมแต้มก้อนแรก +100 XP ฟรี</span>
+                    <Zap className="w-3.5 h-3.5 text-purple-600 fill-purple-500" />
+                    <span>กำลังทำ {joinedQuestIds.length} ภารกิจ</span>
                     <ArrowRight className="w-3 h-3 text-purple-600" />
-                  </button>
-                )}
-              </div>
-
-              {/* Editorial Meta */}
-              <div className="flex items-center gap-2 text-xs text-slate-400 pt-0.5">
-                <span className="font-semibold text-slate-600">{questList.length} ภารกิจเปิดรับ</span>
-                <span>•</span>
-                <span>1,400+ ผู้เข้าร่วม</span>
-                <span>•</span>
-                <span>อัปเดตแต้มรายสัปดาห์</span>
-              </div>
-            </div>
-
-            {/* Right Side (5 Cols): ศูนย์ของรางวัล (Rewards Hub Widget) */}
-            <div className="lg:col-span-5 bg-gradient-to-br from-amber-50/80 via-orange-50/40 to-slate-50/80 p-3.5 sm:p-4 rounded-xl border border-amber-200/80 shadow-2xs space-y-2.5">
-              <div className="flex items-center justify-between gap-1.5">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-amber-100 text-[#B45309] flex items-center justify-center shrink-0 shadow-2xs">
-                    <Gift className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-xs sm:text-[13px] text-slate-900">
-                      ศูนย์ของรางวัล
-                    </h3>
-                    <p className="text-[10.5px] text-slate-500">สะสม XP แลกสิทธิพิเศษ & ของรางวัล</p>
-                  </div>
-                </div>
-                <Link
-                  href="/rewards"
-                  className="text-[11px] font-bold text-[#B45309] hover:text-[#92400E] bg-amber-100/90 hover:bg-amber-200/80 px-2.5 py-1 rounded-lg border border-amber-200 transition-colors flex items-center gap-1 shadow-2xs"
+                  </Link>
+                )
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-purple-50 text-purple-800 text-xs font-bold border border-purple-200/80 hover:bg-purple-100 transition-colors cursor-pointer shadow-2xs active:scale-95"
                 >
-                  <span>ดูของรางวัล</span>
-                  <ArrowRight className="w-3 h-3" />
-                </Link>
-              </div>
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
+                  <span>เข้าสู่ระบบสะสมแต้มก้อนแรก +100 XP ฟรี</span>
+                  <ArrowRight className="w-3 h-3 text-purple-600" />
+                </button>
+              )}
 
-              {/* Rewards Highlights */}
-              <div className="grid grid-cols-2 gap-1.5">
-                <div className="flex items-center gap-2 p-1.5 sm:p-2 rounded-lg bg-white/95 border border-amber-100/80 shadow-2xs">
-                  <span className="text-base shrink-0">☕</span>
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-semibold text-slate-800 truncate">กาแฟ Specialty</p>
-                    <p className="text-[10px] font-bold text-[#B45309] font-mono">500 XP</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 p-1.5 sm:p-2 rounded-lg bg-white/95 border border-amber-100/80 shadow-2xs">
-                  <span className="text-base shrink-0">🎟️</span>
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-semibold text-slate-800 truncate">ส่วนลดงานแฟร์</p>
-                    <p className="text-[10px] font-bold text-[#B45309] font-mono">300 XP</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Button */}
-              <Link
-                href="/rewards"
-                className="w-full py-1.5 sm:py-2 rounded-lg bg-gradient-to-r from-[#F26430] to-[#E0531E] hover:from-[#E0531E] hover:to-[#C84312] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer"
-              >
-                <Gift className="w-3.5 h-3.5" />
-                <span>{isLoggedIn ? `แลกสิทธิ์ด้วยแต้มสะสม (${userXp} XP)` : 'สำรวจของรางวัลทั้งหมด'}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
             </div>
-
           </div>
         </section>
 
+        {/* 2. Standalone Rewards Micro-Incentive Strip */}
+        <section className="rounded-2xl bg-gradient-to-r from-purple-50/90 via-indigo-50/40 to-slate-50 border border-purple-100/90 p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-2xs">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-7 h-7 rounded-lg bg-purple-100 text-[#7C3AED] flex items-center justify-center shrink-0 shadow-2xs">
+              <Gift className="w-4 h-4 text-purple-600" />
+            </div>
+            <p className="text-xs text-slate-700 font-medium leading-relaxed">
+              <strong className="text-purple-900 font-bold">แลกของรางวัล:</strong> สะสมแต้ม XP จากภารกิจ แลกรับกาแฟ Specialty ฟรี, เวิร์กช็อป และสิทธิพิเศษไลฟ์สไตล์
+            </p>
+          </div>
+
+          <Link
+            href="/rewards"
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-2xs transition-all shrink-0 active:scale-95 cursor-pointer leading-none"
+          >
+            <span>สำรวจของรางวัล</span>
+            <ArrowRight className="w-3 h-3" />
+          </Link>
+        </section>
+
         {/* 2. Main Content Container */}
-        <section className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-2xs space-y-4 sm:space-y-5">
+        <section className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-2xs space-y-3.5 sm:space-y-4">
           
-          {/* Category Tabs & Search Bar Row */}
+          {/* Unified Filter & Search Bar Row */}
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 bg-slate-50/90 p-1.5 sm:p-2 rounded-xl border border-slate-200/70">
             
-            {/* Category Pills */}
-            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
-              {[
-                { id: 'all', label: 'ทั้งหมด' },
-                { id: 'move', label: 'สายแอคทีฟ' },
-                { id: 'heal', label: 'สายฮีลใจ' },
-                { id: 'chill', label: 'สายชิลล์' },
-                { id: 'learn', label: 'สายเรียนรู้' },
-              ].map((cat) => {
-                const isSelected = selectedCategory === cat.id;
-                return (
-                  <button
-                    key={cat.id}
-                    onClick={() => setSelectedCategory(cat.id)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 whitespace-nowrap cursor-pointer ${
-                      isSelected
-                        ? 'bg-purple-100 text-purple-900 border border-purple-300/70 shadow-2xs'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/60'
-                    }`}
-                  >
-                    {cat.label}
-                  </button>
-                );
-              })}
+            {/* Filter Pills (No Multi-Color, No Icons) */}
+            <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+              {/* 1. All */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedType('all');
+                  setCurrentPage(1);
+                }}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                  selectedType === 'all'
+                    ? 'bg-slate-900 text-white shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                }`}
+              >
+                <span>ทั้งหมด</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${selectedType === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-slate-600'}`}>
+                  {relevantQuestsByStatus.length}
+                </span>
+              </button>
+
+              {/* 2. Official • Chill & Connect */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedType(selectedType === 'hub_central' ? 'all' : 'hub_central');
+                  setCurrentPage(1);
+                }}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                  selectedType === 'hub_central'
+                    ? 'bg-slate-900 text-white shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                }`}
+              >
+                <span>Official • Chill & Connect</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${selectedType === 'hub_central' ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-slate-600'}`}>
+                  {hubCount}
+                </span>
+              </button>
+
+              {/* 3. Brand Partner */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedType(selectedType === 'brand_partner' ? 'all' : 'brand_partner');
+                  setCurrentPage(1);
+                }}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                  selectedType === 'brand_partner'
+                    ? 'bg-slate-900 text-white shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                }`}
+              >
+                <span>แบรนด์พาร์ทเนอร์</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${selectedType === 'brand_partner' ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-slate-600'}`}>
+                  {partnerCount}
+                </span>
+              </button>
             </div>
 
-            {/* Type Selector (Official vs Community) & Search */}
-            <div className="flex items-center gap-2">
-              <div className="flex items-center bg-white p-0.5 rounded-lg border border-slate-200/80 shrink-0">
-                <button
-                  onClick={() => setSelectedType('all')}
-                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-                    selectedType === 'all' ? 'bg-[#7C3AED] text-white font-bold shadow-2xs' : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  ทั้งหมด
-                </button>
-                <button
-                  onClick={() => setSelectedType('official')}
-                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-                    selectedType === 'official' ? 'bg-[#7C3AED] text-white font-bold shadow-2xs' : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  ทางการ
-                </button>
-                <button
-                  onClick={() => setSelectedType('community')}
-                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-                    selectedType === 'community' ? 'bg-[#7C3AED] text-white font-bold shadow-2xs' : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  ชุมชน
-                </button>
-              </div>
-
-              {/* Compact Search */}
-              <div className="relative flex-1 md:w-52">
-                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="ค้นหาภารกิจ..."
-                  className="w-full pl-8.5 pr-3 py-1.5 text-xs bg-white rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-[#7C3AED]"
-                />
-              </div>
+            {/* Compact Search */}
+            <div className="relative flex-1 sm:max-w-xs md:w-64">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                placeholder="ค้นหาภารกิจ..."
+                className="w-full pl-8.5 pr-3 py-1.5 text-xs bg-white rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-900"
+              />
             </div>
 
           </div>
 
-          {/* 2-Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6 items-start">
-            
-            {/* Left: Quests Grid */}
-            <div className="lg:col-span-2 space-y-3">
-              <div className="flex items-center justify-between pb-0.5">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-sm sm:text-base font-bold text-slate-900">
-                    คลังภารกิจ
-                  </h2>
-                  <span className="text-xs text-slate-400">({filteredQuests.length})</span>
-                </div>
+          {/* Quests Main Section (Full Width) */}
+          <div id="catalog-section" className="space-y-3 sm:space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm sm:text-base font-bold text-slate-900">
+                  {statusFilter === 'active' ? 'ภารกิจที่เปิดรับสมัคร' : 'คลังภารกิจที่สิ้นสุดแล้ว'}
+                </h2>
+                <span className="text-xs text-slate-400 font-medium">
+                  ({filteredQuests.length} ภารกิจ{totalPages > 1 ? ` • หน้า ${currentPage}/${totalPages}` : ''})
+                </span>
               </div>
+
+              {/* Status Switcher: Active vs Ended Archive */}
+              <div className="flex items-center gap-1 bg-slate-100/90 p-0.5 rounded-xl border border-slate-200/70 self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter('active');
+                    setCurrentPage(1);
+                  }}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    statusFilter === 'active'
+                      ? 'bg-white text-slate-900 shadow-2xs'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  เปิดรับสมัคร ({activeQuestsCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter('ended');
+                    setCurrentPage(1);
+                  }}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    statusFilter === 'ended'
+                      ? 'bg-white text-slate-900 shadow-2xs'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  สิ้นสุดแล้ว ({endedQuestsCount})
+                </button>
+              </div>
+            </div>
 
               {filteredQuests.length === 0 ? (
                 <div className="w-full bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200/90 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
@@ -538,7 +722,6 @@ export default function ChallengesDiscoveryPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      setSelectedCategory('all');
                       setSelectedType('all');
                       setSearchQuery('');
                     }}
@@ -549,337 +732,224 @@ export default function ChallengesDiscoveryPage() {
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                  {filteredQuests.map((quest, idx) => {
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {paginatedQuests.map((quest) => {
+                    const isEnded = quest.status === 'ended' || (quest.daysRemaining !== undefined && quest.daysRemaining <= 0);
                     const isJoined = joinedQuestIds.includes(quest.id);
-                    const isUrgent = quest.daysRemaining <= 5;
-
-                    // Dynamic responsive complete rows: 2xl: 10 (5x2), lg/xl: 8 (4x2), md: 6 (3x2), mobile: 4 (4x1)
-                    const responsiveVisibilityClass =
-                      idx >= 8 ? 'hidden 2xl:block' : // 2xl shows 10 (5 rows of 2)
-                      idx >= 6 ? 'hidden lg:block' :  // lg/xl shows 8 (4 rows of 2)
-                      idx >= 4 ? 'hidden md:block' :  // md shows 6 (3 rows of 2)
-                      'block';                        // mobile shows 4 (4 rows of 1)
+                    const isUrgent = !isEnded && quest.daysRemaining <= 5;
+                    const brandReward = getQuestBrandReward(quest);
 
                     return (
-                      <div
-                        key={quest.id}
-                        className={!isExpandedAllQuests ? responsiveVisibilityClass : 'block'}
-                      >
+                      <div key={quest.id}>
                         <div
                           onClick={() => setQuestToJoin(quest)}
-                        className={`group/card bg-white rounded-2xl p-3.5 sm:p-4 border transition-all duration-300 flex flex-col justify-between space-y-3 relative overflow-hidden shadow-2xs hover:shadow-xl hover:border-purple-300/80 hover:-translate-y-0.5 cursor-pointer ${
-                          isJoined 
-                            ? 'border-purple-300 bg-purple-50/15 ring-1 ring-purple-200' 
-                            : 'border-slate-200/80'
-                        }`}
-                      >
-                        {/* Official Quest Top Accent Stripe */}
-                        {quest.isOfficial && (
-                          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-600 via-indigo-400 to-purple-400" />
-                        )}
+                          className={`group/card bg-white rounded-2xl p-3.5 sm:p-4 border transition-all duration-300 flex flex-col justify-between space-y-3 relative overflow-hidden shadow-2xs hover:shadow-xl cursor-pointer ${
+                            isEnded
+                              ? 'opacity-80 bg-slate-50/40 border-slate-200 hover:border-slate-300'
+                              : isJoined 
+                                ? 'border-purple-300 bg-purple-50/15 ring-1 ring-purple-200 hover:border-purple-400' 
+                                : 'border-slate-200/80 hover:border-purple-300/80 hover:-translate-y-0.5'
+                          }`}
+                        >
+                          {/* Official Quest Top Accent Stripe */}
+                          <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${
+                            isEnded
+                              ? 'from-slate-300 to-slate-400'
+                              : brandReward.type === 'brand_partner' 
+                                ? 'from-amber-500 via-amber-400 to-orange-400' 
+                                : 'from-purple-600 via-indigo-400 to-purple-400'
+                          }`} />
 
-                        {/* 1. Top Badges Row: Official/Community + XP Token (CHILL/MOVE/HEAL removed) */}
-                        <div className="flex items-center justify-between gap-1.5 pt-0.5">
-                          <div className="flex items-center gap-1.5">
-                            {quest.isOfficial ? (
+                          {/* 1. Top Badges Row: Brand Partner vs Central Hub Badge vs Ended */}
+                          <div className="flex items-center justify-between gap-1.5 pt-0.5">
+                            {isEnded ? (
+                              <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200 shrink-0">
+                                สิ้นสุดภารกิจแล้ว
+                              </span>
+                            ) : brandReward.type === 'brand_partner' ? (
                               <span
-                                title="ชาเลนจ์ทางการที่จัดทำโดย Chill & Connect Hub"
-                                className="text-[10px] font-black text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-purple-300/80"
+                                title={`ภารกิจพาร์ทเนอร์ทางการ: ${brandReward.partnerName}`}
+                                className="text-[10px] font-black text-amber-950 bg-amber-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-amber-300/80 truncate max-w-[calc(100%-75px)]"
                               >
-                                <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500" />
-                                <span>Official</span>
+                                <Crown className="w-2.5 h-2.5 text-amber-600 fill-amber-500 shrink-0" />
+                                <span className="truncate">Official • {brandReward.partnerName}</span>
                               </span>
                             ) : (
-                              <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
-                                ชุมชน
+                              <span
+                                title="ภารกิจกิจกรรมกลางของ Chill & Connect Hub (สะสมแต้มแลกรางวัลอิสระ)"
+                                className="text-[10px] font-black text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-purple-300/80 truncate max-w-[calc(100%-75px)]"
+                              >
+                                <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500 shrink-0" />
+                                <span className="truncate">Official • Chill & Connect</span>
                               </span>
+                            )}
+
+                            <span className={`text-[10px] font-black border px-2 py-0.5 rounded-md flex items-center gap-0.5 shrink-0 shadow-2xs ${
+                              isEnded
+                                ? 'text-slate-600 bg-slate-100 border-slate-200'
+                                : 'text-purple-800 bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200/90'
+                            }`}>
+                              <Zap className={`w-3 h-3 ${isEnded ? 'text-slate-400 fill-slate-400' : 'text-purple-600 fill-purple-500'}`} />
+                              <span>+{quest.rewardPoints} XP</span>
+                            </span>
+                          </div>
+
+                          {/* 2. Full Inner Image Banner with Floating Glass Medal Badge */}
+                          <div className={`relative h-[135px] sm:h-[154px] w-full rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 transition-colors ${isEnded ? 'grayscale-[25%]' : 'group-hover/card:border-purple-300/50'}`}>
+                            <img
+                              src={quest.image || 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80'}
+                              alt={quest.title}
+                              className={`w-full h-full object-cover transition-transform duration-500 ${isEnded ? '' : 'group-hover/card:scale-105'}`}
+                            />
+                            
+                            {/* Ambient Dark Gradient */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+
+                            {/* Bottom-Left Floating Glass Medal Badge */}
+                            <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
+                              <div className="inline-flex items-center gap-1.5 text-[10.5px] font-black text-white bg-slate-900/85 backdrop-blur-md px-2.5 py-1 rounded-xl border border-white/20 shadow-md truncate max-w-full">
+                                <Award className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                <span className="truncate">เหรียญ {quest.badgeLabel}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 3. Title & Target Description */}
+                          <div className="space-y-1.5 flex-1">
+                            <h3
+                              title={quest.title}
+                              className={`font-black text-xs sm:text-[13px] leading-snug line-clamp-2 min-h-[2.5rem] transition-colors ${
+                                isEnded ? 'text-slate-700' : 'text-slate-900 group-hover/card:text-purple-700'
+                              }`}
+                            >
+                              {quest.title}
+                            </h3>
+                            <p
+                              title={quest.targetGoal}
+                              className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed font-medium min-h-[2rem]"
+                            >
+                              {quest.targetGoal}
+                            </p>
+
+                            {/* Reward Privilege Pill */}
+                            {brandReward.type === 'brand_partner' ? (
+                              <div 
+                                title={`สิทธิพิเศษเฉพาะแบรนด์ ${brandReward.partnerName}: ${brandReward.title}`}
+                                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10.5px] font-bold shadow-2xs ${
+                                  isEnded
+                                    ? 'bg-slate-100 text-slate-600 border border-slate-200'
+                                    : 'bg-amber-50/90 border border-amber-200/90 text-amber-950'
+                                }`}
+                              >
+                                <Ticket className={`w-3.5 h-3.5 shrink-0 ${isEnded ? 'text-slate-400' : 'text-amber-600'}`} />
+                                <span className="truncate">{brandReward.title}</span>
+                              </div>
+                            ) : (
+                              <div 
+                                title="รับแต้มสะสมพิเศษเพื่อนำไปเลือกแลกของรางวัลในศูนย์กลาง (/rewards)"
+                                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10.5px] font-bold shadow-2xs ${
+                                  isEnded
+                                    ? 'bg-slate-100 text-slate-600 border border-slate-200'
+                                    : 'bg-purple-50/90 border border-purple-200/90 text-purple-950'
+                                }`}
+                              >
+                                <Gift className={`w-3.5 h-3.5 shrink-0 ${isEnded ? 'text-slate-400' : 'text-purple-600'}`} />
+                                <span className="truncate">{isEnded ? 'ภารกิจสิ้นสุดระยะเวลาจัดกิจกรรม' : 'แต้มสะสมอิสระ แลกของรางวัลใน Hub Rewards'}</span>
+                              </div>
                             )}
                           </div>
 
-                          <span className="text-[10px] font-black text-purple-800 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200/90 px-2 py-0.5 rounded-md flex items-center gap-0.5 shrink-0 shadow-2xs">
-                            <Zap className="w-3 h-3 text-purple-600 fill-purple-500" />
-                            <span>+{quest.rewardPoints} XP</span>
-                          </span>
-                        </div>
+                          {/* 4. Duration & Attendees (Icon Hygiene applied - clean typography) */}
+                          <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+                            <span className="text-slate-400">{quest.startDate} - {quest.endDate}</span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span className="text-slate-500 font-medium">
+                                {quest.participantsCount} คนร่วมทำ
+                              </span>
+                              <span className="text-slate-300">•</span>
+                              {isEnded ? (
+                                <span className="text-slate-400 font-medium">ปิดรับแล้ว</span>
+                              ) : (
+                                <span className={isUrgent ? 'text-rose-600 font-semibold' : 'text-slate-400'}>
+                                  เหลือ {quest.daysRemaining} วัน
+                                </span>
+                              )}
+                            </div>
+                          </div>
 
-                        {/* 2. Full Inner Image Banner with Floating Glass Medal Badge */}
-                        <div className="relative h-[135px] sm:h-[154px] w-full rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 group-hover/card:border-purple-300/50 transition-colors">
-                          <img
-                            src={quest.image || 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80'}
-                            alt={quest.title}
-                            className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500"
-                          />
-                          
-                          {/* Ambient Dark Gradient */}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+                          {/* 5. Footer Meta & Action Bar (Clean, no redundant duplicate icons) */}
+                          <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 text-[11px] text-slate-500">
+                            <div className="min-w-0 flex-1 truncate" title={brandReward.type === 'brand_partner' ? `พาร์ทเนอร์ทางการ: ${brandReward.partnerName}` : 'กิจกรรมกลางของ Hub'}>
+                              <span className="truncate text-slate-600 font-semibold">
+                                {brandReward.type === 'brand_partner' ? brandReward.partnerName : 'Chill & Connect Hub'}
+                              </span>
+                            </div>
 
-                          {/* Bottom-Left Floating Glass Medal Badge */}
-                          <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
-                            <div className="inline-flex items-center gap-1.5 text-[10.5px] font-black text-white bg-slate-900/85 backdrop-blur-md px-2.5 py-1 rounded-xl border border-white/20 shadow-md truncate max-w-full">
-                              <Award className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                              <span className="truncate">เหรียญ {quest.badgeLabel}</span>
+                            <div className="flex items-center gap-2">
+                              {isEnded ? (
+                                <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                                  ดูสรุปภารกิจ
+                                </span>
+                              ) : isJoined ? (
+                                <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                  <Link
+                                    href="/myhub?tab=quests_rewards"
+                                    className="bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 shadow-2xs cursor-pointer group/btn"
+                                    title="ไปที่ My Hub เพื่อส่งรูปถ่ายยืนยันภารกิจ"
+                                  >
+                                    <span>กำลังทำ</span>
+                                    <ArrowRight className="w-3 h-3 opacity-75 group-hover/btn:translate-x-0.5 transition-transform" />
+                                  </Link>
+                                  
+                                  <button
+                                    type="button"
+                                    onClick={() => setQuestToCancel(quest)}
+                                    className="text-slate-400 hover:text-rose-600 p-1 rounded-md hover:bg-rose-50 transition-colors cursor-pointer"
+                                    title="ยกเลิกภารกิจนี้"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (!isLoggedIn) {
+                                      setIsRequireMembershipOpen(true);
+                                    } else {
+                                      setQuestToJoin(quest);
+                                    }
+                                  }}
+                                  className="bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold px-3 py-1 rounded-lg transition-all shadow-2xs cursor-pointer active:scale-95"
+                                >
+                                  <span>รับภารกิจ</span>
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>
-
-                        {/* 3. Title & Target Description */}
-                        <div className="space-y-1 flex-1">
-                          <h3
-                            title={quest.title}
-                            className="font-black text-xs sm:text-[13px] text-slate-900 group-hover/card:text-purple-700 transition-colors leading-snug line-clamp-1"
-                          >
-                            {quest.title}
-                          </h3>
-                          <p
-                            title={quest.targetGoal}
-                            className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed font-medium"
-                          >
-                            {quest.targetGoal}
-                          </p>
-                        </div>
-
-                        {/* 4. Duration & Attendees */}
-                        <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
-                          <span>{quest.startDate} - {quest.endDate}</span>
-                          <span className={isUrgent ? 'text-rose-600 font-semibold' : ''}>
-                            เหลือ {quest.daysRemaining} วัน
-                          </span>
-                        </div>
-
-                        {/* 5. Footer Meta & Action Bar */}
-                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 text-[11px] text-slate-500">
-                          <div className="flex items-center gap-1.5 truncate max-w-[130px]">
-                            <img
-                              src={quest.creatorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80'}
-                              alt={quest.creatorName || ''}
-                              className="w-4 h-4 rounded-full object-cover border border-slate-200 shrink-0"
-                            />
-                            <span className="truncate text-slate-700 font-medium">{quest.creatorName}</span>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            {isJoined ? (
-                              <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-                                <Link
-                                  href="/myhub?tab=quests_rewards"
-                                  className="bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 shadow-2xs cursor-pointer group/btn"
-                                  title="ไปที่ My Hub เพื่อส่งรูปถ่ายยืนยันภารกิจ"
-                                >
-                                  <CheckCircle2 className="w-3 h-3" />
-                                  <span>กำลังทำ</span>
-                                  <ArrowRight className="w-3 h-3 opacity-75 group-hover/btn:translate-x-0.5 transition-transform" />
-                                </Link>
-                                
-                                <button
-                                  type="button"
-                                  onClick={() => setQuestToCancel(quest)}
-                                  className="text-slate-400 hover:text-rose-600 p-1 rounded-md hover:bg-rose-50 transition-colors cursor-pointer"
-                                  title="ยกเลิกภารกิจนี้"
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (!isLoggedIn) {
-                                    setIsRequireMembershipOpen(true);
-                                  } else {
-                                    setQuestToJoin(quest);
-                                  }
-                                }}
-                                className="text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200/80 text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 active:scale-95 cursor-pointer shrink-0 shadow-2xs"
-                              >
-                                <span>{quest.participantsCount} คน</span>
-                                <ArrowRight className="w-3.5 h-3.5 text-purple-600" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
                       </div>
-                    </div>
-                  );
+                    );
                   })}
                 </div>
 
-                {/* Expand / Collapse Toggle Button */}
-                {filteredQuests.length > 4 && (
-                  <div className="pt-2 text-center">
-                    <button
-                      type="button"
-                      onClick={() => setIsExpandedAllQuests(!isExpandedAllQuests)}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-purple-50 hover:bg-purple-100 text-[#7C3AED] font-bold text-xs rounded-xl border border-purple-200/80 transition-all cursor-pointer shadow-2xs active:scale-95"
-                    >
-                      <span>{isExpandedAllQuests ? 'ย่อรายการภารกิจ' : `ดูภารกิจทั้งหมด (${filteredQuests.length})`}</span>
-                      <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isExpandedAllQuests ? 'rotate-180' : ''}`} />
-                    </button>
+                {/* Pagination */}
+                {filteredQuests.length > itemsPerPage && (
+                  <div className="pt-4">
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={(page) => setCurrentPage(page)}
+                      totalItems={filteredQuests.length}
+                      itemsPerPage={itemsPerPage}
+                      itemUnit="ภารกิจ"
+                      scrollTargetId="catalog-section"
+                    />
                   </div>
                 )}
               </>
             )}
-            </div>
-
-            {/* Right: Sidebar (Rewards & Community Challengers) */}
-            <div className="space-y-3">
-              
-              {/* 1. XP Rewards Bridge Card (Placed at the top for immediate tangible user benefit) */}
-              <div className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-2xs space-y-3">
-                <div className="flex items-center justify-between pb-1 border-b border-slate-100">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
-                    <Gift className="w-3.5 h-3.5 text-purple-600" />
-                    <span>แลกรับสิทธิ์ด้วย XP</span>
-                  </div>
-                  <Link
-                    href="/rewards"
-                    className="text-[10.5px] font-bold text-purple-700 hover:text-purple-900 bg-purple-50 px-2 py-0.5 rounded border border-purple-200/60 flex items-center gap-0.5"
-                  >
-                    <span>ศูนย์ของรางวัล</span>
-                    <ArrowRight className="w-2.5 h-2.5" />
-                  </Link>
-                </div>
-
-                {/* XP Status: Personalized for Member vs General for Guest */}
-                {isLoggedIn ? (
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[11px] bg-purple-50/70 px-2.5 py-1 rounded-lg border border-purple-100">
-                      <span className="text-slate-600">แต้มสะสมของคุณ:</span>
-                      <span className="font-bold text-purple-700 font-mono">{userXp} XP</span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 leading-relaxed font-normal">
-                      {userXp >= 500
-                        ? '🎉 คุณมีแต้มเพียงพอแลกกาแฟ Specialty ฟรี 1 แก้วได้แล้ว!'
-                        : `สะสมอีกเพียง ${Math.max(0, 500 - userXp)} XP จะแลกกาแฟ Specialty ฟรีแก้วแรกได้!`}
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-[11px] text-slate-500 leading-relaxed font-normal">
-                    สะสมแต้มจากการทำภารกิจ นำมาแลกรับเครื่องดื่มฟรี ส่วนลดงานแฟร์ หรือคูปองเวิร์กช็อป
-                  </p>
-                )}
-
-                <div className="space-y-1.5 pt-0.5">
-                  <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50/80 border border-slate-100 text-xs">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-sm shrink-0">☕</span>
-                      <span className="text-slate-700 text-[11px] font-medium truncate">กาแฟ Specialty ฟรี 1 แก้ว</span>
-                    </div>
-                    <span className="text-purple-700 font-bold text-[11px] shrink-0 font-mono pl-1">500 XP</span>
-                  </div>
-
-                  <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50/80 border border-slate-100 text-xs">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-sm shrink-0">🎟️</span>
-                      <span className="text-slate-700 text-[11px] font-medium truncate">ส่วนลดงานแฟร์ 100 บาท</span>
-                    </div>
-                    <span className="text-purple-700 font-bold text-[11px] shrink-0 font-mono pl-1">300 XP</span>
-                  </div>
-                </div>
-
-                <Link
-                  href="/rewards"
-                  className="w-full py-2 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200/80 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-95 shadow-2xs"
-                >
-                  <span>สำรวจศูนย์ของรางวัลทั้งหมด</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-              </div>
-
-              {/* 2. Community Hall of Fame (เพื่อนร่วมทางฮีลใจสัปดาห์นี้ - Non-toxic, Inspiring & Friendly) */}
-              <div className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-2xs space-y-3">
-                <div className="flex items-center justify-between pb-1 border-b border-slate-100">
-                  <div>
-                    <h3 className="font-bold text-xs sm:text-sm text-slate-900 flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
-                      <span>เพื่อนร่วมทางฮีลใจสัปดาห์นี้</span>
-                    </h3>
-                    <p className="text-[10.5px] text-slate-400">สร้างแรงบันดาลใจ & แชร์ช่วงเวลาดีๆ</p>
-                  </div>
-                  <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200/70">
-                    Hall of Fame
-                  </span>
-                </div>
-
-                {/* Community Spotlights List */}
-                <div className="space-y-1.5 pt-0.5">
-                  {WEEKLY_LEADERBOARD.map((user, idx) => (
-                    <div
-                      key={user.name}
-                      className="flex items-center justify-between p-2 rounded-lg bg-slate-50/70 hover:bg-slate-50 transition-colors border border-slate-100/90"
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="relative">
-                          <img
-                            src={user.avatar}
-                            alt={user.name}
-                            className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0"
-                          />
-                          <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-white flex items-center justify-center text-[9px] shadow-2xs border border-slate-100">
-                            {idx === 0 ? '🌟' : idx === 1 ? '🌿' : idx === 2 ? '☕' : idx === 3 ? '🎨' : '🔥'}
-                          </span>
-                        </div>
-
-                        <div className="min-w-0">
-                          <p className="text-xs font-bold text-slate-800 truncate">
-                            {user.name}
-                          </p>
-                          <p className="text-[10px] text-slate-500 truncate font-medium">
-                            {user.tag}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="text-right shrink-0 pl-1">
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-purple-700 bg-purple-50/80 px-2 py-0.5 rounded border border-purple-200/60 font-mono">
-                          <Award className="w-2.5 h-2.5 text-amber-500" />
-                          <span>{user.badges} เหรียญ</span>
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Personal Progress / Community Participation Box */}
-                {isLoggedIn ? (
-                  <div className="mt-2.5 p-2.5 rounded-xl bg-purple-50/70 border border-purple-200/70 space-y-1 shadow-2xs">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-purple-950 flex items-center gap-1.5">
-                        <Zap className="w-3 h-3 text-purple-600 fill-purple-500" />
-                        <span>ความก้าวหน้าของคุณ</span>
-                      </span>
-                      <span className="font-bold text-purple-800 font-mono text-[11px]">Lv.{userLevel} • {userXp} XP</span>
-                    </div>
-                    <p className="text-[11px] text-purple-700 leading-relaxed font-normal">
-                      {joinedQuestIds.length > 0
-                        ? `กำลังพิชิต ${joinedQuestIds.length} ภารกิจ — สู้ๆ นะ ขอให้มีความสุขกับทุกก้าว!`
-                        : 'สะสมแต้มและเหรียญรางวัลในสไตล์คุณได้ตามสบาย ไร้แรงกดดัน'}
-                    </p>
-                    <Link
-                      href="/myhub?tab=quests_rewards"
-                      className="inline-flex items-center gap-1 text-[11px] font-bold text-purple-700 hover:text-purple-900 hover:underline pt-0.5"
-                    >
-                      <span>ดูภารกิจของคุณใน My Hub ↗</span>
-                    </Link>
-                  </div>
-                ) : (
-                  <div
-                    onClick={() => setIsAuthModalOpen(true)}
-                    className="mt-2.5 p-2.5 rounded-xl bg-purple-50/70 border border-dashed border-purple-200 text-center cursor-pointer hover:bg-purple-100/70 transition-colors group/guestRank shadow-2xs"
-                  >
-                    <p className="text-[11px] font-bold text-purple-900 group-hover/guestRank:text-purple-950">
-                      ✨ ร่วมเป็นหนึ่งในเพื่อนร่วมทางฮีลใจ
-                    </p>
-                    <p className="text-[10px] text-purple-600">
-                      เข้าสู่ระบบเพื่อสะสมเหรียญรางวัลและบันทึกความทรงจำ
-                    </p>
-                  </div>
-                )}
-              </div>
-
-            </div>
-
           </div>
 
         </section>
@@ -901,16 +971,17 @@ export default function ChallengesDiscoveryPage() {
         isOpen={!!questToJoin}
         onClose={() => setQuestToJoin(null)}
         quest={questToJoin}
-        onConfirmJoin={() => {
+        onConfirmJoin={(q) => {
           if (!isLoggedIn) {
             setIsRequireMembershipOpen(true);
             return;
           }
-          if (questToJoin) {
-            handleConfirmJoin();
-          }
+          handleConfirmJoin(q || questToJoin);
         }}
         isAlreadyJoined={questToJoin ? joinedQuestIds.includes(questToJoin.id) : false}
+        onCancelQuest={(q) => handleConfirmCancel(q || questToJoin)}
+        onSubmitProgress={(q, newCurrent) => handleSubmitProgress(q, newCurrent)}
+        isCompleted={isQuestCompleted}
       />
 
       {/* 🛡️ 4. POPUP 2: Confirm Cancel Quest Modal (Double Confirm) */}
@@ -946,7 +1017,7 @@ export default function ChallengesDiscoveryPage() {
               </button>
               <button
                 type="button"
-                onClick={handleConfirmCancel}
+                onClick={() => handleConfirmCancel()}
                 className="w-full py-2.5 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold shadow-md shadow-rose-600/25 active:scale-95 cursor-pointer"
               >
                 ยืนยันยกเลิก
@@ -959,16 +1030,6 @@ export default function ChallengesDiscoveryPage() {
       {/* 5. Mobile Bottom Navigation */}
       <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      {/* Create Challenge Modal */}
-      <CreateEventModal
-        isOpen={isCreateEventModalOpen}
-        initialType="challenge"
-        onClose={() => setIsCreateEventModalOpen(false)}
-        onCreateSuccess={(newEvent) => {
-          showToast(`สร้างชาเลนจ์ "${newEvent.title}" เรียบร้อยแล้ว! ⚡`);
-        }}
-      />
-
       {/* Free Membership Required Modal */}
       <RequireMembershipModal
         isOpen={isRequireMembershipOpen}
@@ -977,7 +1038,7 @@ export default function ChallengesDiscoveryPage() {
           setIsRequireMembershipOpen(false);
           setIsAuthModalOpen(true);
         }}
-        actionTitle="เพื่อรับภารกิจและสร้างชาเลนจ์"
+        actionTitle="เพื่อรับภารกิจและสะสมแต้ม"
       />
 
       {/* Auth Modal */}
