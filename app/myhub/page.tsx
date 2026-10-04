@@ -6,7 +6,7 @@ import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
-import { CreateChallengeModal } from '@/components/CreateChallengeModal';
+import { JoinChallengeModal, getQuestBrandReward } from '@/components/JoinChallengeModal';
 import { useAuth } from '@/lib/useAuth';
 import { VerifyQuestModal } from '@/components/VerifyQuestModal';
 import { ETicketModal } from '@/components/ETicketModal';
@@ -148,7 +148,7 @@ export default function MyHubPage() {
   const [isTipModalOpen, setIsTipModalOpen] = useState(false);
   const [tipTargetEvent, setTipTargetEvent] = useState<EventItem | null>(null);
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
-  const [isCreateChallengeModalOpen, setIsCreateChallengeModalOpen] = useState(false);
+  const [selectedQuestForVoucherModal, setSelectedQuestForVoucherModal] = useState<ChallengeQuest | null>(null);
   const [selectedQuestForVerifyModal, setSelectedQuestForVerifyModal] = useState<ChallengeQuest | null>(null);
 
   // Spot Buddy Gathering Modal from Scrapbook
@@ -3574,22 +3574,15 @@ export default function MyHubPage() {
                         <Compass className="w-3.5 h-3.5 text-slate-500" />
                         <span>สำรวจเควสต์เพิ่ม</span>
                       </Link>
-                      <button
-                        type="button"
-                        onClick={() => setIsCreateChallengeModalOpen(true)}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-2xs transition-all cursor-pointer active:scale-95"
-                      >
-                        <PlusCircle className="w-4 h-4" />
-                        <span>สร้างชาเลนจ์ใหม่</span>
-                      </button>
                     </div>
                   </div>
 
-                  {/* Quests Grid (Matched with Discovery Aesthetics) */}
+                  {/* Quests Grid (Matched with Discovery Aesthetics & Strava / Nike Partner Model) */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
                     {myChallenges.map((quest) => {
                       const isCompleted = quest.progressPercent >= 100;
                       const isUrgent = (quest.daysRemaining || 10) <= 5;
+                      const brandReward = getQuestBrandReward(quest);
                       
                       // Category theme helper
                       const getCatTheme = (cat?: string) => {
@@ -3635,15 +3628,12 @@ export default function MyHubPage() {
                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${catTheme.bg}`}>
                                   {catTheme.label}
                                 </span>
-                                {quest.isOfficial ? (
-                                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 shrink-0">
-                                    Official
-                                  </span>
-                                ) : (
-                                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 shrink-0">
-                                    ชุมชน
-                                  </span>
-                                )}
+                                <span 
+                                  title={`ภารกิจพาร์ทเนอร์ทางการ: ${brandReward.partnerName}`}
+                                  className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-900 border border-purple-200 shrink-0 truncate max-w-[140px]"
+                                >
+                                  Official • {brandReward.partnerName}
+                                </span>
                                 <span className="text-[10px] font-black text-purple-700 bg-purple-50 border border-purple-200/80 px-2 py-0.5 rounded-md flex items-center gap-0.5 ml-auto shadow-2xs">
                                   <Zap className="w-3 h-3 text-purple-600 fill-purple-600" />
                                   <span>+{quest.rewardPoints} XP</span>
@@ -3656,8 +3646,8 @@ export default function MyHubPage() {
                             </div>
                           </div>
 
-                          {/* Goal Box */}
-                          <div className="space-y-1 bg-slate-50 p-2.5 rounded-2xl border border-slate-100 text-xs">
+                          {/* Goal Box & Brand Privilege Pill */}
+                          <div className="space-y-1.5 bg-slate-50 p-2.5 rounded-2xl border border-slate-100 text-xs">
                             <div className="font-semibold text-slate-800 flex items-center gap-1">
                               <Award className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                               <span className="truncate">เหรียญ: {quest.badgeLabel}</span>
@@ -3665,6 +3655,15 @@ export default function MyHubPage() {
                             <p className="text-slate-500 line-clamp-2 leading-relaxed text-[11.5px]">
                               {quest.targetGoal}
                             </p>
+
+                            {/* Brand-Exclusive Privilege Pill (Strava / Nike Model) */}
+                            <div 
+                              title={`สิทธิพิเศษเฉพาะแบรนด์ ${brandReward.partnerName}: ${brandReward.title}`}
+                              className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-amber-50/90 border border-amber-200/90 text-amber-950 text-[10px] font-bold shadow-2xs mt-1"
+                            >
+                              <Ticket className="w-3 h-3 text-amber-600 shrink-0" />
+                              <span className="truncate">{brandReward.title}</span>
+                            </div>
                           </div>
 
                           {/* Progress & Duration */}
@@ -3692,13 +3691,17 @@ export default function MyHubPage() {
                             </div>
                           </div>
 
-                          {/* Action Button */}
+                          {/* Action Button: In Strava/Nike model, completed quests give instant access to Brand Voucher */}
                           <div className="pt-2.5 border-t border-slate-100 mt-auto">
                             {isCompleted ? (
-                              <div className="w-full bg-emerald-50 text-emerald-700 text-xs font-bold py-2.5 rounded-xl border border-emerald-200 flex items-center justify-center gap-1.5 shadow-2xs">
-                                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                                <span>สำเร็จภารกิจแล้ว</span>
-                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedQuestForVoucherModal(quest)}
+                                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-bold py-2 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs active:scale-98"
+                              >
+                                <Ticket className="w-3.5 h-3.5 text-white" />
+                                <span>ดูบัตรกำนัล & QR Code</span>
+                              </button>
                             ) : (
                               <button
                                 type="button"
@@ -3927,14 +3930,13 @@ export default function MyHubPage() {
         onVerificationSuccess={handleVerifySuccess}
       />
 
-      {/* 6. Create Challenge Modal */}
-      <CreateChallengeModal
-        isOpen={isCreateChallengeModalOpen}
-        onClose={() => setIsCreateChallengeModalOpen(false)}
-        onCreateSuccess={(newQuest) => {
-          updateChallenges((prev) => [newQuest, ...prev]);
-          showToast(`สร้างชาเลนจ์ "${newQuest.title}" สำเร็จ`);
-        }}
+      {/* 6. Brand Voucher & Quest Detail Modal */}
+      <JoinChallengeModal
+        isOpen={Boolean(selectedQuestForVoucherModal)}
+        onClose={() => setSelectedQuestForVoucherModal(null)}
+        quest={selectedQuestForVoucherModal}
+        isAlreadyJoined={true}
+        isCompleted={true}
       />
 
       {/* 8. Create Event Modal */}

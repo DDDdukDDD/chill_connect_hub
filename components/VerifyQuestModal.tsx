@@ -15,10 +15,12 @@ import {
   Loader2,
   ShieldCheck,
   Image as ImageIcon,
-  Lightbulb
+  Lightbulb,
+  Ticket
 } from 'lucide-react';
 import { ChallengeQuest } from '@/data/mockData';
 import { compressImageToDataUrl } from '@/lib/media/compressor';
+import { getQuestBrandReward } from '@/components/JoinChallengeModal';
 
 interface VerifyQuestModalProps {
   isOpen: boolean;
@@ -140,6 +142,15 @@ export const VerifyQuestModal: React.FC<VerifyQuestModalProps> = ({
             <h3 className="font-extrabold text-base sm:text-lg text-[#1E293B] mt-1 line-clamp-1">
               ส่งหลักฐานยืนยัน: {quest.title}
             </h3>
+            {(() => {
+              const brandReward = getQuestBrandReward(quest);
+              return (
+                <div className="flex items-center gap-1.5 mt-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-[11px] font-medium shadow-2xs">
+                  <Ticket className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span className="truncate"><strong>สิทธิ์ที่จะปลดล็อก:</strong> {brandReward.title} ({brandReward.partnerName})</span>
+                </div>
+              );
+            })()}
           </div>
         </div>
 

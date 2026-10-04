@@ -34,7 +34,7 @@ import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
-import { JoinChallengeModal } from '@/components/JoinChallengeModal';
+import { JoinChallengeModal, getQuestBrandReward } from '@/components/JoinChallengeModal';
 import { BrandLogo } from '@/components/BrandLogo';
 import { Pagination } from '@/components/Pagination';
 import { ChallengeQuest, MOCK_CHALLENGES } from '@/data/mockData';
@@ -561,6 +561,7 @@ export default function ChallengesDiscoveryPage() {
                   {paginatedQuests.map((quest) => {
                     const isJoined = joinedQuestIds.includes(quest.id);
                     const isUrgent = quest.daysRemaining <= 5;
+                    const brandReward = getQuestBrandReward(quest);
 
                     return (
                       <div key={quest.id}>
@@ -575,14 +576,14 @@ export default function ChallengesDiscoveryPage() {
                         {/* Official Quest Top Accent Stripe */}
                         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-600 via-indigo-400 to-purple-400" />
 
-                        {/* 1. Top Badges Row: Official Badge + XP Token */}
+                        {/* 1. Top Badges Row: Official Co-branded Partner Badge + XP Token */}
                         <div className="flex items-center justify-between gap-1.5 pt-0.5">
                           <span
-                            title="ภารกิจทางการจาก Chill & Connect Hub และพาร์ทเนอร์"
-                            className="text-[10px] font-black text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-purple-300/80"
+                            title={`ภารกิจพาร์ทเนอร์ทางการ: ${brandReward.partnerName}`}
+                            className="text-[10px] font-black text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-purple-300/80 truncate max-w-[210px]"
                           >
-                            <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500" />
-                            <span>Official Quest</span>
+                            <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500 shrink-0" />
+                            <span className="truncate">Official • {brandReward.partnerName}</span>
                           </span>
 
                           <span className="text-[10px] font-black text-purple-800 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200/90 px-2 py-0.5 rounded-md flex items-center gap-0.5 shrink-0 shadow-2xs">
@@ -612,7 +613,7 @@ export default function ChallengesDiscoveryPage() {
                         </div>
 
                         {/* 3. Title & Target Description */}
-                        <div className="space-y-1 flex-1">
+                        <div className="space-y-1.5 flex-1">
                           <h3
                             title={quest.title}
                             className="font-black text-xs sm:text-[13px] text-slate-900 group-hover/card:text-purple-700 transition-colors leading-snug line-clamp-1"
@@ -625,6 +626,15 @@ export default function ChallengesDiscoveryPage() {
                           >
                             {quest.targetGoal}
                           </p>
+
+                          {/* Brand-Exclusive Privilege Pill (Strava / Nike Model) */}
+                          <div 
+                            title={`สิทธิพิเศษเฉพาะแบรนด์ ${brandReward.partnerName}: ${brandReward.title}`}
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-50/90 border border-amber-200/90 text-amber-950 text-[10.5px] font-bold shadow-2xs"
+                          >
+                            <Ticket className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                            <span className="truncate">{brandReward.title}</span>
+                          </div>
                         </div>
 
                         {/* 4. Duration & Attendees */}
@@ -644,13 +654,9 @@ export default function ChallengesDiscoveryPage() {
 
                         {/* 5. Footer Meta & Action Bar */}
                         <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 text-[11px] text-slate-500">
-                          <div className="flex items-center gap-1.5 truncate max-w-[130px]">
-                            <img
-                              src={quest.creatorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80'}
-                              alt={quest.creatorName || ''}
-                              className="w-4 h-4 rounded-full object-cover border border-slate-200 shrink-0"
-                            />
-                            <span className="truncate text-slate-700 font-medium">{quest.creatorName}</span>
+                          <div className="flex items-center gap-1.5 truncate max-w-[140px]" title={`พาร์ทเนอร์ทางการ: ${brandReward.partnerName}`}>
+                            <ShieldCheck className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                            <span className="truncate text-slate-700 font-semibold">{brandReward.partnerName}</span>
                           </div>
 
                           <div className="flex items-center gap-2">

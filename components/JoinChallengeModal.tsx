@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import {
@@ -17,15 +17,121 @@ import {
   UploadCloud,
   Check,
   Share2,
-  Crown
+  Crown,
+  Ticket
 } from 'lucide-react';
 import { ChallengeQuest } from '@/data/mockData';
+
+export interface BrandVoucherReward {
+  title: string;
+  partnerName: string;
+  voucherCodePrefix: string;
+  exclusiveNotice: string;
+  terms?: string;
+}
+
+export function getQuestBrandReward(quest: any): BrandVoucherReward {
+  if (quest?.brandReward) return quest.brandReward;
+
+  const id = quest?.id || '';
+  const title = quest?.title || '';
+
+  if (id === 'comm-quest-1' || title.includes('Coffee') || title.includes('กาแฟ') || title.includes('อารีย์')) {
+    return {
+      title: 'ฟรี Signature Cold Brew 1 แก้ว (มูลค่า 140.-)',
+      partnerName: 'Ari Specialty Coffee Club',
+      voucherCodePrefix: 'ARI-BREW-',
+      exclusiveNotice: 'สิทธิ์เฉพาะหน้าร้าน Ari Specialty Coffee Club ทุกสาขาเท่านั้น (แบรนด์อื่นไม่สามารถใช้ได้)',
+      terms: 'แสดง QR Code หน้าร้านก่อนสั่งเครื่องดื่ม จำกัด 1 สิทธิ์/ท่าน มีอายุ 30 วันหลังพิชิตภารกิจ',
+    };
+  }
+  if (id === 'comm-quest-2' || title.includes('Park Run') || title.includes('สวน')) {
+    return {
+      title: 'สิทธิ์วิ่งฟรี BMA City Mini Marathon 2026 พร้อมเสื้อ Finisher',
+      partnerName: 'BMA Sports Hub (สำนักการกีฬา กทม.)',
+      voucherCodePrefix: 'BMA-RUN-',
+      exclusiveNotice: 'สิทธิ์เฉพาะงานวิ่งในสังกัด BMA Sports กรุงเทพมหานครเท่านั้น',
+      terms: 'ใช้รหัสลงทะเบียนผ่านเว็บไซต์งานวิ่ง BMA Marathon ภายในวันที่กำหนด',
+    };
+  }
+  if (id === 'comm-quest-3' || title.includes('HYROX')) {
+    return {
+      title: 'ส่วนลด 20% อุปกรณ์ซ้อม HYROX Official Training Gear',
+      partnerName: 'HYROX Thailand',
+      voucherCodePrefix: 'HYROX-GEAR-',
+      exclusiveNotice: 'สิทธิ์เฉพาะช่องทาง Official Store ของ HYROX Thailand เท่านั้น',
+      terms: 'กรอกรหัสส่วนลดตอน Checkout หรือแสดงบาร์โค้ดที่ Pop-up Store',
+    };
+  }
+  if (id === 'comm-quest-4' || title.includes('Yoga') || title.includes('โยคะ')) {
+    return {
+      title: 'ฟรี คลาส Sound Bath & Yoga Therapy 1 ครั้ง (มูลค่า 650.-)',
+      partnerName: 'Mindful Yoga & Wellness Hub',
+      voucherCodePrefix: 'ZEN-YOGA-',
+      exclusiveNotice: 'ใช้ได้เฉพาะที่สตูดิโอ Mindful Yoga & Wellness Hub เท่านั้น',
+      terms: 'จองรอบคลาสล่วงหน้าอย่างน้อย 24 ชั่วโมงผ่านช่องทางของสตูดิโอ',
+    };
+  }
+  if (id === 'comm-quest-5' || title.includes('Detox') || title.includes('มือถือ')) {
+    return {
+      title: 'เซ็ตชาสมุนไพรออร์แกนิกและเค้กโฮมเมด ฟรี 1 เซ็ต (มูลค่า 220.-)',
+      partnerName: 'Digital Detox Society',
+      voucherCodePrefix: 'DETOX-TEA-',
+      exclusiveNotice: 'สิทธิ์เฉพาะคาเฟ่พาร์ทเนอร์โครงการ Digital Detox ที่ร่วมรายการเท่านั้น',
+      terms: 'แสดงบัตรสิทธิ์แก่บาริสต้าที่ร้านพาร์ทเนอร์ที่ร่วมรายการ',
+    };
+  }
+  if (id === 'comm-quest-6' || title.includes('Gallery') || title.includes('ศิลปะ') || title.includes('แกลเลอรี')) {
+    return {
+      title: 'บัตรเข้าชม Exclusive Art Exhibition ฟรี 1 ใบ (มูลค่า 350.-)',
+      partnerName: 'River City Bangkok',
+      voucherCodePrefix: 'RCB-ART-',
+      exclusiveNotice: 'สิทธิ์เฉพาะที่ริเวอร์ ซิตี้ แบงค็อก (River City Bangkok) เท่านั้น',
+      terms: 'ยื่นรับบัตรเข้าชมนิทรรศการพิเศษได้ที่เคาน์เตอร์ Information ริเวอร์ ซิตี้ แบงค็อก',
+    };
+  }
+  if (id === 'comm-quest-7' || title.includes('Board Game') || title.includes('บอร์ดเกม')) {
+    return {
+      title: 'ฟรี ชั่วโมงเล่นบอร์ดเกม 2 ชั่วโมง หรือส่วนลดซื้อบอร์ดเกม 15%',
+      partnerName: 'Thailand Board Game Club',
+      voucherCodePrefix: 'TBG-PLAY-',
+      exclusiveNotice: 'ใช้ได้เฉพาะร้านบอร์ดเกมคาเฟ่ในเครือ Thailand Board Game Club เท่านั้น',
+      terms: 'แสดงหน้าบัตรก่อนเริ่มเปิดโต๊ะเล่นเกม',
+    };
+  }
+  if (id === 'quest-off-3' || title.includes('Book') || title.includes('หนังสือ')) {
+    return {
+      title: 'คูปองเงินสด 100 บาท ใช้ซื้อหนังสือในงานสัปดาห์หนังสือแห่งชาติ QSNCC',
+      partnerName: 'PUBAT Thailand (สมาคมผู้จัดพิมพ์ฯ)',
+      voucherCodePrefix: 'PUBAT-BOOK-',
+      exclusiveNotice: 'ใช้ได้เฉพาะบูธหนังสือที่ร่วมรายการ ณ ศูนย์ฯ สิริกิติ์ (QSNCC) เท่านั้น',
+      terms: 'แสดงบาร์โค้ดต่อพนักงานแคชเชียร์ก่อนชำระเงิน',
+    };
+  }
+  if (id === 'quest-off-4' || title.includes('Sound Bath') || title.includes('สมาธิ')) {
+    return {
+      title: 'ฟรี เซ็ตชาสมุนไพรนำเข้า + ส่วนลด 30% คอร์ส Sound Healing',
+      partnerName: 'Tibetan Bowls Healing Center',
+      voucherCodePrefix: 'TBH-HEAL-',
+      exclusiveNotice: 'สิทธิ์เฉพาะที่ศูนย์ Tibetan Bowls Healing Center เท่านั้น',
+      terms: 'แสดงบัตรสิทธิ์แก่เจ้าหน้าที่ต้อนรับของศูนย์',
+    };
+  }
+
+  return {
+    title: `บัตรสิทธิพิเศษเฉพาะแบรนด์พาร์ทเนอร์ (มูลค่า 200.-)`,
+    partnerName: quest?.creatorName || 'ทีมงาน Chill & Connect',
+    voucherCodePrefix: 'CCH-PARTNER-',
+    exclusiveNotice: `สิทธิ์เฉพาะหน้าร้าน/จุดบริการของ ${quest?.creatorName || 'พาร์ทเนอร์ทางการ'} เท่านั้น`,
+    terms: 'แสดงรหัสสิทธิ์แก่เจ้าหน้าที่ ณ จุดให้บริการเพื่อรับสิทธิ์',
+  };
+}
 
 interface JoinChallengeModalProps {
   isOpen: boolean;
   onClose: () => void;
   quest: ChallengeQuest | null;
-  onConfirmJoin: (quest: ChallengeQuest) => void;
+  onConfirmJoin?: (quest: ChallengeQuest) => void;
   isAlreadyJoined?: boolean;
   onCancelQuest?: (quest: ChallengeQuest) => void;
   onSubmitProgress?: (quest: ChallengeQuest, newCurrent: number) => void;
@@ -50,6 +156,8 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  const brandReward = useMemo(() => quest ? getQuestBrandReward(quest) : null, [quest]);
 
   // Journey States
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -270,6 +378,62 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
 
         {/* Scrollable Content Body */}
         <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1 bg-white">
+
+          {/* 🎉 Unlocked Brand Voucher Pass (When Completed) */}
+          {(localCompleted || isCompleted) && brandReward && (
+            <div className="p-4 sm:p-5 bg-gradient-to-br from-amber-50 via-purple-50/40 to-amber-50/60 rounded-3xl border-2 border-amber-300 shadow-md space-y-3 animate-fade-in">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-black text-sm shadow-xs">
+                    🎟️
+                  </span>
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-900 bg-amber-200/80 px-2 py-0.5 rounded-md">
+                      Brand Privilege Unlocked
+                    </span>
+                    <h4 className="text-sm sm:text-base font-black text-slate-900">
+                      คุณได้รับสิทธิพิเศษจาก {brandReward.partnerName}
+                    </h4>
+                  </div>
+                </div>
+                <span className="text-[11px] font-extrabold text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-full border border-emerald-300 shrink-0">
+                  ✓ พร้อมใช้งาน
+                </span>
+              </div>
+
+              <div className="p-3.5 bg-white rounded-2xl border border-amber-200 shadow-2xs space-y-2.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold block">รางวัลสิทธิ์พิเศษของคุณ:</span>
+                    <h5 className="font-black text-xs sm:text-sm text-slate-900">
+                      {brandReward.title}
+                    </h5>
+                  </div>
+                  <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200 shrink-0">
+                    {brandReward.partnerName}
+                  </span>
+                </div>
+                
+                {/* Voucher Code & QR simulation */}
+                <div className="p-3 bg-slate-50 rounded-xl border border-dashed border-slate-300 flex items-center justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] text-slate-400 font-bold block">รหัสสิทธิ์สำหรับใช้หน้าร้าน:</span>
+                    <span className="font-mono font-black text-xs sm:text-sm text-[#7C3AED] tracking-wider select-all">
+                      {brandReward.voucherCodePrefix}88492
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700 bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 shrink-0 shadow-2xs">
+                    <QrCode className="w-4 h-4 text-purple-600" />
+                    <span>แสดงสิทธิ์</span>
+                  </div>
+                </div>
+
+                <div className="p-2 rounded-xl bg-amber-50/80 border border-amber-200 text-[10.5px] text-amber-900 font-medium leading-relaxed">
+                  <strong>🔒 ข้อกำหนดการใช้สิทธิ์:</strong> {brandReward.exclusiveNotice}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Submission Sheet Mode */}
           {showSubmitProof ? (
@@ -512,11 +676,45 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                       <Zap className="w-5 h-5 text-amber-600 fill-amber-500" />
                     </div>
                     <div className="min-w-0">
-                      <span className="text-[10px] font-bold text-slate-400 block">แต้มและคะแนน XP</span>
+                      <span className="text-[10px] font-bold text-slate-400 block">แต้มและคะแนน XP ส่วนกลาง</span>
                       <span className="text-xs sm:text-sm font-extrabold text-slate-800">+{quest.rewardPoints || 300} XP Points</span>
                     </div>
                   </div>
                 </div>
+
+                {/* 3. Brand-Exclusive Privilege Block (Strava / Nike Model) */}
+                {brandReward && (
+                  <div className="p-3.5 bg-gradient-to-r from-amber-500/10 via-purple-500/10 to-amber-500/5 rounded-2xl border border-amber-300/80 space-y-2 relative overflow-hidden">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center text-xs font-black shrink-0 shadow-2xs">
+                          🎟️
+                        </span>
+                        <span className="text-xs font-black text-slate-900">
+                          สิทธิพิเศษเฉพาะแบรนด์พาร์ทเนอร์ (Brand-Exclusive Privilege)
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300">
+                        {brandReward.partnerName}
+                      </span>
+                    </div>
+
+                    <div className="bg-white/95 backdrop-blur-xs p-3 rounded-xl border border-amber-200/80 space-y-1">
+                      <h5 className="font-black text-xs sm:text-sm text-slate-900">
+                        {brandReward.title}
+                      </h5>
+                      <p className="text-[11px] text-amber-900 font-semibold flex items-center gap-1">
+                        <span>🔒</span>
+                        <span>{brandReward.exclusiveNotice}</span>
+                      </p>
+                      {brandReward.terms && (
+                        <p className="text-[10.5px] text-slate-500 pt-0.5">
+                          เงื่อนไข: {brandReward.terms}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <p className="text-[11px] sm:text-xs text-slate-600 font-medium pt-0.5 leading-relaxed">
                   {formattedRewardsNote}
@@ -552,12 +750,12 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
           <div className="flex items-center gap-2">
             {localCompleted ? (
               <Link
-                href="/myhub?tab=badges"
+                href="/myhub?tab=quests_rewards"
                 onClick={onClose}
                 className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-amber-950 font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer"
               >
-                <Trophy className="w-4 h-4" />
-                <span>ดูเหรียญตราใน MyHub</span>
+                <Ticket className="w-4 h-4" />
+                <span>ดูบัตรกำนัลใน MyHub</span>
               </Link>
             ) : isAlreadyJoined ? (
               <div className="flex items-center gap-2">
@@ -586,7 +784,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  onConfirmJoin(quest);
+                  onConfirmJoin?.(quest);
                   onClose();
                 }}
                 className="px-7 sm:px-9 py-2.5 rounded-xl bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-extrabold text-xs sm:text-sm shadow-md transition-all active:scale-95 cursor-pointer"
