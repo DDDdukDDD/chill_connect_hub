@@ -259,11 +259,29 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
   const [joinedList, setJoinedList] = useState<string[]>(joinedQuestTitles);
   const [selectedQuestForModal, setSelectedQuestForModal] = useState<ChallengeQuest | null>(null);
   const [questItems, setQuestItems] = useState(COMMUNITY_PUBLIC_QUESTS);
+  const [filterType, setFilterType] = useState<'all' | 'hub_central' | 'brand_partner'>('all');
+
+  const hubCount = questItems.filter((q) => getQuestBrandReward(q).type === 'hub_central').length;
+  const partnerCount = questItems.filter((q) => getQuestBrandReward(q).type === 'brand_partner').length;
+
+  const displayQuests = questItems.filter((q) => {
+    if (filterType === 'all') return true;
+    return getQuestBrandReward(q).type === filterType;
+  });
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
+
+  // Reset scroll when filter changes
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+      setActiveIndex(0);
+      setTimeout(checkScrollability, 250);
+    }
+  }, [filterType]);
 
   useEffect(() => {
     let isActive = true;
@@ -408,6 +426,63 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
         </Link>
       </div>
 
+      {/* Quick Filter: Quest Type Chips (Official Central vs Brand Partner) */}
+      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5">
+        <span className="text-[11px] font-bold text-slate-400 shrink-0 uppercase tracking-wider mr-0.5">
+          ตัวกรองด่วน:
+        </span>
+
+        {/* 1. All */}
+        <button
+          type="button"
+          onClick={() => setFilterType('all')}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shrink-0 shadow-2xs ${
+            filterType === 'all'
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200/80'
+          }`}
+        >
+          <span>ทั้งหมด</span>
+          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${filterType === 'all' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+            {questItems.length}
+          </span>
+        </button>
+
+        {/* 2. Official • Chill & Connect */}
+        <button
+          type="button"
+          onClick={() => setFilterType(filterType === 'hub_central' ? 'all' : 'hub_central')}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shrink-0 shadow-2xs border ${
+            filterType === 'hub_central'
+              ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+              : 'bg-purple-50 hover:bg-purple-100/90 text-purple-900 border-purple-200/90'
+          }`}
+        >
+          <Crown className={`w-3.5 h-3.5 shrink-0 ${filterType === 'hub_central' ? 'text-purple-200 fill-purple-200' : 'text-purple-700 fill-purple-500'}`} />
+          <span>Official • Chill & Connect</span>
+          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${filterType === 'hub_central' ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-800'}`}>
+            {hubCount}
+          </span>
+        </button>
+
+        {/* 3. Brand Partner */}
+        <button
+          type="button"
+          onClick={() => setFilterType(filterType === 'brand_partner' ? 'all' : 'brand_partner')}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shrink-0 shadow-2xs border ${
+            filterType === 'brand_partner'
+              ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+              : 'bg-amber-50 hover:bg-amber-100/90 text-amber-950 border-amber-200/90'
+          }`}
+        >
+          <Crown className={`w-3.5 h-3.5 shrink-0 ${filterType === 'brand_partner' ? 'text-amber-200 fill-amber-200' : 'text-amber-600 fill-amber-500'}`} />
+          <span>แบรนด์พาร์ทเนอร์</span>
+          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${filterType === 'brand_partner' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-900'}`}>
+            {partnerCount}
+          </span>
+        </button>
+      </div>
+
       {/* Horizontal Scrollable Carousel (Manual Swipe / Scroll / Floating Center Arrows, No Auto Slide) */}
       <div className="relative group/carousel">
         
@@ -441,7 +516,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
           className="flex gap-3.5 sm:gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory py-2 px-1 -mx-1 scroll-smooth"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {questItems.map((quest) => {
+          {displayQuests.map((quest) => {
             const isJoined = joinedList.includes(quest.title);
             const isDone = completedList.includes(quest.title);
             const targetTotal = parseInt(quest.total || '3', 10) || 3;
@@ -583,16 +658,16 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
           })}
         </div>
 
-        {/* Pagination Dots Indicator for all 7 Quests */}
+        {/* Pagination Dots Indicator */}
         <div className="flex items-center justify-center gap-1.5 pt-1">
-          {questItems.map((quest, idx) => (
+          {displayQuests.map((quest, idx) => (
             <button
               key={quest.id}
               type="button"
               onClick={() => scrollToCard(idx)}
               className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
                 idx === activeIndex
-                  ? 'w-6 bg-[#4A7C59]'
+                  ? 'w-6 bg-purple-600'
                   : 'w-1.5 bg-slate-200 hover:bg-slate-300'
               }`}
               title={`ไปยังภารกิจที่ ${idx + 1}: ${quest.title}`}
