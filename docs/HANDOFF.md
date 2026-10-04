@@ -23,6 +23,24 @@ Item template:
 
 ## Open
 
+### BE-005 · Quests: use `brandReward` and the server-computed lifecycle from the API
+- **From → To:** Backend → Frontend
+- **Date / branch:** 2026-10-04 · `claude` (merge into `main` pending)
+- **What changed:**
+  - `ChallengeQuest` now has `brandReward?: QuestReward` and `image?: string`. `QuestReward` is exported from `@/data/mockData` with the same shape as the local `QuestRewardProfile` in `components/JoinChallengeModal.tsx`.
+  - `/api/quests` returns `brandReward` for every seed quest (Cafe Hunter → Ari Specialty Coffee Club, HYROX → HYROX Thailand, Step Count / Digital Detox → hub_central).
+  - `daysRemaining` and `status: 'ended'` are computed from `endDate` on every read (stored values are ignored). Seed dates were refreshed to Oct–Dec 2026, except "Digital Detox" which is intentionally ended (25 มี.ค. 2026) so the "สิ้นสุดแล้ว" archive has a real case.
+- **Action for Frontend:**
+  1. Import `QuestReward` from `@/data/mockData` instead of redefining `QuestRewardProfile` (or alias it).
+  2. For API quests, use `quest.brandReward` directly. `getQuestBrandReward()` already returns it when present — the title-keyword fallback is now only needed for the static `ALL_QUESTS` catalog in `app/challenges/page.tsx`.
+  3. Rely on `status` / `daysRemaining` from the API instead of hard-coded values; quests without `endDate` have no `daysRemaining`.
+  4. Optional: `QuestWithDuration.brandReward?: any` can become `QuestReward`.
+- **Status:** Open
+
+---
+
+## Done
+
 ### FE-002 · Quests & Challenges UI Standardization (Status Archive, Ended Quests, Typographic Scale, Clean Minimal Filter)
 - **From → To:** Frontend → Backend
 - **Date / branch:** 2026-10-04 · `main`
@@ -40,11 +58,7 @@ Item template:
      - Removed multi-color rainbow buttons and crown icons from filter chips.
      - Single consolidated filter row on `/challenges` with neutral monochrome slate styling (`bg-slate-900 text-white`).
 - **Action for Backend:** When creating/updating quests in `/api/admin/quests` or `lib/db`, backend can safely set `status: 'ended'` or rely on `daysRemaining: 0` for expired quests. Ensure `brandReward` objects include `partnerName` and `title` when `type === 'brand_partner'`.
-- **Status:** Open
-
----
-
-## Done
+- **Status:** Done (2026-10-04 on `claude`: `brandReward` (`QuestReward`) and `image` added to `ChallengeQuest`; brand_partner requires `partnerName` + `title` (API-validated); `daysRemaining`/`ended` are now computed from `endDate` by the server; admin Quests form edits period and reward type. See BE-005 for the frontend follow-up.)
 
 ### FE-001 · Scope clarification: Claude owns Admin UI + Backend; Antigravity owns Customer-Facing Frontend
 - **From → To:** Frontend → Backend

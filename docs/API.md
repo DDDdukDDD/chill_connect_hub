@@ -5,7 +5,7 @@
 > differs from the code, the code is wrong or this file is stale — report it in [HANDOFF.md](HANDOFF.md).
 >
 > **Status:** prototype. Data is seed/mock data stored in JSON files; there are no real users yet.
-> Last updated: 2026-10-03
+> Last updated: 2026-10-04
 
 ## Conventions
 
@@ -145,6 +145,24 @@ Returns active/ended public quests (drafts and private quests hidden).
 
 Response `200`: `{ success: true, quests: ChallengeQuest[], pagination: Pagination }`. Cache: `s-maxage=60`.
 
+**Quest lifecycle (computed by the server on every read, never stored):**
+- `daysRemaining`: whole days left until the end of `endDate`; `0` once ended; absent when the quest has no `endDate`.
+- `status`: `'ended'` once `endDate` has passed (or an admin closed it early), otherwise `'active'`. Ended quests **are returned** so the UI can show an archive; filter them out of "active" rails on the client.
+- Dates are Thai (`"31 ธ.ค. 2026"`) or ISO (`"2026-12-31"`) strings. Display them as-is or parse both formats.
+
+**Reward type — `brandReward` (`QuestReward` from `@/data/mockData`):**
+```ts
+brandReward?: {
+  type: 'brand_partner' | 'hub_central';
+  title: string;            // the reward / exclusive privilege
+  partnerName: string;      // brand name; always "Chill & Connect Hub" for hub_central
+  voucherCodePrefix?: string; exclusiveNotice?: string;   // brand_partner only
+  hubRewardNote?: string;                                 // hub_central only
+  terms?: string;
+}
+```
+`brand_partner` quests always have `partnerName` and `title`. Quests without `brandReward` have no declared reward type yet — treat them as `hub_central`. `image` (optional cover URL) is also available.
+
 ### `POST /api/upload` — image upload
 
 `multipart/form-data`:
@@ -187,7 +205,7 @@ All writes are `POST` with an `action` field unless noted.
 |---|---|---|
 | `/api/admin/events` | `GET` → `{ events: AdminEventItem[] (all moderation states), total, autoPublish }`. **Paginated mode** when `page` is present: `?page&limit(≤100)&type=community|public_venue&status=pending|approved|rejected|all&format=recurring|online|physical|all&q` → `{ events, counts: {total,pending,approved,rejected,recurring,online}, pagination }`, sorted pending-first then newest; `counts` cover the whole `type` | `create {eventData}`, `update_status {id, status: approved\|rejected\|pending}`, `approve_all`, `update_fields {id, updatedFields}`, `delete {id}`, `toggle_auto_publish {autoPublish}`, `reset_and_seed` — each returns the updated `events` list |
 | `/api/admin/spots` | `GET ?province&category&q&status=draft|published&image=missing|broken|problem` (legacy `filter=missing_image`) → `{ spots (each with imageStatus: ok|broken|missing|unchecked), totalCount, filteredCount, draftCount, missingImagesCount, brokenImagesCount, uncheckedImagesCount, distinctProvinces }`; add `page&limit` for paginated `spots` + `pagination` | `create {newSpot}` (starts as draft), `update {spotId, updatedFields}`, `delete {spotId}`, `auto_enrich_images` — each returns `spots`. `check_images` loads every stored image URL (public HTTPS only; results cached in memory for 6h) → `{ checked, ok, broken }` |
-| `/api/admin/quests` | `GET ?status&category&q&page&limit` → `{ quests, total, pagination }` | `create {quest}` (starts as draft), `update {id, updatedFields}`, `set_status {id, status: draft\|active\|ended}`, `delete {id}` |
+| `/api/admin/quests` | `GET ?status&category&q&page&limit` → `{ quests, total, pagination }` | `create {quest}` (starts as draft; accepts `startDate`, `endDate`, `image`, `brandReward`), `update {id, updatedFields}` (`brandReward: null` clears it; `daysRemaining` is ignored), `set_status {id, status: draft\|active\|ended}` (activating a quest whose `endDate` has passed returns `400`), `delete {id}` |
 | `/api/admin/sources` | `GET` → `{ sources }` | `POST {name, url (https), targetType: events\|spots, ...}` add · `PATCH {id, status}` toggle · `DELETE ?id=` remove |
 | `/api/admin/scrape` | — | `POST {targetType: events\|spots, sourceId?}` → `{ newCount, duplicateCount, totalScanned, sourceResults, events \| spots }` |
 | `/api/admin/cache` | `GET` → `{ stats, activeTags, supportedTags }` | `flush_all`, `flush_tag {tag}`, `flush_tags {tags}` |

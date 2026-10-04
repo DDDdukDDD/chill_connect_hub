@@ -59,6 +59,8 @@ The Discovery & Content work includes backend contracts and the admin control pl
 - Admin design consistency (2026-10-03): every module uses `AdminPageHeader` and the shared `adminButton` styles from `components/admin/AdminUI.tsx` (primary = Royal Blue, dark/secondary = slate, danger = rose outline; no pillar colors on buttons, per AGENTS.md). Sidebar labels match page titles, decorative badges were replaced by real pending counts for Community/Fairs, the Quests table has fixed columns, and moderation rows stack on mobile.
 - Admin modules are addressable by URL (`/admin?m=spots`) using the native History API (refresh, shared links, back/forward).
 
+- FE-002 (2026-10-04): `ChallengeQuest` gained `brandReward?: QuestReward` (`brand_partner` | `hub_central`) and `image`. `lib/questLifecycle.ts` derives `daysRemaining` and `status: 'ended'` from `endDate` (Thai or ISO) on every repository read; stored `daysRemaining` is ignored. `/api/admin/quests` validates rewards (brand_partner requires `partnerName` + `title`), dates (end ≥ start) and image URLs, and refuses to activate an expired quest. Seed quests carry `brandReward`; persisted copies of the old seed are upgraded once on startup (`upgradeLegacySeedQuests`). Seed dates moved to Oct–Dec 2026 except "Digital Detox", kept ended on purpose.
+
 ## Verification
 
 - Editor diagnostics reported no errors for the changed route, client helper, and consuming pages.

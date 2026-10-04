@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { ChallengeQuest } from '@/data/mockData';
+import { ChallengeQuest, QuestReward } from '@/data/mockData';
+import { getQuestDateError, parseQuestDate } from '@/lib/questLifecycle';
 import { db, CreateQuestDTO, UpdateQuestDTO } from '@/lib/db';
 import { requireAdminApiAccess } from '@/lib/adminApiAuth';
 
@@ -10,8 +11,46 @@ const MUTABLE_QUEST_FIELDS = new Set<keyof ChallengeQuest>([
   'badgeIcon', 'badgeCoverImg', 'completedCountInfo', 'category', 'visibility',
   'creatorName', 'creatorAvatar', 'participantsCount', 'rewardPoints', 'targetGoal',
   'isOfficial', 'objective', 'steps', 'verificationMethod', 'rewardsText',
-  'startDate', 'endDate', 'daysRemaining', 'status',
+  'startDate', 'endDate', 'status', 'image', 'brandReward',
 ]);
+const REWARD_TYPES = new Set(['brand_partner', 'hub_central']);
+const PLATFORM_PARTNER_NAME = 'Chill & Connect Hub';
+
+function optionalText(value: unknown, maxLength: number): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim().slice(0, maxLength);
+  return trimmed || undefined;
+}
+
+/**
+ * Normalizes a brandReward payload. Returns null to clear it, a string error, or the clean object.
+ * brand_partner requires partnerName + title; hub_central always uses the platform as partner.
+ */
+function parseBrandReward(value: unknown): QuestReward | null | string {
+  if (value === null) return null;
+  if (!isRecord(value)) return 'ข้อมูลรางวัลพาร์ทเนอร์ไม่ถูกต้อง';
+  if (typeof value.type !== 'string' || !REWARD_TYPES.has(value.type)) return 'ประเภทภารกิจต้องเป็น brand_partner หรือ hub_central';
+  const type = value.type as QuestReward['type'];
+  const title = optionalText(value.title, 160);
+  if (!title || title.length < 3) return 'กรุณาระบุชื่อสิทธิพิเศษ/รางวัล (อย่างน้อย 3 ตัวอักษร)';
+  const partnerName = type === 'hub_central' ? PLATFORM_PARTNER_NAME : optionalText(value.partnerName, 120);
+  if (!partnerName) return 'ภารกิจพาร์ทเนอร์ต้องระบุชื่อแบรนด์พาร์ทเนอร์';
+  return {
+    type,
+    title,
+    partnerName,
+    voucherCodePrefix: type === 'brand_partner' ? optionalText(value.voucherCodePrefix, 32) : undefined,
+    exclusiveNotice: type === 'brand_partner' ? optionalText(value.exclusiveNotice, 300) : undefined,
+    terms: optionalText(value.terms, 500),
+    hubRewardNote: type === 'hub_central' ? optionalText(value.hubRewardNote, 300) : undefined,
+  };
+}
+
+function parseImageUrl(value: unknown): string | undefined | false {
+  const url = optionalText(value, 500);
+  if (!url) return undefined;
+  return url.startsWith('https://') || url.startsWith('/') ? url : false;
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -31,7 +70,7 @@ function validateQuest(quest: Partial<ChallengeQuest>): string | null {
   if (quest.status && !QUEST_STATUSES.has(quest.status)) return 'สถานะภารกิจไม่ถูกต้อง';
   const total = Number(quest.total);
   if (!Number.isFinite(total) || total < 1) return 'เป้าหมายภารกิจต้องมากกว่า 0';
-  return null;
+  return getQuestDateError(quest.startDate, quest.endDate);
 }
 
 function createQuestRecord(input: Record<string, unknown>): CreateQuestDTO | string {
@@ -45,7 +84,13 @@ function createQuestRecord(input: Record<string, unknown>): CreateQuestDTO | str
     iconName: typeof input.iconName === 'string' && input.iconName.trim() ? input.iconName.trim() : 'Zap',
     total: String(Math.floor(Number(input.total) || 1)),
   };
-  const validationError = validateQuest({ ...quest, status: 'draft' });
+  const brandReward = input.brandReward === undefined ? undefined : parseBrandReward(input.brandReward);
+  if (typeof brandReward === 'string') return brandReward;
+  const image = parseImageUrl(input.image);
+  if (image === false) return 'URL รูปภาพต้องขึ้นต้นด้วย https:// หรือ /';
+  const startDate = optionalText(input.startDate, 40);
+  const endDate = optionalText(input.endDate, 40);
+  const validationError = validateQuest({ ...quest, startDate, endDate, status: 'draft' });
   if (validationError) return validationError;
 
   const rewardPoints = Number(input.rewardPoints);
@@ -72,8 +117,10 @@ function createQuestRecord(input: Record<string, unknown>): CreateQuestDTO | str
     rewardsText: typeof input.rewardsText === 'string' ? input.rewardsText.trim() : undefined,
     badgeIcon: typeof input.badgeIcon === 'string' ? input.badgeIcon.trim() : undefined,
     badgeCoverImg: typeof input.badgeCoverImg === 'string' ? input.badgeCoverImg.trim() : undefined,
-    startDate: typeof input.startDate === 'string' ? input.startDate.trim() : undefined,
-    endDate: typeof input.endDate === 'string' ? input.endDate.trim() : undefined,
+    startDate,
+    endDate,
+    image,
+    brandReward: brandReward ?? undefined,
   };
 }
 
@@ -141,6 +188,16 @@ export async function POST(request: Request) {
       const safeFields = Object.fromEntries(
         Object.entries(body.updatedFields).filter(([key]) => MUTABLE_QUEST_FIELDS.has(key as keyof ChallengeQuest))
       ) as UpdateQuestDTO;
+      if ('brandReward' in safeFields) {
+        const brandReward = parseBrandReward(safeFields.brandReward);
+        if (typeof brandReward === 'string') return NextResponse.json({ success: false, error: brandReward }, { status: 400 });
+        safeFields.brandReward = brandReward ?? undefined;
+      }
+      if ('image' in safeFields) {
+        const image = parseImageUrl(safeFields.image);
+        if (image === false) return NextResponse.json({ success: false, error: 'URL รูปภาพต้องขึ้นต้นด้วย https:// หรือ /' }, { status: 400 });
+        safeFields.image = image;
+      }
       const validationError = validateQuest({ ...existing, ...safeFields });
       if (validationError) return NextResponse.json({ success: false, error: validationError }, { status: 400 });
       const quest = await db.updateQuest(body.id, safeFields);
@@ -150,6 +207,15 @@ export async function POST(request: Request) {
     if (body.action === 'set_status') {
       if (typeof body.id !== 'string' || typeof body.status !== 'string' || !QUEST_STATUSES.has(body.status)) {
         return NextResponse.json({ success: false, error: 'Quest id or status is invalid' }, { status: 400 });
+      }
+      const existing = await db.findQuestById(body.id);
+      if (!existing) return NextResponse.json({ success: false, error: 'Quest not found' }, { status: 404 });
+      const endAt = parseQuestDate(existing.endDate, true);
+      if (body.status === 'active' && endAt !== null && endAt < Date.now()) {
+        return NextResponse.json(
+          { success: false, error: `ภารกิจนี้หมดเวลาแล้ว (${existing.endDate}) กรุณาแก้วันสิ้นสุดก่อนเผยแพร่` },
+          { status: 400 }
+        );
       }
       const quest = await db.updateQuest(body.id, { status: body.status as ChallengeQuest['status'] });
       if (!quest) return NextResponse.json({ success: false, error: 'Quest not found' }, { status: 404 });
