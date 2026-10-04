@@ -285,7 +285,7 @@ export default function ChallengesDiscoveryPage() {
                 ภารกิจไลฟ์สไตล์ & ชาเลนจ์
               </h1>
               <p className="text-xs sm:text-[13px] text-slate-500 leading-relaxed font-normal max-w-xl">
-                รับภารกิจ ออกไปวิ่ง เช็คอินคาเฟ่ หรือฮีลใจ สะสมเหรียญรางวัล Badges และส่งหลักฐานเพื่อรับแต้ม XP พิเศษเมื่อทำสำเร็จ
+                รับภารกิจและออกไปทำกิจกรรมสนุกๆ รับแต้ม XP แลกของรางวัล
               </p>
             </div>
 
