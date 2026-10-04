@@ -2139,16 +2139,21 @@ export default function MyHubPage() {
                         <button
                           type="button"
                           onClick={handleQuickFilterUpcoming}
-                          className={`px-3 py-1.5 text-center rounded-xl transition-all cursor-pointer border ${
+                          className={`px-3 py-1.5 text-center rounded-xl transition-all cursor-pointer border flex flex-col items-center justify-start ${
                             hubMainMode === 'categories' && eventViewMode === 'upcoming'
                               ? 'bg-white border-blue-500/80 shadow-2xs'
                               : 'border-transparent hover:bg-white/80'
                           }`}
                           title={`คลิกเพื่อดูนัดหมายที่กำลังจะมาถึง (${upcomingEventsTotalCount} รายการ)`}
                         >
-                          <span className="text-[10px] uppercase font-bold text-slate-400 block">นัดหมาย</span>
-                          <span className="text-base sm:text-lg font-black text-slate-900 block leading-tight">
+                          <div className="h-4 flex items-center justify-center">
+                            <span className="text-[10px] uppercase font-bold text-slate-400 block">นัดหมาย</span>
+                          </div>
+                          <span className="text-base sm:text-lg font-black text-slate-900 block leading-tight mt-0.5">
                             {upcomingEventsTotalCount}
+                          </span>
+                          <span className="text-[9.5px] px-1.5 py-0.2 rounded-md mt-0.5 invisible select-none pointer-events-none" aria-hidden="true">
+                            แลกรางวัล
                           </span>
                         </button>
 
@@ -2156,32 +2161,37 @@ export default function MyHubPage() {
                         <button
                           type="button"
                           onClick={handleQuickFilterAttended}
-                          className={`px-3 py-1.5 text-center rounded-xl transition-all cursor-pointer border border-x border-slate-200 ${
+                          className={`px-3 py-1.5 text-center rounded-xl transition-all cursor-pointer border border-x border-slate-200 flex flex-col items-center justify-start ${
                             hubMainMode === 'categories' && eventViewMode === 'past'
                               ? 'bg-white border-emerald-500/80 shadow-2xs'
                               : 'border-transparent hover:bg-white/80'
                           }`}
                           title={`คลิกเพื่อดูประวัติกิจกรรมที่เคยเข้าร่วม (${attendedEventsTotalCount} รายการ)`}
                         >
-                          <span className="text-[10px] uppercase font-bold text-slate-400 block">ที่เคยเข้าร่วม</span>
-                          <span className="text-base sm:text-lg font-black text-slate-900 block leading-tight">
+                          <div className="h-4 flex items-center justify-center">
+                            <span className="text-[10px] uppercase font-bold text-slate-400 block">ที่เคยเข้าร่วม</span>
+                          </div>
+                          <span className="text-base sm:text-lg font-black text-slate-900 block leading-tight mt-0.5">
                             {attendedEventsTotalCount}
+                          </span>
+                          <span className="text-[9.5px] px-1.5 py-0.2 rounded-md mt-0.5 invisible select-none pointer-events-none" aria-hidden="true">
+                            แลกรางวัล
                           </span>
                         </button>
 
                         {/* 3. แต้มสะสม (Rewards XP) */}
                         <Link
                           href="/rewards"
-                          className="px-3 py-1.5 text-center group/xp hover:bg-amber-50/90 hover:border-amber-300/80 rounded-xl transition-all cursor-pointer flex flex-col items-center justify-center border border-transparent active:scale-95 shadow-2xs"
+                          className="px-3 py-1.5 text-center group/xp hover:bg-amber-50/90 hover:border-amber-300/80 rounded-xl transition-all cursor-pointer flex flex-col items-center justify-start border border-transparent active:scale-95 shadow-2xs"
                           title={`คลิกเพื่อไปหน้าแลกของรางวัล & สิทธิพิเศษ (${userXp} XP)`}
                         >
-                          <div className="flex items-center gap-1">
+                          <div className="h-4 flex items-center justify-center gap-1">
                             <span className="text-[10px] uppercase font-bold text-slate-400 group-hover/xp:text-amber-700 block">
                               แต้มสะสม
                             </span>
                             <ArrowRight className="w-2.5 h-2.5 text-[#D04A1B] opacity-70 group-hover/xp:translate-x-0.5 transition-transform" />
                           </div>
-                          <span className="text-base sm:text-lg font-black text-slate-900 group-hover/xp:text-[#D04A1B] block leading-tight">
+                          <span className="text-base sm:text-lg font-black text-slate-900 group-hover/xp:text-[#D04A1B] block leading-tight mt-0.5">
                             {userXp}
                           </span>
                           <span className="text-[9.5px] font-extrabold text-[#D04A1B] bg-amber-100/90 group-hover/xp:bg-amber-200 px-1.5 py-0.2 rounded-md mt-0.5 transition-colors">
