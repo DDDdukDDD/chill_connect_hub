@@ -149,15 +149,9 @@ export default function FairDetailPage() {
   const [selectedPassData, setSelectedPassData] = useState<ExpoMeetupPassData | null>(null);
   const [isPassModalOpen, setIsPassModalOpen] = useState(false);
 
-  // Joined Sub IDs & Event IDs from localStorage (Only active when logged in)
+  // Joined Sub IDs & Event IDs from localStorage
   useEffect(() => {
     if (typeof window === 'undefined') return;
-
-    if (!isLoggedIn) {
-      setJoinedSubIds([]);
-      setJoinedEventIds([]);
-      return;
-    }
 
     try {
       const savedJoinedSubs = localStorage.getItem('joined_fair_sub_ids');
@@ -170,9 +164,11 @@ export default function FairDetailPage() {
       const savedJoinedEvents = localStorage.getItem('joined_event_ids');
       if (savedJoinedEvents) {
         setJoinedEventIds(JSON.parse(savedJoinedEvents));
+      } else {
+        setJoinedEventIds(['fair-book-expo-2026', 'comm-16', 'comm-18', 'comm-19']);
       }
     } catch {}
-  }, [isLoggedIn]);
+  }, []);
 
   // Retrieve event from mock and live API
   useEffect(() => {
@@ -576,9 +572,9 @@ export default function FairDetailPage() {
     );
   }
 
-  const isFav = isLoggedIn && favorites.includes(eventData.id);
+  const isFav = favorites.includes(eventData.id);
   const isEnded = isEventEnded(eventData);
-  const isJoined = isLoggedIn && (joinedEventIds.includes(eventData.id) || fairSubActivities.some((sub) => joinedSubIds.includes(sub.id)));
+  const isJoined = joinedEventIds.includes(eventData.id) || fairSubActivities.some((sub) => joinedSubIds.includes(sub.id));
 
   return (
     <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans selection:bg-[#2B527A] selection:text-white">

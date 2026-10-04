@@ -193,6 +193,9 @@ export default function MyHubPage() {
         }
       }
       setJoinedEventIds(allJoinedIds);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('joined_event_ids', JSON.stringify(allJoinedIds));
+      }
 
       // Sync Cancelled, Missed & Reviewed States
       const storedCancelled: string[] = JSON.parse(localStorage.getItem('myhub_cancelled_event_ids') || '[]');
@@ -1257,10 +1260,11 @@ export default function MyHubPage() {
               ))}
             </div>
           </div>
+        </div>
 
-          {/* Interactive Daily Agenda Sheet */}
-          <div className="pt-5 border-t border-slate-200/80 space-y-4">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
+        {/* Interactive Daily Agenda Sheet (Full Canvas Width matching Category view) */}
+        <div className="space-y-4 pt-1">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-[#2D5A3C]" />
                 <h3 className="text-sm sm:text-base font-black text-slate-900">
@@ -1832,7 +1836,6 @@ export default function MyHubPage() {
             )}
           </div>
         </div>
-      </div>
     );
   };
 
