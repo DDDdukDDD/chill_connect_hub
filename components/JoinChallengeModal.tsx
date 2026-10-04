@@ -349,7 +349,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
 
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs"
+              className="w-8 h-8 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs shrink-0 self-start"
               title="ปิดหน้าต่าง"
             >
               <X className="w-4 h-4" />
@@ -861,11 +861,11 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
         </div>
 
         {/* Modal Bottom Action Footer */}
-        <div className="p-3.5 sm:p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
+        <div className="p-3.5 sm:p-4 bg-slate-50 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 shrink-0">
           <button
             type="button"
             onClick={handleShare}
-            className="px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-2xs"
+            className="px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-2xs"
             title="แชร์ภารกิจให้เพื่อนๆ"
           >
             {copied ? (
@@ -882,12 +882,12 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
           </button>
 
           {/* Action Buttons depending on State */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             {isEnded && !localCompleted ? (
               <button
                 type="button"
                 disabled
-                className="px-6 sm:px-8 py-2.5 rounded-xl bg-slate-200 text-slate-500 font-bold text-xs sm:text-sm cursor-not-allowed"
+                className="px-6 sm:px-8 py-2.5 rounded-xl bg-slate-200 text-slate-500 font-bold text-xs sm:text-sm cursor-not-allowed text-center"
               >
                 ภารกิจสิ้นสุดระยะเวลาแล้ว
               </button>
@@ -896,7 +896,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                 <Link
                   href="/myhub?tab=quests_rewards"
                   onClick={onClose}
-                  className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-amber-950 font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-amber-950 font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer text-center"
                 >
                   <Ticket className="w-4 h-4" />
                   <span>ดูบัตรกำนัลใน MyHub</span>
@@ -905,19 +905,19 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                 <Link
                   href="/rewards"
                   onClick={onClose}
-                  className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer text-center"
                 >
                   <Gift className="w-4 h-4 text-amber-300" />
                   <span>เปิดศูนย์ของรางวัล (/rewards)</span>
                 </Link>
               )
             ) : isAlreadyJoined ? (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-2">
                 {/* Abandon / Cancel Button */}
                 <button
                   type="button"
                   onClick={() => setShowCancelConfirm(true)}
-                  className="px-3 py-2.5 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 text-xs font-bold transition-all cursor-pointer"
+                  className="px-3 py-2.5 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 text-xs font-bold transition-all cursor-pointer text-center"
                   title="ยกเลิกการทำภารกิจนี้"
                 >
                   <span>ยกเลิกภารกิจ</span>
@@ -927,7 +927,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowSubmitProof(true)}
-                  className="px-5 sm:px-7 py-2.5 rounded-xl bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-extrabold text-xs sm:text-sm shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-2"
+                  className="px-5 sm:px-7 py-2.5 rounded-xl bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-extrabold text-xs sm:text-sm shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2 text-center"
                 >
                   <Camera className="w-4 h-4 text-purple-200" />
                   <span>ส่งผล / บันทึกความคืบหน้า</span>
@@ -941,7 +941,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                   onConfirmJoin?.(quest);
                   onClose();
                 }}
-                className="px-7 sm:px-9 py-2.5 rounded-xl bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-extrabold text-xs sm:text-sm shadow-md transition-all active:scale-95 cursor-pointer"
+                className="px-7 sm:px-9 py-2.5 rounded-xl bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-extrabold text-xs sm:text-sm shadow-md transition-all active:scale-95 cursor-pointer text-center"
               >
                 <span>รับภารกิจท้าทายนี้</span>
               </button>

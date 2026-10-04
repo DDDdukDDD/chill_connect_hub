@@ -140,7 +140,7 @@ export const VerifyQuestModal: React.FC<VerifyQuestModalProps> = ({
                 ความคืบหน้าปัจจุบัน: {quest.completedCountInfo}
               </span>
             </div>
-            <h3 className="font-extrabold text-base sm:text-lg text-[#1E293B] mt-1 line-clamp-1">
+            <h3 className="font-extrabold text-base sm:text-lg text-[#1E293B] mt-1 leading-snug">
               ส่งหลักฐานยืนยัน: {quest.title}
             </h3>
             {(() => {
@@ -148,12 +148,12 @@ export const VerifyQuestModal: React.FC<VerifyQuestModalProps> = ({
               return brandReward.type === 'brand_partner' ? (
                 <div className="flex items-center gap-1.5 mt-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-[11px] font-medium shadow-2xs">
                   <Ticket className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  <span className="truncate"><strong>สิทธิ์ที่จะปลดล็อก:</strong> {brandReward.title} ({brandReward.partnerName})</span>
+                  <span className="leading-snug"><strong>สิทธิ์ที่จะปลดล็อก:</strong> {brandReward.title} ({brandReward.partnerName})</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5 mt-1.5 px-2.5 py-1 rounded-lg bg-purple-50 border border-purple-200 text-purple-900 text-[11px] font-medium shadow-2xs">
                   <Gift className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                  <span className="truncate"><strong>รางวัลที่จะได้รับ:</strong> แต้มพิเศษ + สิทธิ์สะสมแลกของรางวัลอิสระใน Hub Rewards</span>
+                  <span className="leading-snug"><strong>รางวัลที่จะได้รับ:</strong> แต้มพิเศษ + สิทธิ์สะสมแลกของรางวัลอิสระใน Hub Rewards</span>
                 </div>
               );
             })()}

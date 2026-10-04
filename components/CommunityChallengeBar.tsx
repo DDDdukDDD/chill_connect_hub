@@ -540,7 +540,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                   {brandReward.type === 'brand_partner' ? (
                     <span
                       title={`ภารกิจพาร์ทเนอร์ทางการ: ${brandReward.partnerName}`}
-                      className="text-[10px] font-black text-amber-950 bg-amber-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-amber-300/80 truncate max-w-[190px]"
+                      className="text-[10px] font-black text-amber-950 bg-amber-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-amber-300/80 truncate max-w-[calc(100%-70px)]"
                     >
                       <Crown className="w-2.5 h-2.5 text-amber-600 fill-amber-500 shrink-0" />
                       <span className="truncate">Official • {brandReward.partnerName}</span>
@@ -548,7 +548,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                   ) : (
                     <span
                       title="ภารกิจกิจกรรมกลางของ Chill & Connect Hub (สะสมแต้มแลกรางวัลอิสระ)"
-                      className="text-[10px] font-black text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-purple-300/80 truncate max-w-[210px]"
+                      className="text-[10px] font-black text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-purple-300/80 truncate max-w-[calc(100%-70px)]"
                     >
                       <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500 shrink-0" />
                       <span className="truncate">Official • Chill & Connect</span>
@@ -585,13 +585,13 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                 <div className="space-y-1.5 flex-1">
                   <h3
                     title={quest.title}
-                    className="font-black text-xs sm:text-[13px] text-slate-900 group-hover/card:text-purple-700 transition-colors leading-snug line-clamp-1"
+                    className="font-black text-xs sm:text-[13px] text-slate-900 group-hover/card:text-purple-700 transition-colors leading-snug line-clamp-2 min-h-[2.25rem] sm:min-h-[2.5rem]"
                   >
                     {quest.title}
                   </h3>
                   <p
                     title={quest.targetGoal}
-                    className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed font-medium"
+                    className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed font-medium min-h-[2rem]"
                   >
                     {quest.targetGoal}
                   </p>
@@ -618,7 +618,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
 
                 {/* 4. Meta Row: Partner & Participant count + Status Indicator (Clean, No Button) */}
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                  <div className="truncate max-w-[130px]" title={brandReward.type === 'brand_partner' ? `พาร์ทเนอร์ทางการ: ${brandReward.partnerName}` : 'กิจกรรมกลางของ Hub'}>
+                  <div className="min-w-0 flex-1 truncate" title={brandReward.type === 'brand_partner' ? `พาร์ทเนอร์ทางการ: ${brandReward.partnerName}` : 'กิจกรรมกลางของ Hub'}>
                     <span className="truncate text-slate-600 font-semibold text-[11px]">
                       โดย {brandReward.type === 'brand_partner' ? brandReward.partnerName : 'Chill & Connect Hub'}
                     </span>

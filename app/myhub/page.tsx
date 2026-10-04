@@ -3714,7 +3714,7 @@ export default function MyHubPage() {
                                         ) : (
                                           <span 
                                             title="ภารกิจกิจกรรมกลางของ Chill & Connect Hub"
-                                            className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-900 border border-purple-200 shrink-0 truncate max-w-[200px] inline-flex items-center gap-1"
+                                            className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-900 border border-purple-200 shrink-0 truncate max-w-[calc(100%-65px)] inline-flex items-center gap-1"
                                           >
                                             <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500 shrink-0" />
                                             <span className="truncate">Official • Chill & Connect</span>
@@ -3726,7 +3726,7 @@ export default function MyHubPage() {
                                         </span>
                                       </div>
 
-                                      <h5 className="font-bold text-xs sm:text-sm text-slate-900 group-hover/card:text-purple-700 transition-colors leading-snug line-clamp-1">
+                                      <h5 className="font-bold text-xs sm:text-sm text-slate-900 group-hover/card:text-purple-700 transition-colors leading-snug line-clamp-2 min-h-[2.5rem]">
                                         {quest.title}
                                       </h5>
                                     </div>
@@ -3738,7 +3738,7 @@ export default function MyHubPage() {
                                       <Award className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                                       <span className="truncate">เหรียญ: {quest.badgeLabel}</span>
                                     </div>
-                                    <p className="text-slate-500 line-clamp-2 leading-relaxed text-[11.5px]">
+                                    <p className="text-slate-500 line-clamp-2 leading-relaxed text-[11.5px] min-h-[2rem]">
                                       {quest.targetGoal}
                                     </p>
 
