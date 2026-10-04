@@ -2230,10 +2230,7 @@ export default function MyHubPage() {
 
                   <div className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
                     {hubMainMode === 'calendar' ? (
-                      <>
-                        <Sparkles className="w-3.5 h-3.5 text-[#2D5A3C]" />
-                        <span>ปฏิทินรวมนัดหมายทุกประเภทในที่เดียว</span>
-                      </>
+                      <span>ปฏิทินรวมนัดหมายทุกประเภทในที่เดียว</span>
                     ) : (
                       <span>เลือกดูตั๋วและบริหารจัดการตามประเภท</span>
                     )}
