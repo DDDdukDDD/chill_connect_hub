@@ -390,11 +390,11 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
               04
             </span>
             <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <span>ภารกิจไลฟ์สไตล์ & ชาเลนจ์</span>
+              <span>Challenge & Lifestyle Hub</span>
             </h2>
           </div>
           <p className="text-xs text-slate-500 mt-1 font-medium pl-8">
-            พิชิตภารกิจสนุกๆ เพื่อสะสมเข็มกลัดเกียรติยศและคะแนน XP แลกรับสิทธิพิเศษทั่วไทย
+            ภารกิจไลฟ์สไตล์ & ชาเลนจ์ กิจกรรมรับแต้ม XP และของรางวัล
           </p>
         </div>
 
@@ -470,10 +470,10 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                   ) : (
                     <span
                       title="ภารกิจกิจกรรมกลางของ Chill & Connect Hub (สะสมแต้มแลกรางวัลอิสระ)"
-                      className="text-[10px] font-black text-emerald-950 bg-emerald-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-emerald-300/80 truncate max-w-[190px]"
+                      className="text-[10px] font-black text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-purple-300/80 truncate max-w-[210px]"
                     >
-                      <Sparkles className="w-2.5 h-2.5 text-emerald-700 fill-emerald-500 shrink-0" />
-                      <span className="truncate">Hub Challenge • กิจกรรมกลาง</span>
+                      <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500 shrink-0" />
+                      <span className="truncate">Official Hub Challenge • กิจกรรมกลาง</span>
                     </span>
                   )}
 

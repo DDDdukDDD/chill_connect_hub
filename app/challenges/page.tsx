@@ -407,10 +407,10 @@ export default function ChallengesDiscoveryPage() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div className="space-y-1">
               <h1 className="text-lg sm:text-xl md:text-2xl font-black text-slate-900 tracking-tight leading-tight">
-                ภารกิจไลฟ์สไตล์ & ชาเลนจ์
+                Challenge & Lifestyle Hub
               </h1>
               <p className="text-xs sm:text-[13px] text-slate-500 leading-relaxed font-normal max-w-xl">
-                รับภารกิจและออกไปทำกิจกรรมสนุกๆ รับแต้ม XP แลกของรางวัล
+                ภารกิจไลฟ์สไตล์ & ชาเลนจ์ กิจกรรมรับแต้ม XP และของรางวัล
               </p>
             </div>
 
@@ -589,10 +589,10 @@ export default function ChallengesDiscoveryPage() {
                           ) : (
                             <span
                               title="ภารกิจกิจกรรมกลางของ Chill & Connect Hub (สะสมแต้มแลกรางวัลอิสระ)"
-                              className="text-[10px] font-black text-emerald-950 bg-emerald-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-emerald-300/80 truncate max-w-[210px]"
+                              className="text-[10px] font-black text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-purple-300/80 truncate max-w-[210px]"
                             >
-                              <Sparkles className="w-2.5 h-2.5 text-emerald-700 fill-emerald-500 shrink-0" />
-                              <span className="truncate">Hub Challenge • กิจกรรมกลาง</span>
+                              <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500 shrink-0" />
+                              <span className="truncate">Official Hub Challenge • กิจกรรมกลาง</span>
                             </span>
                           )}
 

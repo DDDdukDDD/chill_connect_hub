@@ -816,8 +816,9 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                           สิทธิ์แลกของรางวัลศูนย์กลาง (Universal Hub Rewards)
                         </span>
                       </div>
-                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
-                        Official Hub Challenge
+                      <span className="text-[10px] font-extrabold text-purple-900 bg-purple-100/90 px-2.5 py-0.5 rounded-full border border-purple-300/80 flex items-center gap-1 shadow-2xs">
+                        <Crown className="w-3 h-3 text-purple-700 shrink-0" />
+                        <span>Official Hub Challenge • กิจกรรมกลาง</span>
                       </span>
                     </div>
 

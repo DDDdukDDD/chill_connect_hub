@@ -3631,16 +3631,18 @@ export default function MyHubPage() {
                                 {brandReward.type === 'brand_partner' ? (
                                   <span 
                                     title={`ภารกิจพาร์ทเนอร์ทางการ: ${brandReward.partnerName}`}
-                                    className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-900 border border-purple-200 shrink-0 truncate max-w-[140px]"
+                                    className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-900 border border-purple-200 shrink-0 truncate max-w-[140px] inline-flex items-center gap-1"
                                   >
-                                    Official • {brandReward.partnerName}
+                                    <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500 shrink-0" />
+                                    <span className="truncate">Official • {brandReward.partnerName}</span>
                                   </span>
                                 ) : (
                                   <span 
                                     title="ภารกิจกิจกรรมกลางของ Chill & Connect Hub"
-                                    className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 shrink-0 truncate max-w-[140px]"
+                                    className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-900 border border-purple-200 shrink-0 truncate max-w-[200px] inline-flex items-center gap-1"
                                   >
-                                    Hub Challenge • กิจกรรมกลาง
+                                    <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500 shrink-0" />
+                                    <span className="truncate">Official Hub Challenge • กิจกรรมกลาง</span>
                                   </span>
                                 )}
                                 <span className="text-[10px] font-black text-purple-700 bg-purple-50 border border-purple-200/80 px-2 py-0.5 rounded-md flex items-center gap-0.5 ml-auto shadow-2xs">
