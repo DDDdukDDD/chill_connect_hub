@@ -183,7 +183,6 @@ export default function ChallengesDiscoveryPage() {
     }
   }, [isLoggedIn]);
 
-  const userLevel = Math.max(1, Math.floor(userXp / 150) + 1);
   
   // Confirmation Modal states
   const [questToJoin, setQuestToJoin] = useState<QuestWithDuration | null>(null);
@@ -275,11 +274,9 @@ export default function ChallengesDiscoveryPage() {
       <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] mx-auto px-3.5 sm:px-6 lg:px-8 pt-2.5 pb-28 sm:pt-4 sm:pb-12 space-y-3 sm:space-y-4 w-full">
         
 
-        {/* 1. Header Hero Banner with Member Privileges */}
-        <section className="relative rounded-2xl bg-white p-4 sm:p-5 shadow-2xs border border-slate-200/80 overflow-hidden space-y-4">
-          
-          {/* Top Row: Page Title, Level/XP status, and Meta */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+        {/* 1. Header Hero Banner */}
+        <section className="relative rounded-2xl bg-white p-4 sm:p-5 shadow-2xs border border-slate-200/80 overflow-hidden">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div className="space-y-1">
               <h1 className="text-lg sm:text-xl md:text-2xl font-black text-slate-900 tracking-tight leading-tight">
                 ภารกิจไลฟ์สไตล์ & ชาเลนจ์
@@ -289,26 +286,19 @@ export default function ChallengesDiscoveryPage() {
               </p>
             </div>
 
-            {/* Action Status & Level */}
+            {/* Action Status */}
             <div className="flex items-center gap-2 flex-wrap shrink-0">
               {isLoggedIn ? (
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold shadow-2xs">
-                    <span>Lv.{userLevel}</span>
-                    <span className="text-slate-300">•</span>
-                    <span className="text-purple-700 font-mono">{userXp} XP</span>
-                  </span>
-                  {joinedQuestIds.length > 0 && (
-                    <Link
-                      href="/myhub?tab=quests_rewards"
-                      className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-700 hover:text-purple-900 bg-purple-50 px-3 py-1.5 rounded-xl border border-purple-200/80 hover:bg-purple-100 transition-colors shadow-2xs"
-                    >
-                      <Zap className="w-3.5 h-3.5 text-purple-600 fill-purple-500" />
-                      <span>กำลังทำ {joinedQuestIds.length} ภารกิจ</span>
-                      <ArrowRight className="w-3 h-3 text-purple-600" />
-                    </Link>
-                  )}
-                </div>
+                joinedQuestIds.length > 0 && (
+                  <Link
+                    href="/myhub?tab=quests_rewards"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-700 hover:text-purple-900 bg-purple-50 px-3 py-1.5 rounded-xl border border-purple-200/80 hover:bg-purple-100 transition-colors shadow-2xs"
+                  >
+                    <Zap className="w-3.5 h-3.5 text-purple-600 fill-purple-500" />
+                    <span>กำลังทำ {joinedQuestIds.length} ภารกิจ</span>
+                    <ArrowRight className="w-3 h-3 text-purple-600" />
+                  </Link>
+                )
               ) : (
                 <button
                   type="button"
@@ -322,26 +312,26 @@ export default function ChallengesDiscoveryPage() {
               )}
             </div>
           </div>
+        </section>
 
-          {/* Slim Micro-Incentive Teaser Strip (Approach 1) */}
-          <div className="rounded-xl bg-gradient-to-r from-purple-50/90 via-indigo-50/40 to-slate-50 border border-purple-100/90 p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-2xs">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-7 h-7 rounded-lg bg-purple-100 text-[#7C3AED] flex items-center justify-center shrink-0 shadow-2xs">
-                <Gift className="w-4 h-4 text-purple-600" />
-              </div>
-              <p className="text-xs text-slate-700 font-medium leading-relaxed">
-                <strong className="text-purple-900 font-bold">แลกของรางวัล:</strong> สะสมแต้ม XP จากภารกิจ แลกรับกาแฟ Specialty ฟรี, เวิร์กช็อป และสิทธิพิเศษไลฟ์สไตล์
-              </p>
+        {/* 2. Standalone Rewards Micro-Incentive Strip */}
+        <section className="rounded-2xl bg-gradient-to-r from-purple-50/90 via-indigo-50/40 to-slate-50 border border-purple-100/90 p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-2xs">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-7 h-7 rounded-lg bg-purple-100 text-[#7C3AED] flex items-center justify-center shrink-0 shadow-2xs">
+              <Gift className="w-4 h-4 text-purple-600" />
             </div>
-
-            <Link
-              href="/rewards"
-              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-2xs transition-all shrink-0 active:scale-95 cursor-pointer leading-none"
-            >
-              <span>สำรวจของรางวัล</span>
-              <ArrowRight className="w-3 h-3" />
-            </Link>
+            <p className="text-xs text-slate-700 font-medium leading-relaxed">
+              <strong className="text-purple-900 font-bold">แลกของรางวัล:</strong> สะสมแต้ม XP จากภารกิจ แลกรับกาแฟ Specialty ฟรี, เวิร์กช็อป และสิทธิพิเศษไลฟ์สไตล์
+            </p>
           </div>
+
+          <Link
+            href="/rewards"
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-2xs transition-all shrink-0 active:scale-95 cursor-pointer leading-none"
+          >
+            <span>สำรวจของรางวัล</span>
+            <ArrowRight className="w-3 h-3" />
+          </Link>
         </section>
 
         {/* 2. Main Content Container */}
