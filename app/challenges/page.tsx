@@ -202,7 +202,6 @@ const ALL_QUESTS: QuestWithDuration[] = [
 
 export default function ChallengesDiscoveryPage() {
   const [activeTab, setActiveTab] = useState('challenges');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<'all' | 'hub_central' | 'brand_partner'>('all');
   const [statusFilter, setStatusFilter] = useState<'active' | 'ended'>('active');
   const [searchQuery, setSearchQuery] = useState('');
@@ -472,11 +471,6 @@ export default function ChallengesDiscoveryPage() {
         return false;
       }
 
-      // Category match
-      if (selectedCategory !== 'all' && quest.category !== selectedCategory) {
-        return false;
-      }
-
       // Search query match
       if (searchQuery.trim() !== '') {
         const q = searchQuery.toLowerCase();
@@ -485,7 +479,7 @@ export default function ChallengesDiscoveryPage() {
       }
       return true;
     });
-  }, [questList, statusFilter, selectedType, selectedCategory, searchQuery]);
+  }, [questList, statusFilter, selectedType, searchQuery]);
 
   // Pagination calculation
   const totalPages = Math.ceil(filteredQuests.length / itemsPerPage);
@@ -584,13 +578,11 @@ export default function ChallengesDiscoveryPage() {
         {/* 2. Main Content Container */}
         <section className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-2xs space-y-3.5 sm:space-y-4">
           
-          {/* Quick Filter: Quest Type Chips (Official Central vs Brand Partner) */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-slate-100">
-            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5">
-              <span className="text-[11px] font-bold text-slate-400 shrink-0 uppercase tracking-wider mr-0.5">
-                ตัวกรองด่วน:
-              </span>
-
+          {/* Unified Filter & Search Bar Row */}
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 bg-slate-50/90 p-1.5 sm:p-2 rounded-xl border border-slate-200/70">
+            
+            {/* Filter Pills (No Multi-Color, No Icons) */}
+            <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar py-0.5">
               {/* 1. All */}
               <button
                 type="button"
@@ -598,15 +590,15 @@ export default function ChallengesDiscoveryPage() {
                   setSelectedType('all');
                   setCurrentPage(1);
                 }}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shrink-0 shadow-2xs ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
                   selectedType === 'all'
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                    ? 'bg-slate-900 text-white shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                 }`}
               >
                 <span>ทั้งหมด</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${selectedType === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'}`}>
-                  {questList.length}
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${selectedType === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-slate-600'}`}>
+                  {relevantQuestsByStatus.length}
                 </span>
               </button>
 
@@ -617,15 +609,14 @@ export default function ChallengesDiscoveryPage() {
                   setSelectedType(selectedType === 'hub_central' ? 'all' : 'hub_central');
                   setCurrentPage(1);
                 }}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shrink-0 shadow-2xs border ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
                   selectedType === 'hub_central'
-                    ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
-                    : 'bg-purple-50 hover:bg-purple-100/90 text-purple-900 border-purple-200/90'
+                    ? 'bg-slate-900 text-white shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                 }`}
               >
-                <Crown className={`w-3.5 h-3.5 shrink-0 ${selectedType === 'hub_central' ? 'text-purple-200 fill-purple-200' : 'text-purple-700 fill-purple-500'}`} />
                 <span>Official • Chill & Connect</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${selectedType === 'hub_central' ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-800'}`}>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${selectedType === 'hub_central' ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-slate-600'}`}>
                   {hubCount}
                 </span>
               </button>
@@ -637,70 +628,17 @@ export default function ChallengesDiscoveryPage() {
                   setSelectedType(selectedType === 'brand_partner' ? 'all' : 'brand_partner');
                   setCurrentPage(1);
                 }}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shrink-0 shadow-2xs border ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
                   selectedType === 'brand_partner'
-                    ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
-                    : 'bg-amber-50 hover:bg-amber-100/90 text-amber-950 border-amber-200/90'
+                    ? 'bg-slate-900 text-white shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                 }`}
               >
-                <Crown className={`w-3.5 h-3.5 shrink-0 ${selectedType === 'brand_partner' ? 'text-amber-200 fill-amber-200' : 'text-amber-600 fill-amber-500'}`} />
                 <span>แบรนด์พาร์ทเนอร์</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${selectedType === 'brand_partner' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-900'}`}>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${selectedType === 'brand_partner' ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-slate-600'}`}>
                   {partnerCount}
                 </span>
               </button>
-            </div>
-
-            {/* Micro Helper Note */}
-            <div className="hidden lg:flex items-center gap-1.5 text-[11px] text-slate-400">
-              {selectedType === 'hub_central' && (
-                <span className="text-purple-700 font-semibold flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                  ภารกิจกลาง สะสมแต้มแลกของรางวัลอิสระใน Hub Rewards
-                </span>
-              )}
-              {selectedType === 'brand_partner' && (
-                <span className="text-amber-800 font-semibold flex items-center gap-1">
-                  <Ticket className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  สิทธิพิเศษ รับดิจิทัลเวาเชอร์เฉพาะแบรนด์พาร์ทเนอร์
-                </span>
-              )}
-              {selectedType === 'all' && (
-                <span>แสดงทั้งภารกิจกลางและสิทธิพิเศษแบรนด์</span>
-              )}
-            </div>
-          </div>
-
-          {/* Category Tabs & Search Bar Row */}
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 bg-slate-50/90 p-1.5 sm:p-2 rounded-xl border border-slate-200/70">
-            
-            {/* Category Pills */}
-            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
-              {[
-                { id: 'all', label: 'ทั้งหมด' },
-                { id: 'move', label: 'สายแอคทีฟ' },
-                { id: 'heal', label: 'สายฮีลใจ' },
-                { id: 'chill', label: 'สายชิลล์' },
-                { id: 'learn', label: 'สายเรียนรู้' },
-              ].map((cat) => {
-                const isSelected = selectedCategory === cat.id;
-                return (
-                  <button
-                    key={cat.id}
-                    onClick={() => {
-                      setSelectedCategory(cat.id);
-                      setCurrentPage(1);
-                    }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 whitespace-nowrap cursor-pointer ${
-                      isSelected
-                        ? 'bg-purple-100 text-purple-900 border border-purple-300/70 shadow-2xs'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/60'
-                    }`}
-                  >
-                    {cat.label}
-                  </button>
-                );
-              })}
             </div>
 
             {/* Compact Search */}
@@ -714,7 +652,7 @@ export default function ChallengesDiscoveryPage() {
                   setCurrentPage(1);
                 }}
                 placeholder="ค้นหาภารกิจ..."
-                className="w-full pl-8.5 pr-3 py-1.5 text-xs bg-white rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-[#7C3AED]"
+                className="w-full pl-8.5 pr-3 py-1.5 text-xs bg-white rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-900"
               />
             </div>
 
@@ -785,7 +723,6 @@ export default function ChallengesDiscoveryPage() {
                     type="button"
                     onClick={() => {
                       setSelectedType('all');
-                      setSelectedCategory('all');
                       setSearchQuery('');
                     }}
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold shadow-2xs transition-all cursor-pointer shrink-0 self-end sm:self-center active:scale-95"

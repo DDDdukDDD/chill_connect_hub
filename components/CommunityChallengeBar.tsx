@@ -457,15 +457,14 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
         <button
           type="button"
           onClick={() => setFilterType(filterType === 'hub_central' ? 'all' : 'hub_central')}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shrink-0 shadow-2xs border ${
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 shadow-2xs border ${
             filterType === 'hub_central'
-              ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
-              : 'bg-purple-50 hover:bg-purple-100/90 text-purple-900 border-purple-200/90'
+              ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+              : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200/80'
           }`}
         >
-          <Crown className={`w-3.5 h-3.5 shrink-0 ${filterType === 'hub_central' ? 'text-purple-200 fill-purple-200' : 'text-purple-700 fill-purple-500'}`} />
           <span>Official • Chill & Connect</span>
-          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${filterType === 'hub_central' ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-800'}`}>
+          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${filterType === 'hub_central' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
             {hubCount}
           </span>
         </button>
@@ -474,15 +473,14 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
         <button
           type="button"
           onClick={() => setFilterType(filterType === 'brand_partner' ? 'all' : 'brand_partner')}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shrink-0 shadow-2xs border ${
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 shadow-2xs border ${
             filterType === 'brand_partner'
-              ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
-              : 'bg-amber-50 hover:bg-amber-100/90 text-amber-950 border-amber-200/90'
+              ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+              : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200/80'
           }`}
         >
-          <Crown className={`w-3.5 h-3.5 shrink-0 ${filterType === 'brand_partner' ? 'text-amber-200 fill-amber-200' : 'text-amber-600 fill-amber-500'}`} />
           <span>แบรนด์พาร์ทเนอร์</span>
-          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${filterType === 'brand_partner' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-900'}`}>
+          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${filterType === 'brand_partner' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
             {partnerCount}
           </span>
         </button>
