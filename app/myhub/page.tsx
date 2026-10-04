@@ -3631,9 +3631,9 @@ export default function MyHubPage() {
                                 {brandReward.type === 'brand_partner' ? (
                                   <span 
                                     title={`ภารกิจพาร์ทเนอร์ทางการ: ${brandReward.partnerName}`}
-                                    className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-900 border border-purple-200 shrink-0 truncate max-w-[140px] inline-flex items-center gap-1"
+                                    className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-950 border border-amber-200 shrink-0 truncate max-w-[140px] inline-flex items-center gap-1"
                                   >
-                                    <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500 shrink-0" />
+                                    <Crown className="w-2.5 h-2.5 text-amber-600 fill-amber-500 shrink-0" />
                                     <span className="truncate">Official • {brandReward.partnerName}</span>
                                   </span>
                                 ) : (
@@ -3642,7 +3642,7 @@ export default function MyHubPage() {
                                     className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-900 border border-purple-200 shrink-0 truncate max-w-[200px] inline-flex items-center gap-1"
                                   >
                                     <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500 shrink-0" />
-                                    <span className="truncate">Official Hub Challenge • กิจกรรมกลาง</span>
+                                    <span className="truncate">Official • Chill & Connect</span>
                                   </span>
                                 )}
                                 <span className="text-[10px] font-black text-purple-700 bg-purple-50 border border-purple-200/80 px-2 py-0.5 rounded-md flex items-center gap-0.5 ml-auto shadow-2xs">

@@ -574,16 +574,16 @@ export default function ChallengesDiscoveryPage() {
                         }`}
                       >
                         {/* Official Quest Top Accent Stripe */}
-                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-600 via-indigo-400 to-purple-400" />
+                        <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${brandReward.type === 'brand_partner' ? 'from-amber-500 via-amber-400 to-orange-400' : 'from-purple-600 via-indigo-400 to-purple-400'}`} />
 
                         {/* 1. Top Badges Row: Brand Partner vs Central Hub Badge */}
                         <div className="flex items-center justify-between gap-1.5 pt-0.5">
                           {brandReward.type === 'brand_partner' ? (
                             <span
                               title={`ภารกิจพาร์ทเนอร์ทางการ: ${brandReward.partnerName}`}
-                              className="text-[10px] font-black text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-purple-300/80 truncate max-w-[210px]"
+                              className="text-[10px] font-black text-amber-950 bg-amber-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-amber-300/80 truncate max-w-[210px]"
                             >
-                              <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500 shrink-0" />
+                              <Crown className="w-2.5 h-2.5 text-amber-600 fill-amber-500 shrink-0" />
                               <span className="truncate">Official • {brandReward.partnerName}</span>
                             </span>
                           ) : (
@@ -592,7 +592,7 @@ export default function ChallengesDiscoveryPage() {
                               className="text-[10px] font-black text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-purple-300/80 truncate max-w-[210px]"
                             >
                               <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500 shrink-0" />
-                              <span className="truncate">Official Hub Challenge • กิจกรรมกลาง</span>
+                              <span className="truncate">Official • Chill & Connect</span>
                             </span>
                           )}
 
@@ -677,12 +677,12 @@ export default function ChallengesDiscoveryPage() {
                           <div className="flex items-center gap-1.5 truncate max-w-[140px]" title={brandReward.type === 'brand_partner' ? `พาร์ทเนอร์ทางการ: ${brandReward.partnerName}` : 'กิจกรรมกลางของ Hub'}>
                             {brandReward.type === 'brand_partner' ? (
                               <>
-                                <ShieldCheck className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                                <ShieldCheck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                                 <span className="truncate text-slate-700 font-semibold">{brandReward.partnerName}</span>
                               </>
                             ) : (
                               <>
-                                <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                <Sparkles className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                                 <span className="truncate text-slate-700 font-semibold">Chill & Connect Hub</span>
                               </>
                             )}

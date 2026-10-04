@@ -782,8 +782,9 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                           สิทธิพิเศษเฉพาะแบรนด์พาร์ทเนอร์ (Brand-Exclusive Privilege)
                         </span>
                       </div>
-                      <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300">
-                        {brandReward.partnerName}
+                      <span className="text-[10px] font-extrabold text-amber-950 bg-amber-100/90 px-2.5 py-0.5 rounded-full border border-amber-300/80 flex items-center gap-1 shadow-2xs">
+                        <Crown className="w-3 h-3 text-amber-600 fill-amber-500 shrink-0" />
+                        <span>Official • {brandReward.partnerName}</span>
                       </span>
                     </div>
 
@@ -818,7 +819,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                       </div>
                       <span className="text-[10px] font-extrabold text-purple-900 bg-purple-100/90 px-2.5 py-0.5 rounded-full border border-purple-300/80 flex items-center gap-1 shadow-2xs">
                         <Crown className="w-3 h-3 text-purple-700 shrink-0" />
-                        <span>Official Hub Challenge • กิจกรรมกลาง</span>
+                        <span>Official • Chill & Connect</span>
                       </span>
                     </div>
 
