@@ -3,7 +3,7 @@ import type { AdminEventItem } from './eventsStore';
 import { REAL_BANGKOK_EVENT_SEEDS } from './eventScraper';
 
 const QSNCC_CALENDAR_URL = 'https://www.qsncc.com/en/whats-on/event-calendar';
-const BITEC_GALLERY_URL = 'https://www.bitec.co.th/gallery';
+const BITEC_GALLERY_URL = 'https://www.bitec.co.th/whats-on';
 
 // Helper: Get all protected core community events from mockData
 export function getCoreCommunityEvents(): AdminEventItem[] {
@@ -52,10 +52,11 @@ function resolveOfficialUrl(ev: AdminEventItem): string | null {
 function normalizeEvent(ev: AdminEventItem): AdminEventItem {
   let next = ev;
 
-  // 1. Auto-enrich events with direct official event URLs
-  const officialUrl = resolveOfficialUrl(ev);
-  if (officialUrl && ev.externalUrl !== officialUrl) {
-    next = withSourceUrl(next, officialUrl);
+  // 1. Fill an official URL only for events that have none. Events imported by the scraper already carry their
+  //    own detail page; overwriting it with a venue-wide page (or a seed matched by a similar title) broke links.
+  if (!ev.externalUrl && !ev.sourceUrl && !ev.link) {
+    const officialUrl = resolveOfficialUrl(ev);
+    if (officialUrl) next = withSourceUrl(next, officialUrl);
   }
 
   // 2. Keep pillar identity consistent with the id prefix
