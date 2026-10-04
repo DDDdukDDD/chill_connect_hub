@@ -183,16 +183,10 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                 {getCategoryLabel(quest.category)}
               </span>
 
-              {quest.isOfficial ? (
-                <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-amber-400 text-slate-950 shadow-xs flex items-center gap-1">
-                  <Crown className="w-3.5 h-3.5 fill-slate-950 text-slate-950" />
-                  <span>Official Quest</span>
-                </span>
-              ) : (
-                <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-md text-white border border-white/20">
-                  ชุมชนสร้างสรรค์
-                </span>
-              )}
+              <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-amber-400 text-slate-950 shadow-xs flex items-center gap-1">
+                <Crown className="w-3.5 h-3.5 fill-slate-950 text-slate-950" />
+                <span>Official Quest</span>
+              </span>
 
               {/* Status Badge */}
               {localCompleted ? (

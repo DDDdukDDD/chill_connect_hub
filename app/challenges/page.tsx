@@ -27,7 +27,6 @@ import {
   ShieldCheck,
   Check,
   Sprout,
-  Plus,
   Gift,
 } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
@@ -36,7 +35,6 @@ import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { JoinChallengeModal } from '@/components/JoinChallengeModal';
-import { CreateEventModal } from '@/components/CreateEventModal';
 import { BrandLogo } from '@/components/BrandLogo';
 import { Pagination } from '@/components/Pagination';
 import { ChallengeQuest, MOCK_CHALLENGES } from '@/data/mockData';
@@ -129,7 +127,6 @@ const ALL_QUESTS: QuestWithDuration[] = [
 export default function ChallengesDiscoveryPage() {
   const [activeTab, setActiveTab] = useState('challenges');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedType, setSelectedType] = useState<'all' | 'official' | 'community'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   
   // Auth state
@@ -137,7 +134,6 @@ export default function ChallengesDiscoveryPage() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
-  const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 18;
   const [questList, setQuestList] = useState<QuestWithDuration[]>(ALL_QUESTS);
@@ -363,13 +359,6 @@ export default function ChallengesDiscoveryPage() {
       if (selectedCategory !== 'all' && quest.category !== selectedCategory) {
         return false;
       }
-      // Type match (Official vs Community)
-      if (selectedType === 'official' && !quest.isOfficial) {
-        return false;
-      }
-      if (selectedType === 'community' && quest.isOfficial) {
-        return false;
-      }
       // Search query match
       if (searchQuery.trim() !== '') {
         const q = searchQuery.toLowerCase();
@@ -378,7 +367,7 @@ export default function ChallengesDiscoveryPage() {
       }
       return true;
     });
-  }, [questList, selectedCategory, selectedType, searchQuery]);
+  }, [questList, selectedCategory, searchQuery]);
 
   // Pagination calculation
   const totalPages = Math.ceil(filteredQuests.length / itemsPerPage);
@@ -399,13 +388,6 @@ export default function ChallengesDiscoveryPage() {
         setIsLoggedIn={handleSetIsLoggedIn}
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}
-        onOpenCreateEvent={() => {
-          if (!isLoggedIn) {
-            setIsRequireMembershipOpen(true);
-          } else {
-            setIsCreateEventModalOpen(true);
-          }
-        }}
       />
 
       {/* Toast Notification */}
@@ -457,21 +439,6 @@ export default function ChallengesDiscoveryPage() {
                 </button>
               )}
 
-              {/* Create Challenge CTA */}
-              <button
-                type="button"
-                onClick={() => {
-                  if (!isLoggedIn) {
-                    setIsRequireMembershipOpen(true);
-                    return;
-                  }
-                  setIsCreateEventModalOpen(true);
-                }}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer leading-none"
-              >
-                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                <span>สร้างชาเลนจ์ใหม่</span>
-              </button>
             </div>
           </div>
         </section>
@@ -531,58 +498,19 @@ export default function ChallengesDiscoveryPage() {
               })}
             </div>
 
-            {/* Type Selector (Official vs Community) & Search */}
-            <div className="flex items-center gap-2">
-              <div className="flex items-center bg-white p-0.5 rounded-lg border border-slate-200/80 shrink-0">
-                <button
-                  onClick={() => {
-                    setSelectedType('all');
-                    setCurrentPage(1);
-                  }}
-                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-                    selectedType === 'all' ? 'bg-[#7C3AED] text-white font-bold shadow-2xs' : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  ทั้งหมด
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedType('official');
-                    setCurrentPage(1);
-                  }}
-                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-                    selectedType === 'official' ? 'bg-[#7C3AED] text-white font-bold shadow-2xs' : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  ทางการ
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedType('community');
-                    setCurrentPage(1);
-                  }}
-                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-                    selectedType === 'community' ? 'bg-[#7C3AED] text-white font-bold shadow-2xs' : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  ชุมชน
-                </button>
-              </div>
-
-              {/* Compact Search */}
-              <div className="relative flex-1 md:w-52">
-                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  placeholder="ค้นหาภารกิจ..."
-                  className="w-full pl-8.5 pr-3 py-1.5 text-xs bg-white rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-[#7C3AED]"
-                />
-              </div>
+            {/* Compact Search */}
+            <div className="relative flex-1 sm:max-w-xs md:w-64">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                placeholder="ค้นหาภารกิจ..."
+                className="w-full pl-8.5 pr-3 py-1.5 text-xs bg-white rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-[#7C3AED]"
+              />
             </div>
 
           </div>
@@ -620,7 +548,6 @@ export default function ChallengesDiscoveryPage() {
                     type="button"
                     onClick={() => {
                       setSelectedCategory('all');
-                      setSelectedType('all');
                       setSearchQuery('');
                     }}
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold shadow-2xs transition-all cursor-pointer shrink-0 self-end sm:self-center active:scale-95"
@@ -646,27 +573,17 @@ export default function ChallengesDiscoveryPage() {
                         }`}
                       >
                         {/* Official Quest Top Accent Stripe */}
-                        {quest.isOfficial && (
-                          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-600 via-indigo-400 to-purple-400" />
-                        )}
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-600 via-indigo-400 to-purple-400" />
 
-                        {/* 1. Top Badges Row: Official/Community + XP Token (CHILL/MOVE/HEAL removed) */}
+                        {/* 1. Top Badges Row: Official Badge + XP Token */}
                         <div className="flex items-center justify-between gap-1.5 pt-0.5">
-                          <div className="flex items-center gap-1.5">
-                            {quest.isOfficial ? (
-                              <span
-                                title="ชาเลนจ์ทางการที่จัดทำโดย Chill & Connect Hub"
-                                className="text-[10px] font-black text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-purple-300/80"
-                              >
-                                <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500" />
-                                <span>Official</span>
-                              </span>
-                            ) : (
-                              <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
-                                ชุมชน
-                              </span>
-                            )}
-                          </div>
+                          <span
+                            title="ภารกิจทางการจาก Chill & Connect Hub และพาร์ทเนอร์"
+                            className="text-[10px] font-black text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-purple-300/80"
+                          >
+                            <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500" />
+                            <span>Official Quest</span>
+                          </span>
 
                           <span className="text-[10px] font-black text-purple-800 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200/90 px-2 py-0.5 rounded-md flex items-center gap-0.5 shrink-0 shadow-2xs">
                             <Zap className="w-3 h-3 text-purple-600 fill-purple-500" />
@@ -879,58 +796,6 @@ export default function ChallengesDiscoveryPage() {
       {/* 5. Mobile Bottom Navigation */}
       <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      {/* Create Challenge Modal */}
-      <CreateEventModal
-        isOpen={isCreateEventModalOpen}
-        initialType="challenge"
-        onClose={() => setIsCreateEventModalOpen(false)}
-        onCreateSuccess={(newEvent) => {
-          const newQuest: QuestWithDuration = {
-            id: newEvent.id,
-            title: newEvent.title,
-            iconName: 'Trophy',
-            progressPercent: 0,
-            current: '0',
-            total: '3',
-            badgeLabel: 'New Quest',
-            badgeIcon: '🏅',
-            completedCountInfo: '0/3 ครั้ง',
-            category: (newEvent.category as any) || 'chill',
-            targetGoal: newEvent.description || newEvent.title,
-            objective: newEvent.description,
-            steps: newEvent.rules || ['เช็คอินถ่ายภาพหรือส่งหลักฐาน', 'ทำภารกิจตามกติกาให้ครบ'],
-            verificationMethod: 'อัปโหลดรูปถ่ายหรือเช็คอินพิกัด',
-            rewardsText: newEvent.badgeText || '+250 XP',
-            participantsCount: 1,
-            rewardPoints: 250,
-            isOfficial: false,
-            badgeCoverImg: newEvent.image,
-            image: newEvent.image,
-            startDate: newEvent.date?.split(' - ')[0] || '',
-            endDate: newEvent.date?.split(' - ')[1] || '',
-            daysRemaining: 14,
-            creatorName: userProfile.name || 'ฉัน',
-            creatorAvatar: userProfile.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
-          };
-
-          setQuestList((prev) => [newQuest, ...prev]);
-          setJoinedQuestIds((prev) => Array.from(new Set([newQuest.id, ...prev])));
-
-          if (typeof window !== 'undefined') {
-            try {
-              const raw = localStorage.getItem('cch_my_challenges');
-              const list: ChallengeQuest[] = raw ? JSON.parse(raw) : [];
-              localStorage.setItem('cch_my_challenges', JSON.stringify([newQuest, ...list]));
-            } catch (e) {
-              console.error('Error saving new challenge:', e);
-            }
-          }
-
-          setIsCreateEventModalOpen(false);
-          showToast(`สร้างชาเลนจ์ "${newEvent.title}" เรียบร้อยแล้ว! ⚡`);
-        }}
-      />
-
       {/* Free Membership Required Modal */}
       <RequireMembershipModal
         isOpen={isRequireMembershipOpen}
@@ -939,7 +804,7 @@ export default function ChallengesDiscoveryPage() {
           setIsRequireMembershipOpen(false);
           setIsAuthModalOpen(true);
         }}
-        actionTitle="เพื่อรับภารกิจและสร้างชาเลนจ์"
+        actionTitle="เพื่อรับภารกิจและสะสมแต้ม"
       />
 
       {/* Auth Modal */}

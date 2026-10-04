@@ -105,11 +105,11 @@ export const COMMUNITY_PUBLIC_QUESTS: (ChallengeQuest & { image?: string })[] = 
     current: '0',
     total: '4',
     visibility: 'public',
-    creatorName: 'Coach Mark',
+    creatorName: 'HYROX Thailand (พาร์ทเนอร์ทางการ)',
     creatorAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80',
     participantsCount: 142,
     rewardPoints: 250,
-    isOfficial: false,
+    isOfficial: true,
     targetGoal: 'วิ่งและออกกำลังกายกลุ่มครบ 4 ครั้งใน 14 วัน เตรียมความพร้อมสู่สนามแข่ง',
     objective: 'ฝึกความอดทนของกล้ามเนื้อและระบบหัวใจร่วมกับคอมมูนิตี้สายฟิตเนส',
     steps: [
@@ -136,11 +136,11 @@ export const COMMUNITY_PUBLIC_QUESTS: (ChallengeQuest & { image?: string })[] = 
     current: '0',
     total: '7',
     visibility: 'public',
-    creatorName: 'K. Mindy',
+    creatorName: 'Mindful Yoga & Wellness Hub',
     creatorAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80',
     participantsCount: 189,
     rewardPoints: 200,
-    isOfficial: false,
+    isOfficial: true,
     targetGoal: 'เล่นโยคะยามเช้าหรือฝึกสมาธิต่อเนื่อง 7 วัน เพื่อความสดชื่นและสมดุลจิตใจ',
     objective: 'ปรับสมดุลร่างกายและจิตใจ เริ่มต้นวันใหม่ด้วยสมาธิและความผ่อนคลาย',
     steps: [
@@ -167,11 +167,11 @@ export const COMMUNITY_PUBLIC_QUESTS: (ChallengeQuest & { image?: string })[] = 
     current: '0',
     total: '3',
     visibility: 'public',
-    creatorName: 'K. Ploy',
+    creatorName: 'Digital Detox Society',
     creatorAvatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=120&q=80',
     participantsCount: 95,
     rewardPoints: 180,
-    isOfficial: false,
+    isOfficial: true,
     targetGoal: 'พักสายตา วางจอมือถือ และเข้าร่วมกิจกรรมพบปะเพื่อนออฟไลน์ 3 ชม.',
     objective: 'ลดความเครียดจากการเสพสื่อดิจิทัล และเปิดรับบทสนทนาจริงกับผู้คนรอบข้าง',
     steps: [
@@ -229,11 +229,11 @@ export const COMMUNITY_PUBLIC_QUESTS: (ChallengeQuest & { image?: string })[] = 
     current: '0',
     total: '3',
     visibility: 'public',
-    creatorName: 'Boardgame Addict',
+    creatorName: 'Thailand Board Game Club (พาร์ทเนอร์ทางการ)',
     creatorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80',
     participantsCount: 114,
     rewardPoints: 220,
-    isOfficial: false,
+    isOfficial: true,
     targetGoal: 'ทดลองเล่นบอร์ดเกมประเภทวางแผนหรือปาร์ตี้เกมที่ไม่เคยเล่นมาก่อนครบ 3 เกม',
     objective: 'เปิดประสบการณ์การเล่นเกมใหม่ๆ ฝึกกระบวนการคิด และสร้างมิตรภาพผ่านโต๊ะบอร์ดเกม',
     steps: [
@@ -452,27 +452,17 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                 className="w-[80vw] sm:w-[calc(50%-0.625rem)] lg:w-[calc(25%-0.75rem)] shrink-0 snap-start bg-white rounded-3xl p-3.5 sm:p-4 border border-slate-200 shadow-2xs hover:shadow-xl hover:border-purple-500/40 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between space-y-3 relative overflow-hidden group/card cursor-pointer"
               >
                 {/* Official Quest Top Accent Stripe */}
-                {quest.isOfficial && (
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-600 via-indigo-400 to-purple-400" />
-                )}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-600 via-indigo-400 to-purple-400" />
 
-                {/* 1. Top Badges Row: Official/Community + XP Token (Category badge CHILL/MOVE/HEAL removed) */}
+                {/* 1. Top Badges Row: Official Badge + XP Token */}
                 <div className="flex items-center justify-between gap-1.5 pt-0.5">
-                  <div className="flex items-center gap-1.5">
-                    {quest.isOfficial ? (
-                      <span
-                        title="ชาเลนจ์ทางการที่จัดทำโดย Chill & Connect Hub"
-                        className="text-[10px] font-black text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-purple-300/80"
-                      >
-                        <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500" />
-                        <span>Official</span>
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
-                        ชุมชน
-                      </span>
-                    )}
-                  </div>
+                  <span
+                    title="ภารกิจทางการจาก Chill & Connect Hub และพาร์ทเนอร์"
+                    className="text-[10px] font-black text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-purple-300/80"
+                  >
+                    <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500" />
+                    <span>Official Quest</span>
+                  </span>
 
                   <span className="text-[10px] font-black text-purple-800 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200/90 px-2 py-0.5 rounded-md flex items-center gap-0.5 shrink-0 shadow-2xs">
                     <Zap className="w-3 h-3 text-purple-600 fill-purple-500" />
