@@ -11,12 +11,10 @@ import {
   AlertTriangle,
   FileCheck2,
   HardDrive,
-  Sparkles,
   Search,
-  Filter,
   Layers,
-  CheckCircle2,
 } from 'lucide-react';
+import { AdminPageHeader, adminButton } from './AdminUI';
 import { StoredMediaFile, MediaStorageStats } from '@/lib/media/types';
 import { handleAdminUnauthorized } from './adminAuthUtils';
 
@@ -147,38 +145,25 @@ export function MediaManagerView() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <ImageIcon size={20} className="text-[#4A7C59]" />
-            <h1 className="text-xl font-bold text-slate-800">Media & Image Asset Hub</h1>
-          </div>
-          <p className="text-slate-500 text-sm">
-            ศูนย์จัดการคลังไฟล์มีเดีย รูปภาพอัปโหลด และระบบตรวจจับไฟล์ขยะ (Orphan Files)
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={fetchMedia}
-            disabled={isLoading}
-            className="flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors shadow-xs"
-          >
-            <RefreshCw size={14} className={isLoading ? 'animate-spin text-[#4A7C59]' : ''} />
-            รีเฟรช
-          </button>
-          {stats && stats.orphanCount > 0 && (
-            <button
-              onClick={handleCleanOrphans}
-              disabled={isCleaning}
-              className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm disabled:opacity-50"
-            >
-              <Trash2 size={14} />
-              {isCleaning ? 'กำลังล้าง...' : `ล้างไฟล์ขยะ (${stats.orphanCount})`}
+      <AdminPageHeader
+        icon={ImageIcon}
+        title="Media & Image Hub"
+        description="ไฟล์รูปที่อัปโหลดเข้าระบบ และไฟล์ที่ไม่มีเนื้อหาใดอ้างอิงแล้ว (orphan)"
+        actions={
+          <>
+            <button onClick={fetchMedia} disabled={isLoading} className={adminButton.secondary}>
+              <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+              รีเฟรช
             </button>
-          )}
-        </div>
-      </div>
+            {stats && stats.orphanCount > 0 && (
+              <button onClick={handleCleanOrphans} disabled={isCleaning} className={adminButton.danger}>
+                <Trash2 size={14} />
+                {isCleaning ? 'กำลังลบ...' : `ลบไฟล์ orphan (${stats.orphanCount})`}
+              </button>
+            )}
+          </>
+        }
+      />
 
       {/* KPI Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -248,9 +233,9 @@ export function MediaManagerView() {
           <button
             onClick={handleCleanOrphans}
             disabled={isCleaning}
-            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold transition-colors shadow-xs"
+            className={adminButton.danger}
           >
-            {isCleaning ? 'กำลังลบไฟล์...' : '🧹 ล้างไฟล์ขยะทั้งหมด'}
+            {isCleaning ? 'กำลังลบไฟล์...' : 'ลบไฟล์ orphan ทั้งหมด'}
           </button>
         </div>
       )}

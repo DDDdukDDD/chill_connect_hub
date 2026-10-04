@@ -10,12 +10,54 @@ import {
   setAutoPublish,
   getAutoPublish,
   resetAndSeedAllEvents,
+  queryAdminEvents,
 } from '@/lib/eventsStore';
+
+const EVENT_TYPES = new Set(['community', 'public_venue', 'all']);
+const APPROVAL_STATUSES = new Set(['pending', 'approved', 'rejected', 'all']);
+const EVENT_FORMATS = new Set(['recurring', 'online', 'physical', 'all']);
+
+function parsePositiveInteger(value: string | null, fallback: number, max: number): number {
+  const parsed = Number.parseInt(value || '', 10);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, max) : fallback;
+}
+
+function pickParam<T extends string>(value: string | null, allowed: Set<string>, fallback: T): T {
+  return value && allowed.has(value) ? (value as T) : fallback;
+}
 
 export async function GET(request: Request) {
   const denied = requireAdminApiAccess(request);
   if (denied) return denied;
 
+  const { searchParams } = new URL(request.url);
+
+  // Paginated moderation mode (used by the moderation views)
+  if (searchParams.has('page')) {
+    const result = await queryAdminEvents({
+      type: pickParam(searchParams.get('type'), EVENT_TYPES, 'all'),
+      status: pickParam(searchParams.get('status'), APPROVAL_STATUSES, 'all'),
+      format: pickParam(searchParams.get('format'), EVENT_FORMATS, 'all'),
+      q: searchParams.get('q'),
+      page: parsePositiveInteger(searchParams.get('page'), 1, 10_000),
+      limit: parsePositiveInteger(searchParams.get('limit'), 20, 100),
+    });
+    return NextResponse.json({
+      success: true,
+      events: result.items,
+      counts: result.counts,
+      pagination: {
+        totalCount: result.totalCount,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages,
+        hasNextPage: result.hasNextPage,
+        hasPrevPage: result.hasPrevPage,
+      },
+    });
+  }
+
+  // Full list (dashboard, scraper and provinces views)
   const [events, autoPublish] = await Promise.all([listAdminEvents(), getAutoPublish()]);
   return NextResponse.json({
     success: true,

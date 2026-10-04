@@ -1,10 +1,37 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { MapPin, Search, ChevronDown, Globe, Sparkles, Compass, Users } from 'lucide-react';
-import { MASTER_77_PROVINCES, MASTER_POPULAR_PROVINCE_TAGS } from '@/data/masterHub';
-import { BANGKOK_ZONES, MOCK_EVENTS } from '@/data/mockData';
-import { MOCK_SPOTS } from '@/data/spotsData';
+import React, { useState, useMemo, useEffect } from 'react';
+import { MapPin, Search, ChevronDown, Globe, Sparkles } from 'lucide-react';
+import { AdminPageHeader, AdminBadge } from './AdminUI';
+import { MASTER_77_PROVINCES } from '@/data/masterHub';
+import { BANGKOK_ZONES, EventItem } from '@/data/mockData';
+import { LifestyleSpotItem } from '@/data/spotsData';
+import { handleAdminUnauthorized } from './adminAuthUtils';
+
+interface ContentSnapshot {
+  spots: LifestyleSpotItem[];
+  events: EventItem[];
+}
+
+// Live content from the repository: published spots and approved events only
+async function fetchContentSnapshot(): Promise<ContentSnapshot> {
+  const [spotsRes, eventsRes] = await Promise.all([
+    fetch('/api/admin/spots?status=published', { cache: 'no-store' }),
+    fetch('/api/admin/events', { cache: 'no-store' }),
+  ]);
+  const unauthorized = [spotsRes, eventsRes].find((response) => response.status === 401);
+  if (unauthorized) {
+    handleAdminUnauthorized(unauthorized);
+    throw new Error('เซสชันผู้ดูแลหมดอายุ กำลังนำทางไปหน้าเข้าสู่ระบบ...');
+  }
+  const [spotsData, eventsData] = await Promise.all([spotsRes.json(), eventsRes.json()]);
+  if (!spotsRes.ok || !spotsData.success) throw new Error(spotsData.error || spotsData.message || 'โหลดข้อมูลสถานที่ไม่สำเร็จ');
+  if (!eventsRes.ok || !eventsData.success) throw new Error(eventsData.error || eventsData.message || 'โหลดข้อมูลกิจกรรมไม่สำเร็จ');
+  return {
+    spots: spotsData.spots as LifestyleSpotItem[],
+    events: (eventsData.events as EventItem[]).filter((event) => event.approvalStatus === 'approved'),
+  };
+}
 
 const REGIONS: { label: string; provinces: string[] }[] = [
   {
@@ -28,6 +55,27 @@ const REGIONS: { label: string; provinces: string[] }[] = [
 export function ProvincesManagerView() {
   const [search, setSearch] = useState('');
   const [openRegion, setOpenRegion] = useState<string | null>('ภาคกลาง & ตะวันออก');
+  const [content, setContent] = useState<ContentSnapshot>({ spots: [], events: [] });
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchContentSnapshot()
+      .then((snapshot) => {
+        if (cancelled) return;
+        setContent(snapshot);
+        setLoadState('ready');
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setLoadError(error instanceof Error ? error.message : 'โหลดข้อมูลไม่สำเร็จ');
+        setLoadState('error');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Calculate content density across all provinces
   const densityMap = useMemo(() => {
@@ -36,14 +84,14 @@ export function ProvincesManagerView() {
       map.set(p, { spots: 0, events: 0 });
     });
 
-    MOCK_SPOTS.forEach((s) => {
+    content.spots.forEach((s) => {
       if (s.province && map.has(s.province)) {
         const curr = map.get(s.province)!;
         curr.spots++;
       }
     });
 
-    MOCK_EVENTS.forEach((e) => {
+    content.events.forEach((e) => {
       if (e.province && map.has(e.province)) {
         const curr = map.get(e.province)!;
         curr.events++;
@@ -51,18 +99,18 @@ export function ProvincesManagerView() {
     });
 
     return map;
-  }, []);
+  }, [content]);
 
   // Online virtual events
   const onlineEvents = useMemo(() => {
-    return MOCK_EVENTS.filter(
+    return content.events.filter(
       (e) =>
         e.locationType === 'online' ||
         e.province === 'ออนไลน์' ||
         e.province === 'Online' ||
         Boolean(e.onlineJoinUrl)
     );
-  }, []);
+  }, [content]);
 
   // Top active provinces by content count
   const topProvinces = useMemo(() => {
@@ -88,34 +136,26 @@ export function ProvincesManagerView() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <MapPin size={18} className="text-[#4A7C59]" />
-            <h1 className="text-xl font-bold text-slate-800">77 จังหวัด & โซน (Regional Density Hub)</h1>
-          </div>
-          <p className="text-slate-500 text-sm">
-            จัดการฐานข้อมูลจังหวัด, โซนกรุงเทพฯ, Hub กิจกรรมออนไลน์ และสถิติความหนาแน่นของเนื้อหา
-          </p>
+      <AdminPageHeader
+        icon={MapPin}
+        title="77 จังหวัด & โซน"
+        description="รายชื่อจังหวัดและโซน พร้อมจำนวนเนื้อหาจริงที่เผยแพร่ในแต่ละพื้นที่"
+        badge={<AdminBadge>อ่านอย่างเดียว</AdminBadge>}
+      />
+
+      {loadState === 'error' && (
+        <div className="px-4 py-3 rounded-2xl border border-rose-200 bg-rose-50 text-xs sm:text-sm font-bold text-rose-700">
+          โหลดจำนวนเนื้อหาไม่สำเร็จ: {loadError}
         </div>
-        <div className="flex items-center gap-2">
-          <span className="px-3 py-1.5 bg-[#EBF3ED] border border-[#4A7C59]/20 text-[#2D5A3C] rounded-xl text-xs font-semibold">
-            {MASTER_77_PROVINCES.length} จังหวัด
-          </span>
-          <span className="px-3 py-1.5 bg-sky-50 border border-sky-200 text-[#2B527A] rounded-xl text-xs font-semibold">
-            🌐 {onlineEvents.length} กิจกรรมออนไลน์
-          </span>
-        </div>
-      </div>
+      )}
 
       {/* KPI Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: 'จังหวัดทั้งหมด', value: MASTER_77_PROVINCES.length, accent: 'text-[#4A7C59]', bg: 'bg-[#EBF3ED] border-[#4A7C59]/15' },
-          { label: 'พิกัดเที่ยวทั้งหมด', value: MOCK_SPOTS.length, accent: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-100' },
-          { label: 'กิจกรรมชุมชน & แฟร์', value: MOCK_EVENTS.length, accent: 'text-amber-600', bg: 'bg-amber-50 border-amber-100' },
-          { label: 'Virtual Online Hub', value: onlineEvents.length, accent: 'text-[#2B527A]', bg: 'bg-sky-50 border-sky-100' },
+          { label: 'พิกัดเที่ยวที่เผยแพร่', value: loadState === 'ready' ? content.spots.length : '…', accent: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-100' },
+          { label: 'กิจกรรม & แฟร์ที่อนุมัติ', value: loadState === 'ready' ? content.events.length : '…', accent: 'text-amber-600', bg: 'bg-amber-50 border-amber-100' },
+          { label: 'Virtual Online Hub', value: loadState === 'ready' ? onlineEvents.length : '…', accent: 'text-[#2B527A]', bg: 'bg-sky-50 border-sky-100' },
         ].map((stat) => (
           <div key={stat.label} className={`border rounded-xl p-3.5 ${stat.bg}`}>
             <p className={`text-2xl font-bold ${stat.accent}`}>{stat.value}</p>

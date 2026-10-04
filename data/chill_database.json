@@ -1,6 +1,6 @@
 {
   "version": "2.0.0",
-  "lastUpdated": "2026-10-03T14:45:43.153Z",
+  "lastUpdated": "2026-10-03T16:21:46.209Z",
   "autoPublish": false,
   "events": [
     {
@@ -3690,7 +3690,8 @@
       "approvalStatus": "approved",
       "source": "Chill & Connect Official",
       "sourceUrl": "https://chill-connect-hub.vercel.app",
-      "province": "กรุงเทพมหานคร"
+      "province": "กรุงเทพมหานคร",
+      "eventType": "community"
     },
     {
       "id": "3",
@@ -3736,7 +3737,8 @@
       "approvalStatus": "approved",
       "source": "Chill & Connect Official",
       "sourceUrl": "https://chill-connect-hub.vercel.app",
-      "province": "กรุงเทพมหานคร"
+      "province": "กรุงเทพมหานคร",
+      "eventType": "community"
     },
     {
       "id": "4",
@@ -3766,7 +3768,8 @@
       "approvalStatus": "approved",
       "source": "Chill & Connect Official",
       "sourceUrl": "https://chill-connect-hub.vercel.app",
-      "province": "กรุงเทพมหานคร"
+      "province": "กรุงเทพมหานคร",
+      "eventType": "community"
     },
     {
       "id": "5",
@@ -3795,7 +3798,8 @@
       "approvalStatus": "approved",
       "source": "Chill & Connect Official",
       "sourceUrl": "https://chill-connect-hub.vercel.app",
-      "province": "กรุงเทพมหานคร"
+      "province": "กรุงเทพมหานคร",
+      "eventType": "community"
     },
     {
       "id": "6",
@@ -3826,7 +3830,8 @@
       "approvalStatus": "approved",
       "source": "Chill & Connect Official",
       "sourceUrl": "https://chill-connect-hub.vercel.app",
-      "province": "กรุงเทพมหานคร"
+      "province": "กรุงเทพมหานคร",
+      "eventType": "community"
     },
     {
       "id": "8",

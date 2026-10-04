@@ -89,7 +89,7 @@ export const DEFAULT_DATA_SOURCES: EventDataSource[] = [
   {
     id: 'bitec',
     name: 'ไบเทค บางนา (BITEC)',
-    url: 'https://www.bitec.co.th/gallery',
+    url: 'https://www.bitec.co.th/whats-on',
     targetType: 'events',
     category: 'exhibition',
     categoryLabel: '🏢 งานแสดงสินค้า & เทรดแฟร์',
@@ -101,7 +101,7 @@ export const DEFAULT_DATA_SOURCES: EventDataSource[] = [
   {
     id: 'impact',
     name: 'อิมแพ็ค เมืองทองธานี (IMPACT)',
-    url: 'https://www.impact.co.th/index.php/visitor/event/th',
+    url: 'https://www.impact.co.th/th/visitors/event-calendar',
     targetType: 'events',
     category: 'exhibition',
     categoryLabel: '🎪 คอนเวนชัน & งานแฟร์ใหญ่',
@@ -113,14 +113,14 @@ export const DEFAULT_DATA_SOURCES: EventDataSource[] = [
   {
     id: 'thairun',
     name: 'ThaiRun (ฮับคนรักการวิ่ง)',
-    url: 'https://race.thai.run',
+    url: 'https://race.thai.run/',
     targetType: 'events',
     category: 'running',
     categoryLabel: '🏃 งานวิ่ง & มาราธอนทั่วกรุง',
     icon: '🏃',
     status: 'active',
     eventsCount: 0,
-    description: 'ปฏิทินงานวิ่งมาราธอน ซิตี้รัน มินิมาราธอน และวิ่งเทรลในกรุงเทพฯ',
+    description: 'ปฏิทินงานวิ่งมาราธอน ซิตี้รัน มินิมาราธอน และวิ่งเทรลทั่วประเทศ (เฉพาะงานที่เปิดรับสมัคร ไม่รวมวิ่งเสมือน)',
   },
   {
     id: 'set',
@@ -133,6 +133,18 @@ export const DEFAULT_DATA_SOURCES: EventDataSource[] = [
     status: 'active',
     eventsCount: 0,
     description: 'งานสัมมนาวางแผนการเงิน เวิร์กช็อปหุ้น กองทุน และพัฒนาทักษะธุรกิจ',
+  },
+  {
+    id: 'visit-bangkok-festivals',
+    name: 'Visit Bangkok ปฏิทินเทศกาล (กทม.)',
+    url: 'https://visit.bangkok.go.th/th/festival-calendar',
+    targetType: 'events',
+    category: 'lifestyle',
+    categoryLabel: '🎉 เทศกาล & อีเวนต์ กทม.',
+    icon: '🎉',
+    status: 'active',
+    eventsCount: 0,
+    description: 'ปฏิทินเทศกาล นิทรรศการ และอีเวนต์ทางวัฒนธรรมของกรุงเทพมหานคร (อ่านจาก RSS ทางการ 20 รายการล่าสุด)',
   },
   {
     id: 'bma',

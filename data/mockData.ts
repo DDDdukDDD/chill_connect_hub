@@ -115,6 +115,21 @@ export interface MoodCategory {
   icon: string;
 }
 
+/**
+ * Who stands behind a quest and what finishing it unlocks.
+ * - brand_partner: a partner brand's exclusive voucher (partnerName + title required)
+ * - hub_central:   a platform-wide challenge rewarded with Hub points (partnerName = platform)
+ */
+export interface QuestReward {
+  type: 'brand_partner' | 'hub_central';
+  title: string;
+  partnerName: string;
+  voucherCodePrefix?: string;
+  exclusiveNotice?: string;
+  terms?: string;
+  hubRewardNote?: string;
+}
+
 export interface ChallengeQuest {
   id: string;
   title: string;
@@ -138,10 +153,15 @@ export interface ChallengeQuest {
   rewardsText?: string;
   badgeIcon?: string;
   badgeCoverImg?: string;
+  /** Thai ("31 ธ.ค. 2026") or ISO ("2026-12-31") date */
   startDate?: string;
   endDate?: string;
+  /** Computed by the server from endDate on every read; stored values are ignored */
   daysRemaining?: number;
+  /** 'ended' is also derived by the server once endDate has passed */
   status?: 'draft' | 'active' | 'ended';
+  image?: string;
+  brandReward?: QuestReward;
 }
 
 export interface PostComment {
@@ -3841,6 +3861,7 @@ export const MOCK_EVENTS: EventItem[] = [
   },
   {
     "id": "2",
+    "eventType": "community",
     "title": "City Run Morning วิ่งเช้าในเมือง",
     "date": "13 ส.ค. 2026",
     "time": "06:00 - 08:00 น.",
@@ -3873,6 +3894,7 @@ export const MOCK_EVENTS: EventItem[] = [
   },
   {
     "id": "3",
+    "eventType": "community",
     "title": "Board Game Night Asoke คืนบอร์ดเกม อโศก",
     "date": "23 ส.ค. 2026",
     "time": "18:30 - 21:30 น.",
@@ -3919,6 +3941,7 @@ export const MOCK_EVENTS: EventItem[] = [
   },
   {
     "id": "4",
+    "eventType": "community",
     "title": "Pottery & Ceramic Workshop สตูดิโอปั้นดิน",
     "date": "28 ส.ค. 2026",
     "time": "10:00 - 13:00 น.",
@@ -3949,6 +3972,7 @@ export const MOCK_EVENTS: EventItem[] = [
   },
   {
     "id": "5",
+    "eventType": "community",
     "title": "Acoustic Coffee Session กาแฟ & ดนตรีสด",
     "date": "30 ส.ค. 2026",
     "time": "15:00 - 17:30 น.",
@@ -3978,6 +4002,7 @@ export const MOCK_EVENTS: EventItem[] = [
   },
   {
     "id": "6",
+    "eventType": "community",
     "title": "Sunset Park Yoga สวนลุมพินี",
     "date": "02 ก.ย. 2026",
     "time": "17:00 - 18:30 น.",
@@ -4620,9 +4645,16 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
     participantsCount: 380,
     rewardPoints: 300,
     isOfficial: true,
-    startDate: '1 มี.ค. 2026',
-    endDate: '31 มี.ค. 2026',
-    daysRemaining: 10,
+    startDate: '1 ต.ค. 2026',
+    endDate: '31 ธ.ค. 2026',
+    brandReward: {
+      type: 'brand_partner',
+      title: 'ฟรี Signature Cold Brew 1 แก้ว (มูลค่า 140.-)',
+      partnerName: 'Ari Specialty Coffee Club',
+      voucherCodePrefix: 'ARI-BREW-',
+      exclusiveNotice: 'สิทธิ์เฉพาะหน้าร้าน Ari Specialty Coffee Club ทุกสาขาเท่านั้น',
+      terms: 'แสดง QR Code หน้าร้านก่อนสั่งเครื่องดื่ม จำกัด 1 สิทธิ์/ท่าน มีอายุ 30 วันหลังพิชิตภารกิจ',
+    },
   },
   {
     id: '2',
@@ -4647,9 +4679,15 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
     participantsCount: 520,
     rewardPoints: 450,
     isOfficial: true,
-    startDate: '1 มี.ค. 2026',
-    endDate: '15 เม.ย. 2026',
-    daysRemaining: 25,
+    startDate: '1 ต.ค. 2026',
+    endDate: '30 พ.ย. 2026',
+    brandReward: {
+      type: 'hub_central',
+      title: 'แต้มสะสมอิสระ + ปลดล็อกของรางวัลใน Hub Rewards',
+      partnerName: 'Chill & Connect Hub',
+      hubRewardNote: 'รับแต้ม Boosted XP สำหรับยกระดับเลเวลบัญชี และนำแต้มไปเลือกแลกของรางวัลในศูนย์กลาง (/rewards)',
+      terms: 'นำแต้ม XP ที่ได้รับไปแลกรับสิทธิ์ที่หน้าศูนย์ของรางวัล (/rewards)',
+    },
   },
   {
     id: '3',
@@ -4676,7 +4714,13 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
     isOfficial: true,
     startDate: '5 มี.ค. 2026',
     endDate: '25 มี.ค. 2026',
-    daysRemaining: 4,
+    brandReward: {
+      type: 'hub_central',
+      title: 'แต้มสะสมอิสระ + ปลดล็อกของรางวัลใน Hub Rewards',
+      partnerName: 'Chill & Connect Hub',
+      hubRewardNote: 'รับแต้มพิเศษอัปเลเวลโปรไฟล์ พร้อมสิทธิ์เลือกแลกเซ็ตชาหรือเครื่องดื่มฟรีในคลังของรางวัลกลาง',
+      terms: 'นำแต้ม XP ที่ได้รับไปแลกรับสิทธิ์ที่หน้าศูนย์ของรางวัล (/rewards)',
+    },
   },
   {
     id: '4',
@@ -4701,9 +4745,16 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
     participantsCount: 430,
     rewardPoints: 500,
     isOfficial: true,
-    startDate: '1 มี.ค. 2026',
-    endDate: '31 มี.ค. 2026',
-    daysRemaining: 10,
+    startDate: '15 ต.ค. 2026',
+    endDate: '15 ธ.ค. 2026',
+    brandReward: {
+      type: 'brand_partner',
+      title: 'ส่วนลด 20% อุปกรณ์ซ้อม HYROX Official Training Gear',
+      partnerName: 'HYROX Thailand',
+      voucherCodePrefix: 'HYROX-GEAR-',
+      exclusiveNotice: 'สิทธิ์เฉพาะช่องทาง Official Store ของ HYROX Thailand เท่านั้น',
+      terms: 'กรอกรหัสส่วนลดตอน Checkout หรือแสดงบาร์โค้ดที่ Pop-up Store',
+    },
   },
 ];
 

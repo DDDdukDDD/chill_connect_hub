@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   LayoutDashboard,
@@ -13,13 +13,11 @@ import {
   ShieldCheck,
   Bot,
   Database,
-  ChevronRight,
   Zap,
-  Crown,
-  Settings,
   Home,
   Image as ImageIcon,
 } from 'lucide-react';
+import { AdminSessionStatus } from './AdminSessionStatus';
 
 export type AdminModuleId =
   | 'dashboard'
@@ -43,6 +41,8 @@ interface SidebarModule {
   icon: React.ElementType;
   badge?: string;
   badgeColor?: string;
+  /** Sample-data screen with no backend yet */
+  preview?: boolean;
 }
 
 interface SidebarGroup {
@@ -54,34 +54,34 @@ const SIDEBAR_GROUPS: SidebarGroup[] = [
   {
     groupLabel: 'OVERVIEW',
     modules: [
-      { id: 'dashboard', label: 'แดชบอร์ด', labelEn: 'Dashboard', icon: LayoutDashboard },
+      { id: 'dashboard', label: 'ภาพรวมเนื้อหา', labelEn: 'Dashboard', icon: LayoutDashboard },
     ],
   },
   {
     groupLabel: 'GOVERNANCE & MASTER',
     modules: [
-      { id: 'taxonomy', label: 'Master Taxonomy Hub', labelEn: 'Categories & Tags', icon: FolderTree },
+      { id: 'taxonomy', label: 'Master Taxonomy', labelEn: 'หมวดหมู่ & แท็ก', icon: FolderTree },
       { id: 'provinces', label: '77 จังหวัด & โซน', labelEn: 'Provinces & Zones', icon: MapPin },
-      { id: 'venues', label: 'Venue Master Hub', labelEn: 'Convention Centers', icon: Building2 },
+      { id: 'venues', label: 'Venues', labelEn: 'ศูนย์ประชุม & ฮอลล์', icon: Building2 },
     ],
   },
   {
     groupLabel: 'DISCOVERY & CONTENT',
     modules: [
-      { id: 'spots', label: 'Lifestyle Spots', labelEn: '77 Provinces', icon: Leaf, badge: 'Content' },
-      { id: 'community', label: 'Community Meetups', labelEn: 'กิจกรรมชุมชน', icon: Users, badge: 'Moderation' },
+      { id: 'spots', label: 'Lifestyle Spots', labelEn: 'พิกัดเที่ยว 77 จังหวัด', icon: Leaf },
+      { id: 'community', label: 'Community Meetups', labelEn: 'กิจกรรมชุมชน', icon: Users },
       { id: 'fairs', label: 'Fairs & Expos', labelEn: 'งานมหกรรม', icon: Trophy },
-      { id: 'quests', label: 'Quests & Badges', labelEn: 'ชาเลนจ์ & EXP', icon: Zap },
+      { id: 'quests', label: 'Quests & Badges', labelEn: 'ชาเลนจ์ & XP', icon: Zap },
     ],
   },
   {
     groupLabel: 'SYSTEM & OPERATIONS',
     modules: [
-      { id: 'media', label: 'Media & Image Hub', labelEn: 'Asset Storage', icon: ImageIcon, badge: 'Storage' },
-      { id: 'cache', label: 'Cache & Performance', labelEn: 'Memory Engine', icon: Zap, badge: 'L1' },
-      { id: 'rbac', label: 'Users & Permissions', labelEn: 'Role Management', icon: ShieldCheck },
-      { id: 'scraper', label: 'Scraper Engine', labelEn: 'Aggregator & Bots', icon: Bot },
-      { id: 'backup', label: 'Backup & Audit Logs', labelEn: 'Database & Logs', icon: Database },
+      { id: 'media', label: 'Media & Image Hub', labelEn: 'ไฟล์รูปภาพ', icon: ImageIcon },
+      { id: 'cache', label: 'Cache & Performance', labelEn: 'แคชหน่วยความจำ', icon: Zap },
+      { id: 'rbac', label: 'Users & Permissions', labelEn: 'บัญชี & สิทธิ์', icon: ShieldCheck, preview: true },
+      { id: 'scraper', label: 'Scraper Engine', labelEn: 'นำเข้าข้อมูลภายนอก', icon: Bot },
+      { id: 'backup', label: 'Backup & Audit Logs', labelEn: 'สำรองข้อมูล & บันทึก', icon: Database, preview: true },
     ],
   },
 ];
@@ -89,20 +89,37 @@ const SIDEBAR_GROUPS: SidebarGroup[] = [
 interface AdminSidebarProps {
   activeModule: AdminModuleId;
   onModuleChange: (module: AdminModuleId) => void;
-  currentRole: string;
-  onRoleChange?: () => void;
 }
 
-const ROLE_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
-  'Super Admin':    { bg: 'bg-sage/10',           text: 'text-[#2D5A3C]',  dot: 'bg-[#4A7C59]' },
-  'Content Editor': { bg: 'bg-sky-50',             text: 'text-sky-700',    dot: 'bg-sky-500' },
-  'Moderator':      { bg: 'bg-amber-50',           text: 'text-amber-700',  dot: 'bg-amber-500' },
-  'Organizer':      { bg: 'bg-emerald-50',         text: 'text-emerald-700',dot: 'bg-emerald-500' },
-  'Member':         { bg: 'bg-slate-100',          text: 'text-slate-500',  dot: 'bg-slate-400' },
-};
+// Real pending counts for the moderation pillars (refreshed when the active module changes)
+function usePendingCounts(activeModule: AdminModuleId) {
+  const [pending, setPending] = useState<Partial<Record<AdminModuleId, number>>>({});
 
-export function AdminSidebar({ activeModule, onModuleChange, currentRole, onRoleChange }: AdminSidebarProps) {
-  const roleStyle = ROLE_COLORS[currentRole] || ROLE_COLORS['Member'];
+  useEffect(() => {
+    let cancelled = false;
+    const load = async (type: 'community' | 'public_venue') => {
+      const res = await fetch(`/api/admin/events?page=1&limit=1&type=${type}`, { cache: 'no-store' });
+      if (!res.ok) return 0;
+      const data = await res.json();
+      return Number(data.counts?.pending) || 0;
+    };
+    Promise.all([load('community'), load('public_venue')])
+      .then(([community, fairs]) => {
+        if (!cancelled) setPending({ community, fairs });
+      })
+      .catch(() => {
+        // Counts are a hint only; the moderation view shows the authoritative numbers
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeModule]);
+
+  return pending;
+}
+
+export function AdminSidebar({ activeModule, onModuleChange }: AdminSidebarProps) {
+  const pendingCounts = usePendingCounts(activeModule);
 
   return (
     <aside className="flex flex-col w-64 shrink-0 bg-white border-r border-slate-200/80 h-screen sticky top-0 overflow-y-auto shadow-sm">
@@ -160,6 +177,22 @@ export function AdminSidebar({ activeModule, onModuleChange, currentRole, onRole
                           {mod.labelEn}
                         </p>
                       </div>
+                      {(pendingCounts[mod.id] ?? 0) > 0 && (
+                        <span
+                          title="รายการรอตรวจ"
+                          className="min-w-[20px] text-center text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-amber-500 text-white shrink-0 tabular-nums"
+                        >
+                          {pendingCounts[mod.id]}
+                        </span>
+                      )}
+                      {mod.preview && (
+                        <span
+                          title="ข้อมูลตัวอย่าง ยังไม่เชื่อมต่อระบบจริง"
+                          className="text-[9px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 bg-amber-50 text-amber-700 border-amber-200"
+                        >
+                          ตัวอย่าง
+                        </span>
+                      )}
                       {mod.badge && (
                         <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 ${
                           isActive
@@ -183,23 +216,7 @@ export function AdminSidebar({ activeModule, onModuleChange, currentRole, onRole
 
       {/* Profile / Role Badge */}
       <div className="px-3 py-4 border-t border-slate-100">
-        <button
-          onClick={onRoleChange}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors group"
-          title="Switch Role"
-        >
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shrink-0 border border-slate-200">
-            <Crown size={13} className="text-amber-500" />
-          </div>
-          <div className="flex-1 min-w-0 text-left">
-            <p className="text-[12px] font-semibold text-slate-700 truncate">Admin Preview</p>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <div className={`w-1.5 h-1.5 rounded-full ${roleStyle.dot}`} />
-              <p className={`text-[10px] font-semibold ${roleStyle.text}`}>{currentRole}</p>
-            </div>
-          </div>
-          <Settings size={13} className="text-slate-300 group-hover:text-slate-500 shrink-0 transition-colors" />
-        </button>
+        <AdminSessionStatus variant="sidebar" />
         <div className="mt-1">
           <Link
             href="/"

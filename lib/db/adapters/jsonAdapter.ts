@@ -22,6 +22,7 @@ import {
 import { AsyncMutex } from '../mutex';
 import { readDatabase, updateDatabase } from '../databaseFile';
 import { normalizeStoredEvents } from '../../eventNormalization';
+import { applyQuestLifecycle, upgradeLegacySeedQuests } from '../../questLifecycle';
 import type { AdminEventItem } from '../../eventsStore';
 import { cacheManager } from '../../cache';
 import {
@@ -94,8 +95,13 @@ export class JsonFileAdapter implements IDataRepository {
         }
 
         this.spots = Array.isArray(contentData?.spots) ? contentData.spots : [...MOCK_SPOTS];
-        this.quests = Array.isArray(contentData?.quests) ? contentData.quests : [...MOCK_CHALLENGES];
+        const storedQuests = Array.isArray(contentData?.quests) ? contentData.quests : [...MOCK_CHALLENGES];
+        const upgradedQuests = upgradeLegacySeedQuests(storedQuests, MOCK_CHALLENGES);
+        this.quests = upgradedQuests.quests;
         this.userQuests = contentData?.userQuests || {};
+        if (upgradedQuests.changed) {
+          await this.persistDiscoveryContent();
+        }
 
         this.isInitialized = true;
       } catch (err) {
@@ -474,7 +480,8 @@ export class JsonFileAdapter implements IDataRepository {
       cacheKey,
       async () => {
         await this.ensureInitialized();
-        const filtered = filterQuests(this.quests, params);
+        // Lifecycle (daysRemaining / ended) is derived from endDate before filtering by status
+        const filtered = filterQuests(this.quests.map((quest) => applyQuestLifecycle(quest)), params);
         return paginateArray(filtered, params?.page || 1, params?.limit || 12);
       },
       { ttlMs: 60 * 1000, tags: ['quests'] }
@@ -487,7 +494,8 @@ export class JsonFileAdapter implements IDataRepository {
       cacheKey,
       async () => {
         await this.ensureInitialized();
-        return this.quests.find((q) => q.id === id) || null;
+        const quest = this.quests.find((q) => q.id === id);
+        return quest ? applyQuestLifecycle(quest) : null;
       },
       { ttlMs: 120 * 1000, tags: ['quests', `quest:${id}`] }
     );
@@ -504,7 +512,7 @@ export class JsonFileAdapter implements IDataRepository {
       await this.persistDiscoveryContent(this.spots, updatedQuests);
       this.quests = updatedQuests;
       cacheManager.invalidateTag('quests');
-      return newQuest;
+      return applyQuestLifecycle(newQuest);
     });
   }
 
@@ -513,13 +521,15 @@ export class JsonFileAdapter implements IDataRepository {
     return this.mutex.runExclusive(async () => {
       const idx = this.quests.findIndex((q) => q.id === id);
       if (idx === -1) return null;
-      const updated = { ...this.quests[idx], ...data };
+      // daysRemaining is always computed, never stored
+      const { daysRemaining: _computed, ...updated } = { ...this.quests[idx], ...data };
+      void _computed;
       const updatedQuests = [...this.quests];
       updatedQuests[idx] = updated;
       await this.persistDiscoveryContent(this.spots, updatedQuests);
       this.quests = updatedQuests;
       cacheManager.invalidateTags(['quests', `quest:${id}`]);
-      return updated;
+      return applyQuestLifecycle(updated);
     });
   }
 

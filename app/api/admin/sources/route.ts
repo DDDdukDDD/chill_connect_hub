@@ -6,6 +6,7 @@ import {
   toggleDataSourceStatus,
   deleteCustomDataSource,
 } from '@/lib/sourcesStore';
+import { getBlockedSourceReason } from '@/lib/scrapers/sourcePolicy';
 
 export async function GET(request: Request) {
   const denied = requireAdminApiAccess(request);
@@ -40,6 +41,10 @@ export async function POST(req: Request) {
     }
     if (normalizedUrl.protocol !== 'https:' || normalizedUrl.username || normalizedUrl.password) {
       return NextResponse.json({ success: false, error: 'รองรับเฉพาะ URL สาธารณะผ่าน HTTPS' }, { status: 400 });
+    }
+    const blockedReason = getBlockedSourceReason(normalizedUrl);
+    if (blockedReason) {
+      return NextResponse.json({ success: false, error: blockedReason }, { status: 400 });
     }
 
     const updatedSources = await addCustomDataSource({

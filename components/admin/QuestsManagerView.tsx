@@ -2,7 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { AlertCircle, Check, Clock3, Pencil, Plus, RefreshCw, Search, Trash2, Trophy, X, Zap } from 'lucide-react';
-import { ChallengeQuest } from '@/data/mockData';
+import { AdminPageHeader, adminButton } from './AdminUI';
+import { ChallengeQuest, QuestReward } from '@/data/mockData';
+import { parseQuestDate } from '@/lib/questLifecycle';
 import { handleAdminUnauthorized } from './adminAuthUtils';
 
 type QuestStatus = 'draft' | 'active' | 'ended';
@@ -15,6 +17,16 @@ interface QuestDraft {
   category: QuestCategory;
   total: string;
   rewardPoints: string;
+  startDate: string; // ISO yyyy-mm-dd for <input type="date">
+  endDate: string;
+  image: string;
+  rewardType: QuestReward['type'];
+  partnerName: string;
+  rewardTitle: string;
+  voucherCodePrefix: string;
+  exclusiveNotice: string;
+  hubRewardNote: string;
+  terms: string;
 }
 
 const EMPTY_DRAFT: QuestDraft = {
@@ -24,7 +36,55 @@ const EMPTY_DRAFT: QuestDraft = {
   category: 'chill',
   total: '1',
   rewardPoints: '100',
+  startDate: '',
+  endDate: '',
+  image: '',
+  rewardType: 'hub_central',
+  partnerName: '',
+  rewardTitle: 'แต้มสะสมอิสระ + ปลดล็อกของรางวัลใน Hub Rewards',
+  voucherCodePrefix: '',
+  exclusiveNotice: '',
+  hubRewardNote: '',
+  terms: '',
 };
+
+// Stored dates may be Thai ("31 ธ.ค. 2026") or ISO; the date input needs ISO
+function toIsoDate(value?: string): string {
+  const timestamp = parseQuestDate(value, false);
+  if (timestamp === null) return '';
+  const date = new Date(timestamp);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function toPayload(draft: QuestDraft) {
+  const isPartner = draft.rewardType === 'brand_partner';
+  return {
+    title: draft.title,
+    badgeLabel: draft.badgeLabel,
+    targetGoal: draft.targetGoal,
+    category: draft.category,
+    total: draft.total,
+    rewardPoints: Number(draft.rewardPoints) || 0,
+    startDate: draft.startDate || undefined,
+    endDate: draft.endDate || undefined,
+    image: draft.image.trim() || undefined,
+    brandReward: {
+      type: draft.rewardType,
+      title: draft.rewardTitle,
+      partnerName: isPartner ? draft.partnerName : undefined,
+      voucherCodePrefix: isPartner ? draft.voucherCodePrefix : undefined,
+      exclusiveNotice: isPartner ? draft.exclusiveNotice : undefined,
+      hubRewardNote: isPartner ? undefined : draft.hubRewardNote,
+      terms: draft.terms,
+    },
+  };
+}
+
+function describeTimeLeft(quest: ChallengeQuest): string | null {
+  if (!quest.endDate) return null;
+  if (quest.daysRemaining === 0) return `หมดเวลา ${quest.endDate}`;
+  return `เหลือ ${quest.daysRemaining} วัน · ถึง ${quest.endDate}`;
+}
 
 const STATUS_LABELS: Record<QuestStatus, string> = {
   draft: 'แบบร่าง',
@@ -119,6 +179,16 @@ export function QuestsManagerView() {
       category: quest.category || 'chill',
       total: quest.total || '1',
       rewardPoints: String(quest.rewardPoints || 0),
+      startDate: toIsoDate(quest.startDate),
+      endDate: toIsoDate(quest.endDate),
+      image: quest.image || '',
+      rewardType: quest.brandReward?.type || 'hub_central',
+      partnerName: quest.brandReward?.type === 'brand_partner' ? quest.brandReward.partnerName : '',
+      rewardTitle: quest.brandReward?.title || EMPTY_DRAFT.rewardTitle,
+      voucherCodePrefix: quest.brandReward?.voucherCodePrefix || '',
+      exclusiveNotice: quest.brandReward?.exclusiveNotice || '',
+      hubRewardNote: quest.brandReward?.hubRewardNote || '',
+      terms: quest.brandReward?.terms || '',
     });
     setError(null);
     setIsDialogOpen(true);
@@ -130,8 +200,8 @@ export function QuestsManagerView() {
     setError(null);
     try {
       const payload = editingId
-        ? { action: 'update', id: editingId, updatedFields: { ...draft, rewardPoints: Number(draft.rewardPoints) || 0 } }
-        : { action: 'create', quest: { ...draft, rewardPoints: Number(draft.rewardPoints) || 0 } };
+        ? { action: 'update', id: editingId, updatedFields: toPayload(draft) }
+        : { action: 'create', quest: toPayload(draft) };
       const response = await fetch('/api/admin/quests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -193,21 +263,22 @@ export function QuestsManagerView() {
 
   return (
     <div className="space-y-6">
-      <section className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <p className="text-xs font-semibold uppercase text-slate-500">Discovery & Content / Gamification</p>
-          <h1 className="mt-1 text-2xl font-bold text-slate-950">Quests & Badges</h1>
-          <p className="mt-1 text-sm text-slate-600">จัดการภารกิจ รางวัล XP และเหรียญตราจากข้อมูลจริง</p>
-        </div>
-        <div className="flex gap-2">
-          <button type="button" onClick={loadQuests} disabled={isLoading} aria-label="รีเฟรชรายการภารกิจ" className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50">
-            <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-          </button>
-          <button type="button" onClick={openCreate} className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#2563EB] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[#1D4ED8]">
-            <Plus size={16} /> สร้างภารกิจ
-          </button>
-        </div>
-      </section>
+      <AdminPageHeader
+        icon={Zap}
+        title="Quests & Badges"
+        description="จัดการภารกิจ รางวัล XP และเหรียญตรา"
+        actions={
+          <>
+            <button type="button" onClick={loadQuests} disabled={isLoading} className={adminButton.secondary}>
+              <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+              รีเฟรช
+            </button>
+            <button type="button" onClick={openCreate} className={adminButton.primary}>
+              <Plus size={14} /> สร้างภารกิจ
+            </button>
+          </>
+        }
+      />
 
       <section aria-label="Quest summary" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
@@ -242,8 +313,8 @@ export function QuestsManagerView() {
         {error && <div role="alert" className="flex items-start gap-2 border-l-2 border-rose-500 bg-rose-50 px-3 py-2 text-sm text-rose-800"><AlertCircle size={16} className="mt-0.5 shrink-0" />{error}</div>}
 
         <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-          <div className="hidden grid-cols-[minmax(0,1fr)_130px_120px_150px] gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3 text-[11px] font-semibold uppercase text-slate-500 md:grid">
-            <span>ภารกิจ</span><span>หมวดหมู่</span><span>XP / Badge</span><span className="text-right">สถานะ / จัดการ</span>
+          <div className="hidden grid-cols-[minmax(0,1fr)_96px_minmax(140px,180px)_104px_168px] gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3 text-[11px] font-semibold text-slate-500 md:grid">
+            <span>ภารกิจ</span><span>หมวดหมู่</span><span>รางวัล</span><span>สถานะ</span><span className="text-right">จัดการ</span>
           </div>
           {isLoading ? (
             <div className="space-y-px" aria-label="กำลังโหลดภารกิจ">
@@ -257,31 +328,40 @@ export function QuestsManagerView() {
           ) : filteredQuests.map((quest) => {
             const status = getStatus(quest);
             return (
-              <article key={quest.id} className="grid gap-3 border-b border-slate-100 px-4 py-4 last:border-b-0 md:grid-cols-[minmax(0,1fr)_130px_120px_150px] md:items-center md:gap-4">
+              <article key={quest.id} className="grid gap-3 border-b border-slate-100 px-4 py-4 last:border-b-0 md:grid-cols-[minmax(0,1fr)_96px_minmax(140px,180px)_104px_168px] md:items-center md:gap-4">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <Zap size={14} className="shrink-0 text-amber-600" />
                     <h2 className="truncate text-sm font-semibold text-slate-950">{quest.title}</h2>
                   </div>
                   <p className="mt-1 line-clamp-2 pl-[22px] text-xs leading-5 text-slate-600">{quest.targetGoal || 'ยังไม่มีคำอธิบายเป้าหมาย'}</p>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-2 pl-[22px]">
+                    {quest.brandReward ? (
+                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-extrabold ${quest.brandReward.type === 'brand_partner' ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-purple-200 bg-purple-50 text-purple-800'}`}>
+                        Official • {quest.brandReward.type === 'brand_partner' ? quest.brandReward.partnerName : 'Chill & Connect'}
+                      </span>
+                    ) : (
+                      <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-extrabold text-slate-500">ยังไม่ระบุประเภทรางวัล</span>
+                    )}
+                    {describeTimeLeft(quest) && <span className="text-[11px] font-semibold text-slate-500">{describeTimeLeft(quest)}</span>}
+                  </div>
                 </div>
                 <span className="text-xs font-medium capitalize text-slate-700">{quest.category || 'ไม่ระบุ'}</span>
-                <div className="flex items-center gap-2 text-xs text-slate-700">
-                  <span className="tabular-nums">{quest.rewardPoints || 0} XP</span>
-                  <span className="text-slate-300">/</span>
-                  <span className="truncate">{quest.badgeLabel}</span>
+                <div className="min-w-0 text-xs text-slate-700">
+                  <p className="font-bold tabular-nums">{quest.rewardPoints || 0} XP</p>
+                  <p className="text-slate-500 line-clamp-2" title={quest.badgeLabel}>{quest.badgeLabel}</p>
                 </div>
-                <div className="flex items-center justify-between gap-2 md:justify-end">
-                  <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-semibold ${STATUS_STYLES[status]}`}>
+                <div>
+                  <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-md border px-2 py-1 text-[11px] font-semibold ${STATUS_STYLES[status]}`}>
                     {status === 'draft' ? <Clock3 size={12} /> : status === 'active' ? <Check size={12} /> : <Trophy size={12} />}
                     {STATUS_LABELS[status]}
                   </span>
-                  <div className="flex items-center gap-1">
-                    {status === 'draft' && <button type="button" onClick={() => setQuestStatus(quest, 'active')} title="เผยแพร่ภารกิจ" aria-label={`เผยแพร่ ${quest.title}`} className="rounded-md px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-50">เผยแพร่</button>}
-                    {status === 'active' && <button type="button" onClick={() => setQuestStatus(quest, 'ended')} title="สิ้นสุดภารกิจ" aria-label={`สิ้นสุด ${quest.title}`} className="rounded-md px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-100">สิ้นสุด</button>}
+                </div>
+                <div className="flex items-center justify-end gap-1">
+                    {status === 'draft' && <button type="button" onClick={() => setQuestStatus(quest, 'active')} title="เผยแพร่ภารกิจ" aria-label={`เผยแพร่ ${quest.title}`} className="whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white hover:bg-slate-800">เผยแพร่</button>}
+                    {status === 'active' && <button type="button" onClick={() => setQuestStatus(quest, 'ended')} title="สิ้นสุดภารกิจ" aria-label={`สิ้นสุด ${quest.title}`} className="whitespace-nowrap rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200">ปิดภารกิจ</button>}
                     <button type="button" onClick={() => openEdit(quest)} title="แก้ไขภารกิจ" aria-label={`แก้ไข ${quest.title}`} className="rounded-md p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-950"><Pencil size={14} /></button>
                     <button type="button" onClick={() => deleteQuest(quest)} title="ลบภารกิจ" aria-label={`ลบ ${quest.title}`} className="rounded-md p-2 text-slate-500 hover:bg-rose-50 hover:text-rose-700"><Trash2 size={14} /></button>
-                  </div>
                 </div>
               </article>
             );
@@ -322,6 +402,58 @@ export function QuestsManagerView() {
                   <input required type="number" min="0" value={draft.rewardPoints} onChange={(event) => setDraft({ ...draft, rewardPoints: event.target.value })} className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
                 </label>
               </div>
+
+              <fieldset className="space-y-3 border-t border-slate-200 pt-4">
+                <legend className="text-sm font-bold text-slate-900">ระยะเวลา</legend>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <label className="block space-y-1.5 text-sm font-medium text-slate-800">วันเริ่มต้น
+                    <input type="date" value={draft.startDate} onChange={(event) => setDraft({ ...draft, startDate: event.target.value })} className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                  </label>
+                  <label className="block space-y-1.5 text-sm font-medium text-slate-800">วันสิ้นสุด
+                    <input type="date" value={draft.endDate} min={draft.startDate || undefined} onChange={(event) => setDraft({ ...draft, endDate: event.target.value })} className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                  </label>
+                </div>
+                <p className="text-[11px] sm:text-xs font-semibold text-slate-500">ระบบจะเปลี่ยนเป็น &quot;สิ้นสุด&quot; เองเมื่อเลยวันสิ้นสุด และคำนวณจำนวนวันที่เหลือให้อัตโนมัติ</p>
+              </fieldset>
+
+              <fieldset className="space-y-3 border-t border-slate-200 pt-4">
+                <legend className="text-sm font-bold text-slate-900">ประเภทภารกิจ & รางวัล</legend>
+                <div className="flex gap-1 rounded-lg bg-slate-100 p-1" role="radiogroup" aria-label="ประเภทภารกิจ">
+                  {([['hub_central', 'ภารกิจกลางของ Hub'], ['brand_partner', 'ภารกิจพาร์ทเนอร์']] as const).map(([value, label]) => (
+                    <button key={value} type="button" role="radio" aria-checked={draft.rewardType === value} onClick={() => setDraft({ ...draft, rewardType: value })} className={`flex-1 rounded-md px-3 py-1.5 text-xs font-semibold ${draft.rewardType === value ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {draft.rewardType === 'brand_partner' && (
+                  <label className="block space-y-1.5 text-sm font-medium text-slate-800">ชื่อแบรนด์พาร์ทเนอร์
+                    <input required value={draft.partnerName} onChange={(event) => setDraft({ ...draft, partnerName: event.target.value })} placeholder="เช่น Ari Specialty Coffee Club" className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                  </label>
+                )}
+                <label className="block space-y-1.5 text-sm font-medium text-slate-800">{draft.rewardType === 'brand_partner' ? 'สิทธิพิเศษจากแบรนด์' : 'รางวัลจาก Hub'}
+                  <input required minLength={3} value={draft.rewardTitle} onChange={(event) => setDraft({ ...draft, rewardTitle: event.target.value })} placeholder={draft.rewardType === 'brand_partner' ? 'เช่น ฟรี Cold Brew 1 แก้ว (มูลค่า 140.-)' : ''} className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                </label>
+                {draft.rewardType === 'brand_partner' ? (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <label className="block space-y-1.5 text-sm font-medium text-slate-800">คำนำหน้ารหัสคูปอง
+                      <input value={draft.voucherCodePrefix} onChange={(event) => setDraft({ ...draft, voucherCodePrefix: event.target.value.toUpperCase() })} placeholder="เช่น ARI-BREW-" className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                    </label>
+                    <label className="block space-y-1.5 text-sm font-medium text-slate-800">เงื่อนไขเฉพาะแบรนด์
+                      <input value={draft.exclusiveNotice} onChange={(event) => setDraft({ ...draft, exclusiveNotice: event.target.value })} placeholder="เช่น ใช้ได้เฉพาะหน้าร้านทุกสาขา" className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                    </label>
+                  </div>
+                ) : (
+                  <label className="block space-y-1.5 text-sm font-medium text-slate-800">รายละเอียดรางวัล Hub
+                    <input value={draft.hubRewardNote} onChange={(event) => setDraft({ ...draft, hubRewardNote: event.target.value })} placeholder="เช่น รับแต้ม Boosted XP ไปแลกของรางวัลที่ /rewards" className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                  </label>
+                )}
+                <label className="block space-y-1.5 text-sm font-medium text-slate-800">ข้อกำหนดการใช้สิทธิ์
+                  <textarea rows={2} value={draft.terms} onChange={(event) => setDraft({ ...draft, terms: event.target.value })} className="w-full resize-y rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                </label>
+                <label className="block space-y-1.5 text-sm font-medium text-slate-800">รูปภาพปก (ไม่บังคับ)
+                  <input value={draft.image} onChange={(event) => setDraft({ ...draft, image: event.target.value })} placeholder="https://..." className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                </label>
+              </fieldset>
               {error && <p role="alert" className="text-sm text-rose-700">{error}</p>}
               <div className="flex justify-end gap-2 border-t border-slate-200 pt-4">
                 <button type="button" onClick={() => setIsDialogOpen(false)} className="h-10 rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">ยกเลิก</button>

@@ -3,11 +3,11 @@
 import React, { useState } from 'react';
 import {
   FolderTree,
-  Edit3,
   ChevronDown,
   ChevronUp,
   Tag,
 } from 'lucide-react';
+import { AdminPageHeader, AdminBadge } from './AdminUI';
 import {
   MASTER_SPOT_CATEGORIES,
   MASTER_COMMUNITY_LIFESTYLE_CATEGORIES,
@@ -88,21 +88,12 @@ export function TaxonomyManagerView() {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <FolderTree size={17} className="text-[#4A7C59]" />
-            <h1 className="text-xl font-bold text-slate-800">Master Taxonomy Hub</h1>
-          </div>
-          <p className="text-slate-500 text-sm">
-            จัดการหมวดหมู่หลักของทุก Pillar — เปลี่ยนที่นี่แล้ว Component ทั้งระบบจะอัปเดตตาม
-          </p>
-        </div>
-        <span className="px-3 py-1.5 bg-[#EBF3ED] border border-[#4A7C59]/20 text-[#2D5A3C] rounded-xl text-xs font-semibold">
-          Single Source of Truth
-        </span>
-      </div>
+      <AdminPageHeader
+        icon={FolderTree}
+        title="Master Taxonomy"
+        description="หมวดหมู่หลักของทุก pillar ที่ทั้งระบบใช้ร่วมกัน"
+        badge={<AdminBadge>อ่านอย่างเดียว</AdminBadge>}
+      />
 
       {/* Info Banner */}
       <div className="flex items-start gap-3 bg-slate-50 border border-slate-200/70 rounded-xl px-4 py-3">
@@ -112,7 +103,7 @@ export function TaxonomyManagerView() {
           <code className="bg-white border border-slate-200 px-1.5 py-0.5 rounded text-[#4A7C59] font-mono text-[11px]">
             data/masterHub.ts
           </code>{' '}
-          ซึ่งเป็น Single Source of Truth ที่ Components ทั้งหมดดึงข้อมูลมาใช้ร่วมกัน
+          ซึ่งเป็นแหล่งข้อมูลกลางที่ทุก component ใช้ร่วมกัน ตอนนี้ยังแก้ไขผ่านหน้า admin ไม่ได้ ต้องแก้ในไฟล์โดยตรง
         </p>
       </div>
 
@@ -180,22 +171,10 @@ export function TaxonomyManagerView() {
                         )}
                         <code className="text-[10px] text-slate-300 font-mono">{item.id}</code>
                       </div>
-                      <button className="p-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-white text-slate-400 hover:text-slate-600 transition-all" title="Edit">
-                        <Edit3 size={11} />
-                      </button>
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-4 flex items-center gap-3">
-                  <button className="flex items-center gap-2 px-3 py-2 bg-slate-100 border border-slate-200 text-slate-400 rounded-xl text-xs font-semibold transition-colors opacity-60 cursor-not-allowed" disabled>
-                    + เพิ่มหมวดหมู่ใหม่
-                  </button>
-                  <p className="text-slate-400 text-xs">
-                    แก้ไขได้โดยตรงใน{' '}
-                    <code className="font-mono text-slate-500 bg-slate-100 px-1 py-0.5 rounded text-[11px]">data/masterHub.ts</code>
-                  </p>
-                </div>
               </div>
             )}
           </div>

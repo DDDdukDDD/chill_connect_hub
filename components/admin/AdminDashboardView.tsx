@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Activity, AlertCircle, ArrowRight, CheckCircle2, Clock3, Leaf, RefreshCw, Trophy, Users, Zap } from 'lucide-react';
+import { Activity, AlertCircle, ArrowRight, CheckCircle2, Clock3, LayoutDashboard, Leaf, RefreshCw, Trophy, Users, Zap } from 'lucide-react';
+import { AdminPageHeader, adminButton } from './AdminUI';
 import { AdminModuleId } from './AdminSidebar';
 import { AdminEventItem } from '@/lib/eventsStore';
 import { LifestyleSpotItem } from '@/data/spotsData';
@@ -91,16 +92,17 @@ export function AdminDashboardView({ onNavigate }: AdminDashboardViewProps) {
 
   return (
     <div className="space-y-6">
-      <section className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <p className="text-xs font-semibold uppercase text-slate-500">Chill & Connect / Content operations</p>
-          <h1 className="mt-1 text-2xl font-bold text-slate-950">Discovery overview</h1>
-          <p className="mt-1 text-sm text-slate-600">ภาพรวมเนื้อหาและรายการที่ต้องดำเนินการ</p>
-        </div>
-        <button type="button" onClick={refresh} disabled={isLoading} aria-label="รีเฟรชข้อมูลแดชบอร์ด" className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50">
-          <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-        </button>
-      </section>
+      <AdminPageHeader
+        icon={LayoutDashboard}
+        title="ภาพรวมเนื้อหา"
+        description="จำนวนเนื้อหาจริงในระบบ รายการที่รอตรวจ และสุขภาพของข้อมูล"
+        actions={
+          <button type="button" onClick={refresh} disabled={isLoading} className={adminButton.secondary}>
+            <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+            รีเฟรช
+          </button>
+        }
+      />
 
       {error && <div role="alert" className="flex items-start gap-2 border-l-2 border-rose-500 bg-rose-50 px-3 py-2 text-sm text-rose-800"><AlertCircle size={16} className="mt-0.5 shrink-0" />{error}</div>}
 

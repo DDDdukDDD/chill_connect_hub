@@ -3,6 +3,10 @@ import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
 import { LifestyleSpotItem } from '@/data/spotsData';
 import { ScrapedRawEvent } from '@/lib/aiTagger';
+import { bangkokTime, toThaiDisplayDate } from '@/lib/scrapers/dates';
+import { findSiteEventAdapter } from '@/lib/scrapers/siteAdapters';
+import { getBlockedSourceReason } from '@/lib/scrapers/sourcePolicy';
+import type { SiteAdapterContext } from '@/lib/scrapers/types';
 
 export type ScrapeTarget = 'events' | 'spots';
 
@@ -48,6 +52,11 @@ function isPrivateAddress(address: string): boolean {
     normalized.startsWith('fe9') || normalized.startsWith('fea') ||
     normalized.startsWith('feb') || normalized.startsWith('::ffff:127.') ||
     normalized.startsWith('::ffff:10.') || normalized.startsWith('::ffff:192.168.');
+}
+
+/** Accepts only public HTTPS URLs whose host resolves to public addresses (SSRF guard). */
+export async function validatePublicHttpsUrl(value: string): Promise<URL> {
+  return validateSourceUrl(value);
 }
 
 async function validateSourceUrl(value: string): Promise<URL> {
@@ -117,18 +126,38 @@ async function getRobotsRules(url: URL): Promise<string | null> {
   return rules;
 }
 
-async function fetchSourceDocument(value: string, redirectCount = 0): Promise<{ url: URL; text: string }> {
+const PAGE_TYPES = ['text/html', 'application/ld+json'];
+
+interface GuardedRequest {
+  acceptedTypes?: string[];
+  method?: 'GET' | 'POST';
+  body?: string;
+  headers?: Record<string, string>;
+}
+
+/**
+ * The single network path of the scraper: public HTTPS only (SSRF guard), blocked platforms,
+ * robots.txt, manual redirects (each hop revalidated, GET only), response type, size and time limits.
+ */
+async function fetchSourceDocument(value: string, request: GuardedRequest = {}, redirectCount = 0): Promise<{ url: URL; text: string; contentType: string }> {
   if (redirectCount > 2) throw new Error('Source redirected too many times');
+  const acceptedTypes = request.acceptedTypes || PAGE_TYPES;
   const url = await validateSourceUrl(value);
+  // Checked on every hop so a redirect cannot lead into a blocked platform
+  const blockedReason = getBlockedSourceReason(url);
+  if (blockedReason) throw new Error(blockedReason);
   const robotsRules = await getRobotsRules(url);
   if (!pathAllowedByRobots(robotsRules, url.pathname)) {
     throw new Error('Source path is disallowed by robots.txt');
   }
 
   const response = await fetch(url, {
+    method: request.method || 'GET',
+    body: request.body,
     headers: {
-      Accept: 'text/html, application/ld+json;q=0.9',
+      Accept: acceptedTypes.join(', '),
       'User-Agent': 'ChillConnectHubBot/1.0',
+      ...request.headers,
     },
     redirect: 'manual',
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
@@ -137,20 +166,35 @@ async function fetchSourceDocument(value: string, redirectCount = 0): Promise<{ 
   if (response.status >= 300 && response.status < 400) {
     const location = response.headers.get('location');
     if (!location) throw new Error('Source returned a redirect without a location');
-    return fetchSourceDocument(new URL(location, url).toString(), redirectCount + 1);
+    if (request.method === 'POST') throw new Error('Source API redirected a POST request');
+    return fetchSourceDocument(new URL(location, url).toString(), request, redirectCount + 1);
   }
   if (!response.ok) throw new Error(`Source returned HTTP ${response.status}`);
   const contentType = response.headers.get('content-type') || '';
-  if (!contentType.includes('text/html') && !contentType.includes('application/ld+json')) {
-    throw new Error('Source does not return HTML or JSON-LD');
+  if (!acceptedTypes.some((type) => contentType.includes(type))) {
+    throw new Error(`Source returned ${contentType || 'an unknown type'}, expected ${acceptedTypes.join(' or ')}`);
   }
 
   const contentLength = Number(response.headers.get('content-length') || 0);
   if (contentLength > MAX_RESPONSE_BYTES) throw new Error('Source response exceeds 2 MB');
   const text = await response.text();
   if (Buffer.byteLength(text, 'utf8') > MAX_RESPONSE_BYTES) throw new Error('Source response exceeds 2 MB');
-  return { url, text };
+  return { url, text, contentType };
 }
+
+const adapterContext = (): SiteAdapterContext => ({
+  fetchText: (url, acceptedTypes) => fetchSourceDocument(url, { acceptedTypes }),
+  postJson: async (url, body, headers) => {
+    const { text } = await fetchSourceDocument(url, {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json', ...headers },
+      acceptedTypes: ['application/json'],
+    });
+    return JSON.parse(text);
+  },
+  now: Date.now(),
+});
 
 function parseJsonLdDocuments(text: string, contentType: string): unknown[] {
   if (contentType.includes('application/ld+json')) {
@@ -246,14 +290,6 @@ function offerPrice(value: unknown): string | undefined {
   return price ? `${currency} ${price}`.trim() : undefined;
 }
 
-function timeFromDate(value: unknown): string | undefined {
-  const raw = textValue(value);
-  if (!raw || !raw.includes('T')) return undefined;
-  const date = new Date(raw);
-  if (!Number.isFinite(date.getTime())) return undefined;
-  return date.toLocaleTimeString('th-TH', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit' });
-}
-
 function extractRecords(text: string, contentType: string): Record<string, unknown>[] {
   const unique = new Map<string, Record<string, unknown>>();
   for (const document of parseJsonLdDocuments(text, contentType)) {
@@ -281,6 +317,20 @@ function isPlaceNode(node: Record<string, unknown>): boolean {
 
 export async function scrapeEventSource(source: ScrapeSource): Promise<SourceScrapeResult<ScrapedRawEvent>> {
   try {
+    // Site-specific readers for pages without JSON-LD
+    const adapter = findSiteEventAdapter(source.url);
+    if (adapter) {
+      const result = await adapter.scrape(new URL(source.url), adapterContext());
+      if (result.scannedCount === 0) throw new Error('The source listed no events');
+      return {
+        sourceId: source.id,
+        sourceName: source.name,
+        targetType: 'events',
+        scannedCount: result.scannedCount,
+        items: result.items.filter((item) => !getBlockedSourceReason(item.sourceUrl)),
+      };
+    }
+
     const { url, text } = await fetchSourceDocument(source.url);
     const contentType = text.trimStart().startsWith('{') ? 'application/ld+json' : 'text/html';
     const records = extractRecords(text, contentType).filter(isEventNode);
@@ -299,13 +349,15 @@ export async function scrapeEventSource(source: ScrapeSource): Promise<SourceScr
       const latitude = Number(geo.latitude);
       const longitude = Number(geo.longitude);
       const sourceUrl = safeExternalUrl(record.url) || url.toString();
+      if (getBlockedSourceReason(sourceUrl)) return []; // a listing that re-publishes Meetup/Facebook events
+      const rawEndDate = textValue(record.endDate) || undefined;
       return [{
         source: organizer || source.name,
         sourceUrl,
         rawTitle,
-        rawDate,
-        rawEndDate: textValue(record.endDate) || undefined,
-        rawTime: timeFromDate(record.startDate) || '',
+        rawDate: toThaiDisplayDate(rawDate),
+        rawEndDate: toThaiDisplayDate(rawEndDate),
+        rawTime: [bangkokTime(rawDate), bangkokTime(rawEndDate)].filter(Boolean).join(' - '),
         rawLocation,
         rawProvince: textValue(address.addressRegion || address.addressLocality) || undefined,
         rawPrice: offerPrice(record.offers),

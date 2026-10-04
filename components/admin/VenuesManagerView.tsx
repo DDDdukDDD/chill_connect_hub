@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Building2, MapPin, Navigation, ExternalLink } from 'lucide-react';
+import { AdminPageHeader, AdminBadge } from './AdminUI';
 import { MASTER_VENUE_OPTIONS } from '@/data/masterHub';
 
 const VENUE_DETAILS = [
@@ -75,19 +76,12 @@ const VENUE_DETAILS = [
 export function VenuesManagerView() {
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Building2 size={17} className="text-[#2B527A]" />
-            <h1 className="text-xl font-bold text-slate-800">Venue Master Hub</h1>
-          </div>
-          <p className="text-slate-500 text-sm">ศูนย์ประชุม ฮอลล์จัดงาน และสถานที่สาธารณะขนาดใหญ่ที่ใช้บ่อย</p>
-        </div>
-        <span className="px-3 py-1.5 bg-sky-50 border border-sky-200 text-[#2B527A] rounded-xl text-xs font-semibold">
-          {VENUE_DETAILS.length} Venues
-        </span>
-      </div>
+      <AdminPageHeader
+        icon={Building2}
+        title="Venues"
+        description={`ศูนย์ประชุม ฮอลล์จัดงาน และสถานที่สาธารณะขนาดใหญ่ที่ใช้บ่อย ${VENUE_DETAILS.length} แห่ง (ข้อมูลจากไฟล์ในโค้ด)`}
+        badge={<AdminBadge>อ่านอย่างเดียว</AdminBadge>}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">

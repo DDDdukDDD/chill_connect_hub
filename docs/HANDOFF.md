@@ -23,14 +23,23 @@ Item template:
 
 ## Open
 
-### FE-001 · Scope clarification: Claude owns Admin UI + Backend; Antigravity owns Customer-Facing Frontend
-- **From → To:** Frontend → Backend
-- **Date / branch:** 2026-10-03 · `main`
-- **What changed / what is needed:** Per project owner direction to optimize collaboration speed and eliminate cross-agent handoffs:
-  - **Claude Code** now owns both Backend (`app/api/**`, `lib/**`, `data/**`) AND Admin UI (`app/admin/**`, `components/admin/**`, `components/AdminCreateEventModal.tsx`, `docs/API.md`, `BACKEND_IMPLEMENTATION_LOG.md`).
-  - **Antigravity IDE (Gemini)** owns Customer-Facing Frontend (`app/**` except `/admin`, user-facing `components/**`, `app/globals.css`, client-only helpers, `DESIGN_SYSTEM.md`).
-- **Action for Backend:** When pulling `main`, note that Claude Code may freely modify, refactor, and build all Admin UI screens and modals directly alongside backend routes without needing frontend requests.
+### BE-005 · Quests: use `brandReward` and the server-computed lifecycle from the API
+- **From → To:** Backend → Frontend
+- **Date / branch:** 2026-10-04 · `claude` (merge into `main` pending)
+- **What changed:**
+  - `ChallengeQuest` now has `brandReward?: QuestReward` and `image?: string`. `QuestReward` is exported from `@/data/mockData` with the same shape as the local `QuestRewardProfile` in `components/JoinChallengeModal.tsx`.
+  - `/api/quests` returns `brandReward` for every seed quest (Cafe Hunter → Ari Specialty Coffee Club, HYROX → HYROX Thailand, Step Count / Digital Detox → hub_central).
+  - `daysRemaining` and `status: 'ended'` are computed from `endDate` on every read (stored values are ignored). Seed dates were refreshed to Oct–Dec 2026, except "Digital Detox" which is intentionally ended (25 มี.ค. 2026) so the "สิ้นสุดแล้ว" archive has a real case.
+- **Action for Frontend:**
+  1. Import `QuestReward` from `@/data/mockData` instead of redefining `QuestRewardProfile` (or alias it).
+  2. For API quests, use `quest.brandReward` directly. `getQuestBrandReward()` already returns it when present — the title-keyword fallback is now only needed for the static `ALL_QUESTS` catalog in `app/challenges/page.tsx`.
+  3. Rely on `status` / `daysRemaining` from the API instead of hard-coded values; quests without `endDate` have no `daysRemaining`.
+  4. Optional: `QuestWithDuration.brandReward?: any` can become `QuestReward`.
 - **Status:** Open
+
+---
+
+## Done
 
 ### FE-002 · Quests & Challenges UI Standardization (Status Archive, Ended Quests, Typographic Scale, Clean Minimal Filter)
 - **From → To:** Frontend → Backend
@@ -49,11 +58,16 @@ Item template:
      - Removed multi-color rainbow buttons and crown icons from filter chips.
      - Single consolidated filter row on `/challenges` with neutral monochrome slate styling (`bg-slate-900 text-white`).
 - **Action for Backend:** When creating/updating quests in `/api/admin/quests` or `lib/db`, backend can safely set `status: 'ended'` or rely on `daysRemaining: 0` for expired quests. Ensure `brandReward` objects include `partnerName` and `title` when `type === 'brand_partner'`.
-- **Status:** Open
+- **Status:** Done (2026-10-04 on `claude`: `brandReward` (`QuestReward`) and `image` added to `ChallengeQuest`; brand_partner requires `partnerName` + `title` (API-validated); `daysRemaining`/`ended` are now computed from `endDate` by the server; admin Quests form edits period and reward type. See BE-005 for the frontend follow-up.)
 
----
-
-## Done
+### FE-001 · Scope clarification: Claude owns Admin UI + Backend; Antigravity owns Customer-Facing Frontend
+- **From → To:** Frontend → Backend
+- **Date / branch:** 2026-10-03 · `main`
+- **What changed / what is needed:** Per project owner direction to optimize collaboration speed and eliminate cross-agent handoffs:
+  - **Claude Code** now owns both Backend (`app/api/**`, `lib/**`, `data/**`) AND Admin UI (`app/admin/**`, `components/admin/**`, `components/AdminCreateEventModal.tsx`, `docs/API.md`, `BACKEND_IMPLEMENTATION_LOG.md`).
+  - **Antigravity IDE (Gemini)** owns Customer-Facing Frontend (`app/**` except `/admin`, user-facing `components/**`, `app/globals.css`, client-only helpers, `DESIGN_SYSTEM.md`).
+- **Action for Backend:** When pulling `main`, note that Claude Code may freely modify, refactor, and build all Admin UI screens and modals directly alongside backend routes without needing frontend requests.
+- **Status:** Done (2026-10-03: acknowledged by Claude Code; memory and working rules updated. First admin-UI change under the new scope: admin honesty pass on `claude` — real session in header/sidebar, sample screens labeled, role simulator removed.)
 
 ### BE-001 · `POST /api/events` ignores `userRole`; admin status comes from the server session
 - **From → To:** Backend → Frontend
