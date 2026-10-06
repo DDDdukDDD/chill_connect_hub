@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { runScraperAndAIEngine } from '@/lib/eventsStore';
-import { requireAdminApiAccess } from '@/lib/adminApiAuth';
+import { getAdminActor, requireAdminApiAccess } from '@/lib/adminApiAuth';
+import { recordAudit } from '@/lib/auditLog';
 import { runSpotScraper } from '@/lib/spotScraper';
 import { MASTER_77_PROVINCES } from '@/data/masterHub';
 import type { SpotScrapeOptions } from '@/lib/scrapers/types';
@@ -9,8 +10,9 @@ const DEFAULT_SPOT_LIMIT = 30;
 const MAX_SPOT_LIMIT = 100;
 
 export async function POST(req: Request) {
-  const denied = requireAdminApiAccess(req);
+  const denied = requireAdminApiAccess(req, 'sources.run');
   if (denied) return denied;
+  const actor = getAdminActor(req);
 
   try {
     let targetSource: string | undefined;
@@ -53,10 +55,12 @@ export async function POST(req: Request) {
 
     if (targetType === 'spots') {
       const result = await runSpotScraper(targetSource, spotOptions);
+      recordAudit(actor, 'scrape.spots', `ดึงสถานที่${spotOptions ? ` จังหวัด${spotOptions.province}` : ''}: พบ ${result.totalScanned} นำเข้า ${result.newCount} ซ้ำ ${result.duplicateCount}`, { type: 'source', id: targetSource });
       return NextResponse.json({ ...toSummary(result), spots: result.spots });
     }
 
     const result = await runScraperAndAIEngine(targetSource);
+    recordAudit(actor, 'scrape.events', `ดึงอีเวนต์: พบ ${result.totalScanned} นำเข้า ${result.newCount} ซ้ำ ${result.duplicateCount}`, { type: 'source', id: targetSource });
     return NextResponse.json({ ...toSummary(result), duplicateDetails: result.duplicateDetails, events: result.events });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Scrape failed';

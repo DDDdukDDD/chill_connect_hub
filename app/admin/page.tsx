@@ -2,20 +2,22 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { ALL_THAI_PROVINCES, SPOT_CATEGORIES, LifestyleSpotItem } from '@/data/spotsData';
-import { AdminSidebar, AdminModuleId } from '@/components/admin/AdminSidebar';
+import { AdminSidebar, AdminModuleId, MODULE_PERMISSIONS } from '@/components/admin/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { AdminDashboardView } from '@/components/admin/AdminDashboardView';
 import { TaxonomyManagerView } from '@/components/admin/TaxonomyManagerView';
 import { ProvincesManagerView } from '@/components/admin/ProvincesManagerView';
 import { VenuesManagerView } from '@/components/admin/VenuesManagerView';
 import { QuestsManagerView } from '@/components/admin/QuestsManagerView';
-import { RbacUsersView } from '@/components/admin/RbacUsersView';
 import { ScraperEngineView } from '@/components/admin/ScraperEngineView';
-import { DbBackupView } from '@/components/admin/DbBackupView';
 import { EventsModerationView } from '@/components/admin/EventsModerationView';
 import { MediaManagerView } from '@/components/admin/MediaManagerView';
 import { SystemCacheView } from '@/components/admin/SystemCacheView';
-import { AdminAuthGate } from '@/components/admin/AdminAuthGate';
+import { AdminAuthGate, useAdminSession } from '@/components/admin/AdminAuthGate';
+import { ReviewQueueView } from '@/components/admin/ReviewQueueView';
+import { StaffManagerView } from '@/components/admin/StaffManagerView';
+import { AuditLogView } from '@/components/admin/AuditLogView';
+import { AdminEmptyState } from '@/components/admin/AdminUI';
 import { SpotsManagerView } from '@/components/admin/SpotsManagerView';
 import { handleAdminUnauthorized } from '@/components/admin/adminAuthUtils';
 import {
@@ -25,10 +27,7 @@ import {
 // ─────────────────────────────────────────────────────────────
 // MAIN ADMIN PAGE
 // ─────────────────────────────────────────────────────────────
-const ADMIN_MODULE_IDS: readonly AdminModuleId[] = [
-  'dashboard', 'taxonomy', 'provinces', 'venues', 'spots', 'community', 'fairs',
-  'quests', 'rbac', 'scraper', 'backup', 'media', 'cache',
-];
+const ADMIN_MODULE_IDS = Object.keys(MODULE_PERMISSIONS) as AdminModuleId[];
 
 // The active module lives in the URL (?m=spots) so refresh, shared links and back/forward work
 function readModuleFromUrl(): AdminModuleId {
@@ -140,11 +139,23 @@ function AdminConsole() {
     }
   };
 
+  const { can } = useAdminSession();
+
   // ── Render Active Module ──
   const renderModule = () => {
+    // The API enforces permissions; this only avoids showing a screen the role cannot use
+    if (!can(MODULE_PERMISSIONS[activeModule])) {
+      return <AdminEmptyState>บัญชีของคุณไม่มีสิทธิ์เปิดหน้านี้</AdminEmptyState>;
+    }
     switch (activeModule) {
       case 'dashboard':
         return <AdminDashboardView onNavigate={setActiveModule} />;
+      case 'review':
+        return <ReviewQueueView onNavigate={setActiveModule} />;
+      case 'staff':
+        return <StaffManagerView />;
+      case 'audit':
+        return <AuditLogView />;
       case 'taxonomy':
         return <TaxonomyManagerView />;
       case 'provinces':
@@ -166,16 +177,12 @@ function AdminConsole() {
         return <EventsModerationView key="fairs" type="fairs" />;
       case 'quests':
         return <QuestsManagerView />;
-      case 'rbac':
-        return <RbacUsersView />;
       case 'scraper':
         return <ScraperEngineView />;
       case 'media':
         return <MediaManagerView />;
       case 'cache':
         return <SystemCacheView />;
-      case 'backup':
-        return <DbBackupView />;
       default:
         return <AdminDashboardView onNavigate={setActiveModule} />;
     }

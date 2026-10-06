@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { db, paginateArray } from '@/lib/db';
 import { checkImages, getImageStatus } from '@/lib/imageHealth';
-import { requireAdminApiAccess } from '@/lib/adminApiAuth';
+import { getAdminActor, requireAdminApiAccess } from '@/lib/adminApiAuth';
+import { recordAudit } from '@/lib/auditLog';
 import { LifestyleSpotItem } from '@/data/spotsData';
 import { autoEnrichSpotImages } from '@/lib/spotImageResolver';
 
@@ -127,8 +128,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const denied = requireAdminApiAccess(request);
+  const denied = requireAdminApiAccess(request, 'content.edit');
   if (denied) return denied;
+  const actor = getAdminActor(request);
 
   try {
     const body = await request.json();
@@ -150,6 +152,7 @@ export async function POST(request: Request) {
       const allSpots = await getAllSpots();
       const { enrichedSpots, fixedCount } = autoEnrichSpotImages(allSpots);
       await db.bulkUpdateSpots(enrichedSpots);
+      recordAudit(actor, 'spot.auto_enrich_images', `เติมรูปอัตโนมัติ ${fixedCount} สถานที่`);
       return NextResponse.json({
         success: true,
         message: `สแกนและเติมรูปภาพความละเอียดสูงสำเร็จ ${fixedCount} รายการ`,
@@ -194,6 +197,7 @@ export async function POST(request: Request) {
       // Enrich image if empty
       const { enrichedSpots } = autoEnrichSpotImages([createdSpot]);
       const savedSpot = await db.createSpot(enrichedSpots[0]);
+      recordAudit(actor, 'spot.create', `สร้างสถานที่ "${savedSpot.title}"`, { type: 'spot', id: savedSpot.id });
 
       return NextResponse.json({
         success: true,
@@ -222,6 +226,7 @@ export async function POST(request: Request) {
       if (validationError) return NextResponse.json({ success: false, error: validationError }, { status: 400 });
 
       const updatedSpot = await db.updateSpot(spotId, safeFields);
+      recordAudit(actor, 'spot.update', `แก้ไขสถานที่ "${existing.title}" (${Object.keys(safeFields).join(', ')})`, { type: 'spot', id: spotId });
 
       return NextResponse.json({
         success: true,
@@ -258,6 +263,14 @@ export async function POST(request: Request) {
         (!idSet || idSet.has(spot.id)) && inScope(spot.id) && spot.publicationStatus !== status
       );
       const updated = await db.bulkUpdateSpots(targets.map((spot) => ({ id: spot.id, publicationStatus: status })));
+      recordAudit(
+        actor,
+        status === 'published' ? 'spot.publish' : 'spot.unpublish',
+        targets.length === 1
+          ? `${status === 'published' ? 'เผยแพร่' : 'ซ่อนเป็นร่าง'} "${targets[0].title}"`
+          : `${status === 'published' ? 'เผยแพร่' : 'ซ่อนเป็นร่าง'} ${updated} สถานที่${typeof scope === 'string' ? ` (scope: ${scope})` : ''}`,
+        targets.length === 1 ? { type: 'spot', id: targets[0].id } : { type: 'spot' }
+      );
       return NextResponse.json({
         success: true,
         updated,
@@ -268,8 +281,10 @@ export async function POST(request: Request) {
     if (action === 'delete') {
       const { spotId } = body as { spotId?: string };
       if (!spotId) return NextResponse.json({ success: false, error: 'กรุณาระบุสถานที่' }, { status: 400 });
+      const existing = await db.findSpotById(spotId);
       const deleted = await db.deleteSpot(spotId);
       if (!deleted) return NextResponse.json({ success: false, error: 'ไม่พบสถานที่ที่ระบุ' }, { status: 404 });
+      recordAudit(actor, 'spot.delete', `ลบสถานที่ "${existing?.title ?? spotId}"`, { type: 'spot', id: spotId });
       return NextResponse.json({
         success: true,
         message: 'ลบสถานที่ออกจากระบบเรียบร้อยแล้ว',

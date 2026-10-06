@@ -1,18 +1,26 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
+import { countStaff } from './staffStore';
 
 /**
  * Stateless admin session: an HMAC-SHA256 signed token stored in an httpOnly cookie.
  * Server-side only. Configure with:
- *   ADMIN_PASSWORD — password for the /admin login form
+ *   ADMIN_PASSWORD — owner password for the /admin login form (works without an email)
  *   AUTH_SECRET    — signing key, at least 32 characters
+ * Staff accounts (lib/staffStore.ts) sign in with email + password and get the same cookie.
  */
 export const ADMIN_SESSION_COOKIE = 'cch_admin_session';
 export const ADMIN_SESSION_TTL_SECONDS = 8 * 60 * 60; // 8 hours
 
 const MIN_SECRET_LENGTH = 32;
 
-interface AdminSessionPayload {
-  sub: 'admin';
+/** Subject of the env-based owner login (ADMIN_PASSWORD) */
+export const ENV_OWNER_SUBJECT = 'owner';
+
+export interface AdminSessionPayload {
+  /** ENV_OWNER_SUBJECT or a staff account id */
+  sub: string;
+  /** Staff sessionVersion at login; a mismatch means the session was revoked */
+  ver: number;
   iat: number;
   exp: number;
 }
@@ -23,7 +31,7 @@ function getSecret(): string | null {
 }
 
 export function isAdminLoginConfigured(): boolean {
-  return Boolean(process.env.ADMIN_PASSWORD && getSecret());
+  return Boolean(getSecret() && (process.env.ADMIN_PASSWORD || countStaff() > 0));
 }
 
 function sign(payload: string, secret: string): string {
@@ -45,28 +53,31 @@ export function verifyAdminPassword(candidate: string): boolean {
   return timingSafeEqual(expectedDigest, candidateDigest);
 }
 
-export function createAdminSessionToken(now: number = Date.now()): string {
+export function createAdminSessionToken(subject: string, version: number, now: number = Date.now()): string {
   const secret = getSecret();
   if (!secret) throw new Error('AUTH_SECRET is not configured');
   const issuedAt = Math.floor(now / 1000);
-  const payload: AdminSessionPayload = { sub: 'admin', iat: issuedAt, exp: issuedAt + ADMIN_SESSION_TTL_SECONDS };
+  const payload: AdminSessionPayload = { sub: subject, ver: version, iat: issuedAt, exp: issuedAt + ADMIN_SESSION_TTL_SECONDS };
   const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
   return `${encoded}.${sign(encoded, secret)}`;
 }
 
-export function verifyAdminSessionToken(token: string | undefined | null, now: number = Date.now()): boolean {
+/** Returns the signed payload when the token is authentic and unexpired; revocation is checked by the caller. */
+export function readAdminSessionToken(token: string | undefined | null, now: number = Date.now()): AdminSessionPayload | null {
   const secret = getSecret();
-  if (!secret || !token) return false;
+  if (!secret || !token) return null;
 
   const [encoded, signature, ...rest] = token.split('.');
-  if (!encoded || !signature || rest.length > 0) return false;
-  if (!safeEqual(signature, sign(encoded, secret))) return false;
+  if (!encoded || !signature || rest.length > 0) return null;
+  if (!safeEqual(signature, sign(encoded, secret))) return null;
 
   try {
     const payload = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf-8')) as Partial<AdminSessionPayload>;
-    return payload.sub === 'admin' && typeof payload.exp === 'number' && payload.exp > Math.floor(now / 1000);
+    if (typeof payload.sub !== 'string' || typeof payload.ver !== 'number') return null;
+    if (typeof payload.exp !== 'number' || payload.exp <= Math.floor(now / 1000)) return null;
+    return payload as AdminSessionPayload;
   } catch {
-    return false;
+    return null;
   }
 }
 

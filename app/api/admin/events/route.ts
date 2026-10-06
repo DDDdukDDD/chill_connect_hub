@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { requireAdminApiAccess } from '@/lib/adminApiAuth';
+import { actorCan, getAdminActor, requireAdminApiAccess } from '@/lib/adminApiAuth';
+import { recordAudit } from '@/lib/auditLog';
 import {
   listAdminEvents,
   updateEventApproval,
@@ -68,15 +69,28 @@ export async function GET(request: Request) {
 }
 
 export async function POST(req: Request) {
-  const denied = requireAdminApiAccess(req);
+  const denied = requireAdminApiAccess(req, 'community.review');
   if (denied) return denied;
+  const actor = getAdminActor(req);
 
   try {
     const body = await req.json();
     const { action, id, status, updatedFields, autoPublish, eventData } = body;
 
+    // Moderators may only change the approval of community meetups; everything else needs content.edit
+    // (reset_and_seed replaces every event, so it needs system.manage)
+    const target = typeof id === 'string' ? (await listAdminEvents()).find((ev) => ev.id === id) : undefined;
+    const required = action === 'reset_and_seed'
+      ? 'system.manage'
+      : action === 'update_status' && target?.eventType === 'community' ? 'community.review' : 'content.edit';
+    if (!actorCan(actor, required)) {
+      return NextResponse.json({ success: false, error: 'บัญชีนี้ไม่มีสิทธิ์ทำรายการนี้', permission: required }, { status: 403 });
+    }
+    const label = target ? `"${target.title}"` : id;
+
     if (action === 'create' && eventData) {
-      await createAdminEvent(eventData);
+      const created = await createAdminEvent(eventData);
+      recordAudit(actor, 'event.create', `สร้างกิจกรรม "${created.title}"`, { type: 'event', id: created.id });
       const updated = await listAdminEvents();
       return NextResponse.json({
         success: true,
@@ -87,6 +101,7 @@ export async function POST(req: Request) {
 
     if (action === 'reset_and_seed') {
       const result = await resetAndSeedAllEvents();
+      recordAudit(actor, 'event.reset_and_seed', `รีเซ็ตกิจกรรมทั้งหมด (${result.totalCount} รายการ)`);
       return NextResponse.json({
         success: true,
         message: `รีเซ็ตและดึงข้อมูลใหม่ทั้งหมดสำเร็จ! โหลดเข้าสู่ระบบ ${result.totalCount} กิจกรรม`,
@@ -96,26 +111,32 @@ export async function POST(req: Request) {
 
     if (action === 'update_status' && id && status) {
       const updated = await updateEventApproval(id, status);
+      recordAudit(actor, `event.${status === 'approved' ? 'approve' : status === 'rejected' ? 'reject' : 'set_pending'}`, `เปลี่ยนสถานะ ${label} เป็น ${status}`, { type: 'event', id });
       return NextResponse.json({ success: true, events: updated });
     }
 
     if (action === 'approve_all') {
+      const pendingCount = (await listAdminEvents()).filter((ev) => ev.approvalStatus === 'pending').length;
       const updated = await approveAllPendingEvents();
+      recordAudit(actor, 'event.approve_all', `อนุมัติกิจกรรมที่รอตรวจทั้งหมด ${pendingCount} รายการ`);
       return NextResponse.json({ success: true, events: updated });
     }
 
     if (action === 'delete' && id) {
       const updated = await deleteEvent(id);
+      recordAudit(actor, 'event.delete', `ลบกิจกรรม ${label}`, { type: 'event', id });
       return NextResponse.json({ success: true, events: updated });
     }
 
     if (action === 'update_fields' && id && updatedFields) {
       const updated = await updateAdminEvent(id, updatedFields);
+      recordAudit(actor, 'event.update', `แก้ไข ${label} (${Object.keys(updatedFields).join(', ')})`, { type: 'event', id });
       return NextResponse.json({ success: true, events: updated });
     }
 
     if (action === 'toggle_auto_publish' && typeof autoPublish === 'boolean') {
       await setAutoPublish(autoPublish);
+      recordAudit(actor, 'event.auto_publish', `${autoPublish ? 'เปิด' : 'ปิด'}การเผยแพร่อัตโนมัติ`);
       return NextResponse.json({ success: true, autoPublish });
     }
 

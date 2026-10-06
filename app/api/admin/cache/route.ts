@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdminApiAccess } from '@/lib/adminApiAuth';
+import { getAdminActor, requireAdminApiAccess } from '@/lib/adminApiAuth';
+import { recordAudit } from '@/lib/auditLog';
 import { cacheManager } from '@/lib/cache';
 
 export async function GET(request: NextRequest) {
@@ -33,12 +34,16 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const denied = requireAdminApiAccess(request);
+  const denied = requireAdminApiAccess(request, 'system.manage');
   if (denied) return denied;
 
   try {
     const body = await request.json();
     const { action, tag, tags } = body;
+    if (['flush_all', 'flush_tag', 'flush_tags'].includes(action)) {
+      const scope = action === 'flush_all' ? 'ทั้งหมด' : action === 'flush_tag' ? `แท็ก ${tag}` : `แท็ก ${Array.isArray(tags) ? tags.join(', ') : ''}`;
+      recordAudit(getAdminActor(request), `cache.${action}`, `ล้าง cache ${scope}`);
+    }
 
     if (action === 'flush_all') {
       cacheManager.clear();

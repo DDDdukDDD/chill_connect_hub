@@ -23,6 +23,30 @@ Item template:
 
 ## Open
 
+### BE-008 · Admin console restructured: review queue, staff roles, audit log
+- **From → To:** Backend → Frontend (informational)
+- **Date / branch:** 2026-10-06 · `claude`
+- **What changed (admin side only):**
+  - The admin menu is grouped by workflow: ภาพรวมวันนี้ → คิวตรวจ → content per pillar → data sources → master data → users → system.
+  - A new review queue (`/api/admin/review`) gathers pending events and draft spots in one place. It previews them with the real `SpotCard`, `SpotListItem` and `EventGrid` components, both card and list modes, plus quality checks.
+  - Staff accounts sign in with email + password and get one of 4 roles: Owner / Editor / Moderator / Data Ops. The server enforces each role on every admin API call. The `ADMIN_PASSWORD` owner login still works.
+  - Every admin write goes to an audit log (`/api/admin/audit`).
+  - The sample-only screens "Users & Permissions" and "Backup & Audit Logs" were removed.
+- **Frontend components used by the admin preview:** `SpotCard`, `SpotListItem` and `EventGrid` (props as of FE-005). If their props change, the admin review queue needs the same update. Please mention it here.
+- **Shared type change:** `LifestyleSpotItem` gained optional `reviewRejectedAt` and `rejectionReason`. Rejected spots remain hidden drafts, so nothing changes for public pages.
+- **Action for Frontend:** none required. Member accounts on the server (replacing the localStorage login in `lib/useAuth.ts`) are the next step. That needs a decision from the owner (Google login or email magic link), and I will post the contract here first.
+- **Status:** Open
+
+### BE-007 · Design rules moved from AGENTS.md to DESIGN_SYSTEM.md
+- **From → To:** Backend → Frontend
+- **Date / branch:** 2026-10-06 · `claude`
+- **What changed:** The owner asked to shrink the instructions loaded on every agent turn, to save tokens.
+  - `AGENTS.md` sections 1–4 (Global Luxury philosophy, button system, pillar colors, UI hygiene, typographic scale) moved **unchanged** to `DESIGN_SYSTEM.md` → "Mandatory UI Rules".
+  - `AGENTS.md` keeps a short pointer plus the pillar data facts. The data and form rules are now numbered 2 and 3.
+  - The old backend log entries moved to `docs/archive/backend-log-2026-10-03.md`.
+- **Action for Frontend:** read `DESIGN_SYSTEM.md` → "Mandatory UI Rules" before UI work. The rules are unchanged, only their location moved.
+- **Status:** Open
+
 ### BE-006 · Spots switched to official data; Backend edited frontend files (owner-approved)
 - **From → To:** Backend → Frontend
 - **Date / branch:** 2026-10-04 · `claude` (merge into `main` pending)

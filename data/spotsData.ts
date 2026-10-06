@@ -51,6 +51,9 @@ export interface LifestyleSpotItem {
   latitude: number;
   longitude: number;
   publicationStatus?: 'draft' | 'published';
+  /** Set when a draft was rejected in the admin review queue (it stays a hidden draft) */
+  reviewRejectedAt?: string;
+  rejectionReason?: string;
   sourceName?: string;
   sourceUrl?: string;
   /** Official contact channels from the source (imported spots) */

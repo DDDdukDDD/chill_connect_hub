@@ -4,130 +4,156 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   LayoutDashboard,
+  Inbox,
   FolderTree,
   MapPin,
   Building2,
-  Leaf,
   Users,
   Trophy,
-  ShieldCheck,
-  Bot,
-  Database,
+  Leaf,
   Zap,
+  Bot,
+  Gauge,
   Home,
   Image as ImageIcon,
+  ShieldCheck,
+  History,
 } from 'lucide-react';
+import type { AdminPermission } from '@/lib/permissions';
 import { AdminSessionStatus } from './AdminSessionStatus';
+import { useAdminSession } from './AdminAuthGate';
 
 export type AdminModuleId =
   | 'dashboard'
+  | 'review'
+  | 'community'
+  | 'fairs'
+  | 'spots'
+  | 'quests'
+  | 'scraper'
   | 'taxonomy'
   | 'provinces'
   | 'venues'
-  | 'spots'
-  | 'community'
-  | 'fairs'
-  | 'quests'
-  | 'rbac'
-  | 'scraper'
-  | 'backup'
+  | 'staff'
+  | 'audit'
   | 'media'
   | 'cache';
 
 interface SidebarModule {
   id: AdminModuleId;
   label: string;
-  labelEn: string;
   icon: React.ElementType;
-  badge?: string;
-  badgeColor?: string;
-  /** Sample-data screen with no backend yet */
-  preview?: boolean;
+  /** Pillar identity dot (colors belong on badges, never on buttons) */
+  pillarColor?: string;
 }
 
 interface SidebarGroup {
-  groupLabel: string;
+  groupLabel: string | null;
   modules: SidebarModule[];
 }
 
-const SIDEBAR_GROUPS: SidebarGroup[] = [
+// Grouped by the admin's workflow: overview → review → content per pillar → sources → master data → people → system
+export const SIDEBAR_GROUPS: SidebarGroup[] = [
   {
-    groupLabel: 'OVERVIEW',
+    groupLabel: null,
     modules: [
-      { id: 'dashboard', label: 'ภาพรวมเนื้อหา', labelEn: 'Dashboard', icon: LayoutDashboard },
+      { id: 'dashboard', label: 'ภาพรวมวันนี้', icon: LayoutDashboard },
+      { id: 'review', label: 'คิวตรวจ', icon: Inbox },
     ],
   },
   {
-    groupLabel: 'GOVERNANCE & MASTER',
+    groupLabel: 'เนื้อหา',
     modules: [
-      { id: 'taxonomy', label: 'Master Taxonomy', labelEn: 'หมวดหมู่ & แท็ก', icon: FolderTree },
-      { id: 'provinces', label: '77 จังหวัด & โซน', labelEn: 'Provinces & Zones', icon: MapPin },
-      { id: 'venues', label: 'Venues', labelEn: 'ศูนย์ประชุม & ฮอลล์', icon: Building2 },
+      { id: 'community', label: 'กิจกรรมคอมมูนิตี้', icon: Users, pillarColor: '#F26430' },
+      { id: 'fairs', label: 'งานมหกรรม & เอ็กซ์โป', icon: Trophy, pillarColor: '#2B527A' },
+      { id: 'spots', label: 'พิกัดเที่ยว 77 จังหวัด', icon: Leaf, pillarColor: '#4A7C59' },
+      { id: 'quests', label: 'ชาเลนจ์ & ภารกิจ', icon: Zap, pillarColor: '#7C3AED' },
     ],
   },
   {
-    groupLabel: 'DISCOVERY & CONTENT',
+    groupLabel: 'แหล่งข้อมูล',
+    modules: [{ id: 'scraper', label: 'การดึงข้อมูล', icon: Bot }],
+  },
+  {
+    groupLabel: 'ข้อมูลหลัก',
     modules: [
-      { id: 'spots', label: 'Lifestyle Spots', labelEn: 'พิกัดเที่ยว 77 จังหวัด', icon: Leaf },
-      { id: 'community', label: 'Community Meetups', labelEn: 'กิจกรรมชุมชน', icon: Users },
-      { id: 'fairs', label: 'Fairs & Expos', labelEn: 'งานมหกรรม', icon: Trophy },
-      { id: 'quests', label: 'Quests & Badges', labelEn: 'ชาเลนจ์ & XP', icon: Zap },
+      { id: 'taxonomy', label: 'หมวดหมู่ & แท็ก', icon: FolderTree },
+      { id: 'provinces', label: '77 จังหวัด & โซน', icon: MapPin },
+      { id: 'venues', label: 'สถานที่จัดงาน', icon: Building2 },
     ],
   },
   {
-    groupLabel: 'SYSTEM & OPERATIONS',
+    groupLabel: 'ผู้ใช้',
     modules: [
-      { id: 'media', label: 'Media & Image Hub', labelEn: 'ไฟล์รูปภาพ', icon: ImageIcon },
-      { id: 'cache', label: 'Cache & Performance', labelEn: 'แคชหน่วยความจำ', icon: Zap },
-      { id: 'rbac', label: 'Users & Permissions', labelEn: 'บัญชี & สิทธิ์', icon: ShieldCheck, preview: true },
-      { id: 'scraper', label: 'Scraper Engine', labelEn: 'นำเข้าข้อมูลภายนอก', icon: Bot },
-      { id: 'backup', label: 'Backup & Audit Logs', labelEn: 'สำรองข้อมูล & บันทึก', icon: Database, preview: true },
+      { id: 'staff', label: 'ทีมงาน & สิทธิ์', icon: ShieldCheck },
+      { id: 'audit', label: 'บันทึกการกระทำ', icon: History },
+    ],
+  },
+  {
+    groupLabel: 'ระบบ',
+    modules: [
+      { id: 'media', label: 'คลังรูปภาพ', icon: ImageIcon },
+      { id: 'cache', label: 'Cache & ประสิทธิภาพ', icon: Gauge },
     ],
   },
 ];
+
+/** Permission needed to open each module; the API enforces the same rules on every action */
+export const MODULE_PERMISSIONS: Record<AdminModuleId, AdminPermission> = {
+  dashboard: 'content.view',
+  review: 'content.view',
+  community: 'content.view',
+  fairs: 'content.view',
+  spots: 'content.view',
+  quests: 'content.view',
+  scraper: 'content.view',
+  taxonomy: 'content.view',
+  provinces: 'content.view',
+  venues: 'content.view',
+  staff: 'staff.manage',
+  audit: 'audit.view',
+  media: 'content.view',
+  cache: 'content.view',
+};
 
 interface AdminSidebarProps {
   activeModule: AdminModuleId;
   onModuleChange: (module: AdminModuleId) => void;
 }
 
-// Real pending counts for the moderation pillars (refreshed when the active module changes)
-function usePendingCounts(activeModule: AdminModuleId) {
-  const [pending, setPending] = useState<Partial<Record<AdminModuleId, number>>>({});
+// Real review-queue counts (refreshed when the active module changes)
+function useQueueCounts(activeModule: AdminModuleId) {
+  const [counts, setCounts] = useState<Partial<Record<AdminModuleId, number>>>({});
 
   useEffect(() => {
     let cancelled = false;
-    const load = async (type: 'community' | 'public_venue') => {
-      const res = await fetch(`/api/admin/events?page=1&limit=1&type=${type}`, { cache: 'no-store' });
-      if (!res.ok) return 0;
-      const data = await res.json();
-      return Number(data.counts?.pending) || 0;
-    };
-    Promise.all([load('community'), load('public_venue')])
-      .then(([community, fairs]) => {
-        if (!cancelled) setPending({ community, fairs });
+    fetch('/api/admin/review?limit=1', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.counts) return;
+        setCounts({ review: data.counts.all, community: data.counts.community, fairs: data.counts.fairs, spots: data.counts.spots });
       })
       .catch(() => {
-        // Counts are a hint only; the moderation view shows the authoritative numbers
+        // Counts are a hint only; the review queue shows the authoritative numbers
       });
     return () => {
       cancelled = true;
     };
   }, [activeModule]);
 
-  return pending;
+  return counts;
 }
 
 export function AdminSidebar({ activeModule, onModuleChange }: AdminSidebarProps) {
-  const pendingCounts = usePendingCounts(activeModule);
+  const counts = useQueueCounts(activeModule);
+  const { can } = useAdminSession();
 
   return (
     <aside className="flex flex-col w-64 shrink-0 bg-white border-r border-slate-200/80 h-screen sticky top-0 overflow-y-auto shadow-sm">
-      {/* Logo / Brand */}
       <div className="px-5 py-5 border-b border-slate-100">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#4A7C59] to-[#3B6347] flex items-center justify-center shadow-md shadow-[#4A7C59]/20">
-            <span className="text-lg">🌿</span>
+          <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center shadow-2xs">
+            <Leaf size={16} className="text-white" />
           </div>
           <div>
             <p className="text-sm font-bold text-slate-800 leading-tight">Chill & Connect</p>
@@ -136,91 +162,57 @@ export function AdminSidebar({ activeModule, onModuleChange }: AdminSidebarProps
         </div>
       </div>
 
-      {/* Navigation Modules */}
       <nav className="flex-1 px-3 py-4 space-y-5 overflow-y-auto">
-        {SIDEBAR_GROUPS.map((group) => (
-          <div key={group.groupLabel}>
-            <p className="px-2 mb-1.5 text-[10px] font-bold tracking-[0.12em] text-slate-400 uppercase">
-              {group.groupLabel}
-            </p>
-            <ul className="space-y-0.5">
-              {group.modules.map((mod) => {
-                const Icon = mod.icon;
-                const isActive = activeModule === mod.id;
-                return (
-                  <li key={mod.id}>
-                    <button
-                      onClick={() => onModuleChange(mod.id)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-150 group ${
-                        isActive
-                          ? 'bg-[#EBF3ED] text-[#2D5A3C]'
-                          : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
-                      }`}
-                    >
-                      <Icon
-                        size={15}
-                        className={`shrink-0 ${
-                          isActive
-                            ? 'text-[#4A7C59]'
-                            : 'text-slate-400 group-hover:text-slate-600'
+        {SIDEBAR_GROUPS.map((group) => {
+          const modules = group.modules.filter((mod) => can(MODULE_PERMISSIONS[mod.id]));
+          if (modules.length === 0) return null;
+          return (
+            <div key={group.groupLabel ?? 'main'}>
+              {group.groupLabel && (
+                <p className="px-2 mb-1.5 text-[11px] font-semibold text-slate-400">{group.groupLabel}</p>
+              )}
+              <ul className="space-y-0.5">
+                {modules.map((mod) => {
+                  const Icon = mod.icon;
+                  const isActive = activeModule === mod.id;
+                  const count = counts[mod.id] ?? 0;
+                  return (
+                    <li key={mod.id}>
+                      <button
+                        type="button"
+                        onClick={() => onModuleChange(mod.id)}
+                        aria-current={isActive ? 'page' : undefined}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-colors group ${
+                          isActive ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
                         }`}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-[13px] font-semibold truncate leading-tight ${
-                          isActive ? 'text-[#2D5A3C]' : ''
-                        }`}>
-                          {mod.label}
-                        </p>
-                        <p className={`text-[10px] truncate ${
-                          isActive ? 'text-[#4A7C59]/70' : 'text-slate-400'
-                        }`}>
-                          {mod.labelEn}
-                        </p>
-                      </div>
-                      {(pendingCounts[mod.id] ?? 0) > 0 && (
-                        <span
-                          title="รายการรอตรวจ"
-                          className="min-w-[20px] text-center text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-amber-500 text-white shrink-0 tabular-nums"
-                        >
-                          {pendingCounts[mod.id]}
-                        </span>
-                      )}
-                      {mod.preview && (
-                        <span
-                          title="ข้อมูลตัวอย่าง ยังไม่เชื่อมต่อระบบจริง"
-                          className="text-[9px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 bg-amber-50 text-amber-700 border-amber-200"
-                        >
-                          ตัวอย่าง
-                        </span>
-                      )}
-                      {mod.badge && (
-                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 ${
-                          isActive
-                            ? 'bg-[#4A7C59]/10 text-[#4A7C59] border-[#4A7C59]/20'
-                            : 'bg-slate-100 text-slate-400 border-slate-200'
-                        }`}>
-                          {mod.badge}
-                        </span>
-                      )}
-                      {isActive && (
-                        <div className="w-1 h-5 rounded-full bg-[#4A7C59] shrink-0" />
-                      )}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ))}
+                      >
+                        <Icon size={15} className={`shrink-0 ${isActive ? 'text-slate-900' : 'text-slate-400 group-hover:text-slate-600'}`} />
+                        <span className={`flex-1 min-w-0 truncate text-[13px] ${isActive ? 'font-bold' : 'font-semibold'}`}>{mod.label}</span>
+                        {mod.pillarColor && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: mod.pillarColor }} />}
+                        {count > 0 && (
+                          <span
+                            title="รายการรอตรวจ"
+                            className="min-w-[20px] text-center text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-amber-500 text-white shrink-0 tabular-nums"
+                          >
+                            {count}
+                          </span>
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })}
       </nav>
 
-      {/* Profile / Role Badge */}
       <div className="px-3 py-4 border-t border-slate-100">
         <AdminSessionStatus variant="sidebar" />
         <div className="mt-1">
           <Link
             href="/"
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-slate-400 hover:text-[#4A7C59] hover:bg-[#EBF3ED] transition-colors text-[12px] font-medium"
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors text-[12px] font-medium"
           >
             <Home size={12} />
             <span>กลับหน้าหลัก</span>
