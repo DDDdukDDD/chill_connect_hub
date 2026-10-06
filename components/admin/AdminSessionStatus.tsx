@@ -23,10 +23,10 @@ export function AdminSessionStatus({ variant }: { variant: 'header' | 'sidebar' 
     }
   };
 
-  const label = isLocalOpenAccess ? 'Local · ไม่ต้องเข้าสู่ระบบ' : 'ผู้ดูแลระบบ';
+  const label = isLocalOpenAccess ? 'Local · ไม่ต้องเข้าสู่ระบบ' : session.actor?.name ?? 'ผู้ดูแลระบบ';
   const detail = isLocalOpenAccess
-    ? 'ยังไม่ได้ตั้งค่า ADMIN_PASSWORD / AUTH_SECRET'
-    : 'เข้าสู่ระบบแล้ว · session 8 ชั่วโมง';
+    ? 'ยังไม่ได้ตั้งค่า AUTH_SECRET และ ADMIN_PASSWORD'
+    : `${session.actor?.roleLabel ?? 'Admin'} · session 8 ชั่วโมง`;
   const Icon = isLocalOpenAccess ? Wrench : ShieldCheck;
   const tone = isLocalOpenAccess
     ? 'bg-amber-50 text-amber-700 border-amber-200'

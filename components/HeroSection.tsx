@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
 import { ALL_THAI_PROVINCES, MOCK_SPOTS, LifestyleSpotItem } from '@/data/spotsData';
+import { usePublishedSpots } from '@/lib/usePublishedSpots';
 import { COMMUNITY_PUBLIC_QUESTS } from '@/components/CommunityChallengeBar';
 import { JoinChallengeModal } from '@/components/JoinChallengeModal';
 import { ChallengeQuest, MOCK_EVENTS, EventItem } from '@/data/mockData';
@@ -554,10 +555,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   const trimmedQuery = searchQuery.trim().toLowerCase();
   const isTyping = trimmedQuery.length > 0;
 
+  // Live published catalog (imported spots are not in the bundled MOCK_SPOTS)
+  const { spots: publishedSpots } = usePublishedSpots();
+  const searchableSpots = publishedSpots.length > 0 ? publishedSpots : MOCK_SPOTS;
+
   const matchedSpots = useMemo(() => {
     if (!isTyping) return [];
     if (activeModeTab !== 'all' && activeModeTab !== 'spots') return [];
-    return MOCK_SPOTS.filter((s) => {
+    return searchableSpots.filter((s) => {
       return (
         s.title?.toLowerCase().includes(trimmedQuery) ||
         s.province?.toLowerCase().includes(trimmedQuery) ||
@@ -567,7 +572,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         s.description?.toLowerCase().includes(trimmedQuery)
       );
     }).slice(0, activeModeTab === 'spots' ? 6 : 4);
-  }, [trimmedQuery, isTyping, activeModeTab]);
+  }, [trimmedQuery, isTyping, activeModeTab, searchableSpots]);
 
   const matchedCommunity = useMemo(() => {
     if (!isTyping) return [];

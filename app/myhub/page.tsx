@@ -18,7 +18,8 @@ import { SpotBuddyGatheringModal, SpotBuddyPostItem } from '@/components/SpotBud
 import { MOCK_CHALLENGES, ChallengeQuest, EventItem, MOCK_EVENTS } from '@/data/mockData';
 import { isEventEnded } from '@/lib/dateUtils';
 import { BrandLogo } from '@/components/BrandLogo';
-import { MOCK_SPOTS, LifestyleSpotItem, getSpotVibeCategory } from '@/data/spotsData';
+import { LifestyleSpotItem, getSpotVibeCategory } from '@/data/spotsData';
+import { useSpotCatalog } from '@/lib/usePublishedSpots';
 import { resolveSpotImage } from '@/lib/spotImageResolver';
 import { formatSpotBadgePrice } from '@/components/SpotCard';
 import {
@@ -510,9 +511,12 @@ function MyHubContent() {
     });
   }, [expoEvents, eventViewMode, pastSubFilter, cancelledEventIds, missedEventIds]);
 
+  // Live catalog (published spots + bundled ones saved earlier)
+  const spotCatalog = useSpotCatalog();
+
   // Saved Lifestyle Spots for Scrapbook (Filterable by search and vibe)
   const savedSpotsList: LifestyleSpotItem[] = useMemo(() => {
-    let list = MOCK_SPOTS.filter((s) => savedSpotIds.includes(s.id));
+    let list = spotCatalog.filter((s) => savedSpotIds.includes(s.id));
     if (scrapbookSearch.trim()) {
       const q = scrapbookSearch.toLowerCase().trim();
       list = list.filter(
@@ -526,7 +530,7 @@ function MyHubContent() {
       list = list.filter((s) => (getSpotVibeCategory(s) as string) === scrapbookVibeFilter || (s.category as string) === scrapbookVibeFilter);
     }
     return list;
-  }, [savedSpotIds, scrapbookSearch, scrapbookVibeFilter]);
+  }, [savedSpotIds, scrapbookSearch, scrapbookVibeFilter, spotCatalog]);
 
   const handleRemoveFromScrapbook = (spotId: string, spotTitle: string) => {
     const updated = savedSpotIds.filter((id) => id !== spotId);

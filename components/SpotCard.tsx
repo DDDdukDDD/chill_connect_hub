@@ -135,13 +135,15 @@ export const SpotCard: React.FC<SpotCardProps> = ({
           />
         </button>
 
-        {/* Rating */}
-        <div className="absolute bottom-2 right-2.5 flex items-center gap-1 text-white z-10">
-          <span className="text-[11px] font-bold bg-black/60 backdrop-blur-md text-white px-2 py-0.5 rounded-full flex items-center gap-1">
-            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-            <span>{spot.rating}</span>
-          </span>
-        </div>
+        {/* Rating (hidden when the spot has no real rating) */}
+        {spot.rating > 0 && (
+          <div className="absolute bottom-2 right-2.5 flex items-center gap-1 text-white z-10">
+            <span className="text-[11px] font-bold bg-black/60 backdrop-blur-md text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+              <span>{spot.rating}</span>
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Body */}

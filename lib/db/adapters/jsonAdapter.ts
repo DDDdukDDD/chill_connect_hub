@@ -423,6 +423,22 @@ export class JsonFileAdapter implements IDataRepository {
     });
   }
 
+  public async createSpots(data: CreateSpotDTO[]): Promise<LifestyleSpotItem[]> {
+    if (data.length === 0) return [];
+    await this.ensureInitialized();
+    return this.mutex.runExclusive(async () => {
+      const created: LifestyleSpotItem[] = data.map((spot, index) => ({
+        ...spot,
+        id: spot.id || `spot-${Date.now()}-${index}-${Math.random().toString(36).substring(2, 6)}`,
+      }));
+      const updatedSpots = [...created, ...this.spots];
+      await this.persistDiscoveryContent(updatedSpots);
+      this.spots = updatedSpots;
+      cacheManager.invalidateTag('spots');
+      return created;
+    });
+  }
+
   public async updateSpot(id: string, data: UpdateSpotDTO): Promise<LifestyleSpotItem | null> {
     await this.ensureInitialized();
     return this.mutex.runExclusive(async () => {
@@ -438,7 +454,7 @@ export class JsonFileAdapter implements IDataRepository {
     });
   }
 
-  public async bulkUpdateSpots(spots: LifestyleSpotItem[]): Promise<number> {
+  public async bulkUpdateSpots(spots: Array<Partial<LifestyleSpotItem> & { id: string }>): Promise<number> {
     await this.ensureInitialized();
     return this.mutex.runExclusive(async () => {
       const updates = new Map(spots.map((spot) => [spot.id, spot]));

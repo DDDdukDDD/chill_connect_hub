@@ -1,15 +1,23 @@
 import { NextResponse } from 'next/server';
 import { runScraperAndAIEngine } from '@/lib/eventsStore';
-import { requireAdminApiAccess } from '@/lib/adminApiAuth';
+import { getAdminActor, requireAdminApiAccess } from '@/lib/adminApiAuth';
+import { recordAudit } from '@/lib/auditLog';
 import { runSpotScraper } from '@/lib/spotScraper';
+import { MASTER_77_PROVINCES } from '@/data/masterHub';
+import type { SpotScrapeOptions } from '@/lib/scrapers/types';
+
+const DEFAULT_SPOT_LIMIT = 30;
+const MAX_SPOT_LIMIT = 100;
 
 export async function POST(req: Request) {
-  const denied = requireAdminApiAccess(req);
+  const denied = requireAdminApiAccess(req, 'sources.run');
   if (denied) return denied;
+  const actor = getAdminActor(req);
 
   try {
     let targetSource: string | undefined;
     let targetType: 'events' | 'spots' = 'events';
+    let spotOptions: SpotScrapeOptions | undefined;
     try {
       const body = await req.json();
       if (body && typeof body === 'object') {
@@ -20,6 +28,16 @@ export async function POST(req: Request) {
           ? body.sourceId
           : typeof body.sourceName === 'string' ? body.sourceName : undefined;
         if (body.targetType === 'spots' || body.targetType === 'events') targetType = body.targetType;
+        if (body.province !== undefined) {
+          if (typeof body.province !== 'string' || !MASTER_77_PROVINCES.includes(body.province)) {
+            return NextResponse.json({ success: false, error: 'province must be one of the 77 provinces (e.g. "น่าน", "กรุงเทพฯ")' }, { status: 400 });
+          }
+          const limit = Number(body.limit ?? DEFAULT_SPOT_LIMIT);
+          spotOptions = {
+            province: body.province,
+            limit: Number.isFinite(limit) ? Math.min(MAX_SPOT_LIMIT, Math.max(1, Math.round(limit))) : DEFAULT_SPOT_LIMIT,
+          };
+        }
       }
     } catch {
       // Body is empty (scrape all)
@@ -36,11 +54,13 @@ export async function POST(req: Request) {
     });
 
     if (targetType === 'spots') {
-      const result = await runSpotScraper(targetSource);
+      const result = await runSpotScraper(targetSource, spotOptions);
+      recordAudit(actor, 'scrape.spots', `ดึงสถานที่${spotOptions ? ` จังหวัด${spotOptions.province}` : ''}: พบ ${result.totalScanned} นำเข้า ${result.newCount} ซ้ำ ${result.duplicateCount}`, { type: 'source', id: targetSource });
       return NextResponse.json({ ...toSummary(result), spots: result.spots });
     }
 
     const result = await runScraperAndAIEngine(targetSource);
+    recordAudit(actor, 'scrape.events', `ดึงอีเวนต์: พบ ${result.totalScanned} นำเข้า ${result.newCount} ซ้ำ ${result.duplicateCount}`, { type: 'source', id: targetSource });
     return NextResponse.json({ ...toSummary(result), duplicateDetails: result.duplicateDetails, events: result.events });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Scrape failed';

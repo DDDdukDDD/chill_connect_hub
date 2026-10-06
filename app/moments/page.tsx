@@ -20,7 +20,8 @@ import {
   CommunityPost,
   ChallengeQuest,
 } from '@/data/mockData';
-import { MOCK_SPOTS, LifestyleSpotItem } from '@/data/spotsData';
+import { LifestyleSpotItem } from '@/data/spotsData';
+import { useSpotCatalog } from '@/lib/usePublishedSpots';
 import { BrandLogo } from '@/components/BrandLogo';
 import {
   Sparkles,
@@ -288,11 +289,14 @@ function MomentsContent() {
     return myBookedEvents.filter((e) => e.eventType === 'public_venue' || !e.id.startsWith('comm-'));
   }, [myBookedEvents]);
 
+  // Live catalog (published spots + bundled ones members may have saved earlier)
+  const spotCatalog = useSpotCatalog();
+
   // User's saved spots in MyHub
   const mySavedSpots = useMemo(() => {
     const savedIds = new Set(['spot-bkk-1', 'spot-cnx-1', 'spot-bkk-2', ...spotFavorites]);
-    return MOCK_SPOTS.filter((s) => savedIds.has(s.id));
-  }, [spotFavorites]);
+    return spotCatalog.filter((s) => savedIds.has(s.id));
+  }, [spotFavorites, spotCatalog]);
 
   // User's active quests
   const myQuests = useMemo(() => {
@@ -302,7 +306,7 @@ function MomentsContent() {
   // Filtered Check-in Places for Facebook-style Check-in
   const filteredCheckInPlaces = useMemo(() => {
     const query = checkInSearchQuery.trim().toLowerCase();
-    const spotsAsCheckIn = MOCK_SPOTS.slice(0, 40).map((s) => ({
+    const spotsAsCheckIn = spotCatalog.slice(0, 40).map((s) => ({
       name: s.title,
       location: `${s.district}, ${s.province}`,
       category: s.category || 'พิกัดเที่ยว',
@@ -326,7 +330,7 @@ function MomentsContent() {
           (item.category && item.category.toLowerCase().includes(query))
       )
       .slice(0, 8);
-  }, [checkInSearchQuery]);
+  }, [checkInSearchQuery, spotCatalog]);
 
   // Handle HTML5 Geolocation Check-In
   const handleUseCurrentLocation = () => {
@@ -637,9 +641,9 @@ function MomentsContent() {
 
     if (targetType === 'spot') {
       const matched =
-        MOCK_SPOTS.find(
+        spotCatalog.find(
           (s) => s.id === targetId || s.title === post.targetTitle || s.title === post.location
-        ) || MOCK_SPOTS[0];
+        ) || spotCatalog[0];
       setSelectedSpot(matched);
       return;
     }
@@ -732,7 +736,7 @@ function MomentsContent() {
         resolvedLocation = customLocationInput.trim() || 'พิกัดเที่ยว';
         targetTitle = resolvedLocation;
       } else {
-        const spot = MOCK_SPOTS.find((s) => s.id === createTargetId) || mySavedSpots[0];
+        const spot = spotCatalog.find((s) => s.id === createTargetId) || mySavedSpots[0];
         targetTitle = spot ? spot.title : (customLocationInput.trim() || 'พิกัดเที่ยว');
         resolvedLocation = targetTitle;
       }

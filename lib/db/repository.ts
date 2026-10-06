@@ -49,8 +49,11 @@ export interface IDataRepository {
   findSpots(params?: SpotQueryParams): Promise<PaginatedResult<LifestyleSpotItem>>;
   findSpotById(id: string): Promise<LifestyleSpotItem | null>;
   createSpot(data: CreateSpotDTO): Promise<LifestyleSpotItem>;
+  /** Adds many spots with a single write (scraper imports) */
+  createSpots(data: CreateSpotDTO[]): Promise<LifestyleSpotItem[]>;
   updateSpot(id: string, data: UpdateSpotDTO): Promise<LifestyleSpotItem | null>;
-  bulkUpdateSpots(spots: LifestyleSpotItem[]): Promise<number>;
+  /** Merges partial updates by id with a single write */
+  bulkUpdateSpots(spots: Array<Partial<LifestyleSpotItem> & { id: string }>): Promise<number>;
   deleteSpot(id: string): Promise<boolean>;
 
   // ── Community Quests & Challenges ──

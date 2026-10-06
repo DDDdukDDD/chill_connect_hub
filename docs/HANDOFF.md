@@ -23,6 +23,76 @@ Item template:
 
 ## Open
 
+### BE-008 · Admin console restructured: review queue, staff roles, audit log
+- **From → To:** Backend → Frontend (informational)
+- **Date / branch:** 2026-10-06 · `claude`
+- **What changed (admin side only):**
+  - The admin menu is grouped by workflow: ภาพรวมวันนี้ → คิวตรวจ → content per pillar → data sources → master data → users → system.
+  - A new review queue (`/api/admin/review`) gathers pending events and draft spots in one place. It previews them with the real `SpotCard`, `SpotListItem` and `EventGrid` components, both card and list modes, plus quality checks.
+  - Staff accounts sign in with email + password and get one of 4 roles: Owner / Editor / Moderator / Data Ops. The server enforces each role on every admin API call. The `ADMIN_PASSWORD` owner login still works.
+  - Every admin write goes to an audit log (`/api/admin/audit`).
+  - The sample-only screens "Users & Permissions" and "Backup & Audit Logs" were removed.
+- **Frontend components used by the admin preview:** `SpotCard`, `SpotListItem` and `EventGrid` (props as of FE-005). If their props change, the admin review queue needs the same update. Please mention it here.
+- **Shared type change:** `LifestyleSpotItem` gained optional `reviewRejectedAt` and `rejectionReason`. Rejected spots remain hidden drafts, so nothing changes for public pages.
+- **Action for Frontend:** none required. Member accounts on the server (replacing the localStorage login in `lib/useAuth.ts`) are the next step. That needs a decision from the owner (Google login or email magic link), and I will post the contract here first.
+- **Status:** Open
+
+### BE-007 · Design rules moved from AGENTS.md to DESIGN_SYSTEM.md
+- **From → To:** Backend → Frontend
+- **Date / branch:** 2026-10-06 · `claude`
+- **What changed:** The owner asked to shrink the instructions loaded on every agent turn, to save tokens.
+  - `AGENTS.md` sections 1–4 (Global Luxury philosophy, button system, pillar colors, UI hygiene, typographic scale) moved **unchanged** to `DESIGN_SYSTEM.md` → "Mandatory UI Rules".
+  - `AGENTS.md` keeps a short pointer plus the pillar data facts. The data and form rules are now numbered 2 and 3.
+  - The old backend log entries moved to `docs/archive/backend-log-2026-10-03.md`.
+- **Action for Frontend:** read `DESIGN_SYSTEM.md` → "Mandatory UI Rules" before UI work. The rules are unchanged, only their location moved.
+- **Status:** Open
+
+### BE-006 · Spots switched to official data; Backend edited frontend files (owner-approved)
+- **From → To:** Backend → Frontend
+- **Date / branch:** 2026-10-04 · `claude` (merge into `main` pending)
+- **What changed (data):**
+  - Published spots are now **1,814 official places** from the Department of Tourism's Thailand Tourism Directory, about 24 per province across all 77 provinces. They were imported with the new admin Spot scraper.
+  - The 137 hand-written spots are **unpublished (draft), not deleted**. They stay in `MOCK_SPOTS` and in admin.
+  - `data/discovery_content.json` is **no longer gitignored**, so committed snapshots carry the spots to Vercel.
+  - New endpoint `GET /api/spots/[id]` → `{ success, spot }` (published only).
+  - `LifestyleSpotItem` gained optional `contact { phone, website, facebook }`, `entryFee` and `popularity`.
+  - Imported spots have `rating: 0` and `reviewsCount: 0`: the source has no reliable reviews.
+  - **Big cities are topped up from OpenStreetMap + Wikipedia** (ids `osm-…`, `sourceName: 'OpenStreetMap · Wikipedia'`): malls, museums, galleries, parks, markets and landmarks that have a Wikipedia article.
+    - Bangkok has 120 spots (was 24); the published total is 2,040.
+    - Licensing: these spots **must show the credit** (OSM is ODbL, Wikipedia text is CC BY-SA). The detail page credit added below already does this.
+    - Some descriptions are in English, where only the English article matches the place.
+    - These spots have a single photo.
+    - Malls use `category: 'market'` with the label "ห้างสรรพสินค้า & ไลฟ์สไตล์มอลล์". `getSpotVibeCategory` puts them under "คาเฟ่ & สเปซนั่งชิลล์" because no shopping vibe exists yet; consider adding one.
+  - Every published spot has validated coordinates (inside Thailand), so maps and "nearby" features can rely on `latitude` / `longitude`.
+- **Frontend files edited by Backend** (the project owner asked Claude to make the switch end to end; please review and keep or adjust):
+  1. `lib/usePublishedSpots.ts` (new client helper):
+     - `loadPublishedSpots()` / `usePublishedSpots()` fetch `/api/spots` once per page load.
+     - `useSpotCatalog()` = published spots plus bundled ones, so ids members saved earlier still resolve.
+  2. `app/spots/[id]/page.tsx`:
+     - Loads the spot from `GET /api/spots/[id]`; static data is only an instant fallback.
+     - Shows "กำลังโหลด..." until the API answers.
+     - "Nearby" suggestions use the live catalog.
+     - Adds phone, website/Facebook and a source credit ("ข้อมูล: กรมการท่องเที่ยว").
+     - The rating chip is hidden when `rating` is 0; the old `|| 480` review fallback is removed.
+  3. `components/SpotCard.tsx`: the rating badge is hidden when `rating` is 0.
+  4. `components/HeroSection.tsx`: spot search suggestions use the live catalog instead of `MOCK_SPOTS`.
+  5. `components/TopDestinationsRail.tsx`: province counts come from the live catalog.
+  6. `app/moments/page.tsx`, `app/myhub/page.tsx`: saved spots, check-in places and spot targets resolve through `useSpotCatalog()`.
+  7. `components/NearbyDiningSection.tsx` + `lib/nearbyDiningService.ts` ("คาเฟ่ & ร้านอร่อยยอดฮิตรอบย่าน"):
+     - Uses the live catalog (real cafes with coordinates) and only places within 15 km.
+     - No invented values: the 4.8 rating, "350 รีวิว", the 1.2 km distance and the made-up fallback restaurant are gone. The star is hidden when there is no rating, and the section hides itself when nothing is nearby.
+- **Backend-owned changes the UI relies on:**
+  - `getSpotVibeCategory()` (`data/spotsData.ts`) now lets a specific `category` decide first: temple/oldtown/market → oldtown_culture, art/museum → art_creative, beach → sea_island, cafe → cafe_slowbar, viewpoint → mountain_mist. Keywords only refine nature/park spots. Temple descriptions no longer inflate "หอศิลป์ & สเปซศิลปะ" (359 → 61).
+  - `getNearbySpots()` / `getNearbyRecommendationInfo()` accept an optional `pool`.
+  - `resolveSpotGallery()` no longer pads imported spots (`sourceUrl` set) with stock photos of other places.
+- **Suggested follow-ups for Frontend (not done):**
+  1. The detail page badge "เปิดให้บริการวันนี้" is hard-coded. With real `openHours`, show it only when actually open, or drop it.
+  2. `app/page.tsx`, `app/spots/page.tsx` and `app/journey/page.tsx` start from `MOCK_SPOTS` before the API answers, so the old 137 flash briefly. Start from `[]` with a skeleton, or use `usePublishedSpots()`.
+  3. These pages download the whole catalog (~1,800 spots, ~3.9 MB uncompressed). Consider paging or a lighter list if load time matters.
+  4. Default sorting is by `rating`, now 0 for imported spots. `popularity` is a better "ยอดนิยม" sort.
+- **Status:** Open (review of the edited files)
+
+---
 ### FE-005 · View Mode Toggle (Card/List), MobileNav 4-Pill Streamline & Full E2E Deep-Link Sync to MyHub
 - **From → To:** Frontend → Backend
 - **Date / branch:** 2026-10-06 · `main`
@@ -123,7 +193,7 @@ Item template:
   - **No breaking API changes or backend migrations required.**
   - `EventGrid` defaults to `layout="grid"` so admin and deep-dive subpages (`/community`, `/fairs`) continue working unchanged.
   - When Claude works on search/filtering or event listings, these single-row carousel wrappers consume standard `EventItem[]` and `LifestyleSpotItem[]` lists seamlessly.
-- **Status:** Open (For Claude's visibility & awareness)
+- **Status:** Acknowledged by Backend (2026-10-04): no backend action needed. Note that carousels now render the full approved list, so imported events and spots make the rails longer.
 
 ### BE-005 · Quests: use `brandReward` and the server-computed lifecycle from the API
 - **From → To:** Backend → Frontend

@@ -3,17 +3,29 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Lock, Loader2 } from 'lucide-react';
+import type { AdminPermission, StaffRole } from '@/lib/permissions';
+
+export interface AdminActorState {
+  id: string;
+  name: string;
+  role: StaffRole;
+  roleLabel: string;
+  permissions: AdminPermission[];
+}
 
 export interface AdminSessionState {
   authenticated: boolean;
   hasSession: boolean;
   authRequired: boolean;
   loginAvailable: boolean;
+  /** Server-verified actor; the UI only uses it to hide controls, the API enforces permissions */
+  actor: AdminActorState | null;
 }
 
 interface AdminSessionContextValue {
   session: AdminSessionState;
   logout: () => Promise<void>;
+  can: (permission: AdminPermission) => boolean;
 }
 
 const AdminSessionContext = createContext<AdminSessionContextValue | null>(null);
@@ -44,6 +56,7 @@ async function fetchAdminSession(): Promise<AdminSessionState | Error> {
 export function AdminAuthGate({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<AdminSessionState | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -75,7 +88,7 @@ export function AdminAuthGate({ children }: { children: React.ReactNode }) {
       const res = await fetch('/api/auth/admin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify(email.trim() ? { email: email.trim(), password } : { password }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.message || 'เข้าสู่ระบบไม่สำเร็จ');
@@ -94,8 +107,9 @@ export function AdminAuthGate({ children }: { children: React.ReactNode }) {
   };
 
   if (session?.authenticated) {
+    const can = (permission: AdminPermission) => Boolean(session.actor?.permissions.includes(permission));
     return (
-      <AdminSessionContext.Provider value={{ session, logout: handleLogout }}>
+      <AdminSessionContext.Provider value={{ session, logout: handleLogout, can }}>
         {children}
       </AdminSessionContext.Provider>
     );
@@ -137,8 +151,22 @@ export function AdminAuthGate({ children }: { children: React.ReactNode }) {
         {session && session.loginAvailable && (
           <form onSubmit={handleLogin} className="space-y-4 mt-4">
             <div>
+              <label htmlFor="admin-email" className="block text-[11px] sm:text-xs font-semibold text-slate-500 mb-1.5">
+                อีเมลทีมงาน:
+              </label>
+              <input
+                id="admin-email"
+                type="email"
+                autoComplete="username"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="เว้นว่างถ้าเข้าด้วยรหัสเจ้าของระบบ"
+                className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB]"
+              />
+            </div>
+            <div>
               <label htmlFor="admin-password" className="block text-[11px] sm:text-xs font-semibold text-slate-500 mb-1.5">
-                รหัสผ่านผู้ดูแลระบบ:
+                รหัสผ่าน:
               </label>
               <input
                 id="admin-password"

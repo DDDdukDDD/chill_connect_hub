@@ -1,6 +1,6 @@
 # Backend Implementation Log
 
-Last updated: 2026-10-03 (event-store unification + admin sessions)
+Last updated: 2026-10-06 (admin restructure, staff roles, audit log; older entries archived)
 
 ## Working Scope
 
@@ -25,41 +25,7 @@ The Discovery & Content work includes backend contracts and the admin control pl
 
 ## Implemented In This Handoff
 
-- Added `GET /api/quests` in `app/api/quests/route.ts`. It reads through `db.findQuests`, supports `page`, `limit`, `category`, and `q`, caps page size at 100, and returns pagination metadata with a short shared-cache policy.
-- Added `lib/contentClient.ts` to follow paginated `events`, `spots`, and `quests` API responses, up to the API's page limit.
-- Connected the homepage and `/spots` content lists to `/api/spots`, preserving mock data as a fallback and retaining the existing client-side filters.
-- Connected the homepage quest rail and `/challenges` catalog to `/api/quests`; the existing curated quest content remains as fallback/content, and API additions are deduplicated by normalized title.
-- Updated filtered event GET requests to load the approved event set from `loadCache()` before filtering and pagination. This aligns filtered reads with the unfiltered route, which already excluded pending/rejected events.
-- Expanded event filter detection to include `venueTag`, `status`, `includeEnded`, and `sortBy`. `status=ended` enables ended-event filtering.
-- Updated `/community` to request paginated community events through `/api/events?type=community`; no duplicate `/api/community` route was added.
-- Added `publicationStatus` to spots and `status` to quests; public repository queries omit draft spots, draft quests, and private quests unless `includeDrafts` is explicitly enabled.
-- Added persistence for spot/quest create, update, bulk spot updates, delete, and quest progress in a separate discovery-content JSON file, avoiding concurrent writes with the event store.
-- Replaced `/api/admin/spots`' private in-memory store with the shared repository. It now validates writes, supports publication status, and persists image enrichment through `bulkUpdateSpots`.
-- Added `/api/admin/quests` with paginated admin reads and create, update, status, and delete actions. New quests start as drafts.
-- Added `lib/adminApiAuth.ts` and applied it to admin events, spots, quests, scraper, and source-management routes.
-- Added `data/discovery_content.json` to `.gitignore` because it is mutable local runtime data.
-- Replaced the admin dashboard's hard-coded KPIs and fake activity feed with live counts, a moderation/draft queue, content-health checks, loading/error states, and shortcuts to real modules.
-- Replaced the sample-only Quest Manager with an API-backed list, filters, draft-first create/edit, status transitions, deletion, and visible loading/error states.
-- Added spot draft/published status to the admin Spots panel, lifecycle filtering, and publish/unpublish actions; admin-created spots now start as drafts.
-- Made the admin navigation responsive with a mobile drawer, added a mobile menu trigger, removed the fixed-width mobile content squeeze, and changed the environment/role labels to Development/Production and Preview Role.
-- Added `targetType: 'events' | 'spots'` to source records; legacy sources migrate to Events and stale hard-coded counters are cleared until a real run is recorded.
-- Added `lib/structuredDataScraper.ts` to fetch public HTTPS sources with robots.txt checks, private-host rejection, redirect revalidation, size/time limits, JSON-LD extraction, and distinct Event/Place normalization.
-- Added a dedicated `lib/spotScraper.ts` pipeline. It imports only Places with a title, province, coordinates, and description, deduplicates by stable ID/source URL/title+province, stores source provenance, and defaults imported records to draft.
-- Changed `runScraperAndAIEngine` to read configured active Event sources instead of returning the static seed list. It records source-level scan/import/duplicate/error results and keeps moderation behavior.
-- Updated `/api/admin/scrape` to dispatch by `targetType` and return target-specific records and per-source results. `/api/admin/sources` now stores the target and validates HTTPS URLs.
-- Split the Scraper Engine panel into Event and Spot source tabs, with target-specific run actions, counters, empty states, source status, and import errors. The curated reset action is now explicitly labeled as sample data.
-- Event normalization now avoids random participant/review values, assumed-free pricing, fabricated host avatars, and guessed central-Bangkok coordinates; source end dates, province, times, and valid source coordinates are preserved.
-
-- Admin honesty pass (2026-10-03): removed the client-side role simulator and the notification bell; the header and sidebar now show the real server session (`useAdminSession()` from `AdminAuthGate`) with logout. Users & Permissions and Backup & Audit Logs are labeled as sample screens (`AdminPreviewNotice`), and their non-functional actions are disabled. Taxonomy and Venues are labeled read-only. 77 Provinces counts come from `/api/admin/spots?status=published` and approved events from `/api/admin/events` instead of mock arrays.
-- Seed meetups `2`–`6` in `MOCK_EVENTS` had no `eventType`, which hid them from both moderation views. They are now `community`, and normalization infers a missing `eventType` (seed value → `comm-` prefix → venue/capacity heuristic).
-
-- Admin lists step 2 (2026-10-03): `/api/admin/events` and `/api/admin/spots` support server-side pagination (only when `page` is passed, so full-list callers keep working). Moderation views open on the pending queue (falling back to "all" when it is empty), sort pending-first, and show state-dependent actions: pending → approve/reject, approved → unpublish (back to pending), rejected → back to pending. The Spots module moved out of `app/admin/page.tsx` into `components/admin/SpotsManagerView.tsx`.
-- `lib/imageHealth.ts` + `check_images` action: actually loads every stored image URL (public HTTPS only, via the scraper's SSRF guard; local `/public` paths via the filesystem). Spots carry `imageStatus` (ok/broken/missing/unchecked). Results are cached in process memory for 6h — not persisted, so a restart shows "unchecked" until the next check. First run: 48 distinct URLs, 4 broken, affecting 10 spots.
-
-- Admin design consistency (2026-10-03): every module uses `AdminPageHeader` and the shared `adminButton` styles from `components/admin/AdminUI.tsx` (primary = Royal Blue, dark/secondary = slate, danger = rose outline; no pillar colors on buttons, per AGENTS.md). Sidebar labels match page titles, decorative badges were replaced by real pending counts for Community/Fairs, the Quests table has fixed columns, and moderation rows stack on mobile.
-- Admin modules are addressable by URL (`/admin?m=spots`) using the native History API (refresh, shared links, back/forward).
-
-- FE-002 (2026-10-04): `ChallengeQuest` gained `brandReward?: QuestReward` (`brand_partner` | `hub_central`) and `image`. `lib/questLifecycle.ts` derives `daysRemaining` and `status: 'ended'` from `endDate` (Thai or ISO) on every repository read; stored `daysRemaining` is ignored. `/api/admin/quests` validates rewards (brand_partner requires `partnerName` + `title`), dates (end ≥ start) and image URLs, and refuses to activate an expired quest. Seed quests carry `brandReward`; persisted copies of the old seed are upgraded once on startup (`upgradeLegacySeedQuests`). Seed dates moved to Oct–Dec 2026 except "Digital Detox", kept ended on purpose.
+Entries up to 2026-10-04 (FE-002) and the 2026-10-03 verification notes are in [docs/archive/backend-log-2026-10-03.md](docs/archive/backend-log-2026-10-03.md).
 
 - Scraper sources (2026-10-04): sources without Schema.org JSON-LD are read by site adapters (`lib/scrapers/*`, registry in `siteAdapters.ts`). Adapters are matched on the configured source URL, and all their requests go through the scraper's guarded fetch (SSRF guard, robots.txt, blocked platforms, size and time limits). Ended events are skipped. Live test results (scanned → imported; every rerun gave only duplicates):
   - **QSNCC** `qsncc.com/en/whats-on/event-calendar`: Prismic `calendar_event` docs in `__NEXT_DATA__`, first calendar page only. 9 → 9.
@@ -68,37 +34,71 @@ The Discovery & Content work includes backend contracts and the admin control pl
   - **ThaiRun** `race.thai.run/`: the site's own GraphQL `listEvents` on `api.race.thai.run`. This API is undocumented. Only races open for registration are imported; virtual runs and races abroad (no Thai province) are skipped. English provinces are mapped to Thai (`thaiProvinces.ts`). 67 → 50.
   - **Visit Bangkok (BMA)** `visit.bangkok.go.th/th/festival-calendar`: the page and its CMS API need a key, so the adapter reads the CMS's public RSS feed (20 latest). Dates are parsed from the text (`parseThaiDateRange`), and items without a date are skipped because `pubDate` is only the listing date. The venue is taken only from an explicit `สถานที่:` / 📍 line. 20 → 15.
 - Scraped ISO dates are converted to the Thai display format (`lib/scrapers/dates.ts`) before deduplication and storage. Previously, ISO dates from JSON-LD sources were stored as-is, but `lib/dateUtils` cannot parse them and dedup compared them against Thai dates.
+- Spot scraper (2026-10-04): `lib/scrapers/tourismDirectory.ts` imports spots from the Department of Tourism's Thailand Tourism Directory, one province per run (`POST /api/admin/scrape {targetType:'spots', province, limit}`). It uses the site's own keyless search API (`api.thailandtourismdirectory.go.th/api/v2/maininfo/search`) to list attractions (MainTypeID 1) and keyword-matched cafes (MainTypeID 6), keeps the most viewed ones, and reads each place page's `__NEXT_DATA__`.
+  - **Mapped fields:** Thai name, description, district, coordinates, up to 8 photos, opening hours (grouped days, Bangkok time), entry fee, travel modes and remarks, facilities, activities, and contacts.
+  - **Categories:** rules on the place name first, then on the source types.
+  - **`bestTime`:** generic advice per category, because the source has no such field.
+  - **Import flow:** spots are imported as drafts and deduplicated by id, source URL, and title+province.
+  - **Test results:** Nan 34, Bangkok 36, Chiang Mai 35, Lampang 12 (limit 10), each in about 4–6 s.
+  - **Coverage gaps:** Bangkok has only ~51 attractions in the source, temple-heavy; cafes are thin (≤ ~10 per province). TAT Data API needs a key (declined); OSM and Wikidata were too sparse in Thailand; Google Places forbids storing its content.
+- `GET /api/spots/[id]` returns one published spot (needed by the detail page, see BE-006). `LifestyleSpotItem` gained optional `contact`, `entryFee`, and `popularity`.
+- Admin Scraper Engine, Spots tab: a province picker and a per-province limit. The scan stays disabled until a province is chosen.
+- Spot switch (2026-10-04, owner request): all 77 provinces imported at limit 20, 1,814 spots (about 24 per province incl. cafes, 2–3 s each). They are published with `set_publication {scope:'tourism_directory'}`; the 137 curated spots are drafts (`scope:'curated'`), not deleted.
+  - Imports are written once per run (`db.createSpots`, single file write). `bulkUpdateSpots` accepts partial updates.
+  - The source `Rating` (67 of 1,814, no vote count) is not imported.
+  - `getSpotVibeCategory` maps specific categories first. Final vibe counts: oldtown 816, nature 418, cafe 294, sea 132, mountain 71, art 61, wellness 22.
+  - `data/discovery_content.json` (7.3 MB) is tracked in git so snapshots reach Vercel.
+  - The owner approved Backend editing the frontend files listed in BE-006.
+- OSM + Wikidata spot source (2026-10-04): `lib/scrapers/osmWikidata.ts` adds notable big-city places from OpenStreetMap: malls, museums, galleries, parks, markets, zoos, aquariums and landmarks.
+  - **Selection:** one Overpass area query per province (`TH-xx`, `provinceIsoCode`), keeping only objects tagged with a Wikidata id.
+  - **Enrichment:** Wikidata supplies labels, the photo (P18), the district (P131) and the website (P856); the Wikipedia page summary supplies the description and photo.
+  - **Quality checks:** the OSM and Wikidata names must overlap, and the Wikipedia article title must match the place (sitelinks can redirect, e.g. Sea Life → Siam Paragon). Records without a photo or description, or with coordinates outside Thailand, are skipped.
+  - **Results:** Bangkok 24 → 120 spots; big cities +2 to +14 each. Published total is 2,040. Surat Thani's OSM run hit Overpass 504; rerun from admin.
+  - **robots.txt exemption (owner-approved):** Overpass `/api/interpreter`, Wikidata `/w/api.php` and Wikipedia `/api/rest_v1/page/summary/` disallow crawlers in robots.txt but are public APIs. They are listed in `DOCUMENTED_PUBLIC_APIS` in `structuredDataScraper.ts`, use a descriptive User-Agent, and requests are sequential; robots.txt still applies to every other URL. Overpass requests get a 70 s timeout.
+  - **Credit:** OSM (ODbL) and Wikipedia (CC BY-SA) content is credited via `sourceName` / `sourceUrl`.
+- `isThaiCoordinate`: imports require coordinates inside Thailand and latitude ≠ longitude. Two Tourism Directory records with broken coordinates were unpublished.
+- Event link bug fixed (2026-10-04): on every load, `normalizeEvent` replaced the detail-page link of any event at QSNCC or BITEC with a venue-wide page (BITEC: the retired `/gallery`), and could copy a fake seed URL onto events with a similar title. It now fills an official URL only for events that have none. The 21 damaged links (QSNCC 9, BITEC 12) were recovered from the id hash (`live-agg-` + sha256(sourceUrl)) and restored; a restart confirms they stay. The BITEC adapter still fails because the page no longer embeds its event list.
+- Nearby dining (`lib/nearbyDiningService.ts`) uses the live catalog within 15 km and no longer invents ratings, review counts, distances or a fallback restaurant.
+- Tourism Directory opening hours: a closed day (00:00-00:00) now reads "ปิด". Name rules: "หอศิลป" (without the final mark) → art; "พลาซ่า / มอลล์ / ห้างสรรพสินค้า" → market.
 - Content policy (`lib/scrapers/sourcePolicy.ts`): Meetup, Facebook, and aggregators that re-list their events (allevents.in, dev.events) are blocked. `POST /api/admin/sources` returns 400 for these hosts, fetches refuse them on every redirect hop, and JSON-LD items whose URL points to them are dropped. Community meetups come from our own members, so we never copy another platform's community content.
 
-## Verification
-
-- Editor diagnostics reported no errors for the changed route, client helper, and consuming pages.
-- Browser verification: `/api/spots?page=1&limit=2` returned pagination metadata for 137 spots.
-- Browser verification: `/api/quests?page=1&limit=5` returned repository-backed quest records.
-- Browser verification: `/api/events?type=community&limit=100` returned 11 events; every returned event was `eventType: community` and `approvalStatus: approved`.
-- Browser verification: `/community` completed its filtered API request with HTTP 200 and rendered without an application error.
-- Integration verification: draft spots and quests were hidden from public APIs; publishing/activating them made them visible.
-- Persistence verification: a draft spot and quest remained in admin API results after restarting the dev server and remained hidden from public APIs; temporary records were deleted afterward.
-- Admin UI verification: dashboard totals matched repository responses (137 spots, 45 community meetups, 88 fairs, 4 quests); quest create/publish made the record appear publicly; spot create/publish did the same.
-- Responsive verification: at a 390px viewport the admin content fits without horizontal overflow; the mobile drawer opens and closes on module navigation.
-- Cleanup verification: admin and public API searches returned no temporary test records.
-- Scraper smoke test: a temporary Spot source targeting `https://localhost/` was rejected before network access and then removed.
-- Scraper source test: Eventpop and QSNCC configured pages returned no Event JSON-LD; both runs correctly reported unsupported structured data and imported zero records.
-- Browser verification: the Scraper Engine displays Event/Spot tabs, and the source form switches to Spot mode without Event-only categories.
-- Cheerio is declared in `package.json` and `package-lock.json`, but was not verified in `node_modules`; the install command did not complete cleanly after a PowerShell prompt. Do not import Cheerio until `npm install` completes successfully.
-- Full lint and production build were not run.
+- Admin restructure (2026-10-06, owner request):
+  - **Menu:** grouped by workflow (`components/admin/AdminSidebar.tsx`: `SIDEBAR_GROUPS`, `MODULE_PERMISSIONS`). Header breadcrumbs derive from it. The active state is slate, and pillar colors appear only as dots and badges.
+  - **Removed screens:** the sample-only `RbacUsersView` and `DbBackupView`.
+  - **Review queue:**
+    - `GET/POST /api/admin/review` + `ReviewQueueView`.
+    - Covers pending events and draft spots from scrapers or members; the retired curated `MOCK_SPOTS` drafts and rejected spots are excluded.
+    - Quality checks come from `lib/contentQuality.ts`.
+    - The preview renders the real frontend components with clicks swallowed.
+    - Supports bulk approve/reject, a reject reason, and the keys J/K/A/R.
+    - A rejected spot stays a draft and gets `reviewRejectedAt`.
+  - **Overview:** `AdminDashboardView` now shows to-dos, data health from `?health=1` and recent audit entries. It no longer downloads the full spot list (~3.9 MB).
+  - **Staff and roles:**
+    - Code: `lib/permissions.ts` (role matrix) and `lib/staffStore.ts`.
+    - Storage: `data/staff_accounts.json`, gitignored, with scrypt hashes.
+    - Each session carries `{sub, ver}`. Staff sessions are re-checked against the store on every request, so disabling an account, changing its role, resetting its password or forcing logout revokes it at once.
+    - `requireAdminApiAccess(request, permission)` returns 401 or 403.
+    - Moderators may decide community items only.
+  - **Audit:** `lib/auditLog.ts` writes `data/audit_log.json` (gitignored, newest first, capped at 2,000). Every admin write and every login/logout is recorded.
+  - **UI:** login with email + password, `StaffManagerView` (with a read-only permission matrix), `AuditLogView`. Shared `PillarBadge`, `AdminStatusChip` and `AdminEmptyState` live in `AdminUI.tsx`.
+  - **Verification:**
+    - 30/30 API checks passed on a throwaway server with test credentials: 401/403 matrix, revocation, cross-origin write blocked, no hashes in responses, audit entries.
+    - Reject flow: the queue went from 2 to 1, the spot stays hidden publicly, and the action was audited.
+    - Puppeteer, desktop and 390px: no console errors, no horizontal overflow.
+    - Test data and accounts were removed afterwards.
+  - **Limits:** on Vercel the staff and audit files live in `/tmp` and do not persist, so only the env owner login is reliable there. Invitations are not emailed; the owner sets a temporary password.
 
 ## Known Limitations / Next Backend Work
 
 1. Replace the prototype JSON/in-memory repository with durable shared storage before relying on production writes. `JsonFileAdapter` remains the configured adapter, and serverless `/tmp` storage is ephemeral and not shared across instances.
-2. Admin auth is a single shared password. Replace it with per-user accounts and roles (the admin header "Preview Role" is still a client-side simulator) once a user store exists. Member identity is still client-only (`useAuth` + localStorage), so join `userId` and event `hostId` are not verified.
+2. (Superseded 2026-10-06: staff accounts with roles now exist; they need durable storage before production.) Admin auth is a single shared password. Replace it with per-user accounts and roles (the admin header "Preview Role" is still a client-side simulator) once a user store exists. Member identity is still client-only (`useAuth` + localStorage), so join `userId` and event `hostId` are not verified.
 3. `/api/upload` is still unauthenticated, because members have no server identity yet. It now rejects SVG and checks file signatures, but it has no rate limit.
 4. Add server-side pagination to the admin Spots API as the dataset grows; the current panel receives the complete local catalog.
 5. Participants are now persisted, but mutexes, the login throttle, and the in-memory event state are process-local, so multiple instances will diverge until the storage moves to a shared database.
 6. Add a backend API and persistence contract for Moments/posts if that feature is brought into the dynamic-content scope.
 7. Add focused route/repository tests for approval filtering, query parsing, pagination, persistence, and authorization.
 8. Ingestion supports Schema.org JSON-LD plus site adapters for QSNCC, IMPACT, BITEC, ThaiRun and Visit Bangkok. Site adapters break when a site changes its layout or internal API, and then fail with a clear per-source error. Still unsupported (live probe 2026-10-04): ThaiTicketMajor returns 403 (bot block); The Concert and Ticketmelon load listings client-side; Eventpop's listing page has no Event JSON-LD; SET and pr-bangkok are untested. A browser inspection confirmed Eventpop cards use `a[data-gtm-product-id][data-gtm-product-name]`, `.event-date`, `.event-title`, `.short-location`, and poster images; a Cheerio-based Eventpop listing adapter was started but not applied. First verify/install Cheerio, then add and test that adapter. Do not claim broad live-source coverage until this works.
-9. No Spot sources are configured by default. Add specific intended Spot source URLs and source-specific parsing rules; imported Places will remain drafts until reviewed.
+9. Spot sources: the Tourism Directory adapter covers attractions nationwide. Bangkok and cafes still need a second source. `data/discovery_content.json` (spots) is gitignored, so imported spots do not reach Vercel until that file is tracked or spots move to shared storage.
 10. The reset action still uses the curated event seed catalog and is not a live scrape.
 
 ## Handoff Notes

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { db, paginateArray } from '@/lib/db';
 import { checkImages, getImageStatus } from '@/lib/imageHealth';
-import { requireAdminApiAccess } from '@/lib/adminApiAuth';
+import { getAdminActor, requireAdminApiAccess } from '@/lib/adminApiAuth';
+import { recordAudit } from '@/lib/auditLog';
 import { LifestyleSpotItem } from '@/data/spotsData';
 import { autoEnrichSpotImages } from '@/lib/spotImageResolver';
 
@@ -127,8 +128,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const denied = requireAdminApiAccess(request);
+  const denied = requireAdminApiAccess(request, 'content.edit');
   if (denied) return denied;
+  const actor = getAdminActor(request);
 
   try {
     const body = await request.json();
@@ -150,6 +152,7 @@ export async function POST(request: Request) {
       const allSpots = await getAllSpots();
       const { enrichedSpots, fixedCount } = autoEnrichSpotImages(allSpots);
       await db.bulkUpdateSpots(enrichedSpots);
+      recordAudit(actor, 'spot.auto_enrich_images', `เติมรูปอัตโนมัติ ${fixedCount} สถานที่`);
       return NextResponse.json({
         success: true,
         message: `สแกนและเติมรูปภาพความละเอียดสูงสำเร็จ ${fixedCount} รายการ`,
@@ -194,6 +197,7 @@ export async function POST(request: Request) {
       // Enrich image if empty
       const { enrichedSpots } = autoEnrichSpotImages([createdSpot]);
       const savedSpot = await db.createSpot(enrichedSpots[0]);
+      recordAudit(actor, 'spot.create', `สร้างสถานที่ "${savedSpot.title}"`, { type: 'spot', id: savedSpot.id });
 
       return NextResponse.json({
         success: true,
@@ -222,6 +226,7 @@ export async function POST(request: Request) {
       if (validationError) return NextResponse.json({ success: false, error: validationError }, { status: 400 });
 
       const updatedSpot = await db.updateSpot(spotId, safeFields);
+      recordAudit(actor, 'spot.update', `แก้ไขสถานที่ "${existing.title}" (${Object.keys(safeFields).join(', ')})`, { type: 'spot', id: spotId });
 
       return NextResponse.json({
         success: true,
@@ -232,11 +237,54 @@ export async function POST(request: Request) {
     }
 
     // Action 4: Delete Spot
+    // Action: publish or unpublish many spots in one write, by explicit ids or by origin
+    // scopes: 'tourism_directory' (id "ttd-…"), 'osm' (id "osm-…"), 'imported' (both), 'curated' (everything else)
+    if (action === 'set_publication') {
+      const { spotIds, scope, status } = body as { spotIds?: unknown; scope?: unknown; status?: unknown };
+      if (status !== 'published' && status !== 'draft') {
+        return NextResponse.json({ success: false, error: 'status must be published or draft' }, { status: 400 });
+      }
+      const scopeMatchers: Record<string, (id: string) => boolean> = {
+        tourism_directory: (id) => id.startsWith('ttd-'),
+        osm: (id) => id.startsWith('osm-'),
+        imported: (id) => id.startsWith('ttd-') || id.startsWith('osm-'),
+        curated: (id) => !id.startsWith('ttd-') && !id.startsWith('osm-'),
+      };
+      if (scope !== undefined && (typeof scope !== 'string' || !scopeMatchers[scope])) {
+        return NextResponse.json({ success: false, error: 'scope must be tourism_directory, osm, imported or curated' }, { status: 400 });
+      }
+      const ids = Array.isArray(spotIds) ? spotIds.filter((id): id is string => typeof id === 'string') : null;
+      if (!ids && !scope) {
+        return NextResponse.json({ success: false, error: 'กรุณาระบุ spotIds หรือ scope' }, { status: 400 });
+      }
+      const idSet = ids ? new Set(ids) : null;
+      const inScope = typeof scope === 'string' ? scopeMatchers[scope] : () => true;
+      const targets = (await getAllSpots()).filter((spot) =>
+        (!idSet || idSet.has(spot.id)) && inScope(spot.id) && spot.publicationStatus !== status
+      );
+      const updated = await db.bulkUpdateSpots(targets.map((spot) => ({ id: spot.id, publicationStatus: status })));
+      recordAudit(
+        actor,
+        status === 'published' ? 'spot.publish' : 'spot.unpublish',
+        targets.length === 1
+          ? `${status === 'published' ? 'เผยแพร่' : 'ซ่อนเป็นร่าง'} "${targets[0].title}"`
+          : `${status === 'published' ? 'เผยแพร่' : 'ซ่อนเป็นร่าง'} ${updated} สถานที่${typeof scope === 'string' ? ` (scope: ${scope})` : ''}`,
+        targets.length === 1 ? { type: 'spot', id: targets[0].id } : { type: 'spot' }
+      );
+      return NextResponse.json({
+        success: true,
+        updated,
+        message: `${status === 'published' ? 'เผยแพร่' : 'ซ่อนเป็นร่าง'} ${updated} สถานที่`,
+      });
+    }
+
     if (action === 'delete') {
       const { spotId } = body as { spotId?: string };
       if (!spotId) return NextResponse.json({ success: false, error: 'กรุณาระบุสถานที่' }, { status: 400 });
+      const existing = await db.findSpotById(spotId);
       const deleted = await db.deleteSpot(spotId);
       if (!deleted) return NextResponse.json({ success: false, error: 'ไม่พบสถานที่ที่ระบุ' }, { status: 404 });
+      recordAudit(actor, 'spot.delete', `ลบสถานที่ "${existing?.title ?? spotId}"`, { type: 'spot', id: spotId });
       return NextResponse.json({
         success: true,
         message: 'ลบสถานที่ออกจากระบบเรียบร้อยแล้ว',

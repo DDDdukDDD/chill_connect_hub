@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { requireAdminApiAccess } from '@/lib/adminApiAuth';
+import { getAdminActor, requireAdminApiAccess } from '@/lib/adminApiAuth';
+import { recordAudit } from '@/lib/auditLog';
 import {
   getAllDataSources,
   addCustomDataSource,
@@ -21,7 +22,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(req: Request) {
-  const denied = requireAdminApiAccess(req);
+  const denied = requireAdminApiAccess(req, 'sources.run');
   if (denied) return denied;
 
   try {
@@ -58,6 +59,7 @@ export async function POST(req: Request) {
       description: description?.trim() || 'แหล่งข้อมูลที่เพิ่มโดยผู้ดูแลระบบ (Admin Custom Source)',
     });
 
+    recordAudit(getAdminActor(req), 'source.create', `เพิ่มแหล่งข้อมูล "${name.trim()}" (${normalizedUrl.hostname})`, { type: 'source' });
     return NextResponse.json({
       success: true,
       message: `เพิ่มแหล่งข้อมูล "${name}" สำเร็จ`,
@@ -69,7 +71,7 @@ export async function POST(req: Request) {
 }
 
 export async function PATCH(req: Request) {
-  const denied = requireAdminApiAccess(req);
+  const denied = requireAdminApiAccess(req, 'sources.run');
   if (denied) return denied;
 
   try {
@@ -81,6 +83,8 @@ export async function PATCH(req: Request) {
     }
 
     const updatedSources = await toggleDataSourceStatus(id, status);
+    const source = updatedSources.find((s) => s.id === id);
+    recordAudit(getAdminActor(req), 'source.set_status', `${status === 'active' ? 'เปิด' : 'พัก'}แหล่งข้อมูล "${source?.name ?? id}"`, { type: 'source', id });
     return NextResponse.json({
       success: true,
       message: `เปลี่ยนสถานะเป็น ${status === 'active' ? 'เปิดใช้งาน (Active)' : 'พักการดึง (Inactive)'} แล้ว`,
@@ -92,7 +96,7 @@ export async function PATCH(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const denied = requireAdminApiAccess(req);
+  const denied = requireAdminApiAccess(req, 'sources.run');
   if (denied) return denied;
 
   try {
@@ -103,7 +107,9 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ success: false, error: 'Missing source id' }, { status: 400 });
     }
 
+    const removed = (await getAllDataSources()).find((s) => s.id === id);
     const updatedSources = await deleteCustomDataSource(id);
+    recordAudit(getAdminActor(req), 'source.delete', `ลบแหล่งข้อมูล "${removed?.name ?? id}"`, { type: 'source', id });
     return NextResponse.json({
       success: true,
       message: 'ลบแหล่งข้อมูลสำเร็จ',

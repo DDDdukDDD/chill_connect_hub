@@ -34,8 +34,8 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
-# local mutable discovery content store
-/data/discovery_content.json
+# data/discovery_content.json (spots, quests) is tracked on purpose: committed snapshots are how
+# imported spots reach the Vercel deploy (serverless writes go to /tmp and do not persist)
 
 # vercel
 .vercel
@@ -43,3 +43,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Staff accounts (password hashes) and the admin audit log are local runtime data, never committed
+/data/staff_accounts.json
+/data/audit_log.json

@@ -66,3 +66,44 @@ export function AdminBadge({ tone = 'slate', children }: { tone?: 'slate' | 'amb
     <span className={`px-2 py-0.5 rounded-full border text-[10px] sm:text-xs font-extrabold ${tones[tone]}`}>{children}</span>
   );
 }
+
+/** Pillar identity for badges only (AGENTS.md: section colors never go on buttons). */
+export const PILLAR_STYLES = {
+  community: { label: 'คอมมูนิตี้', className: 'bg-[#FFF4EE] text-[#D04A1B] border-[#F26430]/30' },
+  fairs: { label: 'งานแฟร์', className: 'bg-[#EEF4FA] text-[#1F3D5C] border-[#2B527A]/30' },
+  spots: { label: 'พิกัดเที่ยว', className: 'bg-[#EBF3ED] text-[#2D5A3C] border-[#4A7C59]/30' },
+  quests: { label: 'ชาเลนจ์', className: 'bg-[#F5F3FF] text-[#6D28D9] border-[#7C3AED]/30' },
+} as const;
+
+export type AdminPillar = keyof typeof PILLAR_STYLES;
+
+export function PillarBadge({ pillar }: { pillar: AdminPillar }) {
+  const style = PILLAR_STYLES[pillar];
+  return <span className={`px-2 py-0.5 rounded-full border text-[10px] sm:text-xs font-extrabold whitespace-nowrap ${style.className}`}>{style.label}</span>;
+}
+
+/** One lifecycle vocabulary for every entity: draft → pending → published → ended, plus rejected. */
+const STATUS_STYLES = {
+  draft: { label: 'ร่าง', className: 'bg-slate-100 text-slate-600 border-slate-200' },
+  pending: { label: 'รอตรวจ', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+  published: { label: 'เผยแพร่', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  ended: { label: 'สิ้นสุด', className: 'bg-slate-50 text-slate-500 border-slate-200' },
+  rejected: { label: 'ปฏิเสธ', className: 'bg-rose-50 text-rose-700 border-rose-200' },
+} as const;
+
+export type AdminStatus = keyof typeof STATUS_STYLES;
+
+export function AdminStatusChip({ status }: { status: AdminStatus }) {
+  const style = STATUS_STYLES[status];
+  return <span className={`px-2 py-0.5 rounded-full border text-[10px] sm:text-xs font-extrabold whitespace-nowrap ${style.className}`}>{style.label}</span>;
+}
+
+/** Slim inline empty state (AGENTS.md hygiene rule 5). */
+export function AdminEmptyState({ children, action }: { children: React.ReactNode; action?: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-3 flex-wrap bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200 text-sm text-slate-600">
+      <span>{children}</span>
+      {action}
+    </div>
+  );
+}

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Search, ChevronRight, Server, Menu } from 'lucide-react';
-import { AdminModuleId } from './AdminSidebar';
+import { AdminModuleId, SIDEBAR_GROUPS } from './AdminSidebar';
 import { AdminSessionStatus } from './AdminSessionStatus';
 
 interface AdminHeaderProps {
@@ -13,21 +13,10 @@ interface AdminHeaderProps {
   onOpenNavigation?: () => void;
 }
 
-const MODULE_BREADCRUMBS: Record<AdminModuleId, { parent: string; label: string }> = {
-  dashboard:  { parent: 'Overview', label: 'ภาพรวมเนื้อหา' },
-  taxonomy:   { parent: 'Governance & Master', label: 'Master Taxonomy' },
-  provinces:  { parent: 'Governance & Master', label: '77 จังหวัด & โซน' },
-  venues:     { parent: 'Governance & Master', label: 'Venues' },
-  spots:      { parent: 'Discovery & Content', label: 'Lifestyle Spots' },
-  community:  { parent: 'Discovery & Content', label: 'Community Meetups' },
-  fairs:      { parent: 'Discovery & Content', label: 'Fairs & Expos' },
-  quests:     { parent: 'Discovery & Content', label: 'Quests & Badges' },
-  rbac:       { parent: 'System & Operations', label: 'Users & Permissions' },
-  scraper:    { parent: 'System & Operations', label: 'Scraper Engine' },
-  media:      { parent: 'System & Operations', label: 'Media & Image Hub' },
-  cache:      { parent: 'System & Operations', label: 'Cache & Performance' },
-  backup:     { parent: 'System & Operations', label: 'Backup & Audit Logs' },
-};
+// Breadcrumbs come from the sidebar groups so labels live in one place
+const MODULE_BREADCRUMBS = Object.fromEntries(
+  SIDEBAR_GROUPS.flatMap((group) => group.modules.map((mod) => [mod.id, { parent: group.groupLabel ?? 'Admin', label: mod.label }]))
+) as Record<AdminModuleId, { parent: string; label: string }>;
 
 export function AdminHeader({
   activeModule,
@@ -70,9 +59,9 @@ export function AdminHeader({
       )}
 
       {/* Environment Badge */}
-      <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#EBF3ED] border border-[#4A7C59]/20 rounded-lg">
-        <Server size={11} className="text-[#4A7C59]" />
-        <span className="text-[10px] font-bold text-[#2D5A3C] tracking-wide hidden sm:block">
+      <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg">
+        <Server size={11} className="text-slate-500" />
+        <span className="text-[10px] font-bold text-slate-600 tracking-wide hidden sm:block">
           {process.env.NODE_ENV === 'production' ? 'Production' : 'Development'}
         </span>
       </div>

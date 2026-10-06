@@ -19,6 +19,7 @@ import {
 } from '@/data/spotsData';
 import { SpotCard, formatSpotBadgePrice } from '@/components/SpotCard';
 import { resolveSpotGallery, resolveSpotImage } from '@/lib/spotImageResolver';
+import { usePublishedSpots } from '@/lib/usePublishedSpots';
 import { renderDescriptionContent } from '@/components/RichTextEditor';
 import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import { SmartSpotPlanCard } from '@/components/SmartSpotPlanCard';
@@ -26,6 +27,8 @@ import { NearbyDiningSection } from '@/components/NearbyDiningSection';
 import {
   MapPin,
   Clock,
+  Phone,
+  Globe,
   Heart,
   Star,
   Share2,
@@ -86,11 +89,31 @@ export default function SpotDetailPage() {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
 
-  // Retrieve spot
-  const spot: LifestyleSpotItem | undefined = useMemo(() => {
+  // Retrieve spot: the API holds the live catalog (incl. imported spots); bundled data renders instantly as a fallback
+  const staticSpot: LifestyleSpotItem | undefined = useMemo(() => {
     if (!decodedId) return undefined;
     return getSpotById(decodedId) || MOCK_SPOTS.find((s) => s.id === decodedId || s.title === decodedId);
   }, [decodedId]);
+  const [apiSpot, setApiSpot] = useState<LifestyleSpotItem | null>(null);
+  const [isSpotLoading, setIsSpotLoading] = useState(true);
+  useEffect(() => {
+    if (!decodedId) return;
+    let active = true;
+    fetch(`/api/spots/${encodeURIComponent(decodedId)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (active && data?.spot) setApiSpot(data.spot as LifestyleSpotItem);
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (active) setIsSpotLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [decodedId]);
+  const spot: LifestyleSpotItem | undefined = apiSpot || staticSpot;
+  const { spots: publishedSpots } = usePublishedSpots();
 
   // Gallery Photos (5-8 images guaranteed)
   const galleryImages: string[] = useMemo(() => {
@@ -101,8 +124,8 @@ export default function SpotDetailPage() {
   // Nearby spots recommendation info (smart zonal & distance proximity)
   const recommendation = useMemo(() => {
     if (!spot) return { spots: [], sectionTitle: '', sectionSubtitle: '', zoneName: '' };
-    return getNearbyRecommendationInfo(spot, 5);
-  }, [spot]);
+    return getNearbyRecommendationInfo(spot, 5, publishedSpots.length > 0 ? publishedSpots : MOCK_SPOTS);
+  }, [spot, publishedSpots]);
 
   const nearbySpots = recommendation.spots;
 
@@ -230,6 +253,14 @@ export default function SpotDetailPage() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isLightboxOpen, galleryImages.length]);
+
+  if (!spot && isSpotLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <p className="text-sm font-semibold text-slate-500">กำลังโหลดข้อมูลสถานที่...</p>
+      </div>
+    );
+  }
 
   if (!spot) {
     return (
@@ -450,12 +481,14 @@ export default function SpotDetailPage() {
                   {spot.categoryLabel}
                 </span>
 
-                {/* Star Rating & Reviews */}
-                <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-2xs ml-auto sm:ml-0">
-                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                  <span>{spot.rating}</span>
-                  <span className="text-slate-400 font-normal">({spot.reviewsCount || 480} รีวิว)</span>
-                </div>
+                {/* Star Rating & Reviews (only real values; imported spots have none) */}
+                {spot.rating > 0 && (
+                  <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-2xs ml-auto sm:ml-0">
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                    <span>{spot.rating}</span>
+                    {spot.reviewsCount > 0 && <span className="text-slate-400 font-normal">({spot.reviewsCount} รีวิว)</span>}
+                  </div>
+                )}
               </div>
 
               <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight break-words">
@@ -644,7 +677,45 @@ export default function SpotDetailPage() {
                     <span className="font-bold text-slate-900 leading-snug">{spot.district}, จังหวัด{spot.province}</span>
                   </div>
                 </div>
+
+                {spot.contact?.phone && (
+                  <div className="flex items-start gap-2.5">
+                    <Phone className="w-4 h-4 text-[#4A7C59] shrink-0 mt-0.5" />
+                    <div>
+                      <span className="text-slate-400 text-[11px] block font-semibold">โทรศัพท์</span>
+                      <a href={`tel:${spot.contact.phone.split(',')[0].replace(/[^\d+]/g, '')}`} className="font-bold text-slate-900 hover:underline">
+                        {spot.contact.phone}
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {(spot.contact?.website || spot.contact?.facebook) && (
+                  <div className="flex items-start gap-2.5">
+                    <Globe className="w-4 h-4 text-[#4A7C59] shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <span className="text-slate-400 text-[11px] block font-semibold">ช่องทางติดต่อ</span>
+                      <div className="flex flex-wrap gap-x-3 gap-y-1">
+                        {spot.contact?.website && (
+                          <a href={spot.contact.website} target="_blank" rel="noopener noreferrer" className="font-bold text-slate-900 hover:underline">เว็บไซต์</a>
+                        )}
+                        {spot.contact?.facebook && (
+                          <a href={spot.contact.facebook} target="_blank" rel="noopener noreferrer" className="font-bold text-slate-900 hover:underline">Facebook</a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {spot.sourceName && spot.sourceUrl && (
+                <p className="text-[11px] font-semibold text-slate-400">
+                  ข้อมูล:{' '}
+                  <a href={spot.sourceUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                    {spot.sourceName.replace(/\s*\(.*\)\s*$/, '')}
+                  </a>
+                </p>
+              )}
 
               {/* Centralized Two-Tier Button System */}
               <div className="space-y-2 pt-1">

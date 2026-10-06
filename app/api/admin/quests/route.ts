@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { ChallengeQuest, QuestReward } from '@/data/mockData';
 import { getQuestDateError, parseQuestDate } from '@/lib/questLifecycle';
 import { db, CreateQuestDTO, UpdateQuestDTO } from '@/lib/db';
-import { requireAdminApiAccess } from '@/lib/adminApiAuth';
+import { getAdminActor, requireAdminApiAccess } from '@/lib/adminApiAuth';
+import { recordAudit } from '@/lib/auditLog';
 
 const QUEST_STATUSES = new Set(['draft', 'active', 'ended']);
 const QUEST_CATEGORIES = new Set(['heal', 'move', 'chill', 'learn']);
@@ -164,8 +165,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const denied = requireAdminApiAccess(request);
+  const denied = requireAdminApiAccess(request, 'content.edit');
   if (denied) return denied;
+  const actor = getAdminActor(request);
 
   try {
     const body: unknown = await request.json();
@@ -176,6 +178,7 @@ export async function POST(request: Request) {
       const questData = createQuestRecord(body.quest);
       if (typeof questData === 'string') return NextResponse.json({ success: false, error: questData }, { status: 400 });
       const quest = await db.createQuest(questData);
+      recordAudit(actor, 'quest.create', `สร้างชาเลนจ์ "${quest.title}"`, { type: 'quest', id: quest.id });
       return NextResponse.json({ success: true, quest }, { status: 201 });
     }
 
@@ -201,6 +204,7 @@ export async function POST(request: Request) {
       const validationError = validateQuest({ ...existing, ...safeFields });
       if (validationError) return NextResponse.json({ success: false, error: validationError }, { status: 400 });
       const quest = await db.updateQuest(body.id, safeFields);
+      recordAudit(actor, 'quest.update', `แก้ไขชาเลนจ์ "${existing.title}" (${Object.keys(safeFields).join(', ')})`, { type: 'quest', id: body.id });
       return NextResponse.json({ success: true, quest });
     }
 
@@ -219,13 +223,16 @@ export async function POST(request: Request) {
       }
       const quest = await db.updateQuest(body.id, { status: body.status as ChallengeQuest['status'] });
       if (!quest) return NextResponse.json({ success: false, error: 'Quest not found' }, { status: 404 });
+      recordAudit(actor, 'quest.set_status', `เปลี่ยนสถานะชาเลนจ์ "${existing.title}" เป็น ${body.status}`, { type: 'quest', id: body.id });
       return NextResponse.json({ success: true, quest });
     }
 
     if (body.action === 'delete') {
       if (typeof body.id !== 'string') return NextResponse.json({ success: false, error: 'Quest id is required' }, { status: 400 });
+      const existing = await db.findQuestById(body.id);
       const deleted = await db.deleteQuest(body.id);
       if (!deleted) return NextResponse.json({ success: false, error: 'Quest not found' }, { status: 404 });
+      recordAudit(actor, 'quest.delete', `ลบชาเลนจ์ "${existing?.title ?? body.id}"`, { type: 'quest', id: body.id });
       return NextResponse.json({ success: true, id: body.id });
     }
 

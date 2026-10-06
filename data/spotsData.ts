@@ -51,8 +51,17 @@ export interface LifestyleSpotItem {
   latitude: number;
   longitude: number;
   publicationStatus?: 'draft' | 'published';
+  /** Set when a draft was rejected in the admin review queue (it stays a hidden draft) */
+  reviewRejectedAt?: string;
+  rejectionReason?: string;
   sourceName?: string;
   sourceUrl?: string;
+  /** Official contact channels from the source (imported spots) */
+  contact?: { phone?: string; website?: string; facebook?: string };
+  /** Entry fee as published by the source, e.g. "คนไทย ผู้ใหญ่ 40 บาท · ต่างชาติ ผู้ใหญ่ 200 บาท" */
+  entryFee?: string;
+  /** Source popularity signal (page views on the source site); higher = more visited */
+  popularity?: number;
   zone?: string;
   isTrending?: boolean;
   isNew?: boolean;
@@ -90,8 +99,38 @@ export const SPOT_CATEGORIES = [
  * Guarantees a precise 1-to-1 mapping so category rail totals sum exactly to 100% of spots.
  */
 export function getSpotVibeCategory(spot: LifestyleSpotItem): SpotVibeId {
-  const cat = spot.category;
+  // string (not the union) so the keyword fallbacks below still compile after the switch
+  const cat: string = spot.category;
   const text = `${spot.title} ${spot.categoryLabel} ${spot.description} ${spot.province} ${(spot.vibeTags || []).join(' ')}`.toLowerCase();
+
+  // A specific category decides first. Description keywords are unreliable for these
+  // (temple texts mention "ศิลปะล้านนา", viewpoints mention "ทะเลหมอก"), so they only refine nature/park spots.
+  // Shopping malls have no vibe of their own yet; they are hangout spaces, closest to "คาเฟ่ & สเปซนั่งชิลล์"
+  if (/ห้างสรรพสินค้า|มอลล์/.test(spot.categoryLabel || '')) return 'cafe_slowbar';
+
+  switch (cat) {
+    case 'beach':
+      return 'sea_island';
+    case 'cafe':
+    case 'bar':
+      return 'cafe_slowbar';
+    case 'art':
+    case 'museum':
+      return 'art_creative';
+    case 'temple':
+    case 'oldtown':
+    case 'market':
+      return 'oldtown_culture';
+    case 'viewpoint':
+      return 'mountain_mist';
+  }
+  if (cat === 'nature' || cat === 'park') {
+    const title = spot.title.toLowerCase();
+    if (/น้ำพุร้อน|บ่อน้ำร้อน|สปา|บำบัด|ฮีลใจ|ออนเซ็น/.test(text)) return 'wellness_retreat';
+    if (/ทะเล(?!หมอก)|หาด|เกาะ|อ่าว/.test(title)) return 'sea_island';
+    if (/ดอย|ม่อน|ยอดเขา|ภูเขา|จุดชมวิว|^ภู(?!เก็ต)/.test(title)) return 'mountain_mist';
+    return 'nature_camping';
+  }
 
   // 1. Sea & Island
   if (
@@ -1667,8 +1706,9 @@ export function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: nu
 /**
  * Retrieve nearby or similar spots prioritizing same zone, district, GPS proximity, and province
  */
-export function getNearbySpots(currentSpot: LifestyleSpotItem, limit = 4): LifestyleSpotItem[] {
-  const others = MOCK_SPOTS.filter((s) => s.id !== currentSpot.id);
+/** `pool` is the catalog to search; pass the published spots from the API (defaults to the bundled data). */
+export function getNearbySpots(currentSpot: LifestyleSpotItem, limit = 4, pool: LifestyleSpotItem[] = MOCK_SPOTS): LifestyleSpotItem[] {
+  const others = pool.filter((s) => s.id !== currentSpot.id);
 
   // Score each spot based on proximity factors:
   // 1. Same Zone (if specified) -> top priority
@@ -1716,8 +1756,8 @@ export function getNearbySpots(currentSpot: LifestyleSpotItem, limit = 4): Lifes
 /**
  * Recommendation info package with smart zonal title and subtitle
  */
-export function getNearbyRecommendationInfo(currentSpot: LifestyleSpotItem, limit = 4) {
-  const spots = getNearbySpots(currentSpot, limit);
+export function getNearbyRecommendationInfo(currentSpot: LifestyleSpotItem, limit = 4, pool: LifestyleSpotItem[] = MOCK_SPOTS) {
+  const spots = getNearbySpots(currentSpot, limit, pool);
   const zoneName = currentSpot.zone || currentSpot.district;
   const isZonal = Boolean(zoneName && zoneName !== currentSpot.province);
 

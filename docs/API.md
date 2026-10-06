@@ -5,7 +5,7 @@
 > differs from the code, the code is wrong or this file is stale — report it in [HANDOFF.md](HANDOFF.md).
 >
 > **Status:** prototype. Data is seed/mock data stored in JSON files; there are no real users yet.
-> Last updated: 2026-10-04
+> Last updated: 2026-10-06
 
 ## Conventions
 
@@ -111,6 +111,22 @@ Returns published spots only (drafts hidden).
 
 Response `200`: `{ success: true, spots: LifestyleSpotItem[], pagination: Pagination }`. Cache: `s-maxage=60`.
 
+Province names follow `MASTER_77_PROVINCES` (Bangkok is `"กรุงเทพฯ"`).
+
+**Optional fields on imported spots** (all optional; curated spots usually lack them):
+- `contact?: { phone?, website?, facebook? }`: official contact channels.
+- `entryFee?: string`: entry fee as published, e.g. `"คนไทย ผู้ใหญ่ 40 บาท · ต่างชาติ ผู้ใหญ่ 200 บาท"` or `"เข้าชมฟรี"`. `price` carries the same text for attractions.
+- `popularity?: number`: page views on the source site (higher = more visited).
+- Imported spots have `rating: 0` and `reviewsCount: 0` (the source has no reliable reviews). Hide ratings when they are 0.
+- `sourceName` / `sourceUrl`: where the record came from. Imported spots should show a credit, e.g. "ข้อมูล: กรมการท่องเที่ยว". Spots with `sourceName: "OpenStreetMap · Wikipedia"` (ids `osm-…`) **must** show it (ODbL / CC BY-SA).
+- `latitude` / `longitude` are validated for imported spots (inside Thailand), so they are safe for maps and nearby searches.
+
+### `GET /api/spots/[id]` — one spot
+
+Returns one **published** spot (`404` for drafts and unknown ids). The id is URL-encoded.
+
+Response `200`: `{ success: true, spot: LifestyleSpotItem }`. Cache: `s-maxage=60`.
+
 ### `GET /api/spots/[id]/nearby-dining`
 
 | Param | Default |
@@ -183,18 +199,32 @@ Compress on the client first (`compressImage()` → WebP). Response `200`:
 
 All `/api/admin/*` routes require admin access:
 - **Browser:** the admin session cookie set by `/api/auth/admin` (sent automatically for same-origin `fetch`; writes must be same-origin).
-- **Scripts:** `Authorization: Bearer <ADMIN_API_TOKEN>`.
-- **Local dev** with none of `ADMIN_PASSWORD` / `AUTH_SECRET` / `ADMIN_API_TOKEN` set: access is open.
+- **Scripts:** `Authorization: Bearer <ADMIN_API_TOKEN>` (acts as an Owner).
+- **Local dev** with none of `ADMIN_PASSWORD` / `AUTH_SECRET` / `ADMIN_API_TOKEN` set and no staff accounts: access is open (acts as an Owner).
 
-Denied → `401 { success: false, message: 'Unauthorized' }`; not configured in production → `503`.
+Every request is checked against the caller's **role** (matrix in `lib/permissions.ts`, read from the server session, never from the client):
+
+| Permission | Owner | Editor | Moderator | Data Ops |
+|---|:-:|:-:|:-:|:-:|
+| `content.view` (every `GET`) | ✓ | ✓ | ✓ | ✓ |
+| `community.review` (decide community meetups) | ✓ | ✓ | ✓ | – |
+| `content.edit` (spots, fairs, quests, events writes; decide fairs and spots) | ✓ | ✓ | – | – |
+| `sources.run` (sources, scrape) | ✓ | ✓ | – | ✓ |
+| `system.manage` (media, cache, `reset_and_seed`) | ✓ | – | – | ✓ |
+| `audit.view` | ✓ | ✓ | – | – |
+| `staff.manage` | ✓ | – | – | – |
+
+Not signed in → `401 { success: false, message: 'Unauthorized' }` · signed in without the permission → `403 { success: false, error, permission }` · not configured in production → `503`.
 The admin UI should treat a `401` as "session expired" and show the login screen again.
+Disabling a staff account, changing its role, resetting its password or forcing logout ends its existing sessions at once.
+Every admin write is recorded in the audit log (`/api/admin/audit`).
 
 ### `/api/auth/admin`
 
 | Method | Body | Response |
 |---|---|---|
-| `GET` | — | `{ success, authenticated, hasSession, authRequired, loginAvailable }` |
-| `POST` | `{ password }` | `200 { success: true }` + sets cookie · `401` wrong password · `429` too many attempts · `503` not configured |
+| `GET` | — | `{ success, authenticated, hasSession, authRequired, loginAvailable, actor: { id, name, role, roleLabel, permissions[] } \| null }` |
+| `POST` | `{ email, password }` (staff) or `{ password }` (env owner, `ADMIN_PASSWORD`) | `200 { success: true }` + sets cookie · `401` wrong credentials or disabled account · `429` too many attempts · `503` not configured |
 | `DELETE` | — | Logs out (clears cookie) |
 
 ### Admin routes (summary)
@@ -203,13 +233,16 @@ All writes are `POST` with an `action` field unless noted.
 
 | Route | Reads | Actions |
 |---|---|---|
-| `/api/admin/events` | `GET` → `{ events: AdminEventItem[] (all moderation states), total, autoPublish }`. **Paginated mode** when `page` is present: `?page&limit(≤100)&type=community|public_venue&status=pending|approved|rejected|all&format=recurring|online|physical|all&q` → `{ events, counts: {total,pending,approved,rejected,recurring,online}, pagination }`, sorted pending-first then newest; `counts` cover the whole `type` | `create {eventData}`, `update_status {id, status: approved\|rejected\|pending}`, `approve_all`, `update_fields {id, updatedFields}`, `delete {id}`, `toggle_auto_publish {autoPublish}`, `reset_and_seed` — each returns the updated `events` list |
-| `/api/admin/spots` | `GET ?province&category&q&status=draft|published&image=missing|broken|problem` (legacy `filter=missing_image`) → `{ spots (each with imageStatus: ok|broken|missing|unchecked), totalCount, filteredCount, draftCount, missingImagesCount, brokenImagesCount, uncheckedImagesCount, distinctProvinces }`; add `page&limit` for paginated `spots` + `pagination` | `create {newSpot}` (starts as draft), `update {spotId, updatedFields}`, `delete {spotId}`, `auto_enrich_images` — each returns `spots`. `check_images` loads every stored image URL (public HTTPS only; results cached in memory for 6h) → `{ checked, ok, broken }` |
+| `/api/admin/events` | `GET` → `{ events: AdminEventItem[] (all moderation states), total, autoPublish }`. **Paginated mode** when `page` is present: `?page&limit(≤100)&type=community\|public_venue&status=pending\|approved\|rejected\|all&format=recurring\|online\|physical\|all&q` → `{ events, counts: {total,pending,approved,rejected,recurring,online}, pagination }`, sorted pending-first then newest; `counts` cover the whole `type` | `create {eventData}`, `update_status {id, status: approved\|rejected\|pending}`, `approve_all`, `update_fields {id, updatedFields}`, `delete {id}`, `toggle_auto_publish {autoPublish}`, `reset_and_seed` — each returns the updated `events` list |
+| `/api/admin/spots` | `GET ?province&category&q&status=draft\|published&image=missing\|broken\|problem` (legacy `filter=missing_image`) → `{ spots (each with imageStatus: ok\|broken\|missing\|unchecked), totalCount, filteredCount, draftCount, missingImagesCount, brokenImagesCount, uncheckedImagesCount, distinctProvinces }`; add `page&limit` for paginated `spots` + `pagination` | `create {newSpot}` (starts as draft), `update {spotId, updatedFields}`, `delete {spotId}`, `set_publication {status: published\|draft, spotIds? \| scope?: tourism_directory\|osm\|imported\|curated}` (one write; returns `{ updated }`), `auto_enrich_images` — each returns `spots`. `check_images` loads every stored image URL (public HTTPS only; results cached in memory for 6h) → `{ checked, ok, broken }` |
 | `/api/admin/quests` | `GET ?status&category&q&page&limit` → `{ quests, total, pagination }` | `create {quest}` (starts as draft; accepts `startDate`, `endDate`, `image`, `brandReward`), `update {id, updatedFields}` (`brandReward: null` clears it; `daysRemaining` is ignored), `set_status {id, status: draft\|active\|ended}` (activating a quest whose `endDate` has passed returns `400`), `delete {id}` |
 | `/api/admin/sources` | `GET` → `{ sources }` | `POST {name, url (https), targetType: events\|spots, ...}` add (`400` for blocked platforms: Meetup, Facebook, allevents.in, dev.events) · `PATCH {id, status}` toggle · `DELETE ?id=` remove |
-| `/api/admin/scrape` | — | `POST {targetType: events\|spots, sourceId?}` → `{ newCount, duplicateCount, totalScanned, sourceResults, events \| spots }`. Imported events are always `public_venue`, start as `pending` unless auto-publish is on, and use Thai display dates (`"12 ต.ค. 2026"`) |
+| `/api/admin/scrape` | — | `POST {targetType: events\|spots, sourceId?, province?, limit?}` → `{ newCount, duplicateCount, totalScanned, sourceResults, events \| spots }`. Imported events are always `public_venue`, start as `pending` unless auto-publish is on, and use Thai display dates (`"12 ต.ค. 2026"`). Province-based spot sources (Tourism Directory) require `province` (one of `MASTER_77_PROVINCES`; otherwise `400`) and import up to `limit` attractions (1–100, default 30) plus a few cafes, as drafts |
 | `/api/admin/cache` | `GET` → `{ stats, activeTags, supportedTags }` | `flush_all`, `flush_tag {tag}`, `flush_tags {tags}` |
 | `/api/admin/media` | `GET` → `{ files (with isOrphan), stats }` | `DELETE ?key=` · `POST {action: 'clean_orphans'}` |
+| `/api/admin/review` | `GET ?pillar=community\|fairs\|spots&province&q&page&limit(≤100)&health=1` → `{ items: [{ kind: event\|spot, id, pillar, title, province, source, submittedAt, quality: { checks[{id,label,ok,severity}], score, requiredFailures }, data }], counts: {all, community, fairs, spots}, pagination, health? }`. Queue = pending events + draft spots from scrapers or members (not the retired curated drafts, not already rejected), most complete first. `health` = `{ publishedSpots, spotsMissingImage, spotsBadCoordinates, thinProvinces[], fairsEndingSoon[], approvedEventsPastEnd, failedSources[] }` | `POST {action: approve\|reject, items: [{kind, id}] (1–200), reason?}` → `{ updated, skipped }`. Approve: event → `approved`, spot → `published`. Reject: event → `rejected` (+ `rejectionReason`), spot stays a hidden draft with `reviewRejectedAt` / `rejectionReason`. Moderators may decide community items only (`403` otherwise) |
+| `/api/admin/staff` | `GET` → `{ staff: [{ id, email, name, role, status, createdAt, createdBy, lastLoginAt }], roles: [{ id, label, description, permissions }], permissionLabels, envOwnerEnabled }` (never password hashes) | `create {email, name, role, password (≥10)}`, `set_role {id, role}`, `set_status {id, status: active\|disabled}`, `reset_password {id, password}`, `force_logout {id}`. You cannot change your own role or disable yourself. Owner only |
+| `/api/admin/audit` | `GET ?action (exact or prefix: event, spot, quest, scrape, source, staff, auth, media, cache)&actorId&q&page&limit(≤100)` → `{ entries: [{ id, at, actorId, actorName, actorRole, action, targetType?, targetId?, summary }], pagination }`, newest first, last 2,000 kept | — |
 
 ---
 
