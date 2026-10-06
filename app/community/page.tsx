@@ -20,6 +20,7 @@ import { isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp }
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { EventGrid } from '@/components/EventGrid';
+import { ViewModeToggle, ViewMode } from '@/components/ViewModeToggle';
 import { Pagination } from '@/components/Pagination';
 import { CommunityCategoryRail, COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
 import { TopCommunityRail, TOP_COMMUNITY_CLUBS } from '@/components/TopCommunityRail';
@@ -53,11 +54,29 @@ function CommunityPageContent() {
   const [priceFilter, setPriceFilter] = useState<'all' | 'free'>((searchParams.get('price') as any) || 'all');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [activeVibeFilter, setActiveVibeFilter] = useState<VibeFilter>('all');
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [currentPage, setCurrentPage] = useState(1);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
   const [eventsList, setEventsList] = useState<EventItem[]>(MOCK_EVENTS);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Sync viewMode from localStorage
+  React.useEffect(() => {
+    try {
+      const savedMode = localStorage.getItem('chill_view_mode') as ViewMode;
+      if (savedMode === 'grid' || savedMode === 'list') {
+        setViewMode(savedMode);
+      }
+    } catch {}
+  }, []);
+
+  const handleViewModeChange = (mode: ViewMode) => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem('chill_view_mode', mode);
+    } catch {}
+  };
 
   // Date Filter State
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
@@ -659,38 +678,46 @@ function CommunityPageContent() {
               )}
             </div>
 
-            {/* Sort Dropdown (Agoda / Airbnb style sorting) */}
-            <div className="flex items-center gap-2">
-              <span className="text-slate-500 text-xs shrink-0">เรียงตาม:</span>
-              <div className="relative">
-                <select
-                  value={sortBy}
-                  onChange={(e) => {
-                    const val = e.target.value as SortOption;
-                    if (val === 'favorites' && !isLoggedIn) {
-                      setMembershipActionTitle('เพื่อดูรายการกิจกรรมที่บันทึกไว้');
-                      setPendingAction('favorites');
-                      setIsRequireMembershipOpen(true);
-                      return;
-                    }
-                    setSortBy(val);
-                    setCurrentPage(1);
-                  }}
-                  aria-label="เลือกการเรียงลำดับกิจกรรม"
-                  className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200/90 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-slate-400 cursor-pointer appearance-none pr-7 transition-all"
-                >
-                  <option value="newest">กิจกรรมมาใหม่ล่าสุด</option>
-                  <option value="popular">ยอดนิยม / เรตติ้งสูงสุด</option>
-                  <option value="soonest">จัดขึ้นเร็วๆ นี้</option>
-                  <option value="favorites">ที่บันทึกไว้ ({favorites.length})</option>
-                </select>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+            {/* Sort Dropdown & View Mode Switcher */}
+            <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-500 text-xs shrink-0">เรียงตาม:</span>
+                <div className="relative">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => {
+                      const val = e.target.value as SortOption;
+                      if (val === 'favorites' && !isLoggedIn) {
+                        setMembershipActionTitle('เพื่อดูรายการกิจกรรมที่บันทึกไว้');
+                        setPendingAction('favorites');
+                        setIsRequireMembershipOpen(true);
+                        return;
+                      }
+                      setSortBy(val);
+                      setCurrentPage(1);
+                    }}
+                    aria-label="เลือกการเรียงลำดับกิจกรรม"
+                    className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200/90 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-slate-400 cursor-pointer appearance-none pr-7 transition-all"
+                  >
+                    <option value="newest">กิจกรรมมาใหม่ล่าสุด</option>
+                    <option value="popular">ยอดนิยม / เรตติ้งสูงสุด</option>
+                    <option value="soonest">จัดขึ้นเร็วๆ นี้</option>
+                    <option value="favorites">ที่บันทึกไว้ ({favorites.length})</option>
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
               </div>
+
+              {/* View Mode Switcher (Grid / List) */}
+              <ViewModeToggle
+                viewMode={viewMode}
+                onChange={handleViewModeChange}
+              />
             </div>
           </div>
         </div>
 
-        {/* High-Density Community Events Grid */}
+        {/* High-Density Community Events Grid / List */}
         <EventGrid
           events={paginatedEvents}
           onSelectEvent={() => {}}
@@ -699,6 +726,7 @@ function CommunityPageContent() {
           joinedEventIds={isLoggedIn ? joinedEventIds : []}
           onResetFilters={handleResetAll}
           isFavoritesOnly={sortBy === 'favorites'}
+          viewMode={viewMode}
         />
 
         {filteredEvents.length > itemsPerPage && (

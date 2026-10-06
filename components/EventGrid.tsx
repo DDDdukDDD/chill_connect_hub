@@ -21,6 +21,7 @@ interface EventGridProps {
   columns?: 4 | 5;
   dynamicResponsiveGrid?: boolean;
   layout?: 'grid' | 'carousel';
+  viewMode?: 'grid' | 'list';
 }
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string; badgeBg: string }> = {
@@ -43,6 +44,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
   columns = 5,
   dynamicResponsiveGrid = false,
   layout = 'grid',
+  viewMode = 'grid',
 }) => {
   if (events.length === 0) {
     return (
@@ -293,6 +295,226 @@ export const EventGrid: React.FC<EventGridProps> = ({
     );
   };
 
+  const renderListItem = (event: EventItem, idx: number) => {
+    const isFav = favorites.includes(event.id);
+    const isJoined = joinedEventIds.includes(event.id);
+    const isEnded = isEventEnded(event);
+    const fillRatio = event.participantsCount / event.maxParticipants;
+    const isAlmostFull = fillRatio >= 0.8;
+
+    const detailHref = event.eventType === 'public_venue'
+      ? `/fairs/${encodeURIComponent(event.id)}`
+      : `/community/${encodeURIComponent(event.id)}`;
+
+    return (
+      <motion.div
+        key={event.id}
+        id={`event-list-${event.id}`}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25, delay: Math.min(idx, 8) * 0.03 }}
+        className="block"
+      >
+        <Link
+          href={detailHref}
+          onClick={() => {
+            if (typeof window !== 'undefined') {
+              try {
+                sessionStorage.setItem('chill_last_viewed_event', event.id);
+                sessionStorage.setItem('chill_active_tab', event.eventType === 'public_venue' ? 'public_venue' : 'community');
+              } catch (e) {}
+            }
+            if (onSelectEvent) onSelectEvent(event);
+          }}
+          className={`group bg-white rounded-2xl transition-all duration-300 flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-3 sm:p-3.5 gap-3.5 sm:gap-4 relative overflow-hidden cursor-pointer ${
+            isJoined
+              ? event.eventType === 'public_venue'
+                ? 'border-2 border-[#2B527A] ring-2 ring-[#2B527A]/25 shadow-md'
+                : 'border-2 border-[#F26430] ring-2 ring-[#F26430]/25 shadow-md'
+              : 'border border-slate-200/80 hover:border-slate-300 shadow-2xs hover:shadow-md'
+          }`}
+        >
+          {/* Main Content Area (Thumbnail + Details) */}
+          <div className="flex items-center gap-3.5 min-w-0 flex-1">
+            {/* Thumbnail */}
+            <div className="relative w-20 h-20 sm:w-28 sm:h-24 md:w-32 md:h-24 rounded-xl overflow-hidden bg-slate-100 shrink-0">
+              <img
+                src={event.image}
+                alt={event.title}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
+
+              {/* Distance Pill */}
+              {event.distanceKm !== undefined && (
+                <span className="absolute bottom-1.5 left-1.5 text-[9px] font-semibold bg-slate-900/80 backdrop-blur-md text-white px-1.5 py-0.5 rounded-full shadow-2xs">
+                  {event.distanceKm.toFixed(1)} กม.
+                </span>
+              )}
+
+              {/* Mobile Favorite Button */}
+              {!isEnded && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleFavorite(event.id);
+                  }}
+                  className={`sm:hidden absolute top-1.5 right-1.5 w-6 h-6 rounded-full shadow-xs flex items-center justify-center transition-all z-20 cursor-pointer ${
+                    isFav
+                      ? event.eventType === 'public_venue'
+                        ? 'bg-[#2B527A] text-white'
+                        : 'bg-[#F26430] text-white'
+                      : 'bg-white/90 text-slate-400'
+                  }`}
+                  title={isFav ? 'ยกเลิกถูกใจ' : 'บันทึกกิจกรรม'}
+                >
+                  <Heart className={`w-3 h-3 ${isFav ? 'fill-white text-white' : ''}`} />
+                </button>
+              )}
+            </div>
+
+            {/* Details */}
+            <div className="min-w-0 flex-1 space-y-1">
+              {/* Metadata Row: Host / Venue + Date/Time */}
+              <div className="flex items-center gap-2 flex-wrap text-xs text-slate-500">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <img
+                    src={event.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
+                    alt={event.hostName}
+                    className="w-4 h-4 rounded-full object-cover shrink-0"
+                  />
+                  <span className="text-[11px] font-semibold text-slate-600 truncate max-w-[120px]">
+                    {event.hostName}
+                  </span>
+                  {event.eventType !== 'public_venue' && (
+                    <span
+                      className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-700 bg-amber-50 px-1 py-0.2 rounded shrink-0"
+                      title={`คะแนนโฮสต์ ${(event.hostRating || event.rating || 4.9).toFixed(1)} / 5`}
+                    >
+                      <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                      <span>{(event.hostRating || event.rating || 4.9).toFixed(1)}</span>
+                    </span>
+                  )}
+                </div>
+
+                <span className="text-slate-300">•</span>
+
+                {/* Date & Time */}
+                <div className="flex items-center gap-1 text-[11px] font-medium text-slate-600">
+                  {event.scheduleType === 'recurring' ? (
+                    <Repeat className="w-3 h-3 text-emerald-600 shrink-0" />
+                  ) : (
+                    <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
+                  )}
+                  <span className="truncate">
+                    {event.scheduleType === 'recurring' && event.recurrence?.customSummary
+                      ? `${event.recurrence.customSummary} • ${event.time}`
+                      : `${event.date} • ${event.time}`}
+                  </span>
+                </div>
+              </div>
+
+              {/* Title */}
+              <h3
+                className={`font-bold text-sm sm:text-base text-slate-900 line-clamp-1 sm:line-clamp-2 ${
+                  event.eventType === 'public_venue' ? 'group-hover:text-[#2B527A]' : 'group-hover:text-[#F26430]'
+                } transition-colors leading-snug tracking-tight`}
+                title={event.title}
+              >
+                {event.title}
+              </h3>
+
+              {/* Location */}
+              <div className="flex items-center gap-1 text-xs text-slate-500 min-w-0">
+                {event.province === 'ออนไลน์' || event.locationType === 'online' ? (
+                  <>
+                    <Globe className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+                    <span className="truncate text-sky-700 font-medium">ออนไลน์ • {event.location}</span>
+                  </>
+                ) : (
+                  <>
+                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="truncate text-[11px] sm:text-xs">
+                      {event.province ? `${event.province === 'กรุงเทพมหานคร' ? 'กรุงเทพฯ' : event.province.replace('จังหวัด', '')} • ` : ''}
+                      {event.location}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Price, Status / Slots, Desktop Favorite */}
+          <div className="shrink-0 flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 sm:gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 sm:pl-4 sm:border-l sm:border-slate-100/80 min-w-[130px]">
+            {/* Price */}
+            {event.price && (
+              <span
+                className={`text-xs font-bold px-2.5 py-1 rounded-lg shrink-0 ${
+                  event.price.includes('ฟรี')
+                    ? 'bg-emerald-50 text-emerald-800'
+                    : 'bg-slate-100 text-slate-800'
+                }`}
+              >
+                {event.price.includes('ฟรี') ? 'เข้าร่วมฟรี' : event.price.replace(/\s*\([^)]*\)/g, '').trim()}
+              </span>
+            )}
+
+            {/* Slots or Fair Venue Tag */}
+            {event.eventType !== 'public_venue' ? (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 text-xs text-slate-500">
+                  <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span className="font-semibold text-slate-700">{event.participantsCount || 0}/{event.maxParticipants || 10}</span>
+                </div>
+
+                {isJoined ? (
+                  <span className="text-[11px] font-bold text-[#F26430] flex items-center gap-1 bg-orange-50 px-2 py-0.5 rounded-md">
+                    <CheckCircle2 className="w-3 h-3" />
+                    <span>เข้าร่วมแล้ว</span>
+                  </span>
+                ) : isEnded ? (
+                  <span className="text-[11px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">จบแล้ว</span>
+                ) : isAlmostFull ? (
+                  <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">ใกล้เต็ม</span>
+                ) : (
+                  <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">เปิดรับ</span>
+                )}
+              </div>
+            ) : isEnded ? (
+              <span className="text-[11px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">จัดเสร็จสิ้น</span>
+            ) : null}
+
+            {/* Desktop Favorite Button */}
+            {!isEnded && (
+              <div className="hidden sm:flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleFavorite(event.id);
+                  }}
+                  className={`w-7 h-7 rounded-full shadow-2xs flex items-center justify-center hover:scale-110 active:scale-95 transition-all cursor-pointer ${
+                    isFav
+                      ? event.eventType === 'public_venue'
+                        ? 'bg-[#2B527A] text-white shadow-sky-900/20'
+                        : 'bg-[#F26430] text-white shadow-orange-500/20'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700'
+                  }`}
+                  title={isFav ? 'ยกเลิกถูกใจ' : 'บันทึกกิจกรรม'}
+                >
+                  <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-white text-white' : ''}`} />
+                </button>
+              </div>
+            )}
+          </div>
+        </Link>
+      </motion.div>
+    );
+  };
+
   if (layout === 'carousel') {
     return (
       <FloatingCarousel>
@@ -305,6 +527,14 @@ export const EventGrid: React.FC<EventGridProps> = ({
           </div>
         ))}
       </FloatingCarousel>
+    );
+  }
+
+  if (viewMode === 'list') {
+    return (
+      <div className="space-y-3">
+        {displayedEvents.map((event, idx) => renderListItem(event, idx))}
+      </div>
     );
   }
 

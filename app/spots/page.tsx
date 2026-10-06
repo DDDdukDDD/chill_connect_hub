@@ -17,6 +17,8 @@ import {
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { SpotCard } from '@/components/SpotCard';
+import { SpotListItem } from '@/components/SpotListItem';
+import { ViewModeToggle, ViewMode } from '@/components/ViewModeToggle';
 import { Pagination } from '@/components/Pagination';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
@@ -58,11 +60,29 @@ function SpotsPageContent() {
   const [sortByNearMe, setSortByNearMe] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [currentPage, setCurrentPage] = useState(1);
   const [spotsList, setSpotsList] = useState<LifestyleSpotItem[]>(MOCK_SPOTS);
   const [favoriteSpots, setFavoriteSpots] = useState<string[]>([]);
   const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Sync viewMode from localStorage
+  useEffect(() => {
+    try {
+      const savedMode = localStorage.getItem('chill_view_mode') as ViewMode;
+      if (savedMode === 'grid' || savedMode === 'list') {
+        setViewMode(savedMode);
+      }
+    } catch {}
+  }, []);
+
+  const handleViewModeChange = (mode: ViewMode) => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem('chill_view_mode', mode);
+    } catch {}
+  };
 
   useEffect(() => {
     let isActive = true;
@@ -505,36 +525,59 @@ function SpotsPageContent() {
 
           </div>
 
-          {/* Result Count & Reset */}
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 pt-1 border-t border-slate-200/60">
-            <span>พบทั้งหมด <strong className="text-slate-900 font-bold">{filteredSpots.length}</strong> แห่ง</span>
-            {(searchQuery || selectedCategory !== 'all' || selectedProvince !== 'all' || priceFilter !== 'all' || sortBy === 'favorites' || sortByNearMe) && (
-              <button
-                type="button"
-                onClick={handleResetAll}
-                className="text-xs text-slate-500 hover:text-[#4A7C59] hover:underline cursor-pointer"
-              >
-                ล้างตัวกรองทั้งหมด
-              </button>
-            )}
+          {/* Result Count, Reset & View Mode Switcher */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-semibold text-slate-500 pt-1 border-t border-slate-200/60">
+            <div className="flex items-center gap-2">
+              <span>พบทั้งหมด <strong className="text-slate-900 font-bold">{filteredSpots.length}</strong> แห่ง</span>
+              {(searchQuery || selectedCategory !== 'all' || selectedProvince !== 'all' || priceFilter !== 'all' || sortBy === 'favorites' || sortByNearMe) && (
+                <button
+                  type="button"
+                  onClick={handleResetAll}
+                  className="text-xs text-slate-500 hover:text-[#4A7C59] hover:underline cursor-pointer ml-1"
+                >
+                  ล้างตัวกรองทั้งหมด
+                </button>
+              )}
+            </div>
+
+            {/* View Mode Switcher (Grid / List) */}
+            <ViewModeToggle
+              viewMode={viewMode}
+              onChange={handleViewModeChange}
+            />
           </div>
 
         </div>
 
-        {/* High-Density Spots Grid (4 cols on desktop, 5 cols on 2xl) */}
+        {/* High-Density Spots Grid / List */}
         {filteredSpots.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4">
-              {paginatedSpots.map((spot) => (
-                <SpotCard
-                  key={spot.id}
-                  spot={spot}
-                  isFavorite={isLoggedIn && favoriteSpots.includes(spot.id)}
-                  isJoined={isLoggedIn && joinedEventIds.includes(spot.id)}
-                  onToggleFavorite={(id) => toggleFavoriteSpot(id)}
-                />
-              ))}
-            </div>
+            {viewMode === 'list' ? (
+              <div className="space-y-3">
+                {paginatedSpots.map((spot, idx) => (
+                  <SpotListItem
+                    key={spot.id}
+                    spot={spot}
+                    isFavorite={isLoggedIn && favoriteSpots.includes(spot.id)}
+                    isJoined={isLoggedIn && joinedEventIds.includes(spot.id)}
+                    onToggleFavorite={(id) => toggleFavoriteSpot(id)}
+                    index={idx}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4">
+                {paginatedSpots.map((spot) => (
+                  <SpotCard
+                    key={spot.id}
+                    spot={spot}
+                    isFavorite={isLoggedIn && favoriteSpots.includes(spot.id)}
+                    isJoined={isLoggedIn && joinedEventIds.includes(spot.id)}
+                    onToggleFavorite={(id) => toggleFavoriteSpot(id)}
+                  />
+                ))}
+              </div>
+            )}
 
             {/* Pagination Bar */}
             <div className="pt-4">

@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
@@ -87,7 +88,8 @@ import {
   setStoredRedeemedRewardIds,
 } from '@/data/rewardsData';
 
-export default function MyHubPage() {
+function MyHubContent() {
+  const searchParams = useSearchParams();
   const [activeNavTab, setActiveNavTab] = useState('myhub');
 
   // 4 Core Lifestyle Tabs aligned with Platform Architecture
@@ -259,42 +261,51 @@ export default function MyHubPage() {
       setUserXp(getStoredUserXp());
       setRedeemedRewardIds(getStoredRedeemedRewardIds());
 
-      // 5. Handle URL Query Params
-      const params = new URLSearchParams(window.location.search);
-      const tabParam = params.get('tab');
-      if (tabParam === 'calendar') {
-        setHubMainMode('calendar');
-      } else if (tabParam === 'community' || tabParam === 'fairs' || tabParam === 'scrapbook' || tabParam === 'quests_rewards') {
-        setHubMainMode('categories');
-        setActiveSubTab(tabParam);
-      } else if (tabParam === 'quests' || tabParam === 'rewards') {
-        setHubMainMode('categories');
-        setActiveSubTab('quests_rewards');
-      }
-
-      const typeParam = params.get('type');
-      if (typeParam === 'public_venue') {
-        setActiveSubTab('fairs');
-      } else if (typeParam === 'community') {
-        setActiveSubTab('community');
-      }
-
-      // Auto open chat if deep-linked
-      const chatSubId = params.get('chatSubId');
-      const eventId = params.get('eventId');
-      if (chatSubId && eventId) {
-        setTimeout(() => {
-          const matched = MOCK_EVENTS.find((e) => e.id === eventId);
-          if (matched) {
-            setChatTargetEvent(matched);
-            setIsChatModalOpen(true);
-          }
-        }, 350);
-      }
     } catch (e) {
       console.error('Error syncing localStorage in MyHub:', e);
     }
   }, []);
+
+  // 5. Reactive synchronization with URL Query Params (?tab=..., ?type=..., ?chatSubId=...)
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'calendar') {
+      setHubMainMode('calendar');
+    } else if (
+      tabParam === 'community' ||
+      tabParam === 'fairs' ||
+      tabParam === 'scrapbook' ||
+      tabParam === 'quests_rewards'
+    ) {
+      setHubMainMode('categories');
+      setActiveSubTab(tabParam);
+    } else if (tabParam === 'quests' || tabParam === 'rewards') {
+      setHubMainMode('categories');
+      setActiveSubTab('quests_rewards');
+    }
+
+    const typeParam = searchParams.get('type');
+    if (typeParam === 'public_venue') {
+      setHubMainMode('categories');
+      setActiveSubTab('fairs');
+    } else if (typeParam === 'community') {
+      setHubMainMode('categories');
+      setActiveSubTab('community');
+    }
+
+    // Auto open chat if deep-linked
+    const chatSubId = searchParams.get('chatSubId');
+    const eventId = searchParams.get('eventId');
+    if (chatSubId && eventId) {
+      setTimeout(() => {
+        const matched = MOCK_EVENTS.find((e) => e.id === eventId);
+        if (matched) {
+          setChatTargetEvent(matched);
+          setIsChatModalOpen(true);
+        }
+      }, 350);
+    }
+  }, [searchParams]);
 
   // Close context menu on outside click
   useEffect(() => {
@@ -4156,5 +4167,19 @@ export default function MyHubPage() {
         }}
       />
     </div>
+  );
+}
+
+export default function MyHubPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+          <div className="w-8 h-8 border-3 border-[#2563EB] border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <MyHubContent />
+    </Suspense>
   );
 }
