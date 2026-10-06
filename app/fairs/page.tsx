@@ -17,6 +17,7 @@ import {
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { EventGrid } from '@/components/EventGrid';
+import { ViewModeToggle, ViewMode } from '@/components/ViewModeToggle';
 import { Pagination } from '@/components/Pagination';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
@@ -55,11 +56,29 @@ function FairsPageContent() {
   const [statusFilter, setStatusFilter] = useState<'upcoming' | 'ended' | 'all'>('upcoming');
   const [priceFilter, setPriceFilter] = useState<'all' | 'free'>((searchParams.get('price') as any) || 'all');
   const [sortBy, setSortBy] = useState<'newest' | 'favorites'>('newest');
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [currentPage, setCurrentPage] = useState(1);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
   const [eventsList, setEventsList] = useState<EventItem[]>(MOCK_EVENTS);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Sync viewMode from localStorage
+  React.useEffect(() => {
+    try {
+      const savedMode = localStorage.getItem('chill_view_mode') as ViewMode;
+      if (savedMode === 'grid' || savedMode === 'list') {
+        setViewMode(savedMode);
+      }
+    } catch {}
+  }, []);
+
+  const handleViewModeChange = (mode: ViewMode) => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem('chill_view_mode', mode);
+    } catch {}
+  };
 
   // Date Filter State
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
@@ -554,21 +573,29 @@ function FairsPageContent() {
 
           </div>
 
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 pt-1 border-t border-slate-200/60">
-            <span>พบทั้งหมด <strong className="text-slate-900 font-bold">{filteredEvents.length}</strong> งาน</span>
-            {(searchQuery || selectedCategory || selectedProvince !== 'all' || selectedVenue !== 'all' || customStartDate || priceFilter !== 'all' || sortBy === 'favorites') && (
-              <button
-                type="button"
-                onClick={handleResetAll}
-                className="text-xs text-slate-500 hover:text-[#2B527A] hover:underline cursor-pointer"
-              >
-                ล้างตัวกรองทั้งหมด
-              </button>
-            )}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-semibold text-slate-500 pt-1 border-t border-slate-200/60">
+            <div className="flex items-center gap-2">
+              <span>พบทั้งหมด <strong className="text-slate-900 font-bold">{filteredEvents.length}</strong> งาน</span>
+              {(searchQuery || selectedCategory || selectedProvince !== 'all' || selectedVenue !== 'all' || customStartDate || priceFilter !== 'all' || sortBy === 'favorites') && (
+                <button
+                  type="button"
+                  onClick={handleResetAll}
+                  className="text-xs text-slate-500 hover:text-[#2B527A] hover:underline cursor-pointer ml-1"
+                >
+                  ล้างตัวกรองทั้งหมด
+                </button>
+              )}
+            </div>
+
+            {/* View Mode Switcher (Grid / List) */}
+            <ViewModeToggle
+              viewMode={viewMode}
+              onChange={handleViewModeChange}
+            />
           </div>
         </div>
 
-        {/* High-Density Exhibitions Grid */}
+        {/* High-Density Exhibitions Grid / List */}
         {filteredEvents.length > 0 ? (
           <>
             <EventGrid
@@ -578,6 +605,7 @@ function FairsPageContent() {
               toggleFavorite={toggleFavorite}
               joinedEventIds={isLoggedIn ? joinedEventIds : []}
               onResetFilters={handleResetAll}
+              viewMode={viewMode}
             />
 
             {/* Standard Pagination */}

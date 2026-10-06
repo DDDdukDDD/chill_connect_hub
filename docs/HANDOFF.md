@@ -23,6 +23,79 @@ Item template:
 
 ## Open
 
+### FE-005 · View Mode Toggle (Card/List), MobileNav 4-Pill Streamline & Full E2E Deep-Link Sync to MyHub
+- **From → To:** Frontend → Backend
+- **Date / branch:** 2026-10-06 · `main`
+- **What changed / what is needed:**
+  1. **Card / List View Mode Toggle**:
+     - Added `components/ViewModeToggle.tsx` and `components/SpotListItem.tsx`.
+     - Enabled persistent view mode switching (`'card'` vs `'list'` stored in `localStorage ('chill_view_mode')`) across `/community`, `/fairs`, and `/spots`.
+     - `EventGrid.tsx` now supports `viewMode?: 'card' | 'list'` alongside existing `layout="grid" | "carousel"`.
+  2. **Mobile & Tablet Floating Navigation Bar (`components/MobileNav.tsx`)**:
+     - Removed secondary marketing link "เกี่ยวกับเรา" (About Us) from the bottom floating pill, streamlining it to 4 core lifestyle loops: `[ 🧭 ค้นพบ | 📸 โมเมนต์ | ⚡ ชาเลนจ์ | 🎟️ มายฮับ ]`.
+     - Expanded responsive visibility from `md:hidden` to `lg:hidden` with `max-w-md mx-auto` centering, so Tablet & iPad portrait users (768px - 1023px) also enjoy the ergonomic floating bottom bar.
+  3. **Reactive Deep-Linking to MyHub (`app/myhub/page.tsx`)**:
+     - Wrapped `MyHubPage` in `<Suspense>` and migrated URL parsing to reactive `useSearchParams()`.
+     - Deep-links (`?tab=scrapbook`, `?tab=quests_rewards`, `?tab=fairs`, `?tab=community`, `?type=public_venue`, `?type=community`) now automatically set `hubMainMode: 'categories'` and activate the intended subtab without sticking in the master calendar.
+     - Auto-open group chat triggered when `chatSubId` and `eventId` query parameters are present.
+  4. **Full-Loop Quests Synchronization from Homepage (`app/page.tsx`)**:
+     - `handleJoinQuestFromHome` and `handleCancelQuestFromHome` now write directly to `localStorage ('cch_my_challenges')`, ensuring quests accepted from the Home Hero or Section 04 immediately show up in `/challenges` and `/myhub?tab=quests_rewards`.
+- **Action for Backend:**
+  - Informational only. No breaking API changes or backend migrations required.
+  - When backend tests or creates event/spot data, both Card Grid and List View automatically consume the same standard `EventItem[]` and `LifestyleSpotItem[]` contracts.
+- **Status:** Open
+
+### FE-004 · Data Quality & Ingestion Guidelines for Global Luxury UI (Spots & Scraped Events)
+- **From → To:** Frontend → Backend
+- **Date / branch:** 2026-10-06 · `main`
+- **What changed / what is needed:**
+  To maintain our **Global Luxury 9.8+ & Minimal Editorial** standards across both **Card Grid** and the new **List View Mode**, Frontend audited all components (`SpotCard`, `SpotListItem`, `EventGrid`, and Detail Pages `/spots/[id]`, `/fairs/[id]`, `/community/[id]`).
+  We identified key formatting and fallback opportunities for the Scraper & Normalization engine (`lib/structuredDataScraper.ts`, `lib/eventNormalization.ts`, `lib/spotScraper.ts`) before data is stored into `chill_database.json` / `discovery_content.json`:
+
+  #### 1. 🌲 Nationwide Lifestyle Spots (`LifestyleSpotItem`):
+  - **`categoryLabel` (Must be Thai Vibe Label)**: Currently defaults to raw enum string (e.g. `'nature'`). Please map to human Thai labels:
+    - `cafe` → `'คาเฟ่ & สเปซนั่งชิลล์'`
+    - `art` / `museum` → `'หอศิลป์ & สเปซศิลปะ'`
+    - `nature` / `park` → `'ธรรมชาติ & เดินป่า'`
+    - `oldtown` / `temple` → `'ย่านเก่า & วัฒนธรรม'`
+    - `viewpoint` → `'จุดชมวิว & ยอดดอย'`
+    - `beach` → `'ทะเล & เกาะสวย'`
+    - `market` → `'ตลาดนัด & ไลฟ์สไตล์มอลล์'`
+  - **`vibeTags` (2-3 Thai Tags)**: Currently defaults to `['นำเข้าจากเว็บไซต์']`. Please auto-tag 2-3 short Thai vibe tags based on keywords (e.g. `['#slowbar', '#มุมถ่ายรูป', '#กาแฟดริป']` or `['#ชมพระอาทิตย์ตก', '#วิวธรรมชาติ']`).
+  - **`price` (Free vs Numeric Format)**:
+    - If admission is free or not mentioned for public parks/temples, set `'เข้าชมฟรี'` or `'ฟรี'` (enables the emerald green badge).
+    - If ticketed, format as concise price (e.g. `'฿50'`, `'฿50 - ฿100'`). Avoid generic `'ไม่ระบุ'` whenever possible.
+  - **`openHours`**: Format as clean Thai string (e.g. `'08:30 - 17:00 น.'`, `'เปิด 24 ชั่วโมง'`, `'ปิดวันจันทร์'`). Avoid raw English specs like `'Mo-Fr 08:30-17:00'`.
+  - **`googleMapsUrl`**: If `hasMap` is missing from source, construct a direct search URL:
+    `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}` instead of falling back to the source website URL.
+  - **`galleryImages` (Photo Mosaic)**: Detail page renders a 5-photo mosaic + fullscreen lightbox. If a spot only has 1 image, please provide at least 2-4 curated/related fallback photos (or use `resolveSpotGallery()`) so the photo grid isn't empty.
+  - **`district` & `province` (Clean Text)**: Strip `"อำเภอ"`, `"อ."`, or `"จังหวัด"` prefixes so badges stay compact (e.g. `'พระนคร, กรุงเทพฯ'` not `'อ.พระนคร, จังหวัดกรุงเทพมหานคร'`).
+  - **`transitInfo`**: When available, include transit keywords (`BTS`, `MRT`, `รถประจำทาง`, `มีที่จอดรถ`) so the detail page splits it into Public Transit vs Private Parking blocks.
+  - **`highlights`**: Provide 2-3 bullet strings (e.g. `['จุดชมวิวพระอาทิตย์ตกริมแม่น้ำ', 'คาเฟ่ Specialty Coffee บรรยากาศร่มรื่น']`) to populate the "จุดเด่น & ไฮไลต์" section.
+  - **`contact`**: Populate optional `{ phone, website, facebook }` where available.
+
+  #### 2. 🏛️ Major Fairs & Public Expos (`EventItem` with `eventType: 'public_venue'`):
+  - **`location` / `locationName` (Convention Center Keywords)**:
+    Ensure venue landmarks include standardized names (`ศูนย์การประชุมแห่งชาติสิริกิติ์ (QSNCC)`, `ไบเทค บางนา (BITEC)`, `อิมแพ็ค เมืองทองธานี (IMPACT)`, `รอยัล พารากอน ฮอลล์ (Paragon Hall)`, `ทรู ไอคอน ฮอลล์ (ICONSIAM)`).
+    This automatically triggers public transit badges (MRT/BTS exits, parking capacity) and correct inclusion in `TopVenuesRail`.
+  - **`date` & Date Timestamps (`startDate`, `endDate`)**:
+    - `date`: Concise Thai date range (e.g. `'15 - 19 ต.ค. 2569'`).
+    - `startDate` & `endDate`: Valid ISO timestamp strings so `isEventEnded()` and sort filters can accurately distinguish active events from archived ones.
+  - **`price`**: Provide `'เข้าชมฟรี (Walk-in)'` or ticket tier (`'บัตรราคา 150 บาท'`) to render the price chip properly.
+  - **`sourceUrl` / `externalUrl` / `link`**: Must link to the direct event page or official ticket registration, not just the venue's top-level homepage.
+  - **`organizerName` / `hostName`**: Include the actual official organizer name (e.g. `'สมาคมผู้จัดพิมพ์ฯ (PUBAT)'`, `'Impact Exhibition Management'`).
+
+  #### 3. 👥 Community Meetups (`EventItem` with `eventType: 'community'`):
+  - **`time`**: Friendly Thai time string (e.g. `'07:00 - 09:30 น.'`).
+  - **`maxParticipants`**: Number between 2 and 30 (never 0 or negative).
+  - **`meetingPoint`**: Specific landmark location (e.g. `'ลานจอดรถประตู 1'`, `'หน้าเคาน์เตอร์ Slow Bar'`).
+  - **`hostAvatar`**: High-quality avatar image URL (or fallback to DiceBear / Unsplash portrait avatar).
+
+- **Action for Backend:**
+  - Recommend adding a lightweight `sanitizeSpotItem()` in `lib/spotScraper.ts` / `lib/structuredDataScraper.ts` and `sanitizeEventItem()` in `lib/eventNormalization.ts` to enrich these defaults at ingestion time.
+  - This ensures all newly scraped spots and events immediately look complete, rich, and stunning in both Grid and List modes without needing ad-hoc UI fallbacks.
+- **Status:** Open (For Claude's implementation during scraper / ingestion pipeline refinements)
+
 ### FE-003 · Classic Mode Single-Row Floating Carousels, HeroSection Search Console Tabs & Journey Mode UI
 - **From → To:** Frontend → Backend
 - **Date / branch:** 2026-10-04 · `main`
