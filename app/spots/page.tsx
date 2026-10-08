@@ -24,8 +24,8 @@ import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { useAuth } from '@/lib/useAuth';
-import { fetchAllContentPages } from '@/lib/contentClient';
-import { MOCK_SPOTS, ALL_THAI_PROVINCES, LifestyleSpotItem, getSpotVibeCategory } from '@/data/spotsData';
+import { usePublishedSpots, getCachedSpotVibeCategory, getCachedSpotSearchText } from '@/lib/usePublishedSpots';
+import { MOCK_SPOTS, ALL_THAI_PROVINCES, LifestyleSpotItem } from '@/data/spotsData';
 import { SpotCategoryRail, NATIONWIDE_SPOT_CATEGORIES } from '@/components/SpotCategoryRail';
 import { TopDestinationsRail } from '@/components/TopDestinationsRail';
 import { EventItem } from '@/data/mockData';
@@ -62,7 +62,8 @@ function SpotsPageContent() {
   const [isLocating, setIsLocating] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [currentPage, setCurrentPage] = useState(1);
-  const [spotsList, setSpotsList] = useState<LifestyleSpotItem[]>(MOCK_SPOTS);
+  const { spots: liveSpots } = usePublishedSpots();
+  const spotsList = liveSpots.length > 0 ? liveSpots : MOCK_SPOTS;
   const [favoriteSpots, setFavoriteSpots] = useState<string[]>([]);
   const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -83,19 +84,6 @@ function SpotsPageContent() {
       localStorage.setItem('chill_view_mode', mode);
     } catch {}
   };
-
-  useEffect(() => {
-    let isActive = true;
-    fetchAllContentPages<LifestyleSpotItem>('/api/spots', 'spots')
-      .then((spots) => {
-        if (isActive && spots.length > 0) setSpotsList(spots);
-      })
-      .catch((error) => console.warn('Using default mock spots fallback:', error));
-
-    return () => {
-      isActive = false;
-    };
-  }, []);
 
   // Load favorite spots and joined events from localStorage (Only active when user is logged in)
   useEffect(() => {
@@ -192,34 +180,33 @@ function SpotsPageContent() {
   };
 
   const filteredSpots = useMemo(() => {
-    const result = spotsList.filter((spot) => {
+    const isCategoryFiltered = selectedCategory && selectedCategory !== 'all';
+    const isCatDef = isCategoryFiltered && NATIONWIDE_SPOT_CATEGORIES.some((c) => c.id === selectedCategory);
+    const isProvinceFiltered = selectedProvince !== 'all';
+    const isBangkok = selectedProvince === 'กรุงเทพฯ' || selectedProvince === 'กรุงเทพมหานคร';
+    const pLower = selectedProvince.toLowerCase();
+    const q = searchQuery.trim().toLowerCase();
+
+    let result = spotsList.filter((spot) => {
       // Unified Category Filter (Synchronized with Category Rail and Dropdown)
-      if (selectedCategory && selectedCategory !== 'all') {
-        const catDef = NATIONWIDE_SPOT_CATEGORIES.find((c) => c.id === selectedCategory);
-        if (catDef) {
-          if (getSpotVibeCategory(spot) !== selectedCategory) return false;
+      if (isCategoryFiltered) {
+        if (isCatDef) {
+          if (getCachedSpotVibeCategory(spot) !== selectedCategory) return false;
         } else if (spot.category !== selectedCategory) {
           return false;
         }
       }
 
       // Province Filter with smart city matching (Hat Yai <-> Songkhla, Hua Hin <-> Prachuap, Pattaya <-> Chonburi)
-      if (selectedProvince !== 'all') {
-        const isBangkok = selectedProvince === 'กรุงเทพฯ' || selectedProvince === 'กรุงเทพมหานคร';
-        const spotProv = (spot.province || '').trim();
-        const spotDistrict = (spot.district || '').trim();
-        const spotTitle = spot.title || '';
-        const spotVibes = (spot.vibeTags || []).join(' ');
-        const fullText = `${spotProv} ${spotDistrict} ${spotTitle} ${spotVibes}`.toLowerCase();
-
+      if (isProvinceFiltered) {
+        const spotProv = (spot.province || '').toLowerCase();
         if (isBangkok) {
           if (!spotProv.includes('กรุงเทพ')) return false;
         } else {
-          const pLower = selectedProvince.toLowerCase();
-          const sLower = spotProv.toLowerCase();
+          const fullText = getCachedSpotSearchText(spot);
           const isMatch =
-            sLower.includes(pLower) ||
-            pLower.includes(sLower) ||
+            spotProv.includes(pLower) ||
+            pLower.includes(spotProv) ||
             (pLower.includes('หาดใหญ่') && fullText.includes('หาดใหญ่')) ||
             (pLower.includes('หัวหิน') && fullText.includes('หัวหิน')) ||
             (pLower.includes('พัทยา') && fullText.includes('พัทยา')) ||
@@ -233,33 +220,23 @@ function SpotsPageContent() {
       if (sortBy === 'favorites' && !favoriteSpots.includes(spot.id)) return false;
       if (priceFilter === 'free' && !spot.price.includes('ฟรี')) return false;
 
-      // Smart Search Query (Includes title, description, category label, vibe tags, district, province, highlights)
-      if (searchQuery.trim() !== '') {
-        const q = searchQuery.toLowerCase().trim();
-        const matchTitle = spot.title.toLowerCase().includes(q);
-        const matchDesc = spot.description.toLowerCase().includes(q);
-        const matchCategory = (spot.category || '').toLowerCase().includes(q);
-        const matchCategoryLabel = (spot.categoryLabel || '').toLowerCase().includes(q);
-        const matchVibeTags = (spot.vibeTags || []).some((t: string) => t.toLowerCase().includes(q));
-        const matchDistrict = (spot.district || '').toLowerCase().includes(q);
-        const matchProv = spot.province.toLowerCase().includes(q);
-        const matchHighlights = (spot.highlights || []).some((h: string) => h.toLowerCase().includes(q));
-        if (!matchTitle && !matchDesc && !matchCategory && !matchCategoryLabel && !matchVibeTags && !matchDistrict && !matchProv && !matchHighlights) {
+      // Smart Search Query using cached text index
+      if (q !== '') {
+        const fullText = getCachedSpotSearchText(spot);
+        if (!fullText.includes(q)) {
           return false;
         }
       }
       return true;
-    }).map((spot) => {
-      if (sortByNearMe && userLocation && spot.latitude && spot.longitude) {
-        return {
-          ...spot,
-          distanceKm: calculateDistanceKm(userLocation.lat, userLocation.lng, spot.latitude, spot.longitude),
-        };
-      }
-      return spot;
     });
 
-    if (sortByNearMe) {
+    if (sortByNearMe && userLocation) {
+      result = result.map((spot) => ({
+        ...spot,
+        distanceKm: spot.latitude && spot.longitude
+          ? calculateDistanceKm(userLocation.lat, userLocation.lng, spot.latitude, spot.longitude)
+          : undefined,
+      }));
       result.sort((a, b) => ((a as any).distanceKm ?? 999) - ((b as any).distanceKm ?? 999));
     } else {
       result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
@@ -268,37 +245,43 @@ function SpotsPageContent() {
     return result;
   }, [spotsList, selectedCategory, selectedProvince, priceFilter, sortBy, sortByNearMe, userLocation, favoriteSpots, searchQuery]);
 
-  // Calculate dynamic spot counts per vibe category (supports selectedProvince filter context)
+  // Dynamic spot counts per vibe category: Single-Pass O(N) calculation (< 1ms)
   const spotCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    const baseSpots = spotsList.filter((spot) => {
-      if (selectedProvince !== 'all') {
-        const pLower = selectedProvince.toLowerCase();
-        const spotProv = spot.province.toLowerCase();
-        const spotDistrict = (spot.district || '').toLowerCase();
-        const spotTitle = spot.title.toLowerCase();
-        const spotVibe = (spot.vibeTags || []).join(' ').toLowerCase();
-        const fullSpotText = `${spotProv} ${spotDistrict} ${spotTitle} ${spotVibe}`;
-
-        const isMatch =
-          spotProv.includes(pLower) ||
-          pLower.includes(spotProv) ||
-          (pLower.includes('หาดใหญ่') && fullSpotText.includes('หาดใหญ่')) ||
-          (pLower.includes('หัวหิน') && fullSpotText.includes('หัวหิน')) ||
-          (pLower.includes('พัทยา') && fullSpotText.includes('พัทยา')) ||
-          (pLower.includes('ชลบุรี') && fullSpotText.includes('ชลบุรี')) ||
-          (pLower.includes('ประจวบ') && (fullSpotText.includes('ประจวบ') || fullSpotText.includes('หัวหิน'))) ||
-          (pLower.includes('สงขลา') && (fullSpotText.includes('สงขลา') || fullSpotText.includes('หาดใหญ่')));
-
-        if (!isMatch) return false;
-      }
-      return true;
-    });
-
-    counts['all'] = baseSpots.length;
+    const counts: Record<string, number> = { all: 0 };
     NATIONWIDE_SPOT_CATEGORIES.forEach((cat) => {
-      counts[cat.id] = baseSpots.filter((spot) => getSpotVibeCategory(spot) === cat.id).length;
+      counts[cat.id] = 0;
     });
+
+    const isProvinceFiltered = selectedProvince !== 'all';
+    const pLower = selectedProvince.toLowerCase();
+    const isBangkok = selectedProvince === 'กรุงเทพฯ' || selectedProvince === 'กรุงเทพมหานคร';
+
+    for (let i = 0; i < spotsList.length; i++) {
+      const spot = spotsList[i];
+      if (isProvinceFiltered) {
+        const spotProv = (spot.province || '').toLowerCase();
+        if (isBangkok) {
+          if (!spotProv.includes('กรุงเทพ')) continue;
+        } else {
+          const fullText = getCachedSpotSearchText(spot);
+          const isMatch =
+            spotProv.includes(pLower) ||
+            pLower.includes(spotProv) ||
+            (pLower.includes('หาดใหญ่') && fullText.includes('หาดใหญ่')) ||
+            (pLower.includes('หัวหิน') && fullText.includes('หัวหิน')) ||
+            (pLower.includes('พัทยา') && fullText.includes('พัทยา')) ||
+            (pLower.includes('ชลบุรี') && fullText.includes('ชลบุรี')) ||
+            (pLower.includes('ประจวบ') && (fullText.includes('ประจวบ') || fullText.includes('หัวหิน'))) ||
+            (pLower.includes('สงขลา') && (fullText.includes('สงขลา') || fullText.includes('หาดใหญ่')));
+          if (!isMatch) continue;
+        }
+      }
+
+      counts['all'] += 1;
+      const vibe = getCachedSpotVibeCategory(spot);
+      counts[vibe] = (counts[vibe] || 0) + 1;
+    }
+
     return counts;
   }, [spotsList, selectedProvince]);
 

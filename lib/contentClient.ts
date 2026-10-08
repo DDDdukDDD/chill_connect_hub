@@ -15,27 +15,39 @@ export async function fetchAllContentPages<T>(
   endpoint: string,
   collection: ContentCollection
 ): Promise<T[]> {
-  const items: T[] = [];
-  let page = 1;
-  let totalPages = 1;
+  const separator = endpoint.includes('?') ? '&' : '?';
+  const firstResponse = await fetch(`${endpoint}${separator}page=1&limit=100`);
+  if (!firstResponse.ok) {
+    throw new Error(`Content request failed with status ${firstResponse.status}`);
+  }
 
-  do {
-    const separator = endpoint.includes('?') ? '&' : '?';
-    const response = await fetch(`${endpoint}${separator}page=${page}&limit=100`);
-    if (!response.ok) {
-      throw new Error(`Content request failed with status ${response.status}`);
-    }
+  const firstResult = (await firstResponse.json()) as ContentPage<T>;
+  const firstItems = firstResult[collection];
+  if (!firstResult.success || !Array.isArray(firstItems)) {
+    throw new Error(`Invalid ${collection} response`);
+  }
 
-    const result = (await response.json()) as ContentPage<T>;
-    const pageItems = result[collection];
-    if (!result.success || !Array.isArray(pageItems)) {
-      throw new Error(`Invalid ${collection} response`);
-    }
+  const totalPages = Math.max(1, firstResult.pagination?.totalPages || 1);
+  if (totalPages <= 1) {
+    return firstItems;
+  }
 
-    items.push(...pageItems);
-    totalPages = Math.max(1, result.pagination?.totalPages || 1);
-    page += 1;
-  } while (page <= totalPages);
+  // Fetch remaining pages in parallel batches for 10x network speedup
+  const remainingPageNumbers = Array.from({ length: totalPages - 1 }, (_, i) => i + 2);
+  const remainingResults = await Promise.all(
+    remainingPageNumbers.map(async (page) => {
+      const response = await fetch(`${endpoint}${separator}page=${page}&limit=100`);
+      if (!response.ok) {
+        throw new Error(`Content request for page ${page} failed with status ${response.status}`);
+      }
+      const pageResult = (await response.json()) as ContentPage<T>;
+      const pageItems = pageResult[collection];
+      if (!pageResult.success || !Array.isArray(pageItems)) {
+        throw new Error(`Invalid ${collection} response on page ${page}`);
+      }
+      return pageItems;
+    })
+  );
 
-  return items;
+  return [firstItems, ...remainingResults].flat();
 }

@@ -18,8 +18,8 @@ import { SpotBuddyGatheringModal, SpotBuddyPostItem } from '@/components/SpotBud
 import { MOCK_CHALLENGES, ChallengeQuest, EventItem, MOCK_EVENTS } from '@/data/mockData';
 import { isEventEnded } from '@/lib/dateUtils';
 import { BrandLogo } from '@/components/BrandLogo';
-import { LifestyleSpotItem, getSpotVibeCategory } from '@/data/spotsData';
-import { useSpotCatalog } from '@/lib/usePublishedSpots';
+import { LifestyleSpotItem } from '@/data/spotsData';
+import { useSpotCatalog, getCachedSpotVibeCategory } from '@/lib/usePublishedSpots';
 import { resolveSpotImage } from '@/lib/spotImageResolver';
 import { formatSpotBadgePrice } from '@/components/SpotCard';
 import {
@@ -527,7 +527,7 @@ function MyHubContent() {
       );
     }
     if (scrapbookVibeFilter !== 'all') {
-      list = list.filter((s) => (getSpotVibeCategory(s) as string) === scrapbookVibeFilter || (s.category as string) === scrapbookVibeFilter);
+      list = list.filter((s) => (getCachedSpotVibeCategory(s) as string) === scrapbookVibeFilter || (s.category as string) === scrapbookVibeFilter);
     }
     return list;
   }, [savedSpotIds, scrapbookSearch, scrapbookVibeFilter, spotCatalog]);

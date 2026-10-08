@@ -21,6 +21,7 @@ import { MOCK_SPOTS, LifestyleSpotItem } from '@/data/spotsData';
 import { isEventEnded } from '@/lib/dateUtils';
 import { useAuth } from '@/lib/useAuth';
 import { fetchAllContentPages } from '@/lib/contentClient';
+import { loadPublishedSpots } from '@/lib/usePublishedSpots';
 
 function JourneyContent() {
   const router = useRouter();
@@ -77,7 +78,7 @@ function JourneyContent() {
       })
       .catch((err) => console.warn('Journey events fallback:', err));
 
-    fetchAllContentPages<LifestyleSpotItem>('/api/spots', 'spots')
+    loadPublishedSpots()
       .then((spots) => {
         if (isActive && spots.length > 0) setSpotsList(spots);
       })

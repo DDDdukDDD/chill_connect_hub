@@ -33,7 +33,8 @@ import { TopVenuesRail } from '@/components/TopVenuesRail';
 import { FairCategoryRail, NATIONWIDE_FAIR_CATEGORIES } from '@/components/FairCategoryRail';
 import { Pagination } from '@/components/Pagination';
 import { BrandLogo } from '@/components/BrandLogo';
-import { MOCK_SPOTS, SPOT_CATEGORIES, ALL_THAI_PROVINCES, LifestyleSpotItem, getSpotVibeCategory } from '@/data/spotsData';
+import { MOCK_SPOTS, SPOT_CATEGORIES, ALL_THAI_PROVINCES, LifestyleSpotItem } from '@/data/spotsData';
+import { usePublishedSpots, getCachedSpotVibeCategory, getCachedSpotSearchText } from '@/lib/usePublishedSpots';
 import { getCommunityEventCategory, getFairEventCategory } from '@/data/masterHub';
 import { SpotCard } from '@/components/SpotCard';
 import { isEventEnded, isEventNew, parseEventDateToTimestamp, parseEventEndDateToTimestamp, isEventEndedByDate, isEventMatchingTimeFilter } from '@/lib/dateUtils';
@@ -115,7 +116,8 @@ function HomeContent() {
   const [isLocating, setIsLocating] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [eventsList, setEventsList] = useState<EventItem[]>(MOCK_EVENTS);
-  const [spotsList, setSpotsList] = useState<LifestyleSpotItem[]>(MOCK_SPOTS);
+  const { spots: liveSpots } = usePublishedSpots();
+  const spotsList = liveSpots.length > 0 ? liveSpots : MOCK_SPOTS;
   const [favorites, setFavorites] = useState<string[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
@@ -148,7 +150,9 @@ function HomeContent() {
 
   // Sync and persist active tab switcher
   const handleSelectEventTypeTab = (tab: 'spots' | 'public_venue' | 'community') => {
-    setEventTypeTab(tab);
+    React.startTransition(() => {
+      setEventTypeTab(tab);
+    });
     if (typeof window !== 'undefined') {
       try {
         sessionStorage.setItem('chill_active_tab', tab);
@@ -416,19 +420,6 @@ function HomeContent() {
       }
     };
     loadLiveEvents();
-  }, []);
-
-  React.useEffect(() => {
-    let isActive = true;
-    fetchAllContentPages<LifestyleSpotItem>('/api/spots', 'spots')
-      .then((spots) => {
-        if (isActive && spots.length > 0) setSpotsList(spots);
-      })
-      .catch((err) => console.warn('Using default mock spots fallback:', err));
-
-    return () => {
-      isActive = false;
-    };
   }, []);
 
 
@@ -871,38 +862,43 @@ function HomeContent() {
 
   // Filtered Lifestyle Spots (พิกัดเที่ยว & จุดฮีลใจ ทั่วประเทศ)
   const filteredSpots = useMemo(() => {
-    const result = spotsList.filter((spot) => {
+    const isRailFiltered = selectedSpotRailCategory && selectedSpotRailCategory !== 'all';
+    const isCatFiltered = selectedSpotCategory !== 'all';
+    const isProvinceFiltered = selectedSpotProvince !== 'all' && selectedSpotProvince !== 'ทั่วไทย';
+    const pLower = selectedSpotProvince.toLowerCase();
+    const isBangkok = pLower.includes('กรุงเทพ') || pLower.includes('กทม');
+    const q = searchQuery.trim().toLowerCase();
+    const isCoffee = q.includes('slow bar') || q.includes('สโลว์บาร์') || q.includes('coffee') || q.includes('กาแฟ');
+
+    let result = spotsList.filter((spot) => {
       // 0. Spot Category Rail Filter (1 Card = 1 Category)
-      if (selectedSpotRailCategory && selectedSpotRailCategory !== 'all') {
-        if (getSpotVibeCategory(spot) !== selectedSpotRailCategory) return false;
+      if (isRailFiltered) {
+        if (getCachedSpotVibeCategory(spot) !== selectedSpotRailCategory) return false;
       }
 
       // 1. Category Filter
-      if (selectedSpotCategory !== 'all' && spot.category !== selectedSpotCategory) {
+      if (isCatFiltered && spot.category !== selectedSpotCategory) {
         return false;
       }
 
-      // 2. Province Filter (Smart City Matching: Hat Yai <-> Songkhla, Hua Hin <-> Prachuap, Pattaya <-> Chonburi)
-      if (selectedSpotProvince !== 'all') {
-        const pLower = selectedSpotProvince.toLowerCase();
-        const spotProv = spot.province.toLowerCase();
-        const spotDistrict = (spot.district || '').toLowerCase();
-        const spotTitle = spot.title.toLowerCase();
-        const spotVibe = (spot.vibeTags || []).join(' ').toLowerCase();
-        const fullSpotText = `${spotProv} ${spotDistrict} ${spotTitle} ${spotVibe}`;
+      // 2. Province Filter (Smart City Matching)
+      if (isProvinceFiltered) {
+        const spotProv = (spot.province || '').toLowerCase();
+        if (isBangkok) {
+          if (!spotProv.includes('กรุงเทพ')) return false;
+        } else {
+          const fullSpotText = getCachedSpotSearchText(spot);
+          const isMatch =
+            spotProv.includes(pLower) ||
+            pLower.includes(spotProv) ||
+            (pLower.includes('หาดใหญ่') && fullSpotText.includes('หาดใหญ่')) ||
+            (pLower.includes('หัวหิน') && fullSpotText.includes('หัวหิน')) ||
+            (pLower.includes('พัทยา') && fullSpotText.includes('พัทยา')) ||
+            (pLower.includes('ชลบุรี') && fullSpotText.includes('ชลบุรี')) ||
+            (pLower.includes('ประจวบ') && (fullSpotText.includes('ประจวบ') || fullSpotText.includes('หัวหิน'))) ||
+            (pLower.includes('สงขลา') && (fullSpotText.includes('สงขลา') || fullSpotText.includes('หาดใหญ่')));
 
-        const isMatch =
-          spotProv.includes(pLower) ||
-          pLower.includes(spotProv) ||
-          (pLower.includes('หาดใหญ่') && fullSpotText.includes('หาดใหญ่')) ||
-          (pLower.includes('หัวหิน') && fullSpotText.includes('หัวหิน')) ||
-          (pLower.includes('พัทยา') && fullSpotText.includes('พัทยา')) ||
-          (pLower.includes('ชลบุรี') && fullSpotText.includes('ชลบุรี')) ||
-          (pLower.includes('ประจวบ') && (fullSpotText.includes('ประจวบ') || fullSpotText.includes('หัวหิน'))) ||
-          (pLower.includes('สงขลา') && (fullSpotText.includes('สงขลา') || fullSpotText.includes('หาดใหญ่')));
-
-        if (!isMatch) {
-          return false;
+          if (!isMatch) return false;
         }
       }
 
@@ -912,52 +908,30 @@ function HomeContent() {
       }
 
       // 4. Price Filter (เข้าฟรี)
-      if (priceFilter === 'free') {
-        if (!spot.price.includes('ฟรี')) {
-          return false;
-        }
+      if (priceFilter === 'free' && !spot.price.includes('ฟรี')) {
+        return false;
       }
 
-      // 5. Search Query Filter
-      if (searchQuery.trim() !== '') {
-        const q = searchQuery.toLowerCase().trim();
-        const isCoffee = q.includes('slow bar') || q.includes('สโลว์บาร์') || q.includes('coffee') || q.includes('กาแฟ');
-        const matchTitle = spot.title.toLowerCase().includes(q);
-        const matchDesc = spot.description.toLowerCase().includes(q);
-        const matchProv = spot.province.toLowerCase().includes(q);
-        const matchDist = spot.district.toLowerCase().includes(q);
-        const matchTag = spot.vibeTags.some((t) => t.toLowerCase().includes(q));
-        const matchCat = (spot.categoryLabel || '').toLowerCase().includes(q);
-        const matchHighlights = (spot.highlights || []).some((h) => h.toLowerCase().includes(q));
-        const matchSynonym = isCoffee && (
-          spot.title.toLowerCase().includes('กาแฟ') ||
-          spot.title.toLowerCase().includes('coffee') ||
-          spot.title.toLowerCase().includes('สโลว์บาร์') ||
-          spot.description.toLowerCase().includes('กาแฟ') ||
-          (spot.categoryLabel || '').toLowerCase().includes('กาแฟ') ||
-          spot.vibeTags.some((t) => t.toLowerCase().includes('กาแฟ') || t.toLowerCase().includes('slow bar'))
-        );
-
-        if (!matchTitle && !matchDesc && !matchProv && !matchDist && !matchTag && !matchCat && !matchHighlights && !matchSynonym) {
-          return false;
+      // 5. Search Query Filter using cached search index
+      if (q !== '') {
+        const fullSpotText = getCachedSpotSearchText(spot);
+        if (!fullSpotText.includes(q)) {
+          if (!isCoffee || (!fullSpotText.includes('กาแฟ') && !fullSpotText.includes('coffee') && !fullSpotText.includes('slow bar'))) {
+            return false;
+          }
         }
       }
 
       return true;
-    }).map((spot) => {
-      if (sortByNearMe && userLocation && spot.latitude && spot.longitude) {
-        return {
-          ...spot,
-          distanceKm: calculateDistanceKm(userLocation.lat, userLocation.lng, spot.latitude, spot.longitude),
-        };
-      }
-      return {
-        ...spot,
-        distanceKm: undefined,
-      };
     });
 
-    if (sortByNearMe) {
+    if (sortByNearMe && userLocation) {
+      result = result.map((spot) => ({
+        ...spot,
+        distanceKm: spot.latitude && spot.longitude
+          ? calculateDistanceKm(userLocation.lat, userLocation.lng, spot.latitude, spot.longitude)
+          : undefined,
+      }));
       result.sort((a, b) => ((a as any).distanceKm ?? 999) - ((b as any).distanceKm ?? 999));
     } else if (sortBy === 'favorites') {
       // Keep order
@@ -969,36 +943,43 @@ function HomeContent() {
     return result;
   }, [spotsList, selectedSpotRailCategory, selectedSpotCategory, selectedSpotProvince, priceFilter, sortBy, sortByNearMe, userLocation, favoriteSpots, searchQuery]);
 
-  // Dynamic spot category counts (supports province context)
+  // Dynamic spot category counts: Single-Pass O(N) calculation (< 1ms)
   const spotCategoryCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    const baseSpots = spotsList.filter((spot) => {
-      if (selectedSpotProvince !== 'all') {
-        const pLower = selectedSpotProvince.toLowerCase();
-        const spotProv = spot.province.toLowerCase();
-        const spotDistrict = (spot.district || '').toLowerCase();
-        const spotTitle = spot.title.toLowerCase();
-        const spotVibe = (spot.vibeTags || []).join(' ').toLowerCase();
-        const fullSpotText = `${spotProv} ${spotDistrict} ${spotTitle} ${spotVibe}`;
-
-        return (
-          spotProv.includes(pLower) ||
-          pLower.includes(spotProv) ||
-          (pLower.includes('หาดใหญ่') && fullSpotText.includes('หาดใหญ่')) ||
-          (pLower.includes('หัวหิน') && fullSpotText.includes('หัวหิน')) ||
-          (pLower.includes('พัทยา') && fullSpotText.includes('พัทยา')) ||
-          (pLower.includes('ชลบุรี') && fullSpotText.includes('ชลบุรี')) ||
-          (pLower.includes('ประจวบ') && (fullSpotText.includes('ประจวบ') || fullSpotText.includes('หัวหิน'))) ||
-          (pLower.includes('สงขลา') && (fullSpotText.includes('สงขลา') || fullSpotText.includes('หาดใหญ่')))
-        );
-      }
-      return true;
-    });
-
-    counts['all'] = baseSpots.length;
+    const counts: Record<string, number> = { all: 0 };
     NATIONWIDE_SPOT_CATEGORIES.forEach((cat) => {
-      counts[cat.id] = baseSpots.filter((spot) => getSpotVibeCategory(spot) === cat.id).length;
+      counts[cat.id] = 0;
     });
+
+    const isProvinceFiltered = selectedSpotProvince !== 'all' && selectedSpotProvince !== 'ทั่วไทย';
+    const pLower = selectedSpotProvince.toLowerCase();
+    const isBangkok = pLower.includes('กรุงเทพ') || pLower.includes('กทม');
+
+    for (let i = 0; i < spotsList.length; i++) {
+      const spot = spotsList[i];
+      if (isProvinceFiltered) {
+        const spotProv = (spot.province || '').toLowerCase();
+        if (isBangkok) {
+          if (!spotProv.includes('กรุงเทพ')) continue;
+        } else {
+          const fullSpotText = getCachedSpotSearchText(spot);
+          const isMatch =
+            spotProv.includes(pLower) ||
+            pLower.includes(spotProv) ||
+            (pLower.includes('หาดใหญ่') && fullSpotText.includes('หาดใหญ่')) ||
+            (pLower.includes('หัวหิน') && fullSpotText.includes('หัวหิน')) ||
+            (pLower.includes('พัทยา') && fullSpotText.includes('พัทยา')) ||
+            (pLower.includes('ชลบุรี') && fullSpotText.includes('ชลบุรี')) ||
+            (pLower.includes('ประจวบ') && (fullSpotText.includes('ประจวบ') || fullSpotText.includes('หัวหิน'))) ||
+            (pLower.includes('สงขลา') && (fullSpotText.includes('สงขลา') || fullSpotText.includes('หาดใหญ่')));
+          if (!isMatch) continue;
+        }
+      }
+
+      counts['all'] += 1;
+      const vibe = getCachedSpotVibeCategory(spot);
+      counts[vibe] = (counts[vibe] || 0) + 1;
+    }
+
     return counts;
   }, [spotsList, selectedSpotProvince]);
 
@@ -1302,10 +1283,12 @@ function HomeContent() {
   };
 
   const handleSelectDiscoveryTab = (tab: 'all' | 'spots' | 'community' | 'fairs') => {
-    setActiveScopeTab(tab);
-    if (tab === 'community') setEventTypeTab('community');
-    else if (tab === 'fairs') setEventTypeTab('public_venue');
-    else if (tab === 'spots') setEventTypeTab('spots');
+    React.startTransition(() => {
+      setActiveScopeTab(tab);
+      if (tab === 'community') setEventTypeTab('community');
+      else if (tab === 'fairs') setEventTypeTab('public_venue');
+      else if (tab === 'spots') setEventTypeTab('spots');
+    });
 
     if (typeof window !== 'undefined') {
       try {
@@ -1679,7 +1662,7 @@ function HomeContent() {
                   <div id="section-spots-cards" className="scroll-mt-24">
                     {filteredSpots.length > 0 ? (
                       <FloatingCarousel>
-                        {filteredSpots.map((spot) => (
+                        {filteredSpots.slice(0, 24).map((spot) => (
                           <div
                             key={spot.id}
                             className="w-[calc((100%-12px)/2)] sm:w-[calc((100%-2*14px)/3)] md:w-[calc((100%-3*14px)/4)] lg:w-[calc((100%-4*14px)/5)] shrink-0 snap-start flex flex-col h-full"
@@ -1698,6 +1681,24 @@ function HomeContent() {
                             />
                           </div>
                         ))}
+                        {filteredSpots.length > 24 && (
+                          <div className="w-[calc((100%-12px)/2)] sm:w-[calc((100%-2*14px)/3)] md:w-[calc((100%-3*14px)/4)] lg:w-[calc((100%-4*14px)/5)] shrink-0 snap-start flex flex-col h-full">
+                            <Link
+                              href="/spots"
+                              className="h-full min-h-[300px] rounded-2xl border-2 border-dashed border-emerald-300 hover:border-[#4A7C59] bg-emerald-50/40 hover:bg-emerald-50/80 transition-all flex flex-col items-center justify-center p-6 text-center group cursor-pointer"
+                            >
+                              <div className="w-12 h-12 rounded-full bg-emerald-100 group-hover:bg-[#4A7C59] text-emerald-700 group-hover:text-white flex items-center justify-center transition-colors mb-3">
+                                <Sparkles className="w-6 h-6" />
+                              </div>
+                              <span className="font-bold text-slate-800 text-sm group-hover:text-[#4A7C59] transition-colors">
+                                สำรวจพิกัดทั้งหมด
+                              </span>
+                              <span className="text-xs text-slate-500 mt-1">
+                                อีก {(filteredSpots.length - 24).toLocaleString()} แห่ง ทั่วประเทศ
+                              </span>
+                            </Link>
+                          </div>
+                        )}
                       </FloatingCarousel>
                     ) : (
                       <div className="bg-slate-50/80 rounded-2xl p-5 border border-dashed border-slate-200 text-center space-y-3">
