@@ -1365,7 +1365,7 @@ function HomeContent() {
           activeTab={activeScopeTab}
         />
 
-        <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-4 sm:space-y-6 pt-1 sm:pt-2 pb-6 relative z-10">
+        <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-3 sm:space-y-5 pt-0.5 sm:pt-1 pb-6 relative z-10">
 
           {/* 3. Auto-Sliding Trending Events Carousel (Contextually Adapted) */}
           <TrendingCarousel

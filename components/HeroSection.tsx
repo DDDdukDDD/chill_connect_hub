@@ -1006,7 +1006,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           className="group relative transition-all duration-300"
         >
             {/* 1. Immersive Panoramic Lifestyle Carousel Window (Bright Luxury View - Compact on Mobile, Rich on Desktop) */}
-            <div className="relative rounded-3xl overflow-hidden border border-slate-200/90 shadow-md h-[225px] sm:h-[325px] md:h-[345px] pb-8 sm:pb-20 md:pb-24 pt-4 sm:pt-7 px-3 sm:px-8 flex flex-col justify-start text-center">
+            <div className="relative rounded-3xl overflow-hidden border border-slate-200/90 shadow-md h-[190px] sm:h-[225px] md:h-[235px] pb-4 sm:pb-8 md:pb-10 pt-2.5 sm:pt-4 md:pt-4 px-3 sm:px-8 flex flex-col justify-start text-center">
               
               {/* Background Photos with Cross-fade */}
               <div className="absolute inset-0 z-0 pointer-events-none">
@@ -1050,9 +1050,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               </button>
 
               {/* Centerpiece Content */}
-              <div className="relative z-10 text-center space-y-1.5 sm:space-y-3 max-w-3xl mx-auto w-full">
+              <div className="relative z-10 text-center space-y-1 sm:space-y-2 max-w-3xl mx-auto w-full">
                 {/* Headline (Crisp Bold White with Bright Accent) */}
-                <h1 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight [text-shadow:_0_2px_14px_rgba(0,0,0,0.85),_0_1px_3px_rgba(0,0,0,0.9)]">
+                <h1 className="text-lg sm:text-2xl md:text-3xl font-black text-white tracking-tight leading-snug [text-shadow:_0_2px_14px_rgba(0,0,0,0.85),_0_1px_3px_rgba(0,0,0,0.9)]">
                   {displayTitleLead}{' '}
                   <span className="text-[#FFD166] inline-block transition-all duration-300">
                     {displayTitleHighlight}
@@ -1060,16 +1060,16 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 </h1>
 
                 {/* Subtitle */}
-                <p className="text-[11px] sm:text-sm md:text-base text-white font-medium max-w-xl mx-auto line-clamp-1 sm:line-clamp-none [text-shadow:_0_1px_8px_rgba(0,0,0,0.85)]">
+                <p className="text-[10px] sm:text-xs md:text-sm text-white/95 font-medium max-w-lg mx-auto line-clamp-1 [text-shadow:_0_1px_8px_rgba(0,0,0,0.85)]">
                   {displaySubtitle}
                 </p>
 
                 {/* Micro Trust Bar (Luxury Frosted Glass Capsules - Dynamically synced with Active Tab) */}
-                <div className="flex items-center justify-center gap-1.5 sm:gap-3 flex-wrap pt-0.5 sm:pt-1 text-[10px] sm:text-xs font-bold text-white transition-all duration-300">
+                <div className="flex items-center justify-center gap-1.5 sm:gap-2 flex-wrap pt-0.5 text-[9.5px] sm:text-[11px] font-bold text-white transition-all duration-300">
                   {heroTrustBadges.map((badge, idx) => (
                     <span
                       key={`${activeModeTab}-${badge.id}`}
-                      className={`items-center gap-1 sm:gap-1.5 bg-black/35 backdrop-blur-md px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full border border-white/20 shadow-xs animate-fade-in ${
+                      className={`items-center gap-1 bg-black/35 backdrop-blur-md px-2 sm:px-2.5 py-0.5 rounded-full border border-white/20 shadow-xs animate-fade-in ${
                         idx > 1 ? 'hidden sm:inline-flex' : 'inline-flex'
                       }`}
                     >
@@ -1189,22 +1189,22 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               </div>
             ) : (
               /* 2. Floating All-in-One Lifestyle Search Console (Trip.com Luxury Booking Portal Style - Compact on Mobile) */
-              <div className="relative -mt-[44px] sm:-mt-[68px] md:-mt-[74px] lg:-mt-[78px] z-50 w-[96%] sm:w-[92%] md:w-[90%] lg:w-full max-w-5xl xl:max-w-6xl 2xl:max-w-[1200px] mx-auto px-1.5 sm:px-4">
-              <div className="relative z-50 bg-white rounded-2xl sm:rounded-3xl p-2.5 sm:p-3 md:p-3.5 shadow-[0_20px_50px_-15px_rgba(15,23,42,0.15),0_4px_16px_rgba(15,23,42,0.04)] border border-slate-200/90 space-y-2 sm:space-y-2.5">
+              <div className="relative -mt-[36px] sm:-mt-[50px] md:-mt-[54px] lg:-mt-[58px] z-50 w-[96%] sm:w-[92%] md:w-[90%] lg:w-full max-w-5xl xl:max-w-6xl 2xl:max-w-[1140px] mx-auto px-1.5 sm:px-4">
+              <div className="relative z-50 bg-white rounded-2xl sm:rounded-3xl p-2 sm:p-2.5 md:p-3 shadow-[0_16px_40px_-15px_rgba(15,23,42,0.12),0_4px_16px_rgba(15,23,42,0.04)] border border-slate-200/90 space-y-1.5 sm:space-y-2">
                 
                 {/* 3 Core Pillars + Showroom Navigation Tabs with Floating Surprise Me Action */}
                 <div className="flex items-end justify-between border-b border-slate-200/90 px-1 sm:px-2 overflow-x-auto overflow-y-hidden no-scrollbar gap-2 sm:gap-6 select-none">
-                  <div className="flex items-end gap-3 sm:gap-7 shrink-0">
+                  <div className="flex items-end gap-3 sm:gap-6 shrink-0">
                     {/* Tab 1: ทั้งหมด */}
                     <button
                       type="button"
                       onClick={() => handleTabClick('all')}
-                      className="flex flex-col items-center gap-1 sm:gap-1.5 pt-0.5 sm:pt-1 pb-2 sm:pb-3.5 relative group cursor-pointer transition-all shrink-0"
+                      className="flex flex-col items-center gap-0.5 sm:gap-1 pt-0.5 pb-1.5 sm:pb-2 relative group cursor-pointer transition-all shrink-0"
                     >
-                      <Sparkles className={`w-4.5 h-4.5 sm:w-6 sm:h-6 transition-colors ${
+                      <Sparkles className={`w-4 h-4 sm:w-5 sm:h-5 transition-colors ${
                         activeModeTab === 'all' ? 'text-[#2563EB]' : 'text-slate-400 group-hover:text-slate-600'
                       }`} />
-                      <span className={`text-[11px] sm:text-sm whitespace-nowrap transition-colors ${
+                      <span className={`text-[11px] sm:text-xs md:text-sm whitespace-nowrap transition-colors ${
                         activeModeTab === 'all' ? 'font-black text-[#2563EB]' : 'font-semibold text-slate-500 group-hover:text-slate-800'
                       }`}>
                         ทั้งหมด
@@ -1218,12 +1218,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     <button
                       type="button"
                       onClick={() => handleTabClick('community')}
-                      className="flex flex-col items-center gap-1 sm:gap-1.5 pt-0.5 sm:pt-1 pb-2 sm:pb-3.5 relative group cursor-pointer transition-all shrink-0"
+                      className="flex flex-col items-center gap-0.5 sm:gap-1 pt-0.5 pb-1.5 sm:pb-2 relative group cursor-pointer transition-all shrink-0"
                     >
-                      <Users className={`w-4.5 h-4.5 sm:w-6 sm:h-6 transition-colors ${
+                      <Users className={`w-4 h-4 sm:w-5 sm:h-5 transition-colors ${
                         activeModeTab === 'community' ? 'text-[#F26430]' : 'text-slate-400 group-hover:text-slate-600'
                       }`} />
-                      <span className={`text-[11px] sm:text-sm whitespace-nowrap transition-colors ${
+                      <span className={`text-[11px] sm:text-xs md:text-sm whitespace-nowrap transition-colors ${
                         activeModeTab === 'community' ? 'font-black text-[#F26430]' : 'font-semibold text-slate-500 group-hover:text-slate-800'
                       }`}>
                         กิจกรรมคอมมูนิตี้
@@ -1237,12 +1237,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     <button
                       type="button"
                       onClick={() => handleTabClick('fairs')}
-                      className="flex flex-col items-center gap-1 sm:gap-1.5 pt-0.5 sm:pt-1 pb-2 sm:pb-3.5 relative group cursor-pointer transition-all shrink-0"
+                      className="flex flex-col items-center gap-0.5 sm:gap-1 pt-0.5 pb-1.5 sm:pb-2 relative group cursor-pointer transition-all shrink-0"
                     >
-                      <Building2 className={`w-4.5 h-4.5 sm:w-6 sm:h-6 transition-colors ${
+                      <Building2 className={`w-4 h-4 sm:w-5 sm:h-5 transition-colors ${
                         activeModeTab === 'fairs' ? 'text-[#2B527A]' : 'text-slate-400 group-hover:text-slate-600'
                       }`} />
-                      <span className={`text-[11px] sm:text-sm whitespace-nowrap transition-colors ${
+                      <span className={`text-[11px] sm:text-xs md:text-sm whitespace-nowrap transition-colors ${
                         activeModeTab === 'fairs' ? 'font-black text-[#2B527A]' : 'font-semibold text-slate-500 group-hover:text-slate-800'
                       }`}>
                         งานมหกรรม & เอ็กซ์โป
@@ -1256,12 +1256,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     <button
                       type="button"
                       onClick={() => handleTabClick('spots')}
-                      className="flex flex-col items-center gap-1 sm:gap-1.5 pt-0.5 sm:pt-1 pb-2 sm:pb-3.5 relative group cursor-pointer transition-all shrink-0"
+                      className="flex flex-col items-center gap-0.5 sm:gap-1 pt-0.5 pb-1.5 sm:pb-2 relative group cursor-pointer transition-all shrink-0"
                     >
-                      <Compass className={`w-4.5 h-4.5 sm:w-6 sm:h-6 transition-colors ${
+                      <Compass className={`w-4 h-4 sm:w-5 sm:h-5 transition-colors ${
                         activeModeTab === 'spots' ? 'text-[#2D5A3C]' : 'text-slate-400 group-hover:text-slate-600'
                       }`} />
-                      <span className={`text-[11px] sm:text-sm whitespace-nowrap transition-colors ${
+                      <span className={`text-[11px] sm:text-xs md:text-sm whitespace-nowrap transition-colors ${
                         activeModeTab === 'spots' ? 'font-black text-[#2D5A3C]' : 'font-semibold text-slate-500 group-hover:text-slate-800'
                       }`}>
                         พิกัดเที่ยว & จุดฮีลใจ
@@ -1277,10 +1277,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     <button
                       type="button"
                       onClick={() => onOpenSurpriseModal(activeModeTab === 'community' || activeModeTab === 'fairs' || activeModeTab === 'spots' ? activeModeTab : 'all')}
-                      className="mb-2 sm:mb-2.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 border border-amber-200/90 text-amber-800 hover:text-amber-900 shadow-2xs hover:shadow-xs transition-all active:scale-95 cursor-pointer group text-xs sm:text-sm font-bold shrink-0"
+                      className="mb-1.5 inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 border border-amber-200/90 text-amber-800 hover:text-amber-900 shadow-2xs hover:shadow-xs transition-all active:scale-95 cursor-pointer group text-xs font-bold shrink-0"
                       title="ให้ระบบช่วยสุ่มกิจกรรมหรือสถานที่โดนใจให้คุณ"
                     >
-                      <Dices className="w-4 h-4 text-amber-600 group-hover:rotate-180 transition-transform duration-500" />
+                      <Dices className="w-3.5 h-3.5 text-amber-600 group-hover:rotate-180 transition-transform duration-500" />
                       <span className="whitespace-nowrap">สุ่มให้ฉันที</span>
                     </button>
                   )}
@@ -1291,12 +1291,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   /* ========================================================================= */
                   /* 🌟 HYBRID LUXURY OMNI-BAR (FOR "ทั้งหมด" SHOWROOM OVERVIEW)                */
                   /* ========================================================================= */
-                  <div className="space-y-2.5 sm:space-y-3">
+                  <div>
                     {/* Omni-Bar Container */}
-                    <div className="relative flex items-center bg-white border border-slate-200/90 hover:border-slate-300 focus-within:border-[#2563EB] focus-within:ring-4 focus-within:ring-[#2563EB]/10 rounded-2xl sm:rounded-full p-1 sm:p-1.5 pl-3 sm:pl-4 transition-all shadow-2xs">
+                    <div className="relative flex items-center bg-white border border-slate-200/90 hover:border-slate-300 focus-within:border-[#2563EB] focus-within:ring-4 focus-within:ring-[#2563EB]/10 rounded-xl sm:rounded-full p-1 pl-3 sm:pl-3.5 transition-all shadow-2xs">
                       {/* Left Icon + Search Input */}
-                      <div className="flex items-center gap-2.5 sm:gap-3 flex-1 min-w-0">
-                        <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 shrink-0" />
+                      <div className="flex items-center gap-2 sm:gap-2.5 flex-1 min-w-0">
+                        <Search className="w-4 h-4 text-slate-400 shrink-0" />
                         <div className="flex-1 min-w-0 text-left">
                           <label className="sr-only">ค้นหาทุกกิจกรรม งานแฟร์ และพิกัดฮีลใจทั่วไทย</label>
                           <input
@@ -1307,7 +1307,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onKeyDown={handleKeyDown}
                             placeholder={getSearchPlaceholder()}
-                            className="w-full bg-transparent text-xs sm:text-sm md:text-base font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-normal focus:outline-none truncate leading-normal"
+                            className="w-full bg-transparent text-xs sm:text-sm font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-normal focus:outline-none truncate leading-normal"
                           />
                         </div>
                         {searchQuery && (
@@ -1317,22 +1317,22 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                             className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
                             title="ล้างคำค้นหา"
                           >
-                            <X className="w-4 h-4" />
+                            <X className="w-3.5 h-3.5" />
                           </button>
                         )}
                       </div>
 
                       {/* Right CTA Button: Royal Blue */}
-                      <div className="pl-1.5 sm:pl-2 shrink-0">
+                      <div className="pl-1 sm:pl-1.5 shrink-0">
                         <button
                           type="button"
                           onClick={() => {
                             setIsFocused(false);
                             if (onSearchSubmit) onSearchSubmit();
                           }}
-                          className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-5 sm:px-8 py-2 sm:py-2.5 rounded-xl sm:rounded-full font-extrabold text-xs sm:text-sm md:text-base transition-all shadow-sm flex items-center justify-center gap-1.5 sm:gap-2 shrink-0 active:scale-95 cursor-pointer leading-normal"
+                          className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 sm:px-6 py-1.5 sm:py-2 rounded-lg sm:rounded-full font-extrabold text-xs sm:text-sm transition-all shadow-sm flex items-center justify-center gap-1.5 shrink-0 active:scale-95 cursor-pointer leading-normal"
                         >
-                          <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          <Search className="w-3.5 h-3.5" />
                           <span>ค้นหา</span>
                         </button>
                       </div>
