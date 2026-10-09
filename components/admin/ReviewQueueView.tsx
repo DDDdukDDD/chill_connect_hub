@@ -74,7 +74,7 @@ function FrontendPreview({ item, mode }: { item: ReviewItem; mode: 'card' | 'lis
     );
   }
   return (
-    <div onClickCapture={stop} className={mode === 'card' ? 'max-w-[300px]' : ''}>
+    <div onClickCapture={stop} className={mode === 'card' ? 'max-w-[300px] [&_.grid]:!grid-cols-1' : '[&_.grid]:!grid-cols-1'}>
       <EventGrid
         events={[item.data as EventItem]}
         onSelectEvent={noop}

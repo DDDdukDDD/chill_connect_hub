@@ -1,6 +1,5 @@
 import type { EventItem } from '@/data/mockData';
 import type { LifestyleSpotItem } from '@/data/spotsData';
-import { isThaiCoordinate } from './scrapers/tourismDirectory';
 
 /**
  * Quality checks for content before it is published, based on the platform standards in AGENTS.md
@@ -19,6 +18,13 @@ export interface QualityReport {
   /** Passed checks as a percentage, required checks weighted double */
   score: number;
   requiredFailures: number;
+}
+
+/** Inside Thailand's bounding box; latitude === longitude catches a common source data error */
+export function isThaiCoordinate(latitude: number, longitude: number): boolean {
+  return Number.isFinite(latitude) && Number.isFinite(longitude) &&
+    latitude >= 5.5 && latitude <= 20.6 && longitude >= 97.3 && longitude <= 105.7 &&
+    latitude !== longitude;
 }
 
 // Pictographic emoji (not Thai text, digits or punctuation)

@@ -8,7 +8,6 @@ import {
   Search,
   CheckCircle2,
   XCircle,
-  Clock,
   Trash2,
   ExternalLink,
   MapPin,
@@ -20,8 +19,13 @@ import {
   Globe,
   Undo2,
   EyeOff,
+  Pencil,
+  Plus,
 } from 'lucide-react';
-import { AdminPageHeader, adminButton } from './AdminUI';
+import { AdminPageHeader, AdminStatusChip, adminButton } from './AdminUI';
+import { checkEventQuality } from '@/lib/contentQuality';
+import { EventEditorDrawer, eventStatus } from './EventEditorDrawer';
+import { useAdminSession } from './AdminAuthGate';
 import { handleAdminUnauthorized } from './adminAuthUtils';
 import { AdminPagination, AdminPaginationState } from './AdminPagination';
 import { AdminEventItem } from '@/lib/eventsStore';
@@ -47,11 +51,7 @@ interface ModerationCounts {
 const PAGE_SIZE = 20;
 const EMPTY_COUNTS: ModerationCounts = { total: 0, pending: 0, approved: 0, rejected: 0, recurring: 0, online: 0 };
 
-const STATUS_META: Record<ApprovalStatus, { label: string; className: string; icon: React.ElementType }> = {
-  pending: { label: 'รอตรวจสอบ', className: 'bg-amber-50 text-amber-700 border-amber-200', icon: Clock },
-  approved: { label: 'อนุมัติแล้ว', className: 'bg-[#EBF3ED] text-[#2D5A3C] border-[#4A7C59]/20', icon: CheckCircle2 },
-  rejected: { label: 'ปฏิเสธ', className: 'bg-rose-50 text-rose-700 border-rose-200', icon: XCircle },
-};
+const APPROVAL_STATUSES = new Set<ApprovalStatus>(['pending', 'approved', 'rejected']);
 
 function isOnline(ev: AdminEventItem) {
   return ev.locationType === 'online' || ev.province === 'ออนไลน์' || Boolean(ev.onlineJoinUrl);
@@ -74,6 +74,10 @@ function verifyOnlineLink(url?: string, platform?: string) {
 export function EventsModerationView({ type }: EventsModerationViewProps) {
   const apiType = type === 'fairs' ? 'public_venue' : type;
   const isCommunity = type === 'community';
+  const { can } = useAdminSession();
+  const canEdit = can('content.edit');
+  // undefined = closed, null = creating, event = editing
+  const [editing, setEditing] = useState<AdminEventItem | null | undefined>(undefined);
 
   const [events, setEvents] = useState<AdminEventItem[]>([]);
   const [counts, setCounts] = useState<ModerationCounts>(EMPTY_COUNTS);
@@ -225,7 +229,7 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
 
       <AdminPageHeader
         icon={isCommunity ? Users : Trophy}
-        title={isCommunity ? 'Community Meetups' : 'Fairs & Expos'}
+        title={isCommunity ? 'กิจกรรมคอมมูนิตี้' : 'งานมหกรรม & เอ็กซ์โป'}
         description={
           isCommunity
             ? 'ตรวจกิจกรรมคอมมูนิตี้ นัดประจำ และความปลอดภัยของลิงก์ห้องประชุมออนไลน์'
@@ -237,6 +241,12 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
               <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
               รีเฟรช
             </button>
+            {canEdit && type !== 'all' && (
+              <button onClick={() => setEditing(null)} className={adminButton.primary}>
+                <Plus size={14} />
+                {isCommunity ? 'สร้างกิจกรรม' : 'เพิ่มงานแฟร์'}
+              </button>
+            )}
             {counts.pending > 0 && (
               <button
                 onClick={() => runAction(null, { action: 'approve_all' }, 'อนุมัติรายการที่รอทั้งหมดแล้ว')}
@@ -332,13 +342,12 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
       ) : (
         <div className={`space-y-3 ${isLoading ? 'opacity-60' : ''}`}>
           {events.map((ev) => {
-            const status = (STATUS_META[ev.approvalStatus as ApprovalStatus] ? ev.approvalStatus : 'pending') as ApprovalStatus;
-            const meta = STATUS_META[status];
-            const StatusIcon = meta.icon;
+            const status: ApprovalStatus = APPROVAL_STATUSES.has(ev.approvalStatus) ? ev.approvalStatus : 'pending';
             const online = isOnline(ev);
             const recurring = isRecurring(ev);
             const linkCheck = verifyOnlineLink(ev.onlineJoinUrl, ev.onlinePlatform);
             const isBusy = busyId === ev.id || busyId === '__all__';
+            const quality = checkEventQuality(ev);
 
             return (
               <div
@@ -362,9 +371,14 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${meta.className}`}>
-                          <StatusIcon size={10} />
-                          {meta.label}
+                        <AdminStatusChip status={eventStatus(ev)} />
+                        <span
+                          title={quality.requiredFailures ? `ขาดข้อบังคับ ${quality.requiredFailures} ข้อ` : 'ผ่านข้อบังคับครบ'}
+                          className={`rounded-full border px-1.5 py-0.5 text-[10px] font-extrabold tabular-nums ${
+                            quality.requiredFailures ? 'border-rose-200 bg-rose-50 text-rose-700' : quality.score < 90 ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                          }`}
+                        >
+                          {quality.score}%
                         </span>
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600">
                           {ev.tag || ev.category}
@@ -461,6 +475,11 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
                       </button>
                     )}
 
+                    {canEdit && type !== 'all' && (
+                      <button onClick={() => setEditing(ev)} className={adminButton.icon} title="แก้ไข">
+                        <Pencil size={13} />
+                      </button>
+                    )}
                     <Link
                       href={isCommunity ? `/community/${ev.id}` : `/fairs/${ev.id}`}
                       target="_blank"
@@ -485,6 +504,20 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
 
           <AdminPagination pagination={pagination} onPageChange={setPage} isLoading={isLoading} />
         </div>
+      )}
+
+      {editing !== undefined && type !== 'all' && (
+        <EventEditorDrawer
+          key={editing?.id ?? 'new'}
+          event={editing}
+          type={type}
+          onClose={() => setEditing(undefined)}
+          onSaved={(message) => {
+            setEditing(undefined);
+            showToast(message);
+            refresh();
+          }}
+        />
       )}
     </div>
   );

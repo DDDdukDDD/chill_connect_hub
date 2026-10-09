@@ -14,8 +14,11 @@ import {
   Search,
   Trash2,
 } from 'lucide-react';
-import { AdminPageHeader, adminButton } from './AdminUI';
+import { AdminPageHeader, AdminStatusChip, adminButton } from './AdminUI';
 import { ALL_THAI_PROVINCES, SPOT_CATEGORIES, LifestyleSpotItem } from '@/data/spotsData';
+import { checkSpotQuality } from '@/lib/contentQuality';
+import { defaultSpotCategoryLabel } from '@/lib/spotCategories';
+import { SpotEditorDrawer } from './SpotEditorDrawer';
 import { handleAdminUnauthorized } from './adminAuthUtils';
 import { AdminPagination, AdminPaginationState } from './AdminPagination';
 
@@ -43,14 +46,13 @@ const IMAGE_STATUS_META: Record<ImageStatus, { label: string; className: string;
 };
 
 interface SpotsManagerViewProps {
-  onEditSpot: (spot: LifestyleSpotItem) => void;
-  onAddSpot: () => void;
-  /** Incremented by the parent after it creates or edits a spot */
-  reloadToken: number;
   showToast: (message: string) => void;
 }
 
-export function SpotsManagerView({ onEditSpot, onAddSpot, reloadToken, showToast }: SpotsManagerViewProps) {
+export function SpotsManagerView({ showToast }: SpotsManagerViewProps) {
+  // undefined = closed, null = creating, spot = editing
+  const [editing, setEditing] = useState<LifestyleSpotItem | null | undefined>(undefined);
+  const [reloadToken, setReloadToken] = useState(0);
   const [spots, setSpots] = useState<AdminSpot[]>([]);
   const [stats, setStats] = useState<SpotStats | null>(null);
   const [pagination, setPagination] = useState<AdminPaginationState | null>(null);
@@ -168,8 +170,8 @@ export function SpotsManagerView({ onEditSpot, onAddSpot, reloadToken, showToast
     <div className="space-y-5">
       <AdminPageHeader
         icon={Compass}
-        title="Lifestyle Spots"
-        description="สถานที่เที่ยวและจุดฮีลใจทั่ว 77 จังหวัด"
+        title="พิกัดเที่ยว 77 จังหวัด"
+        description="สถานที่เที่ยวและจุดฮีลใจทั่ว 77 จังหวัด กรองตาม vibe แบบเดียวกับหน้าเว็บ"
         actions={
           <>
             <button
@@ -190,7 +192,7 @@ export function SpotsManagerView({ onEditSpot, onAddSpot, reloadToken, showToast
               <ImageIcon size={14} />
               {busyAction === 'enrich' ? 'กำลังเติมรูป...' : 'เติมรูปที่ขาด'}
             </button>
-            <button onClick={onAddSpot} className={adminButton.primary}>
+            <button onClick={() => setEditing(null)} className={adminButton.primary}>
               <Plus size={14} />
               เพิ่มสถานที่
             </button>
@@ -231,8 +233,8 @@ export function SpotsManagerView({ onEditSpot, onAddSpot, reloadToken, showToast
           />
         </div>
         <select value={category} onChange={(e) => withPageReset(setCategory)(e.target.value)} aria-label="กรองหมวดหมู่" className={selectClass}>
-          <option value="all">ทุกหมวดหมู่</option>
-          {SPOT_CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+          <option value="all">ทุก vibe</option>
+          {SPOT_CATEGORIES.filter((c) => c.id !== 'all').map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
         </select>
         <select value={province} onChange={(e) => withPageReset(setProvince)(e.target.value)} aria-label="กรองจังหวัด" className={selectClass}>
           <option value="all">ทุกจังหวัด</option>
@@ -275,6 +277,7 @@ export function SpotsManagerView({ onEditSpot, onAddSpot, reloadToken, showToast
               const imageMeta = IMAGE_STATUS_META[imageStatus];
               const ImageStatusIcon = imageMeta.icon;
               const isDraft = spot.publicationStatus === 'draft';
+              const quality = checkSpotQuality(spot);
               const rowBusy = busyAction === `pub:${spot.id}` || busyAction === `del:${spot.id}`;
 
               return (
@@ -303,18 +306,22 @@ export function SpotsManagerView({ onEditSpot, onAddSpot, reloadToken, showToast
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-slate-500 text-xs">{spot.province}</span>
                       {spot.district && <span className="text-slate-400 text-xs">· {spot.district}</span>}
-                      {spot.category && (
-                        <span className="px-1.5 py-0.5 bg-[#EBF3ED] text-[#4A7C59] border border-[#4A7C59]/20 rounded text-[10px] font-semibold">
-                          {SPOT_CATEGORIES.find((c) => c.id === spot.category)?.label || spot.category}
-                        </span>
-                      )}
+                      <span className="px-1.5 py-0.5 bg-[#EBF3ED] text-[#2D5A3C] border border-[#4A7C59]/20 rounded text-[10px] font-semibold truncate">
+                        {spot.categoryLabel || defaultSpotCategoryLabel(spot.category)}
+                      </span>
                     </div>
                   </div>
 
                   <div className="col-span-2 flex items-center justify-between gap-3 border-t border-slate-100 pt-2 sm:ml-auto sm:col-span-1 sm:border-0 sm:pt-0">
                     <div className="flex items-center gap-3">
-                      <span className={`rounded-md border px-1.5 py-0.5 text-[10px] font-semibold ${isDraft ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>
-                        {isDraft ? 'แบบร่าง' : 'เผยแพร่'}
+                      <AdminStatusChip status={spot.reviewRejectedAt ? 'rejected' : isDraft ? 'draft' : 'published'} />
+                      <span
+                        title={quality.requiredFailures ? `ขาดข้อบังคับ ${quality.requiredFailures} ข้อ` : 'ผ่านข้อบังคับครบ'}
+                        className={`rounded-full border px-1.5 py-0.5 text-[10px] font-extrabold tabular-nums ${
+                          quality.requiredFailures ? 'border-rose-200 bg-rose-50 text-rose-700' : quality.score < 90 ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                        }`}
+                      >
+                        {quality.score}%
                       </span>
                       <span className={`flex items-center gap-1 text-[11px] font-semibold w-[84px] ${imageMeta.className}`}>
                         <ImageStatusIcon size={13} />
@@ -332,7 +339,7 @@ export function SpotsManagerView({ onEditSpot, onAddSpot, reloadToken, showToast
                       >
                         {isDraft ? 'เผยแพร่' : 'ถอนเผยแพร่'}
                       </button>
-                      <button onClick={() => onEditSpot(spot)} className="p-1.5 rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors" title="แก้ไข">
+                      <button onClick={() => setEditing(spot)} className="p-1.5 rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors" title="แก้ไข">
                         <Edit3 size={14} />
                       </button>
                       <button
@@ -351,6 +358,19 @@ export function SpotsManagerView({ onEditSpot, onAddSpot, reloadToken, showToast
           </div>
           <AdminPagination pagination={pagination} onPageChange={setPage} isLoading={isLoading} />
         </div>
+      )}
+
+      {editing !== undefined && (
+        <SpotEditorDrawer
+          key={editing?.id ?? 'new'}
+          spot={editing}
+          onClose={() => setEditing(undefined)}
+          onSaved={(message) => {
+            setEditing(undefined);
+            showToast(message);
+            setReloadToken((token) => token + 1);
+          }}
+        />
       )}
     </div>
   );

@@ -1,6 +1,6 @@
 # Backend Implementation Log
 
-Last updated: 2026-10-06 (admin restructure, staff roles, audit log; older entries archived)
+Last updated: 2026-10-09 (Google-rated nearby dining; older entries archived)
 
 ## Working Scope
 
@@ -87,6 +87,55 @@ Entries up to 2026-10-04 (FE-002) and the 2026-10-03 verification notes are in [
     - Puppeteer, desktop and 390px: no console errors, no horizontal overflow.
     - Test data and accounts were removed afterwards.
   - **Limits:** on Vercel the staff and audit files live in `/tmp` and do not persist, so only the env owner login is reliable there. Invitations are not emailed; the owner sets a temporary password.
+
+- Nearby dining with Google ratings (2026-10-09, owner request: only places above 4.5★):
+  - **Why Google:** the Tourism Directory has 13,267 restaurants with coordinates, but its `Rating` was 0 on all 40 of the most viewed Bangkok restaurants, and it has no review counts. Google Places is the source of real ratings the owner chose.
+  - **Implementation:** `lib/googlePlaces.ts` is server-only.
+    - Calls Nearby Search (New) within 3 km, `rankPreference: POPULARITY`, with a minimal field mask.
+    - Keeps rating ≥ 4.5 with userRatingCount ≥ 50, and links a result to our own spot when the name matches within 300 m.
+  - **Google terms:** only the place id is stored. Responses are `no-store`, the "Google Maps" attribution is returned, and no photos are requested (separate SKU, and the URL needs the key).
+  - **Budget:** a monthly counter in `data/google_places_usage.json` (gitignored) is capped by `GOOGLE_PLACES_MONTHLY_LIMIT` (default 900, below the 1,000 free Enterprise calls).
+  - **Fixed in `lib/nearbyDiningService.ts`:**
+    - The browser no longer calls Google: the key was in photo URLs, and a `NEXT_PUBLIC_` key fallback was accepted.
+    - Invented 4.7 / 250 defaults are gone.
+    - The fake `CURATED_REAL_DINING` list is removed.
+    - Without Google, the route falls back to nearby catalog cafes with no ratings.
+  - **Verification:**
+    - Mocked Google response: kept 4.7/820 and 4.5/50; dropped 4.2, a 5.0 with 7 reviews, and an unrated place.
+    - The key appears only in the request header.
+    - The cap stopped calls after the limit.
+    - The live route without a key returned `source: catalog`, 6 items, none with invented ratings.
+    - Live Google test (6 calls): Siam and Chiang Mai each returned 6 real food places rated 4.5–4.9 (735–10,719 reviews), and a rural Nan spot returned none. Primary-type filtering (`includedPrimaryTypes`) was added because `includedTypes: restaurant` returned hotels and malls. The key is not in the client bundle.
+- `lib/usePublishedSpots.ts`: a failed load no longer pins `cachedSpots` to MOCK_SPOTS, so the next mount retries (BE-009).
+
+- Sample meetups roll forward (2026-10-09, owner choice "เลื่อนวันอัตโนมัติอย่างเดียว"):
+  - **Problem:** 43 of 50 sample community meetups had passed their fixed dates and were hidden.
+  - **Fix:** `lib/sampleEventDates.ts` is applied in `jsonAdapter.findEvents`, `findEventById` and `listAllEvents`. It moves ended `MOCK_EVENTS` community dates forward by whole cycles of 77 days. The cycle is the community samples' span rounded up to whole weeks; fairs, which run into 2027, are excluded from the span.
+  - **Verification:** 50/50 visible, spread over Oct–Dec 2026, with weekdays kept. Member and scraped events are untouched, the stored file is unchanged, and the fair total is still 116.
+
+- Admin phase 2, pillar content pages (2026-10-09):
+  - **Shared drawer** (`components/admin/AdminDrawer.tsx`): slide-over editor with the form on the left and a live preview on the right, plus `FormSection`, `Field`, `QualityPanel`, `PreviewModeToggle`, `InertPreview` and a placeholder image.
+  - **`SpotEditorDrawer`** (create and edit) replaces the old modals in `app/admin/page.tsx`.
+    - Sections follow the detail page: main info, location (Thailand coordinate check plus a map link), hours and fees, photos, content, contact, source credit.
+    - The preview uses the real `SpotCard` and `SpotListItem`, and the quality checks run live.
+    - Publishing is disabled while a required check fails.
+    - Labels come from `lib/spotCategories.ts`.
+  - **`EventEditorDrawer`** for community and fairs: create (queued or published) and edit.
+    - The preview is `EventGrid` forced to one column.
+    - Community has online or physical mode, meeting point and 2–15 people. Fairs have the official organizer, venue and direct official link.
+  - **Lists:**
+    - Shared `AdminStatusChip` (events show "สิ้นสุด" when ended) and a quality % per row.
+    - Thai page titles; create and edit only for `content.edit`.
+    - The spot category filter now uses the 7 vibes: it previously compared vibe ids with stored categories and always returned 0.
+  - **Server:**
+    - Spot create no longer invents data: no 4.8 rating, no emoji labels and tags, no stock photo, no Bangkok fallback coordinates.
+    - Coordinates must be inside Thailand on create and update; `contact` and `entryFee` are editable.
+    - Events `create` and `update_fields` follow the platform form rules, and `update_fields` has a field whitelist, so approval cannot be changed outside the review flow.
+    - `isThaiCoordinate` moved to `lib/contentQuality.ts` so it can run in the browser.
+    - Tourism Directory: a "สวนสาธารณะ" name now beats the beach rule. Two published parks (เกาะลำพู, หนองบวกหาด) are still stored as `beach` and can be fixed in the editor.
+  - **Verification:**
+    - API 14/14: vibe filter, coordinate rejection, no invented spot data, map link from coordinates, contact/entryFee, fair without organizer, community with 30 people, update_fields cannot approve, title validation, cleanup.
+    - Puppeteer: live preview follows typing, coordinate error shown, preview clicks do not navigate, Esc closes, publish disabled until checks pass, fair and community editors, 390px with no overflow, no console errors.
 
 ## Known Limitations / Next Backend Work
 
