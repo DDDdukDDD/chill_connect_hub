@@ -182,3 +182,21 @@ export const SpotCard: React.FC<SpotCardProps> = ({
     </Link>
   );
 };
+
+export const SpotCardSkeleton: React.FC = () => {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200/70 overflow-hidden flex flex-col justify-between shadow-2xs animate-pulse">
+      <div className="aspect-[4/3] w-full bg-slate-200 shrink-0" />
+      <div className="p-3.5 flex flex-col justify-between flex-1 gap-2">
+        <div className="space-y-2">
+          <div className="flex items-start justify-between gap-2">
+            <div className="h-4 bg-slate-200 rounded-md w-3/4" />
+            <div className="h-4 bg-slate-100 rounded-md w-12 shrink-0" />
+          </div>
+          <div className="h-3 bg-slate-200/70 rounded w-1/2" />
+          <div className="h-3 bg-slate-100 rounded w-2/3" />
+        </div>
+      </div>
+    </div>
+  );
+};

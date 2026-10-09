@@ -187,3 +187,22 @@ export const SpotListItem: React.FC<SpotListItemProps> = ({
     </motion.div>
   );
 };
+
+export const SpotListItemSkeleton: React.FC = () => {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-3.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3.5 sm:gap-4 shadow-2xs animate-pulse">
+      <div className="flex items-center gap-3.5 min-w-0 flex-1">
+        <div className="w-20 h-20 sm:w-28 sm:h-24 md:w-32 md:h-24 rounded-xl bg-slate-200 shrink-0" />
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="h-4 bg-slate-200 rounded-md w-1/3" />
+          <div className="h-3 bg-slate-100 rounded w-1/4" />
+          <div className="h-3 bg-slate-100 rounded w-1/2" />
+        </div>
+      </div>
+      <div className="flex items-center gap-2 self-end sm:self-center">
+        <div className="w-16 h-6 bg-slate-100 rounded-md" />
+        <div className="w-8 h-8 bg-slate-100 rounded-full" />
+      </div>
+    </div>
+  );
+};

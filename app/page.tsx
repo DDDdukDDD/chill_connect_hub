@@ -36,7 +36,7 @@ import { BrandLogo } from '@/components/BrandLogo';
 import { MOCK_SPOTS, SPOT_CATEGORIES, ALL_THAI_PROVINCES, LifestyleSpotItem } from '@/data/spotsData';
 import { usePublishedSpots, getCachedSpotVibeCategory, getCachedSpotSearchText } from '@/lib/usePublishedSpots';
 import { getCommunityEventCategory, getFairEventCategory } from '@/data/masterHub';
-import { SpotCard } from '@/components/SpotCard';
+import { SpotCard, SpotCardSkeleton } from '@/components/SpotCard';
 import { isEventEnded, isEventNew, parseEventDateToTimestamp, parseEventEndDateToTimestamp, isEventEndedByDate, isEventMatchingTimeFilter } from '@/lib/dateUtils';
 import { useAuth } from '@/lib/useAuth';
 import { fetchAllContentPages } from '@/lib/contentClient';
@@ -116,7 +116,7 @@ function HomeContent() {
   const [isLocating, setIsLocating] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [eventsList, setEventsList] = useState<EventItem[]>(MOCK_EVENTS);
-  const { spots: liveSpots } = usePublishedSpots();
+  const { spots: liveSpots, isLoaded: isSpotsLoaded } = usePublishedSpots();
   const spotsList = liveSpots.length > 0 ? liveSpots : MOCK_SPOTS;
   const [favorites, setFavorites] = useState<string[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
@@ -936,8 +936,12 @@ function HomeContent() {
     } else if (sortBy === 'favorites') {
       // Keep order
     } else {
-      // Default: highest rating
-      result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      // Smart Popularity Ranking: nationwide view count signal + rating bonus
+      result.sort((a, b) => {
+        const scoreA = (a.popularity || 0) + (a.rating > 0 ? a.rating * 200 : 0);
+        const scoreB = (b.popularity || 0) + (b.rating > 0 ? b.rating * 200 : 0);
+        return scoreB - scoreA;
+      });
     }
 
     return result;
@@ -1660,7 +1664,18 @@ function HomeContent() {
 
                   {/* Spot Cards Carousel: 1 row with manual floating scroll */}
                   <div id="section-spots-cards" className="scroll-mt-24">
-                    {filteredSpots.length > 0 ? (
+                    {!isSpotsLoaded && liveSpots.length === 0 ? (
+                      <div className="flex gap-3.5 overflow-hidden">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <div
+                            key={i}
+                            className="w-[calc((100%-12px)/2)] sm:w-[calc((100%-2*14px)/3)] md:w-[calc((100%-3*14px)/4)] lg:w-[calc((100%-4*14px)/5)] shrink-0 flex flex-col h-full"
+                          >
+                            <SpotCardSkeleton />
+                          </div>
+                        ))}
+                      </div>
+                    ) : filteredSpots.length > 0 ? (
                       <FloatingCarousel>
                         {filteredSpots.slice(0, 24).map((spot) => (
                           <div
@@ -1999,7 +2014,13 @@ function HomeContent() {
 
                 {/* Full Spots Grid with Pagination */}
                 <div id="section-spots-cards" className="scroll-mt-24">
-                  {displayedSpots.length > 0 ? (
+                  {!isSpotsLoaded && liveSpots.length === 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
+                      {Array.from({ length: 10 }).map((_, i) => (
+                        <SpotCardSkeleton key={i} />
+                      ))}
+                    </div>
+                  ) : displayedSpots.length > 0 ? (
                     <div className="space-y-6">
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
                         {displayedSpots.map((spot) => (

@@ -66,6 +66,103 @@ const cleanText = (str?: string): string => {
     .trim();
 };
 
+export interface SpotOpenStatus {
+  isOpen: boolean;
+  statusText: string;
+  subText?: string;
+  badgeVariant: 'open' | 'closed' | 'unspecified';
+}
+
+export function parseSpotOpenStatus(openHours?: string): SpotOpenStatus {
+  if (!openHours || /ไม่ระบุ/i.test(openHours)) {
+    return {
+      isOpen: false,
+      statusText: 'เวลาทำการตามประกาศ',
+      subText: 'โปรดตรวจสอบก่อนเดินทาง',
+      badgeVariant: 'unspecified',
+    };
+  }
+
+  const clean = openHours.trim();
+
+  // 24 hours check
+  if (/24\s*(ชั่วโมง|ชม)/i.test(clean) || /00:00\s*[-–]\s*23:59/i.test(clean) || /00:00\s*[-–]\s*24:00/i.test(clean)) {
+    return {
+      isOpen: true,
+      statusText: 'เปิดตลอด 24 ชั่วโมง',
+      badgeVariant: 'open',
+    };
+  }
+
+  // Check current Thailand time (UTC+7)
+  const now = new Date();
+  const utcHours = now.getUTCHours();
+  const utcMinutes = now.getUTCMinutes();
+  const thaiHours = (utcHours + 7) % 24;
+  const currentMinutes = thaiHours * 60 + utcMinutes;
+  const currentDay = (now.getUTCDay() + (utcHours + 7 >= 24 ? 1 : 0)) % 7; // 0=Sun, 1=Mon, ..., 6=Sat
+
+  // Check day restrictions
+  if (/จ\.-ศ\./.test(clean) && (currentDay === 0 || currentDay === 6)) {
+    return {
+      isOpen: false,
+      statusText: 'ปิดทำการวันนี้',
+      subText: 'เปิดวันจันทร์ - ศุกร์',
+      badgeVariant: 'closed',
+    };
+  }
+  if (/ส\.-อา\./.test(clean) && currentDay >= 1 && currentDay <= 5) {
+    return {
+      isOpen: false,
+      statusText: 'ปิดทำการวันนี้',
+      subText: 'เปิดเฉพาะ เสาร์ - อาทิตย์',
+      badgeVariant: 'closed',
+    };
+  }
+  if (/ปิดวันจันทร์/.test(clean) && currentDay === 1) {
+    return {
+      isOpen: false,
+      statusText: 'ปิดทำการวันนี้',
+      subText: 'ปิดทุกวันจันทร์',
+      badgeVariant: 'closed',
+    };
+  }
+
+  // Parse time range: e.g. 08:00 - 17:00
+  const match = clean.match(/(\d{1,2})[:.](\d{2})\s*[-–]\s*(\d{1,2})[:.](\d{2})/);
+  if (match) {
+    const openH = parseInt(match[1], 10);
+    const openM = parseInt(match[2], 10);
+    const closeH = parseInt(match[3], 10);
+    const closeM = parseInt(match[4], 10);
+
+    const openMinutes = openH * 60 + openM;
+    const closeMinutes = closeH * 60 + closeM;
+
+    if (currentMinutes >= openMinutes && currentMinutes < closeMinutes) {
+      return {
+        isOpen: true,
+        statusText: 'เปิดให้บริการอยู่',
+        subText: `ปิด ${match[3]}:${match[4]} น.`,
+        badgeVariant: 'open',
+      };
+    } else {
+      return {
+        isOpen: false,
+        statusText: 'ปิดให้บริการแล้ว',
+        subText: `เปิด ${match[1]}:${match[2]} น.`,
+        badgeVariant: 'closed',
+      };
+    }
+  }
+
+  return {
+    isOpen: true,
+    statusText: clean.length > 25 ? 'เปิดให้บริการ' : clean,
+    badgeVariant: 'open',
+  };
+}
+
 export default function SpotDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -115,11 +212,14 @@ export default function SpotDetailPage() {
   const spot: LifestyleSpotItem | undefined = apiSpot || staticSpot;
   const { spots: publishedSpots } = usePublishedSpots();
 
-  // Gallery Photos (5-8 images guaranteed)
+  // Gallery Photos (Adaptive resolution)
   const galleryImages: string[] = useMemo(() => {
     if (!spot) return [];
     return resolveSpotGallery(spot);
   }, [spot]);
+
+  // Real-time open/closed status parsing
+  const openStatus = useMemo(() => parseSpotOpenStatus(spot?.openHours), [spot?.openHours]);
 
   // Nearby spots recommendation info (smart zonal & distance proximity)
   const recommendation = useMemo(() => {
@@ -385,75 +485,165 @@ export default function SpotDetailPage() {
         </div>
 
         {/* =========================================================================
-            EDITORIAL 5-8 PHOTO MOSAIC GALLERY
+            EDITORIAL ADAPTIVE PHOTO GALLERY (1-Photo Hero, 2/3-Photo Split, 5-Mosaic)
            ========================================================================= */}
         <section className="space-y-2">
-          
-          {/* Photo Mosaic Grid (Desktop 5-Photo Hero, Mobile 1 Main + Carousel) */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-2.5 rounded-3xl overflow-hidden bg-slate-100 h-56 sm:h-72 md:h-[320px] max-h-[320px] relative group">
-            
-            {/* Main Big Photo (Left - 2 Cols x 2 Rows) */}
+          {galleryImages.length <= 1 ? (
+            /* Single Hero Photo Banner */
             <div
               onClick={() => {
                 setActivePhotoIndex(0);
                 setIsLightboxOpen(true);
               }}
-              className="md:col-span-2 md:row-span-2 relative h-56 sm:h-72 md:h-[320px] overflow-hidden cursor-pointer bg-slate-200"
+              className="w-full h-64 sm:h-80 md:h-[360px] rounded-3xl overflow-hidden relative group cursor-pointer bg-slate-200 shadow-sm"
             >
               <img
                 src={galleryImages[0] || spot.image}
-                alt={`${spot.title} บรรยากาศ 1`}
+                alt={`${spot.title} ภาพบรรยากาศ`}
                 className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-40 hover:opacity-20 transition-opacity" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-40 group-hover:opacity-25 transition-opacity" />
+              
+              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white">
+                <div className="inline-flex items-center gap-2 bg-slate-900/75 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-semibold border border-white/20">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>ภาพถ่ายอย่างเป็นทางการ</span>
+                </div>
+                <div className="inline-flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md border border-white/20 group-hover:bg-slate-900 transition-colors">
+                  <Camera className="w-3.5 h-3.5" />
+                  <span>ดูภาพขนาดเต็ม</span>
+                </div>
+              </div>
             </div>
-
-            {/* 4 Secondary Thumbnail Photos (Right 2x2 Grid) */}
-            {galleryImages.slice(1, 5).map((imgUrl, idx) => {
-              const photoIdx = idx + 1;
-              const isLast = idx === 3;
-              return (
+          ) : galleryImages.length === 2 ? (
+            /* 2 Photos Split Layout */
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 rounded-3xl overflow-hidden h-64 sm:h-80 md:h-[340px] relative group">
+              {galleryImages.slice(0, 2).map((imgUrl, idx) => (
                 <div
                   key={idx}
                   onClick={() => {
-                    setActivePhotoIndex(photoIdx);
+                    setActivePhotoIndex(idx);
                     setIsLightboxOpen(true);
                   }}
-                  className="hidden md:block relative h-[155px] overflow-hidden cursor-pointer bg-slate-200"
+                  className="relative h-full overflow-hidden cursor-pointer bg-slate-200"
                 >
                   <img
                     src={imgUrl}
-                    alt={`${spot.title} บรรยากาศ ${photoIdx + 1}`}
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                    alt={`${spot.title} บรรยากาศ ${idx + 1}`}
+                    className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
                   />
-                  <div className="absolute inset-0 bg-black/10 hover:bg-black/0 transition-colors" />
-
-                  {/* View All Photos Button Overlay on the 4th Thumbnail */}
-                  {isLast && (
-                    <div className="absolute inset-0 bg-slate-900/60 hover:bg-slate-900/50 backdrop-blur-2xs flex flex-col items-center justify-center text-white transition-all">
-                      <Camera className="w-6 h-6 mb-1 text-white" />
-                      <span className="font-extrabold text-xs sm:text-sm">ดูรูปทั้งหมด</span>
-                      <span className="text-[11px] text-slate-200 font-medium">({galleryImages.length} รูป)</span>
-                    </div>
-                  )}
+                  <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors" />
                 </div>
-              );
-            })}
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  setActivePhotoIndex(0);
+                  setIsLightboxOpen(true);
+                }}
+                className="absolute bottom-3 right-3 bg-slate-900/85 backdrop-blur-md text-white text-xs font-extrabold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg border border-white/20 active:scale-95"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                <span>ดูรูปทั้งหมด (2)</span>
+              </button>
+            </div>
+          ) : galleryImages.length === 3 ? (
+            /* 3 Photos Split Layout */
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 rounded-3xl overflow-hidden h-56 sm:h-72 md:h-[320px] relative group">
+              {galleryImages.slice(0, 3).map((imgUrl, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => {
+                    setActivePhotoIndex(idx);
+                    setIsLightboxOpen(true);
+                  }}
+                  className="relative h-full overflow-hidden cursor-pointer bg-slate-200"
+                >
+                  <img
+                    src={imgUrl}
+                    alt={`${spot.title} บรรยากาศ ${idx + 1}`}
+                    className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors" />
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  setActivePhotoIndex(0);
+                  setIsLightboxOpen(true);
+                }}
+                className="absolute bottom-3 right-3 bg-slate-900/85 backdrop-blur-md text-white text-xs font-extrabold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg border border-white/20 active:scale-95"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                <span>ดูรูปทั้งหมด (3)</span>
+              </button>
+            </div>
+          ) : (
+            /* 4+ Photos Mosaic Grid */
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-2.5 rounded-3xl overflow-hidden bg-slate-100 h-56 sm:h-72 md:h-[320px] max-h-[320px] relative group">
+              {/* Main Big Photo (Left - 2 Cols x 2 Rows) */}
+              <div
+                onClick={() => {
+                  setActivePhotoIndex(0);
+                  setIsLightboxOpen(true);
+                }}
+                className="md:col-span-2 md:row-span-2 relative h-56 sm:h-72 md:h-[320px] overflow-hidden cursor-pointer bg-slate-200"
+              >
+                <img
+                  src={galleryImages[0] || spot.image}
+                  alt={`${spot.title} บรรยากาศ 1`}
+                  className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-40 hover:opacity-20 transition-opacity" />
+              </div>
 
-            {/* Floating Mobile View All Button */}
-            <button
-              type="button"
-              onClick={() => {
-                setActivePhotoIndex(0);
-                setIsLightboxOpen(true);
-              }}
-              className="md:hidden absolute bottom-3 right-3 bg-slate-900/85 backdrop-blur-md text-white text-xs font-extrabold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg border border-white/20 active:scale-95"
-            >
-              <Camera className="w-3.5 h-3.5" />
-              <span>ดูรูปทั้งหมด ({galleryImages.length})</span>
-            </button>
+              {/* Secondary Photos */}
+              {galleryImages.slice(1, 5).map((imgUrl, idx) => {
+                const photoIdx = idx + 1;
+                const isLast = idx === Math.min(3, galleryImages.length - 2);
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => {
+                      setActivePhotoIndex(photoIdx);
+                      setIsLightboxOpen(true);
+                    }}
+                    className="hidden md:block relative h-[155px] overflow-hidden cursor-pointer bg-slate-200"
+                  >
+                    <img
+                      src={imgUrl}
+                      alt={`${spot.title} บรรยากาศ ${photoIdx + 1}`}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-black/10 hover:bg-black/0 transition-colors" />
 
-          </div>
+                    {/* View All Photos Button Overlay on the last thumbnail */}
+                    {isLast && galleryImages.length > 5 && (
+                      <div className="absolute inset-0 bg-slate-900/60 hover:bg-slate-900/50 backdrop-blur-2xs flex flex-col items-center justify-center text-white transition-all">
+                        <Camera className="w-6 h-6 mb-1 text-white" />
+                        <span className="font-extrabold text-xs sm:text-sm">ดูรูปทั้งหมด</span>
+                        <span className="text-[11px] text-slate-200 font-medium">({galleryImages.length} รูป)</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Floating Mobile View All Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActivePhotoIndex(0);
+                  setIsLightboxOpen(true);
+                }}
+                className="md:hidden absolute bottom-3 right-3 bg-slate-900/85 backdrop-blur-md text-white text-xs font-extrabold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg border border-white/20 active:scale-95"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                <span>ดูรูปทั้งหมด ({galleryImages.length})</span>
+              </button>
+            </div>
+          )}
 
           <div className="flex items-center justify-between text-xs text-slate-500 px-1 font-medium">
             <span className="inline-flex items-center gap-1.5">
@@ -462,7 +652,6 @@ export default function SpotDetailPage() {
             </span>
             <span className="hidden sm:inline">คลังภาพบรรยากาศ {galleryImages.length} มุมมอง</span>
           </div>
-
         </section>
 
         {/* =========================================================================
@@ -633,9 +822,28 @@ export default function SpotDetailPage() {
               
               {/* Header Status & District */}
               <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/80">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                  <span className="text-xs font-bold text-emerald-800 whitespace-nowrap">เปิดให้บริการวันนี้</span>
+                <div className="flex flex-col gap-0.5">
+                  <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
+                    openStatus.badgeVariant === 'open'
+                      ? 'bg-emerald-50 border border-emerald-200/80 text-emerald-800'
+                      : openStatus.badgeVariant === 'closed'
+                      ? 'bg-rose-50 border border-rose-200/80 text-rose-800'
+                      : 'bg-slate-100 border border-slate-200 text-slate-700'
+                  }`}>
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${
+                      openStatus.badgeVariant === 'open'
+                        ? 'bg-emerald-500 animate-pulse'
+                        : openStatus.badgeVariant === 'closed'
+                        ? 'bg-rose-500'
+                        : 'bg-slate-400'
+                    }`} />
+                    <span className="whitespace-nowrap">{openStatus.statusText}</span>
+                  </div>
+                  {openStatus.subText && (
+                    <span className="text-[11px] text-slate-500 font-medium pl-1">
+                      {openStatus.subText}
+                    </span>
+                  )}
                 </div>
                 <span className="text-xs font-semibold text-slate-400 truncate max-w-[130px]" title={`${spot.district}, จังหวัด${spot.province}`}>
                   {spot.district}

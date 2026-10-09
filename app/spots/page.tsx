@@ -16,8 +16,8 @@ import {
 } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
-import { SpotCard } from '@/components/SpotCard';
-import { SpotListItem } from '@/components/SpotListItem';
+import { SpotCard, SpotCardSkeleton } from '@/components/SpotCard';
+import { SpotListItem, SpotListItemSkeleton } from '@/components/SpotListItem';
 import { ViewModeToggle, ViewMode } from '@/components/ViewModeToggle';
 import { Pagination } from '@/components/Pagination';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
@@ -62,7 +62,7 @@ function SpotsPageContent() {
   const [isLocating, setIsLocating] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [currentPage, setCurrentPage] = useState(1);
-  const { spots: liveSpots } = usePublishedSpots();
+  const { spots: liveSpots, isLoaded } = usePublishedSpots();
   const spotsList = liveSpots.length > 0 ? liveSpots : MOCK_SPOTS;
   const [favoriteSpots, setFavoriteSpots] = useState<string[]>([]);
   const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
@@ -239,7 +239,12 @@ function SpotsPageContent() {
       }));
       result.sort((a, b) => ((a as any).distanceKm ?? 999) - ((b as any).distanceKm ?? 999));
     } else {
-      result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      // Smart Popularity Ranking: nationwide view count signal + rating bonus
+      result.sort((a, b) => {
+        const scoreA = (a.popularity || 0) + (a.rating > 0 ? a.rating * 200 : 0);
+        const scoreB = (b.popularity || 0) + (b.rating > 0 ? b.rating * 200 : 0);
+        return scoreB - scoreA;
+      });
     }
 
     return result;
@@ -533,7 +538,21 @@ function SpotsPageContent() {
         </div>
 
         {/* High-Density Spots Grid / List */}
-        {filteredSpots.length > 0 ? (
+        {!isLoaded && liveSpots.length === 0 ? (
+          viewMode === 'list' ? (
+            <div className="space-y-3">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <SpotListItemSkeleton key={i} />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <SpotCardSkeleton key={i} />
+              ))}
+            </div>
+          )
+        ) : filteredSpots.length > 0 ? (
           <>
             {viewMode === 'list' ? (
               <div className="space-y-3">
