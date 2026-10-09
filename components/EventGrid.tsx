@@ -6,6 +6,7 @@ import { EventItem } from '@/data/mockData';
 import { Heart, Calendar, MapPin, Users, Star, RotateCcw, Search, Globe, Repeat, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { isEventEnded } from '@/lib/dateUtils';
+import { formatEventBadgePrice, isPriceFree } from '@/lib/priceUtils';
 import { FloatingCarousel } from '@/components/FloatingCarousel';
 
 interface EventGridProps {
@@ -208,13 +209,14 @@ export const EventGrid: React.FC<EventGridProps> = ({
 
                       {event.price && (
                         <span
-                          className={`text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
-                            event.price.includes('ฟรี')
+                          className={`text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 max-w-[130px] sm:max-w-[140px] truncate ${
+                            isPriceFree(event.price)
                               ? 'bg-emerald-50 text-emerald-800'
                               : 'bg-slate-100 text-slate-700'
                           }`}
+                          title={event.price}
                         >
-                          {event.price.includes('ฟรี') ? 'ฟรี' : event.price.replace(/\s*\([^)]*\)/g, '').trim()}
+                          {formatEventBadgePrice(event.price, 'ฟรี')}
                         </span>
                       )}
                     </div>
@@ -452,12 +454,13 @@ export const EventGrid: React.FC<EventGridProps> = ({
             {event.price && (
               <span
                 className={`text-xs font-bold px-2.5 py-1 rounded-lg shrink-0 ${
-                  event.price.includes('ฟรี')
+                  isPriceFree(event.price)
                     ? 'bg-emerald-50 text-emerald-800'
                     : 'bg-slate-100 text-slate-800'
                 }`}
+                title={event.price}
               >
-                {event.price.includes('ฟรี') ? 'เข้าร่วมฟรี' : event.price.replace(/\s*\([^)]*\)/g, '').trim()}
+                {formatEventBadgePrice(event.price, event.eventType === 'public_venue' ? 'เข้าชมฟรี' : 'เข้าร่วมฟรี')}
               </span>
             )}
 

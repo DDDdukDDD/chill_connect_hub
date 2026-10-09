@@ -17,6 +17,7 @@ import {
 } from '@/data/mockData';
 import { isEventEnded } from '@/lib/dateUtils';
 import { resolveEventGallery } from '@/lib/eventImageResolver';
+import { parseEventPrice } from '@/lib/priceUtils';
 import { renderDescriptionContent, stripHtmlToPlainText } from '@/components/RichTextEditor';
 import { SpotBuddyGatheringModal, SpotBuddyPostItem } from '@/components/SpotBuddyGatheringModal';
 import { ExpoMeetupPassModal, ExpoMeetupPassData } from '@/components/ExpoMeetupPassModal';
@@ -208,6 +209,11 @@ export default function FairDetailPage() {
     if (!eventData) return [];
     return resolveEventGallery(eventData);
   }, [eventData]);
+
+  // Editorial Price & Ticket Tier Breakdown
+  const parsedPrice = useMemo(() => {
+    return parseEventPrice(eventData?.price, 'เข้าชมฟรี');
+  }, [eventData?.price]);
 
   // Favorites from localStorage (Only active when logged in)
   useEffect(() => {
@@ -902,6 +908,40 @@ export default function FairDetailPage() {
               {renderDescriptionContent(eventData.description)}
             </div>
 
+            {/* Ticket & Admission Breakdown Section (If multiple tiers) */}
+            {parsedPrice.hasMultipleTiers && (
+              <div className="space-y-3.5 pt-5 border-t border-slate-100">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Ticket className="w-5 h-5 text-[#2B527A]" />
+                  <h2 className="text-lg font-black text-slate-900 tracking-tight">
+                    ผังราคาและประเภทบัตรเข้าชม
+                  </h2>
+                  <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-800 border border-sky-200">
+                    ช่วงราคา {parsedPrice.displayPrice}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 pt-1">
+                  {parsedPrice.tiers.map((t, idx) => (
+                    <div
+                      key={idx}
+                      className={`p-3 rounded-2xl border text-center flex flex-col justify-center transition-all ${
+                        t.isOnline
+                          ? 'bg-gradient-to-b from-amber-50/50 to-white border-amber-200/70 shadow-2xs'
+                          : 'bg-slate-50/60 border-slate-200/80 hover:bg-white hover:shadow-2xs'
+                      }`}
+                    >
+                      <span className="text-[11px] font-semibold text-slate-500 block truncate">
+                        {t.label || (t.isOnline ? 'ออนไลน์' : 'บัตรเข้าชม')}
+                      </span>
+                      <span className="text-base font-black text-slate-900 mt-0.5">
+                        {t.price}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* 5. Verified Highlights */}
             <div className="space-y-3.5 pt-5 border-t border-slate-100">
               <h2 className="text-lg font-black text-slate-900 tracking-tight">
@@ -1126,12 +1166,38 @@ export default function FairDetailPage() {
             }`}>
               
               {/* Header Price & Status */}
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <span className="text-xs font-bold text-slate-500">ค่าเข้าชมนิทรรศการ</span>
-                <span className="text-lg font-black text-slate-900">
-                  {eventData.price && !eventData.price.includes('ฟรี') ? eventData.price : 'เข้าชมฟรี'}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 gap-2">
+                <span className="text-xs font-bold text-slate-500 shrink-0">ค่าเข้าชมนิทรรศการ</span>
+                <span className="text-base sm:text-lg font-black text-slate-900 text-right">
+                  {parsedPrice.displayPrice}
                 </span>
               </div>
+
+              {/* Multi-Tier Chips in Sidebar */}
+              {parsedPrice.hasMultipleTiers && (
+                <div className="bg-slate-50/90 rounded-2xl p-3 border border-slate-200/80 space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-600">
+                    <span className="flex items-center gap-1.5">
+                      <Ticket className="w-3.5 h-3.5 text-[#2B527A]" />
+                      <span>ประเภทบัตรและราคา ({parsedPrice.tiers.length} รูปแบบ)</span>
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 pt-0.5 max-h-36 overflow-y-auto">
+                    {parsedPrice.tiers.map((t, idx) => (
+                      <span
+                        key={idx}
+                        className={`text-[10.5px] font-bold px-2 py-0.5 rounded-md border ${
+                          t.isOnline
+                            ? 'bg-amber-50 text-amber-900 border-amber-200/70'
+                            : 'bg-white text-slate-800 border-slate-200/80 shadow-2xs'
+                        }`}
+                      >
+                        {t.label ? `${t.label}: ` : ''}{t.price}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Date & Time Summary */}
               <div className="space-y-3 text-xs">

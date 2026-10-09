@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { EventItem } from '@/data/mockData';
 import { isEventEnded } from '@/lib/dateUtils';
+import { parseEventPrice } from '@/lib/priceUtils';
 import { X, Calendar, MapPin, Users, Heart, Share2, CheckCircle2, ShieldCheck, Clock, ExternalLink, Ticket, AlertCircle, Bell, Navigation2, MessageCircle, Check, Copy, Sparkles, Flag, ShieldAlert, Lock, AlertTriangle, Plus, ChevronDown, ChevronUp, Image as ImageIcon, HelpCircle, CheckSquare, Star, User, QrCode, ArrowRight } from 'lucide-react';
 import { ReportSafetyModal } from './ReportSafetyModal';
 import { ProfileModal } from './ProfileModal';
@@ -115,6 +116,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
   const isPublicVenue = event.eventType === 'public_venue';
   const isEnded = isEventEnded(event);
+  const parsedPrice = parseEventPrice(event.price, isPublicVenue ? 'เข้าชมฟรี' : 'เข้าร่วมฟรี');
 
   const handleOpenJoinConfirm = () => {
     if (!isLoggedIn && onRequireLogin) {
@@ -409,8 +411,12 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
                 {/* 2. Clean Price Pill */}
                 {event.price && (
-                  <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs">
-                    {event.price.includes('ฟรี') ? 'เข้าร่วมฟรี' : event.price}
+                  <span className={`text-[11px] font-bold px-3 py-1 rounded-full border shadow-2xs ${
+                    parsedPrice.isFree
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                      : 'bg-slate-100 text-slate-800 border-slate-200'
+                  }`}>
+                    {parsedPrice.displayPrice}
                   </span>
                 )}
 
@@ -1289,8 +1295,10 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                 <h4 className={`text-base sm:text-lg font-black leading-snug ${isPublicVenue ? 'text-[#2B527A]' : 'text-slate-900'}`}>
                   {event.title}
                 </h4>
-                <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black shrink-0">
-                  {!event.price || event.price.includes('ฟรี') ? 'เข้าร่วมฟรี' : event.price}
+                <span className={`px-3 py-1 rounded-full text-xs font-black shrink-0 ${
+                  parsedPrice.isFree ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-800 border border-slate-200'
+                }`}>
+                  {parsedPrice.displayPrice}
                 </span>
               </div>
 
@@ -1329,6 +1337,30 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                   </div>
                 </div>
               </div>
+
+              {/* Ticket Tiers Breakdown */}
+              {parsedPrice.hasMultipleTiers && (
+                <div className="pt-2 border-t border-dashed border-[#E8E2D8] space-y-2">
+                  <span className="text-[11px] font-extrabold text-slate-600 flex items-center gap-1.5">
+                    <Ticket className={`w-3.5 h-3.5 ${isPublicVenue ? 'text-[#2B527A]' : 'text-[#4A7C59]'}`} />
+                    <span>ผังราคาและประเภทบัตร ({parsedPrice.tiers.length} รูปแบบ)</span>
+                  </span>
+                  <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+                    {parsedPrice.tiers.map((t, idx) => (
+                      <span
+                        key={idx}
+                        className={`text-[10.5px] font-bold px-2 py-0.5 rounded-md border ${
+                          t.isOnline
+                            ? 'bg-amber-50 text-amber-900 border-amber-200'
+                            : 'bg-white text-slate-800 border-slate-200 shadow-2xs'
+                        }`}
+                      >
+                        {t.label ? `${t.label}: ` : ''}{t.price}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Perforated Divider & E-Ticket Guarantee */}
               <div className="border-t border-dashed border-[#E8E2D8] pt-3.5">

@@ -21,6 +21,7 @@ import {
 } from '@/data/mockData';
 import { isEventEnded } from '@/lib/dateUtils';
 import { resolveEventGallery } from '@/lib/eventImageResolver';
+import { parseEventPrice } from '@/lib/priceUtils';
 import { renderDescriptionContent } from '@/components/RichTextEditor';
 import { EventGrid } from '@/components/EventGrid';
 import {
@@ -152,6 +153,11 @@ export default function CommunityDetailPage() {
     if (!eventData) return [];
     return resolveEventGallery(eventData);
   }, [eventData]);
+
+  // Editorial Price & Ticket Tier Breakdown
+  const parsedPrice = useMemo(() => {
+    return parseEventPrice(eventData?.price, 'เข้าร่วมฟรี');
+  }, [eventData?.price]);
 
   // Load user status from localStorage
   useEffect(() => {
@@ -948,12 +954,34 @@ export default function CommunityDetailPage() {
               )}
 
               {/* Header Price */}
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <span className="text-xs font-bold text-slate-500">ค่าลงทะเบียน</span>
-                <span className="text-lg font-black text-slate-900">
-                  {eventData.price && !eventData.price.includes('ฟรี') ? eventData.price : 'เข้าร่วมฟรี'}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 gap-2">
+                <span className="text-xs font-bold text-slate-500 shrink-0">ค่าลงทะเบียน</span>
+                <span className="text-base sm:text-lg font-black text-slate-900 text-right">
+                  {parsedPrice.displayPrice}
                 </span>
               </div>
+
+              {/* Multi-Tier Chips in Sidebar */}
+              {parsedPrice.hasMultipleTiers && (
+                <div className="bg-slate-50/90 rounded-2xl p-3 border border-slate-200/80 space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-600">
+                    <span className="flex items-center gap-1.5">
+                      <Ticket className="w-3.5 h-3.5 text-[#F26430]" />
+                      <span>ประเภทและอัตราค่าลงทะเบียน ({parsedPrice.tiers.length} รูปแบบ)</span>
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 pt-0.5 max-h-36 overflow-y-auto">
+                    {parsedPrice.tiers.map((t, idx) => (
+                      <span
+                        key={idx}
+                        className="text-[10.5px] font-bold px-2 py-0.5 rounded-md border bg-white text-slate-800 border-slate-200/80 shadow-2xs"
+                      >
+                        {t.label ? `${t.label}: ` : ''}{t.price}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Progress & Remaining Seats */}
               <div className="space-y-2">
@@ -1405,10 +1433,26 @@ export default function CommunityDetailPage() {
                 <h4 className="text-base sm:text-lg font-black text-slate-900 leading-snug">
                   {cleanText(eventData.title)}
                 </h4>
-                <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black shrink-0">
-                  {!eventData.price || cleanText(eventData.price).includes('ฟรี') ? 'เข้าร่วมฟรี' : cleanText(eventData.price)}
+                <span className={`px-3 py-1 rounded-full text-xs font-black shrink-0 ${
+                  parsedPrice.isFree ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-800 border border-slate-200'
+                }`}>
+                  {parsedPrice.displayPrice}
                 </span>
               </div>
+
+              {/* Tier Pills if multiple */}
+              {parsedPrice.hasMultipleTiers && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {parsedPrice.tiers.map((t, idx) => (
+                    <span
+                      key={idx}
+                      className="text-[10.5px] font-bold px-2 py-0.5 rounded-md border bg-white text-slate-800 border-slate-200 shadow-2xs"
+                    >
+                      {t.label ? `${t.label}: ` : ''}{t.price}
+                    </span>
+                  ))}
+                </div>
+              )}
 
               {/* Clean Key-Value Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm text-slate-700 font-medium pt-1">

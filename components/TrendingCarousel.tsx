@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Sparkles, Flame, Calendar, MapPin, Users, Heart, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { EventItem } from '@/data/mockData';
 import { isEventEnded } from '@/lib/dateUtils';
+import { formatEventBadgePrice, isPriceFree } from '@/lib/priceUtils';
 
 interface TrendingCarouselProps {
   events: EventItem[];
@@ -261,13 +262,14 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
                       </span>
                       {event.price && (
                         <span
-                          className={`text-[9.5px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                            event.price.includes('ฟรี')
+                          className={`text-[9.5px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 max-w-[110px] sm:max-w-[125px] truncate ${
+                            isPriceFree(event.price)
                               ? 'bg-emerald-50 text-emerald-800'
                               : 'bg-slate-100 text-slate-700'
                           }`}
+                          title={event.price}
                         >
-                          {event.price.includes('ฟรี') ? 'ฟรี' : event.price.replace(/\s*\([^)]*\)/g, '').trim()}
+                          {formatEventBadgePrice(event.price, 'ฟรี')}
                         </span>
                       )}
                     </div>

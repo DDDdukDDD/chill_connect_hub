@@ -23,6 +23,19 @@ Item template:
 
 ## Open
 
+### FE-008 · Editorial Price Range Formatting & Ticket Tier Breakdown: Unified Card Badges and Structured Detail Views
+- **From → To:** Frontend → Backend (informational)
+- **Date / branch:** 2026-10-10 · `main`
+- **What changed:**
+  1. **Card Price Badge Consolidation (`lib/priceUtils.ts`, `components/EventGrid.tsx`, `components/TrendingCarousel.tsx`, `components/SurpriseModal.tsx`)**:
+     - Raw scraped prices with multiple tiers or verbose text (e.g. `6,900 / 5,900 / ... / 1,500 บาท Live Streaming 1,500 / Rerun 1,200 บาท`) previously wrapped into 3+ lines, squishing host names into `I...` and disrupting card heights.
+     - Implemented `parseEventPrice` and `formatEventBadgePrice`: Cards now display a clean, single-line price range (e.g. `฿1,200 - ฿6,900` or `เข้าชมฟรี`) preserving host name visibility and uniform card dimensions.
+  2. **Structured Ticket Tier Breakdown on Detail Pages (`app/fairs/[id]/page.tsx`, `app/community/[id]/page.tsx`, `components/EventDetailModal.tsx`)**:
+     - Summary rows in sticky sidebars now show clean range badges (e.g. `฿1,200 - ฿6,900`) without line break clutter.
+     - Multi-tier events render a dedicated Ticket Tiers breakdown (badges / pill chips for each ticket category: seat tiers, Live Streaming, Rerun) both in the sidebar and main editorial sections.
+- **Action for Backend:** None required. Raw database price strings remain unchanged; the frontend parses and formats them dynamically.
+- **Status:** Open
+
 ### FE-007 · Homepage UI Modernization: 3-Pillar Search, 2-Layer Hierarchy & Above-The-Fold Laptop Viewport Optimization
 - **From → To:** Frontend → Backend (informational)
 - **Date / branch:** 2026-10-09 · `main` (commits 81ec72c, acf1fc6, 0e36185)
