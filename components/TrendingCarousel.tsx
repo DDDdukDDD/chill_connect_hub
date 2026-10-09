@@ -202,7 +202,7 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
           onMouseUp={handleMouseUp}
           onTouchStart={() => setIsPaused(true)}
           onTouchEnd={() => setIsPaused(false)}
-          className={`flex gap-3 sm:gap-3.5 overflow-x-auto no-scrollbar py-1.5 px-0.5 scroll-smooth select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'
+          className={`flex gap-3 sm:gap-3.5 overflow-x-auto no-scrollbar py-1.5 px-0.5 scroll-smooth select-none snap-x snap-mandatory ${isDragging ? 'cursor-grabbing' : 'cursor-grab'
             }`}
         >
           {trendingEvents.map((event) => {
@@ -222,10 +222,10 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
                     onSelectEvent(event);
                   }
                 }}
-                className="min-w-[235px] sm:min-w-[260px] max-w-[260px] bg-white rounded-2xl overflow-hidden shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group flex flex-col shrink-0 relative border border-slate-100"
+                className="w-[calc((100%-12px)/2)] sm:w-[calc((100%-2*14px)/3)] md:w-[calc((100%-3*14px)/4)] lg:w-[calc((100%-4*14px)/5)] bg-white rounded-2xl overflow-hidden shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group flex flex-col shrink-0 snap-start relative border border-slate-100"
               >
                 {/* Image Banner */}
-                <div className="relative h-[122px] sm:h-[130px] w-full bg-slate-100 overflow-hidden">
+                <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full bg-slate-100 overflow-hidden shrink-0">
                   <img
                     src={event.image}
                     alt={event.title}

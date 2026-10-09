@@ -535,11 +535,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
         <div
           ref={scrollContainerRef}
           onScroll={checkScrollability}
-          className={`flex ${
-            minimalHeader
-              ? 'gap-3 sm:gap-3.5 pb-2 pt-0.5 px-0.5 no-scrollbar'
-              : 'gap-3.5 sm:gap-4 scrollbar-none py-2 px-1 -mx-1'
-          } overflow-x-auto snap-x snap-mandatory scroll-smooth`}
+          className="flex gap-3 sm:gap-3.5 pb-2 pt-0.5 px-0.5 no-scrollbar overflow-x-auto snap-x snap-mandatory scroll-smooth"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {displayQuests.map((quest) => {
@@ -642,7 +638,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
               <div
                 key={quest.id}
                 onClick={() => handleOpenDetailModal(quest)}
-                className="w-[80vw] sm:w-[calc(50%-0.625rem)] lg:w-[calc(25%-0.75rem)] shrink-0 snap-start bg-white rounded-3xl p-3.5 sm:p-4 border border-slate-200 shadow-2xs hover:shadow-xl hover:border-purple-500/40 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between space-y-3 relative overflow-hidden group/card cursor-pointer"
+                className="w-[calc((100%-12px)/2)] sm:w-[calc((100%-2*14px)/3)] md:w-[calc((100%-3*14px)/4)] lg:w-[calc((100%-4*14px)/5)] shrink-0 snap-start bg-white rounded-2xl p-3 sm:p-3.5 border border-slate-200 shadow-2xs hover:shadow-lg hover:border-purple-500/40 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between space-y-2 relative overflow-hidden group/card cursor-pointer"
               >
                 {/* Official Quest Top Accent Stripe */}
                 <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${brandReward.type === 'brand_partner' ? 'from-amber-500 via-amber-400 to-orange-400' : 'from-purple-600 via-indigo-400 to-purple-400'}`} />
