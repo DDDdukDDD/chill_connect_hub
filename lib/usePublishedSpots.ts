@@ -61,8 +61,8 @@ export function loadPublishedSpots(): Promise<LifestyleSpotItem[]> {
     })
     .catch((error) => {
       console.warn('Using bundled spots fallback:', error);
-      pending = null; // retry on next mount
-      cachedSpots = MOCK_SPOTS;
+      // Show the bundled spots for now but do not cache them, so the next mount retries the API
+      pending = null;
       return MOCK_SPOTS;
     });
   return pending;
