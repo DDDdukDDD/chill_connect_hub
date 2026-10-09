@@ -47,3 +47,4 @@ next-env.d.ts
 # Staff accounts (password hashes) and the admin audit log are local runtime data, never committed
 /data/staff_accounts.json
 /data/audit_log.json
+/data/google_places_usage.json
