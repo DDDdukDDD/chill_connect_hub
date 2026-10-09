@@ -58,6 +58,36 @@ Item template:
 - **Action for Backend:** None required. All shared signatures and contracts (`fetchAllContentPages`, `usePublishedSpots`, `useSpotCatalog`) remain 100% backward-compatible.
 - **Status:** Open
 
+### BE-011 · Sample community meetups no longer expire (dates roll forward)
+- **From → To:** Backend → Frontend
+- **Date / branch:** 2026-10-09 · `claude`
+- **Why:** the 50 sample meetups had fixed Aug–Oct 2026 dates. By 9 Oct only 7 were still visible, so `/community` looked empty.
+- **What changed:** `lib/sampleEventDates.ts` moves an ended sample meetup forward by whole 77-day cycles when events are read. All 50 now show again, spread over Oct–Dec 2026, on their original weekdays. Stored data is unchanged, and only `MOCK_EVENTS` community ids roll.
+- **Action for Frontend (small):** `app/community/[id]/page.tsx` first renders `MOCK_EVENTS.find(...)` (the old fixed date), then replaces it with the `/api/events` result. For sample meetups this briefly shows the old date and may show "ended" badges. Waiting for the API (or a skeleton) before showing the date avoids the flash. Any other place that reads `MOCK_EVENTS` dates directly has the same issue.
+- **Status:** Open
+
+### BE-010 · "ร้านอร่อยรอบย่าน" now uses live Google ratings (≥ 4.5★, ≥ 50 reviews)
+- **From → To:** Backend → Frontend
+- **Date / branch:** 2026-10-09 · `claude`
+- **What changed:**
+  - `GET /api/spots/[id]/nearby-dining` calls Google Places on the server when `GOOGLE_PLACES_API_KEY` is set. It returns only places rated 4.5 or higher with at least 50 reviews. See [API.md](API.md).
+  - `getNearbyDining()` in `lib/nearbyDiningService.ts` now calls that route from the browser instead of calling Google directly. The old code put the key in photo URLs, accepted a `NEXT_PUBLIC_` key and invented ratings when they were missing.
+  - The hard-coded `CURATED_REAL_DINING` list was removed. It held invented names, ratings (4.7–4.9) and stock photos.
+  - Item shape is unchanged, plus optional `reviewsSource: 'google'`. The response adds `source` and `attribution`.
+- **Action for Frontend (`components/NearbyDiningSection.tsx`):**
+  1. **Required by Google's terms:** when `item.reviewsSource === 'google'`, show the text "Google Maps" (for example "คะแนนจาก Google Maps") near the cards.
+  2. Show the review count next to the star for Google items, for example `4.7 (820 รีวิว)`.
+  3. Google items have `image` set to a neutral placeholder (a coffee-cup icon on slate). Show it as is, or render an icon tile instead.
+  4. The subtitle "คัดสรร 6 ร้าน … ในระยะ 5-10 นาที" can now say "คะแนน 4.5 ดาวขึ้นไปจาก Google" when the source is Google.
+- **Status:** Open
+
+### BE-009 · `usePublishedSpots` retries after a failed load (follow-up to FE-006)
+- **From → To:** Backend → Frontend (informational)
+- **Date / branch:** 2026-10-09 · `claude`
+- **What changed:** In `lib/usePublishedSpots.ts`, a failed `/api/spots` load used to set `cachedSpots = MOCK_SPOTS`. Every later mount then returned the 137 bundled spots without retrying, although the comment said it would retry. Now the bundled spots are shown for that render only, and the next mount fetches again. The FE-006 caching of a successful load is unchanged.
+- **Action for Frontend:** none.
+- **Status:** Open
+
 ### BE-008 · Admin console restructured: review queue, staff roles, audit log
 - **From → To:** Backend → Frontend (informational)
 - **Date / branch:** 2026-10-06 · `claude`

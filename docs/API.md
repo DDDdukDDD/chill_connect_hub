@@ -5,7 +5,7 @@
 > differs from the code, the code is wrong or this file is stale — report it in [HANDOFF.md](HANDOFF.md).
 >
 > **Status:** prototype. Data is seed/mock data stored in JSON files; there are no real users yet.
-> Last updated: 2026-10-06
+> Last updated: 2026-10-09
 
 ## Conventions
 
@@ -58,6 +58,11 @@ Response `200`:
 { success: true, events: EventItem[], total: number, pagination: Pagination }
 ```
 Cache: `public, s-maxage=30, stale-while-revalidate=120` — a newly created or approved event can take up to ~30s to appear through a CDN.
+
+**Sample meetups roll forward (prototype stage):**
+- Community events whose id comes from the bundled `MOCK_EVENTS` have fixed 2026 dates. When one has ended, every read (this endpoint, admin lists) returns its `date` moved forward by whole 77-day cycles, which keeps its weekday.
+- Stored data is unchanged.
+- Member-created, scraped, recurring and `status: 'ended'` events are never moved.
 
 ### `POST /api/events` — create an event
 
@@ -131,18 +136,31 @@ Response `200`: `{ success: true, spot: LifestyleSpotItem }`. Cache: `s-maxage=6
 
 | Param | Default |
 |---|---|
-| `limit` | `6` |
+| `limit` | `6` (1–12) |
+
+Two sources:
+- **`source: 'google'`** applies when the server has `GOOGLE_PLACES_API_KEY` and is under its monthly cap. It returns live Google Places results within 3 km, keeping only places rated **≥ 4.5 with ≥ 50 reviews**. Nothing is stored except the place id, and the response is `Cache-Control: no-store`. Items carry `reviewsSource: 'google'`.
+  - **Google's terms require the UI to show the `attribution` text ("Google Maps")** next to these results. `image` is a neutral placeholder, because Google photos are a separate paid request.
+  - An empty `data` means nothing nearby passed the filter.
+- **`source: 'catalog'`** applies otherwise: no key, the monthly cap was reached, or Google failed. It returns nearby cafes from our published catalog (≤ 15 km), each with `spotId`. These have no ratings (`rating: 0`), so no star should be shown.
 
 Response `200`:
 ```ts
 {
   spotId: string; spotTitle: string; district: string; province: string;
+  source: 'google' | 'catalog';
+  attribution?: 'Google Maps';                       // present when source = 'google'
+  filter?: { minRating: 4.5; minReviews: 50 };       // present when source = 'google'
   data: Array<{
-    id: string; name: string;
+    id: string; name: string;                        // google ids are "gplace-<place id>"
     category: 'cafe' | 'restaurant' | 'slowbar' | 'bakery' | 'local_food'; categoryLabel: string;
     image: string; rating: number; reviewsCount: number; distanceKm: number;
-    openHours: string; priceRange?: string; specialty: string; googleMapsUrl: string;
-    isPartner?: boolean; spotId?: string;
+    openHours: string;                               // google: 'เปิดอยู่ตอนนี้' | 'ปิดอยู่ตอนนี้' | 'ไม่ระบุเวลาเปิด'
+    priceRange?: string;                             // google: '฿' … '฿฿฿฿'
+    specialty: string;                               // google: short address
+    googleMapsUrl: string;
+    isPartner?: boolean; spotId?: string;            // spotId = same place in our catalog
+    reviewsSource?: 'google';
   }>;
 }
 ```
@@ -233,8 +251,8 @@ All writes are `POST` with an `action` field unless noted.
 
 | Route | Reads | Actions |
 |---|---|---|
-| `/api/admin/events` | `GET` → `{ events: AdminEventItem[] (all moderation states), total, autoPublish }`. **Paginated mode** when `page` is present: `?page&limit(≤100)&type=community\|public_venue&status=pending\|approved\|rejected\|all&format=recurring\|online\|physical\|all&q` → `{ events, counts: {total,pending,approved,rejected,recurring,online}, pagination }`, sorted pending-first then newest; `counts` cover the whole `type` | `create {eventData}`, `update_status {id, status: approved\|rejected\|pending}`, `approve_all`, `update_fields {id, updatedFields}`, `delete {id}`, `toggle_auto_publish {autoPublish}`, `reset_and_seed` — each returns the updated `events` list |
-| `/api/admin/spots` | `GET ?province&category&q&status=draft\|published&image=missing\|broken\|problem` (legacy `filter=missing_image`) → `{ spots (each with imageStatus: ok\|broken\|missing\|unchecked), totalCount, filteredCount, draftCount, missingImagesCount, brokenImagesCount, uncheckedImagesCount, distinctProvinces }`; add `page&limit` for paginated `spots` + `pagination` | `create {newSpot}` (starts as draft), `update {spotId, updatedFields}`, `delete {spotId}`, `set_publication {status: published\|draft, spotIds? \| scope?: tourism_directory\|osm\|imported\|curated}` (one write; returns `{ updated }`), `auto_enrich_images` — each returns `spots`. `check_images` loads every stored image URL (public HTTPS only; results cached in memory for 6h) → `{ checked, ok, broken }` |
+| `/api/admin/events` | `GET` → `{ events: AdminEventItem[] (all moderation states), total, autoPublish }`. **Paginated mode** when `page` is present: `?page&limit(≤100)&type=community\|public_venue&status=pending\|approved\|rejected\|all&format=recurring\|online\|physical\|all&q` → `{ events, counts: {total,pending,approved,rejected,recurring,online}, pagination }`, sorted pending-first then newest; `counts` cover the whole `type` | `create {eventData}` (needs `eventType`; validated with the platform form rules (title ≥ 5, province, location, description ≥ 15 plain characters, date; community also needs time and 2–15 people; fairs need `hostName`) and returns `400` otherwise; `approvalStatus` is `approved` only when sent as such, otherwise `pending`), `update_status {id, status: approved\|rejected\|pending}`, `approve_all`, `update_fields {id, updatedFields}` (only content fields are applied; `approvalStatus`, `participantsCount`, `id`, `eventType` and `source` are ignored; changed fields are validated with the same rules), `delete {id}`, `toggle_auto_publish {autoPublish}`, `reset_and_seed` — each returns the updated `events` list |
+| `/api/admin/spots` | `GET ?province&category (stored category such as temple, or one of the 7 vibes such as sea_island)&q&status=draft\|published&image=missing\|broken\|problem` (legacy `filter=missing_image`) → `{ spots (each with imageStatus: ok\|broken\|missing\|unchecked), totalCount, filteredCount, draftCount, missingImagesCount, brokenImagesCount, uncheckedImagesCount, distinctProvinces }`; add `page&limit` for paginated `spots` + `pagination` | `create {newSpot}` (starts as draft unless `publicationStatus: published`; stores only what was sent: `rating` and `reviewsCount` are 0, there is no stock image, labels default to the Thai category label, and `googleMapsUrl` defaults to a coordinates search link). Create and `update` require coordinates inside Thailand (`400` otherwise); `update` also accepts `contact` and `entryFee`, `update {spotId, updatedFields}`, `delete {spotId}`, `set_publication {status: published\|draft, spotIds? \| scope?: tourism_directory\|osm\|imported\|curated}` (one write; returns `{ updated }`), `auto_enrich_images` — each returns `spots`. `check_images` loads every stored image URL (public HTTPS only; results cached in memory for 6h) → `{ checked, ok, broken }` |
 | `/api/admin/quests` | `GET ?status&category&q&page&limit` → `{ quests, total, pagination }` | `create {quest}` (starts as draft; accepts `startDate`, `endDate`, `image`, `brandReward`), `update {id, updatedFields}` (`brandReward: null` clears it; `daysRemaining` is ignored), `set_status {id, status: draft\|active\|ended}` (activating a quest whose `endDate` has passed returns `400`), `delete {id}` |
 | `/api/admin/sources` | `GET` → `{ sources }` | `POST {name, url (https), targetType: events\|spots, ...}` add (`400` for blocked platforms: Meetup, Facebook, allevents.in, dev.events) · `PATCH {id, status}` toggle · `DELETE ?id=` remove |
 | `/api/admin/scrape` | — | `POST {targetType: events\|spots, sourceId?, province?, limit?}` → `{ newCount, duplicateCount, totalScanned, sourceResults, events \| spots }`. Imported events are always `public_venue`, start as `pending` unless auto-publish is on, and use Thai display dates (`"12 ต.ค. 2026"`). Province-based spot sources (Tourism Directory) require `province` (one of `MASTER_77_PROVINCES`; otherwise `400`) and import up to `limit` attractions (1–100, default 30) plus a few cafes, as drafts |
