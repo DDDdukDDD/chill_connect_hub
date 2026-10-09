@@ -22,6 +22,7 @@ import {
 import { AsyncMutex } from '../mutex';
 import { readDatabase, updateDatabase } from '../databaseFile';
 import { normalizeStoredEvents } from '../../eventNormalization';
+import { rollSampleEventDate, rollSampleEventDates } from '../../sampleEventDates';
 import { applyQuestLifecycle, upgradeLegacySeedQuests } from '../../questLifecycle';
 import type { AdminEventItem } from '../../eventsStore';
 import { cacheManager } from '../../cache';
@@ -173,7 +174,8 @@ export class JsonFileAdapter implements IDataRepository {
       cacheKey,
       async () => {
         await this.ensureInitialized();
-        const filtered = filterEvents(this.events, params);
+        // Sample meetups roll forward on read so they never all expire (see lib/sampleEventDates.ts)
+        const filtered = filterEvents(rollSampleEventDates(this.events), params);
         return paginateArray(filtered, params?.page || 1, params?.limit || 12);
       },
       { ttlMs: 30 * 1000, tags: ['events'] }
@@ -186,7 +188,8 @@ export class JsonFileAdapter implements IDataRepository {
       cacheKey,
       async () => {
         await this.ensureInitialized();
-        return this.events.find((e) => e.id === id) || null;
+        const event = this.events.find((e) => e.id === id);
+        return event ? rollSampleEventDate(event) : null;
       },
       { ttlMs: 60 * 1000, tags: ['events', `event:${id}`] }
     );
@@ -239,7 +242,7 @@ export class JsonFileAdapter implements IDataRepository {
 
   public async listAllEvents(): Promise<EventItem[]> {
     await this.ensureInitialized();
-    return [...this.events];
+    return rollSampleEventDates(this.events);
   }
 
   public async createEvents(data: CreateEventDTO[]): Promise<EventItem[]> {
