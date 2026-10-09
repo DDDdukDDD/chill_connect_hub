@@ -812,7 +812,31 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </div>
         ) : (
           /* CASE 2: Empty Query State (Categorized Directory Filtered by Active Tab) */
-          <div className="p-2.5 sm:p-3 space-y-4">
+          <div className="p-2.5 sm:p-3 space-y-3.5">
+            {/* Quick Popular Discovery Chips inside dropdown */}
+            <div className="px-1 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500">
+                <Flame className="w-3.5 h-3.5 text-amber-500" />
+                <span>คำค้นยอดนิยม</span>
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {(TAB_POPULAR_TAGS[activeModeTab] || POPULAR_DISCOVERY_TAGS).map((tag) => (
+                  <button
+                    key={tag.label}
+                    type="button"
+                    onMouseDown={() => {
+                      setSearchQuery(tag.query);
+                      setIsFocused(false);
+                      if (onSearchSubmit) setTimeout(onSearchSubmit, 50);
+                    }}
+                    className="inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200 transition-all cursor-pointer active:scale-95"
+                  >
+                    {tag.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="px-1 pt-0.5 flex items-center justify-between border-b border-slate-100 pb-2">
               <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                 <Compass className="w-3.5 h-3.5 text-[#4A7C59]" />
@@ -982,7 +1006,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           className="group relative transition-all duration-300"
         >
             {/* 1. Immersive Panoramic Lifestyle Carousel Window (Bright Luxury View - Compact on Mobile, Rich on Desktop) */}
-            <div className="relative rounded-3xl overflow-hidden border border-slate-200/90 shadow-md h-[225px] sm:h-[350px] md:h-[370px] pb-12 sm:pb-28 md:pb-32 pt-4 sm:pt-8 px-3 sm:px-8 flex flex-col justify-start text-center">
+            <div className="relative rounded-3xl overflow-hidden border border-slate-200/90 shadow-md h-[225px] sm:h-[325px] md:h-[345px] pb-8 sm:pb-20 md:pb-24 pt-4 sm:pt-7 px-3 sm:px-8 flex flex-col justify-start text-center">
               
               {/* Background Photos with Cross-fade */}
               <div className="absolute inset-0 z-0 pointer-events-none">
@@ -1165,8 +1189,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               </div>
             ) : (
               /* 2. Floating All-in-One Lifestyle Search Console (Trip.com Luxury Booking Portal Style - Compact on Mobile) */
-              <div className="relative -mt-[52px] sm:-mt-[106px] md:-mt-[116px] lg:-mt-[120px] z-50 w-[96%] sm:w-[92%] md:w-[90%] lg:w-full max-w-5xl xl:max-w-6xl 2xl:max-w-[1200px] mx-auto px-1.5 sm:px-4">
-              <div className="relative z-50 bg-white rounded-2xl sm:rounded-3xl p-2.5 sm:p-4 md:p-5 pb-2 sm:pb-3 md:pb-3.5 shadow-[0_20px_50px_-15px_rgba(15,23,42,0.15),0_4px_16px_rgba(15,23,42,0.04)] border border-slate-200/90 space-y-2.5 sm:space-y-3.5">
+              <div className="relative -mt-[44px] sm:-mt-[68px] md:-mt-[74px] lg:-mt-[78px] z-50 w-[96%] sm:w-[92%] md:w-[90%] lg:w-full max-w-5xl xl:max-w-6xl 2xl:max-w-[1200px] mx-auto px-1.5 sm:px-4">
+              <div className="relative z-50 bg-white rounded-2xl sm:rounded-3xl p-2.5 sm:p-3 md:p-3.5 shadow-[0_20px_50px_-15px_rgba(15,23,42,0.15),0_4px_16px_rgba(15,23,42,0.04)] border border-slate-200/90 space-y-2 sm:space-y-2.5">
                 
                 {/* 3 Core Pillars + Showroom Navigation Tabs with Floating Surprise Me Action */}
                 <div className="flex items-end justify-between border-b border-slate-200/90 px-1 sm:px-2 overflow-x-auto overflow-y-hidden no-scrollbar gap-2 sm:gap-6 select-none">
@@ -1312,28 +1336,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                           <span>ค้นหา</span>
                         </button>
                       </div>
-                    </div>
-
-                    {/* Luxury Quick Discovery Chips */}
-                    <div className="flex items-center gap-1.5 sm:gap-2 px-1 pt-0.5 overflow-x-auto no-scrollbar select-none py-0.5">
-                      <span className="text-[10px] sm:text-xs font-bold text-slate-400 shrink-0 uppercase tracking-wider flex items-center gap-1">
-                        <Flame className="w-3 h-3 text-amber-500" />
-                        <span>คำค้นยอดนิยม:</span>
-                      </span>
-                      {(TAB_POPULAR_TAGS[activeModeTab] || POPULAR_DISCOVERY_TAGS).map((tag) => (
-                        <button
-                          key={tag.label}
-                          type="button"
-                          onClick={() => {
-                            setIsFocused(false);
-                            setSearchQuery(tag.query);
-                            if (onSearchSubmit) setTimeout(onSearchSubmit, 50);
-                          }}
-                          className="inline-flex items-center text-[11px] sm:text-xs font-medium px-2.5 py-1 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200/80 transition-all cursor-pointer hover:border-slate-300 shrink-0 active:scale-95"
-                        >
-                          <span>{tag.label}</span>
-                        </button>
-                      ))}
                     </div>
                   </div>
                 ) : (
@@ -1491,47 +1493,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       </div>
 
                     </div>
-
-                    {/* Under Search Box: Popular Tags & Link in Deep Dive Console */}
-                    <div className="flex items-center justify-between gap-2 px-1 pt-0.5 overflow-x-auto no-scrollbar select-none -mt-0.5">
-                      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 overflow-x-auto no-scrollbar py-0.5">
-                        <span className="text-[10px] sm:text-xs font-bold text-slate-400 shrink-0 uppercase tracking-wider flex items-center gap-1">
-                          <Flame className="w-3 h-3 text-amber-500" />
-                          <span>คำค้นยอดนิยม:</span>
-                        </span>
-                        {(TAB_POPULAR_TAGS[activeModeTab] || POPULAR_DISCOVERY_TAGS).map((tag) => (
-                          <button
-                            key={tag.label}
-                            type="button"
-                            onClick={() => {
-                              setIsFocused(false);
-                              setSearchQuery(tag.query);
-                              if (onSearchSubmit) setTimeout(onSearchSubmit, 50);
-                            }}
-                            className="inline-flex items-center text-[11px] sm:text-xs font-medium px-2.5 py-1 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200/80 transition-all cursor-pointer hover:border-slate-300 shrink-0 active:scale-95"
-                          >
-                            <span>{tag.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
                   </>
                 )}
 
                 {/* Suggestions Dropdown (Positioned cleanly relative to console) */}
                 {renderSearchSuggestions()}
-
-                {/* Subtle Value Proposition Link */}
-                <div className="flex items-center justify-center pt-1 border-t border-slate-100/80">
-                  <a
-                    href="#why-chill-and-connect"
-                    onClick={handleScrollToWhySection}
-                    className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-medium text-slate-400 hover:text-[#2563EB] transition-colors group cursor-pointer"
-                  >
-                    <span>ทำไมต้อง Chill & Connect? เรียนรู้เพิ่มเติม</span>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#2563EB] group-hover:translate-y-0.5 transition-transform" />
-                  </a>
-                </div>
 
               </div>
             </div>

@@ -1468,19 +1468,6 @@ function HomeContent() {
                     />
                   </div>
 
-                  {/* Meetup & Luma Inspired Lifestyle Category Rail */}
-                  <div className="pt-0.5">
-                    <CommunityCategoryRail
-                      selectedCategoryId={selectedCategory}
-                      onSelectCategory={(catId) => {
-                        setSelectedCategory(catId as any);
-                        setSelectedSubCategory(null);
-                      }}
-                      eventCounts={communityCategoryCounts}
-                      variant="rail"
-                    />
-                  </div>
-
                   {/* Community Events Carousel (Single row with manual floating scroll) */}
                   <div id="section-community-cards" className="scroll-mt-24">
                     <EventGrid
@@ -1584,17 +1571,6 @@ function HomeContent() {
                     />
                   </div>
 
-                  {/* Major Fairs & Expo Category Rail */}
-                  <div className="pt-0.5">
-                    <FairCategoryRail
-                      selectedCategoryId={selectedFairRailCategory}
-                      onSelectCategory={(catId) => {
-                        setSelectedFairRailCategory(catId);
-                      }}
-                      fairCounts={fairCategoryCounts}
-                    />
-                  </div>
-
                   {/* Public Venue Events Carousel (Single row with manual floating scroll) */}
                   <div id="section-fairs-cards" className="scroll-mt-24">
                     <EventGrid
@@ -1654,17 +1630,6 @@ function HomeContent() {
                           if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                         }
                       }}
-                    />
-                  </div>
-
-                  {/* Nationwide Spot Category Rail */}
-                  <div className="pt-0.5">
-                    <SpotCategoryRail
-                      selectedCategoryId={selectedSpotRailCategory}
-                      onSelectCategory={(catId) => {
-                        setSelectedSpotRailCategory(catId);
-                      }}
-                      spotCounts={spotCategoryCounts}
                     />
                   </div>
 
