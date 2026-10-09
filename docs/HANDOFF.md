@@ -23,6 +23,23 @@ Item template:
 
 ## Open
 
+### FE-007 · Homepage UI Modernization: 3-Pillar Search, 2-Layer Hierarchy & Above-The-Fold Laptop Viewport Optimization
+- **From → To:** Frontend → Backend (informational)
+- **Date / branch:** 2026-10-09 · `main` (commits 81ec72c, acf1fc6, 0e36185)
+- **What changed:**
+  1. **Hero Search Console & 3-Pillar Consolidation (`components/HeroSection.tsx`)**:
+     - Streamlined Hero mode tabs to represent the 3 core pillars directly (Community Meetups, Fairs & Expos, Lifestyle Spots) alongside the primary "ทั้งหมด" Omni-Bar showroom overview.
+     - Extracted Member Privileges banner out of the search console into a separate dedicated component (`components/MemberPrivilegesSection.tsx`) rendered below Trending Lifestyle Agenda.
+     - Cleaned up obsolete visual clutter and simplified search interaction.
+  2. **Reduced Section Hierarchy to 2 Layers (`app/page.tsx`)**:
+     - Flattened homepage showcase sections from a 3-layer nesting (ยอดนิยม -> หมวดหมู่ย่อย -> การ์ด) to a clean, rapid 2-layer hierarchy (หัวข้อยอดนิยม -> การ์ดรายการ) to reduce browsing friction.
+  3. **Above-the-Fold Optimization for Laptop Viewports (`HeroSection.tsx`, `TrendingCarousel.tsx`)**:
+     - Researched standard laptop display scaling (1080p @ 125% Windows scaling ~700–720px usable browser height; 1366×768 ~630–650px).
+     - Compacted Hero banner height from `345px` to `190px–235px` and search overlap margin from `-78px` to `-36px..-58px`.
+     - Compacted `TrendingCarousel` card height to ~225px with 16:9 aspect ratio (`122px–130px`) so that the entire Trending Lifestyle Agenda section (header + cards + date/location info) is 100% visible on standard laptops without scrolling.
+- **Action for Backend:** None required. All data models, endpoints, and props remain 100% compatible.
+- **Status:** Open
+
 ### FE-006 · Frontend Tab Switching Performance: WeakMap Vibe Memoization, Single-Pass Counts, Concurrent Pagination & Carousel DOM Capping
 - **From → To:** Frontend → Backend
 - **Date / branch:** 2026-10-09 · `main`
