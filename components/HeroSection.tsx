@@ -105,9 +105,7 @@ export const POPULAR_DISCOVERY_TAGS = [
   { label: 'วิ่งสวนเบญ', query: 'วิ่ง' },
   { label: 'บอร์ดเกม', query: 'บอร์ดเกม' },
   { label: 'สัปดาห์หนังสือ', query: 'หนังสือ' },
-  { label: 'BITEC / QSNCC', query: 'QSNCC' },
   { label: 'Slow Bar & กาแฟ', query: 'กาแฟ' },
-  { label: 'ธรรมชาติใกล้กรุง', query: 'ธรรมชาติ' },
 ];
 
 export const TAB_POPULAR_TAGS: Record<string, Array<{ label: string; query: string }>> = {
@@ -117,24 +115,18 @@ export const TAB_POPULAR_TAGS: Record<string, Array<{ label: string; query: stri
     { label: 'บอร์ดเกมสยาม', query: 'บอร์ดเกม' },
     { label: 'ดริปกาแฟ & ชิลล์', query: 'กาแฟ' },
     { label: 'เวิร์กช็อปเซรามิก', query: 'เซรามิก' },
-    { label: 'ปีนผา Bouldering', query: 'ปีนผา' },
-    { label: 'เดินถ่ายรูป', query: 'ถ่ายรูป' },
   ],
   fairs: [
     { label: 'สัปดาห์หนังสือ', query: 'หนังสือ' },
     { label: 'QSNCC ศูนย์สิริกิติ์', query: 'สิริกิติ์' },
     { label: 'BITEC บางนา', query: 'BITEC' },
-    { label: 'IMPACT เมืองทอง', query: 'IMPACT' },
     { label: 'เทศกาลกาแฟ', query: 'กาแฟ' },
-    { label: 'มาราธอน & งานวิ่ง', query: 'วิ่ง' },
   ],
   spots: [
     { label: 'สโลว์บาร์ & คาเฟ่', query: 'กาแฟ' },
     { label: 'ธรรมชาติ & ป่าไม้', query: 'ธรรมชาติ' },
     { label: 'เชียงใหม่ นิมมาน', query: 'เชียงใหม่' },
     { label: 'จุดชมวิวดอย & หมอก', query: 'ดอย' },
-    { label: 'ทะเล & เกาะ', query: 'ทะเล' },
-    { label: 'เมืองเก่า & วัด', query: 'เมืองเก่า' },
   ],
 };
 
@@ -219,7 +211,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   const [selectedQuestForModal, setSelectedQuestForModal] = useState<ChallengeQuest | null>(null);
   const [activeModeTab, setActiveModeTab] = useState<'all' | 'spots' | 'community' | 'fairs' | 'challenges' | 'moments'>(activeTab || 'all');
   const [activeJourneyPill, setActiveJourneyPill] = useState<'home' | 'community' | 'fairs' | 'spots' | 'challenges' | 'moments'>('home');
-  const [showcaseTab, setShowcaseTab] = useState<'vouchers' | 'rewards'>('vouchers');
   const [internalTimeFilter, setInternalTimeFilter] = useState('all');
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isHeroHovered, setIsHeroHovered] = useState(false);
@@ -1177,9 +1168,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               <div className="relative -mt-[52px] sm:-mt-[106px] md:-mt-[116px] lg:-mt-[120px] z-50 w-[96%] sm:w-[92%] md:w-[90%] lg:w-full max-w-5xl xl:max-w-6xl 2xl:max-w-[1200px] mx-auto px-1.5 sm:px-4">
               <div className="relative z-50 bg-white rounded-2xl sm:rounded-3xl p-2.5 sm:p-4 md:p-5 pb-2 sm:pb-3 md:pb-3.5 shadow-[0_20px_50px_-15px_rgba(15,23,42,0.15),0_4px_16px_rgba(15,23,42,0.04)] border border-slate-200/90 space-y-2.5 sm:space-y-3.5">
                 
-                {/* Trip.com Signature Navigation Tabs: Icon Above Label with Active Underline Bar */}
-                <div className="flex items-end justify-between border-b border-slate-200/90 px-1 sm:px-2 overflow-x-auto overflow-y-hidden no-scrollbar gap-2.5 sm:gap-8 select-none">
-                  <div className="flex items-end gap-2.5 sm:gap-8 shrink-0">
+                {/* 3 Core Pillars + Showroom Navigation Tabs with Floating Surprise Me Action */}
+                <div className="flex items-end justify-between border-b border-slate-200/90 px-1 sm:px-2 overflow-x-auto overflow-y-hidden no-scrollbar gap-2 sm:gap-6 select-none">
+                  <div className="flex items-end gap-3 sm:gap-7 shrink-0">
                     {/* Tab 1: ทั้งหมด */}
                     <button
                       type="button"
@@ -1255,57 +1246,18 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                         <span className="absolute bottom-0 left-0 right-0 h-[2.5px] sm:h-[3px] bg-[#2D5A3C] rounded-full" />
                       )}
                     </button>
-
-                    {/* Tab 5: ชาเลนจ์ (Section 4) */}
-                    <button
-                      type="button"
-                      onClick={() => handleScrollToSection('challenges', 'section-challenges', '/challenges')}
-                      className="flex flex-col items-center gap-1 sm:gap-1.5 pt-0.5 sm:pt-1 pb-2 sm:pb-3.5 relative group cursor-pointer transition-all shrink-0"
-                    >
-                      <Trophy className={`w-4.5 h-4.5 sm:w-6 sm:h-6 transition-colors ${
-                        activeModeTab === 'challenges' ? 'text-[#7C3AED]' : 'text-slate-400 group-hover:text-slate-600'
-                      }`} />
-                      <span className={`text-[11px] sm:text-sm whitespace-nowrap transition-colors ${
-                        activeModeTab === 'challenges' ? 'font-black text-[#7C3AED]' : 'font-semibold text-slate-500 group-hover:text-slate-800'
-                      }`}>
-                        ชาเลนจ์
-                      </span>
-                      {activeModeTab === 'challenges' && (
-                        <span className="absolute bottom-0 left-0 right-0 h-[2.5px] sm:h-[3px] bg-[#7C3AED] rounded-full" />
-                      )}
-                    </button>
-
-                    {/* Tab 6: โมเมนต์ (Section 5) */}
-                    <button
-                      type="button"
-                      onClick={() => handleScrollToSection('moments', 'section-moments', '/moments')}
-                      className="flex flex-col items-center gap-1 sm:gap-1.5 pt-0.5 sm:pt-1 pb-2 sm:pb-3.5 relative group cursor-pointer transition-all shrink-0"
-                    >
-                      <Camera className={`w-4.5 h-4.5 sm:w-6 sm:h-6 transition-colors ${
-                        activeModeTab === 'moments' ? 'text-rose-500' : 'text-slate-400 group-hover:text-slate-600'
-                      }`} />
-                      <span className={`text-[11px] sm:text-sm whitespace-nowrap transition-colors ${
-                        activeModeTab === 'moments' ? 'font-black text-rose-500' : 'font-semibold text-slate-500 group-hover:text-slate-800'
-                      }`}>
-                        โมเมนต์
-                      </span>
-                      {activeModeTab === 'moments' && (
-                        <span className="absolute bottom-0 left-0 right-0 h-[2.5px] sm:h-[3px] bg-rose-500 rounded-full" />
-                      )}
-                    </button>
                   </div>
 
-                  {/* Right Tab: สุ่มให้ฉันที */}
+                  {/* Right Action: Delightful Surprise Me Quick Pill */}
                   {onOpenSurpriseModal && (
                     <button
                       type="button"
-                      onClick={() => onOpenSurpriseModal(activeModeTab === 'challenges' || activeModeTab === 'moments' || (activeModeTab === 'all' && currentSlideIndex === 3) ? 'all' : activeModeTab)}
-                      className="flex flex-col items-center gap-1 sm:gap-1.5 pt-0.5 sm:pt-1 pb-2 sm:pb-3.5 relative group cursor-pointer transition-all shrink-0 text-amber-700 hover:text-amber-800"
+                      onClick={() => onOpenSurpriseModal(activeModeTab === 'community' || activeModeTab === 'fairs' || activeModeTab === 'spots' ? activeModeTab : 'all')}
+                      className="mb-2 sm:mb-2.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 border border-amber-200/90 text-amber-800 hover:text-amber-900 shadow-2xs hover:shadow-xs transition-all active:scale-95 cursor-pointer group text-xs sm:text-sm font-bold shrink-0"
+                      title="ให้ระบบช่วยสุ่มกิจกรรมหรือสถานที่โดนใจให้คุณ"
                     >
-                      <Dices className="w-4.5 h-4.5 sm:w-6 sm:h-6 text-amber-600 group-hover:rotate-180 transition-transform duration-500" />
-                      <span className="text-[11px] sm:text-sm font-bold whitespace-nowrap">
-                        สุ่มให้ฉันที
-                      </span>
+                      <Dices className="w-4 h-4 text-amber-600 group-hover:rotate-180 transition-transform duration-500" />
+                      <span className="whitespace-nowrap">สุ่มให้ฉันที</span>
                     </button>
                   )}
                 </div>
@@ -1362,40 +1314,26 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       </div>
                     </div>
 
-                    {/* Luxury Quick Discovery Chips & Anchor Link */}
-                    <div className="flex items-center justify-between gap-2 px-1 pt-0.5 overflow-x-auto no-scrollbar select-none">
-                      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 overflow-x-auto no-scrollbar py-0.5">
-                        <span className="text-[10px] sm:text-xs font-bold text-slate-400 shrink-0 uppercase tracking-wider flex items-center gap-1">
-                          <Flame className="w-3 h-3 text-amber-500" />
-                          <span>คำค้นยอดนิยม:</span>
-                        </span>
-                        {(TAB_POPULAR_TAGS[activeModeTab] || POPULAR_DISCOVERY_TAGS).map((tag) => (
-                          <button
-                            key={tag.label}
-                            type="button"
-                            onClick={() => {
-                              setIsFocused(false);
-                              setSearchQuery(tag.query);
-                              if (onSearchSubmit) setTimeout(onSearchSubmit, 50);
-                            }}
-                            className="inline-flex items-center text-[11px] sm:text-xs font-medium px-2.5 py-1 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200/80 transition-all cursor-pointer hover:border-slate-300 shrink-0 active:scale-95"
-                          >
-                            <span>{tag.label}</span>
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Right-aligned Link under Search Button */}
-                      <a
-                        href="#why-chill-and-connect"
-                        onClick={handleScrollToWhySection}
-                        className="hidden md:inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-[#2563EB] transition-colors group cursor-pointer shrink-0 ml-auto"
-                      >
-                        <span className="hover:underline underline-offset-4 decoration-slate-300 group-hover:decoration-[#2563EB]">
-                          ทำไมต้องเรา?
-                        </span>
-                        <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#2563EB] group-hover:translate-y-0.5 transition-transform" />
-                      </a>
+                    {/* Luxury Quick Discovery Chips */}
+                    <div className="flex items-center gap-1.5 sm:gap-2 px-1 pt-0.5 overflow-x-auto no-scrollbar select-none py-0.5">
+                      <span className="text-[10px] sm:text-xs font-bold text-slate-400 shrink-0 uppercase tracking-wider flex items-center gap-1">
+                        <Flame className="w-3 h-3 text-amber-500" />
+                        <span>คำค้นยอดนิยม:</span>
+                      </span>
+                      {(TAB_POPULAR_TAGS[activeModeTab] || POPULAR_DISCOVERY_TAGS).map((tag) => (
+                        <button
+                          key={tag.label}
+                          type="button"
+                          onClick={() => {
+                            setIsFocused(false);
+                            setSearchQuery(tag.query);
+                            if (onSearchSubmit) setTimeout(onSearchSubmit, 50);
+                          }}
+                          className="inline-flex items-center text-[11px] sm:text-xs font-medium px-2.5 py-1 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200/80 transition-all cursor-pointer hover:border-slate-300 shrink-0 active:scale-95"
+                        >
+                          <span>{tag.label}</span>
+                        </button>
+                      ))}
                     </div>
                   </div>
                 ) : (
@@ -1576,17 +1514,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                           </button>
                         ))}
                       </div>
-
-                      <a
-                        href="#why-chill-and-connect"
-                        onClick={handleScrollToWhySection}
-                        className="hidden md:inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-[#2563EB] transition-colors group cursor-pointer shrink-0 ml-auto"
-                      >
-                        <span className="hover:underline underline-offset-4 decoration-slate-300 group-hover:decoration-[#2563EB]">
-                          ทำไมต้องเรา?
-                        </span>
-                        <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#2563EB] group-hover:translate-y-0.5 transition-transform duration-200" />
-                      </a>
                     </div>
                   </>
                 )}
@@ -1594,386 +1521,20 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 {/* Suggestions Dropdown (Positioned cleanly relative to console) */}
                 {renderSearchSuggestions()}
 
+                {/* Subtle Value Proposition Link */}
+                <div className="flex items-center justify-center pt-1 border-t border-slate-100/80">
+                  <a
+                    href="#why-chill-and-connect"
+                    onClick={handleScrollToWhySection}
+                    className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-medium text-slate-400 hover:text-[#2563EB] transition-colors group cursor-pointer"
+                  >
+                    <span>ทำไมต้อง Chill & Connect? เรียนรู้เพิ่มเติม</span>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#2563EB] group-hover:translate-y-0.5 transition-transform" />
+                  </a>
+                </div>
+
               </div>
             </div>
-            )}
-
-            {/* 3. New User Exclusive & Privilege Ticket Strip (Exclusively in Showroom Mode 'all' to maintain uncluttered focus in pillar discovery modes) */}
-            {activeModeTab === 'all' && !hideSearchConsoleOnAllTab && (
-              <div className="mt-2 sm:mt-3.5 w-full space-y-2 sm:space-y-2.5">
-              
-              {/* Section Header */}
-              <div className="flex items-center justify-between gap-2 px-1 flex-wrap">
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-sm sm:text-lg font-black text-slate-900 tracking-tight">
-                      Member Privileges
-                    </h2>
-                    <span className="sm:hidden text-[9px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full border border-blue-100/80">
-                      ปัดซ้าย-ขวา ↔
-                    </span>
-                  </div>
-                  <p className="text-[10px] sm:text-xs font-medium text-slate-500 line-clamp-1">
-                    สิทธิประโยชน์ และของรางวัลไลฟ์สไตล์ เพื่อการออกไปใช้ชีวิตอย่างมีความหมาย
-                  </p>
-                </div>
-                
-                {/* Tab Switcher (Compact Segmented Control) */}
-                <div className="inline-flex items-center p-0.5 rounded-xl bg-slate-100/90 border border-slate-200/80 text-xs shadow-2xs">
-                  <button
-                    type="button"
-                    onClick={() => setShowcaseTab('vouchers')}
-                    className={`px-2.5 sm:px-3 py-1 rounded-lg font-extrabold text-[10.5px] sm:text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
-                      showcaseTab === 'vouchers'
-                        ? 'bg-white text-slate-900 shadow-xs'
-                        : 'text-slate-500 hover:text-slate-900'
-                    }`}
-                  >
-                    <Gift className="w-3 h-3 text-blue-600" />
-                    <span>สิทธิ์ต้อนรับ</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowcaseTab('rewards')}
-                    className={`px-2.5 sm:px-3 py-1 rounded-lg font-extrabold text-[10.5px] sm:text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
-                      showcaseTab === 'rewards'
-                        ? 'bg-white text-slate-900 shadow-xs'
-                        : 'text-slate-500 hover:text-slate-900'
-                    }`}
-                  >
-                    <Award className="w-3 h-3 text-blue-600" />
-                    <span>XP แลกรางวัล</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* TAB 1: New User Exclusive Real Perforated Ticket Vouchers (Horizontal Scroll on Mobile, Grid on sm+) */}
-              {showcaseTab === 'vouchers' && (
-                <div className="flex sm:grid overflow-x-auto sm:overflow-visible no-scrollbar sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5 animate-fade-in pb-1.5 sm:pb-0 -mx-1 px-1 sm:mx-0 sm:px-0 snap-x snap-mandatory sm:snap-none">
-                  
-                  {/* Card 1: Trip.com Promo Callout Banner Card (Compact) */}
-                  <div className="relative rounded-xl bg-gradient-to-br from-blue-50/90 via-sky-50/40 to-indigo-50/70 border border-blue-100/90 p-2.5 sm:p-3 flex flex-col justify-between shadow-2xs group hover:border-blue-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 min-h-[88px] sm:min-h-[98px] min-w-[245px] max-w-[265px] sm:min-w-0 sm:max-w-none shrink-0 sm:shrink snap-start">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="space-y-0.5 min-w-0">
-                        <span className="text-[9px] font-black text-blue-700 uppercase tracking-wider block leading-none">
-                          Welcome Privilege
-                        </span>
-                        <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 leading-snug truncate">
-                          สิทธิ์พิเศษสำหรับ สมาชิก
-                        </h3>
-                        <p className="text-[10px] text-slate-500 truncate mt-0.5">
-                          สร้างโปรไฟล์ สมัครสมาชิกฟรี เพื่อปลดล็อกสิทธิ์พิเศษมากมาย
-                        </p>
-                      </div>
-                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white text-blue-600 shadow-xs flex items-center justify-center shrink-0 border border-blue-100 group-hover:scale-105 transition-transform">
-                        <Gift className="w-4 h-4 text-blue-600" />
-                      </div>
-                    </div>
-
-                    <div className="pt-1.5">
-                      <Link
-                        href={isLoggedIn ? '/rewards' : '/onboarding'}
-                        className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer gap-1 leading-none"
-                      >
-                        <span>{isLoggedIn ? 'ดูสิทธิ์ของคุณ' : 'เข้าสู่ระบบเพื่อรับสิทธิ์'}</span>
-                        <ArrowRight className="w-2.5 h-2.5" />
-                      </Link>
-                    </div>
-                  </div>
-
-                  {/* Card 2: 10% off Specialty Coffee (Compact Perforated Ticket) */}
-                  <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[88px] sm:min-h-[98px] min-w-[245px] max-w-[265px] sm:min-w-0 sm:max-w-none shrink-0 sm:shrink snap-start">
-                    <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
-                            ลด 10%
-                          </span>
-                          <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded leading-none">
-                            เครื่องดื่ม
-                          </span>
-                        </div>
-                        <p className="text-[11px] font-medium text-slate-600 truncate mt-0.5">
-                          Specialty Coffee 77 จังหวัด
-                        </p>
-                      </div>
-
-                      <div className="pt-1.5">
-                        <Link
-                          href="/rewards"
-                          className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
-                        >
-                          เก็บสิทธิ์
-                        </Link>
-                      </div>
-                    </div>
-
-                    {/* Perforated Vertical Divider with Scallop Notches */}
-                    <div className="relative flex flex-col justify-between items-center w-0 shrink-0">
-                      <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_-1px_2px_rgba(0,0,0,0.04)]" />
-                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]" />
-                    </div>
-
-                    {/* Right Stub: Amber Category Icon */}
-                    <div className="w-14 sm:w-16 shrink-0 flex flex-col items-center justify-center p-2 bg-amber-50/70 rounded-r-xl border-l border-dashed border-slate-200">
-                      <Coffee className="w-4 h-4 sm:w-5 sm:h-5 text-amber-700 group-hover:scale-105 transition-transform" />
-                      <span className="text-[9.5px] font-bold text-amber-800 mt-1 text-center truncate">
-                        คาเฟ่
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Card 3: Free Community Meetup Pass (Compact Perforated Ticket) */}
-                  <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[88px] sm:min-h-[98px] min-w-[245px] max-w-[265px] sm:min-w-0 sm:max-w-none shrink-0 sm:shrink snap-start">
-                    <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
-                            จอยตี้ฟรี
-                          </span>
-                          <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded leading-none">
-                            ตี้แรก
-                          </span>
-                        </div>
-                        <p className="text-[11px] font-medium text-slate-600 truncate mt-0.5">
-                          คอมมูนิตี้ & เพื่อนใหม่
-                        </p>
-                      </div>
-
-                      <div className="pt-1.5">
-                        <Link
-                          href="/community"
-                          className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
-                        >
-                          เก็บสิทธิ์
-                        </Link>
-                      </div>
-                    </div>
-
-                    {/* Perforated Vertical Divider with Scallop Notches */}
-                    <div className="relative flex flex-col justify-between items-center w-0 shrink-0">
-                      <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_-1px_2px_rgba(0,0,0,0.04)]" />
-                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]" />
-                    </div>
-
-                    {/* Right Stub: Orange Category Icon */}
-                    <div className="w-14 sm:w-16 shrink-0 flex flex-col items-center justify-center p-2 bg-orange-50/70 rounded-r-xl border-l border-dashed border-slate-200">
-                      <Ticket className="w-4 h-4 sm:w-5 sm:h-5 text-orange-700 group-hover:scale-105 transition-transform" />
-                      <span className="text-[9.5px] font-bold text-orange-800 mt-1 text-center truncate">
-                        มีตอัป
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Card 4: 15% off Craft Workshop (Compact Perforated Ticket) */}
-                  <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[88px] sm:min-h-[98px] min-w-[245px] max-w-[265px] sm:min-w-0 sm:max-w-none shrink-0 sm:shrink snap-start">
-                    <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
-                            ลด 15%
-                          </span>
-                          <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded leading-none">
-                            เวิร์กช็อป
-                          </span>
-                        </div>
-                        <p className="text-[11px] font-medium text-slate-600 truncate mt-0.5">
-                          คราฟต์ & ศิลปะเซรามิก
-                        </p>
-                      </div>
-
-                      <div className="pt-1.5">
-                        <Link
-                          href="/rewards"
-                          className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
-                        >
-                          เก็บสิทธิ์
-                        </Link>
-                      </div>
-                    </div>
-
-                    {/* Perforated Vertical Divider with Scallop Notches */}
-                    <div className="relative flex flex-col justify-between items-center w-0 shrink-0">
-                      <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_-1px_2px_rgba(0,0,0,0.04)]" />
-                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]" />
-                    </div>
-
-                    {/* Right Stub: Emerald Category Icon */}
-                    <div className="w-14 sm:w-16 shrink-0 flex flex-col items-center justify-center p-2 bg-emerald-50/70 rounded-r-xl border-l border-dashed border-slate-200">
-                      <Palette className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-700 group-hover:scale-105 transition-transform" />
-                      <span className="text-[9.5px] font-bold text-emerald-800 mt-1 text-center truncate">
-                        เวิร์กช็อป
-                      </span>
-                    </div>
-                  </div>
-
-                </div>
-              )}
-
-              {/* TAB 2: XP Store Rewards Real Perforated Ticket Vouchers (Horizontal Scroll on Mobile, Grid on sm+) */}
-              {showcaseTab === 'rewards' && (
-                <div className="flex sm:grid overflow-x-auto sm:overflow-visible no-scrollbar sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5 animate-fade-in pb-1.5 sm:pb-0 -mx-1 px-1 sm:mx-0 sm:px-0 snap-x snap-mandatory sm:snap-none">
-                  
-                  {/* Card 1: XP Store Callout Banner Card (Compact) */}
-                  <div className="relative rounded-xl bg-gradient-to-br from-blue-50/90 via-sky-50/40 to-indigo-50/70 border border-blue-100/90 p-2.5 sm:p-3 flex flex-col justify-between shadow-2xs group hover:border-blue-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 min-h-[88px] sm:min-h-[98px] min-w-[245px] max-w-[265px] sm:min-w-0 sm:max-w-none shrink-0 sm:shrink snap-start">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="space-y-0.5 min-w-0">
-                        <span className="text-[9px] font-black text-blue-700 uppercase tracking-wider block leading-none">
-                          XP Rewards Hub
-                        </span>
-                        <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 leading-snug truncate">
-                          รวมของรางวัลไลฟ์สไตล์
-                        </h3>
-                        <p className="text-[10px] text-slate-500 truncate mt-0.5">
-                          สะสมแต้ม XP จากชาเลนจ์มาแลกรับสิทธิ์
-                        </p>
-                      </div>
-                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white text-blue-600 shadow-xs flex items-center justify-center shrink-0 border border-blue-100 group-hover:scale-105 transition-transform">
-                        <Award className="w-4 h-4 text-blue-600" />
-                      </div>
-                    </div>
-
-                    <div className="pt-1.5">
-                      <Link
-                        href="/rewards"
-                        className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer gap-1 leading-none"
-                      >
-                        <span>ดูของรางวัลทั้งหมด</span>
-                        <ArrowRight className="w-2.5 h-2.5" />
-                      </Link>
-                    </div>
-                  </div>
-
-                  {/* Card 2: ฿50 Specialty Coffee (150 XP - Compact) */}
-                  <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[88px] sm:min-h-[98px] min-w-[245px] max-w-[265px] sm:min-w-0 sm:max-w-none shrink-0 sm:shrink snap-start">
-                    <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
-                            ลด ฿50
-                          </span>
-                          <span className="text-[10px] font-extrabold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded leading-none border border-blue-100">
-                            150 XP
-                          </span>
-                        </div>
-                        <p className="text-[11px] font-medium text-slate-600 truncate mt-0.5">
-                          Specialty Coffee อารีย์ & สุขุมวิท
-                        </p>
-                      </div>
-
-                      <div className="pt-1.5">
-                        <Link
-                          href="/rewards"
-                          className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
-                        >
-                          ใช้สิทธิ์
-                        </Link>
-                      </div>
-                    </div>
-
-                    {/* Perforated Vertical Divider with Scallop Notches */}
-                    <div className="relative flex flex-col justify-between items-center w-0 shrink-0">
-                      <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_-1px_2px_rgba(0,0,0,0.04)]" />
-                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]" />
-                    </div>
-
-                    {/* Right Stub: Amber Category Icon */}
-                    <div className="w-14 sm:w-16 shrink-0 flex flex-col items-center justify-center p-2 bg-amber-50/70 rounded-r-xl border-l border-dashed border-slate-200">
-                      <Coffee className="w-4 h-4 sm:w-5 sm:h-5 text-amber-700 group-hover:scale-105 transition-transform" />
-                      <span className="text-[9.5px] font-bold text-amber-800 mt-1 text-center truncate">
-                        กาแฟ
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Card 3: Free Board Game Day Pass (250 XP - Compact) */}
-                  <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[88px] sm:min-h-[98px] min-w-[245px] max-w-[265px] sm:min-w-0 sm:max-w-none shrink-0 sm:shrink snap-start">
-                    <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
-                            เล่นฟรี 1 วัน
-                          </span>
-                          <span className="text-[10px] font-extrabold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded leading-none border border-blue-100">
-                            250 XP
-                          </span>
-                        </div>
-                        <p className="text-[11px] font-medium text-slate-600 truncate mt-0.5">
-                          Siam Board Game Lounge
-                        </p>
-                      </div>
-
-                      <div className="pt-1.5">
-                        <Link
-                          href="/rewards"
-                          className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
-                        >
-                          ใช้สิทธิ์
-                        </Link>
-                      </div>
-                    </div>
-
-                    {/* Perforated Vertical Divider with Scallop Notches */}
-                    <div className="relative flex flex-col justify-between items-center w-0 shrink-0">
-                      <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_-1px_2px_rgba(0,0,0,0.04)]" />
-                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]" />
-                    </div>
-
-                    {/* Right Stub: Indigo/Blue Category Icon */}
-                    <div className="w-14 sm:w-16 shrink-0 flex flex-col items-center justify-center p-2 bg-blue-50/70 rounded-r-xl border-l border-dashed border-slate-200">
-                      <Dices className="w-4 h-4 sm:w-5 sm:h-5 text-blue-700 group-hover:scale-105 transition-transform" />
-                      <span className="text-[9.5px] font-bold text-blue-800 mt-1 text-center truncate">
-                        บอร์ดเกม
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Card 4: 15% off Craft Workshop (350 XP - Compact) */}
-                  <div className="relative bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex items-stretch group min-h-[88px] sm:min-h-[98px] min-w-[245px] max-w-[265px] sm:min-w-0 sm:max-w-none shrink-0 sm:shrink snap-start">
-                    <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
-                            ลด 15%
-                          </span>
-                          <span className="text-[10px] font-extrabold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded leading-none border border-blue-100">
-                            350 XP
-                          </span>
-                        </div>
-                        <p className="text-[11px] font-medium text-slate-600 truncate mt-0.5">
-                          Clay & Craft Studio สุขุมวิท
-                        </p>
-                      </div>
-
-                      <div className="pt-1.5">
-                        <Link
-                          href="/rewards"
-                          className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
-                        >
-                          ใช้สิทธิ์
-                        </Link>
-                      </div>
-                    </div>
-
-                    {/* Perforated Vertical Divider with Scallop Notches */}
-                    <div className="relative flex flex-col justify-between items-center w-0 shrink-0">
-                      <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_-1px_2px_rgba(0,0,0,0.04)]" />
-                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border border-slate-200/90 z-10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]" />
-                    </div>
-
-                    {/* Right Stub: Emerald Category Icon */}
-                    <div className="w-14 sm:w-16 shrink-0 flex flex-col items-center justify-center p-2 bg-emerald-50/70 rounded-r-xl border-l border-dashed border-slate-200">
-                      <Palette className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-700 group-hover:scale-105 transition-transform" />
-                      <span className="text-[9.5px] font-bold text-emerald-800 mt-1 text-center truncate">
-                        เวิร์กช็อป
-                      </span>
-                    </div>
-                  </div>
-
-                </div>
-              )}
-
-              </div>
             )}
           </div>
 

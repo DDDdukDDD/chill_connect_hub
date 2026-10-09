@@ -17,6 +17,7 @@ import { CreateEventModal } from '@/components/CreateEventModal';
 import { FilterDrawer } from '@/components/FilterDrawer';
 import { StoryBar } from '@/components/StoryBar';
 import { TrendingCarousel } from '@/components/TrendingCarousel';
+import { MemberPrivilegesSection } from '@/components/MemberPrivilegesSection';
 import { CommunityChallengeBar, COMMUNITY_PUBLIC_QUESTS } from '@/components/CommunityChallengeBar';
 import { CommunityMomentsStrip } from '@/components/CommunityMomentsStrip';
 import { FloatingCarousel } from '@/components/FloatingCarousel';
@@ -1378,6 +1379,11 @@ function HomeContent() {
             favorites={favorites}
             toggleFavorite={toggleFavorite}
           />
+
+          {/* 4. Member Privileges & Voucher Strip (Positioned directly below Trending Lifestyle Agenda) */}
+          {activeScopeTab === 'all' && (
+            <MemberPrivilegesSection isLoggedIn={isLoggedIn} />
+          )}
 
           {/* ========================================================================= */}
           {/* UNIFIED CURATED DISCOVERY STREAM (Global Luxury Editorial 9.8+)           */}
