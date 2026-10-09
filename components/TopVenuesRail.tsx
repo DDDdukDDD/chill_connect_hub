@@ -142,7 +142,7 @@ export const TopVenuesRail: React.FC<TopVenuesRailProps> = ({
 
   const handleScroll = (direction: 'left' | 'right') => {
     if (!scrollContainerRef.current) return;
-    const distance = 320;
+    const distance = 240;
     scrollContainerRef.current.scrollBy({
       left: direction === 'left' ? -distance : distance,
       behavior: 'smooth',
@@ -155,13 +155,13 @@ export const TopVenuesRail: React.FC<TopVenuesRailProps> = ({
   };
 
   return (
-    <div className={`relative space-y-3 ${className}`}>
+    <div className={`relative space-y-2 sm:space-y-2.5 ${className}`}>
       {/* Header Row: Title & Quick Reset Pill */}
       <div className="flex items-center justify-between gap-3 px-0.5">
         <div>
-          <h3 className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+          <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 tracking-tight flex items-center gap-1.5 sm:gap-2">
             <span>ศูนย์การประชุมและแลนด์มาร์กยอดนิยม</span>
-            <span className="text-[11px] font-bold text-slate-400 font-sans uppercase tracking-wider hidden sm:inline">
+            <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 font-sans uppercase tracking-wider hidden sm:inline">
               Top Exhibition Venues & Hubs
             </span>
           </h3>
@@ -172,10 +172,10 @@ export const TopVenuesRail: React.FC<TopVenuesRailProps> = ({
           <button
             type="button"
             onClick={() => onSelectVenue(null)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 group/clear"
+            className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-slate-900 text-white text-[11px] sm:text-xs font-bold hover:bg-slate-800 transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 group/clear"
             title="คลิกเพื่อล้างตัวกรองและแสดงงานมหกรรมทั้งหมด"
           >
-            <X className="w-3.5 h-3.5 text-slate-300 group-hover/clear:text-white transition-colors" />
+            <X className="w-3 h-3 text-slate-300 group-hover/clear:text-white transition-colors" />
             <span>ล้างตัวกรอง (ดูทั้งหมด {totalAllFairs})</span>
           </button>
         )}
@@ -188,10 +188,10 @@ export const TopVenuesRail: React.FC<TopVenuesRailProps> = ({
           <button
             type="button"
             onClick={() => handleScroll('left')}
-            className="absolute -left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 hover:bg-white text-slate-700 hover:text-slate-900 shadow-md border border-slate-200 flex items-center justify-center transition-all cursor-pointer active:scale-90"
+            className="absolute -left-2.5 sm:-left-3 top-1/2 -translate-y-1/2 z-20 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 hover:bg-white text-slate-700 hover:text-slate-900 shadow-md border border-slate-200 flex items-center justify-center transition-all cursor-pointer active:scale-90"
             aria-label="เลื่อนซ้าย"
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
         )}
 
@@ -200,17 +200,17 @@ export const TopVenuesRail: React.FC<TopVenuesRailProps> = ({
           <button
             type="button"
             onClick={() => handleScroll('right')}
-            className="absolute -right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 hover:bg-white text-slate-700 hover:text-slate-900 shadow-md border border-slate-200 flex items-center justify-center transition-all cursor-pointer active:scale-90"
+            className="absolute -right-2.5 sm:-right-3 top-1/2 -translate-y-1/2 z-20 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 hover:bg-white text-slate-700 hover:text-slate-900 shadow-md border border-slate-200 flex items-center justify-center transition-all cursor-pointer active:scale-90"
             aria-label="เลื่อนขวา"
           >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
         )}
 
         {/* Horizontal Scroll Track */}
         <div
           ref={scrollContainerRef}
-          className="flex items-stretch gap-3 sm:gap-4 overflow-x-auto scrollbar-none scroll-smooth pt-3 pb-2.5 px-1.5"
+          className="flex items-stretch gap-2.5 sm:gap-3 overflow-x-auto scrollbar-none scroll-smooth pt-1.5 pb-2 px-1 select-none"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {TOP_VENUES.map((venue) => {
@@ -228,13 +228,13 @@ export const TopVenuesRail: React.FC<TopVenuesRailProps> = ({
                     onSelectVenue(venue.venueKey);
                   }
                 }}
-                className="group flex flex-col items-center text-center shrink-0 w-[128px] sm:w-[148px] md:w-[164px] cursor-pointer focus:outline-none transition-all duration-200 text-left"
+                className="group flex flex-col items-center text-center shrink-0 w-[94px] sm:w-[108px] md:w-[118px] cursor-pointer focus:outline-none transition-all duration-200"
               >
                 {/* Image Container with Rounded Luxury Shape (Slate Blue Accent) */}
                 <div
-                  className={`relative w-full aspect-square rounded-2xl sm:rounded-3xl overflow-hidden shadow-xs transition-all duration-300 ${
+                  className={`relative w-full aspect-square rounded-xl sm:rounded-2xl overflow-hidden shadow-xs transition-all duration-300 ${
                     active
-                      ? 'ring-3 ring-[#2B527A] ring-offset-2 scale-[1.02] shadow-md'
+                      ? 'ring-2 sm:ring-3 ring-[#2B527A] ring-offset-1 sm:ring-offset-2 scale-[1.02] shadow-md'
                       : 'group-hover:shadow-md group-hover:scale-[1.02] border border-slate-200/80'
                   }`}
                 >
@@ -250,27 +250,27 @@ export const TopVenuesRail: React.FC<TopVenuesRailProps> = ({
 
                   {/* Active Checked Badge (Slate Blue Theme) */}
                   {active && (
-                    <div className="absolute top-2 right-2 bg-[#2B527A] text-white p-1 rounded-full shadow-md animate-fade-in">
-                      <Check className="w-3 h-3 stroke-[3]" />
+                    <div className="absolute top-1.5 right-1.5 bg-[#2B527A] text-white p-0.5 sm:p-1 rounded-full shadow-md animate-fade-in">
+                      <Check className="w-2.5 h-2.5 stroke-[3]" />
                     </div>
                   )}
 
                   {/* Fair Count Pill on Image (Bottom Left) */}
-                  <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-lg bg-black/60 backdrop-blur-xs text-[10px] sm:text-[11px] font-bold text-white tracking-tight">
-                    {fairCount > 0 ? `${fairCount} งานมหกรรม` : 'ติดตามงานเร็วๆ นี้'}
+                  <div className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-black/65 backdrop-blur-xs text-[9px] sm:text-[10px] font-bold text-white tracking-tight">
+                    {fairCount > 0 ? `${fairCount} งาน` : 'เร็วๆ นี้'}
                   </div>
                 </div>
 
                 {/* Venue Name & Subtitle below image */}
-                <div className="mt-2 w-full px-1 text-center">
+                <div className="mt-1.5 w-full px-0.5 text-center">
                   <p
-                    className={`text-xs sm:text-sm font-extrabold truncate transition-colors leading-tight ${
+                    className={`text-[11px] sm:text-xs font-extrabold truncate transition-colors leading-tight ${
                       active ? 'text-[#2B527A]' : 'text-slate-900 group-hover:text-[#2B527A]'
                     }`}
                   >
                     {venue.nameEn}
                   </p>
-                  <p className="text-[10px] sm:text-[11px] font-medium text-slate-500 truncate mt-0.5">
+                  <p className="text-[9.5px] sm:text-[10px] font-medium text-slate-500 truncate mt-0.5">
                     {venue.nameTh}
                   </p>
                 </div>
