@@ -22,7 +22,7 @@ export const MemberPrivilegesSection: React.FC<MemberPrivilegesSectionProps> = (
   const [showcaseTab, setShowcaseTab] = useState<'vouchers' | 'rewards'>('vouchers');
 
   return (
-    <section id="section-member-privileges" className="w-full space-y-2.5 sm:space-y-3.5 pt-1 sm:pt-2">
+    <section id="section-member-privileges" className="w-full space-y-2 sm:space-y-2.5 pt-0.5 sm:pt-1">
       {/* Section Header */}
       <div className="flex items-center justify-between gap-2 px-1 flex-wrap">
         <div className="space-y-0.5">

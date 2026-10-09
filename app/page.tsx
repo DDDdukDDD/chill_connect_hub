@@ -1388,7 +1388,7 @@ function HomeContent() {
           {/* ========================================================================= */}
           {/* UNIFIED CURATED DISCOVERY STREAM (Global Luxury Editorial 9.8+)           */}
           {/* ========================================================================= */}
-          <div id="catalog-section" className="space-y-12 sm:space-y-14 pt-1 animate-fade-in">
+          <div id="catalog-section" className="space-y-6 sm:space-y-8 pt-0.5 animate-fade-in">
             {/* ========================================================================= */}
             {/* 🌟 MODE 1: SHOWROOM (Master Magazine Overview Across All 3 Pillars)         */}
             {/* ========================================================================= */}
@@ -1397,8 +1397,8 @@ function HomeContent() {
                 {/* ------------------------------------------------------------------------- */}
                 {/* STREAM SECTION 1: 👥 COMMUNITY MEETUPS (กิจกรรมคอมมูนิตี้)                 */}
                 {/* ------------------------------------------------------------------------- */}
-                <section id="section-community" className="space-y-4 scroll-mt-20">
-                  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-orange-50/50 via-slate-50/30 to-transparent p-3.5 sm:p-4 rounded-2xl border border-orange-100/60 shadow-2xs">
+                <section id="section-community" className="space-y-2.5 sm:space-y-3 scroll-mt-20">
+                  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2.5 sm:gap-3 bg-gradient-to-r from-orange-50/50 via-slate-50/30 to-transparent p-3 sm:p-3.5 rounded-2xl border border-orange-100/60 shadow-2xs">
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="w-6 h-6 rounded-lg bg-orange-500/10 text-[#F26430] flex items-center justify-center text-xs font-black shrink-0 border border-orange-500/20">
@@ -1452,7 +1452,7 @@ function HomeContent() {
                   </div>
 
                   {/* Top Community Flagship Circles & Clubs Visual Rail */}
-                  <div className="pt-1 pb-1">
+                  <div className="pt-0 pb-0.5">
                     <TopCommunityRail
                       selectedClub={selectedCommunityClub}
                       onSelectClub={(clubKey) => {
@@ -1485,8 +1485,8 @@ function HomeContent() {
                 {/* ------------------------------------------------------------------------- */}
                 {/* STREAM SECTION 2: 🏛️ EXHIBITIONS & FAIRS (งานมหกรรม & เอ็กซ์โป)           */}
                 {/* ------------------------------------------------------------------------- */}
-                <section id="section-fairs" className="space-y-4 scroll-mt-20">
-                  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-blue-50/50 via-slate-50/30 to-transparent p-3.5 sm:p-4 rounded-2xl border border-blue-100/60 shadow-2xs">
+                <section id="section-fairs" className="space-y-2.5 sm:space-y-3 scroll-mt-20">
+                  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2.5 sm:gap-3 bg-gradient-to-r from-blue-50/50 via-slate-50/30 to-transparent p-3.5 sm:p-4 rounded-2xl border border-blue-100/60 shadow-2xs">
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="w-6 h-6 rounded-lg bg-blue-500/10 text-[#2B527A] flex items-center justify-center text-xs font-black shrink-0 border border-blue-500/20">
@@ -1556,7 +1556,7 @@ function HomeContent() {
                   </div>
 
                   {/* Top Venues in Thailand Visual Rail (Convention Centers & Iconic Venues) */}
-                  <div className="pt-1 pb-1">
+                  <div className="pt-0 pb-0.5">
                     <TopVenuesRail
                       selectedVenue={selectedVenueFilter}
                       onSelectVenue={(venueKey) => {
@@ -1588,8 +1588,8 @@ function HomeContent() {
                 {/* ------------------------------------------------------------------------- */}
                 {/* STREAM SECTION 3: 📍 LIFESTYLE SPOTS (พิกัดเที่ยว & จุดฮีลใจ ทั่วไทย)        */}
                 {/* ------------------------------------------------------------------------- */}
-                <section id="section-spots" className="space-y-4 scroll-mt-20">
-                  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-emerald-50/50 via-slate-50/30 to-transparent p-3.5 sm:p-4 rounded-2xl border border-emerald-100/60 shadow-2xs">
+                <section id="section-spots" className="space-y-2.5 sm:space-y-3 scroll-mt-20">
+                  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2.5 sm:gap-3 bg-gradient-to-r from-emerald-50/50 via-slate-50/30 to-transparent p-3 sm:p-3.5 rounded-2xl border border-emerald-100/60 shadow-2xs">
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="w-6 h-6 rounded-lg bg-emerald-500/10 text-[#4A7C59] flex items-center justify-center text-xs font-black shrink-0 border border-emerald-500/20">
@@ -1619,7 +1619,7 @@ function HomeContent() {
                   </div>
 
                   {/* Top Destinations in Thailand Visual Rail */}
-                  <div className="pt-1 pb-1">
+                  <div className="pt-0 pb-0.5">
                     <TopDestinationsRail
                       selectedProvince={selectedSpotProvince}
                       onSelectProvince={(prov) => {
@@ -1755,7 +1755,7 @@ function HomeContent() {
             {/* 👥 MODE 2: COMMUNITY CIRCLES DEEP DIVE                                    */}
             {/* ========================================================================= */}
             {activeScopeTab === 'community' && (
-              <div className="space-y-8 sm:space-y-10 animate-fade-in">
+              <div className="space-y-6 sm:space-y-7 animate-fade-in">
                 {/* Community Pillar Header */}
                 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-orange-50/60 via-slate-50/40 to-transparent p-3.5 sm:p-4 rounded-2xl border border-orange-100/70 shadow-2xs">
                   <div>
@@ -1783,7 +1783,7 @@ function HomeContent() {
                 </div>
 
                 {/* Top Community Flagship Circles & Clubs Visual Rail */}
-                <div className="pt-1 pb-1">
+                <div className="pt-0 pb-0.5">
                   <TopCommunityRail
                     selectedClub={selectedCommunityClub}
                     onSelectClub={(clubKey) => {
@@ -1845,7 +1845,7 @@ function HomeContent() {
             {/* 🏛️ MODE 3: MAJOR FAIRS & PUBLIC EXPOS DEEP DIVE                           */}
             {/* ========================================================================= */}
             {activeScopeTab === 'fairs' && (
-              <div className="space-y-8 sm:space-y-10 animate-fade-in">
+              <div className="space-y-6 sm:space-y-7 animate-fade-in">
                 {/* Fairs Pillar Header */}
                 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-blue-50/60 via-slate-50/40 to-transparent p-3.5 sm:p-4 rounded-2xl border border-blue-100/70 shadow-2xs">
                   <div>
@@ -1873,7 +1873,7 @@ function HomeContent() {
                 </div>
 
                 {/* Top Venues Rail (Where: Venues) */}
-                <div className="pt-1 pb-1">
+                <div className="pt-0 pb-0.5">
                   <TopVenuesRail
                     selectedVenue={selectedVenueFilter}
                     onSelectVenue={(venueKey) => {
@@ -1933,7 +1933,7 @@ function HomeContent() {
             {/* 🌲 MODE 4: LIFESTYLE SPOTS 77 PROVINCES DEEP DIVE                         */}
             {/* ========================================================================= */}
             {activeScopeTab === 'spots' && (
-              <div className="space-y-8 sm:space-y-10 animate-fade-in">
+              <div className="space-y-6 sm:space-y-7 animate-fade-in">
                 {/* Spots Pillar Header */}
                 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-emerald-50/60 via-slate-50/40 to-transparent p-3.5 sm:p-4 rounded-2xl border border-emerald-100/70 shadow-2xs">
                   <div>
@@ -1961,7 +1961,7 @@ function HomeContent() {
                 </div>
 
                 {/* Top Destinations Rail (Where: Provinces) */}
-                <div className="pt-1 pb-1">
+                <div className="pt-0 pb-0.5">
                   <TopDestinationsRail
                     selectedProvince={selectedSpotProvince}
                     onSelectProvince={(prov) => {
