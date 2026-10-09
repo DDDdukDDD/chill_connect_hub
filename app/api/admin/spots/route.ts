@@ -3,7 +3,9 @@ import { db, paginateArray } from '@/lib/db';
 import { checkImages, getImageStatus } from '@/lib/imageHealth';
 import { getAdminActor, requireAdminApiAccess } from '@/lib/adminApiAuth';
 import { recordAudit } from '@/lib/auditLog';
-import { LifestyleSpotItem } from '@/data/spotsData';
+import { LifestyleSpotItem, getSpotVibeCategory } from '@/data/spotsData';
+import { isThaiCoordinate } from '@/lib/contentQuality';
+import { coordinatesMapUrl, defaultSpotCategoryLabel } from '@/lib/spotCategories';
 import { autoEnrichSpotImages } from '@/lib/spotImageResolver';
 
 const SPOT_CATEGORY_IDS = new Set<LifestyleSpotItem['category']>([
@@ -15,7 +17,7 @@ const MUTABLE_SPOT_FIELDS = new Set<keyof LifestyleSpotItem>([
   'image', 'galleryImages', 'openHours', 'price', 'bestTime', 'vibeTags',
   'description', 'highlights', 'facilities', 'googleMapsUrl', 'rating',
   'reviewsCount', 'latitude', 'longitude', 'publicationStatus', 'sourceName',
-  'sourceUrl', 'zone',
+  'sourceUrl', 'zone', 'contact', 'entryFee',
 ]);
 
 async function getAllSpots(): Promise<LifestyleSpotItem[]> {
@@ -36,6 +38,7 @@ function getSpotValidationError(spot: Partial<LifestyleSpotItem>): string | null
   if (typeof spot.category !== 'string' || !SPOT_CATEGORY_IDS.has(spot.category)) return 'หมวดหมู่สถานที่ไม่ถูกต้อง';
   if (typeof spot.description !== 'string' || spot.description.trim().length < 15) return 'รายละเอียดต้องมีอย่างน้อย 15 ตัวอักษร';
   if (typeof spot.openHours !== 'string' || !spot.openHours.trim()) return 'กรุณาระบุเวลาเปิดให้บริการ';
+  if (!isThaiCoordinate(Number(spot.latitude), Number(spot.longitude))) return 'พิกัดต้องอยู่ในประเทศไทย';
   return null;
 }
 
@@ -58,8 +61,9 @@ export async function GET(request: Request) {
       filtered = filtered.filter((s) => s.province.includes(province) || province.includes(s.province));
     }
 
+    // `category` accepts a stored category (temple, cafe, …) or one of the 7 frontend vibes (sea_island, …)
     if (category && category !== 'all') {
-      filtered = filtered.filter((s) => s.category === category);
+      filtered = filtered.filter((s) => s.category === category || getSpotVibeCategory(s) === category);
     }
 
     if (query && query.trim() !== '') {
@@ -169,34 +173,38 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, error: validationError }, { status: 400 });
       }
 
+      // Only what the admin entered: no invented rating, emoji labels or stock photo of another place
       const latitude = Number(newSpot.latitude);
       const longitude = Number(newSpot.longitude);
+      const image = typeof newSpot.image === 'string' ? newSpot.image.trim() : '';
       const createdSpot: LifestyleSpotItem = {
         id: `spot-custom-${Date.now()}`,
         title: newSpot.title!.trim(),
         category: newSpot.category as LifestyleSpotItem['category'],
-        categoryLabel: newSpot.categoryLabel || '🌿 สวน & ธรรมชาติ',
+        categoryLabel: newSpot.categoryLabel?.trim() || defaultSpotCategoryLabel(newSpot.category),
         province: newSpot.province!.trim(),
-        district: newSpot.district || 'เมือง',
-        image: newSpot.image || '',
-        openHours: newSpot.openHours || 'เปิดทุกวัน: 08:00 - 18:00 น.',
-        price: newSpot.price || 'เข้าฟรี',
-        bestTime: newSpot.bestTime || 'ช่วงเช้า หรือ บ่ายแก่ๆ',
-        vibeTags: newSpot.vibeTags || ['📍 จุดเช็คอินยอดฮิต', '📸 ถ่ายรูปสวย'],
-        description: newSpot.description || '',
+        district: newSpot.district?.trim() || '',
+        image,
+        galleryImages: newSpot.galleryImages?.length ? newSpot.galleryImages : image ? [image] : [],
+        openHours: newSpot.openHours!.trim(),
+        price: newSpot.price?.trim() || 'ไม่ระบุ',
+        entryFee: newSpot.entryFee,
+        bestTime: newSpot.bestTime?.trim() || '',
+        vibeTags: newSpot.vibeTags || [],
+        description: newSpot.description!.trim(),
         highlights: newSpot.highlights || [],
-        facilities: newSpot.facilities || ['🅿️ ลานจอดรถ', '🚻 ห้องน้ำ'],
-        googleMapsUrl: newSpot.googleMapsUrl || `https://maps.google.com/?q=${encodeURIComponent(newSpot.title + ' ' + newSpot.province)}`,
-        rating: 4.8,
-        reviewsCount: 1,
-        latitude: Number.isFinite(latitude) && latitude >= -90 && latitude <= 90 ? latitude : 13.7563,
-        longitude: Number.isFinite(longitude) && longitude >= -180 && longitude <= 180 ? longitude : 100.5018,
+        facilities: newSpot.facilities || [],
+        transitInfo: newSpot.transitInfo,
+        contact: newSpot.contact,
+        googleMapsUrl: newSpot.googleMapsUrl || coordinatesMapUrl(latitude, longitude),
+        rating: 0,
+        reviewsCount: 0,
+        latitude,
+        longitude,
         publicationStatus: newSpot.publicationStatus === 'published' ? 'published' : 'draft',
       };
 
-      // Enrich image if empty
-      const { enrichedSpots } = autoEnrichSpotImages([createdSpot]);
-      const savedSpot = await db.createSpot(enrichedSpots[0]);
+      const savedSpot = await db.createSpot(createdSpot);
       recordAudit(actor, 'spot.create', `สร้างสถานที่ "${savedSpot.title}"`, { type: 'spot', id: savedSpot.id });
 
       return NextResponse.json({

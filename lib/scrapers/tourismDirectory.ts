@@ -1,6 +1,7 @@
 import type { LifestyleSpotItem } from '@/data/spotsData';
 import { htmlToText } from './html';
 import type { SiteAdapterContext, SiteSpotAdapter, SpotScrapeOptions } from './types';
+import { isThaiCoordinate } from '../contentQuality';
 
 /**
  * Thailand Tourism Directory by the Department of Tourism (https://www.thailandtourismdirectory.go.th).
@@ -118,6 +119,8 @@ async function mapLimit<T, R>(items: T[], limit: number, worker: (item: T) => Pr
 // ── Mapping to the app's spot model ──
 
 const CATEGORY_RULES: Array<[RegExp, LifestyleSpotItem['category']]> = [
+  // Before the beach rule: park names often contain "เกาะ" (e.g. สวนสาธารณะเกาะลำพู)
+  [/สวนสาธารณะ/, 'park'],
   [/ทะเล|ชายหาด|หาด|เกาะ|อ่าว/, 'beach'],
   [/วัด|ศาสนสถาน|พระธาตุ|โบสถ์|มัสยิด|ศาลเจ้า|สำนักปฏิบัติธรรม/, 'temple'],
   [/พิพิธภัณฑ์/, 'museum'],
@@ -228,11 +231,8 @@ const safeUrl = (value?: string) => {
  * Coordinates drive maps and "nearby" features, so they must be real: inside Thailand's bounding box
  * and not a copy-paste error (the source has records with latitude == longitude or a negative latitude).
  */
-export function isThaiCoordinate(latitude: number, longitude: number): boolean {
-  return Number.isFinite(latitude) && Number.isFinite(longitude) &&
-    latitude >= 5.5 && latitude <= 20.6 && longitude >= 97.3 && longitude <= 105.7 &&
-    latitude !== longitude;
-}
+// Lives in lib/contentQuality.ts so the admin editor can use it in the browser
+export { isThaiCoordinate };
 
 export function mapDirectoryRecord(record: DirectoryRecord, sourceUrl: string, isRestaurant: boolean): LifestyleSpotItem | null {
   const title = th(record.Name).replace(/\s+/g, ' ');

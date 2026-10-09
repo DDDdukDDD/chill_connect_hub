@@ -15,6 +15,37 @@ import {
 } from '@/lib/eventsStore';
 
 const EVENT_TYPES = new Set(['community', 'public_venue', 'all']);
+
+// Fields an editor may change with update_fields. Approval, participants, ids and provenance have their own
+// actions (or none), so they cannot be changed around the review flow.
+const MUTABLE_EVENT_FIELDS = new Set<string>([
+  'title', 'category', 'tag', 'description', 'date', 'endDate', 'time', 'province', 'location', 'zone',
+  'meetingPoint', 'locationType', 'onlinePlatform', 'onlineJoinUrl', 'maxParticipants', 'hostName',
+  'hostAvatar', 'venueTag', 'price', 'image', 'galleryImages', 'externalUrl', 'sourceUrl', 'link',
+  'latitude', 'longitude', 'status', 'rules', 'whatToBring', 'itinerary', 'instructions', 'contactChannel',
+  'transportation', 'targetGender', 'targetAge', 'energyLevel', 'isSoloFriendly', 'isPetFriendly',
+  'isBeginnerFriendly', 'cancellationPolicy', 'subActivities',
+]);
+
+const plainLength = (html: unknown) => (typeof html === 'string' ? html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().length : 0);
+
+/** Platform form rules (AGENTS.md section 3). Checks only the keys present, so partial updates work. */
+function getEventValidationError(fields: Record<string, unknown>, eventType: string | undefined, isCreate: boolean): string | null {
+  const has = (key: string) => isCreate || key in fields;
+  if (has('title') && (typeof fields.title !== 'string' || fields.title.trim().length < 5)) return 'ชื่อกิจกรรมต้องมีอย่างน้อย 5 ตัวอักษร';
+  if (has('province') && (typeof fields.province !== 'string' || !fields.province.trim())) return 'กรุณาระบุจังหวัด';
+  if (has('location') && (typeof fields.location !== 'string' || !fields.location.trim())) return 'กรุณาระบุสถานที่';
+  if (has('description') && plainLength(fields.description) < 15) return 'รายละเอียดต้องมีอย่างน้อย 15 ตัวอักษร';
+  if (has('date') && (typeof fields.date !== 'string' || !fields.date.trim())) return 'กรุณาระบุวันที่';
+  if (eventType === 'community') {
+    if (has('time') && (typeof fields.time !== 'string' || !fields.time.trim())) return 'กรุณาระบุเวลาเริ่ม-จบ';
+    const max = Number(fields.maxParticipants);
+    if (has('maxParticipants') && !(Number.isInteger(max) && max >= 2 && max <= 15)) return 'จำนวนผู้เข้าร่วมต้องอยู่ระหว่าง 2-15 คน';
+  } else if (eventType === 'public_venue') {
+    if (has('hostName') && (typeof fields.hostName !== 'string' || !fields.hostName.trim())) return 'กรุณาระบุผู้จัดอย่างเป็นทางการ';
+  }
+  return null;
+}
 const APPROVAL_STATUSES = new Set(['pending', 'approved', 'rejected', 'all']);
 const EVENT_FORMATS = new Set(['recurring', 'online', 'physical', 'all']);
 
@@ -89,7 +120,19 @@ export async function POST(req: Request) {
     const label = target ? `"${target.title}"` : id;
 
     if (action === 'create' && eventData) {
-      const created = await createAdminEvent(eventData);
+      if (eventData.eventType !== 'community' && eventData.eventType !== 'public_venue') {
+        return NextResponse.json({ success: false, error: 'eventType must be community or public_venue' }, { status: 400 });
+      }
+      const createError = getEventValidationError(eventData, eventData.eventType, true);
+      if (createError) return NextResponse.json({ success: false, error: createError }, { status: 400 });
+      const safeCreate = Object.fromEntries(Object.entries(eventData).filter(([key]) => MUTABLE_EVENT_FIELDS.has(key)));
+      const created = await createAdminEvent({
+        ...safeCreate,
+        eventType: eventData.eventType,
+        approvalStatus: eventData.approvalStatus === 'approved' ? 'approved' : 'pending',
+        participantsCount: eventData.eventType === 'community' ? 1 : 0,
+        createdAtTimestamp: Date.now(),
+      } as Parameters<typeof createAdminEvent>[0]);
       recordAudit(actor, 'event.create', `สร้างกิจกรรม "${created.title}"`, { type: 'event', id: created.id });
       const updated = await listAdminEvents();
       return NextResponse.json({
@@ -129,8 +172,12 @@ export async function POST(req: Request) {
     }
 
     if (action === 'update_fields' && id && updatedFields) {
-      const updated = await updateAdminEvent(id, updatedFields);
-      recordAudit(actor, 'event.update', `แก้ไข ${label} (${Object.keys(updatedFields).join(', ')})`, { type: 'event', id });
+      if (!target) return NextResponse.json({ success: false, error: 'ไม่พบกิจกรรม' }, { status: 404 });
+      const safeFields = Object.fromEntries(Object.entries(updatedFields as Record<string, unknown>).filter(([key]) => MUTABLE_EVENT_FIELDS.has(key)));
+      const updateError = getEventValidationError(safeFields, target.eventType, false);
+      if (updateError) return NextResponse.json({ success: false, error: updateError }, { status: 400 });
+      const updated = await updateAdminEvent(id, safeFields);
+      recordAudit(actor, 'event.update', `แก้ไข ${label} (${Object.keys(safeFields).join(', ')})`, { type: 'event', id });
       return NextResponse.json({ success: true, events: updated });
     }
 

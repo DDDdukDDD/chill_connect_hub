@@ -265,7 +265,7 @@ export function QuestsManagerView() {
     <div className="space-y-6">
       <AdminPageHeader
         icon={Zap}
-        title="Quests & Badges"
+        title="ชาเลนจ์ & ภารกิจ"
         description="จัดการภารกิจ รางวัล XP และเหรียญตรา"
         actions={
           <>
