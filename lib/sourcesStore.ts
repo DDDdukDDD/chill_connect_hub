@@ -3,6 +3,20 @@ import { readDatabase, updateDatabase } from './db/databaseFile';
 export type SourceTargetType = 'events' | 'spots';
 export type SourceRunStatus = 'success' | 'partial' | 'failed';
 
+export interface SourceRun {
+  at: string;
+  status: SourceRunStatus;
+  scanned: number;
+  imported: number;
+  duplicates: number;
+  /** First few error messages only */
+  errors: string[];
+  /** What the run targeted, e.g. a province for spot sources */
+  context?: string;
+}
+
+export const SOURCE_RUN_HISTORY_LIMIT = 20;
+
 export interface EventDataSource {
   id: string;
   name: string;
@@ -21,6 +35,8 @@ export interface EventDataSource {
   lastRunImported?: number;
   lastRunDuplicates?: number;
   lastRunErrors?: string[];
+  /** Most recent runs first, capped at SOURCE_RUN_HISTORY_LIMIT */
+  runHistory?: SourceRun[];
   isCustom?: boolean;
   description?: string;
 }
@@ -305,6 +321,7 @@ export async function recordSourceScrape(
     importedCount: number;
     duplicateCount: number;
     errors: string[];
+    context?: string;
   }
 ): Promise<void> {
   const now = new Date();
@@ -324,6 +341,18 @@ export async function recordSourceScrape(
       lastRunImported: result.importedCount,
       lastRunDuplicates: result.duplicateCount,
       lastRunErrors: result.errors,
+      runHistory: [
+        {
+          at: now.toISOString(),
+          status: runStatus,
+          scanned: result.scannedCount,
+          imported: result.importedCount,
+          duplicates: result.duplicateCount,
+          errors: result.errors.slice(0, 3).map((error) => error.slice(0, 300)),
+          ...(result.context && { context: result.context }),
+        },
+        ...(source.runHistory ?? []),
+      ].slice(0, SOURCE_RUN_HISTORY_LIMIT),
     };
   }));
 }

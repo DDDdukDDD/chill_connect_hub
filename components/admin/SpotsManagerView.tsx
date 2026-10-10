@@ -47,9 +47,12 @@ const IMAGE_STATUS_META: Record<ImageStatus, { label: string; className: string;
 
 interface SpotsManagerViewProps {
   showToast: (message: string) => void;
+  /** Start filtered (e.g. a cell clicked in the coverage table) */
+  initialProvince?: string;
+  initialCategory?: string;
 }
 
-export function SpotsManagerView({ showToast }: SpotsManagerViewProps) {
+export function SpotsManagerView({ showToast, initialProvince, initialCategory }: SpotsManagerViewProps) {
   // undefined = closed, null = creating, spot = editing
   const [editing, setEditing] = useState<LifestyleSpotItem | null | undefined>(undefined);
   const [reloadToken, setReloadToken] = useState(0);
@@ -62,8 +65,8 @@ export function SpotsManagerView({ showToast }: SpotsManagerViewProps) {
 
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [province, setProvince] = useState('all');
-  const [category, setCategory] = useState('all');
+  const [province, setProvince] = useState(initialProvince || 'all');
+  const [category, setCategory] = useState(initialCategory || 'all');
   const [publication, setPublication] = useState<PublicationFilter>('all');
   const [imageFilter, setImageFilter] = useState<ImageFilter>('all');
   const [page, setPage] = useState(1);

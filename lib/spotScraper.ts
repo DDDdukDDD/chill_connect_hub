@@ -95,6 +95,7 @@ export async function runSpotScraper(targetSource?: string, options?: SpotScrape
     importedCount: importedBySource.get(result.sourceId) || 0,
     duplicateCount: duplicatesBySource.get(result.sourceId) || 0,
     errors: result.error ? [result.error] : [],
+    context: options?.province,
   })));
 
   return {

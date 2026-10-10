@@ -48,6 +48,15 @@ export async function GET(request: Request) {
 
   try {
     const { searchParams } = new URL(request.url);
+
+    // One spot, any publication state (map popups and editor links)
+    const spotId = searchParams.get('id');
+    if (spotId) {
+      const spot = await db.findSpotById(spotId);
+      if (!spot) return NextResponse.json({ success: false, error: 'ไม่พบสถานที่' }, { status: 404 });
+      return NextResponse.json({ success: true, spot: { ...spot, imageStatus: getImageStatus(spot.image) } });
+    }
+
     const province = searchParams.get('province');
     const category = searchParams.get('category');
     const query = searchParams.get('q');
