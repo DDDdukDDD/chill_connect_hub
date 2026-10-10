@@ -39,6 +39,8 @@ Item template:
   2. **Section Header Simplification (`app/page.tsx`)**:
      - Removed redundant "สำรวจทั้งหมด (N)" `<Link>` buttons from Section 01, 02, and 03 header banners to eliminate visual competition with the bottom CTA button.
      - Section banners now stay focused, compact, and elegant (showing only the section number pill, category/venue filter tag, and subtitle).
+  3. **Pillar 5 (Social Moments & Stories) Rose Pink Theme Alignment (`CommunityMomentsStrip.tsx`, `LifestyleJourneyCards.tsx`, `DESIGN_SYSTEM.md`)**:
+     - Standardized Section 05 Moments header banner from residual amber/orange to Rose Pink (`#F43F5E` / `rose-500` / `rose-50`), harmonizing with the platform's 5-pillar color identity (Orange = Community, Blue = Fairs, Green = Spots, Purple = Challenges, Rose Pink = Moments).
 - **Action for Backend:** None required.
 - **Status:** Open
 

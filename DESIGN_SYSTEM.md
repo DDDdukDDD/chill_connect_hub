@@ -29,7 +29,7 @@
 - **มืออาชีพ & ทันสมัย (Editorial & Modern Web Standards)**: ใช้ Typography คุณภาพสูง (Inter, Prompt, Outfit) จัดระดับ Heading/Subheading ชัดเจนแบบ Apple/Luma Style
 - **โทนสีธรรมชาติ (Organic Nature Palette)**:
   - สีหลักของแบรนด์: Forest Green (`#4A7C59`), Soft Mint (`#EBF3ED`), Slate (`#1E293B`, `#0F172A`)
-  - Accent เฉพาะจุด: Warm Amber (`#F26430` สำหรับ Community), Slate Blue (`#2B527A` สำหรับ Major Fairs), Gold (`#D97706` สำหรับ Quests)
+  - Accent เฉพาะจุด: Warm Amber (`#F26430` สำหรับ Community), Slate Blue (`#2B527A` สำหรับ Major Fairs), Royal Violet (`#7C3AED` สำหรับ Quests), Rose Pink (`#F43F5E` สำหรับ Moments)
 
 ---
 
@@ -129,6 +129,11 @@ The platform is strictly organized into 3 discovery pillars + 1 community engage
 #### 4. ⚡ ชาเลนจ์ & ภารกิจท้าทาย (Community Quests - `/challenges`)
 - **Theme Color**: **Royal Violet** (`#7C3AED`, soft tint `#F5F3FF`).
 - **Nature**: Gamified lifestyle check-ins and quests to earn XP and profile badges.
+
+#### 5. 📸 โมเมนต์ & บรรยากาศจริงจากชุมชน (Social Moments & Stories - `/moments`)
+- **Theme Color**: **Rose Pink** (`#F43F5E` / `rose-500`, soft tint `#FFF1F2` / `rose-50`).
+- **Nature**: User-shared photo moments, cafe vibes, community memories, and real trip experiences.
+- **Cards & Rails**: Uses `CommunityMomentsStrip.tsx`, `MomentsStoriesRail.tsx`, and `JourneyMomentCard.tsx`.
 
 ---
 

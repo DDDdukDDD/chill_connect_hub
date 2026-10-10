@@ -187,22 +187,22 @@ export const LifestyleJourneyCards: React.FC = () => {
           </div>
         </div>
 
-        {/* STEP 4: SHARE & REWARDS (Moments & Perks) -> Slate Blue */}
+        {/* STEP 4: SHARE & REWARDS (Moments & Perks) -> Rose Pink */}
         <div className="flex flex-col justify-between p-3.5 sm:p-4 rounded-2xl hover:bg-white/95 hover:shadow-lg transition-all duration-300 group lg:pl-3">
           <div className="space-y-3">
             {/* Header: Milestone Node */}
             <div className="flex items-center justify-between relative">
               <div className="flex items-center gap-2 relative z-10">
-                <span className="w-8 h-8 rounded-xl bg-white text-[#2B527A] border-2 border-blue-400 font-black text-xs flex items-center justify-center shadow-xs ring-4 ring-white group-hover:scale-110 group-hover:bg-[#2B527A] group-hover:text-white group-hover:border-[#2B527A] transition-all duration-300">
+                <span className="w-8 h-8 rounded-xl bg-white text-rose-500 border-2 border-rose-400 font-black text-xs flex items-center justify-center shadow-xs ring-4 ring-white group-hover:scale-110 group-hover:bg-rose-500 group-hover:text-white group-hover:border-rose-500 transition-all duration-300">
                   04
                 </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-[#2B527A] ring-2 ring-blue-100" />
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 ring-2 ring-rose-100" />
               </div>
             </div>
 
             {/* Title & Description */}
             <div className="space-y-1">
-              <h3 className="text-sm sm:text-base font-black text-slate-900 group-hover:text-[#2B527A] transition-colors leading-snug">
+              <h3 className="text-sm sm:text-base font-black text-slate-900 group-hover:text-rose-600 transition-colors leading-snug">
                 4. แชร์ความทรงจำ & รับสิทธิพิเศษ
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed font-normal">
@@ -213,11 +213,11 @@ export const LifestyleJourneyCards: React.FC = () => {
             {/* Clean Micro Features: Borderless Bullet Stream */}
             <div className="space-y-2 pt-1 text-slate-600">
               <div className="flex items-center gap-2 text-[12px] font-medium">
-                <Camera className="w-3.5 h-3.5 text-[#2B527A] shrink-0" />
+                <Camera className="w-3.5 h-3.5 text-rose-500 shrink-0" />
                 <span>แบ่งปันภาพความสุข ส่งต่อแรงบันดาลใจ</span>
               </div>
               <div className="flex items-center gap-2 text-[12px] font-medium">
-                <Gift className="w-3.5 h-3.5 text-[#2B527A] shrink-0" />
+                <Gift className="w-3.5 h-3.5 text-rose-500 shrink-0" />
                 <span>แลกรับส่วนลดคาเฟ่ & สิทธิ์พิเศษไลฟ์สไตล์</span>
               </div>
             </div>
@@ -228,7 +228,7 @@ export const LifestyleJourneyCards: React.FC = () => {
             <Link
               href="/#section-moments"
               onClick={(e) => handleScrollTo(e, 'section-moments')}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#2B527A] hover:text-[#1F3D5C] group/btn cursor-pointer transition-all hover:gap-2.5"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-600 hover:text-rose-700 group/btn cursor-pointer transition-all hover:gap-2.5"
             >
               <span>เปิดดูโมเมนต์ชุมชน</span>
               <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
