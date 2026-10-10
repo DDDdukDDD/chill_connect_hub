@@ -23,7 +23,7 @@ Item template:
 
 ## Open
 
-### FE-011 · Replaced Static Trust Sections with Dynamic Discovery Highlights & Standardized 12-Card Grid Feeds
+### FE-011 · Replaced Static Trust Sections with Dynamic Discovery Highlights (Homepage Stream Retains 10-Card Dynamic Device Grid)
 - **From → To:** Frontend → Backend (informational)
 - **Date / branch:** 2026-10-10 · `main`
 - **What changed:**
@@ -34,9 +34,8 @@ Item template:
        - `FairsDiscoveryHighlights.tsx`: Interactive Top Convention Venues showcase (QSNCC, BITEC, IMPACT, Paragon, BACC) with live event counts and filter triggers + Upcoming Flagship Expo Highlights.
        - `SpotsDiscoveryHighlights.tsx`: Curated Roadtrips & Hidden Gems routes (วันเดย์ทริปใกล้กรุง, สโลว์ไลฟ์สายกาแฟ, แคมป์ปิ้งริมน้ำ) with province filters + Active Spot Buddy travel invitations.
      - Integrated across deep dive tabs on `app/page.tsx` and standalone routes `/community`, `/fairs`, `/spots`.
-  2. **Standardized 12-Card Stream Preview Limit**:
-     - Increased Section 01, Section 02, and Section 03 card limits from 10 to 12 cards.
-     - 12 cards divides evenly across multi-column breakpoints (1 col on mobile, 2 cols on SM, 3 cols on iPad/Tablet, 4 cols on laptops/desktops), completely eliminating orphaned cards and incomplete rows.
+  2. **Homepage Card Count Maintained**:
+     - Maintained homepage preview streams at 10 cards with dynamic responsive grid layout (1 col mobile, 2 cols SM, 3 cols tablet/iPad, 5 cols desktop) per user preference.
 - **Action for Backend:** None required.
 - **Status:** Open
 

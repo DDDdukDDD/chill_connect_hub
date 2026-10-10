@@ -1414,7 +1414,7 @@ function HomeContent() {
                   <div id="section-community-cards" className="scroll-mt-24 space-y-4">
                     <EventGrid
                       events={streamCommunityEvents}
-                      limit={12}
+                      limit={10}
                       columns={5}
                       onSelectEvent={() => { }}
                       favorites={isLoggedIn ? favorites : []}
@@ -1422,13 +1422,13 @@ function HomeContent() {
                       joinedEventIds={isLoggedIn ? joinedEventIds : []}
                       onResetFilters={handleResetAllFilters}
                     />
-                    {streamCommunityEvents.length > 12 && (
+                    {streamCommunityEvents.length > 10 && (
                       <div className="pt-1 text-center">
                         <Link
                           href={`/community${selectedCategory ? `?category=${encodeURIComponent(selectedCategory)}` : ''}`}
                           className="inline-flex items-center gap-2 px-5 py-2 bg-white hover:bg-orange-50 text-[#F26430] border border-orange-200/90 rounded-xl text-xs font-bold shadow-2xs hover:shadow-sm transition-all cursor-pointer active:scale-95"
                         >
-                          <span>ดูเพิ่มเติมอีก {streamCommunityEvents.length - 12} กิจกรรม</span>
+                          <span>ดูเพิ่มเติมอีก {streamCommunityEvents.length - 10} กิจกรรม</span>
                           <ArrowRight className="w-3.5 h-3.5" />
                         </Link>
                       </div>
@@ -1521,7 +1521,7 @@ function HomeContent() {
                   <div id="section-fairs-cards" className="scroll-mt-24 space-y-4">
                     <EventGrid
                       events={streamPublicEvents}
-                      limit={12}
+                      limit={10}
                       columns={5}
                       onSelectEvent={() => { }}
                       favorites={isLoggedIn ? favorites : []}
@@ -1529,13 +1529,13 @@ function HomeContent() {
                       joinedEventIds={isLoggedIn ? joinedEventIds : []}
                       onResetFilters={handleResetAllFilters}
                     />
-                    {streamPublicEvents.length > 12 && (
+                    {streamPublicEvents.length > 10 && (
                       <div className="pt-1 text-center">
                         <Link
                           href={`/fairs${selectedVenueFilter ? `?venue=${encodeURIComponent(selectedVenueFilter)}` : ''}`}
                           className="inline-flex items-center gap-2 px-5 py-2 bg-white hover:bg-sky-50 text-[#2B527A] border border-blue-200/90 rounded-xl text-xs font-bold shadow-2xs hover:shadow-sm transition-all cursor-pointer active:scale-95"
                         >
-                          <span>ดูเพิ่มเติมอีก {streamPublicEvents.length - 12} งาน</span>
+                          <span>ดูเพิ่มเติมอีก {streamPublicEvents.length - 10} งาน</span>
                           <ArrowRight className="w-3.5 h-3.5" />
                         </Link>
                       </div>
@@ -1594,7 +1594,7 @@ function HomeContent() {
                     ) : filteredSpots.length > 0 ? (
                       <div className="space-y-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4">
-                          {filteredSpots.slice(0, 12).map((spot) => (
+                          {filteredSpots.slice(0, 10).map((spot) => (
                             <div key={spot.id} className="block h-full">
                               <SpotCard
                                 spot={spot}
@@ -1611,13 +1611,13 @@ function HomeContent() {
                             </div>
                           ))}
                         </div>
-                        {filteredSpots.length > 12 && (
+                        {filteredSpots.length > 10 && (
                           <div className="pt-1 text-center">
                             <Link
                               href={`/spots?category=${encodeURIComponent(selectedSpotCategory)}&province=${encodeURIComponent(selectedSpotProvince)}`}
                               className="inline-flex items-center gap-2 px-5 py-2 bg-white hover:bg-emerald-50 text-[#4A7C59] border border-emerald-200/90 rounded-xl text-xs font-bold shadow-2xs hover:shadow-sm transition-all cursor-pointer active:scale-95"
                             >
-                              <span>ดูเพิ่มเติมอีก {filteredSpots.length - 12} พิกัด</span>
+                              <span>ดูเพิ่มเติมอีก {filteredSpots.length - 10} พิกัด</span>
                               <ArrowRight className="w-3.5 h-3.5" />
                             </Link>
                           </div>
