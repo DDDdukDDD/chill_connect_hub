@@ -28,6 +28,7 @@ import { usePublishedSpots, getCachedSpotVibeCategory, getCachedSpotSearchText }
 import { MOCK_SPOTS, ALL_THAI_PROVINCES, LifestyleSpotItem } from '@/data/spotsData';
 import { SpotCategoryRail, NATIONWIDE_SPOT_CATEGORIES } from '@/components/SpotCategoryRail';
 import { TopDestinationsRail } from '@/components/TopDestinationsRail';
+import { SpotsDiscoveryHighlights } from '@/components/SpotsDiscoveryHighlights';
 import { EventItem } from '@/data/mockData';
 import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
 import { matchSearchQuery } from '@/lib/searchUtils';
@@ -622,6 +623,18 @@ function SpotsPageContent() {
             </button>
           </div>
         )}
+
+        {/* Dynamic Spots Highlights & Roadtrips */}
+        <div className="pt-6 border-t border-slate-200/60">
+          <SpotsDiscoveryHighlights
+            onSelectProvince={(prov) => {
+              setSelectedProvince(prov);
+              setCurrentPage(1);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onOpenSpotBuddy={() => setIsCreateEventModalOpen(true)}
+          />
+        </div>
 
       </main>
 

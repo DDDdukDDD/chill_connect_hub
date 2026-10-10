@@ -24,6 +24,7 @@ import { ViewModeToggle, ViewMode } from '@/components/ViewModeToggle';
 import { Pagination } from '@/components/Pagination';
 import { CommunityCategoryRail, COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
 import { TopCommunityRail, TOP_COMMUNITY_CLUBS } from '@/components/TopCommunityRail';
+import { CommunityDiscoveryHighlights } from '@/components/CommunityDiscoveryHighlights';
 import { getCommunityEventCategory } from '@/data/masterHub';
 import { CustomDatePickerModal } from '@/components/CustomDatePickerModal';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
@@ -743,6 +744,11 @@ function CommunityPageContent() {
             />
           </div>
         )}
+
+        {/* Dynamic Community Highlights & Quests */}
+        <div className="pt-6 border-t border-slate-200/60">
+          <CommunityDiscoveryHighlights />
+        </div>
 
       </main>
 

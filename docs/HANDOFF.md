@@ -23,6 +23,23 @@ Item template:
 
 ## Open
 
+### FE-011 · Replaced Static Trust Sections with Dynamic Discovery Highlights & Standardized 12-Card Grid Feeds
+- **From → To:** Frontend → Backend (informational)
+- **Date / branch:** 2026-10-10 · `main`
+- **What changed:**
+  1. **Dynamic Discovery Modules replacing Static "ทำไมต้องเป็นเรา" (Trust Pillars)**:
+     - Removed static text-heavy marketing blocks (`CommunityTrustSection`, `FairsTrustSection`, `SpotsTrustSection`) from subpage / deep-dive views.
+     - Built 3 tailored, dynamic discovery modules that provide social proof and actionable engagement:
+       - `CommunityDiscoveryHighlights.tsx`: Real photo stories from recent meetups (`MOCK_POSTS`) + Trending Weekly Quests (`MOCK_CHALLENGES`) with XP rewards and CTAs.
+       - `FairsDiscoveryHighlights.tsx`: Interactive Top Convention Venues showcase (QSNCC, BITEC, IMPACT, Paragon, BACC) with live event counts and filter triggers + Upcoming Flagship Expo Highlights.
+       - `SpotsDiscoveryHighlights.tsx`: Curated Roadtrips & Hidden Gems routes (วันเดย์ทริปใกล้กรุง, สโลว์ไลฟ์สายกาแฟ, แคมป์ปิ้งริมน้ำ) with province filters + Active Spot Buddy travel invitations.
+     - Integrated across deep dive tabs on `app/page.tsx` and standalone routes `/community`, `/fairs`, `/spots`.
+  2. **Standardized 12-Card Stream Preview Limit**:
+     - Increased Section 01, Section 02, and Section 03 card limits from 10 to 12 cards.
+     - 12 cards divides evenly across multi-column breakpoints (1 col on mobile, 2 cols on SM, 3 cols on iPad/Tablet, 4 cols on laptops/desktops), completely eliminating orphaned cards and incomplete rows.
+- **Action for Backend:** None required.
+- **Status:** Open
+
 ### FE-010 · Smart Multi-Token Search Engine & Thai Lifestyle Synonym Expansion
 - **From → To:** Frontend → Backend (informational)
 - **Date / branch:** 2026-10-10 · `main`
