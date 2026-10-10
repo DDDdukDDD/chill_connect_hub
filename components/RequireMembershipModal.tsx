@@ -2,12 +2,16 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { X, Sparkles, Ticket, Users, MessageCircle, Gift, ArrowRight, LogIn } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { PhraseText } from './auth/PhraseText';
+import { X, Sparkles, Ticket, Users, MessageCircle, Gift, ArrowRight } from 'lucide-react';
 
 interface RequireMembershipModalProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenLogin: () => void;
+  /** Opens the sign-up form in place; without it the button goes to /login?mode=signup */
+  onOpenSignup?: () => void;
   actionTitle?: string;
 }
 
@@ -15,9 +19,12 @@ export const RequireMembershipModal: React.FC<RequireMembershipModalProps> = ({
   isOpen,
   onClose,
   onOpenLogin,
+  onOpenSignup,
   actionTitle = 'เพื่อดำเนินการต่อ',
 }) => {
+  const pathname = usePathname();
   if (!isOpen) return null;
+  const signupHref = `/login?mode=signup&returnTo=${encodeURIComponent(pathname || '/')}`;
 
   return (
     <div className="fixed inset-0 z-[100002] flex items-center justify-center p-4 sm:p-6 bg-black/65 backdrop-blur-xs animate-fade-in">
@@ -42,12 +49,10 @@ export const RequireMembershipModal: React.FC<RequireMembershipModalProps> = ({
           </div>
 
           <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            เข้าสู่ระบบ {actionTitle}
+            <PhraseText text={`เข้าสู่ระบบ ${actionTitle}`} />
           </h3>
 
-          <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed max-w-sm mx-auto">
-            เข้าสู่ระบบหรือสมัครสมาชิก เพื่อปลดล็อกสิทธิพิเศษและเชื่อมต่อคอมมูนิตี้
-          </p>
+          <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed max-w-sm mx-auto"><PhraseText text="เข้าสู่ระบบหรือสมัครสมาชิก เพื่อปลดล็อกสิทธิพิเศษ และเชื่อมต่อคอมมูนิตี้" /></p>
         </div>
 
         {/* Membership Perks (Clean Spacious Cards) */}
@@ -58,8 +63,8 @@ export const RequireMembershipModal: React.FC<RequireMembershipModalProps> = ({
               <Ticket className="w-5 h-5" />
             </div>
             <div className="min-w-0">
-              <h4 className="text-xs sm:text-sm font-extrabold text-slate-800 leading-tight">ร่วมทุกกิจกรรม & ชาเลนจ์</h4>
-              <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-0.5">เข้าร่วมกิจกรรมสนุกๆ และรับภารกิจสะสมเหรียญรางวัล</p>
+              <h4 className="text-xs sm:text-sm font-extrabold text-slate-800 leading-tight"><PhraseText text="ร่วมทุกกิจกรรม & ชาเลนจ์" /></h4>
+              <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-0.5"><PhraseText text="เข้าร่วมกิจกรรมสนุกๆ และรับภารกิจสะสมเหรียญรางวัล" /></p>
             </div>
           </div>
 
@@ -69,8 +74,8 @@ export const RequireMembershipModal: React.FC<RequireMembershipModalProps> = ({
               <Users className="w-5 h-5" />
             </div>
             <div className="min-w-0">
-              <h4 className="text-xs sm:text-sm font-extrabold text-slate-800 leading-tight">โพสต์ชวนเพื่อน & หาตี้ใน Buddy Board</h4>
-              <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-0.5">ปลดล็อกการชวนตี้และระบบทักทายหาเพื่อนใหม่</p>
+              <h4 className="text-xs sm:text-sm font-extrabold text-slate-800 leading-tight"><PhraseText text="โพสต์ชวนเพื่อน & หาตี้ใน Buddy Board" /></h4>
+              <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-0.5"><PhraseText text="ปลดล็อกการชวนตี้ และระบบทักทายหาเพื่อนใหม่" /></p>
             </div>
           </div>
 
@@ -80,8 +85,8 @@ export const RequireMembershipModal: React.FC<RequireMembershipModalProps> = ({
               <MessageCircle className="w-5 h-5" />
             </div>
             <div className="min-w-0">
-              <h4 className="text-xs sm:text-sm font-extrabold text-slate-800 leading-tight">ห้องแชตนัดพบ & คอมมูนิตี้ส่วนตัว</h4>
-              <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-0.5">พูดคุยแลกเปลี่ยนใน Group Chat ของแต่ละกิจกรรม</p>
+              <h4 className="text-xs sm:text-sm font-extrabold text-slate-800 leading-tight"><PhraseText text="ห้องแชตนัดพบ & คอมมูนิตี้ส่วนตัว" /></h4>
+              <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-0.5"><PhraseText text="พูดคุยแลกเปลี่ยนใน Group Chat ของแต่ละกิจกรรม" /></p>
             </div>
           </div>
 
@@ -91,8 +96,8 @@ export const RequireMembershipModal: React.FC<RequireMembershipModalProps> = ({
               <Gift className="w-5 h-5" />
             </div>
             <div className="min-w-0">
-              <h4 className="text-xs sm:text-sm font-extrabold text-slate-800 leading-tight">รับแต้มต้อนรับ +50 Connect Points ฟรี</h4>
-              <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-0.5">สะสมแต้มทำภารกิจแลกของรางวัลและส่วนลดพิเศษ</p>
+              <h4 className="text-xs sm:text-sm font-extrabold text-slate-800 leading-tight"><PhraseText text="รับแต้มต้อนรับ +50 XP ฟรี" /></h4>
+              <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-0.5"><PhraseText text="สะสมแต้มทำภารกิจ แลกของรางวัลและส่วนลดพิเศษ" /></p>
             </div>
           </div>
         </div>
@@ -100,8 +105,14 @@ export const RequireMembershipModal: React.FC<RequireMembershipModalProps> = ({
         {/* Action Buttons (Spacious & Comfortable) */}
         <div className="pt-2 space-y-2.5">
           <Link
-            href="/onboarding"
-            onClick={onClose}
+            href={signupHref}
+            onClick={(e) => {
+              onClose();
+              if (onOpenSignup) {
+                e.preventDefault();
+                onOpenSignup();
+              }
+            }}
             className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 sm:py-3.5 px-5 rounded-2xl font-bold text-xs sm:text-sm shadow-sm transition-all active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
           >
             <span>สมัครสมาชิกใหม่ฟรี (เพียง 1 นาที)</span>

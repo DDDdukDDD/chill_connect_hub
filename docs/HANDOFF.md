@@ -58,6 +58,128 @@ Item template:
 - **Action for Backend:** None required. All shared signatures and contracts (`fetchAllContentPages`, `usePublishedSpots`, `useSpotCatalog`) remain 100% backward-compatible.
 - **Status:** Open
 
+### BE-017 · Login and sign-up now use real member accounts (Claude Code owns these files)
+- **From → To:** Backend → Frontend
+- **Date / branch:** 2026-10-10 · `claude`
+- **What changed:** At the owner's request, Claude Code rebuilt the member auth UI and wired it to the real API (BE-015). Claude Code now owns these files; please do not edit them:
+  - `components/auth/**` (new `AuthPanel`, the single login / sign-up / forgot-password card)
+  - `components/AuthModal.tsx`, `app/login/**`, `app/reset-password/**` (new)
+  - `lib/useAuth.ts`, `components/RequireMembershipModal.tsx`
+  - `app/onboarding/**` (the whole page; redesigned 2026-10-10)
+- **What stays the same for your pages:**
+  - `<AuthModal isOpen onClose onLoginSuccess initialMode />` and `useAuth()` keep their props and return shape.
+  - `handleSetIsLoggedIn(true)` re-reads the server session; `handleSetIsLoggedIn(false)` logs out on the server.
+  - `userProfile` now holds the real member: name, an initials avatar when there is no photo, and `email`. Guests see "ผู้เยี่ยมชม".
+  - `useAuth()` also returns `member` (`PublicMember | null`).
+- **Behavior notes:**
+  - Removed: fake hCaptcha, pre-ticked consent boxes, and the "คุณส้ม" sample logins.
+  - Social buttons show "ยังไม่เปิดใช้" until provider credentials are set.
+  - New members continue to `/onboarding?returnTo=…` and then return to the page they came from.
+  - Onboarding is now 3 steps: goals → profile → interests and province.
+    - Interests come from master data (community categories, spot vibes, fair categories) and provinces from master data.
+    - Name and avatar are saved to the account. Other answers are saved in localStorage `cch_member_preferences` as `{ role, goals, birthYear?, gender?, interests: { communityCategories, spotVibes, fairCategories }, province?, completedAt }`, using content ids, so feeds can use them for recommendations.
+    - The old `userProfile` / `userName` keys are no longer written.
+    - **Test without an account:** `/onboarding?preview=1` runs the whole flow, saves nothing, and shows the data it would save.
+    - **Thai line breaks:** `components/auth/PhraseText` wraps lines only at the spaces between phrases. Feel free to reuse it for Thai labels.
+- **Action for Frontend (`components/Navbar.tsx`, not in Claude Code's scope):**
+  1. **Avatar button:** the trigger image is hard-coded to an Unsplash photo (around line 145). Use `userProfile.avatar`.
+  2. **Default name:** the `userName` prop defaults to a real person's name (`'Jirathitigorn Maneekord'`). Remove the default or use `userProfile.name`.
+  3. **Homepage too wide on phones:** at a 360px screen the homepage is 429px wide. The cause is the pill button in `components/HeroSection.tsx` (around line 1280, class `mb-1.5 inline-flex … px-2.5 sm:px-3 py-1`). Phones then zoom the whole page out, and popups such as the login dialog look cut off. Let the pill wrap or shrink.
+  4. **Optional cleanup:** pages that write `localStorage.setItem('userName', …)` in `onLoginSuccess` can drop it, because nothing reads it now.
+- **Status:** Open
+
+### BE-016 · Moments backend is live: please move `/moments` off MOCK_POSTS and localStorage
+- **From → To:** Backend → Frontend
+- **Date / branch:** 2026-10-10 · `claude`
+- **What changed:** `/api/moments` now stores posts, likes, saves, comments and reports for real members (BE-015).
+  - The 24 `MOCK_POSTS` are seeded as samples, so the feed looks the same at first.
+  - Posts go live at once, and 3 reports hide one for moderation. Admin has a new "โมเมนต์" page.
+  - Contract in [API.md](API.md) → "Moments". Items keep the `CommunityPost` shape.
+- **Action for Frontend (`app/moments/page.tsx` and the moment rails):**
+  1. **Feed:** replace `useState(MOCK_POSTS)` and the `chill_user_moments` / `chill_saved_moments` localStorage with `GET /api/moments`.
+     - Map the tabs `all | popular | saved | mine` to `?tab=`; the location filter goes to `?location=`.
+     - "Load more" goes to `?page=`.
+  2. **Create:**
+     - Upload each compressed image with `POST /api/upload` (`folder=moments`), then send the returned URLs in `images`. Data URLs (base64) are rejected.
+     - Send `targetType` / `targetId` / `targetTitle` / `location` as the form already resolves them.
+     - Remove the hard-coded author "คุณส้ม (Som_Chill)": the server uses the signed-in member.
+  3. **Like, save, comment, delete comment, report:** call `POST /api/moments/[id]/actions`, then replace the item with the returned `moment`, or update optimistically and roll back on error.
+     - Use `isLiked`, `isSaved`, `isMine` and `hasReported` from the API.
+     - Show "ลบ" on comments where `comment.isMine` is true or the post is `isMine`.
+  4. **Not signed in:** on `401`, open `RequireMembershipModal` / `AuthModal`.
+  5. **Report:** add "รายงานโมเมนต์" with a short reason list. Hide it when `isMine` or `hasReported` is true. Show the API `message` on `409`.
+  6. **Edit and delete own posts:** `PATCH` / `DELETE /api/moments/[id]`.
+  7. **Show `timeAgo` from the API.** You may label `isSample` posts discreetly; their like counts are illustrative.
+  8. **Not in this round:** following members (`followedUserIds`, `SUGGESTED_MEMBERS`) stays client-only.
+- **Status:** Open
+
+### BE-015 · Real member accounts (4 login channels): please replace the mock login
+- **From → To:** Backend → Frontend
+- **Date / branch:** 2026-10-10 · `claude`
+- **What changed:**
+  - Members now have real server accounts with an httpOnly session cookie, for the 4 channels in the current `AuthModal` design.
+    - **Email/password:** works now.
+    - **Google, Facebook, Apple:** each turns on as soon as its credentials are set on the server. Until then, `providers.<name>` is `false`.
+  - Admin can view, suspend, ban and log out members.
+  - PDPA endpoints: export my data, delete my account.
+  - Contract in [API.md](API.md) → "Member accounts". The client hook is `lib/useMemberSession.ts`.
+- **Action for Frontend:**
+  1. `lib/useAuth.ts`: read the logged-in state and profile from `useMemberSession()` instead of `localStorage` (`isLoggedIn`, `user_profile`). Remove the mock "คุณส้ม" logins.
+  2. `components/AuthModal.tsx` and `app/login/page.tsx`:
+     - Email login calls `login(email, password)`; sign-up calls `register({ displayName, email, password, consent })`. Show the thrown `Error.message`, which is Thai.
+     - Social buttons call `loginWith('google' | 'facebook' | 'apple')`. Disable a button while `providers[name]` is `false`, labelled e.g. "เร็วๆ นี้".
+     - Sign-up needs a consent checkbox (terms + privacy policy). Social sign-up counts as consent, so state the terms next to the social buttons.
+  3. After a social login the user returns to the same page with `?auth=success` or `?auth_error=<message>`: show a toast and remove the query.
+  4. Profile / settings: `updateProfile`, `changePassword`, `logout`, plus "ดาวน์โหลดข้อมูลของฉัน" (`GET /api/auth/member/account`) and "ลบบัญชี" (`deleteAccount()`).
+  5. The member's role must never come from the client. `user_role` in localStorage should not unlock anything.
+- **Next on the backend:** Moments posts, likes and comments will use these sessions. The feed will move from `MOCK_POSTS`/localStorage to an API, with a follow-up note.
+- **Status:** Open
+
+### BE-014 · Uploads are stored in Vercel Blob (persist on the deploy)
+- **From → To:** Backend → Frontend
+- **Date / branch:** 2026-10-10 · `claude`
+- **What changed:**
+  - `POST /api/upload` stores files in Vercel Blob when `BLOB_READ_WRITE_TOKEN` is set, or `BLOB_STORE_ID` with Vercel OIDC (how the connected store works on Vercel). Before, files went to `public/uploads`, which Vercel does not keep.
+  - The returned `url` is then an absolute `https://<store>.public.blob.vercel-storage.com/...` address.
+  - Non-admin callers are limited to 20 uploads per 10 minutes per IP (`429`).
+  - New dependency `@vercel/blob` in `package.json`. The unused `CloudStorageAdapter` was removed: it only built fake URLs.
+- **Action for Frontend:**
+  1. Run `npm install` after merging.
+  2. If any component renders uploaded images with `next/image`, add `*.public.blob.vercel-storage.com` to `images.remotePatterns` in `next.config.ts`. Plain `<img>` needs nothing.
+  3. Handle `429` from `/api/upload` with its `message`.
+- **Status:** Open
+
+### BE-013 · Master data is now editable in admin: please read it through `useMasterData()`
+- **From → To:** Backend → Frontend
+- **Date / branch:** 2026-10-10 · `claude`
+- **What changed:**
+  - Admin can now edit, add, deactivate, reorder and set images for: spot vibes, community moods and categories, fair and quest categories, venues, the 77 provinces, zones, and the image cards of the Top rails (community clubs and venue groups).
+  - Province fields include display name, English name, region, tagline, description, cover image and "featured".
+  - Data lives in `data/master_data.json`, seeded from `data/masterHub.ts`, served by `GET /api/master` (see [API.md](API.md)).
+  - **The public site still reads the hard-coded constants, so admin edits do not show there yet.**
+- **Action for Frontend:** switch these files to `useMasterData()` from `lib/useMasterData.ts`. It returns the same shapes as the constants, falls back to them while loading, and hides inactive entries.
+  1. `components/SpotCategoryRail.tsx`: `MASTER_SPOT_CATEGORIES` → `spotVibes` (entries may now carry `image`).
+  2. `components/CommunityCategoryRail.tsx`: `MASTER_COMMUNITY_LIFESTYLE_CATEGORIES` → `communityCategories`; moods → `communityMoods`.
+  3. `components/FairCategoryRail.tsx`: `MASTER_FAIR_CATEGORIES` → `fairCategories`.
+  4. `components/HeroSection.tsx`: whichever of the above it uses.
+  5. `components/TopDestinationsRail.tsx`: the hard-coded destination list → `featuredProvinces`. It already has the same display names, English names, taglines and `/images/destinations/*` images, seeded from your list. Admin now controls which provinces are featured and their photos.
+  6. `components/FilterDrawer.tsx` and `app/page.tsx`: `BANGKOK_ZONES` → `zonesFor('กรุงเทพฯ')`. Zones for other provinces can now be added.
+  7. `components/TopCommunityRail.tsx`: `TOP_COMMUNITY_CLUBS` → `communityClubs`. The 8 cards are seeded with your names, subtitles, images, badges and keywords; admin can now edit, add, reorder, hide and change photos.
+     - `membersCount` comes back empty: the "850+ สมาชิก" numbers were illustrative, so they were not carried over. Show the real event count the rail already computes, or nothing.
+  8. `components/TopVenuesRail.tsx`: `TOP_VENUES` → `venueGroups`, with the 7 cards seeded the same way.
+  - Keyword-based helpers (`getCommunityEventCategory`, `getFairEventCategory`, `getSpotVibeCategory`) still use the code keywords. Moving them to admin keywords is a later backend step.
+- **Status:** Open
+
+### BE-012 · New dependency: `leaflet` (admin map only)
+- **From → To:** Backend → Frontend (informational)
+- **Date / branch:** 2026-10-10 · `claude`
+- **What changed:**
+  - `package.json` now has `leaflet`, plus `@types/leaflet` as a dev dependency. It is used only by the admin's new "ความครอบคลุม & แผนที่" page (`components/admin/SpotsMapPanel.tsx`).
+  - It is imported in the browser on that page only, so public pages do not load it.
+  - Tiles come from OpenStreetMap, with the required attribution shown.
+- **Action for Frontend:** run `npm install` after merging. If a public map is wanted later, the same library can be reused.
+- **Status:** Open
+
 ### BE-011 · Sample community meetups no longer expire (dates roll forward)
 - **From → To:** Backend → Frontend
 - **Date / branch:** 2026-10-09 · `claude`

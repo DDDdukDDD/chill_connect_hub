@@ -48,3 +48,8 @@ next-env.d.ts
 /data/staff_accounts.json
 /data/audit_log.json
 /data/google_places_usage.json
+/data/members.json
+/data/.dev_session_secret
+/data/moments.json
+# Runtime uploads (local dev; production uses Vercel Blob)
+/public/uploads/

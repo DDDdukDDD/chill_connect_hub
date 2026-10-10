@@ -21,6 +21,7 @@ import { AdminPageHeader, AdminBadge, adminButton } from './AdminUI';
 import { EventDataSource } from '@/lib/sourcesStore';
 import { handleAdminUnauthorized } from './adminAuthUtils';
 import { MASTER_77_PROVINCES } from '@/data/masterHub';
+import { SourceRunHistory } from './SourceRunHistory';
 
 interface ScrapeResultData {
   targetType: 'events' | 'spots';
@@ -31,20 +32,22 @@ interface ScrapeResultData {
   sourceResults: Array<{ sourceId: string; sourceName: string; scanned: number; imported: number; duplicates: number; error?: string }>;
 }
 
-export function ScraperEngineView() {
+/** `initialProvince` opens the Spots tab with that province selected (e.g. from the coverage table) */
+export function ScraperEngineView({ initialProvince }: { initialProvince?: string } = {}) {
   const [sources, setSources] = useState<EventDataSource[]>([]);
   const [isLoadingSources, setIsLoadingSources] = useState(true);
   const [isScraping, setIsScraping] = useState(false);
   const [scrapingSourceId, setScrapingSourceId] = useState<string | null>(null);
-  const [sourceTypeFilter, setSourceTypeFilter] = useState<'events' | 'spots'>('events');
+  const [sourceTypeFilter, setSourceTypeFilter] = useState<'events' | 'spots'>(initialProvince ? 'spots' : 'events');
   const [isEnrichingSpots, setIsEnrichingSpots] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [autoPublish, setAutoPublish] = useState(false);
   const [scrapeResult, setScrapeResult] = useState<ScrapeResultData | null>(null);
   // Province-based spot sources import one province per run
-  const [spotProvince, setSpotProvince] = useState('');
+  const [spotProvince, setSpotProvince] = useState(initialProvince ?? '');
   const [spotLimit, setSpotLimit] = useState(30);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [historySourceId, setHistorySourceId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [toastMsg, setToastMsg] = useState<string | null>(null);
@@ -683,6 +686,15 @@ export function ScraperEngineView() {
                         {isThisScraping ? 'กำลังสแกน...' : 'สแกน'}
                       </button>
 
+                      <button
+                        type="button"
+                        onClick={() => setHistorySourceId((current) => (current === source.id ? null : source.id))}
+                        aria-expanded={historySourceId === source.id}
+                        className={adminButton.secondarySm}
+                      >
+                        ประวัติ
+                      </button>
+
                       {source.isCustom && (
                         <button
                           onClick={() => handleDeleteSource(source.id, source.name)}
@@ -695,6 +707,11 @@ export function ScraperEngineView() {
                     </div>
                   </div>
                 </div>
+                {historySourceId === source.id && (
+                  <div className="mt-3 border-t border-slate-100 pt-3">
+                    <SourceRunHistory source={source} />
+                  </div>
+                )}
               </div>
             );
           })}

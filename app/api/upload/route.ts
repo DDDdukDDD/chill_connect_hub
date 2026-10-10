@@ -1,7 +1,28 @@
 import { NextResponse } from 'next/server';
 import { mediaStorage } from '@/lib/media';
+import { hasAdminCredentials } from '@/lib/adminApiAuth';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
+
+// Members have no server identity yet, so uploads are limited per IP (per server instance) to curb abuse
+// of paid storage. Admin sessions are not limited.
+const UPLOAD_LIMIT = 20;
+const UPLOAD_WINDOW_MS = 10 * 60 * 1000;
+const globalForUploads = globalThis as unknown as { _cchUploadHits?: Map<string, number[]> };
+const uploadHits = (globalForUploads._cchUploadHits ??= new Map());
+
+function isRateLimited(request: Request): boolean {
+  if (hasAdminCredentials(request)) return false;
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'unknown';
+  const now = Date.now();
+  const recent = (uploadHits.get(ip) ?? []).filter((time: number) => now - time < UPLOAD_WINDOW_MS);
+  if (recent.length >= UPLOAD_LIMIT) {
+    uploadHits.set(ip, recent);
+    return true;
+  }
+  uploadHits.set(ip, [...recent, now]);
+  return false;
+}
 
 // Identify raster image formats from their magic bytes
 function detectImageType(buffer: Buffer): string | null {
@@ -13,6 +34,12 @@ function detectImageType(buffer: Buffer): string | null {
 }
 
 export async function POST(request: Request) {
+  if (isRateLimited(request)) {
+    return NextResponse.json(
+      { success: false, message: 'อัปโหลดบ่อยเกินไป กรุณาลองใหม่ในอีกสักครู่' },
+      { status: 429 }
+    );
+  }
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
