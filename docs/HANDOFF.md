@@ -23,16 +23,16 @@ Item template:
 
 ## Open
 
-### FE-011 · Replaced Static Trust Sections with Dynamic Discovery Highlights (Homepage Stream Retains 10-Card Dynamic Device Grid)
+### FE-011 · Replaced Static Trust Sections with Unified Moments & Quests Discovery Modules (Strict Pillar Color Tones)
 - **From → To:** Frontend → Backend (informational)
 - **Date / branch:** 2026-10-10 · `main`
 - **What changed:**
-  1. **Dynamic Discovery Modules replacing Static "ทำไมต้องเป็นเรา" (Trust Pillars)**:
-     - Removed static text-heavy marketing blocks (`CommunityTrustSection`, `FairsTrustSection`, `SpotsTrustSection`) from subpage / deep-dive views.
-     - Built 3 tailored, dynamic discovery modules that provide social proof and actionable engagement:
-       - `CommunityDiscoveryHighlights.tsx`: Real photo stories from recent meetups (`MOCK_POSTS`) + Trending Weekly Quests (`MOCK_CHALLENGES`) with XP rewards and CTAs.
-       - `FairsDiscoveryHighlights.tsx`: Interactive Top Convention Venues showcase (QSNCC, BITEC, IMPACT, Paragon, BACC) with live event counts and filter triggers + Upcoming Flagship Expo Highlights.
-       - `SpotsDiscoveryHighlights.tsx`: Curated Roadtrips & Hidden Gems routes (วันเดย์ทริปใกล้กรุง, สโลว์ไลฟ์สายกาแฟ, แคมป์ปิ้งริมน้ำ) with province filters + Active Spot Buddy travel invitations.
+  1. **Unified Discovery Structure (Real Photo Moments + Weekly XP Quests)**:
+     - Standardized the end-of-page discovery experience across all 3 pillars to: (Left 7-col) 3 Real Photo Moments + (Right 5-col) 3 Weekly Challenge Quests.
+     - Provides consistent social proof and gamified motivation throughout the platform while strictly adhering to pillar color tones:
+       - **Community (`/community`)**: **Sunset Amber** (`#F26430`) theme + meetup/group moments + community friendship quests (`CommunityDiscoveryHighlights.tsx`).
+       - **Fairs (`/fairs`)**: **Slate Blue** (`#2B527A`) theme + expo/festival moments + art/book/creative quests (`FairsDiscoveryHighlights.tsx`).
+       - **Spots (`/spots`)**: **Forest Green** (`#4A7C59`) theme + scenic/cafe/nature moments + Cafe Hunter & outdoor explorer quests (`SpotsDiscoveryHighlights.tsx`).
      - Integrated across deep dive tabs on `app/page.tsx` and standalone routes `/community`, `/fairs`, `/spots`.
   2. **Homepage Card Count Maintained**:
      - Maintained homepage preview streams at 10 cards with dynamic responsive grid layout (1 col mobile, 2 cols SM, 3 cols tablet/iPad, 5 cols desktop) per user preference.

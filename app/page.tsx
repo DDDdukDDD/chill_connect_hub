@@ -1862,13 +1862,7 @@ function HomeContent() {
 
 
                 {/* Fairs Discovery Highlights */}
-                <FairsDiscoveryHighlights
-                  onSelectVenue={(vKey) => {
-                    setSelectedVenueFilter(vKey);
-                    setSelectedFairRailCategory(null);
-                  }}
-                  eventsList={eventsList}
-                />
+                <FairsDiscoveryHighlights />
               </div>
             )}
 
@@ -2013,12 +2007,7 @@ function HomeContent() {
 
 
                 {/* Spots Discovery Highlights */}
-                <SpotsDiscoveryHighlights
-                  onSelectProvince={(prov) => {
-                    setSelectedSpotProvince(prov);
-                  }}
-                  onOpenSpotBuddy={() => setIsCreateEventModalOpen(true)}
-                />
+                <SpotsDiscoveryHighlights />
               </div>
             )}
           </div>

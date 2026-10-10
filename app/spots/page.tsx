@@ -624,16 +624,9 @@ function SpotsPageContent() {
           </div>
         )}
 
-        {/* Dynamic Spots Highlights & Roadtrips */}
+        {/* Dynamic Spots Highlights & Moments */}
         <div className="pt-6 border-t border-slate-200/60">
-          <SpotsDiscoveryHighlights
-            onSelectProvince={(prov) => {
-              setSelectedProvince(prov);
-              setCurrentPage(1);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            onOpenSpotBuddy={() => setIsCreateEventModalOpen(true)}
-          />
+          <SpotsDiscoveryHighlights />
         </div>
 
       </main>

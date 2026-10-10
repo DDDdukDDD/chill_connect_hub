@@ -646,16 +646,9 @@ function FairsPageContent() {
           </div>
         )}
 
-        {/* Dynamic Fairs Highlights & Top Venues */}
+        {/* Dynamic Fairs Highlights & Moments */}
         <div className="pt-6 border-t border-slate-200/60">
-          <FairsDiscoveryHighlights
-            onSelectVenue={(vKey) => {
-              setSelectedVenue(vKey);
-              setCurrentPage(1);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            eventsList={eventsList}
-          />
+          <FairsDiscoveryHighlights />
         </div>
 
       </main>
