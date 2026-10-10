@@ -23,7 +23,7 @@ Item template:
 
 ## Open
 
-### FE-009 · Homepage Stream Transition: Reverted Single-Row Carousels to Dynamic Responsive Multi-Device Grid (1-Col Mobile, 3-Col iPad, 5-Col Desktop)
+### FE-009 · Homepage Stream Transition: Reverted Single-Row Carousels to Dynamic Responsive Multi-Device Grid (1-Col Mobile, 3-Col iPad, 5-Col Desktop) & Cleaned Section Headers
 - **From → To:** Frontend → Backend (informational)
 - **Date / branch:** 2026-10-10 · `main`
 - **What changed:**
@@ -36,6 +36,9 @@ Item template:
        - **Laptops (1024px–1280px)**: 4 columns (`lg:grid-cols-4`).
        - **Desktop (≥ 1280px)**: 5 columns (`xl:grid-cols-5`).
      - Kept max 10 cards per stream on the showroom overview with clean "ดูเพิ่มเติมอีก N รายการ" bottom CTA buttons.
+  2. **Section Header Simplification (`app/page.tsx`)**:
+     - Removed redundant "สำรวจทั้งหมด (N)" `<Link>` buttons from Section 01, 02, and 03 header banners to eliminate visual competition with the bottom CTA button.
+     - Section banners now stay focused, compact, and elegant (showing only the section number pill, category/venue filter tag, and subtitle).
 - **Action for Backend:** None required.
 - **Status:** Open
 

@@ -1398,7 +1398,7 @@ function HomeContent() {
                 {/* STREAM SECTION 1: 👥 COMMUNITY MEETUPS (กิจกรรมคอมมูนิตี้)                 */}
                 {/* ------------------------------------------------------------------------- */}
                 <section id="section-community" className="space-y-2.5 sm:space-y-3 scroll-mt-20">
-                  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2.5 sm:gap-3 bg-gradient-to-r from-orange-50/50 via-slate-50/30 to-transparent p-3 sm:p-3.5 rounded-2xl border border-orange-100/60 shadow-2xs">
+                  <div className="bg-gradient-to-r from-orange-50/50 via-slate-50/30 to-transparent p-3 sm:p-3.5 rounded-2xl border border-orange-100/60 shadow-2xs">
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="w-6 h-6 rounded-lg bg-orange-500/10 text-[#F26430] flex items-center justify-center text-xs font-black shrink-0 border border-orange-500/20">
@@ -1406,11 +1406,11 @@ function HomeContent() {
                         </span>
                         <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
                           <span>กิจกรรมคอมมูนิตี้</span>
-                          {selectedCommunityClub && (
-                            <span className="text-[10px] font-black text-[#F26430] bg-[#FFF4EE] px-2 py-0.5 rounded-full border border-orange-200">
-                              {TOP_COMMUNITY_CLUBS.find((c) => c.clubKey === selectedCommunityClub)?.nameTh || selectedCommunityClub}
-                            </span>
-                          )}
+                          <span className="text-[10px] font-black text-[#F26430] bg-[#FFF4EE] px-2 py-0.5 rounded-full border border-orange-200">
+                            {selectedCommunityClub
+                              ? (TOP_COMMUNITY_CLUBS.find((c) => c.clubKey === selectedCommunityClub)?.nameTh || selectedCommunityClub)
+                              : `${streamCommunityEvents.length} กิจกรรม`}
+                          </span>
                         </h2>
                         {timeFilter !== 'all' && (
                           <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-orange-950 bg-orange-100/90 px-2.5 py-0.5 rounded-full border border-orange-200 shadow-2xs">
@@ -1441,14 +1441,6 @@ function HomeContent() {
                         เชื่อมต่อมิตรภาพผ่านกิจกรรมสร้างสรรค์ ในบรรยากาศอบอุ่น เป็นกันเอง และปลอดภัย
                       </p>
                     </div>
-
-                    <Link
-                      href={`/community${selectedCategory ? `?category=${encodeURIComponent(selectedCategory)}` : ''}`}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-[#F26430] text-[#F26430] hover:text-white border border-orange-200/80 hover:border-[#F26430] rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
-                    >
-                      <span>สำรวจกิจกรรมคอมมูนิตี้ทั้งหมด ({streamCommunityEvents.length})</span>
-                      <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
-                    </Link>
                   </div>
 
                   {/* Top Community Flagship Circles & Clubs Visual Rail */}
@@ -1498,7 +1490,7 @@ function HomeContent() {
                 {/* STREAM SECTION 2: 🏛️ EXHIBITIONS & FAIRS (งานมหกรรม & เอ็กซ์โป)           */}
                 {/* ------------------------------------------------------------------------- */}
                 <section id="section-fairs" className="space-y-2.5 sm:space-y-3 scroll-mt-20">
-                  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2.5 sm:gap-3 bg-gradient-to-r from-blue-50/50 via-slate-50/30 to-transparent p-3.5 sm:p-4 rounded-2xl border border-blue-100/60 shadow-2xs">
+                  <div className="bg-gradient-to-r from-blue-50/50 via-slate-50/30 to-transparent p-3 sm:p-3.5 rounded-2xl border border-blue-100/60 shadow-2xs">
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="w-6 h-6 rounded-lg bg-blue-500/10 text-[#2B527A] flex items-center justify-center text-xs font-black shrink-0 border border-blue-500/20">
@@ -1515,7 +1507,7 @@ function HomeContent() {
                               selectedVenueFilter === 'bacc' ? 'หอศิลป์ BACC' :
                               selectedVenueFilter === 'park' ? 'สวนสาธารณะ & ลานเมือง' :
                               selectedVenueFilter === 'regional' ? 'ศูนย์ประชุมภูมิภาค' : selectedVenueFilter
-                            ) : 'ศูนย์จัดแสดงทั่วประเทศ'}
+                            ) : `${streamPublicEvents.length} งาน`}
                           </span>
                         </h2>
                         {timeFilter !== 'all' && (
@@ -1557,14 +1549,6 @@ function HomeContent() {
                           : `นิทรรศการ คอนเวนชัน และเทศกาลระดับประเทศ ณ ศูนย์การประชุมและแลนด์มาร์กชั้นนำ (${streamPublicEvents.length} งาน)`}
                       </p>
                     </div>
-
-                    <Link
-                      href={`/fairs${selectedVenueFilter ? `?venue=${encodeURIComponent(selectedVenueFilter)}` : ''}`}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-[#2B527A] text-[#2B527A] hover:text-white border border-blue-200/80 hover:border-[#2B527A] rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
-                    >
-                      <span>สำรวจงานมหกรรม & เอ็กซ์โปทั้งหมด ({streamPublicEvents.length})</span>
-                      <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
-                    </Link>
                   </div>
 
                   {/* Top Venues in Thailand Visual Rail (Convention Centers & Iconic Venues) */}
@@ -1613,7 +1597,7 @@ function HomeContent() {
                 {/* STREAM SECTION 3: 📍 LIFESTYLE SPOTS (พิกัดเที่ยว & จุดฮีลใจ ทั่วไทย)        */}
                 {/* ------------------------------------------------------------------------- */}
                 <section id="section-spots" className="space-y-2.5 sm:space-y-3 scroll-mt-20">
-                  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2.5 sm:gap-3 bg-gradient-to-r from-emerald-50/50 via-slate-50/30 to-transparent p-3 sm:p-3.5 rounded-2xl border border-emerald-100/60 shadow-2xs">
+                  <div className="bg-gradient-to-r from-emerald-50/50 via-slate-50/30 to-transparent p-3 sm:p-3.5 rounded-2xl border border-emerald-100/60 shadow-2xs">
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="w-6 h-6 rounded-lg bg-emerald-500/10 text-[#4A7C59] flex items-center justify-center text-xs font-black shrink-0 border border-emerald-500/20">
@@ -1622,7 +1606,7 @@ function HomeContent() {
                         <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
                           <span>พิกัดเที่ยว & จุดฮีลใจ</span>
                           <span className="text-[10px] font-black text-[#4A7C59] bg-[#EBF3ED] px-2 py-0.5 rounded-full border border-emerald-200">
-                            {selectedSpotProvince === 'all' ? '77 จังหวัด' : selectedSpotProvince}
+                            {selectedSpotProvince === 'all' ? `${filteredSpots.length} แห่งทั่วไทย` : selectedSpotProvince}
                           </span>
                         </h2>
                       </div>
@@ -1632,14 +1616,6 @@ function HomeContent() {
                           : `พื้นที่พักผ่อนและสเปซน่าหลงใหลในจังหวัด${selectedSpotProvince} (${filteredSpots.length} แห่ง)`}
                       </p>
                     </div>
-
-                    <Link
-                      href={`/spots?category=${encodeURIComponent(selectedSpotCategory)}&province=${encodeURIComponent(selectedSpotProvince)}`}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-[#4A7C59] text-[#4A7C59] hover:text-white border border-emerald-200/80 hover:border-[#4A7C59] rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
-                    >
-                      <span>สำรวจพิกัดเที่ยวทั้งหมด ({filteredSpots.length})</span>
-                      <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
-                    </Link>
                   </div>
 
                   {/* Top Destinations in Thailand Visual Rail */}
