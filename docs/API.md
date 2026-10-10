@@ -5,7 +5,7 @@
 > differs from the code, the code is wrong or this file is stale — report it in [HANDOFF.md](HANDOFF.md).
 >
 > **Status:** prototype. Data is seed/mock data stored in JSON files; there are no real users yet.
-> Last updated: 2026-10-09
+> Last updated: 2026-10-10
 
 ## Conventions
 
@@ -166,6 +166,67 @@ Response `200`:
 ```
 `404 { error }` if the spot does not exist or is a draft. ⚠️ This endpoint has no `success` field (legacy shape).
 
+### Member accounts — `/api/auth/member/*`
+
+The server decides who is signed in through an httpOnly cookie (`cch_member_session`, 30 days). The client never sends a user id or name to identify itself. **Use `useMemberSession()` from `lib/useMemberSession.ts`.**
+
+| Method & path | Body | Response |
+|---|---|---|
+| `GET /api/auth/member` | — | `{ authenticated, member: PublicMember \| null, providers: { email, google, facebook, apple }, available }`. `providers.x` is `false` until that provider's credentials are set on the server; show those buttons disabled ("ยังไม่เปิดใช้"). `available: false` means AUTH_SECRET is missing in production |
+| `DELETE /api/auth/member` | — | Logs out this browser |
+| `POST /api/auth/member/register` | `{ displayName (2–40), email, password (≥ 8), consent: true }` | `200 { member }` + session cookie · `400` validation (Thai `message`) · `409` email exists · `429` too many |
+| `POST /api/auth/member/login` | `{ email, password }` | `200 { member }` + cookie · `401` wrong credentials · `403` suspended/banned (message says until when) · `429` |
+| `GET /api/auth/member/oauth/{google\|facebook\|apple}?returnTo=/path` | — | Full-page redirect to the provider; it comes back to `returnTo` with `?auth=success` or `?auth_error=<Thai message>`. `returnTo` must be a site path |
+| `PATCH /api/auth/member/profile` | `{ displayName?, avatarUrl? }` | `{ member }` · `401` not signed in |
+| `POST /api/auth/member/password` | `{ currentPassword?, newPassword }` | Other sessions end; this browser stays signed in |
+| `GET /api/auth/member/account` | — | PDPA export of the member's own data (JSON download) |
+| `DELETE /api/auth/member/account` | `{ confirm: "DELETE" }` | Deletes the account and logs out |
+
+`PublicMember = { id, displayName, email?, avatarUrl?, loginMethods: ('email'|'google'|'facebook'|'apple')[], createdAt }`.
+Writes must be same-origin (`403` otherwise).
+
+- **Social sign-in:** it links to an existing account with the same verified email, otherwise it creates one.
+- **Provider credentials (server env):**
+  - Google: `GOOGLE_OAUTH_CLIENT_ID/SECRET`
+  - Facebook: `FACEBOOK_APP_ID/SECRET`
+  - Apple: `APPLE_CLIENT_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`
+- **Redirect URI to register with each provider:** `<site>/api/auth/member/oauth/<provider>/callback`. `APP_URL` overrides the site origin.
+
+### Moments — `/api/moments`
+
+Member photo posts. Reads are public; writes need a signed-in member (`401` otherwise) and must be same-origin.
+Posts go live at once. **3 distinct member reports hide a post** until a moderator restores it. Posts by banned members are not shown.
+
+| Method & path | Body / params | Response |
+|---|---|---|
+| `GET /api/moments` | `?tab=all\|popular\|saved\|mine&location&targetType&targetId&q&page&limit(≤30)` | `{ moments: FeedItem[], pagination }`; `saved`/`mine` without login → `{ moments: [], requiresLogin: true }` |
+| `POST /api/moments` | `{ caption (1–500), images: string[] (1–10, URLs returned by /api/upload), location?, category?: heal\|move\|chill\|learn, targetType?: spot\|community\|fair\|challenge\|general, targetId?, targetTitle? }` | `201 { moment: FeedItem }` · `400` (Thai `message`) · `429` (10 posts/hour) |
+| `GET /api/moments/[id]` | — | `{ moment }` (published, or the viewer's own) · `404` |
+| `PATCH /api/moments/[id]` | `{ caption?, location? }` | own posts only (`403`) |
+| `DELETE /api/moments/[id]` | — | own posts only |
+| `POST /api/moments/[id]/actions` | `{ action: like\|unlike\|save\|unsave }` · `{ action: 'comment', text (1–300) }` · `{ action: 'delete_comment', commentId }` (commenter or post author) · `{ action: 'report', reason }` (once per member, not your own) | `{ moment: FeedItem }`; report also returns `autoHidden` · `409` already reported |
+
+`FeedItem` keeps the `CommunityPost` shape (`data/mockData.ts`) so the current UI fits:
+`{ id, authorId, userName, userAvatar, userBadge, images, caption, location, category?, likesCount, commentsCount, timeAgo (Thai), createdAt, isLiked, isSaved, isMine, hasReported, comments: [{ id, userName, userAvatar, text, timeAgo, createdAt, isMine }], targetType, targetId?, targetTitle?, isSample }`.
+
+- **Author details are live:** `userName` and `userAvatar` follow the author's current profile.
+- **Samples:** the 24 bundled `MOCK_POSTS` are seeded as `isSample: true`, with their illustrative like counts.
+- **Account deletion** removes the member's moments, comments, likes, saves and reports.
+
+### `GET /api/master` — master data (admin-managed)
+
+Active entries only, ordered for display:
+`{ success, updatedAt, spotVibes, communityMoods, communityCategories, fairCategories, questCategories, venues, provinces, zones, communityClubs, venueGroups }`.
+Cache: `public, s-maxage=60`.
+
+- **Categories:** `{ id, name, nameEn, description, keywords[], image?, iconKey, colorKey, parentId? }`. `parentId` is the mood of a community category.
+- **Venues:** `{ id, name, venueTag, province, location, transitHint, latitude?, longitude?, website?, image? }`.
+- **Provinces:** `{ id (stored province name, e.g. "กรุงเทพฯ"), displayName, nameEn, region, tagline, description, image?, featured }`.
+- **Zones:** `{ id, name, province }`.
+- **Rail cards** (`communityClubs` for TopCommunityRail, `venueGroups` for TopVenuesRail): `{ id, name, nameEn, subtitle, image?, badgeLabel?, keywords[] }`.
+
+Icons and colors are keys. **Use `useMasterData()` from `lib/useMasterData.ts`.** It fetches this endpoint once, falls back to the bundled defaults, and returns lists in the old constant shapes (`spotVibes` like `MASTER_SPOT_CATEGORIES`, `venues` like `MASTER_VENUE_OPTIONS`, …) plus `featuredProvinces`, `zonesFor(province)`, `communityClubs` (`TOP_COMMUNITY_CLUBS` shape) and `venueGroups` (`TOP_VENUES` shape).
+
 ### `GET /api/quests` — community challenges
 
 Returns active/ended public quests (drafts and private quests hidden).
@@ -205,6 +266,9 @@ brandReward?: {
 | `file` | JPEG, PNG, WebP or AVIF, ≤ 5 MB. The bytes must match the declared type. **SVG is rejected.** |
 | `folder` | Optional, e.g. `community`, `fair`, `spot` (letters, digits, `-`, `_`) |
 
+Storage: **Vercel Blob** when the server has `BLOB_READ_WRITE_TOKEN`, or `BLOB_STORE_ID` with Vercel OIDC (automatic on Vercel) (persistent; `url` is an absolute `https://…public.blob.vercel-storage.com/…` address). Without it (local dev), files go to `public/uploads` and `url` is a site path such as `/uploads/spot/….webp`. Treat `url` as opaque either way.
+Limit: 20 uploads per 10 minutes per IP for non-admin callers → `429 { success: false, message }`.
+
 Compress on the client first (`compressImage()` → WebP). Response `200`:
 ```ts
 { success: true, url: string, key: string, size: number, mimeType: string, originalName: string }
@@ -230,6 +294,7 @@ Every request is checked against the caller's **role** (matrix in `lib/permissio
 | `sources.run` (sources, scrape) | ✓ | ✓ | – | ✓ |
 | `system.manage` (media, cache, `reset_and_seed`) | ✓ | – | – | ✓ |
 | `audit.view` | ✓ | ✓ | – | – |
+| `members.manage` (member accounts) | ✓ | – | ✓ | – |
 | `staff.manage` | ✓ | – | – | – |
 
 Not signed in → `401 { success: false, message: 'Unauthorized' }` · signed in without the permission → `403 { success: false, error, permission }` · not configured in production → `503`.
@@ -252,9 +317,13 @@ All writes are `POST` with an `action` field unless noted.
 | Route | Reads | Actions |
 |---|---|---|
 | `/api/admin/events` | `GET` → `{ events: AdminEventItem[] (all moderation states), total, autoPublish }`. **Paginated mode** when `page` is present: `?page&limit(≤100)&type=community\|public_venue&status=pending\|approved\|rejected\|all&format=recurring\|online\|physical\|all&q` → `{ events, counts: {total,pending,approved,rejected,recurring,online}, pagination }`, sorted pending-first then newest; `counts` cover the whole `type` | `create {eventData}` (needs `eventType`; validated with the platform form rules (title ≥ 5, province, location, description ≥ 15 plain characters, date; community also needs time and 2–15 people; fairs need `hostName`) and returns `400` otherwise; `approvalStatus` is `approved` only when sent as such, otherwise `pending`), `update_status {id, status: approved\|rejected\|pending}`, `approve_all`, `update_fields {id, updatedFields}` (only content fields are applied; `approvalStatus`, `participantsCount`, `id`, `eventType` and `source` are ignored; changed fields are validated with the same rules), `delete {id}`, `toggle_auto_publish {autoPublish}`, `reset_and_seed` — each returns the updated `events` list |
-| `/api/admin/spots` | `GET ?province&category (stored category such as temple, or one of the 7 vibes such as sea_island)&q&status=draft\|published&image=missing\|broken\|problem` (legacy `filter=missing_image`) → `{ spots (each with imageStatus: ok\|broken\|missing\|unchecked), totalCount, filteredCount, draftCount, missingImagesCount, brokenImagesCount, uncheckedImagesCount, distinctProvinces }`; add `page&limit` for paginated `spots` + `pagination` | `create {newSpot}` (starts as draft unless `publicationStatus: published`; stores only what was sent: `rating` and `reviewsCount` are 0, there is no stock image, labels default to the Thai category label, and `googleMapsUrl` defaults to a coordinates search link). Create and `update` require coordinates inside Thailand (`400` otherwise); `update` also accepts `contact` and `entryFee`, `update {spotId, updatedFields}`, `delete {spotId}`, `set_publication {status: published\|draft, spotIds? \| scope?: tourism_directory\|osm\|imported\|curated}` (one write; returns `{ updated }`), `auto_enrich_images` — each returns `spots`. `check_images` loads every stored image URL (public HTTPS only; results cached in memory for 6h) → `{ checked, ok, broken }` |
+| `/api/admin/spots` | `GET ?id=<spotId>` → `{ spot }` (any publication state, `404` if missing). `GET ?province&category (stored category such as temple, or one of the 7 vibes such as sea_island)&q&status=draft\|published&image=missing\|broken\|problem` (legacy `filter=missing_image`) → `{ spots (each with imageStatus: ok\|broken\|missing\|unchecked), totalCount, filteredCount, draftCount, missingImagesCount, brokenImagesCount, uncheckedImagesCount, distinctProvinces }`; add `page&limit` for paginated `spots` + `pagination` | `create {newSpot}` (starts as draft unless `publicationStatus: published`; stores only what was sent: `rating` and `reviewsCount` are 0, there is no stock image, labels default to the Thai category label, and `googleMapsUrl` defaults to a coordinates search link). Create and `update` require coordinates inside Thailand (`400` otherwise); `update` also accepts `contact` and `entryFee`, `update {spotId, updatedFields}`, `delete {spotId}`, `set_publication {status: published\|draft, spotIds? \| scope?: tourism_directory\|osm\|imported\|curated}` (one write; returns `{ updated }`), `auto_enrich_images` — each returns `spots`. `check_images` loads every stored image URL (public HTTPS only; results cached in memory for 6h) → `{ checked, ok, broken }` |
 | `/api/admin/quests` | `GET ?status&category&q&page&limit` → `{ quests, total, pagination }` | `create {quest}` (starts as draft; accepts `startDate`, `endDate`, `image`, `brandReward`), `update {id, updatedFields}` (`brandReward: null` clears it; `daysRemaining` is ignored), `set_status {id, status: draft\|active\|ended}` (activating a quest whose `endDate` has passed returns `400`), `delete {id}` |
-| `/api/admin/sources` | `GET` → `{ sources }` | `POST {name, url (https), targetType: events\|spots, ...}` add (`400` for blocked platforms: Meetup, Facebook, allevents.in, dev.events) · `PATCH {id, status}` toggle · `DELETE ?id=` remove |
+| `/api/admin/moments` | `GET ?filter=all\|reported\|hidden\|published\|samples&q&page&limit(≤60)` → `{ moments (with reports, all comments, authorStatus, hiddenBy, moderationNote), counts: {published, hidden, removed, reported, samples}, pagination }` | `hide {id, note (required)}`, `restore {id}` (also clears reports), `dismiss_reports {id}`, `remove {id}` (permanent), `hide_comment\|show_comment\|delete_comment {id, commentId}`. Needs `community.review`; audited |
+| `/api/admin/members` | `GET ?q&status=all\|active\|suspended\|banned&page&limit` → `{ members (no password hashes; `hasPassword`), counts, pagination }` | `set_status {id, status: active\|suspended\|banned, days (suspended, 1–365), reason (required unless active)}` (suspend/ban ends the member's sessions), `force_logout {id}`. Needs `members.manage`; audited |
+| `/api/admin/master` | `GET` → all collections including inactive entries (each entry has `active`, `sortOrder`, `builtIn`) | `save {collection, item}` (create when `item.id` is absent; id from `nameEn`/`name`), `set_active {collection, id, active}`, `delete {collection, id}` (not for built-in entries), `reorder {collection, ids}`. Collections: `spotVibes`, `communityMoods`, `provinces` (fixed: edit only), `communityCategories`, `fairCategories`, `questCategories`, `venues`, `zones`, `communityClubs`, `venueGroups` (rail cards need ≥ 1 keyword). Names cannot contain emoji; icons and colors must be from `ICON_OPTIONS`/`COLOR_PRESETS`; image URLs must be `https://` or `/`. Needs `system.manage` |
+| `/api/admin/coverage` | `GET` → `{ vibes: [{id, label}], provinces: [{ province, total, drafts, vibes: {<vibeId>: count} }], totals: { published, drafts, vibes, emptyCells }, unknownProvinces }`. Published spots per province × the 7 frontend vibes; drafts are counted separately. `GET ?view=points` → `{ points: [{ id, title, province, vibe, status: published\|draft, lat, lng, validCoordinates }] }` for every spot (admin map) | — |
+| `/api/admin/sources` | `GET` → `{ sources }` (each may carry `runHistory: [{ at, status: success\|partial\|failed, scanned, imported, duplicates, errors (≤ 3), context? }]`, newest first, last 20 runs; `context` is the province for spot runs) | `POST {name, url (https), targetType: events\|spots, ...}` add (`400` for blocked platforms: Meetup, Facebook, allevents.in, dev.events) · `PATCH {id, status}` toggle · `DELETE ?id=` remove |
 | `/api/admin/scrape` | — | `POST {targetType: events\|spots, sourceId?, province?, limit?}` → `{ newCount, duplicateCount, totalScanned, sourceResults, events \| spots }`. Imported events are always `public_venue`, start as `pending` unless auto-publish is on, and use Thai display dates (`"12 ต.ค. 2026"`). Province-based spot sources (Tourism Directory) require `province` (one of `MASTER_77_PROVINCES`; otherwise `400`) and import up to `limit` attractions (1–100, default 30) plus a few cafes, as drafts |
 | `/api/admin/cache` | `GET` → `{ stats, activeTags, supportedTags }` | `flush_all`, `flush_tag {tag}`, `flush_tags {tags}` |
 | `/api/admin/media` | `GET` → `{ files (with isOrphan), stats }` | `DELETE ?key=` · `POST {action: 'clean_orphans'}` |
