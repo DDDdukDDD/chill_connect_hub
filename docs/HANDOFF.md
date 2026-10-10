@@ -23,6 +23,24 @@ Item template:
 
 ## Open
 
+### FE-010 · Smart Multi-Token Search Engine & Thai Lifestyle Synonym Expansion
+- **From → To:** Frontend → Backend (informational)
+- **Date / branch:** 2026-10-10 · `main`
+- **What changed:**
+  1. **Multi-Token Query Parsing (`lib/searchUtils.ts`)**:
+     - Previously, search filters across `app/page.tsx`, `app/spots/page.tsx`, `app/community/page.tsx`, and `app/fairs/page.tsx` used literal `text.includes(q)` matching the entire un-tokenized string.
+     - Multi-keyword searches (such as `"เดินป่า ปีนเขา"` or `"คาเฟ่ อารีย์"`) returned 0 results because no single entity contained the exact unbroken literal phrase.
+     - Created `lib/searchUtils.ts` with `matchSearchQuery()`: tokenizes input queries by whitespace/delimiters and performs fuzzy keyword matching with Thai lifestyle synonym expansion:
+       - Outdoor / Hiking: `เดินป่า` -> `trekking`, `hiking`, `trail`, `เทรล`, `ศึกษาธรรมชาติ`
+       - Climbing: `ปีนเขา` -> `ปีนผา`, `ปีน`, `climbing`, `bouldering`, `ไต่เขา`
+       - Camping: `กางเต็นท์` -> `camping`, `แคมป์`, `แคมปิ้ง`, `outdoor`
+       - Cafe: `คาเฟ่` -> `cafe`, `coffee`, `กาแฟ`, `slow bar`, `สโลว์บาร์`, `drip`
+       - Running: `วิ่ง` -> `running`, `marathon`, `trail`, `hyrox`, `fun run`
+  2. **Unified Search Across All Pages**:
+     - Integrated `matchSearchQuery` across homepage streams (`app/page.tsx`), `/spots`, `/community`, and `/fairs`.
+- **Action for Backend:** None required.
+- **Status:** Open
+
 ### FE-009 · Homepage Stream Transition: Reverted Single-Row Carousels to Dynamic Responsive Multi-Device Grid (1-Col Mobile, 3-Col iPad, 5-Col Desktop) & Cleaned Section Headers
 - **From → To:** Frontend → Backend (informational)
 - **Date / branch:** 2026-10-10 · `main`

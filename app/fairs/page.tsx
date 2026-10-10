@@ -32,6 +32,7 @@ import { TopVenuesRail } from '@/components/TopVenuesRail';
 import { ALL_THAI_PROVINCES } from '@/data/spotsData';
 
 import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
+import { matchSearchQuery } from '@/lib/searchUtils';
 
 const VENUE_FILTERS = [
   { id: 'all', label: 'ทุกศูนย์ประชุม & ฮอลล์' },
@@ -219,9 +220,8 @@ function FairsPageContent() {
       }
 
       if (searchQuery.trim() !== '') {
-        const q = searchQuery.toLowerCase().trim();
         const text = `${ev.title} ${ev.description || ''} ${ev.tag || ''} ${ev.location || ''} ${ev.hostName || ''} ${ev.venueTag || ''} ${ev.province || ''}`.toLowerCase();
-        if (!text.includes(q)) return false;
+        if (!matchSearchQuery(text, searchQuery)) return false;
       }
       return true;
     });

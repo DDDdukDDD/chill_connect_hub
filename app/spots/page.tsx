@@ -30,6 +30,7 @@ import { SpotCategoryRail, NATIONWIDE_SPOT_CATEGORIES } from '@/components/SpotC
 import { TopDestinationsRail } from '@/components/TopDestinationsRail';
 import { EventItem } from '@/data/mockData';
 import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
+import { matchSearchQuery } from '@/lib/searchUtils';
 
 function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
@@ -220,10 +221,10 @@ function SpotsPageContent() {
       if (sortBy === 'favorites' && !favoriteSpots.includes(spot.id)) return false;
       if (priceFilter === 'free' && !spot.price.includes('ฟรี')) return false;
 
-      // Smart Search Query using cached text index
-      if (q !== '') {
+      // Smart Search Query using cached text index with multi-token and synonyms
+      if (searchQuery.trim() !== '') {
         const fullText = getCachedSpotSearchText(spot);
-        if (!fullText.includes(q)) {
+        if (!matchSearchQuery(fullText, searchQuery)) {
           return false;
         }
       }

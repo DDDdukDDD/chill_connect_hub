@@ -34,6 +34,7 @@ import { fetchAllContentPages } from '@/lib/contentClient';
 import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
 import { MOCK_EVENTS, EventItem } from '@/data/mockData';
 import { ALL_THAI_PROVINCES } from '@/data/spotsData';
+import { matchSearchQuery } from '@/lib/searchUtils';
 
 type SortOption = 'newest' | 'popular' | 'soonest' | 'favorites';
 type VibeFilter = 'all' | 'solo' | 'free' | 'pets' | 'beginners' | 'soon';
@@ -282,8 +283,7 @@ function CommunityPageContent() {
       }
 
       if (searchQuery.trim() !== '') {
-        const q = searchQuery.toLowerCase().trim();
-        if (!eventText.includes(q)) return false;
+        if (!matchSearchQuery(eventText, searchQuery)) return false;
       }
       return true;
     });
