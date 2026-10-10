@@ -14,3 +14,8 @@ export function oauthCallbackUrl(request: NextRequest, provider: OAuthProvider):
   const origin = process.env.APP_URL?.replace(/\/+$/, '') || request.nextUrl.origin;
   return `${origin}/api/auth/member/oauth/${provider}/callback`;
 }
+
+/** Errors land on /login (which shows them) and keep where the member was heading */
+export function loginErrorPath(returnTo: string, message: string): string {
+  return `/login?auth_error=${encodeURIComponent(message)}&returnTo=${encodeURIComponent(returnTo)}`;
+}

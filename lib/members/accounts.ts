@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { burnPasswordCheck, hashPassword, verifyPasswordHash } from '../passwordHash';
 import { memberRepository } from './index';
 import { refreshMemberStatus } from './session';
@@ -89,9 +89,10 @@ export interface OAuthProfile {
  * email (the provider is linked to it), else a new account. Social sign-up counts as consent because the
  * login screen states the terms next to the buttons.
  */
-export async function signInWithOAuth(profile: OAuthProfile): Promise<Member> {
+export async function signInWithOAuth(profile: OAuthProfile): Promise<{ member: Member; created: boolean }> {
   const email = profile.email ? normalizeEmail(profile.email) : undefined;
   let member = await memberRepository.findByProvider(profile.provider, profile.subject);
+  let created = false;
 
   if (!member && email && profile.emailVerified) {
     const byEmail = await memberRepository.findByEmail(email);
@@ -120,12 +121,13 @@ export async function signInWithOAuth(profile: OAuthProfile): Promise<Member> {
       consentAt: now,
       createdAt: now,
     });
+    created = true;
   }
 
   member = await refreshMemberStatus(member);
   const blocked = statusError(member);
   if (blocked) throw blocked;
-  return markLogin(member, profile.provider);
+  return { member: await markLogin(member, profile.provider), created };
 }
 
 export async function updateProfile(member: Member, input: { displayName?: unknown; avatarUrl?: unknown }): Promise<Member> {
@@ -146,4 +148,50 @@ export async function changePassword(member: Member, current: unknown, next: unk
   if (typeof next !== 'string' || next.length < MIN_MEMBER_PASSWORD) throw new MemberAuthError(`รหัสผ่านใหม่ต้องมีอย่างน้อย ${MIN_MEMBER_PASSWORD} ตัวอักษร`);
   if (!member.email) throw new MemberAuthError('บัญชีนี้ยังไม่มีอีเมล จึงตั้งรหัสผ่านไม่ได้');
   return memberRepository.update(member.id, { passwordHash: hashPassword(next), sessionVersion: member.sessionVersion + 1 });
+}
+
+export const PASSWORD_RESET_MINUTES = 30;
+const hashToken = (secret: string) => createHash('sha256').update(secret).digest('hex');
+
+/**
+ * Starts "forgot password". Returns the one-time token to deliver by email, or null when no account
+ * (or a blocked one) uses this email — callers must answer the same way in both cases.
+ * Token format: "<memberId>.<secret>"; only a hash of the secret is stored.
+ */
+export async function createPasswordReset(emailInput: unknown): Promise<{ member: Member; token: string } | null> {
+  const email = typeof emailInput === 'string' ? normalizeEmail(emailInput) : '';
+  if (!isEmail(email)) throw new MemberAuthError('อีเมลไม่ถูกต้อง');
+  const found = await memberRepository.findByEmail(email);
+  if (!found || found.status === 'banned') return null;
+  const secret = randomBytes(32).toString('base64url');
+  const member = await memberRepository.update(found.id, {
+    passwordReset: { tokenHash: hashToken(secret), expiresAt: new Date(Date.now() + PASSWORD_RESET_MINUTES * 60_000).toISOString() },
+  });
+  return { member, token: `${found.id}.${secret}` };
+}
+
+/** Sets a new password from a reset link; ends every other session and proves the email belongs to them */
+export async function resetPasswordWithToken(tokenInput: unknown, password: unknown): Promise<Member> {
+  const invalid = new MemberAuthError('ลิงก์ตั้งรหัสผ่านไม่ถูกต้องหรือหมดอายุแล้ว กรุณาขอลิงก์ใหม่', 400);
+  const token = typeof tokenInput === 'string' ? tokenInput : '';
+  const dot = token.lastIndexOf('.');
+  if (dot <= 0) throw invalid;
+  const member = await memberRepository.findById(token.slice(0, dot));
+  const pending = member?.passwordReset;
+  if (!member || !pending || new Date(pending.expiresAt).getTime() < Date.now()) throw invalid;
+  const given = Buffer.from(hashToken(token.slice(dot + 1)));
+  const stored = Buffer.from(pending.tokenHash);
+  if (given.length !== stored.length || !timingSafeEqual(given, stored)) throw invalid;
+  if (typeof password !== 'string' || password.length < MIN_MEMBER_PASSWORD) {
+    throw new MemberAuthError(`รหัสผ่านใหม่ต้องมีอย่างน้อย ${MIN_MEMBER_PASSWORD} ตัวอักษร`);
+  }
+  const blocked = statusError(await refreshMemberStatus(member));
+  if (blocked) throw blocked;
+  const updated = await memberRepository.update(member.id, {
+    passwordHash: hashPassword(password),
+    passwordReset: undefined,
+    emailVerified: true,
+    sessionVersion: member.sessionVersion + 1,
+  });
+  return markLogin(updated, 'email');
 }

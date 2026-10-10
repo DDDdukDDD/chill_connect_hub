@@ -3,7 +3,7 @@ import { MemberAuthError, signInWithOAuth } from '@/lib/members/accounts';
 import { fetchOAuthProfile, isOAuthProvider } from '@/lib/members/oauth';
 import { readSignedPayload, setMemberSessionCookie } from '@/lib/members/session';
 import { readCookie } from '@/lib/adminSession';
-import { oauthCallbackUrl, OAUTH_STATE_COOKIE, safeReturnTo } from '../../shared';
+import { loginErrorPath, oauthCallbackUrl, OAUTH_STATE_COOKIE, safeReturnTo } from '../../shared';
 
 interface StatePayload {
   provider: string;
@@ -17,13 +17,13 @@ interface StatePayload {
 async function handleCallback(request: NextRequest, provider: string, params: URLSearchParams) {
   const stored = readSignedPayload<StatePayload>(readCookie(request, OAUTH_STATE_COOKIE));
   const returnTo = safeReturnTo(stored?.returnTo);
-  const redirect = (query: string) => {
+  const redirect = (path: string) => {
     // 303 so a POST callback (Apple) becomes a GET of the page
-    const response = NextResponse.redirect(new URL(`${returnTo}${returnTo.includes('?') ? '&' : '?'}${query}`, request.url), 303);
+    const response = NextResponse.redirect(new URL(path, request.url), 303);
     response.cookies.set(OAUTH_STATE_COOKIE, '', { httpOnly: true, secure: true, sameSite: 'none', path: '/api/auth/member/oauth', maxAge: 0 });
     return response;
   };
-  const fail = (message: string) => redirect(`auth_error=${encodeURIComponent(message)}`);
+  const fail = (message: string) => redirect(loginErrorPath(returnTo, message));
 
   if (!isOAuthProvider(provider)) return fail('ไม่รู้จักช่องทางเข้าสู่ระบบนี้');
   if (params.get('error')) return fail('ยกเลิกการเข้าสู่ระบบ');
@@ -41,8 +41,11 @@ async function handleCallback(request: NextRequest, provider: string, params: UR
       nonce: stored.nonce,
       appleUser: params.get('user'),
     });
-    const member = await signInWithOAuth(profile);
-    const response = redirect('auth=success');
+    const { member, created } = await signInWithOAuth(profile);
+    // New members pick their interests first, then continue to where they were heading
+    const response = redirect(created
+      ? `/onboarding?returnTo=${encodeURIComponent(returnTo)}`
+      : `${returnTo}${returnTo.includes('?') ? '&' : '?'}auth=success`);
     setMemberSessionCookie(response, member);
     return response;
   } catch (error) {

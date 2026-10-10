@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { buildAuthorizeUrl, isOAuthProvider, isProviderConfigured, randomToken } from '@/lib/members/oauth';
 import { getSessionSecret, signPayload } from '@/lib/members/session';
-import { oauthCallbackUrl, OAUTH_STATE_COOKIE, safeReturnTo } from '../shared';
+import { loginErrorPath, oauthCallbackUrl, OAUTH_STATE_COOKIE, safeReturnTo } from '../shared';
 
 // Starts social sign-in: /api/auth/member/oauth/google?returnTo=/moments
 export async function GET(request: NextRequest, context: { params: Promise<{ provider: string }> }) {
   const { provider } = await context.params;
   const returnTo = safeReturnTo(request.nextUrl.searchParams.get('returnTo'));
-  const fail = (message: string) => NextResponse.redirect(new URL(`${returnTo}${returnTo.includes('?') ? '&' : '?'}auth_error=${encodeURIComponent(message)}`, request.url));
+  const fail = (message: string) => NextResponse.redirect(new URL(loginErrorPath(returnTo, message), request.url));
 
   if (!isOAuthProvider(provider)) return fail('ไม่รู้จักช่องทางเข้าสู่ระบบนี้');
   if (!isProviderConfigured(provider)) return fail('ช่องทางนี้ยังไม่เปิดใช้งาน');

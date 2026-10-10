@@ -29,6 +29,8 @@ export interface Member {
   statusReason?: string;
   /** Bumped when the password changes, the status changes or sessions are revoked */
   sessionVersion: number;
+  /** Pending "forgot password" link: sha256 of the token's secret part, single use */
+  passwordReset?: { tokenHash: string; expiresAt: string };
   /** PDPA: when the member accepted the terms and privacy policy */
   consentAt: string;
   createdAt: string;
