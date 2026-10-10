@@ -304,6 +304,127 @@ Entries up to 2026-10-04 (FE-002) and the 2026-10-03 verification notes are in [
   - **Verification:** browser checks at 360px and 1280px: no text overflows its box in any step or popup; preview shows the result and leaves localStorage empty; no page errors.
   - **Found:** the homepage is 429px wide on a 360px screen (`HeroSection` pill), reported to the frontend in BE-017.
 
+- **2026-10-10 · DESIGN_SYSTEM.md rewritten (owner request; BE-018)**
+  - **Why:** the file had two halves that contradicted each other (brand green vs blue buttons, soft-tint vs black selected state, "never below 11px" vs 10px badges) and named fonts the app does not load.
+  - **Owner decisions:** blue primary and slate secondary buttons; selected state by context, never solid black; 11px minimum everywhere; gradients only as photo overlays.
+  - **Result:** one rule set in 13 sections (principles, pillars, color, buttons, selected state, typography, layout, components, writing, accessibility, checklist, known gaps with counts, revision notes).
+  - **Merged** 14 new `main` commits (FE-006 to FE-012, no backend action needed) into `claude` with no conflicts.
+
+- **2026-10-10 · Onboarding tells the brand story (owner request)**
+  - **Layout:** two sides on desktop (a sticky photo panel with a brand line per step, and the questions); a photo band on top on phones. Step content fades in; motion is off under `prefers-reduced-motion`.
+  - **Brand:** step 1 groups the choices under "Chill · ให้เวลากับตัวเอง" and "Connect · ออกไปเจอผู้คน" as photo cards.
+  - **Pillars:** every choice carries a pillar tag. The side panel lights up the pillars the visitor is heading for (a chip line on phones), so the four pillars are learned by choosing.
+  - **Last screen:** greets by name and shows real content for the chosen pillars (up to 3 meetups, 3 spots, 3 fairs from `/api/events` and `/api/spots`), trying the most specific query first and widening until something returns. For spots the vibe outranks the home province. Challenges get a link row.
+  - **Saving** now happens before the last screen; its button goes to `returnTo` or the home page. Preview mode shows the same screen and saves nothing.
+  - **Images:** existing files in `public/`, served through `next/image`.
+  - **Verification:** browser walk-through at 1366px and 360px: no overflow, no text under 11px, 9 real cards on the last screen, nothing saved in preview, no page errors.
+
+- **2026-10-10 · Onboarding follow-ups from the owner's review**
+  - **No tabs:** the member / host tab is gone. Host choices are an optional third group on the same screen and can be combined with member choices; any host choice sets the role.
+  - **Moments** is the fifth pillar in the side panel (it lights up once anything is chosen), and the last screen shows a strip of real member photos from `/api/moments?tab=popular`.
+  - **Step 3 icons are neutral gray;** pillar color stays only on the dot beside each group heading.
+  - **Last screen fits one screen on desktop:** three picks in total (one per chosen pillar first), the moments strip, and links to every pillar.
+  - **Navigation bar** (back / next / start) sticks to the bottom of the screen on every step.
+  - **Verification:** browser walk-through at 1366px and 360px, no overflow, no text under 11px, no page errors.
+
+- **2026-10-10 · Onboarding: lighter step 3 and an editorial last screen**
+  - **Province moved to step 2** ("about you"), under name, birth year and gender. Step 3 now holds interests only.
+  - **Last screen:**
+    - A personal header: the member's photo or initial, a greeting by name, and "เพราะคุณชอบ" chips with their own interests and province.
+    - Three picks as photo cards with the text on the photo: one large feature card and two smaller ones (stacked on phones).
+    - Then the moments strip and links to every pillar.
+  - **Verification:** browser walk-through at 1366px and 360px; no overflow, no text under 11px, no page errors.
+
+- **2026-10-10 · Display-name cleanup and onboarding Back fix (found by the owner while testing)**
+  - **Bug 1:** a Thai tone mark typed by accident before a Latin name (Thai keyboard left on) was kept, so it showed before the name and as the avatar letter.
+    - New `lib/displayName.ts`: `tidyDisplayName` removes Thai marks that have no Thai consonant before them, stray leading combining marks and invisible characters; `nameInitial` picks the avatar letter (skips Thai leading vowels).
+    - Used by the server (`cleanDisplayName`, social sign-up names), the sign-up form, onboarding, and `initialsAvatar`.
+  - **Bug 2:** opening a recommended card on the last onboarding screen and pressing Back landed on step 1 with everything lost. A finished run is now kept in memory for the tab and restored; it is cleared by the main button and by "ลองใหม่".
+  - **Preview note** moved from a banner at the top to a small pill beside the main button, so the test page looks like the real one. The honorific before the name was removed.
+  - **Verification:** unit cases for the helpers; browser test (mark removed while typing, avatar letter correct, card → Back returns to the last screen, restart clears it); the register API stores the cleaned name.
+
+- **2026-10-10 · Onboarding last screen: challenges row and final wording**
+  - The honorific is back with a space ("ยินดีที่ได้รู้จัก คุณ ส้ม"). The main button reads "เริ่ม Chill & Connect Hub" in both real and preview mode.
+  - Visitors who chose the challenge goal get a "ชาเลนจ์ ที่เริ่มได้เลย" row after moments: two active quests from `/api/quests`. The picks then sit in one even row of three so the desktop screen still fits without scrolling.
+  - Verification: browser checks at 1366px and 360px, no overflow, no page errors.
+
+- **2026-10-10 · Account popups unified (owner request; BE-019)**
+  - **Frame:** new `DialogShell` gives the login, log-out, terms and privacy, and join-prompt popups one look and behaviour (Esc, focus trap, scroll lock, focus restore, nested dialogs). Onboarding's sign-up popup uses it too.
+  - **Log out:** a calm confirmation (was a red warning), with focus on "ยกเลิก".
+  - **Join prompt:** three perks that exist today, neutral icons, one blue button. Removed Buddy Board, Group Chat and the +50 claims.
+  - **Terms and privacy:**
+    - Text rewritten to match the product: what is stored (hashed password, provider id, moments, cookie, IP), who sees it, 18+, the report and auto-hide rule, XP wording.
+    - Removed emoji, the dark gradient header, English in parentheses, a made-up version number and features that do not exist (Buddy Matching, chat rooms, 3 to 6 photos).
+    - Marked as a draft for the test period: it needs legal review before launch, and the contact email must be a real mailbox.
+  - **PDPA rights in the UI:** signed-in members can download their data and delete their account from the privacy tab (confirmation step, danger button).
+  - **New `/legal` page** with the same content, because the popup is only reachable from login screens.
+  - **Verification:** browser tests at 1366px and 360px for all four popups (no overflow, no text under 11px, Esc closes, cancel keeps the session, confirm logs out on the server); download returns the attachment; delete-account ends the session and the login then fails. Test accounts removed.
+
+- **2026-10-10 · DESIGN_SYSTEM.md section 14 (owner request)**
+  - Added "Signature: what makes it feel premium": checkable rules for signature elements, photography, type, space, depth, motion, details, per-screen limits, and a six-question premium test. Announced in BE-018.
+
+- **2026-10-10 · Design audit of the public pages (owner request; BE-020)**
+  - Measured six public pages in a browser at 1366px and 360px against DESIGN_SYSTEM.md and the premium test; no frontend files were changed.
+  - **Main findings:**
+    - The header needs 429px, so every page is zoomed out on most phones (this corrects the earlier `HeroSection` attribution).
+    - A default host rating of 4.9 is shown when there is none.
+    - Hundreds of texts are below 11px; the homepage renders 12 type sizes and 154 gradient elements, and has looping dots.
+    - English headings and emoji appear on a Thai site; only one blue primary button exists.
+    - The homepage is 18 screens tall on a phone.
+  - The ten-item action list is in docs/HANDOFF.md BE-020.
+
+- **2026-10-10 · Navbar fixes in a frontend file (owner-approved; BE-020 item 1)**
+  - **Width:** the header needed 429px, so every page was shown zoomed out on most phones. It now fits from 360px (tagline hidden below `sm`, smaller brand text, tighter gaps). Measured at 360, 375, 390 and 412px on four pages as guest and member.
+  - **Account details:** the avatar button shows the member's own avatar; the default `userName` (a real person's name) is gone; "(Log out)" was removed.
+  - **Links:** the profile menu and the drawer footer link to `/legal`.
+  - **Correction:** DESIGN_SYSTEM.md wrongly said the homepage modes were gone. They exist (Classic at `/`, Journey at `/journey`), and section 8 now says so.
+
+- **2026-10-10 · Sample data policy (owner's decision)**
+  - Sample data (ratings, privileges, sample posts and events) stays during development and is removed before launch. DESIGN_SYSTEM.md section 9 states the rule and section 12 lists the known cases. BE-020 item 2 is no longer an action for now.
+
+- **2026-10-10 · Member backend and admin catch up with the new auth and onboarding UI (BE-021)**
+  - **Gaps found:** onboarding answers lived only in the browser; the server did not record the age confirmation or which terms version was accepted; staff could not serve a PDPA request (export or delete); the admin page did not show whether the member system was configured.
+  - **Model:** `Member.preferences` (intent, goals, birth year, gender, interests, province), `Member.consent` (terms version, time, age confirmation, source) and `onboardedAt`. `PublicMember.onboarded`.
+  - **API:**
+    - `GET` / `PUT /api/auth/member/preferences`: interests and province are checked against master data, unknown ids are dropped, and a birth year under 18 is rejected.
+    - Register requires `ageConfirmed: true`.
+    - OAuth start accepts `consent=1`, carried in the signed state, so the server knows whether the boxes were ticked.
+    - The account export includes consent and preferences and no longer leaks the reset-token hash.
+    - Self-delete is audited by id only.
+  - **Admin API:** `?view=overview` (counts, top interests, readiness of session secret, providers, mailer and storage), `?export=<id>`, and action `delete` (Owner only, needs a reason and the typed name; cascades to moments and comments; audited without the name).
+  - **Admin UI:** the members page has an overview panel and a readiness checklist, an onboarding column, and a drawer with answers, consent and PDPA actions.
+  - **Client:** onboarding saves to the account and removes the old browser copy; the sign-up form sends the age confirmation; social sign-up passes the consent flag.
+  - **Names:** `toPublicMember` and the admin view tidy names saved before the clean-up existed.
+  - **Privacy text** updated: the answers and the consent record are listed as stored data.
+  - **Verification:** API 20/20 (preferences rules, export contents, admin overview, export, delete rules, audit entries). Browser end to end: real sign-up, onboarding saved on the account, return to `returnTo`, admin overview and drawer, admin delete.
+  - **Not done:** recommendations do not use the answers yet (frontend, BE-021); a member cannot edit the answers after onboarding except by running it again; accounts created from the log-in screen with a social button have no age confirmation.
+
+- **2026-10-10 · Trust and safety for members, and the profile page (owner's decisions; BE-022)**
+  - **Why:** onboarding is one of the places to keep scammers out. A sign-up form cannot stop a determined one, so new accounts can do little and earn more by proving themselves.
+  - **Model** (`lib/members/types.ts`): `pledgeAcceptedAt`, `emailVerification`, `hostApplication`, `profile` (optional details plus a list of hidden fields), `riskFlags`, `riskReviewedAt`, `signupIpHash`, `reportsReceived`, `blockedIds`. `PublicMember.trust`.
+  - **Rules** (`lib/members/trust.ts`, browser-safe): levels new / verified / trusted, 7-day new-account window, limits of 3 moments and 20 comments a day, contact-detail patterns, risk words, throwaway email domains.
+  - **Actions** (`lib/members/safety.ts`): sign-up checks, pledge, email verification (48-hour single-use link), posting guard, profile details, public profile, host applications, report, block.
+  - **API:**
+    - `pledge`, `verify-email` (+ `confirm`), `host-application`, and `profile` `GET` / extended `PATCH` under `/api/auth/member/`.
+    - `/api/members/[id]` and its `actions`.
+    - Register runs the sign-up checks and sends the verification link.
+    - Moments and comments go through the posting guard; the feed accepts `author` and leaves out blocked members.
+    - `POST /api/events` publishes community events at once only for staff and approved hosts.
+  - **Admin:** queues `?queue=flagged|hosts`; actions `clear_flags` and `host_decision`; the members page shows the queues, a trust column, flags, reports and the application with approve / reject.
+  - **Pages:**
+    - Onboarding has a pledge step and next-step strips on the last screen.
+    - `/verify-email` confirms the link.
+    - `/profile` was rebuilt on real accounts: checked badges only, a trust checklist, about fields with per-field visibility, interests, moments, host application, account settings, report and block. Sample profiles are kept and labelled.
+  - **Privacy and terms text** now describe the pledge, verification, new-account limits, profile fields, and the safety data (IP fingerprint, automatic flags, reports).
+  - **Development:** the sign-up rate limit is 300 an hour outside production (10 in production), so the flow can be tested repeatedly.
+  - **Verification:** API 44/44 (levels, verification, posting rules, profile visibility, host flow, event gating, reports, blocks, flags, sign-up checks, what exports contain). Browser end to end at 1366px and 360px with no overflow, no text under 11px and no page errors.
+  - **Not done:**
+    - Phone OTP.
+    - Joining an event is not tied to the member session yet, so it is not gated by trust level.
+    - Blocking hides moments only (there is no direct messaging).
+    - Flags are rule-based word lists and will have false positives; staff decide.
+    - Sample profiles still come from mock data.
+
 ## Known Limitations / Next Backend Work
 
 1. Replace the prototype JSON/in-memory repository with durable shared storage before relying on production writes. `JsonFileAdapter` remains the configured adapter, and serverless `/tmp` storage is ephemeral and not shared across instances.

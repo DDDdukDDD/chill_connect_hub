@@ -139,6 +139,114 @@ Item template:
 - **Action for Backend:** None required. All shared signatures and contracts (`fetchAllContentPages`, `usePublishedSpots`, `useSpotCatalog`) remain 100% backward-compatible.
 - **Status:** Open
 
+### BE-022 · Trust and safety for members, and a new profile page (Claude Code owns `app/profile/**`)
+- **From → To:** Backend → Frontend
+- **Date / branch:** 2026-10-10 · `claude`
+- **What changed (owner's decisions):**
+  - **Trust levels:** `new` → `verified` (email verified and community pledge accepted) → `trusted` (7 days old with no open flag, or an approved host). `useAuth().member.trust` carries it.
+  - **Onboarding** has a fourth step, the community pledge.
+  - **Email verification:** a link is sent at sign-up; `/verify-email` confirms it. In development the link is shown on the profile page.
+  - **Host applications:** members ask on their profile; staff approve in admin.
+  - **Risk flags** and a review queue in admin (staff-only data).
+  - **Report and block** a member from their profile.
+  - **`/profile` was rebuilt on real accounts.** `/profile` (or `?id=me`) is the signed-in member; `/profile?id=mem_…` is a public profile; other ids still show the sample profiles from `data/profilesData.ts`, labelled "โปรไฟล์ตัวอย่าง". Claude Code owns `app/profile/**` and `app/verify-email/**`; please do not edit them.
+- **Behaviour your pages will meet:**
+  1. **Posting a moment or a comment can now fail with `403`** (email not verified, or pledge not accepted), `429` (new-account daily limit) or `400` (contact details from a new account). Show the API `message`; it tells the member what to do. Link to `/profile#trust` on a `403`.
+  2. **Creating a community event** returns `approvalStatus: 'pending'` unless the member is an approved host. Your existing "รอทีมงานตรวจ" feedback for fairs covers it; make sure the community flow shows it too.
+  3. **Badges:** draw "verified" marks only from `trust` or from `GET /api/members/[id]` → `badges`. Never from mock data for a real member.
+  4. **Links to a member:** use `/profile?id=<authorId>` on moments and comments (`authorId` is in the feed item). `ProfileModal` and the host link on `/community/[id]` still point at sample ids, which keep working.
+  5. `GET /api/moments?author=<memberId>` lists one member's moments, if you want them elsewhere.
+- **Status:** Open
+
+### BE-021 · Member backend now covers onboarding answers and consent
+- **From → To:** Backend → Frontend
+- **Date / branch:** 2026-10-10 · `claude`
+- **What changed:**
+  - **Onboarding answers are stored on the account** (`GET` / `PUT /api/auth/member/preferences`). The browser copy in localStorage `cch_member_preferences` is no longer written and is removed after a save.
+  - `PublicMember` has a new field **`onboarded`** (also on `useAuth().member`).
+  - **Register needs `ageConfirmed: true`** besides `consent: true`. Only `AuthPanel` calls it, so no change is needed in your pages.
+  - Admin "สมาชิก" shows an overview, system readiness, each member's answers and consent, and can export or delete an account for a PDPA request.
+- **Action for Frontend (optional, when you personalise pages):**
+  1. Read a member's interests with `fetch('/api/auth/member/preferences')`. `interests.communityCategories`, `spotVibes` and `fairCategories` hold master-data ids; `province` is a province id. Use them to order or pre-filter feeds.
+  2. If `member && !member.onboarded`, you may show a small "ทำความรู้จักกันก่อน" prompt that links to `/onboarding?returnTo=<current page>`.
+  3. Do not read `cch_member_preferences` from localStorage; it is gone.
+- **Status:** Open
+
+### BE-020 · Design audit of the public pages against DESIGN_SYSTEM.md (owner request)
+- **From → To:** Backend → Frontend
+- **Date / branch:** 2026-10-10 · `claude`
+- **What this is:** At the owner's request, Claude Code measured `/`, `/community`, `/fairs`, `/spots`, `/challenges` and `/moments` in a real browser at 1366px and 360px, and judged them with the premium test (DESIGN_SYSTEM.md section 14.9). Nothing in your files was changed. The numbers below are rendered elements, not source counts.
+- **Result of the premium test for the homepage:**
+
+  | Question | Result | Why |
+  | :--- | :--- | :--- |
+  | Squint (one focal point) | No | The first screen has 6 different button colors, a red badge, a gold pill and a green link next to the hero |
+  | Remove (nothing to delete) | No | Trust pills, English sub-labels, rating and price badges and count pills repeat on almost every block |
+  | Five seconds (what and for whom) | Yes | The hero line and search do this well |
+  | Photo (want to be there) | Partly | The hero photo is strong; the first rail is event posters with text baked in |
+  | Edge (shared edges) | Yes | The grid is consistent |
+  | Phone (finished at 360px) | No | See item 1 |
+
+- **Action for Frontend, most important first:**
+  1. **Every page is wider than most phones (blocker).** *Done by Claude Code on 2026-10-10 with the owner's approval; see "Edits made in your file" below.*
+     - The header in `components/Navbar.tsx` needed 429px. The page is 429px wide at 360, 375, 390 and 412px, so those phones show the whole site zoomed out.
+     - Fix the header row for small screens: hide the English tagline below `sm`, and make the login and menu buttons icon-only or narrower.
+     - This corrects BE-017 and BE-019, which blamed a pill in `HeroSection`. The header is the cause on every page.
+  2. **Sample values: keep for now, remove before launch** (owner's decision, 2026-10-10). No action during development.
+     - `components/EventGrid.tsx` shows `hostRating || rating || 4.9`, so a host with no rating displays "4.9".
+     - "Member Privileges" on the homepage offers "ลด 10%", "จอยตี้ฟรี", "ลด 15%".
+     - Sample data is allowed while the product is a prototype. DESIGN_SYSTEM.md section 12 keeps the list of what to remove before launch; add to it when you create new sample data.
+  3. **Text below 11px.** Rendered text under 11px: home 230 places (267 on a phone), community 97, spots 71, fairs 59, challenges 52, moments 22. The header tagline is 10.5px. The minimum is 11px (section 6).
+  4. **Too many type sizes.** The homepage renders 12 sizes (9, 10, 11, 12, 13, 14, 16, 18, 19, 20, 24, 30px). 9, 10, 13 and 19px are not in the scale.
+  5. **Gradients.** Elements with a gradient background: home 154, spots 54, community 50, fairs 49, challenges 37. Only photo overlays may use one (section 3). On `/moments`, 7 button-like elements have gradients.
+  6. **Looping animation.** 15 elements pulse forever on the homepage and 16 on `/community` (the small status dots). Section 14.6 allows looping only for loading.
+  7. **Language.**
+     - English headings and sub-labels on a Thai site: "Trending Lifestyle Agenda", "Member Privileges", "Challenge & Lifestyle Hub", "TOP DESTINATIONS IN THAILAND", and the English line under each category chip ("Mountain & Mist").
+     - On `/spots` the destination cards put the English name large and the Thai name small. Thai should lead.
+     - Emoji in text: 24 text elements on the homepage, about 10 on each pillar page.
+  8. **Button colors.** Only the search button is Royal Blue. Pillar pages have no blue primary button at all, and the first screen of each page shows 3 to 7 button colors. Use the levels in section 4.
+  9. **Page length.** The homepage is 7.2 screens tall on desktop and 18.3 on a 360px phone. Consider fewer rails or fewer cards per rail on phones.
+  10. **Cards carry too many badges.** A community card shows up to five (seats left, heart, host rating, price, status). The limit is two (section 14.8).
+- **Edits made in your file `components/Navbar.tsx`** (owner-approved, kept small; please keep them when you next edit the file):
+  - **Width:** the tagline is hidden below `sm`; the brand name is 15px below 400px and may truncate; gaps are tighter; the login button drops its icon below 400px. Pages are now exactly as wide as the screen at 360, 375, 390 and 412px. At 320px the brand name truncates.
+  - **Avatar button** uses `userProfile.avatar` (was a fixed stock photo), and the `userName` prop no longer defaults to a real person's name.
+  - **Wording:** "ออกจากระบบ (Log out)" is now "ออกจากระบบ".
+  - **Links to `/legal`:** "ข้อมูลและความเป็นส่วนตัว" in the profile menu, and both documents in the drawer footer.
+  - Not touched: the role switcher (9.5px text) and the "สลับโหมดหน้าแรก" block (a gradient, 9.5px text).
+- **What already works well:** the hero photo and headline, the search panel, a consistent card grid, soft-tint selected chips on `/spots`, no broken images on any page (0 of 147 on the homepage).
+- **Status:** Open
+
+### BE-019 · Account popups share one frame; new `/legal` page needs links
+- **From → To:** Backend → Frontend
+- **Date / branch:** 2026-10-10 · `claude`
+- **What changed:** At the owner's request, the login, log-out, terms and privacy, and "join to continue" popups now share one frame and one writing style.
+  - New `components/auth/DialogShell.tsx` (frame: Esc, focus trap, scroll lock) and `dialogButton` styles. Reuse them for other dialogs if you like.
+  - `components/TermsPrivacyModal.tsx` is now maintained by Claude Code (same props). Its text was rewritten to match what the product does today, and signed-in members can download their data or delete their account from the privacy tab.
+  - `LogoutConfirmModal` and `RequireMembershipModal` keep their props.
+  - New page `/legal` (`/legal?tab=privacy`) shows the same terms and privacy text outside a popup.
+- **Action for Frontend:**
+  1. *(Profile menu and drawer links were added by Claude Code on 2026-10-10. The site footer still needs them.)* **Link to `/legal`** from the site footer ("ข้อตกลงการใช้งาน" → `/legal`, "นโยบายความเป็นส่วนตัว" → `/legal?tab=privacy`) and from the profile menu in `components/Navbar.tsx`. Without a link, signed-in members cannot reach the download and delete-account actions.
+  2. ~~Navbar wording "ออกจากระบบ (Log out)"~~ Done by Claude Code on 2026-10-10.
+- **Status:** Open
+
+### BE-018 · DESIGN_SYSTEM.md rewritten as one rule set (owner's decisions)
+- **From → To:** Backend → Frontend
+- **Date / branch:** 2026-10-10 · `claude`
+- **What changed:** At the owner's request, Claude Code reviewed and rewrote [DESIGN_SYSTEM.md](../DESIGN_SYSTEM.md). The two halves of the old file disagreed, so the owner decided each conflict. The file stays yours to maintain; this was a one-time edit.
+- **Rules that changed (see section 13 of the file):**
+  1. **Buttons:** Royal Blue primary and slate secondary. Forest Green is the Spots and logo color only, never a button color.
+  2. **Selected state:** the pillar's soft tint inside pillar pages; a blue border plus a check mark on forms and neutral screens. Never solid black. The old "active filter chips are `slate-900`" rule is withdrawn.
+  3. **Minimum text size is 11px everywhere.** The 10px allowance for micro badges is withdrawn.
+  4. **Gradients** only as a dark overlay on photos; not on buttons, badges, pills or banners.
+- **Also new:** corrected font names, status colors, form and dialog rules, Thai line breaks (`PhraseText`), no English in parentheses, writing rules (no claims of unbuilt features, "XP" only), a 360px no-horizontal-scroll limit, and accessibility rules.
+- **New section 14 "Signature: what makes it feel premium":** signature elements (the two words, pillar tag, editorial photo card, feature set of three, split screen), photography, type, space, depth, motion, per-screen limits, and a six-question premium test. It replaces the old "Global Luxury 9.8+" wording with rules that can be checked. `/onboarding?preview=1` is the reference screen.
+- **Homepage modes:** the old "Compact / Classic" rule was replaced by a short note in section 8, because the code now has Classic (`/`) and Journey (`/journey`), switched from the menu drawer. (An earlier version of this note wrongly said the feature was gone.)
+- **Action for Frontend:**
+  1. Read the new file once. All rules apply to new and edited code.
+  2. Existing code does not need a big cleanup pass. Fix a file's gaps when you touch it; section 12 lists them with counts (10px and 9px text, gradients, green buttons, black selected chips).
+  3. Two gaps are worth fixing soon because they are visible: the homepage is 429px wide on a 360px phone (`HeroSection` pill), and the Navbar shows a stock avatar and a real name by default (both already in BE-017).
+- **Status:** Open
+
 ### BE-017 · Login and sign-up now use real member accounts (Claude Code owns these files)
 - **From → To:** Backend → Frontend
 - **Date / branch:** 2026-10-10 · `claude`
@@ -158,14 +266,15 @@ Item template:
   - New members continue to `/onboarding?returnTo=…` and then return to the page they came from.
   - Onboarding is now 3 steps: goals → profile → interests and province.
     - Interests come from master data (community categories, spot vibes, fair categories) and provinces from master data.
-    - Name and avatar are saved to the account. Other answers are saved in localStorage `cch_member_preferences` as `{ role, goals, birthYear?, gender?, interests: { communityCategories, spotVibes, fairCategories }, province?, completedAt }`, using content ids, so feeds can use them for recommendations.
+    - Name, avatar and all answers are saved to the account (see BE-021). They are no longer kept in localStorage.
     - The old `userProfile` / `userName` keys are no longer written.
+    - **Brand story:** choices are grouped under "Chill" and "Connect" as photo cards with pillar tags, a side panel shows the pillars the visitor is heading for, and the last screen shows real meetups, spots and fairs matching the answers.
     - **Test without an account:** `/onboarding?preview=1` runs the whole flow, saves nothing, and shows the data it would save.
     - **Thai line breaks:** `components/auth/PhraseText` wraps lines only at the spaces between phrases. Feel free to reuse it for Thai labels.
 - **Action for Frontend (`components/Navbar.tsx`, not in Claude Code's scope):**
-  1. **Avatar button:** the trigger image is hard-coded to an Unsplash photo (around line 145). Use `userProfile.avatar`.
-  2. **Default name:** the `userName` prop defaults to a real person's name (`'Jirathitigorn Maneekord'`). Remove the default or use `userProfile.name`.
-  3. **Homepage too wide on phones:** at a 360px screen the homepage is 429px wide. The cause is the pill button in `components/HeroSection.tsx` (around line 1280, class `mb-1.5 inline-flex … px-2.5 sm:px-3 py-1`). Phones then zoom the whole page out, and popups such as the login dialog look cut off. Let the pill wrap or shrink.
+  1. ~~Avatar button hard-coded to a stock photo~~ Done by Claude Code on 2026-10-10 (BE-020).
+  2. ~~`userName` defaulted to a real person's name~~ Done by Claude Code on 2026-10-10 (BE-020).
+  3. **Pages too wide on phones:** every page is 429px wide on phones narrower than that, so the site is shown zoomed out and popups look cut off. Corrected on 2026-10-10: the cause is the header row in `components/Navbar.tsx`, not the `HeroSection` pill named here earlier. See BE-020 item 1.
   4. **Optional cleanup:** pages that write `localStorage.setItem('userName', …)` in `onLoginSuccess` can drop it, because nothing reads it now.
 - **Status:** Open
 
@@ -536,3 +645,12 @@ Item template:
 - **What changed:** Accepted types are JPEG, PNG, WebP and AVIF; the file bytes must match the declared type.
 - **Action for Frontend:** No change needed today (no upload UI advertises SVG). Don't add SVG to `accept=` attributes or upload hints; keep compressing to WebP before upload.
 - **Status:** Done (2026-10-03: Verified no SVG is accepted or advertised; tightened file input accept attributes to `image/jpeg,image/png,image/webp,image/avif` across the app)
+
+### BE-023 (2026-10-10) Moments page wired to the API, hosted events on the profile — from Claude Code
+Owner asked Claude Code to do this directly, including edits in two frontend files.
+- **`app/moments/page.tsx` (frontend file, edited on the owner's request):** posts, comments, likes, saves and deletes on members' posts now go through `/api/moments`. The hard-coded author "คุณส้ม (Som_Chill)" is gone; "mine" and the delete button use `isMine` from the API. Members' posts load from `GET /api/moments?limit=30` and sit above the bundled `MOCK_POSTS`, which stay local. A post needs at least one uploaded photo (no stock image is added). Server refusals (401/403/429/400) show in the page's toast. `localStorage.chill_user_moments` is no longer used.
+- **`app/myhub/page.tsx` (one small edit):** hosted events also load from `GET /api/events?mine=1` and merge over the `user_created_events` browser copy.
+- **New:** `GET /api/events?mine=1` (signed-in member's own events, any approval status) and `GET /api/events?host=<memberId>` (that member's approved events). See `docs/API.md`.
+- **Profile:** `/profile` shows "กิจกรรมที่จัด" (owner sees pending ones with a label; visitors see approved only). Managing events stays in My Hub.
+- **`/onboarding?step=pledge&returnTo=…`:** opens the pledge alone for an existing member and saves nothing else.
+- **For Gemini:** keep these API calls when restyling the Moments page. Still open: the feed's sample posts are local, so likes and comments on them are not saved.

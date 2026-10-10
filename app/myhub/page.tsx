@@ -231,6 +231,16 @@ function MyHubContent() {
       if (Array.isArray(storedCreated)) {
         setUserCreatedEvents(storedCreated);
       }
+      // Events saved on the account follow the member to any device; the browser copy is only a fallback
+      fetch('/api/events?mine=1', { cache: 'no-store' })
+        .then((res) => res.json())
+        .then((json: { events?: EventItem[] }) => {
+          const mine = json.events ?? [];
+          if (!mine.length) return;
+          const ids = new Set(mine.map((ev) => ev.id));
+          setUserCreatedEvents((prev) => [...mine, ...prev.filter((ev) => !ids.has(ev.id))]);
+        })
+        .catch(() => undefined);
 
       // 2. Sync Saved Spots (Scrapbook)
       const storedFavSpots = JSON.parse(localStorage.getItem('favorite_spots') || '[]');

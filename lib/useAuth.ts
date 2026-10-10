@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { memberActions, refreshMemberSession, useMemberSession } from './useMemberSession';
+import { nameInitial } from './displayName';
 import type { PublicMember } from './members/types';
 
 /**
@@ -34,7 +35,7 @@ const AVATAR_COLORS = ['#4A7C59', '#2563EB', '#D04A1B', '#7C3AED', '#0F766E', '#
 
 /** Initial-letter avatar for members without a photo (no third-party avatar service) */
 export function initialsAvatar(name: string, seed = name): string {
-  const letter = (name.trim()[0] || '?').toUpperCase().replace(/[<>&"']/g, '?');
+  const letter = nameInitial(name).replace(/[<>&"']/g, '?');
   let hash = 0;
   for (const ch of seed) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
   const color = AVATAR_COLORS[hash % AVATAR_COLORS.length];

@@ -47,7 +47,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenLogin,
   onOpenLogout,
   onOpenCreateEvent,
-  userName = 'Jirathitigorn Maneekord',
+  userName = '',
   isAuthReady,
 }) => {
   const pathname = usePathname();
@@ -88,27 +88,27 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <>
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 transition-all duration-300 shadow-2xs">
-        <div className="max-w-7xl 2xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-17 flex items-center justify-between gap-4">
+        <div className="max-w-7xl 2xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-17 flex items-center justify-between gap-2 sm:gap-4">
           
           {/* Left: Brand Logo & Name */}
           <Link 
             href="/"
             onClick={() => setActiveTab('explore')}
-            className="flex items-center gap-3 cursor-pointer group py-1 shrink-0"
+            className="flex items-center gap-2 sm:gap-3 cursor-pointer group py-1 min-w-0"
           >
             <BrandLogo size="md" className="group-hover:scale-105 group-hover:shadow-md transition-all duration-300" />
-            <div className="flex flex-col justify-center">
-              <span className="font-black text-lg sm:text-[19px] tracking-tight text-[#0F172A] font-sans leading-none">
+            <div className="flex flex-col justify-center min-w-0">
+              <span className="font-black text-[15px] min-[400px]:text-lg sm:text-[19px] tracking-tight text-[#0F172A] font-sans leading-none truncate">
                 Chill & Connect Hub
               </span>
-              <p className="text-[10.5px] text-slate-500 font-medium tracking-normal leading-none mt-1.5">
+              <p className="hidden sm:block text-[11px] text-slate-500 font-medium tracking-normal leading-none mt-1.5">
                 Curated Lifestyle & Meaningful Activities
               </p>
             </div>
           </Link>
 
           {/* Right: Actions */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             
             {/* Quick Action: Create Event Pill Button (Shown only for Logged-in Users) */}
             {isLoggedIn && onOpenCreateEvent && (
@@ -141,9 +141,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }`}
                   title="คลิกเพื่อเปิดเมนูโปรไฟล์"
                 >
-                  <img 
-                    src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" 
-                    alt={userName}
+                  <img
+                    src={userProfile.avatar}
+                    alt={userProfile.name || userName}
                     className="w-full h-full object-cover"
                   />
                   <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-1.5 ring-white" />
@@ -157,7 +157,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-3 bg-slate-50/70 mx-2 rounded-xl">
                       <div className="relative w-11 h-11 rounded-full overflow-hidden bg-[#EBF3ED] border-2 border-[#4A7C59] shrink-0 shadow-xs">
                         <img
-                          src={userProfile.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80"}
+                          src={userProfile.avatar}
                           alt={userProfile.name || userName}
                           className="w-full h-full object-cover"
                         />
@@ -200,6 +200,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <span>ของรางวัล & สิทธิพิเศษ</span>
                       </Link>
 
+                      <Link
+                        href="/legal?tab=privacy"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 hover:text-[#1E293B] transition-colors"
+                      >
+                        <ShieldCheck className="w-4 h-4 text-slate-500" />
+                        <span>ข้อมูลและความเป็นส่วนตัว</span>
+                      </Link>
+
                     </div>
 
                     {/* Divider, Logout Button & Dev Role Switcher */}
@@ -217,7 +226,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-bold text-xs transition-colors cursor-pointer"
                       >
                         <LogOut className="w-4 h-4 text-slate-400" />
-                        <span>ออกจากระบบ (Log out)</span>
+                        <span>ออกจากระบบ</span>
                       </button>
 
                       {/* Role Switcher (Test / Preview Tool - Placed Below Logout) */}
@@ -259,10 +268,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             ) : (
               <button 
                 onClick={() => onOpenLogin ? onOpenLogin() : setIsLoggedIn?.(true)}
-                className="rounded-full bg-[#1E293B] hover:bg-[#0F172A] text-white px-3.5 sm:px-5 py-2 text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95 cursor-pointer shrink-0"
+                className="rounded-full bg-[#1E293B] hover:bg-[#0F172A] text-white px-3 sm:px-5 py-2 text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95 cursor-pointer shrink-0 whitespace-nowrap"
                 title="คลิกเพื่อเข้าสู่ระบบ / สมัครสมาชิก"
               >
-                <LogIn className="w-3.5 h-3.5 text-emerald-400" />
+                <LogIn className="hidden min-[400px]:block w-3.5 h-3.5 text-emerald-400" />
                 <span>เข้าสู่ระบบ</span>
               </button>
             )}
@@ -404,6 +413,11 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Minimal Brand Footer */}
             <div className="pt-4 mt-6 border-t border-slate-100 text-center">
+              <p className="text-[11px] text-slate-500 font-medium mb-1.5">
+                <Link href="/legal" onClick={() => setIsMobileMenuOpen(false)} className="hover:underline">ข้อตกลงการใช้งาน</Link>
+                {' · '}
+                <Link href="/legal?tab=privacy" onClick={() => setIsMobileMenuOpen(false)} className="hover:underline">นโยบายความเป็นส่วนตัว</Link>
+              </p>
               <p className="text-[11px] text-slate-400 font-medium">© 2026 Chill & Connect Hub</p>
             </div>
 

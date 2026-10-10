@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useSyncExternalStore } from 'react';
-import type { LoginMethod, OAuthProvider, PublicMember } from './members/types';
+import type { HostApplication, LoginMethod, MemberPreferences, MemberProfile, OAuthProvider, PublicMember } from './members/types';
 
 /**
  * Member session for the public site. The server decides who is signed in via an httpOnly cookie;
@@ -63,9 +63,15 @@ async function postJson(url: string, body: unknown, method = 'POST') {
 
 export const memberActions = {
   /** Throws Error(message in Thai) on failure */
-  register: async (input: { displayName: string; email: string; password: string; consent: boolean }) => {
+  register: async (input: { displayName: string; email: string; password: string; consent: boolean; ageConfirmed: boolean }) => {
     const json = await postJson('/api/auth/member/register', input);
     setState({ isLoaded: true, member: json.member });
+    // In development (no mailer) the server returns the verification link instead of emailing it
+    try {
+      if (json.verification?.devVerifyUrl) sessionStorage.setItem('cch_dev_verify_url', json.verification.devVerifyUrl);
+    } catch {
+      /* storage unavailable */
+    }
     return json.member as PublicMember;
   },
   login: async (email: string, password: string) => {
@@ -78,9 +84,10 @@ export const memberActions = {
     setState({ member: null });
   },
   /** Full-page redirect to the provider; comes back to `returnTo` (new members via /onboarding) */
-  loginWith: (provider: OAuthProvider, returnTo: string = window.location.pathname + window.location.search) => {
+  /** Pass `consented: true` only when the member ticked the age and terms boxes on the sign-up screen */
+  loginWith: (provider: OAuthProvider, returnTo: string = window.location.pathname + window.location.search, consented = false) => {
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- API route that redirects off-site
-    window.location.href = `/api/auth/member/oauth/${provider}?returnTo=${encodeURIComponent(returnTo)}`;
+    window.location.href = `/api/auth/member/oauth/${provider}?returnTo=${encodeURIComponent(returnTo)}${consented ? '&consent=1' : ''}`;
   },
   /** Emails a reset link; resolves with devResetUrl when the server has no mailer (development) */
   requestPasswordReset: async (email: string) => {
@@ -91,6 +98,39 @@ export const memberActions = {
     const json = await postJson('/api/auth/member/password-reset/confirm', { token, password });
     setState({ isLoaded: true, member: json.member });
     return json.member as PublicMember;
+  },
+  /** Saves onboarding answers to the account; ids not in master data are dropped by the server */
+  savePreferences: async (preferences: Omit<MemberPreferences, 'updatedAt'>) => {
+    const json = await postJson('/api/auth/member/preferences', preferences, 'PUT');
+    setState({ member: json.member });
+    return json.preferences as MemberPreferences;
+  },
+  /** Records that the member accepted the community pledge */
+  acceptPledge: async () => {
+    const json = await postJson('/api/auth/member/pledge', { accept: true });
+    setState({ member: json.member });
+    return json.member as PublicMember;
+  },
+  /** Sends the "confirm your email" link again; resolves with devVerifyUrl when the server has no mailer */
+  sendEmailVerification: async () => {
+    const json = await postJson('/api/auth/member/verify-email', {});
+    return { sent: Boolean(json.sent), alreadyVerified: Boolean(json.alreadyVerified), devVerifyUrl: json.devVerifyUrl as string | undefined };
+  },
+  confirmEmailVerification: async (token: string) => {
+    const json = await postJson('/api/auth/member/verify-email/confirm', { token });
+    if (state.member && state.member.id === json.member.id) setState({ member: json.member });
+    return json.member as PublicMember;
+  },
+  submitHostApplication: async (input: { kind: HostApplication['kind']; about: string; link?: string }) => {
+    const json = await postJson('/api/auth/member/host-application', input);
+    setState({ member: json.member });
+    return json.application as HostApplication;
+  },
+  /** Name, photo and the optional "about me" details, with the list of fields to hide */
+  saveProfile: async (changes: { displayName?: string; avatarUrl?: string } & Partial<MemberProfile>) => {
+    const json = await postJson('/api/auth/member/profile', changes, 'PATCH');
+    setState({ member: json.member });
+    return json.details as MemberProfile;
   },
   updateProfile: async (changes: { displayName?: string; avatarUrl?: string }) => {
     const json = await postJson('/api/auth/member/profile', changes, 'PATCH');

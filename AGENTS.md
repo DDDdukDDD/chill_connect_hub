@@ -24,7 +24,7 @@ Two AI tools build this project in parallel. Each one owns one side of the codeb
 | Agent | Role | Works on branch | Owns (may edit freely) |
 | :--- | :--- | :--- | :--- |
 | **Antigravity IDE (Gemini)** | Frontend (User-Facing UI) | `main` | All user-facing pages: `app/**/page.tsx`, `app/**/layout.tsx` (except `app/admin/**`), `app/globals.css`, user-facing components in `components/**` (except `components/admin/**` and `components/AdminCreateEventModal.tsx`), `public/**` (except uploads), client-only helpers (`lib/useResponsiveItemsPerPage.ts`, `lib/media/compressor.ts`), `DESIGN_SYSTEM.md` |
-| **Claude Code** | Backend & Admin Console | `claude` | Admin UI: `app/admin/**`, `components/admin/**`, `components/AdminCreateEventModal.tsx`; Member auth UI (since 2026-10-10, BE-017): `components/auth/**`, `components/AuthModal.tsx`, `components/RequireMembershipModal.tsx`, `app/login/**`, `app/reset-password/**`, `lib/useAuth.ts`, `app/onboarding/**`; Backend: `app/api/**`, all other `lib/**`, `data/**` stores and datasets, `docs/API.md`, `BACKEND_IMPLEMENTATION_LOG.md` |
+| **Claude Code** | Backend & Admin Console | `claude` | Admin UI: `app/admin/**`, `components/admin/**`, `components/AdminCreateEventModal.tsx`; Member auth UI (since 2026-10-10, BE-017): `components/auth/**`, `components/AuthModal.tsx`, `components/RequireMembershipModal.tsx`, `components/TermsPrivacyModal.tsx`, `app/legal/**`, `app/profile/**`, `app/verify-email/**`, `app/login/**`, `app/reset-password/**`, `lib/useAuth.ts`, `app/onboarding/**`; Backend: `app/api/**`, all other `lib/**`, `data/**` stores and datasets, `docs/API.md`, `BACKEND_IMPLEMENTATION_LOG.md` |
 
 Ownership is about **editing**, not importing: the frontend may import anything from `lib/` and `data/` (types, `contentClient`, `dateUtils`, image resolvers). Shared utilities used by both sides (`lib/dateUtils.ts`, `lib/spotImageResolver.ts`, `lib/eventImageResolver.ts`, `lib/contentClient.ts`) are backend-owned; behavior changes to them must be announced in `docs/HANDOFF.md`.
 
@@ -54,7 +54,7 @@ Shared (either may edit, keep changes minimal and announce them in `docs/HANDOFF
 
 ## 🎨 1. UI Design Rules (frontend)
 
-The mandatory visual rules — button hierarchy, pillar colors, UI hygiene, typographic scale — live in **[DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)** (section "Mandatory UI Rules"). Read it before editing any user-facing or admin UI.
+The mandatory visual rules — button hierarchy, pillar colors, UI hygiene, typographic scale — live in **[DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)**. Every rule there is mandatory for new and edited code. Read it before editing any user-facing or admin UI.
 
 Pillar facts every agent needs (data side):
 - `/community` = `eventType: 'community'` — shows attendee count and recruitment status.

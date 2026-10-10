@@ -4,6 +4,7 @@ import React, { useId, useState } from 'react';
 import { AlertCircle, ArrowLeft, Check, Eye, EyeOff, Loader2, Mail, MailCheck, X } from 'lucide-react';
 import { TermsPrivacyModal } from '@/components/TermsPrivacyModal';
 import { PhraseText } from './PhraseText';
+import { tidyDisplayName } from '@/lib/displayName';
 import { useMemberSession } from '@/lib/useMemberSession';
 import type { OAuthProvider, PublicMember } from '@/lib/members/types';
 
@@ -212,7 +213,8 @@ export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, on
 
   const social = (provider: OAuthProvider) => {
     setBusy(true);
-    session.loginWith(provider, returnTo);
+    // Only the sign-up screen has the age and terms boxes; the server records which screen it was
+    session.loginWith(provider, returnTo, view === 'signup' && consentGiven);
   };
 
   const handleLogin = (e: React.FormEvent) => {
@@ -231,7 +233,7 @@ export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, on
     if (name.trim().length < 2 || !isEmail(email) || password.length < MIN_PASSWORD || !consentGiven) return;
     void run(async () => {
       try {
-        const member = await session.register({ displayName: name.trim(), email: email.trim(), password, consent: true });
+        const member = await session.register({ displayName: name.trim(), email: email.trim(), password, consent: acceptsTerms, ageConfirmed: isAdult });
         onAuthenticated(member, { isNew: true });
       } catch (err) {
         if (err instanceof Error && err.message.includes('มีบัญชีอยู่แล้ว')) setEmailExists(true);
@@ -337,7 +339,7 @@ export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, on
             </button>
           </form>
           {switchLine('ยังไม่มีบัญชี?', 'สมัครสมาชิกฟรี', 'signup')}
-          <p className="pt-3 text-center text-xs text-slate-400 font-medium leading-relaxed">
+          <p className="pt-3 text-center text-xs text-slate-500 font-medium leading-relaxed">
             <PhraseText text="การเข้าสู่ระบบถือว่าคุณยอมรับ" />{' '}{termsLinks}
           </p>
         </div>
@@ -382,7 +384,7 @@ export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, on
                 maxLength={40}
                 placeholder="เช่น ส้ม หรือ Som S."
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => setName(tidyDisplayName(e.target.value))}
                 aria-invalid={(submitted && name.trim().length < 2) || undefined}
                 className={inputClass}
               />
@@ -474,11 +476,7 @@ export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, on
         </div>
       )}
 
-      {terms.open && (
-        <div data-nested-dialog>
-          <TermsPrivacyModal isOpen onClose={() => setTerms((t) => ({ ...t, open: false }))} initialTab={terms.tab} />
-        </div>
-      )}
+      <TermsPrivacyModal isOpen={terms.open} onClose={() => setTerms((t) => ({ ...t, open: false }))} initialTab={terms.tab} />
     </>
   );
 }
