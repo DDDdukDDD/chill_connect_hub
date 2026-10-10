@@ -3,8 +3,9 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { ArrowRight, Bookmark, Camera, Users } from 'lucide-react';
+import { DialogShell, dialogButton } from './auth/DialogShell';
 import { PhraseText } from './auth/PhraseText';
-import { X, Sparkles, Ticket, Users, MessageCircle, Gift, ArrowRight } from 'lucide-react';
 
 interface RequireMembershipModalProps {
   isOpen: boolean;
@@ -12,9 +13,18 @@ interface RequireMembershipModalProps {
   onOpenLogin: () => void;
   /** Opens the sign-up form in place; without it the button goes to /login?mode=signup */
   onOpenSignup?: () => void;
+  /** Completes "เข้าสู่ระบบ …", e.g. "เพื่อเข้าร่วมกิจกรรม" */
   actionTitle?: string;
 }
 
+// What an account unlocks today (only things that work)
+const PERKS = [
+  { icon: Users, title: 'เข้าร่วมกิจกรรม และชาเลนจ์', desc: 'จองที่ในกิจกรรมคอมมูนิตี้ และรับภารกิจสะสม XP' },
+  { icon: Camera, title: 'แชร์โมเมนต์ของคุณ', desc: 'โพสต์รูป กดไลก์ และคอมเมนต์โมเมนต์ของเพื่อน' },
+  { icon: Bookmark, title: 'เก็บสิ่งที่ชอบ ไว้ดูทีหลัง', desc: 'บันทึกกิจกรรม ที่เที่ยว และโมเมนต์ที่ถูกใจ' },
+];
+
+/** Shown when a visitor tries something that needs an account */
 export const RequireMembershipModal: React.FC<RequireMembershipModalProps> = ({
   isOpen,
   onClose,
@@ -27,116 +37,53 @@ export const RequireMembershipModal: React.FC<RequireMembershipModalProps> = ({
   const signupHref = `/login?mode=signup&returnTo=${encodeURIComponent(pathname || '/')}`;
 
   return (
-    <div className="fixed inset-0 z-[100002] flex items-center justify-center p-4 sm:p-6 bg-black/65 backdrop-blur-xs animate-fade-in">
-      <div 
-        className="bg-white rounded-3xl max-w-md sm:max-w-lg w-full border border-[#E8E2D8] shadow-2xl overflow-hidden animate-scale-up text-[#1E293B] relative p-6 sm:p-8 space-y-5"
-        onClick={(e) => e.stopPropagation()}
+    <DialogShell onClose={onClose} title={`เข้าสู่ระบบ ${actionTitle}`} subtitle="สมัครฟรี ใช้เวลาไม่ถึง 1 นาที">
+      <ul className="space-y-2.5 mb-6">
+        {PERKS.map((perk) => {
+          const Icon = perk.icon;
+          return (
+            <li key={perk.title} className="flex items-center gap-3 p-3 rounded-2xl border border-slate-200">
+              <span className="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+                <Icon className="w-5 h-5" aria-hidden="true" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-extrabold text-slate-900 leading-snug"><PhraseText text={perk.title} /></span>
+                <span className="block text-xs font-medium text-slate-500 mt-0.5"><PhraseText text={perk.desc} /></span>
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+
+      <Link
+        href={signupHref}
+        data-autofocus
+        onClick={(e) => {
+          onClose();
+          if (onOpenSignup) {
+            e.preventDefault();
+            onOpenSignup();
+          }
+        }}
+        className={`${dialogButton.primary} w-full`}
       >
-        {/* Close Button */}
+        สมัครสมาชิกฟรี
+        <ArrowRight className="w-4 h-4" aria-hidden="true" />
+      </Link>
+
+      <p className="pt-5 mt-6 border-t border-slate-100 text-center text-sm text-slate-600 font-medium">
+        มีบัญชีอยู่แล้ว?{' '}
         <button
-          onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-800 transition-colors z-20 cursor-pointer"
-          aria-label="Close"
+          type="button"
+          onClick={() => {
+            onClose();
+            onOpenLogin();
+          }}
+          className="font-extrabold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap"
         >
-          <X className="w-4 h-4" />
+          เข้าสู่ระบบ
         </button>
-
-        {/* Header (Clean White / Light Style) */}
-        <div className="text-center space-y-2.5 pt-1">
-          <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#D04A1B] bg-orange-50 px-3.5 py-1 rounded-full border border-orange-200">
-            <Sparkles className="w-3.5 h-3.5 text-[#F26430]" />
-            <span>สมัครฟรี 100% ไม่มีค่าใช้จ่าย</span>
-          </div>
-
-          <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            <PhraseText text={`เข้าสู่ระบบ ${actionTitle}`} />
-          </h3>
-
-          <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed max-w-sm mx-auto"><PhraseText text="เข้าสู่ระบบหรือสมัครสมาชิก เพื่อปลดล็อกสิทธิพิเศษ และเชื่อมต่อคอมมูนิตี้" /></p>
-        </div>
-
-        {/* Membership Perks (Clean Spacious Cards) */}
-        <div className="space-y-3">
-          {/* Card 1 */}
-          <div className="flex items-center gap-3.5 p-3.5 sm:p-4 rounded-2xl bg-slate-50/70 border border-slate-200/90 shadow-2xs hover:bg-white hover:shadow-xs transition-all">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center shrink-0 shadow-2xs">
-              <Ticket className="w-5 h-5" />
-            </div>
-            <div className="min-w-0">
-              <h4 className="text-xs sm:text-sm font-extrabold text-slate-800 leading-tight"><PhraseText text="ร่วมทุกกิจกรรม & ชาเลนจ์" /></h4>
-              <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-0.5"><PhraseText text="เข้าร่วมกิจกรรมสนุกๆ และรับภารกิจสะสมเหรียญรางวัล" /></p>
-            </div>
-          </div>
-
-          {/* Card 2 */}
-          <div className="flex items-center gap-3.5 p-3.5 sm:p-4 rounded-2xl bg-slate-50/70 border border-slate-200/90 shadow-2xs hover:border-[#F26430]/40 hover:bg-white hover:shadow-xs transition-all">
-            <div className="w-10 h-10 rounded-2xl bg-orange-50 text-[#F26430] border border-orange-200 flex items-center justify-center shrink-0 shadow-2xs">
-              <Users className="w-5 h-5" />
-            </div>
-            <div className="min-w-0">
-              <h4 className="text-xs sm:text-sm font-extrabold text-slate-800 leading-tight"><PhraseText text="โพสต์ชวนเพื่อน & หาตี้ใน Buddy Board" /></h4>
-              <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-0.5"><PhraseText text="ปลดล็อกการชวนตี้ และระบบทักทายหาเพื่อนใหม่" /></p>
-            </div>
-          </div>
-
-          {/* Card 3 */}
-          <div className="flex items-center gap-3.5 p-3.5 sm:p-4 rounded-2xl bg-slate-50/70 border border-slate-200/90 shadow-2xs hover:border-sky-400/40 hover:bg-white hover:shadow-xs transition-all">
-            <div className="w-10 h-10 rounded-2xl bg-sky-50 text-sky-600 border border-sky-200 flex items-center justify-center shrink-0 shadow-2xs">
-              <MessageCircle className="w-5 h-5" />
-            </div>
-            <div className="min-w-0">
-              <h4 className="text-xs sm:text-sm font-extrabold text-slate-800 leading-tight"><PhraseText text="ห้องแชตนัดพบ & คอมมูนิตี้ส่วนตัว" /></h4>
-              <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-0.5"><PhraseText text="พูดคุยแลกเปลี่ยนใน Group Chat ของแต่ละกิจกรรม" /></p>
-            </div>
-          </div>
-
-          {/* Card 4 */}
-          <div className="flex items-center gap-3.5 p-3.5 sm:p-4 rounded-2xl bg-slate-50/70 border border-slate-200/90 shadow-2xs hover:border-amber-400/40 hover:bg-white hover:shadow-xs transition-all">
-            <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center shrink-0 shadow-2xs">
-              <Gift className="w-5 h-5" />
-            </div>
-            <div className="min-w-0">
-              <h4 className="text-xs sm:text-sm font-extrabold text-slate-800 leading-tight"><PhraseText text="รับแต้มต้อนรับ +50 XP ฟรี" /></h4>
-              <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-0.5"><PhraseText text="สะสมแต้มทำภารกิจ แลกของรางวัลและส่วนลดพิเศษ" /></p>
-            </div>
-          </div>
-        </div>
-
-        {/* Action Buttons (Spacious & Comfortable) */}
-        <div className="pt-2 space-y-2.5">
-          <Link
-            href={signupHref}
-            onClick={(e) => {
-              onClose();
-              if (onOpenSignup) {
-                e.preventDefault();
-                onOpenSignup();
-              }
-            }}
-            className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 sm:py-3.5 px-5 rounded-2xl font-bold text-xs sm:text-sm shadow-sm transition-all active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <span>สมัครสมาชิกใหม่ฟรี (เพียง 1 นาที)</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-
-          <button
-            type="button"
-            onClick={() => {
-              onClose();
-              onOpenLogin();
-            }}
-            className="w-full text-center py-1.5 text-xs sm:text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer flex items-center justify-center gap-1"
-          >
-            <span>มีบัญชีอยู่แล้ว?</span>
-            <span className="font-bold text-slate-900 hover:text-[#F26430] hover:underline inline-flex items-center gap-1">
-              <span>เข้าสู่ระบบ</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </span>
-          </button>
-        </div>
-
-      </div>
-    </div>
+      </p>
+    </DialogShell>
   );
 };
-
