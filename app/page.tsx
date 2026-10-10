@@ -1468,17 +1468,29 @@ function HomeContent() {
                     />
                   </div>
 
-                  {/* Community Events Carousel (Single row with manual floating scroll) */}
-                  <div id="section-community-cards" className="scroll-mt-24">
+                  {/* Community Events Grid (Dynamic responsive columns) */}
+                  <div id="section-community-cards" className="scroll-mt-24 space-y-4">
                     <EventGrid
                       events={streamCommunityEvents}
-                      layout="carousel"
+                      limit={10}
+                      columns={5}
                       onSelectEvent={() => { }}
                       favorites={isLoggedIn ? favorites : []}
                       toggleFavorite={toggleFavorite}
                       joinedEventIds={isLoggedIn ? joinedEventIds : []}
                       onResetFilters={handleResetAllFilters}
                     />
+                    {streamCommunityEvents.length > 10 && (
+                      <div className="pt-1 text-center">
+                        <Link
+                          href={`/community${selectedCategory ? `?category=${encodeURIComponent(selectedCategory)}` : ''}`}
+                          className="inline-flex items-center gap-2 px-5 py-2 bg-white hover:bg-orange-50 text-[#F26430] border border-orange-200/90 rounded-xl text-xs font-bold shadow-2xs hover:shadow-sm transition-all cursor-pointer active:scale-95"
+                        >
+                          <span>ดูเพิ่มเติมอีก {streamCommunityEvents.length - 10} กิจกรรม</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
+                    )}
                   </div>
                 </section>
 
@@ -1571,17 +1583,29 @@ function HomeContent() {
                     />
                   </div>
 
-                  {/* Public Venue Events Carousel (Single row with manual floating scroll) */}
-                  <div id="section-fairs-cards" className="scroll-mt-24">
+                  {/* Public Venue Events Grid (Dynamic responsive columns) */}
+                  <div id="section-fairs-cards" className="scroll-mt-24 space-y-4">
                     <EventGrid
                       events={streamPublicEvents}
-                      layout="carousel"
+                      limit={10}
+                      columns={5}
                       onSelectEvent={() => { }}
                       favorites={isLoggedIn ? favorites : []}
                       toggleFavorite={toggleFavorite}
                       joinedEventIds={isLoggedIn ? joinedEventIds : []}
                       onResetFilters={handleResetAllFilters}
                     />
+                    {streamPublicEvents.length > 10 && (
+                      <div className="pt-1 text-center">
+                        <Link
+                          href={`/fairs${selectedVenueFilter ? `?venue=${encodeURIComponent(selectedVenueFilter)}` : ''}`}
+                          className="inline-flex items-center gap-2 px-5 py-2 bg-white hover:bg-sky-50 text-[#2B527A] border border-blue-200/90 rounded-xl text-xs font-bold shadow-2xs hover:shadow-sm transition-all cursor-pointer active:scale-95"
+                        >
+                          <span>ดูเพิ่มเติมอีก {streamPublicEvents.length - 10} งาน</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
+                    )}
                   </div>
                 </section>
 
@@ -1633,59 +1657,46 @@ function HomeContent() {
                     />
                   </div>
 
-                  {/* Spot Cards Carousel: 1 row with manual floating scroll */}
-                  <div id="section-spots-cards" className="scroll-mt-24">
+                  {/* Spot Cards Grid: Dynamic responsive columns */}
+                  <div id="section-spots-cards" className="scroll-mt-24 space-y-4">
                     {!isSpotsLoaded && liveSpots.length === 0 ? (
-                      <div className="flex gap-3.5 overflow-hidden">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <div
-                            key={i}
-                            className="w-[calc((100%-12px)/2)] sm:w-[calc((100%-2*14px)/3)] md:w-[calc((100%-3*14px)/4)] lg:w-[calc((100%-4*14px)/5)] shrink-0 flex flex-col h-full"
-                          >
-                            <SpotCardSkeleton />
-                          </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4">
+                        {Array.from({ length: 10 }).map((_, i) => (
+                          <SpotCardSkeleton key={i} />
                         ))}
                       </div>
                     ) : filteredSpots.length > 0 ? (
-                      <FloatingCarousel>
-                        {filteredSpots.slice(0, 24).map((spot) => (
-                          <div
-                            key={spot.id}
-                            className="w-[calc((100%-12px)/2)] sm:w-[calc((100%-2*14px)/3)] md:w-[calc((100%-3*14px)/4)] lg:w-[calc((100%-4*14px)/5)] shrink-0 snap-start flex flex-col h-full"
-                          >
-                            <SpotCard
-                              spot={spot}
-                              isFavorite={isLoggedIn && favoriteSpots.includes(spot.id)}
-                              isJoined={isLoggedIn && joinedEventIds.includes(spot.id)}
-                              onToggleFavorite={(id) => {
-                                if (!isLoggedIn) {
-                                  triggerMembershipPrompt('เพื่อบันทึกสถานที่โปรด');
-                                  return;
-                                }
-                                toggleFavoriteSpot(id);
-                              }}
-                            />
-                          </div>
-                        ))}
-                        {filteredSpots.length > 24 && (
-                          <div className="w-[calc((100%-12px)/2)] sm:w-[calc((100%-2*14px)/3)] md:w-[calc((100%-3*14px)/4)] lg:w-[calc((100%-4*14px)/5)] shrink-0 snap-start flex flex-col h-full">
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4">
+                          {filteredSpots.slice(0, 10).map((spot) => (
+                            <div key={spot.id} className="block h-full">
+                              <SpotCard
+                                spot={spot}
+                                isFavorite={isLoggedIn && favoriteSpots.includes(spot.id)}
+                                isJoined={isLoggedIn && joinedEventIds.includes(spot.id)}
+                                onToggleFavorite={(id) => {
+                                  if (!isLoggedIn) {
+                                    triggerMembershipPrompt('เพื่อบันทึกสถานที่โปรด');
+                                    return;
+                                  }
+                                  toggleFavoriteSpot(id);
+                                }}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                        {filteredSpots.length > 10 && (
+                          <div className="pt-1 text-center">
                             <Link
-                              href="/spots"
-                              className="h-full min-h-[300px] rounded-2xl border-2 border-dashed border-emerald-300 hover:border-[#4A7C59] bg-emerald-50/40 hover:bg-emerald-50/80 transition-all flex flex-col items-center justify-center p-6 text-center group cursor-pointer"
+                              href={`/spots?category=${encodeURIComponent(selectedSpotCategory)}&province=${encodeURIComponent(selectedSpotProvince)}`}
+                              className="inline-flex items-center gap-2 px-5 py-2 bg-white hover:bg-emerald-50 text-[#4A7C59] border border-emerald-200/90 rounded-xl text-xs font-bold shadow-2xs hover:shadow-sm transition-all cursor-pointer active:scale-95"
                             >
-                              <div className="w-12 h-12 rounded-full bg-emerald-100 group-hover:bg-[#4A7C59] text-emerald-700 group-hover:text-white flex items-center justify-center transition-colors mb-3">
-                                <Sparkles className="w-6 h-6" />
-                              </div>
-                              <span className="font-bold text-slate-800 text-sm group-hover:text-[#4A7C59] transition-colors">
-                                สำรวจพิกัดทั้งหมด
-                              </span>
-                              <span className="text-xs text-slate-500 mt-1">
-                                อีก {(filteredSpots.length - 24).toLocaleString()} แห่ง ทั่วประเทศ
-                              </span>
+                              <span>ดูเพิ่มเติมอีก {filteredSpots.length - 10} พิกัด</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
                             </Link>
                           </div>
                         )}
-                      </FloatingCarousel>
+                      </div>
                     ) : (
                       <div className="bg-slate-50/80 rounded-2xl p-5 border border-dashed border-slate-200 text-center space-y-3">
                         <p className="text-xs sm:text-sm font-bold text-slate-700">

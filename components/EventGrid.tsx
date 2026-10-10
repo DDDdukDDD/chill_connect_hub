@@ -89,7 +89,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
 
   const gridColsClass = columns === 4
     ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'
-    : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4';
+    : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5 gap-3.5 sm:gap-4';
 
   const renderCard = (event: EventItem, idx: number) => {
     const isFav = favorites.includes(event.id);

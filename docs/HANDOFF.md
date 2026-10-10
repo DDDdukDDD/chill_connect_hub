@@ -23,6 +23,22 @@ Item template:
 
 ## Open
 
+### FE-009 · Homepage Stream Transition: Reverted Single-Row Carousels to Dynamic Responsive Multi-Device Grid (1-Col Mobile, 3-Col iPad, 5-Col Desktop)
+- **From → To:** Frontend → Backend (informational)
+- **Date / branch:** 2026-10-10 · `main`
+- **What changed:**
+  1. **User Experience Reversion on Homepage Streams (`app/page.tsx`, `components/EventGrid.tsx`)**:
+     - Single-row horizontal carousels with manual swipe/arrows on mobile and iPad caused horizontal scroll fatigue and left 60–70% of tablet screen height unused.
+     - Reverted Sections 01 (Community Meetups), 02 (Fairs & Expos), and 03 (Lifestyle Spots) on the homepage from `layout="carousel"` to a clean Dynamic Responsive Grid:
+       - **Mobile (< 640px)**: 1 column (`grid-cols-1`) full-width cards with clear vertical scrolling and +20% image height.
+       - **Small Tablets (640px–768px)**: 2 columns (`sm:grid-cols-2`).
+       - **iPad & Tablets (768px–1024px)**: 3 columns (`md:grid-cols-3`).
+       - **Laptops (1024px–1280px)**: 4 columns (`lg:grid-cols-4`).
+       - **Desktop (≥ 1280px)**: 5 columns (`xl:grid-cols-5`).
+     - Kept max 10 cards per stream on the showroom overview with clean "ดูเพิ่มเติมอีก N รายการ" bottom CTA buttons.
+- **Action for Backend:** None required.
+- **Status:** Open
+
 ### FE-008 · Editorial Price Range Formatting & Ticket Tier Breakdown: Unified Card Badges and Structured Detail Views
 - **From → To:** Frontend → Backend (informational)
 - **Date / branch:** 2026-10-10 · `main`
