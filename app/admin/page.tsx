@@ -18,6 +18,10 @@ import { StaffManagerView } from '@/components/admin/StaffManagerView';
 import { AuditLogView } from '@/components/admin/AuditLogView';
 import { AdminEmptyState } from '@/components/admin/AdminUI';
 import { SpotsManagerView } from '@/components/admin/SpotsManagerView';
+import { CoverageView } from '@/components/admin/CoverageView';
+import { FeaturedRailsView } from '@/components/admin/FeaturedRailsView';
+import { MembersManagerView } from '@/components/admin/MembersManagerView';
+import { MomentsManagerView } from '@/components/admin/MomentsManagerView';
 
 // ─────────────────────────────────────────────────────────────
 // MAIN ADMIN PAGE
@@ -31,21 +35,40 @@ function readModuleFromUrl(): AdminModuleId {
   return ADMIN_MODULE_IDS.find((id) => id === requested) ?? 'dashboard';
 }
 
+// Filters handed from one module to another (e.g. coverage cell → spots list), kept in the URL
+const FILTER_PARAMS = ['province', 'vibe'] as const;
+type ModuleFilters = Partial<Record<(typeof FILTER_PARAMS)[number], string>>;
+
+function readFiltersFromUrl(): ModuleFilters {
+  if (typeof window === 'undefined') return {};
+  const params = new URLSearchParams(window.location.search);
+  return Object.fromEntries(FILTER_PARAMS.flatMap((key) => (params.get(key) ? [[key, params.get(key)!]] : [])));
+}
+
 function AdminConsole() {
   // Rendered only on the client after AdminAuthGate has verified the session
   const [activeModule, setActiveModuleState] = useState<AdminModuleId>(readModuleFromUrl);
+  const [moduleFilters, setModuleFilters] = useState<ModuleFilters>(readFiltersFromUrl);
 
-  const setActiveModule = useCallback((module: AdminModuleId) => {
+  const setActiveModule = useCallback((module: AdminModuleId, filters: ModuleFilters = {}) => {
     setActiveModuleState(module);
+    setModuleFilters(filters);
     const params = new URLSearchParams(window.location.search);
     if (module === 'dashboard') params.delete('m');
     else params.set('m', module);
+    for (const key of FILTER_PARAMS) {
+      if (filters[key]) params.set(key, filters[key]!);
+      else params.delete(key);
+    }
     const query = params.toString();
     window.history.pushState(null, '', query ? `?${query}` : window.location.pathname);
   }, []);
 
   useEffect(() => {
-    const syncFromUrl = () => setActiveModuleState(readModuleFromUrl());
+    const syncFromUrl = () => {
+      setActiveModuleState(readModuleFromUrl());
+      setModuleFilters(readFiltersFromUrl());
+    };
     window.addEventListener('popstate', syncFromUrl);
     return () => window.removeEventListener('popstate', syncFromUrl);
   }, []);
@@ -71,6 +94,8 @@ function AdminConsole() {
         return <AdminDashboardView onNavigate={setActiveModule} />;
       case 'review':
         return <ReviewQueueView onNavigate={setActiveModule} />;
+      case 'members':
+        return <MembersManagerView />;
       case 'staff':
         return <StaffManagerView />;
       case 'audit':
@@ -81,9 +106,16 @@ function AdminConsole() {
         return <ProvincesManagerView />;
       case 'venues':
         return <VenuesManagerView />;
+      case 'rails':
+        return <FeaturedRailsView />;
       case 'spots':
         return (
-          <SpotsManagerView showToast={showToast} />
+          <SpotsManagerView
+            key={`spots-${moduleFilters.province ?? ''}-${moduleFilters.vibe ?? ''}`}
+            showToast={showToast}
+            initialProvince={moduleFilters.province}
+            initialCategory={moduleFilters.vibe}
+          />
         );
       case 'community':
         return <EventsModerationView key="community" type="community" />;
@@ -91,8 +123,17 @@ function AdminConsole() {
         return <EventsModerationView key="fairs" type="fairs" />;
       case 'quests':
         return <QuestsManagerView />;
+      case 'moments':
+        return <MomentsManagerView />;
       case 'scraper':
-        return <ScraperEngineView />;
+        return <ScraperEngineView key={`scraper-${moduleFilters.province ?? ''}`} initialProvince={moduleFilters.province} />;
+      case 'coverage':
+        return (
+          <CoverageView
+            onOpenSpots={(filters) => setActiveModule('spots', filters)}
+            onScanProvince={(province) => setActiveModule('scraper', { province })}
+          />
+        );
       case 'media':
         return <MediaManagerView />;
       case 'cache':

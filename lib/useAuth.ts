@@ -1,5 +1,14 @@
-import { useEffect, useSyncExternalStore } from 'react';
+import { useSyncExternalStore } from 'react';
+import { memberActions, refreshMemberSession, useMemberSession } from './useMemberSession';
+import type { PublicMember } from './members/types';
 
+/**
+ * Page-level auth state. Who is signed in comes from the server session (lib/useMemberSession.ts);
+ * this hook keeps the shape the pages already use.
+ *
+ * `role` is still a client-side preview switch (Navbar / CreateEventModal demo). It never grants
+ * access: admin access is decided by the server (/api/auth/admin).
+ */
 export type UserRole = 'member' | 'host' | 'organizer' | 'venue_owner' | 'admin';
 
 export interface UserProfile {
@@ -10,133 +19,104 @@ export interface UserProfile {
   badgeLabel?: string;
   bio?: string;
   isVerified?: boolean;
+  email?: string;
 }
 
-const DEFAULT_PROFILE: UserProfile = {
-  id: 'user-me',
-  name: 'นภัสสร รักษ์ธรรมชาติ',
-  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
-  role: 'member',
-  badgeLabel: 'สมาชิกทั่วไป',
-  isVerified: false,
+const ROLE_BADGES: Record<UserRole, string> = {
+  member: 'สมาชิกทั่วไป',
+  host: 'Verified Host',
+  organizer: 'Official Organizer',
+  venue_owner: 'Verified Space Owner',
+  admin: 'Super Admin',
 };
 
-let globalIsLoggedIn = false;
-let globalUserProfile: UserProfile = DEFAULT_PROFILE;
-let isInitialized = false;
-const listeners = new Set<() => void>();
+const AVATAR_COLORS = ['#4A7C59', '#2563EB', '#D04A1B', '#7C3AED', '#0F766E', '#B45309'];
 
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
+/** Initial-letter avatar for members without a photo (no third-party avatar service) */
+export function initialsAvatar(name: string, seed = name): string {
+  const letter = (name.trim()[0] || '?').toUpperCase().replace(/[<>&"']/g, '?');
+  let hash = 0;
+  for (const ch of seed) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+  const color = AVATAR_COLORS[hash % AVATAR_COLORS.length];
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="${color}"/><text x="32" y="42" font-family="sans-serif" font-size="28" font-weight="700" fill="#fff" text-anchor="middle">${letter}</text></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+const GUEST_NAME = 'ผู้เยี่ยมชม';
+
+function toProfile(member: PublicMember | null, role: UserRole): UserProfile {
+  const name = member?.displayName ?? GUEST_NAME;
+  return {
+    id: member?.id ?? 'guest',
+    name,
+    avatar: member?.avatarUrl || initialsAvatar(name, member?.id ?? 'guest'),
+    role,
+    badgeLabel: ROLE_BADGES[role],
+    isVerified: role !== 'member',
+    email: member?.email,
   };
 }
 
-function getLoggedInSnapshot() {
-  return globalIsLoggedIn;
-}
-
-function getProfileSnapshot() {
-  return globalUserProfile;
-}
-
-function getServerLoggedInSnapshot() {
-  return false;
-}
-
-function getServerProfileSnapshot() {
-  return DEFAULT_PROFILE;
-}
-
-function getAuthReadySnapshot() {
-  return isInitialized;
-}
-
-function getServerAuthReadySnapshot() {
-  return false;
-}
-
-function initFromStorage() {
-  if (typeof window === 'undefined' || isInitialized) return;
-  isInitialized = true;
-  const savedLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-  globalIsLoggedIn = savedLoggedIn;
-
-  const savedRole = (localStorage.getItem('user_role') as UserRole) || 'member';
-  const savedProfile = localStorage.getItem('user_profile');
-  if (savedProfile) {
-    try {
-      const parsed = JSON.parse(savedProfile);
-      globalUserProfile = { ...DEFAULT_PROFILE, ...parsed, role: savedRole };
-    } catch {
-      globalUserProfile = { ...DEFAULT_PROFILE, role: savedRole };
-    }
-  } else {
-    globalUserProfile = { ...DEFAULT_PROFILE, role: savedRole };
+// Preview role (local only)
+let previewRole: UserRole | null = null;
+const roleListeners = new Set<() => void>();
+function readRole(): UserRole {
+  if (previewRole) return previewRole;
+  try {
+    const saved = localStorage.getItem('user_role') as UserRole | null;
+    previewRole = saved && saved in ROLE_BADGES ? saved : 'member';
+  } catch {
+    previewRole = 'member';
   }
+  return previewRole;
+}
+function subscribeRole(listener: () => void) {
+  roleListeners.add(listener);
+  return () => {
+    roleListeners.delete(listener);
+  };
+}
+
+let cachedProfile: { member: PublicMember | null; role: UserRole; profile: UserProfile } | null = null;
+function profileFor(member: PublicMember | null, role: UserRole): UserProfile {
+  if (!cachedProfile || cachedProfile.member !== member || cachedProfile.role !== role) {
+    cachedProfile = { member, role, profile: toProfile(member, role) };
+  }
+  return cachedProfile.profile;
 }
 
 export function useAuth() {
-  const isAuthReady = useSyncExternalStore(subscribe, getAuthReadySnapshot, getServerAuthReadySnapshot);
-  const isLoggedIn = useSyncExternalStore(subscribe, getLoggedInSnapshot, getServerLoggedInSnapshot);
-  const userProfile = useSyncExternalStore(subscribe, getProfileSnapshot, getServerProfileSnapshot);
+  const session = useMemberSession();
+  const role = useSyncExternalStore(subscribeRole, readRole, () => 'member' as UserRole);
+  const userProfile = profileFor(session.member, role);
 
-  useEffect(() => {
-    if (!isInitialized) {
-      initFromStorage();
-      listeners.forEach((l) => l());
-    }
-  }, []);
-
+  /** Pages call this after AuthModal succeeds (true) or to log out (false) */
   const handleSetIsLoggedIn = (status: boolean) => {
-    globalIsLoggedIn = status;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('isLoggedIn', status ? 'true' : 'false');
-    }
-    listeners.forEach((l) => l());
+    void (status ? refreshMemberSession() : memberActions.logout());
   };
 
-  const handleSetRole = (role: UserRole) => {
-    const roleBadges: Record<UserRole, string> = {
-      member: 'สมาชิกทั่วไป',
-      host: 'Verified Host',
-      organizer: 'Official Organizer',
-      venue_owner: 'Verified Space Owner',
-      admin: 'Super Admin',
-    };
-    const updated: UserProfile = {
-      ...globalUserProfile,
-      role,
-      badgeLabel: roleBadges[role] || 'สมาชิกทั่วไป',
-      isVerified: role !== 'member',
-    };
-    globalUserProfile = updated;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('user_role', role);
-      localStorage.setItem('user_profile', JSON.stringify(updated));
+  const handleSetRole = (next: UserRole) => {
+    previewRole = next;
+    try {
+      localStorage.setItem('user_role', next);
+    } catch {
+      /* storage unavailable */
     }
-    listeners.forEach((l) => l());
+    roleListeners.forEach((listener) => listener());
   };
 
-  const isAdmin = userProfile.role === 'admin';
-  const isHost = userProfile.role === 'host' || isAdmin;
-  const isOrganizer = userProfile.role === 'organizer' || isAdmin;
-  const isVenueOwner = userProfile.role === 'venue_owner' || isAdmin;
-  const isMember = userProfile.role === 'member';
-
+  const isAdmin = role === 'admin';
   return {
-    isLoggedIn,
-    isAuthReady,
+    isLoggedIn: session.isLoggedIn,
+    isAuthReady: session.isLoaded,
     userProfile,
+    member: session.member,
     handleSetIsLoggedIn,
     handleSetRole,
     isAdmin,
-    isHost,
-    isOrganizer,
-    isVenueOwner,
-    isMember,
+    isHost: role === 'host' || isAdmin,
+    isOrganizer: role === 'organizer' || isAdmin,
+    isVenueOwner: role === 'venue_owner' || isAdmin,
+    isMember: role === 'member',
   };
 }
-
-

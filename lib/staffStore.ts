@@ -1,7 +1,8 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
+import { burnPasswordCheck, hashPassword, verifyPasswordHash } from './passwordHash';
 import { IS_SERVERLESS } from './db/databaseFile';
 import { isStaffRole, StaffRole } from './permissions';
 
@@ -62,19 +63,6 @@ export function toPublicStaff(account: StaffAccount): PublicStaffAccount {
   return publicFields;
 }
 
-function hashPassword(password: string): string {
-  const salt = randomBytes(16);
-  return `scrypt$${salt.toString('hex')}$${scryptSync(password, salt, 64).toString('hex')}`;
-}
-
-function verifyPasswordHash(password: string, stored: string): boolean {
-  const [scheme, saltHex, hashHex] = stored.split('$');
-  if (scheme !== 'scrypt' || !saltHex || !hashHex) return false;
-  const expected = Buffer.from(hashHex, 'hex');
-  const actual = scryptSync(password, Buffer.from(saltHex, 'hex'), expected.length);
-  return timingSafeEqual(expected, actual);
-}
-
 export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
@@ -96,7 +84,7 @@ export function authenticateStaff(email: string, password: string): StaffAccount
   const account = load().find((a) => a.email === normalizeEmail(email));
   // Hash anyway when the account is unknown so response time does not reveal which emails exist
   if (!account) {
-    verifyPasswordHash(password, `scrypt$${'0'.repeat(32)}$${'0'.repeat(128)}`);
+    burnPasswordCheck(password);
     return null;
   }
   if (account.status !== 'active' || !verifyPasswordHash(password, account.passwordHash)) return null;

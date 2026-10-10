@@ -137,10 +137,177 @@ Entries up to 2026-10-04 (FE-002) and the 2026-10-03 verification notes are in [
     - API 14/14: vibe filter, coordinate rejection, no invented spot data, map link from coordinates, contact/entryFee, fair without organizer, community with 30 people, update_fields cannot approve, title validation, cleanup.
     - Puppeteer: live preview follows typing, coordinate error shown, preview clicks do not navigate, Esc closes, publish disabled until checks pass, fair and community editors, 390px with no overflow, no console errors.
 
+- Admin phase 3, coverage, map and run history (2026-10-10):
+  - **New module "ความครอบคลุม & แผนที่"** (`CoverageView`), backed by `GET /api/admin/coverage`.
+    - A 77 × 7 heatmap of published spots per province and vibe. It uses a binned sequential blue scale, with 0 shown in neutral gray so gaps stand out.
+    - Every cell has its number, a hover tooltip and a legend. Rows can be sorted by fewest spots, most gaps, most spots or name.
+    - Clicking a cell opens the spots list filtered to that province and vibe (`?m=spots&province=&vibe=`). "ดึงเพิ่ม" opens the scraper with the province preselected.
+  - **Map tab** (`SpotsMapPanel`):
+    - Leaflet + OSM tiles on a canvas renderer showing all 2,179 points.
+    - Validated categorical pair: blue is published, orange is draft. The legend doubles as a filter, alongside province and vibe filters.
+    - Clicking a point opens `SpotEditorDrawer`. The 2 spots with invalid coordinates are listed under the map with a fix button.
+    - Uses the new `GET /api/admin/spots?id=`.
+  - **Run history:** `recordSourceScrape` keeps `runHistory` (the last 20 runs, with the province as context for spot runs). The scraper page shows it under each source ("ประวัติ"); older sources show their last run.
+  - **Findings on current data:**
+    - 164 of 539 province × vibe cells are empty.
+    - The thinnest provinces are ลพบุรี (19), สุโขทัย (20) and อุทัยธานี (20).
+    - The least covered vibe is สปา & จุดฮีลใจ, with 24 spots nationwide.
+  - **Verification (puppeteer):**
+    - 77 rows; the tooltip works.
+    - A cell click opens the list filtered to the right province and vibe with 3 rows; "ดึงเพิ่ม" preselects the province.
+    - The history panel renders.
+    - The map loads its canvas, 24 tiles and the OSM attribution; the invalid list opens the editor.
+    - No console errors.
+
+- Editable master data (2026-10-10, owner request):
+  - **`lib/masterData.ts`** (client-safe):
+    - Types for categories, venues, provinces and zones.
+    - `ICON_OPTIONS` (25 lucide icons) and `COLOR_PRESETS` (10 colors, literal Tailwind classes).
+    - A seed built from `data/masterHub.ts`, including the homepage destination profiles and regions.
+    - Resolvers back to the old constant shapes; a built-in keeps its original colors unless recolored.
+  - **`lib/masterDataStore.ts`:**
+    - `data/master_data.json` is committed; serverless writes go to `/tmp`. Seed entries are merged in for built-ins added later.
+    - Validation: no emoji in names, icons and colors from the presets, `https://` or `/` image URLs, coordinates, provinces from the 77.
+    - Built-in entries cannot be deleted, and the fixed collections (vibes, moods, provinces) cannot gain entries.
+  - **APIs:** public `GET /api/master`; admin `GET/POST /api/admin/master` (save / set_active / delete / reorder, `system.manage`, audited).
+  - **Client hook:** `lib/useMasterData.ts` for the frontend (BE-013).
+  - **Admin views rewritten** (they were read-only):
+    - `TaxonomyManagerView`: 5 category collections, icon grid, color swatches, image upload, live chip preview, reorder, activate/deactivate, delete for custom entries.
+    - `ProvincesManagerView`: 77 provinces with region filter, featured toggle, spot counts and a destination-card preview; plus a zones tab.
+    - `VenuesManagerView`: venue editor with coordinates check and website.
+    - Shared pieces in `components/admin/masterAdmin.tsx`: `useMasterAdmin`, `ImageField` (compressed upload via `/api/upload`), `MasterList`.
+  - **Verification:**
+    - API 20/20: create/keywords; emoji, unknown icon and bad image URL rejected; fixed collections and built-in delete rejected; deactivate hides it publicly; built-in edit with image; province featured; zone and venue create; reorder applied; cleanup.
+    - Puppeteer: all three views and their editors render with no console errors.
+    - The test data file was restored to the seed.
+  - **Rail cards:** the image cards the public site already shows in TopCommunityRail (8 clubs) and TopVenuesRail (7 venue groups) are now the `communityClubs` and `venueGroups` collections.
+    - They are seeded from those components; the illustrative member counts are dropped.
+    - They are edited in the new admin module "การ์ดแนะนำ (rail)" (`FeaturedRailsView`) with a card preview.
+    - Venues also got their `/images/venues/*` photos.
+  - **Limits:**
+    - Uploaded images go to `public/uploads`, which does not persist on Vercel.
+    - The public site still reads the code constants until BE-013 is done.
+
+- Vercel Blob for uploads (2026-10-10; the owner created a Blob store):
+  - `lib/media/adapters/blobStorageAdapter.ts` implements upload, delete, list and stats on `@vercel/blob`. Files are public, get a random suffix and a 1-year cache, and the storage key is the blob URL.
+  - `lib/media/index.ts` picks Blob when `BLOB_READ_WRITE_TOKEN` is set, or when `BLOB_STORE_ID` is set on Vercel (OIDC, which the connected store uses) or with a pulled `VERCEL_OIDC_TOKEN` locally; local disk otherwise.
+  - The placeholder `CloudStorageAdapter` was removed: it returned CDN URLs without uploading anything.
+  - `/api/upload` allows 20 uploads per 10 minutes per IP for non-admin callers.
+  - Pending: a live upload test. The store uses OIDC (only `BLOB_STORE_ID` was provided); a local test needs `vercel env pull`, otherwise test on the deploy.
+
+- Member accounts (2026-10-10, owner choices: real accounts before Moments; the 4 channels of the current AuthModal; JSON store first, database later):
+  - **`lib/members/`:**
+    - `types.ts` defines the `Member` type and the `MemberRepository` interface.
+    - `jsonMemberRepository.ts` stores `data/members.json` (gitignored, with a mutex); swap it out in `index.ts` for a database.
+    - `session.ts` signs the 30-day httpOnly cookie with `{sub, ver, exp}` and re-checks the member on every request. In local dev without `AUTH_SECRET`, the signing key goes in the gitignored `data/.dev_session_secret`.
+    - `accounts.ts` handles register/login, OAuth sign-in with verified-email linking, profile and password.
+    - `oauth.ts` covers Google, Facebook and Apple: PKCE for Google and Facebook, nonce for Google and Apple, an Apple ES256 client secret, and issuer/audience checks.
+  - **Shared helpers:** `lib/passwordHash.ts` (now also used by `staffStore`) and `lib/rateLimit.ts`.
+  - **Routes `/api/auth/member/*`:**
+    - session, register, login, profile, password, account (PDPA export/delete).
+    - OAuth start and callback (GET for Google and Facebook, form POST for Apple). The state cookie is signed and SameSite=None for Apple's POST.
+    - `returnTo` is restricted to site paths.
+  - **Admin:**
+    - New permission `members.manage` (Owner, Moderator).
+    - `/api/admin/members` (list without hashes; suspend with days and a reason, ban, restore, force logout; audited).
+    - `MembersManagerView` with a moderation drawer.
+  - **Client hook:** `lib/useMemberSession.ts` (BE-015).
+  - **Verification:**
+    - API 26/26: consent, password rules and the cross-site block on register; duplicate email; session; profile; wrong password; case-insensitive login; a password change ends other sessions; the admin list has no hashes; suspend needs a reason, ends the session and blocks login with a dated message; restore; an unconfigured provider redirects back with an error; `returnTo` cannot leave the site; a forged callback is rejected; PDPA export and delete; audit entries.
+    - The admin page renders with no errors.
+  - **Not yet tested:** live Google, Facebook and Apple sign-in (no credentials).
+  - **Limits:** member accounts on Vercel do not persist until a database repository replaces the JSON one; email verification and password reset need an email service.
+
+- Moments backend (2026-10-10, owner choices: posts go live at once and hide after reports; real member accounts):
+  - **`lib/moments/`:**
+    - `types.ts` defines the `Moment` type and the `MomentRepository` interface.
+    - `jsonMomentRepository.ts` stores `data/moments.json` (gitignored); `MOCK_POSTS` are seeded as samples on first load.
+    - `service.ts`:
+      - The `CommunityPost`-shaped `FeedItem` uses live author profiles; banned authors and hidden comments are filtered out.
+      - Validation: caption 1–500, 1–10 images that must be our uploads, comments up to 300.
+      - Likes and saves are idempotent. A comment can be deleted by its author or the post author. One report per member; 3 reports auto-hide.
+  - **Public routes:**
+    - `/api/moments`: the feed (tabs, filters, paging) and create (10 per hour).
+    - `/api/moments/[id]`: get, edit own, delete own.
+    - `/api/moments/[id]/actions`: like, save, comment (30 per 10 minutes), delete comment, report.
+  - **PDPA:** account deletion removes the member's moments, comments, likes, saves and reports; the export includes their moments.
+  - **Admin:**
+    - `/api/admin/moments` (list with filters and counts; hide with a reason, restore and clear reports, dismiss reports, remove, hide/show/delete comments; `community.review`; audited).
+    - `MomentsManagerView` shows a photo grid with status and report badges and a moderation drawer.
+    - The sidebar badge shows the reported count.
+  - `/public/uploads/` is now gitignored (runtime uploads).
+  - **Verification:**
+    - API 32/32: upload; seeded feed; anonymous post blocked; data URL, foreign image and long caption rejected; create, like (idempotent), save, saved and mine tabs, login-required tab; comment and its delete rights; edit rights; live author name; report rules; auto-hide at 3; author still sees the hidden post; admin reported list; restore; hide needs a reason; banned author hidden; PDPA cascade; audit.
+    - The admin grid and drawer render with no errors.
+  - **Next:** the frontend switch (BE-016). Follows and notifications are not built.
+- **2026-10-10 · Member login and sign-up UI on the real API (owner handed these frontend files to Claude Code; BE-017)**
+  - **Problems found in the old UI:**
+    - Any email and password logged in; the social buttons logged in as a sample user.
+    - The same sign-up UI existed in three copies (`/login`, `AuthModal`, `/onboarding`).
+    - A fake hCaptcha box and pre-ticked age and consent boxes.
+    - localStorage keys did not match between pages.
+    - No forgot-password flow.
+  - **Shared card:** `components/auth/AuthPanel.tsx` has login, sign-up, sign-up with email, forgot password and link-sent views.
+    - Consent boxes start unticked and gate every sign-up button. Social buttons are disabled until configured.
+    - Inline field errors, server messages, and a "go to login" link when the email already exists.
+    - A password strength meter with a text label; `autocomplete` attributes; labelled password toggles.
+    - Buttons follow the design system: Royal Blue primary, slate-900 for register.
+  - **Where the card is used:**
+    - `AuthModal` (same props, now a real dialog: Esc, focus trap, scroll lock, focus restore).
+    - `/login` (server page reading `mode`, `returnTo` and `auth_error`; signed-in visitors are forwarded).
+    - `/onboarding` (sign-up popup only for visitors).
+  - **Client session:** `lib/useMemberSession.ts` is one shared store (`memberActions`, `refreshMemberSession`). `lib/useAuth.ts` keeps its shape on top of it; the role remains a local preview only.
+  - **Forgot password:**
+    - `createPasswordReset` / `resetPasswordWithToken`: token `<memberId>.<secret>`, sha256 stored, 30 minutes, single use. A reset ends other sessions and marks the email verified.
+    - Routes `/api/auth/member/password-reset` and `/confirm`, plus the `/reset-password` page.
+    - `lib/members/mailer.ts` sends through Resend when `RESEND_API_KEY` + `MAIL_FROM` are set. In development the link is logged and returned as `devResetUrl`.
+  - **OAuth:**
+    - Failures land on `/login?auth_error=…&returnTo=…`; new social members go to `/onboarding?returnTo=…`.
+    - `signInWithOAuth` now returns `{ member, created }`.
+    - The admin members view also hides `passwordReset`.
+  - **Onboarding:**
+    - No stranger photos by default; photos are optional; the fake "name taken" check is gone.
+    - Finishing saves the name and avatar (uploaded to `/api/upload`, folder `avatars`) to the account. It keeps the other answers in `cch_member_preferences` and never invents an email.
+  - **Verification:**
+    - API 18/18: reset flow, single use, sessions ended, old password rejected, admin view, OAuth error redirect, open-redirect guard, pages.
+    - Browser end to end:
+      - login errors, consent gating, sign-up → onboarding, modal login, forgot → reset → signed in
+      - no horizontal scroll at 390px
+      - onboarding walk-through back to `returnTo`
+      - no console errors except the intended 401
+
+- **2026-10-10 · Onboarding redesign (owner handed the whole page to Claude Code)**
+  - **Steps:** 5 steps became 3: goals (member or host track), profile, and interests plus province.
+  - **Data:**
+    - Interests come from master data (community categories, spot vibes, fair categories); provinces are the featured provinces with photos, plus all 77 in a select.
+    - Answers are saved with content ids in `cch_member_preferences`.
+  - **Removed:**
+    - Overlapping goal, style and interest lists; the hard-coded province list.
+    - Claims of features that do not exist (AI matching, Buddy Matcher, chat rooms, verification, +50 Points badge); feature promo banners on every step.
+    - Emojis in headings and options; gradients.
+    - Required birth date (it had a default) and gender; occupation, workplace, education and institution.
+  - **Design:**
+    - Royal Blue primary button and progress; selection shown by a blue border plus a check.
+    - Type follows the platform scale, so nothing is below 11px.
+    - Labels keep each "A & B" part on one line, so Thai words do not break on mobile.
+    - Header has a "ข้ามไปก่อน" (skip) link.
+  - **Rules:** birth year is optional (พ.ศ.), offering only ages 18 and up; one optional profile photo is compressed and uploaded on finish.
+  - **Verification:** browser walk-through on 390px and 1280px: goal validation, name prefill, selections, saved preferences, return to `returnTo`; no horizontal scroll; no page errors.
+
+- **2026-10-10 · Onboarding copy, Thai line breaks, preview mode**
+  - **Copy:** onboarding questions are rewritten from the visitor's point of view (feelings and wants, not platform terms), e.g. "ช่วงนี้ อยากทำอะไรบ้าง", "เพื่อนใหม่ จะเรียกคุณว่าอะไรดี", "อะไรทำให้คุณ รู้สึกดี".
+  - **Line breaks:**
+    - `components/auth/PhraseText` keeps each space-separated phrase on one line and keeps "&" with the phrase before it. It is used in onboarding, `AuthPanel` and `RequireMembershipModal`.
+    - The popup is wider (520px). Social buttons show just the provider name below 400px, with a shorter "เร็วๆ นี้" (coming soon) badge.
+    - Interest chips stack the icon above the text below 400px.
+  - **Preview mode:** `/onboarding` became a server page passing `preview` and `returnTo` to `OnboardingFlow`. `?preview=1` skips sign-up, saves nothing, and ends with the data it would save. In development the sign-up popup links to it.
+  - **Verification:** browser checks at 360px and 1280px: no text overflows its box in any step or popup; preview shows the result and leaves localStorage empty; no page errors.
+  - **Found:** the homepage is 429px wide on a 360px screen (`HeroSection` pill), reported to the frontend in BE-017.
+
 ## Known Limitations / Next Backend Work
 
 1. Replace the prototype JSON/in-memory repository with durable shared storage before relying on production writes. `JsonFileAdapter` remains the configured adapter, and serverless `/tmp` storage is ephemeral and not shared across instances.
-2. (Superseded 2026-10-06: staff accounts with roles now exist; they need durable storage before production.) Admin auth is a single shared password. Replace it with per-user accounts and roles (the admin header "Preview Role" is still a client-side simulator) once a user store exists. Member identity is still client-only (`useAuth` + localStorage), so join `userId` and event `hostId` are not verified.
+2. (Superseded 2026-10-10: member accounts and the login UI are real; `useAuth` reads the server session. Superseded 2026-10-06: staff accounts with roles now exist; both need durable storage before production.) Admin auth is a single shared password. Replace it with per-user accounts and roles (the admin header "Preview Role" is still a client-side simulator) once a user store exists. Member identity is still client-only (`useAuth` + localStorage), so join `userId` and event `hostId` are not verified.
 3. `/api/upload` is still unauthenticated, because members have no server identity yet. It now rejects SVG and checks file signatures, but it has no rate limit.
 4. Add server-side pagination to the admin Spots API as the dataset grows; the current panel receives the complete local catalog.
 5. Participants are now persisted, but mutexes, the login throttle, and the in-memory event state are process-local, so multiple instances will diverge until the storage moves to a shared database.

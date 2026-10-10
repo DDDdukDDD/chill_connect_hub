@@ -12,6 +12,7 @@ export type AdminPermission =
   | 'sources.run' // manage data sources and run scrapers
   | 'system.manage' // master data, media, cache
   | 'audit.view' // read the audit log
+  | 'members.manage' // member accounts: view, suspend, ban
   | 'staff.manage'; // staff accounts and roles
 
 export const STAFF_ROLES: readonly StaffRole[] = ['owner', 'editor', 'moderator', 'data_ops'];
@@ -26,7 +27,7 @@ export const ROLE_LABELS: Record<StaffRole, string> = {
 export const ROLE_DESCRIPTIONS: Record<StaffRole, string> = {
   owner: 'ทำได้ทุกอย่าง รวมถึงจัดการทีมงานและสิทธิ์',
   editor: 'ตรวจ แก้ไข และเผยแพร่เนื้อหาทุกเสา รันการดึงข้อมูลได้',
-  moderator: 'ตรวจและอนุมัติกิจกรรมคอมมูนิตี้',
+  moderator: 'ตรวจและอนุมัติกิจกรรมคอมมูนิตี้ และดูแลสมาชิก',
   data_ops: 'ดูแลแหล่งข้อมูล การดึงข้อมูล ข้อมูลหลัก รูปภาพ และ cache',
 };
 
@@ -37,6 +38,7 @@ export const PERMISSION_LABELS: Record<AdminPermission, string> = {
   'sources.run': 'จัดการแหล่งข้อมูล / รันการดึงข้อมูล',
   'system.manage': 'ข้อมูลหลัก รูปภาพ cache',
   'audit.view': 'ดูบันทึกการกระทำ',
+  'members.manage': 'จัดการสมาชิก (ดูรายชื่อ ระงับ แบน)',
   'staff.manage': 'จัดการทีมงานและ role',
 };
 
@@ -45,7 +47,7 @@ export const ALL_PERMISSIONS = Object.keys(PERMISSION_LABELS) as AdminPermission
 export const ROLE_PERMISSIONS: Record<StaffRole, readonly AdminPermission[]> = {
   owner: ALL_PERMISSIONS,
   editor: ['content.view', 'community.review', 'content.edit', 'sources.run', 'audit.view'],
-  moderator: ['content.view', 'community.review'],
+  moderator: ['content.view', 'community.review', 'members.manage'],
   data_ops: ['content.view', 'sources.run', 'system.manage'],
 };
 
