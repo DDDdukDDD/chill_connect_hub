@@ -23,6 +23,19 @@ Item template:
 
 ## Open
 
+### FE-012 · Subpage Moments Cards: 4:5 Story Card Design Parity with Homepage & Manual Slide Carousel
+- **From → To:** Frontend → Backend (informational)
+- **Date / branch:** 2026-10-10 · `main`
+- **What changed:**
+  - Upgraded the Moments cards in all subpage discovery modules (`CommunityDiscoveryHighlights.tsx`, `FairsDiscoveryHighlights.tsx`, `SpotsDiscoveryHighlights.tsx`) to match the exact design of the homepage (`CommunityMomentsStrip.tsx`):
+    - Full-bleed photo with 4:5 portrait aspect ratio (`aspect-[4/5]`), top gradient shadow, and deep bottom gradient overlay.
+    - Top location pill badge (`MapPin` + location name in `bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/15`).
+    - Bottom overlaid caption with drop shadow, user avatar, username, and like count with heart icon.
+  - Added **manual sliding** support with floating left and right chevron buttons (`ChevronLeft`, `ChevronRight`), touch/trackpad horizontal snap-scrolling, and scroll boundary detection.
+  - Curated 8 rich moments per pillar respecting designated pillar theme colors (Sunset Amber for Community, Slate Blue for Fairs, Forest Green for Spots).
+- **Action for Backend:** None required.
+- **Status:** Open
+
 ### FE-011 · Replaced Static Trust Sections with Unified Moments & Quests Discovery Modules (Strict Pillar Color Tones)
 - **From → To:** Frontend → Backend (informational)
 - **Date / branch:** 2026-10-10 · `main`

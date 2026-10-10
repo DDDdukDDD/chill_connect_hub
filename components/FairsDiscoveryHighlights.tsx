@@ -1,12 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Camera, Trophy, Heart, ArrowRight, Sparkles, MapPin, Building2, Ticket } from 'lucide-react';
-import { MOCK_POSTS, MOCK_CHALLENGES } from '@/data/mockData';
+import { Camera, Trophy, Heart, ArrowRight, Sparkles, MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export const FairsDiscoveryHighlights: React.FC = () => {
-  // Fair & Exhibition Moments (Curated from MOCK_POSTS with expo/creative/fair focus)
+  // Fair & Exhibition Moments (Curated 8 expo/creative/fair focus moments for manual sliding)
   const fairMoments = [
     {
       id: 'post-fair-1',
@@ -38,6 +37,56 @@ export const FairsDiscoveryHighlights: React.FC = () => {
       caption: 'เดินชมนิทรรศการศิลปะร่วมสมัย แสงและเงาในโถงหอศิลป์ถ่ายรูปออกมาสวยมาก มีผลงานจัดแสดงให้ชมฟรีหลายชั้นเลย 🎨',
       likesCount: 65,
     },
+    {
+      id: 'post-fair-4',
+      userName: 'คุณเต้ (Tae_Roaster)',
+      userAvatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80',
+      targetTitle: 'Thailand Coffee Fest 2026',
+      location: 'อิมแพ็ค เมืองทองธานี',
+      imageUrl: 'https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=800&q=80',
+      caption: 'กลิ่นกาแฟหอมฟุ้งทั่วฮอลล์ ชิมเมล็ดคั่วพิเศษจากเกษตรกรไทย ได้ความรู้เรื่องกระบวนการโพรเซสเพียบ ☕🌟',
+      likesCount: 91,
+    },
+    {
+      id: 'post-fair-5',
+      userName: 'คุณเมย์ (May_Studio)',
+      userAvatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80',
+      targetTitle: 'Bangkok Design Week',
+      location: 'เจริญกรุง - ตลาดน้อย',
+      imageUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=800&q=80',
+      caption: 'เดินสำรวจแลนด์มาร์กแสงไฟและอินสตอลเลชันงานออกแบบตามตรอกซอยเก่าเจริญกรุง มีเสน่ห์ทุกมุมมอง 💡✨',
+      likesCount: 83,
+    },
+    {
+      id: 'post-fair-6',
+      userName: 'คุณนนท์ (Nont_Tech)',
+      userAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
+      targetTitle: 'Motor Expo 2026',
+      location: 'ชาเลนเจอร์ อิมแพ็ค',
+      imageUrl: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=800&q=80',
+      caption: 'ชมเทคโนโลยียานยนต์ไฟฟ้าและนวัตกรรมแบตเตอรี่รุ่นใหม่ ดีไซน์แห่งอนาคตอลังการมาก ⚡🚗',
+      likesCount: 67,
+    },
+    {
+      id: 'post-fair-7',
+      userName: 'คุณเจ (Jay_Sound)',
+      userAvatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=150&q=80',
+      targetTitle: 'Big Mountain Music Fest',
+      location: 'เขาใหญ่, นครราชสีมา',
+      imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80',
+      caption: 'บรรยากาศเวทีท่ามกลางอากาศหนาวเขาใหญ่ ดนตรีสดกับเพื่อนๆ สนุกสุดเหวี่ยง กรี๊ดจนเสียงแหบ 🎸⛺',
+      likesCount: 95,
+    },
+    {
+      id: 'post-fair-8',
+      userName: 'คุณโอ๊ต (Oat_Gamer)',
+      userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+      targetTitle: 'Thailand Game Show 2026',
+      location: 'ศูนย์ฯ สิริกิติ์ (QSNCC)',
+      imageUrl: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=800&q=80',
+      caption: 'ทดลองเล่นเกมไตเติลใหม่ก่อนใคร ช็อปไอเทมลิมิเต็ดและเจอนักแคสต์เกมคนโปรด ฟินมาก 🎮👾',
+      likesCount: 79,
+    },
   ];
 
   // Fair & Exhibition Quests (Curated learning & creative challenge quests)
@@ -67,6 +116,41 @@ export const FairsDiscoveryHighlights: React.FC = () => {
       badgeLabel: 'Expo Master',
     },
   ];
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const checkScroll = () => {
+    if (!scrollContainerRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+    setCanScrollLeft(scrollLeft > 10);
+    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 10);
+  };
+
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    checkScroll();
+    el.addEventListener('scroll', checkScroll, { passive: true });
+    window.addEventListener('resize', checkScroll);
+    return () => {
+      el.removeEventListener('scroll', checkScroll);
+      window.removeEventListener('resize', checkScroll);
+    };
+  }, [fairMoments.length]);
+
+  const handleScroll = (direction: 'left' | 'right') => {
+    if (!scrollContainerRef.current) return;
+    const container = scrollContainerRef.current;
+    const cardWidth = container.firstElementChild?.clientWidth || 200;
+    const gap = 12;
+    const scrollAmount = (cardWidth + gap) * 2;
+    container.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth',
+    });
+  };
 
   return (
     <section className="space-y-6 pt-2 scroll-mt-24">
@@ -110,7 +194,7 @@ export const FairsDiscoveryHighlights: React.FC = () => {
       {/* Grid: 2 Columns on Desktop (Recent Moments + Trending Quests) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
         
-        {/* Left Column: Recent Expo Moments (7 cols) */}
+        {/* Left Column: Recent Expo Moments (7 cols) with Manual Slide */}
         <div className="lg:col-span-7 space-y-3.5">
           <div className="flex items-center justify-between">
             <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
@@ -126,53 +210,97 @@ export const FairsDiscoveryHighlights: React.FC = () => {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {fairMoments.map((moment) => (
-              <Link
-                key={moment.id}
-                href="/moments"
-                className="group bg-white rounded-2xl border border-slate-200/80 hover:border-blue-300 shadow-2xs hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col cursor-pointer hover:-translate-y-1"
-              >
-                <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100">
-                  <img
-                    src={moment.imageUrl}
-                    alt={moment.targetTitle}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80" />
-                  
-                  {/* Location badge */}
-                  <div className="absolute top-2 left-2 z-10">
-                    <span className="text-[10px] font-bold bg-slate-900/80 backdrop-blur-md text-white px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <MapPin className="w-2.5 h-2.5 text-sky-400" />
-                      <span className="truncate max-w-[100px]">{moment.targetTitle}</span>
-                    </span>
-                  </div>
+          {/* Manual Scrollable Container with Floating Mid-Arrows */}
+          <div className="relative group/carousel">
+            {/* Floating Left Arrow */}
+            <button
+              type="button"
+              onClick={() => handleScroll('left')}
+              disabled={!canScrollLeft}
+              className="absolute -left-2.5 sm:-left-3.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white/95 backdrop-blur-sm border border-slate-200 shadow-md hover:shadow-lg hover:bg-white flex items-center justify-center text-slate-700 hover:text-slate-900 transition-all cursor-pointer active:scale-95 disabled:opacity-0 disabled:pointer-events-none"
+              title="เลื่อนไปทางซ้าย"
+              aria-label="Previous moments"
+            >
+              <ChevronLeft className="w-4 h-4 stroke-[2.5]" />
+            </button>
 
-                  {/* Likes Pill */}
-                  <div className="absolute bottom-2 right-2 z-10 flex items-center gap-1 text-[10px] font-bold text-white bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-full">
-                    <Heart className="w-3 h-3 fill-sky-400 text-sky-400" />
-                    <span>{moment.likesCount}</span>
-                  </div>
-                </div>
+            {/* Floating Right Arrow */}
+            <button
+              type="button"
+              onClick={() => handleScroll('right')}
+              disabled={!canScrollRight}
+              className="absolute -right-2.5 sm:-right-3.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white/95 backdrop-blur-sm border border-slate-200 shadow-md hover:shadow-lg hover:bg-white flex items-center justify-center text-slate-700 hover:text-slate-900 transition-all cursor-pointer active:scale-95 disabled:opacity-0 disabled:pointer-events-none"
+              title="เลื่อนไปทางขวา"
+              aria-label="Next moments"
+            >
+              <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+            </button>
 
-                <div className="p-3 flex-1 flex flex-col justify-between space-y-2">
-                  <div className="flex items-center gap-2">
+            <div
+              ref={scrollContainerRef}
+              onScroll={checkScroll}
+              className="flex overflow-x-auto no-scrollbar gap-3 pb-2 pt-0.5 px-0.5 snap-x snap-mandatory scroll-smooth"
+            >
+              {fairMoments.map((moment) => (
+                <div
+                  key={moment.id}
+                  className="w-[185px] sm:w-[200px] md:w-[210px] shrink-0 snap-start"
+                >
+                  <Link
+                    href="/moments"
+                    className="group relative block aspect-[4/5] rounded-2xl overflow-hidden bg-slate-900 shadow-2xs hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer w-full select-none"
+                  >
+                    {/* Full-bleed Photo */}
                     <img
-                      src={moment.userAvatar}
-                      alt={moment.userName}
-                      className="w-5 h-5 rounded-full object-cover border border-slate-200 shrink-0"
+                      src={moment.imageUrl}
+                      alt={moment.caption}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
                     />
-                    <span className="text-xs font-bold text-slate-800 truncate">
-                      {moment.userName}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-600 line-clamp-2 leading-relaxed font-normal">
-                    {moment.caption}
-                  </p>
+
+                    {/* Subtle Top Shadow for Location Badge */}
+                    <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/60 via-black/20 to-transparent pointer-events-none" />
+
+                    {/* Deep Bottom Shadow for Text & Info */}
+                    <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/85 via-black/45 to-transparent pointer-events-none" />
+
+                    {/* Top Location Badge */}
+                    {(moment.location || moment.targetTitle) && (
+                      <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between z-10">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-white/95 bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/15 truncate max-w-full">
+                          <MapPin className="w-2.5 h-2.5 text-sky-400 shrink-0" />
+                          <span className="truncate">{moment.location || moment.targetTitle}</span>
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Bottom Overlaid Caption and Author Details (Borderless) */}
+                    <div className="absolute inset-x-0 bottom-0 p-3 flex flex-col justify-end space-y-1.5 z-10">
+                      <p className="text-white text-xs font-semibold leading-snug line-clamp-2 drop-shadow-sm group-hover:text-sky-200 transition-colors">
+                        {moment.caption}
+                      </p>
+
+                      <div className="pt-1.5 flex items-center justify-between text-white/90 border-t border-white/15">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <img
+                            src={moment.userAvatar}
+                            alt={moment.userName}
+                            className="w-4 h-4 rounded-full object-cover border border-white/40 shrink-0"
+                          />
+                          <span className="truncate text-[10.5px] font-medium text-white/90">
+                            {moment.userName.split(' ')[0]}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1 text-rose-300 font-bold text-[10.5px] shrink-0 ml-1">
+                          <Heart className="w-3 h-3 fill-rose-400 text-rose-400" />
+                          <span>{moment.likesCount}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
                 </div>
-              </Link>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 
