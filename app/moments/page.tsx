@@ -12,6 +12,8 @@ import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { useAuth } from '@/lib/useAuth';
+import { useMemberSession } from '@/lib/useMemberSession';
+import { nameInitial, tidyDisplayName } from '@/lib/displayName';
 import {
   MOCK_EVENTS,
   MOCK_POSTS,
@@ -113,8 +115,49 @@ const SUGGESTED_MEMBERS = [
   },
 ];
 
+// Moments written by members live on the server (/api/moments); the bundled samples stay local.
+type ServerMoment = Omit<CommunityPost, 'comments'> & { isMine?: boolean; isSample?: boolean; comments?: { id: string; userName: string; userAvatar: string; text: string; timeAgo: string }[] };
+
+/** A member's photo, or a neutral tile with their initial when they have none */
+function avatarOf(name: string, url?: string | null): string {
+  if (url) return url;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96"><rect width="96" height="96" fill="#E2E8F0"/><text x="48" y="60" font-size="40" font-family="sans-serif" font-weight="700" text-anchor="middle" fill="#475569">${nameInitial(name)}</text></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+function fromServerMoment(m: ServerMoment): CommunityPost {
+  const name = tidyDisplayName(m.userName);
+  return {
+    ...m,
+    userName: name,
+    userAvatar: avatarOf(name, m.userAvatar),
+    eventId: m.targetId || m.id,
+    eventTitle: m.targetTitle || m.location,
+    category: m.category || 'chill',
+    sharesCount: 0,
+    comments: (m.comments ?? []).map((c) => ({ ...c, userName: tidyDisplayName(c.userName), userAvatar: avatarOf(c.userName, c.userAvatar), content: c.text })),
+  } as unknown as CommunityPost;
+}
+
+const isMinePost = (post: CommunityPost) => Boolean((post as { isMine?: boolean }).isMine);
+
+async function momentRequest(url: string, method: string, body?: unknown): Promise<{ ok: boolean; message: string; moment?: ServerMoment }> {
+  try {
+    const res = await fetch(url, { method, headers: body ? { 'Content-Type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined });
+    const json = await res.json().catch(() => null);
+    return { ok: res.ok && json?.success !== false, message: json?.message || 'ทำรายการไม่สำเร็จ ลองอีกครั้งนะ', moment: json?.moment };
+  } catch {
+    return { ok: false, message: 'เชื่อมต่อไม่ได้ ลองอีกครั้งนะ' };
+  }
+}
+
 function MomentsContent() {
   const searchParams = useSearchParams();
+  const session = useMemberSession();
+  const memberId = session.member?.id;
+  // Ids of posts stored on the server; actions on them go through the API
+  const serverPostIds = useRef(new Set<string>());
+  const [isPosting, setIsPosting] = useState(false);
   const [activeNavTab, setActiveNavTab] = useState('moments');
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -162,17 +205,7 @@ function MomentsContent() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
-      const savedUserMoments = localStorage.getItem('chill_user_moments');
-      if (savedUserMoments) {
-        const parsed = JSON.parse(savedUserMoments);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setPosts((prev) => {
-            const existingIds = new Set(parsed.map((p: any) => p.id));
-            const rest = prev.filter((p) => !existingIds.has(p.id));
-            return [...parsed, ...rest];
-          });
-        }
-      }
+      localStorage.removeItem('chill_user_moments'); // older builds kept posts in the browser under a sample name
       const savedBookmarks = localStorage.getItem('chill_saved_moments');
       if (savedBookmarks) {
         const parsedBookmarks = JSON.parse(savedBookmarks);
@@ -184,6 +217,24 @@ function MomentsContent() {
       console.error('Error hydrating moments from localStorage:', e);
     }
   }, []);
+
+  // Members' posts come from the server, newest first, above the bundled samples
+  useEffect(() => {
+    if (!session.isLoaded) return;
+    let active = true;
+    fetch('/api/moments?limit=30', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((json: { moments?: ServerMoment[] }) => {
+        if (!active) return;
+        const real = (json.moments ?? []).filter((m) => !m.isSample).map(fromServerMoment);
+        serverPostIds.current = new Set(real.map((p) => p.id));
+        setPosts((prev) => [...real, ...prev.filter((p) => !serverPostIds.current.has(p.id) && !isMinePost(p))]);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [session.isLoaded, memberId]);
 
   // Handle direct link to shared moment (?momentId=...)
   useEffect(() => {
@@ -209,7 +260,7 @@ function MomentsContent() {
 
   // Derive user's latest post thumbnail for Story Rail
   const userStoryThumbnail = useMemo(() => {
-    const userPost = posts.find((p) => p.userName.includes('คุณส้ม') && p.images && p.images.length > 0);
+    const userPost = posts.find((p) => isMinePost(p) && p.images && p.images.length > 0);
     return userPost?.images?.[0] || null;
   }, [posts]);
 
@@ -413,6 +464,10 @@ function MomentsContent() {
       setIsRequireMembershipOpen(true);
       return;
     }
+    if (serverPostIds.current.has(postId)) {
+      const liked = posts.find((p) => p.id === postId)?.isLiked;
+      void momentRequest(`/api/moments/${postId}/actions`, 'POST', { action: liked ? 'unlike' : 'like' });
+    }
     setPosts((prev) =>
       prev.map((post) => {
         if (post.id === postId) {
@@ -441,6 +496,9 @@ function MomentsContent() {
     }, 750);
 
     // Like post if not already liked
+    if (serverPostIds.current.has(postId) && !posts.find((p) => p.id === postId)?.isLiked) {
+      void momentRequest(`/api/moments/${postId}/actions`, 'POST', { action: 'like' });
+    }
     setPosts((prevPosts) =>
       prevPosts.map((p) => {
         if (p.id === postId) {
@@ -465,6 +523,9 @@ function MomentsContent() {
       return;
     }
 
+    if (serverPostIds.current.has(postId)) {
+      void momentRequest(`/api/moments/${postId}/actions`, 'POST', { action: savedPostIds.includes(postId) ? 'unsave' : 'save' });
+    }
     setSavedPostIds((prev) => {
       const isSaved = prev.includes(postId);
       const next = isSaved ? prev.filter((id) => id !== postId) : [...prev, postId];
@@ -485,20 +546,11 @@ function MomentsContent() {
   };
 
   // Delete User's Own Post
-  const handleDeletePost = (postId: string) => {
-    setPosts((prev) => {
-      const next = prev.filter((p) => p.id !== postId);
-      if (typeof window !== 'undefined') {
-        try {
-          const existingLocal = JSON.parse(localStorage.getItem('chill_user_moments') || '[]');
-          const updatedLocal = existingLocal.filter((p: any) => p.id !== postId);
-          localStorage.setItem('chill_user_moments', JSON.stringify(updatedLocal));
-        } catch (e) {
-          console.error('Error deleting user moment:', e);
-        }
-      }
-      return next;
-    });
+  const handleDeletePost = async (postId: string) => {
+    const result = await momentRequest(`/api/moments/${postId}`, 'DELETE');
+    if (!result.ok) return showToast(result.message);
+    serverPostIds.current.delete(postId);
+    setPosts((prev) => prev.filter((p) => p.id !== postId));
     showToast('ลบโมเมนต์ของคุณเรียบร้อยแล้ว');
   };
 
@@ -510,7 +562,7 @@ function MomentsContent() {
   };
 
   // Submit Comment
-  const handleSubmitComment = (postId: string, e: React.FormEvent) => {
+  const handleSubmitComment = async (postId: string, e: React.FormEvent) => {
     e.preventDefault();
     const text = (commentInputs[postId] || '').trim();
     if (!text) return;
@@ -521,11 +573,21 @@ function MomentsContent() {
       return;
     }
 
+    // Comments on members' posts are saved on the server, under the signed-in member's own name
+    if (serverPostIds.current.has(postId)) {
+      const result = await momentRequest(`/api/moments/${postId}/actions`, 'POST', { action: 'comment', text });
+      if (!result.ok || !result.moment) return showToast(result.message);
+      const updated = fromServerMoment(result.moment);
+      setPosts((prev) => prev.map((p) => (p.id === postId ? updated : p)));
+      setCommentInputs((prev) => ({ ...prev, [postId]: '' }));
+      return showToast('ส่งความคิดเห็นเรียบร้อยแล้ว! 💬');
+    }
+
+    const myName = tidyDisplayName(session.member?.displayName ?? '') || 'สมาชิก';
     const newComment = {
       id: `c-${Date.now()}`,
-      userName: 'คุณส้ม (Som_Chill)',
-      userAvatar:
-        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+      userName: myName,
+      userAvatar: avatarOf(myName, session.member?.avatarUrl),
       text: text,
       content: text,
       timeAgo: 'เมื่อสักครู่นี้',
@@ -721,9 +783,9 @@ function MomentsContent() {
   };
 
   // Handle Post Creation
-  const handleCreatePost = (e: React.FormEvent) => {
+  const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!captionInput.trim()) return;
+    if (!captionInput.trim() || isPosting) return;
 
     let targetTitle = '';
     let resolvedLocation = '';
@@ -765,53 +827,42 @@ function MomentsContent() {
       }
     }
 
-    const finalImages =
-      uploadedPostImages.length > 0
-        ? uploadedPostImages
-        : [
-            'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=800&q=80',
-          ];
+    // A moment is the member's own photo: no stock image is added on their behalf
+    if (uploadedPostImages.length === 0) return showToast('เพิ่มรูปอย่างน้อย 1 รูปก่อนนะ');
+    const finalImages = uploadedPostImages;
 
-    const createdPost: CommunityPost = {
-      id: `post-${Date.now()}`,
-      userName: 'คุณส้ม (Som_Chill)',
-      userAvatar:
-        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
-      userBadge:
-        createTargetType === 'challenge'
-          ? 'Quest Hunter'
-          : createTargetType === 'general'
-          ? 'Daily Chiller'
-          : 'Life Explorer',
-      targetType: createTargetType,
-      targetId: createTargetId || `custom-${Date.now()}`,
-      targetTitle,
-      eventId: createTargetId || `custom-${Date.now()}`,
-      eventTitle: targetTitle,
-      category: 'chill',
-      images: finalImages,
-      caption: captionInput.trim(),
-      location: resolvedLocation,
-      likesCount: 1,
-      commentsCount: 0,
-      sharesCount: 0,
-      timeAgo: 'เมื่อสักครู่นี้',
-      isLiked: true,
-      comments: [],
-    };
-
-    setPosts((prev) => {
-      const updated = [createdPost, ...prev];
-      if (typeof window !== 'undefined') {
-        try {
-          const existingLocal = JSON.parse(localStorage.getItem('chill_user_moments') || '[]');
-          localStorage.setItem('chill_user_moments', JSON.stringify([createdPost, ...existingLocal]));
-        } catch (err) {
-          console.error('Error saving user moment:', err);
+    // The post is saved on the server under the signed-in member; the server applies the community rules
+    setIsPosting(true);
+    try {
+      const imageUrls: string[] = [];
+      for (const image of finalImages) {
+        if (!image.startsWith('data:')) {
+          imageUrls.push(image);
+          continue;
         }
+        const form = new FormData();
+        form.append('file', await (await fetch(image)).blob(), 'moment.webp');
+        form.append('folder', 'moments');
+        const upload = await fetch('/api/upload', { method: 'POST', body: form }).then((r) => r.json()).catch(() => null);
+        if (!upload?.success || !upload.url) return showToast(upload?.error || upload?.message || 'อัปโหลดรูปไม่สำเร็จ ลองอีกครั้งนะ');
+        imageUrls.push(upload.url);
       }
-      return updated;
-    });
+      const result = await momentRequest('/api/moments', 'POST', {
+        caption: captionInput.trim(),
+        images: imageUrls,
+        location: resolvedLocation,
+        category: 'chill',
+        targetType: createTargetType,
+        targetId: createTargetId && createTargetId !== 'custom' ? createTargetId : undefined,
+        targetTitle,
+      });
+      if (!result.ok || !result.moment) return showToast(result.message);
+      const createdPost = fromServerMoment(result.moment);
+      serverPostIds.current.add(createdPost.id);
+      setPosts((prev) => [createdPost, ...prev]);
+    } finally {
+      setIsPosting(false);
+    }
     setCaptionInput('');
     setCustomLocationInput('');
     setUploadedPostImages([]);
@@ -869,7 +920,7 @@ function MomentsContent() {
     }
     if (activeTabFilter === 'mine') {
       if (!isLoggedIn) return [];
-      return list.filter((p) => p.userName.includes('คุณส้ม'));
+      return list.filter(isMinePost);
     }
 
     return list;
@@ -1184,7 +1235,7 @@ function MomentsContent() {
                         <span className="text-xs text-slate-400 font-medium">
                           {post.timeAgo}
                         </span>
-                        {post.userName.includes('คุณส้ม') && (
+                        {isMinePost(post) && (
                           <button
                             type="button"
                             onClick={() => handleDeletePost(post.id)}
@@ -2340,10 +2391,10 @@ function MomentsContent() {
                   </button>
                   <button
                     type="submit"
-                    disabled={!captionInput.trim() || isCompressingImages}
+                    disabled={!captionInput.trim() || isCompressingImages || isPosting}
                     className="bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-40 disabled:pointer-events-none text-white px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm hover:shadow-md active:scale-95 cursor-pointer"
                   >
-                    {isCompressingImages ? 'กำลังประมวลผลรูป...' : 'โพสต์โมเมนต์เลย'}
+                    {isCompressingImages ? 'กำลังประมวลผลรูป...' : isPosting ? 'กำลังโพสต์...' : 'โพสต์โมเมนต์เลย'}
                   </button>
                 </div>
               </div>
