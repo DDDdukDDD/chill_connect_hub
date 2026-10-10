@@ -58,6 +58,36 @@ Item template:
 - **Action for Backend:** None required. All shared signatures and contracts (`fetchAllContentPages`, `usePublishedSpots`, `useSpotCatalog`) remain 100% backward-compatible.
 - **Status:** Open
 
+### BE-017 · Login and sign-up now use real member accounts (Claude Code owns these files)
+- **From → To:** Backend → Frontend
+- **Date / branch:** 2026-10-10 · `claude`
+- **What changed:** At the owner's request, Claude Code rebuilt the member auth UI and wired it to the real API (BE-015). Claude Code now owns these files; please do not edit them:
+  - `components/auth/**` (new `AuthPanel`, the single login / sign-up / forgot-password card)
+  - `components/AuthModal.tsx`, `app/login/**`, `app/reset-password/**` (new)
+  - `lib/useAuth.ts`, `components/RequireMembershipModal.tsx`
+  - `app/onboarding/**` (the whole page; redesigned 2026-10-10)
+- **What stays the same for your pages:**
+  - `<AuthModal isOpen onClose onLoginSuccess initialMode />` and `useAuth()` keep their props and return shape.
+  - `handleSetIsLoggedIn(true)` re-reads the server session; `handleSetIsLoggedIn(false)` logs out on the server.
+  - `userProfile` now holds the real member: name, an initials avatar when there is no photo, and `email`. Guests see "ผู้เยี่ยมชม".
+  - `useAuth()` also returns `member` (`PublicMember | null`).
+- **Behavior notes:**
+  - Removed: fake hCaptcha, pre-ticked consent boxes, and the "คุณส้ม" sample logins.
+  - Social buttons show "ยังไม่เปิดใช้" until provider credentials are set.
+  - New members continue to `/onboarding?returnTo=…` and then return to the page they came from.
+  - Onboarding is now 3 steps: goals → profile → interests and province.
+    - Interests come from master data (community categories, spot vibes, fair categories) and provinces from master data.
+    - Name and avatar are saved to the account. Other answers are saved in localStorage `cch_member_preferences` as `{ role, goals, birthYear?, gender?, interests: { communityCategories, spotVibes, fairCategories }, province?, completedAt }`, using content ids, so feeds can use them for recommendations.
+    - The old `userProfile` / `userName` keys are no longer written.
+    - **Test without an account:** `/onboarding?preview=1` runs the whole flow, saves nothing, and shows the data it would save.
+    - **Thai line breaks:** `components/auth/PhraseText` wraps lines only at the spaces between phrases. Feel free to reuse it for Thai labels.
+- **Action for Frontend (`components/Navbar.tsx`, not in Claude Code's scope):**
+  1. **Avatar button:** the trigger image is hard-coded to an Unsplash photo (around line 145). Use `userProfile.avatar`.
+  2. **Default name:** the `userName` prop defaults to a real person's name (`'Jirathitigorn Maneekord'`). Remove the default or use `userProfile.name`.
+  3. **Homepage too wide on phones:** at a 360px screen the homepage is 429px wide. The cause is the pill button in `components/HeroSection.tsx` (around line 1280, class `mb-1.5 inline-flex … px-2.5 sm:px-3 py-1`). Phones then zoom the whole page out, and popups such as the login dialog look cut off. Let the pill wrap or shrink.
+  4. **Optional cleanup:** pages that write `localStorage.setItem('userName', …)` in `onLoginSuccess` can drop it, because nothing reads it now.
+- **Status:** Open
+
 ### BE-016 · Moments backend is live: please move `/moments` off MOCK_POSTS and localStorage
 - **From → To:** Backend → Frontend
 - **Date / branch:** 2026-10-10 · `claude`

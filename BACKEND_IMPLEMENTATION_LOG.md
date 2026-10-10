@@ -240,11 +240,74 @@ Entries up to 2026-10-04 (FE-002) and the 2026-10-03 verification notes are in [
     - API 32/32: upload; seeded feed; anonymous post blocked; data URL, foreign image and long caption rejected; create, like (idempotent), save, saved and mine tabs, login-required tab; comment and its delete rights; edit rights; live author name; report rules; auto-hide at 3; author still sees the hidden post; admin reported list; restore; hide needs a reason; banned author hidden; PDPA cascade; audit.
     - The admin grid and drawer render with no errors.
   - **Next:** the frontend switch (BE-016). Follows and notifications are not built.
+- **2026-10-10 · Member login and sign-up UI on the real API (owner handed these frontend files to Claude Code; BE-017)**
+  - **Problems found in the old UI:**
+    - Any email and password logged in; the social buttons logged in as a sample user.
+    - The same sign-up UI existed in three copies (`/login`, `AuthModal`, `/onboarding`).
+    - A fake hCaptcha box and pre-ticked age and consent boxes.
+    - localStorage keys did not match between pages.
+    - No forgot-password flow.
+  - **Shared card:** `components/auth/AuthPanel.tsx` has login, sign-up, sign-up with email, forgot password and link-sent views.
+    - Consent boxes start unticked and gate every sign-up button. Social buttons are disabled until configured.
+    - Inline field errors, server messages, and a "go to login" link when the email already exists.
+    - A password strength meter with a text label; `autocomplete` attributes; labelled password toggles.
+    - Buttons follow the design system: Royal Blue primary, slate-900 for register.
+  - **Where the card is used:**
+    - `AuthModal` (same props, now a real dialog: Esc, focus trap, scroll lock, focus restore).
+    - `/login` (server page reading `mode`, `returnTo` and `auth_error`; signed-in visitors are forwarded).
+    - `/onboarding` (sign-up popup only for visitors).
+  - **Client session:** `lib/useMemberSession.ts` is one shared store (`memberActions`, `refreshMemberSession`). `lib/useAuth.ts` keeps its shape on top of it; the role remains a local preview only.
+  - **Forgot password:**
+    - `createPasswordReset` / `resetPasswordWithToken`: token `<memberId>.<secret>`, sha256 stored, 30 minutes, single use. A reset ends other sessions and marks the email verified.
+    - Routes `/api/auth/member/password-reset` and `/confirm`, plus the `/reset-password` page.
+    - `lib/members/mailer.ts` sends through Resend when `RESEND_API_KEY` + `MAIL_FROM` are set. In development the link is logged and returned as `devResetUrl`.
+  - **OAuth:**
+    - Failures land on `/login?auth_error=…&returnTo=…`; new social members go to `/onboarding?returnTo=…`.
+    - `signInWithOAuth` now returns `{ member, created }`.
+    - The admin members view also hides `passwordReset`.
+  - **Onboarding:**
+    - No stranger photos by default; photos are optional; the fake "name taken" check is gone.
+    - Finishing saves the name and avatar (uploaded to `/api/upload`, folder `avatars`) to the account. It keeps the other answers in `cch_member_preferences` and never invents an email.
+  - **Verification:**
+    - API 18/18: reset flow, single use, sessions ended, old password rejected, admin view, OAuth error redirect, open-redirect guard, pages.
+    - Browser end to end:
+      - login errors, consent gating, sign-up → onboarding, modal login, forgot → reset → signed in
+      - no horizontal scroll at 390px
+      - onboarding walk-through back to `returnTo`
+      - no console errors except the intended 401
+
+- **2026-10-10 · Onboarding redesign (owner handed the whole page to Claude Code)**
+  - **Steps:** 5 steps became 3: goals (member or host track), profile, and interests plus province.
+  - **Data:**
+    - Interests come from master data (community categories, spot vibes, fair categories); provinces are the featured provinces with photos, plus all 77 in a select.
+    - Answers are saved with content ids in `cch_member_preferences`.
+  - **Removed:**
+    - Overlapping goal, style and interest lists; the hard-coded province list.
+    - Claims of features that do not exist (AI matching, Buddy Matcher, chat rooms, verification, +50 Points badge); feature promo banners on every step.
+    - Emojis in headings and options; gradients.
+    - Required birth date (it had a default) and gender; occupation, workplace, education and institution.
+  - **Design:**
+    - Royal Blue primary button and progress; selection shown by a blue border plus a check.
+    - Type follows the platform scale, so nothing is below 11px.
+    - Labels keep each "A & B" part on one line, so Thai words do not break on mobile.
+    - Header has a "ข้ามไปก่อน" (skip) link.
+  - **Rules:** birth year is optional (พ.ศ.), offering only ages 18 and up; one optional profile photo is compressed and uploaded on finish.
+  - **Verification:** browser walk-through on 390px and 1280px: goal validation, name prefill, selections, saved preferences, return to `returnTo`; no horizontal scroll; no page errors.
+
+- **2026-10-10 · Onboarding copy, Thai line breaks, preview mode**
+  - **Copy:** onboarding questions are rewritten from the visitor's point of view (feelings and wants, not platform terms), e.g. "ช่วงนี้ อยากทำอะไรบ้าง", "เพื่อนใหม่ จะเรียกคุณว่าอะไรดี", "อะไรทำให้คุณ รู้สึกดี".
+  - **Line breaks:**
+    - `components/auth/PhraseText` keeps each space-separated phrase on one line and keeps "&" with the phrase before it. It is used in onboarding, `AuthPanel` and `RequireMembershipModal`.
+    - The popup is wider (520px). Social buttons show just the provider name below 400px, with a shorter "เร็วๆ นี้" (coming soon) badge.
+    - Interest chips stack the icon above the text below 400px.
+  - **Preview mode:** `/onboarding` became a server page passing `preview` and `returnTo` to `OnboardingFlow`. `?preview=1` skips sign-up, saves nothing, and ends with the data it would save. In development the sign-up popup links to it.
+  - **Verification:** browser checks at 360px and 1280px: no text overflows its box in any step or popup; preview shows the result and leaves localStorage empty; no page errors.
+  - **Found:** the homepage is 429px wide on a 360px screen (`HeroSection` pill), reported to the frontend in BE-017.
 
 ## Known Limitations / Next Backend Work
 
 1. Replace the prototype JSON/in-memory repository with durable shared storage before relying on production writes. `JsonFileAdapter` remains the configured adapter, and serverless `/tmp` storage is ephemeral and not shared across instances.
-2. (Superseded 2026-10-06: staff accounts with roles now exist; they need durable storage before production.) Admin auth is a single shared password. Replace it with per-user accounts and roles (the admin header "Preview Role" is still a client-side simulator) once a user store exists. Member identity is still client-only (`useAuth` + localStorage), so join `userId` and event `hostId` are not verified.
+2. (Superseded 2026-10-10: member accounts and the login UI are real; `useAuth` reads the server session. Superseded 2026-10-06: staff accounts with roles now exist; both need durable storage before production.) Admin auth is a single shared password. Replace it with per-user accounts and roles (the admin header "Preview Role" is still a client-side simulator) once a user store exists. Member identity is still client-only (`useAuth` + localStorage), so join `userId` and event `hostId` are not verified.
 3. `/api/upload` is still unauthenticated, because members have no server identity yet. It now rejects SVG and checks file signatures, but it has no rate limit.
 4. Add server-side pagination to the admin Spots API as the dataset grows; the current panel receives the complete local catalog.
 5. Participants are now persisted, but mutexes, the login throttle, and the in-memory event state are process-local, so multiple instances will diverge until the storage moves to a shared database.

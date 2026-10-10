@@ -176,7 +176,9 @@ The server decides who is signed in through an httpOnly cookie (`cch_member_sess
 | `DELETE /api/auth/member` | — | Logs out this browser |
 | `POST /api/auth/member/register` | `{ displayName (2–40), email, password (≥ 8), consent: true }` | `200 { member }` + session cookie · `400` validation (Thai `message`) · `409` email exists · `429` too many |
 | `POST /api/auth/member/login` | `{ email, password }` | `200 { member }` + cookie · `401` wrong credentials · `403` suspended/banned (message says until when) · `429` |
-| `GET /api/auth/member/oauth/{google\|facebook\|apple}?returnTo=/path` | — | Full-page redirect to the provider; it comes back to `returnTo` with `?auth=success` or `?auth_error=<Thai message>`. `returnTo` must be a site path |
+| `GET /api/auth/member/oauth/{google\|facebook\|apple}?returnTo=/path` | — | Full-page redirect to the provider. Afterwards: an existing member returns to `returnTo?auth=success`; a **new** member goes to `/onboarding?returnTo=…`; a failure goes to `/login?auth_error=<Thai message>&returnTo=…` (the login page shows it). `returnTo` must be a site path |
+| `POST /api/auth/member/password-reset` | `{ email }` | Always `200 { minutes: 30 }` whether or not the email has an account. Emails a one-time link to `/reset-password?token=…`. Without a mailer (development only) the response also carries `devResetUrl` · `400` bad email · `429` (5 per 15 min) |
+| `POST /api/auth/member/password-reset/confirm` | `{ token, password (≥ 8) }` | `200 { member }` + session cookie; ends other sessions; the link works once · `400` invalid or expired link |
 | `PATCH /api/auth/member/profile` | `{ displayName?, avatarUrl? }` | `{ member }` · `401` not signed in |
 | `POST /api/auth/member/password` | `{ currentPassword?, newPassword }` | Other sessions end; this browser stays signed in |
 | `GET /api/auth/member/account` | — | PDPA export of the member's own data (JSON download) |
@@ -191,6 +193,8 @@ Writes must be same-origin (`403` otherwise).
   - Facebook: `FACEBOOK_APP_ID/SECRET`
   - Apple: `APPLE_CLIENT_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`
 - **Redirect URI to register with each provider:** `<site>/api/auth/member/oauth/<provider>/callback`. `APP_URL` overrides the site origin.
+- **Password-reset email:** set `RESEND_API_KEY` and `MAIL_FROM` (e.g. `Chill & Connect <no-reply@your-domain>`). Without them production sends nothing.
+- **Client helpers:** `useMemberSession()` / `memberActions` in `lib/useMemberSession.ts` (one shared store), and `useAuth()` in `lib/useAuth.ts`, which now reads the same server session. UI: `components/auth/AuthPanel.tsx`, used by `AuthModal`, `/login` and `/onboarding`.
 
 ### Moments — `/api/moments`
 
