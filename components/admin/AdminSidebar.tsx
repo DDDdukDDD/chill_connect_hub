@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {
   LayoutDashboard,
   Inbox,
+  Camera,
   FolderTree,
   MapPin,
   Building2,
@@ -14,10 +15,13 @@ import {
   Zap,
   Bot,
   Gauge,
+  Grid3x3,
+  GalleryHorizontal,
   Home,
   Image as ImageIcon,
   ShieldCheck,
   History,
+  UserRound,
 } from 'lucide-react';
 import type { AdminPermission } from '@/lib/permissions';
 import { AdminSessionStatus } from './AdminSessionStatus';
@@ -30,10 +34,14 @@ export type AdminModuleId =
   | 'fairs'
   | 'spots'
   | 'quests'
+  | 'moments'
   | 'scraper'
+  | 'coverage'
   | 'taxonomy'
   | 'provinces'
   | 'venues'
+  | 'rails'
+  | 'members'
   | 'staff'
   | 'audit'
   | 'media'
@@ -68,11 +76,15 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
       { id: 'fairs', label: 'งานมหกรรม & เอ็กซ์โป', icon: Trophy, pillarColor: '#2B527A' },
       { id: 'spots', label: 'พิกัดเที่ยว 77 จังหวัด', icon: Leaf, pillarColor: '#4A7C59' },
       { id: 'quests', label: 'ชาเลนจ์ & ภารกิจ', icon: Zap, pillarColor: '#7C3AED' },
+      { id: 'moments', label: 'โมเมนต์', icon: Camera },
     ],
   },
   {
     groupLabel: 'แหล่งข้อมูล',
-    modules: [{ id: 'scraper', label: 'การดึงข้อมูล', icon: Bot }],
+    modules: [
+      { id: 'scraper', label: 'การดึงข้อมูล', icon: Bot },
+      { id: 'coverage', label: 'ความครอบคลุม & แผนที่', icon: Grid3x3 },
+    ],
   },
   {
     groupLabel: 'ข้อมูลหลัก',
@@ -80,11 +92,13 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
       { id: 'taxonomy', label: 'หมวดหมู่ & แท็ก', icon: FolderTree },
       { id: 'provinces', label: '77 จังหวัด & โซน', icon: MapPin },
       { id: 'venues', label: 'สถานที่จัดงาน', icon: Building2 },
+      { id: 'rails', label: 'การ์ดแนะนำ (rail)', icon: GalleryHorizontal },
     ],
   },
   {
     groupLabel: 'ผู้ใช้',
     modules: [
+      { id: 'members', label: 'สมาชิก', icon: UserRound },
       { id: 'staff', label: 'ทีมงาน & สิทธิ์', icon: ShieldCheck },
       { id: 'audit', label: 'บันทึกการกระทำ', icon: History },
     ],
@@ -106,10 +120,14 @@ export const MODULE_PERMISSIONS: Record<AdminModuleId, AdminPermission> = {
   fairs: 'content.view',
   spots: 'content.view',
   quests: 'content.view',
+  moments: 'content.view',
   scraper: 'content.view',
+  coverage: 'content.view',
   taxonomy: 'content.view',
   provinces: 'content.view',
   venues: 'content.view',
+  rails: 'content.view',
+  members: 'members.manage',
   staff: 'staff.manage',
   audit: 'audit.view',
   media: 'content.view',
@@ -127,11 +145,13 @@ function useQueueCounts(activeModule: AdminModuleId) {
 
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/admin/review?limit=1', { cache: 'no-store' })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
+    Promise.all([
+      fetch('/api/admin/review?limit=1', { cache: 'no-store' }).then((res) => (res.ok ? res.json() : null)),
+      fetch('/api/admin/moments?filter=reported&limit=1', { cache: 'no-store' }).then((res) => (res.ok ? res.json() : null)),
+    ])
+      .then(([data, moments]) => {
         if (cancelled || !data?.counts) return;
-        setCounts({ review: data.counts.all, community: data.counts.community, fairs: data.counts.fairs, spots: data.counts.spots });
+        setCounts({ review: data.counts.all, community: data.counts.community, fairs: data.counts.fairs, spots: data.counts.spots, moments: moments?.counts?.reported ?? 0 });
       })
       .catch(() => {
         // Counts are a hint only; the review queue shows the authoritative numbers
