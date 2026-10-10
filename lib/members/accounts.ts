@@ -1,6 +1,8 @@
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { burnPasswordCheck, hashPassword, verifyPasswordHash } from '../passwordHash';
+import { tidyDisplayName } from '../displayName';
 import { memberRepository } from './index';
+import { MIN_MEMBER_AGE, cleanPreferences, newConsent } from './preferences';
 import { refreshMemberStatus } from './session';
 import type { LoginMethod, Member, OAuthProvider } from './types';
 
@@ -16,7 +18,7 @@ const normalizeEmail = (email: string) => email.trim().toLowerCase();
 const isEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 export function cleanDisplayName(name: unknown): string {
-  const value = typeof name === 'string' ? name.replace(/\s+/g, ' ').trim().slice(0, 40) : '';
+  const value = typeof name === 'string' ? tidyDisplayName(name).trim().slice(0, 40) : '';
   if (value.length < 2) throw new MemberAuthError('กรุณาตั้งชื่อที่แสดงอย่างน้อย 2 ตัวอักษร');
   return value;
 }
@@ -34,8 +36,9 @@ async function markLogin(member: Member, method: LoginMethod): Promise<Member> {
   return memberRepository.update(member.id, { lastLoginAt: new Date().toISOString(), lastLoginMethod: method });
 }
 
-export async function registerWithEmail(input: { displayName: unknown; email: unknown; password: unknown; consent: unknown }): Promise<Member> {
+export async function registerWithEmail(input: { displayName: unknown; email: unknown; password: unknown; consent: unknown; ageConfirmed?: unknown }): Promise<Member> {
   if (input.consent !== true) throw new MemberAuthError('กรุณายอมรับข้อกำหนดการใช้งานและนโยบายความเป็นส่วนตัว');
+  if (input.ageConfirmed !== true) throw new MemberAuthError(`กรุณายืนยันว่าคุณอายุ ${MIN_MEMBER_AGE} ปีขึ้นไป`);
   const displayName = cleanDisplayName(input.displayName);
   const email = typeof input.email === 'string' ? normalizeEmail(input.email) : '';
   if (!isEmail(email)) throw new MemberAuthError('อีเมลไม่ถูกต้อง');
@@ -54,6 +57,7 @@ export async function registerWithEmail(input: { displayName: unknown; email: un
     status: 'active',
     sessionVersion: 1,
     consentAt: now,
+    consent: newConsent('signup_form', true),
     createdAt: now,
     lastLoginAt: now,
     lastLoginMethod: 'email',
@@ -89,7 +93,7 @@ export interface OAuthProfile {
  * email (the provider is linked to it), else a new account. Social sign-up counts as consent because the
  * login screen states the terms next to the buttons.
  */
-export async function signInWithOAuth(profile: OAuthProfile): Promise<{ member: Member; created: boolean }> {
+export async function signInWithOAuth(profile: OAuthProfile, options: { consented?: boolean } = {}): Promise<{ member: Member; created: boolean }> {
   const email = profile.email ? normalizeEmail(profile.email) : undefined;
   let member = await memberRepository.findByProvider(profile.provider, profile.subject);
   let created = false;
@@ -110,7 +114,7 @@ export async function signInWithOAuth(profile: OAuthProfile): Promise<{ member: 
     const emailTaken = email ? Boolean(await memberRepository.findByEmail(email)) : false;
     member = await memberRepository.create({
       id: `mem_${randomUUID()}`,
-      displayName: profile.displayName?.trim().slice(0, 40) || (email ? email.split('@')[0] : 'สมาชิกใหม่'),
+      displayName: (profile.displayName ? tidyDisplayName(profile.displayName).trim().slice(0, 40) : '') || (email ? email.split('@')[0] : 'สมาชิกใหม่'),
       // An unverified email that already belongs to someone else is not attached
       email: email && !emailTaken ? email : undefined,
       emailVerified: Boolean(email && !emailTaken && profile.emailVerified),
@@ -119,6 +123,8 @@ export async function signInWithOAuth(profile: OAuthProfile): Promise<{ member: 
       status: 'active',
       sessionVersion: 1,
       consentAt: now,
+      // From the sign-up screen both boxes were ticked; from the log-in screen only the notice was shown
+      consent: newConsent(options.consented ? 'signup_form' : 'social_login', Boolean(options.consented)),
       createdAt: now,
     });
     created = true;
@@ -194,4 +200,30 @@ export async function resetPasswordWithToken(tokenInput: unknown, password: unkn
     sessionVersion: member.sessionVersion + 1,
   });
   return markLogin(updated, 'email');
+}
+
+/** Saves onboarding answers; the first save marks the member as onboarded */
+export async function savePreferences(member: Member, input: unknown): Promise<Member> {
+  const preferences = cleanPreferences(input);
+  return memberRepository.update(member.id, { preferences, onboardedAt: member.onboardedAt ?? preferences.updatedAt });
+}
+
+/**
+ * Everything stored about a member, for an admin handling a PDPA request, or (forMember) for the member's own
+ * download, which leaves out staff-only safety notes: risk flags, who reported them, and the sign-up fingerprint.
+ */
+export function exportableAccount(member: Member, options: { forMember?: boolean } = {}) {
+  const { passwordHash, sessionVersion: _version, passwordReset: _reset, emailVerification: _verify, ...account } = member;
+  void _version;
+  void _reset;
+  void _verify;
+  if (options.forMember) {
+    const { riskFlags: _flags, riskReviewedAt: _reviewed, signupIpHash: _ip, reportsReceived: _reports, ...own } = account;
+    void _flags;
+    void _reviewed;
+    void _ip;
+    void _reports;
+    return { ...own, hasPassword: Boolean(passwordHash) };
+  }
+  return { ...account, hasPassword: Boolean(passwordHash) };
 }

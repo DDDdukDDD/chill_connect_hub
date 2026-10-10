@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MemberAuthError, signInWithOAuth } from '@/lib/members/accounts';
 import { fetchOAuthProfile, isOAuthProvider } from '@/lib/members/oauth';
-import { readSignedPayload, setMemberSessionCookie } from '@/lib/members/session';
+import { applySignupChecks, hashIp } from '@/lib/members/safety';
+import { getSessionSecret, readSignedPayload, setMemberSessionCookie } from '@/lib/members/session';
+import { clientIp } from '@/lib/rateLimit';
 import { readCookie } from '@/lib/adminSession';
 import { loginErrorPath, oauthCallbackUrl, OAUTH_STATE_COOKIE, safeReturnTo } from '../../shared';
 
@@ -11,6 +13,7 @@ interface StatePayload {
   verifier: string;
   nonce: string;
   returnTo: string;
+  consented?: boolean;
   exp: number;
 }
 
@@ -41,7 +44,8 @@ async function handleCallback(request: NextRequest, provider: string, params: UR
       nonce: stored.nonce,
       appleUser: params.get('user'),
     });
-    const { member, created } = await signInWithOAuth(profile);
+    const { member, created } = await signInWithOAuth(profile, { consented: Boolean(stored.consented) });
+    if (created) await applySignupChecks(member, hashIp(clientIp(request), getSessionSecret() ?? ''));
     // New members pick their interests first, then continue to where they were heading
     const response = redirect(created
       ? `/onboarding?returnTo=${encodeURIComponent(returnTo)}`

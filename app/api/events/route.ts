@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createAdminEvent } from '@/lib/eventsStore';
 import { db } from '@/lib/db';
 import { hasAdminCredentials } from '@/lib/adminApiAuth';
+import { getSessionMember } from '@/lib/members/session';
 
 function parsePositiveInteger(value: string | null, fallback: number, max?: number): number {
   if (!value) return fallback;
@@ -13,6 +14,22 @@ function parsePositiveInteger(value: string | null, fallback: number, max?: numb
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
+
+    // Events a member created. ?mine=1 → the signed-in member's own, any approval status (for My Hub).
+    // ?host=<memberId> → that member's approved events (for the public profile).
+    const hostId = searchParams.get('host');
+    if (searchParams.get('mine') === '1' || hostId) {
+      const viewer = hostId ? null : await getSessionMember(request);
+      const ownerId = hostId || viewer?.id;
+      const created = ownerId
+        ? (await db.listAllEvents()).filter((ev) => (ev as { createdByMemberId?: string }).createdByMemberId === ownerId && (!hostId || ev.approvalStatus === 'approved'))
+        : [];
+      return NextResponse.json(
+        { success: true, events: created, total: created.length, ...(!ownerId && { requiresLogin: true }) },
+        { headers: { 'Cache-Control': 'no-store' } }
+      );
+    }
+
     const hasFilterParams = [
       'page', 'limit', 'province', 'type', 'category', 'q', 'zone',
       'venueTag', 'status', 'includeEnded', 'sortBy',
@@ -151,15 +168,19 @@ export async function POST(req: Request) {
     const isAdmin = hasAdminCredentials(req);
     const isPublicVenue = eventData.eventType === 'public_venue';
 
-    // Community events by regular members or verified hosts auto-publish
-    // Public Fairs by non-admins enter pending review for safety
-    const approvalStatus = (isAdmin || !isPublicVenue) ? 'approved' : 'pending';
+    // Who may publish without review: staff, and members whose host application was approved (community events only).
+    // Everything else waits in the admin review queue, so a new account cannot put a meetup in front of people.
+    const member = isAdmin ? null : await getSessionMember(req);
+    const isApprovedHost = member?.hostApplication?.status === 'approved' && member.status === 'active';
+    const approvalStatus = isAdmin || (!isPublicVenue && isApprovedHost) ? 'approved' : 'pending';
 
     const savedEvent = await createAdminEvent({
       ...eventData,
       id: eventData.id || `user-event-${Date.now()}`,
       approvalStatus,
       source: isAdmin ? 'Chill & Connect Official' : 'Community Member',
+      // Server-verified creator, for staff reviewing the queue (the client cannot set this)
+      ...(member && { createdByMemberId: member.id }),
       createdAt: new Date().toISOString(),
     });
 

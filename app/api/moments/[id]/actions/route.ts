@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { addComment, deleteComment, loadPeople, MomentError, reportMoment, setLike, setSaved, toFeedItem } from '@/lib/moments/service';
+import { MemberAuthError } from '@/lib/members/accounts';
+import { guardPosting } from '@/lib/members/safety';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { isRateLimited } from '@/lib/rateLimit';
 
@@ -33,6 +35,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         if (isRateLimited(`moment-comment:${member.id}`, 30, 10 * 60 * 1000)) {
           return NextResponse.json({ success: false, message: 'แสดงความคิดเห็นบ่อยเกินไป กรุณารอสักครู่' }, { status: 429 });
         }
+        await guardPosting(member, 'comment', typeof body.text === 'string' ? body.text : '');
         moment = await addComment(member, id, body.text);
         break;
       case 'delete_comment':
@@ -49,7 +52,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     }
     return NextResponse.json({ success: true, moment: toFeedItem(moment, member, await loadPeople([moment])), ...(body.action === 'report' && { autoHidden }) });
   } catch (error) {
-    if (error instanceof MomentError) return NextResponse.json({ success: false, message: error.message }, { status: error.status });
+    if (error instanceof MomentError || error instanceof MemberAuthError) return NextResponse.json({ success: false, message: error.message }, { status: error.status });
     return NextResponse.json({ success: false, message: 'ทำรายการไม่สำเร็จ' }, { status: 400 });
   }
 }
