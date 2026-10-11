@@ -13,6 +13,7 @@ import { GroupChatModal } from '@/components/GroupChatModal';
 import { CancelTicketModal } from '@/components/CancelTicketModal';
 import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import { useAuth } from '@/lib/useAuth';
+import { activityActions, useMyActivity } from '@/lib/useMyActivity';
 import {
   getEventById,
   getRelatedEvents,
@@ -90,6 +91,11 @@ export default function CommunityDetailPage() {
   // Favorites & Joined Events State
   const [favorites, setFavorites] = useState<string[]>([]);
   const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
+  // What the member joined comes from the account; this keeps the page in step with it
+  const myActivity = useMyActivity();
+  useEffect(() => {
+    if (myActivity.isLoaded) setJoinedEventIds(myActivity.joinedIds);
+  }, [myActivity.isLoaded, myActivity.joinedIds]);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
 
@@ -178,25 +184,6 @@ export default function CommunityDetailPage() {
       } catch {}
     }
 
-    // Default fallback mock events if empty
-    if (joinedList.length === 0) {
-      joinedList = [
-        'comm-16',
-        'comm-18',
-        'comm-19',
-        'comm-20',
-        'fair-book-expo-2026',
-        'comm-oct-special-1',
-        'comm-benjakitti-morning-run',
-        'comm-1',
-        'comm-ai-1',
-        'live-agg-3',
-      ];
-      try {
-        localStorage.setItem('joined_event_ids', JSON.stringify(joinedList));
-      } catch {}
-    }
-
     // Also include user_created_events (Host)
     try {
       const savedCreated = JSON.parse(localStorage.getItem('user_created_events') || '[]');
@@ -269,8 +256,15 @@ export default function CommunityDetailPage() {
     setIsConfirmJoinModalOpen(true);
   };
 
-  const handleExecuteJoin = () => {
+  const handleExecuteJoin = async () => {
     if (!eventData) return;
+    // The server decides (seats left, event ended, account verified)
+    const joinResult = await activityActions.join(eventData.id);
+    if (!joinResult.ok) {
+      setIsConfirmJoinModalOpen(false);
+      showToast(joinResult.message);
+      return;
+    }
 
     const updatedParticipants = Math.min(eventData.participantsCount + 1, eventData.maxParticipants);
     setEventData({ ...eventData, participantsCount: updatedParticipants });
@@ -309,8 +303,14 @@ export default function CommunityDetailPage() {
     setIsETicketOpen(true);
   };
 
-  const handleConfirmCancel = () => {
+  const handleConfirmCancel = async () => {
     if (!eventData) return;
+    const leaveResult = await activityActions.leave(eventData.id);
+    if (!leaveResult.ok) {
+      setIsCancelModalOpen(false);
+      showToast(leaveResult.message);
+      return;
+    }
     const updatedParticipants = Math.max(eventData.participantsCount - 1, 0);
     setEventData({ ...eventData, participantsCount: updatedParticipants });
 

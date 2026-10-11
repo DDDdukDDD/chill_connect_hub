@@ -40,6 +40,7 @@ import { getCommunityEventCategory, getFairEventCategory } from '@/data/masterHu
 import { SpotCard, SpotCardSkeleton } from '@/components/SpotCard';
 import { isEventEnded, isEventNew, parseEventDateToTimestamp, parseEventEndDateToTimestamp, isEventEndedByDate, isEventMatchingTimeFilter } from '@/lib/dateUtils';
 import { useAuth } from '@/lib/useAuth';
+import { useMyActivity } from '@/lib/useMyActivity';
 import { fetchAllContentPages } from '@/lib/contentClient';
 import { matchSearchQuery } from '@/lib/searchUtils';
 import {
@@ -98,6 +99,11 @@ function HomeContent() {
   const [selectedSpot, setSelectedSpot] = useState<LifestyleSpotItem | null>(null);
   const [favoriteSpots, setFavoriteSpots] = useState<string[]>([]);
   const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
+  // What the member joined comes from the account; this keeps the page in step with it
+  const myActivity = useMyActivity();
+  useEffect(() => {
+    if (myActivity.isLoaded) setJoinedEventIds(myActivity.joinedIds);
+  }, [myActivity.isLoaded, myActivity.joinedIds]);
   const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'tomorrow' | 'weekend' | 'next_month' | 'custom'>('all');
   const [priceFilter, setPriceFilter] = useState<'all' | 'free' | 'under500'>('all');
   const [startDate, setStartDate] = useState<string>('');

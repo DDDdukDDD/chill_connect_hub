@@ -27,6 +27,7 @@ import {
 import { useAuth } from '@/lib/useAuth';
 import { BrandLogo } from './BrandLogo';
 import { NotificationBell } from './NotificationBell';
+import { useActivitySync } from '@/lib/useMyActivity';
 
 interface NavbarProps {
   activeTab: string;
@@ -55,6 +56,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   const { userProfile, handleSetRole } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  // Joined events and saved places come from the account (see lib/useMyActivity.ts)
+  useActivitySync();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close profile dropdown or drawer when clicking outside or pressing Escape

@@ -8,6 +8,7 @@ import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { useAuth } from '@/lib/useAuth';
+import { useMyActivity } from '@/lib/useMyActivity';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { MOCK_EVENTS, EventItem } from '@/data/mockData';
 import {
@@ -172,6 +173,11 @@ export default function SpotDetailPage() {
   const [activeNavTab, setActiveNavTab] = useState('spots');
   const [favorites, setFavorites] = useState<string[]>([]);
   const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
+  // What the member joined comes from the account; this keeps the page in step with it
+  const myActivity = useMyActivity();
+  useEffect(() => {
+    if (myActivity.isLoaded) setJoinedEventIds(myActivity.joinedIds);
+  }, [myActivity.isLoaded, myActivity.joinedIds]);
   const [isCopied, setIsCopied] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);

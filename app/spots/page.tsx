@@ -24,6 +24,7 @@ import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { useAuth } from '@/lib/useAuth';
+import { useMyActivity } from '@/lib/useMyActivity';
 import { usePublishedSpots, getCachedSpotVibeCategory, getCachedSpotSearchText } from '@/lib/usePublishedSpots';
 import { MOCK_SPOTS, ALL_THAI_PROVINCES, LifestyleSpotItem } from '@/data/spotsData';
 import { SpotCategoryRail, NATIONWIDE_SPOT_CATEGORIES } from '@/components/SpotCategoryRail';
@@ -68,6 +69,11 @@ function SpotsPageContent() {
   const spotsList = liveSpots.length > 0 ? liveSpots : MOCK_SPOTS;
   const [favoriteSpots, setFavoriteSpots] = useState<string[]>([]);
   const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
+  // What the member joined comes from the account; this keeps the page in step with it
+  const myActivity = useMyActivity();
+  useEffect(() => {
+    if (myActivity.isLoaded) setJoinedEventIds(myActivity.joinedIds);
+  }, [myActivity.isLoaded, myActivity.joinedIds]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Sync viewMode from localStorage

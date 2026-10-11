@@ -15,8 +15,11 @@ import { CancelTicketModal } from '@/components/CancelTicketModal';
 import { GroupChatModal } from '@/components/GroupChatModal';
 import { TipHostModal } from '@/components/TipHostModal';
 import { SpotBuddyGatheringModal, SpotBuddyPostItem } from '@/components/SpotBuddyGatheringModal';
-import { MOCK_CHALLENGES, ChallengeQuest, EventItem, MOCK_EVENTS } from '@/data/mockData';
+import { ChallengeQuest, EventItem } from '@/data/mockData';
 import { isEventEnded } from '@/lib/dateUtils';
+import { activityActions, useMyActivity } from '@/lib/useMyActivity';
+import { useMemberSession } from '@/lib/useMemberSession';
+import { nameInitial, tidyDisplayName } from '@/lib/displayName';
 import { BrandLogo } from '@/components/BrandLogo';
 import { LifestyleSpotItem } from '@/data/spotsData';
 import { useSpotCatalog, getCachedSpotVibeCategory } from '@/lib/usePublishedSpots';
@@ -98,7 +101,7 @@ function MyHubContent() {
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const [myChallenges, setMyChallenges] = useState<ChallengeQuest[]>(MOCK_CHALLENGES);
+  const [myChallenges, setMyChallenges] = useState<ChallengeQuest[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Travel Scrapbook state & quick filters
@@ -167,92 +170,14 @@ function MyHubContent() {
     if (typeof window === 'undefined') return;
 
     try {
-      // 1. Sync Joined Events & Sub-activities
-      const storedJoinedIds: string[] = JSON.parse(localStorage.getItem('joined_event_ids') || '[]');
-      const storedFairSubIds: string[] = JSON.parse(localStorage.getItem('joined_fair_sub_ids') || '[]');
-      let allJoinedIds = Array.from(new Set([...storedJoinedIds, ...storedFairSubIds]));
-      
-      const octoberUpcomingMockIds = [
-        'comm-16', // 03 ต.ค. 2026: Silver Ring Crafting (Today)
-        'comm-18', // 04 ต.ค. 2026: English & Cultural Exchange (Tomorrow)
-        'comm-19', // 10 ต.ค. 2026: Acoustic Guitar Jam
-        'comm-20', // 11 ต.ค. 2026: Cat Cafe Meetup
-        'fair-book-expo-2026', // 15 - 26 ต.ค. 2026: Book Expo Thailand QSNCC
-        'comm-oct-special-1', // 17 ต.ค. 2026: Sunset Rooftop Acoustic อารีย์
-      ];
-
-      // Default fallback mock events if empty or missing active October events
-      if (allJoinedIds.length === 0) {
-        allJoinedIds = [
-          ...octoberUpcomingMockIds,
-          'comm-benjakitti-morning-run', // Ended (Attended)
-          'comm-1', // Ended (Attended)
-          'comm-ai-1', // Ended (Missed)
-          'live-agg-3', // Ended (Cancelled)
-        ];
-      } else {
-        const hasOctEvent = allJoinedIds.some((id) => octoberUpcomingMockIds.includes(id));
-        if (!hasOctEvent) {
-          allJoinedIds = Array.from(new Set([...octoberUpcomingMockIds, ...allJoinedIds]));
-        }
-      }
-      setJoinedEventIds(allJoinedIds);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('joined_event_ids', JSON.stringify(allJoinedIds));
-      }
-
-      // Sync Cancelled, Missed & Reviewed States
-      const storedCancelled: string[] = JSON.parse(localStorage.getItem('myhub_cancelled_event_ids') || '[]');
-      if (Array.isArray(storedCancelled) && storedCancelled.length > 0) {
-        setCancelledEventIds(storedCancelled);
-      } else {
-        setCancelledEventIds(['live-agg-3']); // Initial sample cancelled event
-      }
-
+      // Joined, hosted, cancelled and saved items come from the account (see the effect below).
+      // Still kept in this browser only: what the member marked as missed or already reviewed, and fair sub-groups.
       const storedMissed: string[] = JSON.parse(localStorage.getItem('myhub_missed_event_ids') || '[]');
-      if (Array.isArray(storedMissed) && storedMissed.length > 0) {
-        setMissedEventIds(storedMissed);
-      } else {
-        setMissedEventIds(['comm-ai-1']); // Initial sample missed event
-      }
-
+      if (Array.isArray(storedMissed)) setMissedEventIds(storedMissed);
       const storedReviewed: string[] = JSON.parse(localStorage.getItem('myhub_reviewed_event_ids') || '[]');
-      if (Array.isArray(storedReviewed) && storedReviewed.length > 0) {
-        setReviewedEventIds(storedReviewed);
-      } else {
-        setReviewedEventIds(['comm-1']); // Initial sample already-reviewed event
-      }
-
+      if (Array.isArray(storedReviewed)) setReviewedEventIds(storedReviewed);
       const storedSubs = JSON.parse(localStorage.getItem('joinedSubActivities') || '{}');
       setJoinedSubActivities(storedSubs);
-
-      // 1.1 Sync User Created Events (Host)
-      const storedCreated: EventItem[] = JSON.parse(localStorage.getItem('user_created_events') || '[]');
-      if (Array.isArray(storedCreated)) {
-        setUserCreatedEvents(storedCreated);
-      }
-      // Events saved on the account follow the member to any device; the browser copy is only a fallback
-      fetch('/api/events?mine=1', { cache: 'no-store' })
-        .then((res) => res.json())
-        .then((json: { events?: EventItem[] }) => {
-          const mine = json.events ?? [];
-          if (!mine.length) return;
-          const ids = new Set(mine.map((ev) => ev.id));
-          setUserCreatedEvents((prev) => [...mine, ...prev.filter((ev) => !ids.has(ev.id))]);
-        })
-        .catch(() => undefined);
-
-      // 2. Sync Saved Spots (Scrapbook)
-      const storedFavSpots = JSON.parse(localStorage.getItem('favorite_spots') || '[]');
-      if (Array.isArray(storedFavSpots)) {
-        setSavedSpotIds(storedFavSpots);
-      }
-
-      // 3. Sync Favorites
-      const storedFavs = JSON.parse(localStorage.getItem('favorites') || '[]');
-      if (Array.isArray(storedFavs)) {
-        setFavorites(storedFavs);
-      }
 
       // 3.1 Sync My Challenges Progress
       try {
@@ -274,6 +199,24 @@ function MyHubContent() {
     } catch (e) {
       console.error('Error syncing localStorage in MyHub:', e);
     }
+  }, []);
+
+  // The account is the source of truth for what the member joined, hosts, cancelled and saved
+  const activity = useMyActivity();
+  const hubMember = useMemberSession().member;
+  const hubName = tidyDisplayName(hubMember?.displayName ?? '');
+  useEffect(() => {
+    setJoinedEventIds([...activity.joinedIds, ...activity.cancelled.map((e) => e.id)]);
+    setCancelledEventIds(activity.cancelled.map((e) => e.id));
+    setUserCreatedEvents(activity.hosted);
+    setSavedSpotIds(activity.savedSpotIds);
+    setFavorites(activity.savedEventIds);
+  }, [activity]);
+
+  // On a phone the list of appointments is more useful than a month grid, so it opens first (a ?tab= link still wins)
+  useEffect(() => {
+    if (window.innerWidth < 640 && !searchParams.get('tab') && !searchParams.get('type')) setHubMainMode('categories');
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival
   }, []);
 
   // 5. Reactive synchronization with URL Query Params (?tab=..., ?type=..., ?chatSubId=...)
@@ -308,7 +251,7 @@ function MyHubContent() {
     const eventId = searchParams.get('eventId');
     if (chatSubId && eventId) {
       setTimeout(() => {
-        const matched = MOCK_EVENTS.find((e) => e.id === eventId);
+        const matched = [...activity.joined, ...activity.hosted].find((e) => e.id === eventId);
         if (matched) {
           setChatTargetEvent(matched);
           setIsChatModalOpen(true);
@@ -348,17 +291,17 @@ function MyHubContent() {
       }
     });
 
-    // 1. From MOCK_EVENTS matching joinedEventIds
-    MOCK_EVENTS.forEach((e) => {
-      if (joinedEventIds.includes(e.id) && !addedIds.has(e.id)) {
+    // 1. Events the member joined (and ones they cancelled, kept as history), from the account
+    [...activity.joined, ...activity.cancelled].forEach((e) => {
+      if (!addedIds.has(e.id)) {
         list.push(e);
         addedIds.add(e.id);
       }
     });
 
-    // 2. From joinedSubActivities (custom sub-groups or buddy trips)
+    // 2. Fair sub-groups and buddy trips, still kept in this browser (plain event joins come from the account)
     Object.values(joinedSubActivities).forEach((sub: any) => {
-      if (!addedIds.has(sub.eventId)) {
+      if (sub.id !== sub.eventId && !addedIds.has(sub.eventId)) {
         list.push({
           id: sub.eventId,
           title: sub.eventTitle || 'กิจกรรมที่คุณเข้าร่วม',
@@ -419,7 +362,7 @@ function MyHubContent() {
     });
 
     return list;
-  }, [joinedEventIds, joinedSubActivities, myChallenges, userCreatedEvents]);
+  }, [activity.joined, activity.cancelled, joinedSubActivities, myChallenges, userCreatedEvents]);
 
   // Separate Community Meetups vs Fairs
   const communityEvents = useMemo(() => {
@@ -542,12 +485,8 @@ function MyHubContent() {
     return list;
   }, [savedSpotIds, scrapbookSearch, scrapbookVibeFilter, spotCatalog]);
 
-  const handleRemoveFromScrapbook = (spotId: string, spotTitle: string) => {
-    const updated = savedSpotIds.filter((id) => id !== spotId);
-    setSavedSpotIds(updated);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('favorite_spots', JSON.stringify(updated));
-    }
+  const handleRemoveFromScrapbook = async (spotId: string, spotTitle: string) => {
+    if (!(await activityActions.setSaved('spot', spotId, false))) return showToast('นำออกไม่สำเร็จ ลองอีกครั้งนะ');
     showToast(`นำ "${spotTitle}" ออกจากสมุดบันทึกสถานที่เที่ยวแล้ว`);
   };
 
@@ -589,18 +528,14 @@ function MyHubContent() {
   };
 
   // Cancel Event (Marks as cancelled in history rather than wiping out)
-  const handleConfirmCancel = (ticketId: string, _reason: string) => {
+  const handleConfirmCancel = async (ticketId: string, _reason: string) => {
     if (!cancelTargetEvent) return;
-    const targetId = cancelTargetEvent.id;
-
-    // Track in cancelledEventIds
-    setCancelledEventIds((prev) => {
-      const updated = Array.from(new Set([...prev, targetId]));
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('myhub_cancelled_event_ids', JSON.stringify(updated));
-      }
-      return updated;
-    });
+    const result = await activityActions.leave(cancelTargetEvent.id);
+    if (!result.ok) {
+      showToast(result.message);
+      setIsCancelModalOpen(false);
+      return;
+    }
 
     showToast(
       cancelTargetEvent.eventType === 'public_venue'
@@ -611,16 +546,14 @@ function MyHubContent() {
   };
 
   // Permanent Remove from history
-  const handlePermanentRemove = (eventId: string, title: string) => {
-    setJoinedEventIds((prev) => prev.filter((id) => id !== eventId));
-    setCancelledEventIds((prev) => prev.filter((id) => id !== eventId));
-    setMissedEventIds((prev) => prev.filter((id) => id !== eventId));
-    if (typeof window !== 'undefined') {
-      const currentJoined: string[] = JSON.parse(localStorage.getItem('joined_event_ids') || '[]');
-      localStorage.setItem('joined_event_ids', JSON.stringify(currentJoined.filter((id) => id !== eventId)));
-      const currentCancelled: string[] = JSON.parse(localStorage.getItem('myhub_cancelled_event_ids') || '[]');
-      localStorage.setItem('myhub_cancelled_event_ids', JSON.stringify(currentCancelled.filter((id) => id !== eventId)));
+  const handlePermanentRemove = async (eventId: string, title: string) => {
+    // A past event still on the list is left first, then taken out of the history
+    if (activity.joinedIds.includes(eventId)) {
+      const left = await activityActions.leave(eventId);
+      if (!left.ok) return showToast(left.message);
     }
+    await activityActions.forgetCancelled(eventId);
+    setMissedEventIds((prev) => prev.filter((id) => id !== eventId));
     showToast(`ลบ "${title}" ออกจากประวัติเรียบร้อยแล้ว`);
   };
 
@@ -1258,7 +1191,7 @@ function MyHubContent() {
                         return (
                           <div
                             key={ev.id}
-                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md border truncate ${
+                            className={`text-[11px] font-bold px-1.5 py-0.5 rounded-md border truncate ${
                               isQuest && isDeadline
                                 ? 'bg-purple-100 text-purple-900 border-purple-300 shadow-2xs font-black'
                                 : isQuest
@@ -1272,7 +1205,7 @@ function MyHubContent() {
                         );
                       })}
                       {eventsOnDay.length > 2 && (
-                        <span className="text-[9px] font-bold text-slate-400 block text-right">
+                        <span className="text-[11px] font-bold text-slate-400 block text-right">
                           +{eventsOnDay.length - 2} อื่นๆ
                         </span>
                       )}
@@ -1426,32 +1359,32 @@ function MyHubContent() {
                         {/* Top-Left Badges: Status or Pillar Tag + Host Badge */}
                         <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 flex-wrap">
                           {meta.pillar === 'quests' ? (
-                            <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border shadow-xs backdrop-blur-md ${meta.badgeBg} ${meta.badgeText} ${meta.badgeBorder}`}>
+                            <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border shadow-xs backdrop-blur-md ${meta.badgeBg} ${meta.badgeText} ${meta.badgeBorder}`}>
                               {meta.label}
                             </span>
                           ) : isCancelled ? (
-                            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-rose-600/95 text-white shadow-xs backdrop-blur-md inline-flex items-center gap-1">
+                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-600/95 text-white shadow-xs backdrop-blur-md inline-flex items-center gap-1">
                               <X className="w-3 h-3 stroke-[2.5]" />
                               <span>ยกเลิก</span>
                             </span>
                           ) : isMissed ? (
-                            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-600/95 text-white shadow-xs backdrop-blur-md inline-flex items-center gap-1">
+                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-600/95 text-white shadow-xs backdrop-blur-md inline-flex items-center gap-1">
                               <AlertCircle className="w-3 h-3" />
                               <span>ไม่ได้ไปร่วม</span>
                             </span>
                           ) : isAttended ? (
-                            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-600/95 text-white shadow-xs backdrop-blur-md inline-flex items-center gap-1">
+                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-600/95 text-white shadow-xs backdrop-blur-md inline-flex items-center gap-1">
                               <CheckCircle2 className="w-3 h-3" />
                               <span>เข้าร่วมแล้ว</span>
                             </span>
                           ) : (
-                            <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border shadow-xs backdrop-blur-md ${meta.badgeBg} ${meta.badgeText} ${meta.badgeBorder}`}>
+                            <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border shadow-xs backdrop-blur-md ${meta.badgeBg} ${meta.badgeText} ${meta.badgeBorder}`}>
                               {meta.label}
                             </span>
                           )}
 
                           {(ev.isHost || userCreatedEvents.some((u) => u.id === ev.id)) && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white shadow-xs inline-flex items-center gap-1">
+                            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white shadow-xs inline-flex items-center gap-1">
                               <Crown className="w-3 h-3 text-white" />
                               <span>โฮสต์</span>
                             </span>
@@ -1461,7 +1394,7 @@ function MyHubContent() {
                         {/* Top-Right Badge: Urgent Due Date for Quests only */}
                         {meta.pillar === 'quests' && (ev as any).questDeadlineDay === selectedCalDay && (
                           <div className="absolute top-2.5 right-2.5 z-10">
-                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-600 text-white shadow-xs animate-pulse inline-flex items-center gap-1">
+                            <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-rose-600 text-white shadow-xs animate-pulse inline-flex items-center gap-1">
                               <AlertTriangle className="w-3 h-3 text-white" />
                               <span>เดดไลน์วันนี้</span>
                             </span>
@@ -1485,12 +1418,12 @@ function MyHubContent() {
                               </span>
                             </div>
                             {meta.pillar === 'quests' ? (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200 shrink-0">
+                              <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200 shrink-0">
                                 {ev.price || '+50 XP'}
                               </span>
                             ) : ev.price ? (
                               <span
-                                className={`text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
+                                className={`text-[11px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
                                   ev.price.includes('ฟรี')
                                     ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/60'
                                     : 'bg-slate-100 text-slate-700 border border-slate-200/60'
@@ -1935,7 +1868,7 @@ function MyHubContent() {
                     <QrCode className="w-3.5 h-3.5 text-[#4A7C59]" />
                     <span>Boarding Pass #CCH-2026</span>
                   </span>
-                  <span className="text-[10.5px] font-bold text-[#2D5A3C] bg-[#EBF3ED] px-2 py-0.5 rounded-md border border-[#A3CEB0]/50">
+                  <span className="text-[11px] font-bold text-[#2D5A3C] bg-[#EBF3ED] px-2 py-0.5 rounded-md border border-[#A3CEB0]/50">
                     ยืนยันที่นั่งแล้ว
                   </span>
                 </div>
@@ -1968,7 +1901,7 @@ function MyHubContent() {
                     <Clock className="w-3.5 h-3.5 text-[#2B527A]" />
                     <span>ซิงก์นัดหมายทุกประเภท</span>
                   </span>
-                  <span className="text-[10.5px] font-bold text-[#2B527A] bg-[#F0F4F8] px-2 py-0.5 rounded-md border border-[#CBD5E1]/50">
+                  <span className="text-[11px] font-bold text-[#2B527A] bg-[#F0F4F8] px-2 py-0.5 rounded-md border border-[#CBD5E1]/50">
                     4 หมวดหมู่ในที่เดียว
                   </span>
                 </div>
@@ -2001,7 +1934,7 @@ function MyHubContent() {
                     <MapPin className="w-3.5 h-3.5 text-[#F26430]" />
                     <span>ปักหมุด & เปิดตี้ชวนเที่ยว</span>
                   </span>
-                  <span className="text-[10.5px] font-bold text-[#F26430] bg-[#FFF7ED] px-2 py-0.5 rounded-md border border-[#FED7AA]/50">
+                  <span className="text-[11px] font-bold text-[#F26430] bg-[#FFF7ED] px-2 py-0.5 rounded-md border border-[#FED7AA]/50">
                     ชวนเพื่อน 1-Click
                   </span>
                 </div>
@@ -2034,7 +1967,7 @@ function MyHubContent() {
                     <Gift className="w-3.5 h-3.5 text-[#7C3AED]" />
                     <span>กระเป๋าแต้มสะสม XP</span>
                   </span>
-                  <span className="text-[10.5px] font-bold text-[#7C3AED] bg-[#F5F3FF] px-2 py-0.5 rounded-md border border-[#DDD6FE]/50">
+                  <span className="text-[11px] font-bold text-[#7C3AED] bg-[#F5F3FF] px-2 py-0.5 rounded-md border border-[#DDD6FE]/50">
                     แลกของรางวัลฟรี
                   </span>
                 </div>
@@ -2122,111 +2055,41 @@ function MyHubContent() {
             {/* ========================================================================= */}
             <section className="bg-white border-b border-slate-200/80 pt-3 pb-3 sm:pt-4 sm:pb-4">
               <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="bg-white rounded-2xl p-4 sm:p-5 text-slate-900 border border-slate-200/90 shadow-2xs relative overflow-hidden">
-                  <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                    
-                    {/* User Identity Info */}
-                    <div className="space-y-2.5 min-w-0">
-                      <div>
-                        <div className="flex items-center gap-2.5 flex-wrap">
-                          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-slate-900 truncate">
-                            มายฮับส่วนตัว (My Hub)
-                          </h1>
-                          <Link
-                            href="/challenges"
-                            className="text-[11px] font-bold px-3 py-0.5 rounded-full bg-amber-50 text-amber-900 hover:bg-amber-100 border border-amber-200/90 flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
-                            title="ดูระดับแรงก์และชาเลนจ์ทั้งหมด"
-                          >
-                            <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                            <span>Level 4 Explorer</span>
-                          </Link>
-                        </div>
-                      </div>
-
-                      {/* XP Progress Bar to Next Level */}
-                      <div className="flex items-center gap-2.5 pt-0.5 max-w-md">
-                        <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200/80">
-                          <div
-                            className="bg-gradient-to-r from-amber-500 to-[#F26430] h-full rounded-full transition-all duration-500"
-                            style={{ width: `${Math.min(100, (userXp / 1000) * 100)}%` }}
-                          />
-                        </div>
-                        <span className="text-[10.5px] font-semibold text-slate-500 shrink-0">
-                          {userXp}/1,000 XP สู่ <strong className="text-amber-800 font-bold">Lv.5 Trailblazer</strong>
+                {/* Who this hub belongs to, and three real numbers from the account (levels and points return with the challenges work) */}
+                <div className="bg-white rounded-2xl p-4 sm:p-5 text-slate-900 border border-slate-200/90 shadow-2xs">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6">
+                    <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                      {hubMember?.avatarUrl ? (
+                        <img src={hubMember.avatarUrl} alt="" className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover border border-slate-200 shrink-0" />
+                      ) : (
+                        <span className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-slate-100 text-slate-600 text-xl font-bold flex items-center justify-center shrink-0" aria-hidden="true">
+                          {nameInitial(hubName)}
                         </span>
+                      )}
+                      <div className="min-w-0">
+                        <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 truncate">มายฮับของ{hubName ? ` ${hubName}` : 'คุณ'}</h1>
+                        <p className="text-xs sm:text-sm font-medium text-slate-500 mt-0.5">นัดหมาย กิจกรรมที่จัด และที่เที่ยวที่บันทึกไว้ ของคุณในที่เดียว</p>
                       </div>
                     </div>
 
-                    {/* Passport Metrics (Upcoming -> Attended History -> Rewards XP) */}
-                    <div className="flex items-center self-stretch lg:self-auto">
-                      {/* Metric Chips */}
-                      <div className="grid grid-cols-3 gap-1 sm:gap-2 bg-slate-50 p-2 rounded-2xl border border-slate-200/80 w-full sm:w-auto">
-                        {/* 1. นัดหมาย (Upcoming) */}
+                    <div className="grid grid-cols-3 gap-1 sm:gap-2 bg-slate-50 p-1.5 sm:p-2 rounded-2xl border border-slate-200/80 w-full lg:w-auto">
+                      {[
+                        { label: 'นัดหมาย', value: upcomingEventsTotalCount, onClick: handleQuickFilterUpcoming, active: hubMainMode === 'categories' && eventViewMode === 'upcoming' },
+                        { label: 'เคยเข้าร่วม', value: attendedEventsTotalCount, onClick: handleQuickFilterAttended, active: hubMainMode === 'categories' && eventViewMode === 'past' },
+                        { label: 'ที่เที่ยวที่บันทึก', value: savedSpotIds.length, onClick: () => { setHubMainMode('categories'); setActiveSubTab('scrapbook'); }, active: hubMainMode === 'categories' && activeSubTab === 'scrapbook' },
+                      ].map((metric) => (
                         <button
+                          key={metric.label}
                           type="button"
-                          onClick={handleQuickFilterUpcoming}
-                          className={`px-3 py-1.5 text-center rounded-xl transition-all cursor-pointer border flex flex-col items-center justify-start ${
-                            hubMainMode === 'categories' && eventViewMode === 'upcoming'
-                              ? 'bg-white border-blue-500/80 shadow-2xs'
-                              : 'border-transparent hover:bg-white/80'
-                          }`}
-                          title={`คลิกเพื่อดูนัดหมายที่กำลังจะมาถึง (${upcomingEventsTotalCount} รายการ)`}
+                          onClick={metric.onClick}
+                          aria-pressed={metric.active}
+                          className={`px-2 sm:px-4 py-2 text-center rounded-xl cursor-pointer border transition-colors ${metric.active ? 'bg-white border-blue-200 shadow-2xs' : 'border-transparent hover:bg-white'}`}
                         >
-                          <div className="h-4 flex items-center justify-center">
-                            <span className="text-[10px] uppercase font-bold text-slate-400 block">นัดหมาย</span>
-                          </div>
-                          <span className="text-base sm:text-lg font-black text-slate-900 block leading-tight mt-0.5">
-                            {upcomingEventsTotalCount}
-                          </span>
-                          <span className="text-[9.5px] px-1.5 py-0.2 rounded-md mt-0.5 invisible select-none pointer-events-none" aria-hidden="true">
-                            แลกรางวัล
-                          </span>
+                          <span className="block text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">{metric.value}</span>
+                          <span className="block text-[11px] sm:text-xs font-semibold text-slate-500 whitespace-nowrap">{metric.label}</span>
                         </button>
-
-                        {/* 2. ที่เคยเข้าร่วม (Attended History) */}
-                        <button
-                          type="button"
-                          onClick={handleQuickFilterAttended}
-                          className={`px-3 py-1.5 text-center rounded-xl transition-all cursor-pointer border border-x border-slate-200 flex flex-col items-center justify-start ${
-                            hubMainMode === 'categories' && eventViewMode === 'past'
-                              ? 'bg-white border-emerald-500/80 shadow-2xs'
-                              : 'border-transparent hover:bg-white/80'
-                          }`}
-                          title={`คลิกเพื่อดูประวัติกิจกรรมที่เคยเข้าร่วม (${attendedEventsTotalCount} รายการ)`}
-                        >
-                          <div className="h-4 flex items-center justify-center">
-                            <span className="text-[10px] uppercase font-bold text-slate-400 block">ที่เคยเข้าร่วม</span>
-                          </div>
-                          <span className="text-base sm:text-lg font-black text-slate-900 block leading-tight mt-0.5">
-                            {attendedEventsTotalCount}
-                          </span>
-                          <span className="text-[9.5px] px-1.5 py-0.2 rounded-md mt-0.5 invisible select-none pointer-events-none" aria-hidden="true">
-                            แลกรางวัล
-                          </span>
-                        </button>
-
-                        {/* 3. แต้มสะสม (Rewards XP) */}
-                        <Link
-                          href="/rewards"
-                          className="px-3 py-1.5 text-center group/xp hover:bg-amber-50/90 hover:border-amber-300/80 rounded-xl transition-all cursor-pointer flex flex-col items-center justify-start border border-transparent active:scale-95 shadow-2xs"
-                          title={`คลิกเพื่อไปหน้าแลกของรางวัล & สิทธิพิเศษ (${userXp} XP)`}
-                        >
-                          <div className="h-4 flex items-center justify-center gap-1">
-                            <span className="text-[10px] uppercase font-bold text-slate-400 group-hover/xp:text-amber-700 block">
-                              แต้มสะสม
-                            </span>
-                            <ArrowRight className="w-2.5 h-2.5 text-[#D04A1B] opacity-70 group-hover/xp:translate-x-0.5 transition-transform" />
-                          </div>
-                          <span className="text-base sm:text-lg font-black text-slate-900 group-hover/xp:text-[#D04A1B] block leading-tight mt-0.5">
-                            {userXp}
-                          </span>
-                          <span className="text-[9.5px] font-extrabold text-[#D04A1B] bg-amber-100/90 group-hover/xp:bg-amber-200 px-1.5 py-0.2 rounded-md mt-0.5 transition-colors">
-                            แลกรางวัล
-                          </span>
-                        </Link>
-                      </div>
+                      ))}
                     </div>
-
                   </div>
                 </div>
 
@@ -2244,7 +2107,7 @@ function MyHubContent() {
                       }`}
                     >
                       <CalendarDays className={`w-4 h-4 ${hubMainMode === 'calendar' ? 'text-slate-900' : 'text-slate-400'}`} />
-                      <span>ปฏิทินรวมกิจกรรม ({allJoinedEvents.length})</span>
+                      <span className="whitespace-nowrap">ปฏิทิน ({allJoinedEvents.length})</span>
                     </button>
 
                     <button
@@ -2260,15 +2123,15 @@ function MyHubContent() {
                       }`}
                     >
                       <Layers className={`w-4 h-4 ${hubMainMode === 'categories' ? 'text-slate-900' : 'text-slate-400'}`} />
-                      <span>แยกตามหมวดหมู่</span>
+                      <span className="whitespace-nowrap">รายการ</span>
                     </button>
                   </div>
 
                   <div className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
                     {hubMainMode === 'calendar' ? (
-                      <span>ปฏิทินรวมนัดหมายทุกประเภทในที่เดียว</span>
+                      <span>ดูทุกนัดหมายบนปฏิทินเดือน</span>
                     ) : (
-                      <span>เลือกดูตั๋วและบริหารจัดการตามประเภท</span>
+                      <span>ดูเป็นรายการ แยกตามประเภท</span>
                     )}
                   </div>
                 </div>
@@ -2508,17 +2371,17 @@ function MyHubContent() {
                               {/* Status Badges */}
                               <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 flex-wrap">
                                 {isCancelled ? (
-                                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-rose-600/95 text-white shadow-xs backdrop-blur-md inline-flex items-center gap-1">
+                                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-600/95 text-white shadow-xs backdrop-blur-md inline-flex items-center gap-1">
                                     <X className="w-3 h-3 stroke-[2.5]" />
                                     <span>ยกเลิกการเข้าร่วม</span>
                                   </span>
                                 ) : isMissed ? (
-                                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-600/95 text-white shadow-xs backdrop-blur-md inline-flex items-center gap-1">
+                                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-600/95 text-white shadow-xs backdrop-blur-md inline-flex items-center gap-1">
                                     <AlertCircle className="w-3 h-3" />
                                     <span>ไม่ได้ไปเข้าร่วม</span>
                                   </span>
                                 ) : isAttended ? (
-                                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-600/95 text-white shadow-xs backdrop-blur-md inline-flex items-center gap-1">
+                                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-600/95 text-white shadow-xs backdrop-blur-md inline-flex items-center gap-1">
                                     <CheckCircle2 className="w-3 h-3" />
                                     <span>เข้าร่วมสำเร็จแล้ว</span>
                                   </span>
@@ -2526,7 +2389,7 @@ function MyHubContent() {
 
                                 {/* Host status badge if user is host */}
                                 {(event.isHost || userCreatedEvents.some((u) => u.id === event.id)) && (
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white shadow-xs inline-flex items-center gap-1">
+                                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white shadow-xs inline-flex items-center gap-1">
                                     <Crown className="w-3 h-3 text-white" />
                                     <span>โฮสต์</span>
                                   </span>
@@ -2551,7 +2414,7 @@ function MyHubContent() {
                                   </div>
                                   {event.price && (
                                     <span
-                                      className={`text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
+                                      className={`text-[11px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
                                         event.price.includes('ฟรี')
                                           ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/60'
                                           : 'bg-slate-100 text-slate-700 border border-slate-200/60'
@@ -3027,22 +2890,22 @@ function MyHubContent() {
                               {/* Status Badges */}
                               <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 flex-wrap">
                                 {isCancelled ? (
-                                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-rose-600/95 text-white shadow-xs backdrop-blur-md inline-flex items-center gap-1">
+                                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-600/95 text-white shadow-xs backdrop-blur-md inline-flex items-center gap-1">
                                     <X className="w-3 h-3 stroke-[2.5]" />
                                     <span>ยกเลิกการเข้าร่วม</span>
                                   </span>
                                 ) : isMissed ? (
-                                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-600/95 text-white shadow-xs backdrop-blur-md inline-flex items-center gap-1">
+                                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-600/95 text-white shadow-xs backdrop-blur-md inline-flex items-center gap-1">
                                     <AlertCircle className="w-3 h-3" />
                                     <span>ไม่ได้ไปเข้าร่วม</span>
                                   </span>
                                 ) : isAttended ? (
-                                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-600/95 text-white shadow-xs backdrop-blur-md inline-flex items-center gap-1">
+                                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-600/95 text-white shadow-xs backdrop-blur-md inline-flex items-center gap-1">
                                     <CheckCircle2 className="w-3 h-3" />
                                     <span>ไปร่วมงานแล้ว</span>
                                   </span>
                                 ) : (
-                                  <span className="text-[10px] font-bold bg-[#EEF4FA]/95 backdrop-blur-md text-[#2B527A] border border-[#B8D1E8] px-2.5 py-0.5 rounded-full shadow-xs flex items-center gap-1">
+                                  <span className="text-[11px] font-bold bg-[#EEF4FA]/95 backdrop-blur-md text-[#2B527A] border border-[#B8D1E8] px-2.5 py-0.5 rounded-full shadow-xs flex items-center gap-1">
                                     <Check className="w-3.5 h-3.5 text-[#2B527A] stroke-[2.5]" />
                                     <span>บันทึกแล้ว</span>
                                   </span>
@@ -3059,7 +2922,7 @@ function MyHubContent() {
                                   </span>
                                   {event.price && (
                                     <span
-                                      className={`text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
+                                      className={`text-[11px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
                                         event.price.includes('ฟรี')
                                           ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/60'
                                           : 'bg-slate-100 text-slate-700 border border-slate-200/60'
@@ -3480,7 +3343,7 @@ function MyHubContent() {
 
                             {/* Top-Left: Saved Badge */}
                             <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5">
-                              <span className="text-[10px] font-bold bg-[#EBF3ED]/95 backdrop-blur-md text-[#2D5A3C] border border-[#A3CEB0] px-2.5 py-0.5 rounded-full shadow-xs flex items-center gap-1">
+                              <span className="text-[11px] font-bold bg-[#EBF3ED]/95 backdrop-blur-md text-[#2D5A3C] border border-[#A3CEB0] px-2.5 py-0.5 rounded-full shadow-xs flex items-center gap-1">
                                 <Check className="w-3.5 h-3.5 text-[#2D5A3C]" />
                                 <span>บันทึกแล้ว</span>
                               </span>
@@ -3488,7 +3351,7 @@ function MyHubContent() {
 
                             {/* Bottom-Right: Rating */}
                             <div className="absolute bottom-2 right-2.5 z-10">
-                              <span className="text-[10px] font-bold bg-black/60 backdrop-blur-md text-white px-2 py-0.5 rounded-full flex items-center gap-1 border border-white/20">
+                              <span className="text-[11px] font-bold bg-black/60 backdrop-blur-md text-white px-2 py-0.5 rounded-full flex items-center gap-1 border border-white/20">
                                 <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                                 <span>{spotItem.rating}</span>
                               </span>
@@ -3504,7 +3367,7 @@ function MyHubContent() {
                                   <span className="truncate">{spotItem.district}, {spotItem.province}</span>
                                 </span>
                                 <span
-                                  className={`text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
+                                  className={`text-[11px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
                                     spotItem.price.includes('ฟรี')
                                       ? 'bg-emerald-50 text-emerald-800'
                                       : 'bg-slate-100 text-slate-700'
@@ -3725,13 +3588,13 @@ function MyHubContent() {
 
                                     <div className="min-w-0 flex-1 space-y-1">
                                       <div className="flex items-center gap-1.5 flex-wrap">
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${catTheme.bg}`}>
+                                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${catTheme.bg}`}>
                                           {catTheme.label}
                                         </span>
                                         {brandReward.type === 'brand_partner' ? (
                                           <span 
                                             title={`ภารกิจพาร์ทเนอร์ทางการ: ${brandReward.partnerName}`}
-                                            className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-950 border border-amber-200 shrink-0 truncate max-w-[140px] inline-flex items-center gap-1"
+                                            className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-950 border border-amber-200 shrink-0 truncate max-w-[140px] inline-flex items-center gap-1"
                                           >
                                             <Crown className="w-2.5 h-2.5 text-amber-600 fill-amber-500 shrink-0" />
                                             <span className="truncate">Official • {brandReward.partnerName}</span>
@@ -3739,13 +3602,13 @@ function MyHubContent() {
                                         ) : (
                                           <span 
                                             title="ภารกิจกิจกรรมกลางของ Chill & Connect Hub"
-                                            className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-900 border border-purple-200 shrink-0 truncate max-w-[calc(100%-65px)] inline-flex items-center gap-1"
+                                            className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-900 border border-purple-200 shrink-0 truncate max-w-[calc(100%-65px)] inline-flex items-center gap-1"
                                           >
                                             <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500 shrink-0" />
                                             <span className="truncate">Official • Chill & Connect</span>
                                           </span>
                                         )}
-                                        <span className="text-[10px] font-black text-purple-700 bg-purple-50 border border-purple-200/80 px-2 py-0.5 rounded-md flex items-center gap-0.5 ml-auto shadow-2xs">
+                                        <span className="text-[11px] font-black text-purple-700 bg-purple-50 border border-purple-200/80 px-2 py-0.5 rounded-md flex items-center gap-0.5 ml-auto shadow-2xs">
                                           <Zap className="w-3 h-3 text-purple-600 fill-purple-600" />
                                           <span>+{quest.rewardPoints} XP</span>
                                         </span>
@@ -3771,7 +3634,7 @@ function MyHubContent() {
                                     {brandReward.type === 'brand_partner' ? (
                                       <div 
                                         title={`สิทธิพิเศษเฉพาะแบรนด์ ${brandReward.partnerName}: ${brandReward.title}`}
-                                        className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-amber-50/90 border border-amber-200/90 text-amber-950 text-[10px] font-bold shadow-2xs mt-1"
+                                        className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-amber-50/90 border border-amber-200/90 text-amber-950 text-[11px] font-bold shadow-2xs mt-1"
                                       >
                                         <Ticket className="w-3 h-3 text-amber-600 shrink-0" />
                                         <span className="truncate">{brandReward.title}</span>
@@ -3779,7 +3642,7 @@ function MyHubContent() {
                                     ) : (
                                       <div 
                                         title="รับแต้มสะสมพิเศษเพื่อนำไปเลือกแลกของรางวัลในศูนย์กลาง (/rewards)"
-                                        className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-purple-50/90 border border-purple-200/90 text-purple-950 text-[10px] font-bold shadow-2xs mt-1"
+                                        className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-purple-50/90 border border-purple-200/90 text-purple-950 text-[11px] font-bold shadow-2xs mt-1"
                                       >
                                         <Gift className="w-3 h-3 text-purple-600 shrink-0" />
                                         <span className="truncate">แต้มสะสมอิสระ แลกของรางวัลใน Hub Rewards</span>
@@ -3934,10 +3797,10 @@ function MyHubContent() {
                             >
                               <div className="space-y-1">
                                 <div className="flex items-center justify-between gap-1">
-                                  <span className="text-[10px] font-bold text-[#D04A1B] bg-[#FEF3EE] px-2 py-0.5 rounded-md border border-[#FCD5C5]/70">
+                                  <span className="text-[11px] font-bold text-[#D04A1B] bg-[#FEF3EE] px-2 py-0.5 rounded-md border border-[#FCD5C5]/70">
                                     {item.discountValue}
                                   </span>
-                                  <span className="text-[10px] text-slate-400 font-medium">
+                                  <span className="text-[11px] text-slate-400 font-medium">
                                     ถึง {item.validUntil}
                                   </span>
                                 </div>
@@ -3951,7 +3814,7 @@ function MyHubContent() {
                                   </span>
                                   <Link
                                     href={item.category === 'cafe' ? '/spots?vibe=cafe_slowbar' : '/community?category=chill'}
-                                    className="text-[10px] font-bold text-[#2D5A3C] hover:underline flex items-center gap-0.5 shrink-0"
+                                    className="text-[11px] font-bold text-[#2D5A3C] hover:underline flex items-center gap-0.5 shrink-0"
                                     title="ดูพิกัดร้านที่ร่วมรายการ"
                                   >
                                     <span>ดูพิกัด</span>
