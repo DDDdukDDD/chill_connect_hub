@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { Navbar } from '@/components/Navbar';
+import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { PhraseText } from '@/components/auth/PhraseText';
 import { MOCK_PROFILES } from '@/data/profilesData';
@@ -466,6 +467,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isReporting, setIsReporting] = useState(false);
+  const [reportingReview, setReportingReview] = useState<{ id: string; eventTitle: string } | null>(null);
   const [reload, setReload] = useState(0);
   const [state, setState] = useState<{ status: 'loading' | 'ready' | 'missing' | 'signin'; profile?: PublicProfile; own?: OwnData; moments: MomentThumb[] }>({ status: 'loading', moments: [] });
   const [notice, setNotice] = useState('');
@@ -765,6 +767,11 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                         <span className="text-amber-600 font-extrabold whitespace-nowrap" aria-label={`${r.rating} จาก 5 ดาว`}>{'★'.repeat(r.rating)}<span className="text-slate-300">{'★'.repeat(5 - r.rating)}</span></span>
                         <span className="text-slate-800 font-bold">{r.authorName}</span>
                         <span>{r.timeAgo}</span>
+                        {isLoggedIn && r.authorId !== member?.id && (
+                          <button type="button" onClick={() => setReportingReview({ id: r.id, eventTitle: r.eventTitle })} className="ml-auto inline-flex items-center gap-1 text-slate-500 hover:text-rose-600 cursor-pointer" aria-label={`รายงานรีวิวของ ${r.authorName}`}>
+                            <Flag className="w-3.5 h-3.5" aria-hidden="true" /> รายงาน
+                          </button>
+                        )}
                       </p>
                       {r.text && <p className="mt-2 text-sm text-slate-700 leading-relaxed">{r.text}</p>}
                       <p className="mt-2 text-xs text-slate-500 truncate">กิจกรรม: {r.eventTitle}</p>
@@ -812,6 +819,9 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
             refresh();
           }}
         />
+      )}
+      {reportingReview && (
+        <ReportSafetyModal isOpen onClose={() => setReportingReview(null)} targetType="review" targetId={reportingReview.id} targetTitle={`รีวิวของกิจกรรม "${reportingReview.eventTitle}"`} />
       )}
       {isReporting && profile && (
         <ReportDialog

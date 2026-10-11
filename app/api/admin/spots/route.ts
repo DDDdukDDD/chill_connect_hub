@@ -17,7 +17,7 @@ const MUTABLE_SPOT_FIELDS = new Set<keyof LifestyleSpotItem>([
   'image', 'galleryImages', 'openHours', 'price', 'bestTime', 'vibeTags',
   'description', 'highlights', 'facilities', 'googleMapsUrl', 'rating',
   'reviewsCount', 'latitude', 'longitude', 'publicationStatus', 'sourceName',
-  'sourceUrl', 'zone', 'contact', 'entryFee',
+  'sourceUrl', 'zone', 'contact', 'entryFee', 'meetupAllowed',
 ]);
 
 async function getAllSpots(): Promise<LifestyleSpotItem[]> {
@@ -211,6 +211,7 @@ export async function POST(request: Request) {
         latitude,
         longitude,
         publicationStatus: newSpot.publicationStatus === 'published' ? 'published' : 'draft',
+        meetupAllowed: newSpot.meetupAllowed === true,
       };
 
       const savedSpot = await db.createSpot(createdSpot);
@@ -239,6 +240,7 @@ export async function POST(request: Request) {
       const safeFields = Object.fromEntries(
         Object.entries(updatedFields).filter(([key]) => MUTABLE_SPOT_FIELDS.has(key as keyof LifestyleSpotItem))
       ) as Partial<LifestyleSpotItem>;
+      if ('meetupAllowed' in safeFields) safeFields.meetupAllowed = safeFields.meetupAllowed === true;
       const validationError = getSpotValidationError({ ...existing, ...safeFields });
       if (validationError) return NextResponse.json({ success: false, error: validationError }, { status: 400 });
 

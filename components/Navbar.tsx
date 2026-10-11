@@ -14,14 +14,13 @@ import {
   Compass, 
   Camera, 
   Ticket, 
-  Info,
+  Zap,
   ChevronRight,
   ChevronDown,
   ShieldCheck,
   Sparkles,
   Heart,
   Bot,
-  Zap,
   Gift
 } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
@@ -85,8 +84,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'explore', label: 'ค้นพบ', href: '/', icon: Compass },
     { id: 'moments', label: 'โมเมนต์', href: '/moments', icon: Camera },
     { id: 'challenges', label: 'ชาเลนจ์', href: '/challenges', icon: Zap },
+    // About sits in the footer of this menu
     { id: 'myhub', label: 'มายฮับ', href: '/myhub', icon: Ticket },
-    { id: 'about', label: 'เกี่ยวกับเรา', href: '/about', icon: Info },
   ];
 
   return (
@@ -389,6 +388,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Minimal Brand Footer */}
             <div className="pt-4 mt-6 border-t border-slate-100 text-center">
               <p className="text-[11px] text-slate-500 font-medium mb-1.5">
+                <Link href="/about" onClick={() => setIsMobileMenuOpen(false)} className="hover:underline">เกี่ยวกับเรา</Link>
+                {' · '}
                 <Link href="/legal" onClick={() => setIsMobileMenuOpen(false)} className="hover:underline">ข้อตกลงการใช้งาน</Link>
                 {' · '}
                 <Link href="/legal?tab=privacy" onClick={() => setIsMobileMenuOpen(false)} className="hover:underline">นโยบายความเป็นส่วนตัว</Link>

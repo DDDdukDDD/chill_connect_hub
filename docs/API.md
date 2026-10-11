@@ -132,6 +132,29 @@ Returns one **published** spot (`404` for drafts and unknown ids). The id is URL
 
 Response `200`: `{ success: true, spot: LifestyleSpotItem }`. Cache: `s-maxage=60`.
 
+`spot.meetupAllowed` is `true` when staff opened the place for member meet-ups (Spot Buddy). Places in the `bar` category never qualify.
+
+### `GET /api/spots/[id]/trips` — Spot Buddy on one place
+
+Response `200`: `{ success: true, meetupAllowed: boolean, trips: EventItem[], host?: { canHost: boolean, reason?: string } }`. Never shared-cached.
+
+- `meetupAllowed: false` → `trips` is empty and the page shows no Spot Buddy block.
+- `trips`: approved, not ended community events with this `spotId`, soonest first, without events from people the viewer blocked. Each carries `spotId`, `spotTitle` and `minParticipants` (3); a trip is confirmed when `participantsCount >= minParticipants` (`isTripConfirmed` in `lib/spotTripRules.ts`).
+- `host`: only for a signed-in viewer. `canHost: false` comes with a Thai `reason` to show next to the disabled button.
+
+### Spot Buddy trips — `POST /api/events` with `eventData.spotId`
+
+Sending `spotId` makes the event a Spot Buddy trip, and the server applies these rules (`lib/social/spotTrips.ts`). A refusal answers `{ success: false, message }` with `400`, `403` or `404`.
+
+- The place must exist, be published and have `meetupAllowed`.
+- The member must be allowed to host: no open report or risk flag, at most 2 trips still open, and they have been to something before (checked in by a host, or a fair in their plan or a fair meet-up group that is over). Members with an approved host application skip the last check.
+- `date` is `YYYY-MM-DD`, today or later. `time` is `HH:MM - HH:MM`, inside 06:00 - 19:00, one day only.
+- Send `meetingSpot`: one of `SPOT_TRIP_MEETING_POINTS` (`lib/spotTripRules.ts`). Anything else falls back to the first.
+- The server sets these itself and ignores what was sent: `eventType: 'community'`, `location`, `province`, `meetingPoint`, `latitude`, `longitude`, `spotTitle`, `transportation`, `minParticipants: 3`, and `maxParticipants` held to 3 - 15.
+- A member's trip always starts as `pending` and waits for staff review, approved hosts included. Without `spotId`, the fields `spotId`, `spotTitle` and `minParticipants` are dropped.
+
+`GET /api/events` also takes `spotId` as a filter.
+
 ### `GET /api/spots/[id]/nearby-dining`
 
 | Param | Default |
@@ -472,3 +495,21 @@ Answer: `{ success, places: [{ name, detail, latitude, longitude }] }` (at most 
 
 ### `POST /api/events` — participant count (BE-031)
 For a signed-in member the server ignores `participantsCount` in the body: the event starts at 0 and the creator is added as the first participant, so the answer's `event.participantsCount` is 1.
+
+## Reports for reviews and chat messages; blocking in event lists (added 2026-10-11, BE-032)
+
+### `POST /api/reports` — two more targets
+`targetType` may also be `review` (`targetId` = review id, as returned in a profile's `hostReviews.latest[].id`) or `chat_message` (`targetId` = message id from `GET /api/chat/{roomId}`). The server reads the words and their author from its own data; `targetTitle` in the body is ignored for these two. A chat message can be reported only by someone who can read that room (`403` otherwise). Reporting one's own review or message answers `400`.
+
+### `/api/admin/reports`
+- Each report may carry `excerpt` (the reported words when the report was sent). `hostMemberId` / `hostName` is the author for these two target types.
+- `POST { action: 'remove_content', id, note? }` (permission `community.review`): deletes the reported review or chat message and closes every open report about it. `404` when the report is closed or is about an event, a fair or a place.
+- `GET ?room=<reportId>` (permission `community.review`) → `{ reportedMessageId, messages: [{ id, authorId, authorName, text, createdAt }] }`: the whole chat room of a reported message. Works only for a report about a chat message (`404` otherwise) and writes `report.read_chat` to the audit log. Chat reports carry `roomId`.
+- `POST { action: 'remove_chat_message', id: reportId, messageId }` (permission `community.review`): deletes another message of that room. The report stays open.
+
+### `GET /api/events` — blocked members
+When the signed-in viewer has blocked someone, events that person created are left out of every list and search answer, and that answer is sent with `Cache-Control: private, no-store`. Other answers stay shared-cached. All answers carry `Vary: Cookie`. `total` and `pagination` are not recounted after the filter, so a page can be a few items short.
+
+### Moments feed — blocked members
+`comments` and `commentsCount` of each moment leave out comments from people the viewer blocked.
+

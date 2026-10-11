@@ -49,6 +49,15 @@ export async function hostReviewSummary(hostId: string, latestCount = 3) {
   return { count: mine.length, average: Math.round((mine.reduce((sum, r) => sum + r.rating, 0) / mine.length) * 10) / 10, latest };
 }
 
+export const reviewById = (id: string): EventReview | undefined => store.read().find((r) => r.id === id);
+
+/** Staff take a review down after a report; returns false when it is already gone */
+export async function removeReview(id: string): Promise<boolean> {
+  if (!reviewById(id)) return false;
+  await store.update((items) => items.filter((r) => r.id !== id));
+  return true;
+}
+
 /** Account deletion: reviews the member wrote go with them; reviews about them stay with the events */
 export async function removeReviewsBy(memberId: string): Promise<void> {
   await store.update((items) => items.filter((r) => r.authorId !== memberId));

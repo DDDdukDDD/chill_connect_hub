@@ -31,6 +31,8 @@ export interface EventQueryParams extends PaginationParams {
   zone?: string | null;
   district?: string | null;
   venueTag?: string | null;
+  /** Spot Buddy trips tied to one place */
+  spotId?: string | null;
   searchQuery?: string | null;
   status?: 'recruiting' | 'full' | 'ended' | 'all';
   includeEnded?: boolean;

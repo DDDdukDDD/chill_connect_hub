@@ -752,3 +752,44 @@ New placeholder content in a page must be behind `eventOrigin(...) === 'sample'`
 
 **Follow-up (same day):** the three items found in that test are fixed. The fixed pass numbers (`Pass #CCH-FAIR-0205`, `#CCH-2026`) are removed from the fair and event pages. `POST /api/events` starts a member's event at zero participants and then adds the creator, so a new event shows 1 joined, not 2 (the client's `participantsCount` is ignored). `/spots` puts a place a member suggested in the last 14 days first, newest on top, ahead of the popularity order. The grey map on the fair page was the lazy-loaded frame in the test screenshot, not a defect.
 
+### BE-032 (2026-10-11) Reports for reviews and chat messages; blocking covers comments and events; Moments reads live events — from Claude Code
+
+**What changed**
+- **Reports:** `POST /api/reports` accepts `targetType: 'review' | 'chat_message'` (see `docs/API.md`). A "รายงาน" link sits on each review of a host profile (`app/profile/ProfileScreen.tsx`) and under each message from someone else in the group chat (`components/GroupChatModal.tsx`). `components/ReportSafetyModal.tsx` takes the two new target types and leaves out the two reasons that only fit a place or a meeting.
+- **Admin:** the "รายงานความปลอดภัย" module shows the reported words and who wrote them, with a "ลบรีวิวนี้" / "ลบข้อความนี้" button that removes the content and closes every open report about it. On a chat report, "อ่านแชตทั้งห้อง" shows every message of that room with the reported one marked, and staff can delete other messages there. A room can be read only through a report about it, and each read is written to the audit log.
+- **Blocking:** a viewer no longer sees comments on moments from people they blocked (`lib/moments/service.ts`), nor events those people created, in lists and in search (`GET /api/events`).
+- **Moments page (`app/moments/page.tsx`):** no `MOCK_EVENTS` / `MOCK_CHALLENGES` / `MOCK_POSTS` imports are left. Recommended events and challenges, and the event or challenge a moment is about, come from `/api/events` and `/api/quests`. "My events" and "my saved places" in the post form come from the account (`useMyActivity`), not from fixed sample ids. A moment whose event or challenge no longer exists opens nothing; it used to open an unrelated one. The recommended list could show the same event twice; fixed.
+
+**Tested end to end:** a member who is not an approved host creates a community event, it stays pending and hidden, staff approve it in the review queue, and it appears with 1 participant.
+
+**Frontend action:** none. A new place that shows a review or a chat message should offer the same report link (`ReportSafetyModal` with `targetType` and the review or message id).
+
+### BE-033 (2026-10-11) Spot Buddy on the place page, with safety rules — from Claude Code
+
+**Why:** the owner chose Spot Buddy as the core of the platform. The place page had no way to invite people because meeting strangers away from a public event is risky. It now opens only for places staff marked as safe, under rules the server applies.
+
+**What changed**
+- **Places:** new field `meetupAllowed` on `LifestyleSpotItem`. Staff set it with the "นัดเจอได้" checkbox in the admin spot editor (`components/admin/SpotEditorDrawer.tsx`). It is off for every place until staff turn it on; the `bar` category cannot have it.
+- **Rules (`lib/social/spotTrips.ts`, shared numbers in `lib/spotTripRules.ts`):** at least 3 people before a trip is confirmed, daytime only (06:00 - 19:00, one day), the meeting point is the place itself (a fixed list of three), everyone travels on their own, no contact channel, at most 2 open trips per host, the host has been to something before, and a host with an open report cannot open a trip. See `docs/API.md` ("Spot Buddy trips").
+- **API:** `GET /api/spots/{id}/trips` (new), `spotId` filter on `GET /api/events`, trip rules on `POST /api/events` when `eventData.spotId` is sent. New `EventItem` fields: `spotId`, `spotTitle`, `minParticipants`.
+- **Former frontend files I edited:**
+  - `components/SpotBuddyTrips.tsx` (new): the block on the place page with open trips and the "ชวนเพื่อนไปที่นี่" button.
+  - `app/spots/[id]/page.tsx`: renders that block above the one-day plan card.
+  - `components/SpotBuddyGatheringModal.tsx`: in spot mode the place is locked, the meeting point is a choice, the ride-sharing options are gone, the date starts at tomorrow (it was fixed to 2026-09-01), and a refusal from the server is shown. It used to report success and save the trip in the browser even when the server refused. In fair mode it no longer posts a community event: the fair page already creates the group, so every fair group also left a pending community event behind.
+  - `app/myhub/page.tsx`: the "ชวนเพื่อนไป" button on a saved place shows only when the place has `meetupAllowed`.
+  - `app/community/[id]/page.tsx`: a trip shows whether it is confirmed.
+
+**Tested:** type check passes. The rules were run directly against a made-up place and members (valid trip, night time, past date, place not opened, bar, unknown place, new member, approved host, reported member). Not tested in a browser, and not tested end to end with a signed-in member.
+
+**Note for whoever runs the dev server:** restart `next dev` after pulling. The database object is kept across hot reloads, so the `spotId` filter does not apply until a restart.
+
+**Frontend action:** a place card may show how many trips are open later; there is no count endpoint yet (ask with an `FE-###`).
+
+### BE-034 (2026-10-11) Menu follows the core loop; event page reads "joined" from the account only — from Claude Code
+
+**What changed (former frontend files)**
+- **Menu (`components/Navbar.tsx`, `components/MobileNav.tsx`):** the items are ค้นพบ, โมเมนต์, ชาเลนจ์, มายฮับ. The bottom bar on phones leaves out มายฮับ for a visitor who is not signed in (the side menu still lists it). About moved from the menu list to the footer of the side menu. A ตี้เพื่อนใหม่ item was tried and taken out again at the owner's request.
+- **Event page (`app/community/[id]/page.tsx`):** it no longer adds `joined_event_ids`, `user_created_events` and `joinedSubActivities` from the browser to the joined list. Those lists belong to whoever used the browser last, so after switching accounts the next member looked "joined" and had no join button. Joined state now comes only from `useMyActivity`.
+
+**Still open:** `components/EventDetailModal.tsx`, `app/events/[id]/page.tsx`, `app/community/page.tsx` and `app/myhub/page.tsx` still read those browser lists; they were not checked for the same fault.
+

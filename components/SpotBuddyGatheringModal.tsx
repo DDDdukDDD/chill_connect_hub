@@ -24,6 +24,10 @@ import { SafetyGuidelinesModal } from './SafetyGuidelinesModal';
 import { useAuth } from '@/lib/useAuth';
 import { RichTextEditor, stripHtmlToPlainText } from './RichTextEditor';
 import { compressImage } from '@/lib/media/compressor';
+import {
+  SPOT_TRIP_EARLIEST, SPOT_TRIP_LATEST, SPOT_TRIP_MAX_PEOPLE, SPOT_TRIP_MEETING_POINTS,
+  SPOT_TRIP_MIN_PEOPLE, SPOT_TRIP_TRANSPORT,
+} from '@/lib/spotTripRules';
 
 export interface SpotBuddyPostItem {
   id: string;
@@ -151,17 +155,22 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
       } else {
         setTitle(`ชวนไป ${spotTitle}`);
         setLocationName(spotTitle || '');
-        setMeetingPoint(`หน้าจุดนัดหมายหลัก / หน้าร้าน ${spotTitle}`);
-        setStartTime('06:30');
-        setEndTime('08:30');
+        setMeetingPoint(SPOT_TRIP_MEETING_POINTS[0]);
+        setStartTime('10:00');
+        setEndTime('12:00');
         setItinerary([
-          { time: '06:30 น.', title: 'รวมตัวกันหน้าจุดนัดพบ' },
-          { time: '07:00 น.', title: 'เริ่มกิจกรรมหลักร่วมกัน' },
-          { time: '08:15 น.', title: 'แวะจิบกาแฟ & นั่งคุยผ่อนคลาย' },
+          { time: '10:00 น.', title: 'รวมตัวกันที่จุดนัดพบ' },
+          { time: '10:15 น.', title: 'เริ่มกิจกรรมหลักร่วมกัน' },
+          { time: '11:30 น.', title: 'นั่งคุยผ่อนคลายก่อนแยกย้าย' },
         ]);
-        setWhatToBringList(['ขวดน้ำดื่มส่วนตัว', 'รองเท้าวิ่ง / ผ้าใบ']);
+        setWhatToBringList(['ขวดน้ำดื่มส่วนตัว']);
+        setMaxParticipants((current) => Math.max(SPOT_TRIP_MIN_PEOPLE, current));
+        setTransportation(SPOT_TRIP_TRANSPORT);
         setDescription(`<p><strong>ภาพรวมกิจกรรม:</strong></p><p>ชวนเพื่อนสายเดียวกันไปเที่ยวหรือเปิดทริปฮีลใจยามว่างด้วยกันอย่างเป็นกันเอง ใครมาคนเดียวไม่ต้องเกร็ง ยินดีต้อนรับทุกคนครับ</p>`);
       }
+      // Tomorrow, in local time
+      const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      setDate(`${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`);
       setCoverImage(spotImage || PRESET_VIBE_IMAGES[0].url);
       setIsSafetyAccepted(false);
       setErrorMessage(null);
@@ -169,6 +178,9 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
   }, [isOpen, spotTitle, spotImage, mode]);
 
   if (!isOpen) return null;
+
+  // A trip to a place follows the Spot Buddy rules; a fair group is created by the fair page itself
+  const isSpotTrip = mode === 'spot';
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -276,8 +288,13 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
       setErrorMessage('กรุณาระบุรายละเอียดกิจกรรมอย่างน้อย 15 ตัวอักษร เพื่อให้ข้อมูลครบถ้วน');
       return;
     }
-    if (!maxParticipants || maxParticipants < 2) {
-      setErrorMessage('จำนวนคนที่เปิดรับต้องมีอย่างน้อย 2 คน');
+    const minPeople = isSpotTrip ? SPOT_TRIP_MIN_PEOPLE : 2;
+    if (!maxParticipants || maxParticipants < minPeople || maxParticipants > SPOT_TRIP_MAX_PEOPLE) {
+      setErrorMessage(`จำนวนคนที่เปิดรับต้องอยู่ระหว่าง ${minPeople} - ${SPOT_TRIP_MAX_PEOPLE} คน`);
+      return;
+    }
+    if (isSpotTrip && (startTime < SPOT_TRIP_EARLIEST || endTime > SPOT_TRIP_LATEST || endTime <= startTime)) {
+      setErrorMessage(`ทริปชวนเพื่อนนัดได้เฉพาะช่วงกลางวัน ${SPOT_TRIP_EARLIEST} - ${SPOT_TRIP_LATEST} น.`);
       return;
     }
     if (!isSafetyAccepted) {
@@ -311,6 +328,12 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
     (async () => {
       try {
         setIsSubmitting(true);
+        // A fair group is saved by the fair page (onSuccess); no community event is created for it
+        if (!isSpotTrip) {
+          onSuccess(newTrip);
+          onClose();
+          return;
+        }
         let createdId = newTrip.id;
 
         try {
@@ -322,11 +345,13 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
               eventData: {
                 ...newTrip,
                 eventType: 'community',
-                category: mode === 'fair' ? 'learn' : 'chill',
+                category: 'chill',
                 province: spotProvince || 'กรุงเทพฯ',
                 location: locationName.trim() || spotLocation,
                 spotId: spotId,
                 spotTitle: spotTitle,
+                // One of the fixed meeting points; the server builds the final text from the place itself
+                meetingSpot: meetingPoint,
                 hostId: userProfile.id || 'user-current',
                 status: 'recruiting',
                 isSoloFriendly: true,
@@ -336,12 +361,16 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
               },
             }),
           });
-          const data = await res.json();
-          if (data.success && data.event && data.event.id) {
-            createdId = data.event.id;
+          const data = await res.json().catch(() => null);
+          // The server decides whether a trip may open (place, account, time); a refusal is shown, never hidden
+          if (!res.ok || !data?.success) {
+            setErrorMessage(data?.message || 'เปิดทริปไม่สำเร็จ ลองใหม่อีกครั้ง');
+            return;
           }
-        } catch (apiErr) {
-          console.warn('API save fallback, using client persistence:', apiErr);
+          if (data.event && data.event.id) createdId = data.event.id;
+        } catch {
+          setErrorMessage('เชื่อมต่อไม่ได้ ลองใหม่อีกครั้ง');
+          return;
         }
 
         const finalTrip: SpotBuddyPostItem = {
@@ -357,7 +386,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
             const newEventPayload = {
               ...finalTrip,
               eventType: 'community',
-              category: mode === 'fair' ? 'learn' : 'chill',
+              category: 'chill',
               province: spotProvince || 'กรุงเทพฯ',
               location: locationName.trim() || spotLocation,
               spotId: spotId,
@@ -382,8 +411,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
         onClose();
       } catch (err) {
         console.error('Error creating spot buddy trip:', err);
-        onSuccess(newTrip);
-        onClose();
+        setErrorMessage('เปิดทริปไม่สำเร็จ ลองใหม่อีกครั้ง');
       } finally {
         setIsSubmitting(false);
       }
@@ -459,6 +487,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                     type="date"
                     required
                     value={date}
+                    min={new Date().toISOString().slice(0, 10)}
                     onChange={(e) => setDate(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 outline-none"
                   />
@@ -496,6 +525,9 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                   <div className="py-1 px-2.5 rounded-xl bg-white text-slate-700 text-[11px] font-semibold text-center border border-slate-200/90 shadow-2xs">
                     ช่วงเวลา: {startTime} - {endTime} น.
                   </div>
+                  {isSpotTrip && (
+                    <p className="text-[11px] text-slate-500">นัดได้เฉพาะกลางวัน {SPOT_TRIP_EARLIEST} - {SPOT_TRIP_LATEST} น. และจบในวันเดียว</p>
+                  )}
                 </div>
               </div>
 
@@ -513,6 +545,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                     type="text"
                     required
                     value={locationName}
+                    readOnly={isSpotTrip}
                     onChange={(e) => setLocationName(e.target.value)}
                     placeholder="หรือพิมพ์ระบุสถานที่ เช่น สวนเบญจกิติ / คาเฟ่ More Than Games อารีย์"
                     className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 outline-none focus:border-[#2563EB]"
@@ -526,14 +559,29 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                     </label>
                     <span className="text-[11px] text-slate-400">เช่น หน้าร้านกาแฟ, หน้าเสาธง</span>
                   </div>
-                  <input
-                    type="text"
-                    required
-                    value={meetingPoint}
-                    onChange={(e) => setMeetingPoint(e.target.value)}
-                    placeholder="เช่น หน้าประตู 1 โซนลานจอดรถ, หน้าบันไดสกายวอล์ค, หน้าร้านกาแฟ"
-                    className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 outline-none focus:border-[#2563EB]"
-                  />
+                  {isSpotTrip ? (
+                    <>
+                      <select
+                        value={meetingPoint}
+                        onChange={(e) => setMeetingPoint(e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 outline-none focus:border-[#2563EB] cursor-pointer"
+                      >
+                        {SPOT_TRIP_MEETING_POINTS.map((point) => (
+                          <option key={point} value={point}>{point} {spotTitle}</option>
+                        ))}
+                      </select>
+                      <p className="text-[11px] text-slate-500">ทริปชวนเพื่อนนัดเจอกันที่ตัวสถานที่เท่านั้น</p>
+                    </>
+                  ) : (
+                    <input
+                      type="text"
+                      required
+                      value={meetingPoint}
+                      onChange={(e) => setMeetingPoint(e.target.value)}
+                      placeholder="เช่น หน้าประตู 1 โซนลานจอดรถ, หน้าบันไดสกายวอล์ค, หน้าร้านกาแฟ"
+                      className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 outline-none focus:border-[#2563EB]"
+                    />
+                  )}
                 </div>
               </div>
 
@@ -768,12 +816,15 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                     </div>
                     <input
                       type="number"
-                      min={2}
-                      max={15}
+                      min={isSpotTrip ? SPOT_TRIP_MIN_PEOPLE : 2}
+                      max={SPOT_TRIP_MAX_PEOPLE}
                       value={maxParticipants}
                       onChange={(e) => setMaxParticipants(Number(e.target.value))}
                       className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 outline-none"
                     />
+                    {isSpotTrip && (
+                      <p className="mt-1 text-[11px] text-slate-500">ทริปยืนยันเมื่อครบ {SPOT_TRIP_MIN_PEOPLE} คน รวมคุณ</p>
+                    )}
                   </div>
 
                   <div>
@@ -837,16 +888,10 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                     <label className="text-[11px] font-bold text-slate-700 block mb-1">
                       สไตล์การเดินทาง:
                     </label>
-                    <select
-                      value={transportation}
-                      onChange={(e) => setTransportation(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 outline-none cursor-pointer"
-                    >
-                      <option value="พบกัน ณ จุดนัดพบ (เดินทางอิสระ)">พบกัน ณ จุดนัดพบ (เดินทางอิสระ)</option>
-                      <option value="มีรถยนต์ส่วนตัว (รับเพื่อนร่วมทางได้ / Carpool)">มีรถยนต์ส่วนตัว (รับเพื่อนร่วมทางได้ / Carpool)</option>
-                      <option value="เดินทางด้วย BTS / MRT">เดินทางด้วย BTS / MRT</option>
-                      <option value="แชร์ค่ารถ / แท็กซี่ไปด้วยกัน">แชร์ค่ารถ / แท็กซี่ไปด้วยกัน</option>
-                    </select>
+                    {/* Strangers do not share a ride to the first meeting: everyone travels on their own */}
+                    <p className="w-full px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800">
+                      {isSpotTrip ? SPOT_TRIP_TRANSPORT : transportation}
+                    </p>
                   </div>
 
                   <p className="text-xs font-medium text-slate-600 leading-relaxed p-3 rounded-xl bg-slate-50 border border-slate-200">

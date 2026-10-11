@@ -9,7 +9,9 @@ import type { AdminModuleId } from './AdminSidebar';
 
 interface Report {
   id: string;
-  targetType: 'community' | 'fair' | 'spot';
+  targetType: 'community' | 'fair' | 'spot' | 'review' | 'chat_message';
+  excerpt?: string;
+  roomId?: string;
   targetId: string;
   targetTitle: string;
   reasonLabel: string;
@@ -24,12 +26,22 @@ interface Report {
   note?: string;
 }
 
-const TYPE_LABELS = { community: 'กิจกรรมคอมมูนิตี้', fair: 'งานแฟร์', spot: 'สถานที่' };
-const PUBLIC_PATHS = { community: '/community/', fair: '/fairs/', spot: '/spots/' };
-const MODULES: Record<Report['targetType'], AdminModuleId> = { community: 'community', fair: 'fairs', spot: 'spots' };
+const TYPE_LABELS = { community: 'กิจกรรมคอมมูนิตี้', fair: 'งานแฟร์', spot: 'สถานที่', review: 'รีวิว', chat_message: 'ข้อความแชตกลุ่ม' };
+// Reviews and chat messages have no page of their own; staff read the reported words in the report
+const PUBLIC_PATHS: Partial<Record<Report['targetType'], string>> = { community: '/community/', fair: '/fairs/', spot: '/spots/' };
+const MODULES: Partial<Record<Report['targetType'], AdminModuleId>> = { community: 'community', fair: 'fairs', spot: 'spots' };
+const isWords = (report: Report) => report.targetType === 'review' || report.targetType === 'chat_message';
+interface RoomMessage {
+  id: string;
+  authorId: string;
+  authorName: string;
+  text: string;
+  createdAt: string;
+}
+
 const formatDate = (iso: string) => new Date(iso).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
 
-/** Safety reports members send from event, fair and place pages. Staff read them, act in the content module, then close them. */
+/** Safety reports members send from event, fair and place pages, and about reviews and group chat messages. Staff read them, act in the content module, then close them. */
 export function ReportsManagerView({ onNavigate }: { onNavigate: (module: AdminModuleId) => void }) {
   const { can } = useAdminSession();
   const [status, setStatus] = useState<'open' | 'closed'>('open');
@@ -39,6 +51,9 @@ export function ReportsManagerView({ onNavigate }: { onNavigate: (module: AdminM
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
+  // The chat room of one report, opened by staff to read the reported line in context
+  const [room, setRoom] = useState<{ reportId: string; reportedMessageId: string; messages: RoomMessage[] } | null>(null);
+  const [roomBusy, setRoomBusy] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -60,11 +75,11 @@ export function ReportsManagerView({ onNavigate }: { onNavigate: (module: AdminM
     };
   }, [status, reloadToken]);
 
-  const close = async (report: Report) => {
+  const close = async (report: Report, action: 'close' | 'remove_content' = 'close') => {
     setBusyId(report.id);
     setError(null);
     try {
-      const res = await fetch('/api/admin/reports', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'close', id: report.id, note: notes[report.id] ?? '' }) });
+      const res = await fetch('/api/admin/reports', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, id: report.id, note: notes[report.id] ?? '' }) });
       if (handleAdminUnauthorized(res)) return;
       const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.error || 'ปิดรายงานไม่สำเร็จ');
@@ -76,12 +91,45 @@ export function ReportsManagerView({ onNavigate }: { onNavigate: (module: AdminM
     }
   };
 
+  const openRoom = async (report: Report) => {
+    if (room?.reportId === report.id) return setRoom(null);
+    setRoomBusy(report.id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/reports?room=${encodeURIComponent(report.id)}`, { cache: 'no-store' });
+      if (handleAdminUnauthorized(res)) return;
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error || 'เปิดแชตไม่สำเร็จ');
+      setRoom({ reportId: report.id, reportedMessageId: json.reportedMessageId, messages: json.messages });
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setRoomBusy(null);
+    }
+  };
+
+  const removeRoomMessage = async (reportId: string, messageId: string) => {
+    setRoomBusy(messageId);
+    setError(null);
+    try {
+      const res = await fetch('/api/admin/reports', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'remove_chat_message', id: reportId, messageId }) });
+      if (handleAdminUnauthorized(res)) return;
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error || 'ลบข้อความไม่สำเร็จ');
+      setRoom((current) => (current ? { ...current, messages: current.messages.filter((message) => message.id !== messageId) } : current));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setRoomBusy(null);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <AdminPageHeader
         icon={Flag}
         title="รายงานความปลอดภัย"
-        description="สิ่งที่สมาชิกรายงานจากหน้ากิจกรรม งานแฟร์ และสถานที่ ผู้ถูกรายงานไม่เห็นว่าใครรายงาน"
+        description="สิ่งที่สมาชิกรายงานจากหน้ากิจกรรม งานแฟร์ สถานที่ รีวิว และแชตกลุ่ม ผู้ถูกรายงานไม่เห็นว่าใครรายงาน"
         badge={openCount > 0 ? <AdminBadge tone="amber">{openCount} รอดู</AdminBadge> : undefined}
         actions={
           <button type="button" onClick={() => { setReports(null); setReloadToken((token) => token + 1); }} className={adminButton.secondary}>
@@ -119,14 +167,28 @@ export function ReportsManagerView({ onNavigate }: { onNavigate: (module: AdminM
                 <div><dt className="font-semibold text-slate-500">เหตุผล</dt><dd className="mt-0.5 font-bold text-slate-900">{report.reasonLabel}</dd></div>
                 <div><dt className="font-semibold text-slate-500">ผู้รายงาน</dt><dd className="mt-0.5 text-slate-800">{report.reporterName}</dd></div>
                 {report.details && <div className="sm:col-span-2"><dt className="font-semibold text-slate-500">รายละเอียด</dt><dd className="mt-0.5 text-slate-800 whitespace-pre-wrap">{report.details}</dd></div>}
-                {report.hostName && <div><dt className="font-semibold text-slate-500">คนจัด</dt><dd className="mt-0.5 text-slate-800">{report.hostName}</dd></div>}
+                {report.excerpt && <div className="sm:col-span-2"><dt className="font-semibold text-slate-500">ข้อความที่ถูกรายงาน</dt><dd className="mt-0.5 rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-slate-900 whitespace-pre-wrap break-words">{report.excerpt}</dd></div>}
+                {report.hostName && <div><dt className="font-semibold text-slate-500">{isWords(report) ? 'คนเขียน' : 'คนจัด'}</dt><dd className="mt-0.5 text-slate-800">{report.hostName}</dd></div>}
                 {report.status === 'closed' && <div className="sm:col-span-2"><dt className="font-semibold text-slate-500">ปิดโดย</dt><dd className="mt-0.5 text-slate-800">{report.closedBy}{report.note ? ` · ${report.note}` : ''}</dd></div>}
               </dl>
               <div className="flex items-center gap-2 flex-wrap border-t border-slate-100 pt-3">
-                <a href={`${PUBLIC_PATHS[report.targetType]}${report.targetId}`} target="_blank" rel="noopener noreferrer" className={adminButton.secondary}>
-                  เปิดหน้าเว็บ <ExternalLink size={12} />
-                </a>
-                <button type="button" onClick={() => onNavigate(MODULES[report.targetType])} className={adminButton.secondary}>ไปที่หน้าจัดการ</button>
+                {PUBLIC_PATHS[report.targetType] && (
+                  <a href={`${PUBLIC_PATHS[report.targetType]}${report.targetId}`} target="_blank" rel="noopener noreferrer" className={adminButton.secondary}>
+                    เปิดหน้าเว็บ <ExternalLink size={12} />
+                  </a>
+                )}
+                {MODULES[report.targetType] && <button type="button" onClick={() => onNavigate(MODULES[report.targetType]!)} className={adminButton.secondary}>ไปที่หน้าจัดการ</button>}
+                {report.targetType === 'chat_message' && report.roomId && can('community.review') && (
+                  <button type="button" disabled={roomBusy === report.id} aria-expanded={room?.reportId === report.id} onClick={() => openRoom(report)} className={adminButton.secondary}>
+                    {roomBusy === report.id && <Loader2 size={13} className="animate-spin" />}
+                    {room?.reportId === report.id ? 'ซ่อนแชต' : 'อ่านแชตทั้งห้อง'}
+                  </button>
+                )}
+                {report.status === 'open' && isWords(report) && can('community.review') && (
+                  <button type="button" disabled={busyId === report.id} onClick={() => close(report, 'remove_content')} className={adminButton.danger}>
+                    {report.targetType === 'review' ? 'ลบรีวิวนี้' : 'ลบข้อความนี้'}
+                  </button>
+                )}
                 {report.hostMemberId && can('members.manage') && <button type="button" onClick={() => onNavigate('members')} className={adminButton.secondary}>ไปที่สมาชิก</button>}
                 {report.status === 'open' && can('community.review') && (
                   <span className="flex items-center gap-2 ml-auto flex-1 sm:flex-none min-w-[240px]">
@@ -138,6 +200,36 @@ export function ReportsManagerView({ onNavigate }: { onNavigate: (module: AdminM
                   </span>
                 )}
               </div>
+              {room?.reportId === report.id && (
+                <div className="border-t border-slate-100 pt-3 space-y-2">
+                  <p className="text-xs font-semibold text-slate-500">แชตทั้งห้อง · {room.messages.length} ข้อความ · การเปิดอ่านถูกบันทึกในประวัติการทำงาน</p>
+                  {room.messages.length === 0 ? (
+                    <p className="text-xs text-slate-500">ไม่มีข้อความเหลือในห้องนี้</p>
+                  ) : (
+                    <ul className="max-h-80 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100">
+                      {room.messages.map((message) => {
+                        const isReported = message.id === room.reportedMessageId;
+                        return (
+                          <li key={message.id} className={`flex items-start gap-3 px-3 py-2 text-xs ${isReported ? 'bg-amber-50' : 'bg-white'}`}>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-slate-500">
+                                <span className="text-slate-900 font-bold">{message.authorName}</span> · {formatDate(message.createdAt)}
+                                {isReported && <span className="ml-2 font-bold text-amber-800">ข้อความที่ถูกรายงาน</span>}
+                              </p>
+                              <p className="mt-0.5 text-slate-800 whitespace-pre-wrap break-words">{message.text}</p>
+                            </div>
+                            {!isReported && (
+                              <button type="button" disabled={roomBusy === message.id} onClick={() => removeRoomMessage(report.id, message.id)} className="shrink-0 font-bold text-rose-700 hover:underline disabled:opacity-50 cursor-pointer" aria-label={`ลบข้อความของ ${message.authorName}`}>
+                                ลบ
+                              </button>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              )}
             </li>
           ))}
         </ul>
