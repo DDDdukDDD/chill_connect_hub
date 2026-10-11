@@ -414,6 +414,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
           <button
             type="button"
             onClick={onClose}
+            aria-label="ปิด"
             className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 flex items-center justify-center transition-colors cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />

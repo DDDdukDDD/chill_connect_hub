@@ -65,7 +65,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   const [subNoteInput, setSubNoteInput] = useState('');
   const [hasAcceptedSafetyPledge, setHasAcceptedSafetyPledge] = useState(false);
   const [safetyError, setSafetyError] = useState<string | null>(null);
-  const [reportModalTarget, setReportModalTarget] = useState<{ title: string; hostName?: string } | null>(null);
+  const [reportModalTarget, setReportModalTarget] = useState<{ title: string } | null>(null);
   const [expandedSubId, setExpandedSubId] = useState<string | null>(null);
   const [joinedSubIds, setJoinedSubIds] = useState<string[]>([]);
   const [selectedProfileQuery, setSelectedProfileQuery] = useState<string | null>(null);
@@ -1021,7 +1021,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setReportModalTarget({ title: sub.title, hostName: sub.creatorName });
+                                setReportModalTarget({ title: sub.title });
                               }}
                               className="text-[10px] text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1 rounded-md transition-colors cursor-pointer"
                               title="รายงานความไม่ปลอดภัยของกลุ่มนี้"
@@ -1462,8 +1462,10 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
         <ReportSafetyModal
           isOpen={!!reportModalTarget}
           onClose={() => setReportModalTarget(null)}
-          targetTitle={reportModalTarget.title}
-          targetHostName={reportModalTarget.hostName}
+          targetType={event.eventType === 'community' ? 'community' : 'fair'}
+          targetId={event.id}
+          targetTitle={event.title}
+          subject={reportModalTarget.title}
         />
       )}
 

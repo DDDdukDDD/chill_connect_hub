@@ -1385,8 +1385,9 @@ export default function FairDetailPage() {
           <ReportSafetyModal
             isOpen={isReportModalOpen}
             onClose={() => setIsReportModalOpen(false)}
+            targetType="fair"
+            targetId={eventData.id}
             targetTitle={eventData.title}
-            targetHostName={venueOrganizerName}
           />
           {selectedPassData && (
             <ExpoMeetupPassModal

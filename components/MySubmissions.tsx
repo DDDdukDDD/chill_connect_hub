@@ -34,11 +34,11 @@ export function MySubmissions() {
           status: spot.reviewRejectedAt ? 'ไม่ผ่านการตรวจ' : spot.publicationStatus === 'draft' ? 'รอทีมงานตรวจ' : 'เผยแพร่แล้ว',
           waiting: spot.reviewRejectedAt !== undefined || spot.publicationStatus === 'draft',
         })),
-        ...((quests?.quests ?? []) as Array<{ id: string; title: string; status?: string }>).map((quest) => ({
+        ...((quests?.quests ?? []) as Array<{ id: string; title: string; status?: string; reviewRejectedAt?: string }>).map((quest) => ({
           id: quest.id,
           kind: 'ชาเลนจ์',
           title: quest.title,
-          status: quest.status === 'draft' ? 'รอทีมงานตรวจ' : quest.status === 'ended' ? 'จบแล้ว' : 'เผยแพร่แล้ว',
+          status: quest.reviewRejectedAt ? 'ไม่ผ่านการตรวจ' : quest.status === 'draft' ? 'รอทีมงานตรวจ' : quest.status === 'ended' ? 'จบแล้ว' : 'เผยแพร่แล้ว',
           waiting: quest.status === 'draft',
         })),
       ]);

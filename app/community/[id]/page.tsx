@@ -1533,8 +1533,9 @@ export default function CommunityDetailPage() {
           <ReportSafetyModal
             isOpen={isReportModalOpen}
             onClose={() => setIsReportModalOpen(false)}
+            targetType="community"
+            targetId={eventData.id}
             targetTitle={eventData.title}
-            targetHostName={eventData.hostName}
           />
         </>
       )}

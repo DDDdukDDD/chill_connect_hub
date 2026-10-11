@@ -281,6 +281,19 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
   const [canScrollRight, setCanScrollRight] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
 
+  const checkScrollability = () => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+      setCanScrollLeft(scrollLeft > 5);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 5);
+
+      const firstCard = scrollContainerRef.current.firstElementChild as HTMLElement | null;
+      const cardWidth = firstCard ? firstCard.offsetWidth + 16 : 320;
+      const index = Math.round(scrollLeft / cardWidth);
+      setActiveIndex(Math.min(Math.max(0, index), questItems.length - 1));
+    }
+  };
+
   // Reset scroll when filter changes
   useEffect(() => {
     if (scrollContainerRef.current) {
@@ -309,19 +322,6 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
       isActive = false;
     };
   }, []);
-
-  const checkScrollability = () => {
-    if (scrollContainerRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
-      setCanScrollLeft(scrollLeft > 5);
-      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 5);
-
-      const firstCard = scrollContainerRef.current.firstElementChild as HTMLElement | null;
-      const cardWidth = firstCard ? firstCard.offsetWidth + 16 : 320;
-      const index = Math.round(scrollLeft / cardWidth);
-      setActiveIndex(Math.min(Math.max(0, index), questItems.length - 1));
-    }
-  };
 
   useEffect(() => {
     checkScrollability();

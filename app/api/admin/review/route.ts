@@ -1,22 +1,25 @@
 import { NextResponse } from 'next/server';
 import { actorCan, getAdminActor, requireAdminApiAccess } from '@/lib/adminApiAuth';
 import { recordAudit } from '@/lib/auditLog';
-import { checkEventQuality, checkSpotQuality, QualityReport } from '@/lib/contentQuality';
+import { checkEventQuality, checkQuestQuality, checkSpotQuality, QualityReport } from '@/lib/contentQuality';
 import { db, paginateArray } from '@/lib/db';
 import { isEventEnded, parseEventEndDateToTimestamp } from '@/lib/dateUtils';
 import { AdminEventItem, listAdminEvents } from '@/lib/eventsStore';
 import { getAllDataSources } from '@/lib/sourcesStore';
 import { isThaiCoordinate } from '@/lib/scrapers/tourismDirectory';
 import { LifestyleSpotItem, MOCK_SPOTS } from '@/data/spotsData';
+import type { ChallengeQuest } from '@/data/mockData';
+import { parseQuestDate } from '@/lib/questLifecycle';
 
 /**
  * Unified review queue: everything waiting for a decision, across pillars.
  * - community / fairs: events with approvalStatus "pending"
  * - spots: draft spots that came from a scraper or a member, excluding the retired curated set
  *   (bundled MOCK_SPOTS, unpublished on purpose) and spots already rejected in review
+ * - quests: draft challenges a member proposed (staff's own drafts stay in the challenge manager)
  */
-type Pillar = 'community' | 'fairs' | 'spots';
-type ReviewKind = 'event' | 'spot';
+type Pillar = 'community' | 'fairs' | 'spots' | 'quests';
+type ReviewKind = 'event' | 'spot' | 'quest';
 
 interface ReviewItem {
   kind: ReviewKind;
@@ -27,10 +30,10 @@ interface ReviewItem {
   source: string;
   submittedAt: number | null;
   quality: QualityReport;
-  data: AdminEventItem | LifestyleSpotItem;
+  data: AdminEventItem | LifestyleSpotItem | ChallengeQuest;
 }
 
-const PILLARS = new Set<Pillar>(['community', 'fairs', 'spots']);
+const PILLARS = new Set<Pillar>(['community', 'fairs', 'spots', 'quests']);
 const RETIRED_CURATED_IDS = new Set(MOCK_SPOTS.map((spot) => spot.id));
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -45,6 +48,25 @@ async function getAllSpots(): Promise<LifestyleSpotItem[]> {
 
 function isQueuedSpot(spot: LifestyleSpotItem): boolean {
   return spot.publicationStatus === 'draft' && !RETIRED_CURATED_IDS.has(spot.id) && !spot.reviewRejectedAt;
+}
+
+async function getProposedQuests(): Promise<ChallengeQuest[]> {
+  const result = await db.findQuests({ page: 1, limit: 100, includeDrafts: true, status: 'draft' });
+  return result.items.filter((quest) => quest.createdByMemberId && !quest.reviewRejectedAt);
+}
+
+function toQuestItem(quest: ChallengeQuest): ReviewItem {
+  return {
+    kind: 'quest',
+    id: quest.id,
+    pillar: 'quests',
+    title: quest.title,
+    province: '',
+    source: `สมาชิกเสนอ: ${quest.creatorName || 'ไม่ระบุ'}`,
+    submittedAt: Number(quest.id.replace('quest-', '')) || null,
+    quality: checkQuestQuality(quest),
+    data: quest,
+  };
 }
 
 function toEventItem(event: AdminEventItem): ReviewItem {
@@ -112,16 +134,18 @@ export async function GET(request: Request) {
   const page = Number.parseInt(searchParams.get('page') || '1', 10) || 1;
   const limit = Math.min(Number.parseInt(searchParams.get('limit') || '20', 10) || 20, 100);
 
-  const [events, spots] = await Promise.all([listAdminEvents(), getAllSpots()]);
+  const [events, spots, quests] = await Promise.all([listAdminEvents(), getAllSpots(), getProposedQuests()]);
   const all: ReviewItem[] = [
     ...events.filter((event) => event.approvalStatus === 'pending').map(toEventItem),
     ...spots.filter(isQueuedSpot).map(toSpotItem),
+    ...quests.map(toQuestItem),
   ];
   const counts = {
     all: all.length,
     community: all.filter((item) => item.pillar === 'community').length,
     fairs: all.filter((item) => item.pillar === 'fairs').length,
     spots: all.filter((item) => item.pillar === 'spots').length,
+    quests: all.filter((item) => item.pillar === 'quests').length,
   };
 
   // Most complete first, so quick approvals surface; then newest
@@ -172,7 +196,7 @@ export async function POST(request: Request) {
   }
   const requested = Array.isArray(body.items)
     ? body.items.filter((item): item is { kind: ReviewKind; id: string } =>
-      Boolean(item) && (item.kind === 'event' || item.kind === 'spot') && typeof item.id === 'string')
+      Boolean(item) && (item.kind === 'event' || item.kind === 'spot' || item.kind === 'quest') && typeof item.id === 'string')
     : [];
   if (requested.length === 0 || requested.length > 200) {
     return NextResponse.json({ success: false, error: 'ระบุรายการ 1-200 รายการ' }, { status: 400 });
@@ -183,9 +207,16 @@ export async function POST(request: Request) {
   const spotIds = new Set(requested.filter((item) => item.kind === 'spot').map((item) => item.id));
   const events = (await listAdminEvents()).filter((event) => eventIds.has(event.id) && event.approvalStatus === 'pending');
   const spots = spotIds.size ? (await getAllSpots()).filter((spot) => spotIds.has(spot.id) && isQueuedSpot(spot)) : [];
+  const questIds = new Set(requested.filter((item) => item.kind === 'quest').map((item) => item.id));
+  const quests = questIds.size ? (await getProposedQuests()).filter((quest) => questIds.has(quest.id)) : [];
+  // A challenge whose end date has passed cannot go live; staff fix the dates in the challenge manager first
+  const expired = action === 'approve' ? quests.filter((quest) => (parseQuestDate(quest.endDate, true) ?? Infinity) < Date.now()) : [];
+  if (expired.length) {
+    return NextResponse.json({ success: false, error: `ชาเลนจ์ "${expired[0].title}" หมดเวลาแล้ว แก้วันสิ้นสุดก่อนอนุมัติ` }, { status: 400 });
+  }
 
-  // Moderators may decide community meetups only; fairs and spots need content.edit
-  const needsEdit = spots.length > 0 || events.some((event) => event.eventType !== 'community');
+  // Moderators may decide community meetups only; fairs, spots and challenges need content.edit
+  const needsEdit = spots.length > 0 || quests.length > 0 || events.some((event) => event.eventType !== 'community');
   if (needsEdit && !actorCan(actor, 'content.edit')) {
     return NextResponse.json(
       { success: false, error: 'บัญชีนี้ตรวจได้เฉพาะกิจกรรมคอมมูนิตี้', permission: 'content.edit' },
@@ -210,6 +241,12 @@ export async function POST(request: Request) {
     )));
   }
 
+  for (const quest of quests) {
+    await db.updateQuest(quest.id, action === 'approve'
+      ? { status: 'active' }
+      : { reviewRejectedAt: new Date(moderatedAt).toISOString(), rejectionReason: reason || undefined });
+  }
+
   const verb = action === 'approve' ? 'อนุมัติ' : 'ปฏิเสธ';
   for (const event of events) {
     recordAudit(actor, `event.${action}`, `${verb}${event.eventType === 'community' ? 'กิจกรรม' : 'งานแฟร์'} "${event.title}"${reason && action === 'reject' ? ` · เหตุผล: ${reason}` : ''}`, { type: 'event', id: event.id });
@@ -217,10 +254,13 @@ export async function POST(request: Request) {
   for (const spot of spots) {
     recordAudit(actor, `spot.${action}`, `${verb}สถานที่ "${spot.title}"${reason && action === 'reject' ? ` · เหตุผล: ${reason}` : ''}`, { type: 'spot', id: spot.id });
   }
+  for (const quest of quests) {
+    recordAudit(actor, `quest.${action}`, `${verb}ชาเลนจ์ที่สมาชิกเสนอ "${quest.title}"${reason && action === 'reject' ? ` · เหตุผล: ${reason}` : ''}`, { type: 'quest', id: quest.id });
+  }
 
   return NextResponse.json({
     success: true,
-    updated: events.length + spots.length,
-    skipped: requested.length - events.length - spots.length,
+    updated: events.length + spots.length + quests.length,
+    skipped: requested.length - events.length - spots.length - quests.length,
   });
 }

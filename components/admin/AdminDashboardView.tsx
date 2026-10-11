@@ -27,7 +27,7 @@ interface Health {
 }
 
 interface OverviewData {
-  counts: { all: number; community: number; fairs: number; spots: number };
+  counts: { all: number; community: number; fairs: number; spots: number; quests: number };
   items: QueueItem[];
   health: Health;
   activity: AuditEntry[] | null;
@@ -128,8 +128,8 @@ export function AdminDashboardView({ onNavigate }: { onNavigate: (module: AdminM
               เปิดคิวตรวจ <ArrowRight size={13} />
             </button>
           </div>
-          <div className="grid grid-cols-3 divide-x divide-slate-100 border-b border-slate-100">
-            {(['community', 'fairs', 'spots'] as const).map((pillar) => (
+          <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-slate-100 border-b border-slate-100">
+            {(['community', 'fairs', 'spots', 'quests'] as const).map((pillar) => (
               <button key={pillar} type="button" onClick={() => onNavigate('review')} className="px-4 py-3 text-left hover:bg-slate-50">
                 <PillarBadge pillar={pillar} />
                 <p className="mt-2 text-2xl font-black tabular-nums text-slate-900">{isLoading && !data ? '—' : data?.counts[pillar] ?? 0}</p>

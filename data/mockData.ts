@@ -164,6 +164,9 @@ export interface ChallengeQuest {
   brandReward?: QuestReward;
   /** Set by the server when a member proposed this challenge (it starts as a draft for staff to review) */
   createdByMemberId?: string;
+  /** Set when a member's proposal was rejected in the review queue (it stays a hidden draft) */
+  reviewRejectedAt?: string;
+  rejectionReason?: string;
 }
 
 export interface PostComment {

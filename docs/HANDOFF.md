@@ -707,3 +707,15 @@ From 2026-10-11 the owner asked Claude Code to do all work, frontend included.
 **Frontend action:** none. New date text must use `formatThaiDateBE` / `toBuddhistEra` from `lib/dateUtils.ts`.
 
 **Not done yet:** no "เสนอชาเลนจ์" button on `/challenges` (the chooser reaches it from My Hub and other pages without `initialType`); staff see proposed challenges as drafts in the challenge manager, not in the unified review queue; `components/CreateChallengeModal.tsx` (home page) is the older local-only dialog.
+
+### BE-029 (2026-10-11) Safety reports are real; proposed challenges in the review queue — from Claude Code
+
+**What changed**
+- `components/ReportSafetyModal.tsx` used to save nothing and still say the report was received. It is rewritten on `DialogShell` and posts to `POST /api/reports`. Props changed: `targetType` and `targetId` are required, `targetHostName` is gone, `subject` is optional. The four call sites are updated (`app/community/[id]`, `app/fairs/[id]`, `app/spots/[id]`, `components/EventDetailModal.tsx`).
+- Admin console: new module "รายงานความปลอดภัย" (`components/admin/ReportsManagerView.tsx`) with an open count in the sidebar.
+- Review queue: member-proposed challenges appear under a "ชาเลนจ์" tab and can be approved or rejected there.
+- `/challenges` has an "เสนอชาเลนจ์" button that opens the create dialog on the challenge form.
+- `components/CreateChallengeModal.tsx` is deleted: nothing opened it, and it only wrote to the browser.
+- Three lint errors fixed (`app/challenges/page.tsx`, `app/page.tsx`, `components/CommunityChallengeBar.tsx`); `npx eslint app components lib --quiet` is clean.
+
+**Frontend action:** any new "รายงาน" button must pass `targetType` and `targetId` to `ReportSafetyModal`.
