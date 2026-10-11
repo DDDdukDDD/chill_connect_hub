@@ -61,6 +61,7 @@ function SpotsPageContent() {
   const [priceFilter, setPriceFilter] = useState<'all' | 'free'>((searchParams.get('price') as any) || 'all');
   const [sortBy, setSortBy] = useState<'newest' | 'favorites'>('newest');
   const [sortByNearMe, setSortByNearMe] = useState(false);
+  const [openedAt] = useState(() => Date.now());
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -247,8 +248,17 @@ function SpotsPageContent() {
       }));
       result.sort((a, b) => ((a as any).distanceKm ?? 999) - ((b as any).distanceKm ?? 999));
     } else {
-      // Smart Popularity Ranking: nationwide view count signal + rating bonus
+      // Smart Popularity Ranking: nationwide view count signal + rating bonus.
+      // A place a member suggested in the last 14 days goes first (newest on top): it has no views or rating yet
+      // and would otherwise sit on the last page where nobody finds it.
+      const freshSince = openedAt - 14 * 24 * 60 * 60 * 1000;
+      const freshness = (spot: LifestyleSpotItem) => {
+        const suggested = spot.suggestedAt ? Date.parse(spot.suggestedAt) : 0;
+        return suggested >= freshSince ? suggested : 0;
+      };
       result.sort((a, b) => {
+        const fresh = freshness(b) - freshness(a);
+        if (fresh !== 0) return fresh;
         const scoreA = (a.popularity || 0) + (a.rating > 0 ? a.rating * 200 : 0);
         const scoreB = (b.popularity || 0) + (b.rating > 0 ? b.rating * 200 : 0);
         return scoreB - scoreA;
@@ -256,7 +266,7 @@ function SpotsPageContent() {
     }
 
     return result;
-  }, [spotsList, selectedCategory, selectedProvince, priceFilter, sortBy, sortByNearMe, userLocation, favoriteSpots, searchQuery]);
+  }, [spotsList, selectedCategory, selectedProvince, priceFilter, sortBy, sortByNearMe, userLocation, favoriteSpots, searchQuery, openedAt]);
 
   // Dynamic spot counts per vibe category: Single-Pass O(N) calculation (< 1ms)
   const spotCounts = useMemo(() => {

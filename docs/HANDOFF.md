@@ -750,5 +750,5 @@ New placeholder content in a page must be behind `eventOrigin(...) === 'sample'`
 - `app/spots/[id]/page.tsx`: generic transport lines are seed-only; the photo label says whose photo it is.
 - "ที่คุณอาจสนใจ" on the event and fair pages no longer lists ended events.
 
-**Still open, seen in the same test:** the fair page shows "บันทึกกำหนดการใน My Hub แล้ว · Pass #CCH-FAIR-0205" with a fixed pass number; a new community event shows 2 of 8 joined when only the host is in; a newly approved place is not on the first page of `/spots`.
+**Follow-up (same day):** the three items found in that test are fixed. The fixed pass numbers (`Pass #CCH-FAIR-0205`, `#CCH-2026`) are removed from the fair and event pages. `POST /api/events` starts a member's event at zero participants and then adds the creator, so a new event shows 1 joined, not 2 (the client's `participantsCount` is ignored). `/spots` puts a place a member suggested in the last 14 days first, newest on top, ahead of the popularity order. The grey map on the fair page was the lazy-loaded frame in the test screenshot, not a defect.
 

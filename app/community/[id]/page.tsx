@@ -972,9 +972,6 @@ export default function CommunityDetailPage() {
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>{isHost ? 'คุณเป็นโฮสต์ผู้จัดตี้' : 'คุณลงทะเบียนเรียบร้อยแล้ว'}</span>
                   </span>
-                  <span className="text-[11px] font-mono text-emerald-700/80 font-bold">
-                    #CCH-2026
-                  </span>
                 </div>
               )}
 

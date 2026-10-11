@@ -469,3 +469,6 @@ Answer: `{ success, places: [{ name, detail, latitude, longitude }] }` (at most 
 
 ### `/api/admin/review` — places need a pin
 `POST { action: 'approve' }` answers `400` when a place in the request has no coordinates inside Thailand. Nothing in the request is approved; staff set the pin in the spot editor first.
+
+### `POST /api/events` — participant count (BE-031)
+For a signed-in member the server ignores `participantsCount` in the body: the event starts at 0 and the creator is added as the first participant, so the answer's `event.participantsCount` is 1.

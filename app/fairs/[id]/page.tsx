@@ -611,9 +611,6 @@ export default function FairDetailPage() {
                     <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                     <span>บันทึกกำหนดการใน My Hub แล้ว</span>
                   </span>
-                  <span className="text-xs text-sky-200/80 font-mono">
-                    Pass #CCH-FAIR-0205
-                  </span>
                 </div>
                 <p className="text-sm sm:text-base font-bold text-white tracking-tight truncate">
                   {eventData.date} • {eventData.time || '10:00 - 21:00 น.'}
