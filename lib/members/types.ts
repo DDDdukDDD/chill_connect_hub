@@ -140,6 +140,10 @@ export interface Member {
   reportsReceived?: { byId: string; reason: string; at: string }[];
   /** Members this member does not want to see */
   blockedIds?: string[];
+  /** Members whose moments this member follows */
+  followingIds?: string[];
+  /** Development sample account (author of bundled sample moments); cannot sign in. Remove before launch. */
+  isSample?: boolean;
   createdAt: string;
   lastLoginAt?: string;
   lastLoginMethod?: LoginMethod;

@@ -4,7 +4,7 @@ import { momentRepository } from '../moments';
 import { MemberAuthError } from './accounts';
 import { memberRepository } from './index';
 import {
-  NEW_ACCOUNT_DAYS, NEW_ACCOUNT_LIMITS, PLEDGE_VERSION, accountAgeDays, containsContactInfo, isDisposableEmail, makeFlag, riskTermsIn, trustLevel, trustOf,
+  NEW_ACCOUNT_DAYS, NEW_ACCOUNT_LIMITS, PLEDGE_VERSION, accountAgeDays, containsContactInfo, hasOpenRisk, isDisposableEmail, makeFlag, riskTermsIn, trustLevel, trustOf,
 } from './trust';
 import {
   PROFILE_FIELD_KEYS, PROFILE_HIDDEN_BY_DEFAULT, PROFILE_TEXT_FIELDS,
@@ -178,8 +178,10 @@ export function publicProfileOf(member: Member, viewer: Member | null) {
       hostKind: trust.hostStatus === 'approved' ? member.hostApplication?.kind : undefined,
     },
     isMe,
+    /** Development sample account: the profile says so */
+    isSampleAccount: Boolean(member.isSample),
     viewer: viewer && !isMe
-      ? { hasBlocked: Boolean(viewer.blockedIds?.includes(member.id)), hasReported: Boolean(member.reportsReceived?.some((r) => r.byId === viewer.id)) }
+      ? { isFollowing: Boolean(viewer.followingIds?.includes(member.id)), hasBlocked: Boolean(viewer.blockedIds?.includes(member.id)), hasReported: Boolean(member.reportsReceived?.some((r) => r.byId === viewer.id)) }
       : undefined,
   };
 }
@@ -229,7 +231,66 @@ export async function setBlocked(member: Member, targetId: string, blocked: bool
   const current = new Set(member.blockedIds ?? []);
   if (blocked) current.add(targetId);
   else current.delete(targetId);
-  return memberRepository.update(member.id, { blockedIds: [...current].slice(0, 500) });
+  // Blocking someone also stops following them
+  const following = blocked ? (member.followingIds ?? []).filter((id) => id !== targetId) : member.followingIds;
+  return memberRepository.update(member.id, { blockedIds: [...current].slice(0, 500), ...(following && { followingIds: following }) });
+}
+
+/* ---------- Following ---------- */
+
+export async function setFollowing(member: Member, targetId: string, follow: boolean): Promise<Member> {
+  if (member.id === targetId) throw new MemberAuthError('ติดตามตัวเองไม่ได้');
+  const current = new Set(member.followingIds ?? []);
+  if (follow) {
+    const target = await memberRepository.findById(targetId);
+    if (!target || target.status !== 'active') throw new MemberAuthError('ไม่พบสมาชิก', 404);
+    if (member.blockedIds?.includes(targetId)) throw new MemberAuthError('เลิกบล็อกสมาชิกคนนี้ก่อน จึงจะติดตามได้');
+    current.add(targetId);
+  } else current.delete(targetId);
+  return memberRepository.update(member.id, { followingIds: [...current].slice(0, 2000) });
+}
+
+/** How many active members follow this member */
+export async function followerCount(memberId: string): Promise<number> {
+  const { items } = await memberRepository.query({ status: 'active', page: 1, limit: 100_000 });
+  return items.filter((m) => m.followingIds?.includes(memberId)).length;
+}
+
+/**
+ * Members worth following: active, verified, with published moments, most recent posters first.
+ * Leaves out the viewer, members they already follow or blocked, and members with open risk flags.
+ */
+export async function suggestedMembers(viewer: Member | null, limit = 5) {
+  const [{ items: members }, { items: moments }] = await Promise.all([
+    memberRepository.query({ status: 'active', page: 1, limit: 100_000 }),
+    momentRepository.query({ statuses: ['published'], sort: 'newest', page: 1, limit: 300 }),
+  ]);
+  const skip = new Set([viewer?.id, ...(viewer?.followingIds ?? []), ...(viewer?.blockedIds ?? [])]);
+  const byId = new Map(members.map((m) => [m.id, m]));
+  const posts = new Map<string, { count: number; image?: string }>();
+  for (const moment of moments) {
+    if (!moment.authorId) continue;
+    const entry = posts.get(moment.authorId) ?? { count: 0, image: moment.images[0] };
+    entry.count += 1;
+    posts.set(moment.authorId, entry);
+  }
+  const picks = [];
+  for (const [id, entry] of posts) {
+    const member = byId.get(id);
+    if (!member || skip.has(id) || trustLevel(member) === 'new' || hasOpenRisk(member)) continue;
+    const trust = trustOf(member);
+    picks.push({
+      id,
+      displayName: tidyDisplayName(member.displayName).trim() || member.displayName,
+      avatarUrl: member.avatarUrl,
+      momentCount: entry.count,
+      trusted: trust.level === 'trusted',
+      approvedHost: trust.hostStatus === 'approved',
+      isSample: Boolean(member.isSample),
+    });
+    if (picks.length >= limit) break;
+  }
+  return picks;
 }
 
 export { accountAgeDays };

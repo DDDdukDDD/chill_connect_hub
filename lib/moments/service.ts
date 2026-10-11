@@ -59,6 +59,9 @@ export function isPubliclyVisible(moment: Moment, people: Map<string, Member>): 
  * Feed item in the shape of CommunityPost (data/mockData.ts) plus viewer flags,
  * so the existing /moments UI can switch from MOCK_POSTS with few changes.
  */
+/** Sample posts were written with decorative emoji; the feed shows them without */
+const plain = (value: string, isSample: boolean) => (isSample ? value.replace(/\s*[\p{Extended_Pictographic}\uFE0F\u200D]+/gu, '').trim() : value);
+
 export function toFeedItem(moment: Moment, viewer: Member | null, people: Map<string, Member>) {
   const author = moment.authorId ? people.get(moment.authorId) : undefined;
   const comments = moment.comments
@@ -69,7 +72,7 @@ export function toFeedItem(moment: Moment, viewer: Member | null, people: Map<st
         id: comment.id,
         userName: commenter?.displayName ?? comment.authorName,
         userAvatar: commenter?.avatarUrl ?? comment.authorAvatar ?? '',
-        text: comment.text,
+        text: plain(comment.text, moment.isSample),
         timeAgo: thaiTimeAgo(comment.createdAt),
         createdAt: comment.createdAt,
         isMine: Boolean(viewer && comment.authorId === viewer.id),
@@ -82,7 +85,8 @@ export function toFeedItem(moment: Moment, viewer: Member | null, people: Map<st
     userAvatar: author?.avatarUrl ?? moment.authorAvatar ?? '',
     userBadge: moment.authorBadge ?? '',
     images: moment.images,
-    caption: moment.caption,
+    imageRatio: moment.imageRatio,
+    caption: plain(moment.caption, moment.isSample),
     location: moment.location,
     category: moment.category,
     likesCount: moment.likedBy.length + moment.sampleLikes,
@@ -92,6 +96,7 @@ export function toFeedItem(moment: Moment, viewer: Member | null, people: Map<st
     isLiked: Boolean(viewer && moment.likedBy.includes(viewer.id)),
     isSaved: Boolean(viewer && moment.savedBy.includes(viewer.id)),
     isMine: Boolean(viewer && moment.authorId === viewer.id),
+    isFollowingAuthor: Boolean(viewer && moment.authorId && viewer.followingIds?.includes(moment.authorId)),
     hasReported: Boolean(viewer && moment.reports.some((r) => r.memberId === viewer.id)),
     comments,
     targetType: moment.targetType,
@@ -122,6 +127,7 @@ export async function createMoment(member: Member, input: Record<string, unknown
     authorAvatar: member.avatarUrl,
     caption,
     images,
+    imageRatio: typeof input.imageRatio === 'number' && Number.isFinite(input.imageRatio) ? Math.min(3, Math.max(0.3, Math.round(input.imageRatio * 1000) / 1000)) : undefined,
     location,
     category,
     targetType,
