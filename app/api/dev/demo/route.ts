@@ -23,10 +23,11 @@ const thaiDate = (offsetDays: number) => {
 };
 const hostedId = (memberId: string) => `demo-host-${memberId}`;
 const pastId = (memberId: string) => `demo-past-${memberId}`;
+const upcomingId = (memberId: string) => `demo-join-${memberId}`;
 type NewEvent = Parameters<typeof createAdminEvent>[0];
 
 async function removeDemoEvents(memberId: string) {
-  for (const id of [hostedId(memberId), pastId(memberId)]) await deleteAdminEvent(id).catch(() => undefined);
+  for (const id of [hostedId(memberId), pastId(memberId), upcomingId(memberId)]) await deleteAdminEvent(id).catch(() => undefined);
 }
 
 export async function POST(request: Request) {
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
     db.findEvents({ page: 1, limit: 3, eventType: 'public_venue', sortBy: 'newest', approvalStatus: 'approved' }),
   ]);
   const joined: string[] = [];
-  for (const event of [...meetups.items.filter((e) => /\d{4}/.test(e.date)).slice(0, 2), ...fairs.items.slice(0, 1)]) {
+  for (const event of [...meetups.items.filter((e) => /\d{4}/.test(e.date) && !e.id.startsWith('demo-')).slice(0, 2), ...fairs.items.slice(0, 1)]) {
     const result = await joinEvent(member, event.id);
     if (result.status === 'joined' || result.status === 'already_joined') joined.push(event.title);
   }
@@ -88,6 +89,26 @@ export async function POST(request: Request) {
   if (mint) {
     await sendChatMessage(mint, hostedId(member.id), 'สวัสดีค่ะ เพิ่งเคยมาครั้งแรก ต้องเตรียมอะไรไปไหมคะ').catch(() => undefined);
     await sendChatMessage(mint, hostedId(member.id), 'เจอกันที่ทางเข้าฝั่งศูนย์สิริกิติ์ใช่ไหมคะ').catch(() => undefined);
+  }
+
+  // 3.1 An upcoming event hosted by a sample member: the member's ticket for it shows the QR the host would scan
+  if (kee) {
+    await createAdminEvent({
+      ...base,
+      id: upcomingId(member.id),
+      title: '[ตัวอย่าง] วิ่งเบาๆ รอบสวนลุมพินี',
+      date: thaiDate(4),
+      time: '06:30 - 07:30 น.',
+      location: 'สวนลุมพินี (จุดนัดพบ: ประตูฝั่งถนนพระราม 4)',
+      image: '/event-city-run.png',
+      description: 'กิจกรรมตัวอย่างสำหรับทดสอบมายฮับ: กิจกรรมที่คุณลงชื่อไว้ และคนจัดจะสแกน QR บนบัตรของคุณที่จุดนัดพบ',
+      hostName: kee.displayName,
+      hostAvatar: kee.avatarUrl ?? '',
+      maxParticipants: 8,
+      createdByMemberId: kee.id,
+    } as unknown as NewEvent);
+    await db.atomicJoinEvent(upcomingId(member.id), { userId: kee.id, userName: kee.displayName, userAvatar: kee.avatarUrl, note: 'host' });
+    await db.atomicJoinEvent(upcomingId(member.id), { userId: member.id, userName: member.displayName, userAvatar: member.avatarUrl });
   }
 
   // 4. A past event the member attended (hosted by a sample member), ready to review

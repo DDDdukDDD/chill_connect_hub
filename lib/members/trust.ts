@@ -45,6 +45,7 @@ export function trustOf(member: Member): MemberTrust {
     hasEmail: Boolean(member.email),
     pledged: Boolean(member.pledgeAcceptedAt),
     hostStatus: member.hostApplication?.status ?? 'none',
+    hostKind: member.hostApplication?.status === 'approved' ? member.hostApplication.kind : undefined,
     accountDays: accountAgeDays(member),
   };
 }

@@ -61,6 +61,8 @@ export interface MemberTrust {
   hasEmail: boolean;
   pledged: boolean;
   hostStatus: HostStatus;
+  /** What the member was approved to run; set only when hostStatus is 'approved' */
+  hostKind?: 'host' | 'venue' | 'organizer';
   accountDays: number;
 }
 
