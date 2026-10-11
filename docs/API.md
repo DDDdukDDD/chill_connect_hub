@@ -387,3 +387,14 @@ All writes are `POST` with an `action` field unless noted.
 - Created by the server on follow, like and comment (never for one's own action; a repeated like or follow is one item). Deleted with the account.
 - Feed items of sample posts (`isSample`) are returned without decorative emoji.
 - `POST /api/moments` also accepts `imageRatio` (number, width / height of the first photo, stored between 0.3 and 3); feed items return `imageRatio` when it was saved.
+
+## Member activity: joining events, saved places (added 2026-10-11)
+- `GET /api/auth/member/activity` → `{ success, joined, hosted, cancelled, joinedIds, savedSpotIds, savedEventIds }`. `joined` / `hosted` / `cancelled` are full events (`joinedAt`, `cancelledAt`, `isHost` added). Signed out: empty lists with `requiresLogin`.
+- `POST /api/auth/member/activity`
+  - `{ action: 'join', eventId }` → `{ success, status: 'joined' | 'already_joined' | 'event_full' | 'event_ended' | 'not_found' | 'not_allowed', message, event }`. HTTP 200 / 409 / 404 / 403. Community events need a verified account (email + pledge); fairs (`public_venue`) only need a signed-in member. Only `approved` events can be joined.
+  - `{ action: 'leave', eventId }` gives the seat back and records the event under `cancelled`. The creator of an event cannot leave it (409).
+  - `{ action: 'forget_cancelled', eventId }` removes it from the cancelled history.
+  - `{ action: 'save' | 'unsave', kind: 'spot' | 'event', id }` → `{ success, savedSpotIds, savedEventIds }`.
+- `POST /api/events { action: 'join', eventId }` (older route) now uses the session member and the same rules; `participant` in the body is ignored.
+- Creating an event adds its creator as the first participant. Deleting an account removes the member from every event and gives the seats back.
+- Client: `lib/useMyActivity.ts` (`useMyActivity()`, `activityActions.join/leave/setSaved`). The Navbar mounts `useActivitySync()`, which also mirrors the lists into the older localStorage keys (`joined_event_ids`, `favorites`, `favorite_spots`) and sends hearts toggled by older pages to the account.
