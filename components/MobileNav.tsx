@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Compass, Camera, Ticket, Zap } from 'lucide-react';
+import { useMemberSession } from '@/lib/useMemberSession';
 
 interface MobileNavProps {
   activeTab: string;
@@ -15,11 +16,13 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   setActiveTab,
   favoritesCount = 0,
 }) => {
+  const { isLoggedIn } = useMemberSession();
   const navItems = [
     { id: 'explore', label: 'ค้นพบ', href: '/', icon: Compass },
     { id: 'moments', label: 'โมเมนต์', href: '/moments', icon: Camera },
     { id: 'challenges', label: 'ชาเลนจ์', href: '/challenges', icon: Zap },
-    { id: 'myhub', label: 'มายฮับ', href: '/myhub', icon: Ticket },
+    // My Hub is personal: a visitor who is not signed in has nothing there
+    ...(isLoggedIn ? [{ id: 'myhub', label: 'มายฮับ', href: '/myhub', icon: Ticket }] : []),
   ];
 
   return (
