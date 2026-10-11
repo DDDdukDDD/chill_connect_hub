@@ -268,7 +268,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
       return;
     }
     if (!meetingPoint.trim()) {
-      setErrorMessage('กรุณาระบุจุดนัดพบที่แน่นอน / จุดสังเกต (Meeting Point)');
+      setErrorMessage('กรุณาระบุจุดนัดพบที่แน่นอน / จุดสังเกต');
       return;
     }
     const plainDesc = stripHtmlToPlainText(description);
@@ -442,7 +442,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder={mode === 'fair' ? 'เช่น ชวนดูโซนนิยายแปล & ซื้อหนังสือ, เดินดูโซนดีไซน์แล้วแวะจิบกาแฟ' : 'เช่น วิ่งเช้ารับลมที่สวนเบญจกิติ, จอยบอร์ดเกมคาเฟ่อารีย์'}
-                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs sm:text-sm font-medium text-slate-900 focus:bg-white focus:border-[#4A7C59] outline-none transition-all"
+                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs sm:text-sm font-medium text-slate-900 focus:bg-white focus:border-[#2563EB] outline-none transition-all"
                 />
               </div>
 
@@ -503,7 +503,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-[#4A7C59]" />
+                      <MapPin className="w-3.5 h-3.5 text-[#2563EB]" />
                       <span>สถานที่จัดกิจกรรม <span className="text-rose-500">*</span></span>
                     </label>
                     <span className="text-[11px] text-slate-400">ระบุสถานที่นัดพบ</span>
@@ -514,14 +514,14 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                     value={locationName}
                     onChange={(e) => setLocationName(e.target.value)}
                     placeholder="หรือพิมพ์ระบุสถานที่ เช่น สวนเบญจกิติ / คาเฟ่ More Than Games อารีย์"
-                    className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 outline-none focus:border-[#4A7C59]"
+                    className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 outline-none focus:border-[#2563EB]"
                   />
                 </div>
 
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-slate-800">
-                      จุดนัดพบที่แน่นอน / จุดสังเกต (Meeting Point) <span className="text-rose-500">*</span>
+                      จุดนัดพบที่แน่นอน / จุดสังเกต <span className="text-rose-500">*</span>
                     </label>
                     <span className="text-[11px] text-slate-400">เช่น หน้าร้านกาแฟ, หน้าเสาธง</span>
                   </div>
@@ -531,7 +531,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                     value={meetingPoint}
                     onChange={(e) => setMeetingPoint(e.target.value)}
                     placeholder="เช่น หน้าประตู 1 โซนลานจอดรถ, หน้าบันไดสกายวอล์ค, หน้าร้านกาแฟ"
-                    className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 outline-none focus:border-[#4A7C59]"
+                    className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 outline-none focus:border-[#2563EB]"
                   />
                 </div>
               </div>
@@ -570,14 +570,14 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                   <div className="space-y-0.5">
                     <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                       <Clock className="w-3.5 h-3.5 text-slate-500" />
-                      <span>กำหนดการกิจกรรม (Itinerary)</span>
+                      <span>กำหนดการกิจกรรม</span>
                     </h4>
                     <p className="text-[11px] text-slate-400">ระบุไทม์ไลน์คร่าวๆ ให้เพื่อนๆ ทราบขั้นตอน</p>
                   </div>
                   <button
                     type="button"
                     onClick={handleAddItineraryRow}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-[#4A7C59] bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 transition-all cursor-pointer"
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-[#2563EB] bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 transition-all cursor-pointer"
                   >
                     <Plus className="w-3 h-3" />
                     <span>เพิ่มช่วงเวลา</span>
@@ -587,7 +587,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                 <div className="space-y-2 pt-1">
                   {itinerary.map((item, idx) => (
                     <div key={idx} className="flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-full bg-emerald-100 text-[#2D5A3C] text-[11px] font-black flex items-center justify-center shrink-0">
+                      <span className="w-6 h-6 rounded-full bg-emerald-100 text-[#1D4ED8] text-[11px] font-black flex items-center justify-center shrink-0">
                         {idx + 1}
                       </span>
                       <input
@@ -626,22 +626,22 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
               <div className="p-4 rounded-2xl bg-slate-50/70 border border-slate-200 space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <ImageIcon className="w-3.5 h-3.5 text-[#4A7C59]" />
+                    <ImageIcon className="w-3.5 h-3.5 text-[#2563EB]" />
                     <span>รูปภาพปกกิจกรรม:</span>
                   </label>
                   <span className="text-[11px] text-slate-400">อัปโหลดหรือเลือกรูปสำเร็จ</span>
                 </div>
 
                 {/* Upload Box */}
-                <label className="border-2 border-dashed border-slate-200 hover:border-[#4A7C59] bg-white rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:bg-emerald-50/30 group">
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 group-hover:text-[#4A7C59] group-hover:bg-emerald-100 flex items-center justify-center mb-1.5 transition-colors">
+                <label className="border-2 border-dashed border-slate-200 hover:border-[#2563EB] bg-white rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:bg-emerald-50/30 group">
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 group-hover:text-[#2563EB] group-hover:bg-emerald-100 flex items-center justify-center mb-1.5 transition-colors">
                     {isUploadingImage ? (
-                      <Loader2 className="w-4 h-4 animate-spin text-[#4A7C59]" />
+                      <Loader2 className="w-4 h-4 animate-spin text-[#2563EB]" />
                     ) : (
                       <Upload className="w-4 h-4" />
                     )}
                   </div>
-                  <span className="text-xs font-bold text-slate-700 group-hover:text-[#4A7C59]">
+                  <span className="text-xs font-bold text-slate-700 group-hover:text-[#2563EB]">
                     {isUploadingImage
                       ? 'กำลังบีบอัดและอัปโหลดรูปภาพ...'
                       : uploadedImage
@@ -669,7 +669,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                       }}
                       className={`relative rounded-xl overflow-hidden aspect-video cursor-pointer border-2 transition-all ${
                         coverImage === preset.url && !uploadedImage
-                          ? 'border-[#4A7C59] ring-2 ring-[#4A7C59]/20 shadow-xs'
+                          ? 'border-[#2563EB] ring-2 ring-[#2563EB]/20 shadow-xs'
                           : 'border-transparent opacity-75 hover:opacity-100'
                       }`}
                     >
@@ -685,7 +685,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
               {/* 2. What to Bring Card */}
               <div className="p-4 rounded-2xl bg-slate-50/70 border border-slate-200 space-y-3">
                 <label className="text-xs font-bold text-slate-800 block">
-                  สิ่งที่ต้องเตรียมมา (What to Bring):
+                  สิ่งที่ต้องเตรียมมา:
                 </label>
 
                 {/* Selected Badges */}
@@ -693,7 +693,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                   {whatToBringList.map((item) => (
                     <span
                       key={item}
-                      className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-xl bg-emerald-50 text-[#2D5A3C] border border-emerald-200"
+                      className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-xl bg-emerald-50 text-[#1D4ED8] border border-emerald-200"
                     >
                       <Check className="w-3 h-3 text-emerald-600" />
                       <span>{item}</span>
@@ -743,7 +743,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                   <button
                     type="button"
                     onClick={handleAddCustomBring}
-                    className="px-3 py-1.5 bg-[#4A7C59] hover:bg-[#386144] text-white text-xs font-bold rounded-xl transition-all cursor-pointer"
+                    className="px-3 py-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-xl transition-all cursor-pointer"
                   >
                     เพิ่ม
                   </button>
@@ -753,7 +753,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
               {/* 3. Settings & Safety Card */}
               <div className="p-4 rounded-2xl bg-slate-50/70 border border-slate-200 space-y-3.5">
                 <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5 border-b border-slate-200/80 pb-2">
-                  <Shield className="w-3.5 h-3.5 text-[#4A7C59]" />
+                  <Shield className="w-3.5 h-3.5 text-[#2563EB]" />
                   <span>การตั้งค่าผู้เข้าร่วม & ความปลอดภัย</span>
                 </h4>
 
@@ -820,7 +820,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                         onClick={() => setTargetAge(sug)}
                         className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
                           targetAge === sug
-                            ? 'bg-[#4A7C59] text-white border-[#4A7C59] font-bold'
+                            ? 'bg-[#2563EB] text-white border-[#2563EB] font-bold'
                             : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
                         }`}
                       >
@@ -834,7 +834,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                 <div className="space-y-2 pt-2 border-t border-slate-200/80">
                   <div>
                     <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                      สไตล์การเดินทาง (Transportation):
+                      สไตล์การเดินทาง:
                     </label>
                     <select
                       value={transportation}
@@ -848,22 +848,9 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                     </select>
                   </div>
 
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                      ช่องทางติดต่อหลังกดเข้าร่วม (Group Contact):
-                    </label>
-                    <input
-                      type="text"
-                      value={contactChannel}
-                      onChange={(e) => setContactChannel(e.target.value)}
-                      placeholder="เช่น Line OpenChat / Line ID โฮสต์"
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 outline-none"
-                    />
-                    <span className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
-                      <Lock className="w-3 h-3 text-slate-400 shrink-0" />
-                      <span>จะเปิดเผยเฉพาะสมาชิกที่กดยืนยันเข้าร่วมสำเร็จเท่านั้น</span>
-                    </span>
-                  </div>
+                  <p className="text-xs font-medium text-slate-600 leading-relaxed p-3 rounded-xl bg-slate-50 border border-slate-200">
+                    คนที่เข้าร่วมคุยกับคุณได้ใน "แชตกลุ่ม" ของทริปนี้ จึงไม่ต้องใส่ไลน์หรือเบอร์โทร
+                  </p>
                 </div>
 
               </div>
@@ -880,14 +867,14 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                 required
                 checked={isSafetyAccepted}
                 onChange={(e) => setIsSafetyAccepted(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded text-[#4A7C59] focus:ring-[#4A7C59] border-emerald-300 cursor-pointer shrink-0"
+                className="mt-0.5 w-4 h-4 rounded text-[#2563EB] focus:ring-[#2563EB] border-emerald-300 cursor-pointer shrink-0"
               />
               <span className="leading-relaxed">
                 ข้าพเจ้ายินยอมปฏิบัติตาม{' '}
                 <button
                   type="button"
                   onClick={() => setIsSafetyModalOpen(true)}
-                  className="font-black text-[#4A7C59] underline hover:text-[#386144]"
+                  className="font-black text-[#2563EB] underline hover:text-[#1D4ED8]"
                 >
                   แนวทางความปลอดภัยและข้อกำหนดชุมชน
                 </button>{' '}

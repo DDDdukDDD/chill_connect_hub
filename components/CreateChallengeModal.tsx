@@ -91,8 +91,8 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
         ? 'ส่งภาพถ่ายโมเมนต์ความประทับใจเพื่อยืนยันผล'
         : 'สแกน QR Code จากผู้จัดหรือร้านค้าพาร์ทเนอร์',
       rewardsText: `เหรียญตราเกียรติยศ "${badgeLabel.trim()}" บนหน้าโปรไฟล์ พร้อมรับคะแนนสะสม ${rewardPoints} XP`,
-      startDate: '1 มี.ค. 2026',
-      endDate: '31 มี.ค. 2026',
+      startDate: '1 มี.ค. 2569',
+      endDate: '31 มี.ค. 2569',
       daysRemaining: 15,
       isOfficial: isOfficial,
     };

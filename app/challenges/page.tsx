@@ -56,8 +56,8 @@ export interface QuestWithDuration extends ChallengeQuest {
 const ALL_QUESTS: QuestWithDuration[] = [
   ...COMMUNITY_PUBLIC_QUESTS.map((q) => ({
     ...q,
-    startDate: (q as any).startDate || '1 มี.ค. 2026',
-    endDate: (q as any).endDate || '31 มี.ค. 2026',
+    startDate: (q as any).startDate || '1 มี.ค. 2569',
+    endDate: (q as any).endDate || '31 มี.ค. 2569',
     daysRemaining: (q as any).daysRemaining !== undefined ? (q as any).daysRemaining : 10,
     status: (q as any).status || 'active',
     image: q.image,
@@ -90,8 +90,8 @@ const ALL_QUESTS: QuestWithDuration[] = [
     ],
     verificationMethod: '📸 ถ่ายภาพหนังสือเล่มใหม่พร้อมเช็คอินพิกัด QSNCC',
     rewardsText: '🏅 เหรียญตรา "Master Reader" + ⚡ 200 XP + 🎁 ส่วนลดร้านหนังสือพาร์ทเนอร์ 10%',
-    startDate: '26 มี.ค. 2026',
-    endDate: '6 เม.ย. 2026',
+    startDate: '26 มี.ค. 2569',
+    endDate: '6 เม.ย. 2569',
     daysRemaining: 16,
   },
   {
@@ -122,8 +122,8 @@ const ALL_QUESTS: QuestWithDuration[] = [
     ],
     verificationMethod: '🎟️ การสแกน E-Ticket หรือการยืนยันการเข้าร่วมจากผู้จัดกิจกรรม',
     rewardsText: '🏅 เหรียญตรา "Zen Inner Peace" + ⚡ 280 XP + 🎁 เซ็ตชาสมุนไพรออร์แกนิก',
-    startDate: '10 มี.ค. 2026',
-    endDate: '10 เม.ย. 2026',
+    startDate: '10 มี.ค. 2569',
+    endDate: '10 เม.ย. 2569',
     daysRemaining: 20,
   },
   {
@@ -150,8 +150,8 @@ const ALL_QUESTS: QuestWithDuration[] = [
     steps: ['วิ่งในสวนรถไฟหรือสวนจตุจักร', 'บันทึกสถิติระยะทาง', 'ส่งสถิติวิ่ง'],
     verificationMethod: 'วิ่งสะสมระยะทางผ่านแอปพลิเคชัน',
     rewardsText: '🏅 เหรียญ "Winter Runner" + ⚡ 250 XP',
-    startDate: '1 ธ.ค. 2025',
-    endDate: '31 ม.ค. 2026',
+    startDate: '1 ธ.ค. 2568',
+    endDate: '31 ม.ค. 2569',
     daysRemaining: 0,
     brandReward: {
       type: 'brand_partner',
@@ -186,8 +186,8 @@ const ALL_QUESTS: QuestWithDuration[] = [
     steps: ['เยือนแกลเลอรีที่กำหนด', 'ถ่ายภาพชิ้นงานศิลปะ', 'เช็คอินครบ 5 แห่ง'],
     verificationMethod: 'เช็คอินพร้อมภาพถ่ายนิทรรศการ',
     rewardsText: '🏅 เหรียญ "Art Collector" + ⚡ 300 XP',
-    startDate: '15 พ.ย. 2025',
-    endDate: '15 ม.ค. 2026',
+    startDate: '15 พ.ย. 2568',
+    endDate: '15 ม.ค. 2569',
     daysRemaining: 0,
     brandReward: {
       type: 'hub_central',

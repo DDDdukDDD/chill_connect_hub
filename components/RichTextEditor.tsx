@@ -187,8 +187,9 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <button
             type="button"
             onClick={() => exec('bold')}
-            className="px-2 py-1 rounded-md bg-white hover:bg-slate-200 text-slate-800 font-extrabold flex items-center gap-1 cursor-pointer shadow-2xs text-[11px] transition-colors active:scale-95"
+            className="min-h-8 px-2.5 rounded-lg bg-white hover:bg-slate-200 text-slate-800 font-extrabold flex items-center gap-1 cursor-pointer shadow-2xs text-[11px] transition-colors active:scale-95"
             title="ทำให้ตัวหนา (Ctrl+B)"
+            aria-label="ทำให้ตัวหนา (Ctrl+B)"
           >
             <Bold className="w-3.5 h-3.5" />
             <span>ตัวหนา</span>
@@ -198,8 +199,9 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <button
             type="button"
             onClick={() => exec('italic')}
-            className="px-2 py-1 rounded-md bg-white hover:bg-slate-200 text-slate-800 italic flex items-center gap-1 cursor-pointer shadow-2xs text-[11px] transition-colors active:scale-95"
+            className="min-h-8 px-2.5 rounded-lg bg-white hover:bg-slate-200 text-slate-800 italic flex items-center gap-1 cursor-pointer shadow-2xs text-[11px] transition-colors active:scale-95"
             title="ทำให้ตัวเอียง (Ctrl+I)"
+            aria-label="ทำให้ตัวเอียง (Ctrl+I)"
           >
             <Italic className="w-3.5 h-3.5" />
             <span>ตัวเอียง</span>
@@ -209,8 +211,9 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <button
             type="button"
             onClick={() => exec('insertUnorderedList')}
-            className="px-2 py-1 rounded-md bg-white hover:bg-slate-200 text-slate-800 font-bold flex items-center gap-1 cursor-pointer shadow-2xs text-[11px] transition-colors active:scale-95"
+            className="min-h-8 px-2.5 rounded-lg bg-white hover:bg-slate-200 text-slate-800 font-bold flex items-center gap-1 cursor-pointer shadow-2xs text-[11px] transition-colors active:scale-95"
             title="ใส่สัญลักษณ์ข้อความจุดนำ (Bullet)"
+            aria-label="ใส่สัญลักษณ์ข้อความจุดนำ (Bullet)"
           >
             <List className="w-3.5 h-3.5" />
             <span>Bullet ข้อ</span>
@@ -220,8 +223,9 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <button
             type="button"
             onClick={() => insertCustomNode('<p><strong>จุดนัดพบ:</strong> หน้าจุดนัดหมายหลัก</p>')}
-            className="px-2 py-1 rounded-md bg-white hover:bg-slate-200 text-slate-800 font-bold flex items-center gap-1 cursor-pointer shadow-2xs text-[11px] transition-colors active:scale-95"
+            className="min-h-8 px-2.5 rounded-lg bg-white hover:bg-slate-200 text-slate-800 font-bold flex items-center gap-1 cursor-pointer shadow-2xs text-[11px] transition-colors active:scale-95"
             title="แทรกแถวข้อความจุดนัดพบ"
+            aria-label="แทรกแถวข้อความจุดนัดพบ"
           >
             <MapPin className="w-3 h-3 text-slate-500" />
             <span>จุดนัด</span>
@@ -231,8 +235,9 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <button
             type="button"
             onClick={() => insertCustomNode('<p><strong>กำหนดการ:</strong> 07:00 - 09:30 น.</p>')}
-            className="px-2 py-1 rounded-md bg-white hover:bg-slate-200 text-slate-800 font-bold flex items-center gap-1 cursor-pointer shadow-2xs text-[11px] transition-colors active:scale-95"
+            className="min-h-8 px-2.5 rounded-lg bg-white hover:bg-slate-200 text-slate-800 font-bold flex items-center gap-1 cursor-pointer shadow-2xs text-[11px] transition-colors active:scale-95"
             title="แทรกแถวข้อความกำหนดการ"
+            aria-label="แทรกแถวข้อความกำหนดการ"
           >
             <Clock className="w-3 h-3 text-slate-500" />
             <span>เวลา</span>
@@ -244,10 +249,11 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <button
             type="button"
             onClick={onApplyTemplate}
-            className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#4A7C59] bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 transition-all cursor-pointer shadow-2xs active:scale-95"
+            className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#2563EB] bg-blue-50 hover:bg-blue-100 min-h-8 px-2.5 rounded-lg border border-blue-200 transition-all cursor-pointer shadow-2xs active:scale-95"
             title="คลิกเพื่อวางโครงสร้างตัวอย่างมาตรฐานลงในกล่องข้อความ"
+            aria-label="คลิกเพื่อวางโครงสร้างตัวอย่างมาตรฐานลงในกล่องข้อความ"
           >
-            <FileText className="w-3.5 h-3.5 text-[#4A7C59]" />
+            <FileText className="w-3.5 h-3.5 text-[#2563EB]" />
             <span>{templateLabel || 'ใช้โครงสร้างตัวอย่าง (Template)'}</span>
           </button>
         )}
@@ -261,12 +267,12 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         onBlur={handleInput}
         style={{ minHeight: minHeight || '240px' }}
         data-placeholder={placeholder}
-        className="w-full px-3.5 py-3 rounded-b-xl border border-slate-200 text-xs sm:text-[13px] leading-relaxed outline-none focus:border-[#4A7C59] focus:ring-1 focus:ring-[#4A7C59]/30 bg-white text-slate-800 overflow-y-auto max-h-[380px] empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400 [&_strong]:font-black [&_strong]:text-slate-950 [&_ul]:list-disc [&_ul]:pl-5 [&_p]:mb-1.5"
+        className="w-full px-3.5 py-3 rounded-b-xl border border-slate-200 text-base sm:text-sm leading-relaxed outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]/30 bg-white text-slate-800 overflow-y-auto max-h-[380px] empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400 [&_strong]:font-black [&_strong]:text-slate-950 [&_ul]:list-disc [&_ul]:pl-5 [&_p]:mb-1.5"
       />
 
       {/* Character Counter & Helper Footer */}
-      <div className="flex items-center justify-between text-[10.5px] text-slate-400 px-1">
-        <span>💡 คุณสามารถพิมพ์ตัวหนาหรือไฮไลต์หัวข้อได้ทันทีโดยไม่ต้องใส่เครื่องหมาย **</span>
+      <div className="flex items-center justify-between text-[11px] text-slate-400 px-1">
+        <span>คุณสามารถพิมพ์ตัวหนาหรือไฮไลต์หัวข้อได้ทันทีโดยไม่ต้องใส่เครื่องหมาย **</span>
         <span>{characterCount} ตัวอักษร</span>
       </div>
     </div>

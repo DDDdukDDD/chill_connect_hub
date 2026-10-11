@@ -19,7 +19,7 @@ const DAY = 24 * 60 * 60 * 1000;
 const THAI_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 const thaiDate = (offsetDays: number) => {
   const d = new Date(Date.now() + offsetDays * DAY);
-  return `${d.getDate()} ${THAI_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  return `${d.getDate()} ${THAI_MONTHS[d.getMonth()]} ${d.getFullYear() + 543}`;
 };
 const hostedId = (memberId: string) => `demo-host-${memberId}`;
 const pastId = (memberId: string) => `demo-past-${memberId}`;

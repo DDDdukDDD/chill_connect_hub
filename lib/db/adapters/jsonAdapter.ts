@@ -22,10 +22,25 @@ import {
 import { AsyncMutex } from '../mutex';
 import { readDatabase, updateDatabase } from '../databaseFile';
 import { normalizeStoredEvents } from '../../eventNormalization';
-import { rollSampleEventDate, rollSampleEventDates } from '../../sampleEventDates';
+import { rollSampleEventDate } from '../../sampleEventDates';
+import { toBuddhistEra } from '../../dateUtils';
 import { applyQuestLifecycle, upgradeLegacySeedQuests } from '../../questLifecycle';
 import type { AdminEventItem } from '../../eventsStore';
 import { cacheManager } from '../../cache';
+
+/** How an event is read: sample meetups rolled forward (lib/sampleEventDates.ts) and dates in the Buddhist Era */
+function shownEvent<T extends EventItem>(event: T): T {
+  const rolled = rollSampleEventDate(event);
+  const date = toBuddhistEra(rolled.date);
+  const endDate = toBuddhistEra(rolled.endDate);
+  return date === rolled.date && endDate === rolled.endDate ? rolled : { ...rolled, date, endDate };
+}
+const shownEvents = <T extends EventItem>(events: T[]): T[] => events.map(shownEvent);
+
+function shownQuest(quest: ChallengeQuest): ChallengeQuest {
+  const withLifecycle = applyQuestLifecycle(quest);
+  return { ...withLifecycle, startDate: toBuddhistEra(withLifecycle.startDate), endDate: toBuddhistEra(withLifecycle.endDate) };
+}
 import {
   filterEvents,
   filterSpots,
@@ -185,7 +200,7 @@ export class JsonFileAdapter implements IDataRepository {
       async () => {
         await this.ensureInitialized();
         // Sample meetups roll forward on read so they never all expire (see lib/sampleEventDates.ts)
-        const filtered = filterEvents(rollSampleEventDates(this.events), params);
+        const filtered = filterEvents(shownEvents(this.events), params);
         return paginateArray(filtered, params?.page || 1, params?.limit || 12);
       },
       { ttlMs: 30 * 1000, tags: ['events'] }
@@ -199,7 +214,7 @@ export class JsonFileAdapter implements IDataRepository {
       async () => {
         await this.ensureInitialized();
         const event = this.events.find((e) => e.id === id);
-        return event ? rollSampleEventDate(event) : null;
+        return event ? shownEvent(event) : null;
       },
       { ttlMs: 60 * 1000, tags: ['events', `event:${id}`] }
     );
@@ -252,7 +267,7 @@ export class JsonFileAdapter implements IDataRepository {
 
   public async listAllEvents(): Promise<EventItem[]> {
     await this.ensureInitialized();
-    return rollSampleEventDates(this.events);
+    return shownEvents(this.events);
   }
 
   public async createEvents(data: CreateEventDTO[]): Promise<EventItem[]> {
@@ -580,7 +595,7 @@ export class JsonFileAdapter implements IDataRepository {
       async () => {
         await this.ensureInitialized();
         // Lifecycle (daysRemaining / ended) is derived from endDate before filtering by status
-        const filtered = filterQuests(this.quests.map((quest) => applyQuestLifecycle(quest)), params);
+        const filtered = filterQuests(this.quests.map(shownQuest), params);
         return paginateArray(filtered, params?.page || 1, params?.limit || 12);
       },
       { ttlMs: 60 * 1000, tags: ['quests'] }
@@ -594,7 +609,7 @@ export class JsonFileAdapter implements IDataRepository {
       async () => {
         await this.ensureInitialized();
         const quest = this.quests.find((q) => q.id === id);
-        return quest ? applyQuestLifecycle(quest) : null;
+        return quest ? shownQuest(quest) : null;
       },
       { ttlMs: 120 * 1000, tags: ['quests', `quest:${id}`] }
     );

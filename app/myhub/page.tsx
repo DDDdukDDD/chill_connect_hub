@@ -7,6 +7,7 @@ import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
+import { MySubmissions } from '@/components/MySubmissions';
 import { JoinChallengeModal, getQuestBrandReward } from '@/components/JoinChallengeModal';
 import { useAuth } from '@/lib/useAuth';
 import { VerifyQuestModal } from '@/components/VerifyQuestModal';
@@ -349,7 +350,7 @@ function MyHubContent() {
           title: sub.eventTitle || 'กิจกรรมที่คุณเข้าร่วม',
           category: sub.category || (sub.eventType === 'community' ? 'heal' : 'chill'),
           tag: sub.tag || (sub.eventType === 'community' ? 'กิจกรรมคอมมูนิตี้' : 'งานมหกรรม & ชวนเพื่อน'),
-          date: sub.eventDate || '28 มี.ค. 2026',
+          date: sub.eventDate || '28 มี.ค. 2569',
           time: sub.eventTime || '10:00 - 20:00 น.',
           location: sub.eventLocation || 'ศูนย์การประชุมแห่งชาติสิริกิติ์',
           image: sub.eventImage || 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80',
@@ -374,8 +375,8 @@ function MyHubContent() {
       if (!addedIds.has(questId)) {
         const targetDay = questDeadlineDays[idx % questDeadlineDays.length];
         const startDay = questStartDays[idx % questStartDays.length];
-        const questRangeDate = `${startDay} - ${targetDay} ก.ย. 2026`;
-        const deadlineDate = `${targetDay} ก.ย. 2026`;
+        const questRangeDate = `${startDay} - ${targetDay} ก.ย. 2569`;
+        const deadlineDate = `${targetDay} ก.ย. 2569`;
 
         list.push({
           id: questId,
@@ -829,7 +830,7 @@ function MyHubContent() {
     }
 
     // The day is inside the event when it falls between the event's first and last date
-    // (the old check matched any digit of the date text, so "18 ต.ค. 2026" also showed on the 1st, 2nd, 6th and 8th)
+    // (the old check matched any digit of the date text, so "18 ต.ค. 2569" also showed on the 1st, 2nd, 6th and 8th)
     if (!ev.date || !/[0-9]/.test(ev.date)) return false;
     const dayStart = new Date(year, monthIdx, day, 0, 0, 0).getTime();
     const dayEnd = new Date(year, monthIdx, day, 23, 59, 59).getTime();
@@ -2169,6 +2170,9 @@ function MyHubContent() {
                     </ul>
                   </section>
                 )}
+
+                {/* Places and challenge ideas sent to staff */}
+                <MySubmissions />
 
                 {/* Master View Switcher (Top-Level Dual Mode) */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-6 border-t border-slate-200/80 mt-6">

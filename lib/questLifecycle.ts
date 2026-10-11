@@ -5,7 +5,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})/;
 
 /**
- * Parses a quest date: ISO ("2026-12-31") or Thai ("31 ธ.ค. 2026").
+ * Parses a quest date: ISO ("2026-12-31") or Thai ("31 ธ.ค. 2569").
  * Returns null for empty/unparseable values so callers can treat the quest as open-ended.
  */
 export function parseQuestDate(value: string | undefined, endOfDay: boolean): number | null {
@@ -44,8 +44,8 @@ export function applyQuestLifecycle(quest: ChallengeQuest, now: number = Date.no
 export function getQuestDateError(startDate?: string, endDate?: string): string | null {
   const start = parseQuestDate(startDate, false);
   const end = parseQuestDate(endDate, true);
-  if (startDate && start === null) return 'รูปแบบวันเริ่มต้นไม่ถูกต้อง (ใช้ YYYY-MM-DD หรือ เช่น 1 ต.ค. 2026)';
-  if (endDate && end === null) return 'รูปแบบวันสิ้นสุดไม่ถูกต้อง (ใช้ YYYY-MM-DD หรือ เช่น 31 ธ.ค. 2026)';
+  if (startDate && start === null) return 'รูปแบบวันเริ่มต้นไม่ถูกต้อง (ใช้ YYYY-MM-DD หรือ เช่น 1 ต.ค. 2569)';
+  if (endDate && end === null) return 'รูปแบบวันสิ้นสุดไม่ถูกต้อง (ใช้ YYYY-MM-DD หรือ เช่น 31 ธ.ค. 2569)';
   if (start !== null && end !== null && end < start) return 'วันสิ้นสุดต้องไม่อยู่ก่อนวันเริ่มต้น';
   return null;
 }

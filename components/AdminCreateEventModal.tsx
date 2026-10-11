@@ -83,7 +83,7 @@ export const AdminCreateEventModal: React.FC<AdminCreateEventModalProps> = ({
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<'heal' | 'move' | 'chill' | 'learn'>('learn');
   const [tag, setTag] = useState('Exhibition');
-  const [date, setDate] = useState('28 ก.พ. - 3 มี.ค. 2026');
+  const [date, setDate] = useState('28 ก.พ. - 3 มี.ค. 2569');
   const [time, setTime] = useState('10:00 - 20:00 น.');
   const [location, setLocation] = useState('');
   const [price, setPrice] = useState('เข้าชมฟรี');
@@ -463,7 +463,7 @@ export const AdminCreateEventModal: React.FC<AdminCreateEventModalProps> = ({
                   type="text"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  placeholder="เช่น 28 ก.พ. - 3 มี.ค. 2026 หรือ 15 มี.ค. 2026"
+                  placeholder="เช่น 28 ก.พ. - 3 มี.ค. 2569 หรือ 15 มี.ค. 2569"
                   className="w-full bg-slate-900 text-white text-xs px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-hidden"
                 />
               </div>

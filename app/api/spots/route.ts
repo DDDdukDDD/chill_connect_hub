@@ -1,9 +1,19 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { MemberAuthError } from '@/lib/members/accounts';
+import { getSessionMember } from '@/lib/members/session';
+import { spotsSuggestedBy, suggestSpot } from '@/lib/members/submissions';
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
+
+    // ?mine=1 → what the signed-in member sent in, any review state (for My Hub)
+    if (searchParams.get('mine') === '1') {
+      const viewer = await getSessionMember(request);
+      const spots = viewer ? await spotsSuggestedBy(viewer.id) : [];
+      return NextResponse.json({ success: true, spots }, { headers: { 'Cache-Control': 'no-store' } });
+    }
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '12', 10);
     const province = searchParams.get('province');
@@ -48,5 +58,23 @@ export async function GET(request: Request) {
       { success: false, message: 'เกิดข้อผิดพลาดในการดึงข้อมูลพิกัดสถานที่' },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * A signed-in, verified member suggests a place. It is saved as a draft and published by staff after review.
+ */
+export async function POST(request: Request) {
+  try {
+    const member = await getSessionMember(request);
+    if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }, { status: 401 });
+    const body: unknown = await request.json().catch(() => null);
+    if (!body || typeof body !== 'object') return NextResponse.json({ success: false, message: 'ข้อมูลไม่ถูกต้อง' }, { status: 400 });
+    const spot = await suggestSpot(member, body as Record<string, unknown>);
+    return NextResponse.json({ success: true, spot, message: 'ส่งให้ทีมงานตรวจแล้ว' }, { status: 201 });
+  } catch (error) {
+    if (error instanceof MemberAuthError) return NextResponse.json({ success: false, message: error.message }, { status: error.status });
+    console.error('Error in member submission POST:', error);
+    return NextResponse.json({ success: false, message: 'บันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง' }, { status: 500 });
   }
 }

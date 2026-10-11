@@ -415,3 +415,27 @@ All writes are `POST` with an `action` field unless noted.
 - `GET /api/auth/member/activity` adds `fairGroups: [{ id, fairId, fairTitle, title, time, meetupPoint, isMine }]`.
 - **Development only:** `POST /api/dev/demo` fills the signed-in account with sample activity (verified and trusted, upcoming events, a hosted event with participants and chat, an attended past event); `DELETE /api/dev/demo` removes the two sample events. Both return 404 in production.
 - **Check-in link (2026-10-11):** a ticket's QR encodes `/checkin?event={id}&code={ticketCode}`. The page calls `POST /api/events/{id}/participants { action: 'check_in', code }` with the visitor's session, so only the event's host can complete it.
+
+---
+
+## Member submissions and dates (added 2026-10-11, BE-028)
+
+### Dates are in the Buddhist Era
+Every event `date` / `endDate` and quest `startDate` / `endDate` returned by the API is Thai text with a B.E. year (`"14 ต.ค. 2569"`, `"21 ต.ค. 2569 - 24 ต.ค. 2569"`). Stored C.E. values are converted when read. `lib/dateUtils.ts` parsers read both eras. Use `formatThaiDateBE('2026-10-14')` to format a date input's value and `toBuddhistEra(text)` for existing text.
+
+### `POST /api/events` — who may create
+Signed-in, verified members only (email verified and pledge accepted); otherwise `401` / `403`. `eventType: 'public_venue'` (a fair) is accepted only from an approved organizer or venue (`403` otherwise). `contactChannel` from members is dropped. Community events of an approved host are `approved` at once; everything else is `pending`.
+
+### `POST /api/spots` — a member suggests a place
+Body: `{ title, category, province, description, openHours, district?, googleMapsUrl?, bestTime?, price?, image?, highlights?: string[] }`.
+`category` is one of the stored spot categories (`lib/spotCategories.ts`). Saved as `publicationStatus: 'draft'` with `suggestedByMemberId`; it appears in the staff review queue (pillar `spots`) and not on the site. Coordinates are read from the Google Maps link when it carries them, else `0,0` for staff to set.
+Errors: `401` not signed in, `403` not verified, `400` validation, `409` same name in the same province, `429` five suggestions already waiting.
+Response `201`: `{ success, spot, message }`.
+
+### `GET /api/spots?mine=1` — places the signed-in member suggested (any state)
+
+### `POST /api/quests` — a member proposes a challenge
+Body: `{ title, category: 'heal'|'move'|'chill'|'learn', objective, steps: string[], total: 1-100, badgeLabel, startDate, endDate (YYYY-MM-DD), verificationMethod?, image? }`.
+Saved as `status: 'draft'`, `isOfficial: false`, `rewardPoints: 0`, with `createdByMemberId`. Staff set points and rewards and publish it from the admin challenge manager. Same error codes as above (`429` at five waiting).
+
+### `GET /api/quests?mine=1` — challenges the signed-in member proposed (any state)

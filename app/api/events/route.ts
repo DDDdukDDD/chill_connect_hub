@@ -4,6 +4,8 @@ import { db } from '@/lib/db';
 import { hasAdminCredentials } from '@/lib/adminApiAuth';
 import { joinEvent } from '@/lib/members/activity';
 import { getSessionMember } from '@/lib/members/session';
+import { MemberAuthError } from '@/lib/members/accounts';
+import { guardCreator } from '@/lib/members/submissions';
 
 function parsePositiveInteger(value: string | null, fallback: number, max?: number): number {
   if (!value) return fallback;
@@ -169,8 +171,24 @@ export async function POST(req: Request) {
     // Who may publish without review: staff, and members whose host application was approved (community events only).
     // Everything else waits in the admin review queue, so a new account cannot put a meetup in front of people.
     const member = isAdmin ? null : await getSessionMember(req);
+    if (!isAdmin) {
+      if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }, { status: 401 });
+      try {
+        guardCreator(member);
+      } catch (error) {
+        if (error instanceof MemberAuthError) return NextResponse.json({ success: false, message: error.message }, { status: error.status });
+        throw error;
+      }
+      // Fairs come from approved organizers and venues only
+      if (isPublicVenue && !(member.hostApplication?.status === 'approved' && ['organizer', 'venue'].includes(member.hostApplication.kind))) {
+        return NextResponse.json({ success: false, message: 'งานแฟร์สร้างได้เฉพาะผู้จัดงานหรือเจ้าของพื้นที่ที่ทีมงานอนุมัติแล้ว' }, { status: 403 });
+      }
+    }
     const isApprovedHost = member?.hostApplication?.status === 'approved' && member.status === 'active';
     const approvalStatus = isAdmin || (!isPublicVenue && isApprovedHost) ? 'approved' : 'pending';
+
+    // Members' events carry no private contact channel: people talk in the event's group chat
+    if (!isAdmin) delete eventData.contactChannel;
 
     const savedEvent = await createAdminEvent({
       ...eventData,

@@ -376,7 +376,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
 
                 <span className="flex items-center gap-1 bg-white/15 px-2.5 py-0.5 rounded-lg border border-white/20">
                   <Calendar className="w-3.5 h-3.5 text-purple-200" />
-                  <span>{quest.startDate || '1 มี.ค.'} - {quest.endDate || '31 มี.ค. 2026'}</span>
+                  <span>{quest.startDate || '1 มี.ค.'} - {quest.endDate || '31 มี.ค. 2569'}</span>
                 </span>
 
                 {quest.daysRemaining !== undefined && (

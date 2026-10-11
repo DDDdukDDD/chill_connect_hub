@@ -245,7 +245,7 @@ export function EventEditorDrawer({ event, type, onClose, onSaved }: EventEditor
       </FormSection>
 
       <FormSection title="วันและเวลา" hint={isRecurring ? 'กิจกรรมนี้จัดประจำ: ตารางนัดประจำแก้จากหน้าเว็บของผู้จัด' : undefined}>
-        <Field label="วันเริ่ม:" htmlFor="event-date" hint='รูปแบบ "12 ต.ค. 2026"'>
+        <Field label="วันเริ่ม:" htmlFor="event-date" hint='รูปแบบ "12 ต.ค. 2569"'>
           <input id="event-date" value={form.date} onChange={set('date')} className={fieldInputClass} />
         </Field>
         <Field label="วันสิ้นสุด:" htmlFor="event-end-date" hint={isCommunity ? 'เว้นว่างได้ถ้าจบในวันเดียว' : 'บังคับสำหรับงานแฟร์'}>
