@@ -439,3 +439,19 @@ Body: `{ title, category: 'heal'|'move'|'chill'|'learn', objective, steps: strin
 Saved as `status: 'draft'`, `isOfficial: false`, `rewardPoints: 0`, with `createdByMemberId`. Staff set points and rewards and publish it from the admin challenge manager. Same error codes as above (`429` at five waiting).
 
 ### `GET /api/quests?mine=1` — challenges the signed-in member proposed (any state)
+
+---
+
+## Safety reports and the review queue for challenges (added 2026-10-11, BE-029)
+
+### `POST /api/reports` — a member reports an event, a fair or a place
+Body: `{ targetType: 'community' | 'fair' | 'spot', targetId, reason, details? }`.
+`reason` is one of `investment_mlm`, `harassment`, `unsafe_location`, `fake_or_spam`, `wrong_info`, `other` (`other` needs `details` of 5+ characters). The title and the host are read from the server's own data.
+Errors: `401` not signed in, `400` validation or reporting one's own event, `404` unknown target, `409` already reported and still open, `429` ten reports in a day. Response `201`: `{ success: true }`.
+Use `components/ReportSafetyModal.tsx` (props `targetType`, `targetId`, `targetTitle`, optional `subject`).
+
+### `GET /api/admin/reports?status=open|closed|all` and `POST { action: 'close', id, note? }` — staff
+Listing needs `content.view`; closing needs `community.review`.
+
+### `/api/admin/review` — challenges
+The queue has a fourth pillar `quests` (`kind: 'quest'`): draft challenges a member proposed. `counts.quests` is returned. Approving sets `status: 'active'` (refused when the end date has passed); rejecting sets `reviewRejectedAt` and `rejectionReason` and keeps the draft hidden.

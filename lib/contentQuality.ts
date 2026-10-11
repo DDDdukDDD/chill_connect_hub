@@ -1,4 +1,4 @@
-import type { EventItem } from '@/data/mockData';
+import type { ChallengeQuest, EventItem } from '@/data/mockData';
 import type { LifestyleSpotItem } from '@/data/spotsData';
 
 /**
@@ -115,4 +115,17 @@ export function checkEventQuality(event: Partial<EventItem> & { sourceUrl?: stri
     );
   }
   return report(checks);
+}
+
+/** A member's challenge proposal: what staff still have to add before it can go live */
+export function checkQuestQuality(quest: Partial<ChallengeQuest>): QualityReport {
+  return report([
+    ...titleChecks(quest.title),
+    { id: 'objective', label: 'เป้าหมายอย่างน้อย 15 ตัวอักษร', ok: (quest.objective || quest.targetGoal || '').trim().length >= 15, severity: 'required' },
+    { id: 'steps', label: 'มีขั้นตอนอย่างน้อย 1 ข้อ', ok: (quest.steps?.length ?? 0) > 0, severity: 'required' },
+    { id: 'badge', label: 'มีชื่อเหรียญ', ok: Boolean(quest.badgeLabel?.trim()), severity: 'required' },
+    { id: 'dates', label: 'มีวันเริ่มและวันสิ้นสุด', ok: Boolean(quest.startDate && quest.endDate), severity: 'required' },
+    { id: 'points', label: 'กำหนดคะแนนแล้ว', ok: (quest.rewardPoints ?? 0) > 0, severity: 'recommended' },
+    { id: 'image', label: 'มีรูปปก', ok: Boolean(quest.image || quest.badgeCoverImg), severity: 'recommended' },
+  ]);
 }

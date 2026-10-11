@@ -140,7 +140,7 @@ export async function proposeQuest(member: Member, input: Record<string, unknown
   await guardMemberText(member, `${title} ${objective} ${steps.join(' ')}`, 'เสนอชาเลนจ์');
 
   const mine = await questsProposedBy(member.id);
-  if (mine.filter((quest) => quest.status === 'draft').length >= MAX_WAITING) {
+  if (mine.filter((quest) => quest.status === 'draft' && !quest.reviewRejectedAt).length >= MAX_WAITING) {
     throw new MemberAuthError(`มีชาเลนจ์รอทีมงานตรวจอยู่ ${MAX_WAITING} รายการแล้ว รอผลก่อนแล้วค่อยส่งเพิ่มนะ`, 429);
   }
 

@@ -1256,8 +1256,9 @@ export default function SpotDetailPage() {
         <ReportSafetyModal
           isOpen={isReportModalOpen}
           onClose={() => setIsReportModalOpen(false)}
+          targetType="spot"
+          targetId={spot.id}
           targetTitle={spot.title}
-          targetHostName={spot.province}
           onReportSubmitted={() => {
             showToast('ส่งรายงานข้อมูลสถานที่เรียบร้อย ทีมงานจะตรวจสอบโดยเร็ว');
           }}

@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { 
+  Plus,
   Trophy, 
   Flame, 
   Sparkles, 
@@ -35,6 +36,7 @@ import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { JoinChallengeModal, getQuestBrandReward } from '@/components/JoinChallengeModal';
+import { CreateEventModal } from '@/components/CreateEventModal';
 import { BrandLogo } from '@/components/BrandLogo';
 import { Pagination } from '@/components/Pagination';
 import { ChallengeQuest, MOCK_CHALLENGES } from '@/data/mockData';
@@ -275,6 +277,12 @@ export default function ChallengesDiscoveryPage() {
     }
   }, [isLoggedIn]);
 
+  // Confirmation Modal states
+  const [questToJoin, setQuestToJoin] = useState<QuestWithDuration | null>(null);
+  const [questToCancel, setQuestToCancel] = useState<QuestWithDuration | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isProposeOpen, setIsProposeOpen] = useState(false);
+
   // Deep-linking: Support opening quest modal from URL (e.g. /challenges?quest=comm-quest-1)
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -288,10 +296,6 @@ export default function ChallengesDiscoveryPage() {
     }
   }, [questList]);
 
-  // Confirmation Modal states
-  const [questToJoin, setQuestToJoin] = useState<QuestWithDuration | null>(null);
-  const [questToCancel, setQuestToCancel] = useState<QuestWithDuration | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -528,6 +532,14 @@ export default function ChallengesDiscoveryPage() {
 
             {/* Action Status */}
             <div className="flex items-center gap-2 flex-wrap shrink-0">
+              <button
+                type="button"
+                onClick={() => (isLoggedIn ? setIsProposeOpen(true) : setIsRequireMembershipOpen(true))}
+                className="inline-flex items-center justify-center gap-2 min-h-10 px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold cursor-pointer whitespace-nowrap"
+              >
+                <Plus className="w-4 h-4" aria-hidden="true" />
+                เสนอชาเลนจ์
+              </button>
               {isLoggedIn ? (
                 joinedQuestIds.length > 0 && (
                   <Link
@@ -1031,6 +1043,13 @@ export default function ChallengesDiscoveryPage() {
       <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />
 
       {/* Free Membership Required Modal */}
+      <CreateEventModal
+        isOpen={isProposeOpen}
+        onClose={() => setIsProposeOpen(false)}
+        initialType="challenge"
+        onCreateSuccess={() => undefined}
+      />
+
       <RequireMembershipModal
         isOpen={isRequireMembershipOpen}
         onClose={() => setIsRequireMembershipOpen(false)}

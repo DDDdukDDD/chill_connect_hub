@@ -22,6 +22,7 @@ import { CoverageView } from '@/components/admin/CoverageView';
 import { FeaturedRailsView } from '@/components/admin/FeaturedRailsView';
 import { MembersManagerView } from '@/components/admin/MembersManagerView';
 import { MomentsManagerView } from '@/components/admin/MomentsManagerView';
+import { ReportsManagerView } from '@/components/admin/ReportsManagerView';
 
 // ─────────────────────────────────────────────────────────────
 // MAIN ADMIN PAGE
@@ -125,6 +126,8 @@ function AdminConsole() {
         return <QuestsManagerView />;
       case 'moments':
         return <MomentsManagerView />;
+      case 'reports':
+        return <ReportsManagerView onNavigate={setActiveModule} />;
       case 'scraper':
         return <ScraperEngineView key={`scraper-${moduleFilters.province ?? ''}`} initialProvince={moduleFilters.province} />;
       case 'coverage':

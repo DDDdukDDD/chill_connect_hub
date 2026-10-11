@@ -25,7 +25,6 @@ import { PlatformTrustAndPerks } from '@/components/PlatformTrustAndPerks';
 import { CommunityDiscoveryHighlights } from '@/components/CommunityDiscoveryHighlights';
 import { FairsDiscoveryHighlights } from '@/components/FairsDiscoveryHighlights';
 import { SpotsDiscoveryHighlights } from '@/components/SpotsDiscoveryHighlights';
-import { CreateChallengeModal } from '@/components/CreateChallengeModal';
 import { CommunityCategoryRail, COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
 import { TopCommunityRail, TOP_COMMUNITY_CLUBS } from '@/components/TopCommunityRail';
 import { SpotCategoryRail, NATIONWIDE_SPOT_CATEGORIES } from '@/components/SpotCategoryRail';
@@ -134,7 +133,6 @@ function HomeContent() {
   const [currentFairPage, setCurrentFairPage] = useState<number>(1);
   const [currentSpotPage, setCurrentSpotPage] = useState<number>(1);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [isCreateChallengeModalOpen, setIsCreateChallengeModalOpen] = useState<boolean>(false);
   const [joinedQuestTitles, setJoinedQuestTitles] = useState<string[]>([]);
   const [showEndedEvents, setShowEndedEvents] = useState<boolean>(false);
   const [activeScopeTab, setActiveScopeTab] = useState<'all' | 'spots' | 'community' | 'fairs'>(initialScopeTab);
@@ -347,7 +345,7 @@ function HomeContent() {
                 participantsCount: (matched.participantsCount || 0) + 1,
               }
             : {
-                id: `quest-${Date.now()}`,
+                id: `quest-local-${questTitle.trim().slice(0, 40)}`,
                 title: questTitle,
                 progressPercent: 0,
                 current: '0',
@@ -2241,16 +2239,6 @@ function HomeContent() {
           } else {
             showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จเรียบร้อย! 🎉`);
           }
-        }}
-      />
-
-      {/* Create Custom Challenge Modal */}
-      <CreateChallengeModal
-        isOpen={isCreateChallengeModalOpen}
-        onClose={() => setIsCreateChallengeModalOpen(false)}
-        onCreateSuccess={(newQuest) => {
-          setJoinedQuestTitles((prev) => [...prev, newQuest.title]);
-          showToast(`🎉 สร้างชาเลนจ์ "${newQuest.title}" (${newQuest.visibility === 'public' ? 'สาธารณะ 🌐' : 'ส่วนตัว 🔒'}) สำเร็จแล้ว!`);
         }}
       />
 

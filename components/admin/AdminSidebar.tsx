@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Inbox,
   Camera,
+  Flag,
   FolderTree,
   MapPin,
   Building2,
@@ -35,6 +36,7 @@ export type AdminModuleId =
   | 'spots'
   | 'quests'
   | 'moments'
+  | 'reports'
   | 'scraper'
   | 'coverage'
   | 'taxonomy'
@@ -67,6 +69,7 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
     modules: [
       { id: 'dashboard', label: 'ภาพรวมวันนี้', icon: LayoutDashboard },
       { id: 'review', label: 'คิวตรวจ', icon: Inbox },
+      { id: 'reports', label: 'รายงานความปลอดภัย', icon: Flag },
     ],
   },
   {
@@ -121,6 +124,7 @@ export const MODULE_PERMISSIONS: Record<AdminModuleId, AdminPermission> = {
   spots: 'content.view',
   quests: 'content.view',
   moments: 'content.view',
+  reports: 'content.view',
   scraper: 'content.view',
   coverage: 'content.view',
   taxonomy: 'content.view',
@@ -148,10 +152,11 @@ function useQueueCounts(activeModule: AdminModuleId) {
     Promise.all([
       fetch('/api/admin/review?limit=1', { cache: 'no-store' }).then((res) => (res.ok ? res.json() : null)),
       fetch('/api/admin/moments?filter=reported&limit=1', { cache: 'no-store' }).then((res) => (res.ok ? res.json() : null)),
+      fetch('/api/admin/reports', { cache: 'no-store' }).then((res) => (res.ok ? res.json() : null)),
     ])
-      .then(([data, moments]) => {
+      .then(([data, moments, reports]) => {
         if (cancelled || !data?.counts) return;
-        setCounts({ review: data.counts.all, community: data.counts.community, fairs: data.counts.fairs, spots: data.counts.spots, moments: moments?.counts?.reported ?? 0 });
+        setCounts({ review: data.counts.all, community: data.counts.community, fairs: data.counts.fairs, spots: data.counts.spots, quests: data.counts.quests ?? 0, moments: moments?.counts?.reported ?? 0, reports: reports?.counts?.open ?? 0 });
       })
       .catch(() => {
         // Counts are a hint only; the review queue shows the authoritative numbers

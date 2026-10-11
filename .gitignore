@@ -56,5 +56,6 @@ next-env.d.ts
 /data/reviews.json
 /data/chat_messages.json
 /data/fair_groups.json
+/data/content_reports.json
 # Runtime uploads (local dev; production uses Vercel Blob)
 /public/uploads/

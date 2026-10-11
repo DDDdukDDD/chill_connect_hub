@@ -7,6 +7,7 @@ import { SpotListItem } from '@/components/SpotListItem';
 import { EventGrid } from '@/components/EventGrid';
 import type { EventItem } from '@/data/mockData';
 import type { LifestyleSpotItem } from '@/data/spotsData';
+import type { ChallengeQuest } from '@/data/mockData';
 import type { QualityReport } from '@/lib/contentQuality';
 import { AdminEmptyState, AdminPageHeader, PillarBadge, adminButton } from './AdminUI';
 import { AdminPagination, AdminPaginationState } from './AdminPagination';
@@ -14,10 +15,10 @@ import { useAdminSession } from './AdminAuthGate';
 import { handleAdminUnauthorized } from './adminAuthUtils';
 import type { AdminModuleId } from './AdminSidebar';
 
-type Pillar = 'community' | 'fairs' | 'spots';
+type Pillar = 'community' | 'fairs' | 'spots' | 'quests';
 
 interface ReviewItem {
-  kind: 'event' | 'spot';
+  kind: 'event' | 'spot' | 'quest';
   id: string;
   pillar: Pillar;
   title: string;
@@ -25,7 +26,7 @@ interface ReviewItem {
   source: string;
   submittedAt: number | null;
   quality: QualityReport;
-  data: (EventItem & { sourceUrl?: string }) | LifestyleSpotItem;
+  data: (EventItem & { sourceUrl?: string }) | LifestyleSpotItem | ChallengeQuest;
 }
 
 interface Counts {
@@ -33,6 +34,7 @@ interface Counts {
   community: number;
   fairs: number;
   spots: number;
+  quests: number;
 }
 
 const TABS: Array<{ id: Pillar | 'all'; label: string }> = [
@@ -40,6 +42,7 @@ const TABS: Array<{ id: Pillar | 'all'; label: string }> = [
   { id: 'community', label: 'คอมมูนิตี้' },
   { id: 'fairs', label: 'งานแฟร์' },
   { id: 'spots', label: 'พิกัดเที่ยว' },
+  { id: 'quests', label: 'ชาเลนจ์' },
 ];
 
 const PAGE_SIZE = 20;
@@ -63,6 +66,22 @@ function FrontendPreview({ item, mode }: { item: ReviewItem; mode: 'card' | 'lis
     e.preventDefault();
     e.stopPropagation();
   };
+  if (item.kind === 'quest') {
+    // No public card exists for a draft challenge, so the proposal is shown as the member wrote it
+    const quest = item.data as ChallengeQuest;
+    return (
+      <dl className="space-y-2 text-xs text-slate-700">
+        <div><dt className="font-semibold text-slate-500">เป้าหมาย</dt><dd className="mt-0.5">{quest.objective || quest.targetGoal}</dd></div>
+        <div>
+          <dt className="font-semibold text-slate-500">ขั้นตอน</dt>
+          <dd className="mt-0.5"><ol className="list-decimal pl-4 space-y-0.5">{(quest.steps ?? []).map((step, index) => <li key={index}>{step}</li>)}</ol></dd>
+        </div>
+        <div><dt className="font-semibold text-slate-500">สำเร็จเมื่อ</dt><dd className="mt-0.5">ทำครบ {quest.total} ครั้ง{quest.verificationMethod ? ` · ${quest.verificationMethod}` : ''}</dd></div>
+        <div><dt className="font-semibold text-slate-500">ช่วงเวลา</dt><dd className="mt-0.5">{quest.startDate} - {quest.endDate}</dd></div>
+        <div><dt className="font-semibold text-slate-500">เหรียญ · คะแนน</dt><dd className="mt-0.5">{quest.badgeLabel} · {quest.rewardPoints ? `${quest.rewardPoints} คะแนน` : 'ยังไม่ได้กำหนดคะแนน (กด "แก้ไข" เพื่อกำหนดก่อนอนุมัติ)'}</dd></div>
+      </dl>
+    );
+  }
   if (item.kind === 'spot') {
     const spot = item.data as LifestyleSpotItem;
     return (

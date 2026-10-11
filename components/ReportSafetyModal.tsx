@@ -1,192 +1,119 @@
 'use client';
 
-import React, { useState } from 'react';
-import { X, ShieldAlert, AlertTriangle, CheckCircle2, Lock, Flag, ShieldCheck } from 'lucide-react';
+import React, { useId, useState } from 'react';
+import { Check, Loader2 } from 'lucide-react';
+import { DialogShell, dialogButton } from './auth/DialogShell';
 
 interface ReportSafetyModalProps {
   isOpen: boolean;
   onClose: () => void;
+  targetType: 'community' | 'fair' | 'spot';
+  targetId: string;
   targetTitle: string;
-  targetHostName?: string;
+  /** A part of the target the report is about, such as a meet-up group inside a fair */
+  subject?: string;
   onReportSubmitted?: (reason: string, details: string) => void;
 }
 
-const REPORT_REASONS = [
-  {
-    id: 'investment_mlm',
-    title: 'ชักชวนลงทุน / ขายตรง / งานออนไลน์',
-    desc: 'มีการชวนทำธุรกิจลูกโซ่ คริปโต หรือหารายได้เสริมแอบแฝง',
-  },
-  {
-    id: 'harassment',
-    title: 'คุกคาม / วาจาไม่เหมาะสม / ไม่ปลอดภัย',
-    desc: 'แสดงพฤติกรรมคุกคามทางเพศ ใช้คำพูดหยาบคาย หรือละเมิดความเป็นส่วนตัว',
-  },
-  {
-    id: 'unsafe_location',
-    title: 'นัดพบในสถานที่ลับตาคน / นอกงาน',
-    desc: 'ระบุจุดนัดพบในมุมอับ รถยนต์ส่วนตัว หรือนอกพื้นที่สาธารณะของงาน',
-  },
-  {
-    id: 'fake_or_spam',
-    title: 'กลุ่มสแปม / ไม่มาตามนัด / ตั้งกลุ่มหลอก',
-    desc: 'ข้อมูลเท็จ ไม่มีเจตนามาทำกิจกรรมจริง หรือตั้งกลุ่มรบกวนผู้อื่น',
-  },
-  {
-    id: 'other',
-    title: 'สาเหตุอื่นๆ',
-    desc: 'พฤติกรรมอื่นๆ ที่ไม่เป็นไปตามแนวทางความปลอดภัยของคอมมูนิตี้',
-  },
+// The same ids as CONTENT_REPORT_REASONS in lib/social/contentReports.ts
+const REASONS: Array<{ id: string; title: string; text: string; places?: boolean }> = [
+  { id: 'investment_mlm', title: 'ชวนลงทุน ขายตรง หรือหารายได้เสริม', text: 'ชวนทำธุรกิจ คริปโต ขายประกัน หรือขายของแอบแฝง' },
+  { id: 'harassment', title: 'คุกคามหรือพูดจาไม่เหมาะสม', text: 'คุกคามทางเพศ ใช้คำหยาบ หรือละเมิดความเป็นส่วนตัว' },
+  { id: 'unsafe_location', title: 'นัดพบในที่ลับตาคนหรือไม่ปลอดภัย', text: 'นัดในที่ส่วนตัว ในรถ หรือนอกพื้นที่สาธารณะ' },
+  { id: 'fake_or_spam', title: 'ข้อมูลปลอม สแปม หรือไม่มาตามนัด', text: 'ไม่ได้ตั้งใจจัดจริง หรือตั้งขึ้นเพื่อรบกวนคนอื่น' },
+  { id: 'wrong_info', title: 'ข้อมูลไม่ถูกต้องหรือไม่อัปเดต', text: 'ปิดไปแล้ว ย้ายที่ เวลาหรือราคาไม่ตรง', places: true },
+  { id: 'other', title: 'เรื่องอื่น', text: 'เล่าให้ทีมงานฟังในช่องด้านล่าง' },
 ];
 
-export const ReportSafetyModal: React.FC<ReportSafetyModalProps> = ({
-  isOpen,
-  onClose,
-  targetTitle,
-  targetHostName,
-  onReportSubmitted,
-}) => {
-  const [selectedReason, setSelectedReason] = useState<string>('investment_mlm');
+/** The "รายงาน" dialog on event, fair and place pages. Sends the report to staff (POST /api/reports). */
+export const ReportSafetyModal: React.FC<ReportSafetyModalProps> = (props) => (props.isOpen ? <ReportDialog {...props} /> : null);
+
+function ReportDialog({ onClose, targetType, targetId, targetTitle, subject, onReportSubmitted }: ReportSafetyModalProps) {
+  const uid = useId();
+  // A place is reported for wrong details first; an event for how people behave
+  const reasons = targetType === 'spot' ? [...REASONS.filter((r) => r.places), ...REASONS.filter((r) => !r.places && r.id !== 'unsafe_location')] : REASONS;
+  const [reason, setReason] = useState('');
   const [details, setDetails] = useState('');
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isSending, setIsSending] = useState(false);
+  const [isSent, setIsSent] = useState(false);
 
-  if (!isOpen) return null;
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitted(true);
-    if (onReportSubmitted) {
-      const reasonObj = REPORT_REASONS.find((r) => r.id === selectedReason);
-      onReportSubmitted(reasonObj?.title || selectedReason, details);
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!reason) return setError('เลือกเหตุผลที่รายงาน');
+    if (reason === 'other' && details.trim().length < 5) return setError('เล่าสั้นๆ ว่าเกิดอะไรขึ้น');
+    setError(null);
+    setIsSending(true);
+    try {
+      const res = await fetch('/api/reports', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetType, targetId, targetTitle, reason, details: subject ? `[กลุ่ม: ${subject}] ${details}` : details }) });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        setError(res.status === 401 ? 'เข้าสู่ระบบก่อนจึงจะส่งรายงานได้' : data?.message || 'ส่งรายงานไม่สำเร็จ ลองใหม่อีกครั้ง');
+        return;
+      }
+      setIsSent(true);
+      onReportSubmitted?.(REASONS.find((r) => r.id === reason)?.title ?? reason, details);
+    } catch {
+      setError('เชื่อมต่อไม่ได้ ลองใหม่อีกครั้ง');
+    } finally {
+      setIsSending(false);
     }
-    setTimeout(() => {
-      setIsSubmitted(false);
-      onClose();
-      setDetails('');
-      setSelectedReason('investment_mlm');
-    }, 2200);
   };
 
+  if (isSent) {
+    return (
+      <DialogShell onClose={onClose} size="sm" title="ส่งรายงานแล้ว" subtitle="ขอบคุณที่ช่วยดูแลคอมมูนิตี้ ทีมงานจะตรวจสอบ และจะไม่บอกใครว่าคุณเป็นผู้รายงาน">
+        <div className="flex justify-center">
+          <button type="button" data-autofocus onClick={onClose} className={dialogButton.primary}>เข้าใจแล้ว</button>
+        </div>
+      </DialogShell>
+    );
+  }
+
   return (
-    <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-fade-in">
-      <div className="bg-white rounded-3xl p-5 sm:p-6 max-w-md w-full shadow-2xl border border-rose-100 text-left space-y-4 animate-scale-up relative max-h-[90vh] overflow-y-auto">
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 p-1.5 rounded-full transition-colors cursor-pointer"
-          title="ปิด"
-        >
-          <X className="w-4 h-4" />
-        </button>
+    <DialogShell onClose={onClose} size="md" title="รายงานให้ทีมงาน" subtitle={subject ? `${subject} · ${targetTitle}` : targetTitle}>
+      <form onSubmit={submit} className="space-y-5 text-left">
+        <p className="text-sm font-medium text-slate-600 leading-relaxed p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+          รายงานนี้ส่งถึงทีมงานเท่านั้น ผู้ถูกรายงานจะไม่เห็นว่าใครเป็นคนส่ง
+        </p>
 
-        {isSubmitted ? (
-          <div className="py-8 text-center space-y-3 animate-fade-in">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
-              <ShieldCheck className="w-8 h-8" />
-            </div>
-            <h3 className="text-lg font-extrabold text-[#1E293B]">
-              ได้รับรายงานความปลอดภัยแล้ว
-            </h3>
-            <p className="text-xs text-slate-600 max-w-xs mx-auto leading-relaxed">
-              ขอบคุณที่ช่วยดูแลความปลอดภัยของคอมมูนิตี้ ทีมงาน Trust & Safety จะทำการตรวจสอบข้อมูลทันทีค่ะ
-            </p>
+        <fieldset>
+          <legend className="block text-sm font-extrabold text-slate-900 mb-2">เกิดอะไรขึ้น</legend>
+          <div className="space-y-2">
+            {reasons.map((item) => {
+              const selected = reason === item.id;
+              return (
+                <label key={item.id} className={`relative flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-[#2563EB]/40 ${selected ? 'border-[#2563EB] ring-1 ring-[#2563EB]' : 'border-slate-300 hover:border-slate-400'}`}>
+                  <input type="radio" name={`${uid}-reason`} value={item.id} checked={selected} onChange={() => { setReason(item.id); setError(null); }} className="sr-only" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-extrabold text-slate-900">{item.title}</span>
+                    <span className="block mt-0.5 text-xs font-medium text-slate-500 leading-relaxed">{item.text}</span>
+                  </span>
+                  {selected && <Check className="w-4 h-4 shrink-0 text-[#2563EB] mt-0.5" aria-hidden="true" />}
+                </label>
+              );
+            })}
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Header */}
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 shrink-0 shadow-2xs">
-                <ShieldAlert className="w-5 h-5" />
-              </div>
-              <div className="min-w-0 flex-1 pr-6">
-                <h3 className="text-base font-extrabold text-[#1E293B]">
-                  รายงานความไม่ปลอดภัย
-                </h3>
-                <p className="text-xs text-slate-500 truncate mt-0.5">
-                  กลุ่ม: <span className="font-semibold text-slate-700">&ldquo;{targetTitle}&rdquo;</span>
-                  {targetHostName && <span> (โฮสต์: {targetHostName})</span>}
-                </p>
-              </div>
-            </div>
+        </fieldset>
 
-            {/* Privacy Guarantee Box */}
-            <div className="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-3 text-[11px] text-amber-900 flex items-start gap-2 leading-relaxed">
-              <Lock className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-              <span>
-                <strong>รายงานนี้เป็นความลับ 100%:</strong> ผู้ถูกรายงานจะไม่ทราบว่าใครเป็นผู้ส่งข้อมูล และระบบจะนำไปประเมินความปลอดภัยทันที
-              </span>
-            </div>
+        <div>
+          <label htmlFor={`${uid}-details`} className="block text-sm font-extrabold text-slate-900 mb-1.5">
+            รายละเอียด
+            {reason !== 'other' && <span className="ml-1.5 text-xs font-medium text-slate-500">(ไม่บังคับ)</span>}
+          </label>
+          <textarea id={`${uid}-details`} rows={3} value={details} maxLength={500} onChange={(e) => { setDetails(e.target.value); setError(null); }} placeholder="สิ่งที่เห็นหรือข้อความที่ได้รับ ช่วยให้ทีมงานตรวจได้เร็วขึ้น"
+            className="w-full px-4 py-3 border border-slate-300 rounded-2xl text-base sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-medium focus:outline-hidden focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20" />
+        </div>
 
-            {/* Reason Selection */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-800 block">
-                เลือกเหตุผลที่รายงาน <span className="text-rose-500">*</span>
-              </label>
-              <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
-                {REPORT_REASONS.map((r) => (
-                  <label
-                    key={r.id}
-                    className={`flex items-start gap-2.5 p-2.5 rounded-xl border transition-all cursor-pointer ${
-                      selectedReason === r.id
-                        ? 'border-rose-400 bg-rose-50/50 shadow-2xs'
-                        : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/60'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="report_reason"
-                      value={r.id}
-                      checked={selectedReason === r.id}
-                      onChange={(e) => setSelectedReason(e.target.value)}
-                      className="mt-1 text-rose-600 focus:ring-rose-500 cursor-pointer"
-                    />
-                    <div className="min-w-0 text-left">
-                      <div className="font-bold text-xs text-[#1E293B]">
-                        {r.title}
-                      </div>
-                      <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
-                        {r.desc}
-                      </p>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
+        {error && <p role="alert" className="text-xs font-bold text-rose-600">{error}</p>}
 
-            {/* Additional Details */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-800 block">
-                รายละเอียดเพิ่มเติม (ถ้ามี)
-              </label>
-              <textarea
-                value={details}
-                onChange={(e) => setDetails(e.target.value)}
-                placeholder="ระบุข้อความหรือพฤติกรรมที่พบเห็นเพื่อช่วยให้ทีมงานตรวจสอบได้เร็วยิ่งขึ้น..."
-                rows={2}
-                className="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:border-rose-400 focus:ring-2 focus:ring-rose-100 outline-none resize-none transition-all placeholder:text-slate-400"
-              />
-            </div>
-
-            {/* Action Buttons */}
-            <div className="pt-2 flex items-center gap-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
-              >
-                ยกเลิก
-              </button>
-              <button
-                type="submit"
-                className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md shadow-rose-600/20 transition-all cursor-pointer active:scale-98 flex items-center justify-center gap-1.5"
-              >
-                <Flag className="w-3.5 h-3.5" />
-                <span>ส่งรายงานความปลอดภัย</span>
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
-    </div>
+        <div className="flex items-center justify-between gap-3">
+          <button type="button" onClick={onClose} className={dialogButton.quiet}>ยกเลิก</button>
+          <button type="submit" disabled={isSending} className={dialogButton.primary}>
+            {isSending ? <><Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> กำลังส่ง…</> : 'ส่งรายงาน'}
+          </button>
+        </div>
+      </form>
+    </DialogShell>
   );
-};
+}
