@@ -3962,6 +3962,11 @@ function MyHubContent() {
         onCheckIn={(tId) => {
           handleCheckIn(tId);
         }}
+        onOpenCancel={(ev, tId) => {
+          setCancelTargetEvent(ev);
+          setCancelTargetTicketId(tId);
+          setIsCancelModalOpen(true);
+        }}
         onOpenChat={(ev) => {
           setChatTargetEvent(ev);
           setIsChatModalOpen(true);

@@ -974,12 +974,12 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
         <div className="flex items-start justify-between border-b border-slate-100 pb-4">
           <div className="space-y-1">
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              {step === 1 && (userProfile.role === 'member' ? 'สิทธิ์การสร้างกิจกรรมสำหรับสมาชิก' : 'เลือกประเภทกิจกรรมที่ต้องการสร้าง')}
+              {step === 1 && (userProfile.role === 'member' ? 'สร้างกิจกรรมคอมมูนิตี้' : 'เลือกประเภทกิจกรรมที่ต้องการสร้าง')}
               {step === 2 && `กรอกข้อมูล ${entityType === 'community' ? 'กิจกรรมคอมมูนิตี้' : entityType === 'fair' ? 'งานมหกรรม นิทรรศการ เอ็กซ์โป และ งานวิ่ง' : entityType === 'spot' ? 'สถานที่เที่ยว & จุดฮีลใจ' : 'เควสต์ & ชาเลนจ์'}`}
               {step === 3 && 'ตรวจสอบความถูกต้องก่อนเผยแพร่'}
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 font-medium">
-              {step === 1 && (userProfile.role === 'member' ? 'บทบาทปัจจุบัน: Member (สมาชิกทั่วไป)' : 'คุณจะสามารถสร้างได้เฉพาะกิจกรรมที่คุณมีสิทธิ์ในการสร้างเท่านั้น')}
+              {step === 1 && (userProfile.role === 'member' ? 'ทุกกิจกรรมผ่านการตรวจของทีมงานก่อนเผยแพร่' : 'คุณจะสามารถสร้างได้เฉพาะกิจกรรมที่คุณมีสิทธิ์ในการสร้างเท่านั้น')}
               {step === 2 && 'ระบุรายละเอียดให้ครบถ้วนเพื่อสร้างความชัดเจนและประสบการณ์ที่ดีแก่ผู้เข้าร่วม'}
               {step === 3 && 'จำลองหน้าเผยแพร่จริงเพื่อความมั่นใจก่อนเปิดรับเพื่อนเข้าร่วม'}
             </p>
@@ -997,107 +997,35 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
 
         {/* STEP 1: ENTITY TYPE SELECTOR CARDS OR MEMBER PERMISSION NOTICE */}
         {step === 1 && userProfile.role === 'member' ? (
-          <div className="space-y-5 py-2 animate-fade-in text-left">
-            <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-br from-amber-50/50 via-slate-50 to-emerald-50/30 border border-slate-200 shadow-xs space-y-4">
-              <div className="flex items-start gap-3.5">
-                <div className="w-11 h-11 rounded-2xl bg-amber-100 border border-amber-200 text-amber-800 flex items-center justify-center font-bold shrink-0">
-                  <ShieldAlert className="w-6 h-6 text-amber-600" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-base sm:text-lg font-black text-slate-900">
-                      สิทธิ์เฉพาะ Host, Organizer และ Space Owner
-                    </h3>
-                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-200/80 text-slate-700">
-                      Role: Member (สมาชิกทั่วไป)
-                    </span>
-                  </div>
-                  <p className="text-xs sm:text-[13px] text-slate-600 mt-1 leading-relaxed">
-                    บทบาทปัจจุบันของคุณคือ <strong>Member (สมาชิกทั่วไป)</strong> ซึ่งสามารถค้นหา เข้าร่วมตี้ และส่งต่อโมเมนต์ความประทับใจได้ แต่ยังไม่สามารถสร้างกิจกรรมใหม่ได้ด้วยตนเอง
-                  </p>
-                </div>
-              </div>
-
-              {/* Role Permissions Matrix */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center text-xs font-bold shrink-0">👥</span>
-                    <span className="font-black text-xs text-slate-900">Verified Host</span>
-                  </div>
-                  <p className="text-[11px] text-slate-500 leading-relaxed">
-                    สร้างกิจกรรมคอมมูนิตี้ & ตี้เพื่อนใหม่ (วิ่ง, กาแฟ, บอร์ดเกม, เวิร์กช็อป)
-                  </p>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold shrink-0">🏛️</span>
-                    <span className="font-black text-xs text-slate-900">Organizer / Space</span>
-                  </div>
-                  <p className="text-[11px] text-slate-500 leading-relaxed">
-                    สร้างงานมหกรรม นิทรรศการ เอ็กซ์โป และกิจกรรมคอมมูนิตี้
-                  </p>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs font-bold shrink-0">🛡️</span>
-                    <span className="font-black text-xs text-slate-900">Super Admin</span>
-                  </div>
-                  <p className="text-[11px] text-slate-500 leading-relaxed">
-                    สร้างและจัดการได้ทุกประเภท รวมถึงพิกัดเที่ยว 77 จังหวัด และเควสต์
-                  </p>
-                </div>
-              </div>
-
-              {/* Fast Test Role Switcher inside Modal */}
-              <div className="pt-3 border-t border-slate-200/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <div className="text-xs text-slate-600 font-semibold flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-[#4A7C59] shrink-0" />
-                  <span>ทดสอบฟอร์มสร้างกิจกรรม? สลับบทบาทได้ทันที:</span>
-                </div>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => handleSetRole('host')}
-                    className="px-3 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all active:scale-95 cursor-pointer"
-                  >
-                    สลับเป็น Host
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSetRole('organizer')}
-                    className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all active:scale-95 cursor-pointer"
-                  >
-                    สลับเป็น Organizer
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSetRole('venue_owner')}
-                    className="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all active:scale-95 cursor-pointer"
-                  >
-                    สลับเป็น Space
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSetRole('admin')}
-                    className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all active:scale-95 cursor-pointer"
-                  >
-                    สลับเป็น Admin
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Actions */}
-            <div className="flex justify-end pt-1">
+          <div className="space-y-5 py-2 text-left">
+            <ul className="space-y-3">
+              {[
+                ['สร้างได้เลย', 'กรอกรายละเอียดกิจกรรม แล้วทีมงานจะตรวจก่อนเผยแพร่ให้คนอื่นเห็น'],
+                ['อยากให้เผยแพร่ทันที', 'ส่งคำขอเป็นคนจัดที่หน้าโปรไฟล์ เมื่อทีมงานอนุมัติแล้ว กิจกรรมของคุณจะขึ้นทันทีทุกครั้ง'],
+                ['ดูแลกันและกัน', 'นัดพบในที่สาธารณะ ไม่ขายของ ไม่ชวนลงทุน ตามคำมั่นของคอมมูนิตี้'],
+              ].map(([title, text]) => (
+                <li key={title} className="p-4 rounded-2xl border border-slate-200">
+                  <p className="text-sm sm:text-base font-extrabold text-slate-900">{title}</p>
+                  <p className="mt-1 text-sm font-medium text-slate-600 leading-relaxed">{text}</p>
+                </li>
+              ))}
+            </ul>
+            <div className="flex flex-wrap justify-end gap-2.5 pt-1">
+              <button type="button" onClick={onClose} className="px-5 py-3 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm cursor-pointer whitespace-nowrap">
+                ไว้ทีหลัง
+              </button>
+              <a href="/profile#host" className="px-5 py-3 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-sm whitespace-nowrap">
+                ส่งคำขอเป็นคนจัด
+              </a>
               <button
                 type="button"
-                onClick={onClose}
-                className="px-5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+                onClick={() => {
+                  setEntityType('community');
+                  setStep(2);
+                }}
+                className="px-6 py-3 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-extrabold text-sm shadow-sm cursor-pointer whitespace-nowrap"
               >
-                เข้าใจแล้ว (ปิดหน้าต่าง)
+                สร้างกิจกรรม
               </button>
             </div>
           </div>
@@ -1299,7 +1227,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                         <label className="text-xs font-bold text-slate-800">
                           ชื่อภารกิจท้าทาย (Quest Title) <span className="text-rose-500">*</span>
                         </label>
-                        <span className="text-[10px] text-slate-400">{title.length}/60</span>
+                        <span className="text-[11px] text-slate-400">{title.length}/60</span>
                       </div>
                       <input
                         type="text"
@@ -1380,7 +1308,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                       <label className="text-xs font-bold text-slate-800">
                         พื้นที่เป้าหมาย / ย่านที่ทำภารกิจ <span className="text-rose-500">*</span>
                       </label>
-                      <span className="text-[10px] text-slate-400">{locationName.length}/80</span>
+                      <span className="text-[11px] text-slate-400">{locationName.length}/80</span>
                     </div>
                     <input
                       type="text"
@@ -1400,7 +1328,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                       <Target className="w-4 h-4 text-[#4A7C59]" />
                       <span>วัตถุประสงค์ & ที่มาของภารกิจ <span className="text-rose-500">*</span></span>
                     </h4>
-                    <span className="text-[10px] text-purple-600 font-bold uppercase tracking-wider">Section 01</span>
+                    <span className="text-[11px] text-purple-600 font-bold uppercase tracking-wider">Section 01</span>
                   </div>
 
                   <p className="text-[11px] text-slate-500 font-medium">
@@ -1418,7 +1346,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
 
                   {/* Preset Suggestions */}
                   <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                    <span className="text-[10px] text-slate-400 font-bold">ตัวอย่างด่วน:</span>
+                    <span className="text-[11px] text-slate-400 font-bold">ตัวอย่างด่วน:</span>
                     {[
                       'สนับสนุนร้านกาแฟ Specialty ในย่านอารีย์ และสัมผัสบรรยากาศคาเฟ่คราฟต์',
                       'ส่งเสริมการออกกำลังกายกลางแจ้ง สูดอากาศบริสุทธิ์ในปอดสีเขียวของกรุงเทพฯ',
@@ -1428,7 +1356,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                         key={i}
                         type="button"
                         onClick={() => setQuestObjective(sample)}
-                        className="text-[10.5px] px-2.5 py-1 rounded-lg bg-white hover:bg-purple-50 text-slate-600 hover:text-purple-800 border border-slate-200 transition-colors truncate max-w-[280px] cursor-pointer"
+                        className="text-[11px] px-2.5 py-1 rounded-lg bg-white hover:bg-purple-50 text-slate-600 hover:text-purple-800 border border-slate-200 transition-colors truncate max-w-[280px] cursor-pointer"
                       >
                         + {sample.slice(0, 32)}...
                       </button>
@@ -1491,7 +1419,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                     <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">
                       วิธีการตรวจสอบและส่งหลักฐาน <span className="text-rose-500">*</span>
                     </h4>
-                    <span className="text-[10px] text-purple-600 font-bold uppercase tracking-wider">Section 03</span>
+                    <span className="text-[11px] text-purple-600 font-bold uppercase tracking-wider">Section 03</span>
                   </div>
 
                   <p className="text-[11px] text-slate-500 font-medium">
@@ -1536,7 +1464,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                     <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">
                       ของรางวัลเมื่อทำสำเร็จ <span className="text-rose-500">*</span>
                     </h4>
-                    <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 uppercase tracking-wide">
+                    <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 uppercase tracking-wide">
                       Reward Unlocks
                     </span>
                   </div>
@@ -1545,7 +1473,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {/* Badge Card */}
                     <div className="p-3.5 bg-white rounded-2xl border border-purple-100 shadow-2xs space-y-2">
-                      <span className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wide block">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide block">
                         เหรียญตราเกียรติยศ (Profile Badge)
                       </span>
                       <div className="flex items-center gap-3">
@@ -1567,7 +1495,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
 
                     {/* XP Points Card */}
                     <div className="p-3.5 bg-white rounded-2xl border border-purple-100 shadow-2xs space-y-2">
-                      <span className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wide block">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide block">
                         แต้มและคะแนน XP (XP Points)
                       </span>
                       <div className="flex items-center gap-3">
@@ -1732,7 +1660,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                             onChange={(e) => setCommunityDate(e.target.value)}
                             className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-[#F26430]"
                           />
-                          <div className="text-[10.5px] font-bold text-orange-800 bg-orange-100/60 p-1 rounded-md text-center">
+                          <div className="text-[11px] font-bold text-orange-800 bg-orange-100/60 p-1 rounded-md text-center">
                             {formatThaiDate(communityDate)}
                           </div>
                         </div>
@@ -1756,7 +1684,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                               className="w-full px-2 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 outline-none"
                             />
                           </div>
-                          <div className="text-[10.5px] font-bold text-orange-800 bg-orange-100/60 p-1 rounded-md text-center">
+                          <div className="text-[11px] font-bold text-orange-800 bg-orange-100/60 p-1 rounded-md text-center">
                             {startTime} - {endTime} น.
                           </div>
                         </div>
@@ -1774,14 +1702,14 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                             <button
                               type="button"
                               onClick={() => setSelectedDaysOfWeek(['MO', 'TU', 'WE', 'TH', 'FR'])}
-                              className="text-[10.5px] px-2 py-0.5 rounded-md bg-white border border-orange-200 text-orange-800 hover:bg-orange-100/80 font-bold transition-all cursor-pointer"
+                              className="text-[11px] px-2 py-0.5 rounded-md bg-white border border-orange-200 text-orange-800 hover:bg-orange-100/80 font-bold transition-all cursor-pointer"
                             >
                               วันธรรมดา (จ.-ศ.)
                             </button>
                             <button
                               type="button"
                               onClick={() => setSelectedDaysOfWeek(['SA', 'SU'])}
-                              className="text-[10.5px] px-2 py-0.5 rounded-md bg-white border border-orange-200 text-orange-800 hover:bg-orange-100/80 font-bold transition-all cursor-pointer"
+                              className="text-[11px] px-2 py-0.5 rounded-md bg-white border border-orange-200 text-orange-800 hover:bg-orange-100/80 font-bold transition-all cursor-pointer"
                             >
                               สุดสัปดาห์ (ส.-อา.)
                             </button>
@@ -1970,7 +1898,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                             <label className="text-xs font-bold text-slate-700">
                               ชื่อสถานที่ / ย่าน <span className="text-rose-500">*</span>
                             </label>
-                            <span className="text-[10px] text-slate-400">{locationName.length}/80</span>
+                            <span className="text-[11px] text-slate-400">{locationName.length}/80</span>
                           </div>
                           <input
                             type="text"
@@ -2128,7 +2056,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                       <ImageIcon className="w-3.5 h-3.5 text-[#4A7C59]" />
                       <span>รูปภาพหน้าปก:</span>
                     </label>
-                    <span className="text-[10px] text-slate-400">แนะนำรูปแนวนอน</span>
+                    <span className="text-[11px] text-slate-400">แนะนำรูปแนวนอน</span>
                   </div>
 
                   {/* Upload Box */}
@@ -2147,7 +2075,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                         ? 'เปลี่ยนรูปภาพจากเครื่อง'
                         : 'คลิกเพื่ออัปโหลดรูปภาพ'}
                     </span>
-                    <span className="text-[10px] text-slate-400 mt-0.5">JPG, PNG, WEBP (บีบอัดอัตโนมัติ)</span>
+                    <span className="text-[11px] text-slate-400 mt-0.5">JPG, PNG, WEBP (บีบอัดอัตโนมัติ)</span>
                     <input
                       type="file"
                       disabled={isUploadingImage}
@@ -2165,7 +2093,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
 
                   {/* Preset Chips */}
                   <div className="space-y-1.5 pt-1">
-                    <span className="text-[10.5px] text-slate-400 font-medium block">หรือเลือกภาพพรีเซ็ตแนะนำ:</span>
+                    <span className="text-[11px] text-slate-400 font-medium block">หรือเลือกภาพพรีเซ็ตแนะนำ:</span>
                     <div className="grid grid-cols-2 gap-2">
                       {PRESET_IMAGES[entityType]?.slice(0, 4).map((preset) => (
                         <div
@@ -2181,7 +2109,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                           }`}
                         >
                           <img src={preset.url} alt={preset.label} className="w-full h-full object-cover" />
-                          <span className="absolute bottom-1 left-1 bg-black/60 backdrop-blur-xs text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
+                          <span className="absolute bottom-1 left-1 bg-black/60 backdrop-blur-xs text-white text-[11px] font-bold px-1.5 py-0.5 rounded">
                             {preset.label}
                           </span>
                         </div>
@@ -2217,7 +2145,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                     </div>
 
                     <div className="space-y-1.5 pt-1">
-                      <span className="text-[10.5px] text-slate-400 font-medium block">แตะเพื่อเพิ่มด่วน:</span>
+                      <span className="text-[11px] text-slate-400 font-medium block">แตะเพื่อเพิ่มด่วน:</span>
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {['เสื่อปิกนิก', 'กล้องถ่ายรูป', 'พาวเวอร์แบงก์', 'หมวก / แว่นกันแดด'].filter((s) => !whatToBringList.includes(s)).map((item) => (
                           <button
@@ -2325,7 +2253,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                           placeholder="เช่น Line OpenChat / Line ID โฮสต์"
                           className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 outline-none"
                         />
-                        <span className="text-[10px] text-slate-400 mt-0.5 block">
+                        <span className="text-[11px] text-slate-400 mt-0.5 block">
                           🔒 จะเปิดเผยเฉพาะสมาชิกที่กดยืนยันเข้าร่วมสำเร็จเท่านั้น
                         </span>
                       </div>
@@ -2340,7 +2268,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                           <Sparkles className="w-3.5 h-3.5 text-[#F26430]" />
                           <span>จุดเด่น & สิทธิประโยชน์ (Community Vibe & Perks)</span>
                         </h4>
-                        <span className="text-[10px] font-bold text-[#D04A1B] bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200">
+                        <span className="text-[11px] font-bold text-[#D04A1B] bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200">
                           แสดงบนการ์ดกิจกรรม
                         </span>
                       </div>
@@ -2371,13 +2299,13 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                               >
                                 <div className="flex items-center justify-between">
                                   <span className="text-xs font-black">เหมาะกับมือใหม่</span>
-                                  <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                                  <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[11px] font-bold ${
                                     isBeginnerFriendly ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-400'
                                   }`}>
                                     {isBeginnerFriendly ? '✓' : ''}
                                   </span>
                                 </div>
-                                <p className="text-[10px] leading-tight text-slate-500">
+                                <p className="text-[11px] leading-tight text-slate-500">
                                   ไม่ต้องมีพื้นฐานมาก่อน ยินดีต้อนรับผู้เริ่มต้นทุกคน
                                 </p>
                               </button>
@@ -2397,13 +2325,13 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                             >
                               <div className="flex items-center justify-between">
                                 <span className="text-xs font-black">มาคนเดียวได้</span>
-                                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[11px] font-bold ${
                                   isSoloFriendly ? 'bg-[#F26430] text-white' : 'bg-slate-200 text-slate-400'
                                 }`}>
                                   {isSoloFriendly ? '✓' : ''}
                                 </span>
                               </div>
-                              <p className="text-[10px] leading-tight text-slate-500">
+                              <p className="text-[11px] leading-tight text-slate-500">
                                 ยินดีต้อนรับเพื่อนใหม่ & คนมาเดี่ยว
                               </p>
                             </button>
@@ -2420,13 +2348,13 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                             >
                               <div className="flex items-center justify-between">
                                 <span className="text-xs font-black">สัตว์เลี้ยงร่วมได้</span>
-                                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[11px] font-bold ${
                                   isPetFriendly ? 'bg-amber-500 text-white' : 'bg-slate-200 text-slate-400'
                                 }`}>
                                   {isPetFriendly ? '✓' : ''}
                                 </span>
                               </div>
-                              <p className="text-[10px] leading-tight text-slate-500">
+                              <p className="text-[11px] leading-tight text-slate-500">
                                 นำน้องหมา/น้องแมวมาร่วมได้
                               </p>
                             </button>
@@ -2443,13 +2371,13 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                             >
                               <div className="flex items-center justify-between">
                                 <span className="text-xs font-black">เหมาะกับมือใหม่</span>
-                                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[11px] font-bold ${
                                   isBeginnerFriendly ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-400'
                                 }`}>
                                   {isBeginnerFriendly ? '✓' : ''}
                                 </span>
                               </div>
-                              <p className="text-[10px] leading-tight text-slate-500">
+                              <p className="text-[11px] leading-tight text-slate-500">
                                 ไม่ต้องมีพื้นฐานมาก่อน
                               </p>
                             </button>
@@ -2459,9 +2387,9 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
 
                       {/* Smart Auto-Computed Badges Indicator */}
                       <div className="flex items-center gap-2 flex-wrap pt-1 text-[11px] font-medium text-slate-500">
-                        <span className="text-[10.5px] font-bold text-slate-400">แท็กระบบอัจฉริยะ:</span>
+                        <span className="text-[11px] font-bold text-slate-400">แท็กระบบอัจฉริยะ:</span>
                         {(price === 'ฟรี' || price.includes('ฟรี')) ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[10.5px]">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[11px]">
                             <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                             <span>เข้าร่วมฟรี (คำนวณจากค่าใช้จ่าย)</span>
                           </span>
@@ -2472,7 +2400,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                             const diff = (new Date(communityDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
                             if (diff >= 0 && diff <= 7) {
                               return (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 font-bold text-[10.5px]">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 font-bold text-[11px]">
                                   <Zap className="w-3 h-3 text-amber-500 fill-amber-500" />
                                   <span>จัดขึ้นใน 7 วันนี้ (ติดแท็กเร็วๆ นี้อัตโนมัติ)</span>
                                 </span>
@@ -2487,7 +2415,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                       <div className="space-y-1.5 pt-2 border-t border-slate-200/80">
                         <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between">
                           <span>เงื่อนไขการยกเลิก (Cancellation Policy) <span className="text-rose-500">*</span></span>
-                          <span className="text-[10px] text-slate-400 font-normal">แสดงใน E-Ticket และหน้ารายละเอียด</span>
+                          <span className="text-[11px] text-slate-400 font-normal">แสดงใน E-Ticket และหน้ารายละเอียด</span>
                         </label>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {[
@@ -2508,7 +2436,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                                 }`}
                               >
                                 <div className="text-xs font-bold">{policy.label}</div>
-                                <div className={`text-[10px] ${isSelected ? 'text-slate-300' : 'text-slate-400'}`}>
+                                <div className={`text-[11px] ${isSelected ? 'text-slate-300' : 'text-slate-400'}`}>
                                   {policy.desc}
                                 </div>
                               </div>
@@ -2681,7 +2609,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                       <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">
                         ขั้นตอนและเงื่อนไขการทำภารกิจ
                       </h4>
-                      <span className="text-[10.5px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200">
+                      <span className="text-[11px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200">
                         {questSteps.length} ขั้นตอน
                       </span>
                     </div>
@@ -2714,7 +2642,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                       <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">
                         ของรางวัลเมื่อทำสำเร็จ
                       </h4>
-                      <span className="text-[10px] font-black uppercase tracking-wider text-purple-800 bg-purple-100 px-2.5 py-0.5 rounded-full">
+                      <span className="text-[11px] font-black uppercase tracking-wider text-purple-800 bg-purple-100 px-2.5 py-0.5 rounded-full">
                         Reward Unlocks
                       </span>
                     </div>
@@ -2725,7 +2653,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                           {questBadgeIcon || questIcon}
                         </div>
                         <div className="min-w-0">
-                          <span className="text-[10px] font-bold text-slate-400 block">เหรียญตราเกียรติยศ</span>
+                          <span className="text-[11px] font-bold text-slate-400 block">เหรียญตราเกียรติยศ</span>
                           <span className="text-xs sm:text-sm font-extrabold text-slate-800 truncate block">{questBadgeName}</span>
                         </div>
                       </div>
@@ -2735,7 +2663,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                           <Zap className="w-5 h-5 text-amber-600 fill-amber-500" />
                         </div>
                         <div className="min-w-0">
-                          <span className="text-[10px] font-bold text-slate-400 block">แต้มและคะแนน XP</span>
+                          <span className="text-[11px] font-bold text-slate-400 block">แต้มและคะแนน XP</span>
                           <span className="text-xs sm:text-sm font-extrabold text-slate-800">+{questRewardPoints} XP Points</span>
                         </div>
                       </div>
@@ -2763,27 +2691,27 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                 <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap max-w-[85%]">
-                  <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-xs text-slate-900 shadow-xs uppercase tracking-wider">
+                  <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-xs text-slate-900 shadow-xs uppercase tracking-wider">
                     {entityType === 'community' && 'กิจกรรมคอมมูนิตี้'}
                     {entityType === 'fair' && 'งานมหกรรม & เอ็กซ์โป'}
                     {entityType === 'spot' && 'พิกัดเที่ยว & สเปซฮีลใจ'}
                   </span>
                   {entityType === 'community' && locationType !== 'online' && isSoloFriendly && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-xs text-slate-700 shadow-xs">
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-xs text-slate-700 shadow-xs">
                       มาคนเดียวได้
                     </span>
                   )}
                   {entityType === 'community' && locationType !== 'online' && isPetFriendly && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/90 text-white shadow-xs">
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/90 text-white shadow-xs">
                       สัตว์เลี้ยงร่วมได้
                     </span>
                   )}
                   {entityType === 'community' && isBeginnerFriendly && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-600/90 text-white shadow-xs">
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-600/90 text-white shadow-xs">
                       เหมาะกับมือใหม่
                     </span>
                   )}
-                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xs text-white">
+                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xs text-white">
                     {price || 'ฟรี'}
                   </span>
                 </div>
@@ -2884,7 +2812,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                     <div className="space-y-1.5">
                       {itinerary.map((item, idx) => (
                         <div key={idx} className="flex items-center gap-2 text-xs">
-                          <span className="w-5 h-5 rounded-full bg-emerald-100 text-[#2D5A3C] text-[10px] font-black flex items-center justify-center shrink-0">
+                          <span className="w-5 h-5 rounded-full bg-emerald-100 text-[#2D5A3C] text-[11px] font-black flex items-center justify-center shrink-0">
                             {idx + 1}
                           </span>
                           <span className="font-bold text-slate-900 shrink-0">{item.time}</span>

@@ -133,10 +133,10 @@ export const VerifyQuestModal: React.FC<VerifyQuestModalProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md">
+              <span className="text-[11px] font-black uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md">
                 ระบบตรวจสอบความจริง
               </span>
-              <span className="text-[10px] font-bold text-slate-400">
+              <span className="text-[11px] font-bold text-slate-400">
                 ความคืบหน้าปัจจุบัน: {quest.completedCountInfo}
               </span>
             </div>
@@ -215,7 +215,7 @@ export const VerifyQuestModal: React.FC<VerifyQuestModalProps> = ({
                     <Camera className="w-3.5 h-3.5 text-[#2563EB]" />
                     <span>อัปโหลดหรือถ่ายภาพจริงของคุณ:</span>
                   </label>
-                  <span className="text-[10px] font-extrabold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                  <span className="text-[11px] font-extrabold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
                     Auto-WebP ⚡
                   </span>
                 </div>

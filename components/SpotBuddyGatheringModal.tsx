@@ -474,7 +474,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <span className="text-[10px] font-medium text-slate-400 block mb-0.5">เวลาเริ่ม:</span>
+                      <span className="text-[11px] font-medium text-slate-400 block mb-0.5">เวลาเริ่ม:</span>
                       <input
                         type="time"
                         value={startTime}
@@ -483,7 +483,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                       />
                     </div>
                     <div>
-                      <span className="text-[10px] font-medium text-slate-400 block mb-0.5">เวลาสิ้นสุด:</span>
+                      <span className="text-[11px] font-medium text-slate-400 block mb-0.5">เวลาสิ้นสุด:</span>
                       <input
                         type="time"
                         value={endTime}
@@ -506,7 +506,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                       <MapPin className="w-3.5 h-3.5 text-[#4A7C59]" />
                       <span>สถานที่จัดกิจกรรม <span className="text-rose-500">*</span></span>
                     </label>
-                    <span className="text-[10.5px] text-slate-400">ระบุสถานที่นัดพบ</span>
+                    <span className="text-[11px] text-slate-400">ระบุสถานที่นัดพบ</span>
                   </div>
                   <input
                     type="text"
@@ -523,7 +523,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                     <label className="text-xs font-bold text-slate-800">
                       จุดนัดพบที่แน่นอน / จุดสังเกต (Meeting Point) <span className="text-rose-500">*</span>
                     </label>
-                    <span className="text-[10.5px] text-slate-400">เช่น หน้าร้านกาแฟ, หน้าเสาธง</span>
+                    <span className="text-[11px] text-slate-400">เช่น หน้าร้านกาแฟ, หน้าเสาธง</span>
                   </div>
                   <input
                     type="text"
@@ -629,7 +629,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                     <ImageIcon className="w-3.5 h-3.5 text-[#4A7C59]" />
                     <span>รูปภาพปกกิจกรรม:</span>
                   </label>
-                  <span className="text-[10.5px] text-slate-400">อัปโหลดหรือเลือกรูปสำเร็จ</span>
+                  <span className="text-[11px] text-slate-400">อัปโหลดหรือเลือกรูปสำเร็จ</span>
                 </div>
 
                 {/* Upload Box */}
@@ -648,7 +648,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                       ? 'เปลี่ยนรูปภาพจากเครื่อง'
                       : 'คลิกเพื่ออัปโหลดรูปจากเครื่อง'}
                   </span>
-                  <span className="text-[10px] text-slate-400 mt-0.5">รองรับไฟล์ JPG, PNG, WEBP (บีบอัดอัตโนมัติ)</span>
+                  <span className="text-[11px] text-slate-400 mt-0.5">รองรับไฟล์ JPG, PNG, WEBP (บีบอัดอัตโนมัติ)</span>
                   <input
                     type="file"
                     disabled={isUploadingImage}
@@ -674,7 +674,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                       }`}
                     >
                       <img src={preset.url} alt={preset.label} className="w-full h-full object-cover" />
-                      <span className="absolute inset-0 bg-black/40 flex items-center justify-center text-[9px] font-bold text-white text-center p-1">
+                      <span className="absolute inset-0 bg-black/40 flex items-center justify-center text-[11px] font-bold text-white text-center p-1">
                         {preset.label}
                       </span>
                     </div>
@@ -710,7 +710,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
 
                 {/* Suggestions */}
                 <div className="space-y-1.5 pt-1">
-                  <span className="text-[10.5px] text-slate-400 font-medium block">แตะเพื่อเพิ่มด่วน:</span>
+                  <span className="text-[11px] text-slate-400 font-medium block">แตะเพื่อเพิ่มด่วน:</span>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {WHAT_TO_BRING_SUGGESTIONS.filter((s) => !whatToBringList.includes(s)).map((item) => (
                       <button
@@ -804,7 +804,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center justify-between">
                     <label className="text-[11px] font-bold text-slate-700">ช่วงอายุที่แนะนำ:</label>
-                    <span className="text-[10px] text-slate-400">พิมพ์ระบุเองได้</span>
+                    <span className="text-[11px] text-slate-400">พิมพ์ระบุเองได้</span>
                   </div>
                   <input
                     type="text"
@@ -818,7 +818,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                         key={sug}
                         type="button"
                         onClick={() => setTargetAge(sug)}
-                        className={`text-[10.5px] px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                        className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
                           targetAge === sug
                             ? 'bg-[#4A7C59] text-white border-[#4A7C59] font-bold'
                             : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
@@ -859,7 +859,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                       placeholder="เช่น Line OpenChat / Line ID โฮสต์"
                       className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 outline-none"
                     />
-                    <span className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1">
+                    <span className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
                       <Lock className="w-3 h-3 text-slate-400 shrink-0" />
                       <span>จะเปิดเผยเฉพาะสมาชิกที่กดยืนยันเข้าร่วมสำเร็จเท่านั้น</span>
                     </span>
