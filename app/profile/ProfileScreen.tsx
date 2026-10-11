@@ -41,6 +41,7 @@ interface PublicProfile {
   viewer?: { isFollowing?: boolean; hasBlocked: boolean; hasReported: boolean };
   followerCount?: number;
   followingCount?: number;
+  hostReviews?: { count: number; average: number; latest: { id: string; rating: number; text: string; eventTitle: string; authorId: string | null; authorName: string; timeAgo: string }[] };
   isSampleAccount?: boolean;
   isSample?: boolean;
   sampleInterests?: string[];
@@ -746,6 +747,29 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                       </li>
                     );
                   })}
+                </ul>
+              </section>
+            )}
+
+            {/* Reviews from people who joined this member's events */}
+            {profile.hostReviews && profile.hostReviews.count > 0 && (
+              <section className={card}>
+                <SectionTitle>รีวิวจากผู้เข้าร่วม</SectionTitle>
+                <p className="-mt-2 mb-4 text-sm font-semibold text-slate-600">
+                  <span className="text-lg font-extrabold text-slate-900">{profile.hostReviews.average.toFixed(1)}</span> จาก 5 · {profile.hostReviews.count} รีวิว
+                </p>
+                <ul className="space-y-3">
+                  {profile.hostReviews.latest.map((r) => (
+                    <li key={r.id} className="p-4 rounded-2xl border border-slate-200">
+                      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-slate-500">
+                        <span className="text-amber-600 font-extrabold whitespace-nowrap" aria-label={`${r.rating} จาก 5 ดาว`}>{'★'.repeat(r.rating)}<span className="text-slate-300">{'★'.repeat(5 - r.rating)}</span></span>
+                        <span className="text-slate-800 font-bold">{r.authorName}</span>
+                        <span>{r.timeAgo}</span>
+                      </p>
+                      {r.text && <p className="mt-2 text-sm text-slate-700 leading-relaxed">{r.text}</p>}
+                      <p className="mt-2 text-xs text-slate-500 truncate">กิจกรรม: {r.eventTitle}</p>
+                    </li>
+                  ))}
                 </ul>
               </section>
             )}

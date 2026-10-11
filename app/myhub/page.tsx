@@ -16,10 +16,11 @@ import { GroupChatModal } from '@/components/GroupChatModal';
 import { TipHostModal } from '@/components/TipHostModal';
 import { SpotBuddyGatheringModal, SpotBuddyPostItem } from '@/components/SpotBuddyGatheringModal';
 import { ChallengeQuest, EventItem } from '@/data/mockData';
-import { isEventEnded } from '@/lib/dateUtils';
+import { isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp } from '@/lib/dateUtils';
 import { activityActions, useMyActivity } from '@/lib/useMyActivity';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { nameInitial, tidyDisplayName } from '@/lib/displayName';
+import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { BrandLogo } from '@/components/BrandLogo';
 import { LifestyleSpotItem } from '@/data/spotsData';
 import { useSpotCatalog, getCachedSpotVibeCategory } from '@/lib/usePublishedSpots';
@@ -176,8 +177,9 @@ function MyHubContent() {
       if (Array.isArray(storedMissed)) setMissedEventIds(storedMissed);
       const storedReviewed: string[] = JSON.parse(localStorage.getItem('myhub_reviewed_event_ids') || '[]');
       if (Array.isArray(storedReviewed)) setReviewedEventIds(storedReviewed);
-      const storedSubs = JSON.parse(localStorage.getItem('joinedSubActivities') || '{}');
-      setJoinedSubActivities(storedSubs);
+      // Fair meet-up groups moved to the account; the old browser copy is dropped
+      localStorage.removeItem('joinedSubActivities');
+      localStorage.removeItem('joined_fair_sub_ids');
 
       // 3.1 Sync My Challenges Progress
       try {
@@ -211,6 +213,7 @@ function MyHubContent() {
     setUserCreatedEvents(activity.hosted);
     setSavedSpotIds(activity.savedSpotIds);
     setFavorites(activity.savedEventIds);
+    setReviewedEventIds((prev) => Array.from(new Set([...prev, ...((activity as { reviewedEventIds?: string[] }).reviewedEventIds ?? [])])));
   }, [activity]);
 
   // On a phone the list of appointments is more useful than a month grid, so it opens first (a ?tab= link still wins)
@@ -218,6 +221,45 @@ function MyHubContent() {
     if (window.innerWidth < 640 && !searchParams.get('tab') && !searchParams.get('type')) setHubMainMode('categories');
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival
   }, []);
+
+  // Development only: fills or clears sample activity for the signed-in account (POST / DELETE /api/dev/demo)
+  const [isDemoBusy, setIsDemoBusy] = useState(false);
+  const runDemo = async (method: 'POST' | 'DELETE') => {
+    setIsDemoBusy(true);
+    const json = await fetch('/api/dev/demo', { method }).then((res) => res.json()).catch(() => null);
+    setIsDemoBusy(false);
+    if (!json?.success) return showToast(json?.message || 'ทำรายการไม่สำเร็จ');
+    handleSetIsLoggedIn(true);
+    await activityActions.refresh();
+    showToast(method === 'POST' ? 'เติมข้อมูลตัวอย่างแล้ว' : 'ลบกิจกรรมตัวอย่างแล้ว');
+  };
+
+  // Host check-in: the people who joined one of the member's events
+  type HostParticipant = { userId: string; userName: string; userAvatar: string; checkedInAt?: string; isHost: boolean };
+  const [checkInEvent, setCheckInEvent] = useState<EventItem | null>(null);
+  const [checkInList, setCheckInList] = useState<HostParticipant[] | null>(null);
+  const [checkInCode, setCheckInCode] = useState('');
+  const [checkInNote, setCheckInNote] = useState<{ ok: boolean; text: string } | null>(null);
+  const loadCheckInList = async (eventId: string) => {
+    const json = await fetch(`/api/events/${encodeURIComponent(eventId)}/participants`, { cache: 'no-store' }).then((res) => res.json()).catch(() => null);
+    setCheckInList(json?.participants ?? []);
+  };
+  const openCheckIn = (ev: EventItem) => {
+    setCheckInEvent(ev);
+    setCheckInList(null);
+    setCheckInCode('');
+    setCheckInNote(null);
+    void loadCheckInList(ev.id);
+  };
+  const sendCheckIn = async (body: { action: 'check_in' | 'undo'; code?: string; userId?: string }) => {
+    if (!checkInEvent) return;
+    const res = await fetch(`/api/events/${encodeURIComponent(checkInEvent.id)}/participants`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.success) return setCheckInNote({ ok: false, text: json?.message || 'ทำรายการไม่สำเร็จ ลองอีกครั้งนะ' });
+    setCheckInNote({ ok: true, text: body.action === 'undo' ? `ยกเลิกเช็กอินของ ${json.participant.userName} แล้ว` : `เช็กอิน ${json.participant.userName} แล้ว` });
+    setCheckInCode('');
+    void loadCheckInList(checkInEvent.id);
+  };
 
   // 5. Reactive synchronization with URL Query Params (?tab=..., ?type=..., ?chatSubId=...)
   useEffect(() => {
@@ -378,6 +420,8 @@ function MyHubContent() {
     if (cancelledEventIds.includes(ev.id)) return 'cancelled';
     const ended = isEventEnded(ev);
     if (!ended) return 'upcoming';
+    const record = ev as EventItem & { checkedInAt?: string; hasHostCheckIn?: boolean; isHost?: boolean };
+    if (record.hasHostCheckIn && !record.isHost) return record.checkedInAt ? 'attended' : 'missed';
     if (missedEventIds.includes(ev.id)) return 'missed';
     return 'attended';
   };
@@ -784,28 +828,12 @@ function MyHubContent() {
       return day === qEnd;
     }
 
-    const dStr = ev.date || '';
-
-    // Range match e.g. "22 - 26 ส.ค. 2026" or "10-12 ส.ค."
-    const rangeMatch = dStr.match(/(\d{1,2})\s*[-–—]\s*(\d{1,2})/);
-    if (rangeMatch) {
-      const start = parseInt(rangeMatch[1], 10);
-      const end = parseInt(rangeMatch[2], 10);
-      if (!isNaN(start) && !isNaN(end) && day >= start && day <= end) {
-        return true;
-      }
-    }
-
-    // Number boundaries match
-    const numbers = dStr.match(/\b\d{1,2}\b/g);
-    if (numbers) {
-      for (const numStr of numbers) {
-        const n = parseInt(numStr, 10);
-        if (n === day) return true;
-      }
-    }
-
-    return dStr.includes(` ${day} `) || dStr.startsWith(`${day} `) || dStr.includes(`${day}`);
+    // The day is inside the event when it falls between the event's first and last date
+    // (the old check matched any digit of the date text, so "18 ต.ค. 2026" also showed on the 1st, 2nd, 6th and 8th)
+    if (!ev.date || !/[0-9]/.test(ev.date)) return false;
+    const dayStart = new Date(year, monthIdx, day, 0, 0, 0).getTime();
+    const dayEnd = new Date(year, monthIdx, day, 23, 59, 59).getTime();
+    return parseEventDateToTimestamp(ev.date) <= dayEnd && parseEventEndDateToTimestamp(ev.date) >= dayStart;
   };
 
   // Active scope events for current calendar view (either selected day, or the current month, or all-time)
@@ -2092,6 +2120,55 @@ function MyHubContent() {
                     </div>
                   </div>
                 </div>
+
+                {/* Development only: sample activity for this account, so every feature can be seen with one login */}
+                {process.env.NODE_ENV !== 'production' && (
+                  <div className="mt-4 p-3 sm:p-4 rounded-2xl bg-amber-50 border border-amber-200 flex flex-wrap items-center justify-between gap-3" role="note">
+                    <p className="text-xs sm:text-sm font-semibold text-amber-900 min-w-0 flex-1">โหมดพัฒนา: เติมข้อมูลตัวอย่างให้บัญชีนี้ เพื่อดูนัดหมาย กิจกรรมที่จัด เช็กอิน แชต และรีวิว ได้ด้วยบัญชีเดียว</p>
+                    <span className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        disabled={isDemoBusy}
+                        onClick={() => void runDemo('POST')}
+                        className="px-4 py-2 rounded-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white text-xs sm:text-sm font-bold cursor-pointer whitespace-nowrap"
+                      >
+                        {isDemoBusy ? 'กำลังทำ…' : 'เติมข้อมูลตัวอย่าง'}
+                      </button>
+                      <button type="button" disabled={isDemoBusy} onClick={() => void runDemo('DELETE')} className="px-4 py-2 rounded-full bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs sm:text-sm font-bold cursor-pointer whitespace-nowrap">
+                        ลบกิจกรรมตัวอย่าง
+                      </button>
+                    </span>
+                  </div>
+                )}
+
+                {/* Events the member runs: who is coming, and check-in at the meeting point */}
+                {activity.hosted.length > 0 && (
+                  <section aria-label="กิจกรรมที่คุณจัด" className="mt-4 bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
+                    <h2 className="text-sm sm:text-base font-extrabold text-slate-900">กิจกรรมที่คุณจัด</h2>
+                    <ul className="mt-3 divide-y divide-slate-100">
+                      {activity.hosted.map((ev) => (
+                        <li key={ev.id} className="py-3 first:pt-0 last:pb-0 flex flex-wrap items-center justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-bold text-slate-900 truncate">{ev.title}</p>
+                            <p className="text-xs font-medium text-slate-500 mt-0.5 truncate">
+                              {[ev.date, ev.time].filter(Boolean).join(' · ')} · {ev.participantsCount ?? 0}/{ev.maxParticipants ?? 0} คน
+                            </p>
+                          </div>
+                          {ev.approvalStatus === 'approved' ? (
+                            <button type="button" onClick={() => openCheckIn(ev)} className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold cursor-pointer whitespace-nowrap">
+                              <Users className="w-4 h-4" aria-hidden="true" />
+                              รายชื่อและเช็กอิน
+                            </button>
+                          ) : (
+                            <span className="shrink-0 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold whitespace-nowrap">
+                              {ev.approvalStatus === 'rejected' ? 'ไม่ผ่านการตรวจ' : 'รอทีมงานตรวจ'}
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
 
                 {/* Master View Switcher (Top-Level Dual Mode) */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-6 border-t border-slate-200/80 mt-6">
@@ -3907,6 +3984,62 @@ function MyHubContent() {
         onConfirmCancel={handleConfirmCancel}
       />
 
+      {checkInEvent && (
+        <DialogShell onClose={() => setCheckInEvent(null)} title="รายชื่อและเช็กอิน" subtitle={checkInEvent.title} size="md">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (checkInCode.trim()) void sendCheckIn({ action: 'check_in', code: checkInCode });
+            }}
+            className="flex items-center gap-2"
+          >
+            <label htmlFor="check-in-code" className="sr-only">รหัสบัตรของผู้เข้าร่วม</label>
+            <input
+              id="check-in-code"
+              value={checkInCode}
+              onChange={(e) => setCheckInCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
+              placeholder="รหัสบัตร 6 ตัว"
+              autoComplete="off"
+              className="flex-1 min-w-0 bg-white border border-slate-300 rounded-2xl px-4 py-3 font-mono text-base tracking-widest text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] placeholder:font-sans placeholder:tracking-normal placeholder:text-slate-400"
+            />
+            <button type="submit" disabled={checkInCode.trim().length < 6} className={dialogButton.primary}>เช็กอิน</button>
+          </form>
+          {checkInNote && (
+            <p role="status" className={`mt-3 p-3 rounded-2xl border text-sm font-bold ${checkInNote.ok ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-700'}`}>{checkInNote.text}</p>
+          )}
+          <div className="mt-5">
+            <p className="text-xs font-bold text-slate-500">
+              {checkInList === null ? 'กำลังโหลดรายชื่อ…' : `ผู้เข้าร่วม ${checkInList.length} คน · เช็กอินแล้ว ${checkInList.filter((p) => p.checkedInAt).length} คน`}
+            </p>
+            <ul className="mt-2 divide-y divide-slate-100 max-h-[45vh] overflow-y-auto">
+              {(checkInList ?? []).map((p) => (
+                <li key={p.userId} className="py-2.5 flex items-center justify-between gap-3">
+                  <Link href={`/profile?id=${p.userId}`} className="flex items-center gap-2.5 min-w-0">
+                    {p.userAvatar ? (
+                      <img src={p.userAvatar} alt="" className="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0" />
+                    ) : (
+                      <span className="w-9 h-9 rounded-full bg-slate-100 text-slate-600 text-sm font-bold flex items-center justify-center shrink-0" aria-hidden="true">{nameInitial(p.userName)}</span>
+                    )}
+                    <span className="text-sm font-semibold text-slate-900 truncate">{tidyDisplayName(p.userName)}{p.isHost ? ' (คุณ)' : ''}</span>
+                  </Link>
+                  {p.isHost ? (
+                    <span className="text-xs font-bold text-slate-500 whitespace-nowrap">คนจัด</span>
+                  ) : p.checkedInAt ? (
+                    <button type="button" onClick={() => void sendCheckIn({ action: 'undo', userId: p.userId })} className="shrink-0 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold cursor-pointer whitespace-nowrap" title="แตะเพื่อยกเลิกเช็กอิน">
+                      เช็กอินแล้ว
+                    </button>
+                  ) : (
+                    <button type="button" onClick={() => void sendCheckIn({ action: 'check_in', userId: p.userId })} className="shrink-0 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer whitespace-nowrap">
+                      เช็กอิน
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </DialogShell>
+      )}
+
       {/* 4. Tip Host Modal */}
       <TipHostModal
         isOpen={isTipModalOpen}
@@ -3922,7 +4055,7 @@ function MyHubContent() {
               return updated;
             });
           }
-          updateUserXp(50);
+          void activityActions.refresh();
           showToast(
             amount > 0
               ? `ส่งรีวิวและทิป ฿${amount} ให้ ${tipTargetEvent?.hostName} สำเร็จ ได้รับ +50 XP! ⭐`

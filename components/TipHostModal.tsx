@@ -22,17 +22,29 @@ export const TipHostModal: React.FC<TipHostModalProps> = ({
   const [rating, setRating] = useState<number>(5);
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [reviewText, setReviewText] = useState<string>('');
-  const [selectedTip, setSelectedTip] = useState<number>(50);
-  const [isCustomTip, setIsCustomTip] = useState<boolean>(false);
-  const [customTipValue, setCustomTipValue] = useState<string>('');
+  const [reviewError, setReviewError] = useState('');
+  const [isSending, setIsSending] = useState(false);
 
   if (!isOpen || !event) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // The review is saved on the server first; tipping is not offered until payments exist
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const finalTip = isCustomTip ? (parseFloat(customTipValue) || 0) : selectedTip;
-    onTipSubmit(rating, reviewText, finalTip);
-    onClose();
+    if (isSending) return;
+    setIsSending(true);
+    setReviewError('');
+    try {
+      const res = await fetch(`/api/events/${encodeURIComponent(event.id)}/review`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rating, text: reviewText }) });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) return setReviewError(json?.message || 'ส่งรีวิวไม่สำเร็จ ลองอีกครั้งนะ');
+      onTipSubmit(rating, reviewText, 0);
+      setReviewText('');
+      onClose();
+    } catch {
+      setReviewError('เชื่อมต่อไม่ได้ ลองอีกครั้งนะ');
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
@@ -123,76 +135,9 @@ export const TipHostModal: React.FC<TipHostModalProps> = ({
             />
           </div>
 
-          {/* Host Tipping Engine */}
-          <div className="space-y-2 pt-1 border-t border-slate-100">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
-                <span>ให้ทิปโฮสต์เพื่อสนับสนุน (Tip Creator)</span>
-              </label>
-              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                เข้ากระเป๋าโฮสต์ 100%
-              </span>
-            </div>
-
-            {/* Tip Presets */}
-            <div className="grid grid-cols-5 gap-2">
-              {TIP_PRESETS.map((amt) => (
-                <button
-                  key={amt}
-                  type="button"
-                  onClick={() => {
-                    setSelectedTip(amt);
-                    setIsCustomTip(false);
-                  }}
-                  className={`py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-                    !isCustomTip && selectedTip === amt
-                      ? 'bg-[#F26430] text-white shadow-xs ring-2 ring-[#F26430]/30'
-                      : 'bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100'
-                  }`}
-                >
-                  {amt === 0 ? 'ไม่ให้' : `฿${amt}`}
-                </button>
-              ))}
-            </div>
-
-            {/* Custom Tip Option */}
-            <div className="flex items-center gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => setIsCustomTip(true)}
-                className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer shrink-0 ${
-                  isCustomTip
-                    ? 'bg-amber-500 text-white border-amber-600'
-                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                ระบุจำนวนเงินเอง
-              </button>
-
-              {isCustomTip && (
-                <input
-                  type="number"
-                  min={10}
-                  max={5000}
-                  value={customTipValue}
-                  onChange={(e) => setCustomTipValue(e.target.value)}
-                  placeholder="ใส่จำนวนเงิน (บาท)..."
-                  className="w-full text-xs p-1.5 px-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-amber-400 outline-none"
-                  autoFocus
-                />
-              )}
-            </div>
-          </div>
-
-          {/* Reward Bonus Note for Reviewer */}
-          <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-200 text-[11px] text-emerald-900 flex items-center justify-between">
-            <span className="flex items-center gap-1 font-bold">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              <span>โบนัสของคุณ: ได้รับ +50 XP สะสมทันที!</span>
-            </span>
-            <span className="font-extrabold text-emerald-700">✓ Review & Earn</span>
-          </div>
+          {reviewError && (
+            <p role="alert" className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm font-bold">{reviewError}</p>
+          )}
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2 pt-2">
@@ -208,7 +153,7 @@ export const TipHostModal: React.FC<TipHostModalProps> = ({
               className="flex-1 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-extrabold text-xs py-3 rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
             >
               <Heart className="w-4 h-4 fill-white" />
-              <span>ส่งรีวิว & ทิปโฮสต์</span>
+              <span>{isSending ? 'กำลังส่ง…' : 'ส่งรีวิว'}</span>
             </button>
           </div>
         </form>

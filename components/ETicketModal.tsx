@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { EventItem } from '@/data/mockData';
 import {
   X,
@@ -41,11 +41,32 @@ export const ETicketModal: React.FC<ETicketModalProps> = ({
   onOpenCancel,
 }) => {
   const [copied, setCopied] = useState(false);
+  // The ticket is read from the account each time it opens (the ticketId prop is only a placeholder while loading)
+  const [ticket, setTicket] = useState<{ code: string; checkedInAt?: string; isHost: boolean; hasHostCheckIn: boolean } | null>(null);
+  const [ticketState, setTicketState] = useState<'loading' | 'ready' | 'none'>('loading');
+  const eventId = event?.id;
+  useEffect(() => {
+    if (!isOpen || !eventId) return;
+    let active = true;
+    setTicketState('loading');
+    fetch(`/api/events/${encodeURIComponent(eventId)}/ticket`, { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((json) => {
+        if (!active) return;
+        setTicket(json.ticket ?? null);
+        setTicketState(json.ticket ? 'ready' : 'none');
+      })
+      .catch(() => active && setTicketState('none'));
+    return () => {
+      active = false;
+    };
+  }, [isOpen, eventId]);
+  const shownCode = ticket?.code || (ticketState === 'loading' ? '······' : '—');
 
   if (!isOpen || !event) return null;
 
   const handleCopyTicket = () => {
-    navigator.clipboard?.writeText(ticketId);
+    navigator.clipboard?.writeText(ticket?.code || ticketId);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
@@ -148,8 +169,8 @@ export const ETicketModal: React.FC<ETicketModalProps> = ({
             {/* Attendee Info & Ticket ID Footer */}
             <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
               <div>
-                <p className="text-[11px] text-slate-500 font-medium">รหัสตั๋ว E-Ticket</p>
-                <p className="font-mono font-black text-slate-900 text-xs sm:text-sm">{ticketId}</p>
+                <p className="text-[11px] text-slate-500 font-medium">รหัสบัตร</p>
+                <p className="font-mono font-black text-slate-900 text-xs sm:text-sm tracking-widest">{shownCode}</p>
               </div>
 
               <button
@@ -165,68 +186,29 @@ export const ETicketModal: React.FC<ETicketModalProps> = ({
           {/* Right Column: QR Code & Verification Actions (5 Cols) */}
           <div className="sm:col-span-5 p-6 sm:p-7 bg-slate-50/60 flex flex-col items-center justify-between text-center space-y-4">
             
-            {/* QR Code Container */}
-            <div className="space-y-2">
-              <div className="inline-block p-3 bg-white rounded-2xl shadow-sm border border-slate-200">
-                <svg
-                  className="w-28 h-28 mx-auto"
-                  viewBox="0 0 100 100"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <rect width="100" height="100" fill="white" />
-                  <rect x="10" y="10" width="26" height="26" fill="#1E293B" rx="3" />
-                  <rect x="14" y="14" width="18" height="18" fill="white" rx="2" />
-                  <rect x="18" y="18" width="10" height="10" fill="#F26430" rx="1" />
-                  <rect x="64" y="10" width="26" height="26" fill="#1E293B" rx="3" />
-                  <rect x="68" y="14" width="18" height="18" fill="white" rx="2" />
-                  <rect x="72" y="18" width="10" height="10" fill="#F26430" rx="1" />
-                  <rect x="10" y="64" width="26" height="26" fill="#1E293B" rx="3" />
-                  <rect x="14" y="68" width="18" height="18" fill="white" rx="2" />
-                  <rect x="18" y="72" width="10" height="10" fill="#F26430" rx="1" />
-                  <rect x="42" y="12" width="6" height="6" fill="#1E293B" />
-                  <rect x="52" y="18" width="6" height="6" fill="#1E293B" />
-                  <rect x="42" y="28" width="6" height="6" fill="#1E293B" />
-                  <rect x="12" y="42" width="6" height="6" fill="#1E293B" />
-                  <rect x="22" y="52" width="6" height="6" fill="#1E293B" />
-                  <rect x="42" y="42" width="16" height="16" fill="#F26430" rx="3" />
-                  <circle cx="50" cy="50" r="3" fill="white" />
-                  <rect x="64" y="42" width="6" height="6" fill="#1E293B" />
-                  <rect x="74" y="52" width="6" height="6" fill="#1E293B" />
-                  <rect x="42" y="68" width="6" height="6" fill="#1E293B" />
-                  <rect x="52" y="78" width="6" height="6" fill="#1E293B" />
-                  <rect x="64" y="68" width="8" height="8" fill="#1E293B" />
-                  <rect x="78" y="78" width="10" height="10" fill="#1E293B" />
-                </svg>
+            {/* The code the host types at the meeting point */}
+            <div className="space-y-2 w-full">
+              <div className="p-4 bg-white rounded-2xl shadow-sm border border-slate-200">
+                <p className="text-xs font-bold text-slate-500">รหัสบัตรของคุณ</p>
+                <p className="mt-1 font-mono text-3xl font-black tracking-[0.2em] text-slate-900" aria-live="polite">{shownCode}</p>
               </div>
-              <p className="text-[11px] text-slate-500 font-medium leading-tight">
-                ยื่น QR Code นี้ให้โฮสต์สแกน ณ จุดนัดพบ
+              <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                {ticketState === 'none'
+                  ? 'ไม่พบบัตรของคุณสำหรับกิจกรรมนี้ ลองเข้าร่วมกิจกรรมอีกครั้ง'
+                  : ticket?.isHost
+                  ? 'คุณเป็นคนจัดกิจกรรมนี้ เช็กอินผู้เข้าร่วมได้ที่มายฮับ'
+                  : ticket && !ticket.hasHostCheckIn
+                  ? 'งานนี้ไม่ต้องเช็กอิน เก็บรหัสไว้เป็นหลักฐานการลงทะเบียน'
+                  : 'บอกรหัสนี้กับคนจัดที่จุดนัดพบ เพื่อเช็กอิน'}
               </p>
             </div>
 
-            {/* Check-in Simulator Button (Interactive Toggle) */}
             <div className="w-full space-y-2">
-              {!isCheckedIn ? (
-                <button
-                  type="button"
-                  onClick={() => onCheckIn(ticketId)}
-                  className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2.5 px-3 rounded-xl shadow-2xs hover:shadow-md flex items-center justify-center gap-1.5 active:scale-98 transition-all cursor-pointer"
-                >
-                  <Zap className="w-3.5 h-3.5 text-amber-300" />
-                  <span>จำลองเช็คอินหน้างาน (+50 XP)</span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => onCheckIn(ticketId)}
-                  className="w-full bg-emerald-50 hover:bg-rose-50 text-emerald-800 hover:text-rose-700 font-bold text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 border border-emerald-200 hover:border-rose-200 transition-all cursor-pointer group"
-                  title="คลิกเพื่อยกเลิกการจำลองเช็คอิน"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 group-hover:hidden" />
-                  <RotateCcw className="w-3.5 h-3.5 text-rose-500 hidden group-hover:inline" />
-                  <span className="group-hover:hidden">เช็คอินแล้ว (แตะเพื่อยกเลิก)</span>
-                  <span className="hidden group-hover:inline">ยกเลิกจำลองเช็คอิน</span>
-                </button>
+              {ticket?.checkedInAt && (
+                <p className="w-full bg-emerald-50 text-emerald-800 font-bold text-xs py-2.5 px-3 rounded-xl border border-emerald-200 flex items-center justify-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" aria-hidden="true" />
+                  <span>เช็กอินแล้ว</span>
+                </p>
               )}
 
               {/* Navigation & Chat Action Buttons */}

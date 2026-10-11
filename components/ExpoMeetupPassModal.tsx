@@ -39,6 +39,8 @@ interface ExpoMeetupPassModalProps {
   onClose: () => void;
   passData: ExpoMeetupPassData | null;
   onCancelJoin?: (groupId: string) => void;
+  /** Opens the group's chat (members only) */
+  onOpenChat?: (groupId: string) => void;
 }
 
 export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
@@ -46,6 +48,7 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
   onClose,
   passData,
   onCancelJoin,
+  onOpenChat,
 }) => {
   const [isCopiedContact, setIsCopiedContact] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -178,6 +181,16 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
                   </span>
                 </div>
               </div>
+
+              {onOpenChat && (
+                <button
+                  type="button"
+                  onClick={() => onOpenChat(passData.id)}
+                  className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold cursor-pointer whitespace-nowrap shrink-0"
+                >
+                  แชตกลุ่ม
+                </button>
+              )}
 
               {passData.contactChannel && (
                 <button
