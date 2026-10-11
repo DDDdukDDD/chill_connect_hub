@@ -21,6 +21,7 @@ import {
   EventItem,
   MOCK_EVENTS
 } from '@/data/mockData';
+import { eventOrigin } from '@/lib/contentOrigin';
 import { isEventEnded } from '@/lib/dateUtils';
 import { resolveEventGallery } from '@/lib/eventImageResolver';
 import { parseEventPrice } from '@/lib/priceUtils';
@@ -374,8 +375,11 @@ export default function CommunityDetailPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isLightboxOpen, galleryImages.length]);
 
-  // Verified community highlights
+  // Placeholder text below is for seed events only; a member's event shows what the member entered
+  const isSample = !eventData || eventOrigin(eventData) === 'sample';
+
   const communityHighlights = useMemo(() => {
+    if (!isSample) return [];
     return [
       'กิจกรรมกลุ่มขนาดกะทัดรัด (Small Group) เน้นความเป็นมิตรและเปิดรับทุกคนอย่างอบอุ่น',
       'ดำเนินกิจกรรมโดย Verified Host ที่มีประสบการณ์ พร้อมดูแลให้ทุกคนรู้สึกผ่อนคลาย',
@@ -383,11 +387,12 @@ export default function CommunityDetailPage() {
       'ได้ทั้งเปิดรับความรู้ ทักษะใหม่ๆ และได้รู้จักเพื่อนใหม่ที่มีไลฟ์สไตล์ตรงกัน',
       'มีตั๋ว E-Ticket ในระบบและห้องแชตกลุ่มสำหรับเตรียมนัดพบก่อนเริ่มกิจกรรม'
     ];
-  }, []);
+  }, [isSample]);
 
   // Transit details
   const { publicTransitText, parkingText } = useMemo(() => {
     if (!eventData) return { publicTransitText: '', parkingText: '' };
+    if (!isSample) return { publicTransitText: eventData.transportation || '', parkingText: '' };
     const loc = eventData.location || '';
     if (loc.includes('สวน') || loc.includes('เบญจกิติ') || loc.includes('ลุมพินี')) {
       return {
@@ -399,11 +404,19 @@ export default function CommunityDetailPage() {
       publicTransitText: 'สามารถเดินทางด้วยรถไฟฟ้า BTS, MRT หรือรถประจำทางที่ผ่านบริเวณจุดนัดพบ',
       parkingText: 'มีพื้นที่จอดรถสำหรับผู้เข้าร่วมกิจกรรม หรือจุดจอดรถบริเวณใกล้เคียง'
     };
-  }, [eventData]);
+  }, [eventData, isSample]);
 
+  const checklist = isSample
+    ? [
+      'แต่งกายสุภาพและสวมใส่ชุดที่เคลื่อนไหวสะดวก',
+      'พกสมาร์ตโฟนที่มีแบตเตอรี่พร้อมเปิดตั๋ว E-Ticket และเข้าห้องแชต',
+      'เปิดใจรับฟังและรักษามารยาทต่อเพื่อนร่วมกิจกรรมทุกคน',
+      'หากไม่สะดวกมาร่วมตี้ กรุณากดยกเลิกล่วงหน้า 24 ชม. เพื่อเปิดสิทธิ์ให้ผู้อื่น',
+    ]
+    : eventData?.whatToBring ?? [];
 
-  // Related Community Activities
-  const relatedActivities = eventData ? getRelatedEvents(eventData, 5) : [];
+  // Related Community Activities (never ones that are over)
+  const relatedActivities = eventData ? getRelatedEvents(eventData, 40).filter((event) => !isEventEnded(event)).slice(0, 5) : [];
 
   if (isLoading) {
     return (
@@ -574,7 +587,7 @@ export default function CommunityDetailPage() {
                 setActivePhotoIndex(0);
                 setIsLightboxOpen(true);
               }}
-              className="md:col-span-2 md:row-span-2 relative h-56 sm:h-72 md:h-[320px] overflow-hidden cursor-pointer bg-slate-200"
+              className={`${galleryImages.length >= 5 ? 'md:col-span-2' : 'md:col-span-4'} md:row-span-2 relative h-56 sm:h-72 md:h-[320px] overflow-hidden cursor-pointer bg-slate-200`}
             >
               <img
                 src={galleryImages[0] || eventData.image}
@@ -585,7 +598,7 @@ export default function CommunityDetailPage() {
             </div>
 
             {/* 4 Secondary Thumbnail Photos (Right 2x2 Grid) */}
-            {galleryImages.slice(1, 5).map((imgUrl, idx) => {
+            {galleryImages.length >= 5 && galleryImages.slice(1, 5).map((imgUrl, idx) => {
               const photoIdx = idx + 1;
               const isLast = idx === 3;
               return (
@@ -749,6 +762,7 @@ export default function CommunityDetailPage() {
                     <h3 className="font-extrabold text-sm text-slate-900 group-hover:text-[#F26430] transition-colors truncate">
                       {eventData.hostName}
                     </h3>
+                    {(isSample || eventData.hostRating) && (<>
                     <span
                       className="inline-flex items-center gap-0.5 text-[10.5px] font-bold text-amber-700 bg-amber-50 border border-amber-200/80 px-1.5 py-0.2 rounded shrink-0"
                       title={`คะแนนโฮสต์ ${(eventData.hostRating || eventData.rating || 4.9).toFixed(1)} / 5`}
@@ -760,10 +774,13 @@ export default function CommunityDetailPage() {
                       <ShieldCheck className="w-3 h-3 text-emerald-600" />
                       <span>Verified Host</span>
                     </span>
+                    </>)}
                   </div>
+                  {(isSample || eventData.hostHostedCount) && (
                   <p className="text-xs text-slate-500 mt-0.5">
                     จัดกิจกรรมมาแล้ว {eventData.hostHostedCount || 12} ครั้ง • เรตติ้ง {eventData.hostRating || 4.9}/5.0 ({eventData.hostReviewsCount || 58} รีวิว)
                   </p>
+                  )}
                 </div>
               </Link>
 
@@ -796,6 +813,7 @@ export default function CommunityDetailPage() {
             </div>
 
             {/* 6. Highlights */}
+            {communityHighlights.length > 0 && (
             <div className="space-y-3.5 pt-5 border-t border-slate-100">
               <h2 className="text-lg font-black text-slate-900 tracking-tight">
                 จุดเด่นของกิจกรรมนี้
@@ -813,19 +831,17 @@ export default function CommunityDetailPage() {
               </ul>
             </div>
 
+            )}
+
             {/* 7. Checklist */}
+            {checklist.length > 0 && (
             <div className="space-y-3.5 pt-5 border-t border-slate-100">
               <h2 className="text-lg font-black text-slate-900 tracking-tight">
-                สิ่งที่ควรเตรียมมา & กฎการอยู่ร่วมกัน
+                {isSample ? 'สิ่งที่ควรเตรียมมา & กฎการอยู่ร่วมกัน' : 'สิ่งที่ควรเตรียมมา'}
               </h2>
 
               <ul className="space-y-3 pt-1">
-                {[
-                  'แต่งกายสุภาพและสวมใส่ชุดที่เคลื่อนไหวสะดวก',
-                  'พกสมาร์ตโฟนที่มีแบตเตอรี่พร้อมเปิดตั๋ว E-Ticket และเข้าห้องแชต',
-                  'เปิดใจรับฟังและรักษามารยาทต่อเพื่อนร่วมกิจกรรมทุกคน',
-                  'หากไม่สะดวกมาร่วมตี้ กรุณากดยกเลิกล่วงหน้า 24 ชม. เพื่อเปิดสิทธิ์ให้ผู้อื่น'
-                ].map((rule, idx) => (
+                {checklist.map((rule, idx) => (
                   <li
                     key={idx}
                     className="flex items-start gap-3 text-xs sm:text-sm text-slate-800 leading-relaxed font-medium"
@@ -836,6 +852,7 @@ export default function CommunityDetailPage() {
                 ))}
               </ul>
             </div>
+            )}
 
             {/* 8. Transit & Map OR Virtual Gathering Info */}
             <div className="space-y-4 pt-5 border-t border-slate-100">
@@ -901,16 +918,20 @@ export default function CommunityDetailPage() {
                 </div>
               ) : (
                 <>
+                  {(publicTransitText || parkingText) && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-1">
+                    {publicTransitText && (
                     <div className="space-y-1">
                       <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-                        รถสาธารณะ & รถไฟฟ้า
+                        {isSample ? 'รถสาธารณะ & รถไฟฟ้า' : 'การเดินทาง'}
                       </span>
                       <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
                         {cleanText(publicTransitText)}
                       </p>
                     </div>
+                    )}
 
+                    {parkingText && (
                     <div className="space-y-1">
                       <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
                         รถยนต์ส่วนตัว & ที่จอดรถ
@@ -919,7 +940,9 @@ export default function CommunityDetailPage() {
                         {cleanText(parkingText)}
                       </p>
                     </div>
+                    )}
                   </div>
+                  )}
 
                   <div className="relative w-full h-60 sm:h-72 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-2xs">
                     <iframe

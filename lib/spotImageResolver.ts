@@ -5,6 +5,7 @@
  */
 
 import { LifestyleSpotItem } from '@/data/spotsData';
+import { spotOrigin } from './contentOrigin';
 
 // Curated high-res Unsplash photo bank (8 images per category) for Thai tourism & lifestyle
 export const CATEGORY_IMAGE_BANKS: Record<string, string[]> = {
@@ -117,7 +118,7 @@ export function resolveSpotGallery(spot: Partial<LifestyleSpotItem>): string[] {
   const existingGallery = (spot.galleryImages || []).filter(isValidImageUrl);
 
   // Spots imported from a real source show only their own photos; stock photos of other places would mislead
-  if (spot.sourceUrl && existingGallery.length > 0) {
+  if (spotOrigin(spot) !== 'sample') {
     return [...new Set([mainImage, ...existingGallery].filter(Boolean))];
   }
 

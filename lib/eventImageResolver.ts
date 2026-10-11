@@ -1,5 +1,6 @@
 // lib/eventImageResolver.ts
 import { EventItem } from '@/data/mockData';
+import { eventOrigin } from './contentOrigin';
 
 const EVENT_CATEGORY_GALLERIES: Record<string, string[]> = {
   heal: [
@@ -45,6 +46,11 @@ const EVENT_CATEGORY_GALLERIES: Record<string, string[]> = {
 };
 
 export function resolveEventGallery(event: EventItem): string[] {
+  // Real events show only their own photos; stock photos of other events would mislead
+  if (eventOrigin(event) !== 'sample') {
+    return [...new Set([event.image, ...(event.galleryImages ?? [])].filter(Boolean))];
+  }
+
   const isExpo =
     event.eventType === 'public_venue' ||
     event.venueTag === 'qsncc' ||

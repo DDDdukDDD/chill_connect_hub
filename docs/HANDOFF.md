@@ -734,3 +734,21 @@ From 2026-10-11 the owner asked Claude Code to do all work, frontend included.
 
 **Found by the same test, not fixed (owner to decide):** the event, fair and place pages add content nobody entered: stock photos in the gallery beside the one uploaded photo, a host line "จัดกิจกรรมมาแล้ว 12 ครั้ง • เรตติ้ง 4.9 (58 รีวิว)" and "Verified Host" for a new account, fixed "จุดเด่น" and "สิ่งที่ควรเตรียม" lists, fixed transport text for another venue, "Official Venue & Partner" on a member's fair (the organizer's name is not shown), and ended events under "ที่คุณอาจสนใจ". A newly approved place did not appear on the first page of `/spots`.
 
+### BE-031 (2026-10-11) Detail pages add placeholder content to seed data only; fair badge follows the origin — from Claude Code
+
+**Rule (new, `lib/contentOrigin.ts`):** every event and place has an origin, and it decides what a page may add around it.
+- `member`: created by a member (`createdByMemberId` / `suggestedByMemberId`). The page shows only what the member entered; an empty section is hidden.
+- `source`: imported by staff from an official venue or organizer website (`sourceUrl` with a real `source`). The page shows what the source gave and credits it.
+- `sample`: seed data (`source: 'Chill & Connect Official'`, sample members, seed places). Placeholder photos and text still fill the gaps so layouts can be judged during development.
+
+New placeholder content in a page must be behind `eventOrigin(...) === 'sample'` or `spotOrigin(...) === 'sample'`.
+
+**What changed (files formerly owned by the frontend)**
+- `lib/eventImageResolver.ts`, `lib/spotImageResolver.ts`: stock gallery photos only for seed data. Other records show their own photos; with fewer than five, the event and fair pages show one wide photo instead of the grid.
+- `app/community/[id]/page.tsx`: the host rating, "Verified Host", the hosted-count line, the fixed highlights, the fixed rules and the fixed transport text are seed-only. A member's event shows its own "ของที่ควรเตรียม" and "การเดินทาง" when entered.
+- `app/fairs/[id]/page.tsx`: the fixed highlights and generic transport lines are seed-only (facts about QSNCC, BITEC, IMPACT and Paragon stay for any fair held there). The card under the title names the organizer the member typed, and its badge follows the origin: "ผู้จัดงานลงประกาศเอง" (member), "ข้อมูลจากแหล่งทางการ" (source), "Official Venue & Partner" (seed only).
+- `app/spots/[id]/page.tsx`: generic transport lines are seed-only; the photo label says whose photo it is.
+- "ที่คุณอาจสนใจ" on the event and fair pages no longer lists ended events.
+
+**Still open, seen in the same test:** the fair page shows "บันทึกกำหนดการใน My Hub แล้ว · Pass #CCH-FAIR-0205" with a fixed pass number; a new community event shows 2 of 8 joined when only the host is in; a newly approved place is not on the first page of `/spots`.
+
