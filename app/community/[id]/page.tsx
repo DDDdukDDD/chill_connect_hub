@@ -179,37 +179,8 @@ export default function CommunityDetailPage() {
       } catch {}
     }
 
-    const savedJoined = localStorage.getItem('joined_event_ids');
-    let joinedList: string[] = [];
-    if (savedJoined) {
-      try {
-        joinedList = JSON.parse(savedJoined);
-      } catch {}
-    }
-
-    // Also include user_created_events (Host)
-    try {
-      const savedCreated = JSON.parse(localStorage.getItem('user_created_events') || '[]');
-      if (Array.isArray(savedCreated)) {
-        savedCreated.forEach((e: any) => {
-          if (e?.id && !joinedList.includes(e.id)) {
-            joinedList.push(e.id);
-          }
-        });
-      }
-    } catch {}
-
-    // Also include joinedSubActivities
-    try {
-      const savedSubs = JSON.parse(localStorage.getItem('joinedSubActivities') || '{}');
-      Object.keys(savedSubs).forEach((id) => {
-        if (!joinedList.includes(id)) {
-          joinedList.push(id);
-        }
-      });
-    } catch {}
-
-    setJoinedEventIds(joinedList);
+    // Who joined what comes from the account (useMyActivity above), never from this browser:
+    // lists kept in the browser belong to whoever used it last, so another member would look "joined"
   }, []);
 
   const showToast = (msg: string) => {
@@ -740,6 +711,21 @@ export default function CommunityDetailPage() {
                   </Link>
                 )}
               </div>
+            )}
+
+            {/* Spot Buddy trip: confirmed only once enough people are in */}
+            {eventData.minParticipants && (
+              <p
+                className={`p-3 rounded-2xl text-xs sm:text-sm font-semibold border ${
+                  eventData.participantsCount >= eventData.minParticipants
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                    : 'bg-amber-50 border-amber-200 text-amber-900'
+                }`}
+              >
+                {eventData.participantsCount >= eventData.minParticipants
+                  ? `ทริปนี้ยืนยันแล้ว มีคนเข้าร่วมครบ ${eventData.minParticipants} คน`
+                  : `ทริปนี้จะยืนยันเมื่อมีคนครบ ${eventData.minParticipants} คน ตอนนี้มี ${eventData.participantsCount} คน ถ้ายังไม่ครบ อย่าเพิ่งไปเจอกันสองต่อสอง`}
+              </p>
             )}
 
             {/* Verified Host Card (Community Core) */}

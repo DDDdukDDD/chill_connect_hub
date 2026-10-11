@@ -51,6 +51,8 @@ export interface LifestyleSpotItem {
   latitude: number;
   longitude: number;
   publicationStatus?: 'draft' | 'published';
+  /** Staff marked this place as safe for member meet-ups (public, staffed, easy to leave). Spot Buddy trips open only here. */
+  meetupAllowed?: boolean;
   /** Set when a draft was rejected in the admin review queue (it stays a hidden draft) */
   reviewRejectedAt?: string;
   rejectionReason?: string;

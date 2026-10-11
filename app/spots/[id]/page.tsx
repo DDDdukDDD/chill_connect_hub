@@ -25,6 +25,7 @@ import { usePublishedSpots } from '@/lib/usePublishedSpots';
 import { renderDescriptionContent } from '@/components/RichTextEditor';
 import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import { SmartSpotPlanCard } from '@/components/SmartSpotPlanCard';
+import { SpotBuddyTrips } from '@/components/SpotBuddyTrips';
 import { NearbyDiningSection } from '@/components/NearbyDiningSection';
 import {
   MapPin,
@@ -982,7 +983,18 @@ export default function SpotDetailPage() {
 
             </div>
 
-            {/* Sub-Card: Smart Spot Plan Itinerary Card (แทนที่กล่องตี้เพื่อนใหม่) */}
+            {/* Spot Buddy: shown only for places staff opened for meet-ups */}
+            <SpotBuddyTrips
+              spot={spot}
+              isLoggedIn={isLoggedIn}
+              onRequireLogin={() => {
+                setMembershipActionTitle('เพื่อชวนเพื่อนไปที่นี่');
+                setIsRequireMembershipOpen(true);
+              }}
+              onShowToast={showToast}
+            />
+
+            {/* Sub-Card: Smart Spot Plan Itinerary Card */}
             <SmartSpotPlanCard
               currentSpot={spot}
               onShowToast={showToast}

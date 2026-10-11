@@ -132,6 +132,29 @@ Returns one **published** spot (`404` for drafts and unknown ids). The id is URL
 
 Response `200`: `{ success: true, spot: LifestyleSpotItem }`. Cache: `s-maxage=60`.
 
+`spot.meetupAllowed` is `true` when staff opened the place for member meet-ups (Spot Buddy). Places in the `bar` category never qualify.
+
+### `GET /api/spots/[id]/trips` — Spot Buddy on one place
+
+Response `200`: `{ success: true, meetupAllowed: boolean, trips: EventItem[], host?: { canHost: boolean, reason?: string } }`. Never shared-cached.
+
+- `meetupAllowed: false` → `trips` is empty and the page shows no Spot Buddy block.
+- `trips`: approved, not ended community events with this `spotId`, soonest first, without events from people the viewer blocked. Each carries `spotId`, `spotTitle` and `minParticipants` (3); a trip is confirmed when `participantsCount >= minParticipants` (`isTripConfirmed` in `lib/spotTripRules.ts`).
+- `host`: only for a signed-in viewer. `canHost: false` comes with a Thai `reason` to show next to the disabled button.
+
+### Spot Buddy trips — `POST /api/events` with `eventData.spotId`
+
+Sending `spotId` makes the event a Spot Buddy trip, and the server applies these rules (`lib/social/spotTrips.ts`). A refusal answers `{ success: false, message }` with `400`, `403` or `404`.
+
+- The place must exist, be published and have `meetupAllowed`.
+- The member must be allowed to host: no open report or risk flag, at most 2 trips still open, and they have been to something before (checked in by a host, or a fair in their plan or a fair meet-up group that is over). Members with an approved host application skip the last check.
+- `date` is `YYYY-MM-DD`, today or later. `time` is `HH:MM - HH:MM`, inside 06:00 - 19:00, one day only.
+- Send `meetingSpot`: one of `SPOT_TRIP_MEETING_POINTS` (`lib/spotTripRules.ts`). Anything else falls back to the first.
+- The server sets these itself and ignores what was sent: `eventType: 'community'`, `location`, `province`, `meetingPoint`, `latitude`, `longitude`, `spotTitle`, `transportation`, `minParticipants: 3`, and `maxParticipants` held to 3 - 15.
+- A member's trip always starts as `pending` and waits for staff review, approved hosts included. Without `spotId`, the fields `spotId`, `spotTitle` and `minParticipants` are dropped.
+
+`GET /api/events` also takes `spotId` as a filter.
+
 ### `GET /api/spots/[id]/nearby-dining`
 
 | Param | Default |

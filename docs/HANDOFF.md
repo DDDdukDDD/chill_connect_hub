@@ -764,3 +764,32 @@ New placeholder content in a page must be behind `eventOrigin(...) === 'sample'`
 
 **Frontend action:** none. A new place that shows a review or a chat message should offer the same report link (`ReportSafetyModal` with `targetType` and the review or message id).
 
+### BE-033 (2026-10-11) Spot Buddy on the place page, with safety rules — from Claude Code
+
+**Why:** the owner chose Spot Buddy as the core of the platform. The place page had no way to invite people because meeting strangers away from a public event is risky. It now opens only for places staff marked as safe, under rules the server applies.
+
+**What changed**
+- **Places:** new field `meetupAllowed` on `LifestyleSpotItem`. Staff set it with the "นัดเจอได้" checkbox in the admin spot editor (`components/admin/SpotEditorDrawer.tsx`). It is off for every place until staff turn it on; the `bar` category cannot have it.
+- **Rules (`lib/social/spotTrips.ts`, shared numbers in `lib/spotTripRules.ts`):** at least 3 people before a trip is confirmed, daytime only (06:00 - 19:00, one day), the meeting point is the place itself (a fixed list of three), everyone travels on their own, no contact channel, at most 2 open trips per host, the host has been to something before, and a host with an open report cannot open a trip. See `docs/API.md` ("Spot Buddy trips").
+- **API:** `GET /api/spots/{id}/trips` (new), `spotId` filter on `GET /api/events`, trip rules on `POST /api/events` when `eventData.spotId` is sent. New `EventItem` fields: `spotId`, `spotTitle`, `minParticipants`.
+- **Former frontend files I edited:**
+  - `components/SpotBuddyTrips.tsx` (new): the block on the place page with open trips and the "ชวนเพื่อนไปที่นี่" button.
+  - `app/spots/[id]/page.tsx`: renders that block above the one-day plan card.
+  - `components/SpotBuddyGatheringModal.tsx`: in spot mode the place is locked, the meeting point is a choice, the ride-sharing options are gone, the date starts at tomorrow (it was fixed to 2026-09-01), and a refusal from the server is shown. It used to report success and save the trip in the browser even when the server refused. In fair mode it no longer posts a community event: the fair page already creates the group, so every fair group also left a pending community event behind.
+  - `app/myhub/page.tsx`: the "ชวนเพื่อนไป" button on a saved place shows only when the place has `meetupAllowed`.
+  - `app/community/[id]/page.tsx`: a trip shows whether it is confirmed.
+
+**Tested:** type check passes. The rules were run directly against a made-up place and members (valid trip, night time, past date, place not opened, bar, unknown place, new member, approved host, reported member). Not tested in a browser, and not tested end to end with a signed-in member.
+
+**Note for whoever runs the dev server:** restart `next dev` after pulling. The database object is kept across hot reloads, so the `spotId` filter does not apply until a restart.
+
+**Frontend action:** a place card may show how many trips are open later; there is no count endpoint yet (ask with an `FE-###`).
+
+### BE-034 (2026-10-11) Menu follows the core loop; event page reads "joined" from the account only — from Claude Code
+
+**What changed (former frontend files)**
+- **Menu (`components/Navbar.tsx`, `components/MobileNav.tsx`):** the items are ค้นพบ, โมเมนต์, ชาเลนจ์, มายฮับ. The bottom bar on phones leaves out มายฮับ for a visitor who is not signed in (the side menu still lists it). About moved from the menu list to the footer of the side menu. A ตี้เพื่อนใหม่ item was tried and taken out again at the owner's request.
+- **Event page (`app/community/[id]/page.tsx`):** it no longer adds `joined_event_ids`, `user_created_events` and `joinedSubActivities` from the browser to the joined list. Those lists belong to whoever used the browser last, so after switching accounts the next member looked "joined" and had no join button. Joined state now comes only from `useMyActivity`.
+
+**Still open:** `components/EventDetailModal.tsx`, `app/events/[id]/page.tsx`, `app/community/page.tsx` and `app/myhub/page.tsx` still read those browser lists; they were not checked for the same fault.
+

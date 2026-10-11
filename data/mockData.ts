@@ -65,6 +65,11 @@ export interface EventItem {
   onlinePlatform?: 'zoom' | 'google_meet' | 'discord' | 'teams' | 'other' | string;
   onlineJoinUrl?: string;
   meetingPoint?: string;
+  /** Spot Buddy trip: the place it is tied to, set by the server from the spot record */
+  spotId?: string;
+  spotTitle?: string;
+  /** Spot Buddy trip: people needed (host included) before the trip counts as confirmed */
+  minParticipants?: number;
   distanceKm?: number;
   status?: 'upcoming' | 'ongoing' | 'ended' | string;
   buddyCount?: number;

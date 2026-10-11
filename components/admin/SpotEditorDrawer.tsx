@@ -35,6 +35,7 @@ interface SpotForm {
   website: string;
   facebook: string;
   googleMapsUrl: string;
+  meetupAllowed: boolean;
 }
 
 const lines = (value: string) => value.split('\n').map((line) => line.trim()).filter(Boolean);
@@ -63,6 +64,7 @@ function toForm(spot: LifestyleSpotItem | null): SpotForm {
     website: spot?.contact?.website ?? '',
     facebook: spot?.contact?.facebook ?? '',
     googleMapsUrl: spot?.googleMapsUrl ?? '',
+    meetupAllowed: spot?.meetupAllowed === true,
   };
 }
 
@@ -93,6 +95,8 @@ function toSpotFields(form: SpotForm): Partial<LifestyleSpotItem> {
     transitInfo: form.transitInfo.trim() || undefined,
     contact: hasContact ? Object.fromEntries(Object.entries(contact).filter(([, v]) => v)) : undefined,
     googleMapsUrl: form.googleMapsUrl.trim() || (isThaiCoordinate(latitude, longitude) ? coordinatesMapUrl(latitude, longitude) : ''),
+    // Nightlife venues never host member meet-ups (same rule as the server)
+    meetupAllowed: form.meetupAllowed && form.category !== 'bar',
   };
 }
 
@@ -288,6 +292,26 @@ export function SpotEditorDrawer({ spot, onClose, onSaved }: SpotEditorDrawerPro
         <Field label="การเดินทาง:" htmlFor="spot-transit" wide hint="เช่น BTS ชิดลม ทางออก 5, มีที่จอดรถ">
           <input id="spot-transit" value={form.transitInfo} onChange={set('transitInfo')} className={fieldInputClass} />
         </Field>
+      </FormSection>
+
+      <FormSection title="การนัดเจอของสมาชิก">
+        <label htmlFor="spot-meetup" className="sm:col-span-2 flex items-start gap-2.5 text-sm text-slate-700">
+          <input
+            id="spot-meetup"
+            type="checkbox"
+            checked={form.meetupAllowed && form.category !== 'bar'}
+            disabled={form.category === 'bar'}
+            onChange={(event) => setForm((current) => ({ ...current, meetupAllowed: event.target.checked }))}
+            className="mt-0.5 h-4 w-4 rounded border-slate-300"
+          />
+          <span>
+            <span className="font-semibold text-slate-900">นัดเจอได้</span>
+            <span className="block text-xs text-slate-500">
+              เปิดให้สมาชิกชวนเพื่อนมาที่นี่ได้ ติ๊กเฉพาะที่สาธารณะ มีพนักงานหรือคนพลุกพล่าน และเดินทางกลับเองได้ เช่น คาเฟ่ ห้าง พิพิธภัณฑ์ ตลาด สวนในเมือง ไม่ติ๊กให้ที่เปลี่ยวหรือที่พัก
+              {form.category === 'bar' && ' (หมวดบาร์เปิดไม่ได้)'}
+            </span>
+          </span>
+        </label>
       </FormSection>
 
       <FormSection title="เวลาเปิด & ค่าเข้า">

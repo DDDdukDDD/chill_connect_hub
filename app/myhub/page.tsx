@@ -3476,7 +3476,8 @@ function MyHubContent() {
 
                             {/* Action Buttons: Open Spot & Spot Buddy Gathering */}
                             <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5 text-xs mt-auto">
-                              <button
+                              {/* Only places staff opened for meet-ups (the server refuses the others) */}
+                              {spotItem.meetupAllowed && spotItem.category !== 'bar' && <button
                                 type="button"
                                 onClick={() => handleOpenSpotBuddy(spotItem)}
                                 className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
@@ -3484,7 +3485,7 @@ function MyHubContent() {
                               >
                                 <Users className="w-3.5 h-3.5 shrink-0" />
                                 <span>ชวนเพื่อนไป</span>
-                              </button>
+                              </button>}
 
                               <Link
                                 href={`/spots/${encodeURIComponent(spotItem.id)}`}

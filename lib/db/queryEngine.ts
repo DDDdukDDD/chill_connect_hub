@@ -84,6 +84,7 @@ export function filterEvents(
     province,
     zone,
     venueTag,
+    spotId,
     searchQuery,
     status,
     includeEnded = false,
@@ -156,6 +157,11 @@ export function filterEvents(
 
     // 5. Venue Tag (For Major Fairs e.g. 'qsncc', 'bitec', 'impact')
     if (venueTag && venueTag !== 'all' && ev.venueTag !== venueTag) {
+      return false;
+    }
+
+    // 5.1 Spot Buddy trips of one place
+    if (spotId && ev.spotId !== spotId) {
       return false;
     }
 

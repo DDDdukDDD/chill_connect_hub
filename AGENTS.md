@@ -82,5 +82,6 @@ Pillar facts every agent needs (data side):
 - **Fairs & Expos**: Start date, end date, and official organizer required.
 - **Spots**: Open hours required.
 - **Dedicated Spot Buddy Dialog**: Spot buddy trips triggered from `/spots/[id]` must use `SpotBuddyGatheringModal.tsx`.
+- **Spot Buddy safety rules**: trips open only for places staff marked `meetupAllowed`, and the server applies the rules in `lib/social/spotTrips.ts` (3 people minimum, daytime, meet at the place, no shared rides, no contact channel). Never loosen them in the form alone; see `docs/API.md` ("Spot Buddy trips").
 
 

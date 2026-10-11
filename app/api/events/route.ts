@@ -6,6 +6,8 @@ import { joinEvent } from '@/lib/members/activity';
 import { getSessionMember } from '@/lib/members/session';
 import { MemberAuthError } from '@/lib/members/accounts';
 import { guardCreator } from '@/lib/members/submissions';
+import { prepareSpotTrip } from '@/lib/social/spotTrips';
+import type { EventItem } from '@/data/mockData';
 
 function parsePositiveInteger(value: string | null, fallback: number, max?: number): number {
   if (!value) return fallback;
@@ -44,7 +46,7 @@ export async function GET(request: Request) {
 
     const hasFilterParams = [
       'page', 'limit', 'province', 'type', 'category', 'q', 'zone',
-      'venueTag', 'status', 'includeEnded', 'sortBy',
+      'venueTag', 'status', 'includeEnded', 'sortBy', 'spotId',
     ].some((param) => searchParams.has(param));
 
     if (hasFilterParams) {
@@ -68,6 +70,7 @@ export async function GET(request: Request) {
         province,
         zone,
         venueTag,
+        spotId: searchParams.get('spotId'),
         searchQuery,
         status: status || 'all',
         sortBy: sortBy || 'newest',
@@ -186,13 +189,27 @@ export async function POST(req: Request) {
       }
     }
     const isApprovedHost = member?.hostApplication?.status === 'approved' && member.status === 'active';
-    const approvalStatus = isAdmin || (!isPublicVenue && isApprovedHost) ? 'approved' : 'pending';
+    // A Spot Buddy trip from a member always waits for staff, approved hosts included
+    const approvalStatus = isAdmin || (!isPublicVenue && isApprovedHost && !eventData.spotId) ? 'approved' : 'pending';
 
     // Members' events carry no private contact channel: people talk in the event's group chat
     if (!isAdmin) delete eventData.contactChannel;
 
+    // Spot Buddy trip: the place must be open for meet-ups and the server sets where, when and how many.
+    // Without a spotId these fields are dropped, so a free-form event cannot pose as a trip to a place.
+    let tripFields: Partial<EventItem> = { spotId: undefined, spotTitle: undefined, minParticipants: undefined };
+    if (eventData.spotId) {
+      try {
+        tripFields = await prepareSpotTrip(member, eventData);
+      } catch (error) {
+        if (error instanceof MemberAuthError) return NextResponse.json({ success: false, message: error.message }, { status: error.status });
+        throw error;
+      }
+    }
+
     const savedEvent = await createAdminEvent({
       ...eventData,
+      ...tripFields,
       id: eventData.id || `user-event-${Date.now()}`,
       approvalStatus,
       source: isAdmin ? 'Chill & Connect Official' : 'Community Member',
