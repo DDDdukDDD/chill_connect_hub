@@ -13,11 +13,10 @@ import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { useAuth } from '@/lib/useAuth';
 import { useMemberSession } from '@/lib/useMemberSession';
+import { useMyActivity } from '@/lib/useMyActivity';
+import { isEventEnded } from '@/lib/dateUtils';
 import { nameInitial, tidyDisplayName } from '@/lib/displayName';
 import {
-  MOCK_EVENTS,
-  MOCK_POSTS,
-  MOCK_CHALLENGES,
   EventItem,
   CommunityPost,
   ChallengeQuest,
@@ -226,6 +225,10 @@ function MomentsContent() {
   const [storyDraft, setStoryDraft] = useState<{ file: File | null; preview: string; caption: string } | null>(null);
   const [reportStoryId, setReportStoryId] = useState<string | null>(null);
   const [sidebarQuests, setSidebarQuests] = useState<{ id: string; title: string; badgeLabel?: string }[]>([]);
+  // Approved events and live challenges from the server, for the sidebar and for what a moment is about
+  const [liveEvents, setLiveEvents] = useState<EventItem[]>([]);
+  const [liveQuests, setLiveQuests] = useState<ChallengeQuest[]>([]);
+  const activity = useMyActivity();
   const [socialReload, setSocialReload] = useState(0);
   // What the moment is about: found by searching the real events, places and challenges
   type LinkTarget = { type: 'community' | 'fair' | 'spot' | 'challenge'; id: string; title: string; location: string };
@@ -363,9 +366,18 @@ function MomentsContent() {
       .then((res) => res.json())
       .then((json) => active && setStoryGroups(json.groups ?? []))
       .catch(() => undefined);
-    fetch('/api/quests?limit=6', { cache: 'no-store' })
+    fetch('/api/quests?limit=30', { cache: 'no-store' })
       .then((res) => res.json())
-      .then((json: { quests?: { id: string; title: string; badgeLabel?: string; status?: string }[] }) => active && setSidebarQuests((json.quests ?? []).filter((q) => q.status !== 'ended').slice(0, 3)))
+      .then((json: { quests?: ChallengeQuest[] }) => {
+        if (!active) return;
+        const open = (json.quests ?? []).filter((q) => q.status !== 'ended' && q.status !== 'draft');
+        setLiveQuests(open);
+        setSidebarQuests(open.slice(0, 4));
+      })
+      .catch(() => undefined);
+    fetch('/api/events')
+      .then((res) => res.json())
+      .then((json: { events?: EventItem[] }) => active && setLiveEvents(json.events ?? []))
       .catch(() => undefined);
     return () => {
       active = false;
@@ -582,8 +594,8 @@ function MomentsContent() {
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const [selectedSpot, setSelectedSpot] = useState<LifestyleSpotItem | null>(null);
   const [selectedChallenge, setSelectedChallenge] = useState<ChallengeQuest | null>(null);
-  const [eventFavorites, setEventFavorites] = useState<string[]>(['1', '7']);
-  const [spotFavorites, setSpotFavorites] = useState<string[]>(['spot-bkk-1', 'spot-cnx-1']);
+  const [eventFavorites, setEventFavorites] = useState<string[]>([]);
+  const [spotFavorites, setSpotFavorites] = useState<string[]>([]);
 
   // Create Moment Form State
   const [createTargetType, setCreateTargetType] = useState<
@@ -615,24 +627,18 @@ function MomentsContent() {
     }
   }, [searchParams]);
 
-  // User's booked/favorited community & fair events from MyHub
+  // Events the member joined or saved (from the account), plus ones saved on this page
   const myBookedEvents = useMemo(() => {
-    return MOCK_EVENTS.filter(
-      (e) =>
-        e.id === '1' ||
-        e.id === '3' ||
-        e.id === '4' ||
-        e.id === 'live-agg-1' ||
-        eventFavorites.includes(e.id)
-    );
-  }, [eventFavorites]);
+    const mine = new Set([...activity.joinedIds, ...activity.savedEventIds, ...eventFavorites]);
+    return liveEvents.filter((e) => mine.has(e.id));
+  }, [liveEvents, activity.joinedIds, activity.savedEventIds, eventFavorites]);
 
   const myBookedCommunityEvents = useMemo(() => {
-    return myBookedEvents.filter((e) => e.eventType === 'community' || e.id.startsWith('comm-'));
+    return myBookedEvents.filter((e) => e.eventType === 'community');
   }, [myBookedEvents]);
 
   const myBookedFairEvents = useMemo(() => {
-    return myBookedEvents.filter((e) => e.eventType === 'public_venue' || !e.id.startsWith('comm-'));
+    return myBookedEvents.filter((e) => e.eventType !== 'community');
   }, [myBookedEvents]);
 
   // Live catalog (published spots + bundled ones members may have saved earlier)
@@ -640,14 +646,12 @@ function MomentsContent() {
 
   // User's saved spots in MyHub
   const mySavedSpots = useMemo(() => {
-    const savedIds = new Set(['spot-bkk-1', 'spot-cnx-1', 'spot-bkk-2', ...spotFavorites]);
+    const savedIds = new Set([...activity.savedSpotIds, ...spotFavorites]);
     return spotCatalog.filter((s) => savedIds.has(s.id));
-  }, [spotFavorites, spotCatalog]);
+  }, [activity.savedSpotIds, spotFavorites, spotCatalog]);
 
-  // User's active quests
-  const myQuests = useMemo(() => {
-    return MOCK_CHALLENGES.slice(0, 4);
-  }, []);
+  // Challenges open right now (which ones the member joined is not stored on the server yet)
+  const myQuests = useMemo(() => liveQuests.slice(0, 4), [liveQuests]);
 
   // Filtered Check-in Places for Facebook-style Check-in
   const filteredCheckInPlaces = useMemo(() => {
@@ -1005,19 +1009,17 @@ function MomentsContent() {
     }
 
     if (targetType === 'challenge') {
-      const matched =
-        MOCK_CHALLENGES.find((c) => c.id === targetId || c.title === post.targetTitle) ||
-        MOCK_CHALLENGES[0];
-      setSelectedChallenge(matched);
+      // A challenge that is no longer listed opens nothing, never a different one
+      const matched = liveQuests.find((c) => c.id === targetId || c.title === post.targetTitle);
+      if (matched) setSelectedChallenge(matched);
       return;
     }
 
     // Community or Fair
-    const matched =
-      MOCK_EVENTS.find(
-        (ev) => ev.id === targetId || ev.title === post.targetTitle || ev.id === post.eventId
-      ) || MOCK_EVENTS[0];
-    setSelectedEvent(matched);
+    const matched = liveEvents.find(
+      (ev) => ev.id === targetId || ev.title === post.targetTitle || ev.id === post.eventId
+    );
+    if (matched) setSelectedEvent(matched);
   };
 
   // Handle Multi-Image Upload (Max 10 with Automatic WebP Compression & Canvas Scaling)
@@ -1097,7 +1099,7 @@ function MomentsContent() {
         resolvedLocation = targetTitle;
       }
     } else if (createTargetType === 'challenge') {
-      const quest = MOCK_CHALLENGES.find((c) => c.id === createTargetId) || myQuests[0] || MOCK_CHALLENGES[0];
+      const quest = liveQuests.find((c) => c.id === createTargetId) || myQuests[0];
       targetTitle = quest ? quest.title : 'ภารกิจไลฟ์สไตล์';
       resolvedLocation = targetTitle;
     } else if (createTargetType === 'fair') {
@@ -1105,7 +1107,7 @@ function MomentsContent() {
         resolvedLocation = customLocationInput.trim() || 'งานมหกรรม & เอ็กซ์โป';
         targetTitle = resolvedLocation;
       } else {
-        const ev = MOCK_EVENTS.find((item) => item.id === createTargetId) || myBookedFairEvents[0];
+        const ev = liveEvents.find((item) => item.id === createTargetId) || myBookedFairEvents[0];
         targetTitle = ev ? ev.title : 'งานเอ็กซ์โป';
         resolvedLocation = ev ? ev.location || ev.title : targetTitle;
       }
@@ -1115,7 +1117,7 @@ function MomentsContent() {
         resolvedLocation = customLocationInput.trim() || 'กิจกรรมคอมมูนิตี้';
         targetTitle = resolvedLocation;
       } else {
-        const ev = MOCK_EVENTS.find((item) => item.id === createTargetId) || myBookedCommunityEvents[0];
+        const ev = liveEvents.find((item) => item.id === createTargetId) || myBookedCommunityEvents[0];
         targetTitle = ev ? ev.title : 'กิจกรรมคอมมูนิตี้';
         resolvedLocation = ev ? ev.location || ev.title : targetTitle;
       }
@@ -1193,9 +1195,9 @@ function MomentsContent() {
 
   // Curated Recommended Events for Sidebar (Meetups & Fairs)
   const recommendedEvents = useMemo(() => {
-    const valid = MOCK_EVENTS.filter((e) => e.status !== 'ended');
-    const community = valid.filter((e) => e.eventType === 'community' || e.id.startsWith('comm-'));
-    const fairs = valid.filter((e) => e.eventType === 'public_venue' || !e.id.startsWith('comm-'));
+    const valid = liveEvents.filter((e) => e.status !== 'ended' && !isEventEnded(e));
+    const community = valid.filter((e) => e.eventType === 'community');
+    const fairs = valid.filter((e) => e.eventType !== 'community');
 
     const list: EventItem[] = [];
     if (community[0]) list.push(community[0]);
@@ -1204,7 +1206,7 @@ function MomentsContent() {
     if (fairs[1]) list.push(fairs[1]);
 
     return list.length > 0 ? list : valid.slice(0, 4);
-  }, []);
+  }, [liveEvents]);
 
   return (
     <div className="min-h-screen bg-[#FCFBF9] text-[#1E293B] flex flex-col font-sans selection:bg-slate-800 selection:text-white">

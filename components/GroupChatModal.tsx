@@ -2,9 +2,10 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Send, Trash2, X } from 'lucide-react';
+import { Flag, Send, Trash2, X } from 'lucide-react';
 import { EventItem } from '@/data/mockData';
 import { nameInitial } from '@/lib/displayName';
+import { ReportSafetyModal } from './ReportSafetyModal';
 
 interface ChatMessage {
   id: string;
@@ -41,6 +42,7 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
   const [notice, setNotice] = useState('');
   const [text, setText] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [reporting, setReporting] = useState<ChatMessage | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
   const lastSeen = useRef('');
 
@@ -175,6 +177,12 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
                       ลบ
                     </button>
                   )}
+                  {!m.isMine && (
+                    <button type="button" onClick={() => setReporting(m)} className="inline-flex items-center gap-1 hover:text-rose-600 cursor-pointer" aria-label={`รายงานข้อความของ ${m.authorName}`}>
+                      <Flag className="w-3 h-3" aria-hidden="true" />
+                      รายงาน
+                    </button>
+                  )}
                 </span>
               </div>
             </div>
@@ -204,6 +212,10 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
               <Send className="w-5 h-5" aria-hidden="true" />
             </button>
           </form>
+        )}
+        {reporting && (
+          <ReportSafetyModal isOpen onClose={() => setReporting(null)} targetType="chat_message" targetId={reporting.id}
+            targetTitle={`ข้อความของ ${reporting.authorName}: "${reporting.text.length > 80 ? `${reporting.text.slice(0, 80)}…` : reporting.text}"`} />
         )}
       </div>
     </div>

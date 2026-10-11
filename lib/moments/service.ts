@@ -64,8 +64,10 @@ const plain = (value: string, isSample: boolean) => (isSample ? value.replace(/\
 
 export function toFeedItem(moment: Moment, viewer: Member | null, people: Map<string, Member>) {
   const author = moment.authorId ? people.get(moment.authorId) : undefined;
+  // The viewer does not see comments from people they blocked
+  const blocked = new Set(viewer?.blockedIds ?? []);
   const comments = moment.comments
-    .filter((comment) => !comment.hidden && (!comment.authorId || people.get(comment.authorId)?.status !== 'banned'))
+    .filter((comment) => !comment.hidden && (!comment.authorId || (people.get(comment.authorId)?.status !== 'banned' && !blocked.has(comment.authorId))))
     .map((comment) => {
       const commenter = comment.authorId ? people.get(comment.authorId) : undefined;
       return {

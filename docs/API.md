@@ -472,3 +472,21 @@ Answer: `{ success, places: [{ name, detail, latitude, longitude }] }` (at most 
 
 ### `POST /api/events` — participant count (BE-031)
 For a signed-in member the server ignores `participantsCount` in the body: the event starts at 0 and the creator is added as the first participant, so the answer's `event.participantsCount` is 1.
+
+## Reports for reviews and chat messages; blocking in event lists (added 2026-10-11, BE-032)
+
+### `POST /api/reports` — two more targets
+`targetType` may also be `review` (`targetId` = review id, as returned in a profile's `hostReviews.latest[].id`) or `chat_message` (`targetId` = message id from `GET /api/chat/{roomId}`). The server reads the words and their author from its own data; `targetTitle` in the body is ignored for these two. A chat message can be reported only by someone who can read that room (`403` otherwise). Reporting one's own review or message answers `400`.
+
+### `/api/admin/reports`
+- Each report may carry `excerpt` (the reported words when the report was sent). `hostMemberId` / `hostName` is the author for these two target types.
+- `POST { action: 'remove_content', id, note? }` (permission `community.review`): deletes the reported review or chat message and closes every open report about it. `404` when the report is closed or is about an event, a fair or a place.
+- `GET ?room=<reportId>` (permission `community.review`) → `{ reportedMessageId, messages: [{ id, authorId, authorName, text, createdAt }] }`: the whole chat room of a reported message. Works only for a report about a chat message (`404` otherwise) and writes `report.read_chat` to the audit log. Chat reports carry `roomId`.
+- `POST { action: 'remove_chat_message', id: reportId, messageId }` (permission `community.review`): deletes another message of that room. The report stays open.
+
+### `GET /api/events` — blocked members
+When the signed-in viewer has blocked someone, events that person created are left out of every list and search answer, and that answer is sent with `Cache-Control: private, no-store`. Other answers stay shared-cached. All answers carry `Vary: Cookie`. `total` and `pagination` are not recounted after the filter, so a page can be a few items short.
+
+### Moments feed — blocked members
+`comments` and `commentsCount` of each moment leave out comments from people the viewer blocked.
+

@@ -82,6 +82,35 @@ export async function deleteChatMessage(member: Member, messageId: string): Prom
   await store.update((items) => items.filter((m) => m.id !== messageId));
 }
 
+/** A message someone in the same room reports; only people who can read the room can report from it */
+export async function chatMessageForReport(member: Member, messageId: string): Promise<{ message: ChatMessage; roomTitle: string }> {
+  const message = store.read().find((m) => m.id === messageId);
+  if (!message) throw new MemberAuthError('ไม่พบข้อความนี้ อาจถูกลบไปแล้ว', 404);
+  const room = await roomOf(member, message.roomId);
+  return { message, roomTitle: room.title };
+}
+
+/**
+ * The whole room for staff who are handling a report from it: a reported line often only makes sense
+ * with what was said around it. Names are shown even for suspended accounts, since staff need them.
+ */
+export async function chatRoomForStaff(roomId: string) {
+  const all = store.read().filter((m) => m.roomId === roomId).slice(-KEEP_PER_ROOM);
+  const names = new Map<string, string>();
+  for (const id of new Set(all.map((m) => m.authorId))) {
+    const author = await memberRepository.findById(id);
+    names.set(id, author ? tidyDisplayName(author.displayName).trim() || author.displayName : 'บัญชีที่ลบแล้ว');
+  }
+  return all.map((m) => ({ id: m.id, authorId: m.authorId, authorName: names.get(m.authorId) ?? '', text: m.text, createdAt: m.createdAt }));
+}
+
+/** Staff take a message down after a report; returns false when it is already gone */
+export async function removeChatMessageAsStaff(messageId: string): Promise<boolean> {
+  if (!store.read().some((m) => m.id === messageId)) return false;
+  await store.update((items) => items.filter((m) => m.id !== messageId));
+  return true;
+}
+
 export async function removeChatMessagesBy(memberId: string): Promise<void> {
   await store.update((items) => items.filter((m) => m.authorId !== memberId));
 }

@@ -33,6 +33,15 @@ export async function GET(request: Request) {
       );
     }
 
+    // Events created by someone the viewer blocked are left out. That answer is personal, so it is not shared-cached.
+    const blocked = new Set((await getSessionMember(request))?.blockedIds ?? []);
+    const withoutBlocked = <T extends object>(items: T[]): T[] =>
+      blocked.size ? items.filter((ev) => !blocked.has((ev as { createdByMemberId?: string }).createdByMemberId ?? '')) : items;
+    const listHeaders = {
+      'Cache-Control': blocked.size ? 'private, no-store' : 'public, s-maxage=30, stale-while-revalidate=120',
+      Vary: 'Cookie',
+    };
+
     const hasFilterParams = [
       'page', 'limit', 'province', 'type', 'category', 'q', 'zone',
       'venueTag', 'status', 'includeEnded', 'sortBy',
@@ -69,7 +78,7 @@ export async function GET(request: Request) {
       return NextResponse.json(
         {
           success: true,
-          events: result.items,
+          events: withoutBlocked(result.items),
           total: result.totalCount,
           pagination: {
             totalCount: result.totalCount,
@@ -81,17 +90,13 @@ export async function GET(request: Request) {
             nextCursor: result.nextCursor,
           },
         },
-        {
-          headers: {
-            'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120',
-          },
-        }
+        { headers: listHeaders }
       );
     }
 
     // Default backward-compatible fallback
     const events = await db.listAllEvents();
-    const approved = events.filter((ev) => ev.approvalStatus === 'approved');
+    const approved = withoutBlocked(events.filter((ev) => ev.approvalStatus === 'approved'));
     return NextResponse.json(
       {
         success: true,
@@ -106,11 +111,7 @@ export async function GET(request: Request) {
           hasPrevPage: false,
         },
       },
-      {
-        headers: {
-          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120',
-        },
-      }
+      { headers: listHeaders }
     );
   } catch (error) {
     console.error('Error in /api/events GET:', error);
