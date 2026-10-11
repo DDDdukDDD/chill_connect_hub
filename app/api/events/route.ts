@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createAdminEvent } from '@/lib/eventsStore';
 import { db } from '@/lib/db';
 import { hasAdminCredentials } from '@/lib/adminApiAuth';
+import { joinEvent } from '@/lib/members/activity';
 import { getSessionMember } from '@/lib/members/session';
 
 function parsePositiveInteger(value: string | null, fallback: number, max?: number): number {
@@ -129,18 +130,15 @@ export async function POST(req: Request) {
 
     // ── Action: Atomic Join Event (High-Concurrency Safe) ──
     if (body.action === 'join') {
-      const { eventId, participant } = body;
-      if (!eventId || !participant || !participant.userId) {
-        return NextResponse.json(
-          { success: false, message: 'ข้อมูลไม่ครบถ้วน (ต้องการ eventId และข้อมูลผู้ใช้)' },
-          { status: 400 }
-        );
+      // Who joins comes from the session, never from the request body (same rules as /api/auth/member/activity)
+      const joiner = await getSessionMember(req);
+      if (!joiner) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }, { status: 401 });
+      if (typeof body.eventId !== 'string' || !body.eventId) {
+        return NextResponse.json({ success: false, message: 'ข้อมูลไม่ครบถ้วน (ต้องการ eventId)' }, { status: 400 });
       }
-
-      const joinResult = await db.atomicJoinEvent(eventId, participant);
-      return NextResponse.json(joinResult, {
-        status: joinResult.success ? 200 : 409,
-      });
+      const joinResult = await joinEvent(joiner, body.eventId);
+      const joined = joinResult.status === 'joined' || joinResult.status === 'already_joined';
+      return NextResponse.json({ success: joined, ...joinResult, updatedEvent: joinResult.event }, { status: joined ? 200 : joinResult.status === 'not_allowed' ? 403 : 409 });
     }
 
     // ── Action: Create Event ──
@@ -183,6 +181,9 @@ export async function POST(req: Request) {
       ...(member && { createdByMemberId: member.id }),
       createdAt: new Date().toISOString(),
     });
+
+    // The creator is the first participant of their own event
+    if (member) await db.atomicJoinEvent(savedEvent.id, { userId: member.id, userName: member.displayName, userAvatar: member.avatarUrl, note: 'host' }).catch(() => undefined);
 
     return NextResponse.json({
       success: true,

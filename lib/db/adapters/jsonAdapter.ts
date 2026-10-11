@@ -304,7 +304,8 @@ export class JsonFileAdapter implements IDataRepository {
         return { success: false, message: 'ไม่พบกิจกรรมที่ระบุ', status: 'not_found' };
       }
 
-      if (isEventEnded(event)) {
+      // Sample meetups are shown with a rolled-forward date; judge "ended" by the date people see
+      if (isEventEnded(rollSampleEventDate(event))) {
         return { success: false, message: 'กิจกรรมนี้สิ้นสุดแล้ว', status: 'event_ended' };
       }
 
@@ -382,6 +383,44 @@ export class JsonFileAdapter implements IDataRepository {
       await this.persistEvents();
       cacheManager.invalidateTags(['events', `event:${eventId}`]);
       return { success: true, message: 'ยกเลิกการเข้าร่วมเรียบร้อย' };
+    });
+  }
+
+  public async listParticipations(userId: string): Promise<{ eventId: string; joinedAt?: string; note?: string }[]> {
+    await this.ensureInitialized();
+    const found: { eventId: string; joinedAt?: string; note?: string }[] = [];
+    for (const [eventId, list] of Object.entries(this.participants)) {
+      const mine = list.find((p) => p.userId === userId);
+      if (mine) found.push({ eventId, joinedAt: mine.joinedAt, note: mine.note });
+    }
+    return found.sort((a, b) => (b.joinedAt ?? '').localeCompare(a.joinedAt ?? ''));
+  }
+
+  public async listParticipants(eventId: string): Promise<ParticipantInfo[]> {
+    await this.ensureInitialized();
+    return [...(this.participants[eventId] ?? [])];
+  }
+
+  public async removeParticipantEverywhere(userId: string): Promise<number> {
+    await this.ensureInitialized();
+    return this.mutex.runExclusive(async () => {
+      let removed = 0;
+      for (const [eventId, list] of Object.entries(this.participants)) {
+        const idx = list.findIndex((p) => p.userId === userId);
+        if (idx === -1) continue;
+        list.splice(idx, 1);
+        removed += 1;
+        const event = this.events.find((e) => e.id === eventId);
+        if (!event) continue;
+        event.participantsCount = Math.max(0, (event.participantsCount || 1) - 1);
+        if (event.participantsCount < (event.maxParticipants || 10) && event.status === 'full') event.status = 'recruiting';
+        cacheManager.invalidateTags([`event:${eventId}`]);
+      }
+      if (removed) {
+        await this.persistEvents();
+        cacheManager.invalidateTags(['events']);
+      }
+      return removed;
     });
   }
 

@@ -142,6 +142,11 @@ export interface Member {
   blockedIds?: string[];
   /** Members whose moments this member follows */
   followingIds?: string[];
+  /** Places and events the member saved for later (My Hub) */
+  savedSpotIds?: string[];
+  savedEventIds?: string[];
+  /** Events the member joined and then cancelled, newest first (history in My Hub) */
+  cancelledEvents?: { eventId: string; at: string }[];
   /** Development sample account (author of bundled sample moments); cannot sign in. Remove before launch. */
   isSample?: boolean;
   createdAt: string;

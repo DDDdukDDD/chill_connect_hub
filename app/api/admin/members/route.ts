@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { removeNotificationsOf } from '@/lib/social/notifications';
 import { removeStoriesOf } from '@/lib/social/stories';
+import { db } from '@/lib/db';
 import { getAdminActor, requireAdminApiAccess } from '@/lib/adminApiAuth';
 import { recordAudit } from '@/lib/auditLog';
 import { tidyDisplayName } from '@/lib/displayName';
@@ -195,6 +196,7 @@ export async function POST(request: Request) {
     const removedMoments = await momentRepository.removeByAuthor(member.id);
     const removedComments = await momentRepository.removeCommentsByAuthor(member.id);
     await removeStoriesOf(member.id);
+    await db.removeParticipantEverywhere(member.id);
     await removeNotificationsOf(member.id);
     await memberRepository.remove(member.id);
     // The audit entry keeps the id and the reason, not the member's name or email

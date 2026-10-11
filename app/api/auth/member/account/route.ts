@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { removeNotificationsOf } from '@/lib/social/notifications';
 import { removeStoriesOf } from '@/lib/social/stories';
+import { db } from '@/lib/db';
 import { recordAudit } from '@/lib/auditLog';
 import { memberRepository, toPublicMember } from '@/lib/members';
 import { exportableAccount } from '@/lib/members/accounts';
@@ -30,6 +31,7 @@ export async function DELETE(request: Request) {
   const removedMoments = await momentRepository.removeByAuthor(member.id);
   const removedComments = await momentRepository.removeCommentsByAuthor(member.id);
   await removeStoriesOf(member.id);
+  await db.removeParticipantEverywhere(member.id);
   await removeNotificationsOf(member.id);
   await memberRepository.remove(member.id);
   // Keep proof that the deletion happened, without keeping who it was
