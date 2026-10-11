@@ -58,24 +58,11 @@ function toProfile(member: PublicMember | null, role: UserRole): UserProfile {
   };
 }
 
-// Preview role (local only)
-let previewRole: UserRole | null = null;
-const roleListeners = new Set<() => void>();
-function readRole(): UserRole {
-  if (previewRole) return previewRole;
-  try {
-    const saved = localStorage.getItem('user_role') as UserRole | null;
-    previewRole = saved && saved in ROLE_BADGES ? saved : 'member';
-  } catch {
-    previewRole = 'member';
-  }
-  return previewRole;
-}
-function subscribeRole(listener: () => void) {
-  roleListeners.add(listener);
-  return () => {
-    roleListeners.delete(listener);
-  };
+// The role shown on the site follows what staff approved (host application), never a choice made in the browser
+const KIND_ROLES: Record<string, UserRole> = { host: 'host', venue: 'venue_owner', organizer: 'organizer' };
+function roleOf(member: PublicMember | null): UserRole {
+  const kind = member?.trust?.hostKind;
+  return (kind && KIND_ROLES[kind]) || 'member';
 }
 
 let cachedProfile: { member: PublicMember | null; role: UserRole; profile: UserProfile } | null = null;
@@ -88,7 +75,7 @@ function profileFor(member: PublicMember | null, role: UserRole): UserProfile {
 
 export function useAuth() {
   const session = useMemberSession();
-  const role = useSyncExternalStore(subscribeRole, readRole, () => 'member' as UserRole);
+  const role = roleOf(session.member);
   const userProfile = profileFor(session.member, role);
 
   /** Pages call this after AuthModal succeeds (true) or to log out (false) */
@@ -96,14 +83,13 @@ export function useAuth() {
     void (status ? refreshMemberSession() : memberActions.logout());
   };
 
-  const handleSetRole = (next: UserRole) => {
-    previewRole = next;
+  /** Kept so older callers compile. Roles are granted by staff through the host application, so this does nothing. */
+  const handleSetRole = (_next: UserRole) => {
     try {
-      localStorage.setItem('user_role', next);
+      localStorage.removeItem('user_role'); // older builds kept a made-up role here
     } catch {
       /* storage unavailable */
     }
-    roleListeners.forEach((listener) => listener());
   };
 
   const isAdmin = role === 'admin';

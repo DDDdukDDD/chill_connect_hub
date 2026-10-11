@@ -1,4 +1,10 @@
 import { NextResponse } from 'next/server';
+import { removeNotificationsOf } from '@/lib/social/notifications';
+import { removeStoriesOf } from '@/lib/social/stories';
+import { removeReviewsBy } from '@/lib/social/reviews';
+import { removeFairGroupsOf } from '@/lib/social/fairGroups';
+import { removeChatMessagesBy } from '@/lib/social/chat';
+import { db } from '@/lib/db';
 import { recordAudit } from '@/lib/auditLog';
 import { memberRepository, toPublicMember } from '@/lib/members';
 import { exportableAccount } from '@/lib/members/accounts';
@@ -27,6 +33,12 @@ export async function DELETE(request: Request) {
   // PDPA: the member's posts, comments, likes, saves and reports go with the account
   const removedMoments = await momentRepository.removeByAuthor(member.id);
   const removedComments = await momentRepository.removeCommentsByAuthor(member.id);
+  await removeStoriesOf(member.id);
+  await removeReviewsBy(member.id);
+  await removeFairGroupsOf(member.id);
+  await removeChatMessagesBy(member.id);
+  await db.removeParticipantEverywhere(member.id);
+  await removeNotificationsOf(member.id);
   await memberRepository.remove(member.id);
   // Keep proof that the deletion happened, without keeping who it was
   recordAudit(null, 'member.self_delete', `สมาชิกลบบัญชีของตัวเอง (โมเมนต์ ${removedMoments} คอมเมนต์ ${removedComments})`, { type: 'member', id: member.id });

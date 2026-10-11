@@ -218,3 +218,25 @@ export function isEventNew(event: {
   return !!event.isNew;
 }
 
+
+const THAI_SHORT_MONTH_LABELS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+const HAS_THAI_MONTH = /(ม\.ค|ก\.พ|มี\.ค|เม\.ย|พ\.ค|มิ\.ย|ก\.ค|ส\.ค|ก\.ย|ต\.ค|พ\.ย|ธ\.ค|มกราคม|กุมภาพันธ์|มีนาคม|เมษายน|พฤษภาคม|มิถุนายน|กรกฎาคม|สิงหาคม|กันยายน|ตุลาคม|พฤศจิกายน|ธันวาคม)/;
+
+/**
+ * Dates are shown in the Buddhist Era everywhere ("14 ต.ค. 2569").
+ * Turns the year of a Thai date text from C.E. into B.E.; text without a Thai month, and years already in B.E., pass through.
+ * Every parser in this file and in lib/scrapers/dates.ts reads both eras, so stored C.E. dates keep working.
+ */
+export function toBuddhistEra(text: string): string;
+export function toBuddhistEra(text: string | undefined): string | undefined;
+export function toBuddhistEra(text: string | undefined): string | undefined {
+  if (!text || !HAS_THAI_MONTH.test(text)) return text;
+  return text.replace(/(^|[^0-9])(20[2-3][0-9])(?![0-9])/g, (_match, before: string, year: string) => `${before}${Number(year) + 543}`);
+}
+
+/** "2026-10-14" (a date input's value) → "14 ต.ค. 2569" */
+export function formatThaiDateBE(isoDate: string): string {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  if (!year || !month || !day) return isoDate;
+  return `${day} ${THAI_SHORT_MONTH_LABELS[month - 1]} ${year + 543}`;
+}

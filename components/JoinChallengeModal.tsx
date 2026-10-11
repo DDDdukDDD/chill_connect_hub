@@ -376,7 +376,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
 
                 <span className="flex items-center gap-1 bg-white/15 px-2.5 py-0.5 rounded-lg border border-white/20">
                   <Calendar className="w-3.5 h-3.5 text-purple-200" />
-                  <span>{quest.startDate || '1 มี.ค.'} - {quest.endDate || '31 มี.ค. 2026'}</span>
+                  <span>{quest.startDate || '1 มี.ค.'} - {quest.endDate || '31 มี.ค. 2569'}</span>
                 </span>
 
                 {quest.daysRemaining !== undefined && (
@@ -419,7 +419,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
           {isEnded && !localCompleted && (
             <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between gap-3 text-xs text-slate-600 font-medium">
               <span>ภารกิจนี้สิ้นสุดระยะเวลาจัดกิจกรรมแล้ว ข้อมูลด้านล่างเป็นบันทึกสรุปและของรางวัลย้อนหลัง</span>
-              <span className="text-[10px] font-extrabold px-2.5 py-1 bg-slate-200 text-slate-700 rounded-lg shrink-0">
+              <span className="text-[11px] font-extrabold px-2.5 py-1 bg-slate-200 text-slate-700 rounded-lg shrink-0">
                 คลังย้อนหลัง
               </span>
             </div>
@@ -434,7 +434,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                     🎟️
                   </span>
                   <div>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-900 bg-amber-200/80 px-2 py-0.5 rounded-md">
+                    <span className="text-[11px] font-black uppercase tracking-wider text-amber-900 bg-amber-200/80 px-2 py-0.5 rounded-md">
                       Brand Privilege Unlocked
                     </span>
                     <h4 className="text-sm sm:text-base font-black text-slate-900">
@@ -450,12 +450,12 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
               <div className="p-3.5 bg-white rounded-2xl border border-amber-200 shadow-2xs space-y-2.5">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <span className="text-[10px] text-slate-400 font-bold block">รางวัลสิทธิ์พิเศษของคุณ:</span>
+                    <span className="text-[11px] text-slate-400 font-bold block">รางวัลสิทธิ์พิเศษของคุณ:</span>
                     <h5 className="font-black text-xs sm:text-sm text-slate-900">
                       {brandReward.title}
                     </h5>
                   </div>
-                  <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200 shrink-0">
+                  <span className="text-[11px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200 shrink-0">
                     {brandReward.partnerName}
                   </span>
                 </div>
@@ -463,7 +463,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                 {/* Voucher Code & QR simulation */}
                 <div className="p-3 bg-slate-50 rounded-xl border border-dashed border-slate-300 flex items-center justify-between gap-3">
                   <div className="space-y-0.5">
-                    <span className="text-[10px] text-slate-400 font-bold block">รหัสสิทธิ์สำหรับใช้หน้าร้าน:</span>
+                    <span className="text-[11px] text-slate-400 font-bold block">รหัสสิทธิ์สำหรับใช้หน้าร้าน:</span>
                     <span className="font-mono font-black text-xs sm:text-sm text-[#7C3AED] tracking-wider select-all">
                       {brandReward.voucherCodePrefix || 'CCH-'}88492
                     </span>
@@ -474,7 +474,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                   </div>
                 </div>
 
-                <div className="p-2 rounded-xl bg-amber-50/80 border border-amber-200 text-[10.5px] text-amber-900 font-medium leading-relaxed">
+                <div className="p-2 rounded-xl bg-amber-50/80 border border-amber-200 text-[11px] text-amber-900 font-medium leading-relaxed">
                   <strong>🔒 ข้อกำหนดการใช้สิทธิ์:</strong> {brandReward.exclusiveNotice}
                 </div>
               </div>
@@ -490,7 +490,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                     🏆
                   </span>
                   <div>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-purple-900 bg-purple-200/80 px-2 py-0.5 rounded-md">
+                    <span className="text-[11px] font-black uppercase tracking-wider text-purple-900 bg-purple-200/80 px-2 py-0.5 rounded-md">
                       Hub Official Achievement
                     </span>
                     <h4 className="text-sm sm:text-base font-black text-slate-900">
@@ -506,12 +506,12 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
               <div className="p-3.5 bg-white rounded-2xl border border-purple-200 shadow-2xs space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <span className="text-[10px] text-slate-400 font-bold block">รางวัลความสำเร็จของคุณ:</span>
+                    <span className="text-[11px] text-slate-400 font-bold block">รางวัลความสำเร็จของคุณ:</span>
                     <h5 className="font-black text-xs sm:text-sm text-purple-950">
                       {brandReward.title}
                     </h5>
                   </div>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 shrink-0">
+                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 shrink-0">
                     Chill & Connect Hub
                   </span>
                 </div>
@@ -625,7 +625,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                   <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center hover:border-[#7C3AED] transition-colors cursor-pointer bg-slate-50">
                     <UploadCloud className="w-6 h-6 text-slate-400 mx-auto mb-1" />
                     <span className="text-xs font-bold text-slate-700 block">คลิกเพื่อเลือกภาพถ่ายหลักฐาน</span>
-                    <span className="text-[10px] text-slate-400">รองรับไฟล์ JPG, PNG (ไม่เกิน 5MB)</span>
+                    <span className="text-[11px] text-slate-400">รองรับไฟล์ JPG, PNG (ไม่เกิน 5MB)</span>
                   </div>
                   <input
                     type="text"
@@ -721,7 +721,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                   <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">
                     ขั้นตอนและเงื่อนไขการทำภารกิจ
                   </h4>
-                  <span className="text-[10.5px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200">
+                  <span className="text-[11px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200">
                     {quest.steps?.length || 3} ขั้นตอน
                   </span>
                 </div>
@@ -758,7 +758,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                   <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">
                     ของรางวัลเมื่อทำสำเร็จ
                   </h4>
-                  <span className="text-[10px] font-black uppercase tracking-wider text-purple-800 bg-purple-100 px-2.5 py-0.5 rounded-full">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-purple-800 bg-purple-100 px-2.5 py-0.5 rounded-full">
                     Reward Unlocks
                   </span>
                 </div>
@@ -769,7 +769,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                       {quest.badgeIcon || '🏅'}
                     </div>
                     <div className="min-w-0">
-                      <span className="text-[10px] font-bold text-slate-400 block">เหรียญตราเกียรติยศ</span>
+                      <span className="text-[11px] font-bold text-slate-400 block">เหรียญตราเกียรติยศ</span>
                       <span className="text-xs sm:text-sm font-extrabold text-slate-800 truncate block">{quest.badgeLabel}</span>
                     </div>
                   </div>
@@ -779,7 +779,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                       <Zap className="w-5 h-5 text-amber-600 fill-amber-500" />
                     </div>
                     <div className="min-w-0">
-                      <span className="text-[10px] font-bold text-slate-400 block">แต้มและคะแนน XP ส่วนกลาง</span>
+                      <span className="text-[11px] font-bold text-slate-400 block">แต้มและคะแนน XP ส่วนกลาง</span>
                       <span className="text-xs sm:text-sm font-extrabold text-slate-800">+{quest.rewardPoints || 300} XP Points</span>
                     </div>
                   </div>
@@ -797,7 +797,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                           สิทธิพิเศษเฉพาะแบรนด์พาร์ทเนอร์ (Brand-Exclusive Privilege)
                         </span>
                       </div>
-                      <span className="text-[10px] font-extrabold text-amber-950 bg-amber-100/90 px-2.5 py-0.5 rounded-full border border-amber-300/80 flex items-center gap-1 shadow-2xs">
+                      <span className="text-[11px] font-extrabold text-amber-950 bg-amber-100/90 px-2.5 py-0.5 rounded-full border border-amber-300/80 flex items-center gap-1 shadow-2xs">
                         <Crown className="w-3 h-3 text-amber-600 fill-amber-500 shrink-0" />
                         <span>Official • {brandReward.partnerName}</span>
                       </span>
@@ -811,7 +811,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                         {brandReward.exclusiveNotice}
                       </p>
                       {brandReward.terms && (
-                        <p className="text-[10.5px] text-slate-500 pt-0.5">
+                        <p className="text-[11px] text-slate-500 pt-0.5">
                           เงื่อนไข: {brandReward.terms}
                         </p>
                       )}
@@ -831,7 +831,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                           สิทธิ์แลกของรางวัลศูนย์กลาง (Universal Hub Rewards)
                         </span>
                       </div>
-                      <span className="text-[10px] font-extrabold text-purple-900 bg-purple-100/90 px-2.5 py-0.5 rounded-full border border-purple-300/80 flex items-center gap-1 shadow-2xs">
+                      <span className="text-[11px] font-extrabold text-purple-900 bg-purple-100/90 px-2.5 py-0.5 rounded-full border border-purple-300/80 flex items-center gap-1 shadow-2xs">
                         <Crown className="w-3 h-3 text-purple-700 shrink-0" />
                         <span>Official • Chill & Connect</span>
                       </span>
@@ -844,7 +844,7 @@ export const JoinChallengeModal: React.FC<JoinChallengeModalProps> = ({
                       <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
                         {brandReward.hubRewardNote}
                       </p>
-                      <div className="pt-1 text-[10.5px] text-purple-800 font-semibold">
+                      <div className="pt-1 text-[11px] text-purple-800 font-semibold">
                         <span>อิสระเต็มที่: นำแต้มไปเลือกของรางวัลใดก็ได้ในหน้ารวม /rewards ไม่ติดเงื่อนไขแบรนด์</span>
                       </div>
                     </div>

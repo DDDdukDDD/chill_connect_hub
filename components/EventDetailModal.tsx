@@ -7,6 +7,7 @@ import { X, Calendar, MapPin, Users, Heart, Share2, CheckCircle2, ShieldCheck, C
 import { ReportSafetyModal } from './ReportSafetyModal';
 import { ProfileModal } from './ProfileModal';
 import { ETicketModal } from './ETicketModal';
+import { activityActions } from '@/lib/useMyActivity';
 import { getConnectedUserIds, toggleUserConnect } from '@/data/profilesData';
 
 interface EventDetailModalProps {
@@ -52,6 +53,8 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [showConfirmJoinModal, setShowConfirmJoinModal] = useState(false);
   const [showConfirmCancelModal, setShowConfirmCancelModal] = useState(false);
+  const [joinError, setJoinError] = useState('');
+  const [isJoinBusy, setIsJoinBusy] = useState(false);
   const [showSubForm, setShowSubForm] = useState(false);
   const [subTitleInput, setSubTitleInput] = useState('');
   const [subTimeInput, setSubTimeInput] = useState('14:00 น.');
@@ -76,7 +79,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
       title: 'ชวนเดินดูโซนนิยายแปล & หนังสือประวัติศาสตร์',
       creatorName: 'คุณมายด์',
       isCreator: false,
-      date: '28 มี.ค. 2026',
+      date: '28 มี.ค. 2569',
       time: '14:00 น.',
       membersCount: '2/4 คน',
       meetupPoint: 'หน้าบูธ B02 โซนสำนักพิมพ์มติชน',
@@ -89,7 +92,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
       title: 'หาเพื่อนแวะจิบกาแฟโซน Craft Drip ชิลล์ๆ',
       creatorName: 'คุณน็อต',
       isCreator: false,
-      date: '29 มี.ค. 2026',
+      date: '29 มี.ค. 2569',
       time: '15:30 น.',
       membersCount: '3/5 คน',
       meetupPoint: 'หน้าร้านกาแฟ Slow Bar ชั้น 1',
@@ -124,15 +127,29 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
       onRequireLogin();
       return;
     }
+    setJoinError('');
     setShowConfirmJoinModal(true);
   };
 
-  const handleExecuteJoin = () => {
+  // The server decides (seats left, event ended, account verified); the page updates only after it agrees
+  const handleExecuteJoin = async () => {
+    if (isJoinBusy) return;
+    setIsJoinBusy(true);
+    setJoinError('');
+    const result = await activityActions.join(event.id);
+    setIsJoinBusy(false);
+    if (!result.ok) return setJoinError(result.message);
     setShowConfirmJoinModal(false);
-    onJoinSuccess(event.id);
+    if (result.status !== 'already_joined') onJoinSuccess(event.id);
   };
 
-  const handleExecuteLeave = () => {
+  const handleExecuteLeave = async () => {
+    if (isJoinBusy) return;
+    setIsJoinBusy(true);
+    setJoinError('');
+    const result = await activityActions.leave(event.id);
+    setIsJoinBusy(false);
+    if (!result.ok) return setJoinError(result.message);
     setShowConfirmCancelModal(false);
     if (onLeaveSuccess) {
       onLeaveSuccess(event.id);
@@ -1287,6 +1304,15 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                 {isPublicVenue ? 'บันทึกอีเวนต์ลง MyHub พร้อมแจ้งเตือนกำหนดการจัดงาน' : 'ร่วมกิจกรรมและพบปะเพื่อนใหม่ในบรรยากาศที่เป็นกันเองและปลอดภัย'}
               </p>
             </div>
+
+            {joinError && (
+              <div role="alert" className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-sm font-bold">
+                {joinError}
+                {/ยืนยันอีเมล|รับคำมั่น/.test(joinError) && (
+                  <Link href="/profile#trust" className="ml-2 underline text-rose-800 whitespace-nowrap">ไปที่โปรไฟล์</Link>
+                )}
+              </div>
+            )}
 
             {/* Editorial Reservation Pass Card */}
             <div className="bg-[#FAF7F2] rounded-3xl p-5 sm:p-6 border border-[#E8E2D8] space-y-4 shadow-2xs relative">

@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server';
 import { createAdminEvent } from '@/lib/eventsStore';
 import { db } from '@/lib/db';
 import { hasAdminCredentials } from '@/lib/adminApiAuth';
+import { joinEvent } from '@/lib/members/activity';
 import { getSessionMember } from '@/lib/members/session';
+import { MemberAuthError } from '@/lib/members/accounts';
+import { guardCreator } from '@/lib/members/submissions';
 
 function parsePositiveInteger(value: string | null, fallback: number, max?: number): number {
   if (!value) return fallback;
@@ -129,18 +132,15 @@ export async function POST(req: Request) {
 
     // ── Action: Atomic Join Event (High-Concurrency Safe) ──
     if (body.action === 'join') {
-      const { eventId, participant } = body;
-      if (!eventId || !participant || !participant.userId) {
-        return NextResponse.json(
-          { success: false, message: 'ข้อมูลไม่ครบถ้วน (ต้องการ eventId และข้อมูลผู้ใช้)' },
-          { status: 400 }
-        );
+      // Who joins comes from the session, never from the request body (same rules as /api/auth/member/activity)
+      const joiner = await getSessionMember(req);
+      if (!joiner) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }, { status: 401 });
+      if (typeof body.eventId !== 'string' || !body.eventId) {
+        return NextResponse.json({ success: false, message: 'ข้อมูลไม่ครบถ้วน (ต้องการ eventId)' }, { status: 400 });
       }
-
-      const joinResult = await db.atomicJoinEvent(eventId, participant);
-      return NextResponse.json(joinResult, {
-        status: joinResult.success ? 200 : 409,
-      });
+      const joinResult = await joinEvent(joiner, body.eventId);
+      const joined = joinResult.status === 'joined' || joinResult.status === 'already_joined';
+      return NextResponse.json({ success: joined, ...joinResult, updatedEvent: joinResult.event }, { status: joined ? 200 : joinResult.status === 'not_allowed' ? 403 : 409 });
     }
 
     // ── Action: Create Event ──
@@ -171,8 +171,24 @@ export async function POST(req: Request) {
     // Who may publish without review: staff, and members whose host application was approved (community events only).
     // Everything else waits in the admin review queue, so a new account cannot put a meetup in front of people.
     const member = isAdmin ? null : await getSessionMember(req);
+    if (!isAdmin) {
+      if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }, { status: 401 });
+      try {
+        guardCreator(member);
+      } catch (error) {
+        if (error instanceof MemberAuthError) return NextResponse.json({ success: false, message: error.message }, { status: error.status });
+        throw error;
+      }
+      // Fairs come from approved organizers and venues only
+      if (isPublicVenue && !(member.hostApplication?.status === 'approved' && ['organizer', 'venue'].includes(member.hostApplication.kind))) {
+        return NextResponse.json({ success: false, message: 'งานแฟร์สร้างได้เฉพาะผู้จัดงานหรือเจ้าของพื้นที่ที่ทีมงานอนุมัติแล้ว' }, { status: 403 });
+      }
+    }
     const isApprovedHost = member?.hostApplication?.status === 'approved' && member.status === 'active';
     const approvalStatus = isAdmin || (!isPublicVenue && isApprovedHost) ? 'approved' : 'pending';
+
+    // Members' events carry no private contact channel: people talk in the event's group chat
+    if (!isAdmin) delete eventData.contactChannel;
 
     const savedEvent = await createAdminEvent({
       ...eventData,
@@ -183,6 +199,9 @@ export async function POST(req: Request) {
       ...(member && { createdByMemberId: member.id }),
       createdAt: new Date().toISOString(),
     });
+
+    // The creator is the first participant of their own event
+    if (member) await db.atomicJoinEvent(savedEvent.id, { userId: member.id, userName: member.displayName, userAvatar: member.avatarUrl, note: 'host' }).catch(() => undefined);
 
     return NextResponse.json({
       success: true,

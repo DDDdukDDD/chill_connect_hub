@@ -1,413 +1,211 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import { X, Send, Users, ShieldCheck, Sparkles, MessageCircle, MapPin, Calendar, Smile, Flag, ShieldAlert, Lock, AlertTriangle, Camera, Loader2 } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import { Send, Trash2, X } from 'lucide-react';
 import { EventItem } from '@/data/mockData';
-import { compressImageToDataUrl } from '@/lib/media/compressor';
-import { ReportSafetyModal } from './ReportSafetyModal';
-import { ProfileModal } from './ProfileModal';
+import { nameInitial } from '@/lib/displayName';
 
 interface ChatMessage {
   id: string;
-  senderName: string;
-  senderAvatar: string;
-  isHost?: boolean;
-  isMe?: boolean;
-  time: string;
+  authorId: string | null;
+  authorName: string;
+  authorAvatar: string;
   text: string;
-  imageUrl?: string;
+  createdAt: string;
+  isMine: boolean;
 }
 
 interface GroupChatModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /** The event whose participants are chatting */
   event: EventItem | null;
+  /** A fair meet-up group (grp_…) instead of the whole event */
+  roomId?: string;
+  roomTitle?: string;
 }
 
-export const GroupChatModal: React.FC<GroupChatModalProps> = ({
-  isOpen,
-  onClose,
-  event,
-}) => {
-  const [inputText, setInputText] = useState('');
+const POLL_MS = 4000;
+const clock = (iso: string) => new Date(iso).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+
+/**
+ * Group chat for the people who joined an event (or a fair meet-up group).
+ * Messages live on the server (/api/chat/{roomId}); the list refreshes every few seconds while open.
+ */
+export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose, event, roomId, roomTitle }) => {
+  const room = roomId || event?.id || '';
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [pendingImage, setPendingImage] = useState<string | null>(null);
-  const [isCompressingChatImage, setIsCompressingChatImage] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-  const [reportToast, setReportToast] = useState<string | null>(null);
-  const [selectedProfileQuery, setSelectedProfileQuery] = useState<string | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [info, setInfo] = useState<{ title: string; members: number } | null>(null);
+  const [state, setState] = useState<'loading' | 'ready' | 'denied'>('loading');
+  const [notice, setNotice] = useState('');
+  const [text, setText] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const lastSeen = useRef('');
 
-  // Initialize realistic mock messages when opening chat
   useEffect(() => {
-    if (event) {
-      let subInfo: any = null;
-      if (typeof window !== 'undefined') {
-        try {
-          const stored = JSON.parse(localStorage.getItem('joinedSubActivities') || '{}');
-          if (stored[event.id]) {
-            subInfo = stored[event.id];
-          }
-        } catch (e) {
-          console.log(e);
+    if (!isOpen || !room) return;
+    let active = true;
+    let opened = false;
+    lastSeen.current = '';
+    setMessages([]);
+    setState('loading');
+    setNotice('');
+    const load = async () => {
+      const after = lastSeen.current ? `?after=${encodeURIComponent(lastSeen.current)}` : '';
+      const res = await fetch(`/api/chat/${encodeURIComponent(room)}${after}`, { cache: 'no-store' }).catch(() => null);
+      const json = await res?.json().catch(() => null);
+      if (!active) return;
+      if (!res || !json?.success) {
+        // A refusal on the first load closes the room; a failed refresh just keeps what is shown
+        if (!opened) {
+          setState('denied');
+          setNotice(json?.message || 'เปิดแชตไม่ได้ ลองอีกครั้งนะ');
         }
+        return;
       }
-
-      const hostDisplayName = subInfo?.creatorName || event.hostName || 'โฮสต์ประจำกิจกรรม';
-      const welcomeText = subInfo
-        ? `ยินดีต้อนรับสู่กลุ่ม "${subInfo.subTitle}" ครับ! 🌿 จุดนัดพบ: ${subInfo.meetupPoint || 'ล็อบบี้หน้างาน'} เวลา ${subInfo.subTime} ใครมาถึงแล้วทักแชทบอกได้เลยครับ 😊`
-        : `ยินดีต้อนรับทุกคนสู่ "${event.title}" ครับ! 🌿 กิจกรรมนี้เป็นกันเองมาก ใครมาคนเดียวไม่ต้องเกร็งน้า มีจุดนัดพบชัดเจนครับ`;
-
-      setMessages([
-        {
-          id: 'msg-1',
-          senderName: hostDisplayName,
-          senderAvatar: event.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80',
-          isHost: true,
-          time: '14:20 น.',
-          text: welcomeText,
-        },
-        {
-          id: 'msg-2',
-          senderName: 'กวินท์ (Nut)',
-          senderAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80',
-          time: '14:25 น.',
-          text: 'สวัสดีครับทุกคน! ผมมาคนเดียวครั้งแรก ตื่นเต้นเลยครับ เจอกันหน้างานนะครับ 😊',
-        },
-        {
-          id: 'msg-3',
-          senderName: 'แพรววา (Praew)',
-          senderAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80',
-          time: '14:32 น.',
-          text: 'สวัสดีค่ะทุกคน เดี๋ยววันงานเราเตรียมขนมไปแบ่งด้วยนะคะ 🎉',
-        },
-      ]);
-    }
-  }, [event]);
-
-  // Scroll to bottom on new message
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  if (!isOpen || !event) return null;
-
-  const handleChatPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      setIsCompressingChatImage(true);
-      const result = await compressImageToDataUrl(file, {
-        maxWidth: 1200,
-        maxHeight: 1200,
-        quality: 0.80,
-        targetMimeType: 'image/webp',
-      });
-      setPendingImage(result.dataUrl);
-    } catch (err) {
-      console.error('Chat photo upload error:', err);
-    } finally {
-      setIsCompressingChatImage(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+      opened = true;
+      setInfo(json.room);
+      setState('ready');
+      const fresh: ChatMessage[] = json.messages ?? [];
+      if (fresh.length) {
+        lastSeen.current = fresh[fresh.length - 1].createdAt;
+        setMessages((prev) => [...prev, ...fresh.filter((m) => !prev.some((p) => p.id === m.id))]);
       }
-    }
-  };
-
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputText.trim() && !pendingImage) return;
-
-    const now = new Date();
-    const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} น.`;
-
-    const newMsg: ChatMessage = {
-      id: `msg-${Date.now()}`,
-      senderName: 'ฉัน (คุณ)',
-      senderAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80',
-      isMe: true,
-      time: timeStr,
-      text: inputText.trim(),
-      imageUrl: pendingImage || undefined,
     };
+    void load();
+    const timer = setInterval(() => document.visibilityState === 'visible' && void load(), POLL_MS);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [isOpen, room]);
 
-    setMessages((prev) => [...prev, newMsg]);
-    setInputText('');
-    setPendingImage(null);
+  useEffect(() => {
+    // Keep the newest message in view
+    listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
+  }, [messages.length]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen, onClose]);
+
+  if (!isOpen || !room) return null;
+
+  const post = async (body: Record<string, unknown>) => {
+    const res = await fetch(`/api/chat/${encodeURIComponent(room)}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(() => null);
+    const json = await res?.json().catch(() => null);
+    return { ok: Boolean(res?.ok && json?.success), message: (json?.message as string) || 'ทำรายการไม่สำเร็จ ลองอีกครั้งนะ', json };
   };
 
-  const handleQuickPrompt = (prompt: string) => {
-    setInputText(prompt);
+  const send = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const value = text.trim();
+    if (!value || isSending) return;
+    setIsSending(true);
+    setNotice('');
+    const result = await post({ text: value });
+    setIsSending(false);
+    if (!result.ok) return setNotice(result.message);
+    setText('');
+    // Show it straight away; the next refresh confirms it
+    const mine: ChatMessage = { id: result.json.message.id, authorId: 'me', authorName: 'คุณ', authorAvatar: '', text: value, createdAt: result.json.message.createdAt, isMine: true };
+    lastSeen.current = mine.createdAt;
+    setMessages((prev) => [...prev, mine]);
   };
+
+  const remove = async (id: string) => {
+    const result = await post({ action: 'delete', id });
+    if (!result.ok) return setNotice(result.message);
+    setMessages((prev) => prev.filter((m) => m.id !== id));
+  };
+
+  const title = roomTitle || info?.title || event?.title || 'แชตกลุ่ม';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center sm:p-5 bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col h-[600px] max-h-[90vh] animate-scale-up"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="group-chat-title"
+        className="bg-white w-full sm:max-w-lg h-[88dvh] sm:h-[78vh] flex flex-col rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Chat Top Header */}
-        <div className="bg-[#1E293B] text-white p-4 flex items-center justify-between border-b border-slate-700/80 shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0">
-              <MessageCircle className="w-5 h-5" />
-            </div>
-
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <h3 className="font-extrabold text-sm sm:text-base text-white truncate">
-                  {event.title}
-                </h3>
-              </div>
-              <p className="text-[11px] text-slate-300 flex items-center gap-1.5 mt-0.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block" />
-                <span>ห้องแชตกลุ่มสมาชิก • โฮสต์: {event.hostName}</span>
-              </p>
-            </div>
+        <header className="shrink-0 flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 border-b border-slate-100">
+          <div className="min-w-0">
+            <h3 id="group-chat-title" className="text-base font-extrabold text-slate-900 truncate">{title}</h3>
+            <p className="text-xs font-medium text-slate-500">{info ? `แชตของคนที่เข้าร่วม · ${info.members} คน` : 'แชตของคนที่เข้าร่วม'}</p>
           </div>
+          <button type="button" onClick={onClose} className="shrink-0 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer" aria-label="ปิด">
+            <X className="w-5 h-5" />
+          </button>
+        </header>
 
-          <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              type="button"
-              onClick={() => setIsReportModalOpen(true)}
-              className="text-[11px] font-bold text-rose-300 hover:text-white bg-rose-950/50 hover:bg-rose-900 border border-rose-700/60 px-2.5 py-1 rounded-full flex items-center gap-1 transition-all cursor-pointer active:scale-95"
-              title="รายงานความไม่ปลอดภัย / พฤติกรรมที่ไม่เหมาะสม"
-            >
-              <Flag className="w-3 h-3" />
-              <span className="hidden sm:inline">รายงาน</span>
-            </button>
-
-            <button
-              onClick={onClose}
-              className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-colors cursor-pointer shrink-0"
-              title="ปิดหน้าต่างแชต"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Member Avatars Strip */}
-        <div className="bg-slate-50 px-4 py-2 border-b border-slate-200 flex items-center justify-between text-xs text-slate-500 shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-[#1E293B] text-[11px]">สมาชิกในกลุ่ม:</span>
-            <div className="flex -space-x-1.5 overflow-hidden">
-              <img
-                src={event.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
-                alt="Host"
-                className="inline-block h-6 w-6 rounded-full ring-2 ring-white object-cover"
-                title={`โฮสต์: ${event.hostName}`}
-              />
-              <img
-                src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80"
-                alt="Nut"
-                className="inline-block h-6 w-6 rounded-full ring-2 ring-white object-cover"
-              />
-              <img
-                src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80"
-                alt="Praew"
-                className="inline-block h-6 w-6 rounded-full ring-2 ring-white object-cover"
-              />
-            </div>
-          </div>
-
-          <span className="text-[10px] font-extrabold bg-orange-50 text-[#D04A1B] px-2.5 py-0.5 rounded-full border border-orange-200 flex items-center gap-1">
-            <ShieldCheck className="w-3 h-3 text-[#D04A1B]" />
-            <span>คอมมูนิตี้ปลอดภัย</span>
-          </span>
-        </div>
-
-        {/* Message Thread Scroll Area */}
-        <div className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-slate-50/50">
-          {/* Pinned Safety Banner */}
-          <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-amber-50 border border-emerald-200/80 rounded-2xl p-2.5 text-[11px] text-slate-700 flex items-start gap-2 shadow-2xs">
-            <ShieldAlert className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
-            <div className="min-w-0 space-y-0.5 text-left">
-              <p className="font-bold text-[#1E293B] text-[11px] flex items-center gap-1">
-                <span>🛡️ มาตรการความปลอดภัย (Trust & Safety):</span>
-              </p>
-              <p className="text-[10.5px] text-slate-600 leading-relaxed">
-                โปรดนัดพบในพื้นที่เปิดของงานเสมอ ห้ามโอนเงินหรือให้ข้อมูลส่วนตัวทางการเงินนอกระบบ หากพบพฤติกรรมน่าสงสัยสามารถกด <strong>"รายงาน"</strong> ได้ทันที
-              </p>
-            </div>
-          </div>
-
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex gap-2.5 ${msg.isMe ? 'flex-row-reverse' : 'flex-row'}`}
-            >
-              {!msg.isMe && (
-                <img
-                  src={msg.senderAvatar}
-                  alt={msg.senderName}
-                  onClick={() => setSelectedProfileQuery(msg.senderName)}
-                  className="w-8 h-8 rounded-full object-cover shrink-0 border border-slate-200 mt-1 cursor-pointer hover:scale-105 transition-transform"
-                  title={`คลิกเพื่อดูโปรไฟล์ ${msg.senderName}`}
-                />
-              )}
-
-              <div className={`space-y-1 max-w-[80%] ${msg.isMe ? 'items-end' : 'items-start'}`}>
-                <div className={`flex items-center gap-1.5 text-[10px] ${msg.isMe ? 'justify-end' : 'justify-start'}`}>
-                  <span
-                    onClick={() => !msg.isMe && setSelectedProfileQuery(msg.senderName)}
-                    className={`font-bold text-slate-700 ${!msg.isMe ? 'cursor-pointer hover:text-slate-900 transition-colors' : ''}`}
-                  >
-                    {msg.senderName}
-                  </span>
-                  {msg.isHost && (
-                    <span className="bg-emerald-100 text-emerald-800 text-[9px] font-extrabold px-1.5 py-0.2 rounded-md flex items-center gap-0.5">
-                      <ShieldCheck className="w-2.5 h-2.5 text-emerald-700" />
-                      <span>โฮสต์ยืนยันตัวตน</span>
-                    </span>
+        <div ref={listRef} className="flex-1 overflow-y-auto px-4 sm:px-5 py-4 space-y-3 bg-slate-50/60" aria-live="polite">
+          {state === 'loading' && <p className="text-sm font-medium text-slate-500 text-center py-8">กำลังเปิดแชต…</p>}
+          {state === 'ready' && messages.length === 0 && (
+            <p className="text-sm font-medium text-slate-500 text-center py-8">ยังไม่มีข้อความ ทักทายกันก่อนวันงานได้เลย</p>
+          )}
+          {messages.map((m) => (
+            <div key={m.id} className={`flex items-end gap-2 ${m.isMine ? 'flex-row-reverse' : ''}`}>
+              {!m.isMine &&
+                (m.authorAvatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- member upload
+                  <img src={m.authorAvatar} alt="" className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0" />
+                ) : (
+                  <span className="w-8 h-8 rounded-full bg-slate-200 text-slate-600 text-sm font-bold flex items-center justify-center shrink-0" aria-hidden="true">{nameInitial(m.authorName)}</span>
+                ))}
+              <div className={`max-w-[78%] ${m.isMine ? 'items-end' : 'items-start'} flex flex-col`}>
+                {!m.isMine &&
+                  (m.authorId ? (
+                    <Link href={`/profile?id=${m.authorId}`} className="text-xs font-bold text-slate-700 hover:text-[#2563EB] mb-0.5">{m.authorName}</Link>
+                  ) : (
+                    <span className="text-xs font-bold text-slate-700 mb-0.5">{m.authorName}</span>
+                  ))}
+                <p className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words ${m.isMine ? 'bg-[#2563EB] text-white rounded-br-md' : 'bg-white text-slate-800 border border-slate-200 rounded-bl-md'}`}>{m.text}</p>
+                <span className="mt-1 flex items-center gap-2 text-[11px] font-medium text-slate-500">
+                  {clock(m.createdAt)}
+                  {m.isMine && (
+                    <button type="button" onClick={() => void remove(m.id)} className="inline-flex items-center gap-1 hover:text-rose-600 cursor-pointer" aria-label="ลบข้อความนี้">
+                      <Trash2 className="w-3 h-3" aria-hidden="true" />
+                      ลบ
+                    </button>
                   )}
-                  <span className="text-slate-400">{msg.time}</span>
-                </div>
-
-                <div
-                  className={`p-3 rounded-2xl text-xs leading-relaxed ${
-                    msg.isMe
-                      ? 'bg-slate-900 text-white rounded-tr-xs shadow-xs'
-                      : 'bg-white text-slate-800 border border-slate-200/90 rounded-tl-xs shadow-xs'
-                  }`}
-                >
-                  {msg.imageUrl && (
-                    <div className="mb-2 rounded-xl overflow-hidden max-w-[220px]">
-                      <img
-                        src={msg.imageUrl}
-                        alt="Chat photo"
-                        className="w-full h-auto max-h-[200px] object-cover rounded-xl border border-white/20 shadow-xs"
-                      />
-                    </div>
-                  )}
-                  {msg.text && <p>{msg.text}</p>}
-                </div>
+                </span>
               </div>
             </div>
           ))}
-          <div ref={messagesEndRef} />
         </div>
 
-        {/* Quick Suggested Prompts */}
-        <div className="px-3 pt-2 pb-1 bg-white border-t border-slate-100 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
-          {[
-            '👋 สวัสดีครับทุกคน ยินดีที่ได้รู้จักครับ!',
-            '📍 เจอกันตรงจุดไหนของงานดีครับ?',
-            '🙋 มีใครมาคนเดียวบ้างไหมครับ?',
-          ].map((prompt, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => handleQuickPrompt(prompt)}
-              className="text-[10px] font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-full whitespace-nowrap transition-colors cursor-pointer shrink-0"
-            >
-              {prompt}
-            </button>
-          ))}
-        </div>
-
-        {/* Pending Image Attachment Bar */}
-        {(pendingImage || isCompressingChatImage) && (
-          <div className="px-3 py-2 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0 animate-fade-in">
-            <div className="flex items-center gap-2">
-              {isCompressingChatImage ? (
-                <div className="flex items-center gap-2 text-xs text-slate-500 font-bold">
-                  <Loader2 className="w-4 h-4 animate-spin text-[#2563EB]" />
-                  <span>กำลังบีบอัดรูปภาพเป็น WebP...</span>
-                </div>
-              ) : (
-                pendingImage && (
-                  <div className="flex items-center gap-2">
-                    <div className="w-10 h-10 rounded-lg overflow-hidden border border-slate-300 shrink-0">
-                      <img src={pendingImage} alt="Attachment" className="w-full h-full object-cover" />
-                    </div>
-                    <div>
-                      <span className="text-xs font-bold text-slate-800 block">แนบรูปภาพแล้ว</span>
-                      <span className="text-[10px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.2 rounded">WebP Auto-Compressed ⚡</span>
-                    </div>
-                  </div>
-                )
-              )}
-            </div>
-
-            {pendingImage && !isCompressingChatImage && (
-              <button
-                type="button"
-                onClick={() => setPendingImage(null)}
-                className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
-                title="ลบรูปภาพที่แนบ"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
+        {notice && (
+          <p role="alert" className="shrink-0 mx-4 sm:mx-5 mt-2 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-sm font-bold">
+            {notice}
+            {/ยืนยันอีเมล|รับคำมั่น/.test(notice) && <Link href="/profile#trust" className="ml-2 underline whitespace-nowrap">ไปที่โปรไฟล์</Link>}
+          </p>
         )}
 
-        {/* Chat Input Bar */}
-        <form
-          onSubmit={handleSendMessage}
-          className="p-3 bg-white border-t border-slate-200 flex items-center gap-2 shrink-0"
-        >
-          <label
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer shrink-0 ${
-              isCompressingChatImage
-                ? 'bg-slate-200 text-slate-400'
-                : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 active:scale-95'
-            }`}
-            title="แนบรูปภาพพิกัดหรือบรรยากาศ (WebP Auto-Compress)"
-          >
-            {isCompressingChatImage ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Camera className="w-4 h-4" />
-            )}
+        {state !== 'denied' && (
+          <form onSubmit={send} className="shrink-0 flex items-center gap-2 px-4 sm:px-5 py-3 border-t border-slate-100 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            <label htmlFor="group-chat-input" className="sr-only">ข้อความ</label>
             <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/avif"
-              disabled={isCompressingChatImage}
-              onChange={handleChatPhotoUpload}
-              className="hidden"
+              id="group-chat-input"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              maxLength={500}
+              autoComplete="off"
+              placeholder="พิมพ์ข้อความ"
+              className="flex-1 min-w-0 bg-white border border-slate-300 rounded-full px-4 py-3 text-base sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] placeholder:text-slate-400"
             />
-          </label>
-
-          <input
-            type="text"
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            placeholder="พิมพ์ข้อความทักทายเพื่อนๆ ในตี้..."
-            className="flex-1 bg-slate-100 border border-slate-200 rounded-full px-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white transition-all"
-          />
-
-          <button
-            type="submit"
-            disabled={(!inputText.trim() && !pendingImage) || isCompressingChatImage}
-            className="w-10 h-10 rounded-full bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-white flex items-center justify-center transition-all shadow-2xs hover:shadow-md active:scale-95 cursor-pointer shrink-0"
-            title="ส่งข้อความ"
-          >
-            <Send className="w-4 h-4" />
-          </button>
-        </form>
+            <button type="submit" disabled={!text.trim() || isSending} className="shrink-0 w-12 h-12 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] disabled:bg-slate-200 disabled:text-slate-400 text-white flex items-center justify-center cursor-pointer disabled:cursor-not-allowed" aria-label="ส่งข้อความ">
+              <Send className="w-5 h-5" aria-hidden="true" />
+            </button>
+          </form>
+        )}
       </div>
-
-      {/* Safety Report Modal */}
-      <ReportSafetyModal
-        isOpen={isReportModalOpen}
-        onClose={() => setIsReportModalOpen(false)}
-        targetTitle={event.title}
-        targetHostName={event.hostName}
-      />
-
-      {/* Quick Profile Modal */}
-      {selectedProfileQuery && (
-        <ProfileModal
-          isOpen={!!selectedProfileQuery}
-          onClose={() => setSelectedProfileQuery(null)}
-          targetProfileIdOrName={selectedProfileQuery}
-        />
-      )}
     </div>
   );
 };

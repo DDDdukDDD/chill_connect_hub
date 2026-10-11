@@ -1,3 +1,4 @@
+import { toBuddhistEra } from './dateUtils';
 import { AdminEventItem } from './eventsStore';
 import { ScrapedRawEvent } from './aiTagger';
 
@@ -35,12 +36,12 @@ export function isDuplicateEvent(
 ): { isDuplicate: boolean; matchedEvent?: AdminEventItem; reason?: string } {
   const rawNormTitle = normalizeText(raw.rawTitle);
   const rawNormLoc = normalizeText(raw.rawLocation);
-  const rawNormDate = normalizeText(raw.rawDate);
+  const rawNormDate = normalizeText(toBuddhistEra(raw.rawDate));
 
   for (const existing of existingEvents) {
     const existNormTitle = normalizeText(existing.title);
     const existNormLoc = normalizeText(existing.location);
-    const existNormDate = normalizeText(existing.date);
+    const existNormDate = normalizeText(toBuddhistEra(existing.date));
 
     // Rule 1: Exact Normalized Title Match
     if (rawNormTitle === existNormTitle) {

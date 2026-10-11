@@ -37,7 +37,6 @@ import type { LifestyleSpotItem } from '@/data/spotsData';
 import { nameInitial, tidyDisplayName } from '@/lib/displayName';
 import { compressImage } from '@/lib/media/compressor';
 import { resolveSpotImage } from '@/lib/spotImageResolver';
-import { useAuth, type UserRole } from '@/lib/useAuth';
 import { useMasterData } from '@/lib/useMasterData';
 import { memberActions, useMemberSession } from '@/lib/useMemberSession';
 
@@ -304,7 +303,6 @@ let finishedRun: FinishedRun | null = null;
 export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { preview: boolean; pledgeOnly?: boolean; returnTo: string }) {
   const router = useRouter();
   const session = useMemberSession();
-  const { handleSetRole } = useAuth();
   const master = useMasterData();
 
   const [saved] = useState(() => (finishedRun && finishedRun.preview === preview ? finishedRun : null));
@@ -517,8 +515,6 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
         } catch {
           /* storage unavailable */
         }
-        const previewRole: Record<OnboardingRole, UserRole> = { member: 'member', host: 'host', venue: 'venue_owner', organizer: 'organizer' };
-        handleSetRole(previewRole[role]);
       }
       setDone(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });

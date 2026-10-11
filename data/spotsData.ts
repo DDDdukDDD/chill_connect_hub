@@ -56,6 +56,9 @@ export interface LifestyleSpotItem {
   rejectionReason?: string;
   sourceName?: string;
   sourceUrl?: string;
+  /** Set by the server when a member suggested this place (it starts as a draft for staff to review) */
+  suggestedByMemberId?: string;
+  suggestedAt?: string;
   /** Official contact channels from the source (imported spots) */
   contact?: { phone?: string; website?: string; facebook?: string };
   /** Entry fee as published by the source, e.g. "คนไทย ผู้ใหญ่ 40 บาท · ต่างชาติ ผู้ใหญ่ 200 บาท" */

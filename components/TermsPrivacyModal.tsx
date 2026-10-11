@@ -234,7 +234,7 @@ export function LegalTabs({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) =>
   );
 }
 
-export const LEGAL_VERSION_NOTE = 'ฉบับร่าง ช่วงทดสอบระบบ ปรับปรุง ต.ค. 2026';
+export const LEGAL_VERSION_NOTE = 'ฉบับร่าง ช่วงทดสอบระบบ ปรับปรุง ต.ค. 2569';
 
 export function LegalBody({ tab }: { tab: Tab }) {
   return tab === 'terms' ? (

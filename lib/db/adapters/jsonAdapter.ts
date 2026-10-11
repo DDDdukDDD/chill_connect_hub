@@ -22,10 +22,25 @@ import {
 import { AsyncMutex } from '../mutex';
 import { readDatabase, updateDatabase } from '../databaseFile';
 import { normalizeStoredEvents } from '../../eventNormalization';
-import { rollSampleEventDate, rollSampleEventDates } from '../../sampleEventDates';
+import { rollSampleEventDate } from '../../sampleEventDates';
+import { toBuddhistEra } from '../../dateUtils';
 import { applyQuestLifecycle, upgradeLegacySeedQuests } from '../../questLifecycle';
 import type { AdminEventItem } from '../../eventsStore';
 import { cacheManager } from '../../cache';
+
+/** How an event is read: sample meetups rolled forward (lib/sampleEventDates.ts) and dates in the Buddhist Era */
+function shownEvent<T extends EventItem>(event: T): T {
+  const rolled = rollSampleEventDate(event);
+  const date = toBuddhistEra(rolled.date);
+  const endDate = toBuddhistEra(rolled.endDate);
+  return date === rolled.date && endDate === rolled.endDate ? rolled : { ...rolled, date, endDate };
+}
+const shownEvents = <T extends EventItem>(events: T[]): T[] => events.map(shownEvent);
+
+function shownQuest(quest: ChallengeQuest): ChallengeQuest {
+  const withLifecycle = applyQuestLifecycle(quest);
+  return { ...withLifecycle, startDate: toBuddhistEra(withLifecycle.startDate), endDate: toBuddhistEra(withLifecycle.endDate) };
+}
 import {
   filterEvents,
   filterSpots,
@@ -48,6 +63,16 @@ const IS_SERVERLESS = Boolean(
  * High-Performance JSON & Memory Adapter
  * Provides thread-safe, atomic operations with async mutex protection.
  */
+/** A short code that is easy to read aloud: no 0/O or 1/I, unique within the event */
+function newTicketCode(existing: ParticipantInfo[]): string {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  for (;;) {
+    let code = '';
+    for (let i = 0; i < 6; i++) code += alphabet[Math.floor(Math.random() * alphabet.length)];
+    if (!existing.some((p) => p.ticketCode === code)) return code;
+  }
+}
+
 export class JsonFileAdapter implements IDataRepository {
   private mutex = new AsyncMutex();
   private isInitialized = false;
@@ -175,7 +200,7 @@ export class JsonFileAdapter implements IDataRepository {
       async () => {
         await this.ensureInitialized();
         // Sample meetups roll forward on read so they never all expire (see lib/sampleEventDates.ts)
-        const filtered = filterEvents(rollSampleEventDates(this.events), params);
+        const filtered = filterEvents(shownEvents(this.events), params);
         return paginateArray(filtered, params?.page || 1, params?.limit || 12);
       },
       { ttlMs: 30 * 1000, tags: ['events'] }
@@ -189,7 +214,7 @@ export class JsonFileAdapter implements IDataRepository {
       async () => {
         await this.ensureInitialized();
         const event = this.events.find((e) => e.id === id);
-        return event ? rollSampleEventDate(event) : null;
+        return event ? shownEvent(event) : null;
       },
       { ttlMs: 60 * 1000, tags: ['events', `event:${id}`] }
     );
@@ -242,7 +267,7 @@ export class JsonFileAdapter implements IDataRepository {
 
   public async listAllEvents(): Promise<EventItem[]> {
     await this.ensureInitialized();
-    return rollSampleEventDates(this.events);
+    return shownEvents(this.events);
   }
 
   public async createEvents(data: CreateEventDTO[]): Promise<EventItem[]> {
@@ -304,7 +329,8 @@ export class JsonFileAdapter implements IDataRepository {
         return { success: false, message: 'ไม่พบกิจกรรมที่ระบุ', status: 'not_found' };
       }
 
-      if (isEventEnded(event)) {
+      // Sample meetups are shown with a rolled-forward date; judge "ended" by the date people see
+      if (isEventEnded(rollSampleEventDate(event))) {
         return { success: false, message: 'กิจกรรมนี้สิ้นสุดแล้ว', status: 'event_ended' };
       }
 
@@ -344,6 +370,7 @@ export class JsonFileAdapter implements IDataRepository {
       list.push({
         ...participant,
         joinedAt: participant.joinedAt || new Date().toISOString(),
+        ticketCode: newTicketCode(list),
       });
       this.participants[eventId] = list;
 
@@ -382,6 +409,74 @@ export class JsonFileAdapter implements IDataRepository {
       await this.persistEvents();
       cacheManager.invalidateTags(['events', `event:${eventId}`]);
       return { success: true, message: 'ยกเลิกการเข้าร่วมเรียบร้อย' };
+    });
+  }
+
+  public async getParticipant(eventId: string, userId: string): Promise<ParticipantInfo | null> {
+    await this.ensureInitialized();
+    const list = this.participants[eventId] ?? [];
+    const mine = list.find((p) => p.userId === userId);
+    if (!mine) return null;
+    if (!mine.ticketCode) {
+      await this.mutex.runExclusive(async () => {
+        if (!mine.ticketCode) {
+          mine.ticketCode = newTicketCode(list);
+          await this.persistEvents();
+        }
+      });
+    }
+    return { ...mine };
+  }
+
+  public async setCheckIn(eventId: string, target: { code?: string; userId?: string }, checkedIn: boolean): Promise<ParticipantInfo | null> {
+    await this.ensureInitialized();
+    return this.mutex.runExclusive(async () => {
+      const list = this.participants[eventId] ?? [];
+      const code = target.code?.trim().toUpperCase();
+      const found = list.find((p) => (target.userId ? p.userId === target.userId : Boolean(code) && p.ticketCode === code));
+      if (!found) return null;
+      if (checkedIn) found.checkedInAt = found.checkedInAt ?? new Date().toISOString();
+      else delete found.checkedInAt;
+      await this.persistEvents();
+      return { ...found };
+    });
+  }
+
+  public async listParticipations(userId: string): Promise<{ eventId: string; joinedAt?: string; note?: string }[]> {
+    await this.ensureInitialized();
+    const found: { eventId: string; joinedAt?: string; note?: string }[] = [];
+    for (const [eventId, list] of Object.entries(this.participants)) {
+      const mine = list.find((p) => p.userId === userId);
+      if (mine) found.push({ eventId, joinedAt: mine.joinedAt, note: mine.note });
+    }
+    return found.sort((a, b) => (b.joinedAt ?? '').localeCompare(a.joinedAt ?? ''));
+  }
+
+  public async listParticipants(eventId: string): Promise<ParticipantInfo[]> {
+    await this.ensureInitialized();
+    return [...(this.participants[eventId] ?? [])];
+  }
+
+  public async removeParticipantEverywhere(userId: string): Promise<number> {
+    await this.ensureInitialized();
+    return this.mutex.runExclusive(async () => {
+      let removed = 0;
+      for (const [eventId, list] of Object.entries(this.participants)) {
+        const idx = list.findIndex((p) => p.userId === userId);
+        if (idx === -1) continue;
+        list.splice(idx, 1);
+        removed += 1;
+        const event = this.events.find((e) => e.id === eventId);
+        if (!event) continue;
+        event.participantsCount = Math.max(0, (event.participantsCount || 1) - 1);
+        if (event.participantsCount < (event.maxParticipants || 10) && event.status === 'full') event.status = 'recruiting';
+        cacheManager.invalidateTags([`event:${eventId}`]);
+      }
+      if (removed) {
+        await this.persistEvents();
+        cacheManager.invalidateTags(['events']);
+      }
+      return removed;
     });
   }
 
@@ -500,7 +595,7 @@ export class JsonFileAdapter implements IDataRepository {
       async () => {
         await this.ensureInitialized();
         // Lifecycle (daysRemaining / ended) is derived from endDate before filtering by status
-        const filtered = filterQuests(this.quests.map((quest) => applyQuestLifecycle(quest)), params);
+        const filtered = filterQuests(this.quests.map(shownQuest), params);
         return paginateArray(filtered, params?.page || 1, params?.limit || 12);
       },
       { ttlMs: 60 * 1000, tags: ['quests'] }
@@ -514,7 +609,7 @@ export class JsonFileAdapter implements IDataRepository {
       async () => {
         await this.ensureInitialized();
         const quest = this.quests.find((q) => q.id === id);
-        return quest ? applyQuestLifecycle(quest) : null;
+        return quest ? shownQuest(quest) : null;
       },
       { ttlMs: 120 * 1000, tags: ['quests', `quest:${id}`] }
     );

@@ -63,6 +63,10 @@ export interface ParticipantInfo {
   userAvatar?: string;
   joinedAt?: string;
   note?: string;
+  /** Shown on the member's ticket; the host types it to check them in */
+  ticketCode?: string;
+  /** Set by the host at the meeting point */
+  checkedInAt?: string;
 }
 
 export interface AtomicJoinResult {

@@ -26,6 +26,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
 import { BrandLogo } from './BrandLogo';
+import { NotificationBell } from './NotificationBell';
+import { useActivitySync } from '@/lib/useMyActivity';
 
 interface NavbarProps {
   activeTab: string;
@@ -54,6 +56,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   const { userProfile, handleSetRole } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  // Joined events and saved places come from the account (see lib/useMyActivity.ts)
+  useActivitySync();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close profile dropdown or drawer when clicking outside or pressing Escape
@@ -122,6 +126,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             )}
             
+            {/* Notifications (renders only for a signed-in member) */}
+            {isAuthReady && isLoggedIn && <NotificationBell />}
+
             {/* Desktop User Avatar & Profile Dropdown (Facebook/Google Style) */}
             {!isAuthReady ? (
               <>
@@ -228,38 +235,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <LogOut className="w-4 h-4 text-slate-400" />
                         <span>ออกจากระบบ</span>
                       </button>
-
-                      {/* Role Switcher (Test / Preview Tool - Placed Below Logout) */}
-                      <div className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5">
-                        <div className="flex items-center justify-between text-[10.5px]">
-                          <span className="text-slate-500 font-bold flex items-center gap-1">
-                            <ShieldCheck className="w-3 h-3 text-slate-500" />
-                            <span>สลับบทบาททดสอบ (Role)</span>
-                          </span>
-                          <span className="font-extrabold text-slate-700 bg-slate-200/60 px-1.5 py-0.5 rounded text-[9.5px]">
-                            {userProfile.role}
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-1">
-                          {(['member', 'host', 'organizer', 'venue_owner', 'admin'] as const).map((r) => (
-                            <button
-                              key={r}
-                              type="button"
-                              onClick={() => handleSetRole(r)}
-                              className={`py-1 rounded-lg text-[9.5px] font-bold transition-all cursor-pointer text-center ${
-                                userProfile.role === r
-                                  ? 'bg-slate-900 text-white shadow-2xs'
-                                  : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-200'
-                              }`}
-                            >
-                              {r === 'member' ? 'Member' :
-                               r === 'host' ? 'Host' :
-                               r === 'organizer' ? 'Organizer' :
-                               r === 'venue_owner' ? 'Space' : 'Admin'}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
                     </div>
 
                   </div>

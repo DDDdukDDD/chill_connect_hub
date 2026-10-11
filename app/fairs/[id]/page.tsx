@@ -9,6 +9,8 @@ import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import { useAuth } from '@/lib/useAuth';
+import { useMyActivity } from '@/lib/useMyActivity';
+import { GroupChatModal } from '@/components/GroupChatModal';
 import {
   getEventById,
   getRelatedEvents,
@@ -118,58 +120,42 @@ export default function FairDetailPage() {
   const [isFairBuddyModalOpen, setIsFairBuddyModalOpen] = useState(false);
 
   // Sub-activities for this Fair
-  const [fairSubActivities, setFairSubActivities] = useState<FairSubActivityItem[]>([
-    {
-      id: 'fair-sub-1',
-      title: 'นัดเดินดูโซนไฮไลต์ & ชมนิทรรศการพิเศษด้วยกัน',
-      creatorName: 'คุณมายด์',
-      creatorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
-      meetupPoint: 'จุดนัดพบหน้า Information Counter ชั้น G',
-      time: '14:00 น.',
-      currentMembers: 2,
-      maxMembers: 4,
-      note: 'เดินชมงานแบบสบายๆ ไม่รีบร้อน ใครมาคนเดียวมารวมกลุ่มกันได้เลยครับ',
-      contactChannel: 'LINE: @mind_chill'
-    },
-    {
-      id: 'fair-sub-2',
-      title: 'หาเพื่อนแวะจิบกาแฟ & พักขาโซน Cafe Lounge',
-      creatorName: 'คุณน็อต',
-      creatorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
-      meetupPoint: 'หน้าร้านกาแฟ Slow Bar ชั้น 1',
-      time: '16:00 น.',
-      currentMembers: 3,
-      maxMembers: 5,
-      note: 'นั่งคุยแลกเปลี่ยนไอเดียหลังเดินดูงานเสร็จ ชิลล์ๆ ไม่เกร็งครับ',
-      contactChannel: 'IG: nott_artwalk'
-    }
-  ]);
+  // Meet-up groups members opened inside this fair, from the server
+  const [fairSubActivities, setFairSubActivities] = useState<FairSubActivityItem[]>([]);
+  const [chatGroup, setChatGroup] = useState<{ id: string; title: string } | null>(null);
 
   const [joinedSubIds, setJoinedSubIds] = useState<string[]>([]);
   const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
   const [selectedPassData, setSelectedPassData] = useState<ExpoMeetupPassData | null>(null);
   const [isPassModalOpen, setIsPassModalOpen] = useState(false);
 
-  // Joined Sub IDs & Event IDs from localStorage
+  type ServerGroup = { id: string; title: string; meetupPoint: string; time: string; note: string; maxMembers: number; currentMembers: number; creator: { displayName: string; avatarUrl: string }; isJoined: boolean };
+  const applyGroups = (groups: ServerGroup[]) => {
+    setFairSubActivities(
+      groups.map((g) => ({ id: g.id, title: g.title, creatorName: g.creator.displayName, creatorAvatar: g.creator.avatarUrl, meetupPoint: g.meetupPoint, time: g.time, currentMembers: g.currentMembers, maxMembers: g.maxMembers, note: g.note }))
+    );
+    setJoinedSubIds(groups.filter((g) => g.isJoined).map((g) => g.id));
+  };
+  const groupRequest = async (method: 'GET' | 'POST', body?: Record<string, unknown>) => {
+    try {
+      const res = await fetch(`/api/events/${encodeURIComponent(decodedId)}/groups`, { method, cache: 'no-store', headers: body ? { 'Content-Type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined });
+      const json = await res.json().catch(() => null);
+      if (json?.groups) applyGroups(json.groups);
+      return { ok: res.ok && json?.success !== false, message: (json?.message as string) || 'ทำรายการไม่สำเร็จ ลองอีกครั้งนะ', json };
+    } catch {
+      return { ok: false, message: 'เชื่อมต่อไม่ได้ ลองอีกครั้งนะ', json: null };
+    }
+  };
+
+  // Groups reload when the member signs in or out; what the member joined comes from the account
+  const myActivity = useMyActivity();
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    try {
-      const savedJoinedSubs = localStorage.getItem('joined_fair_sub_ids');
-      if (savedJoinedSubs) {
-        setJoinedSubIds(JSON.parse(savedJoinedSubs));
-      }
-    } catch {}
-
-    try {
-      const savedJoinedEvents = localStorage.getItem('joined_event_ids');
-      if (savedJoinedEvents) {
-        setJoinedEventIds(JSON.parse(savedJoinedEvents));
-      } else {
-        setJoinedEventIds(['fair-book-expo-2026', 'comm-16', 'comm-18', 'comm-19']);
-      }
-    } catch {}
-  }, []);
+    void groupRequest('GET');
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- groupRequest only depends on the fair id
+  }, [decodedId, isLoggedIn]);
+  useEffect(() => {
+    if (myActivity.isLoaded) setJoinedEventIds(myActivity.joinedIds);
+  }, [myActivity.isLoaded, myActivity.joinedIds]);
 
   // Retrieve event from mock and live API
   useEffect(() => {
@@ -302,7 +288,7 @@ export default function FairDetailPage() {
     showToast('เปิดบันทึกลง Google Calendar เรียบร้อย');
   };
 
-  const handleJoinSubActivity = (sub: FairSubActivityItem) => {
+  const handleJoinSubActivity = async (sub: FairSubActivityItem) => {
     if (!isLoggedIn) {
       setMembershipActionTitle('เพื่อขอร่วมกลุ่มเดินชมงานนี้');
       setPendingAction(`join_sub:${sub.id}`);
@@ -336,40 +322,13 @@ export default function FairDetailPage() {
         return;
       }
 
-      const updatedCount = sub.currentMembers + 1;
-      setFairSubActivities((prev) =>
-        prev.map((item) => (item.id === sub.id ? { ...item, currentMembers: updatedCount } : item))
-      );
-
-      const newJoined = [...joinedSubIds, sub.id];
-      setJoinedSubIds(newJoined);
-
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem('joined_fair_sub_ids', JSON.stringify(newJoined));
-          const existingJoined = JSON.parse(localStorage.getItem('joined_event_ids') || '[]');
-          if (!existingJoined.includes(sub.id)) {
-            localStorage.setItem('joined_event_ids', JSON.stringify([...existingJoined, sub.id]));
-          }
-
-          // Sync with joinedSubActivities for MyHub calendar & joined list
-          const existingSubs = JSON.parse(localStorage.getItem('joinedSubActivities') || '{}');
-          existingSubs[sub.id] = {
-            id: sub.id,
-            eventId: eventData?.id || sub.id,
-            eventTitle: cleanText(eventData?.title) || 'งานมหกรรม & เอ็กซ์โป',
-            subTitle: sub.title,
-            eventDate: cleanText(eventData?.date) || 'วันจัดแสดง',
-            eventTime: sub.time,
-            eventLocation: cleanText(eventData?.location) || 'ศูนย์นิทรรศการ',
-            eventImage: eventData?.image || 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80',
-            creatorName: sub.creatorName,
-            creatorAvatar: sub.creatorAvatar,
-            eventType: 'public_venue'
-          };
-          localStorage.setItem('joinedSubActivities', JSON.stringify(existingSubs));
-        } catch {}
+      // The server checks the seats and the member's account
+      const joined = await groupRequest('POST', { action: 'join', groupId: sub.id });
+      if (!joined.ok) {
+        showToast(joined.message);
+        return;
       }
+      const updatedCount = sub.currentMembers + 1;
 
       setSelectedPassData({
         id: sub.id,
@@ -391,71 +350,27 @@ export default function FairDetailPage() {
     }
   };
 
-  const handleCancelJoinSubActivity = (groupId: string) => {
-    setFairSubActivities((prev) =>
-      prev.map((item) => (item.id === groupId ? { ...item, currentMembers: Math.max(1, item.currentMembers - 1) } : item))
-    );
-
-    const newJoined = joinedSubIds.filter((id) => id !== groupId);
-    setJoinedSubIds(newJoined);
-
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('joined_fair_sub_ids', JSON.stringify(newJoined));
-        const existingJoined = JSON.parse(localStorage.getItem('joined_event_ids') || '[]');
-        localStorage.setItem(
-          'joined_event_ids',
-          JSON.stringify(existingJoined.filter((id: string) => id !== groupId))
-        );
-
-        // Remove from joinedSubActivities
-        const existingSubs = JSON.parse(localStorage.getItem('joinedSubActivities') || '{}');
-        delete existingSubs[groupId];
-        localStorage.setItem('joinedSubActivities', JSON.stringify(existingSubs));
-      } catch {}
+  const handleCancelJoinSubActivity = async (groupId: string) => {
+    const left = await groupRequest('POST', { action: 'leave', groupId });
+    if (!left.ok) {
+      showToast(left.message);
+      return;
     }
 
     setIsPassModalOpen(false);
     showToast('ยกเลิกการเข้าร่วมกลุ่มเดินงานแล้ว');
   };
 
-  const handleBuddyModalSuccess = (newTrip: SpotBuddyPostItem) => {
-    const newSub: FairSubActivityItem = {
-      id: newTrip.id,
+  const handleBuddyModalSuccess = async (newTrip: SpotBuddyPostItem) => {
+    const created = await groupRequest('POST', {
+      action: 'create',
       title: newTrip.title,
-      creatorName: newTrip.hostName,
-      creatorAvatar: newTrip.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
       meetupPoint: newTrip.meetingPoint || 'จุดนัดพบในงาน',
       time: newTrip.time,
-      currentMembers: 1,
+      note: stripHtmlToPlainText(newTrip.description),
       maxMembers: newTrip.maxParticipants || 4,
-      note: stripHtmlToPlainText(newTrip.description) || 'มาเดินดูงานด้วยกัน บรรยากาศเป็นกันเองครับ',
-      contactChannel: 'LINE: @' + (newTrip.hostName.toLowerCase().replace(/\s+/g, '_') || 'host')
-    };
-    setFairSubActivities((prev) => [newSub, ...prev]);
-    const newJoined = [...joinedSubIds, newSub.id];
-    setJoinedSubIds(newJoined);
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('joined_fair_sub_ids', JSON.stringify(newJoined));
-        const existingSubs = JSON.parse(localStorage.getItem('joinedSubActivities') || '{}');
-        existingSubs[newSub.id] = {
-          id: newSub.id,
-          eventId: eventData?.id || newSub.id,
-          eventTitle: cleanText(eventData?.title) || 'งานมหกรรม & เอ็กซ์โป',
-          subTitle: newSub.title,
-          eventDate: cleanText(eventData?.date) || 'วันจัดแสดง',
-          eventTime: newSub.time,
-          eventLocation: cleanText(eventData?.location) || 'ศูนย์นิทรรศการ',
-          eventImage: eventData?.image || 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80',
-          creatorName: newSub.creatorName,
-          creatorAvatar: newSub.creatorAvatar,
-          eventType: 'public_venue'
-        };
-        localStorage.setItem('joinedSubActivities', JSON.stringify(existingSubs));
-      } catch {}
-    }
-    showToast(`เปิดกลุ่มนัดเดินงาน "${newSub.title}" สำเร็จแล้ว`);
+    });
+    showToast(created.ok ? `เปิดกลุ่มนัดเดินงาน "${newTrip.title}" แล้ว` : created.message);
   };
 
   // Keyboard navigation for lightbox
@@ -704,6 +619,10 @@ export default function FairDetailPage() {
                 type="button"
                 onClick={() => {
                   const targetSub = fairSubActivities.find((s) => joinedSubIds.includes(s.id)) || fairSubActivities[0];
+                  if (!targetSub) {
+                    showToast('ยังไม่มีกลุ่มนัดหมายในงานนี้ เปิดกลุ่มแรกได้เลย');
+                    return;
+                  }
                   setSelectedPassData({
                     id: targetSub.id,
                     fairTitle: cleanText(eventData.title),
@@ -1475,10 +1394,13 @@ export default function FairDetailPage() {
               onClose={() => setIsPassModalOpen(false)}
               passData={selectedPassData}
               onCancelJoin={handleCancelJoinSubActivity}
+              onOpenChat={(groupId) => setChatGroup({ id: groupId, title: selectedPassData.groupTitle })}
             />
           )}
         </>
       )}
+
+      <GroupChatModal isOpen={Boolean(chatGroup)} onClose={() => setChatGroup(null)} event={eventData} roomId={chatGroup?.id} roomTitle={chatGroup?.title} />
 
       <MobileNav activeTab={activeNavTab} setActiveTab={setActiveNavTab} favoritesCount={favorites.length} />
     </div>

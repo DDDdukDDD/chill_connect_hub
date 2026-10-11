@@ -39,6 +39,8 @@ interface ExpoMeetupPassModalProps {
   onClose: () => void;
   passData: ExpoMeetupPassData | null;
   onCancelJoin?: (groupId: string) => void;
+  /** Opens the group's chat (members only) */
+  onOpenChat?: (groupId: string) => void;
 }
 
 export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
@@ -46,6 +48,7 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
   onClose,
   passData,
   onCancelJoin,
+  onOpenChat,
 }) => {
   const [isCopiedContact, setIsCopiedContact] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -71,7 +74,7 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-sky-800 bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200">
                 <Sparkles className="w-3 h-3 text-sky-600" />
-                <span>Expo Meetup Pass</span>
+                <span>บัตรนัดพบในงาน</span>
               </span>
               <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
                 ✓ ยืนยันร่วมกลุ่มแล้ว
@@ -100,7 +103,7 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
           
           {/* Top Event Context */}
           <div className="space-y-1">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-sky-700 block">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-sky-700 block">
               งานมหกรรม & นิทรรศการ
             </span>
             <h3 className="text-base font-black text-slate-900 leading-snug">
@@ -122,7 +125,7 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
           {/* Group Details */}
           <div className="space-y-3">
             <div className="space-y-1">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block">
                 หัวข้อกลุ่มนัดเดินงาน
               </span>
               <h4 className="text-sm font-black text-slate-900 leading-snug">
@@ -133,7 +136,7 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
             {/* Grid Specs */}
             <div className="grid grid-cols-2 gap-3 pt-1">
               <div className="p-3 rounded-2xl bg-white border border-slate-200/80 space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 block flex items-center gap-1">
+                <span className="text-[11px] font-bold text-slate-400 block flex items-center gap-1">
                   <MapPin className="w-3 h-3 text-[#2B527A]" />
                   จุดนัดพบในงาน
                 </span>
@@ -143,7 +146,7 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
               </div>
 
               <div className="p-3 rounded-2xl bg-white border border-slate-200/80 space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 block flex items-center gap-1">
+                <span className="text-[11px] font-bold text-slate-400 block flex items-center gap-1">
                   <Clock className="w-3 h-3 text-[#2B527A]" />
                   เวลานัดพบ
                 </span>
@@ -173,11 +176,21 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
                   <span className="text-xs font-black text-slate-900 block truncate">
                     {passData.creatorName}
                   </span>
-                  <span className="text-[10px] text-slate-500 block truncate">
+                  <span className="text-[11px] text-slate-500 block truncate">
                     ผู้เปิดกลุ่ม • รวมแล้ว {passData.currentMembers}/{passData.maxMembers} คน
                   </span>
                 </div>
               </div>
+
+              {onOpenChat && (
+                <button
+                  type="button"
+                  onClick={() => onOpenChat(passData.id)}
+                  className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold cursor-pointer whitespace-nowrap shrink-0"
+                >
+                  แชตกลุ่ม
+                </button>
+              )}
 
               {passData.contactChannel && (
                 <button

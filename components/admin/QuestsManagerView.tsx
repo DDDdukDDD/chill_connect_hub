@@ -48,7 +48,7 @@ const EMPTY_DRAFT: QuestDraft = {
   terms: '',
 };
 
-// Stored dates may be Thai ("31 ธ.ค. 2026") or ISO; the date input needs ISO
+// Stored dates may be Thai ("31 ธ.ค. 2569") or ISO; the date input needs ISO
 function toIsoDate(value?: string): string {
   const timestamp = parseQuestDate(value, false);
   if (timestamp === null) return '';

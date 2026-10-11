@@ -31,6 +31,7 @@ import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { useAuth } from '@/lib/useAuth';
+import { useMyActivity } from '@/lib/useMyActivity';
 import { fetchAllContentPages } from '@/lib/contentClient';
 import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
 import { MOCK_EVENTS, EventItem } from '@/data/mockData';
@@ -60,6 +61,11 @@ function CommunityPageContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
+  // What the member joined comes from the account; this keeps the page in step with it
+  const myActivity = useMyActivity();
+  React.useEffect(() => {
+    if (myActivity.isLoaded) setJoinedEventIds(myActivity.joinedIds);
+  }, [myActivity.isLoaded, myActivity.joinedIds]);
   const [eventsList, setEventsList] = useState<EventItem[]>(MOCK_EVENTS);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 

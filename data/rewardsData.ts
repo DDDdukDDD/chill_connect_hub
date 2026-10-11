@@ -44,7 +44,7 @@ export const REWARD_SHOP_ITEMS: RewardShopItem[] = [
     voucherCode: 'CHILL50-ARI-889',
     stockCount: 18,
     discountValue: 'ลด ฿50',
-    validUntil: '31 ธ.ค. 2026',
+    validUntil: '31 ธ.ค. 2569',
     terms: [
       'ใช้ได้กับเครื่องดื่ม Specialty Coffee ทุกเมนู ทั้งร้อนและเย็น',
       'แสดงรหัสคูปองกับพนักงานก่อนชำระเงิน',
@@ -66,7 +66,7 @@ export const REWARD_SHOP_ITEMS: RewardShopItem[] = [
     voucherCode: 'BG-FREEPASS-2026',
     stockCount: 12,
     discountValue: 'ฟรี 1 วัน (มูลค่า ฿150)',
-    validUntil: '30 พ.ย. 2026',
+    validUntil: '30 พ.ย. 2569',
     terms: [
       'เข้าเล่นได้ตั้งแต่ร้านเปิดจนถึงร้านปิดในวันจันทร์ - ศุกร์',
       'ไม่รวมค่าอาหารและเครื่องดื่มเพิ่มเติม',
@@ -88,7 +88,7 @@ export const REWARD_SHOP_ITEMS: RewardShopItem[] = [
     voucherCode: 'TSHIRT-VIP-GOLD',
     stockCount: 5,
     discountValue: 'มูลค่า ฿590',
-    validUntil: '31 ต.ค. 2026',
+    validUntil: '31 ต.ค. 2569',
     terms: [
       'สามารถเลือกขนาดรอบอก S, M, L, XL, 2XL ได้หลังกดแลกสิทธิ์',
       'จัดส่งฟรีผ่านขนส่งเอกชนภายใน 3-5 วันทำการ',
@@ -110,7 +110,7 @@ export const REWARD_SHOP_ITEMS: RewardShopItem[] = [
     voucherCode: 'RUN100-ACTIVE',
     stockCount: 20,
     discountValue: 'ลด ฿100',
-    validUntil: '15 ธ.ค. 2026',
+    validUntil: '15 ธ.ค. 2569',
     terms: [
       'ใช้เป็นโค้ดส่วนลดบนระบบสมัครงานวิ่งออนไลน์',
       'ใช้ได้กับระยะ 5K, 10K, และ 21K',
@@ -132,7 +132,7 @@ export const REWARD_SHOP_ITEMS: RewardShopItem[] = [
     voucherCode: 'DRIP-SPECIAL-220',
     stockCount: 15,
     discountValue: 'มูลค่า ฿220',
-    validUntil: '31 ธ.ค. 2026',
+    validUntil: '31 ธ.ค. 2569',
     terms: [
       'ประกอบด้วยกาแฟดริปแบบซอง 5 ชิ้น คละรสชาติซิกเนเจอร์',
       'ไม่มีค่าจัดส่งเพิ่มเติมเมื่อจัดส่งในเขตกรุงเทพฯ และปริมณฑล',
@@ -153,7 +153,7 @@ export const REWARD_SHOP_ITEMS: RewardShopItem[] = [
     voucherCode: 'CLAY-CRAFT-200',
     stockCount: 8,
     discountValue: 'ลด ฿200',
-    validUntil: '31 ธ.ค. 2026',
+    validUntil: '31 ธ.ค. 2569',
     terms: [
       'ใช้ได้กับคลาสปั้นมือ (Hand-building) และแป้นหมุน (Throwing)',
       'รวมค่าเผาเคลือบและส่งชิ้นงานถึงบ้าน',
@@ -175,7 +175,7 @@ export const REWARD_SHOP_ITEMS: RewardShopItem[] = [
     voucherCode: 'TOTE-EXPLORER-200',
     stockCount: 25,
     discountValue: 'มูลค่า ฿290',
-    validUntil: '31 ธ.ค. 2026',
+    validUntil: '31 ธ.ค. 2569',
     terms: [
       'ผ้าแคนวาสธรรมชาติ 100% ซักทำความสะอาดได้',
       'จัดส่งฟรีทั่วประเทศภายใน 3-5 วันทำการ',
@@ -196,7 +196,7 @@ export const REWARD_SHOP_ITEMS: RewardShopItem[] = [
     voucherCode: 'KOMBUCHA-100-HUB',
     stockCount: 14,
     discountValue: 'ลด ฿100',
-    validUntil: '30 พ.ย. 2026',
+    validUntil: '30 พ.ย. 2569',
     terms: [
       'ใช้ได้กับเครื่องดื่มทุกเมนูในร้าน',
       'แสดงรหัสคูปองต่อพนักงานก่อนรับออเดอร์',

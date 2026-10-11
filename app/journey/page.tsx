@@ -20,6 +20,7 @@ import { MOCK_EVENTS, EventItem } from '@/data/mockData';
 import { MOCK_SPOTS, LifestyleSpotItem } from '@/data/spotsData';
 import { isEventEnded } from '@/lib/dateUtils';
 import { useAuth } from '@/lib/useAuth';
+import { useMyActivity } from '@/lib/useMyActivity';
 import { fetchAllContentPages } from '@/lib/contentClient';
 import { loadPublishedSpots } from '@/lib/usePublishedSpots';
 
@@ -31,6 +32,11 @@ function JourneyContent() {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [favoriteSpots, setFavoriteSpots] = useState<string[]>([]);
   const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
+  // What the member joined comes from the account; this keeps the page in step with it
+  const myActivity = useMyActivity();
+  useEffect(() => {
+    if (myActivity.isLoaded) setJoinedEventIds(myActivity.joinedIds);
+  }, [myActivity.isLoaded, myActivity.joinedIds]);
   const [joinedQuestTitles, setJoinedQuestTitles] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 

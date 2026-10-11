@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { ensureSampleMembers } from '@/lib/members/sampleMembers';
 import { momentRepository, MomentTargetType } from '@/lib/moments';
 import { createMoment, isPubliclyVisible, loadPeople, MomentError, toFeedItem } from '@/lib/moments/service';
 import { MemberAuthError } from '@/lib/members/accounts';
@@ -9,11 +10,12 @@ import { isRateLimited } from '@/lib/rateLimit';
 const TARGET_TYPES = new Set(['spot', 'community', 'fair', 'challenge', 'general']);
 
 /**
- * Moments feed. ?tab=all|popular|saved|mine &author=<memberId> &location &targetType &targetId &q &page &limit(≤30)
+ * Moments feed. ?tab=all|popular|following|saved|mine &author=<memberId> &location &targetType &targetId &q &page &limit(≤30)
  * Posts by members the viewer has blocked are left out.
- * "saved" and "mine" need a signed-in member (otherwise an empty list with requiresLogin).
+ * "saved", "mine" and "following" need a signed-in member (otherwise an empty list with requiresLogin).
  */
 export async function GET(request: Request) {
+  await ensureSampleMembers(); // development sample accounts for the sample posts
   const { searchParams } = new URL(request.url);
   const viewer = await getSessionMember(request);
   const tab = searchParams.get('tab') ?? 'all';
@@ -21,7 +23,7 @@ export async function GET(request: Request) {
   const limit = Math.min(30, Math.max(1, Number.parseInt(searchParams.get('limit') || '12', 10) || 12));
   const targetType = searchParams.get('targetType');
 
-  if ((tab === 'saved' || tab === 'mine') && !viewer) {
+  if ((tab === 'saved' || tab === 'mine' || tab === 'following') && !viewer) {
     return NextResponse.json({ success: true, moments: [], requiresLogin: true, pagination: { totalCount: 0, page: 1, limit, totalPages: 1, hasNextPage: false, hasPrevPage: false } });
   }
 
@@ -39,7 +41,10 @@ export async function GET(request: Request) {
   });
   const people = await loadPeople(result.items);
   const blocked = new Set(viewer?.blockedIds ?? []);
-  const visible = result.items.filter((moment) => isPubliclyVisible(moment, people) && !(moment.authorId && blocked.has(moment.authorId)));
+  const following = tab === 'following' ? new Set(viewer?.followingIds ?? []) : null;
+  const visible = result.items.filter(
+    (moment) => isPubliclyVisible(moment, people) && !(moment.authorId && blocked.has(moment.authorId)) && (!following || (moment.authorId !== null && following.has(moment.authorId)))
+  );
   const totalPages = Math.max(1, Math.ceil(visible.length / limit));
   return NextResponse.json(
     {

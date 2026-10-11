@@ -13,6 +13,8 @@ import { GroupChatModal } from '@/components/GroupChatModal';
 import { CancelTicketModal } from '@/components/CancelTicketModal';
 import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import { useAuth } from '@/lib/useAuth';
+import { useMemberSession } from '@/lib/useMemberSession';
+import { activityActions, useMyActivity } from '@/lib/useMyActivity';
 import {
   getEventById,
   getRelatedEvents,
@@ -79,6 +81,7 @@ export default function CommunityDetailPage() {
 
   const [activeNavTab, setActiveNavTab] = useState('events');
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
+  const hostCheckMember = useMemberSession().member;
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
@@ -90,6 +93,11 @@ export default function CommunityDetailPage() {
   // Favorites & Joined Events State
   const [favorites, setFavorites] = useState<string[]>([]);
   const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
+  // What the member joined comes from the account; this keeps the page in step with it
+  const myActivity = useMyActivity();
+  useEffect(() => {
+    if (myActivity.isLoaded) setJoinedEventIds(myActivity.joinedIds);
+  }, [myActivity.isLoaded, myActivity.joinedIds]);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
 
@@ -178,25 +186,6 @@ export default function CommunityDetailPage() {
       } catch {}
     }
 
-    // Default fallback mock events if empty
-    if (joinedList.length === 0) {
-      joinedList = [
-        'comm-16',
-        'comm-18',
-        'comm-19',
-        'comm-20',
-        'fair-book-expo-2026',
-        'comm-oct-special-1',
-        'comm-benjakitti-morning-run',
-        'comm-1',
-        'comm-ai-1',
-        'live-agg-3',
-      ];
-      try {
-        localStorage.setItem('joined_event_ids', JSON.stringify(joinedList));
-      } catch {}
-    }
-
     // Also include user_created_events (Host)
     try {
       const savedCreated = JSON.parse(localStorage.getItem('user_created_events') || '[]');
@@ -269,8 +258,15 @@ export default function CommunityDetailPage() {
     setIsConfirmJoinModalOpen(true);
   };
 
-  const handleExecuteJoin = () => {
+  const handleExecuteJoin = async () => {
     if (!eventData) return;
+    // The server decides (seats left, event ended, account verified)
+    const joinResult = await activityActions.join(eventData.id);
+    if (!joinResult.ok) {
+      setIsConfirmJoinModalOpen(false);
+      showToast(joinResult.message);
+      return;
+    }
 
     const updatedParticipants = Math.min(eventData.participantsCount + 1, eventData.maxParticipants);
     setEventData({ ...eventData, participantsCount: updatedParticipants });
@@ -309,8 +305,14 @@ export default function CommunityDetailPage() {
     setIsETicketOpen(true);
   };
 
-  const handleConfirmCancel = () => {
+  const handleConfirmCancel = async () => {
     if (!eventData) return;
+    const leaveResult = await activityActions.leave(eventData.id);
+    if (!leaveResult.ok) {
+      setIsCancelModalOpen(false);
+      showToast(leaveResult.message);
+      return;
+    }
     const updatedParticipants = Math.max(eventData.participantsCount - 1, 0);
     setEventData({ ...eventData, participantsCount: updatedParticipants });
 
@@ -456,7 +458,7 @@ export default function CommunityDetailPage() {
   }
 
   const isFav = favorites.includes(eventData.id);
-  const isHost = Boolean(eventData.isHost || (typeof window !== 'undefined' && JSON.parse(localStorage.getItem('user_created_events') || '[]').some((u: any) => u.id === eventData.id)));
+  const isHost = Boolean(eventData.isHost || (hostCheckMember && (eventData as { createdByMemberId?: string }).createdByMemberId === hostCheckMember.id));
   const isJoined = isHost || joinedEventIds.includes(eventData.id);
   const isEnded = isEventEnded(eventData);
   const fillRatio = eventData.participantsCount / eventData.maxParticipants;
@@ -1076,24 +1078,6 @@ export default function CommunityDetailPage() {
                     <div>
                       <span className="text-slate-400 text-[10px] block font-bold">การเดินทาง</span>
                       <span className="font-bold text-slate-900 leading-snug">{cleanText(eventData.transportation)}</span>
-                    </div>
-                  </div>
-                )}
-
-                {eventData.contactChannel && (
-                  <div className="flex items-start gap-2.5">
-                    <MessageCircle className="w-4 h-4 text-[#F26430] shrink-0 mt-0.5" />
-                    <div>
-                      <span className="text-slate-400 text-[10px] block font-bold">ช่องทางติดต่อกลุ่ม</span>
-                      {isJoined ? (
-                        <span className="font-bold text-[#D04A1B] bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200 inline-block mt-0.5">
-                          {cleanText(eventData.contactChannel)}
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 italic text-[11px] block mt-0.5">
-                          เปิดเผยเมื่อลงทะเบียนเข้าร่วม
-                        </span>
-                      )}
                     </div>
                   </div>
                 )}

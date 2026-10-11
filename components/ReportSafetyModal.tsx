@@ -144,7 +144,7 @@ export const ReportSafetyModal: React.FC<ReportSafetyModalProps> = ({
                       <div className="font-bold text-xs text-[#1E293B]">
                         {r.title}
                       </div>
-                      <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">
+                      <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
                         {r.desc}
                       </p>
                     </div>

@@ -287,6 +287,7 @@ Measured on 2026-10-10 in user-facing files (`app/`, `components/`, admin exclud
 | `/moments` | The 24 seeded sample posts and their like counts (`isSample`) |
 | Community meetups | Sample events whose dates roll forward so the feed is never empty |
 | Host and member names on sample events and posts | Sample people |
+| `data/sampleMembers.ts`, `lib/members/sampleMembers.ts` | 24 sample accounts (`isSample`, email `…@sample.invalid`, cannot sign in) that own the sample moments, with made-up profiles. Remove the two files, the `ensureSampleMembers()` calls, and delete the accounts and their moments. |
 
 A page-by-page audit with rendered counts is in [docs/HANDOFF.md](docs/HANDOFF.md) item BE-020.
 

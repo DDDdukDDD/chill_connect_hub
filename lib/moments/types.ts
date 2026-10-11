@@ -38,6 +38,8 @@ export interface Moment {
   authorBadge?: string;
   caption: string;
   images: string[];
+  /** Width / height of the first photo, so the feed can reserve the right frame before the photo loads */
+  imageRatio?: number;
   location: string;
   category?: MomentCategory;
   targetType: MomentTargetType;

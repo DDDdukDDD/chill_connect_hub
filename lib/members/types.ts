@@ -61,6 +61,8 @@ export interface MemberTrust {
   hasEmail: boolean;
   pledged: boolean;
   hostStatus: HostStatus;
+  /** What the member was approved to run; set only when hostStatus is 'approved' */
+  hostKind?: 'host' | 'venue' | 'organizer';
   accountDays: number;
 }
 
@@ -140,6 +142,15 @@ export interface Member {
   reportsReceived?: { byId: string; reason: string; at: string }[];
   /** Members this member does not want to see */
   blockedIds?: string[];
+  /** Members whose moments this member follows */
+  followingIds?: string[];
+  /** Places and events the member saved for later (My Hub) */
+  savedSpotIds?: string[];
+  savedEventIds?: string[];
+  /** Events the member joined and then cancelled, newest first (history in My Hub) */
+  cancelledEvents?: { eventId: string; at: string }[];
+  /** Development sample account (author of bundled sample moments); cannot sign in. Remove before launch. */
+  isSample?: boolean;
   createdAt: string;
   lastLoginAt?: string;
   lastLoginMethod?: LoginMethod;
