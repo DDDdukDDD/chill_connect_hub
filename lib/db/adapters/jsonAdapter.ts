@@ -48,6 +48,16 @@ const IS_SERVERLESS = Boolean(
  * High-Performance JSON & Memory Adapter
  * Provides thread-safe, atomic operations with async mutex protection.
  */
+/** A short code that is easy to read aloud: no 0/O or 1/I, unique within the event */
+function newTicketCode(existing: ParticipantInfo[]): string {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  for (;;) {
+    let code = '';
+    for (let i = 0; i < 6; i++) code += alphabet[Math.floor(Math.random() * alphabet.length)];
+    if (!existing.some((p) => p.ticketCode === code)) return code;
+  }
+}
+
 export class JsonFileAdapter implements IDataRepository {
   private mutex = new AsyncMutex();
   private isInitialized = false;
@@ -345,6 +355,7 @@ export class JsonFileAdapter implements IDataRepository {
       list.push({
         ...participant,
         joinedAt: participant.joinedAt || new Date().toISOString(),
+        ticketCode: newTicketCode(list),
       });
       this.participants[eventId] = list;
 
@@ -383,6 +394,36 @@ export class JsonFileAdapter implements IDataRepository {
       await this.persistEvents();
       cacheManager.invalidateTags(['events', `event:${eventId}`]);
       return { success: true, message: 'ยกเลิกการเข้าร่วมเรียบร้อย' };
+    });
+  }
+
+  public async getParticipant(eventId: string, userId: string): Promise<ParticipantInfo | null> {
+    await this.ensureInitialized();
+    const list = this.participants[eventId] ?? [];
+    const mine = list.find((p) => p.userId === userId);
+    if (!mine) return null;
+    if (!mine.ticketCode) {
+      await this.mutex.runExclusive(async () => {
+        if (!mine.ticketCode) {
+          mine.ticketCode = newTicketCode(list);
+          await this.persistEvents();
+        }
+      });
+    }
+    return { ...mine };
+  }
+
+  public async setCheckIn(eventId: string, target: { code?: string; userId?: string }, checkedIn: boolean): Promise<ParticipantInfo | null> {
+    await this.ensureInitialized();
+    return this.mutex.runExclusive(async () => {
+      const list = this.participants[eventId] ?? [];
+      const code = target.code?.trim().toUpperCase();
+      const found = list.find((p) => (target.userId ? p.userId === target.userId : Boolean(code) && p.ticketCode === code));
+      if (!found) return null;
+      if (checkedIn) found.checkedInAt = found.checkedInAt ?? new Date().toISOString();
+      else delete found.checkedInAt;
+      await this.persistEvents();
+      return { ...found };
     });
   }
 

@@ -53,5 +53,8 @@ next-env.d.ts
 /data/moments.json
 /data/stories.json
 /data/notifications.json
+/data/reviews.json
+/data/chat_messages.json
+/data/fair_groups.json
 # Runtime uploads (local dev; production uses Vercel Blob)
 /public/uploads/

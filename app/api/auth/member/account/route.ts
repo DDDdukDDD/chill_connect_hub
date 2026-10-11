@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { removeNotificationsOf } from '@/lib/social/notifications';
 import { removeStoriesOf } from '@/lib/social/stories';
+import { removeReviewsBy } from '@/lib/social/reviews';
+import { removeFairGroupsOf } from '@/lib/social/fairGroups';
+import { removeChatMessagesBy } from '@/lib/social/chat';
 import { db } from '@/lib/db';
 import { recordAudit } from '@/lib/auditLog';
 import { memberRepository, toPublicMember } from '@/lib/members';
@@ -31,6 +34,9 @@ export async function DELETE(request: Request) {
   const removedMoments = await momentRepository.removeByAuthor(member.id);
   const removedComments = await momentRepository.removeCommentsByAuthor(member.id);
   await removeStoriesOf(member.id);
+  await removeReviewsBy(member.id);
+  await removeFairGroupsOf(member.id);
+  await removeChatMessagesBy(member.id);
   await db.removeParticipantEverywhere(member.id);
   await removeNotificationsOf(member.id);
   await memberRepository.remove(member.id);

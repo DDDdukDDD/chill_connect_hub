@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { toPublicMember } from '@/lib/members';
 import { MemberAuthError, updateProfile } from '@/lib/members/accounts';
 import { followerCount, publicProfileOf, updateProfileDetails } from '@/lib/members/safety';
+import { hostReviewSummary } from '@/lib/social/reviews';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { PROFILE_HIDDEN_BY_DEFAULT } from '@/lib/members/types';
 
@@ -16,7 +17,7 @@ export async function GET(request: Request) {
       details: member.profile ?? { hidden: [...PROFILE_HIDDEN_BY_DEFAULT] },
       preferences: member.preferences ?? null,
       hostApplication: member.hostApplication ?? null,
-      publicView: { ...publicProfileOf(member, member), followerCount: await followerCount(member.id), followingCount: member.followingIds?.length ?? 0 },
+      publicView: { ...publicProfileOf(member, member), followerCount: await followerCount(member.id), followingCount: member.followingIds?.length ?? 0, hostReviews: await hostReviewSummary(member.id) },
     },
     { headers: { 'Cache-Control': 'no-store' } }
   );

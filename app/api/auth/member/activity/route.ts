@@ -4,7 +4,7 @@ import { activityOf, forgetCancelled, joinEvent, leaveEvent, setSaved } from '@/
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { isRateLimited } from '@/lib/rateLimit';
 
-const EMPTY = { joined: [], hosted: [], cancelled: [], joinedIds: [], savedSpotIds: [], savedEventIds: [] };
+const EMPTY = { joined: [], hosted: [], cancelled: [], joinedIds: [], savedSpotIds: [], savedEventIds: [], reviewedEventIds: [], fairGroups: [] };
 
 // The signed-in member's events and saved places: { joined, hosted, cancelled, joinedIds, savedSpotIds, savedEventIds }
 export async function GET(request: Request) {
