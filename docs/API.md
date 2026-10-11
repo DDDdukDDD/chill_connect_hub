@@ -398,3 +398,19 @@ All writes are `POST` with an `action` field unless noted.
 - `POST /api/events { action: 'join', eventId }` (older route) now uses the session member and the same rules; `participant` in the body is ignored.
 - Creating an event adds its creator as the first participant. Deleting an account removes the member from every event and gives the seats back.
 - Client: `lib/useMyActivity.ts` (`useMyActivity()`, `activityActions.join/leave/setSaved`). The Navbar mounts `useActivitySync()`, which also mirrors the lists into the older localStorage keys (`joined_event_ids`, `favorites`, `favorite_spots`) and sends hearts toggled by older pages to the account.
+
+## Tickets, host check-in and reviews (added 2026-10-11)
+- `GET /api/events/{id}/ticket` → `{ ticket: { code, joinedAt, checkedInAt, isHost, hasHostCheckIn } }` for the signed-in participant (404 otherwise). `code` is 6 characters (A–Z without I/O, 2–9), unique within the event and created when the member joins. `hasHostCheckIn` is false for official and sample events, which nobody checks in.
+- `GET /api/events/{id}/participants` → `{ event, participants: [{ userId, userName, userAvatar, joinedAt, checkedInAt, isHost }] }` for the member who created the event only (403 otherwise). Ticket codes are never listed.
+- `POST /api/events/{id}/participants` `{ action: 'check_in', code }` or `{ action: 'check_in' | 'undo', userId }` → `{ participant }`. Host only; a wrong code is 404.
+- `POST /api/events/{id}/review` `{ rating: 1-5, text? (≤300) }` → 201. One per participant per event. Events with a member host need the host's check-in; other events can be reviewed after they end. The host cannot review their own event. Text follows the same trust rules as a comment.
+- `GET /api/members/{id}` and the own-profile `publicView` include `hostReviews: { count, average, latest: [{ id, rating, text, eventTitle, authorId, authorName, timeAgo }] }`.
+- `GET /api/auth/member/activity`: joined events carry `checkedInAt` and `hasHostCheckIn`; the response adds `reviewedEventIds`.
+
+## Group chat and fair meet-up groups (added 2026-10-11)
+- `GET /api/chat/{roomId}?after=<ISO time>` → `{ room: { title, members }, messages: [{ id, authorId, authorName, authorAvatar, text, createdAt, isMine }] }`. `roomId` is an event id (participants and the event's host) or a fair group id `grp_…` (group members). Others get 403. Up to 100 messages per call; poll with `after`.
+- `POST /api/chat/{roomId}` `{ text }` (≤500) → 201; `{ action: 'delete', id }` removes one's own message. Verified accounts only; accounts younger than 7 days cannot send links, phone numbers or LINE ids.
+- `GET /api/events/{fairId}/groups` → `{ groups: [{ id, title, meetupPoint, time, note, maxMembers, currentMembers, creator: { id, displayName, avatarUrl }, isJoined, isMine }] }` (public).
+- `POST /api/events/{fairId}/groups` `{ action: 'create', title, meetupPoint, time, note?, maxMembers? (2-15) }` · `{ action: 'join' | 'leave', groupId }` → `{ groups }`. Verified accounts only; at most 2 groups per member per fair; a full group answers 409; leaving one's own group closes it. Creating or joining also adds the fair to the member's plan.
+- `GET /api/auth/member/activity` adds `fairGroups: [{ id, fairId, fairTitle, title, time, meetupPoint, isMine }]`.
+- **Development only:** `POST /api/dev/demo` fills the signed-in account with sample activity (verified and trusted, upcoming events, a hosted event with participants and chat, an attended past event); `DELETE /api/dev/demo` removes the two sample events. Both return 404 in production.
