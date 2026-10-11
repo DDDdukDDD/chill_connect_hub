@@ -17,6 +17,7 @@ import {
   EventItem,
   MOCK_EVENTS
 } from '@/data/mockData';
+import { eventOrigin } from '@/lib/contentOrigin';
 import { isEventEnded } from '@/lib/dateUtils';
 import { resolveEventGallery } from '@/lib/eventImageResolver';
 import { parseEventPrice } from '@/lib/priceUtils';
@@ -389,8 +390,13 @@ export default function FairDetailPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isLightboxOpen, galleryImages.length]);
 
-  // Verified highlights for Public Venue & Fairs
+  // member = an organizer posted it here, source = imported from an official website, sample = seed data.
+  // Placeholder text is for seed data only.
+  const origin = eventData ? eventOrigin(eventData) : 'sample';
+  const isSample = origin === 'sample';
+
   const fairHighlights = useMemo(() => {
+    if (!isSample) return [];
     return [
       'นิทรรศการและมหกรรมจัดแสดงผลงานระดับประเทศ รวมแบรนด์และผู้เชี่ยวชาญชั้นนำ',
       'เวทีกิจกรรมสัมมนา เปิดมุมมอง และแลกเปลี่ยนองค์ความรู้สร้างสรรค์ใหม่ๆ ตลอดงาน',
@@ -398,7 +404,7 @@ export default function FairDetailPage() {
       'พื้นที่พักผ่อน คาเฟ่ Slow Bar และโซนอาหารรองรับผู้เข้าร่วมงานอย่างทั่วถึง',
       'การเดินทางสะดวกสบายด้วยทางเชื่อมรถไฟฟ้า MRT / BTS Skywalk และที่จอดรถในร่มขนาดใหญ่'
     ];
-  }, []);
+  }, [isSample]);
 
   // Hall & Transit breakdown
   const { publicTransitText, parkingText, venueOrganizerName, officialWebsiteUrl } = useMemo(() => {
@@ -407,8 +413,9 @@ export default function FairDetailPage() {
     
     let organizer = eventData.source || 'ผู้จัดงานทางการ (Official Partner)';
     let website = eventData.externalUrl || eventData.sourceUrl || null;
-    let transit = 'เดินทางสะดวกด้วยรถไฟฟ้า BTS / MRT และรถประจำทาง';
-    let parking = 'มีอาคารจอดรถรองรับผู้เข้าร่วมงาน พร้อมสิ่งอำนวยความสะดวกครบครัน';
+    // Facts about the four known halls are kept for every event held there; the generic lines are filler
+    let transit = isSample ? 'เดินทางสะดวกด้วยรถไฟฟ้า BTS / MRT และรถประจำทาง' : '';
+    let parking = isSample ? 'มีอาคารจอดรถรองรับผู้เข้าร่วมงาน พร้อมสิ่งอำนวยความสะดวกครบครัน' : '';
 
     if (loc.includes('สิริกิติ์') || loc.includes('QSNCC')) {
       organizer = 'ศูนย์การประชุมแห่งชาติสิริกิติ์ (QSNCC)';
@@ -432,13 +439,17 @@ export default function FairDetailPage() {
       parking = 'อาคารจอดรถสยามพารากอนและสยามเซ็นเตอร์';
     }
 
+    // An organizer who posted the fair is named as they wrote it; an imported fair names where it was read from
+    if (origin === 'member') organizer = eventData.hostName || organizer;
+    else if (origin === 'source') organizer = eventData.source || organizer;
+
     return { publicTransitText: transit, parkingText: parking, venueOrganizerName: organizer, officialWebsiteUrl: website };
-  }, [eventData]);
+  }, [eventData, origin, isSample]);
 
   // Related Fairs
   const relatedFairs = useMemo(() => {
     if (!eventData) return [];
-    return getRelatedEvents(eventData, 5);
+    return getRelatedEvents(eventData, 40).filter((event) => !isEventEnded(event)).slice(0, 5);
   }, [eventData]);
 
   if (isLoading) {
@@ -600,9 +611,6 @@ export default function FairDetailPage() {
                     <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                     <span>บันทึกกำหนดการใน My Hub แล้ว</span>
                   </span>
-                  <span className="text-xs text-sky-200/80 font-mono">
-                    Pass #CCH-FAIR-0205
-                  </span>
                 </div>
                 <p className="text-sm sm:text-base font-bold text-white tracking-tight truncate">
                   {eventData.date} • {eventData.time || '10:00 - 21:00 น.'}
@@ -680,7 +688,7 @@ export default function FairDetailPage() {
                 setActivePhotoIndex(0);
                 setIsLightboxOpen(true);
               }}
-              className="md:col-span-2 md:row-span-2 relative h-56 sm:h-72 md:h-[320px] overflow-hidden cursor-pointer bg-slate-200"
+              className={`${galleryImages.length >= 5 ? 'md:col-span-2' : 'md:col-span-4'} md:row-span-2 relative h-56 sm:h-72 md:h-[320px] overflow-hidden cursor-pointer bg-slate-200`}
             >
               <img
                 src={galleryImages[0] || eventData.image}
@@ -691,7 +699,7 @@ export default function FairDetailPage() {
             </div>
 
             {/* 4 Secondary Thumbnail Photos (Right 2x2 Grid) */}
-            {galleryImages.slice(1, 5).map((imgUrl, idx) => {
+            {galleryImages.length >= 5 && galleryImages.slice(1, 5).map((imgUrl, idx) => {
               const photoIdx = idx + 1;
               const isLast = idx === 3;
               return (
@@ -785,11 +793,15 @@ export default function FairDetailPage() {
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <h3 className="font-extrabold text-sm text-slate-900 truncate">{venueOrganizerName}</h3>
                     <span className="text-[10px] font-black text-sky-800 bg-sky-100/90 px-2 py-0.5 rounded-full border border-sky-200">
-                      Official Venue & Partner
+                      {origin === 'member' ? 'ผู้จัดงานลงประกาศเอง' : origin === 'source' ? 'ข้อมูลจากแหล่งทางการ' : 'Official Venue & Partner'}
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    งานแฟร์ทางการ • คัดสรรและตรวจสอบข้อมูลโดย Chill & Connect Hub
+                    {origin === 'member'
+                      ? 'ผู้จัดงานที่ยืนยันตัวตนแล้ว • ตรวจโดยทีมงาน Chill & Connect Hub ก่อนเผยแพร่'
+                      : origin === 'source'
+                        ? 'ทีมงานรวบรวมจากเว็บไซต์ทางการของผู้จัดหรือสถานที่ • ตรวจรายละเอียดล่าสุดที่เว็บไซต์งานก่อนเดินทาง'
+                        : 'งานแฟร์ทางการ • คัดสรรและตรวจสอบข้อมูลโดย Chill & Connect Hub'}
                   </p>
                 </div>
               </div>
@@ -862,6 +874,7 @@ export default function FairDetailPage() {
             )}
 
             {/* 5. Verified Highlights */}
+            {fairHighlights.length > 0 && (
             <div className="space-y-3.5 pt-5 border-t border-slate-100">
               <h2 className="text-lg font-black text-slate-900 tracking-tight">
                 จุดเด่น & ไฮไลต์ที่ไม่ควรพลาดในงาน
@@ -878,8 +891,10 @@ export default function FairDetailPage() {
                 ))}
               </ul>
             </div>
+            )}
 
             {/* 6. Hall Transit & Parking */}
+            {(publicTransitText || parkingText) && (
             <div className="space-y-4 pt-5 border-t border-slate-100">
               <h2 className="text-lg font-black text-slate-900 tracking-tight">
                 การเดินทางเข้าศูนย์นิทรรศการ & ที่จอดรถ
@@ -905,6 +920,7 @@ export default function FairDetailPage() {
                 </div>
               </div>
             </div>
+            )}
 
             {/* 7. Interactive Google Maps */}
             <div className="space-y-3.5 pt-5 border-t border-slate-100">

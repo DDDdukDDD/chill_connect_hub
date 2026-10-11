@@ -19,6 +19,7 @@ import {
   MOCK_SPOTS
 } from '@/data/spotsData';
 import { SpotCard, formatSpotBadgePrice } from '@/components/SpotCard';
+import { spotOrigin } from '@/lib/contentOrigin';
 import { resolveSpotGallery, resolveSpotImage } from '@/lib/spotImageResolver';
 import { usePublishedSpots } from '@/lib/usePublishedSpots';
 import { renderDescriptionContent } from '@/components/RichTextEditor';
@@ -238,6 +239,8 @@ export default function SpotDetailPage() {
   // Separate Public Transit & Private Car Info for real-world clarity (with clean text)
   const { publicTransitText, parkingText } = useMemo(() => {
     if (!spot?.transitInfo) {
+      // Placeholder lines are for seed places only
+      if (spot && spotOrigin(spot) !== 'sample') return { publicTransitText: '', parkingText: '' };
       return {
         publicTransitText: 'เดินทางด้วยรถไฟฟ้าหรือรถประจำทางที่ผ่านบริเวณใกล้เคียง',
         parkingText: 'มีพื้นที่จอดรถสำหรับผู้มาติดต่อ หรือจุดจอดรถบริเวณใกล้เคียง'
@@ -513,7 +516,7 @@ export default function SpotDetailPage() {
               <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white">
                 <div className="inline-flex items-center gap-2 bg-slate-900/75 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-semibold border border-white/20">
                   <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>ภาพถ่ายอย่างเป็นทางการ</span>
+                  <span>{spotOrigin(spot) === 'member' ? 'ภาพจากสมาชิกที่แนะนำ' : spotOrigin(spot) === 'source' ? 'ภาพจากแหล่งข้อมูลต้นทาง' : 'ภาพถ่ายอย่างเป็นทางการ'}</span>
                 </div>
                 <div className="inline-flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md border border-white/20 group-hover:bg-slate-900 transition-colors">
                   <Camera className="w-3.5 h-3.5" />
@@ -734,11 +737,13 @@ export default function SpotDetailPage() {
             )}
 
             {/* 5. Transit & Facilities Section (2-Column Structured Rhythm) */}
+            {(publicTransitText || parkingText || (spot.facilities && spot.facilities.length > 0)) && (
             <div className="space-y-4 pt-5 border-t border-slate-100">
               <h2 className="text-lg font-black text-slate-900 tracking-tight">
                 การเดินทาง & สิ่งอำนวยความสะดวก
               </h2>
 
+              {(publicTransitText || parkingText) && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-1">
                 {/* 1. Public Transit */}
                 <div className="space-y-1">
@@ -760,6 +765,7 @@ export default function SpotDetailPage() {
                   </p>
                 </div>
               </div>
+              )}
 
               {/* Facilities tags */}
               {spot.facilities && spot.facilities.length > 0 && (
@@ -780,6 +786,7 @@ export default function SpotDetailPage() {
                 </div>
               )}
             </div>
+            )}
 
             {/* 6. Interactive Google Map */}
             <div className="space-y-3.5 pt-5 border-t border-slate-100">

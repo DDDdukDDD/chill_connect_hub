@@ -125,6 +125,27 @@ export function SpotEditorDrawer({ spot, onClose, onSaved }: SpotEditorDrawerPro
   const quality = useMemo(() => checkSpotQuality(previewSpot), [previewSpot]);
   const cardSpot = useMemo(() => (previewSpot.image ? previewSpot : { ...previewSpot, image: PREVIEW_PLACEHOLDER_IMAGE }), [previewSpot]);
   const coordinatesOk = isThaiCoordinate(Number(form.latitude), Number(form.longitude));
+  const [isPinning, setIsPinning] = useState(false);
+  const [pinNote, setPinNote] = useState<string | null>(null);
+
+  const pinFromLink = async () => {
+    setIsPinning(true);
+    setPinNote(null);
+    try {
+      const res = await fetch('/api/places/resolve', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: form.googleMapsUrl.trim() }) });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) setPinNote(data?.message || 'อ่านลิงก์นี้ไม่ได้');
+      else if (!data.coordinates) setPinNote('ลิงก์นี้ไม่มีพิกัดติดมา เปิดลิงก์ในคอมพิวเตอร์แล้วคัดลอกที่อยู่จากแถบที่อยู่แทน');
+      else {
+        setForm((current) => ({ ...current, latitude: String(data.coordinates.latitude), longitude: String(data.coordinates.longitude) }));
+        setPinNote('ใส่พิกัดจากลิงก์แล้ว');
+      }
+    } catch {
+      setPinNote('เชื่อมต่อไม่ได้ ลองใหม่อีกครั้ง');
+    } finally {
+      setIsPinning(false);
+    }
+  };
 
   const save = async (publicationStatus?: 'draft' | 'published') => {
     setIsSaving(true);
@@ -248,6 +269,12 @@ export function SpotEditorDrawer({ spot, onClose, onSaved }: SpotEditorDrawerPro
         <Field label="ลองจิจูด:" htmlFor="spot-lng">
           <input id="spot-lng" inputMode="decimal" value={form.longitude} onChange={set('longitude')} placeholder="100.5018" className={fieldInputClass} />
         </Field>
+        <div className="sm:col-span-2 flex flex-wrap items-center gap-2">
+          <button type="button" onClick={pinFromLink} disabled={isPinning || !form.googleMapsUrl.trim()} className={adminButton.secondary}>
+            {isPinning ? <Loader2 size={13} className="animate-spin" /> : <MapPin size={13} />} ดึงพิกัดจากลิงก์ Google Maps
+          </button>
+          <span className="text-xs text-slate-500">{pinNote ?? 'ใช้ลิงก์ในช่อง "ลิงก์ Google Maps" ด้านล่าง'}</span>
+        </div>
         {coordinatesOk && (
           <a
             href={coordinatesMapUrl(Number(form.latitude), Number(form.longitude))}

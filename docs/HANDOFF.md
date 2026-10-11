@@ -719,3 +719,36 @@ From 2026-10-11 the owner asked Claude Code to do all work, frontend included.
 - Three lint errors fixed (`app/challenges/page.tsx`, `app/page.tsx`, `components/CommunityChallengeBar.tsx`); `npx eslint app components lib --quiet` is clean.
 
 **Frontend action:** any new "รายงาน" button must pass `targetType` and `targetId` to `ReportSafetyModal`.
+
+### BE-030 (2026-10-11) Places get their pin when they are suggested; description template is back — from Claude Code
+
+**Why:** an end-to-end test of the four create forms (create in the dialog, approve in the admin console, open the public page) showed that a suggested place was saved at `0,0` unless its Google Maps link happened to carry coordinates. The review queue still published it, and the place page then showed a map in the sea and "999999 กม." in the trip plan.
+
+**What changed**
+- New `components/LocationPinPicker.tsx` in the place form of `components/CreateEventModal.tsx`: paste a Google Maps link, search by name, or tap the map and drag the pin (Leaflet with OpenStreetMap, which was an admin-only dependency until now). A pin is required to continue.
+- `POST /api/spots` requires the pin; `POST /api/places/resolve` and `GET /api/places/search` are new (see `docs/API.md`). `lib/mapLinks.ts` holds the link reader; `coordinatesFromMapUrl` moved there from `lib/members/submissions.ts`.
+- The review queue refuses to approve a place without coordinates. The admin spot editor has a "ดึงพิกัดจากลิงก์ Google Maps" button.
+- The description editor has its "ใช้โครงตัวอย่าง" button again (community event, fair, place). The template is headings with prompts in `[ ]`; the form does not continue while a prompt is left in the text.
+
+**Frontend action:** none.
+
+**Found by the same test, not fixed (owner to decide):** the event, fair and place pages add content nobody entered: stock photos in the gallery beside the one uploaded photo, a host line "จัดกิจกรรมมาแล้ว 12 ครั้ง • เรตติ้ง 4.9 (58 รีวิว)" and "Verified Host" for a new account, fixed "จุดเด่น" and "สิ่งที่ควรเตรียม" lists, fixed transport text for another venue, "Official Venue & Partner" on a member's fair (the organizer's name is not shown), and ended events under "ที่คุณอาจสนใจ". A newly approved place did not appear on the first page of `/spots`.
+
+### BE-031 (2026-10-11) Detail pages add placeholder content to seed data only; fair badge follows the origin — from Claude Code
+
+**Rule (new, `lib/contentOrigin.ts`):** every event and place has an origin, and it decides what a page may add around it.
+- `member`: created by a member (`createdByMemberId` / `suggestedByMemberId`). The page shows only what the member entered; an empty section is hidden.
+- `source`: imported by staff from an official venue or organizer website (`sourceUrl` with a real `source`). The page shows what the source gave and credits it.
+- `sample`: seed data (`source: 'Chill & Connect Official'`, sample members, seed places). Placeholder photos and text still fill the gaps so layouts can be judged during development.
+
+New placeholder content in a page must be behind `eventOrigin(...) === 'sample'` or `spotOrigin(...) === 'sample'`.
+
+**What changed (files formerly owned by the frontend)**
+- `lib/eventImageResolver.ts`, `lib/spotImageResolver.ts`: stock gallery photos only for seed data. Other records show their own photos; with fewer than five, the event and fair pages show one wide photo instead of the grid.
+- `app/community/[id]/page.tsx`: the host rating, "Verified Host", the hosted-count line, the fixed highlights, the fixed rules and the fixed transport text are seed-only. A member's event shows its own "ของที่ควรเตรียม" and "การเดินทาง" when entered.
+- `app/fairs/[id]/page.tsx`: the fixed highlights and generic transport lines are seed-only (facts about QSNCC, BITEC, IMPACT and Paragon stay for any fair held there). The card under the title names the organizer the member typed, and its badge follows the origin: "ผู้จัดงานลงประกาศเอง" (member), "ข้อมูลจากแหล่งทางการ" (source), "Official Venue & Partner" (seed only).
+- `app/spots/[id]/page.tsx`: generic transport lines are seed-only; the photo label says whose photo it is.
+- "ที่คุณอาจสนใจ" on the event and fair pages no longer lists ended events.
+
+**Follow-up (same day):** the three items found in that test are fixed. The fixed pass numbers (`Pass #CCH-FAIR-0205`, `#CCH-2026`) are removed from the fair and event pages. `POST /api/events` starts a member's event at zero participants and then adds the creator, so a new event shows 1 joined, not 2 (the client's `participantsCount` is ignored). `/spots` puts a place a member suggested in the last 14 days first, newest on top, ahead of the popularity order. The grey map on the fair page was the lazy-loaded frame in the test screenshot, not a defect.
+

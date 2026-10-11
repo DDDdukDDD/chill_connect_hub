@@ -4,7 +4,8 @@ import { isThaiCoordinate } from '../contentQuality';
 import { formatThaiDateBE } from '../dateUtils';
 import { db } from '../db';
 import { getQuestDateError } from '../questLifecycle';
-import { defaultSpotCategoryLabel, SPOT_CATEGORY_OPTIONS } from '../spotCategories';
+import { isGoogleMapsUrl, resolveMapCoordinates } from '../mapLinks';
+import { coordinatesMapUrl, defaultSpotCategoryLabel, SPOT_CATEGORY_OPTIONS } from '../spotCategories';
 import { guardMemberText } from '../social/textRules';
 import { MemberAuthError } from './accounts';
 import { trustLevel } from './trust';
@@ -38,15 +39,6 @@ export function guardCreator(member: Member): void {
   if (trustLevel(member) === 'new') throw new MemberAuthError('ยืนยันอีเมลและรับคำมั่นของคอมมูนิตี้ก่อนนะ (ดูที่หน้าโปรไฟล์)', 403);
 }
 
-/** Latitude and longitude from a Google Maps link, when the link carries them */
-export function coordinatesFromMapUrl(url: string): { latitude: number; longitude: number } | null {
-  const match = url.match(/@(-?[0-9]+\.[0-9]+),(-?[0-9]+\.[0-9]+)/) || url.match(/!3d(-?[0-9]+\.[0-9]+)!4d(-?[0-9]+\.[0-9]+)/) || url.match(/[?&](?:q|query|ll)=(-?[0-9]+\.[0-9]+),(-?[0-9]+\.[0-9]+)/);
-  if (!match) return null;
-  const latitude = Number(match[1]);
-  const longitude = Number(match[2]);
-  return isThaiCoordinate(latitude, longitude) ? { latitude, longitude } : null;
-}
-
 async function allSpots(): Promise<LifestyleSpotItem[]> {
   const first = await db.findSpots({ page: 1, limit: 100, includeDrafts: true });
   const spots = [...first.items];
@@ -76,9 +68,13 @@ export async function suggestSpot(member: Member, input: Record<string, unknown>
   if (plain(description).length < 15) throw new MemberAuthError('เล่าเกี่ยวกับสถานที่อย่างน้อย 15 ตัวอักษร', 400);
   if (!openHours) throw new MemberAuthError('กรุณาระบุเวลาเปิด', 400);
   const googleMapsUrl = text(input.googleMapsUrl, 500);
-  if (googleMapsUrl && !/^https:\/\/([a-z0-9-]+\.)*(google\.[a-z.]+|goo\.gl)\//i.test(googleMapsUrl)) {
-    throw new MemberAuthError('ลิงก์แผนที่ต้องเป็นลิงก์ Google Maps', 400);
-  }
+  if (googleMapsUrl && !isGoogleMapsUrl(googleMapsUrl)) throw new MemberAuthError('ลิงก์แผนที่ต้องเป็นลิงก์ Google Maps', 400);
+  // The pin the member set on the map; a link that carries coordinates is the fallback
+  const pinned = { latitude: Number(input.latitude), longitude: Number(input.longitude) };
+  const coordinates = isThaiCoordinate(pinned.latitude, pinned.longitude)
+    ? pinned
+    : googleMapsUrl ? await resolveMapCoordinates(googleMapsUrl) : null;
+  if (!coordinates) throw new MemberAuthError('ปักหมุดตำแหน่งของสถานที่บนแผนที่ก่อนส่ง', 400);
   await guardMemberText(member, `${title} ${plain(description)}`, 'แนะนำสถานที่');
 
   const mine = await spotsSuggestedBy(member.id);
@@ -90,7 +86,6 @@ export async function suggestSpot(member: Member, input: Record<string, unknown>
     throw new MemberAuthError('มีสถานที่ชื่อนี้ในจังหวัดนี้อยู่แล้ว', 409);
   }
 
-  const coordinates = googleMapsUrl ? coordinatesFromMapUrl(googleMapsUrl) : null;
   return db.createSpot({
     title,
     category: category as LifestyleSpotItem['category'],
@@ -105,12 +100,11 @@ export async function suggestSpot(member: Member, input: Record<string, unknown>
     description,
     highlights: list(input.highlights, 6, 80),
     facilities: [],
-    googleMapsUrl,
+    googleMapsUrl: googleMapsUrl || coordinatesMapUrl(coordinates.latitude, coordinates.longitude),
     rating: 0,
     reviewsCount: 0,
-    // Staff set the pin before publishing when the link carries no coordinates
-    latitude: coordinates?.latitude ?? 0,
-    longitude: coordinates?.longitude ?? 0,
+    latitude: Number(coordinates.latitude.toFixed(6)),
+    longitude: Number(coordinates.longitude.toFixed(6)),
     publicationStatus: 'draft',
     sourceName: `สมาชิกแนะนำ: ${member.displayName}`,
     suggestedByMemberId: member.id,

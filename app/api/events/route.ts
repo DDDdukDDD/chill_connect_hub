@@ -196,19 +196,22 @@ export async function POST(req: Request) {
       approvalStatus,
       source: isAdmin ? 'Chill & Connect Official' : 'Community Member',
       // Server-verified creator, for staff reviewing the queue (the client cannot set this)
-      ...(member && { createdByMemberId: member.id }),
+      // The count starts empty: the creator is added just below, and the client's number is not trusted
+      ...(member && { createdByMemberId: member.id, participantsCount: 0 }),
       createdAt: new Date().toISOString(),
     });
 
     // The creator is the first participant of their own event
-    if (member) await db.atomicJoinEvent(savedEvent.id, { userId: member.id, userName: member.displayName, userAvatar: member.avatarUrl, note: 'host' }).catch(() => undefined);
+    const hostJoin = member
+      ? await db.atomicJoinEvent(savedEvent.id, { userId: member.id, userName: member.displayName, userAvatar: member.avatarUrl, note: 'host' }).catch(() => undefined)
+      : undefined;
 
     return NextResponse.json({
       success: true,
       message: approvalStatus === 'approved'
         ? 'สร้างกิจกรรมสำเร็จและเผยแพร่บนหน้าแรกเรียบร้อยแล้ว!'
         : 'ส่งคำขอสร้างกิจกรรมเรียบร้อยแล้ว! ข้อมูลจะแสดงผลหลังผ่านการตรวจสอบจากทีมงาน',
-      event: savedEvent,
+      event: hostJoin?.updatedEvent ?? savedEvent,
     });
   } catch (error) {
     console.error('Error in /api/events POST:', error);
