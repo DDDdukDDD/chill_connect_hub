@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
 import { BrandLogo } from './BrandLogo';
+import { NotificationBell } from './NotificationBell';
 
 interface NavbarProps {
   activeTab: string;
@@ -122,6 +123,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             )}
             
+            {/* Notifications (renders only for a signed-in member) */}
+            {isAuthReady && isLoggedIn && <NotificationBell />}
+
             {/* Desktop User Avatar & Profile Dropdown (Facebook/Google Style) */}
             {!isAuthReady ? (
               <>

@@ -38,7 +38,10 @@ interface PublicProfile {
   interests?: MemberPreferences['interests'];
   badges: { emailVerified: boolean; pledged: boolean; trusted: boolean; approvedHost: boolean; hostKind?: HostApplication['kind'] };
   isMe: boolean;
-  viewer?: { hasBlocked: boolean; hasReported: boolean };
+  viewer?: { isFollowing?: boolean; hasBlocked: boolean; hasReported: boolean };
+  followerCount?: number;
+  followingCount?: number;
+  isSampleAccount?: boolean;
   isSample?: boolean;
   sampleInterests?: string[];
   sampleMoments?: { id: string; image: string; caption: string }[];
@@ -525,6 +528,17 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
   const provinceName = profile?.province ? master.provinces.find((p) => p.id === profile.province)?.displayName ?? profile.province : undefined;
   const hiddenKeys = own?.details.hidden ?? [];
 
+  const toggleFollow = async () => {
+    if (!profile) return;
+    const following = !profile.viewer?.isFollowing;
+    const res = await fetch(`/api/members/${encodeURIComponent(profile.id)}/actions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: following ? 'follow' : 'unfollow' }) });
+    const json = await res.json().catch(() => null);
+    if (res.ok) {
+      setNotice(following ? `ติดตาม ${profile.displayName} แล้ว ดูโพสต์ได้ที่หน้าโมเมนต์ แท็บ "ติดตาม"` : `เลิกติดตาม ${profile.displayName} แล้ว`);
+      refresh();
+    } else setNotice(json?.message || 'ทำรายการไม่สำเร็จ ลองอีกครั้งนะ');
+  };
+
   const toggleBlock = async () => {
     if (!profile) return;
     const blocking = !profile.viewer?.hasBlocked;
@@ -597,12 +611,13 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                         แก้ไขโปรไฟล์
                       </button>
                     ) : (
-                      profile.isSample && <span className="text-[11px] sm:text-xs font-extrabold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full whitespace-nowrap">โปรไฟล์ตัวอย่าง</span>
+                      (profile.isSample || profile.isSampleAccount) && <span className="text-[11px] sm:text-xs font-extrabold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full whitespace-nowrap">โปรไฟล์ตัวอย่าง</span>
                     )}
                   </div>
 
                   <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm font-semibold text-slate-500">
                     {profile.memberSince && <span className="whitespace-nowrap">สมาชิกตั้งแต่ {monthYear(profile.memberSince)}</span>}
+                    {profile.followerCount !== undefined && <span className="whitespace-nowrap">ผู้ติดตาม {profile.followerCount} · กำลังติดตาม {profile.followingCount ?? 0}</span>}
                     {provinceName && (
                       <span className="inline-flex items-center gap-1 whitespace-nowrap">
                         <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
@@ -635,6 +650,16 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
 
               {!profile.isMe && !profile.isSample && isLoggedIn && (
                 <div className="mt-5 pt-4 border-t border-slate-100 flex flex-wrap gap-2">
+                  {!profile.viewer?.hasBlocked && (
+                    <button
+                      type="button"
+                      onClick={toggleFollow}
+                      aria-pressed={Boolean(profile.viewer?.isFollowing)}
+                      className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-extrabold cursor-pointer whitespace-nowrap ${profile.viewer?.isFollowing ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm'}`}
+                    >
+                      {profile.viewer?.isFollowing ? 'กำลังติดตาม' : 'ติดตาม'}
+                    </button>
+                  )}
                   <button type="button" onClick={() => setIsReporting(true)} disabled={profile.viewer?.hasReported} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold cursor-pointer whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed">
                     <Flag className="w-4 h-4" aria-hidden="true" />
                     {profile.viewer?.hasReported ? 'รายงานแล้ว' : 'รายงาน'}

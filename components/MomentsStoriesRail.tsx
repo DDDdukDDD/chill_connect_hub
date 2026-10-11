@@ -469,11 +469,11 @@ export const MomentsStoriesRail: React.FC<MomentsStoriesRailProps> = ({
                   <div className="min-w-0">
                     <p className="text-xs font-black truncate flex items-center gap-1.5">
                       <span>{activeStory.author}</span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-white/90">
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-white/90">
                         {activeStory.badge || 'Hub'}
                       </span>
                     </p>
-                    <p className="text-[10px] text-white/70 truncate">
+                    <p className="text-[11px] text-white/70 truncate">
                       {activeStory.slides[currentSlideIndex].time}
                     </p>
                   </div>

@@ -50,9 +50,15 @@ import {
   UserPlus,
   Search,
   Navigation,
+  Flag,
+  Pencil,
+  Trash2,
+  Plus,
+  Trophy,
   Check,
 } from 'lucide-react';
-import { MomentsStoriesRail } from '@/components/MomentsStoriesRail';
+import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
+import { MomentPhotos } from '@/components/moments/MomentPhotos';
 import { compressImage } from '@/lib/media/compressor';
 
 // Popular Lifestyle Check-In Locations for Facebook-Style Check-In
@@ -139,6 +145,12 @@ function fromServerMoment(m: ServerMoment): CommunityPost {
   } as unknown as CommunityPost;
 }
 
+interface StoryGroup {
+  author: { id: string; displayName: string; avatarUrl: string };
+  isMine: boolean;
+  allSeen: boolean;
+  stories: { id: string; image: string; caption: string; hoursLeft: number; seen: boolean; hasReported?: boolean; views?: number }[];
+}
 const isMinePost = (post: CommunityPost) => Boolean((post as { isMine?: boolean }).isMine);
 
 async function momentRequest(url: string, method: string, body?: unknown): Promise<{ ok: boolean; message: string; moment?: ServerMoment }> {
@@ -171,16 +183,16 @@ function MomentsContent() {
   const urlTab = searchParams.get('tab');
   const urlMomentId = searchParams.get('momentId');
   const [locationFilter, setLocationFilter] = useState<string>(urlLocation);
-  const [activeTabFilter, setActiveTabFilter] = useState<'all' | 'popular' | 'saved' | 'mine'>(
+  const [activeTabFilter, setActiveTabFilter] = useState<'all' | 'following' | 'popular' | 'saved' | 'mine'>(
     urlTab === 'mine' ? 'mine' : urlTab === 'popular' ? 'popular' : 'all'
   );
   const [highlightedPostId, setHighlightedPostId] = useState<string | null>(null);
 
   // Instagram-Grade Micro-Interactions States
-  const [savedPostIds, setSavedPostIds] = useState<string[]>(['1', '3']);
+  const [savedPostIds, setSavedPostIds] = useState<string[]>([]);
   const [followedUserIds, setFollowedUserIds] = useState<string[]>(['user-praew']);
   const [doubleTapPostId, setDoubleTapPostId] = useState<string | null>(null);
-  const [expandedCommentPostIds, setExpandedCommentPostIds] = useState<string[]>(['post-spot-1']);
+  const [expandedCommentPostIds, setExpandedCommentPostIds] = useState<string[]>([]);
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
 
   // Sync if URL location changes
@@ -192,7 +204,68 @@ function MomentsContent() {
 
   // Posts State
   const MAX_MOMENT_IMAGES = 10;
-  const [posts, setPosts] = useState<CommunityPost[]>(MOCK_POSTS);
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
+  // The feed is read from the server page by page
+  const FEED_PAGE_SIZE = 8;
+  const [feedPage, setFeedPage] = useState(1);
+  const [hasMorePosts, setHasMorePosts] = useState(false);
+  const [isFeedLoading, setIsFeedLoading] = useState(true);
+  const [highlights, setHighlights] = useState<CommunityPost[]>([]);
+  const [suggested, setSuggested] = useState<{ id: string; displayName: string; avatarUrl?: string; momentCount: number; trusted: boolean; approvedHost: boolean }[]>([]);
+  const [followingIds, setFollowingIds] = useState<string[]>([]);
+  // Small dialogs: confirm a delete, report a post, edit a caption, finish verifying before posting
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [reportPostId, setReportPostId] = useState<string | null>(null);
+  const [reportReason, setReportReason] = useState('');
+  const [editPost, setEditPost] = useState<{ id: string; caption: string } | null>(null);
+  const [isVerifyNoticeOpen, setIsVerifyNoticeOpen] = useState(false);
+  const [isDialogBusy, setIsDialogBusy] = useState(false);
+  // Stories (one photo, gone after 24 hours), notifications and challenges for the sidebar
+  const [storyGroups, setStoryGroups] = useState<StoryGroup[]>([]);
+  const [storyView, setStoryView] = useState<{ group: number; index: number } | null>(null);
+  const [storyDraft, setStoryDraft] = useState<{ file: File | null; preview: string; caption: string } | null>(null);
+  const [reportStoryId, setReportStoryId] = useState<string | null>(null);
+  const [sidebarQuests, setSidebarQuests] = useState<{ id: string; title: string; badgeLabel?: string }[]>([]);
+  const [socialReload, setSocialReload] = useState(0);
+  // What the moment is about: found by searching the real events, places and challenges
+  type LinkTarget = { type: 'community' | 'fair' | 'spot' | 'challenge'; id: string; title: string; location: string };
+  const [linkedTarget, setLinkedTarget] = useState<LinkTarget | null>(null);
+  const [linkQuery, setLinkQuery] = useState('');
+  const [linkResults, setLinkResults] = useState<LinkTarget[]>([]);
+  const [isLinkSearching, setIsLinkSearching] = useState(false);
+
+  useEffect(() => {
+    const q = linkQuery.trim();
+    if (q.length < 2 || linkedTarget) {
+      setLinkResults([]);
+      return;
+    }
+    let active = true;
+    setIsLinkSearching(true);
+    // Wait until typing pauses, then ask the three catalogs at once
+    const timer = setTimeout(async () => {
+      const get = (url: string) => fetch(url).then((res) => res.json()).catch(() => ({}));
+      const [events, spots, quests] = await Promise.all([
+        get(`/api/events?q=${encodeURIComponent(q)}&limit=5&includeEnded=true`),
+        get(`/api/spots?q=${encodeURIComponent(q)}&limit=4`),
+        get('/api/quests?limit=30'),
+      ]);
+      if (!active) return;
+      const found: LinkTarget[] = [
+        ...((events.events ?? []) as EventItem[]).map((e) => ({ type: e.eventType === 'public_venue' ? ('fair' as const) : ('community' as const), id: e.id, title: e.title, location: e.location || '' })),
+        ...((spots.spots ?? []) as LifestyleSpotItem[]).map((s) => ({ type: 'spot' as const, id: s.id, title: s.title, location: [s.district, s.province].filter(Boolean).join(', ') })),
+        ...((quests.quests ?? []) as { id: string; title: string }[]).filter((c) => c.title.toLowerCase().includes(q.toLowerCase())).slice(0, 3).map((c) => ({ type: 'challenge' as const, id: c.id, title: c.title, location: '' })),
+      ];
+      setLinkResults(found);
+      setIsLinkSearching(false);
+    }, 300);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [linkQuery, linkedTarget]);
+
+  const LINK_TYPE_LABELS: Record<LinkTarget['type'], string> = { community: 'กิจกรรม', fair: 'งานแฟร์', spot: 'ที่เที่ยว', challenge: 'ชาเลนจ์' };
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [uploadedPostImages, setUploadedPostImages] = useState<string[]>([]);
   const [isCompressingImages, setIsCompressingImages] = useState<boolean>(false);
@@ -206,7 +279,7 @@ function MomentsContent() {
     if (typeof window === 'undefined') return;
     try {
       localStorage.removeItem('chill_user_moments'); // older builds kept posts in the browser under a sample name
-      const savedBookmarks = localStorage.getItem('chill_saved_moments');
+      const savedBookmarks = null as string | null; // bookmarks are kept on the account now
       if (savedBookmarks) {
         const parsedBookmarks = JSON.parse(savedBookmarks);
         if (Array.isArray(parsedBookmarks)) {
@@ -218,23 +291,242 @@ function MomentsContent() {
     }
   }, []);
 
-  // Members' posts come from the server, newest first, above the bundled samples
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const feedUrl = (page: number) =>
+    `/api/moments?tab=${activeTabFilter}&limit=${FEED_PAGE_SIZE}&page=${page}${locationFilter ? `&location=${encodeURIComponent(locationFilter)}` : ''}`;
+  type FeedJson = { moments?: ServerMoment[]; pagination?: { hasNextPage?: boolean } };
+  const takeFeed = (json: FeedJson) => {
+    const list = (json.moments ?? []).map(fromServerMoment);
+    list.forEach((p) => serverPostIds.current.add(p.id));
+    const followed = (json.moments ?? []).filter((m) => (m as { isFollowingAuthor?: boolean }).isFollowingAuthor).map((m) => (m as { authorId?: string }).authorId as string);
+    if (followed.length) setFollowingIds((prev) => Array.from(new Set([...prev, ...followed])));
+    setSavedPostIds((prev) => Array.from(new Set([...prev, ...(json.moments ?? []).filter((m) => (m as { isSaved?: boolean }).isSaved).map((m) => m.id)])));
+    setHasMorePosts(Boolean(json.pagination?.hasNextPage));
+    return list;
+  };
+
+  // First page: reloads when the tab, the place filter or the signed-in member changes
   useEffect(() => {
     if (!session.isLoaded) return;
     let active = true;
-    fetch('/api/moments?limit=30', { cache: 'no-store' })
-      .then((res) => res.json())
-      .then((json: { moments?: ServerMoment[] }) => {
+    setIsFeedLoading(true);
+    (async () => {
+      const json: FeedJson = await fetch(feedUrl(1), { cache: 'no-store' }).then((res) => res.json()).catch(() => ({}));
+      if (!active) return;
+      let list = takeFeed(json);
+      // A shared link to one moment: make sure it is in the list even when it is not on the first page
+      if (urlMomentId && !list.some((p) => p.id === urlMomentId)) {
+        const one = await fetch(`/api/moments/${encodeURIComponent(urlMomentId)}`, { cache: 'no-store' }).then((res) => res.json()).catch(() => null);
         if (!active) return;
-        const real = (json.moments ?? []).filter((m) => !m.isSample).map(fromServerMoment);
-        serverPostIds.current = new Set(real.map((p) => p.id));
-        setPosts((prev) => [...real, ...prev.filter((p) => !serverPostIds.current.has(p.id) && !isMinePost(p))]);
-      })
+        if (one?.moment) {
+          serverPostIds.current.add(one.moment.id);
+          list = [fromServerMoment(one.moment), ...list];
+        }
+      }
+      setPosts(list);
+      setFeedPage(1);
+      setIsFeedLoading(false);
+    })();
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- feedUrl depends only on the listed values
+  }, [session.isLoaded, memberId, activeTabFilter, locationFilter, urlMomentId]);
+
+  const loadMorePosts = async () => {
+    if (isLoadingMore || !hasMorePosts) return;
+    setIsLoadingMore(true);
+    const json: FeedJson = await fetch(feedUrl(feedPage + 1), { cache: 'no-store' }).then((res) => res.json()).catch(() => ({}));
+    const more = takeFeed(json);
+    setPosts((prev) => [...prev, ...more.filter((p) => !prev.some((x) => x.id === p.id))]);
+    setFeedPage((p) => p + 1);
+    setIsLoadingMore(false);
+  };
+
+  // Highlights (the most liked moments) and members worth following
+  useEffect(() => {
+    if (!session.isLoaded) return;
+    let active = true;
+    fetch('/api/moments?tab=popular&limit=10', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((json: FeedJson) => active && setHighlights((json.moments ?? []).filter((m) => m.images?.[0]).map(fromServerMoment)))
+      .catch(() => undefined);
+    fetch('/api/members/suggested', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((json) => active && setSuggested(json.members ?? []))
+      .catch(() => undefined);
+    fetch('/api/stories', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((json) => active && setStoryGroups(json.groups ?? []))
+      .catch(() => undefined);
+    fetch('/api/quests?limit=6', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((json: { quests?: { id: string; title: string; badgeLabel?: string; status?: string }[] }) => active && setSidebarQuests((json.quests ?? []).filter((q) => q.status !== 'ended').slice(0, 3)))
       .catch(() => undefined);
     return () => {
       active = false;
     };
-  }, [session.isLoaded, memberId]);
+  }, [session.isLoaded, memberId, socialReload]);
+
+  /** Posting anything needs a verified account; say so before a form opens */
+  const needsVerification = () => {
+    const trust = session.member?.trust;
+    if (trust && !(trust.emailVerified && trust.pledged)) {
+      setIsVerifyNoticeOpen(true);
+      return true;
+    }
+    return false;
+  };
+
+  const handleOpenStoryForm = () => {
+    if (!isLoggedIn) {
+      setMembershipActionTitle('เพื่อแชร์สตอรี่ของคุณ');
+      setIsRequireMembershipOpen(true);
+      return;
+    }
+    if (needsVerification()) return;
+    setStoryDraft({ file: null, preview: '', caption: '' });
+  };
+
+  const handlePickStoryImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const picked = e.target.files?.[0];
+    e.target.value = '';
+    if (!picked || !storyDraft) return;
+    try {
+      const compressed = await compressImage(picked, { maxWidth: 1080, maxHeight: 1920, quality: 0.85, targetMimeType: 'image/webp' });
+      if (storyDraft.preview) URL.revokeObjectURL(storyDraft.preview);
+      setStoryDraft({ ...storyDraft, file: compressed, preview: URL.createObjectURL(compressed) });
+    } catch {
+      showToast('ใช้รูปนี้ไม่ได้ ลองเลือกรูปอื่น (JPG, PNG หรือ WebP)');
+    }
+  };
+
+  const handlePostStory = async () => {
+    if (!storyDraft?.file || isDialogBusy) return;
+    setIsDialogBusy(true);
+    try {
+      const form = new FormData();
+      form.append('file', storyDraft.file);
+      form.append('folder', 'moments');
+      const upload = await fetch('/api/upload', { method: 'POST', body: form }).then((r) => r.json()).catch(() => null);
+      if (!upload?.success || !upload.url) return showToast(upload?.error || upload?.message || 'อัปโหลดรูปไม่สำเร็จ ลองอีกครั้งนะ');
+      const result = await momentRequest('/api/stories', 'POST', { image: upload.url, caption: storyDraft.caption.trim() });
+      if (!result.ok) return showToast(result.message);
+      URL.revokeObjectURL(storyDraft.preview);
+      setStoryDraft(null);
+      setSocialReload((n) => n + 1);
+      showToast('แชร์สตอรี่แล้ว จะแสดง 24 ชั่วโมง');
+    } finally {
+      setIsDialogBusy(false);
+    }
+  };
+
+  const openStory = (group: number, index: number) => {
+    const story = storyGroups[group]?.stories[index];
+    if (!story) return setStoryView(null);
+    setStoryView({ group, index });
+    if (isLoggedIn && !story.seen) {
+      void momentRequest(`/api/stories/${story.id}`, 'POST', {});
+      setStoryGroups((prev) => prev.map((g, gi) => (gi !== group ? g : { ...g, stories: g.stories.map((s, si) => (si === index ? { ...s, seen: true } : s)), allSeen: g.stories.every((s, si) => si === index || s.seen) })));
+    }
+  };
+  /** Next photo, then the next person's stories, then close */
+  const stepStory = (direction: 1 | -1) => {
+    if (!storyView) return;
+    const group = storyGroups[storyView.group];
+    const nextIndex = storyView.index + direction;
+    if (group && nextIndex >= 0 && nextIndex < group.stories.length) return openStory(storyView.group, nextIndex);
+    const nextGroup = storyView.group + direction;
+    if (nextGroup < 0 || nextGroup >= storyGroups.length) return setStoryView(null);
+    openStory(nextGroup, direction === 1 ? 0 : storyGroups[nextGroup].stories.length - 1);
+  };
+  const handleDeleteStory = async (id: string) => {
+    const result = await momentRequest(`/api/stories/${id}`, 'DELETE');
+    if (!result.ok) return showToast(result.message);
+    setStoryView(null);
+    setSocialReload((n) => n + 1);
+    showToast('ลบสตอรี่แล้ว');
+  };
+
+  // Esc closes the post form (the other dialogs use DialogShell, which handles Esc itself)
+  useEffect(() => {
+    if (!isCreateModalOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !isPosting && setIsCreateModalOpen(false);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isCreateModalOpen, isPosting]);
+
+  useEffect(() => {
+    if (!storyView) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setStoryView(null);
+      if (e.key === 'ArrowRight') stepStory(1);
+      if (e.key === 'ArrowLeft') stepStory(-1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- stepStory reads the current view
+  }, [storyView, storyGroups]);
+
+  const handleFollowMember = async (id: string, name: string) => {
+    if (!isLoggedIn) {
+      setMembershipActionTitle(`เพื่อติดตามโมเมนต์ของ ${name}`);
+      setIsRequireMembershipOpen(true);
+      return;
+    }
+    const isFollowing = followingIds.includes(id);
+    const result = await momentRequest(`/api/members/${id}/actions`, 'POST', { action: isFollowing ? 'unfollow' : 'follow' });
+    if (!result.ok) return showToast(result.message);
+    setFollowingIds((prev) => (isFollowing ? prev.filter((x) => x !== id) : [...prev, id]));
+    showToast(isFollowing ? `เลิกติดตาม ${name} แล้ว` : `ติดตาม ${name} แล้ว ดูโพสต์ได้ที่แท็บ "ติดตาม"`);
+  };
+
+  const handleReportPost = async () => {
+    if (!reportReason) return;
+    if (reportStoryId) {
+      setIsDialogBusy(true);
+      const sent = await momentRequest(`/api/stories/${reportStoryId}`, 'POST', { action: 'report', reason: reportReason });
+      setIsDialogBusy(false);
+      if (!sent.ok) return showToast(sent.message);
+      setReportStoryId(null);
+      setReportReason('');
+      setSocialReload((n) => n + 1);
+      return showToast('ส่งรายงานให้ทีมงานแล้ว ขอบคุณที่ช่วยกันดูแล');
+    }
+    if (!reportPostId) return;
+    setIsDialogBusy(true);
+    const result = await momentRequest(`/api/moments/${reportPostId}/actions`, 'POST', { action: 'report', reason: reportReason });
+    setIsDialogBusy(false);
+    if (!result.ok) return showToast(result.message);
+    // A post hidden by enough reports leaves the feed straight away
+    if ((result as { autoHidden?: boolean }).autoHidden) setPosts((prev) => prev.filter((p) => p.id !== reportPostId));
+    setReportPostId(null);
+    setReportReason('');
+    showToast('ส่งรายงานให้ทีมงานแล้ว ขอบคุณที่ช่วยกันดูแล');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editPost || !editPost.caption.trim()) return;
+    setIsDialogBusy(true);
+    const result = await momentRequest(`/api/moments/${editPost.id}`, 'PATCH', { caption: editPost.caption.trim() });
+    setIsDialogBusy(false);
+    if (!result.ok || !result.moment) return showToast(result.message);
+    const updated = fromServerMoment(result.moment);
+    setPosts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+    setEditPost(null);
+    showToast('แก้ไขโมเมนต์แล้ว');
+  };
+
+  const handleDeleteComment = async (postId: string, commentId: string) => {
+    const result = await momentRequest(`/api/moments/${postId}/actions`, 'POST', { action: 'delete_comment', commentId });
+    if (!result.ok || !result.moment) return showToast(result.message);
+    const updated = fromServerMoment(result.moment);
+    setPosts((prev) => prev.map((p) => (p.id === postId ? updated : p)));
+  };
 
   // Handle direct link to shared moment (?momentId=...)
   useEffect(() => {
@@ -247,7 +539,7 @@ function MomentsContent() {
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         setHighlightedPostId(urlMomentId);
-        showToast('เปิดและเน้นโมเมนต์ที่แชร์เรียบร้อย 📍');
+        showToast('เปิดและเน้นโมเมนต์ที่แชร์เรียบร้อย');
         const clearTimer = setTimeout(() => {
           setHighlightedPostId(null);
         }, 4000);
@@ -283,6 +575,8 @@ function MomentsContent() {
     index: number;
     caption?: string;
   } | null>(null);
+  // Swipe left or right in the photo viewer on touch screens
+  const viewerTouchX = useRef<number | null>(null);
 
   // Modal Selection Targets
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
@@ -314,7 +608,8 @@ function MomentsContent() {
       setCreateTargetType('community');
       setCreateTargetId(eventToShare);
       if (locToShare) setCustomLocationInput(locToShare);
-      if (titleToShare) setCaptionInput(`แชร์ความประทับใจจากกิจกรรม "${titleToShare}" ✨\n`);
+      if (titleToShare) setLinkedTarget({ type: 'community', id: eventToShare, title: titleToShare, location: locToShare || '' });
+      if (titleToShare) setCaptionInput(`แชร์ความประทับใจจากกิจกรรม "${titleToShare}"\n`);
       if (imgToShare) setUploadedPostImages([imgToShare]);
       setIsCreateModalOpen(true);
     }
@@ -396,25 +691,24 @@ function MomentsContent() {
         setIsLocating(false);
         setCustomLocationInput('ตำแหน่งปัจจุบันของฉัน (GPS)');
         setIsCheckInPopoverOpen(false);
-        showToast('ระบุพิกัดตำแหน่งปัจจุบันเรียบร้อย 📍');
+        showToast('ระบุพิกัดตำแหน่งปัจจุบันเรียบร้อย');
       },
       () => {
         setIsLocating(false);
         setCustomLocationInput('กรุงเทพมหานคร (พิกัดใกล้ฉัน)');
         setIsCheckInPopoverOpen(false);
-        showToast('ระบุพิกัดพื้นที่ใกล้เคียงเรียบร้อย 📍');
+        showToast('ระบุพิกัดพื้นที่ใกล้เคียงเรียบร้อย');
       },
       { timeout: 5000 }
     );
   };
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
 
   // Open Create Moment Modal with Clean Reset
   const handleOpenCreateModal = () => {
+    if (needsVerification()) return;
+    setLinkedTarget(null);
+    setLinkQuery('');
     setCreateTargetType('general');
     setCreateTargetId('');
     setCustomLocationInput('');
@@ -473,7 +767,7 @@ function MomentsContent() {
         if (post.id === postId) {
           const newIsLiked = !post.isLiked;
           const newLikesCount = newIsLiked ? post.likesCount + 1 : Math.max(0, post.likesCount - 1);
-          if (newIsLiked) showToast('ส่งหัวใจฮีลใจเรียบร้อย! ❤️');
+          if (newIsLiked) showToast('ส่งหัวใจฮีลใจเรียบร้อย!');
           return { ...post, isLiked: newIsLiked, likesCount: newLikesCount };
         }
         return post;
@@ -503,7 +797,7 @@ function MomentsContent() {
       prevPosts.map((p) => {
         if (p.id === postId) {
           if (p.isLiked) return p;
-          showToast('ส่งหัวใจฮีลใจเรียบร้อย! ❤️');
+          showToast('ส่งหัวใจฮีลใจเรียบร้อย!');
           return {
             ...p,
             isLiked: true,
@@ -539,7 +833,7 @@ function MomentsContent() {
       if (isSaved) {
         showToast('ยกเลิกการบันทึกโมเมนต์');
       } else {
-        showToast('บันทึกโมเมนต์ลงคอลเลกชันส่วนตัวแล้ว 🔖');
+        showToast('บันทึกโมเมนต์ลงคอลเลกชันส่วนตัวแล้ว');
       }
       return next;
     });
@@ -580,7 +874,7 @@ function MomentsContent() {
       const updated = fromServerMoment(result.moment);
       setPosts((prev) => prev.map((p) => (p.id === postId ? updated : p)));
       setCommentInputs((prev) => ({ ...prev, [postId]: '' }));
-      return showToast('ส่งความคิดเห็นเรียบร้อยแล้ว! 💬');
+      return showToast('ส่งความคิดเห็นเรียบร้อยแล้ว!');
     }
 
     const myName = tidyDisplayName(session.member?.displayName ?? '') || 'สมาชิก';
@@ -608,7 +902,7 @@ function MomentsContent() {
     );
 
     setCommentInputs((prev) => ({ ...prev, [postId]: '' }));
-    showToast('ส่งความคิดเห็นเรียบร้อยแล้ว! 💬');
+    showToast('ส่งความคิดเห็นเรียบร้อยแล้ว!');
   };
 
   // Copy Share Link & Increment Share Count (Direct moment link & copy toast)
@@ -683,7 +977,7 @@ function MomentsContent() {
         showToast(`ยกเลิก Connect กับ ${member.name} เรียบร้อย`);
         return prev.filter((id) => id !== member.id);
       } else {
-        showToast(`Connect กับ ${member.name} สำเร็จ! ✨`);
+        showToast(`Connect กับ ${member.name} สำเร็จ!`);
         return [...prev, member.id];
       }
     });
@@ -744,10 +1038,10 @@ function MomentsContent() {
       const processedDataUrls: string[] = [];
 
       for (const file of filesToProcess) {
-        // 1. Client-Side HTML5 Canvas Resize & Convert to .webp (Max 1600x1600, quality 0.82)
+        // 1. Client-Side HTML5 Canvas Resize & Convert to .webp (max 1440x1800, quality 0.82)
         const compressedFile = await compressImage(file, {
-          maxWidth: 1600,
-          maxHeight: 1600,
+          maxWidth: 1440,
+          maxHeight: 1800,
           quality: 0.82,
           targetMimeType: 'image/webp',
         });
@@ -768,7 +1062,7 @@ function MomentsContent() {
         return next;
       });
 
-      showToast(`แปลงเป็น WebP และปรับขนาดสำเร็จ (${processedDataUrls.length} รูป) ⚡`);
+      showToast(`แปลงเป็น WebP และปรับขนาดสำเร็จ (${processedDataUrls.length} รูป)`);
     } catch (err) {
       console.error('Error compressing images:', err);
       showToast('เกิดข้อผิดพลาดในการประมวลผลรูปภาพ');
@@ -831,6 +1125,12 @@ function MomentsContent() {
     if (uploadedPostImages.length === 0) return showToast('เพิ่มรูปอย่างน้อย 1 รูปก่อนนะ');
     const finalImages = uploadedPostImages;
 
+    // A linked event, place or challenge decides the title and the place shown on the post
+    if (linkedTarget) {
+      targetTitle = linkedTarget.title;
+      resolvedLocation = linkedTarget.location || linkedTarget.title;
+    }
+
     // The post is saved on the server under the signed-in member; the server applies the community rules
     setIsPosting(true);
     try {
@@ -847,13 +1147,20 @@ function MomentsContent() {
         if (!upload?.success || !upload.url) return showToast(upload?.error || upload?.message || 'อัปโหลดรูปไม่สำเร็จ ลองอีกครั้งนะ');
         imageUrls.push(upload.url);
       }
+      const imageRatio = await new Promise<number | undefined>((resolve) => {
+        const probe = new window.Image();
+        probe.onload = () => resolve(probe.naturalHeight > 0 ? probe.naturalWidth / probe.naturalHeight : undefined);
+        probe.onerror = () => resolve(undefined);
+        probe.src = finalImages[0];
+      });
       const result = await momentRequest('/api/moments', 'POST', {
         caption: captionInput.trim(),
         images: imageUrls,
+        imageRatio,
         location: resolvedLocation,
         category: 'chill',
-        targetType: createTargetType,
-        targetId: createTargetId && createTargetId !== 'custom' ? createTargetId : undefined,
+        targetType: linkedTarget ? linkedTarget.type : 'general',
+        targetId: linkedTarget?.id,
         targetTitle,
       });
       if (!result.ok || !result.moment) return showToast(result.message);
@@ -867,68 +1174,22 @@ function MomentsContent() {
     setCustomLocationInput('');
     setUploadedPostImages([]);
     setIsCreateModalOpen(false);
-    showToast('แชร์โมเมนต์ของคุณเรียบร้อยแล้ว! 🎉');
+    showToast('แชร์โมเมนต์ของคุณเรียบร้อยแล้ว');
   };
 
-  // Auto Infinite Scroll with IntersectionObserver
+  // Infinite scroll: the next page is fetched when the end of the list comes into view
   useEffect(() => {
     const target = sentinelRef.current;
     if (!target) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const first = entries[0];
-        if (first.isIntersecting && !isLoadingMore && visibleCount < posts.length) {
-          setIsLoadingMore(true);
-          setTimeout(() => {
-            const step = typeof window !== 'undefined' && window.innerWidth >= 1024 ? 6 : 4;
-            setVisibleCount((prev) => Math.min(prev + step, posts.length));
-            setIsLoadingMore(false);
-          }, 300);
-        }
-      },
-      { threshold: 0.1, rootMargin: '120px' }
-    );
-
+    const observer = new IntersectionObserver((entries) => entries[0].isIntersecting && void loadMorePosts(), { threshold: 0.1, rootMargin: '200px' });
     observer.observe(target);
-    return () => {
-      if (target) observer.unobserve(target);
-    };
-  }, [visibleCount, posts.length, isLoadingMore]);
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadMorePosts reads the listed values
+  }, [hasMorePosts, isLoadingMore, feedPage, posts.length]);
 
-  // Filter posts
-  const filteredPosts = useMemo(() => {
-    let list = [...posts];
-
-    // Location/Target filter
-    if (locationFilter) {
-      const query = locationFilter.toLowerCase().trim();
-      list = list.filter(
-        (p) =>
-          p.location.toLowerCase().includes(query) ||
-          (p.targetTitle && p.targetTitle.toLowerCase().includes(query)) ||
-          (p.eventTitle && p.eventTitle.toLowerCase().includes(query))
-      );
-    }
-
-    // Tab filter
-    if (activeTabFilter === 'popular') {
-      return list.sort((a, b) => b.likesCount - a.likesCount);
-    }
-    if (activeTabFilter === 'saved') {
-      return list.filter((p) => savedPostIds.includes(p.id));
-    }
-    if (activeTabFilter === 'mine') {
-      if (!isLoggedIn) return [];
-      return list.filter(isMinePost);
-    }
-
-    return list;
-  }, [posts, locationFilter, activeTabFilter, isLoggedIn]);
-
-  const displayedPosts = useMemo(() => {
-    return filteredPosts.slice(0, visibleCount);
-  }, [filteredPosts, visibleCount]);
+  // Tabs and the place filter are applied by the server
+  const filteredPosts = posts;
+  const displayedPosts = posts;
 
   // Curated Recommended Events for Sidebar (Meetups & Fairs)
   const recommendedEvents = useMemo(() => {
@@ -966,39 +1227,63 @@ function MomentsContent() {
       />
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] w-full mx-auto px-3.5 sm:px-6 lg:px-8 pt-2.5 pb-28 sm:pt-4 sm:pb-12 space-y-3 sm:space-y-4">
+      <main className="flex-1 max-w-[1140px] w-full mx-auto px-3.5 sm:px-6 lg:px-8 pt-2.5 pb-28 sm:pt-4 sm:pb-12 space-y-3 sm:space-y-4">
         
         {/* Hidden SEO/A11y H1 */}
         <h1 className="sr-only">โมเมนต์และบรรยากาศจริงจากชุมชน Chill & Connect Hub</h1>
 
-        {/* 1.5 Moments Stories & Highlights Rail (Instagram-Style Stories & Pulse) */}
-        <MomentsStoriesRail
-          onAddStory={() => {
-            if (!isLoggedIn) {
-              setMembershipActionTitle('เพื่อแชร์สตอรี่โมเมนต์ของคุณ');
-              setIsRequireMembershipOpen(true);
-            } else {
-              handleOpenCreateModal();
-            }
-          }}
-          isLoggedIn={isLoggedIn}
-          onOpenTargetLocation={(locName) => setLocationFilter(locName)}
-          onShowToast={showToast}
-          userStoryThumbnail={userStoryThumbnail}
-        />
+        {/* 1.5 Stories (24 hours) first, then highlights: the most liked moments */}
+        <section aria-label="สตอรี่และไฮไลต์" className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-3 sm:p-4">
+          <ul className="flex gap-3 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
+            <li className="shrink-0 w-16 sm:w-[72px]">
+              <button type="button" onClick={handleOpenStoryForm} className="w-full flex flex-col items-center gap-1.5 cursor-pointer group">
+                <span className="w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-full border-2 border-dashed border-slate-300 group-hover:border-[#2563EB] bg-slate-50 flex items-center justify-center text-slate-500 group-hover:text-[#2563EB] transition-colors">
+                  <Plus className="w-6 h-6" aria-hidden="true" />
+                </span>
+                <span className="w-full text-[11px] font-bold text-slate-800 truncate text-center">เพิ่มสตอรี่</span>
+              </button>
+            </li>
+            {storyGroups.map((g, gi) => (
+              <li key={g.author.id} className="shrink-0 w-16 sm:w-[72px]">
+                <button type="button" onClick={() => openStory(gi, Math.max(0, g.stories.findIndex((s) => !s.seen)))} className="w-full flex flex-col items-center gap-1.5 cursor-pointer" aria-label={`ดูสตอรี่ของ ${g.author.displayName}`}>
+                  <span className={`w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-full p-0.5 border-2 ${g.allSeen ? 'border-slate-300' : 'border-[#2563EB]'}`}>
+                    <img loading="lazy" src={g.stories[g.stories.length - 1].image} alt="" className="w-full h-full rounded-full object-cover" />
+                  </span>
+                  <span className="w-full text-[11px] font-semibold text-slate-700 truncate text-center">{g.isMine ? 'สตอรี่ของคุณ' : g.author.displayName}</span>
+                </button>
+              </li>
+            ))}
+            {highlights.length > 0 && (
+              <li className="shrink-0 flex flex-col items-center justify-start gap-1.5 px-1" aria-hidden="true">
+                <span className="h-16 sm:h-[72px] w-px bg-slate-200" />
+                <span className="text-[11px] font-bold text-slate-500 whitespace-nowrap">ไฮไลต์</span>
+              </li>
+            )}
+            {highlights.map((h) => (
+              <li key={h.id} className="shrink-0 w-16 sm:w-[72px]">
+                <button type="button" onClick={() => openLightbox(h.images ?? [], 0, h.caption)} className="w-full flex flex-col items-center gap-1.5 cursor-pointer" aria-label={`ดูรูปยอดนิยมของ ${h.userName}`}>
+                  <span className="w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-2xl overflow-hidden border border-slate-200">
+                    <img loading="lazy" src={h.images?.[0]} alt="" className="w-full h-full object-cover" />
+                  </span>
+                  <span className="w-full text-[11px] font-semibold text-slate-600 truncate text-center">{h.userName}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
 
         {/* 2. Main Grid: 2 Columns */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-6 items-start">
           {/* Left Column (8-cols): Main Visual Feed */}
-          <div className="lg:col-span-8 space-y-4">
+          <div className="min-w-0 w-full max-w-[680px] mx-auto lg:mx-0 lg:justify-self-end space-y-4">
             {/* Quick Post Prompt Input Bar & Segmented Tabs Container */}
             <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-2xs space-y-3.5">
               {/* Quick Post Prompt Input Bar (Adaptive for Logged in vs Logged out) */}
               <div className="flex items-center gap-3">
                 {isLoggedIn ? (
-                  <img
-                    src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80"
-                    alt="User avatar"
+                  <img loading="lazy"
+                    src={avatarOf(tidyDisplayName(session.member?.displayName ?? ''), session.member?.avatarUrl)}
+                    alt=""
                     className="w-9 h-9 rounded-full object-cover shrink-0 border border-slate-200"
                   />
                 ) : (
@@ -1017,48 +1302,76 @@ function MomentsContent() {
                       handleOpenCreateModal();
                     }
                   }}
-                  className="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-500 text-xs sm:text-sm font-medium px-4 py-2.5 rounded-xl text-left transition-colors flex items-center justify-between cursor-pointer border border-slate-200"
+                  className="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-500 text-sm font-medium px-4 py-2.5 rounded-xl text-left transition-colors flex items-center justify-between gap-2 min-w-0 cursor-pointer border border-slate-200"
                 >
-                  <span>
-                    {isLoggedIn
-                      ? 'แชร์ภาพโมเมนต์กิจกรรมหรือพิกัดเที่ยวล่าสุดของคุณ...'
-                      : 'เข้าสู่ระบบเพื่อร่วมแชร์ภาพโมเมนต์กับเพื่อนๆ...'}
+                  <span className="truncate">
+                    {isLoggedIn ? 'แชร์โมเมนต์ของคุณ' : 'แชร์โมเมนต์'}
                   </span>
                   {isLoggedIn ? (
-                    <ImageIcon className="w-4 h-4 text-slate-400" />
+                    <ImageIcon className="w-4 h-4 text-slate-400 shrink-0" />
                   ) : (
-                    <span className="text-xs font-bold text-slate-700 bg-white border border-slate-200/80 px-2.5 py-1 rounded-lg shadow-2xs">
+                    <span className="text-xs font-bold text-slate-700 bg-white border border-slate-200/80 px-2.5 py-1 rounded-lg shadow-2xs shrink-0 whitespace-nowrap">
                       เข้าสู่ระบบ
                     </span>
                   )}
                 </button>
               </div>
 
-              {/* Clean Segmented Tabs */}
-              <div className="bg-slate-100/90 p-1 rounded-xl flex items-center gap-1 border border-slate-200/70">
+              {/* Feed views (3 tabs) + two personal shortcuts */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 min-w-0 bg-slate-100/90 p-1 rounded-xl flex items-center gap-1 border border-slate-200/70" role="tablist" aria-label="มุมมองฟีด">
+                  {[
+                    { id: 'all', label: 'ทั้งหมด' },
+                    { id: 'following', label: 'ติดตาม' },
+                    { id: 'popular', label: 'ยอดนิยม' },
+                  ].map((tab) => {
+                    const isActive = activeTabFilter === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        role="tab"
+                        aria-selected={isActive}
+                        onClick={() => setActiveTabFilter(tab.id as typeof activeTabFilter)}
+                        className={`flex-1 py-2 px-2 sm:px-3 rounded-lg text-xs sm:text-sm font-bold whitespace-nowrap transition-all cursor-pointer ${
+                          isActive ? 'bg-white text-slate-900 shadow-2xs font-extrabold' : 'text-slate-500 hover:text-slate-900'
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    );
+                  })}
+                </div>
                 {[
-                  { id: 'all', label: 'ฟีดทั้งหมด' },
-                  { id: 'popular', label: 'ยอดนิยม' },
-                  { id: 'saved', label: `ที่บันทึกไว้ (${savedPostIds.length})` },
-                  { id: 'mine', label: 'โมเมนต์ของฉัน' },
-                ].map((tab) => {
-                  const isActive = activeTabFilter === tab.id;
+                  { id: 'saved', label: 'โพสต์ที่บันทึกไว้', Icon: Bookmark },
+                  { id: 'mine', label: 'โมเมนต์ของฉัน', Icon: User },
+                ].map(({ id, label, Icon }) => {
+                  const isActive = activeTabFilter === id;
                   return (
                     <button
-                      key={tab.id}
+                      key={id}
                       type="button"
-                      onClick={() => setActiveTabFilter(tab.id as any)}
-                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                        isActive
-                          ? 'bg-white text-slate-900 shadow-2xs font-extrabold'
-                          : 'text-slate-500 hover:text-slate-900'
+                      onClick={() => setActiveTabFilter((isActive ? 'all' : id) as typeof activeTabFilter)}
+                      aria-pressed={isActive}
+                      aria-label={label}
+                      title={label}
+                      className={`shrink-0 w-10 h-10 rounded-xl border flex items-center justify-center cursor-pointer transition-colors ${
+                        isActive ? 'bg-blue-50 border-blue-200 text-[#2563EB]' : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900'
                       }`}
                     >
-                      <span>{tab.label}</span>
+                      <Icon className="w-4 h-4" aria-hidden="true" />
                     </button>
                   );
                 })}
               </div>
+              {(activeTabFilter === 'saved' || activeTabFilter === 'mine') && (
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="text-sm font-extrabold text-slate-900">{activeTabFilter === 'saved' ? 'โพสต์ที่บันทึกไว้' : 'โมเมนต์ของฉัน'}</h2>
+                  <button type="button" onClick={() => setActiveTabFilter('all')} className="text-xs font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap">
+                    กลับไปฟีด
+                  </button>
+                </div>
+              )}
 
               {/* Active Location Filter Pill (if any) */}
               {locationFilter && (
@@ -1082,7 +1395,7 @@ function MomentsContent() {
             </div>
 
             {/* Contextual Empty State for "ที่บันทึกไว้" (Saved Posts) */}
-            {displayedPosts.length === 0 && activeTabFilter === 'saved' && (
+            {!isFeedLoading && displayedPosts.length === 0 && activeTabFilter === 'saved' && isLoggedIn && (
               <div className="bg-amber-50/40 rounded-3xl p-8 border border-dashed border-amber-200/90 text-center space-y-3.5 animate-fade-in my-4">
                 <div className="w-12 h-12 rounded-full bg-amber-100/80 text-amber-600 flex items-center justify-center mx-auto shadow-2xs border border-amber-200/60">
                   <Bookmark className="w-6 h-6 fill-amber-500/20" />
@@ -1092,7 +1405,7 @@ function MomentsContent() {
                     ยังไม่มีโมเมนต์ที่คุณบันทึกไว้
                   </h3>
                   <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
-                    พบภาพถ่ายบรรยากาศหรือพิกัดที่ถูกใจ? กดปุ่ม <strong>"บันทึก 🔖"</strong> ที่มุมขวาล่างของโพสต์ เพื่อเก็บไว้ในคอลเลกชันส่วนตัวของคุณ
+                    พบภาพถ่ายบรรยากาศหรือพิกัดที่ถูกใจ? กดปุ่ม <strong>"บันทึก"</strong> ที่มุมขวาล่างของโพสต์ เพื่อเก็บไว้ในคอลเลกชันส่วนตัวของคุณ
                   </p>
                 </div>
                 <button
@@ -1106,11 +1419,13 @@ function MomentsContent() {
             )}
 
             {/* Standard Empty State for other tabs */}
-            {displayedPosts.length === 0 && activeTabFilter !== 'saved' && (activeTabFilter !== 'mine' || isLoggedIn) && (
+            {!isFeedLoading && displayedPosts.length === 0 && activeTabFilter !== 'saved' && (!['mine', 'following'].includes(activeTabFilter) || isLoggedIn) && (
               <div className="bg-slate-50/80 rounded-2xl p-5 border border-dashed border-slate-200 text-center space-y-3">
                 <p className="text-sm font-semibold text-slate-700">
                   {locationFilter
                     ? `ไม่พบโมเมนต์ที่ตรงกับการค้นหา "${locationFilter}"`
+                    : activeTabFilter === 'following'
+                    ? 'ยังไม่มีโพสต์จากคนที่คุณติดตาม ลองกดติดตามสมาชิกที่ชอบดูนะ'
                     : activeTabFilter === 'mine'
                     ? 'คุณยังไม่ได้แชร์โมเมนต์เลย ออกไปใช้ชีวิตแล้วมาแบ่งปันรูปสวยๆ กันนะ'
                     : 'ยังไม่มีโมเมนต์ในหมวดนี้'}
@@ -1129,17 +1444,17 @@ function MomentsContent() {
             )}
 
             {/* Guest State for "โมเมนต์ของฉัน" when Logged Out */}
-            {activeTabFilter === 'mine' && !isLoggedIn && (
+            {['mine', 'following', 'saved'].includes(activeTabFilter) && !isLoggedIn && (
               <div className="bg-white rounded-2xl p-8 border border-slate-200/80 text-center space-y-3.5 animate-fade-in shadow-xs">
                 <div className="w-12 h-12 rounded-full bg-blue-50 text-[#2563EB] flex items-center justify-center mx-auto border border-blue-100">
                   <LogIn className="w-5 h-5" />
                 </div>
                 <div className="space-y-1">
                   <h3 className="font-bold text-sm text-slate-900">
-                    เข้าสู่ระบบเพื่อดูโมเมนต์ของคุณ
+                    เข้าสู่ระบบเพื่อดูส่วนนี้
                   </h3>
                   <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
-                    บันทึกความทรงจำ รูปภาพบรรยากาศ และเรื่องราวที่คุณเคยร่วมแชร์กับชาวฮับจะแสดงที่นี่
+                    โมเมนต์ของคุณ โพสต์ที่บันทึกไว้ และโพสต์จากคนที่คุณติดตาม จะแสดงที่นี่
                   </p>
                 </div>
                 <button
@@ -1153,18 +1468,42 @@ function MomentsContent() {
               </div>
             )}
 
+            {/* Loading placeholders for the first page */}
+            {isFeedLoading && (
+              <div className="space-y-5" aria-busy="true" aria-label="กำลังโหลดโมเมนต์">
+                {[0, 1].map((i) => (
+                  <div key={i} className="bg-white rounded-3xl border border-slate-200/90 overflow-hidden animate-pulse">
+                    <div className="p-4 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-slate-200" />
+                      <div className="space-y-2 flex-1">
+                        <div className="h-3 w-32 rounded bg-slate-200" />
+                        <div className="h-3 w-20 rounded bg-slate-100" />
+                      </div>
+                    </div>
+                    <div className="h-64 sm:h-80 bg-slate-100" />
+                    <div className="p-4 space-y-2">
+                      <div className="h-3 w-3/4 rounded bg-slate-200" />
+                      <div className="h-3 w-1/2 rounded bg-slate-100" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Feed Posts List */}
-            <div className="space-y-5">
-              {displayedPosts.map((post) => {
+            <div className={`space-y-5 ${isFeedLoading ? 'hidden' : ''}`}>
+              {displayedPosts.map((post, postIndex) => {
                 const targetTitle = post.targetTitle || post.eventTitle;
                 const images = post.images && post.images.length > 0 ? post.images : ['/event-hyrox.png'];
                 const count = images.length;
+                const authorId = (post as { authorId?: string | null }).authorId;
+                const profileHref = authorId ? `/profile?id=${authorId}` : null;
 
                 return (
+                  <React.Fragment key={post.id}>
                   <article
-                    key={post.id}
                     id={`moment-${post.id}`}
-                    className={`bg-white rounded-3xl border border-slate-200/90 shadow-2xs overflow-hidden transition-all duration-500 hover:shadow-md ${
+                    className={`bg-white -mx-3.5 sm:mx-0 rounded-none sm:rounded-3xl border-y sm:border border-slate-200/90 shadow-2xs overflow-hidden transition-all duration-500 hover:shadow-md ${
                       highlightedPostId === post.id
                         ? 'ring-4 ring-[#2563EB]/40 bg-blue-50/15 shadow-xl scale-[1.01]'
                         : ''
@@ -1173,16 +1512,23 @@ function MomentsContent() {
                     {/* Post Author Bar */}
                     <div className="p-4 sm:p-5 flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
-                        <img
-                          src={post.userAvatar}
-                          alt={post.userName}
-                          className="w-10 h-10 rounded-full object-cover shrink-0 border border-slate-200"
-                        />
+                        {profileHref ? (
+                          <Link href={profileHref} className="shrink-0" aria-label={`ดูโปรไฟล์ของ ${post.userName}`}>
+                            <img loading="lazy" src={post.userAvatar} alt="" className="w-10 h-10 rounded-full object-cover border border-slate-200" />
+                          </Link>
+                        ) : (
+                          <img loading="lazy" src={post.userAvatar} alt="" className="w-10 h-10 rounded-full object-cover shrink-0 border border-slate-200" />
+                        )}
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <h3 className="font-bold text-sm text-slate-900 truncate">
-                              {post.userName}
+                              {profileHref ? <Link href={profileHref} className="hover:text-[#2563EB] hover:underline">{post.userName}</Link> : post.userName}
                             </h3>
+                            {authorId && !isMinePost(post) && !followingIds.includes(authorId) && (
+                              <button type="button" onClick={() => handleFollowMember(authorId, post.userName)} className="text-xs font-extrabold text-[#2563EB] hover:text-[#1D4ED8] cursor-pointer whitespace-nowrap">
+                                ติดตาม
+                              </button>
+                            )}
 
                             {/* Facebook-Style Check-In Tag in Author Line */}
                             {post.targetType === 'general' && post.location && post.location !== 'ไลฟ์สไตล์ทั่วไป' && (
@@ -1207,14 +1553,14 @@ function MomentsContent() {
                               <button
                                 type="button"
                                 onClick={() => handleOpenTarget(post)}
-                                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200/90 text-slate-700 hover:text-slate-900 border border-slate-200/80 transition-all cursor-pointer group/poi shadow-2xs active:scale-95"
+                                className="inline-flex items-center gap-1 max-w-full min-w-0 px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200/90 text-slate-700 hover:text-slate-900 border border-slate-200/80 transition-all cursor-pointer group/poi shadow-2xs active:scale-95"
                                 title="คลิกเพื่อดูข้อมูลสถานที่หรือกิจกรรมนี้"
                               >
-                                <MapPin className="w-3 h-3 text-[#F26430] group-hover/poi:scale-110 transition-transform" />
-                                <span className="truncate max-w-[180px] sm:max-w-[260px] font-bold">
+                                <MapPin className="w-3 h-3 shrink-0 text-[#F26430] group-hover/poi:scale-110 transition-transform" />
+                                <span className="truncate min-w-0 sm:max-w-[260px] font-bold">
                                   {targetTitle}
                                 </span>
-                                <span className="text-[10px] text-slate-400 group-hover/poi:text-slate-600 inline-flex items-center gap-0.5">
+                                <span className="hidden sm:inline-flex text-[11px] text-slate-500 group-hover/poi:text-slate-700 items-center gap-0.5 shrink-0 whitespace-nowrap">
                                   <span>ดูข้อมูล</span>
                                   <ArrowRight className="w-2.5 h-2.5 group-hover/poi:translate-x-0.5 transition-transform" />
                                 </span>
@@ -1223,7 +1569,7 @@ function MomentsContent() {
                           )}
                           {post.targetType === 'general' && (!post.location || post.location === 'ไลฟ์สไตล์ทั่วไป') && (
                             <div className="flex items-center gap-1 text-[11px] font-semibold mt-0.5">
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200/80 text-[10px] font-medium">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200/80 text-[11px] font-medium">
                                 <span>ไลฟ์สไตล์ทั่วไป</span>
                               </span>
                             </div>
@@ -1232,138 +1578,64 @@ function MomentsContent() {
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-xs text-slate-400 font-medium">
+                        {(post as { isSample?: boolean }).isSample && (
+                          <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full whitespace-nowrap" title="โพสต์ตัวอย่างระหว่างพัฒนา ไม่มีเจ้าของจริง">ตัวอย่าง</span>
+                        )}
+                        <span className="text-xs text-slate-500 font-medium whitespace-nowrap">
                           {post.timeAgo}
                         </span>
-                        {isMinePost(post) && (
-                          <button
-                            type="button"
-                            onClick={() => handleDeletePost(post.id)}
-                            className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                            title="ลบโมเมนต์นี้"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
+                        {isMinePost(post) ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => setEditPost({ id: post.id, caption: post.caption })}
+                              className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+                              title="แก้ไขข้อความ"
+                              aria-label="แก้ไขข้อความ"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDeleteId(post.id)}
+                              className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                              title="ลบโมเมนต์นี้"
+                              aria-label="ลบโมเมนต์นี้"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        ) : (
+                          Boolean(authorId) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!isLoggedIn) {
+                                  setMembershipActionTitle('เพื่อรายงานโพสต์ที่ไม่เหมาะสม');
+                                  setIsRequireMembershipOpen(true);
+                                } else {
+                                  setReportReason('');
+                                  setReportPostId(post.id);
+                                }
+                              }}
+                              className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+                              title="รายงานโพสต์นี้"
+                              aria-label="รายงานโพสต์นี้"
+                            >
+                              <Flag className="w-4 h-4" />
+                            </button>
+                          )
                         )}
                       </div>
                     </div>
 
-                    {/* Multi-Photo Collage Grid Layout (Facebook-Style Responsive Photo Engine + Double-Tap Like) */}
-                    <div
-                      className="w-full bg-slate-100 overflow-hidden relative select-none"
-                      onDoubleClick={() => handleDoubleTapLike(post.id)}
-                    >
-                      {/* Instagram Bursting Heart Animation on Double-Tap */}
-                      {doubleTapPostId === post.id && (
-                        <div className="absolute inset-0 z-40 pointer-events-none flex items-center justify-center animate-fade-in">
-                          <div className="p-4 rounded-full bg-black/40 backdrop-blur-xs shadow-2xl animate-scale-up">
-                            <Heart className="w-16 h-16 sm:w-20 sm:h-20 text-rose-500 fill-rose-500 drop-shadow-[0_4px_24px_rgba(244,63,94,0.95)]" />
-                          </div>
-                        </div>
-                      )}
-                      {/* Case 1: Single Image (Flexible dynamic height, ambient backdrop blur, never cropped) */}
-                      {count === 1 && (
-                        <div
-                          className="relative w-full bg-slate-950 flex items-center justify-center min-h-[260px] max-h-[520px] sm:max-h-[580px] overflow-hidden cursor-pointer group"
-                          onClick={() => openLightbox(images, 0, post.caption)}
-                        >
-                          {/* Ambient blurred backdrop for vertical/square photos so borders are never harsh */}
-                          <img
-                            src={images[0]}
-                            alt=""
-                            className="absolute inset-0 w-full h-full object-cover filter blur-2xl opacity-35 scale-110 pointer-events-none"
-                            aria-hidden="true"
-                          />
-                          <img
-                            src={images[0]}
-                            alt={post.caption}
-                            className="relative z-10 w-auto h-auto max-h-[520px] sm:max-h-[580px] max-w-full object-contain mx-auto group-hover:scale-[1.01] transition-transform duration-300"
-                          />
-                        </div>
-                      )}
-
-                      {/* Case 2: Exactly 2 Images (Side by Side Equal Columns with generous height) */}
-                      {count === 2 && (
-                        <div className="grid grid-cols-2 gap-1.5 h-[300px] sm:h-[380px] w-full">
-                          {images.slice(0, 2).map((img, idx) => (
-                            <div
-                              key={idx}
-                              className="relative h-full w-full overflow-hidden cursor-pointer group"
-                              onClick={() => openLightbox(images, idx, post.caption)}
-                            >
-                              <img
-                                src={img}
-                                alt={`รูปที่ ${idx + 1}`}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Case 3: Exactly 3 Images (1 Large Left 7-cols + 2 Equal Stacked Right 5-cols) */}
-                      {count === 3 && (
-                        <div className="grid grid-cols-12 gap-1.5 h-[340px] sm:h-[420px] w-full">
-                          {/* Left: 1 Large Image */}
-                          <div
-                            className="col-span-7 h-full overflow-hidden cursor-pointer group relative"
-                            onClick={() => openLightbox(images, 0, post.caption)}
-                          >
-                            <img
-                              src={images[0]}
-                              alt="รูปหลัก"
-                              className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
-                            />
-                          </div>
-                          {/* Right: 2 Stacked Images (50/50 heights with good visibility) */}
-                          <div className="col-span-5 flex flex-col gap-1.5 h-full">
-                            {images.slice(1, 3).map((img, idx) => (
-                              <div
-                                key={idx}
-                                className="relative flex-1 min-h-0 w-full overflow-hidden cursor-pointer group"
-                                onClick={() => openLightbox(images, idx + 1, post.caption)}
-                              >
-                                <img
-                                  src={img}
-                                  alt={`รูปย่อย ${idx + 1}`}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Case 4: 4 or more Images (Facebook Classic 2x2 Grid with +X overlay on 4th cell) */}
-                      {count >= 4 && (
-                        <div className="grid grid-cols-2 gap-1.5 h-[340px] sm:h-[420px] w-full">
-                          {images.slice(0, 4).map((img, idx) => {
-                            const isFourth = idx === 3;
-                            const moreCount = count - 4;
-
-                            return (
-                              <div
-                                key={idx}
-                                className="relative h-full w-full overflow-hidden cursor-pointer group"
-                                onClick={() => openLightbox(images, idx, post.caption)}
-                              >
-                                <img
-                                  src={img}
-                                  alt={`รูปที่ ${idx + 1}`}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                />
-                                {/* Facebook-style +X Overlay on 4th image if more than 4 */}
-                                {isFourth && moreCount > 0 && (
-                                  <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center text-white font-black text-xl sm:text-2xl group-hover:bg-black/75 transition-colors">
-                                    +{moreCount + 1}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
+                    {/* Photos: the grid the large social feeds use (see MomentPhotos); a tap opens the viewer */}
+                    <MomentPhotos
+                      images={images}
+                      ratio={(post as { imageRatio?: number }).imageRatio}
+                      alt={post.caption}
+                      onOpen={(i) => openLightbox(images, i, post.caption)}
+                    />
 
                     {/* Bottom Body: Action Bar + Caption + Quick Cheers */}
                     <div className="p-4 space-y-3">
@@ -1380,6 +1652,8 @@ function MomentsContent() {
                                 : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200'
                             }`}
                             title="ส่งหัวใจ"
+                            aria-label={post.isLiked ? 'เลิกส่งหัวใจ' : 'ส่งหัวใจ'}
+                            aria-pressed={Boolean(post.isLiked)}
                           >
                             <Heart
                               className={`w-4 h-4 transition-transform active:scale-125 ${
@@ -1414,7 +1688,6 @@ function MomentsContent() {
                             aria-label="แชร์โมเมนต์"
                           >
                             <Share2 className="w-4 h-4 text-slate-500" />
-                            <span>{post.sharesCount || 0}</span>
                           </button>
                         </div>
 
@@ -1428,6 +1701,8 @@ function MomentsContent() {
                               : 'bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200'
                           }`}
                           title={savedPostIds.includes(post.id) ? 'บันทึกแล้ว' : 'บันทึกเก็บไว้ดู'}
+                          aria-label={savedPostIds.includes(post.id) ? 'เลิกบันทึก' : 'บันทึกเก็บไว้ดู'}
+                          aria-pressed={savedPostIds.includes(post.id)}
                         >
                           <Bookmark
                             className={`w-4 h-4 transition-transform active:scale-125 ${
@@ -1456,7 +1731,7 @@ function MomentsContent() {
                                   key={comment.id}
                                   className="flex items-start gap-2.5 text-xs bg-slate-50/80 p-2.5 rounded-xl border border-slate-100"
                                 >
-                                  <img
+                                  <img loading="lazy"
                                     src={comment.userAvatar}
                                     alt={comment.userName}
                                     className="w-6 h-6 rounded-full object-cover shrink-0 mt-0.5 border border-slate-200"
@@ -1466,8 +1741,13 @@ function MomentsContent() {
                                       <span className="font-bold text-slate-800 text-[11px] truncate">
                                         {comment.userName}
                                       </span>
-                                      <span className="text-[10px] text-slate-400 shrink-0">
+                                      <span className="text-[11px] text-slate-500 shrink-0 flex items-center gap-2">
                                         {comment.timeAgo}
+                                        {(comment as { isMine?: boolean }).isMine && (
+                                          <button type="button" onClick={() => handleDeleteComment(post.id, comment.id)} className="font-bold text-slate-500 hover:text-rose-600 cursor-pointer">
+                                            ลบ
+                                          </button>
+                                        )}
                                       </span>
                                     </div>
                                     <p className="text-slate-600 text-xs mt-0.5 leading-relaxed">
@@ -1479,7 +1759,7 @@ function MomentsContent() {
                             </div>
                           ) : (
                             <p className="text-[11px] text-slate-400 py-1 text-center">
-                              ยังไม่มีความคิดเห็น ร่วมเป็นคนแรกที่ส่งพลังบวกกันนะ ✨
+                              ยังไม่มีความคิดเห็น ร่วมเป็นคนแรกที่ส่งพลังบวกกันนะ
                             </p>
                           )}
 
@@ -1514,24 +1794,69 @@ function MomentsContent() {
                       )}
                     </div>
                   </article>
+                  {postIndex === 2 && recommendedEvents.length > 0 && (
+                    <section aria-label="กิจกรรมแนะนำ" className="lg:hidden bg-white rounded-2xl border border-slate-200/80 p-4 space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <h2 className="text-sm font-extrabold text-slate-900">กิจกรรมแนะนำ</h2>
+                        <Link href="/community" className="text-xs font-bold text-[#2563EB] hover:underline whitespace-nowrap">ดูทั้งหมด</Link>
+                      </div>
+                      <ul className="flex gap-3 overflow-x-auto no-scrollbar -mx-1 px-1">
+                        {recommendedEvents.map((ev) => (
+                          <li key={ev.id} className="shrink-0 w-40">
+                            <button type="button" onClick={() => setSelectedEvent(ev)} className="w-full text-left cursor-pointer">
+                              <span className="block aspect-[4/3] rounded-xl overflow-hidden bg-slate-100">
+                                <img loading="lazy" src={ev.image} alt="" className="w-full h-full object-cover" />
+                              </span>
+                              <span className="block mt-2 text-xs font-bold text-slate-900 leading-snug line-clamp-2">{ev.title}</span>
+                              <span className="block mt-0.5 text-[11px] font-medium text-slate-500 truncate">{ev.date}</span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+                  {postIndex === 6 && sidebarQuests.length > 0 && (
+                    <section aria-label="ชาเลนจ์แนะนำ" className="lg:hidden bg-white rounded-2xl border border-slate-200/80 p-4 space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <h2 className="text-sm font-extrabold text-slate-900">ชาเลนจ์แนะนำ</h2>
+                        <Link href="/challenges" className="text-xs font-bold text-[#2563EB] hover:underline whitespace-nowrap">ดูทั้งหมด</Link>
+                      </div>
+                      <ul className="space-y-2">
+                        {sidebarQuests.map((q) => (
+                          <li key={q.id}>
+                            <Link href="/challenges" className="flex items-center gap-3 p-2 rounded-xl border border-slate-200">
+                              <span className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center shrink-0">
+                                <Trophy className="w-4 h-4" aria-hidden="true" />
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="block text-xs font-bold text-slate-800 line-clamp-2 leading-snug">{q.title}</span>
+                                {q.badgeLabel && <span className="block text-[11px] font-semibold text-slate-500 mt-0.5 truncate">เหรียญตรา {q.badgeLabel}</span>}
+                              </span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+                  </React.Fragment>
                 );
               })}
             </div>
 
             {/* Auto Infinite Scroll Sentinel Target */}
-            {filteredPosts.length > visibleCount ? (
+            {hasMorePosts ? (
               <div ref={sentinelRef} className="py-6 text-center space-y-2">
                 <div className="inline-flex items-center gap-2 bg-white border border-slate-200 px-5 py-2 rounded-full shadow-2xs text-xs text-slate-700 font-bold">
                   <div className="w-4 h-4 border-2 border-slate-700 border-t-transparent rounded-full animate-spin shrink-0" />
                   <span>
-                    กำลังโหลดโมเมนต์เพิ่มเติม... ({displayedPosts.length}/{filteredPosts.length})
+                    กำลังโหลดโมเมนต์เพิ่มเติม…
                   </span>
                 </div>
               </div>
-            ) : filteredPosts.length > 0 ? (
+            ) : !isFeedLoading && filteredPosts.length > 0 ? (
               <div className="bg-slate-50/80 rounded-2xl p-5 text-center border border-slate-200 space-y-2 my-6">
                 <p className="font-bold text-xs text-slate-700">
-                  คุณได้อ่านโมเมนต์ล่าสุดครบทั้ง {filteredPosts.length} รายการแล้ว
+                  คุณดูโมเมนต์ครบแล้ว
                 </p>
                 <p className="text-[11px] text-slate-500">
                   ออกไปใช้ชีวิต เที่ยวคาเฟ่ หรือร่วมกิจกรรม แล้วมาแบ่งปันโมเมนต์ของคุณนะ
@@ -1555,59 +1880,49 @@ function MomentsContent() {
           </div>
 
           {/* Right Column (4-cols): Sticky Sidebar */}
-          <aside className="lg:col-span-4 space-y-4 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto no-scrollbar pb-6 shrink-0">
-            {/* Widget 1: Suggested for you (แนะนำเพื่อนใหม่) */}
-            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-3.5">
-              <div className="flex items-center justify-between">
+          <aside className="hidden lg:block space-y-4 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto no-scrollbar pb-6 shrink-0">
+            {/* Widget 1: members worth following (real, verified members who post) */}
+            {suggested.length > 0 && (
+              <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-3.5">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-xl bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0">
                     <Users className="w-3.5 h-3.5" />
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-sm text-slate-900 leading-none">Suggested for you</h3>
-                    <p className="text-[11px] text-slate-400 font-medium mt-0.5">เพื่อนใหม่ที่มีไลฟ์สไตล์ตรงกัน</p>
+                    <h3 className="font-extrabold text-sm text-slate-900 leading-none">สมาชิกที่น่าติดตาม</h3>
+                    <p className="text-[11px] text-slate-500 font-medium mt-1">สมาชิกที่ยืนยันแล้ว และแชร์โมเมนต์อยู่</p>
                   </div>
                 </div>
+                <ul className="space-y-3 pt-1">
+                  {suggested.map((m) => {
+                    const isFollowing = followingIds.includes(m.id);
+                    return (
+                      <li key={m.id} className="flex items-center justify-between gap-2.5">
+                        <Link href={`/profile?id=${m.id}`} className="flex items-center gap-2.5 min-w-0 group">
+                          <img loading="lazy" src={avatarOf(m.displayName, m.avatarUrl)} alt="" className="w-10 h-10 rounded-full object-cover border border-slate-100 shrink-0" />
+                          <span className="min-w-0">
+                            <span className="block text-xs font-bold text-slate-900 truncate group-hover:text-[#2563EB]">{m.displayName}</span>
+                            <span className="block text-[11px] text-slate-500 truncate">
+                              {(m as { isSample?: boolean }).isSample ? 'บัญชีตัวอย่าง' : m.approvedHost ? 'โฮสต์ที่ทีมงานอนุมัติ' : m.trusted ? 'สมาชิกที่เชื่อถือได้' : 'ยืนยันแล้ว'} · {m.momentCount} โมเมนต์
+                            </span>
+                          </span>
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => handleFollowMember(m.id, m.displayName)}
+                          aria-pressed={isFollowing}
+                          className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-full transition-colors cursor-pointer whitespace-nowrap ${
+                            isFollowing ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-[#2563EB] hover:bg-[#1D4ED8] text-white'
+                          }`}
+                        >
+                          {isFollowing ? 'กำลังติดตาม' : 'ติดตาม'}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
-
-              <div className="space-y-3 pt-1">
-                {SUGGESTED_MEMBERS.map((member) => {
-                  const isFollowing = followedUserIds.includes(member.id);
-                  return (
-                    <div key={member.id} className="flex items-center justify-between gap-2.5">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="relative shrink-0">
-                          <img
-                            src={member.avatar}
-                            alt={member.name}
-                            className="w-10 h-10 rounded-full object-cover border border-slate-100"
-                          />
-                          <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-bold text-slate-900 truncate">{member.name}</span>
-                          </div>
-                          <p className="text-[11px] text-slate-500 truncate">{member.vibe}</p>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleToggleFollow(member)}
-                        className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-                          isFollowing
-                            ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/80'
-                            : 'bg-slate-900 hover:bg-slate-800 text-white shadow-2xs'
-                        }`}
-                      >
-                        {isFollowing ? 'Connected' : 'Connect'}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            )}
 
             {/* Widget 2: กิจกรรมแนะนำ (Recommended Activities) */}
             <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-3.5">
@@ -1640,7 +1955,7 @@ function MomentsContent() {
                       className="group flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-200/80 cursor-pointer"
                     >
                       <div className="relative w-13 h-13 rounded-xl overflow-hidden shrink-0 bg-slate-100">
-                        <img
+                        <img loading="lazy"
                           src={ev.image}
                           alt={ev.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -1649,7 +1964,7 @@ function MomentsContent() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 mb-0.5">
                           <span
-                            className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md ${
+                            className={`text-[11px] font-extrabold px-1.5 py-0.5 rounded-md ${
                               isCommunity
                                 ? 'bg-[#FFF4EE] text-[#D04A1B]'
                                 : 'bg-[#EEF4FA] text-[#1F3D5C]'
@@ -1657,7 +1972,7 @@ function MomentsContent() {
                           >
                             {isCommunity ? 'กิจกรรมชุมชน' : 'งานเอ็กซ์โป'}
                           </span>
-                          <span className="text-[10px] text-slate-400 font-medium truncate">
+                          <span className="text-[11px] text-slate-400 font-medium truncate">
                             {ev.date}
                           </span>
                         </div>
@@ -1667,11 +1982,11 @@ function MomentsContent() {
                         <div className="flex items-center justify-between text-[11px] text-slate-500 mt-0.5">
                           <span className="truncate max-w-[110px]">{ev.location}</span>
                           {isCommunity ? (
-                            <span className="text-[10px] font-bold text-emerald-600 shrink-0">
+                            <span className="text-[11px] font-bold text-emerald-600 shrink-0">
                               {ev.participantsCount}/{ev.maxParticipants} คน
                             </span>
                           ) : (
-                            <span className="text-[10px] font-bold text-slate-500 shrink-0">
+                            <span className="text-[11px] font-bold text-slate-500 shrink-0">
                               Walk-in
                             </span>
                           )}
@@ -1682,6 +1997,41 @@ function MomentsContent() {
                 })}
               </div>
             </div>
+            {/* Widget 3: recommended challenges (posting a moment is how most challenges are completed) */}
+            {sidebarQuests.length > 0 && (
+              <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center shrink-0">
+                      <Trophy className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-sm text-slate-900 leading-none">ชาเลนจ์แนะนำ</h3>
+                      <p className="text-[11px] text-slate-500 font-medium mt-1">ทำแล้วแชร์โมเมนต์ รับเหรียญตรา</p>
+                    </div>
+                  </div>
+                  <Link href="/challenges" className="text-xs font-bold text-[#2563EB] hover:text-blue-700 flex items-center gap-1 whitespace-nowrap">
+                    <span>ดูทั้งหมด</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
+                </div>
+                <ul className="space-y-2">
+                  {sidebarQuests.map((q) => (
+                    <li key={q.id}>
+                      <Link href="/challenges" className="group flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-200/80">
+                        <span className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center shrink-0">
+                          <Trophy className="w-4 h-4" aria-hidden="true" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-xs font-bold text-slate-800 group-hover:text-[#2563EB] line-clamp-2 leading-snug">{q.title}</span>
+                          {q.badgeLabel && <span className="block text-[11px] font-semibold text-slate-500 mt-0.5 truncate">เหรียญตรา {q.badgeLabel}</span>}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </aside>
         </div>
       </main>
@@ -1731,10 +2081,21 @@ function MomentsContent() {
 
           {/* Center Image Container with Navigation Chevrons */}
           <div
-            className="relative flex-1 w-full max-w-5xl flex items-center justify-center my-auto overflow-hidden"
+            className="relative flex-1 w-full max-w-5xl flex items-center justify-center my-auto overflow-hidden touch-pan-y"
             onClick={(e) => e.stopPropagation()}
+            onTouchStart={(e) => {
+              viewerTouchX.current = e.touches[0].clientX;
+            }}
+            onTouchEnd={(e) => {
+              const start = viewerTouchX.current;
+              viewerTouchX.current = null;
+              if (start === null) return;
+              const moved = e.changedTouches[0].clientX - start;
+              if (Math.abs(moved) < 50) return;
+              setLightboxData((prev) => (prev ? { ...prev, index: (prev.index + (moved < 0 ? 1 : -1) + prev.images.length) % prev.images.length } : null));
+            }}
           >
-            <img
+            <img loading="lazy"
               src={lightboxData.images[lightboxData.index]}
               alt={`ภาพขยาย ${lightboxData.index + 1}`}
               className="max-h-[75vh] max-w-full object-contain rounded-xl shadow-2xl animate-scale-up"
@@ -1800,7 +2161,7 @@ function MomentsContent() {
                       lightboxData.index === tIdx ? 'border-white scale-105' : 'border-white/30 opacity-60 hover:opacity-100'
                     }`}
                   >
-                    <img src={thumb} alt={`Thumbnail ${tIdx + 1}`} className="w-full h-full object-cover" />
+                    <img loading="lazy" src={thumb} alt={`Thumbnail ${tIdx + 1}`} className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>
@@ -1843,564 +2204,402 @@ function MomentsContent() {
         onClose={() => setSelectedChallenge(null)}
         quest={selectedChallenge}
         onConfirmJoin={() => {
-          showToast('รับภารกิจชาเลนจ์เรียบร้อยแล้ว! ⚡');
+          showToast('รับภารกิจชาเลนจ์เรียบร้อยแล้ว!');
           setSelectedChallenge(null);
         }}
       />
 
       {/* Modal 4: Create Moment Modal (Multi-Photo up to 6 images - Luxury Global Standard) */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm animate-fade-in">
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-5 bg-black/60 backdrop-blur-sm animate-fade-in"
+          onClick={() => setIsCreateModalOpen(false)}
+        >
+          {/* A sheet from the bottom on phones, a centred dialog on larger screens */}
           <div
-            className="bg-white rounded-3xl max-w-xl sm:max-w-2xl w-full max-h-[90vh] overflow-y-auto no-scrollbar p-6 sm:p-7 space-y-5 shadow-2xl relative animate-scale-up border border-slate-200/90"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-moment-title"
+            className="bg-white w-full sm:max-w-lg max-h-[92dvh] flex flex-col rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200/90"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header: Clean Typography (NO icons on top per user request) */}
-            <div className="flex items-start justify-between border-b border-slate-100 pb-4">
-              <div className="space-y-1">
-                <h3 className="font-black text-lg sm:text-xl text-slate-900 tracking-tight">
-                  แชร์โมเมนต์ความประทับใจ
-                </h3>
-                <p className="text-xs text-slate-500 font-normal">
-                  แบ่งปันภาพถ่ายจริงและบรรยากาศดีๆ ให้เพื่อนๆ ในคอมมูนิตี้
-                </p>
-              </div>
+            <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3.5 border-b border-slate-100 shrink-0">
+              <h3 id="create-moment-title" className="font-extrabold text-base sm:text-lg text-slate-900">แชร์โมเมนต์</h3>
               <button
                 type="button"
                 onClick={() => setIsCreateModalOpen(false)}
-                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 transition-colors flex items-center justify-center cursor-pointer shrink-0"
-                title="ปิด (Esc)"
+                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors flex items-center justify-center cursor-pointer shrink-0"
+                aria-label="ปิด"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreatePost} className="space-y-4 sm:space-y-5">
-              {/* Pillar Selector Tabs */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
-                  <span>เลือกประเภทการแชร์:</span>
-                  <span className="text-[11px] font-semibold text-slate-400">
-                    {createTargetType === 'general'
-                      ? 'ไลฟ์สไตล์ทั่วไป'
-                      : createTargetType === 'spot'
-                      ? 'พิกัดเที่ยวที่คุณเซฟไว้'
-                      : createTargetType === 'community'
-                      ? 'กิจกรรมที่คุณมีตั๋ว'
-                      : createTargetType === 'fair'
-                      ? 'งานแฟร์ที่คุณไปมา'
-                      : 'ภารกิจชาเลนจ์'}
-                  </span>
-                </label>
-                <div className="grid grid-cols-5 gap-1 p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80">
-                  {[
-                    { id: 'general', label: 'ทั่วไป', activeClass: 'bg-white text-slate-900 shadow-2xs font-black border border-slate-200' },
-                    { id: 'spot', label: 'พิกัดเที่ยว', activeClass: 'bg-white text-emerald-800 shadow-2xs font-black border border-emerald-200' },
-                    { id: 'community', label: 'กิจกรรม', activeClass: 'bg-white text-amber-800 shadow-2xs font-black border border-amber-200' },
-                    { id: 'fair', label: 'งานแฟร์', activeClass: 'bg-white text-blue-800 shadow-2xs font-black border border-blue-200' },
-                    { id: 'challenge', label: 'ชาเลนจ์', activeClass: 'bg-white text-purple-800 shadow-2xs font-black border border-purple-200' },
-                  ].map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => {
-                        const newType = p.id as any;
-                        setCreateTargetType(newType);
-                        if (newType === 'general') {
-                          setCreateTargetId('');
-                        } else if (newType === 'spot') {
-                          setCreateTargetId(mySavedSpots[0]?.id || 'custom');
-                        } else if (newType === 'community') {
-                          setCreateTargetId(myBookedCommunityEvents[0]?.id || 'custom');
-                        } else if (newType === 'fair') {
-                          setCreateTargetId(myBookedFairEvents[0]?.id || 'custom');
-                        } else if (newType === 'challenge') {
-                          setCreateTargetId(myQuests[0]?.id || '');
-                        }
-                      }}
-                      className={`py-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer text-center ${
-                        createTargetType === p.id
-                          ? p.activeClass
-                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
-                      }`}
-                    >
-                      <span>{p.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Dynamic Target Input: Facebook-Style Check-In for General Tab */}
-              {createTargetType === 'general' ? (
+            <form onSubmit={handleCreatePost} className="flex flex-col min-h-0 flex-1">
+              <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-5">
+                {/* 1. Photos */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-[#F26430]" />
-                      <span>เช็คอินสถานที่ (Check-in):</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-bold text-slate-900">รูปภาพ</span>
+                    <span className="text-xs font-medium text-slate-500">
+                      {isCompressingImages ? 'กำลังเตรียมรูป…' : `${uploadedPostImages.length}/${MAX_MOMENT_IMAGES} รูป`}
                     </span>
-                    <span className="text-[11px] font-normal text-slate-400">
-                      {customLocationInput ? 'เช็คอินแล้ว' : 'ไม่บังคับ (ระบุหรือไม่ก็ได้)'}
-                    </span>
-                  </label>
-
-                  {customLocationInput ? (
-                    /* Checked-In Active Badge (Facebook Style) */
-                    <div className="flex items-center justify-between p-3 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-amber-900 transition-all animate-fade-in shadow-2xs">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-[#D04A1B] flex items-center justify-center shrink-0">
-                          <MapPin className="w-4 h-4 text-[#F26430]" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-[10.5px] text-amber-700/80 font-medium">กำลังเช็คอินที่:</div>
-                          <div className="text-xs sm:text-sm font-black text-slate-900 truncate">
-                            {customLocationInput}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
+                  </div>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    {uploadedPostImages.map((img, idx) => (
+                      <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
+                        <img loading="lazy" src={img} alt={`รูปที่ ${idx + 1}`} className="w-full h-full object-cover" />
+                        {idx === 0 && (
+                          <span className="absolute bottom-1 left-1 bg-black/70 text-white text-[11px] font-bold px-1.5 py-0.5 rounded-md">ปก</span>
+                        )}
                         <button
                           type="button"
-                          onClick={() => {
-                            setIsCheckInPopoverOpen(true);
-                            setCheckInSearchQuery('');
-                          }}
-                          className="px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:text-slate-900 bg-white/80 hover:bg-white rounded-lg border border-slate-200/80 transition-colors cursor-pointer"
-                        >
-                          เปลี่ยน
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setCustomLocationInput('');
-                            setIsCheckInPopoverOpen(false);
-                          }}
-                          className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-rose-600 rounded-lg hover:bg-white/80 transition-colors cursor-pointer"
-                          title="ลบการเช็คอิน"
+                          onClick={() => handleRemoveImage(idx)}
+                          className="absolute top-1 right-1 w-7 h-7 rounded-full bg-black/70 hover:bg-rose-600 text-white flex items-center justify-center transition-colors cursor-pointer"
+                          aria-label={`ลบรูปที่ ${idx + 1}`}
                         >
                           <X className="w-4 h-4" />
                         </button>
                       </div>
+                    ))}
+                    {uploadedPostImages.length < MAX_MOMENT_IMAGES && (
+                      <label
+                        className={`${
+                          uploadedPostImages.length === 0 ? 'col-span-3 sm:col-span-4 py-7' : 'aspect-square'
+                        } rounded-2xl bg-slate-50 hover:bg-slate-100 border-2 border-dashed border-slate-300 hover:border-slate-400 transition-colors text-center cursor-pointer flex flex-col items-center justify-center gap-1.5 px-2`}
+                      >
+                        <ImageIcon className="w-6 h-6 text-slate-500" aria-hidden="true" />
+                        <span className="text-sm font-bold text-slate-800">{uploadedPostImages.length === 0 ? 'เลือกรูป' : 'เพิ่มรูป'}</span>
+                        {uploadedPostImages.length === 0 && (
+                          <span className="text-xs text-slate-500">อย่างน้อย 1 รูป สูงสุด {MAX_MOMENT_IMAGES} รูป</span>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp,image/avif"
+                          multiple
+                          disabled={isCompressingImages}
+                          onChange={handleImageFilesChange}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                  </div>
+                </div>
+
+                {/* 2. Caption */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <label htmlFor="moment-caption" className="text-sm font-bold text-slate-900">เล่าสั้นๆ</label>
+                    <span className="text-xs font-medium text-slate-500">{captionInput.length}/500</span>
+                  </div>
+                  <textarea
+                    id="moment-caption"
+                    rows={3}
+                    value={captionInput}
+                    maxLength={500}
+                    onChange={(e) => setCaptionInput(e.target.value)}
+                    placeholder="วันนี้ไปไหนมา รู้สึกยังไง"
+                    className="w-full bg-white border border-slate-300 rounded-2xl p-3.5 text-base sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] resize-none leading-relaxed placeholder:text-slate-400"
+                    required
+                  />
+                </div>
+
+                {/* 3. What it is about: one optional choice instead of five tabs */}
+                <div className="space-y-2">
+                  <label htmlFor="moment-link" className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-bold text-slate-900">เกี่ยวกับกิจกรรมหรือสถานที่ไหน</span>
+                    <span className="text-xs font-medium text-slate-500 shrink-0">ไม่บังคับ</span>
+                  </label>
+                  {linkedTarget ? (
+                    <div className="flex items-center justify-between gap-3 px-3.5 py-3 rounded-2xl border border-blue-200 bg-blue-50/60">
+                      <span className="min-w-0">
+                        <span className="block text-sm font-bold text-slate-900 truncate">{linkedTarget.title}</span>
+                        <span className="block text-xs font-medium text-slate-600 truncate">{[LINK_TYPE_LABELS[linkedTarget.type], linkedTarget.location].filter(Boolean).join(' · ')}</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLinkedTarget(null);
+                          setLinkQuery('');
+                        }}
+                        className="shrink-0 w-9 h-9 rounded-full bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 flex items-center justify-center cursor-pointer"
+                        aria-label="เอารายการนี้ออก"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
                   ) : (
-                    /* Check-In Trigger Button */
-                    <div className="relative">
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setIsCheckInPopoverOpen(!isCheckInPopoverOpen)}
-                          className="flex-1 bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white border border-slate-200 rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 flex items-center justify-between transition-all cursor-pointer group text-left"
-                        >
-                          <div className="flex items-center gap-2 min-w-0 truncate">
-                            <MapPin className="w-4 h-4 text-[#F26430] group-hover:scale-110 transition-transform shrink-0" />
-                            <span className="text-slate-500 font-normal">
-                              คลิกเพื่อค้นหาสถานที่ หรือเช็คอินพิกัด...
-                            </span>
-                          </div>
-                          <span className="text-[11px] font-bold text-slate-700 bg-white border border-slate-200/80 px-2.5 py-0.5 rounded-lg shrink-0 shadow-2xs">
-                            เช็คอิน
-                          </span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={handleUseCurrentLocation}
-                          disabled={isLocating}
-                          className="shrink-0 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 px-3 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                          title="ใช้ตำแหน่งปัจจุบันของคุณ"
-                        >
-                          <Navigation className={`w-3.5 h-3.5 text-blue-600 ${isLocating ? 'animate-spin' : ''}`} />
-                          <span className="hidden sm:inline">ตำแหน่งปัจจุบัน</span>
-                        </button>
+                    <div>
+                      <div className="relative">
+                        <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" aria-hidden="true" />
+                        <input
+                          id="moment-link"
+                          type="search"
+                          value={linkQuery}
+                          onChange={(e) => setLinkQuery(e.target.value)}
+                          placeholder="ค้นหากิจกรรม งานแฟร์ ที่เที่ยว หรือชาเลนจ์"
+                          autoComplete="off"
+                          className="w-full bg-white border border-slate-300 rounded-2xl pl-10 pr-3.5 py-3 text-base sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] placeholder:text-slate-400 placeholder:font-normal"
+                        />
                       </div>
+                      {linkQuery.trim().length >= 2 && (
+                        <ul className="mt-2 rounded-2xl border border-slate-200 divide-y divide-slate-100 overflow-hidden" aria-label="ผลการค้นหา">
+                          {linkResults.map((r) => (
+                            <li key={`${r.type}-${r.id}`}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setLinkedTarget(r);
+                                  setCustomLocationInput('');
+                                }}
+                                className="w-full flex items-center gap-3 px-3.5 py-2.5 text-left hover:bg-slate-50 cursor-pointer"
+                              >
+                                <span className="shrink-0 text-[11px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full whitespace-nowrap">{LINK_TYPE_LABELS[r.type]}</span>
+                                <span className="min-w-0">
+                                  <span className="block text-sm font-semibold text-slate-900 truncate">{r.title}</span>
+                                  {r.location && <span className="block text-xs text-slate-500 truncate">{r.location}</span>}
+                                </span>
+                              </button>
+                            </li>
+                          ))}
+                          {linkResults.length === 0 && (
+                            <li className="px-3.5 py-3 text-sm font-medium text-slate-500">{isLinkSearching ? 'กำลังค้นหา…' : 'ไม่พบรายการที่ตรง ลองคำอื่น หรือพิมพ์ชื่อสถานที่ด้านล่างแทน'}</li>
+                          )}
+                        </ul>
+                      )}
                     </div>
                   )}
 
-                  {/* Facebook Check-In Search Dropdown / Popover */}
-                  {isCheckInPopoverOpen && (
-                    <div className="p-3 bg-white rounded-2xl border border-slate-200/90 shadow-lg space-y-2.5 animate-scale-up">
-                      <div className="relative">
-                        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  {!linkedTarget && (
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1 min-w-0">
+                        <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" aria-hidden="true" />
                         <input
                           type="text"
-                          autoFocus
-                          value={checkInSearchQuery}
-                          onChange={(e) => setCheckInSearchQuery(e.target.value)}
-                          placeholder="ค้นหาสถานที่ คาเฟ่ ย่านท่องเที่ยว หรือพิมพ์ระบุเอง..."
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-8 py-2 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all placeholder:text-slate-400 placeholder:font-normal"
+                          value={customLocationInput}
+                          maxLength={80}
+                          onChange={(e) => setCustomLocationInput(e.target.value)}
+                          placeholder="หรือพิมพ์ชื่อสถานที่"
+                          aria-label="ชื่อสถานที่"
+                          className="w-full bg-white border border-slate-300 rounded-2xl pl-10 pr-3.5 py-3 text-base sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] placeholder:text-slate-400 placeholder:font-normal"
                         />
-                        {checkInSearchQuery && (
-                          <button
-                            type="button"
-                            onClick={() => setCheckInSearchQuery('')}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        )}
                       </div>
-
-                      {/* GPS Action Shortcut */}
                       <button
                         type="button"
                         onClick={handleUseCurrentLocation}
-                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-blue-50/70 text-blue-700 text-xs font-bold transition-colors cursor-pointer text-left"
+                        disabled={isLocating}
+                        className="shrink-0 w-12 h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center cursor-pointer disabled:opacity-50"
+                        aria-label="ใช้ตำแหน่งปัจจุบัน"
+                        title="ใช้ตำแหน่งปัจจุบัน"
                       >
-                        <div className="w-6 h-6 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
-                          <Navigation className={`w-3 h-3 text-blue-600 ${isLocating ? 'animate-spin' : ''}`} />
-                        </div>
-                        <span>ใช้ตำแหน่ง GPS ปัจจุบันของฉัน</span>
-                      </button>
-
-                      {/* Suggestions list */}
-                      <div className="max-h-48 overflow-y-auto no-scrollbar space-y-1 divide-y divide-slate-100">
-                        {/* Custom typed option if user typed something */}
-                        {checkInSearchQuery.trim() && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setCustomLocationInput(checkInSearchQuery.trim());
-                              setIsCheckInPopoverOpen(false);
-                            }}
-                            className="w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 text-left transition-colors cursor-pointer group"
-                          >
-                            <div className="w-7 h-7 rounded-lg bg-orange-100 text-[#F26430] flex items-center justify-center shrink-0">
-                              <MapPin className="w-3.5 h-3.5" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="text-xs font-bold text-slate-900 truncate group-hover:text-[#2563EB]">
-                                เช็คอินที่ "{checkInSearchQuery.trim()}"
-                              </div>
-                              <div className="text-[10.5px] text-slate-400">ระบุพิกัดนี้</div>
-                            </div>
-                          </button>
-                        )}
-
-                        {/* Filtered suggestions */}
-                        {filteredCheckInPlaces.map((place, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => {
-                              setCustomLocationInput(place.name + (place.location ? `, ${place.location}` : ''));
-                              setIsCheckInPopoverOpen(false);
-                            }}
-                            className="w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 text-left transition-colors cursor-pointer group"
-                          >
-                            <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 group-hover:bg-amber-100 group-hover:text-amber-800 flex items-center justify-center shrink-0 transition-colors">
-                              <MapPin className="w-3.5 h-3.5" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="text-xs font-bold text-slate-900 truncate group-hover:text-[#2563EB]">
-                                {place.name}
-                              </div>
-                              <div className="text-[10.5px] text-slate-400 truncate">
-                                {place.location} {place.category ? `• ${place.category}` : ''}
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-
-                      <div className="pt-1 flex items-center justify-between border-t border-slate-100">
-                        <span className="text-[10.5px] text-slate-400">
-                          เลือกสถานที่หรือพิมพ์ชื่อเพื่อเช็คอิน
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setIsCheckInPopoverOpen(false)}
-                          className="text-[11px] font-bold text-slate-500 hover:text-slate-800 cursor-pointer"
-                        >
-                          ปิด
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : createTargetType === 'spot' ? (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
-                    <span>เลือกพิกัดเที่ยวที่คุณบันทึกไว้ใน MyHub:</span>
-                    <span className="text-[11px] font-semibold text-emerald-600">
-                      {mySavedSpots.length} พิกัดที่บันทึก
-                    </span>
-                  </label>
-                  <select
-                    value={createTargetId}
-                    onChange={(e) => setCreateTargetId(e.target.value)}
-                    className="w-full bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white border border-slate-200 rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all cursor-pointer truncate"
-                  >
-                    {mySavedSpots.length === 0 ? (
-                      <option value="" disabled>
-                        ยังไม่มีพิกัดที่บันทึกไว้ใน MyHub
-                      </option>
-                    ) : (
-                      mySavedSpots.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.title} ({s.district}, {s.province}) [บันทึกไว้]
-                        </option>
-                      ))
-                    )}
-                    <option value="custom">+ พิมพ์ระบุพิกัดอื่นด้วยตนเอง</option>
-                  </select>
-                  {createTargetId === 'custom' && (
-                    <input
-                      type="text"
-                      value={customLocationInput}
-                      onChange={(e) => setCustomLocationInput(e.target.value)}
-                      placeholder="พิมพ์ชื่อพิกัดหรือสถานที่ท่องเที่ยวที่ไปมา..."
-                      className="mt-2 w-full bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white border border-slate-200 rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all placeholder:text-slate-400 placeholder:font-normal"
-                    />
-                  )}
-                </div>
-              ) : createTargetType === 'community' ? (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
-                    <span>เลือกกิจกรรมที่คุณลงทะเบียน / มีตั๋ว:</span>
-                    <span className="text-[11px] font-semibold text-amber-600">
-                      {myBookedCommunityEvents.length} กิจกรรมที่มีตั๋ว
-                    </span>
-                  </label>
-                  <select
-                    value={createTargetId}
-                    onChange={(e) => setCreateTargetId(e.target.value)}
-                    className="w-full bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white border border-slate-200 rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all cursor-pointer truncate"
-                  >
-                    {myBookedCommunityEvents.length === 0 ? (
-                      <option value="" disabled>
-                        ยังไม่มีกิจกรรมที่คุณมีตั๋วใน MyHub
-                      </option>
-                    ) : (
-                      myBookedCommunityEvents.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.title} ({c.location}) [มีตั๋วแล้ว]
-                        </option>
-                      ))
-                    )}
-                    <option value="custom">+ พิมพ์ระบุกิจกรรมอื่นด้วยตนเอง</option>
-                  </select>
-                  {createTargetId === 'custom' && (
-                    <input
-                      type="text"
-                      value={customLocationInput}
-                      onChange={(e) => setCustomLocationInput(e.target.value)}
-                      placeholder="พิมพ์ชื่อกิจกรรมคอมมูนิตี้ที่ไปร่วมมา..."
-                      className="mt-2 w-full bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white border border-slate-200 rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all placeholder:text-slate-400 placeholder:font-normal"
-                    />
-                  )}
-                </div>
-              ) : createTargetType === 'fair' ? (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
-                    <span>เลือกงานมหกรรม / เอ็กซ์โปที่คุณไปมา:</span>
-                    <span className="text-[11px] font-semibold text-blue-600">
-                      {myBookedFairEvents.length} งานที่บันทึก
-                    </span>
-                  </label>
-                  <select
-                    value={createTargetId}
-                    onChange={(e) => setCreateTargetId(e.target.value)}
-                    className="w-full bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white border border-slate-200 rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all cursor-pointer truncate"
-                  >
-                    {myBookedFairEvents.length === 0 ? (
-                      <option value="" disabled>
-                        ยังไม่มีงานแฟร์ที่คุณบันทึกไว้ใน MyHub
-                      </option>
-                    ) : (
-                      myBookedFairEvents.map((f) => (
-                        <option key={f.id} value={f.id}>
-                          {f.title} ({f.location}) [งานที่ไปมา]
-                        </option>
-                      ))
-                    )}
-                    <option value="custom">+ พิมพ์ชื่องานแฟร์อื่นด้วยตนเอง</option>
-                  </select>
-                  {createTargetId === 'custom' && (
-                    <input
-                      type="text"
-                      value={customLocationInput}
-                      onChange={(e) => setCustomLocationInput(e.target.value)}
-                      placeholder="พิมพ์ชื่องานมหกรรม เช่น Book Expo, QSNCC..."
-                      className="mt-2 w-full bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white border border-slate-200 rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all placeholder:text-slate-400 placeholder:font-normal"
-                    />
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
-                    <span>เลือกภารกิจชาเลนจ์ที่คุณทำสำเร็จ:</span>
-                    <span className="text-[11px] font-semibold text-purple-600">
-                      {myQuests.length} ภารกิจที่ทำ
-                    </span>
-                  </label>
-                  <select
-                    value={createTargetId}
-                    onChange={(e) => setCreateTargetId(e.target.value)}
-                    className="w-full bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white border border-slate-200 rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all cursor-pointer truncate"
-                  >
-                    {myQuests.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.title} [ภารกิจที่ทำ]
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Caption Text Area + Quick Mood Tags */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs font-bold text-slate-800">
-                  <label>ความรู้สึก & บรรยากาศประทับใจ:</label>
-                  <span className="text-[11px] font-medium text-slate-400">
-                    {captionInput.length}/500 ตัวอักษร
-                  </span>
-                </div>
-                <textarea
-                  rows={4}
-                  value={captionInput}
-                  maxLength={500}
-                  onChange={(e) => setCaptionInput(e.target.value)}
-                  placeholder="เล่าความประทับใจ กลิ่นกาแฟ ผู้คน บรรยากาศรอบตัว หรือมุมถ่ายรูปที่ไม่อยากให้เพื่อนๆ พลาด..."
-                  className="w-full bg-slate-50/80 hover:bg-slate-100/50 focus:bg-white border border-slate-200 rounded-2xl p-3.5 text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all resize-none leading-relaxed placeholder:text-slate-400"
-                  required
-                />
-
-                {/* Quick Vibe Chips to append to caption (# Format, No Emojis) */}
-                <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    แท็กอารมณ์:
-                  </span>
-                  {[
-                    '#กาแฟดริปดีมาก',
-                    '#ธรรมชาติฮีลใจ',
-                    '#มุมถ่ายรูปปัง',
-                    '#สดชื่นได้เหงื่อ',
-                    '#บรรยากาศสงบ',
-                    '#มู้ดดีฮีลใจ',
-                  ].map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() =>
-                        setCaptionInput((prev) => (prev ? `${prev} ${tag}` : tag))
-                      }
-                      className="text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 px-2.5 py-1 rounded-full border border-slate-200 transition-all cursor-pointer active:scale-95"
-                    >
-                      {tag}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Multi-Photo Upload Section (Up to 10 images with Auto WebP Compression) */}
-              <div className="space-y-2.5 pt-1 border-t border-slate-100">
-                <div className="flex items-center justify-between text-xs font-bold text-slate-800">
-                  <span className="flex items-center gap-1.5">
-                    <span>รูปภาพโมเมนต์บรรยากาศ ({uploadedPostImages.length}/{MAX_MOMENT_IMAGES} รูป)</span>
-                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-blue-50 text-[#2563EB] border border-blue-200">
-                      Auto WebP
-                    </span>
-                  </span>
-                  <span className="text-[11px] text-slate-500 font-medium">
-                    {isCompressingImages ? 'กำลังประมวลผล WebP...' : `อัปโหลดได้สูงสุด ${MAX_MOMENT_IMAGES} รูป`}
-                  </span>
-                </div>
-
-                {/* Uploading / Compressing state banner */}
-                {isCompressingImages && (
-                  <div className="p-3 bg-blue-50/80 border border-blue-200/80 rounded-2xl flex items-center gap-2.5 text-xs text-blue-800 font-semibold animate-fade-in">
-                    <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin shrink-0" />
-                    <span>กำลังย่อขนาดและแปลงไฟล์เป็น .WebP เพื่อความคมชัดและโหลดเร็วที่สุด...</span>
-                  </div>
-                )}
-
-                {/* Uploaded Thumbnails Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                  {uploadedPostImages.map((img, idx) => (
-                    <div
-                      key={idx}
-                      className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/90 group shadow-2xs"
-                    >
-                      <img src={img} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
-                      {idx === 0 && (
-                        <span className="absolute bottom-1.5 left-1.5 bg-black/70 text-white text-[9.5px] font-black px-2 py-0.5 rounded-md backdrop-blur-xs">
-                          ภาพหน้าปก
-                        </span>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveImage(idx)}
-                        className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/75 hover:bg-rose-600 text-white flex items-center justify-center text-xs transition-colors cursor-pointer shadow-md"
-                        title="ลบรูปนี้"
-                      >
-                        ✕
+                        <Navigation className={`w-4 h-4 ${isLocating ? 'animate-spin' : ''}`} aria-hidden="true" />
                       </button>
                     </div>
-                  ))}
-
-                  {/* Add More Photos Slot (if < MAX_MOMENT_IMAGES) */}
-                  {uploadedPostImages.length < MAX_MOMENT_IMAGES && (
-                    <label
-                      className={`${
-                        uploadedPostImages.length === 0
-                          ? 'col-span-2 sm:col-span-4 py-6 px-4'
-                          : 'aspect-[4/3]'
-                      } rounded-2xl bg-slate-50 hover:bg-slate-100/80 border-2 border-dashed border-slate-300 hover:border-slate-500 transition-all text-center cursor-pointer flex flex-col items-center justify-center gap-1.5 group`}
-                    >
-                      <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-slate-500 group-hover:text-slate-900 group-hover:scale-105 shadow-2xs border border-slate-200 transition-all">
-                        <ImageIcon className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-slate-800">
-                          {uploadedPostImages.length === 0
-                            ? 'คลิกเพื่อเพิ่มรูปภาพ หรือลากไฟล์มาวาง'
-                            : '+ เพิ่มรูปภาพ'}
-                        </p>
-                        <p className="text-[10.5px] text-slate-500">
-                          {uploadedPostImages.length === 0
-                            ? `รองรับ JPG, PNG, WEBP (สูงสุด ${MAX_MOMENT_IMAGES} รูป)`
-                            : `เหลืออีก ${MAX_MOMENT_IMAGES - uploadedPostImages.length} รูป`}
-                        </p>
-                      </div>
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp,image/avif"
-                        multiple
-                        disabled={isCompressingImages}
-                        onChange={handleImageFilesChange}
-                        className="hidden"
-                      />
-                    </label>
                   )}
                 </div>
               </div>
 
-              {/* Action Buttons: Signature Royal Blue Main CTA */}
-              <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                <span className="text-[11px] text-slate-400 font-medium">
-                  {uploadedPostImages.length === 0
-                    ? 'ใส่รูปภาพอย่างน้อย 1 รูป เพื่อให้เพื่อนๆ เห็นบรรยากาศ'
-                    : 'พร้อมแชร์ลงฟีดคอมมูนิตี้แล้ว'}
-                </span>
-                <div className="flex items-center gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => setIsCreateModalOpen(false)}
-                    className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
-                  >
-                    ยกเลิก
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={!captionInput.trim() || isCompressingImages || isPosting}
-                    className="bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-40 disabled:pointer-events-none text-white px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm hover:shadow-md active:scale-95 cursor-pointer"
-                  >
-                    {isCompressingImages ? 'กำลังประมวลผลรูป...' : isPosting ? 'กำลังโพสต์...' : 'โพสต์โมเมนต์เลย'}
-                  </button>
-                </div>
+              {/* Actions stay in view while the form scrolls */}
+              <div className="shrink-0 px-4 sm:px-6 py-3 border-t border-slate-100 flex items-center gap-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="px-4 py-3 rounded-full text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer whitespace-nowrap"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="submit"
+                  disabled={!captionInput.trim() || uploadedPostImages.length === 0 || isCompressingImages || isPosting}
+                  className="flex-1 bg-[#2563EB] hover:bg-[#1D4ED8] disabled:bg-slate-200 disabled:text-slate-400 disabled:pointer-events-none text-white px-6 py-3 rounded-full font-extrabold text-sm transition-colors shadow-sm cursor-pointer whitespace-nowrap"
+                >
+                  {isCompressingImages
+                    ? 'กำลังเตรียมรูป…'
+                    : isPosting
+                    ? 'กำลังโพสต์…'
+                    : uploadedPostImages.length === 0
+                    ? 'เลือกรูปก่อนนะ'
+                    : !captionInput.trim()
+                    ? 'เขียนเล่าสั้นๆ ก่อนนะ'
+                    : 'โพสต์'}
+                </button>
               </div>
             </form>
           </div>
         </div>
+      )}
+
+      {storyDraft && (
+        <DialogShell onClose={() => setStoryDraft(null)} title="เพิ่มสตอรี่" subtitle="รูปเดียว แสดง 24 ชั่วโมง แล้วหายไปเอง" size="sm">
+          <label className={`block rounded-2xl overflow-hidden border-2 border-dashed cursor-pointer mb-4 ${storyDraft.preview ? 'border-transparent' : 'border-slate-300 hover:border-slate-400 bg-slate-50'}`}>
+            {storyDraft.preview ? (
+              // eslint-disable-next-line @next/next/no-img-element -- local preview
+              <img src={storyDraft.preview} alt="รูปที่เลือก" className="w-full max-h-72 object-contain bg-slate-900" />
+            ) : (
+              <span className="flex flex-col items-center justify-center gap-1.5 py-10 text-slate-600">
+                <ImageIcon className="w-6 h-6" aria-hidden="true" />
+                <span className="text-sm font-bold text-slate-800">เลือกรูป</span>
+              </span>
+            )}
+            <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" onChange={handlePickStoryImage} className="hidden" />
+          </label>
+          <label htmlFor="story-caption" className="sr-only">ข้อความสั้นๆ (ไม่บังคับ)</label>
+          <input
+            id="story-caption"
+            type="text"
+            maxLength={120}
+            value={storyDraft.caption}
+            onChange={(e) => setStoryDraft({ ...storyDraft, caption: e.target.value })}
+            placeholder="ข้อความสั้นๆ (ไม่บังคับ)"
+            className="w-full bg-white border border-slate-300 rounded-2xl px-4 py-3 text-base sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] placeholder:text-slate-400 mb-5"
+          />
+          <div className="flex flex-wrap justify-end gap-2.5">
+            <button type="button" className={dialogButton.quiet} onClick={() => setStoryDraft(null)}>ยกเลิก</button>
+            <button type="button" className={dialogButton.primary} disabled={!storyDraft.file || isDialogBusy} onClick={handlePostStory}>
+              {isDialogBusy ? 'กำลังแชร์…' : storyDraft.file ? 'แชร์สตอรี่' : 'เลือกรูปก่อนนะ'}
+            </button>
+          </div>
+        </DialogShell>
+      )}
+
+      {storyView && storyGroups[storyView.group]?.stories[storyView.index] && (() => {
+        const group = storyGroups[storyView.group];
+        const story = group.stories[storyView.index];
+        return (
+          <div role="dialog" aria-modal="true" aria-label={`สตอรี่ของ ${group.author.displayName}`} className="fixed inset-0 z-[70] bg-black flex items-center justify-center" onClick={() => setStoryView(null)}>
+            <div className="relative w-full h-full sm:h-[92vh] sm:max-w-md sm:rounded-3xl overflow-hidden bg-slate-950" onClick={(e) => e.stopPropagation()}>
+              {/* eslint-disable-next-line @next/next/no-img-element -- member upload */}
+              <img src={story.image} alt={story.caption || `สตอรี่ของ ${group.author.displayName}`} className="absolute inset-0 w-full h-full object-contain" />
+              <button type="button" onClick={() => stepStory(-1)} className="absolute inset-y-0 left-0 w-1/3 cursor-pointer" aria-label="รูปก่อนหน้า" />
+              <button type="button" onClick={() => stepStory(1)} className="absolute inset-y-0 right-0 w-2/3 cursor-pointer" aria-label="รูปถัดไป" />
+              <div className="absolute top-0 inset-x-0 p-3 pt-[max(0.75rem,env(safe-area-inset-top))] bg-black/45 space-y-2.5">
+                <div className="flex gap-1" aria-hidden="true">
+                  {group.stories.map((s, i) => (
+                    <span key={s.id} className={`h-1 flex-1 rounded-full ${i <= storyView.index ? 'bg-white' : 'bg-white/35'}`} />
+                  ))}
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <Link href={`/profile?id=${group.author.id}`} className="flex items-center gap-2.5 min-w-0">
+                    <img src={avatarOf(group.author.displayName, group.author.avatarUrl)} alt="" className="w-9 h-9 rounded-full object-cover border border-white/40 shrink-0" />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-extrabold text-white truncate">{group.author.displayName}</span>
+                      <span className="block text-xs font-medium text-white/80">เหลืออีก {story.hoursLeft} ชั่วโมง</span>
+                    </span>
+                  </Link>
+                  <span className="flex items-center gap-2 shrink-0">
+                    {!group.isMine && isLoggedIn && (
+                      <button
+                        type="button"
+                        disabled={story.hasReported}
+                        onClick={() => {
+                          setReportReason('');
+                          setReportStoryId(story.id);
+                          setStoryView(null);
+                        }}
+                        className="w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 disabled:opacity-50 disabled:cursor-not-allowed text-white flex items-center justify-center cursor-pointer"
+                        aria-label={story.hasReported ? 'รายงานแล้ว' : 'รายงานสตอรี่นี้'}
+                        title={story.hasReported ? 'รายงานแล้ว' : 'รายงานสตอรี่นี้'}
+                      >
+                        <Flag className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button type="button" onClick={() => setStoryView(null)} className="w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center cursor-pointer" aria-label="ปิด">
+                      <X className="w-5 h-5" />
+                    </button>
+                  </span>
+                </div>
+              </div>
+              {(story.caption || group.isMine) && (
+                <div className="absolute bottom-0 inset-x-0 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-black/55 space-y-3">
+                  {story.caption && <p className="text-sm sm:text-base font-semibold text-white leading-relaxed">{story.caption}</p>}
+                  {group.isMine && (
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xs font-semibold text-white/85">มีคนดูแล้ว {story.views ?? 0} คน</span>
+                      <button type="button" onClick={() => handleDeleteStory(story.id)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/15 hover:bg-rose-600 text-white text-sm font-bold cursor-pointer whitespace-nowrap">
+                        <Trash2 className="w-4 h-4" aria-hidden="true" />
+                        ลบสตอรี่
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {confirmDeleteId && (
+        <DialogShell onClose={() => setConfirmDeleteId(null)} title="ลบโมเมนต์นี้ไหม" subtitle="รูป ข้อความ และความคิดเห็นของโพสต์นี้จะหายไป และกู้คืนไม่ได้" size="sm">
+          <div className="flex flex-wrap justify-end gap-2.5">
+            <button type="button" className={dialogButton.quiet} onClick={() => setConfirmDeleteId(null)}>ยกเลิก</button>
+            <button
+              type="button"
+              className={dialogButton.danger}
+              disabled={isDialogBusy}
+              onClick={async () => {
+                setIsDialogBusy(true);
+                await handleDeletePost(confirmDeleteId);
+                setIsDialogBusy(false);
+                setConfirmDeleteId(null);
+              }}
+            >
+              ลบโมเมนต์
+            </button>
+          </div>
+        </DialogShell>
+      )}
+
+      {(reportPostId || reportStoryId) && (
+        <DialogShell
+          onClose={() => {
+            setReportPostId(null);
+            setReportStoryId(null);
+          }}
+          title={reportStoryId ? 'รายงานสตอรี่นี้' : 'รายงานโพสต์นี้'}
+          subtitle="ทีมงานจะตรวจสอบ เจ้าของจะไม่รู้ว่าใครรายงาน"
+          size="sm"
+        >
+          <fieldset className="space-y-2 mb-5">
+            <legend className="sr-only">เหตุผล</legend>
+            {['ชวนลงทุน ขายของ หรือขายประกัน', 'หลอกลวงหรือขอข้อมูลส่วนตัว', 'เนื้อหาไม่เหมาะสม', 'คุกคามหรือพูดจาไม่ดี', 'อื่นๆ'].map((reason) => (
+              <label key={reason} className={`flex items-center gap-3 px-4 py-3 rounded-2xl border cursor-pointer text-sm font-semibold ${reportReason === reason ? 'border-[#2563EB] bg-blue-50/60 text-slate-900' : 'border-slate-200 text-slate-700 hover:bg-slate-50'}`}>
+                <input type="radio" name="report-reason" value={reason} checked={reportReason === reason} onChange={() => setReportReason(reason)} className="accent-[#2563EB]" />
+                <span>{reason}</span>
+              </label>
+            ))}
+          </fieldset>
+          <div className="flex flex-wrap justify-end gap-2.5">
+            <button type="button" className={dialogButton.quiet} onClick={() => { setReportPostId(null); setReportStoryId(null); }}>ยกเลิก</button>
+            <button type="button" className={dialogButton.primary} disabled={!reportReason || isDialogBusy} onClick={handleReportPost}>ส่งรายงาน</button>
+          </div>
+        </DialogShell>
+      )}
+
+      {editPost && (
+        <DialogShell onClose={() => setEditPost(null)} title="แก้ไขข้อความ" size="sm">
+          <label htmlFor="edit-moment-caption" className="sr-only">ข้อความของโมเมนต์</label>
+          <textarea
+            id="edit-moment-caption"
+            rows={4}
+            maxLength={500}
+            value={editPost.caption}
+            onChange={(e) => setEditPost({ ...editPost, caption: e.target.value })}
+            className="w-full bg-white border border-slate-300 rounded-2xl p-3.5 text-base sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] resize-none leading-relaxed mb-5"
+          />
+          <div className="flex flex-wrap justify-end gap-2.5">
+            <button type="button" className={dialogButton.quiet} onClick={() => setEditPost(null)}>ยกเลิก</button>
+            <button type="button" className={dialogButton.primary} disabled={!editPost.caption.trim() || isDialogBusy} onClick={handleSaveEdit}>บันทึก</button>
+          </div>
+        </DialogShell>
+      )}
+
+      {isVerifyNoticeOpen && (
+        <DialogShell onClose={() => setIsVerifyNoticeOpen(false)} title="อีกนิดเดียว ก็โพสต์ได้แล้ว" subtitle="ยืนยันอีเมลและรับคำมั่นของคอมมูนิตี้ก่อน เพื่อให้ที่นี่ปลอดภัยสำหรับทุกคน" size="sm">
+          <div className="flex flex-wrap justify-end gap-2.5">
+            <button type="button" className={dialogButton.quiet} onClick={() => setIsVerifyNoticeOpen(false)}>ไว้ทีหลัง</button>
+            <Link href="/profile#trust" className={dialogButton.primary}>ไปยืนยันที่โปรไฟล์</Link>
+          </div>
+        </DialogShell>
       )}
 
       {/* Create Custom Event Modal */}
@@ -2411,7 +2610,7 @@ function MomentsContent() {
           if (newEvent.approvalStatus === 'pending') {
             showToast(`ส่งข้อมูล "${newEvent.title}" เรียบร้อยแล้ว (รอตรวจสอบและอนุมัติโดยทีมงาน)`);
           } else {
-            showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จเรียบร้อย! 🎉`);
+            showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จเรียบร้อย!`);
           }
         }}
       />
@@ -2433,7 +2632,7 @@ function MomentsContent() {
         onClose={() => setIsAuthModalOpen(false)}
         onLoginSuccess={(userName) => {
           handleSetIsLoggedIn(true);
-          showToast(`ยินดีต้อนรับ ${userName}! เข้าสู่ระบบเรียบร้อย 🎉`);
+          showToast(`ยินดีต้อนรับ ${userName}! เข้าสู่ระบบเรียบร้อย`);
         }}
       />
 
