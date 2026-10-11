@@ -215,6 +215,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: `ชาเลนจ์ "${expired[0].title}" หมดเวลาแล้ว แก้วันสิ้นสุดก่อนอนุมัติ` }, { status: 400 });
   }
 
+  // A place without a pin breaks its map and every distance shown beside it
+  const unpinned = action === 'approve' ? spots.filter((spot) => !isThaiCoordinate(spot.latitude, spot.longitude)) : [];
+  if (unpinned.length) {
+    return NextResponse.json({ success: false, error: `สถานที่ "${unpinned[0].title}" ยังไม่มีพิกัด กด "แก้ไข" เพื่อปักหมุดก่อนอนุมัติ` }, { status: 400 });
+  }
+
   // Moderators may decide community meetups only; fairs, spots and challenges need content.edit
   const needsEdit = spots.length > 0 || quests.length > 0 || events.some((event) => event.eventType !== 'community');
   if (needsEdit && !actorCan(actor, 'content.edit')) {

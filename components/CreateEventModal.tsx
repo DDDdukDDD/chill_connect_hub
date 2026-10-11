@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/useAuth';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { activityActions } from '@/lib/useMyActivity';
 import { DialogShell, dialogButton } from './auth/DialogShell';
+import { LocationPinPicker, Pin } from './LocationPinPicker';
 import { SUBMISSION_SENT_EVENT } from './MySubmissions';
 import { RichTextEditor, renderDescriptionContent, stripHtmlToPlainText } from './RichTextEditor';
 
@@ -141,6 +142,7 @@ const initialForm = (type: CreationEntityType, seed: { title?: string; location?
   openHours: '',
   bestTime: '',
   googleMapsUrl: '',
+  pin: null as Pin | null,
   highlights: [] as string[],
   // challenge
   objective: '',
@@ -151,6 +153,43 @@ const initialForm = (type: CreationEntityType, seed: { title?: string; location?
 });
 type Form = ReturnType<typeof initialForm>;
 type Errors = Partial<Record<keyof Form, string>>;
+
+/** A starting structure for the description; the bracketed lines are prompts the writer replaces */
+const DESCRIPTION_TEMPLATES: Partial<Record<CreationEntityType, string>> = {
+  community: [
+    '<p><strong>ภาพรวมกิจกรรม</strong></p>',
+    '<p>[เล่าสั้นๆ ว่าจะทำอะไรกัน ที่ไหน และบรรยากาศเป็นแบบไหน]</p>',
+    '<p><strong>เหมาะกับใคร</strong></p>',
+    '<ul><li>[เช่น มือใหม่ร่วมได้ ไม่ต้องมีประสบการณ์]</li><li>[เช่น มาคนเดียวได้ มีคนคอยต้อนรับ]</li></ul>',
+    '<p><strong>สิ่งที่จะได้กลับไป</strong></p>',
+    '<p>[เช่น เพื่อนใหม่ที่ชอบเรื่องเดียวกัน หรือทักษะที่ได้ลอง]</p>',
+    '<p><strong>ข้อควรรู้ก่อนมา</strong></p>',
+    '<p>[เช่น การแต่งกาย ค่าใช้จ่ายที่ต้องจ่ายเอง หรือกรณีฝนตก]</p>',
+  ].join(''),
+  fair: [
+    '<p><strong>ภาพรวมของงาน</strong></p>',
+    '<p>[เล่าว่างานนี้คืองานอะไร จัดเพื่อใคร และมีผู้ร่วมออกบูธประมาณเท่าไร]</p>',
+    '<p><strong>ไฮไลต์ในงาน</strong></p>',
+    '<ul><li>[โซนหรือกิจกรรมเด่นที่ 1]</li><li>[โซนหรือกิจกรรมเด่นที่ 2]</li><li>[โปรโมชันหรือของที่มีเฉพาะในงาน]</li></ul>',
+    '<p><strong>เหมาะกับใคร</strong></p>',
+    '<p>[เช่น คนรักงานคราฟต์ ครอบครัว หรือผู้ประกอบการ]</p>',
+    '<p><strong>ข้อมูลการเข้างาน</strong></p>',
+    '<p>[เช่น ต้องลงทะเบียนล่วงหน้าหรือไม่ การเดินทาง และที่จอดรถ]</p>',
+  ].join(''),
+  spot: [
+    '<p><strong>บรรยากาศของสถานที่</strong></p>',
+    '<p>[เล่าว่าที่นี่เป็นแบบไหน เงียบหรือคึกคัก และอะไรทำให้น่ามา]</p>',
+    '<p><strong>สิ่งที่แนะนำ</strong></p>',
+    '<ul><li>[มุมหรือจุดที่ไม่ควรพลาด]</li><li>[เมนูหรือกิจกรรมที่ควรลอง]</li></ul>',
+    '<p><strong>เหมาะกับใคร</strong></p>',
+    '<p>[เช่น มานั่งทำงาน มากับครอบครัว หรือมาคนเดียว]</p>',
+    '<p><strong>ข้อควรรู้</strong></p>',
+    '<p>[เช่น ที่จอดรถ ช่วงที่คนเยอะ หรือสิ่งที่ควรเตรียมมา]</p>',
+  ].join(''),
+};
+
+/** True while a prompt of the template is still in the text, so a half-filled template is never sent */
+const hasTemplatePrompt = (description: string): boolean => /\[[^\]]{3,}\]/.test(stripHtmlToPlainText(description));
 
 /** What must be filled in on each step; the server checks again */
 function validate(type: CreationEntityType, step: number, f: Form, minDate: string): Errors {
@@ -188,7 +227,7 @@ function validate(type: CreationEntityType, step: number, f: Form, minDate: stri
   if (step === 1 && type === 'spot') {
     need('province', Boolean(f.province), 'เลือกจังหวัด');
     need('openHours', f.openHours.trim().length >= 2, 'ใส่เวลาเปิด เช่น ทุกวัน 08:00 - 18:00 น.');
-    need('googleMapsUrl', !f.googleMapsUrl.trim() || f.googleMapsUrl.trim().startsWith('https://'), 'ลิงก์ต้องขึ้นต้นด้วย https://');
+    need('pin', Boolean(f.pin), 'ปักหมุดตำแหน่งของสถานที่ก่อน: ค้นหาชื่อ หรือแตะบนแผนที่');
   }
   if (step === 1 && type === 'challenge') {
     need('objective', f.objective.trim().length >= 15, 'อธิบายเป้าหมายอย่างน้อย 15 ตัวอักษร');
@@ -197,6 +236,7 @@ function validate(type: CreationEntityType, step: number, f: Form, minDate: stri
   }
   if (step === 2 && type !== 'challenge') {
     need('description', stripHtmlToPlainText(f.description).length >= 15, 'เล่ารายละเอียดอย่างน้อย 15 ตัวอักษร');
+    need('description', !hasTemplatePrompt(f.description), 'แก้ข้อความในวงเล็บ [ ] ให้เป็นรายละเอียดจริงก่อน');
     if (type !== 'spot' && f.priceMode === 'paid') need('priceText', f.priceText.trim().length >= 1, 'ใส่ราคา เช่น 150 บาท');
     if (type === 'community') need('maxParticipants', f.maxParticipants >= 2 && f.maxParticipants <= 15, 'รับได้ 2 ถึง 15 คน');
     if (type === 'fair') need('ticketUrl', !f.ticketUrl.trim() || f.ticketUrl.trim().startsWith('https://'), 'ลิงก์ต้องขึ้นต้นด้วย https://');
@@ -497,7 +537,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
     setIsSubmitting(true);
     try {
       const request = type === 'spot'
-        ? { url: '/api/spots', body: { title: form.title, category: form.spotCategory, image: form.image, province: form.province, district: form.district, googleMapsUrl: form.googleMapsUrl.trim(), openHours: form.openHours, bestTime: form.bestTime, price: form.priceText, description: form.description, highlights: form.highlights } }
+        ? { url: '/api/spots', body: { title: form.title, category: form.spotCategory, image: form.image, province: form.province, district: form.district, googleMapsUrl: form.googleMapsUrl.trim().startsWith('https://') ? form.googleMapsUrl.trim() : '', latitude: form.pin?.latitude, longitude: form.pin?.longitude, openHours: form.openHours, bestTime: form.bestTime, price: form.priceText, description: form.description, highlights: form.highlights } }
         : type === 'challenge'
           ? { url: '/api/quests', body: { title: form.title, category: form.category, image: form.image, objective: form.objective, steps: form.steps.filter((item) => item.trim()), total: form.total, verificationMethod: form.verificationMethod, startDate: form.startDate, endDate: form.endDate, badgeLabel: form.badgeLabel } }
           : { url: '/api/events', body: { eventData: eventPayload() } };
@@ -609,7 +649,13 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
 
   const descriptionField = (label: string, placeholder: string) => (
     <Field label={label} error={errors.description} hint="อย่างน้อย 15 ตัวอักษร ห้ามใส่ไลน์ เบอร์โทร หรือลิงก์ส่วนตัว">
-      <RichTextEditor value={form.description} onChange={(value) => set('description', value)} placeholder={placeholder} minHeight="130px" />
+      <RichTextEditor value={form.description} onChange={(value) => set('description', value)} placeholder={placeholder} minHeight="130px"
+        templateLabel="ใช้โครงตัวอย่าง"
+        onApplyTemplate={type && DESCRIPTION_TEMPLATES[type] ? () => {
+          // Text already written is kept; the structure goes below it
+          const written = stripHtmlToPlainText(form.description).length > 0;
+          set('description', `${written ? form.description : ''}${DESCRIPTION_TEMPLATES[type]}`);
+        } : undefined} />
     </Field>
   );
 
@@ -801,9 +847,8 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
               <input id={id('district')} value={form.district} maxLength={60} onChange={(e) => set('district', e.target.value)} className={inputClass()} />
             </Field>
           </div>
-          <Field label="ลิงก์ Google Maps" htmlFor={id('map')} optional error={errors.googleMapsUrl} hint="ช่วยให้ทีมงานปักหมุดได้ถูกจุด">
-            <input id={id('map')} type="url" value={form.googleMapsUrl} maxLength={500} onChange={(e) => set('googleMapsUrl', e.target.value)} placeholder="https://maps.google.com/..." className={inputClass(Boolean(errors.googleMapsUrl))} />
-          </Field>
+          <LocationPinPicker pin={form.pin} onPinChange={(pin) => set('pin', pin)} mapUrl={form.googleMapsUrl} onMapUrlChange={(value) => set('googleMapsUrl', value)}
+            searchText={[form.title.trim(), form.district.trim(), form.province].filter(Boolean).join(' ')} error={errors.pin} />
           <Field label="เวลาเปิด" htmlFor={id('openHours')} error={errors.openHours}>
             <input id={id('openHours')} value={form.openHours} maxLength={100} onChange={(e) => set('openHours', e.target.value)} placeholder="เช่น ทุกวัน 08:00 - 18:00 น." className={inputClass(Boolean(errors.openHours))} />
           </Field>
@@ -1012,7 +1057,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
             <SummaryRow label="เวลาเปิด">{form.openHours.trim()}</SummaryRow>
             {form.bestTime.trim() && <SummaryRow label="ช่วงแนะนำ">{form.bestTime.trim()}</SummaryRow>}
             {form.priceText.trim() && <SummaryRow label="ราคา">{form.priceText.trim()}</SummaryRow>}
-            <SummaryRow label="แผนที่">{form.googleMapsUrl.trim() ? 'แนบลิงก์แล้ว' : 'ไม่ได้แนบ'}</SummaryRow>
+            <SummaryRow label="แผนที่">{form.pin ? 'ปักหมุดแล้ว' : 'ยังไม่ได้ปักหมุด'}</SummaryRow>
           </>
         ))}
         {type === 'challenge' && section(1, (

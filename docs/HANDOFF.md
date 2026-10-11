@@ -719,3 +719,18 @@ From 2026-10-11 the owner asked Claude Code to do all work, frontend included.
 - Three lint errors fixed (`app/challenges/page.tsx`, `app/page.tsx`, `components/CommunityChallengeBar.tsx`); `npx eslint app components lib --quiet` is clean.
 
 **Frontend action:** any new "รายงาน" button must pass `targetType` and `targetId` to `ReportSafetyModal`.
+
+### BE-030 (2026-10-11) Places get their pin when they are suggested; description template is back — from Claude Code
+
+**Why:** an end-to-end test of the four create forms (create in the dialog, approve in the admin console, open the public page) showed that a suggested place was saved at `0,0` unless its Google Maps link happened to carry coordinates. The review queue still published it, and the place page then showed a map in the sea and "999999 กม." in the trip plan.
+
+**What changed**
+- New `components/LocationPinPicker.tsx` in the place form of `components/CreateEventModal.tsx`: paste a Google Maps link, search by name, or tap the map and drag the pin (Leaflet with OpenStreetMap, which was an admin-only dependency until now). A pin is required to continue.
+- `POST /api/spots` requires the pin; `POST /api/places/resolve` and `GET /api/places/search` are new (see `docs/API.md`). `lib/mapLinks.ts` holds the link reader; `coordinatesFromMapUrl` moved there from `lib/members/submissions.ts`.
+- The review queue refuses to approve a place without coordinates. The admin spot editor has a "ดึงพิกัดจากลิงก์ Google Maps" button.
+- The description editor has its "ใช้โครงตัวอย่าง" button again (community event, fair, place). The template is headings with prompts in `[ ]`; the form does not continue while a prompt is left in the text.
+
+**Frontend action:** none.
+
+**Found by the same test, not fixed (owner to decide):** the event, fair and place pages add content nobody entered: stock photos in the gallery beside the one uploaded photo, a host line "จัดกิจกรรมมาแล้ว 12 ครั้ง • เรตติ้ง 4.9 (58 รีวิว)" and "Verified Host" for a new account, fixed "จุดเด่น" and "สิ่งที่ควรเตรียม" lists, fixed transport text for another venue, "Official Venue & Partner" on a member's fair (the organizer's name is not shown), and ended events under "ที่คุณอาจสนใจ". A newly approved place did not appear on the first page of `/spots`.
+

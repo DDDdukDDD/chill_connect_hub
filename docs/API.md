@@ -427,8 +427,8 @@ Every event `date` / `endDate` and quest `startDate` / `endDate` returned by the
 Signed-in, verified members only (email verified and pledge accepted); otherwise `401` / `403`. `eventType: 'public_venue'` (a fair) is accepted only from an approved organizer or venue (`403` otherwise). `contactChannel` from members is dropped. Community events of an approved host are `approved` at once; everything else is `pending`.
 
 ### `POST /api/spots` — a member suggests a place
-Body: `{ title, category, province, description, openHours, district?, googleMapsUrl?, bestTime?, price?, image?, highlights?: string[] }`.
-`category` is one of the stored spot categories (`lib/spotCategories.ts`). Saved as `publicationStatus: 'draft'` with `suggestedByMemberId`; it appears in the staff review queue (pillar `spots`) and not on the site. Coordinates are read from the Google Maps link when it carries them, else `0,0` for staff to set.
+Body: `{ title, category, province, description, openHours, latitude, longitude, district?, googleMapsUrl?, bestTime?, price?, image?, highlights?: string[] }`.
+`category` is one of the stored spot categories (`lib/spotCategories.ts`). Saved as `publicationStatus: 'draft'` with `suggestedByMemberId`; it appears in the staff review queue (pillar `spots`) and not on the site. A pin inside Thailand is required (since BE-030): `latitude` and `longitude` from the map picker, or a `googleMapsUrl` that carries coordinates. Without one the answer is `400`. When no link is sent, `googleMapsUrl` is built from the pin.
 Errors: `401` not signed in, `403` not verified, `400` validation, `409` same name in the same province, `429` five suggestions already waiting.
 Response `201`: `{ success, spot, message }`.
 
@@ -455,3 +455,17 @@ Listing needs `content.view`; closing needs `community.review`.
 
 ### `/api/admin/review` — challenges
 The queue has a fourth pillar `quests` (`kind: 'quest'`): draft challenges a member proposed. `counts.quests` is returned. Approving sets `status: 'active'` (refused when the end date has passed); rejecting sets `reviewRejectedAt` and `rejectionReason` and keeps the draft hidden.
+
+## Place pin: link reader and place search (added 2026-10-11, BE-030)
+
+Both need a signed-in member or a staff session, and are rate limited per account. Used by `components/LocationPinPicker.tsx` and the admin spot editor.
+
+### `POST /api/places/resolve`
+Body: `{ url }` (a Google Maps link, `https://` only). Answer: `{ success, coordinates: { latitude, longitude } | null }`.
+Reads the coordinates in the link's address. A short link (`maps.app.goo.gl`) is followed on Google hosts only. `null` means the link carries no pin inside Thailand, which is common for links shared from the phone app; ask for a pin on the map instead. No Google API is called.
+
+### `GET /api/places/search?q=`
+Answer: `{ success, places: [{ name, detail, latitude, longitude }] }` (at most 5, Thailand only), from OpenStreetMap (Nominatim). Call it on a button press, not while typing. `502` when the search service does not answer.
+
+### `/api/admin/review` — places need a pin
+`POST { action: 'approve' }` answers `400` when a place in the request has no coordinates inside Thailand. Nothing in the request is approved; staff set the pin in the spot editor first.
