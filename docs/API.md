@@ -372,3 +372,18 @@ All writes are `POST` with an `action` field unless noted.
 ## Events created by a member (added 2026-10-10)
 - `GET /api/events?mine=1` → `{ success, events, total }`: events the signed-in member created, any `approvalStatus` (`approved`, `pending`, `rejected`). Signed out: empty list with `requiresLogin: true`. Not cached.
 - `GET /api/events?host=<memberId>` → `{ success, events, total }`: that member's `approved` events only. Public. Not cached.
+
+## Following and suggested members (added 2026-10-11)
+- `POST /api/members/{id}/actions` with `{ action: 'follow' | 'unfollow' }` → `{ success, following, followerCount }`. Signed-in members only; blocking a member also unfollows them.
+- `GET /api/members/{id}` and `GET /api/auth/member/profile` (`publicView`) now include `followerCount`, `followingCount`; `viewer.isFollowing` on another member's profile.
+- `GET /api/members/suggested` → `{ success, members: [{ id, displayName, avatarUrl, momentCount, trusted, approvedHost }] }`: up to 5 verified members with published moments, without the viewer, people they follow or blocked, and accounts with open risk flags.
+- `GET /api/moments?tab=following`: moments by members the viewer follows (signed out: empty list with `requiresLogin`).
+
+## Stories and notifications (added 2026-10-11)
+- `GET /api/stories` → `{ success, groups: [{ author: { id, displayName, avatarUrl }, isMine, isFollowing, allSeen, stories: [{ id, image, caption, createdAt, hoursLeft, seen, views? }] }] }`. Only stories younger than 24 hours; `views` is sent to the author only. Order: own, followed, unseen, seen.
+- `POST /api/stories` `{ image (from /api/upload), caption? (≤120) }` → `201 { story }`. Same trust rules as a moment (verified account, no contact details for new accounts); at most 5 active stories per member.
+- `POST /api/stories/{id}` with `{}` marks it seen by the signed-in member; with `{ action: 'report', reason }` reports it (once per member, 3 distinct reports hide it, staff get a risk flag). Story items include `hasReported`. `DELETE /api/stories/{id}` removes one's own story.
+- `GET /api/notifications` → `{ success, items: [{ id, type: 'follow' | 'like' | 'comment', actorId, actorName, actorAvatar, momentId?, message, preview?, timeAgo, read }], unread }`. `POST /api/notifications` marks all as read.
+- Created by the server on follow, like and comment (never for one's own action; a repeated like or follow is one item). Deleted with the account.
+- Feed items of sample posts (`isSample`) are returned without decorative emoji.
+- `POST /api/moments` also accepts `imageRatio` (number, width / height of the first photo, stored between 0.3 and 3); feed items return `imageRatio` when it was saved.
