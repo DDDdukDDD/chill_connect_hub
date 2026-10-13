@@ -90,12 +90,19 @@ import {
   REWARD_SHOP_ITEMS,
 } from '@/data/rewardsData';
 
+// A date saved as "2026-10-12" reads like the rest of the page: "12 ต.ค. 2569"
+function thaiShortDate(date?: string): string {
+  const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date ?? '');
+  if (!iso) return date ?? '';
+  return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3])).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 function MyHubContent() {
   const searchParams = useSearchParams();
   const [activeNavTab, setActiveNavTab] = useState('myhub');
 
   // 4 Core Lifestyle Tabs aligned with Platform Architecture
-  const [activeSubTab, setActiveSubTab] = useState<'community' | 'fairs' | 'scrapbook' | 'quests_rewards'>('community');
+  const [activeSubTab, setActiveSubTab] = useState<'community' | 'trips' | 'fairs' | 'scrapbook' | 'quests_rewards'>('community');
 
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -147,11 +154,11 @@ function MyHubContent() {
   const [joinedSubActivities, setJoinedSubActivities] = useState<Record<string, any>>({});
 
   // Main Dual Mode: Master Calendar by default as requested
-  const [hubMainMode, setHubMainMode] = useState<'categories' | 'calendar'>('calendar');
+  const [hubMainMode, setHubMainMode] = useState<'categories' | 'calendar' | 'hosting'>('calendar');
   // User Created Events (Host)
   const [userCreatedEvents, setUserCreatedEvents] = useState<EventItem[]>([]);
   // Master Calendar Category Layer Filter
-  const [calendarCategoryFilter, setCalendarCategoryFilter] = useState<'all' | 'community' | 'fairs' | 'spots' | 'quests'>('all');
+  const [calendarCategoryFilter, setCalendarCategoryFilter] = useState<'all' | 'community' | 'fairs' | 'spots' | 'quests' | 'hosting'>('all');
   // View Mode: Cards List vs Calendar
   const [hubViewMode, setHubViewMode] = useState<'list' | 'calendar'>('list');
   // Upcoming vs Past Filter
@@ -378,15 +385,14 @@ function MyHubContent() {
     });
 
     // 3. From active quests / challenges (Gamified Lifestyle Quests)
-    const questDeadlineDays = [20, 25, 28, 30];
-    const questStartDays = [1, 1, 5, 10];
-    myChallenges.forEach((q, idx) => {
+    // A challenge sits on its own dates; one without an end date has no place on a calendar
+    myChallenges.forEach((q) => {
       const questId = `quest-${q.id}`;
-      if (!addedIds.has(questId)) {
-        const targetDay = questDeadlineDays[idx % questDeadlineDays.length];
-        const startDay = questStartDays[idx % questStartDays.length];
-        const questRangeDate = `${startDay} - ${targetDay} ก.ย. 2569`;
-        const deadlineDate = `${targetDay} ก.ย. 2569`;
+      const questEndTs = q.endDate ? parseEventEndDateToTimestamp(q.endDate) : 0;
+      if (!addedIds.has(questId) && Number.isFinite(questEndTs) && questEndTs > 0) {
+        const startTs = q.startDate ? parseEventDateToTimestamp(q.startDate) : 0;
+        const questStartTs = Number.isFinite(startTs) && startTs > 0 ? startTs : 0;
+        const questRangeDate = q.startDate ? `${q.startDate} - ${q.endDate}` : `ถึง ${q.endDate}`;
 
         list.push({
           id: questId,
@@ -405,10 +411,9 @@ function MyHubContent() {
           participantsCount: q.participantsCount || 300,
           maxParticipants: 1000,
           createdAtTimestamp: 1788278059344,
-          // Quest Span Metadata for Option C
-          questStartDay: startDay,
-          questDeadlineDay: targetDay,
-          deadlineDate: deadlineDate,
+          questStartTs,
+          questEndTs,
+          deadlineDate: q.endDate,
         } as any);
         addedIds.add(questId);
       }
@@ -417,14 +422,25 @@ function MyHubContent() {
     return list;
   }, [activity.joined, activity.cancelled, joinedSubActivities, myChallenges, userCreatedEvents]);
 
-  // Separate Community Meetups vs Fairs
+  // Events the member runs live under "งานที่จัด"; the lists and the numbers are about what they go to as a guest
+  const hostedIdSet = useMemo(() => new Set(userCreatedEvents.map((e) => e.id)), [userCreatedEvents]);
+  const guestEvents = useMemo(() => allJoinedEvents.filter((e) => !hostedIdSet.has(e.id)), [allJoinedEvents, hostedIdSet]);
+  // A buddy trip is an event tied to a place: told from the data, never from words in its title
+  const isTripEvent = (e: EventItem) => Boolean(e.spotId || joinedSubActivities[e.id]?.subTitle || e.id.startsWith('spot-'));
+
+  // Meetups and buddy trips share one list block; the open tab decides which of the two it shows
+  const allMeetupEvents = useMemo(() => {
+    return guestEvents.filter((e) => e.eventType !== 'public_venue' && (e.eventType as any) !== 'challenge');
+  }, [guestEvents]);
+  const tripCount = allMeetupEvents.filter(isTripEvent).length;
+  const communityCount = allMeetupEvents.length - tripCount;
   const communityEvents = useMemo(() => {
-    return allJoinedEvents.filter((e) => e.eventType !== 'public_venue' && (e.eventType as any) !== 'challenge');
-  }, [allJoinedEvents]);
+    return allMeetupEvents.filter((e) => isTripEvent(e) === (activeSubTab === 'trips'));
+  }, [allMeetupEvents, activeSubTab, joinedSubActivities]);
 
   const expoEvents = useMemo(() => {
-    return allJoinedEvents.filter((e) => e.eventType === 'public_venue' && (e.eventType as any) !== 'challenge');
-  }, [allJoinedEvents]);
+    return guestEvents.filter((e) => e.eventType === 'public_venue' && (e.eventType as any) !== 'challenge');
+  }, [guestEvents]);
 
   // Attendance Status Resolver: 'upcoming' | 'attended' | 'cancelled' | 'missed'
   const getEventAttendanceStatus = (ev: EventItem): 'upcoming' | 'attended' | 'cancelled' | 'missed' => {
@@ -455,14 +471,20 @@ function MyHubContent() {
 
   // Total counts for Passport Header Metrics (Lifecycle: Upcoming -> Attended -> XP)
   const upcomingEventsTotalCount = useMemo(() => {
-    return upcomingCommunityEvents.length + upcomingExpoEvents.length;
-  }, [upcomingCommunityEvents, upcomingExpoEvents]);
+    return allMeetupEvents.filter((e) => getEventAttendanceStatus(e) === 'upcoming').length + upcomingExpoEvents.length;
+  }, [allMeetupEvents, upcomingExpoEvents, cancelledEventIds]);
 
   const attendedEventsTotalCount = useMemo(() => {
-    const attendedComm = communityEvents.filter((e) => getEventAttendanceStatus(e) === 'attended').length;
+    const attendedComm = allMeetupEvents.filter((e) => getEventAttendanceStatus(e) === 'attended').length;
     const attendedExpo = expoEvents.filter((e) => getEventAttendanceStatus(e) === 'attended').length;
     return attendedComm + attendedExpo;
-  }, [communityEvents, expoEvents, cancelledEventIds, missedEventIds]);
+  }, [allMeetupEvents, expoEvents, cancelledEventIds, missedEventIds]);
+
+  // The box at the top is for events still to run, nearest first; a finished one lives in the past list
+  const hostedUpcoming = useMemo(
+    () => activity.hosted.filter((e) => !isEventEnded(e)).sort((a, b) => parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date)),
+    [activity.hosted],
+  );
 
   // Quick Navigation Handlers for Metric Cards
   const handleQuickFilterUpcoming = () => {
@@ -486,6 +508,15 @@ function MyHubContent() {
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // What is coming comes first, nearest date on top; what has passed follows, latest first
+  const byNearestDate = (a: EventItem, b: EventItem) => {
+    const aUpcoming = getEventAttendanceStatus(a) === 'upcoming';
+    const bUpcoming = getEventAttendanceStatus(b) === 'upcoming';
+    if (aUpcoming !== bUpcoming) return aUpcoming ? -1 : 1;
+    const diff = parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date);
+    return aUpcoming ? diff : -diff;
+  };
+
   // Filtered lists based on All vs Upcoming vs Past + Sub-filter
   const filteredCommunityEvents = useMemo(() => {
     return communityEvents.filter((ev) => {
@@ -500,7 +531,7 @@ function MyHubContent() {
         return true;
       }
       return true;
-    });
+    }).sort(byNearestDate);
   }, [communityEvents, eventViewMode, pastSubFilter, cancelledEventIds, missedEventIds]);
 
   const filteredExpoEvents = useMemo(() => {
@@ -516,7 +547,7 @@ function MyHubContent() {
         return true;
       }
       return true;
-    });
+    }).sort(byNearestDate);
   }, [expoEvents, eventViewMode, pastSubFilter, cancelledEventIds, missedEventIds]);
 
   // Live catalog (published spots + bundled ones saved earlier)
@@ -570,7 +601,24 @@ function MyHubContent() {
     return totalGridCells - (startDayOffset + daysInMonth);
   }, [totalGridCells, startDayOffset, daysInMonth]);
 
+  const isQuestEntry = (ev: EventItem) => (ev as any).eventType === 'challenge' || ev.id.startsWith('quest-');
+  // The days of one month a challenge runs through, and its last day when that falls in the month
+  const questSpanInMonth = (ev: EventItem, monthIdx: number, year: number): { start: number; end: number; deadline: number | null } | null => {
+    const { questStartTs = 0, questEndTs = 0 } = ev as EventItem & { questStartTs?: number; questEndTs?: number };
+    const monthStart = new Date(year, monthIdx, 1).getTime();
+    const lastDay = new Date(year, monthIdx + 1, 0).getDate();
+    const monthEnd = new Date(year, monthIdx, lastDay, 23, 59, 59).getTime();
+    if (!questEndTs || questEndTs < monthStart || questStartTs > monthEnd) return null;
+    const endsHere = questEndTs <= monthEnd;
+    return {
+      start: questStartTs > monthStart ? new Date(questStartTs).getDate() : 1,
+      end: endsHere ? new Date(questEndTs).getDate() : lastDay,
+      deadline: endsHere ? new Date(questEndTs).getDate() : null,
+    };
+  };
+
   const isEventInCalMonth = (ev: EventItem, monthIdx: number, year: number) => {
+    if (isQuestEntry(ev)) return questSpanInMonth(ev, monthIdx, year) !== null;
     const monthShort = THAI_MONTH_SHORT[monthIdx];
     const monthFull = THAI_MONTH_NAMES[monthIdx];
     const dateStr = ev.date || '';
@@ -579,7 +627,7 @@ function MyHubContent() {
       const d = new Date(ev.createdAtTimestamp);
       if (d.getFullYear() === year && d.getMonth() === monthIdx) return true;
     }
-    return monthIdx === 8 && year === 2026 && dateStr.includes('ก.ย.');
+    return false;
   };
 
   // Cancel Event (Marks as cancelled in history rather than wiping out)
@@ -712,10 +760,10 @@ function MyHubContent() {
         passLabel: 'Quest Pass',
       };
     }
-    if (joinedSubActivities[ev.id]?.subTitle || ev.id.startsWith('spot-') || ev.title.includes('ทริป') || ev.title.includes('ชวนเที่ยว')) {
+    if (isTripEvent(ev)) {
       return {
         pillar: 'spots' as const,
-        label: 'ทริปพิกัดเที่ยว',
+        label: 'ทริปชวนเพื่อน',
         dotColor: 'bg-[#F26430]',
         badgeBg: 'bg-[#FEF3EE]',
         badgeText: 'text-[#D04A1B]',
@@ -745,6 +793,10 @@ function MyHubContent() {
       passLabel: 'E-Ticket',
     };
   };
+
+  // On the calendar an event the member runs is its own group, whatever kind of event it is
+  const calGroupOf = (ev: EventItem) => (hostedIdSet.has(ev.id) ? ('hosting' as const) : getEventPillarMeta(ev).pillar);
+  const startTimeOf = (ev: EventItem) => /\d{1,2}[:.]\d{2}/.exec(ev.time ?? '')?.[0].replace('.', ':').padStart(5, '0') ?? '';
 
   const getCommunityMoodTheme = (category?: string) => {
     switch (category) {
@@ -795,16 +847,13 @@ function MyHubContent() {
     if (!isEventInCalMonth(ev, monthIdx, year)) return false;
 
     // Quests Span Handling for Option C (Filter-Activated Span)
-    if ((ev as any).eventType === 'challenge' || ev.id.startsWith('quest-')) {
-      const qStart = (ev as any).questStartDay || 1;
-      const qEnd = (ev as any).questDeadlineDay || 31;
-
-      if (filterMode === 'quests') {
-        // When user explicitly inspects Quests, highlight all days within the span [qStart, qEnd]
-        return day >= qStart && day <= qEnd;
-      }
+    if (isQuestEntry(ev)) {
+      const span = questSpanInMonth(ev, monthIdx, year);
+      if (!span) return false;
+      // When user explicitly inspects Quests, highlight all days within the span
+      if (filterMode === 'quests') return day >= span.start && day <= span.end;
       // In all other modes (e.g. 'all'), ONLY show on the deadline day to prevent calendar clutter
-      return day === qEnd;
+      return day === span.deadline;
     }
 
     // The day is inside the event when it falls between the event's first and last date
@@ -832,46 +881,113 @@ function MyHubContent() {
     let fairs = 0;
     let spots = 0;
     let quests = 0;
+    let hosting = 0;
     scopedCalendarEvents.forEach((ev) => {
-      const meta = getEventPillarMeta(ev);
-      if (meta.pillar === 'fairs') fairs++;
-      else if (meta.pillar === 'spots') spots++;
-      else if (meta.pillar === 'quests') quests++;
+      const group = calGroupOf(ev);
+      if (group === 'hosting') hosting++;
+      else if (group === 'fairs') fairs++;
+      else if (group === 'spots') spots++;
+      else if (group === 'quests') quests++;
       else community++;
     });
-    return { all: scopedCalendarEvents.length, community, fairs, spots, quests };
-  }, [scopedCalendarEvents]);
+    return { all: scopedCalendarEvents.length, community, fairs, spots, quests, hosting };
+  }, [scopedCalendarEvents, hostedIdSet]);
 
   // Master Calendar filtered dataset (used for calendar day cells and dots)
   const filteredMasterEvents = useMemo(() => {
     if (calendarCategoryFilter === 'all') return allJoinedEvents;
-    return allJoinedEvents.filter((ev) => {
-      const meta = getEventPillarMeta(ev);
-      return meta.pillar === calendarCategoryFilter;
-    });
-  }, [allJoinedEvents, calendarCategoryFilter]);
+    return allJoinedEvents.filter((ev) => calGroupOf(ev) === calendarCategoryFilter);
+  }, [allJoinedEvents, calendarCategoryFilter, hostedIdSet]);
 
   // Find ongoing quests for selected day when in 'all' view
   const ongoingQuestsForSelectedDay = useMemo(() => {
     if (selectedCalDay === null || calendarCategoryFilter !== 'all') return [];
     return allJoinedEvents.filter((ev) => {
-      if ((ev as any).eventType !== 'challenge' && !ev.id.startsWith('quest-')) return false;
-      const qStart = (ev as any).questStartDay || 1;
-      const qEnd = (ev as any).questDeadlineDay || 30;
-      return selectedCalDay >= qStart && selectedCalDay < qEnd;
+      if (!isQuestEntry(ev)) return false;
+      const span = questSpanInMonth(ev, calMonth, calYear);
+      return span !== null && selectedCalDay >= span.start && selectedCalDay <= span.end && selectedCalDay !== span.deadline;
     });
-  }, [allJoinedEvents, selectedCalDay, calendarCategoryFilter]);
+  }, [allJoinedEvents, selectedCalDay, calendarCategoryFilter, calMonth, calYear]);
 
   // Daily agenda events: exactly equals scopedCalendarEvents filtered by category
   const dailyAgendaEvents = useMemo(() => {
     if (calendarCategoryFilter === 'all') return scopedCalendarEvents;
-    return scopedCalendarEvents.filter((ev) => {
-      const meta = getEventPillarMeta(ev);
-      return meta.pillar === calendarCategoryFilter;
-    });
-  }, [scopedCalendarEvents, calendarCategoryFilter]);
+    return scopedCalendarEvents.filter((ev) => calGroupOf(ev) === calendarCategoryFilter);
+  }, [scopedCalendarEvents, calendarCategoryFilter, hostedIdSet]);
 
   // Helper to render Master Schedule Calendar (Unified Multi-Category Life Calendar)
+  // The host's side of My Hub: what is still to run (who is coming, check-in, team chat) and what has been run
+  const renderHostingView = () => {
+    const pastHosted = activity.hosted.filter((e) => isEventEnded(e)).sort((a, b) => parseEventDateToTimestamp(b.date) - parseEventDateToTimestamp(a.date));
+    const quietButton = 'inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 text-xs sm:text-sm font-bold cursor-pointer whitespace-nowrap';
+    const row = (ev: EventItem, ended: boolean) => (
+      <li key={ev.id} className="py-3 first:pt-0 last:pb-0 flex flex-wrap items-center gap-x-4 gap-y-2.5">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={ev.image} alt="" className={`w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0 ${ended ? 'grayscale opacity-80' : ''}`} />
+        <div className="min-w-0 flex-1 basis-40">
+          <Link href={`/community/${encodeURIComponent(ev.id)}`} className="block text-sm font-bold text-slate-900 truncate hover:underline">{ev.title}</Link>
+          <p className="text-xs font-medium text-slate-600 mt-0.5 truncate tabular-nums">{[thaiShortDate(ev.date), ev.time].filter(Boolean).join(' · ')}</p>
+          <p className="text-xs font-medium text-slate-500 truncate">{ev.location}</p>
+        </div>
+        <p className="shrink-0 text-xs font-semibold text-slate-600 tabular-nums">
+          <span className="text-sm font-extrabold text-slate-900">{ev.participantsCount ?? 0}</span>/{ev.maxParticipants ?? 0} คน
+        </p>
+        <div className="flex items-center gap-2 shrink-0">
+          {ev.approvalStatus !== 'approved' ? (
+            <span className="px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold whitespace-nowrap">
+              {ev.approvalStatus === 'rejected' ? 'ไม่ผ่านการตรวจ' : 'รอทีมงานตรวจ'}
+            </span>
+          ) : ended ? (
+            <button type="button" onClick={() => openCheckIn(ev)} className={quietButton}>
+              <Users className="w-4 h-4" aria-hidden="true" />
+              รายชื่อคนที่มา
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setChatTargetEvent(ev);
+                  setIsChatModalOpen(true);
+                }}
+                className={quietButton}
+              >
+                <MessageCircle className="w-4 h-4" aria-hidden="true" />
+                แชตลูกทีม
+              </button>
+              <button type="button" onClick={() => openCheckIn(ev)} className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold cursor-pointer whitespace-nowrap">
+                <Users className="w-4 h-4" aria-hidden="true" />
+                รายชื่อและเช็กอิน
+              </button>
+            </>
+          )}
+        </div>
+      </li>
+    );
+    return (
+      <div className="space-y-4">
+        <section aria-label="งานที่กำลังจะถึง" className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
+          <h2 className="text-sm sm:text-base font-extrabold text-slate-900">
+            งานที่กำลังจะถึง <span className="text-slate-500 font-bold tabular-nums">({hostedUpcoming.length})</span>
+          </h2>
+          {hostedUpcoming.length > 0 ? (
+            <ul className="mt-3 divide-y divide-slate-100">{hostedUpcoming.map((ev) => row(ev, false))}</ul>
+          ) : (
+            <p className="mt-2 text-sm font-medium text-slate-600">ตอนนี้ยังไม่มีงานที่รอจัด</p>
+          )}
+        </section>
+        {pastHosted.length > 0 && (
+          <section aria-label="งานที่จัดไปแล้ว" className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
+            <h2 className="text-sm sm:text-base font-extrabold text-slate-900">
+              งานที่จัดไปแล้ว <span className="text-slate-500 font-bold tabular-nums">({pastHosted.length})</span>
+            </h2>
+            <ul className="mt-3 divide-y divide-slate-100">{pastHosted.map((ev) => row(ev, true))}</ul>
+          </section>
+        )}
+      </div>
+    );
+  };
+
   const renderMasterCalendarView = () => {
     const activeRing = 'ring-2 ring-slate-900 bg-slate-50/80';
 
@@ -1032,7 +1148,7 @@ function MyHubContent() {
                 }`}
               >
                 <span className="w-2 h-2 rounded-full bg-[#F26430]" />
-                <span>ทริปพิกัด ({masterCategoryCounts.spots})</span>
+                <span>ทริปชวนเพื่อน ({masterCategoryCounts.spots})</span>
               </button>
 
               <button
@@ -1047,6 +1163,21 @@ function MyHubContent() {
                 <span className="w-2 h-2 rounded-full bg-[#7C3AED]" />
                 <span>ชาเลนจ์ ({masterCategoryCounts.quests})</span>
               </button>
+
+              {hostedIdSet.size > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setCalendarCategoryFilter('hosting')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${
+                    calendarCategoryFilter === 'hosting'
+                      ? 'bg-amber-50 text-amber-900 border border-amber-300 shadow-2xs'
+                      : 'bg-slate-100/90 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  <Crown className="w-3 h-3 text-amber-500" aria-hidden="true" />
+                  <span>งานที่จัด ({masterCategoryCounts.hosting})</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -1059,10 +1190,10 @@ function MyHubContent() {
                 </div>
                 <div className="space-y-0.5 min-w-0">
                   <span className="font-bold block">
-                    โหมดช่วงเวลาชาเลนจ์ (Active Quest Span View)
+                    ช่วงเวลาของชาเลนจ์ที่คุณทำอยู่
                   </span>
                   <span className="text-[11.5px] text-purple-800/80 block truncate">
-                    ไฮไลต์ช่วงระยะเวลาที่ชาเลนจ์เปิดรับส่ง (1 - 30 ก.ย.) และเน้นจุดสีม่วงเข้มในวันเดดไลน์ส่งหลักฐาน
+                    แถบสีม่วงคือวันที่ชาเลนจ์ยังเปิดอยู่ จุดสีม่วงเข้มคือวันสุดท้าย
                   </span>
                 </div>
               </div>
@@ -1090,12 +1221,18 @@ function MyHubContent() {
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-[#F26430]" />
-              <span>ทริปพิกัดเที่ยว</span>
+              <span>ทริปชวนเพื่อน</span>
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-[#7C3AED]" />
-              <span>{calendarCategoryFilter === 'quests' ? 'เดดไลน์ชาเลนจ์' : 'ชาเลนจ์'}</span>
+              <span>{calendarCategoryFilter === 'quests' ? 'วันสุดท้ายของชาเลนจ์' : 'ชาเลนจ์'}</span>
             </span>
+            {hostedIdSet.size > 0 && (
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                <span>งานที่จัด</span>
+              </span>
+            )}
             {calendarCategoryFilter === 'quests' && (
               <span className="flex items-center gap-1.5 text-purple-700 font-semibold">
                 <span className="w-3.5 h-1.5 rounded-sm bg-purple-200 border border-purple-300" />
@@ -1119,7 +1256,7 @@ function MyHubContent() {
             {/* Day Cells Grid */}
             <div className="grid grid-cols-7 bg-slate-100 gap-px">
               {[...Array(startDayOffset)].map((_, i) => (
-                <div key={`empty-start-${i}`} className="bg-slate-50/60 min-h-[75px] sm:min-h-[95px] p-1 opacity-40" />
+                <div key={`empty-start-${i}`} className="bg-slate-50/60 min-h-[64px] sm:min-h-[70px] p-1 opacity-40" />
               ))}
 
               {[...Array(daysInMonth)].map((_, idx) => {
@@ -1129,19 +1266,21 @@ function MyHubContent() {
                 const isSelected = selectedCalDay === day;
                 const eventsOnDay = filteredMasterEvents.filter((ev) => isEventOnDay(ev, day, calMonth, calYear, calendarCategoryFilter));
 
-                const hasCommunity = eventsOnDay.some((ev) => getEventPillarMeta(ev).pillar === 'community');
-                const hasFairs = eventsOnDay.some((ev) => getEventPillarMeta(ev).pillar === 'fairs');
-                const hasSpots = eventsOnDay.some((ev) => getEventPillarMeta(ev).pillar === 'spots');
-                const hasQuests = eventsOnDay.some((ev) => getEventPillarMeta(ev).pillar === 'quests');
+                const hasCommunity = eventsOnDay.some((ev) => calGroupOf(ev) === 'community');
+                const hasFairs = eventsOnDay.some((ev) => calGroupOf(ev) === 'fairs');
+                const hasSpots = eventsOnDay.some((ev) => calGroupOf(ev) === 'spots');
+                const hasQuests = eventsOnDay.some((ev) => calGroupOf(ev) === 'quests');
                 const isQuestMode = calendarCategoryFilter === 'quests';
-                const isQuestDeadlineDay = eventsOnDay.some((ev) => (ev as any).questDeadlineDay === day);
+                const isQuestDeadlineDay = eventsOnDay.some((ev) => questSpanInMonth(ev, calMonth, calYear)?.deadline === day);
                 const isQuestSpan = isQuestMode && hasQuests;
+                // Earliest first; a challenge has no hour, so it comes last
+                const dayEvents = [...eventsOnDay].sort((a, b) => (startTimeOf(a) || '99').localeCompare(startTimeOf(b) || '99'));
 
                 return (
                   <div
                     key={`day-${day}`}
                     onClick={() => setSelectedCalDay(isSelected ? null : day)}
-                    className={`min-h-[75px] sm:min-h-[95px] p-1.5 sm:p-2 flex flex-col justify-between transition-all cursor-pointer hover:bg-slate-50/90 ${
+                    className={`min-h-[64px] sm:min-h-[70px] p-1.5 sm:p-2 flex flex-col transition-all cursor-pointer hover:bg-slate-50/90 ${
                       isSelected
                         ? activeRing
                         : isToday
@@ -1171,9 +1310,10 @@ function MyHubContent() {
 
                       {/* Multi-category Dots */}
                       <div className="flex items-center gap-1">
+                        {eventsOnDay.some((ev) => calGroupOf(ev) === 'hosting') && <span className="w-1.5 h-1.5 rounded-full bg-amber-500" title="งานที่จัด" />}
                         {hasCommunity && <span className="w-1.5 h-1.5 rounded-full bg-[#2D5A3C]" title="ตี้คอมมูนิตี้" />}
                         {hasFairs && <span className="w-1.5 h-1.5 rounded-full bg-[#2B527A]" title="งานแฟร์" />}
-                        {hasSpots && <span className="w-1.5 h-1.5 rounded-full bg-[#F26430]" title="ทริปพิกัดเที่ยว" />}
+                        {hasSpots && <span className="w-1.5 h-1.5 rounded-full bg-[#F26430]" title="ทริปชวนเพื่อน" />}
                         {hasQuests && (
                           <span
                             className={`w-1.5 h-1.5 rounded-full ${
@@ -1186,34 +1326,41 @@ function MyHubContent() {
                             title={isQuestDeadlineDay ? 'กำหนดส่งชาเลนจ์วันสุดท้าย' : 'ช่วงทำชาเลนจ์'}
                           />
                         )}
+                        {/* On a phone there is no room for names, so a busy day says how many */}
+                        {eventsOnDay.length > 1 && <span className="sm:hidden text-[11px] font-bold text-slate-700 tabular-nums leading-none">{eventsOnDay.length}</span>}
                       </div>
                     </div>
 
-                    {/* Desktop Mini-Pill Badges */}
-                    <div className="space-y-1 mt-1 hidden sm:block">
-                      {eventsOnDay.slice(0, 2).map((ev) => {
+                    {/* Up to four events show in full, in time order, and the week grows to fit them; a fuller day shows three and how many more */}
+                    <div className="space-y-0.5 mt-1 hidden sm:block">
+                      {(dayEvents.length > 4 ? dayEvents.slice(0, 3) : dayEvents).map((ev) => {
                         const meta = getEventPillarMeta(ev);
                         const isQuest = meta.pillar === 'quests';
-                        const isDeadline = (ev as any).questDeadlineDay === day;
+                        const isHosting = calGroupOf(ev) === 'hosting';
+                        const isDeadline = questSpanInMonth(ev, calMonth, calYear)?.deadline === day;
                         return (
                           <div
                             key={ev.id}
-                            className={`text-[11px] font-bold px-1.5 py-0.5 rounded-md border truncate ${
-                              isQuest && isDeadline
-                                ? 'bg-purple-100 text-purple-900 border-purple-300 shadow-2xs font-black'
+                            className={`flex items-center gap-1 text-[11px] font-semibold leading-[18px] px-1.5 rounded-md border ${
+                              isHosting
+                                ? 'bg-amber-50 text-amber-900 border-amber-200'
+                                : isQuest && isDeadline
+                                ? 'bg-purple-100 text-purple-900 border-purple-300 font-bold'
                                 : isQuest
                                 ? 'bg-purple-50 text-purple-700 border-purple-200'
                                 : `${meta.badgeBg} ${meta.badgeText} ${meta.badgeBorder}`
                             }`}
-                            title={ev.title}
+                            title={[startTimeOf(ev), ev.title].filter(Boolean).join(' ')}
                           >
-                            {isQuest && isDeadline ? `เดดไลน์: ${ev.title}` : ev.title}
+                            {isHosting && <Crown className="w-3 h-3 shrink-0 text-amber-500" aria-hidden="true" />}
+                            {!isQuest && startTimeOf(ev) && <span className="shrink-0 font-bold tabular-nums">{startTimeOf(ev)}</span>}
+                            <span className="min-w-0 truncate">{isQuest && isDeadline ? `วันสุดท้าย: ${ev.title}` : ev.title}</span>
                           </div>
                         );
                       })}
-                      {eventsOnDay.length > 2 && (
-                        <span className="text-[11px] font-bold text-slate-400 block text-right">
-                          +{eventsOnDay.length - 2} อื่นๆ
+                      {dayEvents.length > 4 && (
+                        <span className="block px-1.5 text-[11px] font-bold text-slate-600 leading-[18px]">
+                          อีก {dayEvents.length - 3} รายการ
                         </span>
                       )}
                     </div>
@@ -1222,7 +1369,7 @@ function MyHubContent() {
               })}
 
               {[...Array(endDayOffset)].map((_, i) => (
-                <div key={`empty-end-${i}`} className="bg-slate-50/60 min-h-[75px] sm:min-h-[95px] p-1 opacity-40" />
+                <div key={`empty-end-${i}`} className="bg-slate-50/60 min-h-[64px] sm:min-h-[70px] p-1 opacity-40" />
               ))}
             </div>
           </div>
@@ -1399,7 +1546,7 @@ function MyHubContent() {
                         </div>
 
                         {/* Top-Right Badge: Urgent Due Date for Quests only */}
-                        {meta.pillar === 'quests' && (ev as any).questDeadlineDay === selectedCalDay && (
+                        {meta.pillar === 'quests' && questSpanInMonth(ev, calMonth, calYear)?.deadline === selectedCalDay && (
                           <div className="absolute top-2.5 right-2.5 z-10">
                             <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-rose-600 text-white shadow-xs animate-pulse inline-flex items-center gap-1">
                               <AlertTriangle className="w-3 h-3 text-white" />
@@ -1555,7 +1702,16 @@ function MyHubContent() {
                                 <span>แชร์โมเมนต์</span>
                               </Link>
 
-                              {ev.eventType !== 'public_venue' ? (
+                              {isHost ? (
+                                <button
+                                  type="button"
+                                  onClick={() => openCheckIn(ev)}
+                                  className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 shadow-2xs"
+                                >
+                                  <Users className="w-3.5 h-3.5" />
+                                  <span>รายชื่อ</span>
+                                </button>
+                              ) : ev.eventType !== 'public_venue' ? (
                                 isReviewed ? (
                                   <button
                                     type="button"
@@ -2063,23 +2219,21 @@ function MyHubContent() {
             <section className="bg-white border-b border-slate-200/80 pt-3 pb-3 sm:pt-4 sm:pb-4">
               <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Who this hub belongs to, and three real numbers from the account (levels and points return with the challenges work) */}
-                <div className="bg-white rounded-2xl p-4 sm:p-5 text-slate-900 border border-slate-200/90 shadow-2xs">
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6">
-                    <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                {/* One row: name, the numbers, and the calendar or list switch */}
+                <div className="text-slate-900">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+                    <div className="flex items-center gap-3 min-w-0 basis-full lg:basis-auto lg:flex-1">
                       {hubMember?.avatarUrl ? (
-                        <img src={hubMember.avatarUrl} alt="" className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover border border-slate-200 shrink-0" />
+                        <img src={hubMember.avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0" />
                       ) : (
-                        <span className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-slate-100 text-slate-600 text-xl font-bold flex items-center justify-center shrink-0" aria-hidden="true">
+                        <span className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 text-base font-bold flex items-center justify-center shrink-0" aria-hidden="true">
                           {nameInitial(hubName)}
                         </span>
                       )}
-                      <div className="min-w-0">
-                        <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 truncate">มายฮับของ{hubName ? ` ${hubName}` : 'คุณ'}</h1>
-                        <p className="text-xs sm:text-sm font-medium text-slate-500 mt-0.5">นัดหมาย กิจกรรมที่จัด และที่เที่ยวที่บันทึกไว้ ของคุณในที่เดียว</p>
-                      </div>
+                      <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 truncate">มายฮับของ{hubName ? ` ${hubName}` : 'คุณ'}</h1>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-1 sm:gap-2 bg-slate-50 p-1.5 sm:p-2 rounded-2xl border border-slate-200/80 w-full lg:w-auto">
+                    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                       {[
                         { label: 'นัดหมาย', value: upcomingEventsTotalCount, onClick: handleQuickFilterUpcoming, active: hubMainMode === 'categories' && eventViewMode === 'upcoming' },
                         { label: 'เคยเข้าร่วม', value: attendedEventsTotalCount, onClick: handleQuickFilterAttended, active: hubMainMode === 'categories' && eventViewMode === 'past' },
@@ -2090,21 +2244,48 @@ function MyHubContent() {
                           type="button"
                           onClick={metric.onClick}
                           aria-pressed={metric.active}
-                          className={`px-2 sm:px-4 py-2 text-center rounded-xl cursor-pointer border transition-colors ${metric.active ? 'bg-white border-blue-200 shadow-2xs' : 'border-transparent hover:bg-white'}`}
+                          className={`shrink-0 inline-flex items-baseline gap-1.5 h-9 px-3 rounded-full cursor-pointer border transition-colors ${metric.active ? 'bg-slate-900 border-slate-900' : 'bg-white border-slate-200 hover:border-slate-300'}`}
                         >
-                          <span className="block text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">{metric.value}</span>
-                          <span className="block text-[11px] sm:text-xs font-semibold text-slate-500 whitespace-nowrap">{metric.label}</span>
+                          <span className={`text-sm font-extrabold tabular-nums leading-9 ${metric.active ? 'text-white' : 'text-slate-900'}`}>{metric.value}</span>
+                          <span className={`text-xs font-semibold whitespace-nowrap leading-9 ${metric.active ? 'text-slate-200' : 'text-slate-600'}`}>{metric.label}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="inline-flex items-center p-1 bg-slate-100 rounded-full border border-slate-200/90 lg:ml-auto" role="group" aria-label="มุมมอง">
+                      {([
+                        { mode: 'calendar', label: 'ปฏิทิน', Icon: CalendarDays },
+                        { mode: 'categories', label: 'รายการ', Icon: Layers },
+                        // Only for a member who runs events; a guest never sees it
+                        ...(activity.hosted.length > 0 ? [{ mode: 'hosting', label: 'งานที่จัด', Icon: Crown } as const] : []),
+                      ] as const).map(({ mode, label, Icon }) => (
+                        <button
+                          key={mode}
+                          type="button"
+                          aria-pressed={hubMainMode === mode}
+                          onClick={() => {
+                            setHubMainMode(mode);
+                            if (mode === 'categories') setSelectedCalDay(null);
+                          }}
+                          className={`flex items-center gap-1.5 h-8 px-3.5 rounded-full text-xs sm:text-sm font-bold transition-colors cursor-pointer whitespace-nowrap ${hubMainMode === mode ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
+                        >
+                          <Icon className={`w-4 h-4 ${hubMainMode === mode ? 'text-slate-900' : 'text-slate-400'}`} aria-hidden="true" />
+                          {label}
                         </button>
                       ))}
                     </div>
                   </div>
                 </div>
 
+                {/* What the member is in the middle of: challenges under way and events they run, side by side on a wide screen */}
+                {(doingChallenges.length > 0 || hostedUpcoming.length > 0) && (
+                <div className={`mt-4 grid grid-cols-1 gap-3 items-start ${doingChallenges.length > 0 && hostedUpcoming.length > 0 ? 'lg:grid-cols-2' : ''}`}>
+
                 {/* Challenges the member is doing: how far they are, how long is left, and the way back to each */}
                 {doingChallenges.length > 0 && (
-                  <section aria-label="ชาเลนจ์ที่ทำอยู่" className="mt-4 bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
+                  <section aria-label="ชาเลนจ์ที่ทำอยู่" className="bg-white rounded-2xl px-4 py-3 border border-slate-200/90 shadow-2xs">
                     <div className="flex items-center justify-between gap-3">
-                      <h2 className="text-sm sm:text-base font-extrabold text-slate-900">ชาเลนจ์ที่ทำอยู่</h2>
+                      <h2 className="text-xs font-bold text-slate-500">ชาเลนจ์ที่ทำอยู่</h2>
                       {doingChallenges.length > 2 && (
                         <button
                           type="button"
@@ -2118,9 +2299,9 @@ function MyHubContent() {
                         </button>
                       )}
                     </div>
-                    <ul className="mt-3 divide-y divide-slate-100">
+                    <ul className="mt-1.5 divide-y divide-slate-100">
                       {doingChallenges.slice(0, 2).map((challenge) => (
-                        <li key={challenge.questId} className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
+                        <li key={challenge.questId} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
                           <div className="min-w-0 flex-1 space-y-1.5">
                             <p className="text-sm font-bold text-slate-900 truncate">{challenge.title}</p>
                             <div className="h-1.5 rounded-full bg-[#F5F3FF] overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={challenge.total} aria-valuenow={challenge.current}>
@@ -2133,7 +2314,7 @@ function MyHubContent() {
                           </div>
                           <Link
                             href={`/challenges/${encodeURIComponent(challenge.questId)}`}
-                            className="shrink-0 inline-flex items-center min-h-10 px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold cursor-pointer whitespace-nowrap"
+                            className="shrink-0 inline-flex items-center h-9 px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold cursor-pointer whitespace-nowrap"
                           >
                             ไปต่อ
                           </Link>
@@ -2143,43 +2324,29 @@ function MyHubContent() {
                   </section>
                 )}
 
-                {/* Development only: sample activity for this account, so every feature can be seen with one login */}
-                {process.env.NODE_ENV !== 'production' && (
-                  <div className="mt-4 p-3 sm:p-4 rounded-2xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3" role="note">
-                    <p className="text-xs sm:text-sm font-semibold text-amber-900 min-w-0 flex-1">โหมดพัฒนา: เติมข้อมูลตัวอย่างให้บัญชีนี้ เพื่อดูนัดหมาย กิจกรรมที่จัด เช็กอิน แชต และรีวิว ได้ด้วยบัญชีเดียว</p>
-                    <span className="flex flex-wrap items-center gap-2 shrink-0">
-                      <button
-                        type="button"
-                        disabled={isDemoBusy}
-                        onClick={() => void runDemo('POST')}
-                        className="px-4 py-2 rounded-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white text-xs sm:text-sm font-bold cursor-pointer whitespace-nowrap"
-                      >
-                        {isDemoBusy ? 'กำลังทำ…' : 'เติมข้อมูลตัวอย่าง'}
-                      </button>
-                      <button type="button" disabled={isDemoBusy} onClick={() => void runDemo('DELETE')} className="px-4 py-2 rounded-full bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs sm:text-sm font-bold cursor-pointer whitespace-nowrap">
-                        ลบกิจกรรมตัวอย่าง
-                      </button>
-                    </span>
-                  </div>
-                )}
-
                 {/* Events the member runs: who is coming, and check-in at the meeting point */}
-                {activity.hosted.length > 0 && (
-                  <section aria-label="กิจกรรมที่คุณจัด" className="mt-4 bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
-                    <h2 className="text-sm sm:text-base font-extrabold text-slate-900">กิจกรรมที่คุณจัด</h2>
-                    <ul className="mt-3 divide-y divide-slate-100">
-                      {activity.hosted.map((ev) => (
-                        <li key={ev.id} className="py-3 first:pt-0 last:pb-0 flex flex-wrap items-center justify-between gap-3">
+                {hostedUpcoming.length > 0 && (
+                  <section aria-label="กิจกรรมที่คุณจัด" className="bg-white rounded-2xl px-4 py-3 border border-slate-200/90 shadow-2xs">
+                    <div className="flex items-center justify-between gap-3">
+                      <h2 className="text-xs font-bold text-slate-500">งานถัดไปที่คุณจัด</h2>
+                      <button type="button" onClick={() => setHubMainMode('hosting')} className="text-xs sm:text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap">
+                        งานที่จัดทั้งหมด <span className="tabular-nums">({activity.hosted.length})</span>
+                      </button>
+                    </div>
+                    <ul className="mt-1.5 divide-y divide-slate-100">
+                      {hostedUpcoming.slice(0, 1).map((ev) => (
+                        <li key={ev.id} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-bold text-slate-900 truncate">{ev.title}</p>
-                            <p className="text-xs font-medium text-slate-500 mt-0.5 truncate">
-                              {[ev.date, ev.time].filter(Boolean).join(' · ')} · {ev.participantsCount ?? 0}/{ev.maxParticipants ?? 0} คน
+                            <p className="text-xs font-medium text-slate-500 mt-0.5 truncate tabular-nums">
+                              {[thaiShortDate(ev.date), ev.time].filter(Boolean).join(' · ')} · {ev.participantsCount ?? 0}/{ev.maxParticipants ?? 0} คน
                             </p>
                           </div>
                           {ev.approvalStatus === 'approved' ? (
-                            <button type="button" onClick={() => openCheckIn(ev)} className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold cursor-pointer whitespace-nowrap">
+                            <button type="button" onClick={() => openCheckIn(ev)} className="shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 text-xs sm:text-sm font-bold cursor-pointer whitespace-nowrap">
                               <Users className="w-4 h-4" aria-hidden="true" />
-                              รายชื่อและเช็กอิน
+                              <span className="sm:hidden">เช็กอิน</span>
+                              <span className="hidden sm:inline">รายชื่อและเช็กอิน</span>
                             </button>
                           ) : (
                             <span className="shrink-0 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold whitespace-nowrap">
@@ -2191,52 +2358,24 @@ function MyHubContent() {
                     </ul>
                   </section>
                 )}
+                </div>
+                )}
 
                 {/* Places and challenge ideas sent to staff */}
                 <MySubmissions />
 
-                {/* Master View Switcher (Top-Level Dual Mode) */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-6 border-t border-slate-200/80 mt-6">
-                  {/* Dual Mode Switcher - Calendar Tab First as Requested */}
-                  <div className="inline-flex items-center p-1 bg-slate-100/90 rounded-2xl border border-slate-200/90 shadow-2xs">
-                    <button
-                      type="button"
-                      onClick={() => setHubMainMode('calendar')}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                        hubMainMode === 'calendar'
-                          ? 'bg-white text-slate-900 shadow-2xs font-extrabold'
-                          : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      <CalendarDays className={`w-4 h-4 ${hubMainMode === 'calendar' ? 'text-slate-900' : 'text-slate-400'}`} />
-                      <span className="whitespace-nowrap">ปฏิทิน ({allJoinedEvents.length})</span>
+                {/* Development only: sample activity for this account, so every feature can be seen with one login */}
+                {process.env.NODE_ENV !== 'production' && (
+                  <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-slate-500" role="note">
+                    <span>โหมดพัฒนา · ข้อมูลตัวอย่างของบัญชีนี้</span>
+                    <button type="button" disabled={isDemoBusy} onClick={() => void runDemo('POST')} className="font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline disabled:text-slate-400 cursor-pointer">
+                      {isDemoBusy ? 'กำลังทำ…' : 'เติม'}
                     </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setHubMainMode('categories');
-                        setSelectedCalDay(null);
-                      }}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                        hubMainMode === 'categories'
-                          ? 'bg-white text-slate-900 shadow-2xs font-extrabold'
-                          : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      <Layers className={`w-4 h-4 ${hubMainMode === 'categories' ? 'text-slate-900' : 'text-slate-400'}`} />
-                      <span className="whitespace-nowrap">รายการ</span>
+                    <button type="button" disabled={isDemoBusy} onClick={() => void runDemo('DELETE')} className="font-bold text-slate-600 hover:text-slate-900 hover:underline disabled:text-slate-400 cursor-pointer">
+                      ลบ
                     </button>
-                  </div>
-
-                  <div className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
-                    {hubMainMode === 'calendar' ? (
-                      <span>ดูทุกนัดหมายบนปฏิทินเดือน</span>
-                    ) : (
-                      <span>ดูเป็นรายการ แยกตามประเภท</span>
-                    )}
-                  </div>
-                </div>
+                  </p>
+                )}
 
                 {/* Sub Tabs Navigation: Unified Minimal Clean Styling (Visible in categories mode) */}
                 {hubMainMode === 'categories' && (
@@ -2252,7 +2391,21 @@ function MyHubContent() {
                       }`}
                     >
                       <Users className={`w-4 h-4 ${activeSubTab === 'community' ? 'text-[#F26430]' : 'text-slate-400'}`} />
-                      <span>ตี้กิจกรรมคอมมูนิตี้ ({eventViewMode === 'all' ? communityEvents.length : filteredCommunityEvents.length})</span>
+                      <span>ตี้กิจกรรมคอมมูนิตี้ ({communityCount})</span>
+                    </button>
+
+                    {/* Buddy trips: the same group the calendar shows */}
+                    <button
+                      type="button"
+                      onClick={() => setActiveSubTab('trips')}
+                      className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all shrink-0 flex items-center gap-2 cursor-pointer ${
+                        activeSubTab === 'trips'
+                          ? 'bg-[#FEF3EE] text-[#D04A1B] border border-[#FCD5C5] shadow-2xs'
+                          : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-slate-200/80'
+                      }`}
+                    >
+                      <MapPin className={`w-4 h-4 ${activeSubTab === 'trips' ? 'text-[#D04A1B]' : 'text-slate-400'}`} />
+                      <span>ทริปชวนเพื่อน ({tripCount})</span>
                     </button>
 
                     {/* Tab 2: Fairs & Expos */}
@@ -2294,7 +2447,7 @@ function MyHubContent() {
                       }`}
                     >
                       <Trophy className={`w-4 h-4 ${activeSubTab === 'quests_rewards' ? 'text-[#7C3AED]' : 'text-slate-400'}`} />
-                      <span>ชาเลนจ์ & แต้มสะสม ({myChallenges.length})</span>
+                      <span>ชาเลนจ์ & XP ({myChallenges.length})</span>
                     </button>
                   </div>
                 )}
@@ -2307,13 +2460,15 @@ function MyHubContent() {
             <main id="hub-content-section" className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
               {hubMainMode === 'calendar' ? (
                 renderMasterCalendarView()
+              ) : hubMainMode === 'hosting' ? (
+                renderHostingView()
               ) : (
                 <>
 
               {/* ============================================================= */}
               {/* TAB 1: 👥 COMMUNITY MEETUPS (Digital Boarding Pass Style)     */}
               {/* ============================================================= */}
-              {activeSubTab === 'community' && (
+              {(activeSubTab === 'community' || activeSubTab === 'trips') && (
                 <div className="space-y-6">
                   {/* Smart Control Bar */}
                   <div className="space-y-2.5 bg-white p-2.5 rounded-2xl border border-slate-200/90 shadow-2xs">
@@ -2355,7 +2510,7 @@ function MyHubContent() {
                       </div>
 
                       <div className="text-xs text-slate-500 font-medium">
-                        <span>แสดง {filteredCommunityEvents.length} ตี้</span>
+                        <span>แสดง {filteredCommunityEvents.length} {activeSubTab === 'trips' ? 'ทริป' : 'ตี้'}</span>
                       </div>
                     </div>
 
@@ -2410,7 +2565,9 @@ function MyHubContent() {
                       </div>
                       <div className="space-y-1.5">
                         <h4 className="text-base font-black text-slate-900">
-                          {eventViewMode === 'upcoming'
+                          {eventViewMode === 'all'
+                            ? activeSubTab === 'trips' ? 'ยังไม่มีทริปชวนเพื่อนในมายฮับของคุณ' : 'ยังไม่มีตี้ในมายฮับของคุณ'
+                            : eventViewMode === 'upcoming'
                             ? 'ยังไม่มีตี้กิจกรรมที่คุณเข้าร่วม'
                             : pastSubFilter === 'attended'
                             ? 'ยังไม่มีกิจกรรมที่เข้าร่วมสำเร็จ'
@@ -2419,14 +2576,14 @@ function MyHubContent() {
                             : 'ไม่มีประวัติกิจกรรมที่ผ่านมา'}
                         </h4>
                         <p className="text-xs text-slate-500 leading-relaxed">
-                          หาเพื่อนใหม่ วิ่ง บอร์ดเกม เวิร์กช็อป ตี้กาแฟ ในคอมมูนิตี้ที่ปลอดภัยไร้แรงกดดัน
+                          {activeSubTab === 'trips' ? 'เปิดดูที่เที่ยวที่ชอบ แล้วชวนเพื่อนไปด้วยกันได้จากหน้านั้นเลย' : 'หาเพื่อนใหม่ วิ่ง บอร์ดเกม เวิร์กช็อป ตี้กาแฟ ในคอมมูนิตี้ที่ปลอดภัยไร้แรงกดดัน'}
                         </p>
                       </div>
                       <Link
-                        href="/community"
+                        href={activeSubTab === 'trips' ? '/spots' : '/community'}
                         className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-2xs transition-all cursor-pointer active:scale-95"
                       >
-                        <span>สำรวจกิจกรรมคอมมูนิตี้</span>
+                        <span>{activeSubTab === 'trips' ? 'ดูที่เที่ยว' : 'สำรวจกิจกรรมคอมมูนิตี้'}</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </Link>
                     </div>
@@ -2608,7 +2765,17 @@ function MyHubContent() {
                                       <span>แชร์โมเมนต์</span>
                                     </Link>
 
-                                    {isReviewed ? (
+                                    {isHost ? (
+                                      /* The host looks back at who came; a host does not review themselves */
+                                      <button
+                                        type="button"
+                                        onClick={() => openCheckIn(event)}
+                                        className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 shadow-2xs"
+                                      >
+                                        <Users className="w-3.5 h-3.5" />
+                                        <span>รายชื่อ</span>
+                                      </button>
+                                    ) : isReviewed ? (
                                       <button
                                         type="button"
                                         disabled
@@ -2931,7 +3098,9 @@ function MyHubContent() {
                         </div>
                         <div>
                           <h4 className="text-sm font-bold text-slate-800">
-                            {eventViewMode === 'upcoming'
+                            {eventViewMode === 'all'
+                              ? 'ยังไม่มีงานแฟร์ในมายฮับของคุณ'
+                              : eventViewMode === 'upcoming'
                               ? 'ยังไม่มีงานแฟร์ที่คุณบันทึกนัดไว้'
                               : pastSubFilter === 'attended'
                               ? 'ยังไม่มีงานแฟร์ที่ไปร่วมงานแล้ว'
@@ -3729,7 +3898,7 @@ function MyHubContent() {
                                             className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-950 border border-amber-200 shrink-0 truncate max-w-[140px] inline-flex items-center gap-1"
                                           >
                                             <Crown className="w-2.5 h-2.5 text-amber-600 fill-amber-500 shrink-0" />
-                                            <span className="truncate">Official • {brandReward.partnerName}</span>
+                                            <span className="truncate">{brandReward.partnerName}</span>
                                           </span>
                                         ) : (
                                           <span 
@@ -3737,7 +3906,7 @@ function MyHubContent() {
                                             className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-900 border border-purple-200 shrink-0 truncate max-w-[calc(100%-65px)] inline-flex items-center gap-1"
                                           >
                                             <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500 shrink-0" />
-                                            <span className="truncate">Official • Chill & Connect</span>
+                                            <span className="truncate">Chill & Connect</span>
                                           </span>
                                         )}
                                         <span className="text-[11px] font-black text-purple-700 bg-purple-50 border border-purple-200/80 px-2 py-0.5 rounded-md flex items-center gap-0.5 ml-auto shadow-2xs">
@@ -3777,7 +3946,7 @@ function MyHubContent() {
                                         className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-purple-50/90 border border-purple-200/90 text-purple-950 text-[11px] font-bold shadow-2xs mt-1"
                                       >
                                         <Gift className="w-3 h-3 text-purple-600 shrink-0" />
-                                        <span className="truncate">แต้มสะสมอิสระ แลกของรางวัลใน Hub Rewards</span>
+                                        <span className="truncate">สะสม XP แลกของรางวัลที่ชอบ</span>
                                       </div>
                                     )}
                                   </div>
@@ -3875,7 +4044,7 @@ function MyHubContent() {
                           แลกรับส่วนลดคาเฟ่ บอร์ดเกม และของขวัญพิเศษ
                         </h4>
                         <p className="text-xs text-slate-500 leading-relaxed">
-                          คุณมีแต้มสะสม <strong className="text-[#D04A1B] font-black">{userXp} XP</strong> พร้อมแลกรับสิทธิพิเศษจากพาร์ทเนอร์ทางการในหน้าศูนย์ของรางวัล
+                          คุณมี <strong className="text-[#D04A1B] font-black">{userXp} XP</strong> พร้อมแลกรับสิทธิพิเศษจากพาร์ทเนอร์ทางการในหน้าศูนย์ของรางวัล
                         </p>
                       </div>
 
@@ -3910,7 +4079,7 @@ function MyHubContent() {
                       {redeemedRewardIds.length === 0 ? (
                         <div className="bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
                           <p className="text-xs text-slate-500">
-                            ยังไม่มีคูปองที่แลกไว้ สามารถนำ XP {userXp} XP ไปแลกรับส่วนลดคาเฟ่หรือตั๋วบอร์ดเกมได้ทันที
+                            ยังไม่มีคูปองที่แลกไว้ นำ {userXp} XP ไปแลกรับส่วนลดคาเฟ่หรือตั๋วบอร์ดเกมได้ทันที
                           </p>
                           <Link
                             href="/rewards"
