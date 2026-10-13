@@ -216,7 +216,7 @@ The server decides who is signed in through an httpOnly cookie (`cch_member_sess
 | `POST /api/members/[id]/actions` | `{ action: 'report', reason }` (once per member) · `{ action: 'block' }` · `{ action: 'unblock' }` | `{ success }` · `403` reporter not verified · `409` already reported |
 | `POST /api/auth/member/password` | `{ currentPassword?, newPassword }` | Other sessions end; this browser stays signed in |
 | `GET /api/auth/member/account` | — | PDPA export of the member's own data (JSON download) |
-| `DELETE /api/auth/member/account` | `{ confirm: "DELETE" }` | Deletes the account and logs out |
+| `DELETE /api/auth/member/account` | `{ confirm: "DELETE" }` | Deletes the account and logs out. Since 2026-10-13 (BE-061) the uploaded files of the member's moments, stories and avatar are deleted too (`lib/media/cleanup.ts`), except a file that remaining content still shows |
 
 `PublicMember = { id, displayName, email?, avatarUrl?, loginMethods: ('email'|'google'|'facebook'|'apple')[], createdAt, onboarded, trust }`, with `trust = { level: 'new'|'verified'|'trusted', emailVerified, hasEmail, pledged, hostStatus: 'none'|'pending'|'approved'|'rejected', accountDays }`.
 Writes must be same-origin (`403` otherwise).

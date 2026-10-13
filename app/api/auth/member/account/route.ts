@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { removeNotificationsOf } from '@/lib/social/notifications';
-import { removeStoriesOf } from '@/lib/social/stories';
+import { removeStoriesOf, storyImagesInUse } from '@/lib/social/stories';
+import { deleteMemberUploads } from '@/lib/media/cleanup';
 import { removeReviewsBy } from '@/lib/social/reviews';
 import { marksOf, removeVisitsBy } from '@/lib/social/visits';
 import { removeRedemptionsBy } from '@/lib/social/rewardsLedger';
@@ -37,9 +38,10 @@ export async function DELETE(request: Request) {
   const body = await request.json().catch(() => ({}));
   if (body?.confirm !== 'DELETE') return NextResponse.json({ success: false, message: 'กรุณายืนยันการลบบัญชี' }, { status: 400 });
   // PDPA: the member's posts, comments, likes, saves and reports go with the account
+  const { items: ownMoments } = await momentRepository.query({ statuses: ['published', 'hidden'], authorId: member.id, sort: 'newest', page: 1, limit: 10_000 });
   const removedMoments = await momentRepository.removeByAuthor(member.id);
   const removedComments = await momentRepository.removeCommentsByAuthor(member.id);
-  await removeStoriesOf(member.id);
+  const storyImages = await removeStoriesOf(member.id);
   await removeReviewsBy(member.id);
   await removeVisitsBy(member.id);
   await removeRedemptionsBy(member.id);
@@ -52,6 +54,12 @@ export async function DELETE(request: Request) {
   await db.removeParticipantEverywhere(member.id);
   await removeNotificationsOf(member.id);
   await memberRepository.remove(member.id);
+  // The photos themselves go too, unless something that remains still shows them
+  const { items: remaining } = await momentRepository.query({ statuses: ['published', 'hidden'], sort: 'newest', page: 1, limit: 10_000 });
+  await deleteMemberUploads(
+    [...ownMoments.flatMap((m) => m.images), ...storyImages, member.avatarUrl],
+    [...remaining.flatMap((m) => m.images), ...storyImagesInUse()],
+  );
   // Keep proof that the deletion happened, without keeping who it was
   recordAudit(null, 'member.self_delete', `สมาชิกลบบัญชีของตัวเอง (โมเมนต์ ${removedMoments} คอมเมนต์ ${removedComments})`, { type: 'member', id: member.id });
   const response = NextResponse.json({ success: true, removedMoments, removedComments });
