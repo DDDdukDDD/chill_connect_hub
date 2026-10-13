@@ -1997,10 +1997,10 @@ function HomeContent() {
                 </ul>
               </div>
 
-              {/* Col 3: ความช่วยเหลือ & ข้อกำหนด */}
+              {/* Col 3: ความปลอดภัย & ช่วยเหลือ */}
               <div className="space-y-3 col-span-2 sm:col-span-1">
                 <h4 className="font-extrabold text-slate-900 text-xs sm:text-sm uppercase tracking-wider">
-                  ความปลอดภัย & ช่วยเหลือ
+                  ความปลอดภัย & ข้อกำหนด
                 </h4>
                 <ul className="space-y-2.5 font-medium text-slate-600">
                   <li>
@@ -2023,6 +2023,24 @@ function HomeContent() {
                   </li>
                   <li>
                     <Link 
+                      href="/legal" 
+                      title="ข้อตกลงและเงื่อนไขการใช้งานแพลตฟอร์ม"
+                      className="hover:text-[#4A7C59] transition-colors focus:outline-none focus:underline"
+                    >
+                      <span>ข้อตกลงการใช้งาน</span>
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      href="/legal?tab=privacy" 
+                      title="นโยบายความเป็นส่วนตัวและการคุ้มครองข้อมูลส่วนบุคคล (PDPA)"
+                      className="hover:text-[#4A7C59] transition-colors focus:outline-none focus:underline"
+                    >
+                      <span>นโยบายความเป็นส่วนตัว</span>
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
                       href="/onboarding" 
                       title="เริ่มต้นตั้งค่าโปรไฟล์และสไตล์ที่ชอบ"
                       className="hover:text-[#4A7C59] transition-colors focus:outline-none focus:underline"
@@ -2039,8 +2057,12 @@ function HomeContent() {
 
           {/* Bottom Row: Clean Copyright & Global Regional Tag */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 font-medium pt-3 border-t border-slate-200/60">
-            <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
               <p>© 2026 Chill & Connect Hub. สร้างขึ้นด้วยความใส่ใจเพื่อชุมชนคนชอบใช้ชีวิต</p>
+              <span className="text-slate-300 hidden sm:inline">•</span>
+              <Link href="/legal" className="text-slate-500 hover:text-slate-800 hover:underline">ข้อตกลงการใช้งาน</Link>
+              <span className="text-slate-300">•</span>
+              <Link href="/legal?tab=privacy" className="text-slate-500 hover:text-slate-800 hover:underline">นโยบายความเป็นส่วนตัว</Link>
               <span className="text-slate-300 hidden sm:inline">•</span>
               <span className="text-slate-400 text-[11px]">Curated Lifestyle Discovery & Community Network</span>
             </div>

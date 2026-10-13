@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Users, ShieldCheck, Flag, BadgeCheck } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
+import { BrandLogo } from '@/components/BrandLogo';
 import { MemberPrivilegesSection } from '@/components/MemberPrivilegesSection';
 import { HeroSection } from '@/components/HeroSection';
 import { TrendingCarousel } from '@/components/TrendingCarousel';
@@ -438,6 +439,27 @@ function JourneyContent() {
               อ่านกติกาความปลอดภัย
             </Link>
           </section>
+
+          {/* Footer */}
+          <footer className="border-t border-slate-200 pt-8 pb-4 text-center text-xs text-slate-500 space-y-2 mt-12 mb-16 md:mb-0">
+            <div className="flex items-center justify-center gap-2 text-sm font-bold text-slate-900">
+              <BrandLogo size="xs" />
+              <span>Chill & Connect Hub</span>
+            </div>
+            <p className="font-medium text-slate-600">
+              Lifestyle Discovery & Community Network คัดสรรเพื่อคนรักการใช้ชีวิตในแบบของตัวเอง
+            </p>
+            <div className="flex items-center justify-center gap-2.5 sm:gap-3 text-xs text-slate-500 pt-1 flex-wrap">
+              <Link href="/about" className="hover:text-slate-800 hover:underline">เกี่ยวกับเรา</Link>
+              <span className="text-slate-300">•</span>
+              <Link href="/safety" className="hover:text-slate-800 hover:underline">คู่มือความปลอดภัย</Link>
+              <span className="text-slate-300">•</span>
+              <Link href="/legal" className="hover:text-slate-800 hover:underline">ข้อตกลงการใช้งาน</Link>
+              <span className="text-slate-300">•</span>
+              <Link href="/legal?tab=privacy" className="hover:text-slate-800 hover:underline">นโยบายความเป็นส่วนตัว</Link>
+            </div>
+            <p className="text-[11px] text-slate-400">© 2026 Chill & Connect Hub. All rights reserved.</p>
+          </footer>
 
         </div>
       </main>

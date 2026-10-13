@@ -878,6 +878,15 @@ export default function RewardsPage() {
         <p className="font-medium text-slate-600">
           ศูนย์ของรางวัลและสิทธิพิเศษคอมมูนิตี้ เพื่อเชื่อมต่อความสุขและมิตรภาพของทุกไลฟ์สไตล์
         </p>
+        <div className="flex items-center justify-center gap-2.5 sm:gap-3 text-xs text-slate-500 pt-1 flex-wrap">
+          <Link href="/about" className="hover:text-slate-800 hover:underline">เกี่ยวกับเรา</Link>
+          <span className="text-slate-300">•</span>
+          <Link href="/safety" className="hover:text-slate-800 hover:underline">คู่มือความปลอดภัย</Link>
+          <span className="text-slate-300">•</span>
+          <Link href="/legal" className="hover:text-slate-800 hover:underline">ข้อตกลงการใช้งาน</Link>
+          <span className="text-slate-300">•</span>
+          <Link href="/legal?tab=privacy" className="hover:text-slate-800 hover:underline">นโยบายความเป็นส่วนตัว</Link>
+        </div>
         <p className="text-[11px] text-slate-400">© 2026 Chill & Connect Hub. All rights reserved.</p>
       </footer>
 
