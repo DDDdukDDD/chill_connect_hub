@@ -230,7 +230,7 @@ export default function RewardsPage() {
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-200/90 text-xs font-bold shadow-2xs transition-all active:scale-95 cursor-pointer"
               >
                 <Zap className="w-4 h-4 text-amber-500" />
-                <span>ทำภารกิจสะสมแต้ม XP</span>
+                <span>ทำภารกิจสะสม XP</span>
               </Link>
               <Link
                 href="/myhub"
@@ -268,7 +268,7 @@ export default function RewardsPage() {
                       {userXp.toLocaleString()}
                     </span>
                     <span className="text-sm sm:text-base font-black text-[#F26430]">
-                      XP
+ XP
                     </span>
                   </div>
                 </div>
@@ -293,7 +293,7 @@ export default function RewardsPage() {
                   href="/challenges"
                   className="px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
                 >
-                  <span>วิธีรับแต้มเพิ่ม</span>
+                  <span>วิธีรับ XP เพิ่ม</span>
                   <ArrowRight className="w-3.5 h-3.5 text-slate-500" />
                 </Link>
               </div>
@@ -404,7 +404,7 @@ export default function RewardsPage() {
                       onChange={(e) => setOnlyAffordable(e.target.checked)}
                       className="w-3.5 h-3.5 rounded text-[#2D5A3C] focus:ring-[#2D5A3C] cursor-pointer"
                     />
-                    <span>เฉพาะที่แต้มพอ</span>
+                    <span>เฉพาะที่ XP พอ</span>
                   </label>
                 </div>
               </div>
@@ -734,7 +734,7 @@ export default function RewardsPage() {
                 <span className="font-bold text-slate-900">{userXp} XP</span>
               </div>
               <div className="flex items-center justify-between text-rose-600">
-                <span>แต้มที่ต้องใช้แลก</span>
+                <span>XP ที่ต้องใช้แลก</span>
                 <span className="font-bold">- {confirmRedeemItem.costXp} XP</span>
               </div>
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between font-bold text-slate-900">

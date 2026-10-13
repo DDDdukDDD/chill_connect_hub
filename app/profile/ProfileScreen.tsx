@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   AlertCircle, BadgeCheck, Ban, CalendarPlus, Check, CircleCheck, Clock, Flag, HandHeart, KeyRound, Loader2, LogOut, MailCheck, MapPin, Pencil, ShieldCheck, UserRound,
-  type LucideIcon,
+  type LucideIcon, Award
 } from 'lucide-react';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { Navbar } from '@/components/Navbar';
@@ -42,6 +42,8 @@ interface PublicProfile {
   viewer?: { isFollowing?: boolean; hasBlocked: boolean; hasReported: boolean };
   followerCount?: number;
   followingCount?: number;
+  /** Badges of the challenges this member finished */
+  challengeBadges?: { questId: string; badgeLabel: string; title: string }[];
   hostReviews?: { count: number; average: number; latest: { id: string; rating: number; text: string; eventTitle: string; authorId: string | null; authorName: string; timeAgo: string }[] };
   isSampleAccount?: boolean;
   isSample?: boolean;
@@ -749,6 +751,25 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                       </li>
                     );
                   })}
+                </ul>
+              </section>
+            )}
+
+            {/* Badges of the challenges this member finished: proof of going out and doing */}
+            {profile.challengeBadges && profile.challengeBadges.length > 0 && (
+              <section className={card}>
+                <h2 className="text-sm sm:text-base font-extrabold text-slate-900">
+                  เหรียญจากชาเลนจ์ <span className="tabular-nums">({profile.challengeBadges.length})</span>
+                </h2>
+                <ul className="mt-3 flex flex-wrap gap-2">
+                  {profile.challengeBadges.map((badge) => (
+                    <li key={badge.questId}>
+                      <Link href={`/challenges/${encodeURIComponent(badge.questId)}`} title={badge.title} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F5F3FF] border border-slate-200 text-xs sm:text-sm font-extrabold text-[#5B21B6] hover:border-[#7C3AED] transition-colors cursor-pointer">
+                        <Award className="w-4 h-4" aria-hidden="true" />
+                        {badge.badgeLabel}
+                      </Link>
+                    </li>
+                  ))}
                 </ul>
               </section>
             )}

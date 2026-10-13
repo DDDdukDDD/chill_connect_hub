@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Trophy,
   Sparkles,
@@ -22,12 +23,12 @@ import {
   Gift
 } from 'lucide-react';
 import { ChallengeQuest } from '@/data/mockData';
-import { JoinChallengeModal, getQuestBrandReward } from '@/components/JoinChallengeModal';
+import { getQuestBrandReward } from '@/lib/questDisplay';
 import { fetchAllContentPages } from '@/lib/contentClient';
+import { useAuth } from '@/lib/useAuth';
+import { useMyRewards } from '@/lib/useMyRewards';
 
 interface CommunityChallengeBarProps {
-  onJoinQuest?: (questTitle: string) => void;
-  joinedQuestTitles?: string[];
   onOpenCreateModal?: () => void;
   minimalHeader?: boolean;
   /** Heading text in the minimal header */
@@ -35,14 +36,16 @@ interface CommunityChallengeBarProps {
 }
 
 export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
-  onJoinQuest,
-  joinedQuestTitles = ['Cafe Hunter 5', 'Step Count 30Days', 'Offline 3 Hours'],
   onOpenCreateModal,
   minimalHeader = false,
-  title = 'Challenge & Lifestyle Hub',
+  title = 'ชาเลนจ์ชวนออกไปใช้ชีวิต',
 }) => {
-  const [joinedList, setJoinedList] = useState<string[]>(joinedQuestTitles);
-  const [selectedQuestForModal, setSelectedQuestForModal] = useState<ChallengeQuest | null>(null);
+  // Joined challenges and their progress come from the account (GET /api/rewards)
+  const { isLoggedIn } = useAuth();
+  const myRewards = useMyRewards(isLoggedIn);
+  const joinedIds = myRewards.joinedQuestIds;
+  const progressOf = (questId: string) => myRewards.quests.find((progress) => progress.questId === questId);
+  const router = useRouter();
   // Every challenge in the row comes from the catalog (GET /api/quests); nothing is typed into this file
   const [questItems, setQuestItems] = useState<(ChallengeQuest & { image?: string })[]>([]);
   const [isLoadingQuests, setIsLoadingQuests] = useState(true);
@@ -93,7 +96,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
     fetchAllContentPages<ChallengeQuest>('/api/quests', 'quests')
       .then((quests) => {
         if (!isActive) return;
-        setQuestItems(quests.map((quest) => ({ ...quest, image: quest.badgeCoverImg })));
+        setQuestItems(quests.map((quest) => ({ ...quest, image: quest.badgeCoverImg || quest.image })));
       })
       .catch((error) => console.warn('Could not load challenges:', error))
       .finally(() => {
@@ -137,52 +140,21 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
     }
   };
 
-  const [questProgressMap, setQuestProgressMap] = useState<Record<string, number>>({});
-  const [completedList, setCompletedList] = useState<string[]>([]);
-
   const handleOpenDetailModal = (quest: ChallengeQuest) => {
-    setSelectedQuestForModal(quest);
-  };
-
-  const handleConfirmJoinModal = (quest: ChallengeQuest) => {
-    if (!joinedList.includes(quest.title)) {
-      setJoinedList((prev) => [...prev, quest.title]);
-      setQuestProgressMap((prev) => ({ ...prev, [quest.title]: prev[quest.title] || 1 }));
-      if (onJoinQuest) {
-        onJoinQuest(quest.title);
-      }
-    }
-  };
-
-  const handleCancelQuestModal = (quest: ChallengeQuest) => {
-    setJoinedList((prev) => prev.filter((t) => t !== quest.title));
-    setQuestProgressMap((prev) => {
-      const next = { ...prev };
-      delete next[quest.title];
-      return next;
-    });
-    setCompletedList((prev) => prev.filter((t) => t !== quest.title));
-  };
-
-  const handleSubmitProgressModal = (quest: ChallengeQuest, newCurrent: number) => {
-    setQuestProgressMap((prev) => ({ ...prev, [quest.title]: newCurrent }));
-    const targetTotal = parseInt(quest.total || '3', 10) || 3;
-    if (newCurrent >= targetTotal && !completedList.includes(quest.title)) {
-      setCompletedList((prev) => [...prev, quest.title]);
-    }
+    router.push(`/challenges/${encodeURIComponent(quest.id)}`);
   };
 
   const getCategoryLabel = (catId?: string) => {
     switch (catId) {
       case 'move':
-        return '🏃 Move';
+        return 'Move';
       case 'heal':
-        return '🌱 Heal';
+        return 'Heal';
       case 'learn':
-        return '🎨 Learn';
+        return 'Learn';
       case 'chill':
       default:
-        return '☕ Chill';
+        return 'Chill';
     }
   };
 
@@ -197,31 +169,31 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
           </h2>
           <Link
             href="/challenges"
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer active:scale-95 leading-none"
+            className="inline-flex items-center gap-1.5 min-h-10 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-full whitespace-nowrap text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer active:scale-95 leading-none"
           >
-            <span>ดูภารกิจทั้งหมด ({activeQuests.length})</span>
+            <span>ดูชาเลนจ์ทั้งหมด ({activeQuests.length})</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
           </Link>
         </div>
       ) : (
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-purple-50/70 via-indigo-50/30 to-transparent p-3.5 sm:p-4 rounded-2xl border border-purple-200/70 shadow-2xs">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-[#F5F3FF] p-3.5 sm:p-4 rounded-2xl border border-slate-200">
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                <span>Challenge & Lifestyle Hub</span>
+                <span>ชาเลนจ์ชวนออกไปใช้ชีวิต</span>
               </h2>
             </div>
             <p className="text-xs text-slate-500 mt-1 font-medium">
-              ภารกิจไลฟ์สไตล์ & ชาเลนจ์ กิจกรรมรับแต้ม XP และของรางวัล
+              ออกไปเที่ยว ไปทำกิจกรรมให้ครบ แล้วรับ XP กับของรางวัลกลับมา
             </p>
           </div>
 
           {/* Right Actions: Clean Glassmorphic Pill Link */}
           <Link
             href="/challenges"
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-purple-900 text-purple-900 hover:text-white border border-purple-200/90 hover:border-purple-900 rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
           >
-            <span>ดูภารกิจทั้งหมด ({activeQuests.length})</span>
+            <span>ดูชาเลนจ์ทั้งหมด ({activeQuests.length})</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
           </Link>
         </div>
@@ -230,7 +202,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
       {/* Quick Filter: Quest Type Chips (Official Central vs Brand Partner) - Hidden in minimal mode */}
       {!minimalHeader && (
         <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5">
-          <span className="text-[11px] font-bold text-slate-400 shrink-0 uppercase tracking-wider mr-0.5">
+          <span className="text-[11px] font-bold text-slate-500 shrink-0 uppercase tracking-wider mr-0.5">
             ตัวกรองด่วน:
           </span>
 
@@ -240,12 +212,12 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
             onClick={() => setFilterType('all')}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shrink-0 shadow-2xs ${
               filterType === 'all'
-                ? 'bg-slate-900 text-white shadow-xs'
+                ? 'bg-[#F5F3FF] border border-[#7C3AED] text-[#5B21B6]'
                 : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200/80'
             }`}
           >
             <span>ทั้งหมด</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${filterType === 'all' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+            <span className={`text-[11px] px-1.5 py-0.2 rounded-full font-bold ${filterType === 'all' ? 'bg-white text-[#5B21B6]' : 'bg-slate-100 text-slate-600'}`}>
               {questItems.length}
             </span>
           </button>
@@ -256,12 +228,12 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
             onClick={() => setFilterType(filterType === 'hub_central' ? 'all' : 'hub_central')}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 shadow-2xs border ${
               filterType === 'hub_central'
-                ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                ? 'bg-[#F5F3FF] border-[#7C3AED] text-[#5B21B6]'
                 : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200/80'
             }`}
           >
             <span>Official • Chill & Connect</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${filterType === 'hub_central' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+            <span className={`text-[11px] px-1.5 py-0.2 rounded-full font-bold ${filterType === 'hub_central' ? 'bg-white text-[#5B21B6]' : 'bg-slate-100 text-slate-600'}`}>
               {hubCount}
             </span>
           </button>
@@ -272,12 +244,12 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
             onClick={() => setFilterType(filterType === 'brand_partner' ? 'all' : 'brand_partner')}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 shadow-2xs border ${
               filterType === 'brand_partner'
-                ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                ? 'bg-[#F5F3FF] border-[#7C3AED] text-[#5B21B6]'
                 : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200/80'
             }`}
           >
             <span>แบรนด์พาร์ทเนอร์</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${filterType === 'brand_partner' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+            <span className={`text-[11px] px-1.5 py-0.2 rounded-full font-bold ${filterType === 'brand_partner' ? 'bg-white text-[#5B21B6]' : 'bg-slate-100 text-slate-600'}`}>
               {partnerCount}
             </span>
           </button>
@@ -330,10 +302,11 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
             </p>
           )}
           {displayQuests.map((quest) => {
-            const isJoined = joinedList.includes(quest.title);
-            const isDone = completedList.includes(quest.title);
-            const targetTotal = parseInt(quest.total || '3', 10) || 3;
-            const currentProg = questProgressMap[quest.title] || (isJoined ? 1 : 0);
+            const isJoined = joinedIds.includes(quest.id);
+            const realProgress = progressOf(quest.id);
+            const isDone = isJoined && Boolean(realProgress?.completed);
+            const targetTotal = realProgress?.total ?? (parseInt(quest.total || '3', 10) || 3);
+            const currentProg = realProgress?.current ?? 0;
             const brandReward = getQuestBrandReward(quest);
 
             if (minimalHeader) {
@@ -361,32 +334,32 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                     {/* Top Badges Row */}
                     <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between z-10 gap-1.5">
                       {/* Left: Medal Badge */}
-                      <span className="inline-flex items-center gap-1 text-[10px] font-black text-white/95 bg-black/45 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-white/20 truncate max-w-[calc(100%-68px)]">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-black text-white/95 bg-black/45 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-white/20 truncate max-w-[calc(100%-68px)]">
                         <Award className="w-2.5 h-2.5 text-amber-400 shrink-0" />
                         <span className="truncate">เหรียญ {quest.badgeLabel}</span>
                       </span>
 
                       {/* Right: XP Reward Pill */}
-                      <span className="inline-flex items-center gap-0.5 text-[10px] font-black text-amber-300 bg-black/45 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/20 shrink-0">
+                      <span className="inline-flex items-center gap-0.5 text-[11px] font-black text-amber-300 bg-black/45 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/20 shrink-0">
                         <Zap className="w-2.5 h-2.5 text-amber-400 fill-amber-300" />
-                        <span>+{quest.rewardPoints} XP</span>
+                        <span>{quest.rule ? `+${quest.rewardPoints ?? 0} XP` : 'บันทึกเอง'}</span>
                       </span>
                     </div>
 
                     {/* Bottom Overlaid Details (Pure Moments Style) */}
                     <div className="absolute inset-x-0 bottom-0 p-3 sm:p-3.5 flex flex-col justify-end space-y-1.5 z-10">
                       {/* Host / Partner Tag */}
-                      <div className="text-[10px] font-extrabold uppercase tracking-wider text-purple-300 drop-shadow-sm truncate">
+                      <div className="text-[11px] font-extrabold uppercase tracking-wider text-purple-300 drop-shadow-sm truncate">
                         {brandReward.type === 'brand_partner' ? brandReward.partnerName : 'Official • Chill & Connect'}
                       </div>
 
                       {/* Title */}
-                      <h3 className="text-white text-xs sm:text-[13px] font-bold leading-snug line-clamp-2 drop-shadow-sm group-hover:text-amber-200 transition-colors">
+                      <h3 className="text-white text-sm sm:text-base font-bold leading-snug line-clamp-2 drop-shadow-sm group-hover:text-amber-200 transition-colors">
                         {quest.title}
                       </h3>
 
                       {/* Footer Meta Row with Top Divider */}
-                      <div className="pt-1.5 flex items-center justify-between text-white/90 border-t border-white/15 text-[10.5px]">
+                      <div className="pt-1.5 flex items-center justify-between text-white/90 border-t border-white/15 text-[11px]">
                         {/* Left: Reward Title */}
                         <div className="flex items-center gap-1 min-w-0">
                           {brandReward.type === 'brand_partner' ? (
@@ -394,7 +367,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                           ) : (
                             <Gift className="w-3 h-3 text-purple-400 shrink-0" />
                           )}
-                          <span className="truncate text-white/85 font-medium text-[10.5px]">
+                          <span className="truncate text-white/85 font-medium text-[11px]">
                             {brandReward.title || quest.badgeLabel}
                           </span>
                         </div>
@@ -402,17 +375,17 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                         {/* Right: Status or Participants */}
                         <div className="shrink-0 font-bold flex items-center gap-1">
                           {isDone ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-black text-purple-200 bg-purple-900/60 backdrop-blur-sm px-2 py-0.5 rounded-full border border-purple-400/40">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-black text-purple-200 bg-purple-900/60 backdrop-blur-sm px-2 py-0.5 rounded-full border border-purple-400/40">
                               <Trophy className="w-2.5 h-2.5 text-purple-300" />
                               <span>พิชิตแล้ว</span>
                             </span>
                           ) : isJoined ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-200 bg-emerald-900/60 backdrop-blur-sm px-2 py-0.5 rounded-full border border-emerald-400/40">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-200 bg-emerald-900/60 backdrop-blur-sm px-2 py-0.5 rounded-full border border-emerald-400/40">
                               <CheckCircle2 className="w-2.5 h-2.5 text-emerald-300" />
                               <span>{currentProg}/{targetTotal}</span>
                             </span>
                           ) : (
-                            <span className="text-white/85 text-[10px] font-medium flex items-center gap-1">
+                            <span className="text-white/85 text-[11px] font-medium flex items-center gap-1">
                               <Users className="w-2.5 h-2.5 text-white/70" />
                               <span>{quest.participantsCount} คน</span>
                             </span>
@@ -432,31 +405,31 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                 className="w-[calc((100%-12px)/2)] sm:w-[calc((100%-2*14px)/3)] md:w-[calc((100%-3*14px)/4)] lg:w-[calc((100%-4*14px)/5)] shrink-0 snap-start bg-white rounded-2xl p-3 sm:p-3.5 border border-slate-200 shadow-2xs hover:shadow-lg hover:border-purple-500/40 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between space-y-2 relative overflow-hidden group/card cursor-pointer"
               >
                 {/* Official Quest Top Accent Stripe */}
-                <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${brandReward.type === 'brand_partner' ? 'from-amber-500 via-amber-400 to-orange-400' : 'from-purple-600 via-indigo-400 to-purple-400'}`} />
+                <div className={`absolute top-0 left-0 right-0 h-1 ${brandReward.type === 'brand_partner' ? 'bg-[#7C3AED]' : 'bg-[#7C3AED]'}`} />
 
                 {/* 1. Top Badges Row: Brand Partner vs Central Hub Badge */}
                 <div className="flex items-center justify-between gap-1.5 pt-0.5">
                   {brandReward.type === 'brand_partner' ? (
                     <span
-                      title={`ภารกิจพาร์ทเนอร์ทางการ: ${brandReward.partnerName}`}
-                      className="text-[10px] font-black text-amber-950 bg-amber-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-amber-300/80 truncate max-w-[calc(100%-70px)]"
+                      title={`ชาเลนจ์พาร์ทเนอร์ทางการ: ${brandReward.partnerName}`}
+                      className="text-[11px] font-black text-amber-950 bg-amber-100/90 px-2 py-0.5 rounded-full flex items-center gap-1 border border-amber-300/80 truncate max-w-[calc(100%-70px)]"
                     >
                       <Crown className="w-2.5 h-2.5 text-amber-600 fill-amber-500 shrink-0" />
                       <span className="truncate">Official • {brandReward.partnerName}</span>
                     </span>
                   ) : (
                     <span
-                      title="ภารกิจกิจกรรมกลางของ Chill & Connect Hub (สะสมแต้มแลกรางวัลอิสระ)"
-                      className="text-[10px] font-black text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-md flex items-center gap-1 border border-purple-300/80 truncate max-w-[calc(100%-70px)]"
+                      title="ชาเลนจ์กิจกรรมกลางของ Chill & Connect Hub (สะสม XP แลกรางวัลอิสระ)"
+                      className="text-[11px] font-black text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-full flex items-center gap-1 border border-purple-300/80 truncate max-w-[calc(100%-70px)]"
                     >
                       <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500 shrink-0" />
                       <span className="truncate">Official • Chill & Connect</span>
                     </span>
                   )}
 
-                  <span className="text-[10px] font-black text-purple-800 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200/90 px-2 py-0.5 rounded-md flex items-center gap-0.5 shrink-0 shadow-2xs">
+                  <span className="text-[11px] font-black text-purple-800 bg-[#F5F3FF] border border-purple-200/90 px-2 py-0.5 rounded-full flex items-center gap-0.5 shrink-0 shadow-2xs">
                     <Zap className="w-3 h-3 text-purple-600 fill-purple-500" />
-                    <span>+{quest.rewardPoints} XP</span>
+                    <span>{quest.rule ? `+${quest.rewardPoints ?? 0} XP` : 'บันทึกเอง'}</span>
                   </span>
                 </div>
 
@@ -473,7 +446,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
 
                   {/* Bottom-Left Floating Glass Medal Badge */}
                   <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
-                    <div className="inline-flex items-center gap-1.5 text-[10.5px] font-black text-white bg-slate-900/80 backdrop-blur-md px-2.5 py-1 rounded-xl border border-white/20 shadow-md truncate max-w-full">
+                    <div className="inline-flex items-center gap-1.5 text-[11px] font-black text-white bg-slate-900/80 backdrop-blur-md px-2.5 py-1 rounded-xl border border-white/20 shadow-md truncate max-w-full">
                       <Award className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                       <span className="truncate">เหรียญ {quest.badgeLabel}</span>
                     </div>
@@ -484,7 +457,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                 <div className="space-y-1.5 flex-1">
                   <h3
                     title={quest.title}
-                    className="font-black text-xs sm:text-[13px] text-slate-900 group-hover/card:text-purple-700 transition-colors leading-snug line-clamp-2 min-h-[2.25rem] sm:min-h-[2.5rem]"
+                    className="font-black text-sm sm:text-base text-slate-900 group-hover/card:text-purple-700 transition-colors leading-snug line-clamp-2 min-h-[2.25rem] sm:min-h-[2.5rem]"
                   >
                     {quest.title}
                   </h3>
@@ -499,7 +472,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                   {brandReward.type === 'brand_partner' ? (
                     <div 
                       title={`สิทธิพิเศษเฉพาะแบรนด์ ${brandReward.partnerName}: ${brandReward.title}`}
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50/90 border border-amber-200/90 text-amber-950 text-[10.5px] font-bold shadow-2xs"
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50/90 border border-amber-200/90 text-amber-950 text-[11px] font-bold shadow-2xs"
                     >
                       <Ticket className="w-3 h-3 text-amber-600 shrink-0" />
                       <span className="truncate">{brandReward.title}</span>
@@ -507,7 +480,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                   ) : (
                     <div 
                       title="รับแต้มสะสมพิเศษเพื่อนำไปเลือกแลกของรางวัลในศูนย์กลาง (/rewards)"
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-50/90 border border-purple-200/90 text-purple-950 text-[10.5px] font-bold shadow-2xs"
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-50/90 border border-purple-200/90 text-purple-950 text-[11px] font-bold shadow-2xs"
                     >
                       <Gift className="w-3 h-3 text-purple-600 shrink-0" />
                       <span className="truncate">แต้มสะสมอิสระ แลกของรางวัลใน Hub Rewards</span>
@@ -525,22 +498,22 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
 
                   <div className="flex items-center gap-2">
                     {isDone ? (
-                      <span className="inline-flex items-center gap-1 text-[10.5px] font-black text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200/80">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-black text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200/80">
                         <Trophy className="w-3 h-3 text-purple-600" />
                         <span>พิชิตแล้ว</span>
                       </span>
                     ) : isJoined ? (
-                      <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                         <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                         <span>{currentProg}/{targetTotal}</span>
                       </span>
                     ) : (
-                      <span className="font-semibold text-slate-500 text-[10.5px]">
+                      <span className="font-semibold text-slate-500 text-[11px]">
                         {quest.participantsCount} คนร่วมทำ
                       </span>
                     )}
 
-                    <div className="w-6 h-6 rounded-full bg-slate-50 group-hover/card:bg-purple-600 flex items-center justify-center text-slate-400 group-hover/card:text-white transition-colors shrink-0">
+                    <div className="w-6 h-6 rounded-full bg-slate-50 group-hover/card:bg-purple-600 flex items-center justify-center text-slate-500 group-hover/card:text-white transition-colors shrink-0">
                       <ArrowRight className="w-3.5 h-3.5" />
                     </div>
                   </div>
@@ -564,7 +537,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                     ? 'w-6 bg-purple-600'
                     : 'w-1.5 bg-slate-200 hover:bg-slate-300'
                 }`}
-                title={`ไปยังภารกิจที่ ${idx + 1}: ${quest.title}`}
+                title={`ไปยังชาเลนจ์ที่ ${idx + 1}: ${quest.title}`}
                 aria-label={`Go to quest ${idx + 1}`}
               />
             ))}
@@ -572,17 +545,6 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
         )}
       </div>
 
-      {/* Detail & Confirmation Modal */}
-      <JoinChallengeModal
-        isOpen={Boolean(selectedQuestForModal)}
-        onClose={() => setSelectedQuestForModal(null)}
-        quest={selectedQuestForModal}
-        onConfirmJoin={handleConfirmJoinModal}
-        isAlreadyJoined={selectedQuestForModal ? joinedList.includes(selectedQuestForModal.title) : false}
-        onCancelQuest={handleCancelQuestModal}
-        onSubmitProgress={handleSubmitProgressModal}
-        isCompleted={selectedQuestForModal ? completedList.includes(selectedQuestForModal.title) : false}
-      />
 
     </section>
   );

@@ -14,6 +14,8 @@ interface NotificationItem {
   actorName: string;
   actorAvatar: string;
   momentId?: string;
+  /** Where a notification that is not about a person leads */
+  href?: string;
   message: string;
   preview?: string;
   timeAgo: string;
@@ -87,7 +89,7 @@ export function NotificationBell() {
               {data.items.map((n) => (
                 <li key={n.id}>
                   <Link
-                    href={n.momentId ? `/moments?momentId=${n.momentId}` : `/profile?id=${n.actorId}`}
+                    href={n.href ?? (n.momentId ? `/moments?momentId=${n.momentId}` : `/profile?id=${n.actorId}`)}
                     onClick={() => setIsOpen(false)}
                     className="flex items-start gap-3 px-2 py-3 rounded-2xl hover:bg-slate-50"
                   >

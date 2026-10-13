@@ -30,7 +30,6 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { LifestyleSpotItem, SpotSubActivity, SpotRelatedQuest } from '@/data/spotsData';
-import { JoinChallengeModal } from '@/components/JoinChallengeModal';
 import { ChallengeQuest } from '@/data/mockData';
 
 interface SpotDetailModalProps {
@@ -41,9 +40,6 @@ interface SpotDetailModalProps {
   onToggleFavorite: (id: string) => void;
   isLoggedIn?: boolean;
   onRequireLogin?: () => void;
-  onAcceptQuest?: (questTitle: string) => void;
-  joinedQuestTitles?: string[];
-  onCancelQuest?: (questTitle: string) => void;
 }
 
 const DEFAULT_AVATARS = [
@@ -61,9 +57,6 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
   onToggleFavorite,
   isLoggedIn = false,
   onRequireLogin,
-  onAcceptQuest,
-  joinedQuestTitles = [],
-  onCancelQuest,
 }) => {
   const [mounted, setMounted] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -72,7 +65,6 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
   // Collapsible state for Buddy Board & Quests
   const [isBuddySectionOpen, setIsBuddySectionOpen] = useState(false);
   const [isQuestsSectionOpen, setIsQuestsSectionOpen] = useState(true);
-  const [selectedQuestModal, setSelectedQuestModal] = useState<ChallengeQuest | null>(null);
   const [showSubForm, setShowSubForm] = useState(false);
   const [expandedSubId, setExpandedSubId] = useState<string | null>(null);
   const [joinedSubIds, setJoinedSubIds] = useState<string[]>([]);
@@ -445,7 +437,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
           </div>
 
           {/* ========================================================================= */}
-          {/* ชาเลนจ์ & เควสต์ที่เกี่ยวข้อง (Clean Secondary Banner เชื่อมต่อไปยังหน้า Challenges) */}
+          {/* ชาเลนจ์ที่เกี่ยวข้อง (Clean Secondary Banner เชื่อมต่อไปยังหน้า Challenges) */}
           {/* ========================================================================= */}
           <div className="rounded-2xl bg-gradient-to-r from-amber-50/80 via-orange-50/80 to-amber-50/80 border border-amber-200/80 p-3.5 flex items-center justify-between gap-3 shadow-2xs">
             <div className="flex items-center gap-2.5 min-w-0">
@@ -454,10 +446,10 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
               </div>
               <div className="min-w-0">
                 <span className="text-xs font-bold text-slate-800 block truncate">
-                  มีเควสต์สะสม XP ประจำสถานที่นี้ 🎯
+                  มีชาเลนจ์สะสม XP ประจำสถานที่นี้ 🎯
                 </span>
                 <span className="text-[11px] text-slate-500 block truncate">
-                  เช็คอินหรือบันทึกภาพโมเมนต์เพื่อรับแต้ม XP และเหรียญตรา
+                  เช็คอินหรือบันทึกภาพโมเมนต์เพื่อรับ XP และเหรียญตรา
                 </span>
               </div>
             </div>
@@ -467,7 +459,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
               onClick={onClose}
               className="inline-flex items-center gap-1 text-xs font-extrabold text-amber-900 hover:text-amber-950 bg-white hover:bg-amber-100/80 px-3 py-1.5 rounded-xl border border-amber-300/80 transition-all shrink-0 shadow-2xs active:scale-95 cursor-pointer"
             >
-              <span>ดูเควสต์</span>
+              <span>ดูชาเลนจ์</span>
               <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
@@ -811,26 +803,6 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
         </div>
       </div>
 
-      {/* Challenge Quest Full Detail Popup Modal */}
-      {selectedQuestModal && (
-        <JoinChallengeModal
-          isOpen={!!selectedQuestModal}
-          onClose={() => setSelectedQuestModal(null)}
-          quest={selectedQuestModal}
-          onConfirmJoin={(q) => {
-            if (!isLoggedIn && onRequireLogin) {
-              onRequireLogin();
-              return;
-            }
-            if (onAcceptQuest) {
-              onAcceptQuest(q.title);
-            } else {
-              showToast(`🎉 รับภารกิจ "${q.title}" เรียบร้อยแล้ว! (+${q.rewardPoints} XP)`);
-            }
-            setSelectedQuestModal(null);
-          }}
-        />
-      )}
     </div>,
     document.body
   );

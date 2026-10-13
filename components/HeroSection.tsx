@@ -37,7 +37,6 @@ import {
 import { useAuth } from '@/lib/useAuth';
 import { ALL_THAI_PROVINCES, MOCK_SPOTS, LifestyleSpotItem } from '@/data/spotsData';
 import { usePublishedSpots } from '@/lib/usePublishedSpots';
-import { JoinChallengeModal } from '@/components/JoinChallengeModal';
 import { ChallengeQuest, MOCK_EVENTS, EventItem } from '@/data/mockData';
 import {
   MASTER_SPOT_CATEGORIES,
@@ -94,7 +93,7 @@ export const HERO_SLIDES: HeroSlideItem[] = [
     tag: 'ชาเลนจ์ & พิกัดทะเล 77 จังหวัด',
     titleLead: 'วันหยุดนี้...',
     titleHighlight: 'ไปเที่ยวทะเลไหนดี?',
-    subtitle: 'เช็กลิสต์พิกัดเกาะพีพีและทะเล 77 จังหวัด พิชิตเควสต์สะสมแต้ม XP แลกรับสิทธิ์ฟรี',
+    subtitle: 'เช็กลิสต์พิกัดเกาะพีพีและทะเล 77 จังหวัด พิชิตชาเลนจ์สะสม XP แลกรับสิทธิ์ฟรี',
     imageUrl: '/hero-koh-phi-phi.jpg',
     imageAlt: 'ทะเลเกาะพีพี อ่าวมาหยา น้ำทะเลสีมรกตใส เรือหางยาวและหน้าผาหินปูน',
   },
@@ -136,9 +135,6 @@ interface HeroSectionProps {
   setSelectedProvince?: (province: string) => void;
   onSearchSubmit?: () => void;
   onOpenSurpriseModal?: (mode?: 'all' | 'spots' | 'community' | 'fairs') => void;
-  onJoinQuest?: (questTitle: string) => void;
-  joinedQuestTitles?: string[];
-  onCancelQuest?: (questTitle: string) => void;
   activeTab?: 'all' | 'spots' | 'community' | 'fairs';
   onSelectDiscoveryTab?: (tab: 'all' | 'spots' | 'community' | 'fairs') => void;
   timeFilter?: string;
@@ -191,9 +187,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   setSelectedProvince,
   onSearchSubmit,
   onOpenSurpriseModal,
-  onJoinQuest,
-  joinedQuestTitles = [],
-  onCancelQuest,
   onSelectDiscoveryTab,
   activeTab,
   timeFilter = 'all',
@@ -207,7 +200,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   const router = useRouter();
   const { isLoggedIn } = useAuth();
   const [isFocused, setIsFocused] = useState(false);
-  const [selectedQuestForModal, setSelectedQuestForModal] = useState<ChallengeQuest | null>(null);
   const [activeModeTab, setActiveModeTab] = useState<'all' | 'spots' | 'community' | 'fairs' | 'challenges' | 'moments'>(activeTab || 'all');
   const [activeJourneyPill, setActiveJourneyPill] = useState<'home' | 'community' | 'fairs' | 'spots' | 'challenges' | 'moments'>('home');
   const [internalTimeFilter, setInternalTimeFilter] = useState('all');
@@ -1495,19 +1487,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
         </div>
 
-      {/* Detail & Confirmation Modal for Quest Selected from Hero Ticker */}
-      <JoinChallengeModal
-        isOpen={Boolean(selectedQuestForModal)}
-        onClose={() => setSelectedQuestForModal(null)}
-        quest={selectedQuestForModal}
-        onConfirmJoin={(q) => {
-          if (onJoinQuest) onJoinQuest(q.title);
-        }}
-        isAlreadyJoined={selectedQuestForModal ? (joinedQuestTitles || []).includes(selectedQuestForModal.title) : false}
-        onCancelQuest={(q) => {
-          if (onCancelQuest) onCancelQuest(q.title);
-        }}
-      />
     </section>
   );
 };
