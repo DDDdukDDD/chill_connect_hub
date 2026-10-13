@@ -27,6 +27,23 @@ interface ActivityState {
 const EMPTY: ActivityState = { isLoaded: false, joined: [], hosted: [], cancelled: [], joinedIds: [], savedSpotIds: [], savedEventIds: [] };
 const MIRROR = { joined: 'joined_event_ids', events: 'favorites', spots: 'favorite_spots' } as const;
 
+// Whose saved lists the browser copy holds. Without it, the lists of the member who used this browser before
+// were taken for hearts made while signed out and added to the next member's account
+const SAVED_OWNER_KEY = 'cch_saved_owner';
+
+/** Empties the browser copy of the saved lists when it belongs to an account other than the one now signed in */
+function dropSavedListsOfAnotherAccount() {
+  try {
+    const owner = localStorage.getItem(SAVED_OWNER_KEY);
+    if (!owner || owner === memberId) return;
+    localStorage.setItem(MIRROR.events, '[]');
+    localStorage.setItem(MIRROR.spots, '[]');
+    localStorage.removeItem(SAVED_OWNER_KEY);
+  } catch {
+    /* storage unavailable */
+  }
+}
+
 let state: ActivityState = EMPTY;
 let memberId: string | null = null;
 const listeners = new Set<() => void>();
@@ -54,6 +71,11 @@ function setState(next: Partial<ActivityState>, mirrorSaved = true) {
     if (mirrorSaved && memberId) {
       writeList(MIRROR.events, state.savedEventIds);
       writeList(MIRROR.spots, state.savedSpotIds);
+      try {
+        localStorage.setItem(SAVED_OWNER_KEY, memberId);
+      } catch {
+        /* storage unavailable */
+      }
     }
   }
   listeners.forEach((l) => l());
@@ -71,6 +93,8 @@ async function post(body: Record<string, unknown>) {
 
 export const activityActions = {
   refresh: async () => {
+    // Signed out, or a different member than last time: the saved lists left in this browser are not theirs
+    dropSavedListsOfAnotherAccount();
     if (!memberId) return setState({ ...EMPTY, isLoaded: true }, false);
     const forMember = memberId;
     const json = await fetch('/api/auth/member/activity', { cache: 'no-store' }).then((res) => res.json()).catch(() => null);
