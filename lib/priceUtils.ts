@@ -179,6 +179,14 @@ export function parseEventPrice(rawPrice?: string | null, fallbackFreeText: stri
 }
 
 /**
+ * True when a card has a real price to show. Cards hide the badge for an empty or "ไม่ระบุราคา" price.
+ */
+export function hasKnownPrice(rawPrice?: string | null): boolean {
+  const clean = rawPrice?.trim();
+  return !!clean && clean !== 'ไม่ระบุราคา';
+}
+
+/**
  * Returns a compact 1-line badge for card views (e.g. "฿1,200 - ฿6,900" or "ฟรี")
  */
 export function formatEventBadgePrice(rawPrice?: string | null, fallbackFreeText: string = 'ฟรี'): string {

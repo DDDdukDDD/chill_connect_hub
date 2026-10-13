@@ -37,7 +37,6 @@ import {
 import { useAuth } from '@/lib/useAuth';
 import { ALL_THAI_PROVINCES, MOCK_SPOTS, LifestyleSpotItem } from '@/data/spotsData';
 import { usePublishedSpots } from '@/lib/usePublishedSpots';
-import { COMMUNITY_PUBLIC_QUESTS } from '@/components/CommunityChallengeBar';
 import { JoinChallengeModal } from '@/components/JoinChallengeModal';
 import { ChallengeQuest, MOCK_EVENTS, EventItem } from '@/data/mockData';
 import {
@@ -313,16 +312,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   const goToNextSlide = () => {
     setCurrentSlideIndex((prev) => (prev + 1) % HERO_SLIDES.length);
   };
-
-  const [currentQuestIndex, setCurrentQuestIndex] = useState(0);
-
-  // Auto-cycle through quests calmly every 10 seconds (Zero visual distraction)
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentQuestIndex((q) => (q + 1) % COMMUNITY_PUBLIC_QUESTS.length);
-    }, 10000);
-    return () => clearInterval(timer);
-  }, []);
 
   const handleScrollToSection = (tabKey: 'challenges' | 'moments', sectionId: string, fallbackUrl?: string) => {
     setActiveModeTab(tabKey);

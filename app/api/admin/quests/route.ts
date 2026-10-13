@@ -4,6 +4,7 @@ import { getQuestDateError, parseQuestDate } from '@/lib/questLifecycle';
 import { db, CreateQuestDTO, UpdateQuestDTO } from '@/lib/db';
 import { getAdminActor, requireAdminApiAccess } from '@/lib/adminApiAuth';
 import { recordAudit } from '@/lib/auditLog';
+import { parseQuestRule } from '@/lib/social/questProgress';
 
 const QUEST_STATUSES = new Set(['draft', 'active', 'ended']);
 const QUEST_CATEGORIES = new Set(['heal', 'move', 'chill', 'learn']);
@@ -12,7 +13,7 @@ const MUTABLE_QUEST_FIELDS = new Set<keyof ChallengeQuest>([
   'badgeIcon', 'badgeCoverImg', 'completedCountInfo', 'category', 'visibility',
   'creatorName', 'creatorAvatar', 'participantsCount', 'rewardPoints', 'targetGoal',
   'isOfficial', 'objective', 'steps', 'verificationMethod', 'rewardsText',
-  'startDate', 'endDate', 'status', 'image', 'brandReward',
+  'startDate', 'endDate', 'status', 'image', 'brandReward', 'rule',
 ]);
 const REWARD_TYPES = new Set(['brand_partner', 'hub_central']);
 const PLATFORM_PARTNER_NAME = 'Chill & Connect Hub';
@@ -191,6 +192,12 @@ export async function POST(request: Request) {
       const safeFields = Object.fromEntries(
         Object.entries(body.updatedFields).filter(([key]) => MUTABLE_QUEST_FIELDS.has(key as keyof ChallengeQuest))
       ) as UpdateQuestDTO;
+      if ('rule' in safeFields) {
+        // null or an empty value removes the rule; anything else must be a valid rule
+        const rule = safeFields.rule ? parseQuestRule(safeFields.rule) : undefined;
+        if (safeFields.rule && !rule) return NextResponse.json({ success: false, error: 'Invalid quest rule' }, { status: 400 });
+        safeFields.rule = rule ?? undefined;
+      }
       if ('brandReward' in safeFields) {
         const brandReward = parseBrandReward(safeFields.brandReward);
         if (typeof brandReward === 'string') return NextResponse.json({ success: false, error: brandReward }, { status: 400 });

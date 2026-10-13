@@ -260,7 +260,8 @@ Posts go live at once. **3 distinct member reports hide a post** until a moderat
 `{ id, authorId, userName, userAvatar, userBadge, images, caption, location, category?, likesCount, commentsCount, timeAgo (Thai), createdAt, isLiked, isSaved, isMine, hasReported, comments: [{ id, userName, userAvatar, text, timeAgo, createdAt, isMine }], targetType, targetId?, targetTitle?, isSample }`.
 
 - **Author details are live:** `userName` and `userAvatar` follow the author's current profile.
-- **Samples:** the 24 bundled `MOCK_POSTS` are seeded as `isSample: true`, with their illustrative like counts.
+- **Samples:** the 24 bundled `MOCK_POSTS` are seeded as `isSample: true`, with their illustrative like counts. 20 of them are tied to a real place or event in the stores (BE-042); on start, a stored sample takes `targetType`, `targetId`, `targetTitle` and `location` from the bundled one, and nothing else.
+- **Homepage row:** `components/CommunityMomentsStrip.tsx` shows the 12 newest from `GET /api/moments?tab=all&limit=12` and the full count from `pagination.totalCount`.
 - **Account deletion** removes the member's moments, comments, likes, saves and reports.
 
 ### `GET /api/master` — master data (admin-managed)
@@ -289,6 +290,8 @@ Returns active/ended public quests (drafts and private quests hidden).
 | `limit` (1–100) | `12` |
 
 Response `200`: `{ success: true, quests: ChallengeQuest[], pagination: Pagination }`. Cache: `s-maxage=60`.
+
+**The catalog is the only source (BE-042).** The homepage challenge row (`components/CommunityChallengeBar.tsx`) shows what this endpoint returns and keeps no list of its own. The sample quests live in `MOCK_CHALLENGES` (`data/mockData.ts`); a store written earlier is given each new seed quest once on start, and the ids already given are kept in `questSeedIds` in `data/discovery_content.json`, so a seed quest staff deleted does not come back. The cover photo is `badgeCoverImg`.
 
 **Quest lifecycle (computed by the server on every read, never stored):**
 - `daysRemaining`: whole days left until the end of `endDate`; `0` once ended; absent when the quest has no `endDate`.
@@ -513,3 +516,71 @@ When the signed-in viewer has blocked someone, events that person created are le
 ### Moments feed — blocked members
 `comments` and `commentsCount` of each moment leave out comments from people the viewer blocked.
 
+
+## Visits: who has been, challenge progress and points (added 2026-10-13, BE-039)
+
+A **visit** is one member having been to one place or event, with evidence. It is the link between the parts of the product: "who has been" on a place or event, challenge progress and points are all worked out from visits on each read. Nothing is stored as a balance. Code: `lib/social/visits.ts`, `lib/social/questProgress.ts`.
+
+| Evidence | Where it comes from | Applies to | Points |
+| :--- | :--- | :--- | :--- |
+| `checkin` | The host checked the member in (`POST /api/events/[id]/participants`) | community events | 50 |
+| `moment` | The member posted a moment with `targetType` and `targetId` set (`POST /api/moments`) | places, community events, fairs | 30 |
+| `marked` | The member pressed "I have been here" (`POST /api/visits`) | places, fairs | 10 |
+
+One visit per member per target; the strongest evidence wins. Target types are `spot`, `community` and `fair` (an event is `fair` when its `eventType` is `public_venue`).
+
+### `GET /api/visits?targets=spot:ID,community:ID,fair:ID` — public
+Up to 40 targets in one call, so a row of cards needs one request. Shared-cached for 30 seconds.
+```
+{ success, pointsPerVisit: { checkin, moment, marked },
+  targets: { "spot:ID": {
+    beenCount,                         // distinct people with any evidence
+    people: [{ name, avatar? }],       // up to 3, from public moments only
+    photos: [{ url, momentId }],       // up to 3, newest first (a preview)
+    momentsCount,                      // all published moments tied to the target; the full list is the feed below
+    rating?: { average, count },       // from the ratings given with a mark
+    quests: [{ questId, title, badgeLabel, rewardPoints, rewardTitle?, count, minEvidence }]  // running challenges a visit here counts toward
+  } } }
+```
+A mark or a check-in adds to `beenCount` but never publishes the member's name; names and photos come only from moments the member posted publicly. Do not show `beenCount` on fair cards or fair pages (the fair pillar shows no head count); photos and faces are fine.
+
+The full list of a target's moments is the paged moments feed: `GET /api/moments?targetType=spot&targetId=ID` (page link: `/moments?targetType=spot&targetId=ID&location=NAME`, where `location` is only the text of the filter chip). The server reads the 60 newest moments of a target for faces and photos; when a target has more, each older moment adds one to `beenCount`.
+
+### `GET /api/visits?mine=1` — the signed-in member
+`{ success, visits: [{ targetType, targetId, evidence, at }], marks: [{ targetType, targetId, rating?, createdAt }], quests: [{ questId, title, current, total, completed, rewardPoints }], points: { total, fromVisits, fromQuests } }`. Signed out: `requiresLogin: true` with empty lists. `quests` lists every non-draft challenge that has a rule, joined or not.
+
+### `POST /api/visits` — the signed-in member
+- `{ action: 'mark', targetType: 'spot' | 'fair', targetId, rating? }`: "I have been here". `rating` is a whole number 1 to 5 and is optional; sending the action again updates the rating. A fair can be marked from its start date. `community` is refused: the host's check-in is its evidence.
+- `{ action: 'unmark', targetType, targetId }`.
+- Answer: `{ success, mark | null, proof, points, quests }` (`proof` has the fields of one target above, without `quests`). Errors: 401 signed out, 403 inactive account, 404 unknown target, 429 more than 30 marks an hour.
+
+### Challenge rules (`rule` on a quest)
+`GET /api/quests` now returns `rule` when a challenge counts visits:
+```
+rule?: { targetTypes: ('spot' | 'community' | 'fair')[], count,
+         categories?, provinces?, keywords?, targetIds?, minEvidence?: 'marked' | 'moment' | 'checkin' }
+```
+Every filter given must match. `categories` is a place's `category` (`cafe`, `park`, ...) or an event's (`heal`, `move`, `chill`, `learn`); `keywords` match the title. Only visits made between the challenge's `startDate` and `endDate` count. Staff set it with `/api/admin/quests` (`action: 'update'`, `updatedFields.rule`; `null` removes it); an invalid rule is refused. Three seed challenges have rules: Cafe Hunter 5 (five cafes, a photo each), Digital Detox and HYROX (one community event, host check-in).
+
+`progressPercent`, `current`, `total` and `completedCountInfo` on a quest are still the old display text; real progress for the signed-in member is in `GET /api/visits?mine=1`.
+
+### Moments composer link
+`/moments?createForEvent=ID&createForType=spot|fair|community&eventTitle=...&location=...` opens the composer tied to that target (`createForType` is new; without it the target is a community event, as before).
+
+### Account deletion and export
+Deleting an account removes the member's marks. `GET /api/auth/member/account` (export) includes them as `visits`.
+
+## Points and rewards (added 2026-10-13, BE-040)
+
+A member's points are no longer kept in the browser. The balance is what the member earned from visits and finished challenges (see "Visits") minus what they spent on rewards. Only the spending is stored (`data/redemptions.json`, gitignored). Code: `lib/social/rewardsLedger.ts`. Client hook: `useMyRewards(isLoggedIn)` in `lib/useMyRewards.ts`.
+
+### `GET /api/rewards` — the signed-in member
+`{ success, points: { earned, fromVisits, fromQuests, spent, balance }, quests: [{ questId, title, current, total, completed, rewardPoints }], redeemedRewardIds, redemptions: [{ rewardId, cost, createdAt }] }`. Signed out: `requiresLogin: true`, zeros and empty lists. A new member starts at 0.
+
+### `POST /api/rewards` — `{ rewardId }`
+Redeems a reward of the catalog (`REWARD_SHOP_ITEMS` in `data/rewardsData.ts`). One of each reward per member. The answer has the same fields as the GET. Errors: 400 not enough points (the message says how many more), 404 unknown reward, 409 already redeemed, 401 signed out, 429 more than 20 an hour.
+
+### What the pages do
+- `/rewards`, `/myhub`, `/challenges` read the balance and the redeemed rewards from `useMyRewards`. The old browser keys `cch_user_xp` and `cch_redeemed_reward_ids` are not read any more (the helpers stay in `data/rewardsData.ts`, unused).
+- `withRealProgress(quests, progress)` puts the server's count on challenges that have a rule. A challenge without a rule keeps the progress the member notes by hand in the browser (`cch_my_challenges`); that progress earns no points.
+- Joining a challenge is still kept in the browser. Progress and points do not depend on joining.

@@ -181,6 +181,9 @@ function MomentsContent() {
   const urlLocation = searchParams.get('location') || '';
   const urlTab = searchParams.get('tab');
   const urlMomentId = searchParams.get('momentId');
+  // A place or event page links here to show only its own moments; `location` carries its name for the filter chip
+  const urlTargetType = searchParams.get('targetType') || '';
+  const urlTargetId = searchParams.get('targetId') || '';
   const [locationFilter, setLocationFilter] = useState<string>(urlLocation);
   const [activeTabFilter, setActiveTabFilter] = useState<'all' | 'following' | 'popular' | 'saved' | 'mine'>(
     urlTab === 'mine' ? 'mine' : urlTab === 'popular' ? 'popular' : 'all'
@@ -300,7 +303,13 @@ function MomentsContent() {
   };
 
   const feedUrl = (page: number) =>
-    `/api/moments?tab=${activeTabFilter}&limit=${FEED_PAGE_SIZE}&page=${page}${locationFilter ? `&location=${encodeURIComponent(locationFilter)}` : ''}`;
+    `/api/moments?tab=${activeTabFilter}&limit=${FEED_PAGE_SIZE}&page=${page}${
+      urlTargetId && locationFilter === urlLocation
+        ? `&targetType=${encodeURIComponent(urlTargetType)}&targetId=${encodeURIComponent(urlTargetId)}`
+        : locationFilter
+        ? `&location=${encodeURIComponent(locationFilter)}`
+        : ''
+    }`;
   type FeedJson = { moments?: ServerMoment[]; pagination?: { hasNextPage?: boolean } };
   const takeFeed = (json: FeedJson) => {
     const list = (json.moments ?? []).map(fromServerMoment);
@@ -616,12 +625,14 @@ function MomentsContent() {
     const titleToShare = searchParams.get('eventTitle');
     const locToShare = searchParams.get('location');
     const imgToShare = searchParams.get('image');
+    const typeParam = searchParams.get('createForType');
+    const typeToShare = typeParam === 'spot' || typeParam === 'fair' ? typeParam : 'community';
     if (eventToShare) {
-      setCreateTargetType('community');
+      setCreateTargetType(typeToShare);
       setCreateTargetId(eventToShare);
       if (locToShare) setCustomLocationInput(locToShare);
-      if (titleToShare) setLinkedTarget({ type: 'community', id: eventToShare, title: titleToShare, location: locToShare || '' });
-      if (titleToShare) setCaptionInput(`แชร์ความประทับใจจากกิจกรรม "${titleToShare}"\n`);
+      if (titleToShare) setLinkedTarget({ type: typeToShare, id: eventToShare, title: titleToShare, location: locToShare || '' });
+      if (titleToShare) setCaptionInput(typeToShare === 'community' ? `แชร์ความประทับใจจากกิจกรรม "${titleToShare}"\n` : `ไปมาแล้ว "${titleToShare}"\n`);
       if (imgToShare) setUploadedPostImages([imgToShare]);
       setIsCreateModalOpen(true);
     }

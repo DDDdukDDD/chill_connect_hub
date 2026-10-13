@@ -19,6 +19,7 @@ import { SpotBuddyGatheringModal, SpotBuddyPostItem } from '@/components/SpotBud
 import { ChallengeQuest, EventItem } from '@/data/mockData';
 import { isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp } from '@/lib/dateUtils';
 import { activityActions, useMyActivity } from '@/lib/useMyActivity';
+import { useMyRewards, withRealProgress } from '@/lib/useMyRewards';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { nameInitial, tidyDisplayName } from '@/lib/displayName';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
@@ -87,10 +88,6 @@ const THAI_MONTH_SHORT = [
 import {
   RewardShopItem,
   REWARD_SHOP_ITEMS,
-  getStoredUserXp,
-  setStoredUserXp,
-  getStoredRedeemedRewardIds,
-  setStoredRedeemedRewardIds,
 } from '@/data/rewardsData';
 
 function MyHubContent() {
@@ -103,7 +100,12 @@ function MyHubContent() {
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const [myChallenges, setMyChallenges] = useState<ChallengeQuest[]>([]);
+  const [storedChallenges, setMyChallenges] = useState<ChallengeQuest[]>([]);
+  // Points, redeemed rewards and the progress of challenges that count visits come from the account (GET /api/rewards)
+  const myRewards = useMyRewards(isLoggedIn);
+  const userXp = myRewards.balance;
+  const redeemedRewardIds = myRewards.redeemedRewardIds;
+  const myChallenges = useMemo(() => withRealProgress(storedChallenges, myRewards.quests), [storedChallenges, myRewards.quests]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Travel Scrapbook state & quick filters
@@ -111,9 +113,6 @@ function MyHubContent() {
   const [scrapbookSearch, setScrapbookSearch] = useState('');
   const [scrapbookVibeFilter, setScrapbookVibeFilter] = useState<string>('all');
 
-  // User XP & Rewards (Synced with rewardsData)
-  const [userXp, setUserXp] = useState<number>(() => getStoredUserXp());
-  const [redeemedRewardIds, setRedeemedRewardIds] = useState<string[]>([]);
   const [checkedInTicketIds, setCheckedInTicketIds] = useState<string[]>([]);
 
   // Joined Events & Sub-activities
@@ -195,9 +194,6 @@ function MyHubContent() {
         console.error('Error syncing myChallenges:', e);
       }
 
-      // 4. Sync User XP & Redeemed Rewards
-      setUserXp(getStoredUserXp());
-      setRedeemedRewardIds(getStoredRedeemedRewardIds());
 
     } catch (e) {
       console.error('Error syncing localStorage in MyHub:', e);
@@ -633,15 +629,6 @@ function MyHubContent() {
     showToast(`บันทึกสถานะว่าได้เข้าร่วม "${title}" สำเร็จแล้ว`);
   };
 
-  // Helper to persist and update User XP
-  const updateUserXp = (delta: number) => {
-    setUserXp((prev) => {
-      const nextXp = Math.max(0, prev + delta);
-      setStoredUserXp(nextXp);
-      return nextXp;
-    });
-  };
-
   // Helper to persist and update Challenges/Quests
   const updateChallenges = (updater: (prev: ChallengeQuest[]) => ChallengeQuest[]) => {
     setMyChallenges((prev) => {
@@ -660,11 +647,9 @@ function MyHubContent() {
   const handleCheckIn = (ticketId: string) => {
     if (!checkedInTicketIds.includes(ticketId)) {
       setCheckedInTicketIds((prev) => [...prev, ticketId]);
-      updateUserXp(50);
-      showToast('เช็คอินสำเร็จ! คุณได้รับ +50 XP และปลดล็อกความคืบหน้า Badge แล้ว');
+      showToast('ลองเช็กอินแล้ว แต้มจริงจะได้เมื่อโฮสต์เช็กอินให้ที่งาน');
     } else {
       setCheckedInTicketIds((prev) => prev.filter((id) => id !== ticketId));
-      updateUserXp(-50);
       showToast('ยกเลิกการจำลองเช็คอินแล้ว');
     }
   };
@@ -686,8 +671,7 @@ function MyHubContent() {
         return q;
       })
     );
-    updateUserXp(50);
-    showToast(`ยืนยันหลักฐานสำเร็จ! ความคืบหน้าเพิ่มขึ้น +50 XP`);
+    showToast('บันทึกความคืบหน้าแล้ว');
   };
 
   // Helper to copy voucher code

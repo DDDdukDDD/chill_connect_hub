@@ -30,7 +30,6 @@ import { isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp }
 import { FairCategoryRail, NATIONWIDE_FAIR_CATEGORIES } from '@/components/FairCategoryRail';
 import { getFairEventCategory } from '@/data/masterHub';
 import { TopVenuesRail } from '@/components/TopVenuesRail';
-import { FairsDiscoveryHighlights } from '@/components/FairsDiscoveryHighlights';
 import { ALL_THAI_PROVINCES } from '@/data/spotsData';
 
 import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
@@ -652,10 +651,6 @@ function FairsPageContent() {
           </div>
         )}
 
-        {/* Dynamic Fairs Highlights & Moments */}
-        <div className="pt-6 border-t border-slate-200/60">
-          <FairsDiscoveryHighlights />
-        </div>
 
       </main>
 

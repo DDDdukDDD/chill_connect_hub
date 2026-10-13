@@ -793,3 +793,97 @@ New placeholder content in a page must be behind `eventOrigin(...) === 'sample'`
 
 **Still open:** `components/EventDetailModal.tsx`, `app/events/[id]/page.tsx`, `app/community/page.tsx` and `app/myhub/page.tsx` still read those browser lists; they were not checked for the same fault.
 
+
+### BE-035 · `/journey` rebuilt as the proposed simpler homepage (owner request, for comparison with `/`)
+- **From → To:** Claude Code → Frontend
+- **Date / branch:** 2026-10-11 · `claude` (not committed yet)
+- **What changed / what is needed:** The owner compared three layouts for the homepage and chose "one row per pillar", built at `/journey` so it can be compared with `/`. `/` is untouched.
+  - `app/journey/page.tsx`: no longer uses `HeroSection`. One still photo with the question, one search box, and a "surprise me" button; three links to `/spots`, `/community`, `/fairs` with live counts; then one row each for places (ranked like the homepage), meetups with seats left (soonest first) and fairs (soonest first). The search filters the three rows on the page and "ดูทั้งหมด" carries the words to the pillar page as `?q=`. Member privileges, challenges and moments stay. The "why" block is three short lines that are true today plus a link to `/safety`; the sample totals ("10,000+") are not shown here. Rows show skeletons until data arrives, so the old 137-place flash is gone on this page.
+  - For first-time visitors (same day): the headline stays "วันหยุดนี้ ไปไหนดี" and the line under it says going alone or finding company are both fine (the owner's point: most visitors are not looking for new friends, so meeting people is offered, not required), a three-step "how it works" strip sits under the three links, and the first row takes one place per vibe in turn (cafes, nature and art first; places open for meet-ups first) instead of the plain popularity order. A search still uses the popularity order.
+  - `components/JourneySectionCarousel.tsx`: shows the `subtitle` prop; "ดูทั้งหมด" is a text link instead of a black button.
+  - `components/JourneyMomentCard.tsx`: text below 11px raised to 11px.
+  - Removed from this page: emoji in card labels and toasts, the made-up 4.8 rating for places with no rating, the "ไม่ระบุราคา" label on fairs.
+- **Action for the other side:** None. If the owner picks this layout for `/`, two written rules change (homepage modes in `DESIGN_SYSTEM.md` section 8, and the three independent section filters in `AGENTS.md` section 2).
+- **Status:** Open (waiting for the owner's comparison)
+
+### BE-036 · Classic homepage `/`: highlights row replaces the trending carousel; three smaller changes (owner request)
+- **From → To:** Claude Code → Frontend
+- **Date / branch:** 2026-10-12 · `claude` (not committed yet)
+- **What changed / what is needed:** The owner keeps Classic `/` and is improving it step by step. Done so far:
+  - `components/TrendingCarousel.tsx` keeps its card and behavior (the owner tried a large photo card and preferred the old one); only the way items are picked changed. The rules are in the new `lib/highlights.ts`. The row shows eight items, one from each pillar in turn (a single pillar when a pillar tab is active); it now takes `spots`, `excludeIds`, `favoriteSpots` and `toggleFavoriteSpot`, and the heart on a place saves it as a place. The first line of each card states why it was picked (in place of the host name), from real data: community "เหลือ N ที่" (3 seats or fewer), "วันนี้ / พรุ่งนี้ / อีก N วัน" (within 14 days) or "เปิดใหม่"; fairs "กำลังจัดอยู่", "วันสุดท้าย" or "เริ่มในอีก N วัน" (within 14 days); places "รีวิว 4.x" (4.5 and 50 reviews or more) or "ยอดนิยม" (source page views), one place per province. The first five items of each section below are picked last, so the row does not repeat them. Fairs whose title reads as a trade show or congress are picked last. Titles are in Thai.
+  - `lib/priceUtils.ts`: new `hasKnownPrice()`. Cards in `EventGrid`, `SurpriseModal` and `TrendingCarousel` show no price badge when the price is empty or "ไม่ระบุราคา". Detail pages are unchanged.
+  - `app/page.tsx`: the 01 to 05 number chips beside the section headings are removed (04 and 05 were in `CommunityChallengeBar.tsx` and `CommunityMomentsStrip.tsx`); the member privileges strip moved from above the three sections to below them (before challenges).
+- **Action for the other side:** None.
+- **Status:** Open (more changes to `/` are being agreed with the owner)
+
+
+### BE-037 · `/journey`: Chill / Connect switch and ready-made day plans (owner request, for comparison with `/`)
+- **From → To:** Claude Code → Frontend
+- **Date / branch:** 2026-10-12 · `claude` (not committed yet)
+- **What changed / what is needed:** The owner asked for a homepage idea that is our own instead of following other sites, built on `/journey` so it can be compared with `/`. `/` is untouched by this note.
+  - `app/journey/page.tsx`: a two-option switch under the three links, "Chill · เวลาของตัวเอง" (default) and "Connect · ออกไปเจอคน". It reorders the three rows (Chill: places, fairs, meetups; Connect: meetups, places, fairs) and changes the meetup row's heading; no row is hidden. In Connect the place row shows places open for meet-ups when at least three exist. The "surprise me" button moved from the hero photo to beside the switch, and in Connect it draws from meetups. The three-step "how it works" strip is replaced by the switch.
+  - New `lib/holidayPlans.ts` and `components/JourneyHolidayPlans.tsx`: up to three day plans, each a date and province with three stops (a place, plus a meetup and/or a fair in the same province on the same day, within 14 days). One plan per province first; weekend days first; trade shows are left out; online events are left out. Events name Bangkok "กรุงเทพมหานคร" and places "กรุงเทพฯ", so the two are matched in this file. Hidden while a search is active.
+  - `lib/highlights.ts` now exports `hasExactDate` and `isTradeEvent` (used by the plans).
+- **Action for the other side:** None.
+- **Status:** Open (waiting for the owner's comparison)
+
+
+### BE-038 · `/journey` rebuilt from the Classic parts, ordered as one story; the earlier version moved to `/journey-simple` (owner request)
+- **From → To:** Claude Code → Frontend
+- **Date / branch:** 2026-10-13 · `claude` (not committed yet)
+- **What changed / what is needed:** The owner asked to start `/journey` from the Classic homepage and order it by the product's three questions: where to go, who has been, what you get for going. `/` is untouched by this note.
+  - `app/journey/page.tsx` now uses the Classic components: `HeroSection` (its pillar tabs open `/community`, `/fairs`, `/spots`), `TrendingCarousel`, `EventGrid` and `SpotCard`. Order: hero, a three-step strip that jumps to each part, highlights, moments ("คนที่ไปมาแล้ว"), challenges and member privileges ("ออกไปแล้วได้อะไร"), then one row per pillar in the Classic order with plain headings and a "ดูทั้งหมด" link, then the short "why" block. On phones the three pillar rows scroll sideways. A search shows the three rows first and hides the rest until it is cleared. Trade shows go last in the fairs row.
+  - `app/journey-simple/page.tsx` is a copy of the previous `/journey` (BE-035 and BE-037: one-row layout, Chill / Connect switch, day plans), kept so the owner can still compare it.
+  - `CommunityMomentsStrip` and `CommunityChallengeBar` take an optional `title` for the heading shown with `minimalHeader`; the default text is unchanged.
+- **Action for the other side:** None.
+- **Status:** Open (waiting for the owner's comparison)
+
+
+### BE-039 · Visits link places, events, moments, challenges and points (owner request)
+- **From → To:** Claude Code → Frontend
+- **Date / branch:** 2026-10-13 · `claude` (not committed yet)
+- **What changed / what is needed:** The owner asked for the parts of the product to be connected. A "visit" (a member has been to a place or event, with evidence) is now the link; see `docs/API.md`, "Visits".
+  - New `lib/social/visits.ts`, `lib/social/questProgress.ts`, `app/api/visits/route.ts`. Evidence is read from the stores that already hold it (host check-in, moments tied to a target) plus a new `data/visits.json` (gitignored) for "I have been here" marks with an optional rating.
+  - `ChallengeQuest` has a new optional `rule` (type `QuestRule` in `data/mockData.ts`). Stored seed quests take their rule from the seed once, on load.
+  - New `components/VisitPanel.tsx` ("ใครไปมาแล้ว" and "ไปแล้วได้อะไร", with the "ฉันไปมาแล้ว" button and rating) in the right column of `/spots/[id]` (above Spot Buddy), `/fairs/[id]` and `/community/[id]` (under the schedule or registration card). Headings read "โมเมนต์จากเพื่อนๆ" and "ร่วมแชร์โมเมนต์".
+  - `app/moments/page.tsx` reads `createForType`, so the composer can open tied to a place or a fair.
+  - Owner decisions the same day: the park run quest (`comm-quest-2`) counts only the three parks its title names (`spot-bkk-1`, `osm-w23483299`, `osm-w23487550`); the HYROX quest (`comm-quest-3`) counts four HYROX meetups, so three sample meetups were added to `MOCK_EVENTS` (`comm-hyrox-2` to `comm-hyrox-4`).
+  - Store edits made by hand with the owner's permission (server stopped): `spot-bkk-1` (Benjakitti Forest Park) is published, so the park run quest can be finished; two scraped places that could not be approved because the source gave a wrong pin (`ttd-100859`, `ttd-2479`) got coordinates from OpenStreetMap. They are still drafts, waiting for approval in the review queue.
+- **Not done yet:** cards in lists do not show the proof (the API serves a whole row in one call); My Hub, `/rewards` and `/challenges` still show sample points and progress; the admin quest form has no rule fields (the API accepts them); most sample moments are still not tied to a place or event.
+- **Action for the other side:** None.
+- **Status:** Open
+
+
+### BE-040 · My Hub, rewards and challenges show real points and progress (owner request)
+- **From → To:** Claude Code → Frontend
+- **Date / branch:** 2026-10-13 · `claude` (not committed yet)
+- **What changed / what is needed:** Points were a browser value that started at 650 for everyone. They now come from the account; see `docs/API.md`, "Points and rewards".
+  - New `lib/social/rewardsLedger.ts`, `app/api/rewards/route.ts`, `lib/useMyRewards.ts`.
+  - `app/rewards/page.tsx`: balance and redeemed rewards from the account; redeeming goes through `POST /api/rewards`. No reward is pre-redeemed for a new member any more.
+  - `app/challenges/page.tsx`, `app/myhub/page.tsx`: balance from the account; challenges with a rule show the server's progress; noting progress by hand, the practice check-in and the practice "verify" no longer add points.
+  - `components/VisitPanel.tsx` (BE-039) no longer lists points; its main button is "ร่วมแชร์โมเมนต์", with "ดูทั้งหมด N โมเมนต์" linking to `/moments?targetType=...&targetId=...` when a place has more than three.
+- **Action for the other side:** None.
+- **Status:** Open
+
+
+### BE-041 · Moments and quests modules removed from the bottom of the pillar pages (owner request)
+- **From → To:** Claude Code → Frontend
+- **Date / branch:** 2026-10-13 · `claude` (not committed yet)
+- **What changed / what is needed:** The owner asked to remove the "moments & quests" block under the lists (FE-011), because each place and event page now carries its own moments and challenge link (BE-039). Removed from `/community`, `/fairs`, `/spots` and from the three pillar tabs of `/`. `components/CommunityDiscoveryHighlights.tsx`, `FairsDiscoveryHighlights.tsx` and `SpotsDiscoveryHighlights.tsx` are deleted (nothing else used them). The moments strip and the challenge bar on the "all" tab of `/` are unchanged.
+- **Action for the other side:** None.
+- **Status:** Open
+
+
+### BE-042 · Homepage challenge and moments rows read real data; sample moments tied to places and events (owner request)
+- **From → To:** Claude Code → Frontend
+- **Date / branch:** 2026-10-13 · `claude` (not committed yet)
+- **What changed / what is needed:** The two rows on `/`, `/journey` and `/journey-simple` showed lists typed into the component files. They now read the stores; see `docs/API.md` ("`GET /api/quests`", "Moments").
+  - `components/CommunityChallengeBar.tsx`: the `COMMUNITY_PUBLIC_QUESTS` list and its export are gone. The row shows `GET /api/quests` only, with placeholder cards while loading and one friendly line when there is nothing to show.
+  - The seven quests from that list moved to `MOCK_CHALLENGES` in `data/mockData.ts` with the same ids (`comm-quest-1` to `comm-quest-7`), dates in the current quarter, `badgeCoverImg`, and a visit rule on six of them (the seven-day yoga one has none). The first four seed quests got cover photos. `lib/questLifecycle.ts` (`addNewSeedQuests`) and `lib/db/adapters/jsonAdapter.ts` add new seed quests to an existing store once.
+  - `components/CommunityMomentsStrip.tsx`: reads the 12 newest moments from `GET /api/moments`; the count in the heading is the feed's total. Every card opens `/moments`, as before; the badge shows the place or event name when the moment is tied to one.
+  - `data/mockData.ts`: 17 sample posts are now tied to a real meetup or a published place (20 of 24 in total; 3 stay `general`, 1 is tied to a challenge). `post-1` pointed at meetup `7`, which does not exist; it now points at `comm-fitness-1`. `lib/moments/jsonMomentRepository.ts` brings a store seeded earlier in line on start.
+  - New export `SAMPLE_JOINED_CHALLENGES` (the first four seed quests) for the "joined" practice list a browser starts with on `/challenges` and `/`, so the longer catalog does not make every quest look joined.
+  - `app/challenges/page.tsx`, `app/page.tsx`, `components/HeroSection.tsx`: no longer import the removed list. `/challenges` lists the catalog first, then the four quests still typed into that page.
+- **Not done yet:** `/challenges` still has four quests typed into the page (two of them ended). `post-spot-1` is tied to `spot-bkk-1`, a draft in the store (the page opens from the bundled list, but the place is in no public list). Near-duplicate sample quests are both kept: coffee (`1`, `comm-quest-1`), HYROX (`4`, `comm-quest-3`), digital detox (`3` ended, `comm-quest-5`).
+- **Action for the other side:** None. A dev server that was already running needs a restart to pick up the seed changes.
+- **Status:** Open

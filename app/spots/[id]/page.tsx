@@ -26,6 +26,7 @@ import { renderDescriptionContent } from '@/components/RichTextEditor';
 import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import { SmartSpotPlanCard } from '@/components/SmartSpotPlanCard';
 import { SpotBuddyTrips } from '@/components/SpotBuddyTrips';
+import { VisitPanel } from '@/components/VisitPanel';
 import { NearbyDiningSection } from '@/components/NearbyDiningSection';
 import {
   MapPin,
@@ -982,6 +983,20 @@ export default function SpotDetailPage() {
               </div>
 
             </div>
+
+            {/* Who has been here, and what going earns */}
+            <VisitPanel
+              targetType="spot"
+              targetId={spot.id}
+              title={spot.title}
+              location={spot.title}
+              isLoggedIn={isLoggedIn}
+              onRequireLogin={() => {
+                setMembershipActionTitle('เพื่อบันทึกว่าคุณไปที่นี่มาแล้ว');
+                setIsRequireMembershipOpen(true);
+              }}
+              onShowToast={showToast}
+            />
 
             {/* Spot Buddy: shown only for places staff opened for meet-ups */}
             <SpotBuddyTrips
