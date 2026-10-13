@@ -4,6 +4,9 @@ import { removeStoriesOf } from '@/lib/social/stories';
 import { removeReviewsBy } from '@/lib/social/reviews';
 import { marksOf, removeVisitsBy } from '@/lib/social/visits';
 import { removeRedemptionsBy } from '@/lib/social/rewardsLedger';
+import { joinsOf, removeQuestJoinsBy } from '@/lib/social/questJoins';
+import { removeVouchersBy, vouchersOf } from '@/lib/social/questVouchers';
+import { removeFinishesBy } from '@/lib/social/questFinishes';
 import { removeContentReportsBy } from '@/lib/social/contentReports';
 import { removeFairGroupsOf } from '@/lib/social/fairGroups';
 import { removeChatMessagesBy } from '@/lib/social/chat';
@@ -21,7 +24,7 @@ export async function GET(request: Request) {
   const { items: ownMoments } = await momentRepository.query({ statuses: ['published', 'hidden'], authorId: member.id, sort: 'newest', page: 1, limit: 10_000 });
   const moments = ownMoments.map((m) => ({ id: m.id, caption: m.caption, images: m.images, location: m.location, status: m.status, createdAt: m.createdAt, likes: m.likedBy.length, comments: m.comments.length }));
   return NextResponse.json(
-    { success: true, exportedAt: new Date().toISOString(), account: exportableAccount(member, { forMember: true }), profile: toPublicMember(member), moments, visits: marksOf(member.id) },
+    { success: true, exportedAt: new Date().toISOString(), account: exportableAccount(member, { forMember: true }), profile: toPublicMember(member), moments, visits: marksOf(member.id), joinedChallenges: joinsOf(member.id), challengeRewardCodes: vouchersOf(member.id) },
     { headers: { 'Content-Disposition': `attachment; filename="chill-connect-account-${member.id}.json"`, 'Cache-Control': 'no-store' } }
   );
 }
@@ -40,6 +43,9 @@ export async function DELETE(request: Request) {
   await removeReviewsBy(member.id);
   await removeVisitsBy(member.id);
   await removeRedemptionsBy(member.id);
+  await removeQuestJoinsBy(member.id);
+  await removeVouchersBy(member.id);
+  await removeFinishesBy(member.id);
   await removeContentReportsBy(member.id);
   await removeFairGroupsOf(member.id);
   await removeChatMessagesBy(member.id);

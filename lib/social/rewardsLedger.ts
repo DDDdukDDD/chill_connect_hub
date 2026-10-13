@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { REWARD_SHOP_ITEMS } from '@/data/rewardsData';
 import { createJsonStore } from './jsonStore';
+import { joinedQuestIdsOf } from './questJoins';
+import { finishesOf, settleFinishes } from './questFinishes';
 import { progressOf } from './questProgress';
 
 /**
@@ -29,11 +31,16 @@ const redemptionsOf = (memberId: string) => store.read().filter((r) => r.memberI
 /** Points, challenge progress and redeemed rewards of one member */
 export async function rewardsOf(memberId: string) {
   const progress = await progressOf(memberId);
+  // A challenge finished since the last read is recorded now: notification, reward code, badge
+  await settleFinishes(memberId, progress.quests);
   const redemptions = redemptionsOf(memberId);
   const spent = redemptions.reduce((sum, r) => sum + r.cost, 0);
   return {
     points: { ...progress.points, earned: progress.points.total, spent, balance: Math.max(0, progress.points.total - spent) },
     quests: progress.quests,
+    joinedQuestIds: joinedQuestIdsOf(memberId),
+    /** Challenges the member finished: the badge, and the code when a partner gives the reward */
+    finished: await finishesOf(memberId),
     redeemedRewardIds: redemptions.map((r) => r.rewardId),
     redemptions: redemptions.map(({ rewardId, cost, createdAt }) => ({ rewardId, cost, createdAt })),
   };
@@ -46,7 +53,7 @@ export async function redeemReward(memberId: string, rewardId: string) {
   const current = await rewardsOf(memberId);
   if (current.redeemedRewardIds.includes(rewardId)) throw new RewardError('คุณแลกของรางวัลนี้ไปแล้ว', 409);
   if (current.points.balance < reward.costXp) {
-    throw new RewardError(`แต้มไม่พอ ต้องการอีก ${(reward.costXp - current.points.balance).toLocaleString()} แต้ม`);
+    throw new RewardError(`XP ไม่พอ ต้องการอีก ${(reward.costXp - current.points.balance).toLocaleString()} XP`);
   }
   const saved: Redemption = { id: `red_${randomUUID()}`, memberId, rewardId, cost: reward.costXp, createdAt: new Date().toISOString() };
   await store.update((items) => [saved, ...items]);

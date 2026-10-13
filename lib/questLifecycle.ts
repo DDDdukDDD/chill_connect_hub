@@ -102,6 +102,33 @@ export function addNewSeedQuests(
   };
 }
 
+/** Raise this when the texts or rule wording of the seed quests change, so stores pick the change up once */
+export const SEED_QUEST_TEXT_VERSION = 4;
+
+/** Seed quests whose title changed: id -> the title stores may still hold */
+const RENAMED_SEED_QUESTS: Record<string, string> = { '1': 'Cafe Hunter 5: ตามรอย 5 คาเฟ่ Specialty ย่านอารีย์-ทองหล่อ' };
+
+/**
+ * Brings the stored copies of the seed quests in line with the seed's wording: the goal, the description,
+ * and the spelling of a rule's title words (a rule that staff changed in any other way is left alone).
+ * Runs once per SEED_QUEST_TEXT_VERSION; quests staff created are never touched.
+ */
+export function refreshSeedQuestTexts(
+  stored: ChallengeQuest[],
+  seeds: ChallengeQuest[],
+  storedVersion: number | undefined
+): { quests: ChallengeQuest[]; changed: boolean } {
+  if ((storedVersion ?? 1) >= SEED_QUEST_TEXT_VERSION) return { quests: stored, changed: false };
+  const seedById = new Map(seeds.map((seed) => [seed.id, seed]));
+  const sameRule = (a: unknown, b: unknown) => JSON.stringify(a ?? null).toLowerCase() === JSON.stringify(b ?? null).toLowerCase();
+  const quests = stored.map((quest) => {
+    const seed = seedById.get(quest.id);
+    if (!seed || (quest.title !== seed.title && quest.title !== RENAMED_SEED_QUESTS[quest.id])) return quest;
+    return { ...quest, title: seed.title, category: seed.category, targetGoal: seed.targetGoal, objective: seed.objective, rule: sameRule(quest.rule, seed.rule) ? seed.rule : quest.rule };
+  });
+  return { quests, changed: true };
+}
+
 /**
  * One-time upgrade: a stored seed quest without a rule takes the rule of the current seed with the same id and title.
  * Quests that already have a rule, and quests staff created, are left untouched.

@@ -241,7 +241,7 @@ export function buildSeedMasterData(now: string = new Date().toISOString()): Mas
       iconKey: iconKeyOf(c.icon), colorKey: colorKeyOf(c.colorScheme.iconBg),
     })),
     questCategories: MASTER_QUEST_CATEGORIES.map((c, i) => ({
-      ...base(c.id, i), name: c.name, nameEn: c.id, description: '', keywords: [], iconKey: 'Sparkles', colorKey: 'purple' as ColorKey,
+      ...base(c.id, i), name: c.name, nameEn: c.id, description: c.desc, keywords: [], iconKey: c.iconKey, colorKey: 'purple' as ColorKey,
     })),
     venues: MASTER_VENUE_OPTIONS.map((v, i) => ({
       ...base(v.id, i), name: v.label, venueTag: v.tag, province: VENUE_PROVINCES[v.id] ?? 'กรุงเทพฯ',

@@ -2,6 +2,7 @@ import type { ChallengeQuest, EventItem, QuestRule } from '@/data/mockData';
 import type { LifestyleSpotItem } from '@/data/spotsData';
 import { db } from '../db';
 import { parseQuestDate } from '../questLifecycle';
+import { joinedQuestIdsOf } from './questJoins';
 import { type Visit, type VisitEvidence, type VisitTargetType, isVisitTargetType, targetKey, visitsOf } from './visits';
 
 /**
@@ -63,6 +64,15 @@ export function parseQuestRule(input: unknown): QuestRule | null {
   };
 }
 
+/**
+ * The weakest evidence that counts for a challenge. A partner brand gives something real, so pressing
+ * "I have been here" (which nothing checks) is not enough for its challenges, whatever their rule says.
+ */
+export function minEvidenceOf(quest: Pick<ChallengeQuest, 'rule' | 'brandReward'>): VisitEvidence {
+  const asked = quest.rule?.minEvidence ?? 'marked';
+  return quest.brandReward?.type === 'brand_partner' && EVIDENCE_RANK[asked] < EVIDENCE_RANK.moment ? 'moment' : asked;
+}
+
 /** Every filter the rule gives must match; a rule with only targetTypes counts any target of those types */
 export function ruleMatchesTarget(rule: QuestRule, target: RuleTarget): boolean {
   if (!rule.targetTypes.includes(target.targetType)) return false;
@@ -106,7 +116,7 @@ export async function rewardsForTargets(targets: { targetType: VisitTargetType; 
             rewardPoints: q.rewardPoints ?? 0,
             rewardTitle: q.brandReward?.title,
             count: q.rule.count,
-            minEvidence: q.rule.minEvidence ?? 'marked',
+            minEvidence: minEvidenceOf(q),
           }))
       : [];
   }
@@ -119,7 +129,84 @@ export interface QuestProgress {
   current: number;
   total: number;
   completed: boolean;
+  /** The member joined it; only then is the reward theirs */
+  joined: boolean;
   rewardPoints: number;
+}
+
+/** Whether one visit counts toward a challenge: the target matches the rule, the evidence is strong enough, and it happened while the challenge runs */
+function visitCounts(quest: ChallengeQuest & { rule: QuestRule }, visit: Visit, target: RuleTarget | null | undefined): boolean {
+  if (!target || !ruleMatchesTarget(quest.rule, target)) return false;
+  if (EVIDENCE_RANK[visit.evidence] < EVIDENCE_RANK[minEvidenceOf(quest)]) return false;
+  const at = Date.parse(visit.at);
+  const start = parseQuestDate(quest.startDate, false);
+  const end = parseQuestDate(quest.endDate, true);
+  return (start === null || at >= start) && (end === null || at <= end);
+}
+
+/** A place or event a challenge counts, in the fields a list row needs */
+export interface QuestTarget {
+  targetType: VisitTargetType;
+  id: string;
+  title: string;
+  image?: string;
+  /** Province for a place; date for an event */
+  detail?: string;
+  href: string;
+  /** The signed-in member already has a visit here that counts */
+  visited: boolean;
+}
+
+const TARGET_PATHS: Record<VisitTargetType, string> = { spot: '/spots', community: '/community', fair: '/fairs' };
+
+async function allPages<T>(load: (page: number) => Promise<{ items: T[]; totalPages: number }>): Promise<T[]> {
+  const first = await load(1);
+  const items = [...first.items];
+  for (let page = 2; page <= first.totalPages; page += 1) items.push(...(await load(page)).items);
+  return items;
+}
+
+/**
+ * Where a member can go for a challenge: published places and events still to come that match its rule.
+ * Places the member already counted come first; `total` is how many match in all.
+ */
+export async function targetsOfQuest(quest: ChallengeQuest, memberId: string | null, limit = 6): Promise<{ targets: QuestTarget[]; total: number; browseHref: string } | null> {
+  const rule = quest.rule;
+  if (!rule) return null;
+  const ruled = quest as ChallengeQuest & { rule: QuestRule };
+  const found: Omit<QuestTarget, 'visited'>[] = [];
+
+  if (rule.targetTypes.includes('spot')) {
+    const spots = await allPages((page) => db.findSpots({ page, limit: 100 }));
+    for (const spot of spots) {
+      if (spot.publicationStatus === 'draft' || !ruleMatchesTarget(rule, spotTarget(spot))) continue;
+      found.push({ targetType: 'spot', id: spot.id, title: spot.title, image: spot.image, detail: spot.province, href: `/spots/${encodeURIComponent(spot.id)}` });
+    }
+  }
+  for (const eventType of ['community', 'public_venue'] as const) {
+    const targetType: VisitTargetType = eventType === 'community' ? 'community' : 'fair';
+    if (!rule.targetTypes.includes(targetType)) continue;
+    const events = await allPages((page) => db.findEvents({ eventType, page, limit: 100 }));
+    for (const event of events) {
+      if (!ruleMatchesTarget(rule, eventTarget(event))) continue;
+      found.push({ targetType, id: event.id, title: event.title, image: event.image, detail: event.date, href: `${TARGET_PATHS[targetType]}/${encodeURIComponent(event.id)}` });
+    }
+  }
+
+  const visited = new Set<string>();
+  if (memberId) {
+    for (const visit of await visitsOf(memberId)) {
+      const target = await loadRuleTarget(visit.targetType, visit.targetId);
+      if (visitCounts(ruled, visit, target)) visited.add(targetKey(visit.targetType, visit.targetId));
+    }
+  }
+  // A place named by the rule keeps the rule's order; places already counted come first
+  const order = new Map((rule.targetIds ?? []).map((id, index) => [id, index]));
+  const targets = found
+    .map((target) => ({ ...target, visited: visited.has(targetKey(target.targetType, target.id)) }))
+    .sort((a, b) => Number(b.visited) - Number(a.visited) || (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0) || Number(Boolean(b.image)) - Number(Boolean(a.image)));
+
+  return { targets: targets.slice(0, limit), total: targets.length, browseHref: TARGET_PATHS[rule.targetTypes[0]] };
 }
 
 /** A member's visits, their progress in every challenge that counts visits, and their points */
@@ -130,25 +217,18 @@ export async function progressOf(memberId: string) {
     targets.set(targetKey(visit.targetType, visit.targetId), await loadRuleTarget(visit.targetType, visit.targetId));
   }
 
-  const counts = (quest: ChallengeQuest & { rule: QuestRule }, visit: Visit) => {
-    const target = targets.get(targetKey(visit.targetType, visit.targetId));
-    if (!target || !ruleMatchesTarget(quest.rule, target)) return false;
-    if (EVIDENCE_RANK[visit.evidence] < EVIDENCE_RANK[quest.rule.minEvidence ?? 'marked']) return false;
-    // Only visits made while the challenge runs
-    const at = Date.parse(visit.at);
-    const start = parseQuestDate(quest.startDate, false);
-    const end = parseQuestDate(quest.endDate, true);
-    return (start === null || at >= start) && (end === null || at <= end);
-  };
+  const counts = (quest: ChallengeQuest & { rule: QuestRule }, visit: Visit) =>
+    visitCounts(quest, visit, targets.get(targetKey(visit.targetType, visit.targetId)));
 
+  const joined = new Set(joinedQuestIdsOf(memberId));
   const quests: QuestProgress[] = (await questsWithRules()).map((quest) => {
     const current = Math.min(quest.rule.count, visits.filter((visit) => counts(quest, visit)).length);
-    return { questId: quest.id, title: quest.title, current, total: quest.rule.count, completed: current >= quest.rule.count, rewardPoints: quest.rewardPoints ?? 0 };
+    return { questId: quest.id, title: quest.title, current, total: quest.rule.count, completed: current >= quest.rule.count, joined: joined.has(quest.id), rewardPoints: quest.rewardPoints ?? 0 };
   });
 
   // A visit to something that no longer exists earns nothing
   const visitPoints = visits.reduce((sum, visit) => sum + (targets.get(targetKey(visit.targetType, visit.targetId)) ? VISIT_POINTS[visit.evidence] : 0), 0);
-  const questPoints = quests.reduce((sum, quest) => sum + (quest.completed ? quest.rewardPoints : 0), 0);
+  const questPoints = quests.reduce((sum, quest) => sum + (quest.completed && quest.joined ? quest.rewardPoints : 0), 0);
 
   return { visits, quests, points: { total: visitPoints + questPoints, fromVisits: visitPoints, fromQuests: questPoints } };
 }

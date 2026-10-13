@@ -4,6 +4,7 @@ import { parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { isRateLimited } from '@/lib/rateLimit';
 import { VISIT_POINTS, progressOf, rewardsForTargets } from '@/lib/social/questProgress';
+import { rewardsOf } from '@/lib/social/rewardsLedger';
 import { type VisitTargetType, isVisitTargetType, markVisit, markedVisitOf, marksOf, socialProofFor, targetKey, unmarkVisit } from '@/lib/social/visits';
 
 const MAX_TARGETS = 40;
@@ -87,6 +88,7 @@ export async function POST(request: Request) {
         if (!(rating >= 1 && rating <= 5)) return NextResponse.json({ success: false, message: 'ให้คะแนน 1 ถึง 5 ดาว' }, { status: 400 });
       }
       await markVisit(member.id, targetType, targetId, rating);
+      await rewardsOf(member.id);
     } else {
       return NextResponse.json({ success: false, message: 'Unknown action' }, { status: 400 });
     }

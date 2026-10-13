@@ -1,4 +1,6 @@
 import type { ChallengeQuest } from '@/data/mockData';
+import { questCategoryId } from '@/data/masterHub';
+import { getMasterData } from '../masterDataStore';
 import type { LifestyleSpotItem } from '@/data/spotsData';
 import { isThaiCoordinate } from '../contentQuality';
 import { formatThaiDateBE } from '../dateUtils';
@@ -17,7 +19,7 @@ import type { Member } from './types';
  * Points, badges' artwork and partner rewards are never set by a member.
  */
 const MAX_WAITING = 5;
-const QUEST_CATEGORIES = new Set(['heal', 'move', 'chill', 'learn']);
+const isQuestCategory = (id: string) => getMasterData().questCategories.some((category) => category.active && category.id === id);
 const SPOT_CATEGORIES = new Set<string>(SPOT_CATEGORY_OPTIONS.map((option) => option.id));
 const ISO_DAY = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
 
@@ -119,9 +121,9 @@ export async function proposeQuest(member: Member, input: Record<string, unknown
   const badgeLabel = text(input.badgeLabel, 40);
   const steps = list(input.steps, 8, 160);
   const total = Math.floor(Number(input.total));
-  const category = text(input.category, 10);
+  const category = questCategoryId(text(input.category, 40));
   if (title.length < 5) throw new MemberAuthError('ชื่อชาเลนจ์ต้องมีอย่างน้อย 5 ตัวอักษร', 400);
-  if (!QUEST_CATEGORIES.has(category)) throw new MemberAuthError('กรุณาเลือกหมวดของชาเลนจ์', 400);
+  if (!isQuestCategory(category)) throw new MemberAuthError('กรุณาเลือกหมวดของชาเลนจ์', 400);
   if (objective.length < 15) throw new MemberAuthError('อธิบายเป้าหมายอย่างน้อย 15 ตัวอักษร', 400);
   if (steps.length === 0) throw new MemberAuthError('ใส่ขั้นตอนอย่างน้อย 1 ข้อ', 400);
   if (!Number.isFinite(total) || total < 1 || total > 100) throw new MemberAuthError('จำนวนครั้งที่ต้องทำต้องอยู่ระหว่าง 1 ถึง 100', 400);

@@ -7,7 +7,7 @@ import {
   MasterCategory, MasterCollection, MasterData, MasterEntry, MasterFeaturedGroup, MasterProvince, MasterVenue,
   MasterZone, REGIONS, slugifyId, VENUE_TAGS,
 } from './masterData';
-import { MASTER_77_PROVINCES } from '@/data/masterHub';
+import { LEGACY_QUEST_CATEGORIES, MASTER_77_PROVINCES } from '@/data/masterHub';
 
 /**
  * Server-side store for admin-editable master data.
@@ -28,7 +28,8 @@ function withSeedDefaults(stored: Partial<MasterData>): MasterData {
     const storedList = (Array.isArray(stored[key]) ? stored[key] : []) as MasterEntry[];
     const ids = new Set(storedList.map((entry) => entry.id));
     const missing = (seed[key] as MasterEntry[]).filter((entry) => !ids.has(entry.id));
-    (merged as unknown as Record<string, MasterEntry[]>)[key] = [...storedList, ...missing];
+    const kept = key === 'questCategories' ? storedList.filter((entry) => !(entry.builtIn && entry.id in LEGACY_QUEST_CATEGORIES)) : storedList;
+    (merged as unknown as Record<string, MasterEntry[]>)[key] = [...kept, ...missing];
   }
   return merged;
 }
@@ -46,7 +47,9 @@ export function getMasterData(): MasterData {
   const stored = (IS_SERVERLESS ? readFile(WRITE_FILE) : null) ?? readFile(BUNDLED_FILE);
   const data = withSeedDefaults(stored ?? {});
   globalForMaster._cchMasterData = data;
-  if (!stored) save(data); // first run: write the seed so the file can be committed
+  const storedQuestCategories = (stored?.questCategories ?? []).map((entry) => entry.id).join();
+  // first run, or the built-in challenge categories changed: write the file so it can be committed
+  if (!stored || storedQuestCategories !== data.questCategories.map((entry) => entry.id).join()) save(data);
   return data;
 }
 
