@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-04T16:34:08.380Z",
+  "lastUpdated": "2026-10-13T04:21:57.889Z",
   "spots": [
     {
       "id": "ttd-2164",
@@ -5658,7 +5658,8 @@
       "sourceUrl": "https://th.wikipedia.org/wiki/%E0%B8%AA%E0%B8%A7%E0%B8%99%E0%B8%A5%E0%B8%B8%E0%B8%A1%E0%B8%9E%E0%B8%B4%E0%B8%99%E0%B8%B5",
       "contact": {
         "website": "http://203.155.220.217/office/ppdd/publicpark/english/mainpark/E_Lumpini.html"
-      }
+      },
+      "meetupAllowed": true
     },
     {
       "id": "osm-w23486019",
@@ -42584,12 +42585,12 @@
         "ร้านขายสินค้าที่ระลึก",
         "มัคคุเทศก์ท้องถิ่น"
       ],
-      "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=18.341448043535117,18.341448043535117",
+      "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=18.3408959,98.0796402",
       "rating": 0,
       "reviewsCount": 0,
-      "latitude": 18.341448043535117,
-      "longitude": 18.341448043535117,
-      "publicationStatus": "draft",
+      "latitude": 18.3408959,
+      "longitude": 98.0796402,
+      "publicationStatus": "published",
       "sourceName": "กรมการท่องเที่ยว (Thailand Tourism Directory)",
       "sourceUrl": "https://www.thailandtourismdirectory.go.th/attraction/100859",
       "contact": {
@@ -65626,12 +65627,12 @@
         "โบราณสถาน"
       ],
       "facilities": [],
-      "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=-1.131702,100.26311666831256",
+      "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=15.8691649,100.2632654",
       "rating": 0,
       "reviewsCount": 0,
-      "latitude": -1.131702,
-      "longitude": 100.26311666831256,
-      "publicationStatus": "draft",
+      "latitude": 15.8691649,
+      "longitude": 100.2632654,
+      "publicationStatus": "published",
       "sourceName": "กรมการท่องเที่ยว (Thailand Tourism Directory)",
       "sourceUrl": "https://www.thailandtourismdirectory.go.th/attraction/2479",
       "contact": {
@@ -90266,7 +90267,7 @@
           "note": "มือใหม่หรือมือโปรก็มาได้ พกกล้องอะไรมาก็ได้ค่ะ"
         }
       ],
-      "publicationStatus": "draft"
+      "publicationStatus": "published"
     },
     {
       "id": "spot-bkk-2",
@@ -97081,7 +97082,18 @@
         "voucherCodePrefix": "ARI-BREW-",
         "exclusiveNotice": "สิทธิ์เฉพาะหน้าร้าน Ari Specialty Coffee Club ทุกสาขาเท่านั้น",
         "terms": "แสดง QR Code หน้าร้านก่อนสั่งเครื่องดื่ม จำกัด 1 สิทธิ์/ท่าน มีอายุ 30 วันหลังพิชิตภารกิจ"
-      }
+      },
+      "rule": {
+        "targetTypes": [
+          "spot"
+        ],
+        "categories": [
+          "cafe"
+        ],
+        "count": 5,
+        "minEvidence": "moment"
+      },
+      "badgeCoverImg": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=600&q=80"
     },
     {
       "id": "2",
@@ -97114,7 +97126,8 @@
         "partnerName": "Chill & Connect Hub",
         "hubRewardNote": "รับแต้ม Boosted XP สำหรับยกระดับเลเวลบัญชี และนำแต้มไปเลือกแลกของรางวัลในศูนย์กลาง (/rewards)",
         "terms": "นำแต้ม XP ที่ได้รับไปแลกรับสิทธิ์ที่หน้าศูนย์ของรางวัล (/rewards)"
-      }
+      },
+      "badgeCoverImg": "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=600&q=80"
     },
     {
       "id": "3",
@@ -97147,7 +97160,15 @@
         "partnerName": "Chill & Connect Hub",
         "hubRewardNote": "รับแต้มพิเศษอัปเลเวลโปรไฟล์ พร้อมสิทธิ์เลือกแลกเซ็ตชาหรือเครื่องดื่มฟรีในคลังของรางวัลกลาง",
         "terms": "นำแต้ม XP ที่ได้รับไปแลกรับสิทธิ์ที่หน้าศูนย์ของรางวัล (/rewards)"
-      }
+      },
+      "rule": {
+        "targetTypes": [
+          "community"
+        ],
+        "count": 1,
+        "minEvidence": "checkin"
+      },
+      "badgeCoverImg": "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=600&q=80"
     },
     {
       "id": "4",
@@ -97181,8 +97202,305 @@
         "voucherCodePrefix": "HYROX-GEAR-",
         "exclusiveNotice": "สิทธิ์เฉพาะช่องทาง Official Store ของ HYROX Thailand เท่านั้น",
         "terms": "กรอกรหัสส่วนลดตอน Checkout หรือแสดงบาร์โค้ดที่ Pop-up Store"
-      }
+      },
+      "rule": {
+        "targetTypes": [
+          "community"
+        ],
+        "keywords": [
+          "hyrox"
+        ],
+        "count": 1,
+        "minEvidence": "checkin"
+      },
+      "badgeCoverImg": "/event-hyrox.png"
+    },
+    {
+      "id": "comm-quest-1",
+      "rule": {
+        "targetTypes": [
+          "spot"
+        ],
+        "categories": [
+          "cafe"
+        ],
+        "count": 3,
+        "minEvidence": "moment"
+      },
+      "title": "Bangkok Coffee Trail: ตะลุย 3 คาเฟ่อารีย์",
+      "badgeCoverImg": "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80",
+      "iconName": "Coffee",
+      "category": "chill",
+      "badgeLabel": "Coffee Explorer",
+      "badgeIcon": "☕",
+      "completedCountInfo": "0/3 ร้าน",
+      "progressPercent": 0,
+      "current": "0",
+      "total": "3",
+      "visibility": "public",
+      "creatorName": "Admin ทีมงาน Hub",
+      "creatorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80",
+      "participantsCount": 235,
+      "rewardPoints": 300,
+      "isOfficial": true,
+      "targetGoal": "เช็คอินคาเฟ่พาร์ทเนอร์ครบ 3 ร้านใน 14 วัน พร้อมถ่ายรูปแก้วกาแฟลง Moments",
+      "objective": "สนับสนุนร้านกาแฟ Specialty ในย่านอารีย์ และสร้างแรงบันดาลใจให้เพื่อนๆ ออกไปสัมผัสบรรยากาศคาเฟ่คราฟต์",
+      "steps": [
+        "เลือกร้านกาแฟพาร์ทเนอร์ย่านอารีย์ในระบบ",
+        "สั่งเครื่องดื่มและถ่ายภาพเช็คอินโมเมนต์",
+        "สะสมครบ 3 ร้านเพื่อรับเหรียญและคะแนน XP"
+      ],
+      "verificationMethod": "📸 ถ่ายรูปภาพแก้วกาแฟหรือหน้าร้านคู่กับการเช็คอิน GPS",
+      "rewardsText": "🏅 เหรียญเกียรติยศ \"Coffee Explorer\" บนหน้าโปรไฟล์ + ⚡ 300 XP",
+      "startDate": "1 ต.ค. 2569",
+      "endDate": "31 ธ.ค. 2569"
+    },
+    {
+      "id": "comm-quest-2",
+      "rule": {
+        "targetTypes": [
+          "spot"
+        ],
+        "targetIds": [
+          "spot-bkk-1",
+          "osm-w23483299",
+          "osm-w23487550"
+        ],
+        "count": 3
+      },
+      "title": "BMA Park Run: วิ่งสะสม 3 สวนสาธารณะ",
+      "badgeCoverImg": "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=600&q=80",
+      "iconName": "Footprints",
+      "category": "move",
+      "badgeLabel": "BMA Park Champion",
+      "badgeIcon": "🏃‍♂️",
+      "completedCountInfo": "0/3 สวน",
+      "progressPercent": 0,
+      "current": "0",
+      "total": "3",
+      "visibility": "public",
+      "creatorName": "Admin ทีมงาน Hub",
+      "creatorAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80",
+      "participantsCount": 310,
+      "rewardPoints": 350,
+      "isOfficial": true,
+      "targetGoal": "วิ่งสะสมระยะทางครบ 3 สวนสาธารณะ กทม. (สวนเบญฯ, สวนลุมฯ, สวนรถไฟ)",
+      "objective": "กระตุ้นการออกกำลังกายกลางแจ้ง สูดอากาศบริสุทธิ์ในสวนสาธารณะ และสร้างสุขภาพที่แข็งแรง",
+      "steps": [
+        "ไปวิ่งออกกำลังกาย ณ สวนสาธารณะที่ร่วมรายการ",
+        "กดเช็คอินพิกัด GPS ผ่านแอปเมื่อเริ่มหรือจบการวิ่ง",
+        "วิ่งครบทั้ง 3 สวนเพื่อปลดล็อกเหรียญ"
+      ],
+      "verificationMethod": "📍 ระบบตรวจสอบพิกัด GPS อัตโนมัติในรัศมีสวนสาธารณะ",
+      "rewardsText": "🏅 เหรียญตรา \"BMA Park Champion\" สีทอง + ⚡ 350 XP",
+      "startDate": "1 ต.ค. 2569",
+      "endDate": "31 ธ.ค. 2569"
+    },
+    {
+      "id": "comm-quest-3",
+      "rule": {
+        "targetTypes": [
+          "community"
+        ],
+        "keywords": [
+          "hyrox"
+        ],
+        "count": 4,
+        "minEvidence": "checkin"
+      },
+      "title": "HYROX 10K Running & Workout Prep",
+      "badgeCoverImg": "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=600&q=80",
+      "iconName": "Flame",
+      "category": "move",
+      "badgeLabel": "HYROX Warrior",
+      "badgeIcon": "🔥",
+      "completedCountInfo": "0/4 ครั้ง",
+      "progressPercent": 0,
+      "current": "0",
+      "total": "4",
+      "visibility": "public",
+      "creatorName": "HYROX Thailand (พาร์ทเนอร์ทางการ)",
+      "creatorAvatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80",
+      "participantsCount": 142,
+      "rewardPoints": 250,
+      "isOfficial": true,
+      "targetGoal": "วิ่งและออกกำลังกายกลุ่มครบ 4 ครั้งใน 14 วัน เตรียมความพร้อมสู่สนามแข่ง",
+      "objective": "ฝึกความอดทนของกล้ามเนื้อและระบบหัวใจร่วมกับคอมมูนิตี้สายฟิตเนส",
+      "steps": [
+        "เข้าร่วมคลาสซ้อม HYROX Community Bootcamp",
+        "ฝึกซ้อมแต่ละสถานีตามโปรแกรมของโค้ช",
+        "บันทึกสถิติครบ 4 ครั้ง"
+      ],
+      "verificationMethod": "🏋️‍♂️ การยืนยันจากโค้ชผู้จัดกิจกรรม",
+      "rewardsText": "🏅 เหรียญ \"HYROX Warrior\" + ⚡ 250 XP",
+      "startDate": "1 ต.ค. 2569",
+      "endDate": "31 ธ.ค. 2569"
+    },
+    {
+      "id": "comm-quest-4",
+      "title": "Morning Yoga 7 Days: ฮีลใจรับอรุณ",
+      "badgeCoverImg": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=600&q=80",
+      "iconName": "Sparkles",
+      "category": "heal",
+      "badgeLabel": "Yoga Spirit",
+      "badgeIcon": "🧘",
+      "completedCountInfo": "0/7 วัน",
+      "progressPercent": 0,
+      "current": "0",
+      "total": "7",
+      "visibility": "public",
+      "creatorName": "Mindful Yoga & Wellness Hub",
+      "creatorAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80",
+      "participantsCount": 189,
+      "rewardPoints": 200,
+      "isOfficial": true,
+      "targetGoal": "เล่นโยคะยามเช้าหรือฝึกสมาธิต่อเนื่อง 7 วัน เพื่อความสดชื่นและสมดุลจิตใจ",
+      "objective": "ปรับสมดุลร่างกายและจิตใจ เริ่มต้นวันใหม่ด้วยสมาธิและความผ่อนคลาย",
+      "steps": [
+        "เล่นโยคะหรือฝึกสมาธิอย่างน้อย 15 นาทีในตอนเช้า",
+        "บันทึกการทำกิจกรรมรายวันในแอป",
+        "สะสมต่อเนื่องครบ 7 วัน"
+      ],
+      "verificationMethod": "📱 การกดบันทึกเช็คอินรายวันผ่านแอป",
+      "rewardsText": "🏅 เหรียญ \"Yoga Spirit\" + ⚡ 200 XP",
+      "startDate": "1 ต.ค. 2569",
+      "endDate": "31 ธ.ค. 2569"
+    },
+    {
+      "id": "comm-quest-5",
+      "rule": {
+        "targetTypes": [
+          "community"
+        ],
+        "count": 1,
+        "minEvidence": "checkin"
+      },
+      "title": "Digital Detox 3 Hours: วันหยุดไร้จอมือถือ",
+      "badgeCoverImg": "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=600&q=80",
+      "iconName": "Sparkles",
+      "category": "chill",
+      "badgeLabel": "Mindful Soul",
+      "badgeIcon": "📵",
+      "completedCountInfo": "0/3 ชม.",
+      "progressPercent": 0,
+      "current": "0",
+      "total": "3",
+      "visibility": "public",
+      "creatorName": "Digital Detox Society",
+      "creatorAvatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=120&q=80",
+      "participantsCount": 95,
+      "rewardPoints": 180,
+      "isOfficial": true,
+      "targetGoal": "พักสายตา วางจอมือถือ และเข้าร่วมกิจกรรมพบปะเพื่อนออฟไลน์ 3 ชม.",
+      "objective": "ลดความเครียดจากการเสพสื่อดิจิทัล และเปิดรับบทสนทนาจริงกับผู้คนรอบข้าง",
+      "steps": [
+        "เข้าร่วมกิจกรรมออฟไลน์ เช่น บอร์ดเกม งานคราฟต์ หรือเวิร์กช็อป",
+        "เปิดโหมดไม่รบกวนตลอดช่วงกิจกรรม 3 ชั่วโมง",
+        "ให้โฮสต์สแกนยืนยันการเข้าร่วม"
+      ],
+      "verificationMethod": "🤝 การยืนยันแบบ Peer-to-Peer จากโฮสต์ผู้จัดงาน",
+      "rewardsText": "🏅 เหรียญ \"Mindful Soul\" + ⚡ 180 XP",
+      "startDate": "1 ต.ค. 2569",
+      "endDate": "31 ธ.ค. 2569"
+    },
+    {
+      "id": "comm-quest-6",
+      "rule": {
+        "targetTypes": [
+          "spot"
+        ],
+        "categories": [
+          "art",
+          "museum"
+        ],
+        "provinces": [
+          "กรุงเทพฯ"
+        ],
+        "count": 3,
+        "minEvidence": "moment"
+      },
+      "title": "Bangkok Art Gallery Walk: ชม 3 แกลเลอรีริมน้ำ",
+      "badgeCoverImg": "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=600&q=80",
+      "iconName": "Sparkles",
+      "category": "chill",
+      "badgeLabel": "Art Collector",
+      "badgeIcon": "🎨",
+      "completedCountInfo": "0/3 แห่ง",
+      "progressPercent": 0,
+      "current": "0",
+      "total": "3",
+      "visibility": "public",
+      "creatorName": "River City Art Club",
+      "creatorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80",
+      "participantsCount": 168,
+      "rewardPoints": 280,
+      "isOfficial": true,
+      "targetGoal": "เสพงานศิลปะและเช็คอินแกลเลอรีหรือมิวเซียมศิลปะริมแม่น้ำเจ้าพระยาครบ 3 แห่ง",
+      "objective": "สนับสนุนวงการศิลปะไทย และสร้างแรงบันดาลใจทางความคิดสร้างสรรค์",
+      "steps": [
+        "เยี่ยมชมแกลเลอรีย่านเจริญกรุง-ตลาดน้อย-คลองสาน",
+        "ถ่ายภาพงานนิทรรศการลง Moments",
+        "เช็คอินครบ 3 แห่งเพื่อรับเข็มกลัด"
+      ],
+      "verificationMethod": "📸 ภาพถ่ายนิทรรศการคู่กับการเช็คอิน GPS",
+      "rewardsText": "🏅 เหรียญ \"Art Collector\" + ⚡ 280 XP",
+      "startDate": "1 ต.ค. 2569",
+      "endDate": "31 ธ.ค. 2569"
+    },
+    {
+      "id": "comm-quest-7",
+      "rule": {
+        "targetTypes": [
+          "community"
+        ],
+        "keywords": [
+          "บอร์ดเกม",
+          "board game"
+        ],
+        "count": 3,
+        "minEvidence": "checkin"
+      },
+      "title": "Board Game Master: เล่นครบ 3 บอร์ดเกมใหม่",
+      "badgeCoverImg": "https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?auto=format&fit=crop&w=600&q=80",
+      "iconName": "Award",
+      "category": "chill",
+      "badgeLabel": "Game Strategist",
+      "badgeIcon": "🎲",
+      "completedCountInfo": "0/3 เกม",
+      "progressPercent": 0,
+      "current": "0",
+      "total": "3",
+      "visibility": "public",
+      "creatorName": "Thailand Board Game Club (พาร์ทเนอร์ทางการ)",
+      "creatorAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80",
+      "participantsCount": 114,
+      "rewardPoints": 220,
+      "isOfficial": true,
+      "targetGoal": "ทดลองเล่นบอร์ดเกมประเภทวางแผนหรือปาร์ตี้เกมที่ไม่เคยเล่นมาก่อนครบ 3 เกม",
+      "objective": "เปิดประสบการณ์การเล่นเกมใหม่ๆ ฝึกกระบวนการคิด และสร้างมิตรภาพผ่านโต๊ะบอร์ดเกม",
+      "steps": [
+        "เข้าร่วมตี้บอร์ดเกมคาเฟ่หรืออีเวนต์คอมมูนิตี้",
+        "ร่วมเล่นเกมจนจบกระดานและบันทึกคะแนน",
+        "สะสมครบ 3 เกม"
+      ],
+      "verificationMethod": "🎲 ถ่ายรูปกระดานเกมหลังจบการเล่น",
+      "rewardsText": "🏅 เหรียญ \"Game Strategist\" + ⚡ 220 XP",
+      "startDate": "1 ต.ค. 2569",
+      "endDate": "31 ธ.ค. 2569"
     }
   ],
-  "userQuests": {}
+  "userQuests": {},
+  "questSeedIds": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "comm-quest-1",
+    "comm-quest-2",
+    "comm-quest-3",
+    "comm-quest-4",
+    "comm-quest-5",
+    "comm-quest-6",
+    "comm-quest-7"
+  ]
 }

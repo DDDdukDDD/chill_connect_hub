@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { removeNotificationsOf } from '@/lib/social/notifications';
 import { removeStoriesOf } from '@/lib/social/stories';
 import { removeReviewsBy } from '@/lib/social/reviews';
+import { removeVisitsBy } from '@/lib/social/visits';
+import { removeRedemptionsBy } from '@/lib/social/rewardsLedger';
 import { removeContentReportsBy } from '@/lib/social/contentReports';
 import { removeFairGroupsOf } from '@/lib/social/fairGroups';
 import { removeChatMessagesBy } from '@/lib/social/chat';
@@ -201,6 +203,8 @@ export async function POST(request: Request) {
     const removedComments = await momentRepository.removeCommentsByAuthor(member.id);
     await removeStoriesOf(member.id);
     await removeReviewsBy(member.id);
+    await removeVisitsBy(member.id);
+    await removeRedemptionsBy(member.id);
     await removeContentReportsBy(member.id);
     await removeFairGroupsOf(member.id);
     await removeChatMessagesBy(member.id);

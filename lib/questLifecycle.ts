@@ -71,3 +71,49 @@ export function upgradeLegacySeedQuests(
   });
   return { quests, changed };
 }
+
+/**
+ * Keeps a stored catalog in step with the seed:
+ * - a seed quest the store has never held is appended once. The ids already seeded are remembered,
+ *   so a seed quest staff deleted does not come back.
+ * - a stored seed quest without a cover photo takes the seed's (same id and title).
+ * `seededIds` is undefined for a store written before the ids were remembered.
+ */
+export function addNewSeedQuests(
+  stored: ChallengeQuest[],
+  seeds: ChallengeQuest[],
+  seededIds: string[] | undefined
+): { quests: ChallengeQuest[]; seededIds: string[]; changed: boolean } {
+  const seedById = new Map(seeds.map((seed) => [seed.id, seed]));
+  const known = new Set([...(seededIds ?? []), ...stored.map((quest) => quest.id)]);
+  let changed = false;
+  const quests = stored.map((quest) => {
+    const seed = seedById.get(quest.id);
+    if (quest.badgeCoverImg || !seed?.badgeCoverImg || quest.title !== seed.title) return quest;
+    changed = true;
+    return { ...quest, badgeCoverImg: seed.badgeCoverImg };
+  });
+  const added = seeds.filter((seed) => !known.has(seed.id));
+  const nextSeededIds = [...new Set([...(seededIds ?? []), ...seeds.map((seed) => seed.id)])];
+  return {
+    quests: [...quests, ...added],
+    seededIds: nextSeededIds,
+    changed: changed || added.length > 0 || nextSeededIds.length !== (seededIds ?? []).length,
+  };
+}
+
+/**
+ * One-time upgrade: a stored seed quest without a rule takes the rule of the current seed with the same id and title.
+ * Quests that already have a rule, and quests staff created, are left untouched.
+ */
+export function copySeedQuestRules(stored: ChallengeQuest[], seeds: ChallengeQuest[]): { quests: ChallengeQuest[]; changed: boolean } {
+  const seedById = new Map(seeds.map((seed) => [seed.id, seed]));
+  let changed = false;
+  const quests = stored.map((quest) => {
+    const seed = seedById.get(quest.id);
+    if (quest.rule || !seed?.rule || quest.title !== seed.title) return quest;
+    changed = true;
+    return { ...quest, rule: seed.rule };
+  });
+  return { quests, changed };
+}

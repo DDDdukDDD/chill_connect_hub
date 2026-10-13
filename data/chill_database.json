@@ -1,8 +1,298 @@
 {
   "version": "2.0.0",
-  "lastUpdated": "2026-10-04T16:40:19.520Z",
+  "lastUpdated": "2026-10-13T04:16:37.288Z",
   "autoPublish": false,
   "events": [
+    {
+      "id": "comm-hyrox-2",
+      "title": "HYROX Run & Sled ซ้อมวิ่งสลับสถานี Sled Push สุขุมวิท 39",
+      "date": "26 ก.ย. 2026",
+      "time": "08:00 - 09:30 น.",
+      "location": "HYROX Training Ground, สุขุมวิท 39 (BTS พร้อมพงษ์)",
+      "tag": "🏋️ ออกกำลังกาย & ฟิตเนส",
+      "category": "move",
+      "image": "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80",
+      "participantsCount": 6,
+      "maxParticipants": 10,
+      "hostName": "โค้ชแม็กซ์ HYROX Coach",
+      "hostAvatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80",
+      "hostHostedCount": 28,
+      "hostRating": 5,
+      "hostBadgeTier": "superhost",
+      "price": "฿250 (รวมโค้ชเทรนและเกลือแร่)",
+      "description": "ซ้อมวิ่ง 1 กม. สลับสถานี Sled Push และ Sled Pull แบบเดียวกับสนามจริง โค้ชสอนท่าและจัดน้ำหนักให้เหมาะกับแต่ละคน มือใหม่มาได้ ไม่ต้องมีคู่ซ้อม",
+      "rating": 4.9,
+      "reviewsCount": 22,
+      "badgeText": "ฟิตเนส & HYROX บูทแคมป์",
+      "createdAtTimestamp": 1788171683948,
+      "eventType": "community",
+      "status": "active",
+      "latitude": 13.7365,
+      "longitude": 100.5701,
+      "zone": "sukhumvit",
+      "approvalStatus": "approved",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
+      "province": "กรุงเทพมหานคร"
+    },
+    {
+      "id": "comm-hyrox-3",
+      "title": "HYROX 10K Long Run ซ้อมวิ่งยาวเตรียมสนาม สวนลุมพินี",
+      "date": "3 ต.ค. 2026",
+      "time": "06:00 - 07:30 น.",
+      "location": "สวนลุมพินี (จุดนัดพบ: ประตู 4 ฝั่งถนนวิทยุ)",
+      "tag": "🏋️ ออกกำลังกาย & ฟิตเนส",
+      "category": "move",
+      "image": "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80",
+      "participantsCount": 7,
+      "maxParticipants": 10,
+      "hostName": "โค้ชแม็กซ์ HYROX Coach",
+      "hostAvatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80",
+      "hostHostedCount": 28,
+      "hostRating": 5,
+      "hostBadgeTier": "superhost",
+      "price": "฿250 (รวมโค้ชเทรนและเกลือแร่)",
+      "description": "วิ่งยาว 10 กม. รอบสวนลุมพินีด้วยเพซคุยกันได้ แบ่งกลุ่มตามความเร็ว ปิดท้ายด้วยยืดเหยียดและคุยเรื่องการวางเพซในวันแข่ง",
+      "rating": 4.9,
+      "reviewsCount": 22,
+      "badgeText": "ฟิตเนส & HYROX บูทแคมป์",
+      "createdAtTimestamp": 1788171683949,
+      "eventType": "community",
+      "status": "active",
+      "latitude": 13.7307,
+      "longitude": 100.5418,
+      "zone": "silom",
+      "approvalStatus": "approved",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
+      "province": "กรุงเทพมหานคร"
+    },
+    {
+      "id": "comm-hyrox-4",
+      "title": "HYROX Race Simulation จำลองสนามแข่งครบ 8 สถานี สุขุมวิท 39",
+      "date": "10 ต.ค. 2026",
+      "time": "08:00 - 10:00 น.",
+      "location": "HYROX Training Ground, สุขุมวิท 39 (BTS พร้อมพงษ์)",
+      "tag": "🏋️ ออกกำลังกาย & ฟิตเนส",
+      "category": "move",
+      "image": "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80",
+      "participantsCount": 5,
+      "maxParticipants": 10,
+      "hostName": "โค้ชแม็กซ์ HYROX Coach",
+      "hostAvatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80",
+      "hostHostedCount": 28,
+      "hostRating": 5,
+      "hostBadgeTier": "superhost",
+      "price": "฿250 (รวมโค้ชเทรนและเกลือแร่)",
+      "description": "จำลองสนามแข่งเต็มรูปแบบ วิ่ง 8 รอบสลับ 8 สถานี จับเวลาเป็นคู่หรือเดี่ยว โค้ชช่วยดูจังหวะพักและการเปลี่ยนสถานี เหมาะกับคนที่ซ้อมมาแล้วอย่างน้อย 2 ครั้ง",
+      "rating": 4.9,
+      "reviewsCount": 22,
+      "badgeText": "ฟิตเนส & HYROX บูทแคมป์",
+      "createdAtTimestamp": 1788171683950,
+      "eventType": "community",
+      "status": "active",
+      "latitude": 13.7365,
+      "longitude": 100.5701,
+      "zone": "sukhumvit",
+      "approvalStatus": "approved",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
+      "province": "กรุงเทพมหานคร"
+    },
+    {
+      "id": "spot-buddy-1791731960279",
+      "title": "ชวนไป สวนลุมพินี",
+      "hostName": "Duke",
+      "hostAvatar": "/uploads/avatars/1791617032836-cha9k7c.webp",
+      "hostBadge": "สมาชิกทั่วไป",
+      "date": "2026-10-12",
+      "time": "10:00 - 12:00 น.",
+      "participantsCount": 1,
+      "maxParticipants": 6,
+      "description": "<p><strong>ภาพรวม & บรรยากาศทริป:</strong></p>\n<p>นัดเจอพูดคุยบรรยากาศสบายๆ ที่ สวนลุมพินี ใครมาคนเดียวไม่ต้องเกร็ง ยินดีต้อนรับทุกคนครับ</p>\n<p><br></p>\n<p><strong>สไตล์ทริป & สิ่งที่จะทำด้วยกัน:</strong></p>\n<ul>\n  <li>เน้นเดินชิลล์ ถ่ายรูปมุมสวยๆ และเสพความสงบของสถานที่</li>\n  <li>แวะจิบกาแฟ/เครื่องดื่ม พูดคุยแลกเปลี่ยนประสบการณ์กันแบบเป็นกันเอง</li>\n  <li>ไม่เร่งรีบ สบายๆ ปลอดภัย และเป็นมิตรกับทุกคน</li>\n</ul>\n<p><br></p>\n<p><strong>คำแนะนำสำหรับผู้ร่วมทริป:</strong></p>\n<p>สามารถเช็คจุดนัดพบ เวลา และสิ่งที่ควรเตรียมมาได้ที่แถบข้อมูลด้านขวา แล้วเจอกันวันนัดหมายนะครับ!</p>",
+      "tag": "กิจกรรมชวนเที่ยว",
+      "meetingPoint": "ทางเข้าหลัก สวนลุมพินี",
+      "targetGender": "all",
+      "targetAge": "18 - 25 ปี",
+      "price": "ฟรี",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/3/3e/Aerial_view_of_Lumphini_Park.jpg?utm_source=th.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+      "whatToBring": [
+        "รองเท้าวิ่ง / ผ้าใบ"
+      ],
+      "transportation": "เจอกันที่สถานที่ (ต่างคนต่างเดินทาง)",
+      "itinerary": [
+        {
+          "time": "10:00 น.",
+          "title": "รวมตัวกันที่จุดนัดพบ"
+        },
+        {
+          "time": "10:15 น.",
+          "title": "เริ่มกิจกรรมหลักร่วมกัน"
+        },
+        {
+          "time": "11:30 น.",
+          "title": "นั่งคุยผ่อนคลายก่อนแยกย้าย"
+        }
+      ],
+      "eventType": "community",
+      "category": "chill",
+      "province": "กรุงเทพฯ",
+      "location": "สวนลุมพินี, ลุมพินี, กรุงเทพฯ",
+      "spotId": "osm-w23483299",
+      "spotTitle": "สวนลุมพินี",
+      "meetingSpot": "ทางเข้าหลัก",
+      "hostId": "mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
+      "status": "recruiting",
+      "isSoloFriendly": true,
+      "isBeginnerFriendly": true,
+      "cancellationPolicy": "free_anytime",
+      "createdAtTimestamp": 1791731960279,
+      "locationType": "physical",
+      "scheduleType": "single",
+      "latitude": 13.7304754,
+      "longitude": 100.5416508,
+      "minParticipants": 3,
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "createdByMemberId": "mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
+      "createdAt": "2026-10-11T15:19:20.315Z",
+      "galleryImages": [
+        "https://upload.wikimedia.org/wikipedia/commons/3/3e/Aerial_view_of_Lumphini_Park.jpg?utm_source=th.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+      ],
+      "subActivities": [],
+      "moderatedAt": 1791731994524
+    },
+    {
+      "category": "chill",
+      "tag": "กิจกรรมคอมมูนิตี้",
+      "price": "เข้าร่วมฟรี",
+      "eventType": "community",
+      "province": "กรุงเทพฯ",
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "participantsCount": 2,
+      "createdAtTimestamp": 1791728891764,
+      "createdAt": "2026-10-11T14:28:11.712Z",
+      "id": "demo-past-mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
+      "title": "[ตัวอย่าง] เดินชมงานอาร์ตแฟร์ด้วยกัน",
+      "date": "8 ต.ค. 2569",
+      "time": "14:00 - 16:00 น.",
+      "location": "หอศิลปวัฒนธรรมแห่งกรุงเทพมหานคร",
+      "image": "/event-board-games.png",
+      "description": "กิจกรรมตัวอย่างสำหรับทดสอบมายฮับ: กิจกรรมที่คุณไปร่วมมาแล้ว และคนจัดเช็กอินให้เรียบร้อย",
+      "hostName": "คุณแพรว (Praew_Art)",
+      "hostAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
+      "maxParticipants": 6,
+      "createdByMemberId": "mem_sample_praew_art",
+      "galleryImages": [
+        "/event-board-games.png"
+      ],
+      "subActivities": [],
+      "status": "recruiting"
+    },
+    {
+      "category": "chill",
+      "tag": "กิจกรรมคอมมูนิตี้",
+      "price": "เข้าร่วมฟรี",
+      "eventType": "community",
+      "province": "กรุงเทพฯ",
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "participantsCount": 2,
+      "createdAtTimestamp": 1791728891764,
+      "createdAt": "2026-10-11T14:28:11.712Z",
+      "id": "demo-join-mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
+      "title": "[ตัวอย่าง] วิ่งเบาๆ รอบสวนลุมพินี",
+      "date": "15 ต.ค. 2569",
+      "time": "06:30 - 07:30 น.",
+      "location": "สวนลุมพินี (จุดนัดพบ: ประตูฝั่งถนนพระราม 4)",
+      "image": "/event-city-run.png",
+      "description": "กิจกรรมตัวอย่างสำหรับทดสอบมายฮับ: กิจกรรมที่คุณลงชื่อไว้ และคนจัดจะสแกน QR บนบัตรของคุณที่จุดนัดพบ",
+      "hostName": "คุณกี้ (Kee_Explorer)",
+      "hostAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+      "maxParticipants": 8,
+      "createdByMemberId": "mem_sample_kee_explorer",
+      "galleryImages": [
+        "/event-city-run.png"
+      ],
+      "subActivities": [],
+      "status": "recruiting"
+    },
+    {
+      "category": "chill",
+      "tag": "กิจกรรมคอมมูนิตี้",
+      "price": "เข้าร่วมฟรี",
+      "eventType": "community",
+      "province": "กรุงเทพฯ",
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "participantsCount": 3,
+      "createdAtTimestamp": 1791728891764,
+      "createdAt": "2026-10-11T14:28:11.712Z",
+      "id": "demo-host-mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
+      "title": "[ตัวอย่าง] เดินเล่นสวนเบญจกิติยามเย็น",
+      "date": "18 ต.ค. 2569",
+      "time": "17:30 - 19:00 น.",
+      "location": "สวนเบญจกิติ (จุดนัดพบ: ทางเข้าฝั่งศูนย์สิริกิติ์)",
+      "image": "/event-city-run.png",
+      "description": "กิจกรรมตัวอย่างสำหรับทดสอบมายฮับ: เดินเล่นคุยกันสบายๆ รอบสวน แล้วนั่งพักดูพระอาทิตย์ตก",
+      "hostName": "Duke",
+      "hostAvatar": "/uploads/avatars/1791617032836-cha9k7c.webp",
+      "maxParticipants": 8,
+      "createdByMemberId": "mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
+      "galleryImages": [
+        "/event-city-run.png"
+      ],
+      "subActivities": [],
+      "status": "recruiting",
+      "externalUrl": "https://www.qsncc.com/en/whats-on/event-calendar",
+      "link": "https://www.qsncc.com/en/whats-on/event-calendar",
+      "sourceUrl": "https://www.qsncc.com/en/whats-on/event-calendar"
+    },
+    {
+      "title": "เรียนรู้งานศิลปะ เซ็นทรัลลาดพร้าว",
+      "image": "https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=800&q=80",
+      "price": "ฟรี",
+      "description": "<p>เจอกันไม่ต้องกลัวเป็นกันเอง งานสบายๆ&nbsp;</p>",
+      "itinerary": [],
+      "hostAvatar": "/uploads/avatars/1791617032836-cha9k7c.webp",
+      "isNew": true,
+      "createdAtTimestamp": 1791724781411,
+      "id": "comm-user-1791724781412",
+      "category": "learn",
+      "eventType": "community",
+      "badgeText": "เปิดรับสมัคร",
+      "tag": "เวิร์กช็อป",
+      "date": "24 ต.ค. 2569",
+      "time": "12:00 - 17:30 น.",
+      "province": "กรุงเทพมหานคร",
+      "location": "เซ็นทรัลลาดพร้าว (จุดนัดพบ: หน้า SCB)",
+      "meetingPoint": "หน้า SCB",
+      "venueTag": "park",
+      "scheduleType": "single",
+      "locationType": "physical",
+      "hostName": "Duke",
+      "participantsCount": 2,
+      "maxParticipants": 8,
+      "targetGender": "all",
+      "targetAge": "20-35",
+      "energyLevel": "chill",
+      "whatToBring": [],
+      "isSoloFriendly": true,
+      "isBeginnerFriendly": true,
+      "isPetFriendly": false,
+      "cancellationPolicy": "free_24h",
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "createdByMemberId": "mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
+      "createdAt": "2026-10-11T13:19:41.453Z",
+      "galleryImages": [
+        "https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=800&q=80"
+      ],
+      "subActivities": [],
+      "status": "recruiting",
+      "moderatedAt": 1791724843131
+    },
     {
       "id": "live-agg-b0d16fb7cff86be0ce4a",
       "title": "The 2026 Annual Meetings of the International Monetary Fund and the World Bank Group",
@@ -3172,7 +3462,7 @@
       "location": "กรุงเทพมหานคร (ดูสถานที่ในรายละเอียด)",
       "province": "กรุงเทพมหานคร",
       "hostName": "Visit Bangkok (กทม.)",
-      "participantsCount": 0,
+      "participantsCount": 1,
       "maxParticipants": 0,
       "description": "กำหนดการฝึกซ้อมขบวนพยุหยาตราทางชลมารค 2569 พร้อมวันพระราชพิธี\nมีการอัปเดตกำหนดการฝึกซ้อมและวันพระราชพิธีการจัดขบวนพยุหยาตราทางชลมารค ในการเสด็จพระราชดำเนินไปทรงบำเพ็ญพระราชกุศลถวายผ้าพระกฐิน พุทธศักราช 2569 เนื่องในโอกาสพระราชพิธีมหามงคลเฉลิมพระชนมพรรษา 4 รอบ สมเด็จพระนางเจ้าฯ พระบรมราชินี\nการฝึกซ้อมจะเริ่มเวลาประมาณ 14.30 น. โดยประชาชนสามารถติดตามการฝึกซ้อมและร่วมเฝ้ารับเสด็จฯ ได้บริเวณสองฝั่งแม่น้ำเจ้าพระยา ตั้งแต่ สะพานกรุงธนบุรี ถึง วัดอรุณราชวราราม\nไฮไลท์\nฝึกซ้อมย่อยรวม 10 ครั้ง ระหว่างเดือนสิงหาคม–ตุลาคม 2569\nฝึกซ้อมใหญ่ 2 ครั้ง วันที่ 21 และ 28 ตุลาคม 2569\nพระราชพิธีจัดขึ้นในวันศุกร์ที่ 6 พฤศจิกายน 2569\nประชาชนสามารถร่วมชมการฝึกซ้อมได้ตลอดแนวแม่น้ำเจ้าพระยา ตั้งแต่สะพานกรุงธนบุรีถึงวัดอรุณราชวราราม\nมีการปิดเส้นทางเดินเรือในพื้นที่ควบคุมระหว่างการฝึกซ้อมและวันพระราชพิธี\nกำหนดการฝึกซ้อม\nฝึกซ้อมย่อย\nเดือนสิงหาคม 2569\n17 สิงหาคม\n20 สิงหาคม\n27 สิงหาคม\nเดือนกันยายน 2569\n3 กันยายน\n8 กันยายน\n17 กันยายน\n23 กันยายน\nเดือนตุลาคม 2569\n5 ตุลาคม\n8 ตุลาคม\n15 ตุลาคม\nฝึกซ้อมใหญ่\n21 ตุลาคม 2569\n28 ตุลาคม 2569\nวันพระราชพิธี\nวันศุกร์ที่ 6 พฤศจิกายน 2569\nข้อควรรู้สำหรับการเดินเรือ\nในวันฝึกซ้อมและวันพระราชพิธี ตั้งแต่เวลา 12.00 น. เป็นต้นไป จนกว่าจะแล้วเสร็จ จะมีการปิดการเดินเรือในพื้นที่ควบคุม โดยห้ามเรือทุกชนิดผ่านบริเวณตั้งแต่ สะพานกรุงธนบุรี–สะพานสมเด็จพระปิ่นเกล้า รวมถึงบริเวณ ปากคลองบางกอกน้อย–วัดสุวรรณารามราชวรวิหาร\nสำหรับเรือด่วนเจ้าพระยาและเรือไฟฟ้า\nฝั่งเหนือ เปิดให้รับ–ส่งผู้โดยสารได้ตั้งแต่ ท่าเรือพายัพ ขึ้นไป\nฝั่งใต้ เปิดให้รับ–ส่งผู้โดยสารได้ตั้งแต่ ท่าเรือราชวงศ์ ลงไป\nทั้งนี้ ห…",
       "price": "ไม่ระบุราคา",
@@ -7761,7 +8051,7 @@
       "scheduleType": "single",
       "hostName": "โค้ชพลอย Fit & Flow",
       "hostAvatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=100&q=80",
-      "participantsCount": 9,
+      "participantsCount": 10,
       "maxParticipants": 15,
       "description": "คลาสโยคะเบาๆ ระดับเริ่มต้น ไม่ต้องมีพื้นฐาน เน้นยืดกล้ามเนื้อคอบ่าไหล่และสะโพก บรรเทาอาการเมื่อยล้าจากการนั่งทำงานหน้าคอมพิวเตอร์เป็นเวลานาน",
       "price": "ฟรี",
@@ -8142,5 +8432,104 @@
       ]
     }
   ],
-  "participants": {}
+  "participants": {
+    "comm-user-1791724781412": [
+      {
+        "userId": "mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
+        "userName": "Duke",
+        "userAvatar": "/uploads/avatars/1791617032836-cha9k7c.webp",
+        "note": "host",
+        "joinedAt": "2026-10-11T13:19:41.520Z",
+        "ticketCode": "HKEZTN"
+      }
+    ],
+    "regional-online-4": [
+      {
+        "userId": "mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
+        "userName": "Duke",
+        "userAvatar": "/uploads/avatars/1791617032836-cha9k7c.webp",
+        "joinedAt": "2026-10-11T14:00:12.896Z",
+        "ticketCode": "F96X2N"
+      }
+    ],
+    "live-agg-a7df1f298b9c9bfef87f": [
+      {
+        "userId": "mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
+        "userName": "Duke",
+        "userAvatar": "/uploads/avatars/1791617032836-cha9k7c.webp",
+        "joinedAt": "2026-10-11T14:00:12.916Z",
+        "ticketCode": "ABS9B7"
+      }
+    ],
+    "demo-host-mem_268dbfac-299b-4ccb-8a59-1286e68e9124": [
+      {
+        "userId": "mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
+        "userName": "Duke",
+        "userAvatar": "/uploads/avatars/1791617032836-cha9k7c.webp",
+        "note": "host",
+        "joinedAt": "2026-10-11T14:28:11.775Z",
+        "ticketCode": "AJ5FLW"
+      },
+      {
+        "userId": "mem_sample_kee_explorer",
+        "userName": "คุณกี้ (Kee_Explorer)",
+        "userAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+        "joinedAt": "2026-10-11T14:28:11.787Z",
+        "ticketCode": "BLZF6R",
+        "checkedInAt": "2026-10-11T14:28:11.818Z"
+      },
+      {
+        "userId": "mem_sample_mint_vibes",
+        "userName": "คุณมิ้นท์ (Mint_Vibes)",
+        "userAvatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80",
+        "joinedAt": "2026-10-11T14:28:11.804Z",
+        "ticketCode": "5YUM2Q"
+      }
+    ],
+    "demo-join-mem_268dbfac-299b-4ccb-8a59-1286e68e9124": [
+      {
+        "userId": "mem_sample_kee_explorer",
+        "userName": "คุณกี้ (Kee_Explorer)",
+        "userAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+        "note": "host",
+        "joinedAt": "2026-10-11T14:28:11.844Z",
+        "ticketCode": "CS7BXW"
+      },
+      {
+        "userId": "mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
+        "userName": "Duke",
+        "userAvatar": "/uploads/avatars/1791617032836-cha9k7c.webp",
+        "joinedAt": "2026-10-11T14:28:11.856Z",
+        "ticketCode": "GJ4QJ5"
+      }
+    ],
+    "demo-past-mem_268dbfac-299b-4ccb-8a59-1286e68e9124": [
+      {
+        "userId": "mem_sample_praew_art",
+        "userName": "คุณแพรว (Praew_Art)",
+        "userAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
+        "note": "host",
+        "joinedAt": "2026-10-11T14:28:11.882Z",
+        "ticketCode": "AJ66K9"
+      },
+      {
+        "userId": "mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
+        "userName": "Duke",
+        "userAvatar": "/uploads/avatars/1791617032836-cha9k7c.webp",
+        "joinedAt": "2026-10-11T14:28:11.893Z",
+        "ticketCode": "P25VQ6",
+        "checkedInAt": "2026-10-11T14:28:11.905Z"
+      }
+    ],
+    "spot-buddy-1791731960279": [
+      {
+        "userId": "mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
+        "userName": "Duke",
+        "userAvatar": "/uploads/avatars/1791617032836-cha9k7c.webp",
+        "note": "host",
+        "joinedAt": "2026-10-11T15:19:20.337Z",
+        "ticketCode": "U7XU9E"
+      }
+    ]
+  }
 }

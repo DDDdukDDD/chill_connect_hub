@@ -24,7 +24,7 @@ import { readDatabase, updateDatabase } from '../databaseFile';
 import { normalizeStoredEvents } from '../../eventNormalization';
 import { rollSampleEventDate } from '../../sampleEventDates';
 import { toBuddhistEra } from '../../dateUtils';
-import { applyQuestLifecycle, upgradeLegacySeedQuests } from '../../questLifecycle';
+import { addNewSeedQuests, applyQuestLifecycle, copySeedQuestRules, upgradeLegacySeedQuests } from '../../questLifecycle';
 import type { AdminEventItem } from '../../eventsStore';
 import { cacheManager } from '../../cache';
 
@@ -83,6 +83,7 @@ export class JsonFileAdapter implements IDataRepository {
   private quests: ChallengeQuest[] = [];
   private participants: Record<string, ParticipantInfo[]> = {}; // eventId -> participants[]
   private userQuests: Record<string, Record<string, number>> = {}; // userId -> { questId: currentProgress }
+  private questSeedIds: string[] = MOCK_CHALLENGES.map((quest) => quest.id); // seed quests the store has already been given
 
   private async ensureInitialized(): Promise<void> {
     if (this.isInitialized) return;
@@ -105,6 +106,7 @@ export class JsonFileAdapter implements IDataRepository {
           spots?: LifestyleSpotItem[];
           quests?: ChallengeQuest[];
           userQuests?: Record<string, Record<string, number>>;
+          questSeedIds?: string[];
         } | null = null;
         const contentFiles = IS_SERVERLESS
           ? [TMP_DISCOVERY_DB_FILE, DISCOVERY_DB_FILE]
@@ -123,9 +125,12 @@ export class JsonFileAdapter implements IDataRepository {
         this.spots = Array.isArray(contentData?.spots) ? contentData.spots : [...MOCK_SPOTS];
         const storedQuests = Array.isArray(contentData?.quests) ? contentData.quests : [...MOCK_CHALLENGES];
         const upgradedQuests = upgradeLegacySeedQuests(storedQuests, MOCK_CHALLENGES);
-        this.quests = upgradedQuests.quests;
+        const ruledQuests = copySeedQuestRules(upgradedQuests.quests, MOCK_CHALLENGES);
+        const seededQuests = addNewSeedQuests(ruledQuests.quests, MOCK_CHALLENGES, Array.isArray(contentData?.questSeedIds) ? contentData.questSeedIds : undefined);
+        this.quests = seededQuests.quests;
+        this.questSeedIds = seededQuests.seededIds;
         this.userQuests = contentData?.userQuests || {};
-        if (upgradedQuests.changed) {
+        if (upgradedQuests.changed || ruledQuests.changed || seededQuests.changed) {
           await this.persistDiscoveryContent();
         }
 
@@ -157,6 +162,7 @@ export class JsonFileAdapter implements IDataRepository {
         spots,
         quests,
         userQuests,
+        questSeedIds: this.questSeedIds,
       }, null, 2),
       'utf-8'
     );

@@ -52,11 +52,29 @@ function seedSamples(): Moment[] {
   });
 }
 
+/**
+ * Stored samples follow the bundled ones in what they are tied to (place or event, and the location text),
+ * so a store seeded earlier picks up new links. Everything else on a stored sample is left alone.
+ */
+function syncSampleTargets(moments: Moment[]): { moments: Moment[]; changed: boolean } {
+  const seedById = new Map(seedSamples().map((seed) => [seed.id, seed]));
+  let changed = false;
+  const synced = moments.map((moment) => {
+    const seed = moment.isSample ? seedById.get(moment.id) : undefined;
+    if (!seed || (moment.targetType === seed.targetType && moment.targetId === seed.targetId && moment.targetTitle === seed.targetTitle && moment.location === seed.location)) return moment;
+    changed = true;
+    return { ...moment, targetType: seed.targetType, targetId: seed.targetId, targetTitle: seed.targetTitle, location: seed.location };
+  });
+  return { moments: synced, changed };
+}
+
 function load(): Moment[] {
   if (globalForMoments._cchMoments) return globalForMoments._cchMoments;
   try {
     const parsed = JSON.parse(fs.readFileSync(FILE, 'utf-8'));
-    globalForMoments._cchMoments = Array.isArray(parsed) ? parsed : [];
+    const synced = syncSampleTargets(Array.isArray(parsed) ? parsed : []);
+    globalForMoments._cchMoments = synced.moments;
+    if (synced.changed) persist(synced.moments);
   } catch {
     globalForMoments._cchMoments = seedSamples();
     persist(globalForMoments._cchMoments);
