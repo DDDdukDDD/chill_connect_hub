@@ -13,6 +13,7 @@ import { CreateEventModal } from '@/components/CreateEventModal';
 import { useAuth } from '@/lib/useAuth';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { useMyActivity } from '@/lib/useMyActivity';
+import { useMyRewards } from '@/lib/useMyRewards';
 import { isEventEnded, parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { nameInitial, tidyDisplayName } from '@/lib/displayName';
 import {
@@ -91,7 +92,6 @@ function targetHrefOf(type?: string, id?: string): string | null {
   const base = type === 'spot' ? '/spots' : type === 'community' ? '/community' : type === 'fair' ? '/fairs' : type === 'challenge' ? '/challenges' : null;
   return base ? `${base}/${encodeURIComponent(id)}` : null;
 }
-const TARGET_GO_LABELS: Record<string, string> = { spot: 'ดูที่เที่ยวนี้', community: 'ดูกิจกรรมนี้', fair: 'ดูงานนี้', challenge: 'ดูชาเลนจ์นี้' };
 /** A member's progress in one challenge, as /api/visits?mine=1 serves it */
 interface CountedQuest {
   questId: string;
@@ -329,10 +329,7 @@ function MomentsContent() {
       })
       .catch(() => undefined);
   };
-  // For the places and events in the feed (one request per batch of new posts), and for the one picked in the share form
-  useEffect(() => {
-    loadTargetQuests(posts.filter((p) => isVisitTarget(p.targetType) && p.targetId).map((p) => `${p.targetType}:${p.targetId}`));
-  }, [posts]);
+  // For the place or event picked in the share form
   useEffect(() => {
     if (linkedTarget) loadTargetQuests([`${linkedTarget.type}:${linkedTarget.id}`]);
   }, [linkedTarget]);
@@ -341,6 +338,7 @@ function MomentsContent() {
   const activity = useMyActivity();
   const [savedSpotTargets, setSavedSpotTargets] = useState<LinkTarget[]>([]);
   const [showAllMine, setShowAllMine] = useState(false);
+  const [openedAt] = useState(() => Date.now());
   const MINE_SHOWN = 4;
   const savedSpotKey = activity.savedSpotIds.slice(0, 30).join(',');
   useEffect(() => {
@@ -359,7 +357,7 @@ function MomentsContent() {
   }, [isCreateModalOpen, savedSpotKey]);
   const myLinkTargets = useMemo(() => {
     const ofEvent = (e: EventItem): LinkTarget => ({ type: e.eventType === 'public_venue' ? 'fair' : 'community', id: e.id, title: e.title, location: e.location || '' });
-    const now = Date.now();
+    const now = openedAt;
     const when = (e: EventItem) => parseEventDateToTimestamp(e.date);
     const saved = new Set(activity.savedEventIds);
     const savedEvents = liveEvents.filter((e) => saved.has(e.id));
@@ -400,7 +398,13 @@ function MomentsContent() {
     </li>
   );
 
-  const linkedQuest = linkedTarget ? (targetQuests[`${linkedTarget.type}:${linkedTarget.id}`] ?? [])[0] : undefined;
+  // A place can count toward several challenges; the one the member is doing is named first
+  const { joinedQuestIds } = useMyRewards(isLoggedIn);
+  const questFor = (type?: string, id?: string) => {
+    const quests = targetQuests[`${type}:${id}`] ?? [];
+    return quests.find((q) => joinedQuestIds.includes(q.questId)) ?? quests[0];
+  };
+  const linkedQuest = linkedTarget ? questFor(linkedTarget.type, linkedTarget.id) : undefined;
 
   const loadMorePosts = async () => {
     if (isLoadingMore || !hasMorePosts) return;
@@ -471,8 +475,16 @@ function MomentsContent() {
     if (!picked || !storyDraft) return;
     try {
       const compressed = await compressImage(picked, { maxWidth: 1080, maxHeight: 1920, quality: 0.85, targetMimeType: 'image/webp' });
-      if (storyDraft.preview) URL.revokeObjectURL(storyDraft.preview);
-      setStoryDraft({ ...storyDraft, file: compressed, preview: URL.createObjectURL(compressed) });
+      const preview = URL.createObjectURL(compressed);
+      // The caption may have been typed while the photo was being prepared, so it is read from the latest draft
+      setStoryDraft((draft) => {
+        if (!draft) {
+          URL.revokeObjectURL(preview);
+          return draft;
+        }
+        if (draft.preview) URL.revokeObjectURL(draft.preview);
+        return { ...draft, file: compressed, preview };
+      });
     } catch {
       showToast('ใช้รูปนี้ไม่ได้ ลองเลือกรูปอื่น (JPG, PNG หรือ WebP)');
     }
@@ -1396,7 +1408,6 @@ function MomentsContent() {
                 const authorId = (post as { authorId?: string | null }).authorId;
                 const profileHref = authorId ? `/profile?id=${authorId}` : null;
                 const targetHref = targetHrefOf(post.targetType, post.targetId);
-                const countsToward = (targetQuests[`${post.targetType}:${post.targetId}`] ?? [])[0];
                 const evidenceRejected = (post as { evidenceRejected?: { note: string } }).evidenceRejected;
 
                 return (
@@ -1616,19 +1627,6 @@ function MomentsContent() {
                         <p className="text-xs font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 leading-relaxed">
                           ทีมงานตรวจรูปแล้ว โมเมนต์นี้ยังไม่นับในชาเลนจ์{evidenceRejected.note ? ` · ${evidenceRejected.note}` : ''}
                         </p>
-                      )}
-
-                      {/* The way on from a moment: the challenge a visit there counts toward, or the page of the place or event */}
-                      {targetHref && (
-                        <Link href={targetHref} className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-sm font-bold text-slate-900 transition-colors">
-                          {countsToward || post.targetType === 'challenge' ? (
-                            <Trophy className="w-4 h-4 text-[#7C3AED] shrink-0" aria-hidden="true" />
-                          ) : (
-                            <MapPin className="w-4 h-4 text-[#F26430] shrink-0" aria-hidden="true" />
-                          )}
-                          <span className="min-w-0 flex-1 truncate">{countsToward ? `นับในชาเลนจ์ ${countsToward.title}` : TARGET_GO_LABELS[post.targetType ?? '']}</span>
-                          <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" aria-hidden="true" />
-                        </Link>
                       )}
 
                       {/* Expandable Inline Comments Section */}
@@ -2229,9 +2227,9 @@ function MomentsContent() {
                       </button>
                     </div>
                     {linkedQuest && (
-                      <p className="mt-2 flex items-center gap-1.5 text-xs font-bold text-[#5B21B6]">
-                        <Trophy className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                        <span className="min-w-0 truncate">ที่นี่นับในชาเลนจ์ {linkedQuest.title}</span>
+                      <p className="mt-2 flex items-start gap-1.5 text-xs font-bold text-[#5B21B6] leading-relaxed">
+                        <Trophy className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden="true" />
+                        <span className="min-w-0 line-clamp-2">ที่นี่นับในชาเลนจ์ {linkedQuest.title}</span>
                       </p>
                     )}
                     </div>

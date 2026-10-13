@@ -161,7 +161,14 @@ export async function moderateStory(id: string, action: 'remove' | 'hide' | 'res
   return story;
 }
 
-/** Account deletion: the member's stories and their views of other stories */
-export async function removeStoriesOf(memberId: string): Promise<void> {
+/** Every image a stored story shows, so a file still in use is not deleted */
+export function storyImagesInUse(): string[] {
+  return store.read().map((s) => s.image);
+}
+
+/** Account deletion: the member's stories and their views of other stories. Answers with the images of the removed stories */
+export async function removeStoriesOf(memberId: string): Promise<string[]> {
+  const images = store.read().filter((s) => s.authorId === memberId).map((s) => s.image);
   await store.update((items) => items.filter((s) => s.authorId !== memberId).map((s) => ({ ...s, viewedBy: s.viewedBy.filter((v) => v !== memberId), reports: s.reports?.filter((r) => r.memberId !== memberId) })));
+  return images;
 }

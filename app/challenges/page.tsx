@@ -466,29 +466,19 @@ export default function ChallengesDiscoveryPage() {
                                   ดูรางวัล
                                 </Link>
                               ) : isJoined ? (
-                                <>
-                                  <button
-                                    type="button"
-                                    onClick={() => setQuestToCancel(quest)}
-                                    className="relative before:absolute before:inset-x-0 before:-inset-y-0.5 before:content-[''] inline-flex items-center min-h-9 px-3 rounded-full text-sm font-bold text-slate-600 hover:bg-slate-100 whitespace-nowrap transition-colors cursor-pointer"
-                                  >
-                                    เลิกทำ
-                                  </button>
                                   <Link
                                     href={`/challenges/${encodeURIComponent(quest.id)}`}
-                                    className="relative before:absolute before:inset-x-0 before:-inset-y-0.5 before:content-[''] inline-flex items-center min-h-9 px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold whitespace-nowrap transition-colors cursor-pointer"
+                                    className="relative before:absolute before:inset-x-0 before:-inset-y-0.5 before:content-[''] inline-flex items-center min-h-9 px-4 rounded-full bg-[#F5F3FF] hover:bg-purple-100 border border-purple-200 text-[#5B21B6] text-sm font-bold whitespace-nowrap transition-colors cursor-pointer"
                                   >
-                                    ไปต่อ
+                                    กำลังทำอยู่
                                   </Link>
-                                </>
                               ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => void handleConfirmJoin(quest)}
+                                <Link
+                                  href={`/challenges/${encodeURIComponent(quest.id)}`}
                                   className="relative before:absolute before:inset-x-0 before:-inset-y-0.5 before:content-[''] inline-flex items-center justify-center min-h-9 px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold whitespace-nowrap transition-colors cursor-pointer"
                                 >
-                                  ร่วมเลย
-                                </button>
+                                  ดูชาเลนจ์
+                                </Link>
                               )}
                             </div>
                           </div>
