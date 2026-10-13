@@ -2,15 +2,14 @@
 
 import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { MySubmissions } from '@/components/MySubmissions';
-import { JoinChallengeModal, getQuestBrandReward } from '@/components/JoinChallengeModal';
+import { getQuestBrandReward } from '@/lib/questDisplay';
 import { useAuth } from '@/lib/useAuth';
-import { VerifyQuestModal } from '@/components/VerifyQuestModal';
 import { ETicketModal } from '@/components/ETicketModal';
 import { CancelTicketModal } from '@/components/CancelTicketModal';
 import { GroupChatModal } from '@/components/GroupChatModal';
@@ -19,7 +18,8 @@ import { SpotBuddyGatheringModal, SpotBuddyPostItem } from '@/components/SpotBud
 import { ChallengeQuest, EventItem } from '@/data/mockData';
 import { isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp } from '@/lib/dateUtils';
 import { activityActions, useMyActivity } from '@/lib/useMyActivity';
-import { useMyRewards, withRealProgress } from '@/lib/useMyRewards';
+import { syncMyChallenges, useMyRewards, withRealProgress } from '@/lib/useMyRewards';
+import { fetchAllContentPages } from '@/lib/contentClient';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { nameInitial, tidyDisplayName } from '@/lib/displayName';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
@@ -106,6 +106,23 @@ function MyHubContent() {
   const userXp = myRewards.balance;
   const redeemedRewardIds = myRewards.redeemedRewardIds;
   const myChallenges = useMemo(() => withRealProgress(storedChallenges, myRewards.quests), [storedChallenges, myRewards.quests]);
+  // The list is the challenges joined on the account, with the catalog's current details (GET /api/quests)
+  const [questCatalog, setQuestCatalog] = useState<ChallengeQuest[] | null>(null);
+  useEffect(() => {
+    let isActive = true;
+    fetchAllContentPages<ChallengeQuest>('/api/quests', 'quests')
+      .then((quests) => {
+        if (isActive) setQuestCatalog(quests);
+      })
+      .catch((error) => console.warn('Could not load challenges:', error));
+    return () => {
+      isActive = false;
+    };
+  }, []);
+  useEffect(() => {
+    if (!isLoggedIn) setMyChallenges([]);
+    else if (myRewards.isLoaded && questCatalog) setMyChallenges(syncMyChallenges(myRewards.joinedQuestIds, questCatalog));
+  }, [isLoggedIn, myRewards.isLoaded, myRewards.joinedQuestIds, questCatalog]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Travel Scrapbook state & quick filters
@@ -155,8 +172,7 @@ function MyHubContent() {
   const [isTipModalOpen, setIsTipModalOpen] = useState(false);
   const [tipTargetEvent, setTipTargetEvent] = useState<EventItem | null>(null);
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
-  const [selectedQuestForVoucherModal, setSelectedQuestForVoucherModal] = useState<ChallengeQuest | null>(null);
-  const [selectedQuestForVerifyModal, setSelectedQuestForVerifyModal] = useState<ChallengeQuest | null>(null);
+  const router = useRouter();
   const [questStatusFilter, setQuestStatusFilter] = useState<'all' | 'in_progress' | 'completed' | 'expired'>('all');
 
   // Spot Buddy Gathering Modal from Scrapbook
@@ -181,18 +197,6 @@ function MyHubContent() {
       localStorage.removeItem('joinedSubActivities');
       localStorage.removeItem('joined_fair_sub_ids');
 
-      // 3.1 Sync My Challenges Progress
-      try {
-        const storedChallenges = localStorage.getItem('cch_my_challenges');
-        if (storedChallenges) {
-          const parsed = JSON.parse(storedChallenges);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setMyChallenges(parsed);
-          }
-        }
-      } catch (e) {
-        console.error('Error syncing myChallenges:', e);
-      }
 
 
     } catch (e) {
@@ -376,15 +380,15 @@ function MyHubContent() {
 
         list.push({
           id: questId,
-          title: q.title || 'เควสต์กิจกรรม',
+          title: q.title || 'ชาเลนจ์กิจกรรม',
           category: q.category || 'chill',
-          tag: q.badgeLabel || 'เควสต์ & ชาเลนจ์',
+          tag: q.badgeLabel || 'ชาเลนจ์',
           date: questRangeDate,
-          time: 'ตลอดวัน (ภารกิจต่อเนื่อง)',
+          time: 'ตลอดวัน (ชาเลนจ์ต่อเนื่อง)',
           location: q.targetGoal || 'เช็คอินตามพิกัดเป้าหมาย',
           image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80',
           price: `+${q.rewardPoints} XP`,
-          description: q.objective || q.targetGoal || 'รายละเอียดภารกิจประจำเดือน',
+          description: q.objective || q.targetGoal || 'รายละเอียดชาเลนจ์ประจำเดือน',
           hostName: 'ระบบชาเลนจ์ทางการ',
           hostAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
           eventType: 'challenge' as any,
@@ -647,34 +651,14 @@ function MyHubContent() {
   const handleCheckIn = (ticketId: string) => {
     if (!checkedInTicketIds.includes(ticketId)) {
       setCheckedInTicketIds((prev) => [...prev, ticketId]);
-      showToast('ลองเช็กอินแล้ว แต้มจริงจะได้เมื่อโฮสต์เช็กอินให้ที่งาน');
+      showToast('ลองเช็กอินแล้ว XP จริงจะได้เมื่อโฮสต์เช็กอินให้ที่งาน');
     } else {
       setCheckedInTicketIds((prev) => prev.filter((id) => id !== ticketId));
       showToast('ยกเลิกการจำลองเช็คอินแล้ว');
     }
   };
 
-  const handleVerifySuccess = (questId: string) => {
-    updateChallenges((prev) =>
-      prev.map((q) => {
-        if (q.id === questId) {
-          const currentCount = parseInt(q.current || '0', 10) + 1;
-          const totalCount = parseInt(q.total || '3', 10) || 3;
-          const newPercent = Math.min(100, Math.round((currentCount / totalCount) * 100));
-          return {
-            ...q,
-            current: currentCount.toString(),
-            completedCountInfo: `${currentCount}/${totalCount} ${q.completedCountInfo.includes('คาเฟ่') ? 'คาเฟ่' : q.completedCountInfo.includes('วัน') ? 'วัน' : q.completedCountInfo.includes('สวน') ? 'สวน' : 'ครั้ง'}`,
-            progressPercent: newPercent,
-          };
-        }
-        return q;
-      })
-    );
-    showToast('บันทึกความคืบหน้าแล้ว');
-  };
 
-  // Helper to copy voucher code
   const handleCopyVoucher = (code: string) => {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(code);
@@ -704,7 +688,7 @@ function MyHubContent() {
     if ((ev as any).eventType === 'challenge' || ev.id.startsWith('quest-')) {
       return {
         pillar: 'quests' as const,
-        label: 'เควสต์ & ชาเลนจ์',
+        label: 'ชาเลนจ์',
         dotColor: 'bg-[#7C3AED]',
         badgeBg: 'bg-purple-50',
         badgeText: 'text-purple-700',
@@ -1051,7 +1035,7 @@ function MyHubContent() {
                 }`}
               >
                 <span className="w-2 h-2 rounded-full bg-[#7C3AED]" />
-                <span>เควสต์ ({masterCategoryCounts.quests})</span>
+                <span>ชาเลนจ์ ({masterCategoryCounts.quests})</span>
               </button>
             </div>
           </div>
@@ -1065,10 +1049,10 @@ function MyHubContent() {
                 </div>
                 <div className="space-y-0.5 min-w-0">
                   <span className="font-bold block">
-                    โหมดช่วงเวลาภารกิจ (Active Quest Span View)
+                    โหมดช่วงเวลาชาเลนจ์ (Active Quest Span View)
                   </span>
                   <span className="text-[11.5px] text-purple-800/80 block truncate">
-                    ไฮไลต์ช่วงระยะเวลาที่เควสต์เปิดรับส่ง (1 - 30 ก.ย.) และเน้นจุดสีม่วงเข้มในวันเดดไลน์ส่งหลักฐาน
+                    ไฮไลต์ช่วงระยะเวลาที่ชาเลนจ์เปิดรับส่ง (1 - 30 ก.ย.) และเน้นจุดสีม่วงเข้มในวันเดดไลน์ส่งหลักฐาน
                   </span>
                 </div>
               </div>
@@ -1100,12 +1084,12 @@ function MyHubContent() {
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-[#7C3AED]" />
-              <span>{calendarCategoryFilter === 'quests' ? 'เดดไลน์เควสต์' : 'เควสต์ & ชาเลนจ์'}</span>
+              <span>{calendarCategoryFilter === 'quests' ? 'เดดไลน์ชาเลนจ์' : 'ชาเลนจ์'}</span>
             </span>
             {calendarCategoryFilter === 'quests' && (
               <span className="flex items-center gap-1.5 text-purple-700 font-semibold">
                 <span className="w-3.5 h-1.5 rounded-sm bg-purple-200 border border-purple-300" />
-                <span>ช่วงทำภารกิจ</span>
+                <span>ช่วงทำชาเลนจ์</span>
               </span>
             )}
           </div>
@@ -1189,7 +1173,7 @@ function MyHubContent() {
                                 ? 'bg-purple-400'
                                 : 'bg-[#7C3AED]'
                             }`}
-                            title={isQuestDeadlineDay ? 'กำหนดส่งเควสต์วันสุดท้าย' : 'ช่วงทำเควสต์'}
+                            title={isQuestDeadlineDay ? 'กำหนดส่งชาเลนจ์วันสุดท้าย' : 'ช่วงทำชาเลนจ์'}
                           />
                         )}
                       </div>
@@ -1271,10 +1255,10 @@ function MyHubContent() {
                   </div>
                   <div className="space-y-0.5 min-w-0">
                     <span className="block truncate">
-                      วันนี้อยู่ในช่วงภารกิจ {ongoingQuestsForSelectedDay.length} เควสต์ ({ongoingQuestsForSelectedDay.map((q) => q.title).join(', ')})
+                      วันนี้อยู่ในช่วงชาเลนจ์ {ongoingQuestsForSelectedDay.length} ชาเลนจ์ ({ongoingQuestsForSelectedDay.map((q) => q.title).join(', ')})
                     </span>
                     <span className="text-[11px] text-purple-700 font-medium block">
-                      ยังไม่ถึงกำหนดส่งวันสุดท้าย สามารถทำภารกิจและส่งหลักฐานล่วงหน้าได้
+                      ยังไม่ถึงกำหนดส่งวันสุดท้าย สามารถทำชาเลนจ์และส่งหลักฐานล่วงหน้าได้
                     </span>
                   </div>
                 </div>
@@ -1283,7 +1267,7 @@ function MyHubContent() {
                   onClick={() => setCalendarCategoryFilter('quests')}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-2xs shrink-0 cursor-pointer transition-all active:scale-95"
                 >
-                  <span>เปิดดูตารางเควสต์</span>
+                  <span>เปิดดูตารางชาเลนจ์</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -1490,7 +1474,7 @@ function MyHubContent() {
                                 onClick={() => {
                                   const rawQuestId = ev.id.replace('quest-', '');
                                   const q = myChallenges.find((item) => item.id === rawQuestId) || myChallenges[0];
-                                  if (q) setSelectedQuestForVerifyModal(q);
+                                  if (q) router.push(`/challenges/${encodeURIComponent(q.id)}`);
                                 }}
                                 className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
                               >
@@ -1500,10 +1484,10 @@ function MyHubContent() {
                               <Link
                                 href="/challenges"
                                 className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 shadow-2xs"
-                                title="ดูรายละเอียดภารกิจทั้งหมดในหน้าชาเลนจ์"
+                                title="ดูรายละเอียดชาเลนจ์ทั้งหมดในหน้าชาเลนจ์"
                               >
                                 <ExternalLink className="w-3.5 h-3.5" />
-                                <span className="hidden sm:inline">ดูเควสต์</span>
+                                <span className="hidden sm:inline">ดูชาเลนจ์</span>
                               </Link>
                             </>
                           ) : isCancelled ? (
@@ -1903,7 +1887,7 @@ function MyHubContent() {
                       Master Lifestyle Calendar
                     </h3>
                     <p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed">
-                      รวมนัดหมายทุกไลฟ์สไตล์ไว้ในตารางเดียว ทั้งตี้คอมมูนิตี้ งานมหกรรมเอ็กซ์โป และเควสต์ประจำสัปดาห์ ไม่พลาดทุกทริปและเวลาพักผ่อน
+                      รวมนัดหมายทุกไลฟ์สไตล์ไว้ในตารางเดียว ทั้งตี้คอมมูนิตี้ งานมหกรรมเอ็กซ์โป และชาเลนจ์ประจำสัปดาห์ ไม่พลาดทุกทริปและเวลาพักผ่อน
                     </p>
                   </div>
                 </div>
@@ -1969,7 +1953,7 @@ function MyHubContent() {
                       Explorer Quests & Rewards
                     </h3>
                     <p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed">
-                      สะสมแต้ม XP จากภารกิจเช็คอินและร่วมกิจกรรม เลื่อนระดับ Explorer แลกรับส่วนลด Specialty Coffee สิทธิ์เล่นบอร์ดเกมฟรี และของรางวัลสุดพรีเมียม
+                      สะสม XP จากชาเลนจ์เช็คอินและร่วมกิจกรรม เลื่อนระดับ Explorer แลกรับส่วนลด Specialty Coffee สิทธิ์เล่นบอร์ดเกมฟรี และของรางวัลสุดพรีเมียม
                     </p>
                   </div>
                 </div>
@@ -2108,9 +2092,9 @@ function MyHubContent() {
 
                 {/* Development only: sample activity for this account, so every feature can be seen with one login */}
                 {process.env.NODE_ENV !== 'production' && (
-                  <div className="mt-4 p-3 sm:p-4 rounded-2xl bg-amber-50 border border-amber-200 flex flex-wrap items-center justify-between gap-3" role="note">
+                  <div className="mt-4 p-3 sm:p-4 rounded-2xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3" role="note">
                     <p className="text-xs sm:text-sm font-semibold text-amber-900 min-w-0 flex-1">โหมดพัฒนา: เติมข้อมูลตัวอย่างให้บัญชีนี้ เพื่อดูนัดหมาย กิจกรรมที่จัด เช็กอิน แชต และรีวิว ได้ด้วยบัญชีเดียว</p>
-                    <span className="flex items-center gap-2 shrink-0">
+                    <span className="flex flex-wrap items-center gap-2 shrink-0">
                       <button
                         type="button"
                         disabled={isDemoBusy}
@@ -2257,7 +2241,7 @@ function MyHubContent() {
                       }`}
                     >
                       <Trophy className={`w-4 h-4 ${activeSubTab === 'quests_rewards' ? 'text-[#7C3AED]' : 'text-slate-400'}`} />
-                      <span>เควสต์ & แต้มสะสม ({myChallenges.length})</span>
+                      <span>ชาเลนจ์ & แต้มสะสม ({myChallenges.length})</span>
                     </button>
                   </div>
                 )}
@@ -3519,6 +3503,35 @@ function MyHubContent() {
 
                     return (
                       <>
+                        {myRewards.finished.length > 0 && (
+                          <section className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 space-y-3" aria-labelledby="my-badges-title">
+                            <h4 id="my-badges-title" className="text-sm sm:text-base font-extrabold text-slate-900">
+                              เหรียญของคุณ <span className="tabular-nums">({myRewards.finished.length})</span>
+                            </h4>
+                            <ul className="space-y-2">
+                              {myRewards.finished.map((done) => (
+                                <li key={done.questId}>
+                                  <Link href={`/challenges/${encodeURIComponent(done.questId)}`} className="flex items-center gap-3 p-3 rounded-2xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-colors cursor-pointer">
+                                    <span className="w-10 h-10 rounded-full bg-[#F5F3FF] text-[#7C3AED] flex items-center justify-center shrink-0">
+                                      <Award className="w-5 h-5" aria-hidden="true" />
+                                    </span>
+                                    <span className="min-w-0 flex-1">
+                                      <span className="block text-sm font-extrabold text-slate-900 truncate">{done.badgeLabel}</span>
+                                      <span className="block text-[11px] sm:text-xs font-semibold text-slate-500 truncate">{done.title}</span>
+                                      {done.voucherCode && (
+                                        <span className="block mt-1 text-xs sm:text-sm font-bold text-slate-800 tabular-nums break-all">
+                                          รหัสรางวัล {done.voucherCode} {done.voucherUsedAt ? '(ใช้แล้ว)' : ''}
+                                        </span>
+                                      )}
+                                    </span>
+                                    <ArrowRight className="w-4 h-4 text-slate-500 shrink-0" aria-hidden="true" />
+                                  </Link>
+                                </li>
+                              ))}
+                            </ul>
+                          </section>
+                        )}
+
                         <div className="flex items-center justify-between gap-3 flex-wrap bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center border border-purple-200 shrink-0">
@@ -3526,13 +3539,13 @@ function MyHubContent() {
                             </div>
                             <div>
                               <h4 className="font-bold text-sm sm:text-base text-slate-900 flex items-center gap-2">
-                                <span>ภารกิจของคุณ (My Quests)</span>
+                                <span>ชาเลนจ์ของคุณ</span>
                                 <span className="text-xs text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full font-bold border border-purple-200/80">
-                                  {myChallenges.length} ภารกิจ
+                                  {myChallenges.length} ชาเลนจ์
                                 </span>
                               </h4>
                               <p className="text-xs text-slate-500">
-                                สะสมแต้ม XP และปลดล็อกเข็มกลัดเกียรติยศลงบนโปรไฟล์ของคุณ
+                                สะสม XP และปลดล็อกเข็มกลัดเกียรติยศลงบนโปรไฟล์ของคุณ
                               </p>
                             </div>
                           </div>
@@ -3602,7 +3615,7 @@ function MyHubContent() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
                           {filteredMyChallenges.length === 0 ? (
                             <div className="col-span-full bg-slate-50/80 rounded-2xl p-8 border border-dashed border-slate-200 text-center text-xs text-slate-500 font-medium">
-                              ไม่มีภารกิจในหมวดหมู่นี้
+                              ไม่มีชาเลนจ์ในหมวดหมู่นี้
                             </div>
                           ) : (
                             filteredMyChallenges.map((quest) => {
@@ -3659,7 +3672,7 @@ function MyHubContent() {
                                         </span>
                                         {brandReward.type === 'brand_partner' ? (
                                           <span 
-                                            title={`ภารกิจพาร์ทเนอร์ทางการ: ${brandReward.partnerName}`}
+                                            title={`ชาเลนจ์พาร์ทเนอร์ทางการ: ${brandReward.partnerName}`}
                                             className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-950 border border-amber-200 shrink-0 truncate max-w-[140px] inline-flex items-center gap-1"
                                           >
                                             <Crown className="w-2.5 h-2.5 text-amber-600 fill-amber-500 shrink-0" />
@@ -3667,7 +3680,7 @@ function MyHubContent() {
                                           </span>
                                         ) : (
                                           <span 
-                                            title="ภารกิจกิจกรรมกลางของ Chill & Connect Hub"
+                                            title="ชาเลนจ์กิจกรรมกลางของ Chill & Connect Hub"
                                             className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-900 border border-purple-200 shrink-0 truncate max-w-[calc(100%-65px)] inline-flex items-center gap-1"
                                           >
                                             <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500 shrink-0" />
@@ -3751,7 +3764,7 @@ function MyHubContent() {
                                       brandReward.type === 'brand_partner' ? (
                                         <button
                                           type="button"
-                                          onClick={() => setSelectedQuestForVoucherModal(quest)}
+                                          onClick={() => router.push(`/challenges/${encodeURIComponent(quest.id)}`)}
                                           className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-bold py-2 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs active:scale-98"
                                         >
                                           <Ticket className="w-3.5 h-3.5 text-white" />
@@ -3760,7 +3773,7 @@ function MyHubContent() {
                                       ) : (
                                         <button
                                           type="button"
-                                          onClick={() => setSelectedQuestForVoucherModal(quest)}
+                                          onClick={() => router.push(`/challenges/${encodeURIComponent(quest.id)}`)}
                                           className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold py-2 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs active:scale-98"
                                         >
                                           <Trophy className="w-3.5 h-3.5 text-amber-300" />
@@ -3773,15 +3786,15 @@ function MyHubContent() {
                                         disabled
                                         className="w-full bg-slate-100 text-slate-400 text-xs font-bold py-2.5 rounded-xl border border-slate-200 cursor-not-allowed"
                                       >
-                                        ภารกิจสิ้นสุดระยะเวลาแล้ว
+                                        ชาเลนจ์สิ้นสุดระยะเวลาแล้ว
                                       </button>
                                     ) : (
                                       <button
                                         type="button"
-                                        onClick={() => setSelectedQuestForVerifyModal(quest)}
+                                        onClick={() => router.push(`/challenges/${encodeURIComponent(quest.id)}`)}
                                         className="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs active:scale-98"
                                       >
-                                        <span>ส่งหลักฐานเช็คอิน</span>
+                                        <span>ดูว่าไปที่ไหนต่อ</span>
                                       </button>
                                     )}
                                   </div>
@@ -3844,7 +3857,7 @@ function MyHubContent() {
                       {redeemedRewardIds.length === 0 ? (
                         <div className="bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
                           <p className="text-xs text-slate-500">
-                            ยังไม่มีคูปองที่แลกไว้ สามารถนำแต้ม {userXp} XP ไปแลกรับส่วนลดคาเฟ่หรือตั๋วบอร์ดเกมได้ทันที
+                            ยังไม่มีคูปองที่แลกไว้ สามารถนำ XP {userXp} XP ไปแลกรับส่วนลดคาเฟ่หรือตั๋วบอร์ดเกมได้ทันที
                           </p>
                           <Link
                             href="/rewards"
@@ -4059,22 +4072,7 @@ function MyHubContent() {
         }}
       />
 
-      {/* 5. Quest Verify Modal */}
-      <VerifyQuestModal
-        isOpen={!!selectedQuestForVerifyModal}
-        onClose={() => setSelectedQuestForVerifyModal(null)}
-        quest={selectedQuestForVerifyModal}
-        onVerificationSuccess={handleVerifySuccess}
-      />
 
-      {/* 6. Brand Voucher & Quest Detail Modal */}
-      <JoinChallengeModal
-        isOpen={Boolean(selectedQuestForVoucherModal)}
-        onClose={() => setSelectedQuestForVoucherModal(null)}
-        quest={selectedQuestForVoucherModal}
-        isAlreadyJoined={true}
-        isCompleted={true}
-      />
 
       {/* 8. Create Event Modal */}
       <CreateEventModal

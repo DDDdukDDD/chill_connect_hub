@@ -3,7 +3,7 @@ import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { isRateLimited } from '@/lib/rateLimit';
 import { RewardError, redeemReward, rewardsOf } from '@/lib/social/rewardsLedger';
 
-const EMPTY = { points: { total: 0, fromVisits: 0, fromQuests: 0, earned: 0, spent: 0, balance: 0 }, quests: [], redeemedRewardIds: [], redemptions: [] };
+const EMPTY = { points: { total: 0, fromVisits: 0, fromQuests: 0, earned: 0, spent: 0, balance: 0 }, quests: [], joinedQuestIds: [], finished: [], redeemedRewardIds: [], redemptions: [] };
 const headers = { 'Cache-Control': 'private, no-store' };
 
 // The signed-in member's points (earned, spent, balance), challenge progress and redeemed rewards
@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ success: true, ...(await rewardsOf(member.id)) }, { headers });
   } catch (error) {
     console.error('Error in /api/rewards GET:', error);
-    return NextResponse.json({ success: false, message: 'โหลดแต้มไม่สำเร็จ' }, { status: 500 });
+    return NextResponse.json({ success: false, message: 'โหลด XP ไม่สำเร็จ' }, { status: 500 });
   }
 }
 

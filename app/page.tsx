@@ -9,7 +9,7 @@ import { MoodFilterChips, SUB_CATEGORIES_MAP } from '@/components/MoodFilterChip
 import { SurpriseModal } from '@/components/SurpriseModal';
 import { EventGrid } from '@/components/EventGrid';
 import { MobileNav } from '@/components/MobileNav';
-import { MOCK_EVENTS, MOCK_POSTS, MOCK_CHALLENGES, SAMPLE_JOINED_CHALLENGES, EventItem, calculateDistanceKm, BANGKOK_ZONES } from '@/data/mockData';
+import { MOCK_EVENTS, MOCK_POSTS, MOCK_CHALLENGES, EventItem, calculateDistanceKm, BANGKOK_ZONES } from '@/data/mockData';
 import { CustomDatePickerModal } from '@/components/CustomDatePickerModal';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
@@ -130,7 +130,6 @@ function HomeContent() {
   const [currentFairPage, setCurrentFairPage] = useState<number>(1);
   const [currentSpotPage, setCurrentSpotPage] = useState<number>(1);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [joinedQuestTitles, setJoinedQuestTitles] = useState<string[]>([]);
   const [showEndedEvents, setShowEndedEvents] = useState<boolean>(false);
   const [activeScopeTab, setActiveScopeTab] = useState<'all' | 'spots' | 'community' | 'fairs'>(initialScopeTab);
 
@@ -248,7 +247,6 @@ function HomeContent() {
       setFavorites([]);
       setFavoriteSpots([]);
       setJoinedEventIds([]);
-      setJoinedQuestTitles([]);
       return;
     }
 
@@ -267,13 +265,6 @@ function HomeContent() {
       if (savedJoined) {
         const parsed = JSON.parse(savedJoined);
         if (Array.isArray(parsed)) setJoinedEventIds(parsed);
-      }
-      const savedChallenges = localStorage.getItem('cch_my_challenges');
-      if (savedChallenges) {
-        const parsed = JSON.parse(savedChallenges);
-        if (Array.isArray(parsed)) {
-          setJoinedQuestTitles(parsed.map((q: any) => q.title));
-        }
       }
     } catch (e) {
       console.error('Error loading stored favorites/joined:', e);
@@ -317,64 +308,6 @@ function HomeContent() {
       setCreateModalInitialType(type);
       setIsCreateEventModalOpen(true);
     }
-  };
-
-  const handleJoinQuestFromHome = (questTitle: string) => {
-    if (!isLoggedIn) {
-      triggerMembershipPrompt('เพื่อเข้าร่วมภารกิจและรับแต้มโบนัส');
-      return;
-    }
-    if (!joinedQuestTitles.includes(questTitle)) {
-      setJoinedQuestTitles((prev) => [...prev, questTitle]);
-      if (typeof window !== 'undefined') {
-        try {
-          const raw = localStorage.getItem('cch_my_challenges');
-          let currentList: any[] = raw ? JSON.parse(raw) : [...SAMPLE_JOINED_CHALLENGES];
-          const matched = MOCK_CHALLENGES.find((q) => q.title.trim() === questTitle.trim());
-          const questToAdd = matched
-            ? {
-                ...matched,
-                progressPercent: 0,
-                current: '0',
-                total: matched.total || '3',
-                participantsCount: (matched.participantsCount || 0) + 1,
-              }
-            : {
-                id: `quest-local-${questTitle.trim().slice(0, 40)}`,
-                title: questTitle,
-                progressPercent: 0,
-                current: '0',
-                total: '3',
-                category: 'chill',
-                participantsCount: 1,
-              };
-          if (!currentList.some((q) => q.title.trim() === questTitle.trim())) {
-            currentList = [questToAdd, ...currentList];
-            localStorage.setItem('cch_my_challenges', JSON.stringify(currentList));
-          }
-        } catch (e) {
-          console.error('Error saving joined quest to cch_my_challenges:', e);
-        }
-      }
-      showToast(`🎉 คุณได้รับภารกิจ "${questTitle}" เข้าสู่หน้ารายการของคุณเรียบร้อย! (+XP Bonus)`);
-    }
-  };
-
-  const handleCancelQuestFromHome = (questTitle: string) => {
-    setJoinedQuestTitles((prev) => prev.filter((t) => t !== questTitle));
-    if (typeof window !== 'undefined') {
-      try {
-        const raw = localStorage.getItem('cch_my_challenges');
-        if (raw) {
-          const currentList: any[] = JSON.parse(raw);
-          const filtered = currentList.filter((q) => q.title.trim() !== questTitle.trim());
-          localStorage.setItem('cch_my_challenges', JSON.stringify(filtered));
-        }
-      } catch (e) {
-        console.error('Error removing quest from cch_my_challenges:', e);
-      }
-    }
-    showToast(`ยกเลิกภารกิจ "${questTitle}" เรียบร้อยแล้ว`);
   };
 
   // Deep Linking Effect: Detect ?event=id in URL and open Event Detail Modal automatically
@@ -1277,9 +1210,6 @@ function HomeContent() {
             setSurpriseModalMode(mode || activeScopeTab || 'all');
             setIsSurpriseModalOpen(true);
           }}
-          onJoinQuest={handleJoinQuestFromHome}
-          joinedQuestTitles={joinedQuestTitles}
-          onCancelQuest={handleCancelQuestFromHome}
           onSelectDiscoveryTab={handleSelectDiscoveryTab}
           activeTab={activeScopeTab}
         />
@@ -1631,8 +1561,6 @@ function HomeContent() {
                 {/* ------------------------------------------------------------------------- */}
                 <div id="section-challenges" className="scroll-mt-24">
                   <CommunityChallengeBar
-                    onJoinQuest={handleJoinQuestFromHome}
-                    joinedQuestTitles={isLoggedIn ? joinedQuestTitles : []}
                   />
                 </div>
 
@@ -2042,7 +1970,7 @@ function HomeContent() {
                   <li>
                     <Link 
                       href="/challenges" 
-                      title="ภารกิจสะสมเหรียญตราและแต้ม EXP"
+                      title="ภารกิจสะสมเหรียญตราและ XP"
                       className="hover:text-purple-700 transition-colors flex items-center gap-1.5 focus:outline-none focus:underline"
                     >
                       <span>ชาเลนจ์สะสมเหรียญตรา</span>

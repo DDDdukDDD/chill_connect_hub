@@ -1,6 +1,6 @@
 {
   "version": "2.0.0",
-  "lastUpdated": "2026-10-13T04:16:37.288Z",
+  "lastUpdated": "2026-10-13T06:43:26.902Z",
   "autoPublish": false,
   "events": [
     {
@@ -161,93 +161,6 @@
       ],
       "subActivities": [],
       "moderatedAt": 1791731994524
-    },
-    {
-      "category": "chill",
-      "tag": "กิจกรรมคอมมูนิตี้",
-      "price": "เข้าร่วมฟรี",
-      "eventType": "community",
-      "province": "กรุงเทพฯ",
-      "approvalStatus": "approved",
-      "source": "Community Member",
-      "participantsCount": 2,
-      "createdAtTimestamp": 1791728891764,
-      "createdAt": "2026-10-11T14:28:11.712Z",
-      "id": "demo-past-mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
-      "title": "[ตัวอย่าง] เดินชมงานอาร์ตแฟร์ด้วยกัน",
-      "date": "8 ต.ค. 2569",
-      "time": "14:00 - 16:00 น.",
-      "location": "หอศิลปวัฒนธรรมแห่งกรุงเทพมหานคร",
-      "image": "/event-board-games.png",
-      "description": "กิจกรรมตัวอย่างสำหรับทดสอบมายฮับ: กิจกรรมที่คุณไปร่วมมาแล้ว และคนจัดเช็กอินให้เรียบร้อย",
-      "hostName": "คุณแพรว (Praew_Art)",
-      "hostAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
-      "maxParticipants": 6,
-      "createdByMemberId": "mem_sample_praew_art",
-      "galleryImages": [
-        "/event-board-games.png"
-      ],
-      "subActivities": [],
-      "status": "recruiting"
-    },
-    {
-      "category": "chill",
-      "tag": "กิจกรรมคอมมูนิตี้",
-      "price": "เข้าร่วมฟรี",
-      "eventType": "community",
-      "province": "กรุงเทพฯ",
-      "approvalStatus": "approved",
-      "source": "Community Member",
-      "participantsCount": 2,
-      "createdAtTimestamp": 1791728891764,
-      "createdAt": "2026-10-11T14:28:11.712Z",
-      "id": "demo-join-mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
-      "title": "[ตัวอย่าง] วิ่งเบาๆ รอบสวนลุมพินี",
-      "date": "15 ต.ค. 2569",
-      "time": "06:30 - 07:30 น.",
-      "location": "สวนลุมพินี (จุดนัดพบ: ประตูฝั่งถนนพระราม 4)",
-      "image": "/event-city-run.png",
-      "description": "กิจกรรมตัวอย่างสำหรับทดสอบมายฮับ: กิจกรรมที่คุณลงชื่อไว้ และคนจัดจะสแกน QR บนบัตรของคุณที่จุดนัดพบ",
-      "hostName": "คุณกี้ (Kee_Explorer)",
-      "hostAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
-      "maxParticipants": 8,
-      "createdByMemberId": "mem_sample_kee_explorer",
-      "galleryImages": [
-        "/event-city-run.png"
-      ],
-      "subActivities": [],
-      "status": "recruiting"
-    },
-    {
-      "category": "chill",
-      "tag": "กิจกรรมคอมมูนิตี้",
-      "price": "เข้าร่วมฟรี",
-      "eventType": "community",
-      "province": "กรุงเทพฯ",
-      "approvalStatus": "approved",
-      "source": "Community Member",
-      "participantsCount": 3,
-      "createdAtTimestamp": 1791728891764,
-      "createdAt": "2026-10-11T14:28:11.712Z",
-      "id": "demo-host-mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
-      "title": "[ตัวอย่าง] เดินเล่นสวนเบญจกิติยามเย็น",
-      "date": "18 ต.ค. 2569",
-      "time": "17:30 - 19:00 น.",
-      "location": "สวนเบญจกิติ (จุดนัดพบ: ทางเข้าฝั่งศูนย์สิริกิติ์)",
-      "image": "/event-city-run.png",
-      "description": "กิจกรรมตัวอย่างสำหรับทดสอบมายฮับ: เดินเล่นคุยกันสบายๆ รอบสวน แล้วนั่งพักดูพระอาทิตย์ตก",
-      "hostName": "Duke",
-      "hostAvatar": "/uploads/avatars/1791617032836-cha9k7c.webp",
-      "maxParticipants": 8,
-      "createdByMemberId": "mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
-      "galleryImages": [
-        "/event-city-run.png"
-      ],
-      "subActivities": [],
-      "status": "recruiting",
-      "externalUrl": "https://www.qsncc.com/en/whats-on/event-calendar",
-      "link": "https://www.qsncc.com/en/whats-on/event-calendar",
-      "sourceUrl": "https://www.qsncc.com/en/whats-on/event-calendar"
     },
     {
       "title": "เรียนรู้งานศิลปะ เซ็นทรัลลาดพร้าว",
@@ -8459,66 +8372,6 @@
         "userAvatar": "/uploads/avatars/1791617032836-cha9k7c.webp",
         "joinedAt": "2026-10-11T14:00:12.916Z",
         "ticketCode": "ABS9B7"
-      }
-    ],
-    "demo-host-mem_268dbfac-299b-4ccb-8a59-1286e68e9124": [
-      {
-        "userId": "mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
-        "userName": "Duke",
-        "userAvatar": "/uploads/avatars/1791617032836-cha9k7c.webp",
-        "note": "host",
-        "joinedAt": "2026-10-11T14:28:11.775Z",
-        "ticketCode": "AJ5FLW"
-      },
-      {
-        "userId": "mem_sample_kee_explorer",
-        "userName": "คุณกี้ (Kee_Explorer)",
-        "userAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
-        "joinedAt": "2026-10-11T14:28:11.787Z",
-        "ticketCode": "BLZF6R",
-        "checkedInAt": "2026-10-11T14:28:11.818Z"
-      },
-      {
-        "userId": "mem_sample_mint_vibes",
-        "userName": "คุณมิ้นท์ (Mint_Vibes)",
-        "userAvatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80",
-        "joinedAt": "2026-10-11T14:28:11.804Z",
-        "ticketCode": "5YUM2Q"
-      }
-    ],
-    "demo-join-mem_268dbfac-299b-4ccb-8a59-1286e68e9124": [
-      {
-        "userId": "mem_sample_kee_explorer",
-        "userName": "คุณกี้ (Kee_Explorer)",
-        "userAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
-        "note": "host",
-        "joinedAt": "2026-10-11T14:28:11.844Z",
-        "ticketCode": "CS7BXW"
-      },
-      {
-        "userId": "mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
-        "userName": "Duke",
-        "userAvatar": "/uploads/avatars/1791617032836-cha9k7c.webp",
-        "joinedAt": "2026-10-11T14:28:11.856Z",
-        "ticketCode": "GJ4QJ5"
-      }
-    ],
-    "demo-past-mem_268dbfac-299b-4ccb-8a59-1286e68e9124": [
-      {
-        "userId": "mem_sample_praew_art",
-        "userName": "คุณแพรว (Praew_Art)",
-        "userAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
-        "note": "host",
-        "joinedAt": "2026-10-11T14:28:11.882Z",
-        "ticketCode": "AJ66K9"
-      },
-      {
-        "userId": "mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
-        "userName": "Duke",
-        "userAvatar": "/uploads/avatars/1791617032836-cha9k7c.webp",
-        "joinedAt": "2026-10-11T14:28:11.893Z",
-        "ticketCode": "P25VQ6",
-        "checkedInAt": "2026-10-11T14:28:11.905Z"
       }
     ],
     "spot-buddy-1791731960279": [

@@ -589,14 +589,40 @@ export const MASTER_POPULAR_PROVINCE_TAGS = [
 export interface MasterQuestCategory {
   id: string;
   name: string;
+  /** What kind of challenge belongs here, shown to staff */
+  desc: string;
+  /** A key of ICON_OPTIONS in lib/masterData.ts */
+  iconKey: string;
 }
 
+/**
+ * A challenge's category says what it is about, the way a visitor would look for it.
+ * (How it is counted and what it gives are separate: the rule and the reward.)
+ * Staff add, rename and switch categories off in the admin console; these are the ones every install starts with.
+ */
 export const MASTER_QUEST_CATEGORIES: MasterQuestCategory[] = [
-  { id: 'general', name: 'ทั่วไป' },
-  { id: 'exp_only', name: 'สะสม EXP' },
-  { id: 'badge_only', name: 'สะสม Badge' },
-  { id: 'exp_badge', name: 'สะสม EXP + Badge' },
+  { id: 'cafe_food', name: 'คาเฟ่ & ของอร่อย', desc: 'ตระเวนคาเฟ่ ร้านอาหาร และตลาด', iconKey: 'Coffee' },
+  { id: 'active_outdoor', name: 'ออกกำลัง & กลางแจ้ง', desc: 'วิ่ง เดิน ปั่น ฟิตเนส และสวนสาธารณะ', iconKey: 'Dumbbell' },
+  { id: 'art_learn', name: 'ศิลปะ & เรียนรู้', desc: 'แกลเลอรี พิพิธภัณฑ์ งานหนังสือ และเวิร์กช็อป', iconKey: 'Palette' },
+  { id: 'wellness', name: 'ฮีลใจ & ดูแลตัวเอง', desc: 'โยคะ สมาธิ และการพักจากหน้าจอ', iconKey: 'Sun' },
+  { id: 'social', name: 'พบปะ & ทำด้วยกัน', desc: 'บอร์ดเกม กิจกรรมกลุ่ม และการเจอเพื่อนใหม่', iconKey: 'HeartHandshake' },
+  { id: 'travel', name: 'เที่ยว & ต่างจังหวัด', desc: 'ธรรมชาติ วัด จุดชมวิว และเมืองเก่าทั่วไทย', iconKey: 'Mountain' },
 ];
+
+/** Ids an earlier version used for challenge categories, mapped to today's */
+export const LEGACY_QUEST_CATEGORIES: Record<string, string> = {
+  heal: 'wellness',
+  move: 'active_outdoor',
+  learn: 'art_learn',
+  chill: 'social',
+  general: 'social',
+  exp_only: 'social',
+  badge_only: 'social',
+  exp_badge: 'social',
+};
+
+/** A challenge's category id as used today */
+export const questCategoryId = (category: string | undefined): string => (category && LEGACY_QUEST_CATEGORIES[category]) || category || 'social';
 
 // =========================================================================
 // 6. 🎯 DETERMINISTIC SINGLE-CATEGORY CLASSIFIERS (1 Card = Exactly 1 Category)

@@ -237,13 +237,13 @@ export const MemberPrivilegesSection: React.FC<MemberPrivilegesSectionProps> = (
             <div className="flex items-start justify-between gap-2">
               <div className="space-y-0.5 min-w-0">
                 <span className="text-[9px] font-black text-blue-700 uppercase tracking-wider block leading-none">
-                  XP Rewards Hub
+ XP Rewards Hub
                 </span>
                 <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 leading-snug truncate">
                   รวมของรางวัลไลฟ์สไตล์
                 </h3>
                 <p className="text-[10px] text-slate-500 truncate mt-0.5">
-                  สะสมแต้ม XP จากชาเลนจ์มาแลกรับสิทธิ์
+                  สะสม XP จากชาเลนจ์มาแลกรับสิทธิ์
                 </p>
               </div>
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white text-blue-600 shadow-xs flex items-center justify-center shrink-0 border border-blue-100 group-hover:scale-105 transition-transform">

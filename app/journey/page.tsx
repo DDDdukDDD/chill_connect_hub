@@ -36,7 +36,7 @@ const VIBE_ORDER: SpotVibeId[] = ['cafe_slowbar', 'nature_camping', 'art_creativ
 const STEPS = [
   { href: '#journey-where', title: 'เลือกที่ไป', line: 'ที่เที่ยว กิจกรรม งานแฟร์' },
   { href: '#journey-moments', title: 'โมเมนต์จากเพื่อนๆ', line: 'รูปและเรื่องเล่าจากคนที่ไปจริง' },
-  { href: '#journey-rewards', title: 'ภารกิจและรางวัล', line: 'ออกไปเที่ยว สะสมเหรียญและแต้ม' },
+  { href: '#journey-rewards', title: 'ภารกิจและรางวัล', line: 'ออกไปเที่ยว สะสมเหรียญและ XP' },
 ];
 
 const eventSearchText =(e: EventItem) =>
@@ -61,7 +61,6 @@ function JourneyContent() {
   const spotsList = useMemo(() => (liveSpots.length > 0 ? liveSpots : isSpotsLoaded ? MOCK_SPOTS : []), [liveSpots, isSpotsLoaded]);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [favoriteSpots, setFavoriteSpots] = useState<string[]>([]);
-  const [joinedQuestTitles, setJoinedQuestTitles] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -90,8 +89,6 @@ function JourneyContent() {
       if (storedFavs) setFavorites(JSON.parse(storedFavs));
       const storedSpotFavs = localStorage.getItem('favorite_spots');
       if (storedSpotFavs) setFavoriteSpots(JSON.parse(storedSpotFavs));
-      const storedQuests = localStorage.getItem('joined_quest_titles');
-      if (storedQuests) setJoinedQuestTitles(JSON.parse(storedQuests));
     } catch {}
 
     let isActive = true;
@@ -314,22 +311,6 @@ function JourneyContent() {
     </div>
   );
 
-  const handleJoinQuestFromHome = (questTitle: string) => {
-    if (!isLoggedIn) {
-      triggerMembershipPrompt('เพื่อกดรับภารกิจชาเลนจ์นี้');
-      return;
-    }
-    setJoinedQuestTitles((prev) => {
-      if (prev.includes(questTitle)) return prev;
-      const updated = [...prev, questTitle];
-      try {
-        localStorage.setItem('joined_quest_titles', JSON.stringify(updated));
-      } catch {}
-      showToast(`รับภารกิจ "${questTitle}" แล้ว`);
-      return updated;
-    });
-  };
-
   const handleSearchSubmit = () => {
     document.getElementById('journey-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
@@ -368,8 +349,6 @@ function JourneyContent() {
             setSurpriseMode(mode || 'all');
             setIsSurpriseModalOpen(true);
           }}
-          onJoinQuest={handleJoinQuestFromHome}
-          joinedQuestTitles={joinedQuestTitles}
           activeTab="all"
           onSelectDiscoveryTab={(tab) => {
             if (tab !== 'all') router.push(`/${tab}`);
@@ -428,8 +407,6 @@ function JourneyContent() {
               {/* 6. Step 3, what you get for going out: challenges, then member privileges */}
               <div id="journey-rewards" className="scroll-mt-24 space-y-6">
                 <CommunityChallengeBar
-                  onJoinQuest={handleJoinQuestFromHome}
-                  joinedQuestTitles={isLoggedIn ? joinedQuestTitles : []}
                   minimalHeader={true}
                   title="ภารกิจชวนออกไปเที่ยว"
                 />

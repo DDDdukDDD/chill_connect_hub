@@ -5,7 +5,7 @@ import type { Member } from '../members/types';
 import { thaiTimeAgo } from '../moments/service';
 import { createJsonStore } from './jsonStore';
 
-export type NotificationType = 'follow' | 'like' | 'comment';
+export type NotificationType = 'follow' | 'like' | 'comment' | 'challenge';
 
 interface StoredNotification {
   id: string;
@@ -16,6 +16,8 @@ interface StoredNotification {
   momentId?: string;
   /** Start of the comment, for 'comment' */
   preview?: string;
+  /** For 'challenge': the challenge the member finished (actorId is the member themselves) */
+  questId?: string;
   createdAt: string;
   read: boolean;
 }
@@ -35,7 +37,17 @@ export async function notify(recipientId: string | null | undefined, actor: Memb
   });
 }
 
-const MESSAGES: Record<NotificationType, string> = { follow: 'เริ่มติดตามคุณ', like: 'ส่งหัวใจให้โมเมนต์ของคุณ', comment: 'แสดงความคิดเห็นในโมเมนต์ของคุณ' };
+/** Tells a member, once per challenge, that they finished it and the reward is waiting */
+export async function notifyChallengeFinished(memberId: string, questId: string, questTitle: string): Promise<void> {
+  await store.update((items) => {
+    if (items.some((n) => n.memberId === memberId && n.type === 'challenge' && n.questId === questId)) return items;
+    const next = [{ id: `ntf_${randomUUID()}`, memberId, type: 'challenge' as const, actorId: memberId, questId, preview: questTitle.slice(0, 80), createdAt: new Date().toISOString(), read: false }, ...items];
+    let kept = 0;
+    return next.filter((n) => n.memberId !== memberId || ++kept <= KEEP_PER_MEMBER);
+  });
+}
+
+const MESSAGES: Record<NotificationType, string> = { follow: 'เริ่มติดตามคุณ', like: 'ส่งหัวใจให้โมเมนต์ของคุณ', comment: 'แสดงความคิดเห็นในโมเมนต์ของคุณ', challenge: 'คุณทำชาเลนจ์ครบแล้ว กดดูรางวัลได้เลย' };
 
 export async function notificationsFor(member: Member) {
   const mine = store.read().filter((n) => n.memberId === member.id);
@@ -43,8 +55,23 @@ export async function notificationsFor(member: Member) {
   const actors = new Map<string, Member | null>();
   for (const id of new Set(mine.map((n) => n.actorId))) actors.set(id, await memberRepository.findById(id));
   const items = mine
-    .filter((n) => !blocked.has(n.actorId) && actors.get(n.actorId)?.status === 'active')
+    .filter((n) => n.type === 'challenge' || (!blocked.has(n.actorId) && actors.get(n.actorId)?.status === 'active'))
     .map((n) => {
+      if (n.type === 'challenge') {
+        return {
+          id: n.id,
+          type: n.type,
+          actorId: n.actorId,
+          actorName: 'Chill & Connect Hub',
+          actorAvatar: '',
+          momentId: undefined,
+          href: `/challenges/${encodeURIComponent(n.questId ?? '')}`,
+          message: MESSAGES.challenge,
+          preview: n.preview,
+          timeAgo: thaiTimeAgo(n.createdAt),
+          read: n.read,
+        };
+      }
       const actor = actors.get(n.actorId)!;
       return {
         id: n.id,
@@ -53,6 +80,7 @@ export async function notificationsFor(member: Member) {
         actorName: tidyDisplayName(actor.displayName).trim() || actor.displayName,
         actorAvatar: actor.avatarUrl ?? '',
         momentId: n.momentId,
+        href: undefined as string | undefined,
         message: MESSAGES[n.type],
         preview: n.preview,
         timeAgo: thaiTimeAgo(n.createdAt),

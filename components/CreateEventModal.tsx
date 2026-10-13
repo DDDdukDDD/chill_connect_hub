@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/useAuth';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { activityActions } from '@/lib/useMyActivity';
 import { DialogShell, dialogButton } from './auth/DialogShell';
+import { useMasterData } from '@/lib/useMasterData';
 import { LocationPinPicker, Pin } from './LocationPinPicker';
 import { SUBMISSION_SENT_EVENT } from './MySubmissions';
 import { RichTextEditor, renderDescriptionContent, stripHtmlToPlainText } from './RichTextEditor';
@@ -582,6 +583,24 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
     </Field>
   );
 
+  const { questCategories } = useMasterData();
+  const questCategoryField = (
+    <Field label="หมวด">
+      <div className="grid grid-cols-2 gap-2">
+        {questCategories.map((item) => {
+          const selected = (form.category as string) === item.id;
+          return (
+            <button key={item.id} type="button" aria-pressed={selected} onClick={() => set('category', item.id as Category)}
+              className={`relative text-left p-3 rounded-2xl border cursor-pointer transition-colors ${selected ? 'border-[#2563EB] ring-1 ring-[#2563EB]' : 'border-slate-300 hover:border-slate-400'}`}>
+              <span className="block text-sm font-extrabold text-slate-900 pr-5">{item.name}</span>
+              <span className="block mt-0.5 text-xs font-medium text-slate-500">{item.description}</span>
+              {selected && <Check className="absolute top-3 right-3 w-4 h-4 text-[#2563EB]" aria-hidden="true" />}
+            </button>
+          );
+        })}
+      </div>
+    </Field>
+  );
   const categoryField = (
     <Field label="หมวด">
       <div className="grid grid-cols-2 gap-2">
@@ -730,7 +749,8 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
           {type === 'fair' && titleField('ชื่องาน', 'เช่น สัปดาห์หนังสือแห่งชาติ ครั้งที่ 54')}
           {type === 'spot' && titleField('ชื่อสถานที่', 'เช่น ไร่ชาลุงเดช')}
           {type === 'challenge' && titleField('ชื่อชาเลนจ์', 'เช่น ตะลุย 3 คาเฟ่ย่านอารีย์')}
-          {(type === 'community' || type === 'challenge') && categoryField}
+          {type === 'community' && categoryField}
+          {type === 'challenge' && questCategoryField}
           {type === 'fair' && (
             <Field label="ผู้จัดงาน" htmlFor={id('organizer')} error={errors.organizer} hint="ชื่อองค์กรหรือทีมที่จัดงานนี้">
               <input id={id('organizer')} value={form.organizer} maxLength={80} onChange={(e) => set('organizer', e.target.value)} className={inputClass(Boolean(errors.organizer))} />

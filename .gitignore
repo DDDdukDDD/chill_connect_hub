@@ -56,6 +56,9 @@ next-env.d.ts
 /data/reviews.json
 /data/visits.json
 /data/redemptions.json
+/data/quest_joins.json
+/data/quest_vouchers.json
+/data/quest_finishes.json
 /data/chat_messages.json
 /data/fair_groups.json
 /data/content_reports.json

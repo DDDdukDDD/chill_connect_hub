@@ -5,9 +5,13 @@ import { db, CreateQuestDTO, UpdateQuestDTO } from '@/lib/db';
 import { getAdminActor, requireAdminApiAccess } from '@/lib/adminApiAuth';
 import { recordAudit } from '@/lib/auditLog';
 import { parseQuestRule } from '@/lib/social/questProgress';
+import { findVoucherByCode, markVoucherUsed } from '@/lib/social/questVouchers';
+import { memberRepository } from '@/lib/members';
+import { getMasterData } from '@/lib/masterDataStore';
 
 const QUEST_STATUSES = new Set(['draft', 'active', 'ended']);
-const QUEST_CATEGORIES = new Set(['heal', 'move', 'chill', 'learn']);
+// A challenge's category must be one of the active ones in the master data (admin console → categories)
+const isQuestCategory = (id: string) => getMasterData().questCategories.some((category) => category.active && category.id === id);
 const MUTABLE_QUEST_FIELDS = new Set<keyof ChallengeQuest>([
   'title', 'iconName', 'progressPercent', 'current', 'total', 'badgeLabel',
   'badgeIcon', 'badgeCoverImg', 'completedCountInfo', 'category', 'visibility',
@@ -68,7 +72,7 @@ function validateQuest(quest: Partial<ChallengeQuest>): string | null {
   if (typeof quest.title !== 'string' || quest.title.trim().length < 5) return 'ชื่อภารกิจต้องมีอย่างน้อย 5 ตัวอักษร';
   if (typeof quest.badgeLabel !== 'string' || !quest.badgeLabel.trim()) return 'กรุณาระบุชื่อเหรียญตรา';
   if (typeof quest.targetGoal !== 'string' || quest.targetGoal.trim().length < 15) return 'เป้าหมายภารกิจต้องมีอย่างน้อย 15 ตัวอักษร';
-  if (quest.category && !QUEST_CATEGORIES.has(quest.category)) return 'หมวดหมู่ภารกิจไม่ถูกต้อง';
+  if (quest.category && !isQuestCategory(quest.category)) return 'หมวดหมู่ภารกิจไม่ถูกต้อง';
   if (quest.status && !QUEST_STATUSES.has(quest.status)) return 'สถานะภารกิจไม่ถูกต้อง';
   const total = Number(quest.total);
   if (!Number.isFinite(total) || total < 1) return 'เป้าหมายภารกิจต้องมากกว่า 0';
@@ -80,9 +84,7 @@ function createQuestRecord(input: Record<string, unknown>): CreateQuestDTO | str
     title: typeof input.title === 'string' ? input.title.trim() : '',
     badgeLabel: typeof input.badgeLabel === 'string' ? input.badgeLabel.trim() : '',
     targetGoal: typeof input.targetGoal === 'string' ? input.targetGoal.trim() : '',
-    category: typeof input.category === 'string' && QUEST_CATEGORIES.has(input.category)
-      ? input.category as ChallengeQuest['category']
-      : 'chill' as const,
+    category: typeof input.category === 'string' && isQuestCategory(input.category) ? input.category : 'social',
     iconName: typeof input.iconName === 'string' && input.iconName.trim() ? input.iconName.trim() : 'Zap',
     total: String(Math.floor(Number(input.total) || 1)),
   };
@@ -90,6 +92,8 @@ function createQuestRecord(input: Record<string, unknown>): CreateQuestDTO | str
   if (typeof brandReward === 'string') return brandReward;
   const image = parseImageUrl(input.image);
   if (image === false) return 'URL รูปภาพต้องขึ้นต้นด้วย https:// หรือ /';
+  const rule = input.rule ? parseQuestRule(input.rule) : undefined;
+  if (input.rule && !rule) return 'Invalid quest rule';
   const startDate = optionalText(input.startDate, 40);
   const endDate = optionalText(input.endDate, 40);
   const validationError = validateQuest({ ...quest, startDate, endDate, status: 'draft' });
@@ -123,6 +127,7 @@ function createQuestRecord(input: Record<string, unknown>): CreateQuestDTO | str
     endDate,
     image,
     brandReward: brandReward ?? undefined,
+    rule: rule ?? undefined,
   };
 }
 
@@ -213,6 +218,27 @@ export async function POST(request: Request) {
       const quest = await db.updateQuest(body.id, safeFields);
       recordAudit(actor, 'quest.update', `แก้ไขชาเลนจ์ "${existing.title}" (${Object.keys(safeFields).join(', ')})`, { type: 'quest', id: body.id });
       return NextResponse.json({ success: true, quest });
+    }
+
+    // A reward code a member shows at a partner: look it up, or mark it used
+    if (body.action === 'check_voucher' || body.action === 'use_voucher') {
+      const code = typeof body.code === 'string' ? body.code.slice(0, 60) : '';
+      const voucher = body.action === 'use_voucher' ? await markVoucherUsed(code) : findVoucherByCode(code);
+      if (!voucher) return NextResponse.json({ success: false, error: 'ไม่พบรหัสนี้ ตรวจตัวสะกดอีกครั้ง' }, { status: 404 });
+      const [quest, member] = await Promise.all([db.findQuestById(voucher.questId), memberRepository.findById(voucher.memberId)]);
+      if (body.action === 'use_voucher') recordAudit(actor, 'quest.voucher_used', `ทำเครื่องหมายรหัสรางวัล ${voucher.code} ว่าใช้แล้ว`, { type: 'quest', id: voucher.questId });
+      return NextResponse.json({
+        success: true,
+        voucher: {
+          code: voucher.code,
+          issuedAt: voucher.issuedAt,
+          usedAt: voucher.usedAt ?? null,
+          questTitle: quest?.title ?? '(ชาเลนจ์ถูกลบแล้ว)',
+          rewardTitle: quest?.brandReward?.title ?? '',
+          partnerName: quest?.brandReward?.partnerName ?? '',
+          memberName: member?.displayName ?? '(บัญชีถูกลบแล้ว)',
+        },
+      });
     }
 
     if (body.action === 'set_status') {

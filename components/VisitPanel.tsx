@@ -202,7 +202,7 @@ export const VisitPanel: React.FC<VisitPanelProps> = ({ targetType, targetId, ti
           <span className="min-w-0">
             <span className="block font-extrabold text-slate-900 line-clamp-1">นับในภารกิจ {quest.title}</span>
             <span className="block line-clamp-1 tabular-nums">
-              ไปครบ {quest.count} แห่ง รับ {quest.rewardTitle || `${quest.rewardPoints} แต้ม`}
+              ไปครบ {quest.count} แห่ง รับ {quest.rewardTitle || `${quest.rewardPoints} XP`}
             </span>
           </span>
         </Link>

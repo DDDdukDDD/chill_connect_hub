@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { MemberAuthError } from '@/lib/members/accounts';
 import { getSessionMember } from '@/lib/members/session';
 import { proposeQuest, questsProposedBy } from '@/lib/members/submissions';
+import { joinCounts } from '@/lib/social/questJoins';
 
 function parsePositiveInteger(value: string | null, fallback: number, max?: number): number {
   if (!value) return fallback;
@@ -28,10 +29,12 @@ export async function GET(request: Request) {
       searchQuery: searchParams.get('q'),
     });
 
+    const joins = joinCounts();
     return NextResponse.json(
       {
         success: true,
-        quests: result.items,
+        // The number a quest was written with (sample data) plus the members who really joined
+        quests: result.items.map((quest) => ({ ...quest, participantsCount: (quest.participantsCount ?? 0) + (joins.get(quest.id) ?? 0) })),
         pagination: {
           totalCount: result.totalCount,
           page: result.page,

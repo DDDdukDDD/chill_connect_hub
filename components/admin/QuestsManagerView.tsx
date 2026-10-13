@@ -6,14 +6,17 @@ import { AdminPageHeader, adminButton } from './AdminUI';
 import { ChallengeQuest, QuestReward } from '@/data/mockData';
 import { parseQuestDate } from '@/lib/questLifecycle';
 import { handleAdminUnauthorized } from './adminAuthUtils';
+import { useMasterData } from '@/lib/useMasterData';
 
 type QuestStatus = 'draft' | 'active' | 'ended';
-type QuestCategory = 'heal' | 'move' | 'chill' | 'learn';
+type QuestCategory = string;
 
 interface QuestDraft {
   title: string;
   badgeLabel: string;
   targetGoal: string;
+  /** The longer description shown on the challenge page */
+  objective: string;
   category: QuestCategory;
   total: string;
   rewardPoints: string;
@@ -27,13 +30,41 @@ interface QuestDraft {
   exclusiveNotice: string;
   hubRewardNote: string;
   terms: string;
+  /** What the server counts toward the challenge; '' = it is not counted automatically */
+  ruleType: '' | 'spot' | 'community' | 'fair';
+  ruleEvidence: 'marked' | 'moment' | 'checkin';
+  // Comma-separated lists, as typed
+  ruleCategories: string;
+  ruleKeywords: string;
+  ruleProvinces: string;
+  ruleTargetIds: string;
 }
+
+const RULE_TYPE_LABELS = { spot: 'ไปสถานที่', community: 'ร่วมกิจกรรมคอมมูนิตี้', fair: 'ไปงานแฟร์' } as const;
+const RULE_CATEGORY_HINTS = {
+  spot: 'รหัสหมวดสถานที่ เช่น cafe, park, art, museum',
+  community: 'heal, move, chill, learn',
+  fair: 'heal, move, chill, learn',
+} as const;
+const splitList = (value: string) => value.split(',').map((item) => item.trim()).filter(Boolean);
+
+interface VoucherInfo {
+  code: string;
+  issuedAt: string;
+  usedAt: string | null;
+  questTitle: string;
+  rewardTitle: string;
+  partnerName: string;
+  memberName: string;
+}
+const thaiDateTime = (iso: string) => new Date(iso).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
 
 const EMPTY_DRAFT: QuestDraft = {
   title: '',
   badgeLabel: '',
   targetGoal: '',
-  category: 'chill',
+  objective: '',
+  category: 'social',
   total: '1',
   rewardPoints: '100',
   startDate: '',
@@ -46,6 +77,12 @@ const EMPTY_DRAFT: QuestDraft = {
   exclusiveNotice: '',
   hubRewardNote: '',
   terms: '',
+  ruleType: '',
+  ruleEvidence: 'moment',
+  ruleCategories: '',
+  ruleKeywords: '',
+  ruleProvinces: '',
+  ruleTargetIds: '',
 };
 
 // Stored dates may be Thai ("31 ธ.ค. 2569") or ISO; the date input needs ISO
@@ -62,6 +99,7 @@ function toPayload(draft: QuestDraft) {
     title: draft.title,
     badgeLabel: draft.badgeLabel,
     targetGoal: draft.targetGoal,
+    objective: draft.objective.trim() || draft.targetGoal,
     category: draft.category,
     total: draft.total,
     rewardPoints: Number(draft.rewardPoints) || 0,
@@ -77,6 +115,18 @@ function toPayload(draft: QuestDraft) {
       hubRewardNote: isPartner ? undefined : draft.hubRewardNote,
       terms: draft.terms,
     },
+    // The target number above is how many different places or events must be visited; null removes the rule
+    rule: draft.ruleType
+      ? {
+          targetTypes: [draft.ruleType],
+          count: Math.max(1, Math.floor(Number(draft.total)) || 1),
+          minEvidence: draft.ruleEvidence,
+          categories: splitList(draft.ruleCategories),
+          keywords: splitList(draft.ruleKeywords),
+          provinces: splitList(draft.ruleProvinces),
+          targetIds: splitList(draft.ruleTargetIds),
+        }
+      : null,
   };
 }
 
@@ -121,6 +171,35 @@ export function QuestsManagerView() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<QuestDraft>(EMPTY_DRAFT);
+  // Categories are managed under "หมวดหมู่" in this console
+  const { questCategories } = useMasterData();
+  // Reward codes members show at a partner brand
+  const [voucherCode, setVoucherCode] = useState('');
+  const [voucher, setVoucher] = useState<VoucherInfo | null>(null);
+  const [voucherError, setVoucherError] = useState<string | null>(null);
+  const [isCheckingVoucher, setIsCheckingVoucher] = useState(false);
+
+  const sendVoucher = async (action: 'check_voucher' | 'use_voucher') => {
+    if (!voucherCode.trim()) return;
+    setIsCheckingVoucher(true);
+    setVoucherError(null);
+    try {
+      const response = await fetch('/api/admin/quests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, code: voucherCode }),
+      });
+      if (handleAdminUnauthorized(response)) return;
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || 'ตรวจรหัสไม่สำเร็จ');
+      setVoucher(data.voucher);
+    } catch (caught) {
+      setVoucher(null);
+      setVoucherError(caught instanceof Error ? caught.message : 'ตรวจรหัสไม่สำเร็จ');
+    } finally {
+      setIsCheckingVoucher(false);
+    }
+  };
 
   const loadQuests = async () => {
     setIsLoading(true);
@@ -176,12 +255,13 @@ export function QuestsManagerView() {
       title: quest.title,
       badgeLabel: quest.badgeLabel,
       targetGoal: quest.targetGoal || '',
-      category: quest.category || 'chill',
+      objective: quest.objective && quest.objective !== quest.targetGoal ? quest.objective : '',
+      category: quest.category || 'social',
       total: quest.total || '1',
       rewardPoints: String(quest.rewardPoints || 0),
       startDate: toIsoDate(quest.startDate),
       endDate: toIsoDate(quest.endDate),
-      image: quest.image || '',
+      image: quest.image || quest.badgeCoverImg || '',
       rewardType: quest.brandReward?.type || 'hub_central',
       partnerName: quest.brandReward?.type === 'brand_partner' ? quest.brandReward.partnerName : '',
       rewardTitle: quest.brandReward?.title || EMPTY_DRAFT.rewardTitle,
@@ -189,6 +269,12 @@ export function QuestsManagerView() {
       exclusiveNotice: quest.brandReward?.exclusiveNotice || '',
       hubRewardNote: quest.brandReward?.hubRewardNote || '',
       terms: quest.brandReward?.terms || '',
+      ruleType: quest.rule?.targetTypes[0] || '',
+      ruleEvidence: quest.rule?.minEvidence || 'marked',
+      ruleCategories: quest.rule?.categories?.join(', ') || '',
+      ruleKeywords: quest.rule?.keywords?.join(', ') || '',
+      ruleProvinces: quest.rule?.provinces?.join(', ') || '',
+      ruleTargetIds: quest.rule?.targetIds?.join(', ') || '',
     });
     setError(null);
     setIsDialogOpen(true);
@@ -294,6 +380,43 @@ export function QuestsManagerView() {
         ))}
       </section>
 
+      <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-4" aria-labelledby="voucher-check-title">
+        <div>
+          <h3 id="voucher-check-title" className="text-sm font-bold text-slate-900">ตรวจรหัสรางวัล</h3>
+          <p className="text-xs font-medium text-slate-500">รหัสที่สมาชิกได้เมื่อทำชาเลนจ์ของแบรนด์ครบ ตรวจก่อนให้สิทธิ์ แล้วทำเครื่องหมายว่าใช้แล้ว</p>
+        </div>
+        <form
+          className="flex flex-col gap-2 sm:flex-row"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void sendVoucher('check_voucher');
+          }}
+        >
+          <label className="block flex-1">
+            <span className="sr-only">รหัสรางวัล</span>
+            <input value={voucherCode} onChange={(event) => setVoucherCode(event.target.value)} placeholder="เช่น ARI-BREW-XXXXXXXX" autoComplete="off" className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm uppercase focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+          </label>
+          <button type="submit" disabled={isCheckingVoucher || !voucherCode.trim()} className="h-10 whitespace-nowrap rounded-md bg-[#2563EB] px-4 text-sm font-semibold text-white hover:bg-[#1D4ED8] disabled:opacity-50">
+            {isCheckingVoucher ? 'กำลังตรวจ…' : 'ตรวจรหัส'}
+          </button>
+        </form>
+        {voucherError && <p role="alert" className="text-sm text-rose-700">{voucherError}</p>}
+        {voucher && (
+          <div className={`flex flex-wrap items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm ${voucher.usedAt ? 'border-amber-200 bg-amber-50 text-amber-900' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>
+            <div className="min-w-0 space-y-0.5">
+              <p className="font-bold">{voucher.usedAt ? `ใช้ไปแล้วเมื่อ ${thaiDateTime(voucher.usedAt)}` : 'รหัสถูกต้อง ยังไม่เคยใช้'}</p>
+              <p className="font-medium">{voucher.rewardTitle || voucher.questTitle}{voucher.partnerName ? ` · ${voucher.partnerName}` : ''}</p>
+              <p className="text-xs font-medium">สมาชิก: {voucher.memberName} · ชาเลนจ์: {voucher.questTitle} · ออกรหัส {thaiDateTime(voucher.issuedAt)}</p>
+            </div>
+            {!voucher.usedAt && (
+              <button type="button" disabled={isCheckingVoucher} onClick={() => void sendVoucher('use_voucher')} className="h-9 whitespace-nowrap rounded-md border border-emerald-300 bg-white px-3 text-xs font-semibold text-emerald-900 hover:bg-emerald-100 disabled:opacity-50">
+                ทำเครื่องหมายว่าใช้แล้ว
+              </button>
+            )}
+          </div>
+        )}
+      </section>
+
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex gap-1 overflow-x-auto rounded-lg bg-slate-100 p-1" role="tablist" aria-label="กรองสถานะภารกิจ">
@@ -386,13 +509,17 @@ export function QuestsManagerView() {
               <label className="block space-y-1.5 text-sm font-medium text-slate-800">เป้าหมาย
                 <textarea required minLength={15} rows={3} value={draft.targetGoal} onChange={(event) => setDraft({ ...draft, targetGoal: event.target.value })} className="w-full resize-y rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
               </label>
+              <label className="block space-y-1.5 text-sm font-medium text-slate-800">รายละเอียด (ไม่บังคับ)
+                <textarea value={draft.objective} onChange={(event) => setDraft({ ...draft, objective: event.target.value })} rows={3} maxLength={600} placeholder="เล่าว่าชาเลนจ์นี้ชวนทำอะไร ทำไมน่าร่วม เหมาะกับใคร" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                <span className="block text-xs font-medium text-slate-500">แสดงใต้หัวข้อ &quot;รายละเอียดชาเลนจ์&quot; ต่อจากเป้าหมาย</span>
+              </label>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <label className="block space-y-1.5 text-sm font-medium text-slate-800">ชื่อเหรียญตรา
                   <input required value={draft.badgeLabel} onChange={(event) => setDraft({ ...draft, badgeLabel: event.target.value })} className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
                 </label>
                 <label className="block space-y-1.5 text-sm font-medium text-slate-800">หมวดหมู่
                   <select value={draft.category} onChange={(event) => setDraft({ ...draft, category: event.target.value as QuestCategory })} className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100">
-                    <option value="heal">ฮีลใจ</option><option value="move">แอคทีฟ</option><option value="chill">ชิลล์</option><option value="learn">เรียนรู้</option>
+                    {questCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
                   </select>
                 </label>
                 <label className="block space-y-1.5 text-sm font-medium text-slate-800">จำนวนเป้าหมาย
@@ -414,6 +541,48 @@ export function QuestsManagerView() {
                   </label>
                 </div>
                 <p className="text-[11px] sm:text-xs font-semibold text-slate-500">ระบบจะเปลี่ยนเป็น &quot;สิ้นสุด&quot; เองเมื่อเลยวันสิ้นสุด และคำนวณจำนวนวันที่เหลือให้อัตโนมัติ</p>
+              </fieldset>
+
+              <fieldset className="space-y-3 border-t border-slate-200 pt-4">
+                <legend className="text-sm font-bold text-slate-900">การนับความคืบหน้า</legend>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <label className="block space-y-1.5 text-sm font-medium text-slate-800">นับจาก
+                    <select value={draft.ruleType} onChange={(event) => setDraft({ ...draft, ruleType: event.target.value as QuestDraft['ruleType'] })} className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                      <option value="">ไม่นับอัตโนมัติ</option>
+                      {Object.entries(RULE_TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                    </select>
+                  </label>
+                  {draft.ruleType && (
+                    <label className="block space-y-1.5 text-sm font-medium text-slate-800">หลักฐานขั้นต่ำ
+                      <select value={draft.ruleEvidence} onChange={(event) => setDraft({ ...draft, ruleEvidence: event.target.value as QuestDraft['ruleEvidence'] })} className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                        <option value="marked">กด &quot;มาที่นี่แล้ว&quot;</option>
+                        <option value="moment">แชร์โมเมนต์พร้อมรูป</option>
+                        <option value="checkin">โฮสต์เช็กอินให้ (เฉพาะกิจกรรมคอมมูนิตี้)</option>
+                      </select>
+                    </label>
+                  )}
+                </div>
+                {draft.ruleType ? (
+                  <>
+                    <p className="text-[11px] sm:text-xs font-semibold text-slate-500">สมาชิกต้องไปให้ครบตาม &quot;จำนวนเป้าหมาย&quot; ด้านบน โดยนับเฉพาะที่ตรงทุกเงื่อนไขที่กรอก ช่องที่เว้นว่างคือไม่จำกัด คั่นหลายค่าด้วยจุลภาค</p>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <label className="block space-y-1.5 text-sm font-medium text-slate-800">หมวดหมู่
+                        <input value={draft.ruleCategories} onChange={(event) => setDraft({ ...draft, ruleCategories: event.target.value })} placeholder={RULE_CATEGORY_HINTS[draft.ruleType]} className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                      </label>
+                      <label className="block space-y-1.5 text-sm font-medium text-slate-800">จังหวัด
+                        <input value={draft.ruleProvinces} onChange={(event) => setDraft({ ...draft, ruleProvinces: event.target.value })} placeholder="เช่น กรุงเทพฯ" className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                      </label>
+                      <label className="block space-y-1.5 text-sm font-medium text-slate-800">คำในชื่อ (ตรงคำใดคำหนึ่ง)
+                        <input value={draft.ruleKeywords} onChange={(event) => setDraft({ ...draft, ruleKeywords: event.target.value })} placeholder="เช่น hyrox, บอร์ดเกม" className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                      </label>
+                      <label className="block space-y-1.5 text-sm font-medium text-slate-800">เฉพาะรหัสเหล่านี้
+                        <input value={draft.ruleTargetIds} onChange={(event) => setDraft({ ...draft, ruleTargetIds: event.target.value })} placeholder="รหัสสถานที่หรือกิจกรรม" className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                      </label>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-[11px] sm:text-xs font-semibold text-slate-500">ภารกิจนี้จะไม่มีความคืบหน้าอัตโนมัติ และสมาชิกจะไม่ได้ XP รางวัลเมื่อทำครบ</p>
+                )}
               </fieldset>
 
               <fieldset className="space-y-3 border-t border-slate-200 pt-4">
@@ -444,7 +613,7 @@ export function QuestsManagerView() {
                   </div>
                 ) : (
                   <label className="block space-y-1.5 text-sm font-medium text-slate-800">รายละเอียดรางวัล Hub
-                    <input value={draft.hubRewardNote} onChange={(event) => setDraft({ ...draft, hubRewardNote: event.target.value })} placeholder="เช่น รับแต้ม Boosted XP ไปแลกของรางวัลที่ /rewards" className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                    <input value={draft.hubRewardNote} onChange={(event) => setDraft({ ...draft, hubRewardNote: event.target.value })} placeholder="เช่น รับ XP Boosted XP ไปแลกของรางวัลที่ /rewards" className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
                   </label>
                 )}
                 <label className="block space-y-1.5 text-sm font-medium text-slate-800">ข้อกำหนดการใช้สิทธิ์

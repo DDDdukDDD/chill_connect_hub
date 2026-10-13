@@ -887,3 +887,188 @@ New placeholder content in a page must be behind `eventOrigin(...) === 'sample'`
 - **Not done yet:** `/challenges` still has four quests typed into the page (two of them ended). `post-spot-1` is tied to `spot-bkk-1`, a draft in the store (the page opens from the bundled list, but the place is in no public list). Near-duplicate sample quests are both kept: coffee (`1`, `comm-quest-1`), HYROX (`4`, `comm-quest-3`), digital detox (`3` ended, `comm-quest-5`).
 - **Action for the other side:** None. A dev server that was already running needs a restart to pick up the seed changes.
 - **Status:** Open
+
+
+### BE-043 · Joining a challenge is kept with the account; rule fields in the admin form (owner request)
+- **From → To:** Claude Code → Frontend
+- **Date / branch:** 2026-10-13 · `claude`
+- **What changed / what is needed:** Joining was a list in the browser (`cch_my_challenges`) that started with four sample challenges for everyone. It is now on the account; see `docs/API.md`, "Joining a challenge".
+  - New `lib/social/questJoins.ts`, `app/api/quests/join/route.ts`. `GET /api/rewards` adds `joinedQuestIds` and `quests[].joined`. A challenge's reward points count only while the member is joined; progress is counted from visits either way.
+  - `GET /api/quests`: `participantsCount` is the written number plus real joins.
+  - `lib/useMyRewards.ts`: `joinQuest`, `leaveQuest`, `syncMyChallenges`.
+  - `app/challenges/page.tsx`: joined state, join and cancel go through the account; the page lists the catalog only. Its four typed-in quests moved to `MOCK_CHALLENGES` (`quest-off-3`, `quest-off-4` with current dates and a rule; `quest-ended-1`, `quest-ended-2` as ended).
+  - `app/myhub/page.tsx`: the challenge list is the joined challenges from the account with the catalog's details.
+  - `components/CommunityChallengeBar.tsx`: joined state and progress from the account; the made-up "1/3" a card showed right after joining is gone. `joinedQuestTitles` is still accepted but no longer read; `onJoinQuest` is called after a saved join and when a signed-out visitor tries to join.
+  - `components/admin/QuestsManagerView.tsx`: a "การนับความคืบหน้า" section sets the rule (what is counted, weakest evidence, categories, provinces, title words, ids). The target number is the rule's count. `/api/admin/quests` accepts `rule` on create as well.
+  - `SAMPLE_JOINED_CHALLENGES` (BE-042) is removed. The challenge row and `/challenges` use `badgeCoverImg || image` for the cover, so a cover set in the admin form shows.
+- **Not done yet:** the hero and the place modal on `/` still read joined titles from the browser list, which is only brought in line when `/challenges` or My Hub is opened. Saving a seed quest in the admin form sets the rule's count to the target number (for "Digital Detox" that is 3 hours against a count of 1; check before saving).
+- **Action for the other side:** None.
+- **Status:** Open
+
+
+### BE-044 · The challenge detail window shows what the server counted (owner request)
+- **From → To:** Claude Code → Frontend
+- **Date / branch:** 2026-10-13 · `claude` (not committed yet)
+- **What changed / what is needed:** The window (`components/JoinChallengeModal.tsx`, used on `/challenges`, the homepage row and the hero) let anyone press "send proof" and reach a reward card with the same code for everybody. It now reads `GET /api/quests/[id]`; see `docs/API.md`.
+  - New `app/api/quests/[id]/route.ts`, `lib/social/questVouchers.ts`; `targetsOfQuest` in `lib/social/questProgress.ts`.
+  - A challenge with a rule: a "ไปที่ไหนได้บ้าง" list of the places and events that count, each a link, with "นับแล้ว" on the ones already counted; progress is the server's; the main button for a joined member is "ไปกันเลย" (the next place). The simulated GPS / photo / QR proof form is gone for these.
+  - A challenge without a rule: the member notes progress for themselves ("บันทึกความคืบหน้าเอง"), kept in the browser under `cch_quest_notes`, and the window says it earns no points or reward.
+  - The partner reward card appears only when the server says the challenge is finished, with the member's own code. The made-up "1/N" right after joining is gone.
+  - `data/mockData.ts`: the nine seed quests whose reward was guessed from the title now carry `brandReward` (same values).
+  - `app/challenges/page.tsx`: the signed-out button no longer promises "+100 XP ฟรี".
+- **Not done yet:** seed texts on some quests still describe GPS check-ins in their steps (the "ขั้นตอน" list), which the product does not do; the admin form has no steps field to correct them. Cards and the window still show "+XP" on the two quests without a rule (Step Count, Morning Yoga), though they cannot be finished for points. Emoji remain inside the reward cards. `isCompleted` is still accepted by the window but no longer read.
+- **Action for the other side:** None.
+- **Status:** Open
+
+
+### BE-045 · Challenges page: own progress on cards, one word for the thing, moments in the detail window (owner request)
+- **From → To:** Claude Code → Frontend
+- **Date / branch:** 2026-10-13 · `claude` (not committed yet)
+- **What changed / what is needed:**
+  - `app/challenges/page.tsx`: a joined card shows the member's own progress bar from the account ("ร่วมอยู่ บันทึกความคืบหน้าเองได้" for a challenge without a rule). Heading is "ชาเลนจ์ชวนออกไปใช้ชีวิต"; the tabs read "เปิดอยู่" and "จบไปแล้ว"; the card button reads "ร่วมเลย".
+  - Wording in `app/challenges/page.tsx`, `components/JoinChallengeModal.tsx`, `components/CommunityChallengeBar.tsx`: the thing is "ชาเลนจ์" everywhere (it was also "ภารกิจ" and "เควสต์"), and points are "แต้ม" (it was "XP"). The row's default heading changed with it. Join toasts on `/`, `/journey`, `/journey-simple` follow.
+  - A challenge without a rule shows "บันทึกเอง" where the points were, on cards and in the window, since it cannot be finished for points.
+  - The window's steps ("ทำอย่างไร") are written from how the challenge is counted (join, how a visit is counted, how many by when), not from `quest.steps`; the stored steps of the sample quests described GPS checks the product does not do. `quest.steps` and `verificationMethod` are no longer shown in the window.
+  - `GET /api/quests/[id]` adds `moments` and `momentsTotal`; the window shows them as "โมเมนต์จากเพื่อนๆ ที่ร่วมชาเลนจ์นี้" when there are any, linking to `/moments?targetType=challenge&targetId=...`.
+  - The window no longer shows made-up numbers: "+300 XP" for a quest with no points, "150+" participants for a quest with none.
+- **Not done yet:** the moments composer cannot be opened tied to a challenge from a link (`createForType` accepts `spot`, `fair`, community only), so the window has no "share a moment" button. My Hub and `/rewards` still say "เควสต์" and "XP" in places. Emoji remain in the reward cards of the window.
+- **Action for the other side:** None.
+- **Status:** Open
+
+
+### BE-046 · Challenges: leftovers done, then the page and its popups checked against DESIGN_SYSTEM.md (owner request)
+- **From → To:** Claude Code → Frontend
+- **Date / branch:** 2026-10-13 · `claude` (not committed yet)
+- **Leftovers from BE-045:**
+  - `app/moments/page.tsx`: `createForType=challenge` opens the composer tied to a challenge; the detail window links to it ("ร่วมแชร์โมเมนต์") for a member who joined.
+  - Reward codes: staff look one up and mark it used in `components/admin/QuestsManagerView.tsx` ("ตรวจรหัสรางวัล"); see `docs/API.md`.
+  - `app/myhub/page.tsx`, `components/HeroSection.tsx`, `components/SpotDetailModal.tsx`: "เควสต์" and "ภารกิจ" read "ชาเลนจ์".
+- **Design check** (rules in `DESIGN_SYSTEM.md`; counts are of the three files after the change: 0 texts under 11px, 0 gradients outside photo overlays, 0 emoji, 0 pillar-colored buttons, 0 solid-black selected states, 0 colored shadows, 0 `slate-400` text):
+  - `components/JoinChallengeModal.tsx` was rebuilt on `DialogShell` (Esc, focus kept inside, `role="dialog"`, 520px, quiet close button). One blue primary action for the member's state; share and "เลิกทำ" are quiet. The violet gradient header, emoji, English sub-labels and bordered-box sections are gone; the pillar color stays only on the pillar dot, the progress bar and reward icons. Leaving a challenge is a quiet/secondary confirmation, not a danger one, because it can be undone.
+  - `app/challenges/page.tsx`: selected filter uses the violet tint; buttons are slate or quiet, round and 40px high; card titles and the heading follow the type scale; the medal badge on the card photo is removed (two badges per card: owner and points); the cancel confirmation uses `DialogShell`.
+  - `components/CommunityChallengeBar.tsx`: the same text sizes, flat tint, selected chips and button levels.
+  - Already compliant, not changed: the propose dialog (`CreateEventModal`), the sign-in prompt (`RequireMembershipModal`) and `AuthModal`, all on `DialogShell`.
+- **Not done yet / to decide:**
+  - `DESIGN_SYSTEM.md` section 9 says points are called "XP". BE-045 renamed them "แต้ม" on the challenge screens, which matches `/rewards` and the server messages but breaks that rule as written. The owner has to choose; the rule file is unchanged until then, and My Hub and `/rewards` still say "XP" in places.
+  - Filter chips do not expose `aria-pressed`. The pages were checked at desktop widths only, not at 360px. The homepage row's photo cards still carry three badges.
+- **Action for the other side:** None.
+- **Status:** Open
+
+
+### BE-047 · The challenge window answers one question per state (owner feedback)
+- **From → To:** Claude Code → Frontend
+- **Date / branch:** 2026-10-13 · `claude` (not committed yet)
+- **What changed / what is needed:** The owner pointed out that the list of places and the moments strip did not belong in the window a visitor opens to decide whether to join. `components/JoinChallengeModal.tsx` now shows, by state:
+  - **Deciding (not joined):** what the challenge asks, what you get, one line on how it is counted, and the join button. Nothing else.
+  - **Doing (joined, not finished):** the member's progress, "ไปที่ไหนต่อดี" (the places that count, with "นับแล้ว"), and the reward as a reminder. A challenge without a rule shows the self-noting line instead of places.
+  - **Done:** the reward (the member's code for a partner challenge, or the points).
+  - The moments strip is removed from the window, and with it the `moments` / `momentsTotal` fields of `GET /api/quests/[id]` and the `createForType=challenge` composer link (both added in BE-045 and BE-046). The three-step "ทำอย่างไร" list is replaced by the one line.
+- **Action for the other side:** None.
+- **Status:** Open
+
+
+### BE-048 · Points are called XP everywhere (owner decision)
+- **From → To:** Claude Code → Frontend
+- **Date / branch:** 2026-10-13 · `claude` (not committed yet)
+- **What changed / what is needed:** The owner chose "XP", as `DESIGN_SYSTEM.md` section 9 already says; the rule file is unchanged. The "แต้ม" wording from BE-045 is reverted on the challenge screens, and the same name now applies to `/rewards`, My Hub, the visit panel, the homepage toasts, the admin challenge form and the server messages of `/api/rewards` (15 files, 40 places). The older phrase "แต้มสะสม" for the balance is left as it was.
+- **Action for the other side:** None.
+- **Status:** Open
+
+
+### BE-049 · A challenge has its own page; a card opens it and "ร่วมเลย" joins in place (owner request)
+- **From → To:** Claude Code → Frontend
+- **Date / branch:** 2026-10-13 · `claude` (not committed yet)
+- **What changed / what is needed:** The owner asked for the journey from a challenge card to be redesigned and left the choice between a page and a popup to me. I chose a page.
+  - New `app/challenges/[id]/page.tsx`: a photo hero with the pillar tag, who runs it, the title, four facts and one main action; then "ทำครบแล้วได้อะไร" (first on a phone, sticky beside the text on a desktop), "ชาเลนจ์นี้ชวนทำอะไร" and "นับอย่างไร". After joining it shows progress and "ไปที่ไหนต่อดี" (photo cards of the places that count); when finished it shows the reward and the member's code. The places also show before joining when the challenge is about six places or fewer, because then the places are what the challenge is.
+  - `app/challenges/page.tsx`: a card opens the page (`router.push`); "ร่วมเลย" joins at once with a toast, no window in between; a joined card's button reads "ไปต่อ" and opens the page; `/challenges?quest=id` redirects to `/challenges/id`. The page no longer renders `JoinChallengeModal`.
+  - `components/CommunityChallengeBar.tsx`: a card opens the page; the window and its join handlers are removed, and `onJoinQuest` is no longer called.
+  - `components/JoinChallengeModal.tsx` exports the texts and types the page shares with it.
+- **Not done yet:** the window is still what opens from the hero and the place modal on `/`, from `/moments` and from My Hub; those should link to the page next so there is one experience. The page was checked at 1280px and 520px, not at 360px, and only signed out.
+- **Action for the other side:** None.
+- **Status:** Open
+
+
+### BE-050 · One challenge experience; the page carries an organizer's brief (owner request)
+- **From → To:** Claude Code → Frontend
+- **Date / branch:** 2026-10-13 · `claude` (not committed yet)
+- **What changed / what is needed:**
+  - `components/JoinChallengeModal.tsx` is deleted. What it exported lives in `lib/questDisplay.ts` (`getQuestBrandReward`, `QuestDetail`, `describeQuestRule`, the texts and the self-noted progress helpers). `/moments` and My Hub now open `/challenges/[id]`; the hero and the place modal on `/` never opened the window, so their unused state and render were removed.
+  - `app/challenges/[id]/page.tsx`, main column: "รายละเอียดชาเลนจ์" (`objective`), "ขั้นตอนการเข้าร่วม" (four steps), the places, and "กติกาและเงื่อนไข" (period, what counts, how a visit is confirmed, one count per place, who may join, how the reward is given, organizer). Steps and terms are written from the quest's `rule` by `describeQuestRule`, so they match what the server counts. A member who is doing the challenge sees the places first. The reward card reads "รางวัลเมื่อทำครบ" and says how the reward reaches the member.
+  - `components/admin/QuestsManagerView.tsx`: a "รายละเอียด (ไม่บังคับ)" field saves `objective`, the longer description shown on the page.
+- **Not done yet:** the sample quests have one-sentence descriptions, and some of their texts disagree with their dates (for example "ใน 14 วัน" on a quest that runs three months); a title word in a rule shows as stored (`"hyrox"`). Both are data to edit in the admin form.
+- **Action for the other side:** None.
+- **Status:** Open
+
+
+### BE-051 · Descriptions for the running sample challenges; goals now match their rules (owner request)
+- **From → To:** Claude Code → Frontend
+- **Date / branch:** 2026-10-13 · `claude` (not committed yet)
+- **What changed / what is needed:**
+  - `data/mockData.ts`: the 12 running sample quests have a description of three to five sentences (`objective`) and a one-line goal (`targetGoal`) that says what their rule really counts (no "partner cafes", "14 days" or GPS). Title words in rules are spelled as shown to people ("HYROX", "Board Game").
+  - `lib/questLifecycle.ts` (`refreshSeedQuestTexts`, `SEED_QUEST_TEXT_VERSION`) and `lib/db/adapters/jsonAdapter.ts`: a store takes the seed's goal and description for its seed quests once per text version (kept as `questSeedTextVersion` in `data/discovery_content.json`). This overwrites a goal or description staff edited on a sample quest; quests staff created are not touched. Raise the version when the seed texts change again.
+- **Not done yet:** the three ended sample quests keep their old texts. Titles are unchanged, so "Cafe Hunter 5 … ย่านอารีย์-ทองหล่อ" still names an area its rule does not limit to.
+- **Action for the other side:** None.
+- **Status:** Open
+
+
+### BE-052 · Challenges walked end to end in a browser; eleven gaps closed (owner request)
+- **From → To:** Claude Code → Frontend
+- **Date / branch:** 2026-10-13 · `claude` (not committed yet)
+- **How it was checked:** a headless browser at 360px, signed in with a throwaway member (deleted afterwards), went list → join → challenge page → place page → finish → My Hub → rewards → homepage row. No page overflows at 360px and the browser logged no errors.
+- **What changed / what is needed:**
+  1. **A partner's reward needs proof.** `minEvidenceOf` (`lib/social/questProgress.ts`): a challenge whose reward is `brand_partner` counts a photo moment or a host check-in, never a bare "มาที่นี่แล้ว", whatever its rule says. Before this, three presses gave a partner code.
+  2. **The practice "verify" window is gone.** `components/VerifyQuestModal.tsx` is deleted; My Hub's buttons open the challenge page.
+  3. **Badges exist.** `lib/social/questFinishes.ts` records a finished challenge once (`data/quest_finishes.json`, gitignored). `GET /api/rewards` adds `finished: [{ questId, title, badgeLabel, finishedAt, voucherCode, voucherUsedAt, rewardTitle }]`; My Hub shows them as "เหรียญของคุณ" with the reward code. A badge stays if the member later leaves the challenge.
+  4. **Phone order.** A member who is doing a challenge sees the places before the reward card.
+  5. **Finishing is announced.** The read that first sees a finished challenge (`/api/rewards`, `/api/quests/[id]`, or marking a visit) issues the partner code and sends a notification of the new type `'challenge'` (`href` to the challenge page; `components/NotificationBell.tsx` follows `href`).
+  6. **Shared links carry the challenge.** `app/challenges/[id]/layout.tsx` sets the title, description and preview photo.
+  7. **Out of time.** A member whose challenge ended unfinished is told how far they got.
+  8. My Hub's development strip stacks at phone width.
+  9. Leaving from a list card is a labelled "เลิกทำ" button.
+  10. The home pages (`/`, `/journey`, `/journey-simple`), `HeroSection` and `SpotDetailModal` lost their unused join callbacks, the joined-titles state and the browser keys behind them; `CommunityChallengeBar` no longer takes `onJoinQuest` or `joinedQuestTitles`.
+  11. Seed quest `1` is titled "Cafe Hunter 5: ตามรอย 5 คาเฟ่ที่ยังไม่เคยไป", which matches its rule; stores take the new title once (`SEED_QUEST_TEXT_VERSION` 3).
+- **Not done yet:** badges are not on the public profile. The admin code check and challenge form, and a challenge counted by a host's check-in, were not exercised (they need an admin and a host). Moments posted for a partner challenge are not reviewed by anyone, so a photo of anything still counts.
+- **Action for the other side:** None.
+- **Status:** Open
+
+
+### BE-053 · Challenge categories by topic, managed in the admin master data; badges on the public profile (owner request)
+- **From → To:** Claude Code → Frontend
+- **Date / branch:** 2026-10-13 · `claude` (not committed yet)
+- **What changed / what is needed:**
+  - **Categories.** A challenge's `category` is now an id of the master data collection `questCategories` (admin console → categories), not one of the four meetup moods. Built in: `cafe_food`, `active_outdoor`, `art_learn`, `wellness`, `social`, `travel` (`MASTER_QUEST_CATEGORIES` in `data/masterHub.ts`). The four entries the collection had before (`general`, `exp_only`, `badge_only`, `exp_badge`) described reward mechanics, were used by no challenge, and are dropped from `data/master_data.json` on load. `ChallengeQuest.category` is a `string`; a quest saved with an old id is shown under today's (`questCategoryId`, `LEGACY_QUEST_CATEGORIES`). Seed quests carry the new ids (`SEED_QUEST_TEXT_VERSION` 4).
+  - `components/admin/QuestsManagerView.tsx` and the member's propose form (`components/CreateEventModal.tsx`, challenge type) list the active categories from the master data; `/api/admin/quests` and `lib/members/submissions.ts` accept only those.
+  - `app/challenges/page.tsx`: a row of category chips filters the list (a category with nothing to show is left out); `GET /api/quests?category=` takes the same ids. `app/challenges/[id]/page.tsx` names the category beside the organizer.
+  - **Badges.** `GET /api/members/[id]` adds `challengeBadges: [{ questId, badgeLabel, title }]`; `app/profile/ProfileScreen.tsx` shows them as "เหรียญจากชาเลนจ์".
+- **Checked through the API** (development leaves the admin console open to the local developer): staff create a challenge with a category, a description and a rule; an old category id falls back; a host's check-in finishes a challenge; staff look a partner code up (any letter case), mark it used, and the member sees it used; the public profile lists the badges. Test data was removed.
+- **Not done yet:** the admin screens themselves were not clicked through in a browser. The list page now has two filter rows (category, and Official / partner); the second could go.
+- **Action for the other side:** None.
+- **Status:** Open
+
+
+### BE-054 · The top of the challenges list is two rows, so the cards start in the first screen (owner request)
+- **From → To:** Claude Code → Frontend
+- **Date / branch:** 2026-10-13 · `claude` (not committed yet)
+- **What changed / what is needed:** `app/challenges/page.tsx` had four stacked blocks above the cards (a boxed heading, a rewards strip, the category row, the Official / partner filter with search, then a heading with the open / ended switch). Now:
+  - Row 1: the heading and one line, with "เสนอชาเลนจ์" and one quiet link beside it ("ดูของรางวัล" signed out; the member's XP and how many challenges they are doing when signed in).
+  - Row 2: the category chips, the open / ended switch with its counts, and the search field (one row on a desktop, two on a phone).
+  - Removed: the rewards strip, the Official / partner filter (who runs a challenge is on every card), the "sign in to start collecting XP" button, the heading above the cards (its count is in the switch) and the box around the list.
+  - Measured: the first card starts at 231px at 1280 wide (it was about 486px) and at 304px at 360 wide; no horizontal overflow.
+- **Action for the other side:** None.
+- **Status:** Open
+
+
+### BE-055 · A tighter challenge card on the list (owner request)
+- **From → To:** Claude Code → Frontend
+- **Date / branch:** 2026-10-13 · `claude`
+- **What changed / what is needed:** the card in `app/challenges/page.tsx` now reads top to bottom: the photo edge to edge (16:10) with one white pill for the XP, who runs it, the title, the one-line goal, the partner's reward when there is one, the member's progress when they joined, then "N days left · N people" beside the one button. Removed from the card: the colored stripe, the "Official • …" badge with a crown (the organizer was named twice), the generic reward pill on platform challenges, the date range (days left says it; the range is on the challenge page) and the divider. An ended card shows its photo in grey with "จบแล้ว".
+- **Action for the other side:** None.
+- **Status:** Open
+
+
+### BE-056 · The challenge card keeps its own look (owner feedback on BE-055)
+- **From → To:** Claude Code → Frontend
+- **Date / branch:** 2026-10-13 · `claude`
+- **What changed / what is needed:** BE-055 turned the card into a photo-first card like the place and event cards. The owner preferred the earlier look because it is more interesting and unlike the other cards, and asked only for it to be tidier with fewer icons. `app/challenges/page.tsx` is back to that look: the violet stripe, the owner pill and the XP pill, the inset photo, title and goal, the reward pill, dates with people and days left, and a footer with the organizer and the one button. Tidied: one pill size, the photo at 16:10, text sizes from the scale, no medal badge on the photo. Icons removed: the crown in the owner pill and the gift in the platform reward pill; the XP bolt and the partner's ticket stay because they carry meaning. A self-noted challenge shows no reward pill.
+- **Action for the other side:** None.
+- **Status:** Open

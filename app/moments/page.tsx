@@ -2,12 +2,11 @@
 
 import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { EventDetailModal } from '@/components/EventDetailModal';
 import { SpotDetailModal } from '@/components/SpotDetailModal';
-import { JoinChallengeModal } from '@/components/JoinChallengeModal';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
@@ -602,7 +601,7 @@ function MomentsContent() {
   // Modal Selection Targets
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const [selectedSpot, setSelectedSpot] = useState<LifestyleSpotItem | null>(null);
-  const [selectedChallenge, setSelectedChallenge] = useState<ChallengeQuest | null>(null);
+  const router = useRouter();
   const [eventFavorites, setEventFavorites] = useState<string[]>([]);
   const [spotFavorites, setSpotFavorites] = useState<string[]>([]);
 
@@ -1022,7 +1021,7 @@ function MomentsContent() {
     if (targetType === 'challenge') {
       // A challenge that is no longer listed opens nothing, never a different one
       const matched = liveQuests.find((c) => c.id === targetId || c.title === post.targetTitle);
-      if (matched) setSelectedChallenge(matched);
+      if (matched) router.push(`/challenges/${encodeURIComponent(matched.id)}`);
       return;
     }
 
@@ -2211,16 +2210,6 @@ function MomentsContent() {
         onJoinSuccess={() => showToast('เข้าร่วมกิจกรรมสำเร็จ!')}
       />
 
-      {/* Modal 3: Join Challenge Modal */}
-      <JoinChallengeModal
-        isOpen={Boolean(selectedChallenge)}
-        onClose={() => setSelectedChallenge(null)}
-        quest={selectedChallenge}
-        onConfirmJoin={() => {
-          showToast('รับภารกิจชาเลนจ์เรียบร้อยแล้ว!');
-          setSelectedChallenge(null);
-        }}
-      />
 
       {/* Modal 4: Create Moment Modal (Multi-Photo up to 6 images - Luxury Global Standard) */}
       {isCreateModalOpen && (

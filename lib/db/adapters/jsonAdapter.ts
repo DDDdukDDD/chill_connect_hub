@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import { EventItem, ChallengeQuest, MOCK_CHALLENGES } from '@/data/mockData';
+import { questCategoryId } from '@/data/masterHub';
 import { LifestyleSpotItem, MOCK_SPOTS } from '@/data/spotsData';
 import { IDataRepository } from '../repository';
 import {
@@ -24,7 +25,7 @@ import { readDatabase, updateDatabase } from '../databaseFile';
 import { normalizeStoredEvents } from '../../eventNormalization';
 import { rollSampleEventDate } from '../../sampleEventDates';
 import { toBuddhistEra } from '../../dateUtils';
-import { addNewSeedQuests, applyQuestLifecycle, copySeedQuestRules, upgradeLegacySeedQuests } from '../../questLifecycle';
+import { SEED_QUEST_TEXT_VERSION, addNewSeedQuests, applyQuestLifecycle, copySeedQuestRules, refreshSeedQuestTexts, upgradeLegacySeedQuests } from '../../questLifecycle';
 import type { AdminEventItem } from '../../eventsStore';
 import { cacheManager } from '../../cache';
 
@@ -39,7 +40,8 @@ const shownEvents = <T extends EventItem>(events: T[]): T[] => events.map(shownE
 
 function shownQuest(quest: ChallengeQuest): ChallengeQuest {
   const withLifecycle = applyQuestLifecycle(quest);
-  return { ...withLifecycle, startDate: toBuddhistEra(withLifecycle.startDate), endDate: toBuddhistEra(withLifecycle.endDate) };
+  // A quest saved with a category id of an earlier version is shown under today's
+  return { ...withLifecycle, category: questCategoryId(withLifecycle.category), startDate: toBuddhistEra(withLifecycle.startDate), endDate: toBuddhistEra(withLifecycle.endDate) };
 }
 import {
   filterEvents,
@@ -107,6 +109,7 @@ export class JsonFileAdapter implements IDataRepository {
           quests?: ChallengeQuest[];
           userQuests?: Record<string, Record<string, number>>;
           questSeedIds?: string[];
+          questSeedTextVersion?: number;
         } | null = null;
         const contentFiles = IS_SERVERLESS
           ? [TMP_DISCOVERY_DB_FILE, DISCOVERY_DB_FILE]
@@ -127,10 +130,12 @@ export class JsonFileAdapter implements IDataRepository {
         const upgradedQuests = upgradeLegacySeedQuests(storedQuests, MOCK_CHALLENGES);
         const ruledQuests = copySeedQuestRules(upgradedQuests.quests, MOCK_CHALLENGES);
         const seededQuests = addNewSeedQuests(ruledQuests.quests, MOCK_CHALLENGES, Array.isArray(contentData?.questSeedIds) ? contentData.questSeedIds : undefined);
-        this.quests = seededQuests.quests;
+        // A store that has no content file yet starts from the current seed, so there is nothing to refresh
+        const refreshedQuests = refreshSeedQuestTexts(seededQuests.quests, MOCK_CHALLENGES, contentData ? contentData.questSeedTextVersion : SEED_QUEST_TEXT_VERSION);
+        this.quests = refreshedQuests.quests;
         this.questSeedIds = seededQuests.seededIds;
         this.userQuests = contentData?.userQuests || {};
-        if (upgradedQuests.changed || ruledQuests.changed || seededQuests.changed) {
+        if (upgradedQuests.changed || ruledQuests.changed || seededQuests.changed || refreshedQuests.changed) {
           await this.persistDiscoveryContent();
         }
 
@@ -163,6 +168,7 @@ export class JsonFileAdapter implements IDataRepository {
         quests,
         userQuests,
         questSeedIds: this.questSeedIds,
+        questSeedTextVersion: SEED_QUEST_TEXT_VERSION,
       }, null, 2),
       'utf-8'
     );
