@@ -23,7 +23,7 @@ export function getQuestBrandReward(quest: Pick<ChallengeQuest, 'brandReward'> |
   // A challenge that names no reward is a platform challenge: XP, spent on any reward
   return {
     type: 'hub_central',
-    title: 'แต้มสะสมอิสระ + ปลดล็อกของรางวัลใน Hub Rewards',
+    title: 'สะสม XP แลกของรางวัลที่ชอบ',
     partnerName: 'Chill & Connect Hub',
     hubRewardNote: 'ชาเลนจ์กิจกรรมกลางของระบบ รับแต้มสะสมอิสระเพื่อนำไปเลือกแลกของรางวัลในหน้า /rewards',
     terms: 'นำ XP ไปเลือกของรางวัลที่ต้องการได้ตลอดเวลา',
@@ -40,7 +40,20 @@ export interface QuestDetail {
   targetsTotal: number;
   browseHref: string | null;
   quest?: ChallengeQuest;
-  mine: { joined: boolean; current: number; total: number | null; completed: boolean; voucherCode: string | null; voucherUsedAt?: string | null } | null;
+  mine: {
+    joined: boolean;
+    current: number;
+    total: number | null;
+    completed: boolean;
+    voucherCode: string | null;
+    voucherUsedAt?: string | null;
+    /** Set once the challenge is finished */
+    finishedAt?: string | null;
+    /** The places the member went for a finished challenge, oldest first, with their own photo when they shared one */
+    memories?: { targetType: string; id: string; title: string; image?: string; ownPhoto: boolean; href: string; at: string }[];
+  } | null;
+  /** After finishing: one running challenge the member has not joined */
+  next?: { id: string; title: string; image: string | null; rewardPoints: number; rewardTitle: string | null } | null;
 }
 
 /** Said beside the places, to a member who is doing the challenge */

@@ -16,12 +16,14 @@ import { useMasterData } from '@/lib/useMasterData';
 
 /**
  * One challenge on its own page. It answers one question for the state the visitor is in:
- * deciding (what is it, what do I get), doing (where do I go next), done (what did I get).
+ * deciding (what is it, what do I get), doing (where do I go next), done (what did I get, where did I go
+ * for it, and what could I do next).
  */
 const FALLBACK_PHOTO = 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1200&q=80';
 const SECTION_TITLE = 'text-xl sm:text-2xl font-black text-slate-900 tracking-tight';
 const BODY = 'text-sm font-medium text-slate-700 leading-relaxed';
 const RULE_LABEL = 'text-[11px] sm:text-xs font-semibold text-slate-500';
+const shortDate = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
 const FACT = 'inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-700 whitespace-nowrap';
 
 export default function ChallengeDetailPage() {
@@ -183,7 +185,10 @@ export default function ChallengeDetailPage() {
       ];
   const nextTargetHref = detail.targets.find((target) => !target.visited)?.href ?? detail.browseHref ?? '/challenges';
   // A challenge about a few named places shows them while deciding too: they are what the challenge is
-  const showPlaces = tracked && detail.targets.length > 0 && (isDoing || detail.targetsTotal <= 6);
+  const showPlaces = tracked && !earned && detail.targets.length > 0 && (isDoing || detail.targetsTotal <= 6);
+  const memories = earned ? detail.mine?.memories ?? [] : [];
+  const finishedDate = earned ? shortDate(detail.mine?.finishedAt) : '';
+  const next = earned ? detail.next : null;
 
   const handleJoin = async () => {
     if (!isLoggedIn) {
@@ -215,7 +220,7 @@ export default function ChallengeDetailPage() {
   const handleShare = () => {
     const url = window.location.href;
     if (navigator.share) {
-      navigator.share({ title: quest.title, text: quest.targetGoal || quest.title, url }).catch(() => {});
+      navigator.share({ title: quest.title, text: earned ? `ฉันทำชาเลนจ์ "${quest.title}" สำเร็จแล้ว มาลองกัน` : quest.targetGoal || quest.title, url }).catch(() => {});
     } else {
       navigator.clipboard.writeText(url);
       setCopied(true);
@@ -269,6 +274,12 @@ export default function ChallengeDetailPage() {
         </div>
 
         <div className="space-y-4 min-w-0">
+          {earned && (
+            <p className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-xs sm:text-sm font-extrabold text-emerald-800 tabular-nums">
+              <Trophy className="w-4 h-4" aria-hidden="true" />
+              ทำสำเร็จแล้ว{finishedDate ? ` · ${finishedDate}` : ''}
+            </p>
+          )}
           <p className="text-xs sm:text-sm font-semibold text-slate-500">
             {[questCategories.find((category) => category.id === quest.category)?.name, `โดย ${reward.partnerName}`].filter(Boolean).join(' · ')}
           </p>
@@ -431,6 +442,59 @@ export default function ChallengeDetailPage() {
                   </li>
                 ))}
               </ul>
+            </section>
+          )}
+
+          {/* Done: the places the member went, with their own photos, kept as the memory of the challenge */}
+          {memories.length > 0 && (
+            <section className="space-y-4 order-1">
+              <div className="space-y-1">
+                <h2 className={SECTION_TITLE}>ความทรงจำจากชาเลนจ์นี้</h2>
+                <p className="text-sm font-medium text-slate-600 leading-relaxed">ที่ที่คุณไปมาจนทำสำเร็จ เรียงตามวันที่ไป</p>
+              </div>
+              <ol className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+                {memories.map((memory, index) => (
+                  <li key={`${memory.targetType}:${memory.id}`}>
+                    <Link href={memory.href} className="group block rounded-2xl cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]">
+                      <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100">
+                        {memory.image && <img src={memory.image} alt="" loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />}
+                        <span className="absolute top-2 left-2 w-7 h-7 rounded-full bg-white/95 border border-slate-200 text-xs font-extrabold text-slate-800 flex items-center justify-center tabular-nums" aria-hidden="true">
+                          {index + 1}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-sm font-extrabold text-slate-900 line-clamp-2">{memory.title}</p>
+                      <p className="text-[11px] sm:text-xs font-semibold text-slate-500 tabular-nums truncate">
+                        {shortDate(memory.at)}
+                        {memory.ownPhoto ? ' · รูปของคุณ' : ''}
+                      </p>
+                    </Link>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
+
+          {/* Done: one challenge to go on with */}
+          {next && (
+            <section className="space-y-4 order-1">
+              <h2 className={SECTION_TITLE}>ไปต่อกันเลยไหม</h2>
+              <Link
+                href={`/challenges/${encodeURIComponent(next.id)}`}
+                className="group flex items-center gap-4 p-3 rounded-3xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-colors duration-200 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+              >
+                <div className="w-24 sm:w-28 aspect-square rounded-2xl overflow-hidden bg-slate-100 shrink-0">
+                  <img src={next.image || FALLBACK_PHOTO} alt="" loading="lazy" className="w-full h-full object-cover" />
+                </div>
+                <div className="min-w-0 space-y-1">
+                  <p className="text-sm sm:text-base font-extrabold text-slate-900 line-clamp-2">{next.title}</p>
+                  {next.rewardTitle && <p className="text-xs sm:text-sm font-medium text-slate-600 line-clamp-1">{next.rewardTitle}</p>}
+                  <p className="inline-flex items-center gap-1 text-xs sm:text-sm font-extrabold text-[#5B21B6] tabular-nums">
+                    <Zap className="w-3.5 h-3.5" aria-hidden="true" />
+                    +{next.rewardPoints.toLocaleString()} XP
+                  </p>
+                </div>
+                <ArrowRight className="w-5 h-5 ml-auto text-slate-500 shrink-0" aria-hidden="true" />
+              </Link>
             </section>
           )}
 
