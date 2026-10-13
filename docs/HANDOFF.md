@@ -1072,3 +1072,19 @@ New placeholder content in a page must be behind `eventOrigin(...) === 'sample'`
 - **What changed / what is needed:** BE-055 turned the card into a photo-first card like the place and event cards. The owner preferred the earlier look because it is more interesting and unlike the other cards, and asked only for it to be tidier with fewer icons. `app/challenges/page.tsx` is back to that look: the violet stripe, the owner pill and the XP pill, the inset photo, title and goal, the reward pill, dates with people and days left, and a footer with the organizer and the one button. Tidied: one pill size, the photo at 16:10, text sizes from the scale, no medal badge on the photo. Icons removed: the crown in the owner pill and the gift in the platform reward pill; the XP bolt and the partner's ticket stay because they carry meaning. A self-noted challenge shows no reward pill.
 - **Action for the other side:** None.
 - **Status:** Open
+
+
+### BE-057 · Shorter challenge card, the reward on the photo, and a reward required on every challenge (owner request)
+- **From → To:** Claude Code → Frontend
+- **Date / branch:** 2026-10-13 · `claude`
+- **What changed:** `app/challenges/page.tsx`: the card is about 11% shorter (435px → 385px at 1440px wide; 8px gaps, the reward row gone, buttons 36px tall with a hidden edge that keeps the 40px touch target). The reward (`brandReward.title`) moved from its own row under the title to a strip on the lower edge of the photo and now shows on every card: amber with a ticket for `brand_partner`, violet with no icon for `hub_central`, grey when ended. `/api/admin/quests`: `create` now returns `400` without `brandReward`, and `update` returns `400` for `brandReward: null` (it used to clear the reward). The same now holds for `rule`: required on `create`, not removable on `update`, and `set_status active` returns `400` for a challenge without one; the admin form requires it. The two challenges nothing can check (`2` Step Count 30Days, `comm-quest-4` Morning Yoga 7 Days) are now `draft` in the seed and the store, so they are off the public list but still in the admin console. The default Hub reward text is now "สะสม XP แลกของรางวัลที่ชอบ" (seed, store, admin form default, `getQuestBrandReward` fallback). `docs/API.md` updated.
+- **Action for the other side:** None.
+- **Status:** Open
+
+
+### BE-058 · The challenge journey, walked as a new member and filled in (owner request)
+- **From → To:** Claude Code → Frontend
+- **Date / branch:** 2026-10-13 · `claude`
+- **What changed:** I walked the journey at 390px with a throwaway account (meet, decide, start, go, between visits, finish, after) and filled the gaps. `app/challenges/[id]/page.tsx`: a finished challenge shows a "ทำสำเร็จแล้ว" line with the date, the places the member went with their own photos ("ความทรงจำจากชาเลนจ์นี้") and one challenge to go on with. `components/VisitPanel.tsx`: the challenge line links to the challenge's own page, says "ชาเลนจ์" (it said "ภารกิจ"), and for a member who joined shows their progress and whether this place has counted. `app/myhub/page.tsx`: a "ชาเลนจ์ที่ทำอยู่" section under the header (up to two, with progress, days left and "ไปต่อ"). `GET /api/quests/[id]`: `mine.finishedAt`, `mine.memories`, `next`, and places in the member's province first. `GET /api/auth/member/profile`: `publicView.challengeBadges`, so badges show on the member's own profile. Data: `comm-quest-1` (Bangkok Coffee Trail) counts cafes in กรุงเทพฯ only; it counted every cafe in the country. `docs/API.md` updated.
+- **Action for the other side:** None.
+- **Status:** Open
