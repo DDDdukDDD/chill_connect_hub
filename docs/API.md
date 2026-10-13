@@ -284,14 +284,14 @@ Returns active/ended public quests (drafts and private quests hidden).
 
 | Param | Default |
 |---|---|
-| `category` (`heal` `move` `chill` `learn`) | — |
+| `category` (an id of the master data `questCategories`: `cafe_food` `active_outdoor` `art_learn` `wellness` `social` `travel`, plus any staff added) | — |
 | `q` | — |
 | `page` | `1` |
 | `limit` (1–100) | `12` |
 
 Response `200`: `{ success: true, quests: ChallengeQuest[], pagination: Pagination }`. Cache: `s-maxage=60`.
 
-**The catalog is the only source (BE-042).** The homepage challenge row (`components/CommunityChallengeBar.tsx`) shows what this endpoint returns and keeps no list of its own. The sample quests live in `MOCK_CHALLENGES` (`data/mockData.ts`); a store written earlier is given each new seed quest once on start, and the ids already given are kept in `questSeedIds` in `data/discovery_content.json`, so a seed quest staff deleted does not come back. The cover photo is `badgeCoverImg`.
+**The catalog is the only source (BE-042, BE-043).** `/challenges` also shows this endpoint only; the four quests once typed into that page are seed quests now. The homepage challenge row (`components/CommunityChallengeBar.tsx`) shows what this endpoint returns and keeps no list of its own. The sample quests live in `MOCK_CHALLENGES` (`data/mockData.ts`); a store written earlier is given each new seed quest once on start, and the ids already given are kept in `questSeedIds` in `data/discovery_content.json`, so a seed quest staff deleted does not come back. The cover photo is `badgeCoverImg`.
 
 **Quest lifecycle (computed by the server on every read, never stored):**
 - `daysRemaining`: whole days left until the end of `endDate`; `0` once ended; absent when the quest has no `endDate`.
@@ -575,12 +575,37 @@ Deleting an account removes the member's marks. `GET /api/auth/member/account` (
 A member's points are no longer kept in the browser. The balance is what the member earned from visits and finished challenges (see "Visits") minus what they spent on rewards. Only the spending is stored (`data/redemptions.json`, gitignored). Code: `lib/social/rewardsLedger.ts`. Client hook: `useMyRewards(isLoggedIn)` in `lib/useMyRewards.ts`.
 
 ### `GET /api/rewards` — the signed-in member
-`{ success, points: { earned, fromVisits, fromQuests, spent, balance }, quests: [{ questId, title, current, total, completed, rewardPoints }], redeemedRewardIds, redemptions: [{ rewardId, cost, createdAt }] }`. Signed out: `requiresLogin: true`, zeros and empty lists. A new member starts at 0.
+`{ success, points: { earned, fromVisits, fromQuests, spent, balance }, quests: [{ questId, title, current, total, completed, joined, rewardPoints }], joinedQuestIds, redeemedRewardIds, redemptions: [{ rewardId, cost, createdAt }] }`. Signed out: `requiresLogin: true`, zeros and empty lists. A new member starts at 0.
 
 ### `POST /api/rewards` — `{ rewardId }`
 Redeems a reward of the catalog (`REWARD_SHOP_ITEMS` in `data/rewardsData.ts`). One of each reward per member. The answer has the same fields as the GET. Errors: 400 not enough points (the message says how many more), 404 unknown reward, 409 already redeemed, 401 signed out, 429 more than 20 an hour.
 
+### Joining a challenge — `POST /api/quests/join` (added 2026-10-13, BE-043)
+Body `{ questId, action: 'join' | 'leave' }`; signed-in, active member, same origin. The answer has the same fields as `GET /api/rewards`. Joins are stored in `data/quest_joins.json` (gitignored); code in `lib/social/questJoins.ts`. Errors: 404 unknown or draft challenge, 409 the challenge has ended, 401 signed out, 429 more than 60 an hour. Joining twice changes nothing.
+- **What joining does:** the challenge appears in My Hub, the member counts among its participants, and its reward points are theirs when they finish. Progress is counted from visits whether or not the member joined, so visits made before joining still count; the reward points are added only while the member is joined (`quests[].joined`).
+- **`participantsCount` in `GET /api/quests`** is the number the quest was written with (sample data for seed quests, 0 for new ones) plus the members who joined.
+- **Client:** `useMyRewards` gives `joinedQuestIds`, `joinQuest(questId)` and `leaveQuest(questId)`. `syncMyChallenges(joinedQuestIds, catalog)` rebuilds the browser list `cch_my_challenges` from the account; that list now only keeps progress noted by hand on challenges without a rule. A new member starts with no joined challenge (the browser used to start with four).
+- **Account deletion** removes the member's joins; the account export lists them as `joinedChallenges`.
+
+### `GET /api/quests/[id]` — one challenge for its detail window (added 2026-10-13, BE-044)
+Public; `404` for an unknown or draft challenge. Answer:
+```
+{ success, quest,                 // with participantsCount as in the list
+  tracked,                        // false: the server cannot count it (no rule); the member only notes progress for themselves
+  minEvidence,                    // 'marked' | 'moment' | 'checkin' | null
+  targets: [{ targetType, id, title, image?, detail?, href, visited }],   // up to 6: published places and coming events that match the rule
+  targetsTotal, browseHref,       // how many match in all, and the list page to see the rest
+  mine: null | { joined, current, total, completed, voucherCode } }      // the signed-in member
+```
+- `visited` marks a place the member already has a counting visit at; those come first. A rule with `targetIds` keeps its order.
+- `mine.completed` is true only when the member joined **and** the server counted every visit. Progress (`current`) is shown either way.
+- `mine.voucherCode`: for a `brand_partner` challenge, the member's own code (the reward's `voucherCodePrefix` plus 8 random characters), issued the first time the finished challenge is read and the same afterwards. Stored in `data/quest_vouchers.json` (gitignored); code in `lib/social/questVouchers.ts`. A platform challenge gives no code. Staff look a code up and mark it used in the admin challenge manager: `POST /api/admin/quests` with `{ action: 'check_voucher' | 'use_voucher', code }` answers `{ voucher: { code, issuedAt, usedAt, questTitle, rewardTitle, partnerName, memberName } }` (`404` unknown code). `mine.voucherUsedAt` tells the member (BE-046).
+- **Evidence floor (BE-052):** `minEvidence` in this answer is what really counts. For a `brand_partner` challenge it is never below `'moment'`, whatever the stored rule says.
+- **Finishing (BE-052):** the first read that sees the challenge finished records it, issues the partner code and notifies the member (notification type `'challenge'` with `href`). `GET /api/rewards` lists `finished` challenges (badge, code).
+- **Reward type comes from the data only.** Every seed quest now carries `brandReward`; `getQuestBrandReward` no longer guesses a brand from words in the title. A quest without `brandReward` is a platform challenge.
+- Account deletion removes the member's codes; the account export lists them as `challengeRewardCodes`.
+
 ### What the pages do
 - `/rewards`, `/myhub`, `/challenges` read the balance and the redeemed rewards from `useMyRewards`. The old browser keys `cch_user_xp` and `cch_redeemed_reward_ids` are not read any more (the helpers stay in `data/rewardsData.ts`, unused).
 - `withRealProgress(quests, progress)` puts the server's count on challenges that have a rule. A challenge without a rule keeps the progress the member notes by hand in the browser (`cch_my_challenges`); that progress earns no points.
-- Joining a challenge is still kept in the browser. Progress and points do not depend on joining.
+- Joining a challenge is kept with the account (BE-043); see "Joining a challenge" below.
