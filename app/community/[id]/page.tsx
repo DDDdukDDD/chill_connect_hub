@@ -13,6 +13,7 @@ import { GroupChatModal } from '@/components/GroupChatModal';
 import { CancelTicketModal } from '@/components/CancelTicketModal';
 import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import { useAuth } from '@/lib/useAuth';
+import { VisitPanel } from '@/components/VisitPanel';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { activityActions, useMyActivity } from '@/lib/useMyActivity';
 import {
@@ -1191,6 +1192,20 @@ export default function CommunityDetailPage() {
 
             </div>
 
+
+            {/* Moments from members here, and how to share one (same place as on the place page) */}
+            <VisitPanel
+              targetType="community"
+              targetId={eventData.id}
+              title={eventData.title}
+              location={eventData.location}
+              isLoggedIn={isLoggedIn}
+              onRequireLogin={() => {
+                setMembershipActionTitle('เพื่อโพสต์โมเมนต์จากกิจกรรมนี้');
+                setIsRequireMembershipOpen(true);
+              }}
+              onShowToast={showToast}
+            />
           </div>
 
         </div>

@@ -43,11 +43,8 @@ import {
   RewardShopItem, 
   REWARD_CATEGORIES, 
   REWARD_SHOP_ITEMS,
-  getStoredUserXp,
-  setStoredUserXp,
-  getStoredRedeemedRewardIds,
-  setStoredRedeemedRewardIds
 } from '@/data/rewardsData';
+import { useMyRewards } from '@/lib/useMyRewards';
 
 export default function RewardsPage() {
   const [activeNavTab, setActiveNavTab] = useState('rewards');
@@ -56,8 +53,10 @@ export default function RewardsPage() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   // Rewards State
-  const [userXp, setUserXp] = useState<number>(650);
-  const [redeemedRewardIds, setRedeemedRewardIds] = useState<string[]>(['reward-1']);
+  // Points and redeemed rewards come from the account (GET /api/rewards)
+  const myRewards = useMyRewards(isLoggedIn);
+  const userXp = myRewards.balance;
+  const redeemedRewardIds = myRewards.redeemedRewardIds;
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [onlyAffordable, setOnlyAffordable] = useState<boolean>(false);
@@ -72,8 +71,6 @@ export default function RewardsPage() {
   // Sync with localStorage on mount
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    setUserXp(getStoredUserXp());
-    setRedeemedRewardIds(getStoredRedeemedRewardIds());
 
     // Check URL query parameters (e.g. ?tab=my_vouchers or ?category=cafe)
     const params = new URLSearchParams(window.location.search);
@@ -106,7 +103,7 @@ export default function RewardsPage() {
   };
 
   // Execute redemption
-  const handleConfirmRedemption = () => {
+  const handleConfirmRedemption = async () => {
     if (!confirmRedeemItem) return;
 
     if (!isLoggedIn) {
@@ -121,17 +118,15 @@ export default function RewardsPage() {
       return;
     }
 
-    const newXp = userXp - confirmRedeemItem.costXp;
-    const newRedeemedIds = [...redeemedRewardIds, confirmRedeemItem.id];
-
-    setUserXp(newXp);
-    setStoredUserXp(newXp);
-    setRedeemedRewardIds(newRedeemedIds);
-    setStoredRedeemedRewardIds(newRedeemedIds);
-
     const redeemed = confirmRedeemItem;
     setConfirmRedeemItem(null);
-    showToast(`🎉 แลกรางวัล "${redeemed.title}" สำเร็จ! รหัสคูปอง: ${redeemed.voucherCode}`);
+    // The server checks the balance again and records the spending
+    const result = await myRewards.redeem(redeemed.id);
+    if (!result.ok) {
+      showToast(result.message || 'แลกของรางวัลไม่สำเร็จ กรุณาลองใหม่');
+      return;
+    }
+    showToast(`แลกรางวัล "${redeemed.title}" สำเร็จ รหัสคูปอง: ${redeemed.voucherCode}`);
     setVoucherDetailItem(redeemed);
   };
 

@@ -39,9 +39,8 @@ import { JoinChallengeModal, getQuestBrandReward } from '@/components/JoinChalle
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { BrandLogo } from '@/components/BrandLogo';
 import { Pagination } from '@/components/Pagination';
-import { ChallengeQuest, MOCK_CHALLENGES } from '@/data/mockData';
-import { COMMUNITY_PUBLIC_QUESTS } from '@/components/CommunityChallengeBar';
-import { getStoredUserXp, setStoredUserXp } from '@/data/rewardsData';
+import { ChallengeQuest, SAMPLE_JOINED_CHALLENGES } from '@/data/mockData';
+import { useMyRewards, withRealProgress } from '@/lib/useMyRewards';
 import { fetchAllContentPages } from '@/lib/contentClient';
 
 // Extended Quest Interface with Date, Duration & Image
@@ -56,14 +55,6 @@ export interface QuestWithDuration extends ChallengeQuest {
 
 // Extended Catalog of Official & Community Quests with rich gamification metadata
 const ALL_QUESTS: QuestWithDuration[] = [
-  ...COMMUNITY_PUBLIC_QUESTS.map((q) => ({
-    ...q,
-    startDate: (q as any).startDate || '1 มี.ค. 2569',
-    endDate: (q as any).endDate || '31 มี.ค. 2569',
-    daysRemaining: (q as any).daysRemaining !== undefined ? (q as any).daysRemaining : 10,
-    status: (q as any).status || 'active',
-    image: q.image,
-  })),
   {
     id: 'quest-off-3',
     title: 'Bookworm Expo 2026: ตะลุยงานสัปดาห์หนังสือแห่งชาติ',
@@ -215,7 +206,11 @@ export default function ChallengesDiscoveryPage() {
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 18;
-  const [questList, setQuestList] = useState<QuestWithDuration[]>(ALL_QUESTS);
+  const [storedQuestList, setQuestList] = useState<QuestWithDuration[]>(ALL_QUESTS);
+  // Points and the progress of challenges that count visits come from the account (GET /api/rewards)
+  const myRewards = useMyRewards(isLoggedIn);
+  const userXp = myRewards.balance;
+  const questList = useMemo(() => withRealProgress(storedQuestList, myRewards.quests), [storedQuestList, myRewards.quests]);
 
   useEffect(() => {
     let isActive = true;
@@ -232,7 +227,8 @@ export default function ChallengesDiscoveryPage() {
             daysRemaining: quest.daysRemaining ?? 0,
             image: quest.badgeCoverImg,
           }));
-        setQuestList([...ALL_QUESTS, ...additions]);
+        // Challenges from the catalog come first; the ones typed into this file follow
+        setQuestList([...additions, ...ALL_QUESTS]);
       })
       .catch((error) => console.warn('Using default challenge catalog fallback:', error));
 
@@ -241,17 +237,10 @@ export default function ChallengesDiscoveryPage() {
     };
   }, []);
 
-  // User XP State
-  const [userXp, setUserXp] = useState<number>(() => getStoredUserXp());
-
   // Joined Quest state synchronized with localStorage ('cch_my_challenges')
   const [joinedQuestIds, setJoinedQuestIds] = useState<string[]>([]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setUserXp(getStoredUserXp());
-    }
-
     if (isLoggedIn) {
       if (typeof window !== 'undefined') {
         try {
@@ -263,8 +252,8 @@ export default function ChallengesDiscoveryPage() {
               return;
             }
           }
-          // Default initial challenges synced with MOCK_CHALLENGES
-          const initial = MOCK_CHALLENGES;
+          // Default initial challenges: the sample joined list
+          const initial = SAMPLE_JOINED_CHALLENGES;
           localStorage.setItem('cch_my_challenges', JSON.stringify(initial));
           setJoinedQuestIds(initial.map((q) => q.id));
         } catch (e) {
@@ -336,7 +325,7 @@ export default function ChallengesDiscoveryPage() {
     if (typeof window !== 'undefined') {
       try {
         const raw = localStorage.getItem('cch_my_challenges');
-        let currentList: ChallengeQuest[] = raw ? JSON.parse(raw) : [...MOCK_CHALLENGES];
+        let currentList: ChallengeQuest[] = raw ? JSON.parse(raw) : [...SAMPLE_JOINED_CHALLENGES];
         if (!currentList.some((q) => q.id === quest.id || q.title.trim() === quest.title.trim())) {
           currentList = [questToAdd, ...currentList];
           localStorage.setItem('cch_my_challenges', JSON.stringify(currentList));
@@ -377,6 +366,11 @@ export default function ChallengesDiscoveryPage() {
   };
 
   const handleSubmitProgress = (quest: ChallengeQuest, newCurrent: number) => {
+    // A challenge that counts visits moves only when the member really goes
+    if (myRewards.quests.some((q) => q.questId === quest.id)) {
+      showToast('ภารกิจนี้นับจากการไปจริง แชร์โมเมนต์จากสถานที่หรือเช็กอินกับโฮสต์เพื่อเพิ่มความคืบหน้า');
+      return;
+    }
     const targetTotal = parseInt(quest.total || '3', 10) || 3;
     const isDone = newCurrent >= targetTotal;
     const progressPercent = Math.min(100, Math.round((newCurrent / targetTotal) * 100));
@@ -399,14 +393,6 @@ export default function ChallengesDiscoveryPage() {
           });
           localStorage.setItem('cch_my_challenges', JSON.stringify(updated));
         }
-        
-        // If completed, award XP!
-        if (isDone && quest.rewardPoints) {
-          const currentXp = getStoredUserXp();
-          const nextXp = currentXp + quest.rewardPoints;
-          setStoredUserXp(nextXp);
-          setUserXp(nextXp);
-        }
       } catch (e) {
         console.error('Error saving progress to cch_my_challenges:', e);
       }
@@ -416,6 +402,8 @@ export default function ChallengesDiscoveryPage() {
   // Check if currently viewed quest is completed
   const isQuestCompleted = useMemo(() => {
     if (!questToJoin) return false;
+    const real = myRewards.quests.find((q) => q.questId === questToJoin.id);
+    if (real) return real.completed;
     try {
       if (typeof window !== 'undefined') {
         const raw = localStorage.getItem('cch_my_challenges');

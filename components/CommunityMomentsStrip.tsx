@@ -3,16 +3,43 @@
 import React, { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Camera, Heart, ArrowRight, MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
-import { MOCK_POSTS } from '@/data/mockData';
+import type { FeedItem } from '@/lib/moments/service';
+
+/** How many of the newest moments the row shows; the heading carries the full count */
+const STRIP_LIMIT = 12;
 
 interface CommunityMomentsStripProps {
   minimalHeader?: boolean;
+  /** Heading text in the minimal header */
+  title?: string;
 }
 
 export const CommunityMomentsStrip: React.FC<CommunityMomentsStripProps> = ({
   minimalHeader = false,
+  title = 'โมเมนต์ & บรรยากาศจริงจากชุมชน',
 }) => {
-  const displayPosts = MOCK_POSTS;
+  // The newest moments from the feed (GET /api/moments); nothing is typed into this file
+  const [displayPosts, setDisplayPosts] = useState<FeedItem[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let isActive = true;
+    fetch(`/api/moments?tab=all&limit=${STRIP_LIMIT}`)
+      .then((response) => response.json())
+      .then((result) => {
+        if (!isActive || !result?.success || !Array.isArray(result.moments)) return;
+        setDisplayPosts(result.moments);
+        setTotalCount(result.pagination?.totalCount ?? result.moments.length);
+      })
+      .catch((error) => console.warn('Could not load moments:', error))
+      .finally(() => {
+        if (isActive) setIsLoading(false);
+      });
+    return () => {
+      isActive = false;
+    };
+  }, []);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
@@ -48,6 +75,9 @@ export const CommunityMomentsStrip: React.FC<CommunityMomentsStripProps> = ({
     });
   };
 
+  // Nothing to show: the row steps aside instead of leaving an empty frame
+  if (!isLoading && displayPosts.length === 0) return null;
+
   return (
     <section className="space-y-3 scroll-mt-20">
       {/* Header Bar: Editorial Section 05 Banner or Minimal Header */}
@@ -58,9 +88,9 @@ export const CommunityMomentsStrip: React.FC<CommunityMomentsStripProps> = ({
               <Camera className="w-3.5 h-3.5 text-rose-500" />
             </span>
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <span>โมเมนต์ & บรรยากาศจริงจากชุมชน</span>
+              <span>{title}</span>
               <span className="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
-                {MOCK_POSTS.length} เรื่องราว
+                {totalCount} เรื่องราว
               </span>
             </h2>
           </div>
@@ -68,7 +98,7 @@ export const CommunityMomentsStrip: React.FC<CommunityMomentsStripProps> = ({
             href="/moments"
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-rose-500 text-rose-600 hover:text-white border border-rose-200/80 hover:border-rose-500 rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer active:scale-95 leading-none"
           >
-            <span>ดูโมเมนต์ทั้งหมด ({MOCK_POSTS.length})</span>
+            <span>ดูโมเมนต์ทั้งหมด ({totalCount})</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
           </Link>
         </div>
@@ -76,17 +106,14 @@ export const CommunityMomentsStrip: React.FC<CommunityMomentsStripProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-rose-50/60 via-pink-50/30 to-transparent p-3 sm:p-3.5 rounded-2xl border border-rose-100/70 shadow-2xs">
           <div>
             <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-lg bg-rose-500/10 text-rose-600 flex items-center justify-center text-xs font-black shrink-0 border border-rose-500/20">
-                05
-              </span>
               <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
                 <span>โมเมนต์ & บรรยากาศจริงจากชุมชน</span>
                 <span className="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
-                  {displayPosts.length} เรื่องราว
+                  {totalCount} เรื่องราว
                 </span>
               </h2>
             </div>
-            <p className="text-xs text-slate-500 mt-1 font-medium pl-8">
+            <p className="text-xs text-slate-500 mt-1 font-medium">
               ภาพถ่ายความประทับใจ บรรยากาศคาเฟ่ และมิตรภาพใหม่ๆ ที่เกิดขึ้นจริงจากผู้ร่วมทริป
             </p>
           </div>
@@ -96,7 +123,7 @@ export const CommunityMomentsStrip: React.FC<CommunityMomentsStripProps> = ({
             href="/moments"
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-rose-500 text-rose-600 hover:text-white border border-rose-200/80 hover:border-rose-500 rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
           >
-            <span>ดูโมเมนต์ทั้งหมด ({MOCK_POSTS.length})</span>
+            <span>ดูโมเมนต์ทั้งหมด ({totalCount})</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
           </Link>
         </div>
@@ -133,6 +160,13 @@ export const CommunityMomentsStrip: React.FC<CommunityMomentsStripProps> = ({
           onScroll={checkScroll}
           className="flex overflow-x-auto no-scrollbar gap-3 sm:gap-3.5 pb-2 pt-0.5 px-0.5 snap-x snap-mandatory scroll-smooth"
         >
+          {isLoading &&
+            Array.from({ length: 5 }, (_, index) => (
+              <div
+                key={`moment-loading-${index}`}
+                className="w-[calc((100%-12px)/2)] sm:w-[calc((100%-2*14px)/3)] md:w-[calc((100%-3*14px)/4)] lg:w-[calc((100%-4*14px)/5)] shrink-0 aspect-[4/5] rounded-2xl bg-slate-100 animate-pulse"
+              />
+            ))}
           {displayPosts.map((post) => (
             <div
               key={post.id}
@@ -156,11 +190,11 @@ export const CommunityMomentsStrip: React.FC<CommunityMomentsStripProps> = ({
                 <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/85 via-black/45 to-transparent pointer-events-none" />
 
                 {/* Top Location Badge */}
-                {post.location && (
+                {(post.targetTitle || post.location) && (
                   <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between z-10">
                     <span className="inline-flex items-center gap-1 text-[10px] font-medium text-white/95 bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/15 truncate max-w-full">
                       <MapPin className="w-2.5 h-2.5 text-amber-400 shrink-0" />
-                      <span className="truncate">{post.location}</span>
+                      <span className="truncate">{post.targetId && post.targetTitle ? post.targetTitle : post.location}</span>
                     </span>
                   </div>
                 )}

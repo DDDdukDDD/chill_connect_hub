@@ -9,6 +9,7 @@ import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import { useAuth } from '@/lib/useAuth';
+import { VisitPanel } from '@/components/VisitPanel';
 import { useMyActivity } from '@/lib/useMyActivity';
 import { GroupChatModal } from '@/components/GroupChatModal';
 import {
@@ -18,7 +19,7 @@ import {
   MOCK_EVENTS
 } from '@/data/mockData';
 import { eventOrigin } from '@/lib/contentOrigin';
-import { isEventEnded } from '@/lib/dateUtils';
+import { isEventEnded, parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { resolveEventGallery } from '@/lib/eventImageResolver';
 import { parseEventPrice } from '@/lib/priceUtils';
 import { renderDescriptionContent, stripHtmlToPlainText } from '@/components/RichTextEditor';
@@ -1211,6 +1212,21 @@ export default function FairDetailPage() {
 
             </div>
 
+
+            {/* Moments from members here, and how to share one (same place as on the place page) */}
+            <VisitPanel
+              targetType="fair"
+              markOpensAt={parseEventDateToTimestamp(eventData.date)}
+              targetId={eventData.id}
+              title={eventData.title}
+              location={eventData.location}
+              isLoggedIn={isLoggedIn}
+              onRequireLogin={() => {
+                setMembershipActionTitle('เพื่อบันทึกว่าคุณไปงานนี้มาแล้ว');
+                setIsRequireMembershipOpen(true);
+              }}
+              onShowToast={showToast}
+            />
           </div>
 
         </div>

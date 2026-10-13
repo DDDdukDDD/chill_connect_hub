@@ -30,237 +30,22 @@ interface CommunityChallengeBarProps {
   joinedQuestTitles?: string[];
   onOpenCreateModal?: () => void;
   minimalHeader?: boolean;
+  /** Heading text in the minimal header */
+  title?: string;
 }
-
-export const COMMUNITY_PUBLIC_QUESTS: (ChallengeQuest & { image?: string })[] = [
-  {
-    id: 'comm-quest-1',
-    title: 'Bangkok Coffee Trail: ตะลุย 3 คาเฟ่อารีย์',
-    image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80',
-    iconName: 'Coffee',
-    category: 'chill',
-    badgeLabel: 'Coffee Explorer',
-    badgeIcon: '☕',
-    completedCountInfo: '0/3 ร้าน',
-    progressPercent: 0,
-    current: '0',
-    total: '3',
-    visibility: 'public',
-    creatorName: 'Admin ทีมงาน Hub',
-    creatorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
-    participantsCount: 235,
-    rewardPoints: 300,
-    isOfficial: true,
-    targetGoal: 'เช็คอินคาเฟ่พาร์ทเนอร์ครบ 3 ร้านใน 14 วัน พร้อมถ่ายรูปแก้วกาแฟลง Moments',
-    objective: 'สนับสนุนร้านกาแฟ Specialty ในย่านอารีย์ และสร้างแรงบันดาลใจให้เพื่อนๆ ออกไปสัมผัสบรรยากาศคาเฟ่คราฟต์',
-    steps: [
-      'เลือกร้านกาแฟพาร์ทเนอร์ย่านอารีย์ในระบบ',
-      'สั่งเครื่องดื่มและถ่ายภาพเช็คอินโมเมนต์',
-      'สะสมครบ 3 ร้านเพื่อรับเหรียญและคะแนน XP'
-    ],
-    verificationMethod: '📸 ถ่ายรูปภาพแก้วกาแฟหรือหน้าร้านคู่กับการเช็คอิน GPS',
-    rewardsText: '🏅 เหรียญเกียรติยศ "Coffee Explorer" บนหน้าโปรไฟล์ + ⚡ 300 XP',
-    startDate: '1 มี.ค. 2569',
-    endDate: '31 มี.ค. 2569',
-    daysRemaining: 10,
-  },
-  {
-    id: 'comm-quest-2',
-    title: 'BMA Park Run: วิ่งสะสม 3 สวนสาธารณะ',
-    image: 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=600&q=80',
-    iconName: 'Footprints',
-    category: 'move',
-    badgeLabel: 'BMA Park Champion',
-    badgeIcon: '🏃‍♂️',
-    completedCountInfo: '0/3 สวน',
-    progressPercent: 0,
-    current: '0',
-    total: '3',
-    visibility: 'public',
-    creatorName: 'Admin ทีมงาน Hub',
-    creatorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80',
-    participantsCount: 310,
-    rewardPoints: 350,
-    isOfficial: true,
-    targetGoal: 'วิ่งสะสมระยะทางครบ 3 สวนสาธารณะ กทม. (สวนเบญฯ, สวนลุมฯ, สวนรถไฟ)',
-    objective: 'กระตุ้นการออกกำลังกายกลางแจ้ง สูดอากาศบริสุทธิ์ในสวนสาธารณะ และสร้างสุขภาพที่แข็งแรง',
-    steps: [
-      'ไปวิ่งออกกำลังกาย ณ สวนสาธารณะที่ร่วมรายการ',
-      'กดเช็คอินพิกัด GPS ผ่านแอปเมื่อเริ่มหรือจบการวิ่ง',
-      'วิ่งครบทั้ง 3 สวนเพื่อปลดล็อกเหรียญ'
-    ],
-    verificationMethod: '📍 ระบบตรวจสอบพิกัด GPS อัตโนมัติในรัศมีสวนสาธารณะ',
-    rewardsText: '🏅 เหรียญตรา "BMA Park Champion" สีทอง + ⚡ 350 XP',
-    startDate: '1 มี.ค. 2569',
-    endDate: '31 มี.ค. 2569',
-    daysRemaining: 10,
-  },
-  {
-    id: 'comm-quest-3',
-    title: 'HYROX 10K Running & Workout Prep',
-    image: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=600&q=80',
-    iconName: 'Flame',
-    category: 'move',
-    badgeLabel: 'HYROX Warrior',
-    badgeIcon: '🔥',
-    completedCountInfo: '0/4 ครั้ง',
-    progressPercent: 0,
-    current: '0',
-    total: '4',
-    visibility: 'public',
-    creatorName: 'HYROX Thailand (พาร์ทเนอร์ทางการ)',
-    creatorAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80',
-    participantsCount: 142,
-    rewardPoints: 250,
-    isOfficial: true,
-    targetGoal: 'วิ่งและออกกำลังกายกลุ่มครบ 4 ครั้งใน 14 วัน เตรียมความพร้อมสู่สนามแข่ง',
-    objective: 'ฝึกความอดทนของกล้ามเนื้อและระบบหัวใจร่วมกับคอมมูนิตี้สายฟิตเนส',
-    steps: [
-      'เข้าร่วมคลาสซ้อม HYROX Community Bootcamp',
-      'ฝึกซ้อมแต่ละสถานีตามโปรแกรมของโค้ช',
-      'บันทึกสถิติครบ 4 ครั้ง'
-    ],
-    verificationMethod: '🏋️‍♂️ การยืนยันจากโค้ชผู้จัดกิจกรรม',
-    rewardsText: '🏅 เหรียญ "HYROX Warrior" + ⚡ 250 XP',
-    startDate: '5 มี.ค. 2569',
-    endDate: '28 มี.ค. 2569',
-    daysRemaining: 7,
-  },
-  {
-    id: 'comm-quest-4',
-    title: 'Morning Yoga 7 Days: ฮีลใจรับอรุณ',
-    image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=600&q=80',
-    iconName: 'Sparkles',
-    category: 'heal',
-    badgeLabel: 'Yoga Spirit',
-    badgeIcon: '🧘',
-    completedCountInfo: '0/7 วัน',
-    progressPercent: 0,
-    current: '0',
-    total: '7',
-    visibility: 'public',
-    creatorName: 'Mindful Yoga & Wellness Hub',
-    creatorAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80',
-    participantsCount: 189,
-    rewardPoints: 200,
-    isOfficial: true,
-    targetGoal: 'เล่นโยคะยามเช้าหรือฝึกสมาธิต่อเนื่อง 7 วัน เพื่อความสดชื่นและสมดุลจิตใจ',
-    objective: 'ปรับสมดุลร่างกายและจิตใจ เริ่มต้นวันใหม่ด้วยสมาธิและความผ่อนคลาย',
-    steps: [
-      'เล่นโยคะหรือฝึกสมาธิอย่างน้อย 15 นาทีในตอนเช้า',
-      'บันทึกการทำกิจกรรมรายวันในแอป',
-      'สะสมต่อเนื่องครบ 7 วัน'
-    ],
-    verificationMethod: '📱 การกดบันทึกเช็คอินรายวันผ่านแอป',
-    rewardsText: '🏅 เหรียญ "Yoga Spirit" + ⚡ 200 XP',
-    startDate: '1 มี.ค. 2569',
-    endDate: '20 มี.ค. 2569',
-    daysRemaining: 5,
-  },
-  {
-    id: 'comm-quest-5',
-    title: 'Digital Detox 3 Hours: วันหยุดไร้จอมือถือ',
-    image: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=600&q=80',
-    iconName: 'Sparkles',
-    category: 'chill',
-    badgeLabel: 'Mindful Soul',
-    badgeIcon: '📵',
-    completedCountInfo: '0/3 ชม.',
-    progressPercent: 0,
-    current: '0',
-    total: '3',
-    visibility: 'public',
-    creatorName: 'Digital Detox Society',
-    creatorAvatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=120&q=80',
-    participantsCount: 95,
-    rewardPoints: 180,
-    isOfficial: true,
-    targetGoal: 'พักสายตา วางจอมือถือ และเข้าร่วมกิจกรรมพบปะเพื่อนออฟไลน์ 3 ชม.',
-    objective: 'ลดความเครียดจากการเสพสื่อดิจิทัล และเปิดรับบทสนทนาจริงกับผู้คนรอบข้าง',
-    steps: [
-      'เข้าร่วมกิจกรรมออฟไลน์ เช่น บอร์ดเกม งานคราฟต์ หรือเวิร์กช็อป',
-      'เปิดโหมดไม่รบกวนตลอดช่วงกิจกรรม 3 ชั่วโมง',
-      'ให้โฮสต์สแกนยืนยันการเข้าร่วม'
-    ],
-    verificationMethod: '🤝 การยืนยันแบบ Peer-to-Peer จากโฮสต์ผู้จัดงาน',
-    rewardsText: '🏅 เหรียญ "Mindful Soul" + ⚡ 180 XP',
-    startDate: '1 มี.ค. 2569',
-    endDate: '31 มี.ค. 2569',
-    daysRemaining: 10,
-  },
-  {
-    id: 'comm-quest-6',
-    title: 'Bangkok Art Gallery Walk: ชม 3 แกลเลอรีริมน้ำ',
-    image: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=600&q=80',
-    iconName: 'Sparkles',
-    category: 'chill',
-    badgeLabel: 'Art Collector',
-    badgeIcon: '🎨',
-    completedCountInfo: '0/3 แห่ง',
-    progressPercent: 0,
-    current: '0',
-    total: '3',
-    visibility: 'public',
-    creatorName: 'River City Art Club',
-    creatorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
-    participantsCount: 168,
-    rewardPoints: 280,
-    isOfficial: true,
-    targetGoal: 'เสพงานศิลปะและเช็คอินแกลเลอรีหรือมิวเซียมศิลปะริมแม่น้ำเจ้าพระยาครบ 3 แห่ง',
-    objective: 'สนับสนุนวงการศิลปะไทย และสร้างแรงบันดาลใจทางความคิดสร้างสรรค์',
-    steps: [
-      'เยี่ยมชมแกลเลอรีย่านเจริญกรุง-ตลาดน้อย-คลองสาน',
-      'ถ่ายภาพงานนิทรรศการลง Moments',
-      'เช็คอินครบ 3 แห่งเพื่อรับเข็มกลัด'
-    ],
-    verificationMethod: '📸 ภาพถ่ายนิทรรศการคู่กับการเช็คอิน GPS',
-    rewardsText: '🏅 เหรียญ "Art Collector" + ⚡ 280 XP',
-    startDate: '1 มี.ค. 2569',
-    endDate: '31 มี.ค. 2569',
-    daysRemaining: 10,
-  },
-  {
-    id: 'comm-quest-7',
-    title: 'Board Game Master: เล่นครบ 3 บอร์ดเกมใหม่',
-    image: 'https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?auto=format&fit=crop&w=600&q=80',
-    iconName: 'Award',
-    category: 'chill',
-    badgeLabel: 'Game Strategist',
-    badgeIcon: '🎲',
-    completedCountInfo: '0/3 เกม',
-    progressPercent: 0,
-    current: '0',
-    total: '3',
-    visibility: 'public',
-    creatorName: 'Thailand Board Game Club (พาร์ทเนอร์ทางการ)',
-    creatorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80',
-    participantsCount: 114,
-    rewardPoints: 220,
-    isOfficial: true,
-    targetGoal: 'ทดลองเล่นบอร์ดเกมประเภทวางแผนหรือปาร์ตี้เกมที่ไม่เคยเล่นมาก่อนครบ 3 เกม',
-    objective: 'เปิดประสบการณ์การเล่นเกมใหม่ๆ ฝึกกระบวนการคิด และสร้างมิตรภาพผ่านโต๊ะบอร์ดเกม',
-    steps: [
-      'เข้าร่วมตี้บอร์ดเกมคาเฟ่หรืออีเวนต์คอมมูนิตี้',
-      'ร่วมเล่นเกมจนจบกระดานและบันทึกคะแนน',
-      'สะสมครบ 3 เกม'
-    ],
-    verificationMethod: '🎲 ถ่ายรูปกระดานเกมหลังจบการเล่น',
-    rewardsText: '🏅 เหรียญ "Game Strategist" + ⚡ 220 XP',
-    startDate: '1 มี.ค. 2569',
-    endDate: '31 มี.ค. 2569',
-    daysRemaining: 10,
-  },
-];
 
 export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
   onJoinQuest,
   joinedQuestTitles = ['Cafe Hunter 5', 'Step Count 30Days', 'Offline 3 Hours'],
   onOpenCreateModal,
   minimalHeader = false,
+  title = 'Challenge & Lifestyle Hub',
 }) => {
   const [joinedList, setJoinedList] = useState<string[]>(joinedQuestTitles);
   const [selectedQuestForModal, setSelectedQuestForModal] = useState<ChallengeQuest | null>(null);
-  const [questItems, setQuestItems] = useState(COMMUNITY_PUBLIC_QUESTS);
+  // Every challenge in the row comes from the catalog (GET /api/quests); nothing is typed into this file
+  const [questItems, setQuestItems] = useState<(ChallengeQuest & { image?: string })[]>([]);
+  const [isLoadingQuests, setIsLoadingQuests] = useState(true);
   const [filterType, setFilterType] = useState<'all' | 'hub_central' | 'brand_partner'>('all');
 
   const activeQuests = questItems.filter((q) => {
@@ -308,15 +93,12 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
     fetchAllContentPages<ChallengeQuest>('/api/quests', 'quests')
       .then((quests) => {
         if (!isActive) return;
-        setQuestItems((current) => {
-          const titles = new Set(current.map((quest) => quest.title.trim().toLowerCase()));
-          const additions = quests
-            .filter((quest) => !titles.has(quest.title.trim().toLowerCase()))
-            .map((quest) => ({ ...quest, image: quest.badgeCoverImg }));
-          return [...current, ...additions];
-        });
+        setQuestItems(quests.map((quest) => ({ ...quest, image: quest.badgeCoverImg })));
       })
-      .catch((error) => console.warn('Using default community quests fallback:', error));
+      .catch((error) => console.warn('Could not load challenges:', error))
+      .finally(() => {
+        if (isActive) setIsLoadingQuests(false);
+      });
 
     return () => {
       isActive = false;
@@ -411,7 +193,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
       {minimalHeader ? (
         <div className="flex items-center justify-between gap-4 pb-1 pt-2">
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            Challenge & Lifestyle Hub
+            {title}
           </h2>
           <Link
             href="/challenges"
@@ -425,14 +207,11 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-gradient-to-r from-purple-50/70 via-indigo-50/30 to-transparent p-3.5 sm:p-4 rounded-2xl border border-purple-200/70 shadow-2xs">
           <div>
             <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-lg bg-purple-500/15 text-purple-900 flex items-center justify-center text-xs font-black shrink-0 border border-purple-500/30">
-                04
-              </span>
               <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
                 <span>Challenge & Lifestyle Hub</span>
               </h2>
             </div>
-            <p className="text-xs text-slate-500 mt-1 font-medium pl-8">
+            <p className="text-xs text-slate-500 mt-1 font-medium">
               ภารกิจไลฟ์สไตล์ & ชาเลนจ์ กิจกรรมรับแต้ม XP และของรางวัล
             </p>
           </div>
@@ -538,6 +317,18 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
           className="flex gap-3 sm:gap-3.5 pb-2 pt-0.5 px-0.5 no-scrollbar overflow-x-auto snap-x snap-mandatory scroll-smooth"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
+          {isLoadingQuests &&
+            Array.from({ length: 5 }, (_, index) => (
+              <div
+                key={`quest-loading-${index}`}
+                className="w-[calc((100%-12px)/2)] sm:w-[calc((100%-2*14px)/3)] md:w-[calc((100%-3*14px)/4)] lg:w-[calc((100%-4*14px)/5)] shrink-0 aspect-[4/5] rounded-2xl bg-slate-100 animate-pulse"
+              />
+            ))}
+          {!isLoadingQuests && displayQuests.length === 0 && (
+            <p className="w-full py-8 text-center text-sm font-medium text-slate-500">
+              ชาเลนจ์ใหม่กำลังจะมาเร็วๆ นี้ แวะมาดูกันอีกทีนะ
+            </p>
+          )}
           {displayQuests.map((quest) => {
             const isJoined = joinedList.includes(quest.title);
             const isDone = completedList.includes(quest.title);
