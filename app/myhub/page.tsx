@@ -1564,7 +1564,7 @@ function MyHubContent() {
                                 className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer truncate active:scale-95"
                               >
                                 <CheckCircle2 className="w-3.5 h-3.5" />
-                                <span>ไปต่อ</span>
+                                <span>ดูความคืบหน้า</span>
                               </button>
                               <Link
                                 href="/challenges"
@@ -1572,7 +1572,7 @@ function MyHubContent() {
                                 title="ดูรายละเอียดชาเลนจ์ทั้งหมดในหน้าชาเลนจ์"
                               >
                                 <ExternalLink className="w-3.5 h-3.5" />
-                                <span className="hidden sm:inline">ดูชาเลนจ์</span>
+                                <span className="hidden sm:inline">ชาเลนจ์อื่น</span>
                               </Link>
                             </div>
                           ) : isCancelled ? (
@@ -2079,7 +2079,7 @@ function MyHubContent() {
                               href={`/challenges/${encodeURIComponent(challenge.questId)}`}
                               className="shrink-0 inline-flex items-center justify-center h-9 px-4 lg:w-full rounded-full bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 text-xs sm:text-sm font-bold cursor-pointer whitespace-nowrap"
                             >
-                              ไปต่อ
+                              ดูความคืบหน้า
                             </Link>
                           </div>
                         ))}

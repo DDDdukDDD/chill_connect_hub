@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { AlertTriangle, ArrowLeft, ArrowRight, Award, Calendar, Check, Clock, Gift, MapPin, Share2, Ticket, Trophy, Users, Zap } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, ArrowRight, Award, Calendar, Check, Clock, Gift, Share2, Ticket, Trophy, Users, Zap } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
@@ -20,7 +20,9 @@ import { useMasterData } from '@/lib/useMasterData';
  * for it, and what could I do next).
  */
 const FALLBACK_PHOTO = 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1200&q=80';
-const SECTION_TITLE = 'text-xl sm:text-2xl font-black text-slate-900 tracking-tight';
+// Offered when a member stops a challenge; the answer is optional and reaches staff without their name
+const LEAVE_REASONS = ['ไม่มีเวลาไปแล้ว', 'ที่ที่นับอยู่ไกลเกินไป', 'ไม่สนใจแล้ว', 'กดร่วมผิด', 'อื่นๆ'];
+const SECTION_TITLE ='text-xl sm:text-2xl font-black text-slate-900 tracking-tight';
 const BODY = 'text-sm font-medium text-slate-700 leading-relaxed';
 const RULE_LABEL = 'text-[11px] sm:text-xs font-semibold text-slate-500';
 const shortDate = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
@@ -39,6 +41,9 @@ export default function ChallengeDetailPage() {
   const [isLeaveOpen, setIsLeaveOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [justJoined, setJustJoined] = useState(false);
+  const [leaveReason, setLeaveReason] = useState('');
+  const [leaveNote, setLeaveNote] = useState('');
   const [copied, setCopied] = useState(false);
 
   const [detail, setDetail] = useState<QuestDetail | null>(null);
@@ -183,7 +188,6 @@ export default function ChallengeDetailPage() {
         { label: 'ผู้มีสิทธิ์ร่วม', text: 'สมาชิก Chill & Connect Hub ทุกคน ไม่มีค่าใช้จ่าย' },
         { label: 'ผู้จัด', text: reward.partnerName },
       ];
-  const nextTargetHref = detail.targets.find((target) => !target.visited)?.href ?? detail.browseHref ?? '/challenges';
   // A challenge about a few named places shows them while deciding too: they are what the challenge is
   const showPlaces = tracked && !earned && detail.targets.length > 0 && (isDoing || detail.targetsTotal <= 6);
   const memories = earned ? detail.mine?.memories ?? [] : [];
@@ -199,13 +203,19 @@ export default function ChallengeDetailPage() {
     const result = await myRewards.joinQuest(quest.id);
     await load();
     setIsSaving(false);
-    showToast(result.ok ? 'ร่วมแล้ว ไปกันเลย' : result.message || 'ร่วมไม่สำเร็จ ลองใหม่อีกครั้งนะ');
+    // Joining is answered on the page itself (what happened, what to do first), not by a passing toast
+    if (result.ok) setJustJoined(true);
+    else showToast(result.message || 'ร่วมไม่สำเร็จ ลองใหม่อีกครั้งนะ');
   };
   const handleLeave = async () => {
     setIsLeaveOpen(false);
-    const result = await myRewards.leaveQuest(quest.id);
+    setJustJoined(false);
+    const reason = leaveReason === 'อื่นๆ' ? leaveNote.trim() || 'อื่นๆ' : leaveReason;
+    const result = await myRewards.leaveQuest(quest.id, reason || undefined);
+    setLeaveReason('');
+    setLeaveNote('');
     await load();
-    showToast(result.ok ? 'เลิกทำชาเลนจ์นี้แล้ว' : result.message || 'ทำรายการไม่สำเร็จ ลองใหม่อีกครั้งนะ');
+    showToast(result.ok ? 'ยกเลิกการทำชาเลนจ์นี้แล้ว' : result.message || 'ทำรายการไม่สำเร็จ ลองใหม่อีกครั้งนะ');
   };
   const handleNote = () => {
     const next = Math.min(total, notedProgress + 1);
@@ -246,12 +256,8 @@ export default function ChallengeDetailPage() {
       </button>
     );
   } else if (tracked) {
-    mainAction = (
-      <Link href={nextTargetHref} className={dialogButton.primary}>
-        <MapPin className="w-4 h-4" aria-hidden="true" />
-        ไปกันเลย
-      </Link>
-    );
+    // Joined and counted by the system: the places are right below, so the only choice left here is to stop
+    mainAction = null;
   } else {
     mainAction = (
       <button type="button" onClick={handleNote} disabled={selfDone} className={dialogButton.primary}>
@@ -318,6 +324,18 @@ export default function ChallengeDetailPage() {
             </div>
           )}
 
+          {justJoined && joined && !earned && (
+            <div className="flex items-start gap-2 p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900" role="status">
+              <Check className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
+              <div className="min-w-0">
+                <p className="text-sm font-extrabold">ร่วมชาเลนจ์นี้แล้ว</p>
+                <p className="text-sm font-medium leading-relaxed">
+                  {tracked ? `เริ่มได้เลย: ${EVIDENCE_HINTS[detail.minEvidence ?? 'marked']}` : 'เริ่มได้เลย ทำครบแต่ละครั้งแล้วกลับมากด "บันทึกเอง" ที่หน้านี้'}
+                </p>
+              </div>
+            </div>
+          )}
+
           {(joined || earned) && (
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-sm font-bold text-slate-800">
@@ -332,6 +350,11 @@ export default function ChallengeDetailPage() {
 
           <div className="flex flex-wrap items-center gap-2 pt-1">
             {mainAction}
+            {isDoing && (
+              <button type="button" onClick={() => setIsLeaveOpen(true)} className={dialogButton.quiet}>
+                ยกเลิกการทำชาเลนจ์
+              </button>
+            )}
             <button type="button" onClick={handleShare} className={dialogButton.quiet}>
               {copied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Share2 className="w-4 h-4" aria-hidden="true" />}
               {copied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'}
@@ -342,7 +365,7 @@ export default function ChallengeDetailPage() {
 
       <div className="mt-10 sm:mt-14 grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:gap-10 lg:items-start">
         {/* What you get: the reason to join, so it comes first on a phone and stays in view on a desktop */}
-        <aside className={`${isDoing ? 'order-2' : ''} lg:order-2 lg:sticky lg:top-24`}>
+        <aside className={`lg:order-2 space-y-10 ${showPlaces ? '' : 'lg:sticky lg:top-24'}`}>
           {earned && isPartner && detail.mine?.voucherCode ? (
             <div className="p-5 sm:p-6 rounded-3xl bg-emerald-50 border border-emerald-200 space-y-3">
               <div className="flex items-start gap-2 text-emerald-800">
@@ -409,13 +432,12 @@ export default function ChallengeDetailPage() {
               <p className={BODY}>{SELF_NOTED_HINT}</p>
             </div>
           )}
-        </aside>
 
-        <div className={`${isDoing ? 'order-1' : ''} lg:order-1 flex flex-col gap-10 min-w-0`}>
+          {/* The places that count come right after the reward: what you get, then where to go for it */}
           {showPlaces && (
-            <section className={`space-y-4 ${isDoing ? 'order-1' : 'order-4'}`}>
+            <section id="places" className={`space-y-4 scroll-mt-24 ${isDoing ? 'order-1' : 'order-4'}`}>
               <div className="flex items-end justify-between gap-3">
-                <h2 className={SECTION_TITLE}>{isDoing ? 'ไปที่ไหนต่อดี' : 'ที่ที่นับในชาเลนจ์นี้'}</h2>
+                <h2 className={SECTION_TITLE}>ที่ที่นับในชาเลนจ์นี้</h2>
                 {detail.browseHref && detail.targetsTotal > detail.targets.length && (
                   <Link href={detail.browseHref} className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline shrink-0">
                     ดูทั้งหมด <span className="tabular-nums">{detail.targetsTotal.toLocaleString()}</span> แห่ง
@@ -423,7 +445,7 @@ export default function ChallengeDetailPage() {
                 )}
               </div>
               {isDoing && <p className="text-sm font-medium text-slate-600 leading-relaxed">{EVIDENCE_HINTS[detail.minEvidence ?? 'marked']}</p>}
-              <ul className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+              <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
                 {detail.targets.map((target) => (
                   <li key={`${target.targetType}:${target.id}`}>
                     <Link href={target.href} className="group block rounded-2xl cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]">
@@ -444,7 +466,9 @@ export default function ChallengeDetailPage() {
               </ul>
             </section>
           )}
+        </aside>
 
+        <div className="lg:order-1 flex flex-col gap-10 min-w-0">
           {/* Done: the places the member went, with their own photos, kept as the memory of the challenge */}
           {memories.length > 0 && (
             <section className="space-y-4 order-1">
@@ -477,7 +501,7 @@ export default function ChallengeDetailPage() {
           {/* Done: one challenge to go on with */}
           {next && (
             <section className="space-y-4 order-1">
-              <h2 className={SECTION_TITLE}>ไปต่อกันเลยไหม</h2>
+              <h2 className={SECTION_TITLE}>ลองชาเลนจ์ถัดไปไหม</h2>
               <Link
                 href={`/challenges/${encodeURIComponent(next.id)}`}
                 className="group flex items-center gap-4 p-3 rounded-3xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-colors duration-200 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]"
@@ -531,22 +555,43 @@ export default function ChallengeDetailPage() {
             </dl>
           </section>
 
-          {isDoing && (
-            <button type="button" onClick={() => setIsLeaveOpen(true)} className="order-6 self-start text-sm font-bold text-slate-600 hover:text-slate-900 hover:underline cursor-pointer">
-              เลิกทำชาเลนจ์นี้
-            </button>
-          )}
         </div>
       </div>
 
       {isLeaveOpen && (
-        <DialogShell onClose={() => setIsLeaveOpen(false)} size="sm" title="เลิกทำชาเลนจ์นี้ใช่ไหม" subtitle={tracked ? 'ที่ที่คุณไปมาแล้วยังนับอยู่ กลับมาร่วมใหม่ได้ทุกเมื่อก่อนหมดเขต' : 'กลับมาร่วมใหม่ได้ทุกเมื่อก่อนหมดเขต'}>
+        <DialogShell onClose={() => setIsLeaveOpen(false)} size="sm" title="ยกเลิกชาเลนจ์นี้ใช่ไหม" subtitle={tracked ? 'ที่ที่คุณไปมาแล้วยังนับอยู่ กลับมาร่วมใหม่ได้ทุกเมื่อก่อนหมดเขต' : 'กลับมาร่วมใหม่ได้ทุกเมื่อก่อนหมดเขต'}>
+          {/* The reason is asked, never demanded: stopping must stay as easy as joining */}
+          <fieldset className="mb-5">
+            <legend className="text-sm font-bold text-slate-900">บอกเหตุผลสักนิดได้ไหม <span className="font-medium text-slate-500">(ไม่บังคับ)</span></legend>
+            <div className="mt-2 space-y-1.5">
+              {LEAVE_REASONS.map((reason) => (
+                <label key={reason} className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-sm font-medium cursor-pointer ${leaveReason === reason ? 'border-slate-900 bg-slate-50 text-slate-900' : 'border-slate-200 text-slate-700 hover:border-slate-300'}`}>
+                  <input type="radio" name="leave-reason" value={reason} checked={leaveReason === reason} onChange={() => setLeaveReason(reason)} className="w-4 h-4 accent-slate-900" />
+                  {reason}
+                </label>
+              ))}
+            </div>
+            {leaveReason === 'อื่นๆ' && (
+              <>
+                <label htmlFor="leave-note" className="sr-only">เหตุผลอื่น</label>
+                <input
+                  id="leave-note"
+                  type="text"
+                  maxLength={150}
+                  value={leaveNote}
+                  onChange={(e) => setLeaveNote(e.target.value)}
+                  placeholder="เล่าสั้นๆ ได้เลย"
+                  className="mt-2 w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-base sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] placeholder:text-slate-400"
+                />
+              </>
+            )}
+          </fieldset>
           <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-2">
             <button type="button" data-autofocus onClick={() => setIsLeaveOpen(false)} className={dialogButton.quiet}>
-              ทำต่อ
+              ทำชาเลนจ์ต่อ
             </button>
             <button type="button" onClick={handleLeave} className={dialogButton.secondary}>
-              เลิกทำ
+              ยืนยันยกเลิก
             </button>
           </div>
         </DialogShell>

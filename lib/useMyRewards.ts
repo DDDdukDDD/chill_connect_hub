@@ -98,12 +98,12 @@ export function useMyRewards(isLoggedIn: boolean) {
   }, []);
 
   /** Joins or leaves a challenge on the account; the answer carries the message to show when it is refused */
-  const setJoined = useCallback(async (questId: string, action: 'join' | 'leave'): Promise<{ ok: boolean; message?: string }> => {
+  const setJoined = useCallback(async (questId: string, action: 'join' | 'leave', reason?: string): Promise<{ ok: boolean; message?: string }> => {
     try {
       const data: RewardsAnswer = await fetch('/api/quests/join', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ questId, action }),
+        body: JSON.stringify({ questId, action, reason }),
       }).then((res) => res.json());
       if (!data.success) return { ok: false, message: data.message };
       setState(toState(data));
@@ -113,7 +113,7 @@ export function useMyRewards(isLoggedIn: boolean) {
     }
   }, []);
   const joinQuest = useCallback((questId: string) => setJoined(questId, 'join'), [setJoined]);
-  const leaveQuest = useCallback((questId: string) => setJoined(questId, 'leave'), [setJoined]);
+  const leaveQuest = useCallback((questId: string, reason?: string) => setJoined(questId, 'leave', reason), [setJoined]);
 
   return { ...state, refresh, redeem, joinQuest, leaveQuest };
 }
