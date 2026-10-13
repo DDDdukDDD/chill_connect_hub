@@ -3,8 +3,9 @@
 import React, { useState } from 'react';
 
 /**
- * Every post shows its photos in the same square frame, whatever the photos' own shape or number,
- * so the feed keeps one rhythm. Photos fill the frame; the viewer shows them whole.
+ * Every post shows its photos in the same frame, whatever the photos' own shape or number, so the feed keeps
+ * one rhythm: square on a phone, and no taller than 500px on wider screens so a whole post fits in one screen.
+ * Photos fill the frame; the viewer shows them whole.
  */
 export const PHOTO_FRAME_RATIO = 1;
 /** How many photos the feed shows before "+N" */
@@ -92,7 +93,7 @@ export function MomentPhotos({ images, ratio, alt, onOpen }: MomentPhotosProps) 
 
   return (
     <div
-      className="grid w-full gap-0.5 bg-white select-none"
+      className="grid w-full gap-0.5 bg-white select-none sm:max-h-[500px]"
       style={{ aspectRatio: String(layout.frame), gridTemplateColumns: layout.columns, gridTemplateRows: layout.rows }}
     >
       {layout.tiles.map((tile, i) => (

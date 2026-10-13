@@ -2,6 +2,7 @@ import type { ChallengeQuest, EventItem, QuestRule } from '@/data/mockData';
 import type { LifestyleSpotItem } from '@/data/spotsData';
 import { db } from '../db';
 import { parseQuestDate } from '../questLifecycle';
+import { momentRepository } from '../moments';
 import { joinedQuestIdsOf } from './questJoins';
 import { type Visit, type VisitEvidence, type VisitTargetType, isVisitTargetType, targetKey, visitsOf } from './visits';
 
@@ -168,19 +169,20 @@ async function allPages<T>(load: (page: number) => Promise<{ items: T[]; totalPa
 
 /**
  * Where a member can go for a challenge: published places and events still to come that match its rule.
- * Places the member already counted come first; `total` is how many match in all.
+ * Places the member already counted come first, then those in the member's own province (`near` holds its names);
+ * `total` is how many match in all.
  */
-export async function targetsOfQuest(quest: ChallengeQuest, memberId: string | null, limit = 6): Promise<{ targets: QuestTarget[]; total: number; browseHref: string } | null> {
+export async function targetsOfQuest(quest: ChallengeQuest, memberId: string | null, limit = 6, near: string[] = []): Promise<{ targets: QuestTarget[]; total: number; browseHref: string } | null> {
   const rule = quest.rule;
   if (!rule) return null;
   const ruled = quest as ChallengeQuest & { rule: QuestRule };
-  const found: Omit<QuestTarget, 'visited'>[] = [];
+  const found: (Omit<QuestTarget, 'visited'> & { province?: string })[] = [];
 
   if (rule.targetTypes.includes('spot')) {
     const spots = await allPages((page) => db.findSpots({ page, limit: 100 }));
     for (const spot of spots) {
       if (spot.publicationStatus === 'draft' || !ruleMatchesTarget(rule, spotTarget(spot))) continue;
-      found.push({ targetType: 'spot', id: spot.id, title: spot.title, image: spot.image, detail: spot.province, href: `/spots/${encodeURIComponent(spot.id)}` });
+      found.push({ targetType: 'spot', id: spot.id, title: spot.title, image: spot.image, detail: spot.province, province: spot.province, href: `/spots/${encodeURIComponent(spot.id)}` });
     }
   }
   for (const eventType of ['community', 'public_venue'] as const) {
@@ -189,7 +191,7 @@ export async function targetsOfQuest(quest: ChallengeQuest, memberId: string | n
     const events = await allPages((page) => db.findEvents({ eventType, page, limit: 100 }));
     for (const event of events) {
       if (!ruleMatchesTarget(rule, eventTarget(event))) continue;
-      found.push({ targetType, id: event.id, title: event.title, image: event.image, detail: event.date, href: `${TARGET_PATHS[targetType]}/${encodeURIComponent(event.id)}` });
+      found.push({ targetType, id: event.id, title: event.title, image: event.image, detail: event.date, province: event.province, href: `${TARGET_PATHS[targetType]}/${encodeURIComponent(event.id)}` });
     }
   }
 
@@ -203,10 +205,58 @@ export async function targetsOfQuest(quest: ChallengeQuest, memberId: string | n
   // A place named by the rule keeps the rule's order; places already counted come first
   const order = new Map((rule.targetIds ?? []).map((id, index) => [id, index]));
   const targets = found
-    .map((target) => ({ ...target, visited: visited.has(targetKey(target.targetType, target.id)) }))
-    .sort((a, b) => Number(b.visited) - Number(a.visited) || (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0) || Number(Boolean(b.image)) - Number(Boolean(a.image)));
+    .map(({ province, ...target }) => ({ target: { ...target, visited: visited.has(targetKey(target.targetType, target.id)) }, near: Number(Boolean(province) && near.includes(province as string)) }))
+    .sort(
+      (a, b) =>
+        Number(b.target.visited) - Number(a.target.visited) ||
+        (order.get(a.target.id) ?? 0) - (order.get(b.target.id) ?? 0) ||
+        b.near - a.near ||
+        Number(Boolean(b.target.image)) - Number(Boolean(a.target.image))
+    )
+    .map((entry) => entry.target);
 
   return { targets: targets.slice(0, limit), total: targets.length, browseHref: TARGET_PATHS[rule.targetTypes[0]] };
+}
+
+/** One place or event the member went to for a challenge, with their own photo from there when they shared one */
+export interface QuestMemory {
+  targetType: VisitTargetType;
+  id: string;
+  title: string;
+  /** The member's own photo; the place's photo when they shared none */
+  image?: string;
+  ownPhoto: boolean;
+  href: string;
+  at: string;
+}
+
+/** The visits a challenge counted for one member, oldest first: what they did to finish it */
+export async function memoriesOfQuest(quest: ChallengeQuest, memberId: string): Promise<QuestMemory[]> {
+  if (!quest.rule) return [];
+  const ruled = quest as ChallengeQuest & { rule: QuestRule };
+  const { items: moments } = await momentRepository.query({ statuses: ['published'], authorId: memberId, sort: 'newest', page: 1, limit: 500 });
+  const photos = new Map<string, string>();
+  for (const moment of moments) {
+    if (isVisitTargetType(moment.targetType) && moment.targetId && moment.images?.[0]) photos.set(targetKey(moment.targetType, moment.targetId), moment.images[0]);
+  }
+
+  const memories: QuestMemory[] = [];
+  for (const visit of await visitsOf(memberId)) {
+    if (!visitCounts(ruled, visit, await loadRuleTarget(visit.targetType, visit.targetId))) continue;
+    const place = visit.targetType === 'spot' ? await db.findSpotById(visit.targetId) : await db.findEventById(visit.targetId);
+    if (!place) continue;
+    const ownPhoto = photos.get(targetKey(visit.targetType, visit.targetId));
+    memories.push({
+      targetType: visit.targetType,
+      id: visit.targetId,
+      title: place.title,
+      image: ownPhoto ?? place.image,
+      ownPhoto: Boolean(ownPhoto),
+      href: `${TARGET_PATHS[visit.targetType]}/${encodeURIComponent(visit.targetId)}`,
+      at: visit.at,
+    });
+  }
+  return memories.sort((a, b) => a.at.localeCompare(b.at)).slice(0, ruled.rule.count);
 }
 
 /** A member's visits, their progress in every challenge that counts visits, and their points */

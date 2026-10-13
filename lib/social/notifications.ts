@@ -5,7 +5,7 @@ import type { Member } from '../members/types';
 import { thaiTimeAgo } from '../moments/service';
 import { createJsonStore } from './jsonStore';
 
-export type NotificationType = 'follow' | 'like' | 'comment' | 'challenge';
+export type NotificationType = 'follow' | 'like' | 'comment' | 'challenge' | 'evidence';
 
 interface StoredNotification {
   id: string;
@@ -47,7 +47,17 @@ export async function notifyChallengeFinished(memberId: string, questId: string,
   });
 }
 
-const MESSAGES: Record<NotificationType, string> = { follow: 'เริ่มติดตามคุณ', like: 'ส่งหัวใจให้โมเมนต์ของคุณ', comment: 'แสดงความคิดเห็นในโมเมนต์ของคุณ', challenge: 'คุณทำชาเลนจ์ครบแล้ว กดดูรางวัลได้เลย' };
+/** Tells a member that staff looked at a moment's photo and did not count it as a visit (the reason is the preview) */
+export async function notifyEvidenceRejected(memberId: string, momentId: string, note: string): Promise<void> {
+  await store.update((items) => {
+    const rest = items.filter((n) => !(n.memberId === memberId && n.type === 'evidence' && n.momentId === momentId));
+    const next = [{ id: `ntf_${randomUUID()}`, memberId, type: 'evidence' as const, actorId: memberId, momentId, preview: note.slice(0, 80), createdAt: new Date().toISOString(), read: false }, ...rest];
+    let kept = 0;
+    return next.filter((n) => n.memberId !== memberId || ++kept <= KEEP_PER_MEMBER);
+  });
+}
+
+const MESSAGES: Record<NotificationType, string> = { evidence: 'ทีมงานตรวจรูปแล้ว โมเมนต์นี้ยังไม่นับในชาเลนจ์', follow: 'เริ่มติดตามคุณ', like: 'ส่งหัวใจให้โมเมนต์ของคุณ', comment: 'แสดงความคิดเห็นในโมเมนต์ของคุณ', challenge: 'คุณทำชาเลนจ์ครบแล้ว กดดูรางวัลได้เลย' };
 
 export async function notificationsFor(member: Member) {
   const mine = store.read().filter((n) => n.memberId === member.id);
@@ -55,18 +65,18 @@ export async function notificationsFor(member: Member) {
   const actors = new Map<string, Member | null>();
   for (const id of new Set(mine.map((n) => n.actorId))) actors.set(id, await memberRepository.findById(id));
   const items = mine
-    .filter((n) => n.type === 'challenge' || (!blocked.has(n.actorId) && actors.get(n.actorId)?.status === 'active'))
+    .filter((n) => n.type === 'challenge' || n.type === 'evidence' || (!blocked.has(n.actorId) && actors.get(n.actorId)?.status === 'active'))
     .map((n) => {
-      if (n.type === 'challenge') {
+      if (n.type === 'challenge' || n.type === 'evidence') {
         return {
           id: n.id,
           type: n.type,
           actorId: n.actorId,
           actorName: 'Chill & Connect Hub',
           actorAvatar: '',
-          momentId: undefined,
-          href: `/challenges/${encodeURIComponent(n.questId ?? '')}`,
-          message: MESSAGES.challenge,
+          momentId: n.type === 'evidence' ? n.momentId : undefined,
+          href: n.type === 'evidence' ? undefined : `/challenges/${encodeURIComponent(n.questId ?? '')}`,
+          message: MESSAGES[n.type],
           preview: n.preview,
           timeAgo: thaiTimeAgo(n.createdAt),
           read: n.read,

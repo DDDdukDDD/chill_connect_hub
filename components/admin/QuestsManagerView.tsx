@@ -72,7 +72,7 @@ const EMPTY_DRAFT: QuestDraft = {
   image: '',
   rewardType: 'hub_central',
   partnerName: '',
-  rewardTitle: 'แต้มสะสมอิสระ + ปลดล็อกของรางวัลใน Hub Rewards',
+  rewardTitle: 'สะสม XP แลกของรางวัลที่ชอบ',
   voucherCodePrefix: '',
   exclusiveNotice: '',
   hubRewardNote: '',
@@ -547,8 +547,8 @@ export function QuestsManagerView() {
                 <legend className="text-sm font-bold text-slate-900">การนับความคืบหน้า</legend>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <label className="block space-y-1.5 text-sm font-medium text-slate-800">นับจาก
-                    <select value={draft.ruleType} onChange={(event) => setDraft({ ...draft, ruleType: event.target.value as QuestDraft['ruleType'] })} className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100">
-                      <option value="">ไม่นับอัตโนมัติ</option>
+                    <select required value={draft.ruleType} onChange={(event) => setDraft({ ...draft, ruleType: event.target.value as QuestDraft['ruleType'] })} className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                      <option value="" disabled>เลือกสิ่งที่ระบบจะนับ</option>
                       {Object.entries(RULE_TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                     </select>
                   </label>
@@ -581,7 +581,7 @@ export function QuestsManagerView() {
                     </div>
                   </>
                 ) : (
-                  <p className="text-[11px] sm:text-xs font-semibold text-slate-500">ภารกิจนี้จะไม่มีความคืบหน้าอัตโนมัติ และสมาชิกจะไม่ได้ XP รางวัลเมื่อทำครบ</p>
+                  <p className="text-[11px] sm:text-xs font-semibold text-slate-500">ทุกชาเลนจ์ต้องมีวิธีที่ระบบตรวจได้ สมาชิกจึงจะได้ XP และรางวัลเมื่อทำครบ</p>
                 )}
               </fieldset>
 

@@ -12,6 +12,15 @@ interface TargetReward {
   rewardPoints: number;
   rewardTitle?: string;
   count: number;
+  minEvidence?: Evidence;
+}
+
+type Evidence = 'checkin' | 'moment' | 'marked';
+const EVIDENCE_RANK: Record<Evidence, number> = { checkin: 3, moment: 2, marked: 1 };
+/** The signed-in member's part: how far they are in each challenge, and the evidence they have for this place */
+interface MyPart {
+  quests: Record<string, { current: number; total: number; completed: boolean; joined: boolean }>;
+  evidence?: Evidence;
 }
 
 interface TargetProof {
@@ -49,6 +58,7 @@ export const VisitPanel: React.FC<VisitPanelProps> = ({ targetType, targetId, ti
   const [isMarked, setIsMarked] = useState(false);
   const [myRating, setMyRating] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  const [myPart, setMyPart] = useState<MyPart | null>(null);
   const key = `${targetType}:${targetId}`;
   const canMark = targetType !== 'community';
   const [openedAt] = useState(() => Date.now());
@@ -72,6 +82,7 @@ export const VisitPanel: React.FC<VisitPanelProps> = ({ targetType, targetId, ti
     if (!isLoggedIn) {
       setIsMarked(false);
       setMyRating(0);
+      setMyPart(null);
       return;
     }
     let isActive = true;
@@ -82,12 +93,18 @@ export const VisitPanel: React.FC<VisitPanelProps> = ({ targetType, targetId, ti
         const mark = (data.marks ?? []).find((m: { targetType: string; targetId: string }) => m.targetType === targetType && m.targetId === targetId);
         setIsMarked(Boolean(mark));
         setMyRating(mark?.rating ?? 0);
+        const visit = (data.visits ?? []).find((v: { targetType: string; targetId: string }) => v.targetType === targetType && v.targetId === targetId);
+        setMyPart({
+          quests: Object.fromEntries((data.quests ?? []).map((q: { questId: string; current: number; total: number; completed: boolean; joined: boolean }) => [q.questId, q])),
+          evidence: visit?.evidence,
+        });
       })
       .catch(() => {});
     return () => {
       isActive = false;
     };
-  }, [isLoggedIn, targetType, targetId]);
+    // Pressing "been here" changes what counts, so the member's part is read again
+  }, [isLoggedIn, targetType, targetId, isMarked]);
 
   const send = useCallback(
     async (action: 'mark' | 'unmark', rating?: number) => {
@@ -196,17 +213,35 @@ export const VisitPanel: React.FC<VisitPanelProps> = ({ targetType, targetId, ti
       </div>
 
       {/* A challenge that a visit here counts toward */}
-      {quests.map((quest) => (
-        <Link key={quest.questId} href="/challenges" className="flex items-start gap-2 rounded-2xl bg-slate-50 p-2.5 text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-200">
-          <Trophy className="w-4 h-4 text-slate-700 shrink-0 mt-0.5" aria-hidden="true" />
-          <span className="min-w-0">
-            <span className="block font-extrabold text-slate-900 line-clamp-1">นับในภารกิจ {quest.title}</span>
-            <span className="block line-clamp-1 tabular-nums">
-              ไปครบ {quest.count} แห่ง รับ {quest.rewardTitle || `${quest.rewardPoints} XP`}
+      {quests.map((quest) => {
+        // A member who joined sees how far they are and whether this place already counted; everyone else sees the offer
+        const mine = myPart?.quests[quest.questId];
+        const doing = Boolean(mine?.joined);
+        const countedHere = doing && myPart?.evidence !== undefined && EVIDENCE_RANK[myPart.evidence] >= EVIDENCE_RANK[quest.minEvidence ?? 'marked'];
+        return (
+          <Link
+            key={quest.questId}
+            href={`/challenges/${encodeURIComponent(quest.questId)}`}
+            className={`flex items-start gap-2 rounded-2xl p-2.5 text-xs font-medium transition-colors duration-200 ${
+              countedHere ? 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            {countedHere ? <Check className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" /> : <Trophy className="w-4 h-4 text-slate-700 shrink-0 mt-0.5" aria-hidden="true" />}
+            <span className="min-w-0">
+              <span className={`block font-extrabold line-clamp-1 ${countedHere ? 'text-emerald-900' : 'text-slate-900'}`}>
+                {countedHere ? 'นับที่นี่แล้วในชาเลนจ์' : doing ? 'ชาเลนจ์ที่คุณทำอยู่:' : 'นับในชาเลนจ์'} {quest.title}
+              </span>
+              <span className="block line-clamp-1 tabular-nums">
+                {doing && mine
+                  ? mine.completed
+                    ? 'ทำครบแล้ว กดดูรางวัลได้เลย'
+                    : `ไปแล้ว ${mine.current} จาก ${mine.total}${countedHere ? ` เหลืออีก ${mine.total - mine.current}` : ' แชร์โมเมนต์จากที่นี่เพื่อนับเพิ่ม'}`
+                  : `ไปครบ ${quest.count} แห่ง รับ ${quest.rewardTitle || `${quest.rewardPoints} XP`}`}
+              </span>
             </span>
-          </span>
-        </Link>
-      ))}
+          </Link>
+        );
+      })}
 
       {/* Actions: share a moment first; "been here" is the quiet second step */}
       <div className={wide ? 'grid gap-2.5 sm:grid-cols-2 sm:items-start' : 'space-y-2.5'}>

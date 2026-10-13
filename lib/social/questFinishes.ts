@@ -39,6 +39,10 @@ export async function settleFinishes(memberId: string, progress: QuestProgress[]
   }
 }
 
+/** When the member finished one challenge; undefined while they have not */
+export const finishedAtOf = (memberId: string, questId: string): string | undefined =>
+  store.read().find((finish) => finish.memberId === memberId && finish.questId === questId)?.finishedAt;
+
 /** Badges and reward codes of the challenges a member finished, newest first */
 export async function finishesOf(memberId: string) {
   const mine = store.read().filter((finish) => finish.memberId === memberId);

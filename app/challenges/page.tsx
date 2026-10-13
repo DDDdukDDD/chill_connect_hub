@@ -105,6 +105,8 @@ export default function ChallengesDiscoveryPage() {
 
   // Which challenges the member joined comes from the account; the browser copy only keeps progress noted by hand
   const joinedQuestIds = myRewards.joinedQuestIds;
+  // Joined and not finished yet: a finished challenge is no longer being done
+  const doingCount = joinedQuestIds.filter((id) => !myRewards.quests.some((progress) => progress.questId === id && progress.completed)).length;
 
   useEffect(() => {
     if (isLoggedIn && myRewards.isLoaded && storedQuestList.length > 0) syncMyChallenges(myRewards.joinedQuestIds, storedQuestList);
@@ -235,7 +237,7 @@ export default function ChallengesDiscoveryPage() {
               >
                 <Zap className="w-4 h-4 text-[#7C3AED]" aria-hidden="true" />
                 <span className="tabular-nums">{userXp.toLocaleString()} XP</span>
-                {joinedQuestIds.length > 0 && <span className="text-slate-500 tabular-nums">· กำลังทำ {joinedQuestIds.length}</span>}
+                {doingCount > 0 && <span className="text-slate-500 tabular-nums">· กำลังทำ {doingCount}</span>}
               </Link>
             )}
             {!isLoggedIn && (
@@ -354,15 +356,14 @@ export default function ChallengesDiscoveryPage() {
                     const brandReward = getQuestBrandReward(quest);
                     const isPartner = brandReward.type === 'brand_partner';
                     const mine = isJoined && !isEnded ? myRewards.quests.find((progress) => progress.questId === quest.id) : undefined;
-                    const PILL = 'inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-extrabold whitespace-nowrap';
 
                     return (
                       // The challenge card keeps its own look, unlike the place and event cards: a violet stripe, the owner
-                      // and XP pills, an inset photo, the reward pill, and a footer with the one action.
+                      // and XP pills, an inset photo with the reward strip, and a footer with the one action.
                       <article
                         key={quest.id}
                         onClick={() => router.push(`/challenges/${encodeURIComponent(quest.id)}`)}
-                        className={`group/card relative flex flex-col gap-3 rounded-2xl border p-4 overflow-hidden cursor-pointer transition-all duration-200 ${
+                        className={`group/card relative flex flex-col gap-2 rounded-2xl border p-3.5 sm:p-4 overflow-hidden cursor-pointer transition-all duration-200 ${
                           isEnded
                             ? 'bg-slate-50 border-slate-200'
                             : isJoined
@@ -372,54 +373,55 @@ export default function ChallengesDiscoveryPage() {
                       >
                         <div className={`absolute top-0 inset-x-0 h-1 ${isEnded ? 'bg-slate-300' : 'bg-[#7C3AED]'}`} aria-hidden="true" />
 
-                        {/* Who runs it, and what it gives */}
+                        {/* Who runs it (quiet), and the XP it gives (the one loud thing on the card) */}
                         <div className="flex items-center justify-between gap-2 pt-1">
-                          {isEnded ? (
-                            <span className={`${PILL} bg-slate-100 border-slate-200 text-slate-600`}>ชาเลนจ์นี้จบแล้ว</span>
-                          ) : (
-                            <span
-                              title={isPartner ? brandReward.partnerName : 'Chill & Connect Hub'}
-                              className={`${PILL} min-w-0 ${isPartner ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-[#F5F3FF] border-violet-200 text-[#5B21B6]'}`}
-                            >
-                              <span className="truncate">Official • {isPartner ? brandReward.partnerName : 'Chill & Connect'}</span>
-                            </span>
-                          )}
-                          <span className={`${PILL} shrink-0 ${isEnded ? 'bg-slate-100 border-slate-200 text-slate-600' : 'bg-[#F5F3FF] border-violet-200 text-[#5B21B6]'}`}>
-                            {quest.rule && <Zap className="w-3.5 h-3.5" aria-hidden="true" />}
-                            <span className="tabular-nums">{quest.rule ? `+${(quest.rewardPoints ?? 0).toLocaleString()} XP` : 'บันทึกเอง'}</span>
+                          <span
+                            title={isPartner ? brandReward.partnerName : 'Chill & Connect Hub'}
+                            className="inline-flex items-center gap-1.5 min-w-0 px-2.5 py-1 rounded-full bg-white border border-slate-200 text-xs font-bold text-slate-700"
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isEnded ? 'bg-slate-400' : isPartner ? 'bg-amber-500' : 'bg-[#7C3AED]'}`} aria-hidden="true" />
+                            <span className="truncate">{isPartner ? brandReward.partnerName : 'Chill & Connect Hub'}</span>
                           </span>
+                          {isEnded ? (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-200 text-xs font-extrabold text-slate-600 whitespace-nowrap shrink-0">จบแล้ว</span>
+                          ) : quest.rule ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#7C3AED] text-xs font-extrabold text-white whitespace-nowrap shrink-0 tabular-nums">
+                              <Zap className="w-3.5 h-3.5" aria-hidden="true" />
+                              +{(quest.rewardPoints ?? 0).toLocaleString()} XP
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-100 text-xs font-extrabold text-slate-600 whitespace-nowrap shrink-0">บันทึกเอง</span>
+                          )}
                         </div>
 
-                        <div className="aspect-[16/10] rounded-2xl overflow-hidden bg-slate-100">
+                        {/* The photo carries what you get, as a strip on its lower edge: every challenge has a reward, so every card has the strip */}
+                        <div className="relative aspect-[2/1] rounded-2xl overflow-hidden bg-slate-100">
                           <img
                             src={quest.image || 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80'}
                             alt=""
                             loading="lazy"
                             className={`w-full h-full object-cover transition-transform duration-500 ${isEnded ? 'grayscale opacity-80' : 'group-hover/card:scale-105'}`}
                           />
+                          <p
+                            title={brandReward.title}
+                            className={`absolute inset-x-0 bottom-0 flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-bold min-w-0 ${
+                              isEnded ? 'bg-slate-100 text-slate-600' : isPartner ? 'bg-amber-100 text-amber-900' : 'bg-[#F5F3FF] text-[#5B21B6]'
+                            }`}
+                          >
+                            {isPartner && <Ticket className="w-4 h-4 shrink-0" aria-hidden="true" />}
+                            <span className="truncate">{brandReward.title}</span>
+                          </p>
                         </div>
 
+                        {/* Title, then what to do in one line */}
                         <div className="space-y-1.5">
                           <h3 title={quest.title} className={`text-sm sm:text-base font-extrabold leading-snug line-clamp-2 sm:min-h-[2.75rem] ${isEnded ? 'text-slate-700' : 'text-slate-900'}`}>
                             {quest.title}
                           </h3>
-                          <p title={quest.targetGoal} className="text-xs sm:text-sm font-medium text-slate-600 leading-relaxed line-clamp-2 sm:min-h-[2.75rem]">
+                          <p title={quest.targetGoal} className="text-xs sm:text-sm font-medium text-slate-600 leading-snug line-clamp-1">
                             {quest.targetGoal}
                           </p>
                         </div>
-
-                        {/* The reward: a partner's privilege, or XP to spend on anything */}
-                        {!isEnded && quest.rule && (
-                          <p
-                            title={isPartner ? brandReward.title : undefined}
-                            className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl border text-xs sm:text-sm font-bold min-w-0 ${
-                              isPartner ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-[#F5F3FF] border-violet-200 text-[#5B21B6]'
-                            }`}
-                          >
-                            {isPartner && <Ticket className="w-4 h-4 shrink-0" aria-hidden="true" />}
-                            <span className="truncate">{isPartner ? brandReward.title : 'นำ XP ไปแลกของรางวัลอะไรก็ได้'}</span>
-                          </p>
-                        )}
 
                         {/* The member's own progress, from the account */}
                         {isJoined && !isEnded && (
@@ -438,34 +440,43 @@ export default function ChallengesDiscoveryPage() {
                           )
                         )}
 
-                        <div className="mt-auto space-y-3">
-                          <div className="flex items-center justify-between gap-2 text-xs font-medium text-slate-500 tabular-nums">
-                            <span className="truncate">{quest.startDate} - {quest.endDate}</span>
-                            {!isEnded && (
-                              <span className="shrink-0">
-                                {quest.participantsCount ? `${quest.participantsCount.toLocaleString()} คนร่วมทำ · ` : ''}
-                                <span className={isUrgent ? 'font-bold text-rose-700' : ''}>เหลือ {quest.daysRemaining} วัน</span>
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-2">
-                            <span className="text-xs font-semibold text-slate-600 truncate min-w-0">{isPartner ? brandReward.partnerName : 'Chill & Connect Hub'}</span>
+                        {/* One bottom row: how long is left and how many joined, beside the one action. The dates are on the challenge page.
+                            The buttons look 36px tall to keep the card short; a hidden edge keeps the 40px touch target */}
+                        <div className="mt-auto">
+                          <div className="pt-2.5 border-t border-slate-200 flex items-center justify-between gap-2">
+                            <span className="text-xs font-medium text-slate-500 truncate min-w-0 tabular-nums">
+                              {isEnded ? (
+                                `จบเมื่อ ${quest.endDate}`
+                              ) : (
+                                <>
+                                  <span className={isUrgent ? 'font-bold text-rose-700' : ''}>เหลือ {quest.daysRemaining} วัน</span>
+                                  {quest.participantsCount ? ` · ${quest.participantsCount.toLocaleString()} คนร่วมทำ` : ''}
+                                </>
+                              )}
+                            </span>
                             <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                               {isEnded ? (
-                                <span className="inline-flex items-center min-h-10 px-4 rounded-full bg-slate-100 text-slate-700 text-sm font-bold whitespace-nowrap">ดูย้อนหลัง</span>
+                                <span className="inline-flex items-center min-h-9 px-4 rounded-full bg-slate-100 text-slate-700 text-sm font-bold whitespace-nowrap">ดูย้อนหลัง</span>
+                              ) : mine?.completed ? (
+                                // Finished: the one thing left is the reward, so there is nothing to leave
+                                <Link
+                                  href={`/challenges/${encodeURIComponent(quest.id)}`}
+                                  className="relative before:absolute before:inset-x-0 before:-inset-y-0.5 before:content-[''] inline-flex items-center min-h-9 px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold whitespace-nowrap transition-colors cursor-pointer"
+                                >
+                                  ดูรางวัล
+                                </Link>
                               ) : isJoined ? (
                                 <>
                                   <button
                                     type="button"
                                     onClick={() => setQuestToCancel(quest)}
-                                    className="inline-flex items-center min-h-10 px-3 rounded-full text-sm font-bold text-slate-600 hover:bg-slate-100 whitespace-nowrap transition-colors cursor-pointer"
+                                    className="relative before:absolute before:inset-x-0 before:-inset-y-0.5 before:content-[''] inline-flex items-center min-h-9 px-3 rounded-full text-sm font-bold text-slate-600 hover:bg-slate-100 whitespace-nowrap transition-colors cursor-pointer"
                                   >
                                     เลิกทำ
                                   </button>
                                   <Link
                                     href={`/challenges/${encodeURIComponent(quest.id)}`}
-                                    className="inline-flex items-center min-h-10 px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold whitespace-nowrap transition-colors cursor-pointer"
+                                    className="relative before:absolute before:inset-x-0 before:-inset-y-0.5 before:content-[''] inline-flex items-center min-h-9 px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold whitespace-nowrap transition-colors cursor-pointer"
                                   >
                                     ไปต่อ
                                   </Link>
@@ -474,7 +485,7 @@ export default function ChallengesDiscoveryPage() {
                                 <button
                                   type="button"
                                   onClick={() => void handleConfirmJoin(quest)}
-                                  className="inline-flex items-center justify-center min-h-10 px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold whitespace-nowrap transition-colors cursor-pointer"
+                                  className="relative before:absolute before:inset-x-0 before:-inset-y-0.5 before:content-[''] inline-flex items-center justify-center min-h-9 px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold whitespace-nowrap transition-colors cursor-pointer"
                                 >
                                   ร่วมเลย
                                 </button>

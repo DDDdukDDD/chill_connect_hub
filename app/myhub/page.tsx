@@ -108,6 +108,16 @@ function MyHubContent() {
   const myChallenges = useMemo(() => withRealProgress(storedChallenges, myRewards.quests), [storedChallenges, myRewards.quests]);
   // The list is the challenges joined on the account, with the catalog's current details (GET /api/quests)
   const [questCatalog, setQuestCatalog] = useState<ChallengeQuest[] | null>(null);
+  // Joined, still running and not finished: shown at the top so the member lands on what is left to do
+  const doingChallenges = useMemo(
+    () =>
+      myRewards.quests.flatMap((progress) => {
+        const quest = questCatalog?.find((entry) => entry.id === progress.questId);
+        const isRunning = quest && quest.status !== 'ended' && (quest.daysRemaining === undefined || quest.daysRemaining > 0);
+        return progress.joined && !progress.completed && isRunning ? [{ ...progress, daysRemaining: quest.daysRemaining }] : [];
+      }),
+    [myRewards.quests, questCatalog]
+  );
   useEffect(() => {
     let isActive = true;
     fetchAllContentPages<ChallengeQuest>('/api/quests', 'quests')
@@ -2089,6 +2099,49 @@ function MyHubContent() {
                     </div>
                   </div>
                 </div>
+
+                {/* Challenges the member is doing: how far they are, how long is left, and the way back to each */}
+                {doingChallenges.length > 0 && (
+                  <section aria-label="ชาเลนจ์ที่ทำอยู่" className="mt-4 bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
+                    <div className="flex items-center justify-between gap-3">
+                      <h2 className="text-sm sm:text-base font-extrabold text-slate-900">ชาเลนจ์ที่ทำอยู่</h2>
+                      {doingChallenges.length > 2 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setHubMainMode('categories');
+                            setActiveSubTab('quests_rewards');
+                          }}
+                          className="text-xs sm:text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap"
+                        >
+                          ดูทั้งหมด <span className="tabular-nums">({doingChallenges.length})</span>
+                        </button>
+                      )}
+                    </div>
+                    <ul className="mt-3 divide-y divide-slate-100">
+                      {doingChallenges.slice(0, 2).map((challenge) => (
+                        <li key={challenge.questId} className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
+                          <div className="min-w-0 flex-1 space-y-1.5">
+                            <p className="text-sm font-bold text-slate-900 truncate">{challenge.title}</p>
+                            <div className="h-1.5 rounded-full bg-[#F5F3FF] overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={challenge.total} aria-valuenow={challenge.current}>
+                              <div className="h-full rounded-full bg-[#7C3AED]" style={{ width: `${Math.round((challenge.current / challenge.total) * 100)}%` }} />
+                            </div>
+                            <p className="text-xs font-medium text-slate-500 tabular-nums">
+                              ไปแล้ว {challenge.current} จาก {challenge.total}
+                              {challenge.daysRemaining !== undefined ? ` · เหลือ ${challenge.daysRemaining} วัน` : ''}
+                            </p>
+                          </div>
+                          <Link
+                            href={`/challenges/${encodeURIComponent(challenge.questId)}`}
+                            className="shrink-0 inline-flex items-center min-h-10 px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold cursor-pointer whitespace-nowrap"
+                          >
+                            ไปต่อ
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
 
                 {/* Development only: sample activity for this account, so every feature can be seen with one login */}
                 {process.env.NODE_ENV !== 'production' && (

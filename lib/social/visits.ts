@@ -135,7 +135,7 @@ export async function visitsOf(memberId: string): Promise<Visit[]> {
 
   const { items: moments } = await momentRepository.query({ statuses: ['published'], authorId: memberId, sort: 'newest', page: 1, limit: 500 });
   for (const moment of moments) {
-    if (isVisitTargetType(moment.targetType) && moment.targetId) {
+    if (isVisitTargetType(moment.targetType) && moment.targetId && !moment.evidenceRejected) {
       add({ targetType: moment.targetType, targetId: moment.targetId, evidence: 'moment', at: moment.createdAt });
     }
   }

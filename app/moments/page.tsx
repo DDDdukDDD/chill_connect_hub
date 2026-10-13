@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { EventDetailModal } from '@/components/EventDetailModal';
@@ -13,7 +13,7 @@ import { CreateEventModal } from '@/components/CreateEventModal';
 import { useAuth } from '@/lib/useAuth';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { useMyActivity } from '@/lib/useMyActivity';
-import { isEventEnded } from '@/lib/dateUtils';
+import { isEventEnded, parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { nameInitial, tidyDisplayName } from '@/lib/displayName';
 import {
   EventItem,
@@ -21,31 +21,24 @@ import {
   ChallengeQuest,
 } from '@/data/mockData';
 import { LifestyleSpotItem } from '@/data/spotsData';
-import { useSpotCatalog } from '@/lib/usePublishedSpots';
 import { BrandLogo } from '@/components/BrandLogo';
 import {
-  Sparkles,
   Heart,
   Share2,
   X,
   Image as ImageIcon,
   CheckCircle2,
-  Flame,
-  Camera,
   ChevronLeft,
   ChevronRight,
-  ShieldCheck,
   User,
   LogIn,
   MapPin,
-  ArrowLeft,
   ArrowRight,
   Bookmark,
   MessageCircle,
   Send,
   Calendar,
   Users,
-  UserPlus,
   Search,
   Navigation,
   Flag,
@@ -53,71 +46,13 @@ import {
   Trash2,
   Plus,
   Trophy,
-  Check,
+  Zap,
+  Ticket,
 } from 'lucide-react';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { MomentPhotos } from '@/components/moments/MomentPhotos';
+import { getQuestBrandReward } from '@/lib/questDisplay';
 import { compressImage } from '@/lib/media/compressor';
-
-// Popular Lifestyle Check-In Locations for Facebook-Style Check-In
-const POPULAR_CHECKIN_SPOTS = [
-  { name: 'สวนป่าเบญจกิติ', location: 'คลองเตย, กรุงเทพฯ', category: 'สวนสาธารณะ' },
-  { name: 'ซอยอารีย์', location: 'พญาไท, กรุงเทพฯ', category: 'ย่านไลฟ์สไตล์ & คาเฟ่' },
-  { name: 'ถนนทรงวาด - ตลาดน้อย', location: 'สัมพันธวงศ์, กรุงเทพฯ', category: 'ย่านเมืองเก่า' },
-  { name: 'สยามสแควร์', location: 'ปทุมวัน, กรุงเทพฯ', category: 'แหล่งแฮงเอาท์' },
-  { name: 'ศูนย์การประชุมแห่งชาติสิริกิติ์ (QSNCC)', location: 'คลองเตย, กรุงเทพฯ', category: 'งานเอ็กซ์โป & นิทรรศการ' },
-  { name: 'บางกระเจ้า (คุ้งบางกะเจ้า)', location: 'พระประแดง, สมุทรปราการ', category: 'ธรรมชาติ & ปั่นจักรยาน' },
-  { name: 'อ่างแก้ว มหาวิทยาลัยเชียงใหม่', location: 'เมือง, เชียงใหม่', category: 'วิวธรรมชาติ & พระอาทิตย์ตก' },
-  { name: 'หาดยะนุ้ย - แหลมพรหมเทพ', location: 'เมือง, ภูเก็ต', category: 'ชายหาด & ชมวิว' },
-  { name: 'เขาใหญ่ (อุทยานแห่งชาติเขาใหญ่)', location: 'ปากช่อง, นครราชสีมา', category: 'ภูเขา & แคมป์ปิ้ง' },
-  { name: 'เจริญกรุง - ครีเอทีฟ ดิสทริกต์', location: 'บางรัก, กรุงเทพฯ', category: 'ศิลปะ & แกลเลอรี' },
-  { name: 'เอ็มสเฟียร์ (EMSPHERE)', location: 'คลองเตย, กรุงเทพฯ', category: 'ห้าง & แฮงเอาท์' },
-  { name: 'สวนลุมพินี', location: 'ปทุมวัน, กรุงเทพฯ', category: 'สวนสาธารณะ & วิ่ง' },
-];
-
-// Curated active community members for "Suggested for you"
-const SUGGESTED_MEMBERS = [
-  {
-    id: 'user-praew',
-    name: 'คุณแพรว',
-    handle: '@praew_art',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80',
-    vibe: 'สายอาร์ต นิทรรศการ & เอ็กซ์โป',
-    badge: 'Art Explorer',
-  },
-  {
-    id: 'user-kee',
-    name: 'คุณกี้',
-    handle: '@kee_explorer',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
-    vibe: 'สวนป่า จุดฮีลใจ & เดินทาง 77 จว.',
-    badge: 'Nature Lover',
-  },
-  {
-    id: 'user-mook',
-    name: 'คุณมุก',
-    handle: '@mook_slowbar',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
-    vibe: 'Slow Bar & Specialty Coffee',
-    badge: 'Coffee Hopper',
-  },
-  {
-    id: 'user-bas',
-    name: 'คุณบาส',
-    handle: '@bas_runner',
-    avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80',
-    vibe: 'City Run & Hyrox Bootcamp',
-    badge: 'Urban Runner',
-  },
-  {
-    id: 'user-nont',
-    name: 'คุณนนท์',
-    handle: '@nont_boardgame',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
-    vibe: 'Board Game & ตี้เพื่อนใหม่',
-    badge: 'Game Master',
-  },
-];
 
 // Moments written by members live on the server (/api/moments); the bundled samples stay local.
 type ServerMoment = Omit<CommunityPost, 'comments'> & { isMine?: boolean; isSample?: boolean; comments?: { id: string; userName: string; userAvatar: string; text: string; timeAgo: string }[] };
@@ -149,7 +84,47 @@ interface StoryGroup {
   allSeen: boolean;
   stories: { id: string; image: string; caption: string; hoursLeft: number; seen: boolean; hasReported?: boolean; views?: number }[];
 }
+const isVisitTarget = (type?: string): type is 'spot' | 'community' | 'fair' => type === 'spot' || type === 'community' || type === 'fair';
+/** The page a moment's place, event or challenge lives on */
+function targetHrefOf(type?: string, id?: string): string | null {
+  if (!id) return null;
+  const base = type === 'spot' ? '/spots' : type === 'community' ? '/community' : type === 'fair' ? '/fairs' : type === 'challenge' ? '/challenges' : null;
+  return base ? `${base}/${encodeURIComponent(id)}` : null;
+}
+const TARGET_GO_LABELS: Record<string, string> = { spot: 'ดูที่เที่ยวนี้', community: 'ดูกิจกรรมนี้', fair: 'ดูงานนี้', challenge: 'ดูชาเลนจ์นี้' };
+/** A member's progress in one challenge, as /api/visits?mine=1 serves it */
+interface CountedQuest {
+  questId: string;
+  title: string;
+  current: number;
+  total: number;
+  completed: boolean;
+  joined: boolean;
+}
 const isMinePost = (post: CommunityPost) => Boolean((post as { isMine?: boolean }).isMine);
+
+const QUEST_PHOTO_FALLBACK = 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80';
+
+/** A suggested challenge the way the challenges list shows it: the photo, the XP on it, the reward on its lower edge, then the title */
+function QuestSuggestCard({ quest }: { quest: ChallengeQuest }) {
+  const reward = getQuestBrandReward(quest);
+  return (
+    <Link href={`/challenges/${encodeURIComponent(quest.id)}`} className="group/quest block">
+      <span className="relative block aspect-[2/1] rounded-xl overflow-hidden bg-slate-100">
+        <img loading="lazy" src={quest.badgeCoverImg || quest.image || QUEST_PHOTO_FALLBACK} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover/quest:scale-105" />
+        <span className="absolute top-2 left-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#7C3AED] text-[11px] font-extrabold text-white whitespace-nowrap tabular-nums">
+          <Zap className="w-3 h-3" aria-hidden="true" />
+          +{(quest.rewardPoints ?? 0).toLocaleString()} XP
+        </span>
+        <span className={`absolute inset-x-0 bottom-0 flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold min-w-0 ${reward.type === 'brand_partner' ? 'bg-amber-100 text-amber-900' : 'bg-[#F5F3FF] text-[#5B21B6]'}`}>
+          {reward.type === 'brand_partner' && <Ticket className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />}
+          <span className="truncate">{reward.title}</span>
+        </span>
+      </span>
+      <span className="block mt-2 text-sm font-bold text-slate-900 group-hover/quest:text-[#2563EB] leading-snug line-clamp-2">{quest.title}</span>
+    </Link>
+  );
+}
 
 async function momentRequest(url: string, method: string, body?: unknown): Promise<{ ok: boolean; message: string; moment?: ServerMoment }> {
   try {
@@ -191,7 +166,6 @@ function MomentsContent() {
 
   // Instagram-Grade Micro-Interactions States
   const [savedPostIds, setSavedPostIds] = useState<string[]>([]);
-  const [followedUserIds, setFollowedUserIds] = useState<string[]>(['user-praew']);
   const [doubleTapPostId, setDoubleTapPostId] = useState<string | null>(null);
   const [expandedCommentPostIds, setExpandedCommentPostIds] = useState<string[]>([]);
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
@@ -212,6 +186,11 @@ function MomentsContent() {
   const [hasMorePosts, setHasMorePosts] = useState(false);
   const [isFeedLoading, setIsFeedLoading] = useState(true);
   const [highlights, setHighlights] = useState<CommunityPost[]>([]);
+  // The running challenges each linked place or event counts toward, keyed "type:id"
+  const [targetQuests, setTargetQuests] = useState<Record<string, { questId: string; title: string }[]>>({});
+  const askedTargetKeys = useRef<Set<string>>(new Set());
+  // Shown after posting when the moment counted toward a challenge the member is doing
+  const [countedNotice, setCountedNotice] = useState<CountedQuest | null>(null);
   const [suggested, setSuggested] = useState<{ id: string; displayName: string; avatarUrl?: string; momentCount: number; trusted: boolean; approvedHost: boolean }[]>([]);
   const [followingIds, setFollowingIds] = useState<string[]>([]);
   // Small dialogs: confirm a delete, report a post, edit a caption, finish verifying before posting
@@ -226,14 +205,13 @@ function MomentsContent() {
   const [storyView, setStoryView] = useState<{ group: number; index: number } | null>(null);
   const [storyDraft, setStoryDraft] = useState<{ file: File | null; preview: string; caption: string } | null>(null);
   const [reportStoryId, setReportStoryId] = useState<string | null>(null);
-  const [sidebarQuests, setSidebarQuests] = useState<{ id: string; title: string; badgeLabel?: string }[]>([]);
+  const [sidebarQuests, setSidebarQuests] = useState<ChallengeQuest[]>([]);
   // Approved events and live challenges from the server, for the sidebar and for what a moment is about
   const [liveEvents, setLiveEvents] = useState<EventItem[]>([]);
-  const [liveQuests, setLiveQuests] = useState<ChallengeQuest[]>([]);
-  const activity = useMyActivity();
   const [socialReload, setSocialReload] = useState(0);
-  // What the moment is about: found by searching the real events, places and challenges
-  type LinkTarget = { type: 'community' | 'fair' | 'spot' | 'challenge'; id: string; title: string; location: string };
+  // Where the moment is from: found by searching the real events and places. A challenge is not a choice here,
+  // because only a visit to a place or event counts toward one.
+  type LinkTarget = { type: 'community' | 'fair' | 'spot'; id: string; title: string; location: string };
   const [linkedTarget, setLinkedTarget] = useState<LinkTarget | null>(null);
   const [linkQuery, setLinkQuery] = useState('');
   const [linkResults, setLinkResults] = useState<LinkTarget[]>([]);
@@ -247,19 +225,17 @@ function MomentsContent() {
     }
     let active = true;
     setIsLinkSearching(true);
-    // Wait until typing pauses, then ask the three catalogs at once
+    // Wait until typing pauses, then ask both catalogs at once
     const timer = setTimeout(async () => {
       const get = (url: string) => fetch(url).then((res) => res.json()).catch(() => ({}));
-      const [events, spots, quests] = await Promise.all([
+      const [events, spots] = await Promise.all([
         get(`/api/events?q=${encodeURIComponent(q)}&limit=5&includeEnded=true`),
         get(`/api/spots?q=${encodeURIComponent(q)}&limit=4`),
-        get('/api/quests?limit=30'),
       ]);
       if (!active) return;
       const found: LinkTarget[] = [
         ...((events.events ?? []) as EventItem[]).map((e) => ({ type: e.eventType === 'public_venue' ? ('fair' as const) : ('community' as const), id: e.id, title: e.title, location: e.location || '' })),
         ...((spots.spots ?? []) as LifestyleSpotItem[]).map((s) => ({ type: 'spot' as const, id: s.id, title: s.title, location: [s.district, s.province].filter(Boolean).join(', ') })),
-        ...((quests.quests ?? []) as { id: string; title: string }[]).filter((c) => c.title.toLowerCase().includes(q.toLowerCase())).slice(0, 3).map((c) => ({ type: 'challenge' as const, id: c.id, title: c.title, location: '' })),
       ];
       setLinkResults(found);
       setIsLinkSearching(false);
@@ -270,7 +246,7 @@ function MomentsContent() {
     };
   }, [linkQuery, linkedTarget]);
 
-  const LINK_TYPE_LABELS: Record<LinkTarget['type'], string> = { community: 'กิจกรรม', fair: 'งานแฟร์', spot: 'ที่เที่ยว', challenge: 'ชาเลนจ์' };
+  const LINK_TYPE_LABELS: Record<LinkTarget['type'], string> = { community: 'กิจกรรม', fair: 'งานแฟร์', spot: 'ที่เที่ยว' };
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [uploadedPostImages, setUploadedPostImages] = useState<string[]>([]);
   const [isCompressingImages, setIsCompressingImages] = useState<boolean>(false);
@@ -279,20 +255,13 @@ function MomentsContent() {
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  // Hydrate user-created posts and saved bookmarks from localStorage
+  // Older builds kept posts and bookmarks in the browser; both live on the account now
   useEffect(() => {
-    if (typeof window === 'undefined') return;
     try {
-      localStorage.removeItem('chill_user_moments'); // older builds kept posts in the browser under a sample name
-      const savedBookmarks = null as string | null; // bookmarks are kept on the account now
-      if (savedBookmarks) {
-        const parsedBookmarks = JSON.parse(savedBookmarks);
-        if (Array.isArray(parsedBookmarks)) {
-          setSavedPostIds(parsedBookmarks);
-        }
-      }
-    } catch (e) {
-      console.error('Error hydrating moments from localStorage:', e);
+      localStorage.removeItem('chill_user_moments');
+      localStorage.removeItem('chill_saved_moments');
+    } catch {
+      // storage can be unavailable (private mode); nothing to clean then
     }
   }, []);
 
@@ -348,6 +317,91 @@ function MomentsContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- feedUrl depends only on the listed values
   }, [session.isLoaded, memberId, activeTabFilter, locationFilter, urlMomentId]);
 
+  // Which challenges a place or event counts toward; each one is asked once
+  const loadTargetQuests = (keys: string[]) => {
+    const fresh = Array.from(new Set(keys.filter((key) => !askedTargetKeys.current.has(key)))).slice(0, 40);
+    if (fresh.length === 0) return;
+    fresh.forEach((key) => askedTargetKeys.current.add(key));
+    fetch(`/api/visits?targets=${fresh.map(encodeURIComponent).join(',')}`)
+      .then((res) => res.json())
+      .then((json: { targets?: Record<string, { quests?: { questId: string; title: string }[] }> }) => {
+        setTargetQuests((prev) => ({ ...prev, ...Object.fromEntries(Object.entries(json.targets ?? {}).map(([key, value]) => [key, value.quests ?? []])) }));
+      })
+      .catch(() => undefined);
+  };
+  // For the places and events in the feed (one request per batch of new posts), and for the one picked in the share form
+  useEffect(() => {
+    loadTargetQuests(posts.filter((p) => isVisitTarget(p.targetType) && p.targetId).map((p) => `${p.targetType}:${p.targetId}`));
+  }, [posts]);
+  useEffect(() => {
+    if (linkedTarget) loadTargetQuests([`${linkedTarget.type}:${linkedTarget.id}`]);
+  }, [linkedTarget]);
+  // Before the member types anything, the form offers what they joined or saved: the likeliest places a moment is from.
+  // The list can be long, so it is ordered by how likely each one is, shows a few, and opens to the rest on request.
+  const activity = useMyActivity();
+  const [savedSpotTargets, setSavedSpotTargets] = useState<LinkTarget[]>([]);
+  const [showAllMine, setShowAllMine] = useState(false);
+  const MINE_SHOWN = 4;
+  const savedSpotKey = activity.savedSpotIds.slice(0, 30).join(',');
+  useEffect(() => {
+    if (!isCreateModalOpen || !savedSpotKey) return;
+    let active = true;
+    fetch(`/api/spots?ids=${encodeURIComponent(savedSpotKey)}`)
+      .then((res) => res.json())
+      .then((json: { spots?: LifestyleSpotItem[] }) => {
+        if (!active) return;
+        setSavedSpotTargets((json.spots ?? []).map((spot) => ({ type: 'spot' as const, id: spot.id, title: spot.title, location: [spot.district, spot.province].filter(Boolean).join(', ') })));
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [isCreateModalOpen, savedSpotKey]);
+  const myLinkTargets = useMemo(() => {
+    const ofEvent = (e: EventItem): LinkTarget => ({ type: e.eventType === 'public_venue' ? 'fair' : 'community', id: e.id, title: e.title, location: e.location || '' });
+    const now = Date.now();
+    const when = (e: EventItem) => parseEventDateToTimestamp(e.date);
+    const saved = new Set(activity.savedEventIds);
+    const savedEvents = liveEvents.filter((e) => saved.has(e.id));
+    // Most likely first: events already attended (latest first), saved places, saved events that have started, then what is still ahead
+    const all = [
+      ...activity.joined.filter((e) => when(e) <= now).sort((a, b) => when(b) - when(a)).map(ofEvent),
+      ...(savedSpotKey ? savedSpotTargets : []),
+      ...savedEvents.filter((e) => when(e) <= now).map(ofEvent),
+      ...activity.joined.filter((e) => when(e) > now).sort((a, b) => when(a) - when(b)).map(ofEvent),
+      ...savedEvents.filter((e) => when(e) > now).map(ofEvent),
+    ];
+    return all.filter((item, index) => all.findIndex((other) => other.type === item.type && other.id === item.id) === index);
+  }, [activity.joined, activity.savedEventIds, savedSpotKey, savedSpotTargets, liveEvents]);
+  // While typing, the member's own matches come before the catalog's
+  const linkMatches = useMemo(() => {
+    const q = linkQuery.trim().toLowerCase();
+    if (q.length < 2) return [];
+    const mine = myLinkTargets.filter((item) => item.title.toLowerCase().includes(q) || item.location.toLowerCase().includes(q)).slice(0, 4);
+    return [...mine, ...linkResults.filter((r) => !mine.some((item) => item.type === r.type && item.id === r.id))];
+  }, [linkQuery, linkResults, myLinkTargets]);
+
+  const renderLinkRow = (r: LinkTarget) => (
+    <li key={`${r.type}-${r.id}`}>
+      <button
+        type="button"
+        onClick={() => {
+          setLinkedTarget(r);
+          setCustomLocationInput('');
+        }}
+        className="w-full flex items-center gap-3 px-3.5 py-2.5 text-left hover:bg-slate-50 cursor-pointer"
+      >
+        <span className="shrink-0 text-[11px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full whitespace-nowrap">{LINK_TYPE_LABELS[r.type]}</span>
+        <span className="min-w-0">
+          <span className="block text-sm font-semibold text-slate-900 truncate">{r.title}</span>
+          {r.location && <span className="block text-xs text-slate-500 truncate">{r.location}</span>}
+        </span>
+      </button>
+    </li>
+  );
+
+  const linkedQuest = linkedTarget ? (targetQuests[`${linkedTarget.type}:${linkedTarget.id}`] ?? [])[0] : undefined;
+
   const loadMorePosts = async () => {
     if (isLoadingMore || !hasMorePosts) return;
     setIsLoadingMore(true);
@@ -379,7 +433,6 @@ function MomentsContent() {
       .then((json: { quests?: ChallengeQuest[] }) => {
         if (!active) return;
         const open = (json.quests ?? []).filter((q) => q.status !== 'ended' && q.status !== 'draft');
-        setLiveQuests(open);
         setSidebarQuests(open.slice(0, 4));
       })
       .catch(() => undefined);
@@ -570,12 +623,6 @@ function MomentsContent() {
     return () => clearTimeout(timer);
   }, [urlMomentId, posts]);
 
-  // Derive user's latest post thumbnail for Story Rail
-  const userStoryThumbnail = useMemo(() => {
-    const userPost = posts.find((p) => isMinePost(p) && p.images && p.images.length > 0);
-    return userPost?.images?.[0] || null;
-  }, [posts]);
-
   // Dynamic responsive initial count based on screen size (4 mobile, 6 tablet, 8 desktop)
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -601,21 +648,15 @@ function MomentsContent() {
   // Modal Selection Targets
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const [selectedSpot, setSelectedSpot] = useState<LifestyleSpotItem | null>(null);
-  const router = useRouter();
   const [eventFavorites, setEventFavorites] = useState<string[]>([]);
   const [spotFavorites, setSpotFavorites] = useState<string[]>([]);
 
   // Create Moment Form State
-  const [createTargetType, setCreateTargetType] = useState<
-    'general' | 'spot' | 'community' | 'fair' | 'challenge'
-  >('general');
-  const [createTargetId, setCreateTargetId] = useState<string>('');
   const [customLocationInput, setCustomLocationInput] = useState<string>('');
   const [captionInput, setCaptionInput] = useState<string>('');
+  // Something is filled in: a tap outside the form must not throw it away
+  const hasMomentDraft = Boolean(captionInput.trim() || uploadedPostImages.length > 0 || linkedTarget || customLocationInput.trim());
 
-  // Facebook-Style Check-In States for General tab
-  const [isCheckInPopoverOpen, setIsCheckInPopoverOpen] = useState<boolean>(false);
-  const [checkInSearchQuery, setCheckInSearchQuery] = useState<string>('');
   const [isLocating, setIsLocating] = useState<boolean>(false);
 
   // Auto-open Create Moment modal if directed from MyHub with an event
@@ -627,8 +668,6 @@ function MomentsContent() {
     const typeParam = searchParams.get('createForType');
     const typeToShare = typeParam === 'spot' || typeParam === 'fair' ? typeParam : 'community';
     if (eventToShare) {
-      setCreateTargetType(typeToShare);
-      setCreateTargetId(eventToShare);
       if (locToShare) setCustomLocationInput(locToShare);
       if (titleToShare) setLinkedTarget({ type: typeToShare, id: eventToShare, title: titleToShare, location: locToShare || '' });
       if (titleToShare) setCaptionInput(typeToShare === 'community' ? `แชร์ความประทับใจจากกิจกรรม "${titleToShare}"\n` : `ไปมาแล้ว "${titleToShare}"\n`);
@@ -637,60 +676,6 @@ function MomentsContent() {
     }
   }, [searchParams]);
 
-  // Events the member joined or saved (from the account), plus ones saved on this page
-  const myBookedEvents = useMemo(() => {
-    const mine = new Set([...activity.joinedIds, ...activity.savedEventIds, ...eventFavorites]);
-    return liveEvents.filter((e) => mine.has(e.id));
-  }, [liveEvents, activity.joinedIds, activity.savedEventIds, eventFavorites]);
-
-  const myBookedCommunityEvents = useMemo(() => {
-    return myBookedEvents.filter((e) => e.eventType === 'community');
-  }, [myBookedEvents]);
-
-  const myBookedFairEvents = useMemo(() => {
-    return myBookedEvents.filter((e) => e.eventType !== 'community');
-  }, [myBookedEvents]);
-
-  // Live catalog (published spots + bundled ones members may have saved earlier)
-  const spotCatalog = useSpotCatalog();
-
-  // User's saved spots in MyHub
-  const mySavedSpots = useMemo(() => {
-    const savedIds = new Set([...activity.savedSpotIds, ...spotFavorites]);
-    return spotCatalog.filter((s) => savedIds.has(s.id));
-  }, [activity.savedSpotIds, spotFavorites, spotCatalog]);
-
-  // Challenges open right now (which ones the member joined is not stored on the server yet)
-  const myQuests = useMemo(() => liveQuests.slice(0, 4), [liveQuests]);
-
-  // Filtered Check-in Places for Facebook-style Check-in
-  const filteredCheckInPlaces = useMemo(() => {
-    const query = checkInSearchQuery.trim().toLowerCase();
-    const spotsAsCheckIn = spotCatalog.slice(0, 40).map((s) => ({
-      name: s.title,
-      location: `${s.district}, ${s.province}`,
-      category: s.category || 'พิกัดเที่ยว',
-    }));
-    const all = [...POPULAR_CHECKIN_SPOTS, ...spotsAsCheckIn];
-
-    const seen = new Set<string>();
-    const unique = all.filter((item) => {
-      const key = item.name.toLowerCase();
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-
-    if (!query) return unique.slice(0, 8);
-    return unique
-      .filter(
-        (item) =>
-          item.name.toLowerCase().includes(query) ||
-          item.location.toLowerCase().includes(query) ||
-          (item.category && item.category.toLowerCase().includes(query))
-      )
-      .slice(0, 8);
-  }, [checkInSearchQuery, spotCatalog]);
 
   // Handle HTML5 Geolocation Check-In
   const handleUseCurrentLocation = () => {
@@ -704,13 +689,11 @@ function MomentsContent() {
       () => {
         setIsLocating(false);
         setCustomLocationInput('ตำแหน่งปัจจุบันของฉัน (GPS)');
-        setIsCheckInPopoverOpen(false);
         showToast('ระบุพิกัดตำแหน่งปัจจุบันเรียบร้อย');
       },
       () => {
         setIsLocating(false);
         setCustomLocationInput('กรุงเทพมหานคร (พิกัดใกล้ฉัน)');
-        setIsCheckInPopoverOpen(false);
         showToast('ระบุพิกัดพื้นที่ใกล้เคียงเรียบร้อย');
       },
       { timeout: 5000 }
@@ -723,12 +706,9 @@ function MomentsContent() {
     if (needsVerification()) return;
     setLinkedTarget(null);
     setLinkQuery('');
-    setCreateTargetType('general');
-    setCreateTargetId('');
     setCustomLocationInput('');
-    setCheckInSearchQuery('');
-    setIsCheckInPopoverOpen(false);
     setIsLocating(false);
+    setShowAllMine(false);
     setCaptionInput('');
     setUploadedPostImages([]);
     setIsCreateModalOpen(true);
@@ -837,13 +817,6 @@ function MomentsContent() {
     setSavedPostIds((prev) => {
       const isSaved = prev.includes(postId);
       const next = isSaved ? prev.filter((id) => id !== postId) : [...prev, postId];
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem('chill_saved_moments', JSON.stringify(next));
-        } catch (e) {
-          console.error('Error saving bookmark to localStorage:', e);
-        }
-      }
       if (isSaved) {
         showToast('ยกเลิกการบันทึกโมเมนต์');
       } else {
@@ -942,7 +915,7 @@ function MomentsContent() {
             text: post.caption?.slice(0, 120) || 'ร่วมชมโมเมนต์ไลฟ์สไตล์บน Chill & Connect Hub',
             url: shareUrl,
           });
-          showToast('แชร์โมเมนต์สำเร็จ! 🌟');
+          showToast('แชร์โมเมนต์แล้ว');
           return;
         } catch (err: any) {
           // If user aborted/cancelled the native share sheet, do not error out
@@ -955,10 +928,10 @@ function MomentsContent() {
         navigator.clipboard
           .writeText(shareUrl)
           .then(() => {
-            showToast('คัดลอกลิงก์โมเมนต์เรียบร้อยแล้ว! 🔗');
+            showToast('คัดลอกลิงก์โมเมนต์แล้ว');
           })
           .catch(() => {
-            showToast('คัดลอกลิงก์โมเมนต์เรียบร้อยแล้ว! 🔗');
+            showToast('คัดลอกลิงก์โมเมนต์แล้ว');
           });
       } else {
         // Fallback for older browsers
@@ -969,70 +942,14 @@ function MomentsContent() {
           tempInput.select();
           document.execCommand('copy');
           document.body.removeChild(tempInput);
-          showToast('คัดลอกลิงก์โมเมนต์เรียบร้อยแล้ว! 🔗');
+          showToast('คัดลอกลิงก์โมเมนต์แล้ว');
         } catch {
-          showToast('แชร์โมเมนต์สำเร็จ! 🌟');
+          showToast('แชร์โมเมนต์แล้ว');
         }
       }
     }
   };
  
-  // Toggle Connect Member (Suggested for you)
-  const handleToggleFollow = (member: (typeof SUGGESTED_MEMBERS)[number]) => {
-    if (!isLoggedIn) {
-      setMembershipActionTitle(`เพื่อ Connect กับ ${member.name} และรับการแจ้งเตือนโมเมนต์ใหม่`);
-      setIsRequireMembershipOpen(true);
-      return;
-    }
-
-    setFollowedUserIds((prev) => {
-      const isFollowing = prev.includes(member.id);
-      if (isFollowing) {
-        showToast(`ยกเลิก Connect กับ ${member.name} เรียบร้อย`);
-        return prev.filter((id) => id !== member.id);
-      } else {
-        showToast(`Connect กับ ${member.name} สำเร็จ!`);
-        return [...prev, member.id];
-      }
-    });
-  };
-
-  // Click on Target Tag Link
-  const handleOpenTarget = (post: CommunityPost) => {
-    const targetType = post.targetType || 'community';
-    const targetId = post.targetId || post.eventId;
-
-    if (targetType === 'general') {
-      if (post.location && post.location !== 'ไลฟ์สไตล์ทั่วไป') {
-        setLocationFilter(post.location);
-      }
-      return;
-    }
-
-    if (targetType === 'spot') {
-      const matched =
-        spotCatalog.find(
-          (s) => s.id === targetId || s.title === post.targetTitle || s.title === post.location
-        ) || spotCatalog[0];
-      setSelectedSpot(matched);
-      return;
-    }
-
-    if (targetType === 'challenge') {
-      // A challenge that is no longer listed opens nothing, never a different one
-      const matched = liveQuests.find((c) => c.id === targetId || c.title === post.targetTitle);
-      if (matched) router.push(`/challenges/${encodeURIComponent(matched.id)}`);
-      return;
-    }
-
-    // Community or Fair
-    const matched = liveEvents.find(
-      (ev) => ev.id === targetId || ev.title === post.targetTitle || ev.id === post.eventId
-    );
-    if (matched) setSelectedEvent(matched);
-  };
-
-  // Handle Multi-Image Upload (Max 10 with Automatic WebP Compression & Canvas Scaling)
   const handleImageFilesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -1093,58 +1010,17 @@ function MomentsContent() {
     e.preventDefault();
     if (!captionInput.trim() || isPosting) return;
 
-    let targetTitle = '';
-    let resolvedLocation = '';
-
-    if (createTargetType === 'general') {
-      resolvedLocation = customLocationInput.trim() || 'ไลฟ์สไตล์ทั่วไป';
-      targetTitle = resolvedLocation;
-    } else if (createTargetType === 'spot') {
-      if (createTargetId === 'custom' || !createTargetId) {
-        resolvedLocation = customLocationInput.trim() || 'พิกัดเที่ยว';
-        targetTitle = resolvedLocation;
-      } else {
-        const spot = spotCatalog.find((s) => s.id === createTargetId) || mySavedSpots[0];
-        targetTitle = spot ? spot.title : (customLocationInput.trim() || 'พิกัดเที่ยว');
-        resolvedLocation = targetTitle;
-      }
-    } else if (createTargetType === 'challenge') {
-      const quest = liveQuests.find((c) => c.id === createTargetId) || myQuests[0];
-      targetTitle = quest ? quest.title : 'ภารกิจไลฟ์สไตล์';
-      resolvedLocation = targetTitle;
-    } else if (createTargetType === 'fair') {
-      if (createTargetId === 'custom' || !createTargetId) {
-        resolvedLocation = customLocationInput.trim() || 'งานมหกรรม & เอ็กซ์โป';
-        targetTitle = resolvedLocation;
-      } else {
-        const ev = liveEvents.find((item) => item.id === createTargetId) || myBookedFairEvents[0];
-        targetTitle = ev ? ev.title : 'งานเอ็กซ์โป';
-        resolvedLocation = ev ? ev.location || ev.title : targetTitle;
-      }
-    } else {
-      // Community
-      if (createTargetId === 'custom' || !createTargetId) {
-        resolvedLocation = customLocationInput.trim() || 'กิจกรรมคอมมูนิตี้';
-        targetTitle = resolvedLocation;
-      } else {
-        const ev = liveEvents.find((item) => item.id === createTargetId) || myBookedCommunityEvents[0];
-        targetTitle = ev ? ev.title : 'กิจกรรมคอมมูนิตี้';
-        resolvedLocation = ev ? ev.location || ev.title : targetTitle;
-      }
-    }
+    // The picked place or event decides the title and the place shown on the post; otherwise the typed name does
+    const resolvedLocation = linkedTarget ? linkedTarget.location || linkedTarget.title : customLocationInput.trim() || 'ไลฟ์สไตล์ทั่วไป';
+    const targetTitle = linkedTarget ? linkedTarget.title : resolvedLocation;
 
     // A moment is the member's own photo: no stock image is added on their behalf
     if (uploadedPostImages.length === 0) return showToast('เพิ่มรูปอย่างน้อย 1 รูปก่อนนะ');
     const finalImages = uploadedPostImages;
 
-    // A linked event, place or challenge decides the title and the place shown on the post
-    if (linkedTarget) {
-      targetTitle = linkedTarget.title;
-      resolvedLocation = linkedTarget.location || linkedTarget.title;
-    }
-
     // The post is saved on the server under the signed-in member; the server applies the community rules
     setIsPosting(true);
+    let counted: CountedQuest | null = null;
     try {
       const imageUrls: string[] = [];
       for (const image of finalImages) {
@@ -1179,6 +1055,14 @@ function MomentsContent() {
       const createdPost = fromServerMoment(result.moment);
       serverPostIds.current.add(createdPost.id);
       setPosts((prev) => [createdPost, ...prev]);
+      // A moment at a place or event is a visit: say so when it counted toward a challenge the member is doing
+      if (linkedTarget && isVisitTarget(linkedTarget.type)) {
+        const key = `${linkedTarget.type}:${linkedTarget.id}`;
+        const get = (url: string) => fetch(url, { cache: 'no-store' }).then((res) => res.json()).catch(() => ({}));
+        const [here, mine] = await Promise.all([get(`/api/visits?targets=${encodeURIComponent(key)}`), get('/api/visits?mine=1')]);
+        const hereIds = new Set(((here.targets?.[key]?.quests ?? []) as { questId: string }[]).map((q) => q.questId));
+        counted = ((mine.quests ?? []) as CountedQuest[]).find((q) => q.joined && q.current > 0 && hereIds.has(q.questId)) ?? null;
+      }
     } finally {
       setIsPosting(false);
     }
@@ -1186,7 +1070,8 @@ function MomentsContent() {
     setCustomLocationInput('');
     setUploadedPostImages([]);
     setIsCreateModalOpen(false);
-    showToast('แชร์โมเมนต์ของคุณเรียบร้อยแล้ว');
+    if (counted) setCountedNotice(counted);
+    else showToast('แชร์โมเมนต์ของคุณเรียบร้อยแล้ว');
   };
 
   // Infinite scroll: the next page is fetched when the end of the list comes into view
@@ -1244,52 +1129,52 @@ function MomentsContent() {
         {/* Hidden SEO/A11y H1 */}
         <h1 className="sr-only">โมเมนต์และบรรยากาศจริงจากชุมชน Chill & Connect Hub</h1>
 
-        {/* 1.5 Stories (24 hours) first, then highlights: the most liked moments */}
-        <section aria-label="สตอรี่และไฮไลต์" className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-3 sm:p-4">
-          <ul className="flex gap-3 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
-            <li className="shrink-0 w-16 sm:w-[72px]">
-              <button type="button" onClick={handleOpenStoryForm} className="w-full flex flex-col items-center gap-1.5 cursor-pointer group">
-                <span className="w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-full border-2 border-dashed border-slate-300 group-hover:border-[#2563EB] bg-slate-50 flex items-center justify-center text-slate-500 group-hover:text-[#2563EB] transition-colors">
-                  <Plus className="w-6 h-6" aria-hidden="true" />
-                </span>
-                <span className="w-full text-[11px] font-bold text-slate-800 truncate text-center">เพิ่มสตอรี่</span>
-              </button>
-            </li>
-            {storyGroups.map((g, gi) => (
-              <li key={g.author.id} className="shrink-0 w-16 sm:w-[72px]">
-                <button type="button" onClick={() => openStory(gi, Math.max(0, g.stories.findIndex((s) => !s.seen)))} className="w-full flex flex-col items-center gap-1.5 cursor-pointer" aria-label={`ดูสตอรี่ของ ${g.author.displayName}`}>
-                  <span className={`w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-full p-0.5 border-2 ${g.allSeen ? 'border-slate-300' : 'border-[#2563EB]'}`}>
-                    <img loading="lazy" src={g.stories[g.stories.length - 1].image} alt="" className="w-full h-full rounded-full object-cover" />
-                  </span>
-                  <span className="w-full text-[11px] font-semibold text-slate-700 truncate text-center">{g.isMine ? 'สตอรี่ของคุณ' : g.author.displayName}</span>
-                </button>
-              </li>
-            ))}
-            {highlights.length > 0 && (
-              <li className="shrink-0 flex flex-col items-center justify-start gap-1.5 px-1" aria-hidden="true">
-                <span className="h-16 sm:h-[72px] w-px bg-slate-200" />
-                <span className="text-[11px] font-bold text-slate-500 whitespace-nowrap">ไฮไลต์</span>
-              </li>
-            )}
-            {highlights.map((h) => (
-              <li key={h.id} className="shrink-0 w-16 sm:w-[72px]">
-                <button type="button" onClick={() => openLightbox(h.images ?? [], 0, h.caption)} className="w-full flex flex-col items-center gap-1.5 cursor-pointer" aria-label={`ดูรูปยอดนิยมของ ${h.userName}`}>
-                  <span className="w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-2xl overflow-hidden border border-slate-200">
-                    <img loading="lazy" src={h.images?.[0]} alt="" className="w-full h-full object-cover" />
-                  </span>
-                  <span className="w-full text-[11px] font-semibold text-slate-600 truncate text-center">{h.userName}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-
         {/* 2. Main Grid: 2 Columns */}
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-6 items-start">
           {/* Left Column (8-cols): Main Visual Feed */}
-          <div className="min-w-0 w-full max-w-[680px] mx-auto lg:mx-0 lg:justify-self-end space-y-4">
+          <div className="min-w-0 w-full max-w-[680px] mx-auto lg:mx-0 lg:max-w-none space-y-4">
+            {/* Stories (24 hours) first, then highlights: the most liked moments; in the feed column so its edges line up with the posts */}
+            <section aria-label="สตอรี่และไฮไลต์" className="bg-white -mx-3.5 sm:mx-0 rounded-none sm:rounded-2xl border-y sm:border border-slate-200/80 shadow-2xs p-4 sm:p-5">
+              <ul className="flex gap-3 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
+                <li className="shrink-0 w-16 sm:w-[72px]">
+                  <button type="button" onClick={handleOpenStoryForm} className="w-full flex flex-col items-center gap-1.5 cursor-pointer group">
+                    <span className="w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-full border-2 border-dashed border-slate-300 group-hover:border-[#2563EB] bg-slate-50 flex items-center justify-center text-slate-500 group-hover:text-[#2563EB] transition-colors">
+                      <Plus className="w-6 h-6" aria-hidden="true" />
+                    </span>
+                    <span className="w-full text-[11px] font-bold text-slate-800 truncate text-center">เพิ่มสตอรี่</span>
+                  </button>
+                </li>
+                {storyGroups.map((g, gi) => (
+                  <li key={g.author.id} className="shrink-0 w-16 sm:w-[72px]">
+                    <button type="button" onClick={() => openStory(gi, Math.max(0, g.stories.findIndex((s) => !s.seen)))} className="w-full flex flex-col items-center gap-1.5 cursor-pointer" aria-label={`ดูสตอรี่ของ ${g.author.displayName}`}>
+                      <span className={`w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-full p-0.5 border-2 ${g.allSeen ? 'border-slate-300' : 'border-[#2563EB]'}`}>
+                        <img loading="lazy" src={g.stories[g.stories.length - 1].image} alt="" className="w-full h-full rounded-full object-cover" />
+                      </span>
+                      <span className="w-full text-[11px] font-semibold text-slate-700 truncate text-center">{g.isMine ? 'สตอรี่ของคุณ' : g.author.displayName}</span>
+                    </button>
+                  </li>
+                ))}
+                {highlights.length > 0 && (
+                  <li className="shrink-0 flex flex-col items-center justify-start gap-1.5 px-1" aria-hidden="true">
+                    <span className="h-16 sm:h-[72px] w-px bg-slate-200" />
+                    <span className="text-[11px] font-bold text-slate-500 whitespace-nowrap">ไฮไลต์</span>
+                  </li>
+                )}
+                {highlights.map((h) => (
+                  <li key={h.id} className="shrink-0 w-16 sm:w-[72px]">
+                    <button type="button" onClick={() => openLightbox(h.images ?? [], 0, h.caption)} className="w-full flex flex-col items-center gap-1.5 cursor-pointer" aria-label={`ดูรูปยอดนิยมของ ${h.userName}`}>
+                      <span className="w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-2xl overflow-hidden border border-slate-200">
+                        <img loading="lazy" src={h.images?.[0]} alt="" className="w-full h-full object-cover" />
+                      </span>
+                      <span className="w-full text-[11px] font-semibold text-slate-600 truncate text-center">{h.userName}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
             {/* Quick Post Prompt Input Bar & Segmented Tabs Container */}
-            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-2xs space-y-3.5">
+            <div className="bg-white -mx-3.5 sm:mx-0 rounded-none sm:rounded-2xl p-4 sm:p-5 border-y sm:border border-slate-200/80 shadow-2xs space-y-3.5">
               {/* Quick Post Prompt Input Bar (Adaptive for Logged in vs Logged out) */}
               <div className="flex items-center gap-3">
                 {isLoggedIn ? (
@@ -1510,6 +1395,9 @@ function MomentsContent() {
                 const count = images.length;
                 const authorId = (post as { authorId?: string | null }).authorId;
                 const profileHref = authorId ? `/profile?id=${authorId}` : null;
+                const targetHref = targetHrefOf(post.targetType, post.targetId);
+                const countsToward = (targetQuests[`${post.targetType}:${post.targetId}`] ?? [])[0];
+                const evidenceRejected = (post as { evidenceRejected?: { note: string } }).evidenceRejected;
 
                 return (
                   <React.Fragment key={post.id}>
@@ -1559,24 +1447,15 @@ function MomentsContent() {
                             )}
                           </div>
 
-                          {/* Sub-text: Destination Tag Link (Interactive POI Pill) for non-general posts */}
+                          {/* Where the moment is from: a link to that place, event or challenge's own page */}
                           {post.targetType !== 'general' && targetTitle && (
-                            <div className="flex items-center gap-1 text-[11px] font-semibold mt-1">
-                              <button
-                                type="button"
-                                onClick={() => handleOpenTarget(post)}
-                                className="inline-flex items-center gap-1 max-w-full min-w-0 px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200/90 text-slate-700 hover:text-slate-900 border border-slate-200/80 transition-all cursor-pointer group/poi shadow-2xs active:scale-95"
-                                title="คลิกเพื่อดูข้อมูลสถานที่หรือกิจกรรมนี้"
-                              >
-                                <MapPin className="w-3 h-3 shrink-0 text-[#F26430] group-hover/poi:scale-110 transition-transform" />
-                                <span className="truncate min-w-0 sm:max-w-[260px] font-bold">
-                                  {targetTitle}
-                                </span>
-                                <span className="hidden sm:inline-flex text-[11px] text-slate-500 group-hover/poi:text-slate-700 items-center gap-0.5 shrink-0 whitespace-nowrap">
-                                  <span>ดูข้อมูล</span>
-                                  <ArrowRight className="w-2.5 h-2.5 group-hover/poi:translate-x-0.5 transition-transform" />
-                                </span>
-                              </button>
+                            <div className="flex items-center gap-1 text-xs font-semibold text-slate-600 mt-0.5 min-w-0">
+                              <MapPin className="w-3 h-3 shrink-0 text-[#F26430]" aria-hidden="true" />
+                              {targetHref ? (
+                                <Link href={targetHref} className="truncate hover:text-[#2563EB] hover:underline">{targetTitle}</Link>
+                              ) : (
+                                <span className="truncate">{targetTitle}</span>
+                              )}
                             </div>
                           )}
                           {post.targetType === 'general' && (!post.location || post.location === 'ไลฟ์สไตล์ทั่วไป') && (
@@ -1732,6 +1611,26 @@ function MomentsContent() {
                         {post.caption}
                       </p>
 
+                      {/* Only the author sees that staff did not count the photo as a visit */}
+                      {evidenceRejected && (
+                        <p className="text-xs font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 leading-relaxed">
+                          ทีมงานตรวจรูปแล้ว โมเมนต์นี้ยังไม่นับในชาเลนจ์{evidenceRejected.note ? ` · ${evidenceRejected.note}` : ''}
+                        </p>
+                      )}
+
+                      {/* The way on from a moment: the challenge a visit there counts toward, or the page of the place or event */}
+                      {targetHref && (
+                        <Link href={targetHref} className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-sm font-bold text-slate-900 transition-colors">
+                          {countsToward || post.targetType === 'challenge' ? (
+                            <Trophy className="w-4 h-4 text-[#7C3AED] shrink-0" aria-hidden="true" />
+                          ) : (
+                            <MapPin className="w-4 h-4 text-[#F26430] shrink-0" aria-hidden="true" />
+                          )}
+                          <span className="min-w-0 flex-1 truncate">{countsToward ? `นับในชาเลนจ์ ${countsToward.title}` : TARGET_GO_LABELS[post.targetType ?? '']}</span>
+                          <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" aria-hidden="true" />
+                        </Link>
+                      )}
+
                       {/* Expandable Inline Comments Section */}
                       {expandedCommentPostIds.includes(post.id) && (
                         <div className="pt-3 border-t border-slate-100 space-y-2.5 animate-fade-in">
@@ -1833,18 +1732,10 @@ function MomentsContent() {
                         <h2 className="text-sm font-extrabold text-slate-900">ชาเลนจ์แนะนำ</h2>
                         <Link href="/challenges" className="text-xs font-bold text-[#2563EB] hover:underline whitespace-nowrap">ดูทั้งหมด</Link>
                       </div>
-                      <ul className="space-y-2">
+                      <ul className="flex gap-3 overflow-x-auto no-scrollbar -mx-1 px-1">
                         {sidebarQuests.map((q) => (
-                          <li key={q.id}>
-                            <Link href="/challenges" className="flex items-center gap-3 p-2 rounded-xl border border-slate-200">
-                              <span className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center shrink-0">
-                                <Trophy className="w-4 h-4" aria-hidden="true" />
-                              </span>
-                              <span className="min-w-0 flex-1">
-                                <span className="block text-xs font-bold text-slate-800 line-clamp-2 leading-snug">{q.title}</span>
-                                {q.badgeLabel && <span className="block text-[11px] font-semibold text-slate-500 mt-0.5 truncate">เหรียญตรา {q.badgeLabel}</span>}
-                              </span>
-                            </Link>
+                          <li key={q.id} className="shrink-0 w-56">
+                            <QuestSuggestCard quest={q} />
                           </li>
                         ))}
                       </ul>
@@ -2019,7 +1910,7 @@ function MomentsContent() {
                     </div>
                     <div>
                       <h3 className="font-extrabold text-sm text-slate-900 leading-none">ชาเลนจ์แนะนำ</h3>
-                      <p className="text-[11px] text-slate-500 font-medium mt-1">ทำแล้วแชร์โมเมนต์ รับเหรียญตรา</p>
+                      <p className="text-[11px] text-slate-500 font-medium mt-1">ไปให้ครบ แชร์โมเมนต์ รับรางวัล</p>
                     </div>
                   </div>
                   <Link href="/challenges" className="text-xs font-bold text-[#2563EB] hover:text-blue-700 flex items-center gap-1 whitespace-nowrap">
@@ -2027,18 +1918,10 @@ function MomentsContent() {
                     <ArrowRight className="w-3 h-3" />
                   </Link>
                 </div>
-                <ul className="space-y-2">
-                  {sidebarQuests.map((q) => (
+                <ul className="space-y-4">
+                  {sidebarQuests.slice(0, 3).map((q) => (
                     <li key={q.id}>
-                      <Link href="/challenges" className="group flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-200/80">
-                        <span className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center shrink-0">
-                          <Trophy className="w-4 h-4" aria-hidden="true" />
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-xs font-bold text-slate-800 group-hover:text-[#2563EB] line-clamp-2 leading-snug">{q.title}</span>
-                          {q.badgeLabel && <span className="block text-[11px] font-semibold text-slate-500 mt-0.5 truncate">เหรียญตรา {q.badgeLabel}</span>}
-                        </span>
-                      </Link>
+                      <QuestSuggestCard quest={q} />
                     </li>
                   ))}
                 </ul>
@@ -2224,7 +2107,9 @@ function MomentsContent() {
       {isCreateModalOpen && (
         <div
           className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-5 bg-black/60 backdrop-blur-sm animate-fade-in"
-          onClick={() => setIsCreateModalOpen(false)}
+          onClick={() => {
+            if (!hasMomentDraft && !isPosting) setIsCreateModalOpen(false);
+          }}
         >
           {/* A sheet from the bottom on phones, a centred dialog on larger screens */}
           <div
@@ -2318,10 +2203,14 @@ function MomentsContent() {
                 {/* 3. What it is about: one optional choice instead of five tabs */}
                 <div className="space-y-2">
                   <label htmlFor="moment-link" className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-bold text-slate-900">เกี่ยวกับกิจกรรมหรือสถานที่ไหน</span>
+                    <span className="text-sm font-bold text-slate-900">ไปที่ไหนมา</span>
                     <span className="text-xs font-medium text-slate-500 shrink-0">ไม่บังคับ</span>
                   </label>
+                  {!linkedTarget && (
+                    <p className="text-xs font-medium text-slate-600 leading-relaxed">เลือกที่เที่ยว กิจกรรม หรืองานที่ไปมา เพื่อนๆ จะตามไปได้ และถ้าที่นั่นอยู่ในชาเลนจ์ ระบบจะนับให้เลย</p>
+                  )}
                   {linkedTarget ? (
+                    <div>
                     <div className="flex items-center justify-between gap-3 px-3.5 py-3 rounded-2xl border border-blue-200 bg-blue-50/60">
                       <span className="min-w-0">
                         <span className="block text-sm font-bold text-slate-900 truncate">{linkedTarget.title}</span>
@@ -2339,6 +2228,13 @@ function MomentsContent() {
                         <X className="w-4 h-4" />
                       </button>
                     </div>
+                    {linkedQuest && (
+                      <p className="mt-2 flex items-center gap-1.5 text-xs font-bold text-[#5B21B6]">
+                        <Trophy className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                        <span className="min-w-0 truncate">ที่นี่นับในชาเลนจ์ {linkedQuest.title}</span>
+                      </p>
+                    )}
+                    </div>
                   ) : (
                     <div>
                       <div className="relative">
@@ -2348,32 +2244,30 @@ function MomentsContent() {
                           type="search"
                           value={linkQuery}
                           onChange={(e) => setLinkQuery(e.target.value)}
-                          placeholder="ค้นหากิจกรรม งานแฟร์ ที่เที่ยว หรือชาเลนจ์"
+                          placeholder="ค้นหาที่เที่ยว กิจกรรม หรืองานแฟร์"
                           autoComplete="off"
                           className="w-full bg-white border border-slate-300 rounded-2xl pl-10 pr-3.5 py-3 text-base sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] placeholder:text-slate-400 placeholder:font-normal"
                         />
                       </div>
+                      {linkQuery.trim().length < 2 && myLinkTargets.length > 0 && (
+                        <div className="mt-2">
+                          <div className="flex items-center justify-between gap-2 mb-1.5">
+                            <p className="text-xs font-bold text-slate-600">ที่คุณเข้าร่วมหรือบันทึกไว้</p>
+                            {myLinkTargets.length > MINE_SHOWN && (
+                              <button type="button" onClick={() => setShowAllMine((open) => !open)} className="text-xs font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap">
+                                {showAllMine ? 'ย่อ' : `ดูทั้งหมด ${myLinkTargets.length}`}
+                              </button>
+                            )}
+                          </div>
+                          <ul className={`rounded-2xl border border-slate-200 divide-y divide-slate-100 ${showAllMine ? 'max-h-64 overflow-y-auto' : 'overflow-hidden'}`} aria-label="ที่คุณเข้าร่วมหรือบันทึกไว้">
+                            {(showAllMine ? myLinkTargets : myLinkTargets.slice(0, MINE_SHOWN)).map(renderLinkRow)}
+                          </ul>
+                        </div>
+                      )}
                       {linkQuery.trim().length >= 2 && (
                         <ul className="mt-2 rounded-2xl border border-slate-200 divide-y divide-slate-100 overflow-hidden" aria-label="ผลการค้นหา">
-                          {linkResults.map((r) => (
-                            <li key={`${r.type}-${r.id}`}>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setLinkedTarget(r);
-                                  setCustomLocationInput('');
-                                }}
-                                className="w-full flex items-center gap-3 px-3.5 py-2.5 text-left hover:bg-slate-50 cursor-pointer"
-                              >
-                                <span className="shrink-0 text-[11px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full whitespace-nowrap">{LINK_TYPE_LABELS[r.type]}</span>
-                                <span className="min-w-0">
-                                  <span className="block text-sm font-semibold text-slate-900 truncate">{r.title}</span>
-                                  {r.location && <span className="block text-xs text-slate-500 truncate">{r.location}</span>}
-                                </span>
-                              </button>
-                            </li>
-                          ))}
-                          {linkResults.length === 0 && (
+                          {linkMatches.map(renderLinkRow)}
+                          {linkMatches.length === 0 && (
                             <li className="px-3.5 py-3 text-sm font-medium text-slate-500">{isLinkSearching ? 'กำลังค้นหา…' : 'ไม่พบรายการที่ตรง ลองคำอื่น หรือพิมพ์ชื่อสถานที่ด้านล่างแทน'}</li>
                           )}
                         </ul>
@@ -2659,8 +2553,29 @@ function MomentsContent() {
       />
 
       {/* Toast Notification */}
+      {countedNotice && (
+        <div role="status" className="fixed bottom-24 sm:bottom-6 left-4 right-4 sm:left-auto sm:right-6 sm:w-[360px] z-50 bg-[#1E293B] text-white p-4 rounded-2xl shadow-xl border border-slate-700 animate-slide-up">
+          <div className="flex items-start gap-2.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" aria-hidden="true" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold">แชร์โมเมนต์แล้ว</p>
+              <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">
+                {countedNotice.completed
+                  ? `ทำชาเลนจ์ ${countedNotice.title} ครบแล้ว`
+                  : `นับในชาเลนจ์ ${countedNotice.title} แล้ว ${countedNotice.current} จาก ${countedNotice.total}`}
+              </p>
+            </div>
+            <button type="button" onClick={() => setCountedNotice(null)} className="w-8 h-8 -mt-1.5 -mr-1.5 flex items-center justify-center rounded-lg text-slate-400 hover:text-white cursor-pointer shrink-0" aria-label="ปิด">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <Link href={`/challenges/${encodeURIComponent(countedNotice.questId)}`} className="mt-3 flex items-center justify-center h-10 rounded-xl bg-white text-slate-900 text-sm font-bold hover:bg-slate-100 transition-colors">
+            {countedNotice.completed ? 'ดูรางวัล' : 'ดูชาเลนจ์'}
+          </Link>
+        </div>
+      )}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#1E293B] text-white px-5 py-3 rounded-2xl shadow-xl border border-slate-700 text-sm font-medium flex items-center gap-2.5 animate-slide-up">
+        <div role="status" className="fixed bottom-24 sm:bottom-6 left-4 right-4 sm:left-auto sm:right-6 z-50 bg-[#1E293B] text-white px-5 py-3 rounded-2xl shadow-xl border border-slate-700 text-sm font-medium flex items-center gap-2.5 animate-slide-up">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>

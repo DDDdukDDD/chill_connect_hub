@@ -126,6 +126,41 @@ export async function deleteStory(member: Member, id: string): Promise<void> {
   await store.update((items) => items.filter((s) => s.id !== id));
 }
 
+/** For staff: every story still inside its 24 hours, hidden ones included, most reported first */
+export async function storiesForStaff() {
+  const now = Date.now();
+  const active = store.read().filter((s) => isActive(s, now));
+  const authors = new Map<string, Member | null>();
+  for (const id of new Set(active.map((s) => s.authorId))) authors.set(id, await memberRepository.findById(id));
+  return active
+    .map((s) => {
+      const author = authors.get(s.authorId);
+      return {
+        id: s.id,
+        authorId: s.authorId,
+        authorName: author ? tidyDisplayName(author.displayName).trim() || author.displayName : 'บัญชีที่ลบแล้ว',
+        authorStatus: author?.status ?? 'deleted',
+        image: s.image,
+        caption: s.caption,
+        createdAt: s.createdAt,
+        hoursLeft: Math.max(1, Math.ceil((new Date(s.expiresAt).getTime() - now) / HOUR)),
+        views: s.viewedBy.length,
+        hidden: Boolean(s.hidden),
+        reports: (s.reports ?? []).map((r) => ({ reason: r.reason, at: r.at })),
+      };
+    })
+    .sort((a, b) => b.reports.length - a.reports.length || b.createdAt.localeCompare(a.createdAt));
+}
+
+/** Staff actions on one story: take it down, hide it until it expires, or show it again and drop its reports */
+export async function moderateStory(id: string, action: 'remove' | 'hide' | 'restore'): Promise<Story> {
+  const story = store.read().find((s) => s.id === id);
+  if (!story) throw new MemberAuthError('ไม่พบสตอรี่ (อาจหมดเวลาแล้ว)', 404);
+  if (action === 'remove') await store.update((items) => items.filter((s) => s.id !== id));
+  else await store.update((items) => items.map((s) => (s.id === id ? (action === 'hide' ? { ...s, hidden: true } : { ...s, hidden: false, reports: [] }) : s)));
+  return story;
+}
+
 /** Account deletion: the member's stories and their views of other stories */
 export async function removeStoriesOf(memberId: string): Promise<void> {
   await store.update((items) => items.filter((s) => s.authorId !== memberId).map((s) => ({ ...s, viewedBy: s.viewedBy.filter((v) => v !== memberId), reports: s.reports?.filter((r) => r.memberId !== memberId) })));

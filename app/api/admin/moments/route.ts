@@ -4,11 +4,23 @@ import { recordAudit } from '@/lib/auditLog';
 import { Moment, momentRepository, MomentStatus } from '@/lib/moments';
 import { loadPeople, thaiTimeAgo } from '@/lib/moments/service';
 import type { Member } from '@/lib/members';
+import { notifyEvidenceRejected } from '@/lib/social/notifications';
+import { type TargetReward, rewardsForTargets } from '@/lib/social/questProgress';
+import { isVisitTargetType, targetKey } from '@/lib/social/visits';
 
-type Filter = 'all' | 'published' | 'hidden' | 'reported' | 'samples';
-const FILTERS = new Set<Filter>(['all', 'published', 'hidden', 'reported', 'samples']);
+type Filter = 'all' | 'published' | 'hidden' | 'reported' | 'samples' | 'evidence';
+const FILTERS = new Set<Filter>(['all', 'published', 'hidden', 'reported', 'samples', 'evidence']);
 
-function toAdminItem(moment: Moment, people: Map<string, Member>) {
+/** The running challenges each moment's place or event counts toward, keyed by moment id */
+async function challengesCountedBy(moments: Moment[]): Promise<Map<string, TargetReward[]>> {
+  const tied = moments.filter((m) => !m.isSample && isVisitTargetType(m.targetType) && m.targetId);
+  const rewards = await rewardsForTargets(
+    Array.from(new Map(tied.map((m) => [targetKey(m.targetType as 'spot', m.targetId!), { targetType: m.targetType as 'spot', targetId: m.targetId! }])).values())
+  );
+  return new Map(tied.map((m) => [m.id, rewards[targetKey(m.targetType as 'spot', m.targetId!)] ?? []]));
+}
+
+function toAdminItem(moment: Moment, people: Map<string, Member>, counted: Map<string, TargetReward[]>) {
   const author = moment.authorId ? people.get(moment.authorId) : undefined;
   return {
     id: moment.id,
@@ -34,6 +46,9 @@ function toAdminItem(moment: Moment, people: Map<string, Member>) {
     hiddenBy: moment.hiddenBy,
     moderationNote: moment.moderationNote,
     isSample: moment.isSample,
+    // What the photo is used as evidence for; a challenge with a partner reward needs the photo ('moment' evidence)
+    countsToward: (counted.get(moment.id) ?? []).map((q) => ({ questId: q.questId, title: q.title, needsPhoto: q.minEvidence === 'moment' })),
+    evidenceRejected: moment.evidenceRejected,
     createdAt: moment.createdAt,
     timeAgo: thaiTimeAgo(moment.createdAt),
   };
@@ -48,7 +63,7 @@ export async function GET(request: Request) {
   const page = Math.max(1, Number.parseInt(searchParams.get('page') || '1', 10) || 1);
   const limit = Math.min(60, Math.max(1, Number.parseInt(searchParams.get('limit') || '24', 10) || 24));
 
-  const statuses: MomentStatus[] = filter === 'published' ? ['published'] : filter === 'hidden' ? ['hidden'] : ['published', 'hidden'];
+  const statuses: MomentStatus[] = filter === 'published' || filter === 'evidence' ? ['published'] : filter === 'hidden' ? ['hidden'] : ['published', 'hidden'];
   const result = await momentRepository.query({
     statuses,
     reportedOnly: filter === 'reported',
@@ -57,16 +72,19 @@ export async function GET(request: Request) {
     page: 1,
     limit: 10_000,
   });
-  const items = filter === 'samples' ? result.items.filter((m) => m.isSample) : result.items;
+  // The evidence queue: members' moments whose place or event counts toward a running challenge
+  const evidence = filter === 'evidence' ? await challengesCountedBy(result.items) : null;
+  const items = filter === 'samples' ? result.items.filter((m) => m.isSample) : evidence ? result.items.filter((m) => (evidence.get(m.id) ?? []).length > 0) : result.items;
   // Reported first in the reported view (most reports on top)
   if (filter === 'reported') items.sort((a, b) => b.reports.length - a.reports.length);
   const pageItems = items.slice((page - 1) * limit, page * limit);
   const people = await loadPeople(pageItems);
+  const counted = evidence ?? (await challengesCountedBy(pageItems));
   const totalPages = Math.max(1, Math.ceil(items.length / limit));
   return NextResponse.json(
     {
       success: true,
-      moments: pageItems.map((m) => toAdminItem(m, people)),
+      moments: pageItems.map((m) => toAdminItem(m, people, counted)),
       counts: await momentRepository.counts(),
       pagination: { totalCount: items.length, page, limit, totalPages, hasNextPage: page < totalPages, hasPrevPage: page > 1 },
     },
@@ -77,6 +95,7 @@ export async function GET(request: Request) {
 /**
  * Moderation actions: hide {id, note} · restore {id} (also clears reports) · dismiss_reports {id}
  * · remove {id} (permanent) · hide_comment / show_comment / delete_comment {id, commentId}
+ * · reject_evidence {id, note} (the post stays but is no longer a visit; the author is told) · accept_evidence {id}
  */
 export async function POST(request: Request) {
   const denied = requireAdminApiAccess(request, 'community.review');
@@ -107,6 +126,18 @@ export async function POST(request: Request) {
     case 'remove':
       await momentRepository.remove(moment.id);
       audit('remove', `ลบโมเมนต์ ${label}${note ? ` · เหตุผล: ${note}` : ''}`);
+      break;
+    case 'reject_evidence': {
+      if (!note) return NextResponse.json({ success: false, error: 'กรุณาระบุเหตุผล' }, { status: 400 });
+      if (!isVisitTargetType(moment.targetType) || !moment.targetId) return NextResponse.json({ success: false, error: 'โมเมนต์นี้ไม่ได้ผูกกับสถานที่หรือกิจกรรม' }, { status: 400 });
+      await momentRepository.mutate(moment.id, (m) => ({ ...m, evidenceRejected: { at: new Date().toISOString(), note } }));
+      if (moment.authorId) await notifyEvidenceRejected(moment.authorId, moment.id, note);
+      audit('reject_evidence', `ไม่นับโมเมนต์ ${label} เป็นการไป · เหตุผล: ${note}`);
+      break;
+    }
+    case 'accept_evidence':
+      await momentRepository.mutate(moment.id, (m) => ({ ...m, evidenceRejected: undefined }));
+      audit('accept_evidence', `กลับมานับโมเมนต์ ${label} เป็นการไป`);
       break;
     case 'hide_comment':
     case 'show_comment':

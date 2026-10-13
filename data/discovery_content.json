@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-13T06:43:23.541Z",
+  "lastUpdated": "2026-10-13T12:23:36.679Z",
   "spots": [
     {
       "id": "ttd-2164",
@@ -97122,12 +97122,13 @@
       "endDate": "30 พ.ย. 2026",
       "brandReward": {
         "type": "hub_central",
-        "title": "แต้มสะสมอิสระ + ปลดล็อกของรางวัลใน Hub Rewards",
+        "title": "สะสม XP แลกของรางวัลที่ชอบ",
         "partnerName": "Chill & Connect Hub",
         "hubRewardNote": "รับแต้ม Boosted XP สำหรับยกระดับเลเวลบัญชี และนำแต้มไปเลือกแลกของรางวัลในศูนย์กลาง (/rewards)",
         "terms": "นำแต้ม XP ที่ได้รับไปแลกรับสิทธิ์ที่หน้าศูนย์ของรางวัล (/rewards)"
       },
-      "badgeCoverImg": "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=600&q=80"
+      "badgeCoverImg": "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=600&q=80",
+      "status": "draft"
     },
     {
       "id": "3",
@@ -97156,7 +97157,7 @@
       "endDate": "25 มี.ค. 2026",
       "brandReward": {
         "type": "hub_central",
-        "title": "แต้มสะสมอิสระ + ปลดล็อกของรางวัลใน Hub Rewards",
+        "title": "สะสม XP แลกของรางวัลที่ชอบ",
         "partnerName": "Chill & Connect Hub",
         "hubRewardNote": "รับแต้มพิเศษอัปเลเวลโปรไฟล์ พร้อมสิทธิ์เลือกแลกเซ็ตชาหรือเครื่องดื่มฟรีในคลังของรางวัลกลาง",
         "terms": "นำแต้ม XP ที่ได้รับไปแลกรับสิทธิ์ที่หน้าศูนย์ของรางวัล (/rewards)"
@@ -97223,6 +97224,9 @@
         ],
         "categories": [
           "cafe"
+        ],
+        "provinces": [
+          "กรุงเทพฯ"
         ],
         "count": 3,
         "minEvidence": "moment"
@@ -97391,11 +97395,12 @@
       "endDate": "31 ธ.ค. 2569",
       "brandReward": {
         "type": "hub_central",
-        "title": "แต้มสะสมอิสระ + ปลดล็อกของรางวัลใน Hub Rewards",
+        "title": "สะสม XP แลกของรางวัลที่ชอบ",
         "partnerName": "Chill & Connect Hub",
         "hubRewardNote": "รับแต้ม Boosted XP ก้อนใหญ่สำหรับยกระดับเลเวลบัญชี และนำแต้มไปเลือกแลกของรางวัลในศูนย์กลาง (/rewards) ได้อย่างอิสระตามใจชอบ",
         "terms": "สามารถนำแต้ม XP สะสมไปแลกรับของรางวัลที่ร่วมรายการในหน้าศูนย์ของรางวัล (/rewards) ได้ทันที"
-      }
+      },
+      "status": "draft"
     },
     {
       "id": "comm-quest-5",
@@ -97435,7 +97440,7 @@
       "endDate": "31 ธ.ค. 2569",
       "brandReward": {
         "type": "hub_central",
-        "title": "แต้มสะสมอิสระ + ปลดล็อกของรางวัลใน Hub Rewards",
+        "title": "สะสม XP แลกของรางวัลที่ชอบ",
         "partnerName": "Chill & Connect Hub",
         "hubRewardNote": "รับแต้มพิเศษอัปเลเวลโปรไฟล์ พร้อมสิทธิ์เลือกแลกเซ็ตชาหรือเครื่องดื่มฟรีในคลังของรางวัลกลาง",
         "terms": "นำแต้ม XP ที่ได้รับไปแลกรับสิทธิ์ที่หน้าศูนย์ของรางวัล (/rewards)"
@@ -97706,7 +97711,7 @@
       "endDate": "15 ม.ค. 2569",
       "brandReward": {
         "type": "hub_central",
-        "title": "แต้มสะสมอิสระ + ปลดล็อกของรางวัลใน Hub Rewards",
+        "title": "สะสม XP แลกของรางวัลที่ชอบ",
         "partnerName": "Chill & Connect Hub",
         "hubRewardNote": "ภารกิจสิ้นสุดระยะเวลาแล้ว",
         "terms": "กิจกรรมสิ้นสุดแล้ว"
