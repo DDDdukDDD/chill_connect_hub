@@ -62,7 +62,7 @@ export const JourneyMomentCard: React.FC<JourneyMomentCardProps> = ({
       <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between z-10 gap-2">
         {/* Location pill */}
         {location && (
-          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-white/95 bg-black/45 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-white/15 truncate max-w-[calc(100%-36px)]">
+          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-white/95 bg-black/45 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-white/15 truncate max-w-[calc(100%-36px)]">
             <MapPin className="w-2.5 h-2.5 text-amber-400 shrink-0" />
             <span className="truncate">{location}</span>
           </span>
@@ -99,7 +99,7 @@ export const JourneyMomentCard: React.FC<JourneyMomentCardProps> = ({
       <div className="absolute inset-x-0 bottom-0 p-3 sm:p-3.5 flex flex-col justify-end space-y-1.5 z-10">
         {/* Optional Category / Date Tag */}
         {categoryLabel && (
-          <div className="text-[10px] font-extrabold uppercase tracking-wider text-amber-300 drop-shadow-sm truncate">
+          <div className="text-[11px] font-extrabold uppercase tracking-wider text-amber-300 drop-shadow-sm truncate">
             {categoryLabel}
           </div>
         )}
@@ -110,7 +110,7 @@ export const JourneyMomentCard: React.FC<JourneyMomentCardProps> = ({
         </h3>
 
         {/* Footer Meta Row with Top Divider */}
-        <div className="pt-1.5 flex items-center justify-between text-white/90 border-t border-white/15 text-[10.5px]">
+        <div className="pt-1.5 flex items-center justify-between text-white/90 border-t border-white/15 text-[11px]">
           {/* Left: Author / Host / Date */}
           <div className="flex items-center gap-1.5 min-w-0">
             {authorOrHost?.avatar && (
@@ -127,7 +127,7 @@ export const JourneyMomentCard: React.FC<JourneyMomentCardProps> = ({
 
           {/* Right Metric */}
           {metricBadge && (
-            <div className="shrink-0 font-bold text-white/95 flex items-center gap-1 text-[10.5px]">
+            <div className="shrink-0 font-bold text-white/95 flex items-center gap-1 text-[11px]">
               {metricBadge}
             </div>
           )}

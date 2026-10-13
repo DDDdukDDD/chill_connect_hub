@@ -4,14 +4,22 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sparkles, Flame, Calendar, MapPin, Users, Heart, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { EventItem } from '@/data/mockData';
-import { isEventEnded } from '@/lib/dateUtils';
-import { formatEventBadgePrice, isPriceFree } from '@/lib/priceUtils';
+import { LifestyleSpotItem } from '@/data/spotsData';
+import { pickHighlights } from '@/lib/highlights';
+import { formatEventBadgePrice, hasKnownPrice, isPriceFree } from '@/lib/priceUtils';
+
+const PILLAR_COLORS = { community: '#F26430', fairs: '#2B527A', spots: '#4A7C59' };
 
 interface TrendingCarouselProps {
   events: EventItem[];
+  spots: LifestyleSpotItem[];
+  /** Items already at the top of the sections below; they are picked last so the row does not repeat them */
+  excludeIds?: string[];
   onSelectEvent: (event: EventItem) => void;
   favorites: string[];
   toggleFavorite: (id: string) => void;
+  favoriteSpots: string[];
+  toggleFavoriteSpot: (id: string) => void;
   title?: string;
   subtitle?: string;
   badgeText?: string;
@@ -21,10 +29,14 @@ interface TrendingCarouselProps {
 
 export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
   events,
+  spots,
+  excludeIds,
   onSelectEvent,
   favorites,
   toggleFavorite,
-  title = 'Trending Lifestyle Agenda',
+  favoriteSpots,
+  toggleFavoriteSpot,
+  title = 'ไฮไลต์สัปดาห์นี้',
   subtitle = 'คัดสรรกิจกรรมและงานอีเวนต์ที่มีผู้ให้ความสนใจสูงสุดประจำสัปดาห์นี้',
   badgeText = 'ยอดนิยม',
   badgeColor,
@@ -92,48 +104,19 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
     setIsDragging(false);
   };
 
-  // Smart Trending Algorithm (คัดเฉพาะ 8 กิจกรรมระดับท็อปที่ยังไม่จบ: มหกรรมใหญ่ + กิจกรรมกระแสแรง)
-  const trendingEvents = React.useMemo(() => {
-    // 1. กรองเฉพาะงานที่ยังไม่จบ 100%
-    const activeEvents = events.filter((e) => !isEventEnded(e));
-    const pool = activeEvents.length >= 6 ? activeEvents : events;
+  // Day counts depend on the visitor's clock, so the row is picked after the page loads in the browser
+  const [todayStart, setTodayStart] = useState<number | null>(null);
+  useEffect(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    setTodayStart(today.getTime());
+  }, []);
 
-    const scored = pool.map((event) => {
-      let score = 0;
-
-      // 1. งานอีเวนต์ใหญ่ / มหกรรมสาธารณะระดับชาติ (QSNCC, BITEC, IMPACT, Stadium)
-      if (event.eventType === 'public_venue') {
-        score += 60;
-      }
-
-      // 2. ความใกล้ของวันจัดงาน (งานในเดือน ส.ค. - ก.ย. ได้คะแนนพิเศษ)
-      const d = event.date || '';
-      if (d.includes('ส.ค.') || d.includes('22') || d.includes('23') || d.includes('25')) {
-        score += 40;
-      } else if (d.includes('ก.ย.') || d.includes('ต.ค.')) {
-        score += 25;
-      }
-
-      // 3. อัตราส่วนที่นั่ง / ความจุคน
-      const fillRatio = event.maxParticipants > 0 ? event.participantsCount / event.maxParticipants : 0.5;
-      if (fillRatio >= 0.8) score += 30;
-      else if (fillRatio >= 0.5) score += 15;
-
-      // 4. ได้รับการบันทึกเป็นรายการโปรด
-      if (favorites.includes(event.id)) {
-        score += 35;
-      }
-
-      // 5. คะแนนรีวิวความน่าเชื่อถือ
-      score += (event.rating || 4.8) * 5;
-
-      return { event, score };
-    });
-
-    // เรียงลำดับจากคะแนนสูงสุดลงมา แล้วเลือก 8 อันดับแรก
-    scored.sort((a, b) => b.score - a.score);
-    return scored.slice(0, 8).map((item) => item.event);
-  }, [events, favorites]);
+  // Rule-based picks (lib/highlights.ts): each item comes with the reason it was picked
+  const highlights = React.useMemo(
+    () => (todayStart === null ? [] : pickHighlights({ events, spots, mode, excludeIds: excludeIds || [], todayStart })),
+    [events, spots, mode, excludeIds, todayStart]
+  );
 
   return (
     <section className="space-y-1.5 sm:space-y-2">
@@ -206,8 +189,9 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
           className={`flex gap-3 sm:gap-3.5 overflow-x-auto no-scrollbar py-1.5 px-0.5 scroll-smooth select-none snap-x snap-mandatory ${isDragging ? 'cursor-grabbing' : 'cursor-grab'
             }`}
         >
-          {trendingEvents.map((event) => {
-            const isFav = favorites.includes(event.id);
+          {highlights.map(({ event, reason, pillar }) => {
+            const isSpot = pillar === 'spots';
+            const isFav = isSpot ? favoriteSpots.includes(event.id) : favorites.includes(event.id);
 
             return (
               <div
@@ -239,7 +223,8 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      toggleFavorite(event.id);
+                      if (isSpot) toggleFavoriteSpot(event.id);
+                      else toggleFavorite(event.id);
                     }}
                     className={`absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center transition-all shadow-xs z-10 cursor-pointer hover:scale-110 active:scale-95 ${
                       isFav
@@ -257,10 +242,17 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
 
                     {/* Host & Price Row */}
                     <div className="flex items-center justify-between gap-1.5">
-                      <span className="text-[10px] sm:text-[10.5px] font-medium text-slate-500 truncate">
-                        {event.hostName}
-                      </span>
-                      {event.price && (
+                      {reason ? (
+                        // Why this item is in the row, in the pillar color
+                        <span className="text-[11px] font-extrabold truncate tabular-nums" style={{ color: PILLAR_COLORS[pillar] }}>
+                          {reason}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] sm:text-[10.5px] font-medium text-slate-500 truncate">
+                          {event.hostName}
+                        </span>
+                      )}
+                      {hasKnownPrice(event.price) && (
                         <span
                           className={`text-[9.5px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 max-w-[110px] sm:max-w-[125px] truncate ${
                             isPriceFree(event.price)

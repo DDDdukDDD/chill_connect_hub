@@ -22,6 +22,7 @@ interface JourneySectionCarouselProps {
 
 export const JourneySectionCarousel: React.FC<JourneySectionCarouselProps> = ({
   title,
+  subtitle,
   moreLink,
   moreText,
   children,
@@ -73,18 +74,21 @@ export const JourneySectionCarousel: React.FC<JourneySectionCarouselProps> = ({
   return (
     <section className="space-y-3 scroll-mt-20">
       {/* Header Row: Minimal & Unboxed without subtitle/badge/boxes */}
-      <div className="flex items-center justify-between gap-4 pb-1 pt-2">
-        <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-          {title}
-        </h2>
+      <div className="flex items-end justify-between gap-4 pb-1">
+        <div className="min-w-0 space-y-0.5">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+            {title}
+          </h2>
+          {subtitle && <p className="text-sm font-medium text-slate-500 truncate">{subtitle}</p>}
+        </div>
 
-        {/* More / See All Button */}
+        {/* More / See All link */}
         <Link
           href={moreLink}
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer active:scale-95 leading-none"
+          className="inline-flex items-center gap-1 py-2 text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap group/btn shrink-0 cursor-pointer"
         >
           <span>{moreText}</span>
-          <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
+          <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-0.5 transition-transform" aria-hidden="true" />
         </Link>
       </div>
 

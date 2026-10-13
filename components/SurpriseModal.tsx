@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { EventItem } from '@/data/mockData';
 import { LifestyleSpotItem } from '@/data/spotsData';
-import { formatEventBadgePrice } from '@/lib/priceUtils';
+import { formatEventBadgePrice, hasKnownPrice } from '@/lib/priceUtils';
 import { Sparkles, Dices, X, RefreshCw, Calendar, MapPin, Users, ArrowRight, Clock, Mountain, Building2 } from 'lucide-react';
 
 export type SurpriseItem =
@@ -286,7 +286,7 @@ export const SurpriseModal: React.FC<SurpriseModalProps> = ({
                     <span>{pickedItem.badgeText}</span>
                   </span>
                 </div>
-                {pickedItem.kind !== 'spot' && pickedItem.price && (
+                {pickedItem.kind !== 'spot' && hasKnownPrice(pickedItem.price) && (
                   <div className="absolute top-2.5 right-2.5">
                     <span className={`text-[11px] font-extrabold px-2.5 py-1 rounded-full text-white shadow-md ${
                       pickedItem.kind === 'fair' ? 'bg-[#2B527A]' : 'bg-[#F26430]'

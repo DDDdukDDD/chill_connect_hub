@@ -6,7 +6,7 @@ import { EventItem } from '@/data/mockData';
 import { Heart, Calendar, MapPin, Users, Star, RotateCcw, Search, Globe, Repeat, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { isEventEnded } from '@/lib/dateUtils';
-import { formatEventBadgePrice, isPriceFree } from '@/lib/priceUtils';
+import { formatEventBadgePrice, hasKnownPrice, isPriceFree } from '@/lib/priceUtils';
 import { FloatingCarousel } from '@/components/FloatingCarousel';
 
 interface EventGridProps {
@@ -207,7 +207,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                         )}
                       </div>
 
-                      {event.price && (
+                      {hasKnownPrice(event.price) && (
                         <span
                           className={`text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 max-w-[130px] sm:max-w-[140px] truncate ${
                             isPriceFree(event.price)
@@ -451,7 +451,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
           {/* Right Column: Price, Status / Slots, Desktop Favorite */}
           <div className="shrink-0 flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 sm:gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 sm:pl-4 sm:border-l sm:border-slate-100/80 min-w-[130px]">
             {/* Price */}
-            {event.price && (
+            {hasKnownPrice(event.price) && (
               <span
                 className={`text-xs font-bold px-2.5 py-1 rounded-lg shrink-0 ${
                   isPriceFree(event.price)

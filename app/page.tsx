@@ -9,7 +9,7 @@ import { MoodFilterChips, SUB_CATEGORIES_MAP } from '@/components/MoodFilterChip
 import { SurpriseModal } from '@/components/SurpriseModal';
 import { EventGrid } from '@/components/EventGrid';
 import { MobileNav } from '@/components/MobileNav';
-import { MOCK_EVENTS, MOCK_POSTS, MOCK_CHALLENGES, EventItem, calculateDistanceKm, BANGKOK_ZONES } from '@/data/mockData';
+import { MOCK_EVENTS, MOCK_POSTS, MOCK_CHALLENGES, SAMPLE_JOINED_CHALLENGES, EventItem, calculateDistanceKm, BANGKOK_ZONES } from '@/data/mockData';
 import { CustomDatePickerModal } from '@/components/CustomDatePickerModal';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
@@ -18,13 +18,10 @@ import { FilterDrawer } from '@/components/FilterDrawer';
 import { StoryBar } from '@/components/StoryBar';
 import { TrendingCarousel } from '@/components/TrendingCarousel';
 import { MemberPrivilegesSection } from '@/components/MemberPrivilegesSection';
-import { CommunityChallengeBar, COMMUNITY_PUBLIC_QUESTS } from '@/components/CommunityChallengeBar';
+import { CommunityChallengeBar } from '@/components/CommunityChallengeBar';
 import { CommunityMomentsStrip } from '@/components/CommunityMomentsStrip';
 import { FloatingCarousel } from '@/components/FloatingCarousel';
 import { PlatformTrustAndPerks } from '@/components/PlatformTrustAndPerks';
-import { CommunityDiscoveryHighlights } from '@/components/CommunityDiscoveryHighlights';
-import { FairsDiscoveryHighlights } from '@/components/FairsDiscoveryHighlights';
-import { SpotsDiscoveryHighlights } from '@/components/SpotsDiscoveryHighlights';
 import { CommunityCategoryRail, COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
 import { TopCommunityRail, TOP_COMMUNITY_CLUBS } from '@/components/TopCommunityRail';
 import { SpotCategoryRail, NATIONWIDE_SPOT_CATEGORIES } from '@/components/SpotCategoryRail';
@@ -332,10 +329,8 @@ function HomeContent() {
       if (typeof window !== 'undefined') {
         try {
           const raw = localStorage.getItem('cch_my_challenges');
-          let currentList: any[] = raw ? JSON.parse(raw) : [...MOCK_CHALLENGES];
-          const matched =
-            COMMUNITY_PUBLIC_QUESTS.find((q) => q.title.trim() === questTitle.trim()) ||
-            MOCK_CHALLENGES.find((q) => q.title.trim() === questTitle.trim());
+          let currentList: any[] = raw ? JSON.parse(raw) : [...SAMPLE_JOINED_CHALLENGES];
+          const matched = MOCK_CHALLENGES.find((q) => q.title.trim() === questTitle.trim());
           const questToAdd = matched
             ? {
                 ...matched,
@@ -489,11 +484,6 @@ function HomeContent() {
     });
     showToast('ยกเลิกการเข้าร่วมกิจกรรมเรียบร้อยแล้ว');
   };
-
-  // Trending Events (isTrending = true)
-  const trendingEvents = useMemo(() => {
-    return eventsList.filter((e) => e.isTrending);
-  }, [eventsList]);
 
   // Newly Added Events (isNew within 3 days, not ended)
   const newEvents = useMemo(() => {
@@ -942,69 +932,44 @@ function HomeContent() {
     return counts;
   }, [spotsList, selectedSpotProvince]);
 
-  const trendingSpotsAsEvents: EventItem[] = useMemo(() => {
-    return spotsList.slice(0, 10).map((spot) => ({
-      id: spot.id,
-      title: spot.title,
-      description: spot.description,
-      image: spot.image,
-      date: spot.openHours || 'เปิดบริการทุกวัน',
-      time: '10:00 - 18:00',
-      location: `${spot.district ? spot.district + ', ' : ''}${spot.province}`,
-      category: 'chill',
-      tag: spot.categoryLabel,
-      price: spot.price || 'เข้าชมฟรี',
-      hostName: spot.province,
-      eventType: 'spots' as any,
-      participantsCount: 10,
-      maxParticipants: 10,
-      rating: spot.rating || 4.9,
-      reviewsCount: spot.reviewsCount || 10,
-      isNew: spot.isNew,
-      createdAtTimestamp: 1726000000000,
-    }));
-  }, [spotsList]);
+  // The highlights row picks these last, so it does not repeat the first row of each section below
+  const highlightExcludeIds = useMemo(
+    () => [...streamCommunityEvents.slice(0, 5), ...streamPublicEvents.slice(0, 5), ...filteredSpots.slice(0, 5)].map((item) => item.id),
+    [streamCommunityEvents, streamPublicEvents, filteredSpots]
+  );
 
   const trendingCarouselProps = useMemo(() => {
     switch (activeScopeTab) {
       case 'community':
         return {
-          events: eventsList.filter((e) => (e.eventType || 'community') === 'community'),
-          title: 'Trending Community Circles',
-          subtitle: 'ตี้กิจกรรมและเวิร์กช็อปที่มีเพื่อนๆ สมัครเข้าร่วมคึกคักที่สุดในสัปดาห์นี้',
+          title: 'กิจกรรมไฮไลต์',
+          subtitle: 'กิจกรรมที่ใกล้ถึงวันและที่นั่งใกล้เต็ม',
           badgeText: 'ตี้มาแรง',
           badgeColor: 'bg-orange-50 text-[#F26430] border border-orange-200/80',
-          mode: 'community' as const,
         };
       case 'fairs':
         return {
-          events: eventsList.filter((e) => e.eventType === 'public_venue'),
-          title: 'Trending Mega Expos & Fairs',
-          subtitle: 'งานมหกรรม นิทรรศการ และเทศกาลระดับชาติที่ผู้คนรอคอยมากที่สุด',
+          title: 'งานแฟร์ไฮไลต์',
+          subtitle: 'งานที่กำลังจัดอยู่และใกล้เริ่มในสองสัปดาห์นี้',
           badgeText: 'งานไฮไลต์',
           badgeColor: 'bg-blue-50 text-[#2B527A] border border-blue-200/80',
-          mode: 'fairs' as const,
         };
       case 'spots':
         return {
-          events: trendingSpotsAsEvents,
-          title: 'Trending Curated Lifestyle Spots',
-          subtitle: 'พิกัดพักผ่อน คาเฟ่ธรรมชาติ และสเปซฮีลใจที่ได้รับคะแนนรีวิวสูงสุด 77 จังหวัด',
+          title: 'ที่เที่ยวไฮไลต์',
+          subtitle: 'ที่เที่ยวยอดนิยม จังหวัดละหนึ่งแห่ง',
           badgeText: 'จุดฮิตคนท้องถิ่น',
           badgeColor: 'bg-emerald-50 text-[#4A7C59] border border-emerald-200/80',
-          mode: 'spots' as const,
         };
       default:
         return {
-          events: eventsList,
-          title: 'Trending Lifestyle Agenda',
-          subtitle: 'คัดสรรกิจกรรมและงานอีเวนต์ที่มีผู้ให้ความสนใจสูงสุดประจำสัปดาห์นี้',
+          title: 'ไฮไลต์สัปดาห์นี้',
+          subtitle: 'กิจกรรม งานแฟร์ และที่เที่ยวที่ใกล้ถึงวัน ใกล้เต็ม หรือเป็นที่นิยม',
           badgeText: 'ยอดนิยม',
           badgeColor: undefined,
-          mode: 'all' as const,
         };
     }
-  }, [activeScopeTab, eventsList, trendingSpotsAsEvents]);
+  }, [activeScopeTab]);
 
   const handleSearchSubmit = () => {
     // Smart Search Auto-Clear: reset conflicting sub-filters so the search result is not blocked
@@ -1321,23 +1286,22 @@ function HomeContent() {
 
         <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-3 sm:space-y-5 pt-0.5 sm:pt-1 pb-6 relative z-10">
 
-          {/* 3. Auto-Sliding Trending Events Carousel (Contextually Adapted) */}
+          {/* 3. Highlights row: a few items from the three pillars, each with the reason it was picked */}
           <TrendingCarousel
-            events={trendingCarouselProps.events}
+            events={eventsList}
+            spots={spotsList}
+            excludeIds={highlightExcludeIds}
             title={trendingCarouselProps.title}
             subtitle={trendingCarouselProps.subtitle}
             badgeText={trendingCarouselProps.badgeText}
             badgeColor={trendingCarouselProps.badgeColor}
-            mode={trendingCarouselProps.mode}
+            mode={activeScopeTab}
             onSelectEvent={() => { }}
-            favorites={favorites}
+            favorites={isLoggedIn ? favorites : []}
             toggleFavorite={toggleFavorite}
+            favoriteSpots={isLoggedIn ? favoriteSpots : []}
+            toggleFavoriteSpot={toggleFavoriteSpot}
           />
-
-          {/* 4. Member Privileges & Voucher Strip (Positioned directly below Trending Lifestyle Agenda) */}
-          {activeScopeTab === 'all' && (
-            <MemberPrivilegesSection isLoggedIn={isLoggedIn} />
-          )}
 
           {/* ========================================================================= */}
           {/* UNIFIED CURATED DISCOVERY STREAM (Global Luxury Editorial 9.8+)           */}
@@ -1355,9 +1319,6 @@ function HomeContent() {
                   <div className="bg-gradient-to-r from-orange-50/50 via-slate-50/30 to-transparent p-3 sm:p-3.5 rounded-2xl border border-orange-100/60 shadow-2xs">
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="w-6 h-6 rounded-lg bg-orange-500/10 text-[#F26430] flex items-center justify-center text-xs font-black shrink-0 border border-orange-500/20">
-                          01
-                        </span>
                         <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
                           <span>กิจกรรมคอมมูนิตี้</span>
                           <span className="text-[10px] font-black text-[#F26430] bg-[#FFF4EE] px-2 py-0.5 rounded-full border border-orange-200">
@@ -1391,7 +1352,7 @@ function HomeContent() {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500 mt-1 font-medium pl-8">
+                      <p className="text-xs text-slate-500 mt-1 font-medium">
                         เชื่อมต่อมิตรภาพผ่านกิจกรรมสร้างสรรค์ ในบรรยากาศอบอุ่น เป็นกันเอง และปลอดภัย
                       </p>
                     </div>
@@ -1447,9 +1408,6 @@ function HomeContent() {
                   <div className="bg-gradient-to-r from-blue-50/50 via-slate-50/30 to-transparent p-3 sm:p-3.5 rounded-2xl border border-blue-100/60 shadow-2xs">
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="w-6 h-6 rounded-lg bg-blue-500/10 text-[#2B527A] flex items-center justify-center text-xs font-black shrink-0 border border-blue-500/20">
-                          02
-                        </span>
                         <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
                           <span>งานมหกรรม & เอ็กซ์โป</span>
                           <span className="text-[10px] font-black text-[#2B527A] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
@@ -1489,7 +1447,7 @@ function HomeContent() {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500 mt-1 font-medium pl-8">
+                      <p className="text-xs text-slate-500 mt-1 font-medium">
                         {selectedVenueFilter
                           ? `นิทรรศการและงานมหกรรม ณ ${
                               selectedVenueFilter === 'qsncc' ? 'ศูนย์การประชุมแห่งชาติสิริกิติ์ (QSNCC)' :
@@ -1554,9 +1512,6 @@ function HomeContent() {
                   <div className="bg-gradient-to-r from-emerald-50/50 via-slate-50/30 to-transparent p-3 sm:p-3.5 rounded-2xl border border-emerald-100/60 shadow-2xs">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-lg bg-emerald-500/10 text-[#4A7C59] flex items-center justify-center text-xs font-black shrink-0 border border-emerald-500/20">
-                          03
-                        </span>
                         <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
                           <span>พิกัดเที่ยว & จุดฮีลใจ</span>
                           <span className="text-[10px] font-black text-[#4A7C59] bg-[#EBF3ED] px-2 py-0.5 rounded-full border border-emerald-200">
@@ -1564,7 +1519,7 @@ function HomeContent() {
                           </span>
                         </h2>
                       </div>
-                      <p className="text-xs text-slate-500 mt-1 font-medium pl-8">
+                      <p className="text-xs text-slate-500 mt-1 font-medium">
                         {selectedSpotProvince === 'all'
                           ? `พื้นที่ชาร์จพลัง คาเฟ่รักษ์โลก และจุดพักผ่อนธรรมชาติที่ผ่านการคัดสรรโดยคนท้องถิ่น (${filteredSpots.length} แห่ง)`
                           : `พื้นที่พักผ่อนและสเปซน่าหลงใหลในจังหวัด${selectedSpotProvince} (${filteredSpots.length} แห่ง)`}
@@ -1667,6 +1622,9 @@ function HomeContent() {
                     )}
                   </div>
                 </section>
+
+                {/* Member Privileges & Voucher Strip (below the three pillar sections) */}
+                <MemberPrivilegesSection isLoggedIn={isLoggedIn} />
 
                 {/* ------------------------------------------------------------------------- */}
                 {/* STREAM SECTION 4: ⚡ COMMUNITY QUESTS (ชาเลนจ์ & ภารกิจท้าทาย)             */}
@@ -1776,9 +1734,6 @@ function HomeContent() {
                   )}
                 </div>
 
-
-                {/* Community Discovery Highlights */}
-                <CommunityDiscoveryHighlights />
               </div>
             )}
 
@@ -1864,9 +1819,6 @@ function HomeContent() {
                   )}
                 </div>
 
-
-                {/* Fairs Discovery Highlights */}
-                <FairsDiscoveryHighlights />
               </div>
             )}
 
@@ -2009,9 +1961,6 @@ function HomeContent() {
                   )}
                 </div>
 
-
-                {/* Spots Discovery Highlights */}
-                <SpotsDiscoveryHighlights />
               </div>
             )}
           </div>
