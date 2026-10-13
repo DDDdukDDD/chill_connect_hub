@@ -105,6 +105,8 @@ export function toFeedItem(moment: Moment, viewer: Member | null, people: Map<st
     targetId: moment.targetId,
     targetTitle: moment.targetTitle,
     isSample: moment.isSample,
+    // Only the author learns that staff did not count the photo as a visit
+    evidenceRejected: viewer && moment.authorId === viewer.id && moment.evidenceRejected ? { note: moment.evidenceRejected.note } : undefined,
   };
 }
 

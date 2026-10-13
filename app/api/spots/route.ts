@@ -14,6 +14,17 @@ export async function GET(request: Request) {
       const spots = viewer ? await spotsSuggestedBy(viewer.id) : [];
       return NextResponse.json({ success: true, spots }, { headers: { 'Cache-Control': 'no-store' } });
     }
+    // ?ids=a,b,c (≤ 30) → those published places, in the order asked; unknown and draft ids are left out
+    const ids = searchParams.get('ids');
+    if (ids !== null) {
+      const wanted = Array.from(new Set(ids.split(',').map((id) => id.trim()).filter(Boolean))).slice(0, 30);
+      const found = await Promise.all(wanted.map((id) => db.findSpotById(id)));
+      return NextResponse.json(
+        { success: true, spots: found.filter((spot) => spot && spot.publicationStatus !== 'draft') },
+        { headers: { 'Cache-Control': 'private, no-store' } }
+      );
+    }
+
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '12', 10);
     const province = searchParams.get('province');

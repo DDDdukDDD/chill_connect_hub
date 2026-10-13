@@ -55,6 +55,8 @@ export interface Moment {
   /** Why it is hidden: member reports or a moderator */
   hiddenBy?: 'reports' | 'admin';
   moderationNote?: string;
+  /** A moderator decided the photo does not show the place or event it is tied to: the post stays, but it is not a visit and counts toward no challenge */
+  evidenceRejected?: { at: string; note: string };
   /** Seeded from MOCK_POSTS, not written by a member */
   isSample: boolean;
   createdAt: string;
