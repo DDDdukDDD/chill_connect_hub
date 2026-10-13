@@ -13,6 +13,7 @@ import { CreateEventModal } from '@/components/CreateEventModal';
 import { useAuth } from '@/lib/useAuth';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { useMyActivity } from '@/lib/useMyActivity';
+import { useMyRewards } from '@/lib/useMyRewards';
 import { isEventEnded, parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { nameInitial, tidyDisplayName } from '@/lib/displayName';
 import {
@@ -400,7 +401,13 @@ function MomentsContent() {
     </li>
   );
 
-  const linkedQuest = linkedTarget ? (targetQuests[`${linkedTarget.type}:${linkedTarget.id}`] ?? [])[0] : undefined;
+  // A place can count toward several challenges; the one the member is doing is named first
+  const { joinedQuestIds } = useMyRewards(isLoggedIn);
+  const questFor = (type?: string, id?: string) => {
+    const quests = targetQuests[`${type}:${id}`] ?? [];
+    return quests.find((q) => joinedQuestIds.includes(q.questId)) ?? quests[0];
+  };
+  const linkedQuest = linkedTarget ? questFor(linkedTarget.type, linkedTarget.id) : undefined;
 
   const loadMorePosts = async () => {
     if (isLoadingMore || !hasMorePosts) return;
@@ -471,8 +478,16 @@ function MomentsContent() {
     if (!picked || !storyDraft) return;
     try {
       const compressed = await compressImage(picked, { maxWidth: 1080, maxHeight: 1920, quality: 0.85, targetMimeType: 'image/webp' });
-      if (storyDraft.preview) URL.revokeObjectURL(storyDraft.preview);
-      setStoryDraft({ ...storyDraft, file: compressed, preview: URL.createObjectURL(compressed) });
+      const preview = URL.createObjectURL(compressed);
+      // The caption may have been typed while the photo was being prepared, so it is read from the latest draft
+      setStoryDraft((draft) => {
+        if (!draft) {
+          URL.revokeObjectURL(preview);
+          return draft;
+        }
+        if (draft.preview) URL.revokeObjectURL(draft.preview);
+        return { ...draft, file: compressed, preview };
+      });
     } catch {
       showToast('ใช้รูปนี้ไม่ได้ ลองเลือกรูปอื่น (JPG, PNG หรือ WebP)');
     }
@@ -1396,7 +1411,7 @@ function MomentsContent() {
                 const authorId = (post as { authorId?: string | null }).authorId;
                 const profileHref = authorId ? `/profile?id=${authorId}` : null;
                 const targetHref = targetHrefOf(post.targetType, post.targetId);
-                const countsToward = (targetQuests[`${post.targetType}:${post.targetId}`] ?? [])[0];
+                const countsToward = questFor(post.targetType, post.targetId);
                 const evidenceRejected = (post as { evidenceRejected?: { note: string } }).evidenceRejected;
 
                 return (
@@ -2220,9 +2235,9 @@ function MomentsContent() {
                       </button>
                     </div>
                     {linkedQuest && (
-                      <p className="mt-2 flex items-center gap-1.5 text-xs font-bold text-[#5B21B6]">
-                        <Trophy className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                        <span className="min-w-0 truncate">ที่นี่นับในชาเลนจ์ {linkedQuest.title}</span>
+                      <p className="mt-2 flex items-start gap-1.5 text-xs font-bold text-[#5B21B6] leading-relaxed">
+                        <Trophy className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden="true" />
+                        <span className="min-w-0 line-clamp-2">ที่นี่นับในชาเลนจ์ {linkedQuest.title}</span>
                       </p>
                     )}
                     </div>
