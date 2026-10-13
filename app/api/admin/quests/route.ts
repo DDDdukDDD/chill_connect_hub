@@ -28,8 +28,11 @@ function optionalText(value: unknown, maxLength: number): string | undefined {
   return trimmed || undefined;
 }
 
+const REWARD_REQUIRED_ERROR = 'ทุกชาเลนจ์ต้องมีรางวัล กรุณาระบุประเภทและชื่อรางวัล';
+const RULE_REQUIRED_ERROR = 'ทุกชาเลนจ์ต้องมีวิธีที่ระบบตรวจได้ กรุณาเลือกสิ่งที่ระบบจะนับ';
+
 /**
- * Normalizes a brandReward payload. Returns null to clear it, a string error, or the clean object.
+ * Normalizes a brandReward payload. Returns null when none was sent, a string error, or the clean object.
  * brand_partner requires partnerName + title; hub_central always uses the platform as partner.
  */
 function parseBrandReward(value: unknown): QuestReward | null | string {
@@ -88,12 +91,16 @@ function createQuestRecord(input: Record<string, unknown>): CreateQuestDTO | str
     iconName: typeof input.iconName === 'string' && input.iconName.trim() ? input.iconName.trim() : 'Zap',
     total: String(Math.floor(Number(input.total) || 1)),
   };
-  const brandReward = input.brandReward === undefined ? undefined : parseBrandReward(input.brandReward);
+  // Every challenge is created with a reward: the card and the challenge page always show one
+  const brandReward = parseBrandReward(input.brandReward ?? null);
+  if (brandReward === null) return REWARD_REQUIRED_ERROR;
   if (typeof brandReward === 'string') return brandReward;
   const image = parseImageUrl(input.image);
   if (image === false) return 'URL รูปภาพต้องขึ้นต้นด้วย https:// หรือ /';
-  const rule = input.rule ? parseQuestRule(input.rule) : undefined;
-  if (input.rule && !rule) return 'Invalid quest rule';
+  // And with a rule the system can check, or the reward could never be given
+  if (!input.rule) return RULE_REQUIRED_ERROR;
+  const rule = parseQuestRule(input.rule);
+  if (!rule) return 'Invalid quest rule';
   const startDate = optionalText(input.startDate, 40);
   const endDate = optionalText(input.endDate, 40);
   const validationError = validateQuest({ ...quest, startDate, endDate, status: 'draft' });
@@ -126,8 +133,8 @@ function createQuestRecord(input: Record<string, unknown>): CreateQuestDTO | str
     startDate,
     endDate,
     image,
-    brandReward: brandReward ?? undefined,
-    rule: rule ?? undefined,
+    brandReward,
+    rule,
   };
 }
 
@@ -198,15 +205,18 @@ export async function POST(request: Request) {
         Object.entries(body.updatedFields).filter(([key]) => MUTABLE_QUEST_FIELDS.has(key as keyof ChallengeQuest))
       ) as UpdateQuestDTO;
       if ('rule' in safeFields) {
-        // null or an empty value removes the rule; anything else must be a valid rule
-        const rule = safeFields.rule ? parseQuestRule(safeFields.rule) : undefined;
-        if (safeFields.rule && !rule) return NextResponse.json({ success: false, error: 'Invalid quest rule' }, { status: 400 });
-        safeFields.rule = rule ?? undefined;
+        // The rule can be changed but not removed
+        if (!safeFields.rule) return NextResponse.json({ success: false, error: RULE_REQUIRED_ERROR }, { status: 400 });
+        const rule = parseQuestRule(safeFields.rule);
+        if (!rule) return NextResponse.json({ success: false, error: 'Invalid quest rule' }, { status: 400 });
+        safeFields.rule = rule;
       }
       if ('brandReward' in safeFields) {
-        const brandReward = parseBrandReward(safeFields.brandReward);
+        // The reward can be changed but not removed
+        const brandReward = parseBrandReward(safeFields.brandReward ?? null);
+        if (brandReward === null) return NextResponse.json({ success: false, error: REWARD_REQUIRED_ERROR }, { status: 400 });
         if (typeof brandReward === 'string') return NextResponse.json({ success: false, error: brandReward }, { status: 400 });
-        safeFields.brandReward = brandReward ?? undefined;
+        safeFields.brandReward = brandReward;
       }
       if ('image' in safeFields) {
         const image = parseImageUrl(safeFields.image);
@@ -253,6 +263,10 @@ export async function POST(request: Request) {
           { success: false, error: `ภารกิจนี้หมดเวลาแล้ว (${existing.endDate}) กรุณาแก้วันสิ้นสุดก่อนเผยแพร่` },
           { status: 400 }
         );
+      }
+      // An older challenge without a rule cannot be published until it has one
+      if (body.status === 'active' && !existing.rule) {
+        return NextResponse.json({ success: false, error: RULE_REQUIRED_ERROR }, { status: 400 });
       }
       const quest = await db.updateQuest(body.id, { status: body.status as ChallengeQuest['status'] });
       if (!quest) return NextResponse.json({ success: false, error: 'Quest not found' }, { status: 404 });

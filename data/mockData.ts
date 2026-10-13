@@ -4787,6 +4787,8 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
   },
   {
     id: '2',
+    // Nothing in the system can check steps, so it stays out of the public list until it has a rule
+    status: 'draft',
     badgeCoverImg: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=600&q=80',
     title: 'Step Count 30Days: เดินก้าวสุขภาพต่อเนื่อง 30 วัน',
     iconName: 'Footprints',
@@ -4813,7 +4815,7 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
     endDate: '30 พ.ย. 2569',
     brandReward: {
       type: 'hub_central',
-      title: 'แต้มสะสมอิสระ + ปลดล็อกของรางวัลใน Hub Rewards',
+      title: 'สะสม XP แลกของรางวัลที่ชอบ',
       partnerName: 'Chill & Connect Hub',
       hubRewardNote: 'รับแต้ม Boosted XP สำหรับยกระดับเลเวลบัญชี และนำแต้มไปเลือกแลกของรางวัลในศูนย์กลาง (/rewards)',
       terms: 'นำแต้ม XP ที่ได้รับไปแลกรับสิทธิ์ที่หน้าศูนย์ของรางวัล (/rewards)',
@@ -4848,7 +4850,7 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
     endDate: '25 มี.ค. 2569',
     brandReward: {
       type: 'hub_central',
-      title: 'แต้มสะสมอิสระ + ปลดล็อกของรางวัลใน Hub Rewards',
+      title: 'สะสม XP แลกของรางวัลที่ชอบ',
       partnerName: 'Chill & Connect Hub',
       hubRewardNote: 'รับแต้มพิเศษอัปเลเวลโปรไฟล์ พร้อมสิทธิ์เลือกแลกเซ็ตชาหรือเครื่องดื่มฟรีในคลังของรางวัลกลาง',
       terms: 'นำแต้ม XP ที่ได้รับไปแลกรับสิทธิ์ที่หน้าศูนย์ของรางวัล (/rewards)',
@@ -4901,7 +4903,7 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
       exclusiveNotice: 'สิทธิ์เฉพาะหน้าร้าน Ari Specialty Coffee Club ทุกสาขาเท่านั้น (แบรนด์อื่นไม่สามารถใช้ได้)',
       terms: 'แสดง QR Code หน้าร้านก่อนสั่งเครื่องดื่ม จำกัด 1 สิทธิ์/ท่าน มีอายุ 30 วันหลังพิชิตภารกิจ',
     },
-    rule: { targetTypes: ['spot'], categories: ['cafe'], count: 3, minEvidence: 'moment' },
+    rule: { targetTypes: ['spot'], categories: ['cafe'], provinces: ['กรุงเทพฯ'], count: 3, minEvidence: 'moment' },
     title: 'Bangkok Coffee Trail: ตะลุย 3 คาเฟ่อารีย์',
     badgeCoverImg: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80',
     iconName: 'Coffee',
@@ -5011,9 +5013,11 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
   },
   {
     id: 'comm-quest-4',
+    // Nothing in the system can check yoga at home, so it stays out of the public list until it has a rule
+    status: 'draft',
     brandReward: {
       type: 'hub_central',
-      title: 'แต้มสะสมอิสระ + ปลดล็อกของรางวัลใน Hub Rewards',
+      title: 'สะสม XP แลกของรางวัลที่ชอบ',
       partnerName: 'Chill & Connect Hub',
       hubRewardNote: 'รับแต้ม Boosted XP ก้อนใหญ่สำหรับยกระดับเลเวลบัญชี และนำแต้มไปเลือกแลกของรางวัลในศูนย์กลาง (/rewards) ได้อย่างอิสระตามใจชอบ',
       terms: 'สามารถนำแต้ม XP สะสมไปแลกรับของรางวัลที่ร่วมรายการในหน้าศูนย์ของรางวัล (/rewards) ได้ทันที',
@@ -5050,7 +5054,7 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
     id: 'comm-quest-5',
     brandReward: {
       type: 'hub_central',
-      title: 'แต้มสะสมอิสระ + ปลดล็อกของรางวัลใน Hub Rewards',
+      title: 'สะสม XP แลกของรางวัลที่ชอบ',
       partnerName: 'Chill & Connect Hub',
       hubRewardNote: 'รับแต้มพิเศษอัปเลเวลโปรไฟล์ พร้อมสิทธิ์เลือกแลกเซ็ตชาหรือเครื่องดื่มฟรีในคลังของรางวัลกลาง',
       terms: 'นำแต้ม XP ที่ได้รับไปแลกรับสิทธิ์ที่หน้าศูนย์ของรางวัล (/rewards)',
@@ -5297,7 +5301,7 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
     endDate: '15 ม.ค. 2569',
     brandReward: {
       type: 'hub_central',
-      title: 'แต้มสะสมอิสระ + ปลดล็อกของรางวัลใน Hub Rewards',
+      title: 'สะสม XP แลกของรางวัลที่ชอบ',
       partnerName: 'Chill & Connect Hub',
       hubRewardNote: 'ภารกิจสิ้นสุดระยะเวลาแล้ว',
       terms: 'กิจกรรมสิ้นสุดแล้ว',
