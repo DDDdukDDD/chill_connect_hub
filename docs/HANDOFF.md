@@ -1064,3 +1064,11 @@ New placeholder content in a page must be behind `eventOrigin(...) === 'sample'`
 - **What changed / what is needed:** the card in `app/challenges/page.tsx` now reads top to bottom: the photo edge to edge (16:10) with one white pill for the XP, who runs it, the title, the one-line goal, the partner's reward when there is one, the member's progress when they joined, then "N days left · N people" beside the one button. Removed from the card: the colored stripe, the "Official • …" badge with a crown (the organizer was named twice), the generic reward pill on platform challenges, the date range (days left says it; the range is on the challenge page) and the divider. An ended card shows its photo in grey with "จบแล้ว".
 - **Action for the other side:** None.
 - **Status:** Open
+
+
+### BE-056 · The challenge card keeps its own look (owner feedback on BE-055)
+- **From → To:** Claude Code → Frontend
+- **Date / branch:** 2026-10-13 · `claude`
+- **What changed / what is needed:** BE-055 turned the card into a photo-first card like the place and event cards. The owner preferred the earlier look because it is more interesting and unlike the other cards, and asked only for it to be tidier with fewer icons. `app/challenges/page.tsx` is back to that look: the violet stripe, the owner pill and the XP pill, the inset photo, title and goal, the reward pill, dates with people and days left, and a footer with the organizer and the one button. Tidied: one pill size, the photo at 16:10, text sizes from the scale, no medal badge on the photo. Icons removed: the crown in the owner pill and the gift in the platform reward pill; the XP bolt and the partner's ticket stay because they carry meaning. A self-noted challenge shows no reward pill.
+- **Action for the other side:** None.
+- **Status:** Open

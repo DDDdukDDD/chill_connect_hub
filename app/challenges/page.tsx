@@ -350,82 +350,110 @@ export default function ChallengesDiscoveryPage() {
                   {paginatedQuests.map((quest) => {
                     const isEnded = quest.status === 'ended' || (quest.daysRemaining !== undefined && quest.daysRemaining <= 0);
                     const isJoined = joinedQuestIds.includes(quest.id);
+                    const isUrgent = !isEnded && quest.daysRemaining <= 5;
                     const brandReward = getQuestBrandReward(quest);
                     const isPartner = brandReward.type === 'brand_partner';
                     const mine = isJoined && !isEnded ? myRewards.quests.find((progress) => progress.questId === quest.id) : undefined;
+                    const PILL = 'inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-extrabold whitespace-nowrap';
 
                     return (
-                      // The card: photo, who runs it, what it is, what you get, then one action. Its page has the rest
+                      // The challenge card keeps its own look, unlike the place and event cards: a violet stripe, the owner
+                      // and XP pills, an inset photo, the reward pill, and a footer with the one action.
                       <article
                         key={quest.id}
                         onClick={() => router.push(`/challenges/${encodeURIComponent(quest.id)}`)}
-                        className={`group/card flex flex-col bg-white rounded-2xl border overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-sm ${
-                          isJoined && !isEnded ? 'border-[#7C3AED]' : 'border-slate-200 hover:border-slate-300'
+                        className={`group/card relative flex flex-col gap-3 rounded-2xl border p-4 overflow-hidden cursor-pointer transition-all duration-200 ${
+                          isEnded
+                            ? 'bg-slate-50 border-slate-200'
+                            : isJoined
+                              ? 'bg-white border-[#7C3AED] hover:shadow-sm'
+                              : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-sm'
                         }`}
                       >
-                        <div className="relative aspect-[16/10] bg-slate-100 overflow-hidden">
+                        <div className={`absolute top-0 inset-x-0 h-1 ${isEnded ? 'bg-slate-300' : 'bg-[#7C3AED]'}`} aria-hidden="true" />
+
+                        {/* Who runs it, and what it gives */}
+                        <div className="flex items-center justify-between gap-2 pt-1">
+                          {isEnded ? (
+                            <span className={`${PILL} bg-slate-100 border-slate-200 text-slate-600`}>ชาเลนจ์นี้จบแล้ว</span>
+                          ) : (
+                            <span
+                              title={isPartner ? brandReward.partnerName : 'Chill & Connect Hub'}
+                              className={`${PILL} min-w-0 ${isPartner ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-[#F5F3FF] border-violet-200 text-[#5B21B6]'}`}
+                            >
+                              <span className="truncate">Official • {isPartner ? brandReward.partnerName : 'Chill & Connect'}</span>
+                            </span>
+                          )}
+                          <span className={`${PILL} shrink-0 ${isEnded ? 'bg-slate-100 border-slate-200 text-slate-600' : 'bg-[#F5F3FF] border-violet-200 text-[#5B21B6]'}`}>
+                            {quest.rule && <Zap className="w-3.5 h-3.5" aria-hidden="true" />}
+                            <span className="tabular-nums">{quest.rule ? `+${(quest.rewardPoints ?? 0).toLocaleString()} XP` : 'บันทึกเอง'}</span>
+                          </span>
+                        </div>
+
+                        <div className="aspect-[16/10] rounded-2xl overflow-hidden bg-slate-100">
                           <img
                             src={quest.image || 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80'}
                             alt=""
                             loading="lazy"
                             className={`w-full h-full object-cover transition-transform duration-500 ${isEnded ? 'grayscale opacity-80' : 'group-hover/card:scale-105'}`}
                           />
-                          <span className="absolute top-3 left-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/95 border border-slate-200 shadow-2xs text-[11px] sm:text-xs font-extrabold text-slate-800 whitespace-nowrap">
-                            {isEnded ? (
-                              'จบแล้ว'
-                            ) : (
-                              <>
-                                <Zap className="w-3.5 h-3.5 text-[#7C3AED]" aria-hidden="true" />
-                                <span className="tabular-nums">{quest.rule ? `+${(quest.rewardPoints ?? 0).toLocaleString()} XP` : 'บันทึกเอง'}</span>
-                              </>
-                            )}
-                          </span>
                         </div>
 
-                        <div className="flex flex-col flex-1 p-4 gap-2">
-                          <p className="text-[11px] sm:text-xs font-semibold text-slate-500 truncate">{isPartner ? brandReward.partnerName : 'Chill & Connect Hub'}</p>
-                          <h3 title={quest.title} className="text-sm sm:text-base font-extrabold text-slate-900 leading-snug line-clamp-2 sm:min-h-[2.75rem]">
+                        <div className="space-y-1.5">
+                          <h3 title={quest.title} className={`text-sm sm:text-base font-extrabold leading-snug line-clamp-2 sm:min-h-[2.75rem] ${isEnded ? 'text-slate-700' : 'text-slate-900'}`}>
                             {quest.title}
                           </h3>
-                          <p title={quest.targetGoal} className="text-sm font-medium text-slate-600 leading-relaxed line-clamp-2">
+                          <p title={quest.targetGoal} className="text-xs sm:text-sm font-medium text-slate-600 leading-relaxed line-clamp-2 sm:min-h-[2.75rem]">
                             {quest.targetGoal}
                           </p>
-                          {isPartner && !isEnded && (
-                            <p title={brandReward.title} className="flex items-center gap-1.5 text-sm font-bold text-slate-900 min-w-0">
-                              <Ticket className="w-4 h-4 text-[#7C3AED] shrink-0" aria-hidden="true" />
-                              <span className="truncate">{brandReward.title}</span>
-                            </p>
-                          )}
+                        </div>
 
-                          {/* The member's own progress, from the account */}
-                          {isJoined && !isEnded && (
-                            mine ? (
-                              <div className="space-y-1 pt-1">
-                                <div className="flex items-center justify-between text-[11px] sm:text-xs font-bold text-slate-800">
-                                  <span>{mine.completed ? 'ทำครบแล้ว เก่งมาก' : 'ความคืบหน้าของคุณ'}</span>
-                                  <span className="tabular-nums">{mine.current}/{mine.total}</span>
-                                </div>
-                                <div className="h-1.5 rounded-full bg-[#F5F3FF] overflow-hidden">
-                                  <div className="h-full rounded-full bg-[#7C3AED] transition-all" style={{ width: `${Math.round((mine.current / mine.total) * 100)}%` }} />
-                                </div>
+                        {/* The reward: a partner's privilege, or XP to spend on anything */}
+                        {!isEnded && quest.rule && (
+                          <p
+                            title={isPartner ? brandReward.title : undefined}
+                            className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl border text-xs sm:text-sm font-bold min-w-0 ${
+                              isPartner ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-[#F5F3FF] border-violet-200 text-[#5B21B6]'
+                            }`}
+                          >
+                            {isPartner && <Ticket className="w-4 h-4 shrink-0" aria-hidden="true" />}
+                            <span className="truncate">{isPartner ? brandReward.title : 'นำ XP ไปแลกของรางวัลอะไรก็ได้'}</span>
+                          </p>
+                        )}
+
+                        {/* The member's own progress, from the account */}
+                        {isJoined && !isEnded && (
+                          mine ? (
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between text-xs font-bold text-[#5B21B6]">
+                                <span>{mine.completed ? 'ทำครบแล้ว เก่งมาก' : 'ความคืบหน้าของคุณ'}</span>
+                                <span className="tabular-nums">{mine.current}/{mine.total}</span>
                               </div>
-                            ) : (
-                              <p className="text-[11px] sm:text-xs font-bold text-slate-800 pt-1">ร่วมอยู่ บันทึกความคืบหน้าเองได้</p>
-                            )
-                          )}
+                              <div className="h-1.5 rounded-full bg-[#F5F3FF] overflow-hidden">
+                                <div className="h-full rounded-full bg-[#7C3AED] transition-all" style={{ width: `${Math.round((mine.current / mine.total) * 100)}%` }} />
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-xs font-bold text-[#5B21B6]">ร่วมอยู่ บันทึกความคืบหน้าเองได้</p>
+                          )
+                        )}
 
-                          <div className="mt-auto pt-2 flex items-center justify-between gap-2">
-                            <p className="text-[11px] sm:text-xs font-semibold text-slate-500 min-w-0 truncate tabular-nums">
-                              {isEnded
-                                ? `จบเมื่อ ${quest.endDate}`
-                                : [quest.daysRemaining !== undefined ? `เหลือ ${quest.daysRemaining} วัน` : '', quest.participantsCount ? `${quest.participantsCount.toLocaleString()} คนร่วมทำ` : ''].filter(Boolean).join(' · ')}
-                            </p>
+                        <div className="mt-auto space-y-3">
+                          <div className="flex items-center justify-between gap-2 text-xs font-medium text-slate-500 tabular-nums">
+                            <span className="truncate">{quest.startDate} - {quest.endDate}</span>
+                            {!isEnded && (
+                              <span className="shrink-0">
+                                {quest.participantsCount ? `${quest.participantsCount.toLocaleString()} คนร่วมทำ · ` : ''}
+                                <span className={isUrgent ? 'font-bold text-rose-700' : ''}>เหลือ {quest.daysRemaining} วัน</span>
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-2">
+                            <span className="text-xs font-semibold text-slate-600 truncate min-w-0">{isPartner ? brandReward.partnerName : 'Chill & Connect Hub'}</span>
                             <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                               {isEnded ? (
-                                <span className="inline-flex items-center gap-1 text-sm font-bold text-slate-700">
-                                  ดูย้อนหลัง
-                                  <ArrowRight className="w-4 h-4" aria-hidden="true" />
-                                </span>
+                                <span className="inline-flex items-center min-h-10 px-4 rounded-full bg-slate-100 text-slate-700 text-sm font-bold whitespace-nowrap">ดูย้อนหลัง</span>
                               ) : isJoined ? (
                                 <>
                                   <button
@@ -437,10 +465,9 @@ export default function ChallengesDiscoveryPage() {
                                   </button>
                                   <Link
                                     href={`/challenges/${encodeURIComponent(quest.id)}`}
-                                    className="inline-flex items-center gap-1 min-h-10 px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold whitespace-nowrap transition-colors cursor-pointer"
+                                    className="inline-flex items-center min-h-10 px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold whitespace-nowrap transition-colors cursor-pointer"
                                   >
                                     ไปต่อ
-                                    <ArrowRight className="w-4 h-4" aria-hidden="true" />
                                   </Link>
                                 </>
                               ) : (
