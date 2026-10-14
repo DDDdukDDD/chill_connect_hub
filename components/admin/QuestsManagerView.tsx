@@ -7,6 +7,9 @@ import { ChallengeQuest, QuestReward } from '@/data/mockData';
 import { parseQuestDate } from '@/lib/questLifecycle';
 import { handleAdminUnauthorized } from './adminAuthUtils';
 import { useMasterData } from '@/lib/useMasterData';
+import { SPOT_CATEGORY_OPTIONS } from '@/lib/spotCategories';
+import { ImageField } from './masterAdmin';
+import { ChallengeList } from '@/components/ChallengeList';
 
 type QuestStatus = 'draft' | 'active' | 'ended';
 type QuestCategory = string;
@@ -38,14 +41,23 @@ interface QuestDraft {
   ruleKeywords: string;
   ruleProvinces: string;
   ruleTargetIds: string;
+  /** spotVibes ids, as grouped on /spots */
+  ruleVibes: string;
 }
 
 const RULE_TYPE_LABELS = { spot: 'ไปสถานที่', community: 'ร่วมกิจกรรมคอมมูนิตี้', fair: 'ไปงานแฟร์' } as const;
-const RULE_CATEGORY_HINTS = {
-  spot: 'รหัสหมวดสถานที่ เช่น cafe, park, art, museum',
-  community: 'heal, move, chill, learn',
-  fair: 'heal, move, chill, learn',
-} as const;
+// The categories a rule can name, by their names: places use the data categories, events the four moods
+const EVENT_CATEGORY_OPTIONS = [
+  { id: 'chill', label: 'จิบกาแฟ & ชิลล์' },
+  { id: 'move', label: 'ขยับกาย & กีฬา' },
+  { id: 'heal', label: 'ฮีลใจ & สมาธิ' },
+  { id: 'learn', label: 'ศิลปะ & เวิร์กช็อป' },
+];
+/** Adds or removes one value in a comma-separated list */
+const toggleInList = (list: string, value: string) => {
+  const items = splitList(list);
+  return (items.includes(value) ? items.filter((item) => item !== value) : [...items, value]).join(', ');
+};
 const splitList = (value: string) => value.split(',').map((item) => item.trim()).filter(Boolean);
 
 interface VoucherInfo {
@@ -57,6 +69,21 @@ interface VoucherInfo {
   partnerName: string;
   memberName: string;
 }
+/** One choice in a rule, picked by its name */
+function RuleChip({ label, isOn, onToggle }: { label: string; isOn: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={isOn}
+      onClick={onToggle}
+      className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${isOn ? 'border-violet-600 bg-violet-50 text-violet-800' : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'}`}
+    >
+      {isOn && <Check size={12} aria-hidden="true" />}
+      {label}
+    </button>
+  );
+}
+
 const thaiDateTime = (iso: string) => new Date(iso).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
 
 const EMPTY_DRAFT: QuestDraft = {
@@ -83,6 +110,7 @@ const EMPTY_DRAFT: QuestDraft = {
   ruleKeywords: '',
   ruleProvinces: '',
   ruleTargetIds: '',
+  ruleVibes: '',
 };
 
 // Stored dates may be Thai ("31 ธ.ค. 2569") or ISO; the date input needs ISO
@@ -125,8 +153,30 @@ function toPayload(draft: QuestDraft) {
           keywords: splitList(draft.ruleKeywords),
           provinces: splitList(draft.ruleProvinces),
           targetIds: splitList(draft.ruleTargetIds),
+          vibes: draft.ruleType === 'spot' ? splitList(draft.ruleVibes) : [],
         }
       : null,
+  };
+}
+
+/** The draft as a challenge, for the preview row: the dates decide whether it shows as running or coming up */
+function previewQuest(draft: QuestDraft): ChallengeQuest {
+  const payload = toPayload(draft);
+  const now = Date.now();
+  const start = parseQuestDate(payload.startDate, false);
+  const end = parseQuestDate(payload.endDate, true);
+  const day = 24 * 60 * 60 * 1000;
+  return {
+    ...(payload as unknown as ChallengeQuest),
+    id: 'preview',
+    title: payload.title || 'ชื่อชาเลนจ์',
+    targetGoal: payload.targetGoal || 'สิ่งที่ต้องทำ',
+    rule: payload.rule ?? undefined,
+    image: payload.image,
+    status: 'active',
+    participantsCount: 0,
+    daysRemaining: end !== null ? Math.max(0, Math.ceil((end - now) / day)) : undefined,
+    startsInDays: start !== null && start > now ? Math.ceil((start - now) / day) : undefined,
   };
 }
 
@@ -172,7 +222,27 @@ export function QuestsManagerView() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<QuestDraft>(EMPTY_DRAFT);
   // Categories are managed under "หมวดหมู่" in this console
-  const { questCategories } = useMasterData();
+  const { questCategories, spotVibes } = useMasterData();
+  // How many places or events the rule being written would count (POST action preview_rule), asked again shortly after each change
+  const [rulePreview, setRulePreview] = useState<{ total: number; targets: { title: string; detail?: string }[] } | null>(null);
+  const rulePayload = isDialogOpen ? JSON.stringify(toPayload(draft).rule) : 'null';
+  useEffect(() => {
+    if (rulePayload === 'null') return;
+    let isCurrent = true;
+    setRulePreview(null);
+    const timer = setTimeout(() => {
+      fetch('/api/admin/quests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'preview_rule', rule: JSON.parse(rulePayload) }) })
+        .then((res) => res.json())
+        .then((json) => {
+          if (isCurrent && json?.success) setRulePreview({ total: json.total, targets: json.targets ?? [] });
+        })
+        .catch(() => {});
+    }, 400);
+    return () => {
+      isCurrent = false;
+      clearTimeout(timer);
+    };
+  }, [rulePayload]);
   // Reward codes members show at a partner brand
   const [voucherCode, setVoucherCode] = useState('');
   const [voucher, setVoucher] = useState<VoucherInfo | null>(null);
@@ -272,6 +342,7 @@ export function QuestsManagerView() {
       ruleType: quest.rule?.targetTypes[0] || '',
       ruleEvidence: quest.rule?.minEvidence || 'marked',
       ruleCategories: quest.rule?.categories?.join(', ') || '',
+      ruleVibes: quest.rule?.vibes?.join(', ') || '',
       ruleKeywords: quest.rule?.keywords?.join(', ') || '',
       ruleProvinces: quest.rule?.provinces?.join(', ') || '',
       ruleTargetIds: quest.rule?.targetIds?.join(', ') || '',
@@ -494,7 +565,7 @@ export function QuestsManagerView() {
 
       {isDialogOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/40 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setIsDialogOpen(false); }}>
-          <section role="dialog" aria-modal="true" aria-labelledby="quest-dialog-title" className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-lg bg-white shadow-2xl">
+          <section role="dialog" aria-modal="true" aria-labelledby="quest-dialog-title" className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white shadow-2xl">
             <div className="flex items-start justify-between border-b border-slate-200 px-5 py-4">
               <div>
                 <h2 id="quest-dialog-title" className="text-lg font-bold text-slate-950">{editingId ? 'แก้ไขภารกิจ' : 'สร้างภารกิจแบบร่าง'}</h2>
@@ -522,9 +593,6 @@ export function QuestsManagerView() {
                     {questCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
                   </select>
                 </label>
-                <label className="block space-y-1.5 text-sm font-medium text-slate-800">จำนวนเป้าหมาย
-                  <input required type="number" min="1" value={draft.total} onChange={(event) => setDraft({ ...draft, total: event.target.value })} className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
-                </label>
                 <label className="block space-y-1.5 text-sm font-medium text-slate-800">รางวัล XP
                   <input required type="number" min="0" value={draft.rewardPoints} onChange={(event) => setDraft({ ...draft, rewardPoints: event.target.value })} className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
                 </label>
@@ -545,39 +613,77 @@ export function QuestsManagerView() {
 
               <fieldset className="space-y-3 border-t border-slate-200 pt-4">
                 <legend className="text-sm font-bold text-slate-900">การนับความคืบหน้า</legend>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <label className="block space-y-1.5 text-sm font-medium text-slate-800">นับจาก
-                    <select required value={draft.ruleType} onChange={(event) => setDraft({ ...draft, ruleType: event.target.value as QuestDraft['ruleType'] })} className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                    <select required value={draft.ruleType} onChange={(event) => setDraft({ ...draft, ruleType: event.target.value as QuestDraft['ruleType'], ruleCategories: '', ruleVibes: '' })} className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100">
                       <option value="" disabled>เลือกสิ่งที่ระบบจะนับ</option>
                       {Object.entries(RULE_TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                     </select>
+                  </label>
+                  {/* How many is part of the rule: it sits here, beside what is counted */}
+                  <label className="block space-y-1.5 text-sm font-medium text-slate-800">ต้องไปให้ครบ
+                    <span className="flex items-center gap-2">
+                      <input required type="number" min="1" value={draft.total} onChange={(event) => setDraft({ ...draft, total: event.target.value })} className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                      <span className="shrink-0 text-sm text-slate-600">{draft.ruleType === 'spot' ? 'แห่ง' : draft.ruleType === 'fair' ? 'งาน' : 'ครั้ง'}</span>
+                    </span>
                   </label>
                   {draft.ruleType && (
                     <label className="block space-y-1.5 text-sm font-medium text-slate-800">หลักฐานขั้นต่ำ
                       <select value={draft.ruleEvidence} onChange={(event) => setDraft({ ...draft, ruleEvidence: event.target.value as QuestDraft['ruleEvidence'] })} className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100">
                         <option value="marked">กด &quot;มาที่นี่แล้ว&quot;</option>
                         <option value="moment">แชร์โมเมนต์พร้อมรูป</option>
-                        <option value="checkin">โฮสต์เช็กอินให้ (เฉพาะกิจกรรมคอมมูนิตี้)</option>
+                        {draft.ruleType === 'community' && <option value="checkin">โฮสต์เช็กอินให้</option>}
                       </select>
                     </label>
                   )}
                 </div>
                 {draft.ruleType ? (
                   <>
-                    <p className="text-[11px] sm:text-xs font-semibold text-slate-500">สมาชิกต้องไปให้ครบตาม &quot;จำนวนเป้าหมาย&quot; ด้านบน โดยนับเฉพาะที่ตรงทุกเงื่อนไขที่กรอก ช่องที่เว้นว่างคือไม่จำกัด คั่นหลายค่าด้วยจุลภาค</p>
+                    <p className="text-[11px] sm:text-xs font-semibold text-slate-500">นับเฉพาะที่ตรงทุกเงื่อนไขที่เลือก ส่วนที่ไม่ได้เลือกคือไม่จำกัด</p>
+                    {draft.ruleType === 'spot' && (
+                      <div className="space-y-1.5">
+                        <p className="text-sm font-medium text-slate-800">หมวดแบบที่สมาชิกเห็นในหน้าที่เที่ยว</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {spotVibes.map((vibe) => (
+                            <RuleChip key={vibe.id} label={vibe.name} isOn={splitList(draft.ruleVibes).includes(vibe.id)} onToggle={() => setDraft({ ...draft, ruleVibes: toggleInList(draft.ruleVibes, vibe.id) })} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div className="space-y-1.5">
+                      <p className="text-sm font-medium text-slate-800">{draft.ruleType === 'spot' ? 'ประเภทสถานที่' : 'หมวดกิจกรรม'}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {(draft.ruleType === 'spot' ? SPOT_CATEGORY_OPTIONS : EVENT_CATEGORY_OPTIONS).map((option) => (
+                          <RuleChip key={option.id} label={option.label} isOn={splitList(draft.ruleCategories).includes(option.id)} onToggle={() => setDraft({ ...draft, ruleCategories: toggleInList(draft.ruleCategories, option.id) })} />
+                        ))}
+                      </div>
+                    </div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <label className="block space-y-1.5 text-sm font-medium text-slate-800">หมวดหมู่
-                        <input value={draft.ruleCategories} onChange={(event) => setDraft({ ...draft, ruleCategories: event.target.value })} placeholder={RULE_CATEGORY_HINTS[draft.ruleType]} className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
-                      </label>
                       <label className="block space-y-1.5 text-sm font-medium text-slate-800">จังหวัด
-                        <input value={draft.ruleProvinces} onChange={(event) => setDraft({ ...draft, ruleProvinces: event.target.value })} placeholder="เช่น กรุงเทพฯ" className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                        <input value={draft.ruleProvinces} onChange={(event) => setDraft({ ...draft, ruleProvinces: event.target.value })} placeholder="เช่น กรุงเทพฯ (คั่นด้วยจุลภาค)" className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
                       </label>
                       <label className="block space-y-1.5 text-sm font-medium text-slate-800">คำในชื่อ (ตรงคำใดคำหนึ่ง)
-                        <input value={draft.ruleKeywords} onChange={(event) => setDraft({ ...draft, ruleKeywords: event.target.value })} placeholder="เช่น hyrox, บอร์ดเกม" className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                        <input value={draft.ruleKeywords} onChange={(event) => setDraft({ ...draft, ruleKeywords: event.target.value })} placeholder="เช่น ตลาด, hyrox" className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
                       </label>
-                      <label className="block space-y-1.5 text-sm font-medium text-slate-800">เฉพาะรหัสเหล่านี้
-                        <input value={draft.ruleTargetIds} onChange={(event) => setDraft({ ...draft, ruleTargetIds: event.target.value })} placeholder="รหัสสถานที่หรือกิจกรรม" className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                      <label className="block space-y-1.5 text-sm font-medium text-slate-800 sm:col-span-2">เฉพาะรหัสเหล่านี้
+                        <input value={draft.ruleTargetIds} onChange={(event) => setDraft({ ...draft, ruleTargetIds: event.target.value })} placeholder="รหัสสถานที่หรือกิจกรรม (ไม่บังคับ)" className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
                       </label>
+                    </div>
+                    {/* What the rule counts right now, so a rule nobody can finish shows before it is saved */}
+                    <div role="status" className={`rounded-md border px-3 py-2.5 text-sm ${rulePreview && rulePreview.total < Math.max(1, Number(draft.total) || 1) ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-slate-200 bg-slate-50 text-slate-700'}`}>
+                      {!rulePreview ? (
+                        'กำลังนับว่ามีกี่แห่งที่ตรงเงื่อนไข…'
+                      ) : (
+                        <>
+                          <p className="font-semibold">
+                            ตรงเงื่อนไข {rulePreview.total.toLocaleString()} {draft.ruleType === 'spot' ? 'แห่ง' : 'งาน'}
+                            {rulePreview.total < Math.max(1, Number(draft.total) || 1) && ` น้อยกว่าที่ต้องไปให้ครบ (${draft.total}) สมาชิกจะทำไม่ครบ`}
+                          </p>
+                          {rulePreview.targets.length > 0 && (
+                            <p className="mt-0.5 text-xs text-slate-600">เช่น {rulePreview.targets.map((target) => `${target.title}${target.detail ? ` (${target.detail})` : ''}`).join(', ')}</p>
+                          )}
+                        </>
+                      )}
                     </div>
                   </>
                 ) : (
@@ -619,10 +725,18 @@ export function QuestsManagerView() {
                 <label className="block space-y-1.5 text-sm font-medium text-slate-800">ข้อกำหนดการใช้สิทธิ์
                   <textarea rows={2} value={draft.terms} onChange={(event) => setDraft({ ...draft, terms: event.target.value })} className="w-full resize-y rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
                 </label>
-                <label className="block space-y-1.5 text-sm font-medium text-slate-800">รูปภาพปก (ไม่บังคับ)
-                  <input value={draft.image} onChange={(event) => setDraft({ ...draft, image: event.target.value })} placeholder="https://..." className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
-                </label>
+                <div className="space-y-1.5 text-sm font-medium text-slate-800">
+                  <label htmlFor="quest-cover">รูปภาพปก (ไม่บังคับ)</label>
+                  <ImageField id="quest-cover" value={draft.image} onChange={(url) => setDraft({ ...draft, image: url })} folder="quests" />
+                </div>
               </fieldset>
+              {/* The row as members will see it on /challenges (tapping it does nothing here) */}
+              <section aria-label="ตัวอย่างบนหน้าชาเลนจ์" className="space-y-2 border-t border-slate-200 pt-4">
+                <p className="text-sm font-bold text-slate-900">ตัวอย่างบนหน้าชาเลนจ์</p>
+                <div className="pointer-events-none" aria-hidden="true">
+                  <ChallengeList quests={[previewQuest(draft)]} joinedIds={[]} progress={[]} />
+                </div>
+              </section>
               {error && <p role="alert" className="text-sm text-rose-700">{error}</p>}
               <div className="flex justify-end gap-2 border-t border-slate-200 pt-4">
                 <button type="button" onClick={() => setIsDialogOpen(false)} className="h-10 rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">ยกเลิก</button>
