@@ -10,7 +10,7 @@ import { CreateEventModal } from '@/components/CreateEventModal';
 import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import { useAuth } from '@/lib/useAuth';
 import { VisitPanel } from '@/components/VisitPanel';
-import { useMyActivity } from '@/lib/useMyActivity';
+import { activityActions, useMyActivity } from '@/lib/useMyActivity';
 import { GroupChatModal } from '@/components/GroupChatModal';
 import {
   getEventById,
@@ -67,9 +67,7 @@ import {
   Plus,
   Compass,
   CalendarPlus,
-  Ticket,
-  CheckCircle2,
-  MessageCircle
+  Ticket
 } from 'lucide-react';
 
 // Helper to strip rogue emojis for clean, editorial typography
@@ -99,7 +97,6 @@ export default function FairDetailPage() {
   const [pendingAction, setPendingAction] = useState<string | null>(null);
 
   // Favorites state
-  const [favorites, setFavorites] = useState<string[]>([]);
   const [isCopied, setIsCopied] = useState(false);
   const [isSavedToCalendar, setIsSavedToCalendar] = useState(false);
 
@@ -151,6 +148,7 @@ export default function FairDetailPage() {
 
   // Groups reload when the member signs in or out; what the member joined comes from the account
   const myActivity = useMyActivity();
+  const favorites = isLoggedIn ? myActivity.savedEventIds : [];
   useEffect(() => {
     void groupRequest('GET');
     // eslint-disable-next-line react-hooks/exhaustive-deps -- groupRequest only depends on the fair id
@@ -203,22 +201,6 @@ export default function FairDetailPage() {
     return parseEventPrice(eventData?.price, 'เข้าชมฟรี');
   }, [eventData?.price]);
 
-  // Favorites from localStorage (Only active when logged in)
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    if (!isLoggedIn) {
-      setFavorites([]);
-      return;
-    }
-
-    const savedFavs = localStorage.getItem('favorite_events');
-    if (savedFavs) {
-      try {
-        setFavorites(JSON.parse(savedFavs));
-      } catch {}
-    }
-  }, [isLoggedIn]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -232,21 +214,31 @@ export default function FairDetailPage() {
       setIsRequireMembershipOpen(true);
       return;
     }
-    setFavorites((prev) => {
-      const isFav = prev.includes(eventId);
-      let updated: string[];
-      if (isFav) {
-        updated = prev.filter((id) => id !== eventId);
-        showToast('ลบออกจากรายการบันทึกแล้ว');
-      } else {
-        updated = [...prev, eventId];
-        const isTargetEnded = eventId === eventData?.id ? isEnded : false;
-        showToast(isTargetEnded ? 'เพิ่มเข้าคลังเพื่อติดตามรอบถัดไปเรียบร้อย' : 'บันทึกงานแฟร์นี้ใน MyHub เรียบร้อย');
-      }
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('favorite_events', JSON.stringify(updated));
-      }
-      return updated;
+    // Hearts are saved on the account, the same list My Hub shows under "งานที่บันทึกไว้"
+    const wasSaved = favorites.includes(eventId);
+    void activityActions.setSaved('event', eventId, !wasSaved).then((ok) => {
+      if (!ok) return showToast('บันทึกไม่สำเร็จ ลองอีกครั้งนะ');
+      const isTargetEnded = eventId === eventData?.id ? isEnded : false;
+      showToast(wasSaved ? 'ลบออกจากรายการบันทึกแล้ว' : isTargetEnded ? 'เพิ่มเข้าคลังเพื่อติดตามรอบถัดไปเรียบร้อย' : 'บันทึกงานแฟร์นี้ใน MyHub เรียบร้อย');
+    });
+  };
+
+  // "บันทึกงานนี้ลง MyHub": an upcoming fair joins the member's schedule in My Hub (the account's joined list);
+  // a fair that has ended can only be kept to follow its next round, which is a saved event
+  const toggleInHub = () => {
+    if (!eventData) return;
+    if (!isLoggedIn) {
+      setMembershipActionTitle('เพื่อบันทึกงานนี้ลง MyHub');
+      setPendingAction(`hub:${eventData.id}`);
+      setIsRequireMembershipOpen(true);
+      return;
+    }
+    if (isEnded) return toggleFavorite(eventData.id);
+    const id = eventData.id;
+    const wasIn = joinedEventIds.includes(id);
+    void (wasIn ? activityActions.leave(id) : activityActions.join(id)).then((result) => {
+      if (!result.ok) return showToast(result.message);
+      showToast(wasIn ? 'นำออกจาก MyHub แล้ว' : 'บันทึกงานแฟร์นี้ใน MyHub เรียบร้อย');
     });
   };
 
@@ -505,9 +497,9 @@ export default function FairDetailPage() {
     );
   }
 
-  const isFav = favorites.includes(eventData.id);
   const isEnded = isEventEnded(eventData);
-  const isJoined = joinedEventIds.includes(eventData.id) || fairSubActivities.some((sub) => joinedSubIds.includes(sub.id));
+  // In My Hub: on the schedule while the fair is ahead, kept to follow once it has ended
+  const isFav = isEnded ? favorites.includes(eventData.id) : joinedEventIds.includes(eventData.id);
 
   return (
     <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans selection:bg-[#2B527A] selection:text-white">
@@ -552,7 +544,7 @@ export default function FairDetailPage() {
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
-              onClick={() => toggleFavorite(eventData.id)}
+              onClick={toggleInHub}
               className={`inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-2xs border cursor-pointer active:scale-95 ${
                 isFav
                   ? 'bg-sky-50 text-[#2B527A] border-sky-200'
@@ -594,87 +586,6 @@ export default function FairDetailPage() {
           </div>
 
         </div>
-
-        {/* =========================================================================
-            ACTIVE PASS / APPOINTMENT BANNER (For Joined / Saved Fair)
-           ========================================================================= */}
-        {isJoined && (
-          <div className="bg-gradient-to-r from-slate-900 via-[#1F3D5C] to-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-700/60 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-fade-in relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-72 h-72 bg-sky-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
-            
-            <div className="flex items-start sm:items-center gap-3.5 relative z-10 min-w-0">
-              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-sky-500/20 border border-sky-400/30 flex items-center justify-center shrink-0 text-sky-400">
-                <Ticket className="w-5 h-5 stroke-[2.2]" />
-              </div>
-              <div className="space-y-0.5 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[11px] sm:text-xs font-bold tracking-wide px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 inline-flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                    <span>บันทึกกำหนดการใน My Hub แล้ว</span>
-                  </span>
-                </div>
-                <p className="text-sm sm:text-base font-bold text-white tracking-tight truncate">
-                  {eventData.date} • {eventData.time || '10:00 - 21:00 น.'}
-                </p>
-                <p className="text-xs text-slate-300 flex items-center gap-1.5 truncate">
-                  <MapPin className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                  <span className="truncate">{eventData.location}</span>
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 relative z-10 flex-wrap">
-              <button
-                type="button"
-                onClick={() => {
-                  const targetSub = fairSubActivities.find((s) => joinedSubIds.includes(s.id)) || fairSubActivities[0];
-                  if (!targetSub) {
-                    showToast('ยังไม่มีกลุ่มนัดหมายในงานนี้ เปิดกลุ่มแรกได้เลย');
-                    return;
-                  }
-                  setSelectedPassData({
-                    id: targetSub.id,
-                    fairTitle: cleanText(eventData.title),
-                    fairLocation: cleanText(eventData.location),
-                    fairDate: cleanText(eventData.date),
-                    groupTitle: targetSub.title,
-                    meetupPoint: targetSub.meetupPoint,
-                    time: targetSub.time,
-                    creatorName: targetSub.creatorName,
-                    creatorAvatar: targetSub.creatorAvatar,
-                    contactChannel: targetSub.contactChannel,
-                    note: targetSub.note,
-                    currentMembers: targetSub.currentMembers,
-                    maxMembers: targetSub.maxMembers
-                  });
-                  setIsPassModalOpen(true);
-                }}
-                className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer active:scale-95"
-              >
-                <Ticket className="w-3.5 h-3.5" />
-                <span>ดู Expo Pass</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setIsFairBuddyModalOpen(true)}
-                className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white border border-white/15 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer backdrop-blur-md active:scale-95"
-              >
-                <MessageCircle className="w-3.5 h-3.5 text-sky-300" />
-                <span>ชวนเพื่อนเดินงาน</span>
-              </button>
-
-              <Link
-                href="/myhub?tab=fairs"
-                className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-semibold transition-all flex items-center justify-center gap-1 cursor-pointer"
-                title="กลับสู่ My Hub เพื่อดูตารางและงานที่บันทึกไว้"
-              >
-                <span>จัดการใน My Hub</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-          </div>
-        )}
 
         {/* =========================================================================
             EDITORIAL 5-PHOTO MOSAIC GALLERY (Expos & Fairs)
@@ -1174,7 +1085,7 @@ export default function FairDetailPage() {
               <div className="space-y-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => toggleFavorite(eventData.id)}
+                  onClick={toggleInHub}
                   className={`group w-full py-3.5 px-4 rounded-2xl font-black text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer ${
                     isFav
                       ? 'bg-sky-50 text-[#2B527A] border border-sky-300 shadow-sky-900/10 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200'
@@ -1366,6 +1277,8 @@ export default function FairDetailPage() {
           showToast(`ยินดีต้อนรับ ${name}! เข้าสู่ระบบเรียบร้อย`);
           if (pendingAction === 'create_sub_trip') {
             setIsFairBuddyModalOpen(true);
+          } else if (pendingAction && pendingAction.startsWith('hub:')) {
+            toggleInHub();
           } else if (pendingAction && pendingAction.startsWith('favorite:')) {
             const targetId = pendingAction.split(':')[1];
             if (targetId) toggleFavorite(targetId);

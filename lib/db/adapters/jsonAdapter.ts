@@ -360,8 +360,9 @@ export class JsonFileAdapter implements IDataRepository {
       const currentCount = event.participantsCount || 0;
       const maxAllowed = event.maxParticipants || 10;
 
-      // ATOMIC CHECK: Do not allow joining if event is full
-      if (currentCount >= maxAllowed) {
+      // ATOMIC CHECK: Do not allow joining if event is full.
+      // A fair is a public venue: joining only puts it in the member's My Hub, so it has no seats to run out of
+      if (event.eventType !== 'public_venue' && currentCount >= maxAllowed) {
         event.status = 'full';
         return {
           success: false,
@@ -375,7 +376,7 @@ export class JsonFileAdapter implements IDataRepository {
       // Safe to increment
       const newCount = currentCount + 1;
       event.participantsCount = newCount;
-      if (newCount >= maxAllowed) {
+      if (event.eventType !== 'public_venue' && newCount >= maxAllowed) {
         event.status = 'full';
       }
 
