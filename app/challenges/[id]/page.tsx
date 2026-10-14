@@ -300,7 +300,7 @@ export default function ChallengeDetailPage() {
             {!isEnded && quest.daysRemaining !== undefined && (
               <span className={FACT}>
                 <Clock className="w-4 h-4 text-slate-500" aria-hidden="true" />
-                <span className="tabular-nums">เหลือ {quest.daysRemaining} วัน</span>
+                <span className="tabular-nums">{quest.startsInDays ? `เริ่มในอีก ${quest.startsInDays} วัน นับตั้งแต่วันเริ่ม` : `เหลือ ${quest.daysRemaining} วัน`}</span>
               </span>
             )}
             {quest.endDate && (

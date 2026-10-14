@@ -25,19 +25,26 @@ export function parseQuestDate(value: string | undefined, endOfDay: boolean): nu
  * Derives the effective lifecycle from the dates (never persisted):
  * - daysRemaining: whole days left until the end of endDate (0 once ended); undefined without endDate
  * - status: drafts stay drafts; otherwise 'ended' once endDate has passed, else the stored status
+ * - startsInDays: days until startDate while it has not started; absent once it runs
  */
 export function applyQuestLifecycle(quest: ChallengeQuest, now: number = Date.now()): ChallengeQuest {
+  // startsInDays: whole days until startDate while the challenge has not started (visits before it do not count)
+  const { startsInDays: _stored, ...questWithoutStart } = quest;
+  void _stored;
+  const start = parseQuestDate(quest.startDate, false);
+  const startsIn = start !== null && start > now ? { startsInDays: Math.max(1, Math.ceil((start - now) / DAY_MS)) } : {};
+
   const end = parseQuestDate(quest.endDate, true);
   if (end === null) {
-    const { daysRemaining: _ignored, ...rest } = quest;
+    const { daysRemaining: _ignored, ...rest } = questWithoutStart;
     void _ignored;
-    return { ...rest, status: quest.status ?? 'active' };
+    return { ...rest, ...startsIn, status: quest.status ?? 'active' };
   }
 
   const hasEnded = end < now;
   const daysRemaining = hasEnded ? 0 : Math.max(0, Math.ceil((end - now) / DAY_MS));
   const status = quest.status === 'draft' ? 'draft' : hasEnded ? 'ended' : quest.status ?? 'active';
-  return { ...quest, daysRemaining, status };
+  return { ...questWithoutStart, ...startsIn, daysRemaining, status };
 }
 
 /** Validation helper for admin writes: both dates parse and the end is not before the start. */

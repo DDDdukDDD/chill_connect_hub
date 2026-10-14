@@ -1,5 +1,5 @@
 import type { ChallengeQuest, EventItem, QuestRule } from '@/data/mockData';
-import type { LifestyleSpotItem } from '@/data/spotsData';
+import { getSpotVibeCategory, type LifestyleSpotItem } from '@/data/spotsData';
 import { db } from '../db';
 import { parseQuestDate } from '../questLifecycle';
 import { momentRepository } from '../moments';
@@ -25,11 +25,13 @@ interface RuleTarget {
   title: string;
   category?: string;
   province?: string;
+  /** A place's vibe as grouped on /spots */
+  vibe?: string;
 }
 
 export const eventTargetType = (event: EventItem): VisitTargetType => (event.eventType === 'public_venue' ? 'fair' : 'community');
 
-const spotTarget = (spot: LifestyleSpotItem): RuleTarget => ({ targetType: 'spot', id: spot.id, title: spot.title, category: spot.category, province: spot.province });
+const spotTarget = (spot: LifestyleSpotItem): RuleTarget => ({ targetType: 'spot', id: spot.id, title: spot.title, category: spot.category, province: spot.province, vibe: getSpotVibeCategory(spot) });
 const eventTarget = (event: EventItem): RuleTarget => ({ targetType: eventTargetType(event), id: event.id, title: event.title, category: event.category, province: event.province });
 
 export async function loadRuleTarget(targetType: VisitTargetType, targetId: string): Promise<RuleTarget | null> {
@@ -60,6 +62,7 @@ export function parseQuestRule(input: unknown): QuestRule | null {
     categories: stringList(raw.categories),
     provinces: stringList(raw.provinces),
     keywords: stringList(raw.keywords),
+    vibes: stringList(raw.vibes),
     targetIds: stringList(raw.targetIds),
     minEvidence: EVIDENCES.includes(raw.minEvidence as VisitEvidence) ? (raw.minEvidence as VisitEvidence) : undefined,
   };
@@ -80,6 +83,7 @@ export function ruleMatchesTarget(rule: QuestRule, target: RuleTarget): boolean 
   if (rule.targetIds && !rule.targetIds.includes(target.id)) return false;
   if (rule.categories && !rule.categories.includes(target.category ?? '')) return false;
   if (rule.provinces && !rule.provinces.includes(target.province ?? '')) return false;
+  if (rule.vibes && !rule.vibes.includes(target.vibe ?? '')) return false;
   if (rule.keywords && !rule.keywords.some((word) => target.title.toLowerCase().includes(word.toLowerCase()))) return false;
   return true;
 }

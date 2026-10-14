@@ -148,6 +148,8 @@ export interface QuestRule {
   provinces?: string[];
   /** Any of these words in the title */
   keywords?: string[];
+  /** Only places of these vibes (spotVibes ids such as 'mountain_mist', as grouped on /spots) */
+  vibes?: string[];
   /** Only these places or events */
   targetIds?: string[];
   /** Weakest evidence that counts: 'marked' (default), 'moment' (a photo) or 'checkin' (the host's check-in) */
@@ -183,6 +185,8 @@ export interface ChallengeQuest {
   endDate?: string;
   /** Computed by the server from endDate on every read; stored values are ignored */
   daysRemaining?: number;
+  /** Whole days until startDate while the challenge has not started (derived, never stored); absent once it runs */
+  startsInDays?: number;
   /** 'ended' is also derived by the server once endDate has passed */
   status?: 'draft' | 'active' | 'ended';
   image?: string;

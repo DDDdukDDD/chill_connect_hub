@@ -4,7 +4,7 @@ import { getQuestDateError, parseQuestDate } from '@/lib/questLifecycle';
 import { db, CreateQuestDTO, UpdateQuestDTO } from '@/lib/db';
 import { getAdminActor, requireAdminApiAccess } from '@/lib/adminApiAuth';
 import { recordAudit } from '@/lib/auditLog';
-import { parseQuestRule } from '@/lib/social/questProgress';
+import { parseQuestRule, targetsOfQuest } from '@/lib/social/questProgress';
 import { findVoucherByCode, markVoucherUsed } from '@/lib/social/questVouchers';
 import { memberRepository } from '@/lib/members';
 import { getMasterData } from '@/lib/masterDataStore';
@@ -185,6 +185,15 @@ export async function POST(request: Request) {
   try {
     const body: unknown = await request.json();
     if (!isRecord(body)) return NextResponse.json({ success: false, error: 'Invalid request body' }, { status: 400 });
+
+    // While a challenge is written: how many places or events its rule would count, and a few of them, so staff
+    // see a rule nobody can finish (too few matches) before saving it
+    if (body.action === 'preview_rule') {
+      const rule = parseQuestRule(body.rule);
+      if (!rule) return NextResponse.json({ success: true, total: 0, targets: [] });
+      const result = await targetsOfQuest({ rule } as ChallengeQuest, null, 5);
+      return NextResponse.json({ success: true, total: result?.total ?? 0, targets: (result?.targets ?? []).map((t) => ({ title: t.title, detail: t.detail })) });
+    }
 
     if (body.action === 'create') {
       if (!isRecord(body.quest)) return NextResponse.json({ success: false, error: 'Quest data is required' }, { status: 400 });
