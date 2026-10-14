@@ -16,11 +16,12 @@ import {
   Compass, 
   ChevronRight, 
   Search, 
+  List, 
+  LayoutGrid, 
   CheckCircle2, 
   Zap, 
   MapPin, 
   Camera, 
-  Ticket, 
   Filter,
   Medal,
   Clock,
@@ -37,6 +38,9 @@ import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { getQuestBrandReward } from '@/lib/questDisplay';
+import { ChallengeCard } from '@/components/ChallengeCard';
+import { ChallengeList } from '@/components/ChallengeList';
+import { CategoryIconRow, FilterMenu } from '@/components/ChallengeFilters';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { BrandLogo } from '@/components/BrandLogo';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
@@ -58,10 +62,33 @@ export interface QuestWithDuration extends ChallengeQuest {
 
 
 
+type WhenFilter = 'open' | 'running' | 'upcoming' | 'ended';
+// A challenge has ended, has not started yet (visits before its start do not count), or runs now
+const whenOf = (quest: ChallengeQuest): Exclude<WhenFilter, 'open'> =>
+  quest.status === 'ended' || (quest.daysRemaining !== undefined && quest.daysRemaining <= 0) ? 'ended' : quest.startsInDays ? 'upcoming' : 'running';
+
 export default function ChallengesDiscoveryPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('challenges');
-  const [statusFilter, setStatusFilter] = useState<'active' | 'ended'>('active');
+  // Filters folded into pills: when it runs, how it is done, what it gives, and only the member's own
+  const [whenFilter, setWhenFilter] = useState<WhenFilter>('open');
+  const [byFilter, setByFilter] = useState<'all' | 'spot' | 'community' | 'fair'>('all');
+  const [rewardFilter, setRewardFilter] = useState<'all' | 'partner' | 'hub'>('all');
+  const [mineOnly, setMineOnly] = useState(false);
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  // A dated list by default (like the schedule in My Hub); the cards stay one tap away and the choice is remembered
+  const [viewMode, setViewMode] = useState<'list' | 'cards'>('list');
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('cch_challenges_view') === 'cards') setViewMode('cards');
+    } catch {}
+  }, []);
+  const chooseView = (mode: 'list' | 'cards') => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem('cch_challenges_view', mode);
+    } catch {}
+  };
   const [searchQuery, setSearchQuery] = useState('');
   // What a challenge is about; the list of categories is managed in the admin console
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -150,45 +177,53 @@ export default function ChallengesDiscoveryPage() {
     setQuestToCancel(null);
   };
 
-  // Status and type counts
-  const activeQuestsCount = useMemo(
-    () => questList.filter((q) => q.status !== 'ended' && (q.daysRemaining === undefined || q.daysRemaining > 0)).length,
-    [questList]
-  );
-  const endedQuestsCount = useMemo(
-    () => questList.filter((q) => q.status === 'ended' || (q.daysRemaining !== undefined && q.daysRemaining <= 0)).length,
-    [questList]
-  );
+  // How many challenges each choice of "ช่วงเวลา" holds
+  const whenCounts = useMemo(() => {
+    const counts = { open: 0, running: 0, upcoming: 0, ended: 0 };
+    for (const quest of questList) {
+      const when = whenOf(quest);
+      counts[when] += 1;
+      if (when !== 'ended') counts.open += 1;
+    }
+    return counts;
+  }, [questList]);
 
-  const relevantQuestsByStatus = useMemo(() => {
-    return questList.filter((q) => {
-      const isEnded = q.status === 'ended' || (q.daysRemaining !== undefined && q.daysRemaining <= 0);
-      return statusFilter === 'active' ? !isEnded : isEnded;
+  // Everything but the topic and the search: the topic row counts from this
+  const relevantQuests = useMemo(() => {
+    return questList.filter((quest) => {
+      const when = whenOf(quest);
+      if (whenFilter === 'open' ? when === 'ended' : when !== whenFilter) return false;
+      if (byFilter !== 'all' && !quest.rule?.targetTypes.includes(byFilter)) return false;
+      if (rewardFilter !== 'all' && (getQuestBrandReward(quest).type === 'brand_partner') !== (rewardFilter === 'partner')) return false;
+      if (mineOnly && !joinedQuestIds.includes(quest.id)) return false;
+      return true;
     });
-  }, [questList, statusFilter]);
+  }, [questList, whenFilter, byFilter, rewardFilter, mineOnly, joinedQuestIds]);
 
   // Filtered Quests
   const filteredQuests = useMemo(() => {
-    return questList.filter((quest) => {
-      const isQuestEnded = quest.status === 'ended' || (quest.daysRemaining !== undefined && quest.daysRemaining <= 0);
-
-      // Status match (Active vs Ended)
-      if (statusFilter === 'active' && isQuestEnded) return false;
-      if (statusFilter === 'ended' && !isQuestEnded) return false;
-
-      const reward = getQuestBrandReward(quest);
-
+    return relevantQuests.filter((quest) => {
       if (selectedCategory && quest.category !== selectedCategory) return false;
-
       // Search query match
       if (searchQuery.trim() !== '') {
+        const reward = getQuestBrandReward(quest);
         const q = searchQuery.toLowerCase();
         const text = `${quest.title} ${quest.targetGoal} ${quest.badgeLabel} ${quest.creatorName} ${reward.partnerName} ${reward.title}`.toLowerCase();
         if (!text.includes(q)) return false;
       }
       return true;
     });
-  }, [questList, statusFilter, selectedCategory, searchQuery]);
+  }, [relevantQuests, selectedCategory, searchQuery]);
+  const isFiltered = whenFilter !== 'open' || byFilter !== 'all' || rewardFilter !== 'all' || mineOnly || selectedCategory !== null;
+  const clearFilters = () => {
+    setWhenFilter('open');
+    setByFilter('all');
+    setRewardFilter('all');
+    setMineOnly(false);
+    setSelectedCategory(null);
+    setSearchQuery('');
+    setCurrentPage(1);
+  };
 
   // Pagination calculation
   const totalPages = Math.ceil(filteredQuests.length / itemsPerPage);
@@ -256,65 +291,130 @@ export default function ChallengesDiscoveryPage() {
           </div>
         </header>
 
-        {/* 2. Choosing: the category, open or ended, and a search, in one row on a desktop */}
+        {/* 2. Choosing: topics as a row of icons, then the other filters folded into pills, the view and a search */}
         <section className="space-y-4 sm:space-y-5">
-          <div className="flex flex-col lg:flex-row lg:items-center gap-2.5 lg:gap-4">
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 min-w-0 lg:flex-1" role="group" aria-label="หมวดของชาเลนจ์">
-              {[{ id: null as string | null, name: 'ทุกหมวด' }, ...questCategories.filter((category) => relevantQuestsByStatus.some((quest) => quest.category === category.id))].map((category) => {
-                const selected = selectedCategory === category.id;
-                return (
-                  <button
-                    key={category.id ?? 'all'}
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() => {
-                      setSelectedCategory(category.id);
-                      setCurrentPage(1);
-                    }}
-                    className={`inline-flex items-center min-h-9 px-3.5 rounded-full border text-sm font-bold whitespace-nowrap transition-colors cursor-pointer shrink-0 ${
-                      selected ? 'bg-[#F5F3FF] border-[#7C3AED] text-[#5B21B6]' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
-                    }`}
-                  >
-                    {category.name}
-                  </button>
-                );
-              })}
-            </div>
+          <div className="space-y-3">
+            <CategoryIconRow
+              topics={[
+                { id: 'all', name: 'ทั้งหมด', count: relevantQuests.length },
+                ...questCategories
+                  .map((category) => ({ id: category.id, name: category.name, count: relevantQuests.filter((quest) => quest.category === category.id).length }))
+                  .filter((topic) => topic.count > 0 || topic.id === selectedCategory),
+              ]}
+              selected={selectedCategory ?? 'all'}
+              onSelect={(id) => {
+                setSelectedCategory(id === 'all' ? null : id);
+                setCurrentPage(1);
+              }}
+            />
 
-            <div className="flex items-center gap-2 shrink-0">
-              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-full shrink-0" role="group" aria-label="สถานะของชาเลนจ์">
-                {([['active', 'เปิดอยู่', activeQuestsCount], ['ended', 'จบไปแล้ว', endedQuestsCount]] as const).map(([value, label, count]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    aria-pressed={statusFilter === value}
-                    onClick={() => {
-                      setStatusFilter(value);
-                      setSelectedCategory(null);
-                      setCurrentPage(1);
-                    }}
-                    className={`min-h-8 px-3 rounded-full text-xs sm:text-sm font-bold whitespace-nowrap transition-colors cursor-pointer ${
-                      statusFilter === value ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    {label} <span className="tabular-nums">{count}</span>
-                  </button>
-                ))}
-              </div>
-              <label className="relative flex-1 lg:flex-none lg:w-52 min-w-0">
-                <span className="sr-only">ค้นหาชาเลนจ์</span>
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" aria-hidden="true" />
-                <input
-                  type="search"
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
+            <div className="flex flex-wrap items-center gap-2">
+              <FilterMenu
+                id="when"
+                label="ช่วงเวลา"
+                value={whenFilter}
+                defaultValue="open"
+                options={[
+                  { value: 'open', label: 'เปิดอยู่ทั้งหมด', count: whenCounts.open },
+                  { value: 'running', label: 'ทำได้เลยตอนนี้', count: whenCounts.running },
+                  { value: 'upcoming', label: 'เริ่มเร็วๆ นี้', count: whenCounts.upcoming },
+                  { value: 'ended', label: 'จบไปแล้ว', count: whenCounts.ended },
+                ]}
+                openId={openMenu}
+                setOpenId={setOpenMenu}
+                onChange={(value) => {
+                  setWhenFilter(value);
+                  setCurrentPage(1);
+                }}
+              />
+              <FilterMenu
+                id="by"
+                label="ทำอย่างไร"
+                value={byFilter}
+                defaultValue="all"
+                options={[
+                  { value: 'all', label: 'ทุกแบบ' },
+                  { value: 'spot', label: 'ไปที่เที่ยว' },
+                  { value: 'community', label: 'ร่วมตี้' },
+                  { value: 'fair', label: 'ไปงานแฟร์' },
+                ]}
+                openId={openMenu}
+                setOpenId={setOpenMenu}
+                onChange={(value) => {
+                  setByFilter(value);
+                  setCurrentPage(1);
+                }}
+              />
+              <FilterMenu
+                id="reward"
+                label="ของรางวัล"
+                value={rewardFilter}
+                defaultValue="all"
+                options={[
+                  { value: 'all', label: 'ทุกแบบ' },
+                  { value: 'partner', label: 'ของรางวัลจากร้านหรือแบรนด์' },
+                  { value: 'hub', label: 'XP และเหรียญจาก Hub' },
+                ]}
+                openId={openMenu}
+                setOpenId={setOpenMenu}
+                onChange={(value) => {
+                  setRewardFilter(value);
+                  setCurrentPage(1);
+                }}
+              />
+              {isLoggedIn && (
+                <button
+                  type="button"
+                  aria-pressed={mineOnly}
+                  onClick={() => {
+                    setMineOnly(!mineOnly);
                     setCurrentPage(1);
                   }}
-                  placeholder="ค้นหา"
-                  className="w-full min-h-10 pl-9 pr-3 text-sm font-medium bg-white rounded-full border border-slate-300 focus:outline-hidden focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20"
-                />
-              </label>
+                  className={`inline-flex items-center min-h-9 px-3.5 rounded-full border text-sm font-bold whitespace-nowrap transition-colors cursor-pointer ${
+                    mineOnly ? 'bg-[#F5F3FF] border-[#7C3AED] text-[#5B21B6]' : 'bg-white border-slate-300 text-slate-800 hover:border-slate-400'
+                  }`}
+                >
+                  ที่ฉันทำอยู่
+                </button>
+              )}
+              {isFiltered && (
+                <button type="button" onClick={clearFilters} className="min-h-9 px-2 text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap">
+                  ล้างตัวกรอง
+                </button>
+              )}
+
+              <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-auto">
+                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-full shrink-0" role="group" aria-label="วิธีดู">
+                  {([['list', 'รายการ', List], ['cards', 'การ์ด', LayoutGrid]] as const).map(([value, label, Icon]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      aria-pressed={viewMode === value}
+                      onClick={() => chooseView(value)}
+                      className={`inline-flex items-center gap-1 min-h-8 px-3 rounded-full text-xs sm:text-sm font-bold whitespace-nowrap transition-colors cursor-pointer ${
+                        viewMode === value ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" aria-hidden="true" />
+                      <span className="hidden sm:inline">{label}</span>
+                    </button>
+                  ))}
+                </div>
+                <label className="relative flex-1 sm:flex-none sm:w-52 min-w-0">
+                  <span className="sr-only">ค้นหาชาเลนจ์</span>
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" aria-hidden="true" />
+                  <input
+                    type="search"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    placeholder="ค้นหา"
+                    className="w-full min-h-10 pl-9 pr-3 text-sm font-medium bg-white rounded-full border border-slate-300 focus:outline-hidden focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20"
+                  />
+                </label>
+              </div>
             </div>
           </div>
 
@@ -347,144 +447,25 @@ export default function ChallengesDiscoveryPage() {
                   </button>
                 </div>
               ) : (
+                viewMode === 'list' ? (
+                  <ChallengeList
+                    quests={filteredQuests}
+                    joinedIds={joinedQuestIds}
+                    progress={myRewards.quests}
+                    onBrowseAllSoon={() => {
+                      setWhenFilter('upcoming');
+                      setCurrentPage(1);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                  />
+                ) : (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {paginatedQuests.map((quest) => {
                     const isEnded = quest.status === 'ended' || (quest.daysRemaining !== undefined && quest.daysRemaining <= 0);
                     const isJoined = joinedQuestIds.includes(quest.id);
-                    const isUrgent = !isEnded && quest.daysRemaining <= 5;
-                    const brandReward = getQuestBrandReward(quest);
-                    const isPartner = brandReward.type === 'brand_partner';
                     const mine = isJoined && !isEnded ? myRewards.quests.find((progress) => progress.questId === quest.id) : undefined;
-
-                    return (
-                      // The challenge card keeps its own look, unlike the place and event cards: a violet stripe, the owner
-                      // and XP pills, an inset photo with the reward strip, and a footer with the one action.
-                      <article
-                        key={quest.id}
-                        onClick={() => router.push(`/challenges/${encodeURIComponent(quest.id)}`)}
-                        className={`group/card relative flex flex-col gap-2 rounded-2xl border p-3.5 sm:p-4 overflow-hidden cursor-pointer transition-all duration-200 ${
-                          isEnded
-                            ? 'bg-slate-50 border-slate-200'
-                            : isJoined
-                              ? 'bg-white border-[#7C3AED] hover:shadow-sm'
-                              : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-sm'
-                        }`}
-                      >
-                        <div className={`absolute top-0 inset-x-0 h-1 ${isEnded ? 'bg-slate-300' : 'bg-[#7C3AED]'}`} aria-hidden="true" />
-
-                        {/* Who runs it (quiet), and the XP it gives (the one loud thing on the card) */}
-                        <div className="flex items-center justify-between gap-2 pt-1">
-                          <span
-                            title={isPartner ? brandReward.partnerName : 'Chill & Connect Hub'}
-                            className="inline-flex items-center gap-1.5 min-w-0 px-2.5 py-1 rounded-full bg-white border border-slate-200 text-xs font-bold text-slate-700"
-                          >
-                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isEnded ? 'bg-slate-400' : isPartner ? 'bg-amber-500' : 'bg-[#7C3AED]'}`} aria-hidden="true" />
-                            <span className="truncate">{isPartner ? brandReward.partnerName : 'Chill & Connect Hub'}</span>
-                          </span>
-                          {isEnded ? (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-200 text-xs font-extrabold text-slate-600 whitespace-nowrap shrink-0">จบแล้ว</span>
-                          ) : quest.rule ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#7C3AED] text-xs font-extrabold text-white whitespace-nowrap shrink-0 tabular-nums">
-                              <Zap className="w-3.5 h-3.5" aria-hidden="true" />
-                              +{(quest.rewardPoints ?? 0).toLocaleString()} XP
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-100 text-xs font-extrabold text-slate-600 whitespace-nowrap shrink-0">บันทึกเอง</span>
-                          )}
-                        </div>
-
-                        {/* The photo carries what you get, as a strip on its lower edge: every challenge has a reward, so every card has the strip */}
-                        <div className="relative aspect-[2/1] rounded-2xl overflow-hidden bg-slate-100">
-                          <img
-                            src={quest.image || 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80'}
-                            alt=""
-                            loading="lazy"
-                            className={`w-full h-full object-cover transition-transform duration-500 ${isEnded ? 'grayscale opacity-80' : 'group-hover/card:scale-105'}`}
-                          />
-                          <p
-                            title={brandReward.title}
-                            className={`absolute inset-x-0 bottom-0 flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-bold min-w-0 ${
-                              isEnded ? 'bg-slate-100 text-slate-600' : isPartner ? 'bg-amber-100 text-amber-900' : 'bg-[#F5F3FF] text-[#5B21B6]'
-                            }`}
-                          >
-                            {isPartner && <Ticket className="w-4 h-4 shrink-0" aria-hidden="true" />}
-                            <span className="truncate">{brandReward.title}</span>
-                          </p>
-                        </div>
-
-                        {/* Title, then what to do in one line */}
-                        <div className="space-y-1.5">
-                          <h3 title={quest.title} className={`text-sm sm:text-base font-extrabold leading-snug line-clamp-2 sm:min-h-[2.75rem] ${isEnded ? 'text-slate-700' : 'text-slate-900'}`}>
-                            {quest.title}
-                          </h3>
-                          <p title={quest.targetGoal} className="text-xs sm:text-sm font-medium text-slate-600 leading-snug line-clamp-1">
-                            {quest.targetGoal}
-                          </p>
-                        </div>
-
-                        {/* The member's own progress, from the account */}
-                        {isJoined && !isEnded && (
-                          mine ? (
-                            <div className="space-y-1">
-                              <div className="flex items-center justify-between text-xs font-bold text-[#5B21B6]">
-                                <span>{mine.completed ? 'ทำครบแล้ว เก่งมาก' : 'ความคืบหน้าของคุณ'}</span>
-                                <span className="tabular-nums">{mine.current}/{mine.total}</span>
-                              </div>
-                              <div className="h-1.5 rounded-full bg-[#F5F3FF] overflow-hidden">
-                                <div className="h-full rounded-full bg-[#7C3AED] transition-all" style={{ width: `${Math.round((mine.current / mine.total) * 100)}%` }} />
-                              </div>
-                            </div>
-                          ) : (
-                            <p className="text-xs font-bold text-[#5B21B6]">ร่วมอยู่ บันทึกความคืบหน้าเองได้</p>
-                          )
-                        )}
-
-                        {/* One bottom row: how long is left and how many joined, beside the one action. The dates are on the challenge page.
-                            The buttons look 36px tall to keep the card short; a hidden edge keeps the 40px touch target */}
-                        <div className="mt-auto">
-                          <div className="pt-2.5 border-t border-slate-200 flex items-center justify-between gap-2">
-                            <span className="text-xs font-medium text-slate-500 truncate min-w-0 tabular-nums">
-                              {isEnded ? (
-                                `จบเมื่อ ${quest.endDate}`
-                              ) : (
-                                <>
-                                  <span className={isUrgent ? 'font-bold text-rose-700' : ''}>เหลือ {quest.daysRemaining} วัน</span>
-                                  {quest.participantsCount ? ` · ${quest.participantsCount.toLocaleString()} คนร่วมทำ` : ''}
-                                </>
-                              )}
-                            </span>
-                            <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                              {isEnded ? (
-                                <span className="inline-flex items-center min-h-9 px-4 rounded-full bg-slate-100 text-slate-700 text-sm font-bold whitespace-nowrap">ดูย้อนหลัง</span>
-                              ) : mine?.completed ? (
-                                // Finished: the one thing left is the reward, so there is nothing to leave
-                                <Link
-                                  href={`/challenges/${encodeURIComponent(quest.id)}`}
-                                  className="relative before:absolute before:inset-x-0 before:-inset-y-0.5 before:content-[''] inline-flex items-center min-h-9 px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold whitespace-nowrap transition-colors cursor-pointer"
-                                >
-                                  ดูรางวัล
-                                </Link>
-                              ) : isJoined ? (
-                                  <Link
-                                    href={`/challenges/${encodeURIComponent(quest.id)}`}
-                                    className="relative before:absolute before:inset-x-0 before:-inset-y-0.5 before:content-[''] inline-flex items-center min-h-9 px-4 rounded-full bg-[#F5F3FF] hover:bg-purple-100 border border-purple-200 text-[#5B21B6] text-sm font-bold whitespace-nowrap transition-colors cursor-pointer"
-                                  >
-                                    กำลังทำอยู่
-                                  </Link>
-                              ) : (
-                                <Link
-                                  href={`/challenges/${encodeURIComponent(quest.id)}`}
-                                  className="relative before:absolute before:inset-x-0 before:-inset-y-0.5 before:content-[''] inline-flex items-center justify-center min-h-9 px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold whitespace-nowrap transition-colors cursor-pointer"
-                                >
-                                  ดูชาเลนจ์
-                                </Link>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </article>
-                    );
+                    return <ChallengeCard key={quest.id} quest={quest} isJoined={isJoined} mine={mine} />;
                   })}
                 </div>
 
@@ -503,6 +484,7 @@ export default function ChallengesDiscoveryPage() {
                   </div>
                 )}
               </>
+                )
             )}
           </div>
 
