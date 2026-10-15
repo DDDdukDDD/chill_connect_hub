@@ -227,6 +227,12 @@ export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, on
     });
   };
 
+  const tryDemo = () =>
+    void run(async () => {
+      const member = await session.loginDemo();
+      onAuthenticated(member, { isNew: false });
+    });
+
   const handleSignup = (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
@@ -318,6 +324,17 @@ export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, on
       {view === 'login' && (
         <div>
           {header('เข้าสู่ระบบ', 'ยินดีต้อนรับกลับสู่ Chill & Connect Hub')}
+          {/* PROTOTYPE ONLY: shown while the server has DEMO_LOGIN=on (lib/members/demoLogin.ts) */}
+          {session.demoLogin && (
+            <div className="mb-5 rounded-2xl border border-dashed border-amber-300 bg-amber-50 p-3 text-center">
+              <p className="text-xs font-bold text-amber-800">ช่วงทดลองระบบ</p>
+              <button type="button" onClick={tryDemo} disabled={busy} className={`${primaryButton} mt-2`}>
+                {busy && <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />}
+                <span>ลองใช้เลย ไม่ต้องสมัคร</span>
+              </button>
+              <p className="mt-2 text-xs font-medium text-amber-800/80">ใช้บัญชีทดลองร่วมกัน ข้อมูลอาจหายได้</p>
+            </div>
+          )}
           <SocialButtons verb="เข้าสู่ระบบ" available={session.providers} disabled={busy} onPick={social} />
           <Divider label="หรือใช้อีเมล" />
           <form onSubmit={handleLogin} noValidate className="space-y-4">
