@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Plus, MapPin } from 'lucide-react';
+import { Plus, MapPin, Heart } from 'lucide-react';
 import type { EventItem } from '@/data/mockData';
 import { parseEventDateToTimestamp } from '@/lib/dateUtils';
 
@@ -12,7 +12,8 @@ const FACES_SHOWN = 3;
 const FACE_COLORS = ['bg-violet-500', 'bg-cyan-600', 'bg-pink-500', 'bg-orange-500', 'bg-emerald-600', 'bg-blue-600'];
 const WEEKDAYS = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
 const DAY_MS = 24 * 60 * 60 * 1000;
-const TILE = 'w-[68%] shrink-0 snap-start sm:w-auto';
+// Same widths as ChallengePicks, so the homepage photo rows line up
+const TILE = 'w-[44%] sm:w-[30%] md:w-[23%] lg:w-[calc((100%-5*24px)/6)] shrink-0 snap-start';
 
 // "วันนี้", "เสาร์นี้" for the coming days, then the short day itself
 function dayLabel(event: EventItem, now: Date) {
@@ -53,7 +54,7 @@ function FaceStack({ event }: { event: EventItem }) {
   const people = listed.length === 0 && event.hostName ? [{ id: 'host', name: event.hostName, avatar: event.hostAvatar ?? '' }] : listed;
   const shown = people.slice(0, FACES_SHOWN);
   const more = Math.max(event.participantsCount, people.length) - shown.length;
-  const box = 'w-7 h-7 rounded-full border-2 border-white';
+  const box = 'w-6 h-6 rounded-full border-2 border-white';
 
   return (
     <span className="flex -space-x-2 shrink-0" aria-hidden="true">
@@ -63,31 +64,33 @@ function FaceStack({ event }: { event: EventItem }) {
         ) : (
           <span
             key={p.id}
-            className={`${box} ${FACE_COLORS[[...p.name].reduce((n, c) => n + c.charCodeAt(0), 0) % FACE_COLORS.length]} text-white text-[11px] font-bold flex items-center justify-center`}
+            className={`${box} ${FACE_COLORS[[...p.name].reduce((n, c) => n + c.charCodeAt(0), 0) % FACE_COLORS.length]} text-white text-[10px] font-bold flex items-center justify-center`}
           >
             {[...p.name][0] ?? '?'}
           </span>
         )
       )}
       {more > 0 && (
-        <span className={`${box} bg-white text-slate-800 text-[10px] font-extrabold flex items-center justify-center`}>+{more}</span>
+        <span className={`${box} bg-slate-100 text-slate-700 text-[10px] font-extrabold flex items-center justify-center`}>+{more}</span>
       )}
     </span>
   );
 }
 
 /**
- * "ตี้ที่เปิดรับอยู่" on /journey: tall photo tiles with the day, who is going and the seats left.
- * The last tile invites the member to start their own.
+ * "ตี้แนะนำ เปิดรับอยู่" on the homepage: square photos the size of the challenge picks, with the day and
+ * the seats left on the photo, and the title, place and who is going below it.
+ * The last tile invites the member to start their own. `reasons` (signed-in home) puts why a meetup is
+ * suggested, such as "เพราะคุณชอบสายคาเฟ่", in place of the place.
  */
-export function OpenMeetupTiles({ events, isLoaded, onCreate }: { events: EventItem[]; isLoaded: boolean; onCreate: () => void }) {
-  const row = 'flex overflow-x-auto no-scrollbar snap-x snap-mandatory gap-3 sm:grid sm:overflow-visible sm:grid-cols-3 lg:grid-cols-6 sm:gap-4';
+export function OpenMeetupTiles({ events, isLoaded, onCreate, reasons }: { events: EventItem[]; isLoaded: boolean; onCreate: () => void; reasons?: Record<string, string> }) {
+  const row = 'flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar snap-x -mx-4 px-4 scroll-px-4 sm:mx-0 sm:px-1 sm:scroll-px-1 pt-1 pb-2';
 
   if (!isLoaded) {
     return (
       <div className={row}>
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className={`${TILE} aspect-[3/4] rounded-3xl bg-slate-100`} />
+          <div key={i} className={`${TILE} aspect-square rounded-3xl bg-slate-100`} />
         ))}
       </div>
     );
@@ -97,29 +100,34 @@ export function OpenMeetupTiles({ events, isLoaded, onCreate }: { events: EventI
 
   return (
     <div className={row}>
-      {events.map((event, i) => {
+      {events.map((event) => {
         const startTime = event.time.split('-')[0].trim().replace(/\s*น\.$/, '');
+        const reason = reasons?.[event.id];
         return (
-          <Link
-            key={event.id}
-            href={`/community/${encodeURIComponent(event.id)}`}
-            className={`${TILE} group relative aspect-[3/4] overflow-hidden rounded-3xl bg-slate-200 ${i % 2 ? 'sm:mt-5' : ''}`}
-          >
-            <img src={event.image} alt="" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-            <span className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" aria-hidden="true" />
-            <span className="absolute left-3 top-3 rounded-full bg-white px-2.5 py-1 text-xs font-extrabold text-slate-900 shadow-sm">
-              {dayLabel(event, now)} · {startTime}
+          <Link key={event.id} href={`/community/${encodeURIComponent(event.id)}`} className={`${TILE} group block`}>
+            <span className="relative block aspect-square overflow-hidden rounded-3xl bg-slate-200 shadow-md">
+              <img src={event.image} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+              <span className="absolute left-2.5 top-2.5 rounded-full bg-white px-2.5 py-1 text-xs font-extrabold text-slate-900 shadow-sm">
+                {dayLabel(event, now)} · {startTime}
+              </span>
+              <span className="absolute right-2.5 bottom-2.5 rounded-full bg-[#F26430] px-2.5 py-1 text-[11px] font-extrabold text-white whitespace-nowrap shadow-sm">
+                {seatsLine(event)}
+              </span>
             </span>
-            <span className="absolute inset-x-0 bottom-0 p-3.5 text-white">
-              <span className="block text-base font-black leading-snug line-clamp-2">{event.title}</span>
-              <span className="mt-1 flex items-center gap-1 text-xs font-medium text-white/85 min-w-0">
+            <span className="mt-3 text-sm font-extrabold text-slate-900 leading-snug line-clamp-2 group-hover:underline">{event.title}</span>
+            {reason ? (
+              <span className="mt-1 flex items-center gap-1 text-xs font-bold text-orange-700 min-w-0">
+                <Heart className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                <span className="truncate">{reason}</span>
+              </span>
+            ) : (
+              <span className="mt-1 flex items-center gap-1 text-xs font-bold text-slate-500 min-w-0">
                 <MapPin className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
                 <span className="truncate">{event.location}</span>
               </span>
-              <span className="mt-2.5 flex items-center justify-between gap-2">
-                <FaceStack event={event} />
-                <span className="rounded-full bg-[#F26430] px-2.5 py-1 text-[11px] font-extrabold whitespace-nowrap">{seatsLine(event)}</span>
-              </span>
+            )}
+            <span className="mt-2 block">
+              <FaceStack event={event} />
             </span>
           </Link>
         );
@@ -127,14 +135,14 @@ export function OpenMeetupTiles({ events, isLoaded, onCreate }: { events: EventI
       <button
         type="button"
         onClick={onCreate}
-        className={`${TILE} ${events.length % 2 ? 'sm:mt-5' : ''} group aspect-[3/4] rounded-3xl border-2 border-dashed border-slate-300 hover:border-[#F26430] hover:bg-orange-50/60 flex flex-col items-center justify-center gap-3 p-4 text-center cursor-pointer transition-colors`}
+        className={`${TILE} group self-start aspect-square rounded-3xl border-2 border-dashed border-slate-300 hover:border-[#F26430] hover:bg-orange-50/60 flex flex-col items-center justify-center gap-2.5 p-3 text-center cursor-pointer transition-colors`}
       >
-        <span className="w-12 h-12 rounded-full bg-[#F26430] text-white flex items-center justify-center -rotate-6 group-hover:rotate-0 transition-transform">
-          <Plus className="w-6 h-6" aria-hidden="true" />
+        <span className="w-11 h-11 rounded-full bg-[#F26430] text-white flex items-center justify-center -rotate-6 group-hover:rotate-0 transition-transform">
+          <Plus className="w-5 h-5" aria-hidden="true" />
         </span>
         <span>
-          <span className="block text-base font-black text-slate-900">ไม่เจอที่ใช่?</span>
-          <span className="block mt-0.5 text-sm font-bold text-slate-600">ตั้งตี้เองเลย แล้วรอเพื่อนๆ มาร่วม</span>
+          <span className="block text-sm font-black text-slate-900">ไม่เจอที่ใช่?</span>
+          <span className="block mt-0.5 text-xs font-bold text-slate-600">ตั้งตี้เองเลย แล้วรอเพื่อนๆ มาร่วม</span>
         </span>
       </button>
     </div>
