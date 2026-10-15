@@ -207,7 +207,7 @@ The server decides who is signed in through an httpOnly cookie (`cch_member_sess
 | `GET /api/auth/member/profile` | — | My own profile: `{ member, details: MemberProfile, preferences, hostApplication, publicView }` (`details` includes hidden fields) |
 | `PATCH /api/auth/member/profile` | `{ displayName?, avatarUrl?, bio?, occupation?, workplace?, education?, hometown?, livingArea?, relationshipStatus?, connectGoal?, hidden?: ProfileFieldKey[] }` | `{ member, details }` · `400` when a not-yet-trusted member puts contact details in a field |
 | `POST /api/auth/member/pledge` | `{ accept: true }` | `{ member }`. Records acceptance of the community pledge |
-| `POST /api/auth/member/verify-email` | — | Sends the verification link again. `{ sent, devVerifyUrl? }` (`devVerifyUrl` only in development without a mailer) · `429` |
+| `POST /api/auth/member/verify-email` | — | Sends the verification link again. `{ sent, devVerifyUrl? }` (`devVerifyUrl` only in development without a mailer) · `429`. With `SKIP_EMAIL_VERIFICATION=true` it verifies the email at once and returns `{ alreadyVerified: true }` |
 | `POST /api/auth/member/verify-email/confirm` | `{ token }` | `{ member }` · `400` invalid or expired (48 hours). The link opens `/verify-email?token=…` |
 | `GET /api/auth/member/host-application` | — | `{ application: HostApplication \| null }` |
 | `POST /api/auth/member/host-application` | `{ kind: host\|venue\|organizer, about (30–600), link? (https) }` | `{ application, member }` · `403` until verified · `400` when one is pending or approved |
@@ -226,6 +226,7 @@ Writes must be same-origin (`403` otherwise).
   - Posting a moment or a comment needs `verified` (`403` with a Thai message that says what is missing).
   - Until `trusted`: 3 moments and 20 comments a day (`429`), and no links, phone numbers or LINE ids in captions, comments or profile fields (`400`).
   - Register returns `verification: { sent, devVerifyUrl? }`; social accounts arrive with a verified email.
+  - **Prototype switch `SKIP_EMAIL_VERIFICATION=true`** (server env, added 2026-10-16): email sign-ups are verified at once and no link is sent, so a deployment without a mailer (Vercel) can join meetups and post. The pledge is still asked. Must be off at launch (docs/LAUNCH_CHECKLIST.md).
   - Badges on a profile come only from these facts. Do not draw a "verified" badge from anything else.
 - **Risk flags** are staff-only: throwaway email, several sign-ups from one place (a one-way hash of the IP is stored, never the address), risky words in a name, post, profile or host application, attempts to post contact details, and reports from members. They never appear in any member-facing response.
 - **Blocking** hides the blocked member's moments from the blocker's feed. `GET /api/moments?author=<memberId>` lists one member's public moments.

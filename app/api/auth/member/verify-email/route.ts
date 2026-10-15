@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { isRateLimited } from '@/lib/rateLimit';
+import { autoVerifyEmail, isEmailVerificationSkipped } from '@/lib/members/safety';
 import { sendVerification } from './send';
 
 // Sends (again) the "confirm your email" link to the signed-in member
@@ -10,6 +11,11 @@ export async function POST(request: Request) {
   if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบ' }, { status: 401 });
   if (member.emailVerified) return NextResponse.json({ success: true, alreadyVerified: true });
   if (!member.email) return NextResponse.json({ success: false, message: 'บัญชีนี้ยังไม่มีอีเมล' }, { status: 400 });
+  // Prototype deployments without a mailer: accounts made before the switch verify with this button
+  if (isEmailVerificationSkipped()) {
+    await autoVerifyEmail(member);
+    return NextResponse.json({ success: true, alreadyVerified: true });
+  }
   if (isRateLimited(`verify-email:${member.id}`, 5, 60 * 60 * 1000)) {
     return NextResponse.json({ success: false, message: 'ขอลิงก์บ่อยเกินไป กรุณาลองใหม่ภายหลัง' }, { status: 429 });
   }
