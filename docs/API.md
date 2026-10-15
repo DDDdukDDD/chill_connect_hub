@@ -284,7 +284,7 @@ Returns active/ended public quests (drafts and private quests hidden).
 
 | Param | Default |
 |---|---|
-| `category` (an id of the master data `questCategories`: `cafe_food` `active_outdoor` `art_learn` `wellness` `social` `travel`, plus any staff added) | — |
+| `category` (an id of the master data `communityCategories` since 2026-10-16: `running_fitness` `wellness_mind` `cafe_social` `boardgames_party` `arts_crafts` `travel_outdoor` `tech_skills` `pets_family`, plus any staff added; older ids are mapped on read, see `LEGACY_QUEST_CATEGORIES`) | — |
 | `q` | — |
 | `page` | `1` |
 | `limit` (1–100) | `12` |
@@ -430,6 +430,8 @@ All writes are `POST` with an `action` field unless noted.
 ## Tickets, host check-in and reviews (added 2026-10-11)
 - `GET /api/events/{id}/ticket` → `{ ticket: { code, joinedAt, checkedInAt, isHost, hasHostCheckIn } }` for the signed-in participant (404 otherwise). `code` is 6 characters (A–Z without I/O, 2–9), unique within the event and created when the member joins. `hasHostCheckIn` is false for official and sample events, which nobody checks in.
 - `GET /api/events/{id}/participants` → `{ event, participants: [{ userId, userName, userAvatar, joinedAt, checkedInAt, isHost }] }` for the member who created the event only (403 otherwise). Ticket codes are never listed.
+- `GET /api/quests/{id}/members` → the same shape as attendees below, for a challenge: who joined it, in join order (added 2026-10-16). `total` is `participantsCount` (sample starting count) plus the listed joins. 404 for an unknown id.
+- `GET /api/events/{id}/attendees` → `{ total, attendees: [{ id, name, avatar, verified, isHost, isMe }] }` for anyone, signed in or not (added 2026-10-16; the owner decided the list is open and members cannot hide from it). Host first, then in join order; people the viewer blocked are left out. `verified` = email verified and pledge accepted. `total` is the event's `participantsCount`, which can be larger than the list for sample events. 404 for fairs (`public_venue`) and unknown ids.
 - `POST /api/events/{id}/participants` `{ action: 'check_in', code }` or `{ action: 'check_in' | 'undo', userId }` → `{ participant }`. Host only; a wrong code is 404.
 - `POST /api/events/{id}/review` `{ rating: 1-5, text? (≤300) }` → 201. One per participant per event. Events with a member host need the host's check-in; other events can be reviewed after they end. The host cannot review their own event. Text follows the same trust rules as a comment.
 - `GET /api/members/{id}` and the own-profile `publicView` include `hostReviews: { count, average, latest: [{ id, rating, text, eventTitle, authorId, authorName, timeAgo }] }`.
@@ -595,11 +597,12 @@ Public; `404` for an unknown or draft challenge. Answer:
 { success, quest,                 // with participantsCount as in the list
   tracked,                        // false: the server cannot count it (no rule); the member only notes progress for themselves
   minEvidence,                    // 'marked' | 'moment' | 'checkin' | null
-  targets: [{ targetType, id, title, image?, detail?, href, visited }],   // up to 6: published places and coming events that match the rule
+  targets: [{ targetType, id, title, image?, detail?, href, visited }],   // up to 6: published places, and events not ended that match the rule and fall inside the challenge period (2026-10-16)
   targetsTotal, browseHref,       // how many match in all, and the list page to see the rest
   mine: null | { joined, current, total, completed, voucherCode,        // the signed-in member
                  finishedAt, memories },                                // finished challenges only (BE-058)
-  next: null | { id, title, image, rewardPoints, rewardTitle } }          // finished challenges only (BE-058)
+  next: null | { id, title, image, rewardPoints, rewardTitle },          // finished challenges only (BE-058)
+  related: [{ id, title, image, rewardPoints, period, startsInDays, participantsCount }] }  // up to 4 open challenges not joined, same category first (2026-10-16)
 ```
 - `visited` marks a place the member already has a counting visit at; those come first. A rule with `targetIds` keeps its order.
 - **Near the member first (BE-058):** after the counted places, places in the province the member gave at sign-up (`preferences.province`) come before the rest.

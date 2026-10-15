@@ -1193,3 +1193,22 @@ New placeholder content in a page must be behind `eventOrigin(...) === 'sample'`
 - **Still sample:** the meetup ticket number is the same placeholder (`CCH-2026-0101`) for every event in the "ถัดไปของคุณ" box.
 - **Action for the other side:** None.
 - **Status:** Open
+
+### BE-066 · Meetup page: who is going, and a phone layout with a bottom bar (owner decisions)
+- **2026-10-16, after comparing our meetup page with Meetup's event page (draft approved by the owner):**
+  - **"ใครจะไปบ้าง" (phones and desktop):** one row under the meeting point and map: host first, 3 people on phones and 5 on wider screens, then an "อีก N คน" tile; "ดูทั้งหมด" opens the full grid. Each person links to their profile. Component `components/EventAttendees.tsx`, data from the new `GET /api/events/{id}/attendees` (see `docs/API.md`). The owner decided the list is open to everyone and members cannot hide from it; only name, photo and a checked badge are shown. Sample events have a count but few join records, so the event's host and gray "สมาชิก" faces fill the gap.
+  - **Phones and tablets (below `lg`) on `/community/[id]`:** a card under the title with date and time, place with a "แผนที่" link, and price; a fixed bottom bar with date, seats left or the member's state, save, share and one main button (ลงทะเบียนเข้าร่วม / ดูตั๋ว / เปิดแชตลูกทีม / disabled when full or ended). The bar replaces the app's bottom menu (`MobileNav`) on this page. Save and share left the top row on these widths; the report flag stays there. The photo tip "(Fullscreen Lightbox)" is hidden on these widths. The sidebar card hides its price, date block and join button there, keeping seats, the cancellation rule and the joined member's ticket, chat and cancel buttons.
+  - **Desktop (`lg` and up):** unchanged apart from "ใครจะไปบ้าง", as the owner asked.
+- **Not done, for later:** the same header, card and bottom bar on `/fairs/[id]` and `/spots/[id]` (the owner kept those for later); the sidebar's "ใกล้เต็มแล้ว! เหลือ 0 ที่" pill also shows when an event is full.
+- **Action for the other side:** None.
+- **Status:** Open
+
+### BE-067 · Challenges: community categories, where to go, who is doing it (owner decisions)
+- **2026-10-16:**
+  - **Categories:** challenges use the eight community categories (master data `communityCategories`), as the owner asked, and `/challenges` shows the same category rail as `/community` (`CommunityCategoryRail`, now with an `allLabelEn` prop: "All Challenges"). Old challenge ids are mapped on read (`LEGACY_QUEST_CATEGORIES` in `data/masterHub.ts`); the admin form, member proposals and validation use `communityCategories`; the old "หมวดชาเลนจ์" list is no longer offered in the admin taxonomy screen. Staff set board games → บอร์ดเกม & ปาร์ตี้, temples and sea of mist → ท่องเที่ยว & เอาต์ดอร์. The old icon row (`CategoryIconRow`) was removed.
+  - **Detail page:** "ที่ที่นับในชาเลนจ์นี้" now shows before joining too, and says plainly when nothing is open in the period yet. Events in it must be still to come and inside the challenge period (they were not filtered before, so a January challenge listed October meetups). Dates read "5 ม.ค. – 28 ก.พ. 70" everywhere (`questDateRange`, `questDay` in `lib/questDisplay.ts`); "เริ่มในอีก N วัน" lost "นับตั้งแต่วันเริ่ม". New "ใครทำอยู่บ้าง" at the end of the main column, the same component as the meetup page (`EventAttendees`, now taking `src` and `title`), from `GET /api/quests/{id}/members`.
+  - **List page:** "กำลังทำ N" no longer counts joined challenges that have not started or have ended.
+  - **Sample data:** the sea-of-mist sample now also needs the `mountain_mist` vibe (75 places instead of 501 that included waterfalls and caves).
+  - **Later the same day (owner):** the challenge detail page has a bottom bar on phones and tablets like the meetup page (XP and period, where the member stands, share, one main button: ร่วมชาเลนจ์นี้ / ดูที่ที่นับ / บันทึกเอง / reward link / disabled when ended), replacing the bottom menu there; and "ชาเลนจ์อื่นที่น่าลอง" at the end (up to 4 from `related` in `GET /api/quests/{id}`). The December fair challenge moved to "ศิลปะ & งานคราฟต์" (its text is about book fairs, craft fairs and Christmas markets). On phones and tablets "ที่ที่นับในชาเลนจ์นี้" sits right after "กติกาและเงื่อนไข" (owner); on a desktop it stays in the right column under the reward (one render function, `placesSection`). The meetup sidebar no longer shows "ใกล้เต็มแล้ว! เหลือ 0 ที่" when full.
+- **Action for the other side:** None.
+- **Status:** Open
