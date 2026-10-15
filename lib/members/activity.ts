@@ -7,6 +7,8 @@ import { MemberAuthError } from './accounts';
 import { guardPosting } from './safety';
 import { memberRepository } from './index';
 import { trustLevel } from './trust';
+import { tidyDisplayName } from '../displayName';
+import { joinersOf } from '../social/questJoins';
 import type { Member } from './types';
 
 /**
@@ -108,6 +110,45 @@ export async function ticketOf(member: Member, eventId: string) {
     /** False for official and sample events: nobody checks tickets there */
     hasHostCheckIn: Boolean(hostOf(event)),
   };
+}
+
+/**
+ * Who is going, for anyone who opens a meetup (owner 2026-10-16: open to everyone, nobody can hide).
+ * Only name, photo and a checked badge leave the server; profile fields stay behind the profile's own rules.
+ * `total` is the event's count, which can be larger than the list for sample events without join records.
+ */
+export async function attendeesOf(eventId: string, viewer: Member | null) {
+  const event = await db.findEventById(eventId);
+  if (!event || event.eventType === 'public_venue') return null;
+  const records = await db.listParticipants(eventId);
+  const attendees = await publicPeople(records.map((p) => ({ userId: p.userId, userName: p.userName, userAvatar: p.userAvatar, joinedAt: p.joinedAt })), viewer, hostOf(event));
+  return { total: Math.max(event.participantsCount ?? 0, attendees.length), attendees };
+}
+
+/** The same open list for a challenge: who joined it (owner 2026-10-16) */
+export async function questMembersOf(questId: string, viewer: Member | null) {
+  const quest = await db.findQuestById(questId);
+  if (!quest) return null;
+  const people = await publicPeople(joinersOf(questId).map((join) => ({ userId: join.memberId, joinedAt: join.joinedAt })), viewer);
+  // Sample challenges carry a starting count on top of real joins, as the list page shows
+  return { total: (quest.participantsCount ?? 0) + people.length, attendees: people };
+}
+
+/** Name, photo and a checked badge of each person; host first, then in the order they joined; people the viewer blocked left out */
+async function publicPeople(records: { userId: string; userName?: string; userAvatar?: string; joinedAt?: string }[], viewer: Member | null, hostId?: string) {
+  const members = await Promise.all(records.map((p) => memberRepository.findById(p.userId)));
+  return records
+    .map((record, i) => ({ record, member: members[i] }))
+    .filter(({ record, member }) => (member || record.userName) && !viewer?.blockedIds?.includes(record.userId))
+    .sort((a, b) => Number(b.record.userId === hostId) - Number(a.record.userId === hostId) || (a.record.joinedAt ?? '').localeCompare(b.record.joinedAt ?? ''))
+    .map(({ record, member }) => ({
+      id: record.userId,
+      name: tidyDisplayName(member?.displayName ?? record.userName ?? '').trim() || record.userName || 'สมาชิก',
+      avatar: member?.avatarUrl ?? record.userAvatar ?? '',
+      verified: Boolean(member?.emailVerified && member.pledgeAcceptedAt),
+      isHost: Boolean(hostId) && record.userId === hostId,
+      isMe: record.userId === viewer?.id,
+    }));
 }
 
 async function requireHost(member: Member, eventId: string) {

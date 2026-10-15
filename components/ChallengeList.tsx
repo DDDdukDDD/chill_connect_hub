@@ -4,25 +4,13 @@ import React, { useRef } from 'react';
 import Link from 'next/link';
 import { CalendarDays, ChevronRight } from 'lucide-react';
 import type { ChallengeQuest } from '@/data/mockData';
-import { getQuestBrandReward } from '@/lib/questDisplay';
+import { getQuestBrandReward, questDateRange } from '@/lib/questDisplay';
 import { parseQuestDate } from '@/lib/questLifecycle';
 import type { QuestProgress } from '@/lib/useMyRewards';
 
 const THAI_MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
-const THAI_MONTHS_SHORT = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80';
 
-/** "1 พ.ย. – 6 ธ.ค. 69", or "1 พ.ย. 69 – 31 ม.ค. 70" across a new year; empty without both dates */
-function dateRange(quest: ChallengeQuest): string {
-  const from = parseQuestDate(quest.startDate, false);
-  const to = parseQuestDate(quest.endDate, true);
-  if (from === null || to === null) return '';
-  const a = new Date(from);
-  const b = new Date(to);
-  const year = (d: Date) => String((d.getFullYear() + 543) % 100).padStart(2, '0');
-  const day = (d: Date) => `${d.getDate()} ${THAI_MONTHS_SHORT[d.getMonth()]}`;
-  return a.getFullYear() === b.getFullYear() ? `${day(a)} – ${day(b)} ${year(b)}` : `${day(a)} ${year(a)} – ${day(b)} ${year(b)}`;
-}
 
 const isEndedQuest = (quest: ChallengeQuest) => quest.status === 'ended' || (quest.daysRemaining !== undefined && quest.daysRemaining <= 0);
 const endTs = (quest: ChallengeQuest) => parseQuestDate(quest.endDate, true) ?? Number.MAX_SAFE_INTEGER;
@@ -41,7 +29,7 @@ function ChallengeRow({ quest, on, isJoined, mine }: RowProps) {
   const reward = getQuestBrandReward(quest);
   const isPartner = reward.type === 'brand_partner';
   const isUrgent = !isEnded && on === 'end' && quest.daysRemaining !== undefined && quest.daysRemaining <= 5;
-  const range = dateRange(quest);
+  const range = questDateRange(quest);
   const when = isEnded
     ? 'จบแล้ว'
     : quest.startsInDays
@@ -159,7 +147,7 @@ function StartingSoonStrip({ quests, joinedIds, onBrowseAll }: { quests: Challen
         {quests.map((quest) => {
           const reward = getQuestBrandReward(quest);
           const isPartner = reward.type === 'brand_partner';
-          const range = dateRange(quest);
+          const range = questDateRange(quest);
           return (
             <Link
               key={quest.id}

@@ -208,7 +208,7 @@ Slim 6px scrollbars with a transparent track and a soft slate thumb are set glob
 
 ### Homepage modes
 
-The homepage has two modes: Classic at `/` (the default) and Journey at `/journey`. The switch lives in the menu drawer only, so the page itself stays uncluttered.
+The homepage is the single page at `/` (the former Journey draft, chosen by the owner on 2026-10-16). `/journey` redirects to `/`; the old Classic page and its menu switch are gone.
 
 ### Trust pills
 

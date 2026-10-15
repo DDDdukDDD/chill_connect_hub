@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-13T12:23:36.679Z",
+  "lastUpdated": "2026-10-15T03:04:49.430Z",
   "spots": [
     {
       "id": "ttd-2164",
@@ -97051,6 +97051,203 @@
   ],
   "quests": [
     {
+      "title": "เพื่อนใหม่ต้นปี: ร่วมตี้ 2 ครั้ง",
+      "badgeLabel": "เพื่อนใหม่ต้นปี",
+      "targetGoal": "ร่วมกิจกรรมคอมมูนิตี้ให้ครบ 2 ครั้ง และให้โฮสต์เช็กอินที่งาน",
+      "category": "social",
+      "iconName": "Zap",
+      "total": "2",
+      "progressPercent": 0,
+      "current": "0",
+      "completedCountInfo": "0/2",
+      "visibility": "public",
+      "status": "active",
+      "creatorName": "Chill & Connect Team",
+      "participantsCount": 0,
+      "rewardPoints": 300,
+      "isOfficial": true,
+      "objective": "ปีใหม่ ลองทำสิ่งใหม่กับคนใหม่ เลือกตี้ที่สนใจ จะเป็นวิ่ง บอร์ดเกม หรือเวิร์กช็อปก็ได้ ไปเจอกันที่จุดนัดตามเวลา แล้วให้โฮสต์เช็กอินให้ที่งาน",
+      "steps": [],
+      "startDate": "2027-01-05",
+      "endDate": "2027-02-28",
+      "image": "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=80",
+      "brandReward": {
+        "type": "hub_central",
+        "title": "สะสม XP แลกของรางวัลที่ชอบ",
+        "partnerName": "Chill & Connect Hub",
+        "terms": "นับเฉพาะกิจกรรมที่จัดระหว่างวันที่ 5 ม.ค. ถึง 28 ก.พ. 2570 และโฮสต์เช็กอินแล้ว"
+      },
+      "rule": {
+        "targetTypes": [
+          "community"
+        ],
+        "count": 2,
+        "minEvidence": "checkin"
+      },
+      "id": "quest-1792000872542"
+    },
+    {
+      "title": "ไหว้พระรับปีใหม่ 5 วัด",
+      "badgeLabel": "สายบุญต้นปี",
+      "targetGoal": "ไปไหว้พระที่วัดในระบบให้ครบ 5 วัด แล้วแชร์โมเมนต์จากแต่ละวัด",
+      "category": "travel_outdoor",
+      "iconName": "Zap",
+      "total": "5",
+      "progressPercent": 0,
+      "current": "0",
+      "completedCountInfo": "0/5",
+      "visibility": "public",
+      "status": "active",
+      "creatorName": "Chill & Connect Team",
+      "participantsCount": 0,
+      "rewardPoints": 350,
+      "isOfficial": true,
+      "objective": "ประเพณีต้นปีที่ทำได้ทั้งคนเดียวและกับครอบครัว เลือกวัดใกล้บ้านหรือวางเส้นทางเที่ยวต่างจังหวัดก็ได้ แต่งกายสุภาพ และเคารพพื้นที่ของวัด",
+      "steps": [],
+      "startDate": "2027-01-01",
+      "endDate": "2027-01-31",
+      "image": "https://images.unsplash.com/photo-1528181304800-259b08848526?auto=format&fit=crop&w=1200&q=80",
+      "brandReward": {
+        "type": "hub_central",
+        "title": "เหรียญสายบุญต้นปี + 350 XP",
+        "partnerName": "Chill & Connect Hub",
+        "terms": "นับเฉพาะโมเมนต์ที่แชร์ระหว่างวันที่ 1 ถึง 31 ม.ค. 2570 หนึ่งวัดนับครั้งเดียว"
+      },
+      "rule": {
+        "targetTypes": [
+          "spot"
+        ],
+        "count": 5,
+        "categories": [
+          "temple"
+        ],
+        "minEvidence": "moment"
+      },
+      "id": "quest-1792000865675"
+    },
+    {
+      "title": "ส่งท้ายปีที่งานแฟร์: ไปงาน 2 งานในเดือนธันวาคม",
+      "badgeLabel": "ขาประจำงานแฟร์",
+      "targetGoal": "ไปงานแฟร์หรืองานนิทรรศการในระบบให้ครบ 2 งาน แล้วแชร์โมเมนต์จากในงาน",
+      "category": "arts_crafts",
+      "iconName": "Zap",
+      "total": "2",
+      "progressPercent": 0,
+      "current": "0",
+      "completedCountInfo": "0/2",
+      "visibility": "public",
+      "status": "active",
+      "creatorName": "Chill & Connect Team",
+      "participantsCount": 0,
+      "rewardPoints": 300,
+      "isOfficial": true,
+      "objective": "เดือนธันวาคมมีทั้งงานหนังสือ งานคราฟต์ และตลาดคริสต์มาส เลือกสองงานที่อยากไป ชวนเพื่อนจากกลุ่มนัดเดินงานในหน้าแฟร์ไปด้วยกันก็ได้",
+      "steps": [],
+      "startDate": "2026-12-01",
+      "endDate": "2026-12-31",
+      "image": "https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=1200&q=80",
+      "brandReward": {
+        "type": "hub_central",
+        "title": "สะสม XP แลกของรางวัลที่ชอบ",
+        "partnerName": "Chill & Connect Hub",
+        "terms": "นับเฉพาะงานที่จัดและแชร์โมเมนต์ระหว่างวันที่ 1 ถึง 31 ธ.ค. 2569"
+      },
+      "rule": {
+        "targetTypes": [
+          "fair"
+        ],
+        "count": 2,
+        "minEvidence": "moment"
+      },
+      "id": "quest-1792000858613"
+    },
+    {
+      "title": "ตลาดนัดสุดสัปดาห์: เดินครบ 3 ตลาด",
+      "badgeLabel": "สายเดินตลาด",
+      "targetGoal": "ไปตลาดนัดหรือตลาดชุมชนที่อยู่ในระบบให้ครบ 3 แห่ง แล้วแชร์โมเมนต์ของกินหรือของที่ได้กลับมา",
+      "category": "cafe_food",
+      "iconName": "Zap",
+      "total": "3",
+      "progressPercent": 0,
+      "current": "0",
+      "completedCountInfo": "0/3",
+      "visibility": "public",
+      "status": "active",
+      "creatorName": "Chill & Connect Team",
+      "participantsCount": 0,
+      "rewardPoints": 250,
+      "isOfficial": true,
+      "objective": "อากาศเย็นลงแล้ว ได้เวลาเดินตลาดแบบไม่เหงื่อท่วม ลองตลาดที่ยังไม่เคยไป ชิมร้านเจ้าประจำของคนในพื้นที่ แล้วเล่าให้เพื่อนฟังว่าร้านไหนห้ามพลาด",
+      "steps": [],
+      "startDate": "2026-11-07",
+      "endDate": "2026-12-06",
+      "image": "https://files.thailandtourismdirectory.go.th/assets/upload/info/attraction/901/2017102311b65127bdcdc9b568005841628de275010322.jpg",
+      "brandReward": {
+        "type": "hub_central",
+        "title": "สะสม XP แลกของรางวัลที่ชอบ",
+        "partnerName": "Chill & Connect Hub",
+        "terms": "นับเฉพาะโมเมนต์ที่แชร์ระหว่างวันที่ 7 พ.ย. ถึง 6 ธ.ค. 2569"
+      },
+      "rule": {
+        "targetTypes": [
+          "spot"
+        ],
+        "count": 3,
+        "categories": [
+          "market"
+        ],
+        "keywords": [
+          "ตลาด"
+        ],
+        "minEvidence": "moment"
+      },
+      "id": "quest-1792000851873"
+    },
+    {
+      "title": "ทะเลหมอกต้นหนาว: ตื่นเช้าไปชมวิว 2 จุด",
+      "badgeLabel": "นักล่าทะเลหมอก",
+      "targetGoal": "ไปจุดชมวิวหรือดอยที่อยู่ในระบบให้ครบ 2 แห่ง แล้วแชร์โมเมนต์พร้อมรูปวิวจากแต่ละที่",
+      "category": "travel_outdoor",
+      "iconName": "Zap",
+      "total": "2",
+      "progressPercent": 0,
+      "current": "0",
+      "completedCountInfo": "0/2",
+      "visibility": "public",
+      "status": "active",
+      "creatorName": "Chill & Connect Team",
+      "participantsCount": 0,
+      "rewardPoints": 400,
+      "isOfficial": true,
+      "objective": "หน้าหนาวคือช่วงเดียวของปีที่ทะเลหมอกขึ้นให้เห็นชัด ชวนเพื่อนตั้งนาฬิกาปลุกตีสี่ ขึ้นไปรอพระอาทิตย์ขึ้นด้วยกัน จะไปดอยใกล้บ้านหรือขับไกลข้ามจังหวัดก็นับเหมือนกัน",
+      "steps": [],
+      "startDate": "2026-11-01",
+      "endDate": "2027-01-31",
+      "image": "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=80",
+      "brandReward": {
+        "type": "hub_central",
+        "title": "เหรียญนักล่าทะเลหมอก + 400 XP",
+        "partnerName": "Chill & Connect Hub",
+        "terms": "นับเฉพาะโมเมนต์ที่แชร์ระหว่างวันที่ 1 พ.ย. 2569 ถึง 31 ม.ค. 2570 หนึ่งสถานที่นับครั้งเดียว",
+        "hubRewardNote": "นำ XP ไปแลกของรางวัลได้ที่ศูนย์ของรางวัล"
+      },
+      "rule": {
+        "targetTypes": [
+          "spot"
+        ],
+        "count": 2,
+        "categories": [
+          "viewpoint",
+          "nature"
+        ],
+        "vibes": [
+          "mountain_mist"
+        ],
+        "minEvidence": "moment"
+      },
+      "id": "quest-1792000844813"
+    },
+    {
       "id": "1",
       "title": "Cafe Hunter 5: ตามรอย 5 คาเฟ่ที่ยังไม่เคยไป",
       "iconName": "Coffee",
@@ -97514,7 +97711,7 @@
       "title": "Board Game Master: เล่นครบ 3 บอร์ดเกมใหม่",
       "badgeCoverImg": "https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?auto=format&fit=crop&w=600&q=80",
       "iconName": "Award",
-      "category": "social",
+      "category": "boardgames_party",
       "badgeLabel": "Game Strategist",
       "badgeIcon": "🎲",
       "completedCountInfo": "0/3 เกม",

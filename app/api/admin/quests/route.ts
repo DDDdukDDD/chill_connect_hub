@@ -11,7 +11,8 @@ import { getMasterData } from '@/lib/masterDataStore';
 
 const QUEST_STATUSES = new Set(['draft', 'active', 'ended']);
 // A challenge's category must be one of the active ones in the master data (admin console → categories)
-const isQuestCategory = (id: string) => getMasterData().questCategories.some((category) => category.active && category.id === id);
+// Challenges use the community categories (owner 2026-10-16)
+const isQuestCategory = (id: string) => getMasterData().communityCategories.some((category) => category.active && category.id === id);
 const MUTABLE_QUEST_FIELDS = new Set<keyof ChallengeQuest>([
   'title', 'iconName', 'progressPercent', 'current', 'total', 'badgeLabel',
   'badgeIcon', 'badgeCoverImg', 'completedCountInfo', 'category', 'visibility',

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { toPublicMember } from '@/lib/members';
 import { MemberAuthError, registerWithEmail } from '@/lib/members/accounts';
-import { applySignupChecks, hashIp } from '@/lib/members/safety';
+import { applySignupChecks, autoVerifyEmail, hashIp, isEmailVerificationSkipped } from '@/lib/members/safety';
 import { getSessionSecret, isSameOrigin, setMemberSessionCookie } from '@/lib/members/session';
 import { sendVerification } from '../verify-email/send';
 import { clientIp, isRateLimited } from '@/lib/rateLimit';
@@ -17,8 +17,10 @@ export async function POST(request: Request) {
   try {
     const created = await registerWithEmail(await request.json());
     // Warning signs for staff (throwaway email, many accounts from one place, risky name); never blocks sign-up
-    const member = await applySignupChecks(created, hashIp(clientIp(request), getSessionSecret() ?? ''));
-    const verification = await sendVerification(request, member);
+    const checked = await applySignupChecks(created, hashIp(clientIp(request), getSessionSecret() ?? ''));
+    // Prototype deployments without a mailer skip the email link (SKIP_EMAIL_VERIFICATION)
+    const member = isEmailVerificationSkipped() ? await autoVerifyEmail(checked) : checked;
+    const verification = member.emailVerified ? { sent: false } : await sendVerification(request, member);
     const response = NextResponse.json({ success: true, member: toPublicMember(member), verification });
     setMemberSessionCookie(response, member);
     return response;

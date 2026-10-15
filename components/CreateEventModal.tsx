@@ -583,7 +583,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
     </Field>
   );
 
-  const { questCategories } = useMasterData();
+  const { communityCategories: questCategories } = useMasterData();
   const questCategoryField = (
     <Field label="หมวด">
       <div className="grid grid-cols-2 gap-2">
@@ -593,7 +593,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
             <button key={item.id} type="button" aria-pressed={selected} onClick={() => set('category', item.id as Category)}
               className={`relative text-left p-3 rounded-2xl border cursor-pointer transition-colors ${selected ? 'border-[#2563EB] ring-1 ring-[#2563EB]' : 'border-slate-300 hover:border-slate-400'}`}>
               <span className="block text-sm font-extrabold text-slate-900 pr-5">{item.name}</span>
-              <span className="block mt-0.5 text-xs font-medium text-slate-500">{item.description}</span>
+              <span className="block mt-0.5 text-xs font-medium text-slate-500">{item.desc}</span>
               {selected && <Check className="absolute top-3 right-3 w-4 h-4 text-[#2563EB]" aria-hidden="true" />}
             </button>
           );

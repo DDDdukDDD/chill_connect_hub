@@ -7,7 +7,9 @@ import {
   MasterCategory, MasterCollection, MasterData, MasterEntry, MasterFeaturedGroup, MasterProvince, MasterVenue,
   MasterZone, REGIONS, slugifyId, VENUE_TAGS,
 } from './masterData';
-import { LEGACY_QUEST_CATEGORIES, MASTER_77_PROVINCES } from '@/data/masterHub';
+import { MASTER_77_PROVINCES } from '@/data/masterHub';
+
+const FIRST_QUEST_CATEGORY_IDS = new Set(['heal', 'move', 'learn', 'chill', 'general', 'exp_only', 'badge_only', 'exp_badge']);
 
 /**
  * Server-side store for admin-editable master data.
@@ -28,7 +30,8 @@ function withSeedDefaults(stored: Partial<MasterData>): MasterData {
     const storedList = (Array.isArray(stored[key]) ? stored[key] : []) as MasterEntry[];
     const ids = new Set(storedList.map((entry) => entry.id));
     const missing = (seed[key] as MasterEntry[]).filter((entry) => !ids.has(entry.id));
-    const kept = key === 'questCategories' ? storedList.filter((entry) => !(entry.builtIn && entry.id in LEGACY_QUEST_CATEGORIES)) : storedList;
+    // Built-in challenge categories of the first version (moods) are dropped; the later topic ids stay as they were
+    const kept = key === 'questCategories' ? storedList.filter((entry) => !(entry.builtIn && FIRST_QUEST_CATEGORY_IDS.has(entry.id))) : storedList;
     (merged as unknown as Record<string, MasterEntry[]>)[key] = [...kept, ...missing];
   }
   return merged;

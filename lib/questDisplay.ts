@@ -1,4 +1,27 @@
 import type { ChallengeQuest, QuestRule } from '@/data/mockData';
+import { parseQuestDate } from './questLifecycle';
+
+const THAI_MONTHS_SHORT = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+const shortYear = (d: Date) => String((d.getFullYear() + 543) % 100).padStart(2, '0');
+const dayMonth = (d: Date) => `${d.getDate()} ${THAI_MONTHS_SHORT[d.getMonth()]}`;
+
+/** "1 พ.ย. – 6 ธ.ค. 69", or "1 พ.ย. 69 – 31 ม.ค. 70" across a new year; empty without both dates */
+export function questDateRange(quest: Pick<ChallengeQuest, 'startDate' | 'endDate'>): string {
+  const from = parseQuestDate(quest.startDate, false);
+  const to = parseQuestDate(quest.endDate, true);
+  if (from === null || to === null) return '';
+  const a = new Date(from);
+  const b = new Date(to);
+  return a.getFullYear() === b.getFullYear() ? `${dayMonth(a)} – ${dayMonth(b)} ${shortYear(b)}` : `${dayMonth(a)} ${shortYear(a)} – ${dayMonth(b)} ${shortYear(b)}`;
+}
+
+/** One challenge date as "28 ก.พ. 70", whichever way it was stored; the stored text when it cannot be read */
+export function questDay(value: string | undefined): string {
+  const ts = parseQuestDate(value, false);
+  if (ts === null) return value ?? '';
+  const d = new Date(ts);
+  return `${dayMonth(d)} ${shortYear(d)}`;
+}
 
 /**
  * What the screens need to present a challenge: its reward, the answer of GET /api/quests/[id],
@@ -54,6 +77,8 @@ export interface QuestDetail {
   } | null;
   /** After finishing: one running challenge the member has not joined */
   next?: { id: string; title: string; image: string | null; rewardPoints: number; rewardTitle: string | null } | null;
+  /** A few more open challenges, the same category first */
+  related?: { id: string; title: string; image: string | null; rewardPoints: number; period: string; startsInDays: number; participantsCount: number }[];
 }
 
 /** Said beside the places, to a member who is doing the challenge */

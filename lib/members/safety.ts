@@ -58,6 +58,19 @@ export async function acceptPledge(member: Member): Promise<Member> {
 
 /* ---------- Email verification ---------- */
 
+/**
+ * Prototype switch: SKIP_EMAIL_VERIFICATION=true marks emails as verified without sending a link,
+ * so a deployment without a mailer (Vercel preview) can still join meetups and post. Turn off before launch.
+ */
+export function isEmailVerificationSkipped(): boolean {
+  return process.env.SKIP_EMAIL_VERIFICATION === 'true';
+}
+
+export async function autoVerifyEmail(member: Member): Promise<Member> {
+  if (!member.email || member.emailVerified) return member;
+  return memberRepository.update(member.id, { emailVerified: true, emailVerification: undefined });
+}
+
 /** Returns the one-time token to email, or null when there is nothing to verify */
 export async function createEmailVerification(member: Member): Promise<string | null> {
   if (!member.email || member.emailVerified) return null;

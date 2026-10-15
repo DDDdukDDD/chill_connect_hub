@@ -40,7 +40,8 @@ import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { getQuestBrandReward } from '@/lib/questDisplay';
 import { ChallengeCard } from '@/components/ChallengeCard';
 import { ChallengeList } from '@/components/ChallengeList';
-import { CategoryIconRow, FilterMenu } from '@/components/ChallengeFilters';
+import { FilterMenu } from '@/components/ChallengeFilters';
+import { CommunityCategoryRail, COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { BrandLogo } from '@/components/BrandLogo';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
@@ -48,7 +49,6 @@ import { Pagination } from '@/components/Pagination';
 import { ChallengeQuest } from '@/data/mockData';
 import { syncMyChallenges, useMyRewards, withRealProgress } from '@/lib/useMyRewards';
 import { fetchAllContentPages } from '@/lib/contentClient';
-import { useMasterData } from '@/lib/useMasterData';
 
 // Extended Quest Interface with Date, Duration & Image
 export interface QuestWithDuration extends ChallengeQuest {
@@ -90,9 +90,8 @@ export default function ChallengesDiscoveryPage() {
     } catch {}
   };
   const [searchQuery, setSearchQuery] = useState('');
-  // What a challenge is about; the list of categories is managed in the admin console
+  // What a challenge is about: the same categories as community meetups (owner 2026-10-16)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const { questCategories } = useMasterData();
   
   // Auth state
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn, userProfile } = useAuth();
@@ -132,8 +131,12 @@ export default function ChallengesDiscoveryPage() {
 
   // Which challenges the member joined comes from the account; the browser copy only keeps progress noted by hand
   const joinedQuestIds = myRewards.joinedQuestIds;
-  // Joined and not finished yet: a finished challenge is no longer being done
-  const doingCount = joinedQuestIds.filter((id) => !myRewards.quests.some((progress) => progress.questId === id && progress.completed)).length;
+  // Joined, running and not finished: a finished, ended or not yet started challenge is not being done now
+  const doingCount = joinedQuestIds.filter((id) => {
+    const quest = storedQuestList.find((item) => item.id === id);
+    if (quest && ((quest.startsInDays ?? 0) > 0 || quest.status === 'ended' || quest.daysRemaining <= 0)) return false;
+    return !myRewards.quests.some((progress) => progress.questId === id && progress.completed);
+  }).length;
 
   useEffect(() => {
     if (isLoggedIn && myRewards.isLoaded && storedQuestList.length > 0) syncMyChallenges(myRewards.joinedQuestIds, storedQuestList);
@@ -294,19 +297,22 @@ export default function ChallengesDiscoveryPage() {
         {/* 2. Choosing: topics as a row of icons, then the other filters folded into pills, the view and a search */}
         <section className="space-y-4 sm:space-y-5">
           <div className="space-y-3">
-            <CategoryIconRow
-              topics={[
-                { id: 'all', name: 'ทั้งหมด', count: relevantQuests.length },
-                ...questCategories
-                  .map((category) => ({ id: category.id, name: category.name, count: relevantQuests.filter((quest) => quest.category === category.id).length }))
-                  .filter((topic) => topic.count > 0 || topic.id === selectedCategory),
-              ]}
-              selected={selectedCategory ?? 'all'}
-              onSelect={(id) => {
-                setSelectedCategory(id === 'all' ? null : id);
-                setCurrentPage(1);
-              }}
-            />
+            {/* Same category rail as the community page */}
+            <div className="bg-slate-50/60 p-2.5 sm:p-3 rounded-2xl border border-slate-200/70 shadow-2xs">
+              <CommunityCategoryRail
+                selectedCategoryId={selectedCategory}
+                onSelectCategory={(id) => {
+                  setSelectedCategory(id);
+                  setCurrentPage(1);
+                }}
+                eventCounts={{
+                  all: relevantQuests.length,
+                  ...Object.fromEntries(COMMUNITY_LIFESTYLE_CATEGORIES.map((category) => [category.id, relevantQuests.filter((quest) => quest.category === category.id).length])),
+                }}
+                allLabelEn="All Challenges"
+                variant="rail"
+              />
+            </div>
 
             <div className="flex flex-wrap items-center gap-2">
               <FilterMenu
