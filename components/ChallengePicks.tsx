@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Zap, Gift, Clock, Flame, CalendarClock, Footprints } from 'lucide-react';
 import type { ChallengeQuest } from '@/data/mockData';
 import { getQuestBrandReward } from '@/lib/questDisplay';
+import type { QuestProgress } from '@/lib/useMyRewards';
 
 const PICK_LIMIT = 6;
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80';
@@ -55,9 +56,24 @@ const score = (q: ChallengeQuest) =>
 
 /**
  * "ชาเลนจ์สนุก แนะนำสำหรับคุณ" on the homepage: a playful row of small, tilted photos with an XP sticker,
- * the title, and one friendly reason to try it. No card frames. Members do not see challenges they joined.
+ * the title, and one friendly reason to try it. No card frames. Members do not see challenges they joined,
+ * except on the signed-in home (`progress` given): there the ones they are doing come first with a progress bar.
  */
-export function ChallengePicks({ quests, joinedIds, isLoaded }: { quests: ChallengeQuest[]; joinedIds: string[]; isLoaded: boolean }) {
+export function ChallengePicks({ quests, joinedIds, isLoaded, progress }: { quests: ChallengeQuest[]; joinedIds: string[]; isLoaded: boolean; progress?: QuestProgress[] }) {
+  // Challenges the member is doing and that are still open, closing soonest first
+  const mine = useMemo(() => {
+    if (!progress) return new Map<string, QuestProgress>();
+    const doing = quests
+      .filter((q) => joinedIds.includes(q.id) && q.status !== 'ended' && !(q.daysRemaining !== undefined && q.daysRemaining <= 0))
+      .flatMap((q) => {
+        const entry = progress.find((p) => p.questId === q.id);
+        return entry && !entry.completed ? [[q, entry] as const] : [];
+      })
+      .sort(([a], [b]) => (a.daysRemaining ?? 999) - (b.daysRemaining ?? 999))
+      .slice(0, 3);
+    return new Map(doing.map(([q, entry]) => [q.id, entry]));
+  }, [quests, joinedIds, progress]);
+
   // Running challenges first, with the last place kept for one that starts soon (when there is one)
   const picks = useMemo(() => {
     const open = quests
@@ -67,9 +83,10 @@ export function ChallengePicks({ quests, joinedIds, isLoaded }: { quests: Challe
     const running = open.filter((q) => !q.startsInDays);
     const soon = open.filter((q) => q.startsInDays).sort((a, b) => (a.startsInDays ?? 0) - (b.startsInDays ?? 0));
     const runningSlots = soon.length > 0 ? PICK_LIMIT - 1 : PICK_LIMIT;
-    return [...running.slice(0, runningSlots), ...soon].slice(0, PICK_LIMIT);
-  }, [quests, joinedIds]);
-  const reasons = useMemo(() => assignReasons(picks), [picks]);
+    const suggested = [...running.slice(0, runningSlots), ...soon].slice(0, PICK_LIMIT - mine.size);
+    return [...quests.filter((q) => mine.has(q.id)).sort((a, b) => (a.daysRemaining ?? 999) - (b.daysRemaining ?? 999)), ...suggested];
+  }, [quests, joinedIds, mine]);
+  const reasons = useMemo(() => assignReasons(picks.filter((q) => !mine.has(q.id))), [picks, mine]);
 
   const itemWidth = 'w-[44%] sm:w-[30%] md:w-[23%] lg:w-[calc((100%-5*24px)/6)]';
 
@@ -95,7 +112,8 @@ export function ChallengePicks({ quests, joinedIds, isLoaded }: { quests: Challe
   return (
     <ul className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar snap-x -mx-4 px-4 scroll-px-4 sm:mx-0 sm:px-1 sm:scroll-px-1 pt-3 pb-2">
       {picks.map((quest, i) => {
-        const reason = reasons.get(quest.id)!;
+        const doing = mine.get(quest.id);
+        const reason = reasons.get(quest.id);
         return (
           <li key={quest.id} className={`${itemWidth} shrink-0 snap-start`}>
             <Link href={`/challenges/${encodeURIComponent(quest.id)}`} className="group block">
@@ -113,13 +131,24 @@ export function ChallengePicks({ quests, joinedIds, isLoaded }: { quests: Challe
                   </span>
                 )}
               </span>
-              <span className="mt-3 block text-sm font-extrabold text-slate-900 leading-snug line-clamp-2 group-hover:underline">
+              <span className="mt-3 text-sm font-extrabold text-slate-900 leading-snug line-clamp-2 group-hover:underline">
                 {quest.title}
               </span>
-              <span className={`mt-1 flex items-center gap-1 text-xs font-bold ${reason.tone}`}>
-                <reason.Icon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                <span className="truncate">{reason.text}</span>
-              </span>
+              {doing ? (
+                <span className="mt-1.5 flex items-center gap-2">
+                  <span className="h-1.5 flex-1 rounded-full bg-violet-100 overflow-hidden" role="progressbar" aria-label="ความคืบหน้า" aria-valuemin={0} aria-valuemax={doing.total} aria-valuenow={doing.current}>
+                    <span className="block h-full bg-[#7C3AED]" style={{ width: `${Math.min(100, (doing.current / Math.max(1, doing.total)) * 100)}%` }} />
+                  </span>
+                  <span className="text-xs font-bold text-slate-600 tabular-nums">{doing.current}/{doing.total}</span>
+                </span>
+              ) : (
+                reason && (
+                  <span className={`mt-1 flex items-center gap-1 text-xs font-bold ${reason.tone}`}>
+                    <reason.Icon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                    <span className="truncate">{reason.text}</span>
+                  </span>
+                )
+              )}
             </Link>
           </li>
         );
