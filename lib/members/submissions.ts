@@ -19,7 +19,8 @@ import type { Member } from './types';
  * Points, badges' artwork and partner rewards are never set by a member.
  */
 const MAX_WAITING = 5;
-const isQuestCategory = (id: string) => getMasterData().questCategories.some((category) => category.active && category.id === id);
+// Challenges use the community categories (owner 2026-10-16)
+const isQuestCategory = (id: string) => getMasterData().communityCategories.some((category) => category.active && category.id === id);
 const SPOT_CATEGORIES = new Set<string>(SPOT_CATEGORY_OPTIONS.map((option) => option.id));
 const ISO_DAY = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
 

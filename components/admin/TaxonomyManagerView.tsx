@@ -13,9 +13,9 @@ import { ImageField, MasterList, MasterNotices, useMasterAdmin } from './masterA
 const COLLECTION_HINTS: Record<CategoryCollection, string> = {
   spotVibes: '7 vibe ที่หน้าเว็บใช้จัดกลุ่มพิกัดเที่ยว (เพิ่ม/ลบไม่ได้ เพราะระบบคำนวณ vibe จาก id เหล่านี้)',
   communityMoods: '4 อารมณ์หลักของกิจกรรมคอมมูนิตี้ (เพิ่ม/ลบไม่ได้)',
-  communityCategories: 'หมวดใน rail ของหน้าคอมมูนิตี้ แต่ละหมวดผูกกับอารมณ์หลัก 1 แบบ',
+  communityCategories: 'หมวดใน rail ของหน้าคอมมูนิตี้และหน้าชาเลนจ์ แต่ละหมวดผูกกับอารมณ์หลัก 1 แบบ',
   fairCategories: 'หมวดใน rail ของหน้างานมหกรรม & เอ็กซ์โป',
-  questCategories: 'หมวดของชาเลนจ์ & ภารกิจ',
+  questCategories: 'ไม่ใช้แล้ว: ชาเลนจ์ใช้หมวดของคอมมูนิตี้',
 };
 
 function CategoryChip({ entry }: { entry: Pick<MasterCategory, 'iconKey' | 'colorKey' | 'name'> }) {
@@ -185,7 +185,8 @@ export function TaxonomyManagerView() {
       />
 
       <div className="flex flex-wrap gap-1.5">
-        {CATEGORY_COLLECTIONS.map((collection) => (
+        {/* Challenges use the community categories since 2026-10-16, so their old list is not offered */}
+        {CATEGORY_COLLECTIONS.filter((collection) => collection !== 'questCategories').map((collection) => (
           <button
             key={collection}
             type="button"

@@ -15,6 +15,8 @@ interface CommunityCategoryRailProps {
   onSelectCategory: (categoryId: string | null) => void;
   eventCounts?: Record<string, number>;
   variant?: 'rail' | 'grid';
+  /** English line under "ทั้งหมด" (the challenges page says All Challenges) */
+  allLabelEn?: string;
 }
 
 export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
@@ -22,6 +24,7 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
   onSelectCategory,
   eventCounts = {},
   variant = 'rail',
+  allLabelEn = 'All Events',
 }) => {
   // Variant = 'rail' (Meetup + Luma Horizontal Flow Carousel with Smooth Scroll Buttons)
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
@@ -221,7 +224,7 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
             <span className={`block text-[10px] font-medium ${
               selectedCategoryId === null ? 'text-[#F26430]' : 'text-slate-400'
             }`}>
-              All Events
+              {allLabelEn}
             </span>
           </div>
         </button>

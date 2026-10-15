@@ -2,6 +2,7 @@ import type { ChallengeQuest, EventItem, QuestRule } from '@/data/mockData';
 import { getSpotVibeCategory, type LifestyleSpotItem } from '@/data/spotsData';
 import { db } from '../db';
 import { parseQuestDate } from '../questLifecycle';
+import { isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp } from '../dateUtils';
 import { momentRepository } from '../moments';
 import { joinedQuestIdsOf } from './questJoins';
 import { type Visit, type VisitEvidence, type VisitTargetType, isVisitTargetType, targetKey, visitsOf } from './visits';
@@ -193,8 +194,13 @@ export async function targetsOfQuest(quest: ChallengeQuest, memberId: string | n
     const targetType: VisitTargetType = eventType === 'community' ? 'community' : 'fair';
     if (!rule.targetTypes.includes(targetType)) continue;
     const events = await allPages((page) => db.findEvents({ eventType, page, limit: 100 }));
+    // Only events still to come that fall inside the challenge's period can count
+    const questStart = parseQuestDate(quest.startDate, false);
+    const questEnd = parseQuestDate(quest.endDate, true);
     for (const event of events) {
-      if (!ruleMatchesTarget(rule, eventTarget(event))) continue;
+      if (isEventEnded(event) || !ruleMatchesTarget(rule, eventTarget(event))) continue;
+      if (questStart !== null && parseEventEndDateToTimestamp(event.date) < questStart) continue;
+      if (questEnd !== null && parseEventDateToTimestamp(event.date) > questEnd) continue;
       found.push({ targetType, id: event.id, title: event.title, image: event.image, detail: event.date, province: event.province, href: `${TARGET_PATHS[targetType]}/${encodeURIComponent(event.id)}` });
     }
   }

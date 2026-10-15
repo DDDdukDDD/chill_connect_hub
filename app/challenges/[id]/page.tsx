@@ -9,7 +9,8 @@ import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
-import { EVIDENCE_HINTS, NOTES_KEY, QuestDetail, SELF_NOTED_HINT, describeQuestRule, getQuestBrandReward, readNotes } from '@/lib/questDisplay';
+import { EVIDENCE_HINTS, NOTES_KEY, QuestDetail, SELF_NOTED_HINT, describeQuestRule, getQuestBrandReward, questDateRange, questDay, readNotes } from '@/lib/questDisplay';
+import { EventAttendees } from '@/components/EventAttendees';
 import { useAuth } from '@/lib/useAuth';
 import { useMyRewards } from '@/lib/useMyRewards';
 import { useMasterData } from '@/lib/useMasterData';
@@ -34,7 +35,7 @@ export default function ChallengeDetailPage() {
   const [activeTab, setActiveTab] = useState('challenges');
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
   const myRewards = useMyRewards(isLoggedIn);
-  const { questCategories } = useMasterData();
+  const { communityCategories: questCategories } = useMasterData();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
@@ -81,7 +82,7 @@ export default function ChallengeDetailPage() {
     setNotedProgress(joined ? readNotes()[questId] ?? 0 : 0);
   }, [joined, questId]);
 
-  const chrome = (content: React.ReactNode) => (
+  const chrome = (content: React.ReactNode, bottomBar?: React.ReactNode) => (
     <div className="min-h-screen bg-white text-slate-900 flex flex-col font-sans">
       <Navbar
         activeTab={activeTab}
@@ -97,14 +98,14 @@ export default function ChallengeDetailPage() {
           {toastMessage}
         </div>
       )}
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-28 sm:pb-16">
+      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-28 lg:pb-16">
         <Link href="/challenges" className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
           ชาเลนจ์ทั้งหมด
         </Link>
         {content}
       </main>
-      <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />
+      {bottomBar ?? <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />}
       <RequireMembershipModal
         isOpen={isRequireMembershipOpen}
         onClose={() => setIsRequireMembershipOpen(false)}
@@ -161,12 +162,12 @@ export default function ChallengeDetailPage() {
   const selfDone = !tracked && joined && notedProgress >= total;
   const isDoing = joined && !isEnded && !earned;
   const rules = tracked ? describeQuestRule(quest.rule, detail.minEvidence) : null;
-  const period = quest.startDate && quest.endDate ? `${quest.startDate} - ${quest.endDate}` : quest.endDate ? `ถึง ${quest.endDate}` : 'ไม่กำหนดวันสิ้นสุด';
+  const period = questDateRange(quest) || (quest.endDate ? `ถึง ${questDay(quest.endDate)}` : 'ไม่กำหนดวันสิ้นสุด');
   const about = quest.objective && quest.objective !== quest.targetGoal ? quest.objective : '';
   const steps = rules
     ? [
         'กดร่วมชาเลนจ์ในหน้านี้ ไม่มีค่าใช้จ่าย',
-        `${rules.goStep.replace('{n}', String(total))}${quest.endDate ? ` ภายในวันที่ ${quest.endDate}` : ''}`,
+        `${rules.goStep.replace('{n}', String(total))}${quest.endDate ? ` ภายในวันที่ ${questDay(quest.endDate)}` : ''}`,
         `ยืนยันการไปแต่ละครั้ง: ${rules.proof}`,
         isPartner ? 'เมื่อครบ ระบบมอบ XP และออกรหัสรับสิทธิ์ให้ในหน้านี้ทันที' : 'เมื่อครบ ระบบมอบ XP เข้าบัญชีให้ทันที',
       ]
@@ -188,8 +189,9 @@ export default function ChallengeDetailPage() {
         { label: 'ผู้มีสิทธิ์ร่วม', text: 'สมาชิก Chill & Connect Hub ทุกคน ไม่มีค่าใช้จ่าย' },
         { label: 'ผู้จัด', text: reward.partnerName },
       ];
-  // A challenge about a few named places shows them while deciding too: they are what the challenge is
-  const showPlaces = tracked && !earned && detail.targets.length > 0 && (isDoing || detail.targetsTotal <= 6);
+  // Where to go shows while deciding too, so a visitor sees where before joining (owner 2026-10-16);
+  // with nothing in the period yet it says so instead of leaving the question open
+  const showPlaces = tracked && !earned && !isEnded;
   const memories = earned ? detail.mine?.memories ?? [] : [];
   const finishedDate = earned ? shortDate(detail.mine?.finishedAt) : '';
   const next = earned ? detail.next : null;
@@ -267,6 +269,102 @@ export default function ChallengeDetailPage() {
     );
   }
 
+  // Phones and tablets: the period, where the member stands, share and the one main action stay in reach
+  const barStatus = earned
+    ? 'ทำสำเร็จแล้ว'
+    : isEnded
+    ? 'ชาเลนจ์นี้จบแล้ว'
+    : joined
+    ? `คุณร่วมแล้ว · ${current}/${total}`
+    : quest.startsInDays
+    ? `เริ่มในอีก ${quest.startsInDays} วัน`
+    : quest.daysRemaining !== undefined
+    ? `เหลือ ${quest.daysRemaining} วัน`
+    : '';
+  const barButton = 'px-4 py-2.5 rounded-full text-xs sm:text-sm font-bold shrink-0 cursor-pointer active:scale-95 inline-flex items-center gap-1.5';
+  const bottomBar = (
+    <div className="lg:hidden fixed inset-x-0 bottom-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-6px_18px_rgba(15,23,42,0.06)] px-4 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="max-w-3xl mx-auto flex items-center gap-2.5">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs sm:text-sm font-bold text-slate-900 truncate tabular-nums">
+            {[tracked ? `+${points.toLocaleString()} XP` : 'บันทึกเอง', period].join(' · ')}
+          </p>
+          <p className={`text-[11px] sm:text-xs font-bold truncate tabular-nums ${earned || joined ? 'text-emerald-700' : isEnded ? 'text-slate-500' : 'text-[#7C3AED]'}`}>{barStatus}</p>
+        </div>
+        <button
+          type="button"
+          onClick={handleShare}
+          aria-label="แชร์ชาเลนจ์"
+          className="w-10 h-10 rounded-full border border-slate-200 bg-white flex items-center justify-center shrink-0 cursor-pointer active:scale-95"
+        >
+          {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Share2 className="w-4 h-4 text-slate-600" />}
+        </button>
+        {earned ? (
+          <Link href={isPartner ? '/myhub?tab=quests_rewards' : '/rewards'} className={`${barButton} bg-[#2563EB] hover:bg-[#1D4ED8] text-white`}>
+            {isPartner ? 'ไปมายฮับ' : 'ไปเลือกของรางวัล'}
+          </Link>
+        ) : isEnded ? (
+          <button type="button" disabled className={`${barButton} bg-slate-100 text-slate-500 cursor-not-allowed`}>จบแล้ว</button>
+        ) : !joined ? (
+          <button type="button" onClick={handleJoin} disabled={isSaving} className={`${barButton} bg-[#2563EB] hover:bg-[#1D4ED8] text-white`}>
+            {isSaving ? 'กำลังบันทึก…' : 'ร่วมชาเลนจ์นี้'}
+          </button>
+        ) : tracked ? (
+          <a href="#places" className={`${barButton} bg-slate-900 hover:bg-slate-800 text-white`}>ดูที่ที่นับ</a>
+        ) : (
+          <button type="button" onClick={handleNote} disabled={selfDone} className={`${barButton} bg-slate-900 hover:bg-slate-800 text-white`}>
+            <Check className="w-4 h-4" aria-hidden="true" />
+            บันทึกเอง
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  // Where to go for the challenge; shown in the right column on a desktop and after the rules on phones and tablets
+  const placesSection = (anchorId: string) => (
+    <section id={anchorId} className="space-y-4 scroll-mt-24">
+      <div className="flex items-end justify-between gap-3">
+        <h2 className={SECTION_TITLE}>ที่ที่นับในชาเลนจ์นี้</h2>
+        {detail.browseHref && detail.targetsTotal > detail.targets.length && (
+          <Link href={detail.browseHref} className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline shrink-0">
+            ดูทั้งหมด <span className="tabular-nums">{detail.targetsTotal.toLocaleString()}</span> แห่ง
+          </Link>
+        )}
+      </div>
+      {isDoing && <p className="text-sm font-medium text-slate-600 leading-relaxed">{EVIDENCE_HINTS[detail.minEvidence ?? 'marked']}</p>}
+      {detail.targets.length === 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200">
+          <p className="text-sm font-medium text-slate-700">ยังไม่มีที่ไหนเปิดในช่วง {period} เลย เดี๋ยวมีเมื่อไรจะขึ้นตรงนี้</p>
+          {detail.browseHref && (
+            <Link href={detail.browseHref} className="inline-flex items-center justify-center min-h-10 px-4 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold whitespace-nowrap cursor-pointer">
+              ดูทั้งหมด
+            </Link>
+          )}
+        </div>
+      )}
+      <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
+        {detail.targets.map((target) => (
+          <li key={`${target.targetType}:${target.id}`}>
+            <Link href={target.href} className="group block rounded-2xl cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]">
+              <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100">
+                {target.image && <img src={target.image} alt="" loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />}
+                {target.visited && (
+                  <span className="absolute top-2 left-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/95 border border-emerald-200 text-[11px] sm:text-xs font-extrabold text-emerald-800">
+                    <Check className="w-3 h-3" aria-hidden="true" />
+                    นับแล้ว
+                  </span>
+                )}
+              </div>
+              <p className="mt-2 text-sm font-extrabold text-slate-900 line-clamp-2">{target.title}</p>
+              {target.detail && <p className="text-[11px] sm:text-xs font-semibold text-slate-500 tabular-nums truncate">{target.detail}</p>}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+
   return chrome(
     <>
       {/* Hero: the photo carries the feeling; the facts and the one action sit beside it */}
@@ -300,13 +398,13 @@ export default function ChallengeDetailPage() {
             {!isEnded && quest.daysRemaining !== undefined && (
               <span className={FACT}>
                 <Clock className="w-4 h-4 text-slate-500" aria-hidden="true" />
-                <span className="tabular-nums">{quest.startsInDays ? `เริ่มในอีก ${quest.startsInDays} วัน นับตั้งแต่วันเริ่ม` : `เหลือ ${quest.daysRemaining} วัน`}</span>
+                <span className="tabular-nums">{quest.startsInDays ? `เริ่มในอีก ${quest.startsInDays} วัน` : `เหลือ ${quest.daysRemaining} วัน`}</span>
               </span>
             )}
             {quest.endDate && (
               <span className={FACT}>
                 <Calendar className="w-4 h-4 text-slate-500" aria-hidden="true" />
-                <span className="tabular-nums">ถึง {quest.endDate}</span>
+                <span className="tabular-nums">{period}</span>
               </span>
             )}
             {participants > 0 && (
@@ -433,39 +531,8 @@ export default function ChallengeDetailPage() {
             </div>
           )}
 
-          {/* The places that count come right after the reward: what you get, then where to go for it */}
-          {showPlaces && (
-            <section id="places" className={`space-y-4 scroll-mt-24 ${isDoing ? 'order-1' : 'order-4'}`}>
-              <div className="flex items-end justify-between gap-3">
-                <h2 className={SECTION_TITLE}>ที่ที่นับในชาเลนจ์นี้</h2>
-                {detail.browseHref && detail.targetsTotal > detail.targets.length && (
-                  <Link href={detail.browseHref} className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline shrink-0">
-                    ดูทั้งหมด <span className="tabular-nums">{detail.targetsTotal.toLocaleString()}</span> แห่ง
-                  </Link>
-                )}
-              </div>
-              {isDoing && <p className="text-sm font-medium text-slate-600 leading-relaxed">{EVIDENCE_HINTS[detail.minEvidence ?? 'marked']}</p>}
-              <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
-                {detail.targets.map((target) => (
-                  <li key={`${target.targetType}:${target.id}`}>
-                    <Link href={target.href} className="group block rounded-2xl cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]">
-                      <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100">
-                        {target.image && <img src={target.image} alt="" loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />}
-                        {target.visited && (
-                          <span className="absolute top-2 left-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/95 border border-emerald-200 text-[11px] sm:text-xs font-extrabold text-emerald-800">
-                            <Check className="w-3 h-3" aria-hidden="true" />
-                            นับแล้ว
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-2 text-sm font-extrabold text-slate-900 line-clamp-2">{target.title}</p>
-                      {target.detail && <p className="text-[11px] sm:text-xs font-semibold text-slate-500 tabular-nums truncate">{target.detail}</p>}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+          {/* The places that count come right after the reward on a desktop: what you get, then where to go for it */}
+          {showPlaces && <div className="hidden lg:block">{placesSection('places-wide')}</div>}
         </aside>
 
         <div className="lg:order-1 flex flex-col gap-10 min-w-0">
@@ -555,8 +622,57 @@ export default function ChallengeDetailPage() {
             </dl>
           </section>
 
+          {/* On phones and tablets the places come right after the rules (owner 2026-10-16) */}
+          {showPlaces && <div className="lg:hidden order-5">{placesSection('places')}</div>}
+
+          <div className="order-6">
+            <EventAttendees
+              src={`/api/quests/${encodeURIComponent(quest.id)}/members`}
+              title="ใครทำอยู่บ้าง"
+              total={participants}
+              refreshKey={joined}
+            />
+          </div>
+
         </div>
       </div>
+
+      {(detail.related?.length ?? 0) > 0 && (
+        <section className="mt-12 sm:mt-16 space-y-4" aria-labelledby="related-title">
+          <div className="flex items-end justify-between gap-3">
+            <h2 id="related-title" className={SECTION_TITLE}>ชาเลนจ์อื่นที่น่าลอง</h2>
+            <Link href="/challenges" className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline shrink-0">ดูทั้งหมด</Link>
+          </div>
+          <ul className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {detail.related!.map((item) => (
+              <li key={item.id}>
+                <Link href={`/challenges/${encodeURIComponent(item.id)}`} className="group block h-full rounded-2xl border border-slate-200 bg-white overflow-hidden hover:shadow-md transition-shadow cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]">
+                  <div className="aspect-[16/9] bg-slate-100 overflow-hidden">
+                    <img src={item.image || FALLBACK_PHOTO} alt="" loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                  </div>
+                  <div className="p-3 space-y-1.5">
+                    {item.period && (
+                      <p className="flex items-center gap-1.5 text-[11px] sm:text-xs font-bold text-slate-700 tabular-nums">
+                        <Calendar className="w-3.5 h-3.5 text-slate-500" aria-hidden="true" />
+                        {item.period}
+                      </p>
+                    )}
+                    <p className="text-sm sm:text-base font-extrabold text-slate-900 line-clamp-2 min-h-[2.5rem]">{item.title}</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] sm:text-xs font-semibold text-slate-500 tabular-nums truncate">
+                        {item.startsInDays > 0 ? `เริ่มในอีก ${item.startsInDays} วัน` : item.participantsCount > 0 ? `${item.participantsCount.toLocaleString()} คนร่วมทำ` : 'เปิดอยู่'}
+                      </span>
+                      {item.rewardPoints > 0 && (
+                        <span className="shrink-0 px-2 py-0.5 rounded-full bg-[#7C3AED] text-white text-[11px] font-extrabold tabular-nums">+{item.rewardPoints} XP</span>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {isLeaveOpen && (
         <DialogShell onClose={() => setIsLeaveOpen(false)} size="sm" title="ยกเลิกชาเลนจ์นี้ใช่ไหม" subtitle={tracked ? 'ที่ที่คุณไปมาแล้วยังนับอยู่ กลับมาร่วมใหม่ได้ทุกเมื่อก่อนหมดเขต' : 'กลับมาร่วมใหม่ได้ทุกเมื่อก่อนหมดเขต'}>
@@ -596,6 +712,7 @@ export default function ChallengeDetailPage() {
           </div>
         </DialogShell>
       )}
-    </>
+    </>,
+    bottomBar
   );
 }

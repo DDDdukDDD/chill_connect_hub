@@ -165,7 +165,7 @@ export interface ChallengeQuest {
   total: string;
   badgeLabel: string;
   completedCountInfo: string;
-  /** An id of the admin-managed challenge categories (master data `questCategories`) */
+  /** An id of the community categories (master data `communityCategories`), which challenges share since 2026-10-16 */
   category?: string;
   visibility?: 'public' | 'private';
   creatorName?: string;

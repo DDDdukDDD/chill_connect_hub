@@ -222,7 +222,7 @@ export function QuestsManagerView() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<QuestDraft>(EMPTY_DRAFT);
   // Categories are managed under "หมวดหมู่" in this console
-  const { questCategories, spotVibes } = useMasterData();
+  const { communityCategories: questCategories, spotVibes } = useMasterData();
   // How many places or events the rule being written would count (POST action preview_rule), asked again shortly after each change
   const [rulePreview, setRulePreview] = useState<{ total: number; targets: { title: string; detail?: string }[] } | null>(null);
   const rulePayload = isDialogOpen ? JSON.stringify(toPayload(draft).rule) : 'null';

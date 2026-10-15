@@ -583,7 +583,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
     </Field>
   );
 
-  const { questCategories } = useMasterData();
+  const { communityCategories: questCategories } = useMasterData();
   const questCategoryField = (
     <Field label="หมวด">
       <div className="grid grid-cols-2 gap-2">

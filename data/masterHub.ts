@@ -609,20 +609,31 @@ export const MASTER_QUEST_CATEGORIES: MasterQuestCategory[] = [
   { id: 'travel', name: 'เที่ยว & ต่างจังหวัด', desc: 'ธรรมชาติ วัด จุดชมวิว และเมืองเก่าทั่วไทย', iconKey: 'Mountain' },
 ];
 
-/** Ids an earlier version used for challenge categories, mapped to today's */
+/**
+ * Ids earlier versions used for challenge categories, mapped to today's.
+ * Since 2026-10-16 challenges use the community categories (master data communityCategories), as the owner asked.
+ */
 export const LEGACY_QUEST_CATEGORIES: Record<string, string> = {
-  heal: 'wellness',
-  move: 'active_outdoor',
-  learn: 'art_learn',
-  chill: 'social',
-  general: 'social',
-  exp_only: 'social',
-  badge_only: 'social',
-  exp_badge: 'social',
+  // Challenge topics of 2026-10-13 to 2026-10-15
+  cafe_food: 'cafe_social',
+  active_outdoor: 'running_fitness',
+  art_learn: 'arts_crafts',
+  wellness: 'wellness_mind',
+  social: 'cafe_social',
+  travel: 'travel_outdoor',
+  // Moods of the first version
+  heal: 'wellness_mind',
+  move: 'running_fitness',
+  learn: 'arts_crafts',
+  chill: 'cafe_social',
+  general: 'cafe_social',
+  exp_only: 'cafe_social',
+  badge_only: 'cafe_social',
+  exp_badge: 'cafe_social',
 };
 
-/** A challenge's category id as used today */
-export const questCategoryId = (category: string | undefined): string => (category && LEGACY_QUEST_CATEGORIES[category]) || category || 'social';
+/** A challenge's category id as used today: one of the community categories */
+export const questCategoryId = (category: string | undefined): string => (category && LEGACY_QUEST_CATEGORIES[category]) || category || 'cafe_social';
 
 // =========================================================================
 // 6. 🎯 DETERMINISTIC SINGLE-CATEGORY CLASSIFIERS (1 Card = Exactly 1 Category)
