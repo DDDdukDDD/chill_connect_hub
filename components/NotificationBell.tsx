@@ -83,7 +83,7 @@ export function NotificationBell() {
       {isOpen && (
         <DialogShell onClose={() => setIsOpen(false)} title="การแจ้งเตือน" size="sm">
           {data.items.length === 0 ? (
-            <p className="text-sm font-medium text-slate-600 py-4">ยังไม่มีการแจ้งเตือน เมื่อมีคนติดตาม ส่งหัวใจ หรือคอมเมนต์โมเมนต์ของคุณ จะแสดงที่นี่</p>
+            <p className="text-sm font-medium text-slate-600 py-4">ยังไม่มีการแจ้งเตือน เมื่อมีคนติดตาม ส่งหัวใจ <span className="whitespace-nowrap">หรือคอมเมนต์</span><span className="whitespace-nowrap">โมเมนต์ของคุณ</span> <span className="whitespace-nowrap">จะแสดงที่นี่</span></p>
           ) : (
             <ul className="-mx-2 max-h-[60vh] overflow-y-auto">
               {data.items.map((n) => (

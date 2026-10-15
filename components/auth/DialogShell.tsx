@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useId, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { PhraseText } from './PhraseText';
 
@@ -10,6 +11,8 @@ import { PhraseText } from './PhraseText';
  * overlay, white rounded panel, quiet close button, Esc to close, focus kept inside, page scroll locked,
  * and focus returned to the trigger on close. A dialog opened from another dialog works: only the
  * top-most one reacts to keys.
+ * Rendered into <body>, so a dialog opened from inside the sticky navbar (whose backdrop blur would
+ * otherwise become the frame for `fixed`) still covers the whole screen.
  */
 interface DialogShellProps {
   onClose: () => void;
@@ -78,7 +81,9 @@ export function DialogShell({ onClose, children, title, subtitle, labelledBy, si
     };
   }, []);
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <div className={`fixed inset-0 flex items-center justify-center p-4 sm:p-6 bg-black/65 backdrop-blur-xs ${layer === 'top' ? 'z-[100010]' : 'z-[100002]'}`}>
       <div
         ref={panelRef}
@@ -108,7 +113,8 @@ export function DialogShell({ onClose, children, title, subtitle, labelledBy, si
         )}
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

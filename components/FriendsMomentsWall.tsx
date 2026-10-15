@@ -114,7 +114,7 @@ export function FriendsMomentsWall() {
       <div key={active.id} className="grid lg:grid-cols-[1.2fr_1fr] gap-4 lg:gap-10 items-center animate-fade-in">
         <Link
           href={`/moments?momentId=${encodeURIComponent(active.id)}`}
-          className={`grid gap-2 sm:gap-3 h-52 sm:h-[300px] ${photos.length > 1 ? 'grid-cols-3 grid-rows-2' : 'grid-cols-1'}`}
+          className={`grid gap-2 sm:gap-3 h-52 sm:h-[300px] overflow-hidden ${photos.length > 1 ? 'grid-cols-3 grid-rows-2' : 'grid-cols-1 grid-rows-1'}`}
           aria-label={`ดูโมเมนต์ของ ${shortName(active.userName)}`}
         >
           {photos.map((src, i) => (
@@ -124,7 +124,7 @@ export function FriendsMomentsWall() {
               src={src}
               alt=""
               loading="lazy"
-              className={`w-full h-full object-cover rounded-3xl hover:opacity-95 transition-opacity ${
+              className={`w-full h-full min-h-0 object-cover rounded-3xl hover:opacity-95 transition-opacity ${
                 photos.length > 1 && i === 0 ? 'col-span-2 row-span-2' : ''
               } ${photos.length === 2 && i === 1 ? 'row-span-2' : ''}`}
             />
