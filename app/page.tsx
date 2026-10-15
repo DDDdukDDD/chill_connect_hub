@@ -1243,7 +1243,15 @@ function HomeContent() {
             {activeScopeTab === 'all' && (
               <>
                 {/* ------------------------------------------------------------------------- */}
-                {/* STREAM SECTION 1: 👥 COMMUNITY MEETUPS (กิจกรรมคอมมูนิตี้)                 */}
+                {/* STREAM SECTION 1: ⚡ COMMUNITY QUESTS (ชาเลนจ์ & ภารกิจท้าทาย)             */}
+                {/* ------------------------------------------------------------------------- */}
+                <div id="section-challenges" className="scroll-mt-24">
+                  <CommunityChallengeBar
+                  />
+                </div>
+
+                {/* ------------------------------------------------------------------------- */}
+                {/* STREAM SECTION 2: 👥 COMMUNITY MEETUPS (กิจกรรมคอมมูนิตี้)                 */}
                 {/* ------------------------------------------------------------------------- */}
                 <section id="section-community" className="space-y-2.5 sm:space-y-3 scroll-mt-20">
                   <div className="bg-gradient-to-r from-orange-50/50 via-slate-50/30 to-transparent p-3 sm:p-3.5 rounded-2xl border border-orange-100/60 shadow-2xs">
@@ -1332,111 +1340,22 @@ function HomeContent() {
                 </section>
 
                 {/* ------------------------------------------------------------------------- */}
-                {/* STREAM SECTION 2: 🏛️ EXHIBITIONS & FAIRS (งานมหกรรม & เอ็กซ์โป)           */}
+                {/* STREAM SECTION 3: 📸 SOCIAL STORIES (โมเมนต์ & บรรยากาศจริงจากชุมชน)        */}
                 {/* ------------------------------------------------------------------------- */}
-                <section id="section-fairs" className="space-y-2.5 sm:space-y-3 scroll-mt-20">
-                  <div className="bg-gradient-to-r from-blue-50/50 via-slate-50/30 to-transparent p-3 sm:p-3.5 rounded-2xl border border-blue-100/60 shadow-2xs">
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                          <span>งานมหกรรม & เอ็กซ์โป</span>
-                          <span className="text-[10px] font-black text-[#2B527A] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
-                            {selectedVenueFilter ? (
-                              selectedVenueFilter === 'qsncc' ? 'ศูนย์ฯ สิริกิติ์' :
-                              selectedVenueFilter === 'bitec' ? 'ไบเทค บางนา' :
-                              selectedVenueFilter === 'impact' ? 'อิมแพ็ค เมืองทองธานี' :
-                              selectedVenueFilter === 'paragon' ? 'พารากอน & ไอคอนสยาม' :
-                              selectedVenueFilter === 'bacc' ? 'หอศิลป์ BACC' :
-                              selectedVenueFilter === 'park' ? 'สวนสาธารณะ & ลานเมือง' :
-                              selectedVenueFilter === 'regional' ? 'ศูนย์ประชุมภูมิภาค' : selectedVenueFilter
-                            ) : `${streamPublicEvents.length} งาน`}
-                          </span>
-                        </h2>
-                        {timeFilter !== 'all' && (
-                          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-950 bg-blue-100/90 px-2.5 py-0.5 rounded-full border border-blue-200 shadow-2xs">
-                            <Calendar className="w-3 h-3 text-[#2B527A]" />
-                            <span>
-                              {timeFilter === 'today' && 'วันนี้ (12 ก.ย.)'}
-                              {timeFilter === 'tomorrow' && 'พรุ่งนี้ (13 ก.ย.)'}
-                              {timeFilter === 'weekend' && 'สุดสัปดาห์นี้'}
-                              {timeFilter === 'next_month' && 'เดือนนี้'}
-                              {timeFilter === 'custom' && (startDate ? `${startDate}${endDate && endDate !== startDate ? ` - ${endDate}` : ''}` : 'ระบุวันที่')}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setTimeFilter('all');
-                                setStartDate('');
-                                setEndDate('');
-                              }}
-                              className="p-0.5 hover:bg-blue-200 rounded-full cursor-pointer ml-0.5"
-                              title="ล้างตัวกรองช่วงเวลา"
-                            >
-                              <X className="w-3 h-3 text-blue-700" />
-                            </button>
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-slate-500 mt-1 font-medium">
-                        {selectedVenueFilter
-                          ? `นิทรรศการและงานมหกรรม ณ ${
-                              selectedVenueFilter === 'qsncc' ? 'ศูนย์การประชุมแห่งชาติสิริกิติ์ (QSNCC)' :
-                              selectedVenueFilter === 'bitec' ? 'ศูนย์นิทรรศการและการประชุมไบเทค บางนา (BITEC)' :
-                              selectedVenueFilter === 'impact' ? 'อิมแพ็ค เมืองทองธานี (IMPACT)' :
-                              selectedVenueFilter === 'paragon' ? 'รอยัล พารากอน ฮอลล์ & ทรู ไอคอน ฮอลล์' :
-                              selectedVenueFilter === 'bacc' ? 'หอศิลปวัฒนธรรมแห่งกรุงเทพมหานคร (BACC) & ย่านสร้างสรรค์' :
-                              selectedVenueFilter === 'park' ? 'สวนสาธารณะ & ลานเมืองกลางแจ้ง' :
-                              selectedVenueFilter === 'regional' ? 'ศูนย์การประชุมและแสดงสินค้านานาชาติระดับภูมิภาค (KICE / CMECC)' : selectedVenueFilter
-                            } (${streamPublicEvents.length} งาน)`
-                          : `นิทรรศการ คอนเวนชัน และเทศกาลระดับประเทศ ณ ศูนย์การประชุมและแลนด์มาร์กชั้นนำ (${streamPublicEvents.length} งาน)`}
-                      </p>
-                    </div>
-                  </div>
+                <div id="section-moments" className="scroll-mt-24">
+                  <CommunityMomentsStrip />
+                </div>
 
-                  {/* Top Venues in Thailand Visual Rail (Convention Centers & Iconic Venues) */}
-                  <div className="pt-0 pb-0.5">
-                    <TopVenuesRail
-                      selectedVenue={selectedVenueFilter}
-                      onSelectVenue={(venueKey) => {
-                        setSelectedVenueFilter(venueKey);
-                        setSelectedFairRailCategory(null);
-                        if (typeof window !== 'undefined' && window.innerWidth < 640) {
-                          const el = document.getElementById('section-fairs-cards');
-                          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                        }
-                      }}
-                      eventsList={eventsList}
-                    />
-                  </div>
-
-                  {/* Public Venue Events Grid (Dynamic responsive columns) */}
-                  <div id="section-fairs-cards" className="scroll-mt-24 space-y-4">
-                    <EventGrid
-                      events={streamPublicEvents}
-                      limit={10}
-                      columns={5}
-                      onSelectEvent={() => { }}
-                      favorites={isLoggedIn ? favorites : []}
-                      toggleFavorite={toggleFavorite}
-                      joinedEventIds={isLoggedIn ? joinedEventIds : []}
-                      onResetFilters={handleResetAllFilters}
-                    />
-                    {streamPublicEvents.length > 10 && (
-                      <div className="pt-1 text-center">
-                        <Link
-                          href={`/fairs${selectedVenueFilter ? `?venue=${encodeURIComponent(selectedVenueFilter)}` : ''}`}
-                          className="inline-flex items-center gap-2 px-5 py-2 bg-white hover:bg-sky-50 text-[#2B527A] border border-blue-200/90 rounded-xl text-xs font-bold shadow-2xs hover:shadow-sm transition-all cursor-pointer active:scale-95"
-                        >
-                          <span>ดูเพิ่มเติมอีก {streamPublicEvents.length - 10} งาน</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </Link>
-                      </div>
-                    )}
-                  </div>
-                </section>
+                {/* Places and fairs support the loop: where challenges send people and where meetups gather */}
+                <div className="pt-2 sm:pt-3">
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">ไปที่ไหนกันดี</h2>
+                  <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
+                    ที่เที่ยวและงานที่ชาเลนจ์พาไป และเป็นจุดนัดเจอของตี้เพื่อนๆ
+                  </p>
+                </div>
 
                 {/* ------------------------------------------------------------------------- */}
-                {/* STREAM SECTION 3: 📍 LIFESTYLE SPOTS (พิกัดเที่ยว & จุดฮีลใจ ทั่วไทย)        */}
+                {/* STREAM SECTION 4: 📍 LIFESTYLE SPOTS (พิกัดเที่ยว & จุดฮีลใจ ทั่วไทย)        */}
                 {/* ------------------------------------------------------------------------- */}
                 <section id="section-spots" className="space-y-2.5 sm:space-y-3 scroll-mt-20">
                   <div className="bg-gradient-to-r from-emerald-50/50 via-slate-50/30 to-transparent p-3 sm:p-3.5 rounded-2xl border border-emerald-100/60 shadow-2xs">
@@ -1553,23 +1472,112 @@ function HomeContent() {
                   </div>
                 </section>
 
-                {/* Member Privileges & Voucher Strip (below the three pillar sections) */}
+                {/* ------------------------------------------------------------------------- */}
+                {/* STREAM SECTION 5: 🏛️ EXHIBITIONS & FAIRS (งานมหกรรม & เอ็กซ์โป)           */}
+                {/* ------------------------------------------------------------------------- */}
+                <section id="section-fairs" className="space-y-2.5 sm:space-y-3 scroll-mt-20">
+                  <div className="bg-gradient-to-r from-blue-50/50 via-slate-50/30 to-transparent p-3 sm:p-3.5 rounded-2xl border border-blue-100/60 shadow-2xs">
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                          <span>งานมหกรรม & เอ็กซ์โป</span>
+                          <span className="text-[10px] font-black text-[#2B527A] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                            {selectedVenueFilter ? (
+                              selectedVenueFilter === 'qsncc' ? 'ศูนย์ฯ สิริกิติ์' :
+                              selectedVenueFilter === 'bitec' ? 'ไบเทค บางนา' :
+                              selectedVenueFilter === 'impact' ? 'อิมแพ็ค เมืองทองธานี' :
+                              selectedVenueFilter === 'paragon' ? 'พารากอน & ไอคอนสยาม' :
+                              selectedVenueFilter === 'bacc' ? 'หอศิลป์ BACC' :
+                              selectedVenueFilter === 'park' ? 'สวนสาธารณะ & ลานเมือง' :
+                              selectedVenueFilter === 'regional' ? 'ศูนย์ประชุมภูมิภาค' : selectedVenueFilter
+                            ) : `${streamPublicEvents.length} งาน`}
+                          </span>
+                        </h2>
+                        {timeFilter !== 'all' && (
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-950 bg-blue-100/90 px-2.5 py-0.5 rounded-full border border-blue-200 shadow-2xs">
+                            <Calendar className="w-3 h-3 text-[#2B527A]" />
+                            <span>
+                              {timeFilter === 'today' && 'วันนี้ (12 ก.ย.)'}
+                              {timeFilter === 'tomorrow' && 'พรุ่งนี้ (13 ก.ย.)'}
+                              {timeFilter === 'weekend' && 'สุดสัปดาห์นี้'}
+                              {timeFilter === 'next_month' && 'เดือนนี้'}
+                              {timeFilter === 'custom' && (startDate ? `${startDate}${endDate && endDate !== startDate ? ` - ${endDate}` : ''}` : 'ระบุวันที่')}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setTimeFilter('all');
+                                setStartDate('');
+                                setEndDate('');
+                              }}
+                              className="p-0.5 hover:bg-blue-200 rounded-full cursor-pointer ml-0.5"
+                              title="ล้างตัวกรองช่วงเวลา"
+                            >
+                              <X className="w-3 h-3 text-blue-700" />
+                            </button>
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1 font-medium">
+                        {selectedVenueFilter
+                          ? `นิทรรศการและงานมหกรรม ณ ${
+                              selectedVenueFilter === 'qsncc' ? 'ศูนย์การประชุมแห่งชาติสิริกิติ์ (QSNCC)' :
+                              selectedVenueFilter === 'bitec' ? 'ศูนย์นิทรรศการและการประชุมไบเทค บางนา (BITEC)' :
+                              selectedVenueFilter === 'impact' ? 'อิมแพ็ค เมืองทองธานี (IMPACT)' :
+                              selectedVenueFilter === 'paragon' ? 'รอยัล พารากอน ฮอลล์ & ทรู ไอคอน ฮอลล์' :
+                              selectedVenueFilter === 'bacc' ? 'หอศิลปวัฒนธรรมแห่งกรุงเทพมหานคร (BACC) & ย่านสร้างสรรค์' :
+                              selectedVenueFilter === 'park' ? 'สวนสาธารณะ & ลานเมืองกลางแจ้ง' :
+                              selectedVenueFilter === 'regional' ? 'ศูนย์การประชุมและแสดงสินค้านานาชาติระดับภูมิภาค (KICE / CMECC)' : selectedVenueFilter
+                            } (${streamPublicEvents.length} งาน)`
+                          : `นิทรรศการ คอนเวนชัน และเทศกาลระดับประเทศ ณ ศูนย์การประชุมและแลนด์มาร์กชั้นนำ (${streamPublicEvents.length} งาน)`}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Top Venues in Thailand Visual Rail (Convention Centers & Iconic Venues) */}
+                  <div className="pt-0 pb-0.5">
+                    <TopVenuesRail
+                      selectedVenue={selectedVenueFilter}
+                      onSelectVenue={(venueKey) => {
+                        setSelectedVenueFilter(venueKey);
+                        setSelectedFairRailCategory(null);
+                        if (typeof window !== 'undefined' && window.innerWidth < 640) {
+                          const el = document.getElementById('section-fairs-cards');
+                          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
+                      }}
+                      eventsList={eventsList}
+                    />
+                  </div>
+
+                  {/* Public Venue Events Grid (Dynamic responsive columns) */}
+                  <div id="section-fairs-cards" className="scroll-mt-24 space-y-4">
+                    <EventGrid
+                      events={streamPublicEvents}
+                      limit={10}
+                      columns={5}
+                      onSelectEvent={() => { }}
+                      favorites={isLoggedIn ? favorites : []}
+                      toggleFavorite={toggleFavorite}
+                      joinedEventIds={isLoggedIn ? joinedEventIds : []}
+                      onResetFilters={handleResetAllFilters}
+                    />
+                    {streamPublicEvents.length > 10 && (
+                      <div className="pt-1 text-center">
+                        <Link
+                          href={`/fairs${selectedVenueFilter ? `?venue=${encodeURIComponent(selectedVenueFilter)}` : ''}`}
+                          className="inline-flex items-center gap-2 px-5 py-2 bg-white hover:bg-sky-50 text-[#2B527A] border border-blue-200/90 rounded-xl text-xs font-bold shadow-2xs hover:shadow-sm transition-all cursor-pointer active:scale-95"
+                        >
+                          <span>ดูเพิ่มเติมอีก {streamPublicEvents.length - 10} งาน</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                {/* Member Privileges & Voucher Strip (below the core loop and the places/fairs it leads to) */}
                 <MemberPrivilegesSection isLoggedIn={isLoggedIn} />
-
-                {/* ------------------------------------------------------------------------- */}
-                {/* STREAM SECTION 4: ⚡ COMMUNITY QUESTS (ชาเลนจ์ & ภารกิจท้าทาย)             */}
-                {/* ------------------------------------------------------------------------- */}
-                <div id="section-challenges" className="scroll-mt-24">
-                  <CommunityChallengeBar
-                  />
-                </div>
-
-                {/* ------------------------------------------------------------------------- */}
-                {/* STREAM SECTION 5: 📸 SOCIAL STORIES (โมเมนต์ & บรรยากาศจริงจากชุมชน)        */}
-                {/* ------------------------------------------------------------------------- */}
-                <div id="section-moments" className="scroll-mt-24">
-                  <CommunityMomentsStrip />
-                </div>
 
                 {/* ------------------------------------------------------------------------- */}
                 {/* STREAM SECTION 6: 💎 PLATFORM TRUST & LIFESTYLE PERKS                     */}

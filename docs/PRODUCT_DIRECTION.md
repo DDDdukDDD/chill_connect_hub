@@ -45,8 +45,8 @@ No platform found (2026-10-16, a short search) does the whole loop, especially i
 - **Moments:** most are sample data now. Challenges that need a moment as proof will fill this over time.
 - **Earlier owner decision (2026-10-11):** most visitors do not come to find new friends, so company is offered clearly but never required. Keep this in copy even with meetups at the core.
 
-## Next steps (proposed, not started)
+## Next steps
 
-1. Homepage: challenges, meetups and moments first; places and fairs below or shown as "where challenges send you".
+1. Homepage: challenges, meetups and moments first; places and fairs below or shown as "where challenges send you". **Done 2026-10-16 (BE-068).**
 2. Menu order to match.
 3. Place and fair pages: make "challenges that count here" and "meetups that meet here" prominent.
