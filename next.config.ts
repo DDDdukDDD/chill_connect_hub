@@ -18,6 +18,8 @@ const nextConfig: NextConfig = {
 
       // 3. กิจกรรม & อีเวนต์ (Direct event aliases to catalog)
       { source: '/event', destination: '/', permanent: true },
+      // The /journey homepage draft became the home page (2026-10-16)
+      { source: '/journey', destination: '/', permanent: false },
       { source: '/events', destination: '/', permanent: true },
 
       // 4. มายฮับ & E-Ticket (User personal hub & ticket aliases)

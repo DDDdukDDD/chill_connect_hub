@@ -26,7 +26,6 @@ const targetHref = (m: FeedItem) => {
  */
 export function FriendsMomentsWall() {
   const [moments, setMoments] = useState<FeedItem[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -38,7 +37,6 @@ export function FriendsMomentsWall() {
         if (!isActive || !result?.success || !Array.isArray(result.moments)) return;
         const withPhotos = (result.moments as FeedItem[]).filter((m) => m.images?.length > 0);
         setMoments(withPhotos);
-        setTotalCount(result.pagination?.totalCount ?? withPhotos.length);
       })
       .catch((error) => console.warn('Could not load moments:', error))
       .finally(() => {
@@ -113,10 +111,10 @@ export function FriendsMomentsWall() {
       </div>
 
       {/* The chosen moment, told openly */}
-      <div key={active.id} className="grid lg:grid-cols-[1.2fr_1fr] gap-5 lg:gap-10 items-center animate-fade-in">
+      <div key={active.id} className="grid lg:grid-cols-[1.2fr_1fr] gap-4 lg:gap-10 items-center animate-fade-in">
         <Link
           href={`/moments?momentId=${encodeURIComponent(active.id)}`}
-          className={`grid gap-2 sm:gap-3 h-64 sm:h-[400px] ${photos.length > 1 ? 'grid-cols-3 grid-rows-2' : 'grid-cols-1'}`}
+          className={`grid gap-2 sm:gap-3 h-52 sm:h-[300px] ${photos.length > 1 ? 'grid-cols-3 grid-rows-2' : 'grid-cols-1'}`}
           aria-label={`ดูโมเมนต์ของ ${shortName(active.userName)}`}
         >
           {photos.map((src, i) => (
@@ -150,7 +148,7 @@ export function FriendsMomentsWall() {
             </p>
           )}
 
-          <blockquote className="mt-2 text-lg sm:text-2xl font-black text-slate-900 leading-snug tracking-tight line-clamp-4">
+          <blockquote className="mt-2 text-lg sm:text-xl font-black text-slate-900 leading-snug tracking-tight line-clamp-3">
             “{active.caption}”
           </blockquote>
 
@@ -160,7 +158,7 @@ export function FriendsMomentsWall() {
           </p>
 
           {reply && (
-            <div className="mt-4 flex items-start gap-2.5">
+            <div className="mt-3 flex items-start gap-2.5">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={reply.userAvatar} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
               <p className="min-w-0 rounded-2xl rounded-tl-sm bg-slate-100 px-3.5 py-2.5 text-sm text-slate-700">
@@ -170,7 +168,7 @@ export function FriendsMomentsWall() {
             </div>
           )}
 
-          <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3">
+          <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-3">
             {placeHref && (
               <Link
                 href={placeHref}
@@ -187,9 +185,6 @@ export function FriendsMomentsWall() {
         </div>
       </div>
 
-      {totalCount > moments.length && (
-        <p className="text-sm font-medium text-slate-500">เพื่อนๆ แชร์ไปแล้ว {totalCount.toLocaleString()} โมเมนต์</p>
-      )}
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useDeferredValue, Suspense } from 'react';
 import Link from 'next/link';
-import { Search, X, Users, ShieldCheck, Flag, BadgeCheck, Plus, Trophy, Camera, Footprints, ArrowRight, MapPin } from 'lucide-react';
+import { Search, X, Users, ShieldCheck, Flag, Trophy, Camera, Footprints, ArrowRight, MapPin } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { BrandLogo } from '@/components/BrandLogo';
@@ -10,6 +10,7 @@ import { EventGrid } from '@/components/EventGrid';
 import { SpotCard, SpotCardSkeleton } from '@/components/SpotCard';
 import { ChallengePicks } from '@/components/ChallengePicks';
 import { FriendsMomentsWall } from '@/components/FriendsMomentsWall';
+import { OpenMeetupTiles } from '@/components/OpenMeetupTiles';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
@@ -20,7 +21,7 @@ import { useAuth } from '@/lib/useAuth';
 import { fetchAllContentPages } from '@/lib/contentClient';
 import { useMyRewards } from '@/lib/useMyRewards';
 import { usePublishedSpots, getCachedSpotSearchText, getCachedSpotVibeCategory } from '@/lib/usePublishedSpots';
-import type { SpotVibeId } from '@/data/masterHub';
+import { getCommunityEventCategory, type SpotVibeId } from '@/data/masterHub';
 import { matchSearchQuery } from '@/lib/searchUtils';
 import { isTradeEvent } from '@/lib/highlights';
 import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
@@ -31,11 +32,11 @@ const ROW_SIZE = 5;
 // Order of the vibes in the places row: what the audience looks for on a day off comes first
 const VIBE_ORDER: SpotVibeId[] = ['cafe_slowbar', 'nature_camping', 'art_creative', 'sea_island', 'mountain_mist', 'wellness_retreat', 'oldtown_culture'];
 
-// The core loop (docs/PRODUCT_DIRECTION.md), shown to signed-out visitors as "how it works"
+// The core loop (docs/PRODUCT_DIRECTION.md), told as "how it works" near the end of the page
 const HOW_IT_WORKS = [
-  { href: '#journey-challenges', Icon: Trophy, tint: 'bg-amber-50', iconBg: 'bg-amber-100 text-amber-700', title: 'เลือกชาเลนจ์', line: 'เหตุผลดีๆ ให้ออกไป ไปให้ครบแล้วรับแต้ม เหรียญ และของรางวัลจากร้าน', cta: 'ดูชาเลนจ์' },
-  { href: '#journey-meetups', Icon: Users, tint: 'bg-orange-50', iconBg: 'bg-orange-100 text-orange-700', title: 'ไปกับตี้ หรือไปเอง', line: 'อยากมีเพื่อนไปด้วยก็ร่วมตี้ที่เปิดรับ ไม่บังคับ ไปเองก็นับเหมือนกัน', cta: 'ดูตี้' },
-  { href: '#journey-moments', Icon: Camera, tint: 'bg-rose-50', iconBg: 'bg-rose-100 text-rose-700', title: 'แชร์โมเมนต์', line: 'เก็บรูปและเรื่องเล่าจากที่ที่ไป ให้เพื่อนๆ อยากไปตาม', cta: 'ดูโมเมนต์' },
+  { href: '/challenges', Icon: Trophy, blob: 'bg-amber-100/70', iconBg: 'bg-amber-400 text-white', title: 'เลือกชาเลนจ์ที่ใช่', line: 'เหตุผลดีๆ ให้ออกไป ไปให้ครบแล้วรับแต้ม เหรียญ และของรางวัลจากร้าน', cta: 'ดูชาเลนจ์' },
+  { href: '/community', Icon: Users, blob: 'bg-orange-100/70', iconBg: 'bg-[#F26430] text-white', title: 'ร่วมตี้ หรือไปเองก็ได้', line: 'อยากมีเพื่อนไปด้วยก็ร่วมตี้ที่เปิดรับ หรือตั้งตี้เอง ไปคนเดียวก็นับเหมือนกัน', cta: 'ดูตี้' },
+  { href: '/moments', Icon: Camera, blob: 'bg-rose-100/70', iconBg: 'bg-rose-500 text-white', title: 'แชร์โมเมนต์', line: 'เก็บรูปและเรื่องเล่าจากที่ที่ไป ให้เพื่อนๆ อยากไปตาม', cta: 'ดูโมเมนต์' },
 ];
 
 // Photos for the hero collage and the join block (local files, shown on /spots too)
@@ -44,11 +45,17 @@ const HERO_PHOTOS = ['/images/destinations/chiangmai.jpg', '/images/destinations
 // Quick searches under the hero search box
 const QUICK_SEARCHES = ['คาเฟ่', 'วิ่ง', 'บอร์ดเกม', 'เชียงใหม่'];
 
-// Provinces shown in "ไปจังหวัดไหนดี"
+// Provinces shown in "ไปไหนดี?"
 const DESTINATION_IDS = ['bkk', 'chiangmai', 'chonburi', 'khaoyai', 'krabi', 'nan'];
 
 const eventSearchText = (e: EventItem) =>
   `${e.title} ${e.description} ${e.tag} ${e.location} ${e.hostName || ''} ${e.province || ''}`.toLowerCase();
+
+// "12 ต.ค. – 18 ต.ค." for a fair, years left out
+const fairDates = (e: EventItem) => {
+  const short = (d: string) => d.replace(/\s*\d{4}$/, '');
+  return e.endDate && e.endDate !== e.date ? `${short(e.date)} – ${short(e.endDate)}` : short(e.date);
+};
 
 // Each kind, soonest first; ended events never show on the homepage
 const upcomingByDate = (events: EventItem[], type: 'community' | 'public_venue') =>
@@ -222,6 +229,12 @@ function JourneyContent() {
     [fairEvents, query]
   );
 
+  // Open meetups (seats left) per category, shown on each box
+  const categoryBoxes = useMemo(() => {
+    const open = communityEvents.filter((e) => e.participantsCount < e.maxParticipants);
+    return COMMUNITY_LIFESTYLE_CATEGORIES.map((cat) => ({ cat, count: open.filter((e) => getCommunityEventCategory(e) === cat.id).length }));
+  }, [communityEvents]);
+
   const destinations = DESTINATION_IDS.flatMap((id) => TOP_DESTINATIONS.filter((d) => d.id === id));
 
   const withQuery = (path: string) => (query ? `${path}?q=${encodeURIComponent(query)}` : path);
@@ -287,16 +300,6 @@ function JourneyContent() {
     </div>
   );
 
-  const createMeetupButton = (
-    <button
-      type="button"
-      onClick={openCreateMeetup}
-      className="hidden sm:inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold whitespace-nowrap cursor-pointer transition-colors"
-    >
-      <Plus className="w-4 h-4" aria-hidden="true" />
-      ตั้งตี้เอง
-    </button>
-  );
 
   // A search shows its matches in three rows; the story of the page comes back when it is cleared
   const searchResults = (
@@ -377,15 +380,15 @@ function JourneyContent() {
                   <Footprints className="w-4 h-4 sm:w-6 sm:h-6" />
                 </span>
                 <br />
-                มี<span className="text-[#F26430]">เพื่อน</span>ไปด้วย{' '}
+                พบเจอ<span className="text-[#F26430]">มิตรภาพ</span>ใหม่{' '}
                 <span className="inline-flex align-middle w-7 h-7 sm:w-10 sm:h-10 rounded-full bg-[#2563EB] text-white items-center justify-center rotate-6" aria-hidden="true">
                   <Users className="w-4 h-4 sm:w-6 sm:h-6" />
                 </span>
                 <br />
-                มี<span className="text-[#2563EB]">เรื่องเล่า</span>กลับมา
+                ส่งต่อ<span className="text-[#2563EB]">ความประทับใจ</span>
               </h1>
               <p className="mt-2.5 sm:mt-3 text-sm sm:text-base font-medium text-slate-600 max-w-lg mx-auto lg:mx-0">
-                ชาเลนจ์ชวนออกไป ตี้ให้ไปด้วยกัน และโมเมนต์จากคนที่ไปมาแล้ว <span className="whitespace-nowrap">ทั่วไทย</span>
+                ชาเลนจ์สนุกๆ ตี้ชิลๆ และกิจกรรมมากมาย<span className="whitespace-nowrap">ทั่วไทย</span> <span className="whitespace-nowrap">รอให้คุณออกไปลอง</span>
               </p>
 
               <form
@@ -446,25 +449,35 @@ function JourneyContent() {
             <>
               {/* 2. What do you feel like doing: the eight community categories, each opening its meetups */}
               <section className="space-y-4">
-                <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">อยากทำอะไรดี</h2>
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">เป็นสายไหน?</h2>
+                  <p className="mt-1 text-sm font-medium text-slate-500">เลือกสายที่ใช่ แล้วดูว่ามีตี้ไหนชวนอยู่บ้าง</p>
+                </div>
                 <div className="grid grid-cols-4 lg:grid-cols-8 gap-2 sm:gap-3">
-                  {COMMUNITY_LIFESTYLE_CATEGORIES.map((cat) => {
+                  {categoryBoxes.map(({ cat, count }, i) => {
                     const Icon = cat.icon;
                     return (
                       <Link
                         key={cat.id}
                         href={`/community?category=${cat.id}`}
-                        className="group flex flex-col items-center gap-2 rounded-2xl border border-slate-200 bg-white px-1 py-3 sm:py-4 hover:border-slate-300 hover:shadow-md hover:-translate-y-0.5 transition-all"
+                        aria-label={count > 0 ? `${cat.name} ${count} ตี้เปิดรับ` : cat.name}
+                        className={`group relative flex flex-col items-center gap-2 rounded-2xl border-2 border-slate-100 border-b-4 ${cat.colorScheme.borderBottom} bg-white px-1 py-3 sm:py-4 hover:-translate-y-1 hover:shadow-lg active:translate-y-0 transition-all`}
                       >
-                        <span className={`w-11 h-11 sm:w-14 sm:h-14 rounded-full flex items-center justify-center ${cat.colorScheme.iconBg} ${cat.colorScheme.iconColor} group-hover:scale-105 transition-transform`}>
-                          <Icon className="w-5 h-5 sm:w-6 sm:h-6" aria-hidden="true" />
+                        {/* The count sits on the corner like a sticker, so the box keeps its size */}
+                        {count > 0 && (
+                          <span className={`absolute -top-2 -right-1.5 min-w-6 h-6 px-1.5 rounded-full border-2 border-white text-[11px] font-black flex items-center justify-center shadow-sm rotate-12 group-hover:rotate-0 transition-transform ${cat.colorScheme.activeBg}`} aria-hidden="true">
+                            {count}
+                          </span>
+                        )}
+                        <span className={`w-11 h-11 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center ${cat.colorScheme.iconBg} ${cat.colorScheme.iconColor} ${i % 2 ? 'rotate-6' : '-rotate-6'} group-hover:rotate-0 group-hover:scale-110 transition-transform`}>
+                          <Icon className="w-5 h-5 sm:w-7 sm:h-7" aria-hidden="true" />
                         </span>
                         {/* Break only at the ampersand, never inside a Thai word */}
-                        <span className="text-[11px] sm:text-xs font-bold text-slate-800 text-center leading-tight">
-                          {cat.name.split(' & ').map((part, i, all) => (
+                        <span className="text-[11px] sm:text-xs font-extrabold text-slate-800 text-center leading-tight" aria-hidden="true">
+                          {cat.name.split(' & ').map((part, j, all) => (
                             <span key={part} className="block whitespace-nowrap">
                               {part}
-                              {i < all.length - 1 ? ' &' : ''}
+                              {j < all.length - 1 ? ' &' : ''}
                             </span>
                           ))}
                         </span>
@@ -480,81 +493,50 @@ function JourneyContent() {
                 <ChallengePicks quests={questList} joinedIds={isLoggedIn ? myRewards.joinedQuestIds : []} isLoaded={isQuestsLoaded} />
               </section>
 
-              {/* 4. Who to go with; company is offered, never required */}
-              <section id="journey-meetups" className="space-y-4 scroll-mt-24">
-                {sectionHead('ตี้ที่เปิดรับอยู่', 'อยากมีเพื่อนไปด้วยก็ร่วมตี้ อยากไปเองก็ได้เหมือนกัน', '/community', createMeetupButton)}
-                {eventRow(communityRow)}
-                <button
-                  type="button"
-                  onClick={openCreateMeetup}
-                  className="sm:hidden w-full inline-flex items-center justify-center gap-1.5 h-10 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold whitespace-nowrap cursor-pointer transition-colors"
-                >
-                  <Plus className="w-4 h-4" aria-hidden="true" />
-                  ไม่เจอที่ใช่? ตั้งตี้เอง
-                </button>
-              </section>
-
-              {/* 5. Signed out only: how it works, then one invitation to join */}
+              {/* Signed out only: the invitation to join, high on the page right after the first reason to go */}
               {isAuthReady && !isLoggedIn && (
-                <section className="space-y-4 sm:space-y-6">
-                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">ใช้งานยังไง</h2>
-                  <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
-                    {HOW_IT_WORKS.map(({ href, Icon, tint, iconBg, title, line, cta }, i) => (
-                      <a key={href} href={href} className={`group rounded-3xl ${tint} p-5 sm:p-6 flex sm:flex-col gap-4 hover:shadow-md transition-shadow`}>
-                        <span className={`w-12 h-12 sm:w-14 sm:h-14 shrink-0 rounded-2xl ${iconBg} flex items-center justify-center ${i % 2 ? 'rotate-3' : '-rotate-3'}`}>
-                          <Icon className="w-6 h-6 sm:w-7 sm:h-7" aria-hidden="true" />
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block text-base sm:text-lg font-black text-slate-900">
-                            <span className="text-slate-400 tabular-nums mr-1.5">{i + 1}.</span>{title}
-                          </span>
-                          <span className="block mt-1 text-sm font-medium text-slate-600">{line}</span>
-                          <span className="mt-2 inline-flex items-center gap-1 text-sm font-bold text-[#2563EB] group-hover:underline">
-                            {cta} <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-                          </span>
-                        </span>
-                      </a>
+                <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-orange-50 via-amber-50 to-sky-50 px-5 py-6 sm:px-10 sm:py-8 flex flex-col sm:flex-row items-center gap-4 sm:gap-8 text-center sm:text-left">
+                  <div className="flex -space-x-3 shrink-0" aria-hidden="true">
+                    {HERO_PHOTOS.map((src, i) => (
+                      <img key={src} src={src} alt="" className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-[3px] border-white shadow-sm ${i === 1 ? '-translate-y-1.5 rotate-3' : '-rotate-3'}`} />
                     ))}
                   </div>
-
-                  <div className="relative overflow-hidden rounded-3xl bg-[#1E293B] text-white px-5 py-7 sm:px-10 sm:py-10 flex flex-col sm:flex-row items-center gap-6">
-                    <div className="pointer-events-none absolute -right-10 -top-16 w-56 h-56 rounded-full bg-[#F26430]/25" aria-hidden="true" />
-                    <div className="pointer-events-none absolute right-40 -bottom-20 w-40 h-40 rounded-full bg-[#2563EB]/30" aria-hidden="true" />
-                    <div className="relative flex -space-x-4 shrink-0 order-first sm:order-last" aria-hidden="true">
-                      {HERO_PHOTOS.map((src, i) => (
-                        <img key={src} src={src} alt="" className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-4 border-[#1E293B] ${i === 1 ? '-translate-y-2' : ''}`} />
-                      ))}
-                    </div>
-                    <div className="relative flex-1 text-center sm:text-left">
-                      <p className="text-xl sm:text-2xl font-black tracking-tight">ไปคนเดียวก็ได้ ไปกับเพื่อนใหม่ก็ดี</p>
-                      <p className="mt-1.5 text-sm sm:text-base font-medium text-white/80">สมัครฟรี แล้วเริ่มเก็บแต้มจากทุกที่ที่ไป ร่วมตี้ และแชร์โมเมนต์ได้เลย</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setIsAuthModalOpen(true)}
-                      className="relative shrink-0 h-11 px-6 rounded-full bg-white hover:bg-slate-100 text-slate-900 text-sm font-extrabold whitespace-nowrap cursor-pointer transition-colors"
-                    >
-                      สมัครสมาชิกฟรี
-                    </button>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight">มาเป็นส่วนหนึ่งของ <span className="whitespace-nowrap">Chill &amp; Connect กัน</span></p>
+                    <p className="mt-1 text-sm sm:text-base font-medium text-slate-600">ให้ทุกการออกไปใช้ชีวิตมีความหมาย สมัครฟรี แล้วเก็บแต้ม ร่วมตี้ และแชร์โมเมนต์ได้เลย</p>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsAuthModalOpen(true)}
+                    className="shrink-0 w-full sm:w-auto h-12 px-8 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-base font-extrabold shadow-sm whitespace-nowrap cursor-pointer transition-colors"
+                  >
+                    สมัครสมาชิกฟรี
+                  </button>
                 </section>
               )}
 
-              {/* 6. Proof that people went, which makes the next person go */}
+              {/* 4. Who to go with; company is offered, never required */}
+              <section id="journey-meetups" className="space-y-4 scroll-mt-24">
+                {sectionHead('ตี้แนะนำ เปิดรับอยู่', 'อยากมีเพื่อนไปด้วยก็ร่วมตี้ อยากไปเองก็ได้เหมือนกัน', '/community')}
+                <OpenMeetupTiles events={communityRow} isLoaded={isEventsLoaded} onCreate={openCreateMeetup} />
+              </section>
+
+              {/* 5. Proof that people went, which makes the next person go */}
               <section id="journey-moments" className="space-y-4 scroll-mt-24">
-                {sectionHead('เพื่อน & โมเมนต์', 'เรื่องเล่าจริงจากเพื่อนๆ ที่ออกไปมาแล้ว แตะที่เพื่อนเพื่ออ่านเรื่องของเขา', '/moments')}
+                {sectionHead('เพื่อน & โมเมนต์', 'เรื่องเล่าจริงจากเพื่อนๆ ที่ออกไปมาแล้ว แตะที่รูปเพื่ออ่านเรื่องของแต่ละคน', '/moments')}
                 <FriendsMomentsWall />
               </section>
 
-              {/* 7. Support: where challenges send people and where meetups gather */}
+              {/* 6. Support: provinces to explore, then the fairs coming up */}
               <section className="space-y-4">
-                {sectionHead('ไปจังหวัดไหนดี', 'ที่เที่ยวที่ชาเลนจ์พาไป และจุดนัดเจอของตี้เพื่อนๆ', '/spots')}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+                {sectionHead('ไปไหนดี?', 'ที่เที่ยว ที่เดินเล่น และงานแฟร์ทั่วไทย เลือกจังหวัดที่อยากไปได้เลย', '/spots')}
+                {/* On phones the provinces scroll sideways, like the other photo rows */}
+                <div className="flex overflow-x-auto no-scrollbar snap-x snap-mandatory gap-3 sm:grid sm:overflow-visible sm:grid-cols-3 lg:grid-cols-6 sm:gap-4">
                   {destinations.map((d) => (
                     <Link
                       key={d.id}
                       href={`/spots?province=${encodeURIComponent(d.provinceKey)}`}
-                      className="group relative aspect-[4/5] rounded-2xl overflow-hidden bg-slate-200"
+                      className="group relative w-[42%] shrink-0 snap-start sm:w-auto aspect-[4/5] rounded-2xl overflow-hidden bg-slate-200"
                     >
                       <img src={d.imageUrl} alt={d.nameTh} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                       <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/75 to-transparent" aria-hidden="true" />
@@ -570,31 +552,80 @@ function JourneyContent() {
                     <MapPin className="w-4 h-4" aria-hidden="true" />
                     ที่เที่ยวทั้งหมด{isSpotsLoaded ? ` ${spotsList.length.toLocaleString()} แห่ง` : ''}
                   </Link>
-                  <Link href="/fairs" className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold whitespace-nowrap transition-colors">
-                    งานแฟร์ & นิทรรศการ{isEventsLoaded ? ` ${fairEvents.length.toLocaleString()} งาน` : ''}
-                  </Link>
                 </div>
+
+                {/* Fairs and exhibitions get their own row, soonest first (trade shows last) */}
+                {isEventsLoaded && fairRow.length > 0 && (
+                  <div className="pt-4 sm:pt-6 space-y-3">
+                    <div className="flex items-end justify-between gap-3">
+                      <h3 className="text-base sm:text-lg font-black text-slate-900">งานแฟร์ & นิทรรศการช่วงนี้</h3>
+                      <Link href="/fairs" className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">
+                        ดูทั้งหมด {fairEvents.length.toLocaleString()} งาน
+                      </Link>
+                    </div>
+                    <div className="flex overflow-x-auto no-scrollbar snap-x snap-mandatory gap-3 sm:grid sm:overflow-visible sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
+                      {fairRow.slice(0, 4).map((fair) => {
+                        const isOn = parseEventDateToTimestamp(fair.date) <= Date.now();
+                        return (
+                          <Link key={fair.id} href={`/fairs/${encodeURIComponent(fair.id)}`} className="group w-[72%] shrink-0 snap-start sm:w-auto">
+                            <span className="relative block aspect-[16/10] rounded-2xl overflow-hidden bg-slate-200">
+                              <img src={fair.image} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                              <span className={`absolute left-2.5 top-2.5 rounded-full px-2.5 py-1 text-[11px] font-extrabold shadow-sm ${isOn ? 'bg-[#F26430] text-white' : 'bg-white text-slate-900'}`}>
+                                {isOn ? 'กำลังจัดอยู่' : 'เร็วๆ นี้'}
+                              </span>
+                            </span>
+                            <span className="block mt-2 text-sm sm:text-[15px] font-extrabold text-slate-900 leading-snug line-clamp-2 group-hover:underline">{fair.title}</span>
+                            <span className="mt-0.5 flex items-center gap-1 text-xs font-medium text-slate-500 min-w-0">
+                              <MapPin className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                              <span className="truncate">{fairDates(fair)} · {fair.location}</span>
+                            </span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </section>
 
-              {/* 8. Going out safely, kept to what is true today */}
-              <section className="rounded-2xl border border-slate-200 p-4 sm:p-6 space-y-4">
-                <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">ออกไปอย่างสบายใจ</h2>
-                <ul className="grid gap-3 sm:grid-cols-3 sm:gap-6">
-                  {[
-                    { Icon: Users, text: 'ทริปชวนเพื่อนมีกติกา อย่างน้อย 3 คน นัดตอนกลางวัน และเจอกันที่สถานที่' },
-                    { Icon: Flag, text: 'รายงานหรือบล็อกคนที่ทำให้ไม่สบายใจได้ทุกเมื่อ' },
-                    { Icon: BadgeCheck, text: 'ข้อมูลงานแฟร์มาจากผู้จัดงานและศูนย์ประชุมโดยตรง' },
-                  ].map(({ Icon, text }) => (
-                    <li key={text} className="flex items-start gap-3">
-                      <Icon className="w-5 h-5 text-slate-700 shrink-0 mt-0.5" aria-hidden="true" />
-                      <span className="text-sm font-medium text-slate-700">{text}</span>
+              {/* 7. How it works, the way Meetup tells it: three steps of the loop, then the safety rules in one line */}
+              <section className="space-y-6 sm:space-y-8">
+                <div className="text-center">
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Chill & Connect Hub ใช้งานยังไง</h2>
+                  <p className="mt-1 text-sm font-medium text-slate-500">ออกไปทำสิ่งที่ชอบ เจอเพื่อนใหม่ แล้วเก็บเรื่องเล่ากลับมา ใช้ฟรีทั้งหมด</p>
+                </div>
+                <ol className="grid gap-6 sm:grid-cols-3 sm:gap-8">
+                  {HOW_IT_WORKS.map(({ href, Icon, blob, iconBg, title, line, cta }, i) => (
+                    <li key={href}>
+                      <Link href={href} className="group flex sm:flex-col sm:items-center sm:text-center gap-4">
+                        <span className={`relative w-20 h-20 sm:w-28 sm:h-28 shrink-0 rounded-full ${blob} flex items-center justify-center`} aria-hidden="true">
+                          <span className={`w-12 h-12 sm:w-16 sm:h-16 rounded-2xl ${iconBg} flex items-center justify-center shadow-sm ${i % 2 ? 'rotate-6' : '-rotate-6'} group-hover:rotate-0 group-hover:scale-110 transition-transform`}>
+                            <Icon className="w-6 h-6 sm:w-8 sm:h-8" />
+                          </span>
+                          <span className="absolute -top-1 -left-1 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-900 text-white text-xs sm:text-sm font-black flex items-center justify-center border-2 border-white">
+                            {i + 1}
+                          </span>
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-base sm:text-lg font-black text-slate-900 group-hover:underline">{title}</span>
+                          <span className="block mt-1 text-sm font-medium text-slate-600 sm:max-w-[17rem] sm:mx-auto">{line}</span>
+                          <span className="mt-2 inline-flex items-center gap-1 text-sm font-bold text-[#2563EB]">
+                            {cta} <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+                          </span>
+                        </span>
+                      </Link>
                     </li>
                   ))}
-                </ul>
-                <Link href="/safety" className="inline-flex items-center gap-1.5 text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline">
-                  <ShieldCheck className="w-4 h-4" aria-hidden="true" />
-                  อ่านกติกาความปลอดภัย
-                </Link>
+                </ol>
+                {/* Safety stays, kept to what is true today */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-x-5 gap-y-2 rounded-2xl bg-slate-50 px-4 py-3 text-xs sm:text-sm font-medium text-slate-600">
+                  <span className="inline-flex items-center gap-1.5 font-extrabold text-slate-900">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600" aria-hidden="true" />
+                    ออกไปอย่างสบายใจ
+                  </span>
+                  <span className="inline-flex items-center gap-1.5"><Users className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />ทริปชวนเพื่อนอย่างน้อย 3 คน นัดกลางวัน เจอกันที่สถานที่</span>
+                  <span className="inline-flex items-center gap-1.5"><Flag className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />รายงานหรือบล็อกได้ทุกเมื่อ</span>
+                  <Link href="/safety" className="font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">อ่านกติกาความปลอดภัย</Link>
+                </div>
               </section>
             </>
           )}
@@ -668,7 +699,7 @@ function JourneyContent() {
   );
 }
 
-export default function JourneyPage() {
+export default function HomePage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-white flex items-center justify-center">
