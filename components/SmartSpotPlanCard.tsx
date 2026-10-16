@@ -215,17 +215,17 @@ export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({
         {/* Header: Organic Luxury Forest Green Badge & Compact Typography */}
         <div className="flex items-start justify-between gap-2 relative z-10">
           <div className="space-y-1 min-w-0">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-[#2D5A3C] to-[#3B6E4C] text-white text-[10.5px] font-black shadow-xs border border-[#4A7C59]/40">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-[#2D5A3C] to-[#3B6E4C] text-white text-[10.5px] font-bold shadow-xs border border-[#4A7C59]/40">
               <span className="w-1.5 h-1.5 rounded-full bg-[#86EFAC] animate-pulse shrink-0" />
               <span className="tracking-wide">Smart Plan • เที่ยวรอบย่าน</span>
             </div>
 
-            <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight leading-snug">
+            <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight leading-snug">
               ทริป 1 วันรอบย่าน {cleanText(currentSpot.district || currentSpot.province)}
             </h3>
 
             <div className="flex items-center gap-1.5 text-[11px] pt-0.5">
-              <span className="inline-flex items-center font-extrabold text-[#2D5A3C] bg-[#EBF3ED] px-2 py-0.5 rounded-full border border-[#C5DEC9]">
+              <span className="inline-flex items-center font-bold text-[#2D5A3C] bg-[#EBF3ED] px-2 py-0.5 rounded-full border border-[#C5DEC9]">
                 {stops.length} จุดเช็คอิน
               </span>
               <span className="text-slate-500 font-medium truncate">
@@ -237,7 +237,7 @@ export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({
           <button
             type="button"
             onClick={handleShuffle}
-            className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#2D5A3C] hover:text-[#1B432C] bg-white hover:bg-[#F4F8F5] px-2.5 py-1 rounded-xl border border-[#C5DEC9] hover:border-[#A8CEB3] shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 mt-0.5"
+            className="inline-flex items-center gap-1 text-[11px] font-bold text-[#2D5A3C] hover:text-[#1B432C] bg-white hover:bg-[#F4F8F5] px-2.5 py-1 rounded-xl border border-[#C5DEC9] hover:border-[#A8CEB3] shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 mt-0.5"
             title="สลับพิกัดทางเลือกใหม่"
           >
             <span>สลับทริป</span>
@@ -263,7 +263,7 @@ export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({
 
               {/* Step Node Circle */}
               <div
-                className={`absolute left-2.5 top-2.5 -translate-x-1/2 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shadow-2xs z-10 ${
+                className={`absolute left-2.5 top-2.5 -translate-x-1/2 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shadow-2xs z-10 ${
                   item.isCurrentSpot
                     ? 'bg-[#2D5A3C] text-white ring-3 ring-[#DDF0E1]'
                     : 'bg-white text-[#2D5A3C] border-[1.5px] border-[#A8CEB3] ring-2 ring-white'
@@ -284,7 +284,7 @@ export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({
                 <div className="flex items-center justify-between gap-1.5">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span
-                      className={`font-black text-[10.5px] px-2 py-0.5 rounded-md border shrink-0 ${
+                      className={`font-bold text-[10.5px] px-2 py-0.5 rounded-md border shrink-0 ${
                         item.isCurrentSpot
                           ? 'text-[#2D5A3C] bg-[#DDF0E1] border-[#BBDDC3]'
                           : 'text-slate-800 bg-slate-100 border-slate-200'
@@ -298,13 +298,13 @@ export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({
                   </div>
 
                   {item.isCurrentSpot ? (
-                    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[9.5px] font-black bg-[#2D5A3C] text-white shadow-2xs shrink-0">
+                    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[9.5px] font-bold bg-[#2D5A3C] text-white shadow-2xs shrink-0">
                       ★ พิกัดนี้
                     </span>
                   ) : (
                     <Link
                       href={`/spots/${item.spot.id}`}
-                      className="text-[10.5px] font-extrabold text-[#2D5A3C] hover:text-[#1B432C] hover:underline shrink-0"
+                      className="text-[10.5px] font-bold text-[#2D5A3C] hover:text-[#1B432C] hover:underline shrink-0"
                     >
                       ดูข้อมูล
                     </Link>
@@ -334,13 +334,13 @@ export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({
 
                   <div className="min-w-0 flex-1">
                     {item.isCurrentSpot ? (
-                      <div className="text-xs font-black text-slate-900 truncate leading-snug">
+                      <div className="text-xs font-bold text-slate-900 truncate leading-snug">
                         {cleanText(item.spot.title)}
                       </div>
                     ) : (
                       <Link
                         href={`/spots/${item.spot.id}`}
-                        className="text-xs font-black text-slate-900 hover:text-[#2D5A3C] transition-colors truncate block leading-snug"
+                        className="text-xs font-bold text-slate-900 hover:text-[#2D5A3C] transition-colors truncate block leading-snug"
                       >
                         {cleanText(item.spot.title)}
                       </Link>
@@ -379,7 +379,7 @@ export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({
             href={multiStopMapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full py-2.5 px-3 rounded-xl font-black text-xs bg-gradient-to-r from-[#2D5A3C] via-[#366846] to-[#2D5A3C] hover:from-[#234E32] hover:via-[#2C573A] hover:to-[#234E32] text-white shadow-sm hover:shadow transition-all flex items-center justify-center gap-1.5 active:scale-98 cursor-pointer text-center"
+            className="w-full py-2.5 px-3 rounded-xl font-bold text-xs bg-gradient-to-r from-[#2D5A3C] via-[#366846] to-[#2D5A3C] hover:from-[#234E32] hover:via-[#2C573A] hover:to-[#234E32] text-white shadow-sm hover:shadow transition-all flex items-center justify-center gap-1.5 active:scale-98 cursor-pointer text-center"
           >
             <span>เปิดเส้นทางบน Google Maps ({stops.length} จุด)</span>
           </a>
@@ -389,7 +389,7 @@ export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({
               <button
                 type="button"
                 onClick={handleAddStop}
-                className="flex-1 py-2 px-2.5 rounded-lg font-black text-[11px] bg-[#EBF3ED] hover:bg-[#DDF0E1] text-[#20442D] border border-[#BBDDC3] transition-all cursor-pointer text-center shadow-2xs active:scale-95 truncate"
+                className="flex-1 py-2 px-2.5 rounded-lg font-bold text-[11px] bg-[#EBF3ED] hover:bg-[#DDF0E1] text-[#20442D] border border-[#BBDDC3] transition-all cursor-pointer text-center shadow-2xs active:scale-95 truncate"
               >
                 + เพิ่มสถานที่ ({stopCount}/6)
               </button>
@@ -397,7 +397,7 @@ export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({
               <button
                 type="button"
                 onClick={handleResetStops}
-                className="flex-1 py-2 px-2.5 rounded-lg font-black text-[11px] bg-[#EBF3ED] hover:bg-[#DDF0E1] text-[#20442D] border border-[#BBDDC3] transition-all cursor-pointer text-center shadow-2xs active:scale-95 truncate"
+                className="flex-1 py-2 px-2.5 rounded-lg font-bold text-[11px] bg-[#EBF3ED] hover:bg-[#DDF0E1] text-[#20442D] border border-[#BBDDC3] transition-all cursor-pointer text-center shadow-2xs active:scale-95 truncate"
               >
                 รีเซ็ต (เหลือ 3 จุด)
               </button>
@@ -415,7 +415,7 @@ export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({
           <button
             type="button"
             onClick={openFullModal}
-            className="w-full text-center text-[11px] font-extrabold text-slate-500 hover:text-[#2D5A3C] transition-colors py-0.5 cursor-pointer"
+            className="w-full text-center text-[11px] font-bold text-slate-500 hover:text-[#2D5A3C] transition-colors py-0.5 cursor-pointer"
           >
             ดูรายละเอียดแผนทริปเต็มพร้อมภาพขยาย
           </button>

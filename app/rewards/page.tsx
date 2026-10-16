@@ -215,7 +215,7 @@ export default function RewardsPage() {
 
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6">
             <div className="space-y-1.5 max-w-2xl">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 tracking-tight leading-tight">
                 ศูนย์สิทธิพิเศษ & ของรางวัลไลฟ์สไตล์
               </h1>
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
@@ -259,15 +259,15 @@ export default function RewardsPage() {
                     <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                       กระเป๋าแต้มสะสมของคุณ
                     </span>
-                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#EBF3ED] text-[#2D5A3C] border border-[#A3CEB0]">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EBF3ED] text-[#2D5A3C] border border-[#A3CEB0]">
                       Level 2: Active Explorer
                     </span>
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
+                    <span className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 tracking-tight">
                       {userXp.toLocaleString()}
                     </span>
-                    <span className="text-sm sm:text-base font-black text-[#F26430]">
+                    <span className="text-sm sm:text-base font-bold text-[#F26430]">
  XP
                     </span>
                   </div>
@@ -328,7 +328,7 @@ export default function RewardsPage() {
               onClick={() => setViewTab('my_vouchers')}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                 viewTab === 'my_vouchers'
-                  ? 'bg-[#EBF3ED] text-[#2D5A3C] shadow-2xs font-black'
+                  ? 'bg-[#EBF3ED] text-[#2D5A3C] shadow-2xs font-bold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -417,7 +417,7 @@ export default function RewardsPage() {
                   <Gift className="w-7 h-7" />
                 </div>
                 <div className="space-y-1">
-                  <h4 className="font-black text-slate-900 text-base">ไม่พบของรางวัลตามเงื่อนไขที่เลือก</h4>
+                  <h4 className="font-bold text-slate-900 text-base">ไม่พบของรางวัลตามเงื่อนไขที่เลือก</h4>
                   <p className="text-xs text-slate-500 leading-relaxed">
                     ลองปรับคำค้นหา หรือเลือกหมวดหมู่อื่นเพื่อสำรวจของรางวัลและคูปองส่วนลดที่มีทั้งหมด
                   </p>
@@ -460,7 +460,7 @@ export default function RewardsPage() {
                           </span>
                         </div>
 
-                        <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-[#F26430] text-white shadow-2xs shrink-0">
+                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-[#F26430] text-white shadow-2xs shrink-0">
                           {item.costXp} XP
                         </span>
                       </div>
@@ -508,7 +508,7 @@ export default function RewardsPage() {
                             <div className="bg-[#EBF3ED] border border-dashed border-[#A3CEB0] rounded-2xl p-2.5 flex items-center justify-between gap-2">
                               <div className="min-w-0">
                                 <span className="text-[10px] text-[#2D5A3C] font-bold block">รหัสคูปองของคุณ</span>
-                                <strong className="text-xs font-mono font-black text-[#1E3F29] truncate block">
+                                <strong className="text-xs font-mono font-bold text-[#1E3F29] truncate block">
                                   {item.voucherCode}
                                 </strong>
                               </div>
@@ -571,7 +571,7 @@ export default function RewardsPage() {
           <div className="space-y-6">
             <div className="bg-white p-4 sm:p-6 rounded-3xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-4 flex-wrap">
               <div className="space-y-1">
-                <h3 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
                   <Ticket className="w-5 h-5 text-[#2D5A3C]" />
                   <span>คลังคูปองและสิทธิพิเศษที่คุณแลกไว้ ({myRedeemedItems.length} ใบ)</span>
                 </h3>
@@ -596,7 +596,7 @@ export default function RewardsPage() {
                   <Ticket className="w-7 h-7" />
                 </div>
                 <div className="space-y-1.5">
-                  <h4 className="font-black text-slate-900 text-base">คุณยังไม่มีคูปองในคลัง</h4>
+                  <h4 className="font-bold text-slate-900 text-base">คุณยังไม่มีคูปองในคลัง</h4>
                   <p className="text-xs text-slate-500 leading-relaxed">
                     คุณมีแต้มสะสม {userXp} XP สามารถเลือกแลกคูปองส่วนลด Specialty Coffee หรือตั๋วบอร์ดเกมได้ทันที
                   </p>
@@ -644,7 +644,7 @@ export default function RewardsPage() {
                       </div>
 
                       <div className="flex items-center justify-between gap-2 bg-white rounded-xl p-2 border border-[#A3CEB0]/60">
-                        <span className="font-mono text-sm sm:text-base font-black text-slate-900 tracking-wider">
+                        <span className="font-mono text-sm sm:text-base font-bold text-slate-900 tracking-wider">
                           {item.voucherCode}
                         </span>
                         <button
@@ -698,7 +698,7 @@ export default function RewardsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-scale-up">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2 text-slate-900 font-black text-base">
+              <div className="flex items-center gap-2 text-slate-900 font-bold text-base">
                 <Gift className="w-5 h-5 text-[#F26430]" />
                 <span>ยืนยันการแลกของรางวัล</span>
               </div>
@@ -739,7 +739,7 @@ export default function RewardsPage() {
               </div>
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between font-bold text-slate-900">
                 <span>แต้มสะสมคงเหลือหลังแลก</span>
-                <span className="text-[#2D5A3C] font-black text-sm">
+                <span className="text-[#2D5A3C] font-bold text-sm">
                   {userXp - confirmRedeemItem.costXp} XP
                 </span>
               </div>
@@ -772,7 +772,7 @@ export default function RewardsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-scale-up">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2 text-slate-900 font-black text-base">
+              <div className="flex items-center gap-2 text-slate-900 font-bold text-base">
                 <Ticket className="w-5 h-5 text-[#2D5A3C]" />
                 <span>รายละเอียดคูปอง & สิทธิพิเศษ</span>
               </div>
@@ -809,7 +809,7 @@ export default function RewardsPage() {
 
               {/* Code display */}
               <div className="flex items-center justify-center gap-2 bg-white py-2 px-4 rounded-xl border border-[#A3CEB0]">
-                <span className="font-mono text-base font-black text-slate-900 tracking-wider">
+                <span className="font-mono text-base font-bold text-slate-900 tracking-wider">
                   {voucherDetailItem.voucherCode}
                 </span>
                 <button

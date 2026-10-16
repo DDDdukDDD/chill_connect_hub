@@ -291,7 +291,7 @@ function StoriesPanel({ canModerate, reloadToken, onLoading }: { canModerate: bo
                 <div className="absolute left-2 top-2 flex flex-wrap gap-1">
                   <AdminStatusChip status={story.hidden ? 'rejected' : 'published'} />
                   {story.reports.length > 0 && (
-                    <span className="inline-flex items-center gap-0.5 rounded-full bg-rose-600 px-1.5 py-0.5 text-[10px] font-extrabold text-white"><Flag size={10} />{story.reports.length}</span>
+                    <span className="inline-flex items-center gap-0.5 rounded-full bg-rose-600 px-1.5 py-0.5 text-[10px] font-bold text-white"><Flag size={10} />{story.reports.length}</span>
                   )}
                 </div>
               </div>
@@ -453,9 +453,9 @@ export function MomentsManagerView() {
                     <div className="absolute left-2 top-2 flex flex-wrap gap-1">
                       <AdminStatusChip status={statusOf(moment)} />
                       {moment.reports.length > 0 && (
-                        <span className="inline-flex items-center gap-0.5 rounded-full bg-rose-600 px-1.5 py-0.5 text-[10px] font-extrabold text-white"><Flag size={10} />{moment.reports.length}</span>
+                        <span className="inline-flex items-center gap-0.5 rounded-full bg-rose-600 px-1.5 py-0.5 text-[10px] font-bold text-white"><Flag size={10} />{moment.reports.length}</span>
                       )}
-                      {moment.evidenceRejected && <span className="rounded-full bg-slate-900 px-1.5 py-0.5 text-[10px] font-extrabold text-white">ไม่นับ</span>}
+                      {moment.evidenceRejected && <span className="rounded-full bg-slate-900 px-1.5 py-0.5 text-[10px] font-bold text-white">ไม่นับ</span>}
                     </div>
                     {moment.images.length > 1 && <span className="absolute right-2 top-2 rounded-full bg-black/60 px-1.5 py-0.5 text-[10px] font-bold text-white">{moment.images.length} รูป</span>}
                   </div>

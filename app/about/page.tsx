@@ -76,7 +76,7 @@ export default function AboutPage() {
             
 
             {/* Main Headline */}
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-snug max-w-3xl mx-auto">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 tracking-tight leading-snug max-w-3xl mx-auto">
               แพลตฟอร์มค้นพบไลฟ์สไตล์ <br className="hidden sm:inline" />
               <span className="text-[#4A7C59]">
                 สำหรับคนชอบออกไปใช้ชีวิต
@@ -103,7 +103,7 @@ export default function AboutPage() {
                         {stat.icon}
                         <span>{stat.label}</span>
                       </div>
-                      <p className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight">{stat.val}</p>
+                      <p className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight">{stat.val}</p>
                     </div>
                   ))}
                 </div>
@@ -119,7 +119,7 @@ export default function AboutPage() {
         <section className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 space-y-8">
           
           <div className="text-center space-y-2 max-w-3xl mx-auto">
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 tracking-tight">
               4 สเต็ปง่ายๆ ออกไปใช้ชีวิตในแบบที่คุณรัก
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-xl mx-auto">
@@ -148,7 +148,7 @@ export default function AboutPage() {
           
           {/* Header */}
           <div className="text-center space-y-2 max-w-3xl mx-auto">
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 tracking-tight">
               คำตอบครบทุกมิติของการออกไปใช้ชีวิต
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-xl mx-auto">
@@ -181,14 +181,14 @@ export default function AboutPage() {
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-slate-900/20 to-transparent" />
                     
                     {/* Floating Pill */}
-                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-2.5 py-0.5 rounded-full shadow-xs text-[10px] font-black text-[#4A7C59] border border-white/60">
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-2.5 py-0.5 rounded-full shadow-xs text-[10px] font-bold text-[#4A7C59] border border-white/60">
                       <MapPin className="w-3 h-3 text-[#4A7C59]" />
                       <span>WHERE TO GO</span>
                     </div>
 
                     {/* Bottom Title inside Image */}
                     <div className="absolute bottom-3 left-3.5 right-3.5 text-white">
-                      <p className="text-sm sm:text-base font-black tracking-tight">1. สถานที่เที่ยว & จุดฮีลใจ</p>
+                      <p className="text-sm sm:text-base font-bold tracking-tight">1. สถานที่เที่ยว & จุดฮีลใจ</p>
                       <p className="text-[11px] text-slate-200 font-medium">ไม่รู้จะไปไหน ให้เราช่วยคัดสรรพิกัดที่ดีที่สุด</p>
                     </div>
                   </div>
@@ -196,10 +196,10 @@ export default function AboutPage() {
                   {/* Headline & Description */}
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-lg bg-emerald-50 text-[#4A7C59] border border-emerald-200 text-xs font-black flex items-center justify-center shrink-0">
+                      <span className="w-6 h-6 rounded-lg bg-emerald-50 text-[#4A7C59] border border-emerald-200 text-xs font-bold flex items-center justify-center shrink-0">
                         01
                       </span>
-                      <h3 className="text-base font-black text-slate-900 group-hover:text-[#4A7C59] transition-colors">
+                      <h3 className="text-base font-bold text-slate-900 group-hover:text-[#4A7C59] transition-colors">
                         พิกัดชาร์จพลัง 77 จังหวัดทั่วไทย
                       </h3>
                     </div>
@@ -248,14 +248,14 @@ export default function AboutPage() {
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-slate-900/20 to-transparent" />
                     
                     {/* Floating Pill */}
-                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-2.5 py-0.5 rounded-full shadow-xs text-[10px] font-black text-[#2B527A] border border-white/60">
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-2.5 py-0.5 rounded-full shadow-xs text-[10px] font-bold text-[#2B527A] border border-white/60">
                       <Calendar className="w-3 h-3 text-[#2B527A]" />
                       <span>WHAT TO DO</span>
                     </div>
 
                     {/* Bottom Title inside Image */}
                     <div className="absolute bottom-3 left-3.5 right-3.5 text-white">
-                      <p className="text-sm sm:text-base font-black tracking-tight">2. กิจกรรมและงานมหกรรมสดใหม่</p>
+                      <p className="text-sm sm:text-base font-bold tracking-tight">2. กิจกรรมและงานมหกรรมสดใหม่</p>
                       <p className="text-[11px] text-slate-200 font-medium">วันหยุดนี้ไม่มีเบื่อ รวมทุกงานแฟร์ & เวิร์กช็อป</p>
                     </div>
                   </div>
@@ -263,10 +263,10 @@ export default function AboutPage() {
                   {/* Headline & Description */}
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-lg bg-blue-50 text-[#2B527A] border border-blue-200 text-xs font-black flex items-center justify-center shrink-0">
+                      <span className="w-6 h-6 rounded-lg bg-blue-50 text-[#2B527A] border border-blue-200 text-xs font-bold flex items-center justify-center shrink-0">
                         02
                       </span>
-                      <h3 className="text-base font-black text-slate-900 group-hover:text-[#2B527A] transition-colors">
+                      <h3 className="text-base font-bold text-slate-900 group-hover:text-[#2B527A] transition-colors">
                         งานแฟร์ นิทรรศการ & เทศกาลสดใหม่
                       </h3>
                     </div>
@@ -315,14 +315,14 @@ export default function AboutPage() {
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-slate-900/20 to-transparent" />
                     
                     {/* Floating Pill */}
-                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-2.5 py-0.5 rounded-full shadow-xs text-[10px] font-black text-[#F26430] border border-white/60">
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-2.5 py-0.5 rounded-full shadow-xs text-[10px] font-bold text-[#F26430] border border-white/60">
                       <Users className="w-3 h-3 text-[#F26430]" />
                       <span>WHO TO GO WITH</span>
                     </div>
 
                     {/* Bottom Title inside Image */}
                     <div className="absolute bottom-3 left-3.5 right-3.5 text-white">
-                      <p className="text-sm sm:text-base font-black tracking-tight">3. เพื่อนและคอมมูนิตี้คอเดียวกัน</p>
+                      <p className="text-sm sm:text-base font-bold tracking-tight">3. เพื่อนและคอมมูนิตี้คอเดียวกัน</p>
                       <p className="text-[11px] text-slate-200 font-medium">ไม่ต้องไปคนเดียว ชวนเพื่อนใหม่ในเซฟสเปซ</p>
                     </div>
                   </div>
@@ -330,10 +330,10 @@ export default function AboutPage() {
                   {/* Headline & Description */}
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-lg bg-orange-50 text-[#F26430] border border-orange-200 text-xs font-black flex items-center justify-center shrink-0">
+                      <span className="w-6 h-6 rounded-lg bg-orange-50 text-[#F26430] border border-orange-200 text-xs font-bold flex items-center justify-center shrink-0">
                         03
                       </span>
-                      <h3 className="text-base font-black text-slate-900 group-hover:text-[#F26430] transition-colors">
+                      <h3 className="text-base font-bold text-slate-900 group-hover:text-[#F26430] transition-colors">
                         ตี้เพื่อนรู้ใจ ในพื้นที่ปลอดภัย 100%
                       </h3>
                     </div>
@@ -399,7 +399,7 @@ export default function AboutPage() {
           <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             
             <div className="max-w-3xl mx-auto text-center space-y-2.5">
-              <h2 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-slate-900">
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-slate-900">
                 พิชิตเป้าหมายสนุกๆ สะสมแต้ม HubXP แลกรับสิทธิพิเศษเพื่อคุณ
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 max-w-2xl mx-auto leading-relaxed">
@@ -420,15 +420,15 @@ export default function AboutPage() {
                 <div className="flex flex-col justify-between space-y-4 pt-4 md:pt-0 md:pr-6 group">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="w-9 h-9 rounded-2xl bg-purple-50 text-[#7C3AED] border border-purple-200/80 font-black text-xs flex items-center justify-center shadow-xs group-hover:scale-105 group-hover:bg-[#7C3AED] group-hover:text-white transition-all duration-300">
+                      <span className="w-9 h-9 rounded-2xl bg-purple-50 text-[#7C3AED] border border-purple-200/80 font-bold text-xs flex items-center justify-center shadow-xs group-hover:scale-105 group-hover:bg-[#7C3AED] group-hover:text-white transition-all duration-300">
                         01
                       </span>
-                      <span className="text-[10px] font-black uppercase tracking-wider text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200/80">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200/80">
                         Lifestyle Quests
                       </span>
                     </div>
                     <div>
-                      <h3 className="text-base font-black text-slate-900 group-hover:text-[#7C3AED] transition-colors">
+                      <h3 className="text-base font-bold text-slate-900 group-hover:text-[#7C3AED] transition-colors">
                         1. พิชิตภารกิจชาเลนจ์สนุกๆ
                       </h3>
                       <p className="text-xs text-slate-600 leading-relaxed mt-1.5 font-normal">
@@ -455,15 +455,15 @@ export default function AboutPage() {
                 <div className="flex flex-col justify-between space-y-4 pt-6 md:pt-0 md:px-6 group">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="w-9 h-9 rounded-2xl bg-blue-50 text-[#2B527A] border border-blue-200/80 font-black text-xs flex items-center justify-center shadow-xs group-hover:scale-105 group-hover:bg-[#2B527A] group-hover:text-white transition-all duration-300">
+                      <span className="w-9 h-9 rounded-2xl bg-blue-50 text-[#2B527A] border border-blue-200/80 font-bold text-xs flex items-center justify-center shadow-xs group-hover:scale-105 group-hover:bg-[#2B527A] group-hover:text-white transition-all duration-300">
                         02
                       </span>
-                      <span className="text-[10px] font-black uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200/80">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200/80">
                         HubXP Points
                       </span>
                     </div>
                     <div>
-                      <h3 className="text-base font-black text-slate-900 group-hover:text-[#2B527A] transition-colors">
+                      <h3 className="text-base font-bold text-slate-900 group-hover:text-[#2B527A] transition-colors">
                         2. สะสมแต้ม HubXP อัปเลเวล
                       </h3>
                       <p className="text-xs text-slate-600 leading-relaxed mt-1.5 font-normal">
@@ -490,15 +490,15 @@ export default function AboutPage() {
                 <div className="flex flex-col justify-between space-y-4 pt-6 md:pt-0 md:pl-6 group">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="w-9 h-9 rounded-2xl bg-orange-50 text-[#F26430] border border-orange-200/80 font-black text-xs flex items-center justify-center shadow-xs group-hover:scale-105 group-hover:bg-[#F26430] group-hover:text-white transition-all duration-300">
+                      <span className="w-9 h-9 rounded-2xl bg-orange-50 text-[#F26430] border border-orange-200/80 font-bold text-xs flex items-center justify-center shadow-xs group-hover:scale-105 group-hover:bg-[#F26430] group-hover:text-white transition-all duration-300">
                         03
                       </span>
-                      <span className="text-[10px] font-black uppercase tracking-wider text-[#C2410C] bg-orange-50 px-2.5 py-0.5 rounded-full border border-orange-200/80">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#C2410C] bg-orange-50 px-2.5 py-0.5 rounded-full border border-orange-200/80">
                         Lifestyle Perks
                       </span>
                     </div>
                     <div>
-                      <h3 className="text-base font-black text-slate-900 group-hover:text-[#F26430] transition-colors">
+                      <h3 className="text-base font-bold text-slate-900 group-hover:text-[#F26430] transition-colors">
                         3. แลกรับสิทธิ์พิเศษ & ส่วนลด
                       </h3>
                       <p className="text-xs text-slate-600 leading-relaxed mt-1.5 font-normal">
@@ -552,7 +552,7 @@ export default function AboutPage() {
                 </span>
               </div>
 
-              <h2 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-slate-900 sm:whitespace-nowrap">
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-slate-900 sm:whitespace-nowrap">
                 พร้อมเริ่มออกไปค้นพบความสุขใหม่ๆ หรือยัง?
               </h2>
               <p className="text-xs sm:text-sm md:text-base text-slate-600 font-normal leading-relaxed max-w-2xl mx-auto">
@@ -563,7 +563,7 @@ export default function AboutPage() {
             <div className="pt-2 relative z-10 flex justify-center">
               <Link
                 href="/"
-                className="bg-slate-900 hover:bg-slate-800 text-white px-8 py-3.5 rounded-full font-black text-sm sm:text-base transition-all shadow-lg hover:shadow-xl hover:scale-102 active:scale-98 flex items-center gap-2.5 cursor-pointer group"
+                className="bg-slate-900 hover:bg-slate-800 text-white px-8 py-3.5 rounded-full font-bold text-sm sm:text-base transition-all shadow-lg hover:shadow-xl hover:scale-102 active:scale-98 flex items-center gap-2.5 cursor-pointer group"
               >
                 <span>เริ่มความสนุกกับ Chill & Connect Hub กันเลย</span>
                 <ArrowRight className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform" />

@@ -38,7 +38,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
               onClick={() => setActiveTab(item.id)}
               className={`flex flex-col items-center justify-center py-2 px-3 rounded-2xl transition-all duration-200 relative select-none cursor-pointer ${
                 isActive
-                  ? 'bg-white/15 text-white font-black scale-105 shadow-inner'
+                  ? 'bg-white/15 text-white font-bold scale-105 shadow-inner'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >

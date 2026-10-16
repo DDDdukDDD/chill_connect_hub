@@ -76,7 +76,7 @@ export const JourneySectionCarousel: React.FC<JourneySectionCarouselProps> = ({
       {/* Header Row: Minimal & Unboxed without subtitle/badge/boxes */}
       <div className="flex items-end justify-between gap-4 pb-1">
         <div className="min-w-0 space-y-0.5">
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
             {title}
           </h2>
           {subtitle && <p className="text-sm font-medium text-slate-500 truncate">{subtitle}</p>}

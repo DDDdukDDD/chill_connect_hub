@@ -374,7 +374,7 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
                         <AdminStatusChip status={eventStatus(ev)} />
                         <span
                           title={quality.requiredFailures ? `ขาดข้อบังคับ ${quality.requiredFailures} ข้อ` : 'ผ่านข้อบังคับครบ'}
-                          className={`rounded-full border px-1.5 py-0.5 text-[10px] font-extrabold tabular-nums ${
+                          className={`rounded-full border px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${
                             quality.requiredFailures ? 'border-rose-200 bg-rose-50 text-rose-700' : quality.score < 90 ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'
                           }`}
                         >

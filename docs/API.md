@@ -622,6 +622,20 @@ Public; `404` for an unknown or draft challenge. Answer:
 - `withRealProgress(quests, progress)` puts the server's count on challenges that have a rule. A challenge without a rule keeps the progress the member notes by hand in the browser (`cch_my_challenges`); that progress earns no points.
 - Joining a challenge is kept with the account (BE-043); see "Joining a challenge" below.
 
+## Live activity, "ตอนนี้ในชิลล์" (added 2026-10-16, BE-076)
+
+### `GET /api/activity`
+The server decides from its own session which shape to send.
+
+- **Signed in:** `{ success, mode: 'member', items: LiveItem[] }`, the 12 newest lines, newest first, at most 2 per shown name. Never the viewer's own actions, people the viewer blocked, people who blocked the viewer, or banned members. `Cache-Control: private, no-store`.
+- **Signed out:** `{ success, mode: 'public', counts: { since, meetupJoins, questJoins, moments } }`, the last 7 days, no names. Cached 60 seconds.
+
+`LiveItem` (`lib/social/liveActivity.ts`): `{ id, kind, at, timeAgo, person: { name, avatar? }, target: { type, id?, title } }`.
+- `kind`: `meetup_join` | `meetup_host` | `quest_join` | `quest_finish` | `moment`
+- `target.type`: `community` | `challenge` | `spot` | `fair` | `general` (a moment tied to nothing; `id` is then the moment id). Links: `/community/ID`, `/challenges/ID`, `/spots/ID`, `/fairs/ID`, `/moments?momentId=ID` (`liveHref` in `components/home/LiveActivity.tsx`).
+
+Only actions already public elsewhere are named: meetup attendees, "ใครทำอยู่บ้าง" on challenges, posted moments. Meetup lines cover open, approved community events only. Check-ins and "I have been here" marks are never named, the same rule as `SocialProof` in `/api/visits`.
+
 ## Evidence review and story moderation (added 2026-10-13, BE-060)
 
 A moment tied to a place or event is a visit, and a visit counts toward challenges (see "Visits"). Staff can now decide that a photo is not evidence of a visit.

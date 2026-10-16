@@ -46,7 +46,7 @@ export function AdminPageHeader({ icon: Icon, title, description, badge, actions
       <div className="min-w-0">
         <div className="flex items-center gap-2 flex-wrap mb-1">
           <Icon size={18} className="text-slate-500 shrink-0" />
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900">{title}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{title}</h1>
           {badge}
         </div>
         <p className="text-sm text-slate-500">{description}</p>
@@ -63,7 +63,7 @@ export function AdminBadge({ tone = 'slate', children }: { tone?: 'slate' | 'amb
     amber: 'bg-amber-50 text-amber-700 border-amber-200',
   };
   return (
-    <span className={`px-2 py-0.5 rounded-full border text-[10px] sm:text-xs font-extrabold ${tones[tone]}`}>{children}</span>
+    <span className={`px-2 py-0.5 rounded-full border text-[10px] sm:text-xs font-bold ${tones[tone]}`}>{children}</span>
   );
 }
 
@@ -79,7 +79,7 @@ export type AdminPillar = keyof typeof PILLAR_STYLES;
 
 export function PillarBadge({ pillar }: { pillar: AdminPillar }) {
   const style = PILLAR_STYLES[pillar];
-  return <span className={`px-2 py-0.5 rounded-full border text-[10px] sm:text-xs font-extrabold whitespace-nowrap ${style.className}`}>{style.label}</span>;
+  return <span className={`px-2 py-0.5 rounded-full border text-[10px] sm:text-xs font-bold whitespace-nowrap ${style.className}`}>{style.label}</span>;
 }
 
 /** One lifecycle vocabulary for every entity: draft → pending → published → ended, plus rejected. */
@@ -95,7 +95,7 @@ export type AdminStatus = keyof typeof STATUS_STYLES;
 
 export function AdminStatusChip({ status }: { status: AdminStatus }) {
   const style = STATUS_STYLES[status];
-  return <span className={`px-2 py-0.5 rounded-full border text-[10px] sm:text-xs font-extrabold whitespace-nowrap ${style.className}`}>{style.label}</span>;
+  return <span className={`px-2 py-0.5 rounded-full border text-[10px] sm:text-xs font-bold whitespace-nowrap ${style.className}`}>{style.label}</span>;
 }
 
 /** Slim inline empty state (AGENTS.md hygiene rule 5). */

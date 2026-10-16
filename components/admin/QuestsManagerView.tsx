@@ -531,11 +531,11 @@ export function QuestsManagerView() {
                   <p className="mt-1 line-clamp-2 pl-[22px] text-xs leading-5 text-slate-600">{quest.targetGoal || 'ยังไม่มีคำอธิบายเป้าหมาย'}</p>
                   <div className="mt-1.5 flex flex-wrap items-center gap-2 pl-[22px]">
                     {quest.brandReward ? (
-                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-extrabold ${quest.brandReward.type === 'brand_partner' ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-purple-200 bg-purple-50 text-purple-800'}`}>
+                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${quest.brandReward.type === 'brand_partner' ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-purple-200 bg-purple-50 text-purple-800'}`}>
                         Official • {quest.brandReward.type === 'brand_partner' ? quest.brandReward.partnerName : 'Chill & Connect'}
                       </span>
                     ) : (
-                      <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-extrabold text-slate-500">ยังไม่ระบุประเภทรางวัล</span>
+                      <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-500">ยังไม่ระบุประเภทรางวัล</span>
                     )}
                     {describeTimeLeft(quest) && <span className="text-[11px] font-semibold text-slate-500">{describeTimeLeft(quest)}</span>}
                   </div>

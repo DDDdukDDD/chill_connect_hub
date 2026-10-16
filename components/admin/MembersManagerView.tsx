@@ -98,7 +98,7 @@ function OverviewPanel({ overview }: { overview: Overview }) {
           {stats.map((stat) => (
             <div key={stat.label}>
               <dt className="text-[11px] font-semibold text-slate-500">{stat.label}</dt>
-              <dd className="mt-0.5 text-xl font-extrabold tabular-nums text-slate-900">{stat.value}</dd>
+              <dd className="mt-0.5 text-xl font-bold tabular-nums text-slate-900">{stat.value}</dd>
             </div>
           ))}
         </dl>
@@ -115,7 +115,7 @@ function OverviewPanel({ overview }: { overview: Overview }) {
         </div>
       </div>
       <div className="rounded-2xl border border-slate-200 bg-white p-4">
-        <h2 className="text-xs font-extrabold text-slate-900">ความพร้อมของระบบสมาชิก</h2>
+        <h2 className="text-xs font-bold text-slate-900">ความพร้อมของระบบสมาชิก</h2>
         <ul className="mt-2.5 space-y-1.5">
           <ReadinessRow ok={r.sessionSecret} label="การเข้าสู่ระบบ" detail="ยังไม่ได้ตั้งค่า AUTH_SECRET สมาชิกจะสมัครและเข้าสู่ระบบไม่ได้" />
           <ReadinessRow ok={r.providers.google} label="Google" detail="ยังไม่ได้ใส่ GOOGLE_OAUTH_CLIENT_ID / SECRET ปุ่มจะขึ้นว่า เร็วๆ นี้" />
@@ -208,7 +208,7 @@ function ModerationDrawer({ member, onClose, onDone }: { member: AdminMember; on
           </p>
           <p>
             <span className="text-slate-500">สถานะ:</span>{' '}
-            <span className={`rounded-full border px-2 py-0.5 text-[10px] sm:text-xs font-extrabold ${STATUS_META[member.status].className}`}>{STATUS_META[member.status].label}</span>
+            <span className={`rounded-full border px-2 py-0.5 text-[10px] sm:text-xs font-bold ${STATUS_META[member.status].className}`}>{STATUS_META[member.status].label}</span>
             {member.suspendedUntil && <span className="text-xs text-slate-500"> ถึง {formatDate(member.suspendedUntil)}</span>}
             {member.statusReason && <span className="block text-xs text-slate-500">เหตุผล: {member.statusReason}</span>}
           </p>
@@ -507,8 +507,8 @@ export function MembersManagerView() {
                           <div className="min-w-0">
                             <p className="truncate font-bold text-slate-800">
                               {member.displayName}
-                              {member.hasOpenRisk && <span className="ml-1.5 inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[11px] font-extrabold text-amber-800 align-middle"><Flag size={10} aria-hidden="true" />รอตรวจ</span>}
-                              {member.hostApplication?.status === 'pending' && <span className="ml-1.5 rounded-full border border-blue-200 bg-blue-50 px-1.5 py-0.5 text-[11px] font-extrabold text-blue-800 align-middle">ขอเป็นโฮสต์</span>}
+                              {member.hasOpenRisk && <span className="ml-1.5 inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[11px] font-bold text-amber-800 align-middle"><Flag size={10} aria-hidden="true" />รอตรวจ</span>}
+                              {member.hostApplication?.status === 'pending' && <span className="ml-1.5 rounded-full border border-blue-200 bg-blue-50 px-1.5 py-0.5 text-[11px] font-bold text-blue-800 align-middle">ขอเป็นโฮสต์</span>}
                             </p>
                             <p className="truncate text-[11px] text-slate-500">{member.email ?? 'ไม่มีอีเมล'}</p>
                           </div>
@@ -524,7 +524,7 @@ export function MembersManagerView() {
                       <td className="px-4 py-2.5 text-xs text-slate-500 whitespace-nowrap">{formatDate(member.createdAt)}</td>
                       <td className="px-4 py-2.5 text-xs text-slate-500 whitespace-nowrap">{formatDate(member.lastLoginAt)}</td>
                       <td className="px-4 py-2.5">
-                        <span className={`rounded-full border px-2 py-0.5 text-[10px] sm:text-xs font-extrabold whitespace-nowrap ${STATUS_META[member.status].className}`}>{STATUS_META[member.status].label}</span>
+                        <span className={`rounded-full border px-2 py-0.5 text-[10px] sm:text-xs font-bold whitespace-nowrap ${STATUS_META[member.status].className}`}>{STATUS_META[member.status].label}</span>
                       </td>
                       <td className="px-4 py-2.5 text-right">
                         <button type="button" onClick={() => setSelected(member)} className={adminButton.secondarySm}>จัดการ</button>

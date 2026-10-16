@@ -12,9 +12,7 @@ import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { useAuth } from '@/lib/useAuth';
 import { useMemberSession } from '@/lib/useMemberSession';
-import { useMyActivity } from '@/lib/useMyActivity';
-import { useMyRewards } from '@/lib/useMyRewards';
-import { isEventEnded, parseEventDateToTimestamp } from '@/lib/dateUtils';
+import { isEventEnded } from '@/lib/dateUtils';
 import { nameInitial, tidyDisplayName } from '@/lib/displayName';
 import {
   EventItem,
@@ -40,12 +38,9 @@ import {
   Send,
   Calendar,
   Users,
-  Search,
-  Navigation,
   Flag,
   Pencil,
   Trash2,
-  Plus,
   Trophy,
   Zap,
   Ticket,
@@ -53,7 +48,8 @@ import {
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { MomentPhotos } from '@/components/moments/MomentPhotos';
 import { getQuestBrandReward } from '@/lib/questDisplay';
-import { compressImage } from '@/lib/media/compressor';
+import { StoriesRail } from '@/components/moments/StoriesRail';
+import { MomentComposer, CountedQuestNotice, type CountedQuest, type MomentComposerInitial } from '@/components/moments/MomentComposer';
 
 // Moments written by members live on the server (/api/moments); the bundled samples stay local.
 type ServerMoment = Omit<CommunityPost, 'comments'> & { isMine?: boolean; isSample?: boolean; comments?: { id: string; userName: string; userAvatar: string; text: string; timeAgo: string }[] };
@@ -79,27 +75,11 @@ function fromServerMoment(m: ServerMoment): CommunityPost {
   } as unknown as CommunityPost;
 }
 
-interface StoryGroup {
-  author: { id: string; displayName: string; avatarUrl: string };
-  isMine: boolean;
-  allSeen: boolean;
-  stories: { id: string; image: string; caption: string; hoursLeft: number; seen: boolean; hasReported?: boolean; views?: number }[];
-}
-const isVisitTarget = (type?: string): type is 'spot' | 'community' | 'fair' => type === 'spot' || type === 'community' || type === 'fair';
 /** The page a moment's place, event or challenge lives on */
 function targetHrefOf(type?: string, id?: string): string | null {
   if (!id) return null;
   const base = type === 'spot' ? '/spots' : type === 'community' ? '/community' : type === 'fair' ? '/fairs' : type === 'challenge' ? '/challenges' : null;
   return base ? `${base}/${encodeURIComponent(id)}` : null;
-}
-/** A member's progress in one challenge, as /api/visits?mine=1 serves it */
-interface CountedQuest {
-  questId: string;
-  title: string;
-  current: number;
-  total: number;
-  completed: boolean;
-  joined: boolean;
 }
 const isMinePost = (post: CommunityPost) => Boolean((post as { isMine?: boolean }).isMine);
 
@@ -112,7 +92,7 @@ function QuestSuggestCard({ quest }: { quest: ChallengeQuest }) {
     <Link href={`/challenges/${encodeURIComponent(quest.id)}`} className="group/quest block">
       <span className="relative block aspect-[2/1] rounded-xl overflow-hidden bg-slate-100">
         <img loading="lazy" src={quest.badgeCoverImg || quest.image || QUEST_PHOTO_FALLBACK} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover/quest:scale-105" />
-        <span className="absolute top-2 left-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#7C3AED] text-[11px] font-extrabold text-white whitespace-nowrap tabular-nums">
+        <span className="absolute top-2 left-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#7C3AED] text-[11px] font-bold text-white whitespace-nowrap tabular-nums">
           <Zap className="w-3 h-3" aria-hidden="true" />
           +{(quest.rewardPoints ?? 0).toLocaleString()} XP
         </span>
@@ -142,7 +122,6 @@ function MomentsContent() {
   const memberId = session.member?.id;
   // Ids of posts stored on the server; actions on them go through the API
   const serverPostIds = useRef(new Set<string>());
-  const [isPosting, setIsPosting] = useState(false);
   const [activeNavTab, setActiveNavTab] = useState('moments');
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -178,7 +157,6 @@ function MomentsContent() {
   }, [urlLocation]);
 
   // Posts State
-  const MAX_MOMENT_IMAGES = 10;
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   // The feed is read from the server page by page
   const FEED_PAGE_SIZE = 8;
@@ -186,9 +164,6 @@ function MomentsContent() {
   const [hasMorePosts, setHasMorePosts] = useState(false);
   const [isFeedLoading, setIsFeedLoading] = useState(true);
   const [highlights, setHighlights] = useState<CommunityPost[]>([]);
-  // The running challenges each linked place or event counts toward, keyed "type:id"
-  const [targetQuests, setTargetQuests] = useState<Record<string, { questId: string; title: string }[]>>({});
-  const askedTargetKeys = useRef<Set<string>>(new Set());
   // Shown after posting when the moment counted toward a challenge the member is doing
   const [countedNotice, setCountedNotice] = useState<CountedQuest | null>(null);
   const [suggested, setSuggested] = useState<{ id: string; displayName: string; avatarUrl?: string; momentCount: number; trusted: boolean; approvedHost: boolean }[]>([]);
@@ -198,58 +173,12 @@ function MomentsContent() {
   const [reportPostId, setReportPostId] = useState<string | null>(null);
   const [reportReason, setReportReason] = useState('');
   const [editPost, setEditPost] = useState<{ id: string; caption: string } | null>(null);
-  const [isVerifyNoticeOpen, setIsVerifyNoticeOpen] = useState(false);
   const [isDialogBusy, setIsDialogBusy] = useState(false);
-  // Stories (one photo, gone after 24 hours), notifications and challenges for the sidebar
-  const [storyGroups, setStoryGroups] = useState<StoryGroup[]>([]);
-  const [storyView, setStoryView] = useState<{ group: number; index: number } | null>(null);
-  const [storyDraft, setStoryDraft] = useState<{ file: File | null; preview: string; caption: string } | null>(null);
-  const [reportStoryId, setReportStoryId] = useState<string | null>(null);
+  // Challenges for the sidebar (stories live in StoriesRail)
   const [sidebarQuests, setSidebarQuests] = useState<ChallengeQuest[]>([]);
   // Approved events and live challenges from the server, for the sidebar and for what a moment is about
   const [liveEvents, setLiveEvents] = useState<EventItem[]>([]);
-  const [socialReload, setSocialReload] = useState(0);
-  // Where the moment is from: found by searching the real events and places. A challenge is not a choice here,
-  // because only a visit to a place or event counts toward one.
-  type LinkTarget = { type: 'community' | 'fair' | 'spot'; id: string; title: string; location: string };
-  const [linkedTarget, setLinkedTarget] = useState<LinkTarget | null>(null);
-  const [linkQuery, setLinkQuery] = useState('');
-  const [linkResults, setLinkResults] = useState<LinkTarget[]>([]);
-  const [isLinkSearching, setIsLinkSearching] = useState(false);
-
-  useEffect(() => {
-    const q = linkQuery.trim();
-    if (q.length < 2 || linkedTarget) {
-      setLinkResults([]);
-      return;
-    }
-    let active = true;
-    setIsLinkSearching(true);
-    // Wait until typing pauses, then ask both catalogs at once
-    const timer = setTimeout(async () => {
-      const get = (url: string) => fetch(url).then((res) => res.json()).catch(() => ({}));
-      const [events, spots] = await Promise.all([
-        get(`/api/events?q=${encodeURIComponent(q)}&limit=5&includeEnded=true`),
-        get(`/api/spots?q=${encodeURIComponent(q)}&limit=4`),
-      ]);
-      if (!active) return;
-      const found: LinkTarget[] = [
-        ...((events.events ?? []) as EventItem[]).map((e) => ({ type: e.eventType === 'public_venue' ? ('fair' as const) : ('community' as const), id: e.id, title: e.title, location: e.location || '' })),
-        ...((spots.spots ?? []) as LifestyleSpotItem[]).map((s) => ({ type: 'spot' as const, id: s.id, title: s.title, location: [s.district, s.province].filter(Boolean).join(', ') })),
-      ];
-      setLinkResults(found);
-      setIsLinkSearching(false);
-    }, 300);
-    return () => {
-      active = false;
-      clearTimeout(timer);
-    };
-  }, [linkQuery, linkedTarget]);
-
-  const LINK_TYPE_LABELS: Record<LinkTarget['type'], string> = { community: 'กิจกรรม', fair: 'งานแฟร์', spot: 'ที่เที่ยว' };
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
-  const [uploadedPostImages, setUploadedPostImages] = useState<string[]>([]);
-  const [isCompressingImages, setIsCompressingImages] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState<number>(6);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
@@ -317,95 +246,6 @@ function MomentsContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- feedUrl depends only on the listed values
   }, [session.isLoaded, memberId, activeTabFilter, locationFilter, urlMomentId]);
 
-  // Which challenges a place or event counts toward; each one is asked once
-  const loadTargetQuests = (keys: string[]) => {
-    const fresh = Array.from(new Set(keys.filter((key) => !askedTargetKeys.current.has(key)))).slice(0, 40);
-    if (fresh.length === 0) return;
-    fresh.forEach((key) => askedTargetKeys.current.add(key));
-    fetch(`/api/visits?targets=${fresh.map(encodeURIComponent).join(',')}`)
-      .then((res) => res.json())
-      .then((json: { targets?: Record<string, { quests?: { questId: string; title: string }[] }> }) => {
-        setTargetQuests((prev) => ({ ...prev, ...Object.fromEntries(Object.entries(json.targets ?? {}).map(([key, value]) => [key, value.quests ?? []])) }));
-      })
-      .catch(() => undefined);
-  };
-  // For the place or event picked in the share form
-  useEffect(() => {
-    if (linkedTarget) loadTargetQuests([`${linkedTarget.type}:${linkedTarget.id}`]);
-  }, [linkedTarget]);
-  // Before the member types anything, the form offers what they joined or saved: the likeliest places a moment is from.
-  // The list can be long, so it is ordered by how likely each one is, shows a few, and opens to the rest on request.
-  const activity = useMyActivity();
-  const [savedSpotTargets, setSavedSpotTargets] = useState<LinkTarget[]>([]);
-  const [showAllMine, setShowAllMine] = useState(false);
-  const [openedAt] = useState(() => Date.now());
-  const MINE_SHOWN = 4;
-  const savedSpotKey = activity.savedSpotIds.slice(0, 30).join(',');
-  useEffect(() => {
-    if (!isCreateModalOpen || !savedSpotKey) return;
-    let active = true;
-    fetch(`/api/spots?ids=${encodeURIComponent(savedSpotKey)}`)
-      .then((res) => res.json())
-      .then((json: { spots?: LifestyleSpotItem[] }) => {
-        if (!active) return;
-        setSavedSpotTargets((json.spots ?? []).map((spot) => ({ type: 'spot' as const, id: spot.id, title: spot.title, location: [spot.district, spot.province].filter(Boolean).join(', ') })));
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, [isCreateModalOpen, savedSpotKey]);
-  const myLinkTargets = useMemo(() => {
-    const ofEvent = (e: EventItem): LinkTarget => ({ type: e.eventType === 'public_venue' ? 'fair' : 'community', id: e.id, title: e.title, location: e.location || '' });
-    const now = openedAt;
-    const when = (e: EventItem) => parseEventDateToTimestamp(e.date);
-    const saved = new Set(activity.savedEventIds);
-    const savedEvents = liveEvents.filter((e) => saved.has(e.id));
-    // Most likely first: events already attended (latest first), saved places, saved events that have started, then what is still ahead
-    const all = [
-      ...activity.joined.filter((e) => when(e) <= now).sort((a, b) => when(b) - when(a)).map(ofEvent),
-      ...(savedSpotKey ? savedSpotTargets : []),
-      ...savedEvents.filter((e) => when(e) <= now).map(ofEvent),
-      ...activity.joined.filter((e) => when(e) > now).sort((a, b) => when(a) - when(b)).map(ofEvent),
-      ...savedEvents.filter((e) => when(e) > now).map(ofEvent),
-    ];
-    return all.filter((item, index) => all.findIndex((other) => other.type === item.type && other.id === item.id) === index);
-  }, [activity.joined, activity.savedEventIds, savedSpotKey, savedSpotTargets, liveEvents]);
-  // While typing, the member's own matches come before the catalog's
-  const linkMatches = useMemo(() => {
-    const q = linkQuery.trim().toLowerCase();
-    if (q.length < 2) return [];
-    const mine = myLinkTargets.filter((item) => item.title.toLowerCase().includes(q) || item.location.toLowerCase().includes(q)).slice(0, 4);
-    return [...mine, ...linkResults.filter((r) => !mine.some((item) => item.type === r.type && item.id === r.id))];
-  }, [linkQuery, linkResults, myLinkTargets]);
-
-  const renderLinkRow = (r: LinkTarget) => (
-    <li key={`${r.type}-${r.id}`}>
-      <button
-        type="button"
-        onClick={() => {
-          setLinkedTarget(r);
-          setCustomLocationInput('');
-        }}
-        className="w-full flex items-center gap-3 px-3.5 py-2.5 text-left hover:bg-slate-50 cursor-pointer"
-      >
-        <span className="shrink-0 text-[11px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full whitespace-nowrap">{LINK_TYPE_LABELS[r.type]}</span>
-        <span className="min-w-0">
-          <span className="block text-sm font-semibold text-slate-900 truncate">{r.title}</span>
-          {r.location && <span className="block text-xs text-slate-500 truncate">{r.location}</span>}
-        </span>
-      </button>
-    </li>
-  );
-
-  // A place can count toward several challenges; the one the member is doing is named first
-  const { joinedQuestIds } = useMyRewards(isLoggedIn);
-  const questFor = (type?: string, id?: string) => {
-    const quests = targetQuests[`${type}:${id}`] ?? [];
-    return quests.find((q) => joinedQuestIds.includes(q.questId)) ?? quests[0];
-  };
-  const linkedQuest = linkedTarget ? questFor(linkedTarget.type, linkedTarget.id) : undefined;
-
   const loadMorePosts = async () => {
     if (isLoadingMore || !hasMorePosts) return;
     setIsLoadingMore(true);
@@ -428,10 +268,6 @@ function MomentsContent() {
       .then((res) => res.json())
       .then((json) => active && setSuggested(json.members ?? []))
       .catch(() => undefined);
-    fetch('/api/stories', { cache: 'no-store' })
-      .then((res) => res.json())
-      .then((json) => active && setStoryGroups(json.groups ?? []))
-      .catch(() => undefined);
     fetch('/api/quests?limit=30', { cache: 'no-store' })
       .then((res) => res.json())
       .then((json: { quests?: ChallengeQuest[] }) => {
@@ -447,115 +283,8 @@ function MomentsContent() {
     return () => {
       active = false;
     };
-  }, [session.isLoaded, memberId, socialReload]);
+  }, [session.isLoaded, memberId]);
 
-  /** Posting anything needs a verified account; say so before a form opens */
-  const needsVerification = () => {
-    const trust = session.member?.trust;
-    if (trust && !(trust.emailVerified && trust.pledged)) {
-      setIsVerifyNoticeOpen(true);
-      return true;
-    }
-    return false;
-  };
-
-  const handleOpenStoryForm = () => {
-    if (!isLoggedIn) {
-      setMembershipActionTitle('เพื่อแชร์สตอรี่ของคุณ');
-      setIsRequireMembershipOpen(true);
-      return;
-    }
-    if (needsVerification()) return;
-    setStoryDraft({ file: null, preview: '', caption: '' });
-  };
-
-  const handlePickStoryImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const picked = e.target.files?.[0];
-    e.target.value = '';
-    if (!picked || !storyDraft) return;
-    try {
-      const compressed = await compressImage(picked, { maxWidth: 1080, maxHeight: 1920, quality: 0.85, targetMimeType: 'image/webp' });
-      const preview = URL.createObjectURL(compressed);
-      // The caption may have been typed while the photo was being prepared, so it is read from the latest draft
-      setStoryDraft((draft) => {
-        if (!draft) {
-          URL.revokeObjectURL(preview);
-          return draft;
-        }
-        if (draft.preview) URL.revokeObjectURL(draft.preview);
-        return { ...draft, file: compressed, preview };
-      });
-    } catch {
-      showToast('ใช้รูปนี้ไม่ได้ ลองเลือกรูปอื่น (JPG, PNG หรือ WebP)');
-    }
-  };
-
-  const handlePostStory = async () => {
-    if (!storyDraft?.file || isDialogBusy) return;
-    setIsDialogBusy(true);
-    try {
-      const form = new FormData();
-      form.append('file', storyDraft.file);
-      form.append('folder', 'moments');
-      const upload = await fetch('/api/upload', { method: 'POST', body: form }).then((r) => r.json()).catch(() => null);
-      if (!upload?.success || !upload.url) return showToast(upload?.error || upload?.message || 'อัปโหลดรูปไม่สำเร็จ ลองอีกครั้งนะ');
-      const result = await momentRequest('/api/stories', 'POST', { image: upload.url, caption: storyDraft.caption.trim() });
-      if (!result.ok) return showToast(result.message);
-      URL.revokeObjectURL(storyDraft.preview);
-      setStoryDraft(null);
-      setSocialReload((n) => n + 1);
-      showToast('แชร์สตอรี่แล้ว จะแสดง 24 ชั่วโมง');
-    } finally {
-      setIsDialogBusy(false);
-    }
-  };
-
-  const openStory = (group: number, index: number) => {
-    const story = storyGroups[group]?.stories[index];
-    if (!story) return setStoryView(null);
-    setStoryView({ group, index });
-    if (isLoggedIn && !story.seen) {
-      void momentRequest(`/api/stories/${story.id}`, 'POST', {});
-      setStoryGroups((prev) => prev.map((g, gi) => (gi !== group ? g : { ...g, stories: g.stories.map((s, si) => (si === index ? { ...s, seen: true } : s)), allSeen: g.stories.every((s, si) => si === index || s.seen) })));
-    }
-  };
-  /** Next photo, then the next person's stories, then close */
-  const stepStory = (direction: 1 | -1) => {
-    if (!storyView) return;
-    const group = storyGroups[storyView.group];
-    const nextIndex = storyView.index + direction;
-    if (group && nextIndex >= 0 && nextIndex < group.stories.length) return openStory(storyView.group, nextIndex);
-    const nextGroup = storyView.group + direction;
-    if (nextGroup < 0 || nextGroup >= storyGroups.length) return setStoryView(null);
-    openStory(nextGroup, direction === 1 ? 0 : storyGroups[nextGroup].stories.length - 1);
-  };
-  const handleDeleteStory = async (id: string) => {
-    const result = await momentRequest(`/api/stories/${id}`, 'DELETE');
-    if (!result.ok) return showToast(result.message);
-    setStoryView(null);
-    setSocialReload((n) => n + 1);
-    showToast('ลบสตอรี่แล้ว');
-  };
-
-  // Esc closes the post form (the other dialogs use DialogShell, which handles Esc itself)
-  useEffect(() => {
-    if (!isCreateModalOpen) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !isPosting && setIsCreateModalOpen(false);
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [isCreateModalOpen, isPosting]);
-
-  useEffect(() => {
-    if (!storyView) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setStoryView(null);
-      if (e.key === 'ArrowRight') stepStory(1);
-      if (e.key === 'ArrowLeft') stepStory(-1);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- stepStory reads the current view
-  }, [storyView, storyGroups]);
 
   const handleFollowMember = async (id: string, name: string) => {
     if (!isLoggedIn) {
@@ -572,16 +301,6 @@ function MomentsContent() {
 
   const handleReportPost = async () => {
     if (!reportReason) return;
-    if (reportStoryId) {
-      setIsDialogBusy(true);
-      const sent = await momentRequest(`/api/stories/${reportStoryId}`, 'POST', { action: 'report', reason: reportReason });
-      setIsDialogBusy(false);
-      if (!sent.ok) return showToast(sent.message);
-      setReportStoryId(null);
-      setReportReason('');
-      setSocialReload((n) => n + 1);
-      return showToast('ส่งรายงานให้ทีมงานแล้ว ขอบคุณที่ช่วยกันดูแล');
-    }
     if (!reportPostId) return;
     setIsDialogBusy(true);
     const result = await momentRequest(`/api/moments/${reportPostId}/actions`, 'POST', { action: 'report', reason: reportReason });
@@ -663,66 +382,27 @@ function MomentsContent() {
   const [eventFavorites, setEventFavorites] = useState<string[]>([]);
   const [spotFavorites, setSpotFavorites] = useState<string[]>([]);
 
-  // Create Moment Form State
-  const [customLocationInput, setCustomLocationInput] = useState<string>('');
-  const [captionInput, setCaptionInput] = useState<string>('');
-  // Something is filled in: a tap outside the form must not throw it away
-  const hasMomentDraft = Boolean(captionInput.trim() || uploadedPostImages.length > 0 || linkedTarget || customLocationInput.trim());
-
-  const [isLocating, setIsLocating] = useState<boolean>(false);
-
-  // Auto-open Create Moment modal if directed from MyHub with an event
+  // The share form opens filled in when My Hub or a place page sends a member here to share it
+  const [composerInitial, setComposerInitial] = useState<MomentComposerInitial | null>(null);
   useEffect(() => {
     const eventToShare = searchParams.get('createForEvent');
+    if (!eventToShare) return;
     const titleToShare = searchParams.get('eventTitle');
-    const locToShare = searchParams.get('location');
+    const locToShare = searchParams.get('location') || '';
     const imgToShare = searchParams.get('image');
     const typeParam = searchParams.get('createForType');
     const typeToShare = typeParam === 'spot' || typeParam === 'fair' ? typeParam : 'community';
-    if (eventToShare) {
-      if (locToShare) setCustomLocationInput(locToShare);
-      if (titleToShare) setLinkedTarget({ type: typeToShare, id: eventToShare, title: titleToShare, location: locToShare || '' });
-      if (titleToShare) setCaptionInput(typeToShare === 'community' ? `แชร์ความประทับใจจากกิจกรรม "${titleToShare}"\n` : `ไปมาแล้ว "${titleToShare}"\n`);
-      if (imgToShare) setUploadedPostImages([imgToShare]);
-      setIsCreateModalOpen(true);
-    }
+    setComposerInitial({
+      target: titleToShare ? { type: typeToShare, id: eventToShare, title: titleToShare, location: locToShare } : undefined,
+      location: locToShare,
+      caption: titleToShare ? (typeToShare === 'community' ? `แชร์ความประทับใจจากกิจกรรม "${titleToShare}"\n` : `ไปมาแล้ว "${titleToShare}"\n`) : undefined,
+      image: imgToShare || undefined,
+    });
+    setIsCreateModalOpen(true);
   }, [searchParams]);
 
-
-  // Handle HTML5 Geolocation Check-In
-  const handleUseCurrentLocation = () => {
-    if (typeof window === 'undefined') return;
-    if (!navigator.geolocation) {
-      showToast('เบราว์เซอร์ไม่รองรับการระบุพิกัด GPS');
-      return;
-    }
-    setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      () => {
-        setIsLocating(false);
-        setCustomLocationInput('ตำแหน่งปัจจุบันของฉัน (GPS)');
-        showToast('ระบุพิกัดตำแหน่งปัจจุบันเรียบร้อย');
-      },
-      () => {
-        setIsLocating(false);
-        setCustomLocationInput('กรุงเทพมหานคร (พิกัดใกล้ฉัน)');
-        showToast('ระบุพิกัดพื้นที่ใกล้เคียงเรียบร้อย');
-      },
-      { timeout: 5000 }
-    );
-  };
-
-
-  // Open Create Moment Modal with Clean Reset
   const handleOpenCreateModal = () => {
-    if (needsVerification()) return;
-    setLinkedTarget(null);
-    setLinkQuery('');
-    setCustomLocationInput('');
-    setIsLocating(false);
-    setShowAllMine(false);
-    setCaptionInput('');
-    setUploadedPostImages([]);
+    setComposerInitial(null);
     setIsCreateModalOpen(true);
   };
 
@@ -962,130 +642,6 @@ function MomentsContent() {
     }
   };
  
-  const handleImageFilesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    const remainingSlots = MAX_MOMENT_IMAGES - uploadedPostImages.length;
-    if (remainingSlots <= 0) {
-      showToast(`สามารถแชร์ได้สูงสุดไม่เกิน ${MAX_MOMENT_IMAGES} รูปต่อโพสต์ครับ`);
-      return;
-    }
-
-    const filesToProcess = Array.from(files).slice(0, remainingSlots);
-    setIsCompressingImages(true);
-
-    try {
-      const processedDataUrls: string[] = [];
-
-      for (const file of filesToProcess) {
-        // 1. Client-Side HTML5 Canvas Resize & Convert to .webp (max 1440x1800, quality 0.82)
-        const compressedFile = await compressImage(file, {
-          maxWidth: 1440,
-          maxHeight: 1800,
-          quality: 0.82,
-          targetMimeType: 'image/webp',
-        });
-
-        // 2. Read as Lightweight WebP Data URL
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(compressedFile);
-        });
-
-        processedDataUrls.push(dataUrl);
-      }
-
-      setUploadedPostImages((prev) => {
-        const next = [...prev, ...processedDataUrls].slice(0, MAX_MOMENT_IMAGES);
-        return next;
-      });
-
-      showToast(`แปลงเป็น WebP และปรับขนาดสำเร็จ (${processedDataUrls.length} รูป)`);
-    } catch (err) {
-      console.error('Error compressing images:', err);
-      showToast('เกิดข้อผิดพลาดในการประมวลผลรูปภาพ');
-    } finally {
-      setIsCompressingImages(false);
-      e.target.value = '';
-    }
-  };
-
-  const handleRemoveImage = (indexToRemove: number) => {
-    setUploadedPostImages((prev) => prev.filter((_, idx) => idx !== indexToRemove));
-  };
-
-  // Handle Post Creation
-  const handleCreatePost = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!captionInput.trim() || isPosting) return;
-
-    // The picked place or event decides the title and the place shown on the post; otherwise the typed name does
-    const resolvedLocation = linkedTarget ? linkedTarget.location || linkedTarget.title : customLocationInput.trim() || 'ไลฟ์สไตล์ทั่วไป';
-    const targetTitle = linkedTarget ? linkedTarget.title : resolvedLocation;
-
-    // A moment is the member's own photo: no stock image is added on their behalf
-    if (uploadedPostImages.length === 0) return showToast('เพิ่มรูปอย่างน้อย 1 รูปก่อนนะ');
-    const finalImages = uploadedPostImages;
-
-    // The post is saved on the server under the signed-in member; the server applies the community rules
-    setIsPosting(true);
-    let counted: CountedQuest | null = null;
-    try {
-      const imageUrls: string[] = [];
-      for (const image of finalImages) {
-        if (!image.startsWith('data:')) {
-          imageUrls.push(image);
-          continue;
-        }
-        const form = new FormData();
-        form.append('file', await (await fetch(image)).blob(), 'moment.webp');
-        form.append('folder', 'moments');
-        const upload = await fetch('/api/upload', { method: 'POST', body: form }).then((r) => r.json()).catch(() => null);
-        if (!upload?.success || !upload.url) return showToast(upload?.error || upload?.message || 'อัปโหลดรูปไม่สำเร็จ ลองอีกครั้งนะ');
-        imageUrls.push(upload.url);
-      }
-      const imageRatio = await new Promise<number | undefined>((resolve) => {
-        const probe = new window.Image();
-        probe.onload = () => resolve(probe.naturalHeight > 0 ? probe.naturalWidth / probe.naturalHeight : undefined);
-        probe.onerror = () => resolve(undefined);
-        probe.src = finalImages[0];
-      });
-      const result = await momentRequest('/api/moments', 'POST', {
-        caption: captionInput.trim(),
-        images: imageUrls,
-        imageRatio,
-        location: resolvedLocation,
-        category: 'chill',
-        targetType: linkedTarget ? linkedTarget.type : 'general',
-        targetId: linkedTarget?.id,
-        targetTitle,
-      });
-      if (!result.ok || !result.moment) return showToast(result.message);
-      const createdPost = fromServerMoment(result.moment);
-      serverPostIds.current.add(createdPost.id);
-      setPosts((prev) => [createdPost, ...prev]);
-      // A moment at a place or event is a visit: say so when it counted toward a challenge the member is doing
-      if (linkedTarget && isVisitTarget(linkedTarget.type)) {
-        const key = `${linkedTarget.type}:${linkedTarget.id}`;
-        const get = (url: string) => fetch(url, { cache: 'no-store' }).then((res) => res.json()).catch(() => ({}));
-        const [here, mine] = await Promise.all([get(`/api/visits?targets=${encodeURIComponent(key)}`), get('/api/visits?mine=1')]);
-        const hereIds = new Set(((here.targets?.[key]?.quests ?? []) as { questId: string }[]).map((q) => q.questId));
-        counted = ((mine.quests ?? []) as CountedQuest[]).find((q) => q.joined && q.current > 0 && hereIds.has(q.questId)) ?? null;
-      }
-    } finally {
-      setIsPosting(false);
-    }
-    setCaptionInput('');
-    setCustomLocationInput('');
-    setUploadedPostImages([]);
-    setIsCreateModalOpen(false);
-    if (counted) setCountedNotice(counted);
-    else showToast('แชร์โมเมนต์ของคุณเรียบร้อยแล้ว');
-  };
-
   // Infinite scroll: the next page is fetched when the end of the list comes into view
   useEffect(() => {
     const target = sentinelRef.current;
@@ -1144,28 +700,19 @@ function MomentsContent() {
         {/* 2. Main Grid: 2 Columns */}
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-6 items-start">
           {/* Left Column (8-cols): Main Visual Feed */}
-          <div className="min-w-0 w-full max-w-[680px] mx-auto lg:mx-0 lg:max-w-none space-y-4">
+          <div className="min-w-0 w-full max-w-[560px] mx-auto space-y-4">
             {/* Stories (24 hours) first, then highlights: the most liked moments; in the feed column so its edges line up with the posts */}
             <section aria-label="สตอรี่และไฮไลต์" className="bg-white -mx-3.5 sm:mx-0 rounded-none sm:rounded-2xl border-y sm:border border-slate-200/80 shadow-2xs p-4 sm:p-5">
-              <ul className="flex gap-3 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
-                <li className="shrink-0 w-16 sm:w-[72px]">
-                  <button type="button" onClick={handleOpenStoryForm} className="w-full flex flex-col items-center gap-1.5 cursor-pointer group">
-                    <span className="w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-full border-2 border-dashed border-slate-300 group-hover:border-[#2563EB] bg-slate-50 flex items-center justify-center text-slate-500 group-hover:text-[#2563EB] transition-colors">
-                      <Plus className="w-6 h-6" aria-hidden="true" />
-                    </span>
-                    <span className="w-full text-[11px] font-bold text-slate-800 truncate text-center">เพิ่มสตอรี่</span>
-                  </button>
-                </li>
-                {storyGroups.map((g, gi) => (
-                  <li key={g.author.id} className="shrink-0 w-16 sm:w-[72px]">
-                    <button type="button" onClick={() => openStory(gi, Math.max(0, g.stories.findIndex((s) => !s.seen)))} className="w-full flex flex-col items-center gap-1.5 cursor-pointer" aria-label={`ดูสตอรี่ของ ${g.author.displayName}`}>
-                      <span className={`w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-full p-0.5 border-2 ${g.allSeen ? 'border-slate-300' : 'border-[#2563EB]'}`}>
-                        <img loading="lazy" src={g.stories[g.stories.length - 1].image} alt="" className="w-full h-full rounded-full object-cover" />
-                      </span>
-                      <span className="w-full text-[11px] font-semibold text-slate-700 truncate text-center">{g.isMine ? 'สตอรี่ของคุณ' : g.author.displayName}</span>
-                    </button>
-                  </li>
-                ))}
+
+              <StoriesRail
+                isLoggedIn={isLoggedIn}
+                onNeedLogin={() => {
+                  setMembershipActionTitle('เพื่อแชร์สตอรี่ของคุณ');
+                  setIsRequireMembershipOpen(true);
+                }}
+                onToast={showToast}
+                after={
+                  <>
                 {highlights.length > 0 && (
                   <li className="shrink-0 flex flex-col items-center justify-start gap-1.5 px-1" aria-hidden="true">
                     <span className="h-16 sm:h-[72px] w-px bg-slate-200" />
@@ -1182,7 +729,9 @@ function MomentsContent() {
                     </button>
                   </li>
                 ))}
-              </ul>
+                  </>
+                }
+              />
             </section>
 
             {/* Quick Post Prompt Input Bar & Segmented Tabs Container */}
@@ -1243,7 +792,7 @@ function MomentsContent() {
                         aria-selected={isActive}
                         onClick={() => setActiveTabFilter(tab.id as typeof activeTabFilter)}
                         className={`flex-1 py-2 px-2 sm:px-3 rounded-lg text-xs sm:text-sm font-bold whitespace-nowrap transition-all cursor-pointer ${
-                          isActive ? 'bg-white text-slate-900 shadow-2xs font-extrabold' : 'text-slate-500 hover:text-slate-900'
+                          isActive ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-500 hover:text-slate-900'
                         }`}
                       >
                         {tab.label}
@@ -1275,7 +824,7 @@ function MomentsContent() {
               </div>
               {(activeTabFilter === 'saved' || activeTabFilter === 'mine') && (
                 <div className="flex items-center justify-between gap-2">
-                  <h2 className="text-sm font-extrabold text-slate-900">{activeTabFilter === 'saved' ? 'โพสต์ที่บันทึกไว้' : 'โมเมนต์ของฉัน'}</h2>
+                  <h2 className="text-sm font-bold text-slate-900">{activeTabFilter === 'saved' ? 'โพสต์ที่บันทึกไว้' : 'โมเมนต์ของฉัน'}</h2>
                   <button type="button" onClick={() => setActiveTabFilter('all')} className="text-xs font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap">
                     กลับไปฟีด
                   </button>
@@ -1436,7 +985,7 @@ function MomentsContent() {
                               {profileHref ? <Link href={profileHref} className="hover:text-[#2563EB] hover:underline">{post.userName}</Link> : post.userName}
                             </h3>
                             {authorId && !isMinePost(post) && !followingIds.includes(authorId) && (
-                              <button type="button" onClick={() => handleFollowMember(authorId, post.userName)} className="text-xs font-extrabold text-[#2563EB] hover:text-[#1D4ED8] cursor-pointer whitespace-nowrap">
+                              <button type="button" onClick={() => handleFollowMember(authorId, post.userName)} className="text-xs font-bold text-[#2563EB] hover:text-[#1D4ED8] cursor-pointer whitespace-nowrap">
                                 ติดตาม
                               </button>
                             )}
@@ -1537,6 +1086,7 @@ function MomentsContent() {
                       ratio={(post as { imageRatio?: number }).imageRatio}
                       alt={post.caption}
                       onOpen={(i) => openLightbox(images, i, post.caption)}
+                      onDoubleTap={() => handleDoubleTapLike(post.id)}
                     />
 
                     {/* Bottom Body: Action Bar + Caption + Quick Cheers */}
@@ -1706,7 +1256,7 @@ function MomentsContent() {
                   {postIndex === 2 && recommendedEvents.length > 0 && (
                     <section aria-label="กิจกรรมแนะนำ" className="lg:hidden bg-white rounded-2xl border border-slate-200/80 p-4 space-y-3">
                       <div className="flex items-center justify-between gap-2">
-                        <h2 className="text-sm font-extrabold text-slate-900">กิจกรรมแนะนำ</h2>
+                        <h2 className="text-sm font-bold text-slate-900">กิจกรรมแนะนำ</h2>
                         <Link href="/community" className="text-xs font-bold text-[#2563EB] hover:underline whitespace-nowrap">ดูทั้งหมด</Link>
                       </div>
                       <ul className="flex gap-3 overflow-x-auto no-scrollbar -mx-1 px-1">
@@ -1727,7 +1277,7 @@ function MomentsContent() {
                   {postIndex === 6 && sidebarQuests.length > 0 && (
                     <section aria-label="ชาเลนจ์แนะนำ" className="lg:hidden bg-white rounded-2xl border border-slate-200/80 p-4 space-y-3">
                       <div className="flex items-center justify-between gap-2">
-                        <h2 className="text-sm font-extrabold text-slate-900">ชาเลนจ์แนะนำ</h2>
+                        <h2 className="text-sm font-bold text-slate-900">ชาเลนจ์แนะนำ</h2>
                         <Link href="/challenges" className="text-xs font-bold text-[#2563EB] hover:underline whitespace-nowrap">ดูทั้งหมด</Link>
                       </div>
                       <ul className="flex gap-3 overflow-x-auto no-scrollbar -mx-1 px-1">
@@ -1790,7 +1340,7 @@ function MomentsContent() {
                     <Users className="w-3.5 h-3.5" />
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-sm text-slate-900 leading-none">สมาชิกที่น่าติดตาม</h3>
+                    <h3 className="font-bold text-sm text-slate-900 leading-none">สมาชิกที่น่าติดตาม</h3>
                     <p className="text-[11px] text-slate-500 font-medium mt-1">สมาชิกที่ยืนยันแล้ว และแชร์โมเมนต์อยู่</p>
                   </div>
                 </div>
@@ -1833,7 +1383,7 @@ function MomentsContent() {
                     <Calendar className="w-3.5 h-3.5" />
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-sm text-slate-900 leading-none">กิจกรรมแนะนำ</h3>
+                    <h3 className="font-bold text-sm text-slate-900 leading-none">กิจกรรมแนะนำ</h3>
                     <p className="text-[11px] text-slate-400 font-medium mt-0.5">เปิดรับสมัคร & น่าสนใจ</p>
                   </div>
                 </div>
@@ -1865,7 +1415,7 @@ function MomentsContent() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 mb-0.5">
                           <span
-                            className={`text-[11px] font-extrabold px-1.5 py-0.5 rounded-md ${
+                            className={`text-[11px] font-bold px-1.5 py-0.5 rounded-md ${
                               isCommunity
                                 ? 'bg-[#FFF4EE] text-[#D04A1B]'
                                 : 'bg-[#EEF4FA] text-[#1F3D5C]'
@@ -1907,7 +1457,7 @@ function MomentsContent() {
                       <Trophy className="w-3.5 h-3.5" />
                     </div>
                     <div>
-                      <h3 className="font-extrabold text-sm text-slate-900 leading-none">ชาเลนจ์แนะนำ</h3>
+                      <h3 className="font-bold text-sm text-slate-900 leading-none">ชาเลนจ์แนะนำ</h3>
                       <p className="text-[11px] text-slate-500 font-medium mt-1">ไปให้ครบ แชร์โมเมนต์ รับรางวัล</p>
                     </div>
                   </div>
@@ -2101,335 +1651,23 @@ function MomentsContent() {
       />
 
 
-      {/* Modal 4: Create Moment Modal (Multi-Photo up to 6 images - Luxury Global Standard) */}
+      {/* The share form, shared with the home feed */}
       {isCreateModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-5 bg-black/60 backdrop-blur-sm animate-fade-in"
-          onClick={() => {
-            if (!hasMomentDraft && !isPosting) setIsCreateModalOpen(false);
+        <MomentComposer
+          initial={composerInitial}
+          onClose={() => setIsCreateModalOpen(false)}
+          onToast={showToast}
+          onPosted={(moment, counted) => {
+            const createdPost = fromServerMoment(moment as unknown as ServerMoment);
+            serverPostIds.current.add(createdPost.id);
+            setPosts((prev) => [createdPost, ...prev]);
+            setIsCreateModalOpen(false);
+            if (counted) setCountedNotice(counted);
+            else showToast('แชร์โมเมนต์ของคุณเรียบร้อยแล้ว');
           }}
-        >
-          {/* A sheet from the bottom on phones, a centred dialog on larger screens */}
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="create-moment-title"
-            className="bg-white w-full sm:max-w-lg max-h-[92dvh] flex flex-col rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200/90"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3.5 border-b border-slate-100 shrink-0">
-              <h3 id="create-moment-title" className="font-extrabold text-base sm:text-lg text-slate-900">แชร์โมเมนต์</h3>
-              <button
-                type="button"
-                onClick={() => setIsCreateModalOpen(false)}
-                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors flex items-center justify-center cursor-pointer shrink-0"
-                aria-label="ปิด"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreatePost} className="flex flex-col min-h-0 flex-1">
-              <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-5">
-                {/* 1. Photos */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-bold text-slate-900">รูปภาพ</span>
-                    <span className="text-xs font-medium text-slate-500">
-                      {isCompressingImages ? 'กำลังเตรียมรูป…' : `${uploadedPostImages.length}/${MAX_MOMENT_IMAGES} รูป`}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                    {uploadedPostImages.map((img, idx) => (
-                      <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
-                        <img loading="lazy" src={img} alt={`รูปที่ ${idx + 1}`} className="w-full h-full object-cover" />
-                        {idx === 0 && (
-                          <span className="absolute bottom-1 left-1 bg-black/70 text-white text-[11px] font-bold px-1.5 py-0.5 rounded-md">ปก</span>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveImage(idx)}
-                          className="absolute top-1 right-1 w-7 h-7 rounded-full bg-black/70 hover:bg-rose-600 text-white flex items-center justify-center transition-colors cursor-pointer"
-                          aria-label={`ลบรูปที่ ${idx + 1}`}
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                    {uploadedPostImages.length < MAX_MOMENT_IMAGES && (
-                      <label
-                        className={`${
-                          uploadedPostImages.length === 0 ? 'col-span-3 sm:col-span-4 py-7' : 'aspect-square'
-                        } rounded-2xl bg-slate-50 hover:bg-slate-100 border-2 border-dashed border-slate-300 hover:border-slate-400 transition-colors text-center cursor-pointer flex flex-col items-center justify-center gap-1.5 px-2`}
-                      >
-                        <ImageIcon className="w-6 h-6 text-slate-500" aria-hidden="true" />
-                        <span className="text-sm font-bold text-slate-800">{uploadedPostImages.length === 0 ? 'เลือกรูป' : 'เพิ่มรูป'}</span>
-                        {uploadedPostImages.length === 0 && (
-                          <span className="text-xs text-slate-500">อย่างน้อย 1 รูป สูงสุด {MAX_MOMENT_IMAGES} รูป</span>
-                        )}
-                        <input
-                          type="file"
-                          accept="image/jpeg,image/png,image/webp,image/avif"
-                          multiple
-                          disabled={isCompressingImages}
-                          onChange={handleImageFilesChange}
-                          className="hidden"
-                        />
-                      </label>
-                    )}
-                  </div>
-                </div>
-
-                {/* 2. Caption */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <label htmlFor="moment-caption" className="text-sm font-bold text-slate-900">เล่าสั้นๆ</label>
-                    <span className="text-xs font-medium text-slate-500">{captionInput.length}/500</span>
-                  </div>
-                  <textarea
-                    id="moment-caption"
-                    rows={3}
-                    value={captionInput}
-                    maxLength={500}
-                    onChange={(e) => setCaptionInput(e.target.value)}
-                    placeholder="วันนี้ไปไหนมา รู้สึกยังไง"
-                    className="w-full bg-white border border-slate-300 rounded-2xl p-3.5 text-base sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] resize-none leading-relaxed placeholder:text-slate-400"
-                    required
-                  />
-                </div>
-
-                {/* 3. What it is about: one optional choice instead of five tabs */}
-                <div className="space-y-2">
-                  <label htmlFor="moment-link" className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-bold text-slate-900">ไปที่ไหนมา</span>
-                    <span className="text-xs font-medium text-slate-500 shrink-0">ไม่บังคับ</span>
-                  </label>
-                  {!linkedTarget && (
-                    <p className="text-xs font-medium text-slate-600 leading-relaxed">เลือกที่เที่ยว กิจกรรม หรืองานที่ไปมา เพื่อนๆ จะตามไปได้ และถ้าที่นั่นอยู่ในชาเลนจ์ ระบบจะนับให้เลย</p>
-                  )}
-                  {linkedTarget ? (
-                    <div>
-                    <div className="flex items-center justify-between gap-3 px-3.5 py-3 rounded-2xl border border-blue-200 bg-blue-50/60">
-                      <span className="min-w-0">
-                        <span className="block text-sm font-bold text-slate-900 truncate">{linkedTarget.title}</span>
-                        <span className="block text-xs font-medium text-slate-600 truncate">{[LINK_TYPE_LABELS[linkedTarget.type], linkedTarget.location].filter(Boolean).join(' · ')}</span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setLinkedTarget(null);
-                          setLinkQuery('');
-                        }}
-                        className="shrink-0 w-9 h-9 rounded-full bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 flex items-center justify-center cursor-pointer"
-                        aria-label="เอารายการนี้ออก"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                    {linkedQuest && (
-                      <p className="mt-2 flex items-start gap-1.5 text-xs font-bold text-[#5B21B6] leading-relaxed">
-                        <Trophy className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden="true" />
-                        <span className="min-w-0 line-clamp-2">ที่นี่นับในชาเลนจ์ {linkedQuest.title}</span>
-                      </p>
-                    )}
-                    </div>
-                  ) : (
-                    <div>
-                      <div className="relative">
-                        <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" aria-hidden="true" />
-                        <input
-                          id="moment-link"
-                          type="search"
-                          value={linkQuery}
-                          onChange={(e) => setLinkQuery(e.target.value)}
-                          placeholder="ค้นหาที่เที่ยว กิจกรรม หรืองานแฟร์"
-                          autoComplete="off"
-                          className="w-full bg-white border border-slate-300 rounded-2xl pl-10 pr-3.5 py-3 text-base sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] placeholder:text-slate-400 placeholder:font-normal"
-                        />
-                      </div>
-                      {linkQuery.trim().length < 2 && myLinkTargets.length > 0 && (
-                        <div className="mt-2">
-                          <div className="flex items-center justify-between gap-2 mb-1.5">
-                            <p className="text-xs font-bold text-slate-600">ที่คุณเข้าร่วมหรือบันทึกไว้</p>
-                            {myLinkTargets.length > MINE_SHOWN && (
-                              <button type="button" onClick={() => setShowAllMine((open) => !open)} className="text-xs font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap">
-                                {showAllMine ? 'ย่อ' : `ดูทั้งหมด ${myLinkTargets.length}`}
-                              </button>
-                            )}
-                          </div>
-                          <ul className={`rounded-2xl border border-slate-200 divide-y divide-slate-100 ${showAllMine ? 'max-h-64 overflow-y-auto' : 'overflow-hidden'}`} aria-label="ที่คุณเข้าร่วมหรือบันทึกไว้">
-                            {(showAllMine ? myLinkTargets : myLinkTargets.slice(0, MINE_SHOWN)).map(renderLinkRow)}
-                          </ul>
-                        </div>
-                      )}
-                      {linkQuery.trim().length >= 2 && (
-                        <ul className="mt-2 rounded-2xl border border-slate-200 divide-y divide-slate-100 overflow-hidden" aria-label="ผลการค้นหา">
-                          {linkMatches.map(renderLinkRow)}
-                          {linkMatches.length === 0 && (
-                            <li className="px-3.5 py-3 text-sm font-medium text-slate-500">{isLinkSearching ? 'กำลังค้นหา…' : 'ไม่พบรายการที่ตรง ลองคำอื่น หรือพิมพ์ชื่อสถานที่ด้านล่างแทน'}</li>
-                          )}
-                        </ul>
-                      )}
-                    </div>
-                  )}
-
-                  {!linkedTarget && (
-                    <div className="flex items-center gap-2">
-                      <div className="relative flex-1 min-w-0">
-                        <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" aria-hidden="true" />
-                        <input
-                          type="text"
-                          value={customLocationInput}
-                          maxLength={80}
-                          onChange={(e) => setCustomLocationInput(e.target.value)}
-                          placeholder="หรือพิมพ์ชื่อสถานที่"
-                          aria-label="ชื่อสถานที่"
-                          className="w-full bg-white border border-slate-300 rounded-2xl pl-10 pr-3.5 py-3 text-base sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] placeholder:text-slate-400 placeholder:font-normal"
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleUseCurrentLocation}
-                        disabled={isLocating}
-                        className="shrink-0 w-12 h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center cursor-pointer disabled:opacity-50"
-                        aria-label="ใช้ตำแหน่งปัจจุบัน"
-                        title="ใช้ตำแหน่งปัจจุบัน"
-                      >
-                        <Navigation className={`w-4 h-4 ${isLocating ? 'animate-spin' : ''}`} aria-hidden="true" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Actions stay in view while the form scrolls */}
-              <div className="shrink-0 px-4 sm:px-6 py-3 border-t border-slate-100 flex items-center gap-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-                <button
-                  type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-3 rounded-full text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer whitespace-nowrap"
-                >
-                  ยกเลิก
-                </button>
-                <button
-                  type="submit"
-                  disabled={!captionInput.trim() || uploadedPostImages.length === 0 || isCompressingImages || isPosting}
-                  className="flex-1 bg-[#2563EB] hover:bg-[#1D4ED8] disabled:bg-slate-200 disabled:text-slate-400 disabled:pointer-events-none text-white px-6 py-3 rounded-full font-extrabold text-sm transition-colors shadow-sm cursor-pointer whitespace-nowrap"
-                >
-                  {isCompressingImages
-                    ? 'กำลังเตรียมรูป…'
-                    : isPosting
-                    ? 'กำลังโพสต์…'
-                    : uploadedPostImages.length === 0
-                    ? 'เลือกรูปก่อนนะ'
-                    : !captionInput.trim()
-                    ? 'เขียนเล่าสั้นๆ ก่อนนะ'
-                    : 'โพสต์'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        />
       )}
 
-      {storyDraft && (
-        <DialogShell onClose={() => setStoryDraft(null)} title="เพิ่มสตอรี่" subtitle="รูปเดียว แสดง 24 ชั่วโมง แล้วหายไปเอง" size="sm">
-          <label className={`block rounded-2xl overflow-hidden border-2 border-dashed cursor-pointer mb-4 ${storyDraft.preview ? 'border-transparent' : 'border-slate-300 hover:border-slate-400 bg-slate-50'}`}>
-            {storyDraft.preview ? (
-              // eslint-disable-next-line @next/next/no-img-element -- local preview
-              <img src={storyDraft.preview} alt="รูปที่เลือก" className="w-full max-h-72 object-contain bg-slate-900" />
-            ) : (
-              <span className="flex flex-col items-center justify-center gap-1.5 py-10 text-slate-600">
-                <ImageIcon className="w-6 h-6" aria-hidden="true" />
-                <span className="text-sm font-bold text-slate-800">เลือกรูป</span>
-              </span>
-            )}
-            <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" onChange={handlePickStoryImage} className="hidden" />
-          </label>
-          <label htmlFor="story-caption" className="sr-only">ข้อความสั้นๆ (ไม่บังคับ)</label>
-          <input
-            id="story-caption"
-            type="text"
-            maxLength={120}
-            value={storyDraft.caption}
-            onChange={(e) => setStoryDraft({ ...storyDraft, caption: e.target.value })}
-            placeholder="ข้อความสั้นๆ (ไม่บังคับ)"
-            className="w-full bg-white border border-slate-300 rounded-2xl px-4 py-3 text-base sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] placeholder:text-slate-400 mb-5"
-          />
-          <div className="flex flex-wrap justify-end gap-2.5">
-            <button type="button" className={dialogButton.quiet} onClick={() => setStoryDraft(null)}>ยกเลิก</button>
-            <button type="button" className={dialogButton.primary} disabled={!storyDraft.file || isDialogBusy} onClick={handlePostStory}>
-              {isDialogBusy ? 'กำลังแชร์…' : storyDraft.file ? 'แชร์สตอรี่' : 'เลือกรูปก่อนนะ'}
-            </button>
-          </div>
-        </DialogShell>
-      )}
-
-      {storyView && storyGroups[storyView.group]?.stories[storyView.index] && (() => {
-        const group = storyGroups[storyView.group];
-        const story = group.stories[storyView.index];
-        return (
-          <div role="dialog" aria-modal="true" aria-label={`สตอรี่ของ ${group.author.displayName}`} className="fixed inset-0 z-[70] bg-black flex items-center justify-center" onClick={() => setStoryView(null)}>
-            <div className="relative w-full h-full sm:h-[92vh] sm:max-w-md sm:rounded-3xl overflow-hidden bg-slate-950" onClick={(e) => e.stopPropagation()}>
-              {/* eslint-disable-next-line @next/next/no-img-element -- member upload */}
-              <img src={story.image} alt={story.caption || `สตอรี่ของ ${group.author.displayName}`} className="absolute inset-0 w-full h-full object-contain" />
-              <button type="button" onClick={() => stepStory(-1)} className="absolute inset-y-0 left-0 w-1/3 cursor-pointer" aria-label="รูปก่อนหน้า" />
-              <button type="button" onClick={() => stepStory(1)} className="absolute inset-y-0 right-0 w-2/3 cursor-pointer" aria-label="รูปถัดไป" />
-              <div className="absolute top-0 inset-x-0 p-3 pt-[max(0.75rem,env(safe-area-inset-top))] bg-black/45 space-y-2.5">
-                <div className="flex gap-1" aria-hidden="true">
-                  {group.stories.map((s, i) => (
-                    <span key={s.id} className={`h-1 flex-1 rounded-full ${i <= storyView.index ? 'bg-white' : 'bg-white/35'}`} />
-                  ))}
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <Link href={`/profile?id=${group.author.id}`} className="flex items-center gap-2.5 min-w-0">
-                    <img src={avatarOf(group.author.displayName, group.author.avatarUrl)} alt="" className="w-9 h-9 rounded-full object-cover border border-white/40 shrink-0" />
-                    <span className="min-w-0">
-                      <span className="block text-sm font-extrabold text-white truncate">{group.author.displayName}</span>
-                      <span className="block text-xs font-medium text-white/80">เหลืออีก {story.hoursLeft} ชั่วโมง</span>
-                    </span>
-                  </Link>
-                  <span className="flex items-center gap-2 shrink-0">
-                    {!group.isMine && isLoggedIn && (
-                      <button
-                        type="button"
-                        disabled={story.hasReported}
-                        onClick={() => {
-                          setReportReason('');
-                          setReportStoryId(story.id);
-                          setStoryView(null);
-                        }}
-                        className="w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 disabled:opacity-50 disabled:cursor-not-allowed text-white flex items-center justify-center cursor-pointer"
-                        aria-label={story.hasReported ? 'รายงานแล้ว' : 'รายงานสตอรี่นี้'}
-                        title={story.hasReported ? 'รายงานแล้ว' : 'รายงานสตอรี่นี้'}
-                      >
-                        <Flag className="w-4 h-4" />
-                      </button>
-                    )}
-                    <button type="button" onClick={() => setStoryView(null)} className="w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center cursor-pointer" aria-label="ปิด">
-                      <X className="w-5 h-5" />
-                    </button>
-                  </span>
-                </div>
-              </div>
-              {(story.caption || group.isMine) && (
-                <div className="absolute bottom-0 inset-x-0 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-black/55 space-y-3">
-                  {story.caption && <p className="text-sm sm:text-base font-semibold text-white leading-relaxed">{story.caption}</p>}
-                  {group.isMine && (
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-xs font-semibold text-white/85">มีคนดูแล้ว {story.views ?? 0} คน</span>
-                      <button type="button" onClick={() => handleDeleteStory(story.id)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/15 hover:bg-rose-600 text-white text-sm font-bold cursor-pointer whitespace-nowrap">
-                        <Trash2 className="w-4 h-4" aria-hidden="true" />
-                        ลบสตอรี่
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })()}
 
       {confirmDeleteId && (
         <DialogShell onClose={() => setConfirmDeleteId(null)} title="ลบโมเมนต์นี้ไหม" subtitle="รูป ข้อความ และความคิดเห็นของโพสต์นี้จะหายไป และกู้คืนไม่ได้" size="sm">
@@ -2452,13 +1690,10 @@ function MomentsContent() {
         </DialogShell>
       )}
 
-      {(reportPostId || reportStoryId) && (
+      {reportPostId && (
         <DialogShell
-          onClose={() => {
-            setReportPostId(null);
-            setReportStoryId(null);
-          }}
-          title={reportStoryId ? 'รายงานสตอรี่นี้' : 'รายงานโพสต์นี้'}
+          onClose={() => setReportPostId(null)}
+          title="รายงานโพสต์นี้"
           subtitle="ทีมงานจะตรวจสอบ เจ้าของจะไม่รู้ว่าใครรายงาน"
           size="sm"
         >
@@ -2472,7 +1707,7 @@ function MomentsContent() {
             ))}
           </fieldset>
           <div className="flex flex-wrap justify-end gap-2.5">
-            <button type="button" className={dialogButton.quiet} onClick={() => { setReportPostId(null); setReportStoryId(null); }}>ยกเลิก</button>
+            <button type="button" className={dialogButton.quiet} onClick={() => setReportPostId(null)}>ยกเลิก</button>
             <button type="button" className={dialogButton.primary} disabled={!reportReason || isDialogBusy} onClick={handleReportPost}>ส่งรายงาน</button>
           </div>
         </DialogShell>
@@ -2496,14 +1731,6 @@ function MomentsContent() {
         </DialogShell>
       )}
 
-      {isVerifyNoticeOpen && (
-        <DialogShell onClose={() => setIsVerifyNoticeOpen(false)} title="อีกนิดเดียว ก็โพสต์ได้แล้ว" subtitle="ยืนยันอีเมลและรับคำมั่นของคอมมูนิตี้ก่อน เพื่อให้ที่นี่ปลอดภัยสำหรับทุกคน" size="sm">
-          <div className="flex flex-wrap justify-end gap-2.5">
-            <button type="button" className={dialogButton.quiet} onClick={() => setIsVerifyNoticeOpen(false)}>ไว้ทีหลัง</button>
-            <Link href="/profile#trust" className={dialogButton.primary}>ไปยืนยันที่โปรไฟล์</Link>
-          </div>
-        </DialogShell>
-      )}
 
       {/* Create Custom Event Modal */}
       <CreateEventModal
@@ -2551,27 +1778,7 @@ function MomentsContent() {
       />
 
       {/* Toast Notification */}
-      {countedNotice && (
-        <div role="status" className="fixed bottom-24 sm:bottom-6 left-4 right-4 sm:left-auto sm:right-6 sm:w-[360px] z-50 bg-[#1E293B] text-white p-4 rounded-2xl shadow-xl border border-slate-700 animate-slide-up">
-          <div className="flex items-start gap-2.5">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" aria-hidden="true" />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold">แชร์โมเมนต์แล้ว</p>
-              <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">
-                {countedNotice.completed
-                  ? `ทำชาเลนจ์ ${countedNotice.title} ครบแล้ว`
-                  : `นับในชาเลนจ์ ${countedNotice.title} แล้ว ${countedNotice.current} จาก ${countedNotice.total}`}
-              </p>
-            </div>
-            <button type="button" onClick={() => setCountedNotice(null)} className="w-8 h-8 -mt-1.5 -mr-1.5 flex items-center justify-center rounded-lg text-slate-400 hover:text-white cursor-pointer shrink-0" aria-label="ปิด">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          <Link href={`/challenges/${encodeURIComponent(countedNotice.questId)}`} className="mt-3 flex items-center justify-center h-10 rounded-xl bg-white text-slate-900 text-sm font-bold hover:bg-slate-100 transition-colors">
-            {countedNotice.completed ? 'ดูรางวัล' : 'ดูชาเลนจ์'}
-          </Link>
-        </div>
-      )}
+      {countedNotice && <CountedQuestNotice counted={countedNotice} onClose={() => setCountedNotice(null)} />}
       {toastMessage && (
         <div role="status" className="fixed bottom-24 sm:bottom-6 left-4 right-4 sm:left-auto sm:right-6 z-50 bg-[#1E293B] text-white px-5 py-3 rounded-2xl shadow-xl border border-slate-700 text-sm font-medium flex items-center gap-2.5 animate-slide-up">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />

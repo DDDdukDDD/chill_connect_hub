@@ -74,7 +74,7 @@ export function NotificationBell() {
       >
         <Bell className="w-4 h-4" aria-hidden="true" />
         {data.unread > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-[11px] font-extrabold flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-[11px] font-bold flex items-center justify-center">
             {data.unread > 9 ? '9+' : data.unread}
           </span>
         )}
@@ -103,7 +103,7 @@ export function NotificationBell() {
                     )}
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm text-slate-700 leading-snug">
-                        <span className="font-extrabold text-slate-900">{n.actorName}</span> {n.message}
+                        <span className="font-bold text-slate-900">{n.actorName}</span> {n.message}
                       </span>
                       {n.preview && <span className="block text-xs text-slate-500 mt-0.5 truncate">“{n.preview}”</span>}
                       <span className="block text-xs font-medium text-slate-500 mt-0.5">{n.timeAgo}</span>

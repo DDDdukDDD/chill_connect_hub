@@ -25,7 +25,7 @@ export const JourneyHolidayPlans: React.FC<JourneyHolidayPlansProps> = ({ plans,
   return (
     <section className="space-y-4" aria-labelledby="holiday-plans-heading">
       <div>
-        <h2 id="holiday-plans-heading" className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+        <h2 id="holiday-plans-heading" className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
           แผนวันหยุดพร้อมไป
         </h2>
         <p className="text-sm font-medium text-slate-500 mt-1">{subtitle}</p>
@@ -41,7 +41,7 @@ export const JourneyHolidayPlans: React.FC<JourneyHolidayPlansProps> = ({ plans,
           : plans.map((plan) => (
               <article key={plan.id} className={`${PLAN_SLOT} rounded-2xl border border-slate-200 bg-white p-4 sm:p-5`}>
                 <h3 className="flex items-baseline justify-between gap-3">
-                  <span className="text-base font-extrabold text-slate-900 tabular-nums">{plan.dateLabel}</span>
+                  <span className="text-base font-bold text-slate-900 tabular-nums">{plan.dateLabel}</span>
                   <span className="text-xs font-medium text-slate-500 truncate">{plan.province}</span>
                 </h3>
 
@@ -59,7 +59,7 @@ export const JourneyHolidayPlans: React.FC<JourneyHolidayPlansProps> = ({ plans,
                           )}
                         </span>
                         <span className="min-w-0 flex-1">
-                          <span className="flex items-center gap-1.5 text-[11px] font-extrabold text-slate-500 tabular-nums">
+                          <span className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 tabular-nums">
                             <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: PILLARS[stop.pillar].color }} aria-hidden="true" />
                             {index + 1} · {PILLARS[stop.pillar].label}
                           </span>

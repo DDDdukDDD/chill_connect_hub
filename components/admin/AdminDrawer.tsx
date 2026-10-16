@@ -42,7 +42,7 @@ export function AdminDrawer({
       <div className="relative flex h-full w-full max-w-6xl flex-col bg-[#F6F8F7] shadow-2xl">
         <div className="flex items-start justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-6">
           <div className="min-w-0">
-            <h2 className="text-lg sm:text-xl font-black text-slate-900 truncate">{title}</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 truncate">{title}</h2>
             {subtitle && <div className="mt-0.5 text-xs text-slate-500">{subtitle}</div>}
           </div>
           <button type="button" onClick={onClose} aria-label="ปิด" className="rounded-xl bg-slate-100 p-2 text-slate-600 hover:bg-slate-200">
@@ -65,7 +65,7 @@ export function AdminDrawer({
 export function FormSection({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
-      <h3 className="text-sm sm:text-base font-extrabold text-slate-900">{title}</h3>
+      <h3 className="text-sm sm:text-base font-bold text-slate-900">{title}</h3>
       {hint && <p className="mt-0.5 text-[11px] sm:text-xs text-slate-500">{hint}</p>}
       <div className="mt-3 grid gap-3 sm:grid-cols-2">{children}</div>
     </section>
@@ -110,7 +110,7 @@ export function QualityPanel({ report }: { report: QualityReport }) {
     <div className="rounded-2xl border border-slate-200 bg-white p-4">
       <div className="mb-2 flex items-center justify-between">
         <p className="text-[11px] sm:text-xs font-semibold text-slate-500">ตรวจคุณภาพ</p>
-        <span className={`rounded-full border px-2 py-0.5 text-[10px] sm:text-xs font-extrabold tabular-nums ${
+        <span className={`rounded-full border px-2 py-0.5 text-[10px] sm:text-xs font-bold tabular-nums ${
           report.requiredFailures > 0
             ? 'border-rose-200 bg-rose-50 text-rose-700'
             : report.score < 90 ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'

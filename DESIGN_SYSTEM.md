@@ -122,17 +122,24 @@ Show selection once. Do not combine a border, a fill, a check mark and an icon c
 
 **Minimum size: 11px.** No text below `text-[11px]`, in any component.
 
+**Weights: 700 at most.** IBM Plex Sans Thai is loaded at 300–700. `font-extrabold` (800) and `font-black` (900) are not in the font, so the browser fakes them by thickening the letters, which smears Thai. Never use them; `font-bold` (700) is the heaviest weight. Changed site-wide on 2026-10-16 (owner): every 800/900 became 700.
+
+**Few bold lines.** In a block, only the title is bold or semibold. Secondary lines (counts, places, times, "N คนกำลังทำ") are regular `text-slate-500`; links such as "ดูทั้งหมด" are `font-medium`.
+
 | Level | Classes | Size (mobile → desktop) | Use for |
 | :--- | :--- | :--- | :--- |
-| Page H1 | `text-2xl sm:text-3xl md:text-4xl font-black` | 24 → 36px | Homepage hero, detail-page titles. Step titles of a wizard stop at `sm:text-3xl` |
-| Section H2 | `text-xl sm:text-2xl font-black` | 20 → 24px | Pillar and section headings |
-| Dialog title | `text-lg sm:text-xl md:text-2xl font-black` | 18 → 24px | Dialog and pass titles |
-| Card title | `text-sm sm:text-base font-extrabold` | 14 → 16px | Titles in feeds, with `line-clamp-2 min-h-[2.5rem]` so cards in a row align |
-| Body | `text-sm font-medium` | 14px | Paragraphs and descriptions |
-| Key value | `text-xs sm:text-sm font-bold` | 12 → 14px | Dates, times, places, prices, ticket ids |
+| Page H1 | `text-2xl sm:text-3xl md:text-4xl font-bold` | 24 → 36px | Homepage hero, detail-page titles. Step titles of a wizard stop at `sm:text-3xl` |
+| Section H2 | `text-xl sm:text-2xl font-bold` | 20 → 24px | Pillar and section headings |
+| Dialog title | `text-lg sm:text-xl md:text-2xl font-bold` | 18 → 24px | Dialog and pass titles |
+| Card title | `text-sm sm:text-base font-bold` | 14 → 16px | Titles on photo cards, with `line-clamp-2 min-h-[2.5rem]` so cards in a row align |
+| Side heading | `text-base font-bold` | 16px | Headings of narrow side columns and sidebars (member home, /moments) |
+| List row title | `text-sm font-semibold` | 14px | Titles in rows with a small photo, names on posts |
+| Secondary line | `text-xs text-slate-500` | 12px | The line under a row title: counts, places, seats left |
+| Body | `text-sm font-medium` (captions: `text-sm leading-relaxed`) | 14px | Paragraphs and descriptions; moment captions are regular weight |
+| Key value | `text-xs sm:text-sm font-semibold` | 12 → 14px | Dates, times, places, prices, ticket ids |
 | Form label | `text-xs sm:text-sm font-bold text-slate-800` | 12 → 14px | The label above an input |
 | Spec label | `text-[11px] sm:text-xs font-semibold text-slate-500` | 11 → 12px | Inline labels such as `วันที่จัดกิจกรรม:` |
-| Badge / pill | `text-[11px] sm:text-xs font-extrabold` | 11 → 12px | Category tags, trust pills, counters |
+| Badge / pill | `text-[11px] sm:text-xs font-bold` | 11 → 12px | Category tags, trust pills, counters |
 
 **Thai line breaks**
 
@@ -354,9 +361,9 @@ Photos carry the emotion; the interface stays quiet around them.
 
 ### 14.3 Type with confidence
 
-- **Display line** (one per screen at most, for a hero or brand statement): `text-3xl sm:text-4xl lg:text-5xl font-black leading-tight tracking-tight`, two lines at most.
+- **Display line** (one per screen at most, for a hero or brand statement): `text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight tracking-tight`, two lines at most.
 - Pair a large line with one quiet supporting line (`text-sm text-slate-500`). Do not stack three sizes of heading.
-- **Two weights per block:** one heavy (`font-extrabold` or `font-black`) and one regular (`font-medium`). No more.
+- **Two weights per block:** one heavy (`font-bold`, or `font-semibold` for row titles) and one regular. No more.
 - **Numbers** in prices, dates, counters and XP use `tabular-nums`.
 - **Body lines** stay under about 70 characters (`max-w-prose` or a narrower column).
 - The Thai font stops at weight 700 while the Latin font goes heavier, so in a mixed headline the Latin words look bolder. That contrast is part of the brand in the two words (14.1); elsewhere keep mixed Thai and Latin text at `font-bold` so it reads evenly.

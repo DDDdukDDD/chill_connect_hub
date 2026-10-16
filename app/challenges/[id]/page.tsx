@@ -23,7 +23,7 @@ import { useMasterData } from '@/lib/useMasterData';
 const FALLBACK_PHOTO = 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1200&q=80';
 // Offered when a member stops a challenge; the answer is optional and reaches staff without their name
 const LEAVE_REASONS = ['ไม่มีเวลาไปแล้ว', 'ที่ที่นับอยู่ไกลเกินไป', 'ไม่สนใจแล้ว', 'กดร่วมผิด', 'อื่นๆ'];
-const SECTION_TITLE ='text-xl sm:text-2xl font-black text-slate-900 tracking-tight';
+const SECTION_TITLE ='text-xl sm:text-2xl font-bold text-slate-900 tracking-tight';
 const BODY = 'text-sm font-medium text-slate-700 leading-relaxed';
 const RULE_LABEL = 'text-[11px] sm:text-xs font-semibold text-slate-500';
 const shortDate = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
@@ -350,13 +350,13 @@ export default function ChallengeDetailPage() {
               <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100">
                 {target.image && <img src={target.image} alt="" loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />}
                 {target.visited && (
-                  <span className="absolute top-2 left-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/95 border border-emerald-200 text-[11px] sm:text-xs font-extrabold text-emerald-800">
+                  <span className="absolute top-2 left-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/95 border border-emerald-200 text-[11px] sm:text-xs font-bold text-emerald-800">
                     <Check className="w-3 h-3" aria-hidden="true" />
                     นับแล้ว
                   </span>
                 )}
               </div>
-              <p className="mt-2 text-sm font-extrabold text-slate-900 line-clamp-2">{target.title}</p>
+              <p className="mt-2 text-sm font-bold text-slate-900 line-clamp-2">{target.title}</p>
               {target.detail && <p className="text-[11px] sm:text-xs font-semibold text-slate-500 tabular-nums truncate">{target.detail}</p>}
             </Link>
           </li>
@@ -371,7 +371,7 @@ export default function ChallengeDetailPage() {
       <section className="mt-2 grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:gap-10 lg:items-center">
         <div className="relative aspect-[16/10] rounded-3xl overflow-hidden bg-slate-100">
           <img src={quest.badgeCoverImg || quest.image || FALLBACK_PHOTO} alt="" className="w-full h-full object-cover" />
-          <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 border border-slate-200 shadow-2xs text-[11px] sm:text-xs font-extrabold text-slate-800">
+          <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 border border-slate-200 shadow-2xs text-[11px] sm:text-xs font-bold text-slate-800">
             <span className="w-1.5 h-1.5 rounded-full bg-[#7C3AED]" aria-hidden="true" />
             ชาเลนจ์
           </span>
@@ -379,7 +379,7 @@ export default function ChallengeDetailPage() {
 
         <div className="space-y-4 min-w-0">
           {earned && (
-            <p className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-xs sm:text-sm font-extrabold text-emerald-800 tabular-nums">
+            <p className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-xs sm:text-sm font-bold text-emerald-800 tabular-nums">
               <Trophy className="w-4 h-4" aria-hidden="true" />
               ทำสำเร็จแล้ว{finishedDate ? ` · ${finishedDate}` : ''}
             </p>
@@ -387,7 +387,7 @@ export default function ChallengeDetailPage() {
           <p className="text-xs sm:text-sm font-semibold text-slate-500">
             {[questCategories.find((category) => category.id === quest.category)?.name, `โดย ${reward.partnerName}`].filter(Boolean).join(' · ')}
           </p>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 leading-tight tracking-tight">{quest.title}</h1>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 leading-tight tracking-tight">{quest.title}</h1>
           {quest.targetGoal && <p className="text-sm font-medium text-slate-600 leading-relaxed max-w-prose">{quest.targetGoal}</p>}
 
           <div className="flex flex-wrap gap-x-5 gap-y-2">
@@ -426,7 +426,7 @@ export default function ChallengeDetailPage() {
             <div className="flex items-start gap-2 p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900" role="status">
               <Check className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
               <div className="min-w-0">
-                <p className="text-sm font-extrabold">ร่วมชาเลนจ์นี้แล้ว</p>
+                <p className="text-sm font-bold">ร่วมชาเลนจ์นี้แล้ว</p>
                 <p className="text-sm font-medium leading-relaxed">
                   {tracked ? `เริ่มได้เลย: ${EVIDENCE_HINTS[detail.minEvidence ?? 'marked']}` : 'เริ่มได้เลย ทำครบแต่ละครั้งแล้วกลับมากด "บันทึกเอง" ที่หน้านี้'}
                 </p>
@@ -469,13 +469,13 @@ export default function ChallengeDetailPage() {
               <div className="flex items-start gap-2 text-emerald-800">
                 <Ticket className="w-5 h-5 mt-0.5 shrink-0" aria-hidden="true" />
                 <div className="min-w-0">
-                  <p className="text-sm sm:text-base font-extrabold">คุณได้สิทธิ์จาก {reward.partnerName} และเหรียญ {quest.badgeLabel}</p>
+                  <p className="text-sm sm:text-base font-bold">คุณได้สิทธิ์จาก {reward.partnerName} และเหรียญ {quest.badgeLabel}</p>
                   <p className="text-sm font-medium">{reward.title}</p>
                 </div>
               </div>
               <div className="p-3 rounded-2xl bg-white border border-emerald-200">
                 <p className="text-[11px] sm:text-xs font-semibold text-slate-500">รหัสของคุณ แสดงที่หน้าร้าน</p>
-                <p className="text-lg sm:text-xl font-black text-slate-900 tabular-nums tracking-wide break-all">{detail.mine.voucherCode}</p>
+                <p className="text-lg sm:text-xl font-bold text-slate-900 tabular-nums tracking-wide break-all">{detail.mine.voucherCode}</p>
                 <p className="mt-1 inline-flex items-center gap-1 text-xs sm:text-sm font-bold text-emerald-800">
                   <Check className="w-3.5 h-3.5" aria-hidden="true" />
                   {detail.mine.voucherUsedAt ? 'ใช้สิทธิ์ไปแล้ว' : 'พร้อมใช้งาน'}
@@ -487,7 +487,7 @@ export default function ChallengeDetailPage() {
             <div className="flex items-start gap-2 p-5 sm:p-6 rounded-3xl bg-emerald-50 border border-emerald-200 text-emerald-800">
               <Trophy className="w-5 h-5 mt-0.5 shrink-0" aria-hidden="true" />
               <div className="min-w-0">
-                <p className="text-sm sm:text-base font-extrabold">ทำครบแล้ว เก่งมาก</p>
+                <p className="text-sm sm:text-base font-bold">ทำครบแล้ว เก่งมาก</p>
                 <p className="text-sm font-medium">
                   <span className="tabular-nums">+{points.toLocaleString()} XP</span> และเหรียญ {quest.badgeLabel} เข้าบัญชีของคุณแล้ว ดูเหรียญได้ในมายฮับ
                 </p>
@@ -495,12 +495,12 @@ export default function ChallengeDetailPage() {
             </div>
           ) : tracked ? (
             <div className="p-5 sm:p-6 rounded-3xl bg-[#F5F3FF] border border-slate-200 space-y-4">
-              <h2 className="text-sm sm:text-base font-extrabold text-slate-900">รางวัลเมื่อทำครบ</h2>
+              <h2 className="text-sm sm:text-base font-bold text-slate-900">รางวัลเมื่อทำครบ</h2>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
                   {isPartner ? <Ticket className="w-5 h-5 mt-0.5 text-[#7C3AED] shrink-0" aria-hidden="true" /> : <Gift className="w-5 h-5 mt-0.5 text-[#7C3AED] shrink-0" aria-hidden="true" />}
                   <span className="min-w-0 space-y-0.5">
-                    <span className="block text-sm sm:text-base font-extrabold text-slate-900">{isPartner ? reward.title : 'นำ XP ไปแลกของรางวัลอะไรก็ได้'}</span>
+                    <span className="block text-sm sm:text-base font-bold text-slate-900">{isPartner ? reward.title : 'นำ XP ไปแลกของรางวัลอะไรก็ได้'}</span>
                     {isPartner && reward.exclusiveNotice && <span className="block text-xs sm:text-sm font-medium text-slate-600">{reward.exclusiveNotice}</span>}
                   </span>
                 </li>
@@ -508,14 +508,14 @@ export default function ChallengeDetailPage() {
                   <li className="flex items-center gap-3">
                     <Zap className="w-5 h-5 text-[#7C3AED] shrink-0" aria-hidden="true" />
                     <span className={BODY}>
-                      <strong className="font-extrabold text-slate-900 tabular-nums">+{points.toLocaleString()} XP</strong> เข้าบัญชีทันที
+                      <strong className="font-bold text-slate-900 tabular-nums">+{points.toLocaleString()} XP</strong> เข้าบัญชีทันที
                     </span>
                   </li>
                 )}
                 <li className="flex items-center gap-3">
                   <Award className="w-5 h-5 text-[#7C3AED] shrink-0" aria-hidden="true" />
                   <span className={BODY}>
-                    เหรียญ <strong className="font-extrabold text-slate-900">{quest.badgeLabel}</strong>
+                    เหรียญ <strong className="font-bold text-slate-900">{quest.badgeLabel}</strong>
                   </span>
                 </li>
               </ul>
@@ -526,7 +526,7 @@ export default function ChallengeDetailPage() {
             </div>
           ) : (
             <div className="p-5 sm:p-6 rounded-3xl bg-slate-50 border border-slate-200 space-y-2">
-              <h2 className="text-sm sm:text-base font-extrabold text-slate-900">ชาเลนจ์แบบบันทึกเอง</h2>
+              <h2 className="text-sm sm:text-base font-bold text-slate-900">ชาเลนจ์แบบบันทึกเอง</h2>
               <p className={BODY}>{SELF_NOTED_HINT}</p>
             </div>
           )}
@@ -549,11 +549,11 @@ export default function ChallengeDetailPage() {
                     <Link href={memory.href} className="group block rounded-2xl cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]">
                       <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100">
                         {memory.image && <img src={memory.image} alt="" loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />}
-                        <span className="absolute top-2 left-2 w-7 h-7 rounded-full bg-white/95 border border-slate-200 text-xs font-extrabold text-slate-800 flex items-center justify-center tabular-nums" aria-hidden="true">
+                        <span className="absolute top-2 left-2 w-7 h-7 rounded-full bg-white/95 border border-slate-200 text-xs font-bold text-slate-800 flex items-center justify-center tabular-nums" aria-hidden="true">
                           {index + 1}
                         </span>
                       </div>
-                      <p className="mt-2 text-sm font-extrabold text-slate-900 line-clamp-2">{memory.title}</p>
+                      <p className="mt-2 text-sm font-bold text-slate-900 line-clamp-2">{memory.title}</p>
                       <p className="text-[11px] sm:text-xs font-semibold text-slate-500 tabular-nums truncate">
                         {shortDate(memory.at)}
                         {memory.ownPhoto ? ' · รูปของคุณ' : ''}
@@ -577,9 +577,9 @@ export default function ChallengeDetailPage() {
                   <img src={next.image || FALLBACK_PHOTO} alt="" loading="lazy" className="w-full h-full object-cover" />
                 </div>
                 <div className="min-w-0 space-y-1">
-                  <p className="text-sm sm:text-base font-extrabold text-slate-900 line-clamp-2">{next.title}</p>
+                  <p className="text-sm sm:text-base font-bold text-slate-900 line-clamp-2">{next.title}</p>
                   {next.rewardTitle && <p className="text-xs sm:text-sm font-medium text-slate-600 line-clamp-1">{next.rewardTitle}</p>}
-                  <p className="inline-flex items-center gap-1 text-xs sm:text-sm font-extrabold text-[#5B21B6] tabular-nums">
+                  <p className="inline-flex items-center gap-1 text-xs sm:text-sm font-bold text-[#5B21B6] tabular-nums">
                     <Zap className="w-3.5 h-3.5" aria-hidden="true" />
                     +{next.rewardPoints.toLocaleString()} XP
                   </p>
@@ -600,7 +600,7 @@ export default function ChallengeDetailPage() {
               <ol className="space-y-3">
                 {steps.map((step, index) => (
                   <li key={step} className="flex items-start gap-3">
-                    <span className="w-7 h-7 rounded-full bg-[#F5F3FF] text-[#5B21B6] text-sm font-extrabold flex items-center justify-center shrink-0 tabular-nums" aria-hidden="true">
+                    <span className="w-7 h-7 rounded-full bg-[#F5F3FF] text-[#5B21B6] text-sm font-bold flex items-center justify-center shrink-0 tabular-nums" aria-hidden="true">
                       {index + 1}
                     </span>
                     <span className={`${BODY} pt-1`}>{step}</span>
@@ -657,13 +657,13 @@ export default function ChallengeDetailPage() {
                         {item.period}
                       </p>
                     )}
-                    <p className="text-sm sm:text-base font-extrabold text-slate-900 line-clamp-2 min-h-[2.5rem]">{item.title}</p>
+                    <p className="text-sm sm:text-base font-bold text-slate-900 line-clamp-2 min-h-[2.5rem]">{item.title}</p>
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-[11px] sm:text-xs font-semibold text-slate-500 tabular-nums truncate">
                         {item.startsInDays > 0 ? `เริ่มในอีก ${item.startsInDays} วัน` : item.participantsCount > 0 ? `${item.participantsCount.toLocaleString()} คนร่วมทำ` : 'เปิดอยู่'}
                       </span>
                       {item.rewardPoints > 0 && (
-                        <span className="shrink-0 px-2 py-0.5 rounded-full bg-[#7C3AED] text-white text-[11px] font-extrabold tabular-nums">+{item.rewardPoints} XP</span>
+                        <span className="shrink-0 px-2 py-0.5 rounded-full bg-[#7C3AED] text-white text-[11px] font-bold tabular-nums">+{item.rewardPoints} XP</span>
                       )}
                     </div>
                   </div>

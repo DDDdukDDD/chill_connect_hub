@@ -53,7 +53,7 @@ function ChallengeRow({ quest, on, isJoined, mine }: RowProps) {
           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isEnded ? 'bg-slate-400' : isPartner ? 'bg-amber-500' : 'bg-[#7C3AED]'}`} aria-hidden="true" />
           <span className="truncate">{isPartner ? reward.partnerName : 'Chill & Connect Hub'}</span>
         </p>
-        <h3 className="mt-0.5 text-sm sm:text-base font-extrabold text-slate-900 leading-snug line-clamp-2 sm:line-clamp-1 group-hover:underline" title={quest.title}>{quest.title}</h3>
+        <h3 className="mt-0.5 text-sm sm:text-base font-bold text-slate-900 leading-snug line-clamp-2 sm:line-clamp-1 group-hover:underline" title={quest.title}>{quest.title}</h3>
         <p className="text-xs text-slate-600 truncate" title={quest.targetGoal}>{quest.targetGoal}</p>
         <p className="mt-1 flex items-center gap-1.5 text-xs min-w-0">
           {quest.rule ? (
@@ -131,7 +131,7 @@ function StartingSoonStrip({ quests, joinedIds, onBrowseAll }: { quests: Challen
     <section aria-label="เริ่มเร็วๆ นี้" className={groupBox}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-extrabold text-slate-900">
+          <h2 className="text-base font-bold text-slate-900">
             เริ่มเร็วๆ นี้ <span className="text-xs font-bold text-slate-500 tabular-nums">{quests.length}</span>
           </h2>
           <p className="text-xs text-slate-500">ร่วมล่วงหน้าได้ แต่จะนับตั้งแต่วันเริ่ม</p>
@@ -163,7 +163,7 @@ function StartingSoonStrip({ quests, joinedIds, onBrowseAll }: { quests: Challen
                     {range}
                   </p>
                 )}
-                <h3 className="text-sm font-extrabold text-slate-900 leading-snug line-clamp-2 min-h-[2.5rem] group-hover:underline" title={quest.title}>{quest.title}</h3>
+                <h3 className="text-sm font-bold text-slate-900 leading-snug line-clamp-2 min-h-[2.5rem] group-hover:underline" title={quest.title}>{quest.title}</h3>
                 <p className="flex items-center justify-between gap-2 text-xs">
                   <span className="font-bold text-[#5B21B6] tabular-nums">{quest.startsInDays ? `เริ่มในอีก ${quest.startsInDays} วัน` : ''}</span>
                   {joinedIds.includes(quest.id) ? (
@@ -214,7 +214,7 @@ export function ChallengeList({ quests, joinedIds, progress, onBrowseAllSoon }: 
       {upcoming.length > 0 && running.length > 0 && <StartingSoonStrip quests={upcoming} joinedIds={joinedIds} onBrowseAll={onBrowseAllSoon} />}
       {groups.map((group) => (
         <section key={group.key} aria-label={group.title} className={groupBox}>
-          <h2 className="text-base font-extrabold text-slate-900">
+          <h2 className="text-base font-bold text-slate-900">
             {group.title} <span className="text-xs font-bold text-slate-500 tabular-nums">{group.items.length}</span>
           </h2>
           <p className="text-xs text-slate-500">{group.note}</p>

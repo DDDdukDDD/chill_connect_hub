@@ -47,7 +47,7 @@ export function SourceRunHistory({ source }: { source: EventDataSource }) {
             <tr key={run.at} className="align-top">
               <td className="py-1.5 pr-3 whitespace-nowrap tabular-nums text-slate-600">{new Date(run.at).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}</td>
               <td className="py-1.5 pr-3">
-                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-extrabold whitespace-nowrap ${STATUS_META[run.status].className}`}>{STATUS_META[run.status].label}</span>
+                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold whitespace-nowrap ${STATUS_META[run.status].className}`}>{STATUS_META[run.status].label}</span>
               </td>
               {source.targetType === 'spots' && <td className="py-1.5 pr-3 whitespace-nowrap text-slate-700">{run.context ?? '–'}</td>}
               <td className="py-1.5 pr-3 text-right tabular-nums">{run.scanned}</td>

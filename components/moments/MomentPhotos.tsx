@@ -1,127 +1,145 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ChevronLeft, ChevronRight, Heart } from 'lucide-react';
 
 /**
- * Every post shows its photos in the same frame, whatever the photos' own shape or number, so the feed keeps
- * one rhythm: square on a phone, and no taller than 500px on wider screens so a whole post fits in one screen.
- * Photos fill the frame; the viewer shows them whole.
+ * A moment's photos the way Instagram and Lemon8 show them: one photo at a time, swiped sideways on a phone,
+ * arrows on hover on a computer, "1/3" in the corner and dots underneath.
+ * Every post uses the same square frame (owner, 2026-10-16), so the feed keeps one even rhythm; each photo fills it
+ * and the viewer shows it whole.
+ * A tap opens the viewer at the photo on screen; a double tap likes the post (when `onDoubleTap` is given).
  */
-export const PHOTO_FRAME_RATIO = 1;
-/** How many photos the feed shows before "+N" */
-export const MAX_TILES = 5;
 
 interface MomentPhotosProps {
   images: string[];
-  /** Width / height of the first photo, saved when the moment was posted. Measured in the browser when missing. */
+  /** Width / height of the first photo. Not used for the frame any more (every post is square); kept so callers need not change. */
   ratio?: number;
   alt: string;
   /** Opens the photo viewer at this photo */
   onOpen: (index: number) => void;
+  /** Double tap: like the post. The heart shows either way. */
+  onDoubleTap?: () => void;
 }
 
 /** Uploads are served through the image optimizer in three widths; other sources are used as they are */
 const FRAME_WIDTHS = [640, 828, 1200];
-const COLUMN_WIDTH = 680;
 const sized = (src: string, width: number) => `/_next/image?url=${encodeURIComponent(src)}&w=${width}&q=75`;
-const responsive = (src: string, share: number) =>
-  src.startsWith('/uploads/')
-    ? { src: sized(src, 828), srcSet: FRAME_WIDTHS.map((w) => `${sized(src, w)} ${w}w`).join(', '), sizes: `(min-width: 680px) ${Math.round(COLUMN_WIDTH * share)}px, ${Math.round(100 * share)}vw` }
-    : { src };
+const responsive = (src: string) =>
+  src.startsWith('/uploads/') ? { src: sized(src, 828), srcSet: FRAME_WIDTHS.map((w) => `${sized(src, w)} ${w}w`).join(', '), sizes: '(min-width: 640px) 560px, 100vw' } : { src };
 
-interface Layout {
-  /** Width / height of the whole block */
-  frame: number;
-  /** CSS grid of the block */
-  columns: string;
-  rows: string;
-  /** Grid area of each tile (row / column / row-end / column-end) and the share of the width it takes */
-  tiles: { area: string; share: number }[];
-}
+/** A second tap within this time is a double tap */
+const DOUBLE_TAP_MS = 260;
 
-/**
- * The photo grid the large social feeds use: the number of photos and the shape of the first one decide the layout.
- *  1          the photo, filling the frame
- *  2          side by side; stacked when the first photo is landscape
- *  3          one large photo and two small ones (large on top for landscape, on the left for portrait)
- *  4          one large photo and three small ones; 2 x 2 when the first photo is square
- *  5 or more  two photos above three, with "+N" on the last tile
- */
-function layoutFor(count: number, first: number): Layout {
-  const shape = first > 1.15 ? 'landscape' : first < 0.87 ? 'portrait' : 'square';
-  if (count === 1) return { frame: PHOTO_FRAME_RATIO, columns: '1fr', rows: '1fr', tiles: [{ area: '1 / 1', share: 1 }] };
-  if (count === 2) {
-    return shape === 'landscape'
-      ? { frame: PHOTO_FRAME_RATIO, columns: '1fr', rows: '1fr 1fr', tiles: [{ area: '1 / 1', share: 1 }, { area: '2 / 1', share: 1 }] }
-      : { frame: PHOTO_FRAME_RATIO, columns: '1fr 1fr', rows: '1fr', tiles: [{ area: '1 / 1', share: 0.5 }, { area: '1 / 2', share: 0.5 }] };
-  }
-  if (count === 3) {
-    return shape === 'portrait'
-      ? { frame: PHOTO_FRAME_RATIO, columns: '2fr 1fr', rows: '1fr 1fr', tiles: [{ area: '1 / 1 / 3 / 2', share: 0.67 }, { area: '1 / 2', share: 0.33 }, { area: '2 / 2', share: 0.33 }] }
-      : { frame: PHOTO_FRAME_RATIO, columns: '1fr 1fr', rows: '2fr 1fr', tiles: [{ area: '1 / 1 / 2 / 3', share: 1 }, { area: '2 / 1', share: 0.5 }, { area: '2 / 2', share: 0.5 }] };
-  }
-  if (count === 4) {
-    if (shape === 'portrait') {
-      return { frame: PHOTO_FRAME_RATIO, columns: '2fr 1fr', rows: '1fr 1fr 1fr', tiles: [{ area: '1 / 1 / 4 / 2', share: 0.67 }, { area: '1 / 2', share: 0.33 }, { area: '2 / 2', share: 0.33 }, { area: '3 / 2', share: 0.33 }] };
-    }
-    if (shape === 'landscape') {
-      return { frame: PHOTO_FRAME_RATIO, columns: '1fr 1fr 1fr', rows: '2fr 1fr', tiles: [{ area: '1 / 1 / 2 / 4', share: 1 }, { area: '2 / 1', share: 0.33 }, { area: '2 / 2', share: 0.33 }, { area: '2 / 3', share: 0.33 }] };
-    }
-    return { frame: PHOTO_FRAME_RATIO, columns: '1fr 1fr', rows: '1fr 1fr', tiles: [{ area: '1 / 1', share: 0.5 }, { area: '1 / 2', share: 0.5 }, { area: '2 / 1', share: 0.5 }, { area: '2 / 2', share: 0.5 }] };
-  }
-  // Two of half the width above three of a third of the width
-  return {
-    frame: PHOTO_FRAME_RATIO,
-    columns: 'repeat(6, 1fr)',
-    rows: '3fr 2fr',
-    tiles: [
-      { area: '1 / 1 / 2 / 4', share: 0.5 },
-      { area: '1 / 4 / 2 / 7', share: 0.5 },
-      { area: '2 / 1 / 3 / 3', share: 0.33 },
-      { area: '2 / 3 / 3 / 5', share: 0.33 },
-      { area: '2 / 5 / 3 / 7', share: 0.33 },
-    ],
-  };
-}
-
-/** Photos of one moment in the feed. Every photo fills its tile; a tap opens the viewer at that photo. */
-export function MomentPhotos({ images, ratio, alt, onOpen }: MomentPhotosProps) {
-  const [measured, setMeasured] = useState<number | null>(null);
+export function MomentPhotos({ images, alt, onOpen, onDoubleTap }: MomentPhotosProps) {
+  const [index, setIndex] = useState(0);
+  const [hearts, setHearts] = useState(0);
+  const track = useRef<HTMLDivElement>(null);
+  const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const count = images.length;
-  const layout = layoutFor(count, ratio || measured || 1);
-  const hidden = count - MAX_TILES;
+
+  useEffect(() => () => {
+    if (tapTimer.current) clearTimeout(tapTimer.current);
+  }, []);
+
+  const goTo = (next: number) => {
+    const el = track.current;
+    if (!el) return;
+    el.scrollTo({ left: Math.max(0, Math.min(count - 1, next)) * el.clientWidth, behavior: 'smooth' });
+  };
+
+  const onTap = () => {
+    if (tapTimer.current) {
+      // Second tap: like, and no viewer
+      clearTimeout(tapTimer.current);
+      tapTimer.current = null;
+      if (onDoubleTap) {
+        onDoubleTap();
+        setHearts((n) => n + 1);
+      }
+      return;
+    }
+    tapTimer.current = setTimeout(() => {
+      tapTimer.current = null;
+      onOpen(index);
+    }, onDoubleTap ? DOUBLE_TAP_MS : 0);
+  };
 
   return (
-    <div
-      className="grid w-full gap-0.5 bg-white select-none sm:max-h-[500px]"
-      style={{ aspectRatio: String(layout.frame), gridTemplateColumns: layout.columns, gridTemplateRows: layout.rows }}
-    >
-      {layout.tiles.map((tile, i) => (
-        <button
-          key={`${images[i]}-${i}`}
-          type="button"
-          onClick={() => onOpen(i)}
-          style={{ gridArea: tile.area }}
-          className="relative min-h-0 min-w-0 overflow-hidden bg-slate-200 cursor-pointer group/tile focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#2563EB]"
-          aria-label={count > 1 ? (i === MAX_TILES - 1 && hidden > 0 ? `ดูรูปทั้งหมด ${count} รูป` : `ดูรูปที่ ${i + 1} จาก ${count}`) : 'ดูรูปเต็ม'}
+    <div className="space-y-2">
+      <div className="group/photos relative w-full aspect-square overflow-hidden rounded-2xl bg-slate-100 select-none">
+        <div
+          ref={track}
+          onScroll={(e) => {
+            const el = e.currentTarget;
+            const next = Math.round(el.scrollLeft / Math.max(1, el.clientWidth));
+            if (next !== index) setIndex(next);
+          }}
+          className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar overscroll-x-contain"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element -- member uploads and remote sample images */}
-          <img
-            {...responsive(images[i], tile.share)}
-            alt={i === 0 ? alt : ''}
-            loading="lazy"
-            decoding="async"
-            draggable={false}
-            onLoad={i === 0 && !ratio ? (e) => e.currentTarget.naturalHeight > 0 && setMeasured(e.currentTarget.naturalWidth / e.currentTarget.naturalHeight) : undefined}
-            className="absolute inset-0 h-full w-full object-cover transition-opacity group-hover/tile:opacity-95"
-          />
-          {i === MAX_TILES - 1 && hidden > 0 && (
-            <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-2xl sm:text-3xl font-bold" aria-hidden="true">
-              +{hidden}
+          {images.map((src, i) => (
+            <button
+              key={`${src}-${i}`}
+              type="button"
+              onClick={onTap}
+              className="relative h-full w-full shrink-0 snap-center cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#2563EB]"
+              aria-label={count > 1 ? `ดูรูปที่ ${i + 1} จาก ${count}` : 'ดูรูปเต็ม'}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- member uploads and remote sample images */}
+              <img
+                {...responsive(src)}
+                alt={i === 0 ? alt : ''}
+                loading={i === 0 ? 'eager' : 'lazy'}
+                decoding="async"
+                draggable={false}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            </button>
+          ))}
+        </div>
+
+        {count > 1 && (
+          <>
+            <span className="pointer-events-none absolute top-3 right-3 rounded-full bg-black/60 px-2.5 py-0.5 text-xs font-semibold text-white tabular-nums">
+              {index + 1}/{count}
             </span>
-          )}
-        </button>
-      ))}
+            {index > 0 && (
+              <button
+                type="button"
+                onClick={() => goTo(index - 1)}
+                aria-label="รูปก่อนหน้า"
+                className="hidden sm:flex absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 text-slate-800 shadow items-center justify-center opacity-0 group-hover/photos:opacity-100 focus-visible:opacity-100 transition-opacity cursor-pointer"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+            )}
+            {index < count - 1 && (
+              <button
+                type="button"
+                onClick={() => goTo(index + 1)}
+                aria-label="รูปถัดไป"
+                className="hidden sm:flex absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 text-slate-800 shadow items-center justify-center opacity-0 group-hover/photos:opacity-100 focus-visible:opacity-100 transition-opacity cursor-pointer"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            )}
+          </>
+        )}
+
+        {hearts > 0 && (
+          <span key={hearts} className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
+            <Heart className="w-24 h-24 text-white fill-white drop-shadow-lg motion-safe:animate-heart-pop motion-reduce:opacity-0" />
+          </span>
+        )}
+      </div>
+
+      {count > 1 && (
+        <div className="flex justify-center gap-1.5" aria-hidden="true">
+          {images.map((src, i) => (
+            <span key={`${src}-dot-${i}`} className={`h-1.5 rounded-full transition-all ${i === index ? 'w-4 bg-[#F43F5E]' : 'w-1.5 bg-slate-300'}`} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

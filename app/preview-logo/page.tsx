@@ -38,8 +38,8 @@ export default function PreviewLogoPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6 border-slate-200/60">
           <div>
-            <span className="text-xs font-black uppercase tracking-widest text-[#4A7C59]">Brand Identity Redesign</span>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight mt-1">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#4A7C59]">Brand Identity Redesign</span>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mt-1">
               Global Brand Logo Showcase: Letter "C"
             </h1>
             <p className="text-sm text-slate-500 mt-1">
@@ -77,7 +77,7 @@ export default function PreviewLogoPage() {
             >
               <div className="flex items-center justify-between mb-2">
                 <BrandLogo variant={v.id} size="sm" withShadow={false} />
-                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                   selectedVariant === v.id ? 'bg-[#4A7C59] text-white' : 'bg-slate-100 text-slate-500 dark:bg-slate-800'
                 }`}>
                   {v.id.toUpperCase()}
@@ -94,14 +94,14 @@ export default function PreviewLogoPage() {
           
           {/* 1. Real Navbar Simulation */}
           <div className="space-y-3">
-            <h2 className="text-sm font-extrabold text-slate-400 uppercase tracking-wider">
+            <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider">
               1. จำลองการแสดงผลบนแถบ Navbar จริง (ความสูง 40px)
             </h2>
             <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <BrandLogo variant={selectedVariant} size="md" />
                 <div>
-                  <span className="font-black text-lg sm:text-[19px] tracking-tight text-slate-900 dark:text-white leading-none block">
+                  <span className="font-bold text-lg sm:text-[19px] tracking-tight text-slate-900 dark:text-white leading-none block">
                     Chill & Connect Hub
                   </span>
                   <p className="text-[10.5px] text-slate-400 font-medium mt-1.5">
@@ -126,7 +126,7 @@ export default function PreviewLogoPage() {
 
           {/* 2. Scale Stress Test (16px Favicon -> 128px Hero Icon) */}
           <div className="space-y-3">
-            <h2 className="text-sm font-extrabold text-slate-400 uppercase tracking-wider">
+            <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider">
               2. การทดสอบการมองเห็นในทุกระดับขนาด (Scale & Legibility Test)
             </h2>
             <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-wrap items-end justify-around gap-6">
@@ -169,7 +169,7 @@ export default function PreviewLogoPage() {
 
           {/* 3. Mobile App Icon Squircle (App Store Standard) */}
           <div className="space-y-3">
-            <h2 className="text-sm font-extrabold text-slate-400 uppercase tracking-wider">
+            <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider">
               3. ไอคอนแอปบนหน้าจอมือถือ (iOS / Android App Icon)
             </h2>
             <div className="p-8 rounded-3xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800 border border-slate-200 dark:border-slate-800 flex items-center justify-center gap-8 flex-wrap">

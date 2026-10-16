@@ -27,7 +27,7 @@ export const MemberPrivilegesSection: React.FC<MemberPrivilegesSectionProps> = (
       <div className="flex items-center justify-between gap-2 px-1 flex-wrap">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
-            <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
               Member Privileges
             </h2>
             <span className="sm:hidden text-[9px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full border border-blue-100/80">
@@ -44,7 +44,7 @@ export const MemberPrivilegesSection: React.FC<MemberPrivilegesSectionProps> = (
           <button
             type="button"
             onClick={() => setShowcaseTab('vouchers')}
-            className={`px-2.5 sm:px-3 py-1 rounded-lg font-extrabold text-[10.5px] sm:text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-2.5 sm:px-3 py-1 rounded-lg font-bold text-[10.5px] sm:text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
               showcaseTab === 'vouchers'
                 ? 'bg-white text-slate-900 shadow-xs'
                 : 'text-slate-500 hover:text-slate-900'
@@ -56,7 +56,7 @@ export const MemberPrivilegesSection: React.FC<MemberPrivilegesSectionProps> = (
           <button
             type="button"
             onClick={() => setShowcaseTab('rewards')}
-            className={`px-2.5 sm:px-3 py-1 rounded-lg font-extrabold text-[10.5px] sm:text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-2.5 sm:px-3 py-1 rounded-lg font-bold text-[10.5px] sm:text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
               showcaseTab === 'rewards'
                 ? 'bg-white text-slate-900 shadow-xs'
                 : 'text-slate-500 hover:text-slate-900'
@@ -75,10 +75,10 @@ export const MemberPrivilegesSection: React.FC<MemberPrivilegesSectionProps> = (
           <div className="relative rounded-xl bg-gradient-to-br from-blue-50/90 via-sky-50/40 to-indigo-50/70 border border-blue-100/90 p-2.5 sm:p-3 flex flex-col justify-between shadow-2xs group hover:border-blue-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 min-h-[92px] sm:min-h-[102px] min-w-[245px] max-w-[265px] sm:min-w-0 sm:max-w-none shrink-0 sm:shrink snap-start">
             <div className="flex items-start justify-between gap-2">
               <div className="space-y-0.5 min-w-0">
-                <span className="text-[9px] font-black text-blue-700 uppercase tracking-wider block leading-none">
+                <span className="text-[9px] font-bold text-blue-700 uppercase tracking-wider block leading-none">
                   Welcome Privilege
                 </span>
-                <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 leading-snug truncate">
+                <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug truncate">
                   สิทธิ์พิเศษสำหรับ สมาชิก
                 </h3>
                 <p className="text-[10px] text-slate-500 truncate mt-0.5">
@@ -93,7 +93,7 @@ export const MemberPrivilegesSection: React.FC<MemberPrivilegesSectionProps> = (
             <div className="pt-1.5">
               <Link
                 href={isLoggedIn ? '/rewards' : '/onboarding'}
-                className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer gap-1 leading-none"
+                className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[10.5px] font-bold transition-all shadow-xs active:scale-95 cursor-pointer gap-1 leading-none"
               >
                 <span>{isLoggedIn ? 'ดูสิทธิ์ของคุณ' : 'เข้าสู่ระบบเพื่อรับสิทธิ์'}</span>
                 <ArrowRight className="w-2.5 h-2.5" />
@@ -106,7 +106,7 @@ export const MemberPrivilegesSection: React.FC<MemberPrivilegesSectionProps> = (
             <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
+                  <span className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-none">
                     ลด 10%
                   </span>
                   <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded leading-none">
@@ -121,7 +121,7 @@ export const MemberPrivilegesSection: React.FC<MemberPrivilegesSectionProps> = (
               <div className="pt-1.5">
                 <Link
                   href="/rewards"
-                  className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
+                  className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-bold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
                 >
                   เก็บสิทธิ์
                 </Link>
@@ -148,7 +148,7 @@ export const MemberPrivilegesSection: React.FC<MemberPrivilegesSectionProps> = (
             <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
+                  <span className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-none">
                     จอยตี้ฟรี
                   </span>
                   <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded leading-none">
@@ -163,7 +163,7 @@ export const MemberPrivilegesSection: React.FC<MemberPrivilegesSectionProps> = (
               <div className="pt-1.5">
                 <Link
                   href="/community"
-                  className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
+                  className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-bold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
                 >
                   เก็บสิทธิ์
                 </Link>
@@ -190,7 +190,7 @@ export const MemberPrivilegesSection: React.FC<MemberPrivilegesSectionProps> = (
             <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
+                  <span className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-none">
                     ลด 15%
                   </span>
                   <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded leading-none">
@@ -205,7 +205,7 @@ export const MemberPrivilegesSection: React.FC<MemberPrivilegesSectionProps> = (
               <div className="pt-1.5">
                 <Link
                   href="/rewards"
-                  className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
+                  className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-bold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
                 >
                   เก็บสิทธิ์
                 </Link>
@@ -236,10 +236,10 @@ export const MemberPrivilegesSection: React.FC<MemberPrivilegesSectionProps> = (
           <div className="relative rounded-xl bg-gradient-to-br from-blue-50/90 via-sky-50/40 to-indigo-50/70 border border-blue-100/90 p-2.5 sm:p-3 flex flex-col justify-between shadow-2xs group hover:border-blue-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 min-h-[92px] sm:min-h-[102px] min-w-[245px] max-w-[265px] sm:min-w-0 sm:max-w-none shrink-0 sm:shrink snap-start">
             <div className="flex items-start justify-between gap-2">
               <div className="space-y-0.5 min-w-0">
-                <span className="text-[9px] font-black text-blue-700 uppercase tracking-wider block leading-none">
+                <span className="text-[9px] font-bold text-blue-700 uppercase tracking-wider block leading-none">
  XP Rewards Hub
                 </span>
-                <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 leading-snug truncate">
+                <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug truncate">
                   รวมของรางวัลไลฟ์สไตล์
                 </h3>
                 <p className="text-[10px] text-slate-500 truncate mt-0.5">
@@ -254,7 +254,7 @@ export const MemberPrivilegesSection: React.FC<MemberPrivilegesSectionProps> = (
             <div className="pt-1.5">
               <Link
                 href="/rewards"
-                className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer gap-1 leading-none"
+                className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[10.5px] font-bold transition-all shadow-xs active:scale-95 cursor-pointer gap-1 leading-none"
               >
                 <span>ดูของรางวัลทั้งหมด</span>
                 <ArrowRight className="w-2.5 h-2.5" />
@@ -267,10 +267,10 @@ export const MemberPrivilegesSection: React.FC<MemberPrivilegesSectionProps> = (
             <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
+                  <span className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-none">
                     ลด ฿50
                   </span>
-                  <span className="text-[10px] font-extrabold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded leading-none border border-blue-100">
+                  <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded leading-none border border-blue-100">
                     150 XP
                   </span>
                 </div>
@@ -282,7 +282,7 @@ export const MemberPrivilegesSection: React.FC<MemberPrivilegesSectionProps> = (
               <div className="pt-1.5">
                 <Link
                   href="/rewards"
-                  className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
+                  className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-bold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
                 >
                   ใช้สิทธิ์
                 </Link>
@@ -309,10 +309,10 @@ export const MemberPrivilegesSection: React.FC<MemberPrivilegesSectionProps> = (
             <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
+                  <span className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-none">
                     เล่นฟรี 1 วัน
                   </span>
-                  <span className="text-[10px] font-extrabold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded leading-none border border-blue-100">
+                  <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded leading-none border border-blue-100">
                     250 XP
                   </span>
                 </div>
@@ -324,7 +324,7 @@ export const MemberPrivilegesSection: React.FC<MemberPrivilegesSectionProps> = (
               <div className="pt-1.5">
                 <Link
                   href="/rewards"
-                  className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
+                  className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-bold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
                 >
                   ใช้สิทธิ์
                 </Link>
@@ -351,10 +351,10 @@ export const MemberPrivilegesSection: React.FC<MemberPrivilegesSectionProps> = (
             <div className="p-2.5 sm:p-3 flex-1 min-w-0 flex flex-col justify-between">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
+                  <span className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-none">
                     ลด 15%
                   </span>
-                  <span className="text-[10px] font-extrabold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded leading-none border border-blue-100">
+                  <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded leading-none border border-blue-100">
                     350 XP
                   </span>
                 </div>
@@ -366,7 +366,7 @@ export const MemberPrivilegesSection: React.FC<MemberPrivilegesSectionProps> = (
               <div className="pt-1.5">
                 <Link
                   href="/rewards"
-                  className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
+                  className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-slate-900 hover:bg-[#2563EB] text-white text-[10.5px] font-bold transition-all shadow-xs active:scale-95 cursor-pointer leading-none"
                 >
                   ใช้สิทธิ์
                 </Link>

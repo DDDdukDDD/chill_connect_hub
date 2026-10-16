@@ -403,7 +403,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsETicketModalOpen(true)}
-                  className="inline-flex items-center gap-1 text-[11px] text-slate-800 bg-white hover:bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200 font-extrabold shadow-2xs shrink-0 cursor-pointer transition-all active:scale-95"
+                  className="inline-flex items-center gap-1 text-[11px] text-slate-800 bg-white hover:bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200 font-bold shadow-2xs shrink-0 cursor-pointer transition-all active:scale-95"
                 >
                   <Ticket className="w-3 h-3 text-slate-600" />
                   <span>ดูตั๋ว E-Ticket</span>
@@ -418,7 +418,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             <div className="flex items-center justify-between gap-2 flex-wrap pb-0.5">
               <div className="flex items-center gap-2 flex-wrap">
                 {/* 1. Primary Pillar / Type Badge */}
-                <span className={`text-[11px] font-extrabold px-3 py-1 rounded-full border shadow-2xs ${
+                <span className={`text-[11px] font-bold px-3 py-1 rounded-full border shadow-2xs ${
                   isPublicVenue
                     ? 'bg-[#EEF4FA] text-[#1F3D5C] border-[#2B527A]/25'
                     : 'bg-[#FFF4EE] text-[#D04A1B] border-[#F26430]/25'
@@ -455,7 +455,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                 {copied ? (
                   <>
                     <Check className="w-3 h-3 text-emerald-600" />
-                    <span className="text-emerald-600 font-extrabold">คัดลอกแล้ว</span>
+                    <span className="text-emerald-600 font-bold">คัดลอกแล้ว</span>
                   </>
                 ) : (
                   <>
@@ -466,7 +466,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               </button>
             </div>
 
-            <h2 className="text-base sm:text-xl font-black text-slate-900 leading-snug tracking-tight">
+            <h2 className="text-base sm:text-xl font-bold text-slate-900 leading-snug tracking-tight">
               {event.title}
             </h2>
           </div>
@@ -601,7 +601,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
               {/* What to Bring */}
               <div className="p-3.5 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-1.5 text-xs text-slate-700">
-                <h5 className="font-extrabold text-slate-900 flex items-center gap-1.5 text-xs">
+                <h5 className="font-bold text-slate-900 flex items-center gap-1.5 text-xs">
                   <span>สิ่งที่ควรเตรียมมา</span>
                 </h5>
                 <ul className="space-y-1 text-[11px] text-slate-600 list-disc list-inside leading-relaxed">
@@ -613,7 +613,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
               {/* Community Rules & Safety */}
               <div className="p-3.5 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-1.5 text-xs text-slate-700">
-                <h5 className="font-extrabold text-slate-900 flex items-center gap-1.5 text-xs">
+                <h5 className="font-bold text-slate-900 flex items-center gap-1.5 text-xs">
                   <ShieldCheck className="w-3.5 h-3.5 text-slate-700" />
                   <span>กฎระเบียบ & ความปลอดภัย</span>
                 </h5>
@@ -641,7 +641,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                 />
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-extrabold text-xs sm:text-sm text-slate-900 group-hover:text-blue-600 transition-colors truncate">
+                    <span className="font-bold text-xs sm:text-sm text-slate-900 group-hover:text-blue-600 transition-colors truncate">
                       {event.hostName}
                     </span>
                     <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
@@ -714,7 +714,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                 className="p-3.5 sm:p-4 flex items-center justify-between gap-2 cursor-pointer hover:bg-slate-100/60 transition-colors select-none"
               >
                 <div className="space-y-0.5 min-w-0 flex-1">
-                  <h4 className="font-extrabold text-xs sm:text-sm text-slate-900 flex items-center gap-1.5 truncate">
+                  <h4 className="font-bold text-xs sm:text-sm text-slate-900 flex items-center gap-1.5 truncate">
                     <Users className="w-4 h-4 text-slate-600 shrink-0" />
                     <span>ชวนเพื่อนทำกิจกรรมในงาน ({subActivities.length})</span>
                     <span className="text-[10px] font-bold text-slate-700 bg-slate-200/80 px-2 py-0.5 rounded-full">
@@ -809,7 +809,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                   className="p-3.5 sm:p-4 bg-white rounded-2xl border border-amber-300/80 shadow-md space-y-3 animate-scale-up text-left"
                 >
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                    <h5 className="text-xs font-extrabold text-[#1E293B] flex items-center gap-1.5">
+                    <h5 className="text-xs font-bold text-[#1E293B] flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-[#F26430]" />
                       <span>ตั้งกลุ่มชวนเพื่อนเดินงานนี้</span>
                     </h5>
@@ -1038,7 +1038,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                         <div className="flex items-center gap-1.5 flex-wrap text-[10px] sm:text-[11px] text-slate-500">
                           <span className="flex items-center gap-1">
                             <span>จัดโดย <strong className="text-slate-900">{sub.creatorName}</strong></span>
-                            <span className="inline-flex items-center gap-0.5 text-[9px] font-extrabold px-1.5 py-0.2 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
                               <ShieldCheck className="w-2.5 h-2.5 text-emerald-600" />
                               <span>ยืนยันตัวตน</span>
                             </span>
@@ -1093,7 +1093,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                                 <Link
                                   href={`/myhub?chatSubId=${sub.id}&eventId=${event.id}`}
                                   onClick={onClose}
-                                  className="text-[10px] sm:text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-slate-900 hover:bg-slate-800 text-white transition-all shrink-0 flex items-center gap-1 shadow-2xs"
+                                  className="text-[10px] sm:text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-900 hover:bg-slate-800 text-white transition-all shrink-0 flex items-center gap-1 shadow-2xs"
                                   title="เปิดห้องแชตคุยกับโฮสต์และเพื่อนๆ ที่หน้ามายฮับ"
                                 >
                                   <span>คุยในแชต ➔</span>
@@ -1152,7 +1152,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             <div className="p-3.5 rounded-2xl bg-slate-100/80 border border-slate-200 space-y-2 text-xs">
               <div className="flex items-center justify-between gap-2">
                 <div className="space-y-0.5 min-w-0">
-                  <h4 className="font-extrabold text-xs sm:text-sm text-slate-700 flex items-center gap-1.5 truncate">
+                  <h4 className="font-bold text-xs sm:text-sm text-slate-700 flex items-center gap-1.5 truncate">
                     <Users className="w-4 h-4 text-slate-500 shrink-0" />
                     <span>กลุ่มชวนเพื่อนที่เคยนัดหมาย ({subActivities.length} กิจกรรม)</span>
                   </h4>
@@ -1205,7 +1205,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
           {isEnded ? (
             /* When Event Has Ended: Display clean Ended Badge */
             <div className="flex items-center justify-center sm:justify-end gap-2 w-full">
-              <span className="px-5 py-2 rounded-full font-extrabold text-xs sm:text-sm bg-slate-100 text-slate-600 border border-slate-300/80 flex items-center gap-1.5 shadow-2xs">
+              <span className="px-5 py-2 rounded-full font-bold text-xs sm:text-sm bg-slate-100 text-slate-600 border border-slate-300/80 flex items-center gap-1.5 shadow-2xs">
                 <span>งานนี้จัดเสร็จสิ้นแล้ว</span>
               </span>
             </div>
@@ -1297,7 +1297,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
             {/* Headline */}
             <div className="space-y-1">
-              <h3 className="text-2xl sm:text-[26px] font-black text-slate-900 tracking-tight leading-tight">
+              <h3 className="text-2xl sm:text-[26px] font-bold text-slate-900 tracking-tight leading-tight">
                 {isPublicVenue ? 'ยืนยันบันทึกลงตารางนัดหมาย' : 'ยืนยันการลงทะเบียน'}
               </h3>
               <p className="text-xs sm:text-sm text-slate-500 font-medium">
@@ -1318,10 +1318,10 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             <div className="bg-[#FAF7F2] rounded-3xl p-5 sm:p-6 border border-[#E8E2D8] space-y-4 shadow-2xs relative">
               {/* Event Title & Price Pill */}
               <div className="flex items-start justify-between gap-3">
-                <h4 className={`text-base sm:text-lg font-black leading-snug ${isPublicVenue ? 'text-[#2B527A]' : 'text-slate-900'}`}>
+                <h4 className={`text-base sm:text-lg font-bold leading-snug ${isPublicVenue ? 'text-[#2B527A]' : 'text-slate-900'}`}>
                   {event.title}
                 </h4>
-                <span className={`px-3 py-1 rounded-full text-xs font-black shrink-0 ${
+                <span className={`px-3 py-1 rounded-full text-xs font-bold shrink-0 ${
                   parsedPrice.isFree ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-800 border border-slate-200'
                 }`}>
                   {parsedPrice.displayPrice}
@@ -1367,7 +1367,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               {/* Ticket Tiers Breakdown */}
               {parsedPrice.hasMultipleTiers && (
                 <div className="pt-2 border-t border-dashed border-[#E8E2D8] space-y-2">
-                  <span className="text-[11px] font-extrabold text-slate-600 flex items-center gap-1.5">
+                  <span className="text-[11px] font-bold text-slate-600 flex items-center gap-1.5">
                     <Ticket className={`w-3.5 h-3.5 ${isPublicVenue ? 'text-[#2B527A]' : 'text-[#4A7C59]'}`} />
                     <span>ผังราคาและประเภทบัตร ({parsedPrice.tiers.length} รูปแบบ)</span>
                   </span>
@@ -1411,7 +1411,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               <button
                 type="button"
                 onClick={handleExecuteJoin}
-                className="w-full py-3.5 rounded-2xl text-white text-sm font-black shadow-2xs hover:shadow-md transition-all active:scale-98 cursor-pointer flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800"
+                className="w-full py-3.5 rounded-2xl text-white text-sm font-bold shadow-2xs hover:shadow-md transition-all active:scale-98 cursor-pointer flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800"
               >
                 <span>{isPublicVenue ? 'บันทึกลงตาราง' : 'ยืนยันการเข้าร่วม'}</span>
                 <ArrowRight className="w-4 h-4" />
@@ -1429,7 +1429,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="space-y-1.5">
-              <h3 className="font-extrabold text-base sm:text-lg text-[#1E293B]">
+              <h3 className="font-bold text-base sm:text-lg text-[#1E293B]">
                 ยืนยันยกเลิกการเข้าร่วม?
               </h3>
               <p className="text-xs text-slate-600 font-medium">

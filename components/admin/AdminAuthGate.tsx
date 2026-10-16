@@ -121,7 +121,7 @@ export function AdminAuthGate({ children }: { children: React.ReactNode }) {
         <div className="w-12 h-12 mb-5 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center">
           {session || loadError ? <Lock size={22} className="text-slate-500" /> : <Loader2 size={22} className="text-slate-400 animate-spin" />}
         </div>
-        <h1 className="text-lg sm:text-xl font-black text-slate-900 mb-1">Admin Console</h1>
+        <h1 className="text-lg sm:text-xl font-bold text-slate-900 mb-1">Admin Console</h1>
 
         {!session && !loadError && (
           <p className="text-xs sm:text-sm font-bold text-slate-500">กำลังตรวจสอบสิทธิ์ผู้ดูแล...</p>

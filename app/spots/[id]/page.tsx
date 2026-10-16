@@ -390,7 +390,7 @@ export default function SpotDetailPage() {
           <div className="w-16 h-16 bg-slate-100 text-slate-700 rounded-2xl flex items-center justify-center mx-auto">
             <MapPin className="w-8 h-8 text-slate-600" />
           </div>
-          <h1 className="text-2xl font-black text-slate-900">ไม่พบข้อมูลสถานที่ท่องเที่ยวนี้</h1>
+          <h1 className="text-2xl font-bold text-slate-900">ไม่พบข้อมูลสถานที่ท่องเที่ยวนี้</h1>
           <p className="text-sm text-slate-600">สถานที่นี้อาจถูกย้ายหรือไม่มีอยู่ในระบบ</p>
           <div className="flex items-center justify-center gap-3 pt-2">
             <Link
@@ -473,7 +473,7 @@ export default function SpotDetailPage() {
               {isCopied ? (
                 <>
                   <Check className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="text-emerald-600 font-extrabold">คัดลอกลิงก์แล้ว!</span>
+                  <span className="text-emerald-600 font-bold">คัดลอกลิงก์แล้ว!</span>
                 </>
               ) : (
                 <>
@@ -552,7 +552,7 @@ export default function SpotDetailPage() {
                   setActivePhotoIndex(0);
                   setIsLightboxOpen(true);
                 }}
-                className="absolute bottom-3 right-3 bg-slate-900/85 backdrop-blur-md text-white text-xs font-extrabold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg border border-white/20 active:scale-95"
+                className="absolute bottom-3 right-3 bg-slate-900/85 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg border border-white/20 active:scale-95"
               >
                 <Camera className="w-3.5 h-3.5" />
                 <span>ดูรูปทั้งหมด (2)</span>
@@ -584,7 +584,7 @@ export default function SpotDetailPage() {
                   setActivePhotoIndex(0);
                   setIsLightboxOpen(true);
                 }}
-                className="absolute bottom-3 right-3 bg-slate-900/85 backdrop-blur-md text-white text-xs font-extrabold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg border border-white/20 active:scale-95"
+                className="absolute bottom-3 right-3 bg-slate-900/85 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg border border-white/20 active:scale-95"
               >
                 <Camera className="w-3.5 h-3.5" />
                 <span>ดูรูปทั้งหมด (3)</span>
@@ -633,7 +633,7 @@ export default function SpotDetailPage() {
                     {isLast && galleryImages.length > 5 && (
                       <div className="absolute inset-0 bg-slate-900/60 hover:bg-slate-900/50 backdrop-blur-2xs flex flex-col items-center justify-center text-white transition-all">
                         <Camera className="w-6 h-6 mb-1 text-white" />
-                        <span className="font-extrabold text-xs sm:text-sm">ดูรูปทั้งหมด</span>
+                        <span className="font-bold text-xs sm:text-sm">ดูรูปทั้งหมด</span>
                         <span className="text-[11px] text-slate-200 font-medium">({galleryImages.length} รูป)</span>
                       </div>
                     )}
@@ -648,7 +648,7 @@ export default function SpotDetailPage() {
                   setActivePhotoIndex(0);
                   setIsLightboxOpen(true);
                 }}
-                className="md:hidden absolute bottom-3 right-3 bg-slate-900/85 backdrop-blur-md text-white text-xs font-extrabold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg border border-white/20 active:scale-95"
+                className="md:hidden absolute bottom-3 right-3 bg-slate-900/85 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg border border-white/20 active:scale-95"
               >
                 <Camera className="w-3.5 h-3.5" />
                 <span>ดูรูปทั้งหมด ({galleryImages.length})</span>
@@ -677,13 +677,13 @@ export default function SpotDetailPage() {
             <div className="space-y-3 pb-4 border-b border-slate-100">
               <div className="flex items-center gap-2 flex-wrap">
                 {/* Category Badge - Forest Green */}
-                <span className="text-xs font-black px-3 py-1 rounded-full bg-[#EBF3ED] text-[#2D5A3C] border border-emerald-200">
+                <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#EBF3ED] text-[#2D5A3C] border border-emerald-200">
                   {spot.categoryLabel}
                 </span>
 
                 {/* Star Rating & Reviews (only real values; imported spots have none) */}
                 {spot.rating > 0 && (
-                  <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-2xs ml-auto sm:ml-0">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-2xs ml-auto sm:ml-0">
                     <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                     <span>{spot.rating}</span>
                     {spot.reviewsCount > 0 && <span className="text-slate-400 font-normal">({spot.reviewsCount} รีวิว)</span>}
@@ -691,7 +691,7 @@ export default function SpotDetailPage() {
                 )}
               </div>
 
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight break-words">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 tracking-tight leading-tight break-words">
                 {cleanText(spot.title)}
               </h1>
 
@@ -712,7 +712,7 @@ export default function SpotDetailPage() {
 
             {/* About / Story Section (Clean Editorial Paragraphs & Rich Content) */}
             <div className="space-y-3 pt-1">
-              <h2 className="text-lg font-black text-slate-900 tracking-tight">
+              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
                 เกี่ยวกับสถานที่นี้
               </h2>
               {renderDescriptionContent(spot.description)}
@@ -721,7 +721,7 @@ export default function SpotDetailPage() {
             {/* 4. Highlights Section (Clean Minimal Bullets) */}
             {spot.highlights && spot.highlights.length > 0 && (
               <div className="space-y-3.5 pt-5 border-t border-slate-100">
-                <h2 className="text-lg font-black text-slate-900 tracking-tight">
+                <h2 className="text-lg font-bold text-slate-900 tracking-tight">
                   จุดเด่น & ไฮไลต์ที่ไม่ควรพลาด
                 </h2>
                 <ul className="space-y-3 pt-1">
@@ -741,7 +741,7 @@ export default function SpotDetailPage() {
             {/* 5. Transit & Facilities Section (2-Column Structured Rhythm) */}
             {(publicTransitText || parkingText || (spot.facilities && spot.facilities.length > 0)) && (
             <div className="space-y-4 pt-5 border-t border-slate-100">
-              <h2 className="text-lg font-black text-slate-900 tracking-tight">
+              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
                 การเดินทาง & สิ่งอำนวยความสะดวก
               </h2>
 
@@ -793,7 +793,7 @@ export default function SpotDetailPage() {
             {/* 6. Interactive Google Map */}
             <div className="space-y-3.5 pt-5 border-t border-slate-100">
               <div className="flex items-center justify-between gap-2">
-                <h3 className="text-lg font-black text-slate-900 tracking-tight">
+                <h3 className="text-lg font-bold text-slate-900 tracking-tight">
                   พิกัดแผนที่ & เส้นทาง
                 </h3>
 
@@ -974,7 +974,7 @@ export default function SpotDetailPage() {
                 {isFavorite && (
                   <Link
                     href="/myhub?tab=scrapbook"
-                    className="w-full text-center inline-flex items-center justify-center gap-1 text-[11px] font-extrabold text-[#4A7C59] hover:text-[#2D5A3C] hover:underline pt-0.5"
+                    className="w-full text-center inline-flex items-center justify-center gap-1 text-[11px] font-bold text-[#4A7C59] hover:text-[#2D5A3C] hover:underline pt-0.5"
                   >
                     <span>เปิดดูสมุดบันทึกเที่ยวของฉันใน MyHub</span>
                     <ArrowRight className="w-3 h-3" />
@@ -1020,11 +1020,11 @@ export default function SpotDetailPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Tag className="w-3.5 h-3.5 text-[#2D5A3C]" />
-                  <h3 className="text-xs sm:text-sm font-black text-slate-900 tracking-tight">
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 tracking-tight">
                     สิทธิพิเศษ & ดีลการเดินทาง
                   </h3>
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#EBF3ED] text-[#2D5A3C] border border-[#C5DEC9]">
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#EBF3ED] text-[#2D5A3C] border border-[#C5DEC9]">
                   Travel Perks
                 </span>
               </div>
@@ -1041,11 +1041,11 @@ export default function SpotDetailPage() {
                   className="p-2.5 rounded-2xl bg-white border border-slate-200/80 hover:border-emerald-300 hover:shadow-xs transition-all flex items-center justify-between gap-2.5 group"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-sm font-black shrink-0">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-sm font-bold shrink-0">
                       <Car className="w-4 h-4 text-emerald-700" />
                     </div>
                     <div className="min-w-0">
-                      <div className="text-xs font-black text-slate-900 group-hover:text-emerald-700 transition-colors truncate">
+                      <div className="text-xs font-bold text-slate-900 group-hover:text-emerald-700 transition-colors truncate">
                         เรียกรถไปจุดนี้ รับส่วนลด 15%
                       </div>
                       <div className="text-[10px] text-slate-400 truncate">
@@ -1053,7 +1053,7 @@ export default function SpotDetailPage() {
                       </div>
                     </div>
                   </div>
-                  <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg shrink-0 inline-flex items-center gap-1">
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg shrink-0 inline-flex items-center gap-1">
                     <span>รับสิทธิ์</span>
                     <ArrowRight className="w-3 h-3" />
                   </span>
@@ -1067,11 +1067,11 @@ export default function SpotDetailPage() {
                   className="p-2.5 rounded-2xl bg-white border border-slate-200/80 hover:border-blue-300 hover:shadow-xs transition-all flex items-center justify-between gap-2.5 group"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center text-sm font-black shrink-0">
+                    <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center text-sm font-bold shrink-0">
                       <Building2 className="w-4 h-4 text-sky-700" />
                     </div>
                     <div className="min-w-0">
-                      <div className="text-xs font-black text-slate-900 group-hover:text-sky-700 transition-colors truncate">
+                      <div className="text-xs font-bold text-slate-900 group-hover:text-sky-700 transition-colors truncate">
                         ค้นหาที่พัก & โฮสเทลใกล้เคียง
                       </div>
                       <div className="text-[10px] text-slate-400 truncate">
@@ -1079,7 +1079,7 @@ export default function SpotDetailPage() {
                       </div>
                     </div>
                   </div>
-                  <span className="text-[10px] font-extrabold text-sky-700 bg-sky-50 px-2 py-1 rounded-lg shrink-0 inline-flex items-center gap-1">
+                  <span className="text-[10px] font-bold text-sky-700 bg-sky-50 px-2 py-1 rounded-lg shrink-0 inline-flex items-center gap-1">
                     <span>ดูราคา</span>
                     <ArrowRight className="w-3 h-3" />
                   </span>
@@ -1093,11 +1093,11 @@ export default function SpotDetailPage() {
                   className="p-2.5 rounded-2xl bg-white border border-slate-200/80 hover:border-amber-300 hover:shadow-xs transition-all flex items-center justify-between gap-2.5 group"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center text-sm font-black shrink-0">
+                    <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center text-sm font-bold shrink-0">
                       <Ticket className="w-4 h-4 text-amber-700" />
                     </div>
                     <div className="min-w-0">
-                      <div className="text-xs font-black text-slate-900 group-hover:text-amber-700 transition-colors truncate">
+                      <div className="text-xs font-bold text-slate-900 group-hover:text-amber-700 transition-colors truncate">
                         บัตรกิจกรรม & เวิร์กช็อปพิเศษ
                       </div>
                       <div className="text-[10px] text-slate-400 truncate">
@@ -1105,7 +1105,7 @@ export default function SpotDetailPage() {
                       </div>
                     </div>
                   </div>
-                  <span className="text-[10px] font-extrabold text-amber-700 bg-amber-50 px-2 py-1 rounded-lg shrink-0 inline-flex items-center gap-1">
+                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded-lg shrink-0 inline-flex items-center gap-1">
                     <span>สำรวจ</span>
                     <ArrowRight className="w-3 h-3" />
                   </span>
@@ -1130,7 +1130,7 @@ export default function SpotDetailPage() {
           <section className="pt-8 sm:pt-10 border-t border-slate-100 space-y-4 sm:space-y-5">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
               <div className="space-y-1">
-                <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight pt-0.5">
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight pt-0.5">
                   {recommendation.sectionTitle}
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-600">
@@ -1140,7 +1140,7 @@ export default function SpotDetailPage() {
 
               <Link
                 href={`/spots?province=${encodeURIComponent(spot.province)}`}
-                className="text-xs font-extrabold text-[#2D5A3C] hover:text-[#1B432C] hover:underline flex items-center gap-1 shrink-0"
+                className="text-xs font-bold text-[#2D5A3C] hover:text-[#1B432C] hover:underline flex items-center gap-1 shrink-0"
               >
                 <span>ดูทั้งหมดใน {spot.province}</span>
                 <ArrowRight className="w-3 h-3" />
@@ -1172,7 +1172,7 @@ export default function SpotDetailPage() {
           {/* Top Bar: Title, Counter & Close Button */}
           <div className="flex items-center justify-between text-white pb-3">
             <div className="space-y-0.5">
-              <h3 className="text-sm sm:text-base font-black truncate max-w-xs sm:max-w-md">{spot.title}</h3>
+              <h3 className="text-sm sm:text-base font-bold truncate max-w-xs sm:max-w-md">{spot.title}</h3>
               <p className="text-xs text-slate-400">รูปที่ {activePhotoIndex + 1} จาก {galleryImages.length} รูป</p>
             </div>
 

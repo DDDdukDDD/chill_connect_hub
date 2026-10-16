@@ -483,7 +483,7 @@ export default function FairDetailPage() {
           <div className="w-16 h-16 bg-sky-50 text-sky-600 rounded-2xl flex items-center justify-center mx-auto">
             <Building2 className="w-8 h-8 text-[#2B527A]" />
           </div>
-          <h1 className="text-2xl font-black text-slate-900">ไม่พบข้อมูลงานอีเวนต์หรือนิทรรศการนี้</h1>
+          <h1 className="text-2xl font-bold text-slate-900">ไม่พบข้อมูลงานอีเวนต์หรือนิทรรศการนี้</h1>
           <p className="text-sm text-slate-600">งานนี้อาจสิ้นสุดลงแล้วหรือถูกย้ายออกจากระบบ</p>
           <Link
             href="/fairs"
@@ -574,7 +574,7 @@ export default function FairDetailPage() {
               {isCopied ? (
                 <>
                   <Check className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="text-emerald-600 font-extrabold">คัดลอกลิงก์แล้ว</span>
+                  <span className="text-emerald-600 font-bold">คัดลอกลิงก์แล้ว</span>
                 </>
               ) : (
                 <>
@@ -633,7 +633,7 @@ export default function FairDetailPage() {
                   {isLast && (
                     <div className="absolute inset-0 bg-slate-900/60 hover:bg-slate-900/50 backdrop-blur-2xs flex flex-col items-center justify-center text-white transition-all">
                       <Camera className="w-6 h-6 mb-1 text-white" />
-                      <span className="font-extrabold text-xs sm:text-sm">ดูภาพบรรยากาศทั้งหมด</span>
+                      <span className="font-bold text-xs sm:text-sm">ดูภาพบรรยากาศทั้งหมด</span>
                       <span className="text-[11px] text-slate-200 font-medium">({galleryImages.length} รูป)</span>
                     </div>
                   )}
@@ -648,7 +648,7 @@ export default function FairDetailPage() {
                 setActivePhotoIndex(0);
                 setIsLightboxOpen(true);
               }}
-              className="md:hidden absolute bottom-3 right-3 bg-slate-900/85 backdrop-blur-md text-white text-xs font-extrabold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg border border-white/20 active:scale-95"
+              className="md:hidden absolute bottom-3 right-3 bg-slate-900/85 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg border border-white/20 active:scale-95"
             >
               <Camera className="w-3.5 h-3.5" />
               <span>ดูรูปทั้งหมด ({galleryImages.length})</span>
@@ -674,7 +674,7 @@ export default function FairDetailPage() {
             {/* 1. Title, Category Tag & Status */}
             <div className="space-y-3 pb-4 border-b border-slate-100">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-black px-3 py-1 rounded-full bg-sky-50 text-sky-800 border border-sky-200">
+                <span className="text-xs font-bold px-3 py-1 rounded-full bg-sky-50 text-sky-800 border border-sky-200">
                   {cleanText(eventData.tag) || 'งานมหกรรม & งานแฟร์'}
                 </span>
 
@@ -683,14 +683,14 @@ export default function FairDetailPage() {
                     งานสิ้นสุดลงแล้ว
                   </span>
                 ) : (
-                  <span className="text-xs font-black px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5">
+                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                     <span>กำลังเปิดจัดแสดง / กำลังจะมาถึง</span>
                   </span>
                 )}
               </div>
 
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight break-words">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 tracking-tight leading-tight break-words">
                 {cleanText(eventData.title)}
               </h1>
             </div>
@@ -703,8 +703,8 @@ export default function FairDetailPage() {
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <h3 className="font-extrabold text-sm text-slate-900 truncate">{venueOrganizerName}</h3>
-                    <span className="text-[10px] font-black text-sky-800 bg-sky-100/90 px-2 py-0.5 rounded-full border border-sky-200">
+                    <h3 className="font-bold text-sm text-slate-900 truncate">{venueOrganizerName}</h3>
+                    <span className="text-[10px] font-bold text-sky-800 bg-sky-100/90 px-2 py-0.5 rounded-full border border-sky-200">
                       {origin === 'member' ? 'ผู้จัดงานลงประกาศเอง' : origin === 'source' ? 'ข้อมูลจากแหล่งทางการ' : 'Official Venue & Partner'}
                     </span>
                   </div>
@@ -745,7 +745,7 @@ export default function FairDetailPage() {
 
             {/* 4. About the Fair / Story */}
             <div className="space-y-3 pt-1">
-              <h2 className="text-lg font-black text-slate-900 tracking-tight">
+              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
                 เกี่ยวกับงานและนิทรรศการนี้
               </h2>
               {renderDescriptionContent(eventData.description)}
@@ -756,10 +756,10 @@ export default function FairDetailPage() {
               <div className="space-y-3.5 pt-5 border-t border-slate-100">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Ticket className="w-5 h-5 text-[#2B527A]" />
-                  <h2 className="text-lg font-black text-slate-900 tracking-tight">
+                  <h2 className="text-lg font-bold text-slate-900 tracking-tight">
                     ผังราคาและประเภทบัตรเข้าชม
                   </h2>
-                  <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-800 border border-sky-200">
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-800 border border-sky-200">
                     ช่วงราคา {parsedPrice.displayPrice}
                   </span>
                 </div>
@@ -776,7 +776,7 @@ export default function FairDetailPage() {
                       <span className="text-[11px] font-semibold text-slate-500 block truncate">
                         {t.label || (t.isOnline ? 'ออนไลน์' : 'บัตรเข้าชม')}
                       </span>
-                      <span className="text-base font-black text-slate-900 mt-0.5">
+                      <span className="text-base font-bold text-slate-900 mt-0.5">
                         {t.price}
                       </span>
                     </div>
@@ -788,7 +788,7 @@ export default function FairDetailPage() {
             {/* 5. Verified Highlights */}
             {fairHighlights.length > 0 && (
             <div className="space-y-3.5 pt-5 border-t border-slate-100">
-              <h2 className="text-lg font-black text-slate-900 tracking-tight">
+              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
                 จุดเด่น & ไฮไลต์ที่ไม่ควรพลาดในงาน
               </h2>
               <ul className="space-y-3 pt-1">
@@ -808,7 +808,7 @@ export default function FairDetailPage() {
             {/* 6. Hall Transit & Parking */}
             {(publicTransitText || parkingText) && (
             <div className="space-y-4 pt-5 border-t border-slate-100">
-              <h2 className="text-lg font-black text-slate-900 tracking-tight">
+              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
                 การเดินทางเข้าศูนย์นิทรรศการ & ที่จอดรถ
               </h2>
 
@@ -837,7 +837,7 @@ export default function FairDetailPage() {
             {/* 7. Interactive Google Maps */}
             <div className="space-y-3.5 pt-5 border-t border-slate-100">
               <div className="flex items-center justify-between gap-2">
-                <h3 className="text-lg font-black text-slate-900 tracking-tight">
+                <h3 className="text-lg font-bold text-slate-900 tracking-tight">
                   พิกัดแผนที่ศูนย์นิทรรศการ
                 </h3>
 
@@ -869,10 +869,10 @@ export default function FairDetailPage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-black text-slate-900 tracking-tight">
+                    <h2 className="text-lg font-bold text-slate-900 tracking-tight">
                       กลุ่มนัดเดินดูงาน & หาเพื่อนแวะจิบกาแฟ
                     </h2>
-                    <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-800 border border-sky-200">
+                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-800 border border-sky-200">
                       {fairSubActivities.length} กลุ่มนัดหมาย
                     </span>
                   </div>
@@ -901,7 +901,7 @@ export default function FairDetailPage() {
                         setIsFairBuddyModalOpen(true);
                       }
                     }}
-                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold shadow-sm transition-all cursor-pointer active:scale-95 shrink-0"
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-sm transition-all cursor-pointer active:scale-95 shrink-0"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>สร้างกลุ่มนัดเดินงาน</span>
@@ -927,7 +927,7 @@ export default function FairDetailPage() {
                     >
                       <div className="space-y-2">
                         <div className="flex items-center justify-between gap-2 text-[11px]">
-                          <span className="inline-flex items-center gap-1 font-black text-sky-800 bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200 truncate">
+                          <span className="inline-flex items-center gap-1 font-bold text-sky-800 bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200 truncate">
                             <MapPin className="w-3 h-3 text-sky-700 shrink-0" />
                             <span>{sub.meetupPoint}</span>
                           </span>
@@ -935,14 +935,14 @@ export default function FairDetailPage() {
                             isFull
                               ? 'bg-slate-100 text-slate-500'
                               : isJoined
-                              ? 'bg-emerald-50 text-emerald-700 font-extrabold border border-emerald-200'
+                              ? 'bg-emerald-50 text-emerald-700 font-bold border border-emerald-200'
                               : 'bg-sky-50 text-sky-700'
                           }`}>
                             {sub.currentMembers}/{sub.maxMembers} คน {isFull ? '(เต็มแล้ว)' : `(ว่าง ${availableSlots})`}
                           </span>
                         </div>
 
-                        <h4 className="font-extrabold text-sm text-slate-900 leading-snug">
+                        <h4 className="font-bold text-sm text-slate-900 leading-snug">
                           {sub.title}
                         </h4>
 
@@ -1015,7 +1015,7 @@ export default function FairDetailPage() {
               {/* Header Price & Status */}
               <div className="flex items-center justify-between pb-3 border-b border-slate-100 gap-2">
                 <span className="text-xs font-bold text-slate-500 shrink-0">ค่าเข้าชมนิทรรศการ</span>
-                <span className="text-base sm:text-lg font-black text-slate-900 text-right">
+                <span className="text-base sm:text-lg font-bold text-slate-900 text-right">
                   {parsedPrice.displayPrice}
                 </span>
               </div>
@@ -1086,7 +1086,7 @@ export default function FairDetailPage() {
                 <button
                   type="button"
                   onClick={toggleInHub}
-                  className={`group w-full py-3.5 px-4 rounded-2xl font-black text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer ${
+                  className={`group w-full py-3.5 px-4 rounded-2xl font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer ${
                     isFav
                       ? 'bg-sky-50 text-[#2B527A] border border-sky-300 shadow-sky-900/10 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200'
                       : 'bg-slate-900 hover:bg-slate-800 text-white shadow-sm'
@@ -1149,7 +1149,7 @@ export default function FairDetailPage() {
           <section className="pt-10 border-t border-slate-100 space-y-5">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
                   งานมหกรรมและนิทรรศการที่น่าสนใจอื่นๆ
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-600">
@@ -1159,7 +1159,7 @@ export default function FairDetailPage() {
 
               <Link
                 href="/fairs"
-                className="text-xs font-extrabold text-[#2B527A] hover:underline flex items-center gap-1 shrink-0"
+                className="text-xs font-bold text-[#2B527A] hover:underline flex items-center gap-1 shrink-0"
               >
                 <span>สำรวจงานมหกรรม & เอ็กซ์โปทั้งหมด</span>
                 <ArrowRight className="w-3 h-3" />
@@ -1183,7 +1183,7 @@ export default function FairDetailPage() {
         <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col justify-between p-4 sm:p-6 animate-in fade-in duration-200">
           <div className="flex items-center justify-between text-white pb-3 border-b border-white/10">
             <div className="flex items-center gap-3">
-              <span className="text-sm sm:text-base font-black truncate max-w-md">
+              <span className="text-sm sm:text-base font-bold truncate max-w-md">
                 {cleanText(eventData.title)}
               </span>
               <span className="text-xs text-slate-400 bg-white/10 px-2.5 py-0.5 rounded-full">

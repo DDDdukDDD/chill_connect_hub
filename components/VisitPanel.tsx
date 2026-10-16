@@ -156,9 +156,9 @@ export const VisitPanel: React.FC<VisitPanelProps> = ({ targetType, targetId, ti
       {/* Who has been */}
       <div className="space-y-3">
         <div className="flex items-baseline justify-between gap-3">
-          <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight">โมเมนต์จากเพื่อนๆ</h3>
+          <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">โมเมนต์จากเพื่อนๆ</h3>
           {proof.rating && (
-            <span className="inline-flex items-center gap-1 text-xs font-extrabold text-slate-800 tabular-nums">
+            <span className="inline-flex items-center gap-1 text-xs font-bold text-slate-800 tabular-nums">
               <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" aria-hidden="true" />
               {proof.rating.average.toFixed(1)}
               <span className="font-medium text-slate-500">จาก {proof.rating.count} คน</span>
@@ -176,7 +176,7 @@ export const VisitPanel: React.FC<VisitPanelProps> = ({ targetType, targetId, ti
                       // eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers
                       <img key={person.name} src={person.avatar} alt="" className="w-7 h-7 rounded-full object-cover border-2 border-white bg-slate-100" />
                     ) : (
-                      <span key={person.name} className="w-7 h-7 rounded-full border-2 border-white bg-slate-200 text-[11px] font-extrabold text-slate-700 flex items-center justify-center">
+                      <span key={person.name} className="w-7 h-7 rounded-full border-2 border-white bg-slate-200 text-[11px] font-bold text-slate-700 flex items-center justify-center">
                         {person.name.slice(0, 1)}
                       </span>
                     )
@@ -228,7 +228,7 @@ export const VisitPanel: React.FC<VisitPanelProps> = ({ targetType, targetId, ti
           >
             {countedHere ? <Check className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" /> : <Trophy className="w-4 h-4 text-slate-700 shrink-0 mt-0.5" aria-hidden="true" />}
             <span className="min-w-0">
-              <span className={`block font-extrabold line-clamp-1 ${countedHere ? 'text-emerald-900' : 'text-slate-900'}`}>
+              <span className={`block font-bold line-clamp-1 ${countedHere ? 'text-emerald-900' : 'text-slate-900'}`}>
                 {countedHere ? 'นับที่นี่แล้วในชาเลนจ์' : doing ? 'ชาเลนจ์ที่คุณทำอยู่:' : 'นับในชาเลนจ์'} {quest.title}
               </span>
               <span className="block line-clamp-1 tabular-nums">
@@ -266,7 +266,7 @@ export const VisitPanel: React.FC<VisitPanelProps> = ({ targetType, targetId, ti
           (isMarked ? (
             <div className="rounded-2xl bg-slate-50 p-3 space-y-2">
               <div className="flex items-center justify-between gap-3">
-                <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-slate-900">
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-900">
                   <Check className="w-4 h-4 text-emerald-600" aria-hidden="true" />
                   คุณมาที่นี่แล้ว
                 </span>

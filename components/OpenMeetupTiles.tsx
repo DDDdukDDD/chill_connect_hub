@@ -71,7 +71,7 @@ function FaceStack({ event }: { event: EventItem }) {
         )
       )}
       {more > 0 && (
-        <span className={`${box} bg-slate-100 text-slate-700 text-[10px] font-extrabold flex items-center justify-center`}>+{more}</span>
+        <span className={`${box} bg-slate-100 text-slate-700 text-[10px] font-bold flex items-center justify-center`}>+{more}</span>
       )}
     </span>
   );
@@ -107,14 +107,14 @@ export function OpenMeetupTiles({ events, isLoaded, onCreate, reasons }: { event
           <Link key={event.id} href={`/community/${encodeURIComponent(event.id)}`} className={`${TILE} group block`}>
             <span className="relative block aspect-square overflow-hidden rounded-3xl bg-slate-200 shadow-md">
               <img src={event.image} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-              <span className="absolute left-2.5 top-2.5 rounded-full bg-white px-2.5 py-1 text-xs font-extrabold text-slate-900 shadow-sm">
+              <span className="absolute left-2.5 top-2.5 rounded-full bg-white px-2.5 py-1 text-xs font-bold text-slate-900 shadow-sm">
                 {dayLabel(event, now)} · {startTime}
               </span>
-              <span className="absolute right-2.5 bottom-2.5 rounded-full bg-[#F26430] px-2.5 py-1 text-[11px] font-extrabold text-white whitespace-nowrap shadow-sm">
+              <span className="absolute right-2.5 bottom-2.5 rounded-full bg-[#F26430] px-2.5 py-1 text-[11px] font-bold text-white whitespace-nowrap shadow-sm">
                 {seatsLine(event)}
               </span>
             </span>
-            <span className="mt-3 text-sm font-extrabold text-slate-900 leading-snug line-clamp-2 group-hover:underline">{event.title}</span>
+            <span className="mt-3 text-sm font-bold text-slate-900 leading-snug line-clamp-2 group-hover:underline">{event.title}</span>
             {reason ? (
               <span className="mt-1 flex items-center gap-1 text-xs font-bold text-orange-700 min-w-0">
                 <Heart className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
@@ -141,7 +141,7 @@ export function OpenMeetupTiles({ events, isLoaded, onCreate, reasons }: { event
           <Plus className="w-5 h-5" aria-hidden="true" />
         </span>
         <span>
-          <span className="block text-sm font-black text-slate-900">ไม่เจอที่ใช่?</span>
+          <span className="block text-sm font-bold text-slate-900">ไม่เจอที่ใช่?</span>
           <span className="block mt-0.5 text-xs font-bold text-slate-600">ตั้งตี้เองเลย แล้วรอเพื่อนๆ มาร่วม</span>
         </span>
       </button>

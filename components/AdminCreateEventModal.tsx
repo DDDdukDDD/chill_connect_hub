@@ -192,7 +192,7 @@ export const AdminCreateEventModal: React.FC<AdminCreateEventModalProps> = ({
                   <div>
                     {boldMatch ? (
                       <>
-                        <strong className="font-extrabold text-slate-950">{boldMatch[1]}:</strong>
+                        <strong className="font-bold text-slate-950">{boldMatch[1]}:</strong>
                         <span>{boldMatch[2]}</span>
                       </>
                     ) : (
@@ -223,7 +223,7 @@ export const AdminCreateEventModal: React.FC<AdminCreateEventModalProps> = ({
         const isHeading = trimmed.startsWith('✨') || trimmed.startsWith('🏛️') || trimmed.startsWith('🏡') || trimmed.endsWith(':');
         if (isHeading) {
           elements.push(
-            <h4 key={`h-${idx}`} className="font-black text-xs sm:text-sm text-slate-900 mt-2.5 mb-1 flex items-center gap-1.5">
+            <h4 key={`h-${idx}`} className="font-bold text-xs sm:text-sm text-slate-900 mt-2.5 mb-1 flex items-center gap-1.5">
               <span>{trimmed}</span>
             </h4>
           );
@@ -337,7 +337,7 @@ export const AdminCreateEventModal: React.FC<AdminCreateEventModalProps> = ({
                 <PlusCircle className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
+                <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
                   <span>สร้างกิจกรรมใหม่ (Admin Event Creator)</span>
                 </h2>
                 <p className="text-xs text-slate-400">สร้างและเผยแพร่กิจกรรมขึ้นสู่หน้าแรกได้ทันที</p>
@@ -361,7 +361,7 @@ export const AdminCreateEventModal: React.FC<AdminCreateEventModalProps> = ({
                 setCoverImage(PRESET_PUBLIC_IMAGES[0]);
                 handleLoadTemplate('public');
               }}
-              className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                 eventType === 'public_venue'
                   ? 'bg-sky-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-slate-200'
@@ -378,7 +378,7 @@ export const AdminCreateEventModal: React.FC<AdminCreateEventModalProps> = ({
                 setCoverImage(PRESET_COMMUNITY_IMAGES[0]);
                 handleLoadTemplate('community');
               }}
-              className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                 eventType === 'community'
                   ? 'bg-[#4A7C59] text-white shadow-md'
                   : 'text-slate-400 hover:text-slate-200'
@@ -743,7 +743,7 @@ export const AdminCreateEventModal: React.FC<AdminCreateEventModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting || isCompressingBanner}
-              className="bg-gradient-to-r from-[#4A7C59] to-emerald-600 hover:from-[#3B6347] hover:to-emerald-500 text-white px-6 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm shadow-lg shadow-emerald-950/40 active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              className="bg-gradient-to-r from-[#4A7C59] to-emerald-600 hover:from-[#3B6347] hover:to-emerald-500 text-white px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-lg shadow-emerald-950/40 active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>{isCompressingBanner ? 'กำลังประมวลผลรูป...' : isSubmitting ? 'กำลังบันทึกกิจกรรม...' : '🚀 บันทึกและเผยแพร่กิจกรรมทันที'}</span>

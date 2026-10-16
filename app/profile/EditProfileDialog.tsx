@@ -125,7 +125,7 @@ export function EditProfileDialog({
     <DialogShell onClose={onClose} size="lg" bare labelledBy="edit-profile-title">
       <form onSubmit={save} className="flex flex-col min-h-0 flex-1">
         <header className="px-5 sm:px-8 pt-6 sm:pt-8 pb-4 border-b border-slate-100 shrink-0">
-          <h2 id="edit-profile-title" className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 pr-12">แก้ไขโปรไฟล์</h2>
+          <h2 id="edit-profile-title" className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 pr-12">แก้ไขโปรไฟล์</h2>
           <p className="text-sm text-slate-500 font-medium mt-1.5">
             <PhraseText text="ทุกช่องไม่บังคับ คุณเลือกได้ว่า จะให้คนอื่นเห็นช่องไหน" />
           </p>
@@ -133,7 +133,7 @@ export function EditProfileDialog({
 
         <div className="px-5 sm:px-8 py-5 overflow-y-auto flex-1 space-y-6">
           <div className="flex items-center gap-4">
-            <span className="w-20 h-20 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-[#2563EB] text-white text-2xl font-black">
+            <span className="w-20 h-20 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-[#2563EB] text-white text-2xl font-bold">
               {photo || member.avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element -- member photo (local preview or uploaded file)
                 <img src={photo?.preview ?? member.avatarUrl} alt="" className="w-full h-full object-cover" />
@@ -175,7 +175,7 @@ export function EditProfileDialog({
 
           <div className="rounded-2xl border border-slate-200 p-4 space-y-3">
             <div className="flex items-baseline justify-between gap-3">
-              <h3 className="text-sm font-extrabold text-slate-900">จากคำตอบตอนเริ่มใช้งาน</h3>
+              <h3 className="text-sm font-bold text-slate-900">จากคำตอบตอนเริ่มใช้งาน</h3>
               <Link href="/onboarding?returnTo=%2Fprofile" className="text-xs font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">แก้คำตอบ</Link>
             </div>
             {answerRows.map((row) => (

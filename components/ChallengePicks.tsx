@@ -126,12 +126,12 @@ export function ChallengePicks({ quests, joinedIds, isLoaded, progress }: { ques
                   className="w-full aspect-square object-cover rounded-3xl bg-slate-100 shadow-md"
                 />
                 {quest.rule && (
-                  <span className={`absolute -top-2.5 -left-1.5 ${XP_TILTS[i % XP_TILTS.length]} inline-flex items-center gap-0.5 rounded-full bg-[#7C3AED] text-white px-2.5 py-1 text-xs font-black shadow-md tabular-nums`}>
+                  <span className={`absolute -top-2.5 -left-1.5 ${XP_TILTS[i % XP_TILTS.length]} inline-flex items-center gap-0.5 rounded-full bg-[#7C3AED] text-white px-2.5 py-1 text-xs font-bold shadow-md tabular-nums`}>
                     <Zap className="w-3 h-3 fill-current" aria-hidden="true" />+{(quest.rewardPoints ?? 0).toLocaleString()}
                   </span>
                 )}
               </span>
-              <span className="mt-3 text-sm font-extrabold text-slate-900 leading-snug line-clamp-2 group-hover:underline">
+              <span className="mt-3 text-sm font-bold text-slate-900 leading-snug line-clamp-2 group-hover:underline">
                 {quest.title}
               </span>
               {doing ? (

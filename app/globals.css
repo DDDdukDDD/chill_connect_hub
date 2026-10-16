@@ -12,6 +12,15 @@
   --color-coral-light: #FDF0EB;
   --color-slate-dark: #1E293B;
   --color-slate-card: #0F172A;
+
+  /* Double-tap like on a moment's photo (MomentPhotos) */
+  --animate-heart-pop: heart-pop 800ms ease-out forwards;
+  @keyframes heart-pop {
+    0% { transform: scale(0.4); opacity: 0; }
+    20% { transform: scale(1.15); opacity: 0.95; }
+    40% { transform: scale(1); opacity: 0.95; }
+    100% { transform: scale(1); opacity: 0; }
+  }
 }
 
 :root {

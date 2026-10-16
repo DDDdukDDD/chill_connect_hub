@@ -39,6 +39,9 @@ export async function settleFinishes(memberId: string, progress: QuestProgress[]
   }
 }
 
+/** Every finish, for the home page's live activity */
+export const allQuestFinishes = (): readonly QuestFinish[] => store.read();
+
 /** When the member finished one challenge; undefined while they have not */
 export const finishedAtOf = (memberId: string, questId: string): string | undefined =>
   store.read().find((finish) => finish.memberId === memberId && finish.questId === questId)?.finishedAt;

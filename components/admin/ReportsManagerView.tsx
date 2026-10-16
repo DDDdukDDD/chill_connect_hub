@@ -159,7 +159,7 @@ export function ReportsManagerView({ onNavigate }: { onNavigate: (module: AdminM
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-slate-500">{TYPE_LABELS[report.targetType]} · {formatDate(report.createdAt)}</p>
-                  <h2 className="mt-0.5 text-sm sm:text-base font-extrabold text-slate-900">{report.targetTitle}</h2>
+                  <h2 className="mt-0.5 text-sm sm:text-base font-bold text-slate-900">{report.targetTitle}</h2>
                 </div>
                 {report.status === 'open' && report.sameTargetOpen > 1 && <AdminBadge tone="amber">ถูกรายงาน {report.sameTargetOpen} ครั้ง</AdminBadge>}
               </div>

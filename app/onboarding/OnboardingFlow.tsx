@@ -155,7 +155,7 @@ interface MomentThumb {
 function PillarTag({ pillar }: { pillar: PillarId }) {
   const p = PILLARS[pillar];
   return (
-    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/95 text-[11px] font-extrabold text-slate-800 whitespace-nowrap">
+    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/95 text-[11px] font-bold text-slate-800 whitespace-nowrap">
       <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: p.color }} aria-hidden="true" />
       {p.short}
     </span>
@@ -165,7 +165,7 @@ function PillarTag({ pillar }: { pillar: PillarId }) {
 function StepHeading({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <div className="mb-6">
-      <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 leading-tight">
+      <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 leading-tight">
         <PhraseText text={title} />
       </h1>
       <p className="text-sm text-slate-500 font-medium mt-2 leading-relaxed">
@@ -178,7 +178,7 @@ function StepHeading({ title, subtitle }: { title: string; subtitle: string }) {
 function GroupLabel({ children, hint, pillar }: { children: string; hint?: string; pillar?: PillarId }) {
   return (
     <div className="flex items-center justify-between gap-3 mb-3">
-      <h2 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center gap-2 min-w-0">
+      <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2 min-w-0">
         {pillar && <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: PILLARS[pillar].color }} aria-hidden="true" />}
         <span><PhraseText text={children} /></span>
       </h2>
@@ -226,7 +226,7 @@ function PickCard({ item, big, delay }: { item: Pick; big: boolean; delay: numbe
         <PillarTag pillar={item.pillar} />
       </span>
       <span className="absolute inset-x-0 bottom-0 p-3.5 sm:p-4">
-        <span className={`font-extrabold text-white leading-snug line-clamp-2 ${big ? 'text-base sm:text-xl' : 'text-sm sm:text-base'}`}>{item.title}</span>
+        <span className={`font-bold text-white leading-snug line-clamp-2 ${big ? 'text-base sm:text-xl' : 'text-sm sm:text-base'}`}>{item.title}</span>
         <span className="text-xs font-semibold text-white/85 mt-1 line-clamp-1">{item.meta}</span>
       </span>
     </Link>
@@ -244,7 +244,7 @@ function GoalCard({ goal, selected, onClick, wide }: { goal: Goal; selected: boo
           <PillarTag pillar={goal.pillar} />
         </span>
         <span className="absolute inset-x-0 bottom-0 p-3">
-          <span className="block text-sm sm:text-base font-extrabold text-white leading-snug">
+          <span className="block text-sm sm:text-base font-bold text-white leading-snug">
             <PhraseText text={goal.title} />
           </span>
           <span className="block text-xs text-white/85 font-medium mt-0.5">
@@ -583,10 +583,10 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
         <div className="relative h-full flex flex-col justify-between p-4 sm:p-6 lg:p-10">
           <Link href="/" className="inline-flex items-center gap-2 self-start">
             <BrandLogo size="sm" />
-            <span className="font-extrabold text-sm sm:text-base">Chill & Connect Hub</span>
+            <span className="font-bold text-sm sm:text-base">Chill & Connect Hub</span>
           </Link>
           <div>
-            <p key={scene.headline} className="cch-rise text-xl sm:text-2xl lg:text-4xl font-black leading-tight tracking-tight max-w-md">
+            <p key={scene.headline} className="cch-rise text-xl sm:text-2xl lg:text-4xl font-bold leading-tight tracking-tight max-w-md">
               <PhraseText text={scene.headline} />
             </p>
             <ul className="hidden lg:block mt-8 space-y-3 max-w-sm">
@@ -600,7 +600,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
                       {lit ? <Check className="w-4 h-4 stroke-[3]" aria-hidden="true" /> : <Icon className="w-4 h-4" aria-hidden="true" />}
                     </span>
                     <span className="min-w-0">
-                      <span className="block text-sm font-extrabold">{p.name}</span>
+                      <span className="block text-sm font-bold">{p.name}</span>
                       <span className="block text-xs font-medium text-white/80"><PhraseText text={p.line} /></span>
                     </span>
                   </li>
@@ -617,7 +617,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
           <section className="cch-rise">
             {/* Personal header: who they are and what they told us */}
             <div className="flex items-center gap-4 mb-5">
-              <span className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-[#2563EB] text-white text-xl sm:text-2xl font-black ring-4 ring-blue-50">
+              <span className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-[#2563EB] text-white text-xl sm:text-2xl font-bold ring-4 ring-blue-50">
                 {photo ? (
                   // eslint-disable-next-line @next/next/no-img-element -- local object URL preview
                   <img src={photo.preview} alt="" className="w-full h-full object-cover" />
@@ -626,7 +626,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
                 )}
               </span>
               <div className="min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 leading-tight">
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 leading-tight">
                   <PhraseText text={firstName ? `ยินดีที่ได้รู้จัก คุณ ${firstName}` : 'ยินดีที่ได้รู้จัก'} />
                 </h1>
                 <p className="text-sm text-slate-500 font-medium mt-1">
@@ -643,7 +643,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
                     <span className="flex-1 min-w-[12rem] font-semibold text-slate-700">
                       <PhraseText text="อีกขั้นเดียว ยืนยันอีเมล แล้วเริ่มโพสต์ และคอมเมนต์ได้" />
                     </span>
-                    <Link href="/profile#trust" onClick={() => { finishedRun = null; }} className="font-extrabold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">
+                    <Link href="/profile#trust" onClick={() => { finishedRun = null; }} className="font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">
                       ยืนยันอีเมล
                     </Link>
                   </div>
@@ -654,7 +654,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
                     <span className="flex-1 min-w-[12rem] font-semibold text-slate-700">
                       <PhraseText text="อยากเป็นคนชวน ส่งคำขอสั้นๆ ให้ทีมงานดูก่อน" />
                     </span>
-                    <Link href="/profile#host" onClick={() => { finishedRun = null; }} className="font-extrabold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">
+                    <Link href="/profile#host" onClick={() => { finishedRun = null; }} className="font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">
                       ส่งคำขอ
                     </Link>
                   </div>
@@ -702,7 +702,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
             {moments.length > 0 && (
               <div className="mt-5">
                 <div className="flex items-center justify-between gap-3 mb-2.5">
-                  <h2 className="text-sm font-extrabold text-slate-900 flex items-center gap-2 min-w-0">
+                  <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2 min-w-0">
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: PILLARS.moments.color }} aria-hidden="true" />
                     <span><PhraseText text="โมเมนต์ จากคนที่ไปมาแล้ว" /></span>
                   </h2>
@@ -725,7 +725,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
             {quests.length > 0 && (
               <div className="mt-5">
                 <div className="flex items-center justify-between gap-3 mb-2.5">
-                  <h2 className="text-sm font-extrabold text-slate-900 flex items-center gap-2 min-w-0">
+                  <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2 min-w-0">
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: PILLARS.challenges.color }} aria-hidden="true" />
                     <span><PhraseText text="ชาเลนจ์ ที่เริ่มได้เลย" /></span>
                   </h2>
@@ -739,7 +739,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
                           <Trophy className="w-5 h-5" aria-hidden="true" />
                         </span>
                         <span className="min-w-0">
-                          <span className="text-xs sm:text-sm font-extrabold text-slate-900 leading-snug line-clamp-1">{quest.title}</span>
+                          <span className="text-xs sm:text-sm font-bold text-slate-900 leading-snug line-clamp-1">{quest.title}</span>
                           {quest.badge && <span className="text-xs font-semibold text-slate-500 line-clamp-1">เหรียญ {quest.badge} และ XP</span>}
                         </span>
                       </Link>
@@ -780,7 +780,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
               )}
               <span className="flex items-center gap-2 sm:gap-3 min-w-0">
                 {previewNote}
-                <Link href={destination} onClick={() => { finishedRun = null; }} className="inline-flex items-center gap-2 px-5 sm:px-8 py-3 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm sm:text-base font-extrabold shadow-sm whitespace-nowrap">
+                <Link href={destination} onClick={() => { finishedRun = null; }} className="inline-flex items-center gap-2 px-5 sm:px-8 py-3 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm sm:text-base font-bold shadow-sm whitespace-nowrap">
                   เริ่ม Chill & Connect Hub
                   <ArrowRight className="w-4 h-4" aria-hidden="true" />
                 </Link>
@@ -818,7 +818,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
                   {GOAL_GROUPS.map((group) => (
                     <div key={group.id} className="mb-6">
                       <h2 className="flex items-baseline gap-2 mb-3">
-                        <span className="text-lg sm:text-xl font-black text-slate-900">{group.word}</span>
+                        <span className="text-lg sm:text-xl font-bold text-slate-900">{group.word}</span>
                         <span className="text-xs sm:text-sm font-semibold text-slate-500">{group.line}</span>
                       </h2>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -841,7 +841,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
                   {/* Hosts choose here too: same screen, clearly optional, can be combined with the above */}
                   <div className="mb-6 p-4 rounded-2xl bg-slate-50 border border-slate-200">
                     <h2 className="flex flex-wrap items-baseline gap-x-2 mb-3">
-                      <span className="text-sm sm:text-base font-extrabold text-slate-900">หรือคุณ อยากเป็นคนชวน</span>
+                      <span className="text-sm sm:text-base font-bold text-slate-900">หรือคุณ อยากเป็นคนชวน</span>
                       <span className="text-xs font-semibold text-slate-500">ไม่ใช่ก็ข้ามได้</span>
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -863,7 +863,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
                               {selected ? <Check className="w-4 h-4 stroke-[3]" aria-hidden="true" /> : <Icon className="w-4 h-4" aria-hidden="true" />}
                             </span>
                             <span className="min-w-0">
-                              <span className="block text-xs sm:text-sm font-extrabold text-slate-900 leading-snug"><PhraseText text={goal.title} /></span>
+                              <span className="block text-xs sm:text-sm font-bold text-slate-900 leading-snug"><PhraseText text={goal.title} /></span>
                               <span className="block text-xs text-slate-500 font-medium mt-0.5"><PhraseText text={goal.desc} /></span>
                             </span>
                           </SelectCard>
@@ -1039,7 +1039,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
                             <Icon className="w-5 h-5" aria-hidden="true" />
                           </span>
                           <span className="min-w-0">
-                            <span className="block text-sm sm:text-base font-extrabold text-slate-900 leading-snug"><PhraseText text={item.title} /></span>
+                            <span className="block text-sm sm:text-base font-bold text-slate-900 leading-snug"><PhraseText text={item.title} /></span>
                             <span className="block text-xs sm:text-sm text-slate-500 font-medium mt-1"><PhraseText text={item.desc} /></span>
                           </span>
                         </li>
@@ -1076,7 +1076,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
                 type="button"
                 onClick={next}
                 disabled={isFinishing || isCompressing}
-                className="inline-flex items-center gap-2 px-5 sm:px-8 py-3 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] disabled:bg-slate-200 disabled:text-slate-400 text-white text-sm sm:text-base font-extrabold shadow-sm cursor-pointer disabled:cursor-not-allowed whitespace-nowrap"
+                className="inline-flex items-center gap-2 px-5 sm:px-8 py-3 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] disabled:bg-slate-200 disabled:text-slate-400 text-white text-sm sm:text-base font-bold shadow-sm cursor-pointer disabled:cursor-not-allowed whitespace-nowrap"
               >
                 {isFinishing && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
                 <span>{step < STEPS.length - 1 ? (step === 2 && !interestCount ? 'ข้ามข้อนี้' : 'ถัดไป') : isFinishing ? 'กำลังบันทึก…' : 'ฉันรับคำมั่นนี้'}</span>

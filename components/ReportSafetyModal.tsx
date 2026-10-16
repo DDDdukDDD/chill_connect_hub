@@ -80,7 +80,7 @@ function ReportDialog({ onClose, targetType, targetId, targetTitle, subject, onR
         </p>
 
         <fieldset>
-          <legend className="block text-sm font-extrabold text-slate-900 mb-2">เกิดอะไรขึ้น</legend>
+          <legend className="block text-sm font-bold text-slate-900 mb-2">เกิดอะไรขึ้น</legend>
           <div className="space-y-2">
             {reasons.map((item) => {
               const selected = reason === item.id;
@@ -88,7 +88,7 @@ function ReportDialog({ onClose, targetType, targetId, targetTitle, subject, onR
                 <label key={item.id} className={`relative flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-[#2563EB]/40 ${selected ? 'border-[#2563EB] ring-1 ring-[#2563EB]' : 'border-slate-300 hover:border-slate-400'}`}>
                   <input type="radio" name={`${uid}-reason`} value={item.id} checked={selected} onChange={() => { setReason(item.id); setError(null); }} className="sr-only" />
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-extrabold text-slate-900">{item.title}</span>
+                    <span className="block text-sm font-bold text-slate-900">{item.title}</span>
                     <span className="block mt-0.5 text-xs font-medium text-slate-500 leading-relaxed">{item.text}</span>
                   </span>
                   {selected && <Check className="w-4 h-4 shrink-0 text-[#2563EB] mt-0.5" aria-hidden="true" />}
@@ -99,7 +99,7 @@ function ReportDialog({ onClose, targetType, targetId, targetTitle, subject, onR
         </fieldset>
 
         <div>
-          <label htmlFor={`${uid}-details`} className="block text-sm font-extrabold text-slate-900 mb-1.5">
+          <label htmlFor={`${uid}-details`} className="block text-sm font-bold text-slate-900 mb-1.5">
             รายละเอียด
             {reason !== 'other' && <span className="ml-1.5 text-xs font-medium text-slate-500">(ไม่บังคับ)</span>}
           </label>

@@ -139,7 +139,7 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
       >
         <header className="shrink-0 flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 border-b border-slate-100">
           <div className="min-w-0">
-            <h3 id="group-chat-title" className="text-base font-extrabold text-slate-900 truncate">{title}</h3>
+            <h3 id="group-chat-title" className="text-base font-bold text-slate-900 truncate">{title}</h3>
             <p className="text-xs font-medium text-slate-500">{info ? `แชตของคนที่เข้าร่วม · ${info.members} คน` : 'แชตของคนที่เข้าร่วม'}</p>
           </div>
           <button type="button" onClick={onClose} className="shrink-0 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer" aria-label="ปิด">

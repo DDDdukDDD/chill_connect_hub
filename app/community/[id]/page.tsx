@@ -428,7 +428,7 @@ export default function CommunityDetailPage() {
           <div className="w-16 h-16 bg-orange-50 text-[#F26430] rounded-2xl flex items-center justify-center mx-auto text-2xl">
             🌿
           </div>
-          <h1 className="text-2xl font-black text-slate-900">ไม่พบข้อมูลกิจกรรมคอมมูนิตี้นี้</h1>
+          <h1 className="text-2xl font-bold text-slate-900">ไม่พบข้อมูลกิจกรรมคอมมูนิตี้นี้</h1>
           <p className="text-sm text-slate-600">กิจกรรมนี้อาจสิ้นสุดลงแล้วหรือถูกยกเลิก</p>
           <Link
             href="/community"
@@ -522,7 +522,7 @@ export default function CommunityDetailPage() {
               {isCopied ? (
                 <>
                   <Check className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="text-emerald-600 font-extrabold">คัดลอกลิงก์แล้ว!</span>
+                  <span className="text-emerald-600 font-bold">คัดลอกลิงก์แล้ว!</span>
                 </>
               ) : (
                 <>
@@ -592,7 +592,7 @@ export default function CommunityDetailPage() {
                   {isLast && (
                     <div className="absolute inset-0 bg-slate-900/60 hover:bg-slate-900/50 backdrop-blur-2xs flex flex-col items-center justify-center text-white transition-all">
                       <Camera className="w-6 h-6 mb-1 text-white" />
-                      <span className="font-extrabold text-xs sm:text-sm">ดูรูปทั้งหมด</span>
+                      <span className="font-bold text-xs sm:text-sm">ดูรูปทั้งหมด</span>
                       <span className="text-[11px] text-slate-200 font-medium">({galleryImages.length} รูป)</span>
                     </div>
                   )}
@@ -607,7 +607,7 @@ export default function CommunityDetailPage() {
                 setActivePhotoIndex(0);
                 setIsLightboxOpen(true);
               }}
-              className="md:hidden absolute bottom-3 right-3 bg-slate-900/85 backdrop-blur-md text-white text-xs font-extrabold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg border border-white/20 active:scale-95"
+              className="md:hidden absolute bottom-3 right-3 bg-slate-900/85 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg border border-white/20 active:scale-95"
             >
               <Camera className="w-3.5 h-3.5" />
               <span>ดูรูปทั้งหมด ({galleryImages.length})</span>
@@ -633,7 +633,7 @@ export default function CommunityDetailPage() {
             {/* 1. Header Title, Badges & Ratings */}
             <div className="space-y-3 pb-4 border-b border-slate-100">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className={`text-xs font-black px-3 py-1 rounded-full border ${catStyle.bg} ${catStyle.text} ${catStyle.border}`}>
+                <span className={`text-xs font-bold px-3 py-1 rounded-full border ${catStyle.bg} ${catStyle.text} ${catStyle.border}`}>
                   {catStyle.label}
                 </span>
 
@@ -642,17 +642,17 @@ export default function CommunityDetailPage() {
                     กิจกรรมสิ้นสุดแล้ว
                   </span>
                 ) : eventData.participantsCount >= eventData.maxParticipants ? (
-                  <span className="text-xs font-black px-3 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1.5">
+                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-rose-500" />
                     <span>ที่นั่งเต็มแล้ว</span>
                   </span>
                 ) : isAlmostFull ? (
-                  <span className="text-xs font-black px-3 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1.5">
+                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
                     <span>ที่นั่งใกล้เต็ม (เหลือ {Math.max(eventData.maxParticipants - eventData.participantsCount, 0)} ที่)</span>
                   </span>
                 ) : (
-                  <span className="text-xs font-black px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5">
+                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                     <span>เปิดรับสมัคร</span>
                   </span>
@@ -681,7 +681,7 @@ export default function CommunityDetailPage() {
                 )}
               </div>
 
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight break-words">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 tracking-tight leading-tight break-words">
                 {cleanText(eventData.title)}
               </h1>
             </div>
@@ -796,7 +796,7 @@ export default function CommunityDetailPage() {
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <h3 className="font-extrabold text-sm text-slate-900 group-hover:text-[#F26430] transition-colors truncate">
+                    <h3 className="font-bold text-sm text-slate-900 group-hover:text-[#F26430] transition-colors truncate">
                       {eventData.hostName}
                     </h3>
                     {(isSample || eventData.hostRating) && (<>
@@ -807,7 +807,7 @@ export default function CommunityDetailPage() {
                       <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
                       <span>{(eventData.hostRating || eventData.rating || 4.9).toFixed(1)}</span>
                     </span>
-                    <span className="text-[10px] font-black text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
                       <ShieldCheck className="w-3 h-3 text-emerald-600" />
                       <span>Verified Host</span>
                     </span>
@@ -843,7 +843,7 @@ export default function CommunityDetailPage() {
 
             {/* 4. About Story */}
             <div className="space-y-3 pt-1">
-              <h2 className="text-lg font-black text-slate-900 tracking-tight">
+              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
                 รายละเอียดกิจกรรม & วัตถุประสงค์
               </h2>
               {renderDescriptionContent(eventData.description)}
@@ -852,7 +852,7 @@ export default function CommunityDetailPage() {
             {/* 6. Highlights */}
             {communityHighlights.length > 0 && (
             <div className="space-y-3.5 pt-5 border-t border-slate-100">
-              <h2 className="text-lg font-black text-slate-900 tracking-tight">
+              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
                 จุดเด่นของกิจกรรมนี้
               </h2>
               <ul className="space-y-3 pt-1">
@@ -873,7 +873,7 @@ export default function CommunityDetailPage() {
             {/* 7. Checklist */}
             {checklist.length > 0 && (
             <div className="space-y-3.5 pt-5 border-t border-slate-100">
-              <h2 className="text-lg font-black text-slate-900 tracking-tight">
+              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
                 {isSample ? 'สิ่งที่ควรเตรียมมา & กฎการอยู่ร่วมกัน' : 'สิ่งที่ควรเตรียมมา'}
               </h2>
 
@@ -894,7 +894,7 @@ export default function CommunityDetailPage() {
             {/* 8. Transit & Map OR Virtual Gathering Info */}
             <div className="space-y-4 pt-5 border-t border-slate-100">
               <div className="flex items-center justify-between gap-2">
-                <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
+                <h2 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
                   {eventData.locationType === 'online' || eventData.province === 'ออนไลน์' ? (
                     <>
                       <Globe className="w-4 h-4 text-sky-600" />
@@ -921,7 +921,7 @@ export default function CommunityDetailPage() {
               {eventData.locationType === 'online' || eventData.province === 'ออนไลน์' ? (
                 <div className="p-5 rounded-2xl bg-sky-50/60 border border-sky-200/80 space-y-3">
                   <div className="flex items-center gap-2 text-sm font-bold text-sky-950">
-                    <span className="px-2.5 py-1 rounded-full bg-sky-100 text-sky-800 text-xs font-black uppercase tracking-wider">
+                    <span className="px-2.5 py-1 rounded-full bg-sky-100 text-sky-800 text-xs font-bold uppercase tracking-wider">
                       {eventData.onlinePlatform ? eventData.onlinePlatform.toUpperCase() : 'VIRTUAL'}
                     </span>
                     <span>รวมตัวผ่านแพลตฟอร์มออนไลน์</span>
@@ -1024,7 +1024,7 @@ export default function CommunityDetailPage() {
               {/* Header Price */}
               <div className="hidden lg:flex items-center justify-between pb-3 border-b border-slate-100 gap-2">
                 <span className="text-xs font-bold text-slate-500 shrink-0">ค่าลงทะเบียน</span>
-                <span className="text-base sm:text-lg font-black text-slate-900 text-right">
+                <span className="text-base sm:text-lg font-bold text-slate-900 text-right">
                   {parsedPrice.displayPrice}
                 </span>
               </div>
@@ -1058,7 +1058,7 @@ export default function CommunityDetailPage() {
                     <Users className="w-3.5 h-3.5 text-[#F26430]" />
                     <span>ผู้ลงทะเบียน</span>
                   </span>
-                  <span className="text-slate-900 font-extrabold">
+                  <span className="text-slate-900 font-bold">
                     {eventData.participantsCount} / {eventData.maxParticipants} คน
                   </span>
                 </div>
@@ -1276,7 +1276,7 @@ export default function CommunityDetailPage() {
           <section className="pt-10 border-t border-slate-100 space-y-5">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
                   กิจกรรมคอมมูนิตี้ที่คุณอาจสนใจ
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-600">
@@ -1482,7 +1482,7 @@ export default function CommunityDetailPage() {
 
             {/* Headline */}
             <div className="space-y-1">
-              <h3 className="text-2xl sm:text-[26px] font-black text-slate-900 tracking-tight leading-tight">
+              <h3 className="text-2xl sm:text-[26px] font-bold text-slate-900 tracking-tight leading-tight">
                 ยืนยันการลงทะเบียน
               </h3>
               <p className="text-xs sm:text-sm text-slate-500 font-medium">
@@ -1494,10 +1494,10 @@ export default function CommunityDetailPage() {
             <div className="bg-slate-50 rounded-2xl p-5 sm:p-6 border border-slate-200 space-y-4 shadow-2xs relative">
               {/* Event Title & Price Pill */}
               <div className="flex items-start justify-between gap-3">
-                <h4 className="text-base sm:text-lg font-black text-slate-900 leading-snug">
+                <h4 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
                   {cleanText(eventData.title)}
                 </h4>
-                <span className={`px-3 py-1 rounded-full text-xs font-black shrink-0 ${
+                <span className={`px-3 py-1 rounded-full text-xs font-bold shrink-0 ${
                   parsedPrice.isFree ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-800 border border-slate-200'
                 }`}>
                   {parsedPrice.displayPrice}

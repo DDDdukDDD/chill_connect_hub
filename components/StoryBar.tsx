@@ -19,7 +19,7 @@ export const StoryBar: React.FC<StoryBarProps> = ({ onSelectEventId }) => {
         
         {/* Section Header */}
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-1.5 text-xs font-extrabold text-[#1E293B]">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-[#1E293B]">
             <Camera className="w-4 h-4 text-[#F26430]" />
             <span>โมเมนต์บรรยากาศสดจากเพื่อนๆ</span>
             <span className="text-[10px] font-semibold text-[#4A7C59] bg-[#EBF3ED] px-2 py-0.5 rounded-full border border-[#4A7C59]/20">

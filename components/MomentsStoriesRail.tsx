@@ -467,7 +467,7 @@ export const MomentsStoriesRail: React.FC<MomentsStoriesRailProps> = ({
                     className="w-9 h-9 rounded-full object-cover border-2 border-white/80 shrink-0 shadow-sm"
                   />
                   <div className="min-w-0">
-                    <p className="text-xs font-black truncate flex items-center gap-1.5">
+                    <p className="text-xs font-bold truncate flex items-center gap-1.5">
                       <span>{activeStory.author}</span>
                       <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-white/90">
                         {activeStory.badge || 'Hub'}

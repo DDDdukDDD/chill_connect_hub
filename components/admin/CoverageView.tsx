@@ -130,7 +130,7 @@ export function CoverageView({ onOpenSpots, onScanProvince }: CoverageViewProps)
               ].map((stat) => (
                 <div key={stat.label} className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
                   <p className="text-[11px] sm:text-xs font-semibold text-slate-500">{stat.label}</p>
-                  <p className="mt-1 text-sm sm:text-base font-extrabold text-slate-900 truncate">{stat.value}</p>
+                  <p className="mt-1 text-sm sm:text-base font-bold text-slate-900 truncate">{stat.value}</p>
                 </div>
               ))}
             </div>
@@ -216,7 +216,7 @@ export function CoverageView({ onOpenSpots, onScanProvince }: CoverageViewProps)
                           </td>
                         );
                       })}
-                      <td className="px-2 text-right text-xs font-extrabold tabular-nums text-slate-900">{row.total}</td>
+                      <td className="px-2 text-right text-xs font-bold tabular-nums text-slate-900">{row.total}</td>
                       <td className="px-2 text-right text-xs tabular-nums text-slate-500">{row.drafts || '–'}</td>
                       <td className="px-2 text-right">
                         <button type="button" onClick={() => onScanProvince(row.province)} className={`${adminButton.secondarySm} whitespace-nowrap`}>

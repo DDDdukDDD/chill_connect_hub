@@ -99,7 +99,7 @@ export const JourneyMomentCard: React.FC<JourneyMomentCardProps> = ({
       <div className="absolute inset-x-0 bottom-0 p-3 sm:p-3.5 flex flex-col justify-end space-y-1.5 z-10">
         {/* Optional Category / Date Tag */}
         {categoryLabel && (
-          <div className="text-[11px] font-extrabold uppercase tracking-wider text-amber-300 drop-shadow-sm truncate">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-amber-300 drop-shadow-sm truncate">
             {categoryLabel}
           </div>
         )}

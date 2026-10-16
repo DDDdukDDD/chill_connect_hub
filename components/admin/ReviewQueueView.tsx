@@ -325,7 +325,7 @@ export function ReviewQueueView({ onNavigate }: { onNavigate: (module: AdminModu
                         className="h-4 w-4 accent-slate-900 shrink-0"
                       />
                       <button type="button" onClick={() => setActiveId(item.id)} className="flex-1 min-w-0 text-left">
-                        <p className={`text-sm truncate ${isActive ? 'font-extrabold text-slate-900' : 'font-bold text-slate-800'}`}>{item.title}</p>
+                        <p className={`text-sm truncate ${isActive ? 'font-bold text-slate-900' : 'font-bold text-slate-800'}`}>{item.title}</p>
                         <div className="mt-1 flex items-center gap-2 flex-wrap text-[11px] text-slate-500">
                           <PillarBadge pillar={item.pillar} />
                           {item.province && <span>{item.province}</span>}
@@ -334,7 +334,7 @@ export function ReviewQueueView({ onNavigate }: { onNavigate: (module: AdminModu
                       </button>
                       <span
                         title={item.quality.requiredFailures ? `ขาดข้อบังคับ ${item.quality.requiredFailures} ข้อ` : 'ผ่านข้อบังคับครบ'}
-                        className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] sm:text-xs font-extrabold tabular-nums ${scoreTone(item.quality)}`}
+                        className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] sm:text-xs font-bold tabular-nums ${scoreTone(item.quality)}`}
                       >
                         {item.quality.score}%
                       </span>
@@ -356,7 +356,7 @@ export function ReviewQueueView({ onNavigate }: { onNavigate: (module: AdminModu
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-1"><PillarBadge pillar={active.pillar} /></div>
-                  <h2 className="text-sm sm:text-base font-extrabold text-slate-900 line-clamp-2">{active.title}</h2>
+                  <h2 className="text-sm sm:text-base font-bold text-slate-900 line-clamp-2">{active.title}</h2>
                   <p className="text-[11px] text-slate-500 mt-0.5">แหล่งที่มา: {active.source}</p>
                 </div>
                 <div className="inline-flex rounded-xl bg-slate-100 p-0.5 shrink-0">

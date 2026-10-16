@@ -114,7 +114,7 @@ function sampleProfile(id: string): PublicProfile | null {
 
 function Avatar({ name, url, size }: { name: string; url?: string; size: string }) {
   return (
-    <span className={`${size} rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-[#2563EB] text-white font-black ring-4 ring-white shadow-sm`}>
+    <span className={`${size} rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-[#2563EB] text-white font-bold ring-4 ring-white shadow-sm`}>
       {url ? (
         // eslint-disable-next-line @next/next/no-img-element -- member photo from uploads or a provider
         <img src={url} alt="" className="w-full h-full object-cover" />
@@ -127,7 +127,7 @@ function Avatar({ name, url, size }: { name: string; url?: string; size: string 
 
 function Badge({ icon: Icon, children }: { icon: LucideIcon; children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] sm:text-xs font-extrabold whitespace-nowrap">
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] sm:text-xs font-bold whitespace-nowrap">
       <Icon className="w-3.5 h-3.5" aria-hidden="true" />
       {children}
     </span>
@@ -137,7 +137,7 @@ function Badge({ icon: Icon, children }: { icon: LucideIcon; children: React.Rea
 function SectionTitle({ children, action }: { children: string; action?: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3 mb-4">
-      <h2 className="text-base sm:text-lg font-extrabold text-slate-900">{children}</h2>
+      <h2 className="text-base sm:text-lg font-bold text-slate-900">{children}</h2>
       {action}
     </div>
   );
@@ -189,7 +189,7 @@ function TrustCard({ member, onChanged }: { member: PublicMember; onChanged: () 
       title: 'ยืนยันอีเมล',
       desc: t.emailVerified ? 'ยืนยันแล้ว' : t.hasEmail ? 'กดลิงก์ในอีเมลที่เราส่งให้ จึงจะโพสต์และคอมเมนต์ได้' : 'บัญชีนี้ยังไม่มีอีเมล',
       action: !t.emailVerified && t.hasEmail && (
-        <button type="button" onClick={send} disabled={busy} className="inline-flex items-center gap-1.5 text-sm font-extrabold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap disabled:opacity-60">
+        <button type="button" onClick={send} disabled={busy} className="inline-flex items-center gap-1.5 text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap disabled:opacity-60">
           {busy && <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />}
           ส่งลิงก์
         </button>
@@ -199,7 +199,7 @@ function TrustCard({ member, onChanged }: { member: PublicMember; onChanged: () 
       done: t.pledged,
       title: 'รับคำมั่นของคอมมูนิตี้',
       desc: t.pledged ? 'รับแล้ว' : 'คำมั่น 4 ข้อที่สมาชิกทุกคนรับร่วมกัน',
-      action: !t.pledged && <Link href="/onboarding?step=pledge&returnTo=%2Fprofile" className="text-sm font-extrabold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">อ่านและรับ</Link>,
+      action: !t.pledged && <Link href="/onboarding?step=pledge&returnTo=%2Fprofile" className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">อ่านและรับ</Link>,
     },
     {
       done: t.level === 'trusted',
@@ -210,7 +210,7 @@ function TrustCard({ member, onChanged }: { member: PublicMember; onChanged: () 
 
   return (
     <section id="trust" className={`${card} scroll-mt-24`}>
-      <SectionTitle action={<span className="text-xs font-extrabold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full whitespace-nowrap">{levelText}</span>}>ความน่าเชื่อถือของบัญชี</SectionTitle>
+      <SectionTitle action={<span className="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full whitespace-nowrap">{levelText}</span>}>ความน่าเชื่อถือของบัญชี</SectionTitle>
       <ul className="space-y-3">
         {rows.map((row) => (
           <li key={row.title} className="flex items-start gap-3">
@@ -218,7 +218,7 @@ function TrustCard({ member, onChanged }: { member: PublicMember; onChanged: () 
               {row.done ? <Check className="w-3.5 h-3.5 stroke-[3]" aria-hidden="true" /> : <Clock className="w-3.5 h-3.5" aria-hidden="true" />}
             </span>
             <span className="flex-1 min-w-0">
-              <span className="block text-sm font-extrabold text-slate-900">{row.title}</span>
+              <span className="block text-sm font-bold text-slate-900">{row.title}</span>
               <span className="block text-xs sm:text-sm font-medium text-slate-500 mt-0.5"><PhraseText text={row.desc} /></span>
             </span>
             {row.action}
@@ -585,7 +585,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
             <span className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center mx-auto mb-4">
               <UserRound className="w-7 h-7" aria-hidden="true" />
             </span>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">โปรไฟล์ของคุณ</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">โปรไฟล์ของคุณ</h1>
             <p className="text-sm text-slate-500 font-medium mt-2 mb-6"><PhraseText text="เข้าสู่ระบบก่อน เพื่อดูและแก้ไขโปรไฟล์ของคุณ" /></p>
             <button type="button" onClick={() => setIsAuthOpen(true)} className={dialogButton.primary}>เข้าสู่ระบบ</button>
           </div>
@@ -593,7 +593,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
 
         {state.status === 'missing' && (
           <div className={`${card} text-center`}>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">ไม่พบโปรไฟล์นี้</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">ไม่พบโปรไฟล์นี้</h1>
             <p className="text-sm text-slate-500 font-medium mt-2 mb-6"><PhraseText text="สมาชิกคนนี้อาจลบบัญชี หรือถูกระงับการใช้งาน" /></p>
             <Link href="/" className={dialogButton.quiet}>กลับหน้าแรก</Link>
           </div>
@@ -609,14 +609,14 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                 <Avatar name={profile.displayName} url={profile.avatarUrl} size="w-24 h-24 sm:w-28 sm:h-28 text-4xl" />
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-start justify-between gap-3">
-                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight break-words min-w-0">{profile.displayName}</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight break-words min-w-0">{profile.displayName}</h1>
                     {profile.isMe ? (
                       <button type="button" onClick={() => setIsEditing(true)} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold cursor-pointer whitespace-nowrap">
                         <Pencil className="w-4 h-4" aria-hidden="true" />
                         แก้ไขโปรไฟล์
                       </button>
                     ) : (
-                      (profile.isSample || profile.isSampleAccount) && <span className="text-[11px] sm:text-xs font-extrabold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full whitespace-nowrap">โปรไฟล์ตัวอย่าง</span>
+                      (profile.isSample || profile.isSampleAccount) && <span className="text-[11px] sm:text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full whitespace-nowrap">โปรไฟล์ตัวอย่าง</span>
                     )}
                   </div>
 
@@ -660,7 +660,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                       type="button"
                       onClick={toggleFollow}
                       aria-pressed={Boolean(profile.viewer?.isFollowing)}
-                      className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-extrabold cursor-pointer whitespace-nowrap ${profile.viewer?.isFollowing ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm'}`}
+                      className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold cursor-pointer whitespace-nowrap ${profile.viewer?.isFollowing ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm'}`}
                     >
                       {profile.viewer?.isFollowing ? 'กำลังติดตาม' : 'ติดตาม'}
                     </button>
@@ -729,7 +729,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                           {ev.image && <img src={ev.image} alt="" loading="lazy" className="w-full h-full object-cover" />}
                         </span>
                         <span className="min-w-0 flex-1">
-                          <span className="block text-sm font-extrabold text-slate-900 leading-snug line-clamp-2">{ev.title}</span>
+                          <span className="block text-sm font-bold text-slate-900 leading-snug line-clamp-2">{ev.title}</span>
                           <span className="block text-xs font-medium text-slate-500 mt-1 truncate">{[ev.date, ev.location].filter(Boolean).join(' · ')}</span>
                           {!isLive && (
                             <span className="inline-block mt-1.5 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-900 text-[11px] font-bold whitespace-nowrap">
@@ -758,13 +758,13 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
             {/* Badges of the challenges this member finished: proof of going out and doing */}
             {profile.challengeBadges && profile.challengeBadges.length > 0 && (
               <section className={card}>
-                <h2 className="text-sm sm:text-base font-extrabold text-slate-900">
+                <h2 className="text-sm sm:text-base font-bold text-slate-900">
                   เหรียญจากชาเลนจ์ <span className="tabular-nums">({profile.challengeBadges.length})</span>
                 </h2>
                 <ul className="mt-3 flex flex-wrap gap-2">
                   {profile.challengeBadges.map((badge) => (
                     <li key={badge.questId}>
-                      <Link href={`/challenges/${encodeURIComponent(badge.questId)}`} title={badge.title} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F5F3FF] border border-slate-200 text-xs sm:text-sm font-extrabold text-[#5B21B6] hover:border-[#7C3AED] transition-colors cursor-pointer">
+                      <Link href={`/challenges/${encodeURIComponent(badge.questId)}`} title={badge.title} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F5F3FF] border border-slate-200 text-xs sm:text-sm font-bold text-[#5B21B6] hover:border-[#7C3AED] transition-colors cursor-pointer">
                         <Award className="w-4 h-4" aria-hidden="true" />
                         {badge.badgeLabel}
                       </Link>
@@ -779,13 +779,13 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
               <section className={card}>
                 <SectionTitle>รีวิวจากผู้เข้าร่วม</SectionTitle>
                 <p className="-mt-2 mb-4 text-sm font-semibold text-slate-600">
-                  <span className="text-lg font-extrabold text-slate-900">{profile.hostReviews.average.toFixed(1)}</span> จาก 5 · {profile.hostReviews.count} รีวิว
+                  <span className="text-lg font-bold text-slate-900">{profile.hostReviews.average.toFixed(1)}</span> จาก 5 · {profile.hostReviews.count} รีวิว
                 </p>
                 <ul className="space-y-3">
                   {profile.hostReviews.latest.map((r) => (
                     <li key={r.id} className="p-4 rounded-2xl border border-slate-200">
                       <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-slate-500">
-                        <span className="text-amber-600 font-extrabold whitespace-nowrap" aria-label={`${r.rating} จาก 5 ดาว`}>{'★'.repeat(r.rating)}<span className="text-slate-300">{'★'.repeat(5 - r.rating)}</span></span>
+                        <span className="text-amber-600 font-bold whitespace-nowrap" aria-label={`${r.rating} จาก 5 ดาว`}>{'★'.repeat(r.rating)}<span className="text-slate-300">{'★'.repeat(5 - r.rating)}</span></span>
                         <span className="text-slate-800 font-bold">{r.authorName}</span>
                         <span>{r.timeAgo}</span>
                         {isLoggedIn && r.authorId !== member?.id && (
@@ -817,7 +817,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
               ) : (
                 <div className="bg-slate-50/80 rounded-2xl p-4 border border-dashed border-slate-200 flex flex-wrap items-center justify-between gap-3">
                   <p className="text-sm font-semibold text-slate-600"><PhraseText text={profile.isMe ? 'ยังไม่มีโมเมนต์ ไปกิจกรรมแล้ว กลับมาแชร์ภาพกันนะ' : 'ยังไม่มีโมเมนต์'} /></p>
-                  {profile.isMe && <Link href="/moments" className="text-sm font-extrabold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">ไปหน้าโมเมนต์</Link>}
+                  {profile.isMe && <Link href="/moments" className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">ไปหน้าโมเมนต์</Link>}
                 </div>
               )}
             </section>
