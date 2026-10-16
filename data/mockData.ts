@@ -5324,7 +5324,7 @@ export const MOCK_POSTS: CommunityPost[] = [
     targetTitle: 'สวนป่าเบญจกิติ',
     category: 'heal',
     images: [
-      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=800&q=80',
+      '/hero-bkk-park-sunny.jpg',
       'https://images.unsplash.com/photo-1519331379826-f10be5486c6f?auto=format&fit=crop&w=800&q=80',
       'https://images.unsplash.com/photo-1473448912268-2022ce9509d8?auto=format&fit=crop&w=800&q=80',
     ],

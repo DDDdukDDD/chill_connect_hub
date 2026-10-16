@@ -200,6 +200,24 @@ function withSampleCounts<T extends typeof SAMPLE_COUNTS>(counts: T): T {
   };
 }
 
+/** Visitor hero: one line, how many times people joined a meetup last week. `faces` sits before the words. */
+export function LiveJoinsLine({ faces }: { faces?: React.ReactNode }) {
+  const live = useLiveActivity();
+  if (!live.counts) return null;
+  const joins = withSampleCounts(live.counts).meetupJoins;
+  if (joins <= 0) return null;
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span className="relative flex w-2 h-2 shrink-0" aria-hidden="true">
+        <span className="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75 motion-safe:animate-ping" />
+        <span className="relative inline-flex w-2 h-2 rounded-full bg-red-500" />
+      </span>
+      {faces}
+      สัปดาห์นี้ไปตี้กันแล้ว <strong className="font-semibold text-slate-900">{joins.toLocaleString()} ครั้ง</strong>
+    </span>
+  );
+}
+
 export function LiveCountsRow({ className = '' }: { className?: string }) {
   const live = useLiveActivity();
   if (!live.counts) return null;
