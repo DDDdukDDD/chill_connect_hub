@@ -11,7 +11,9 @@ import { SpotCard, SpotCardSkeleton } from '@/components/SpotCard';
 import { ChallengePicks } from '@/components/ChallengePicks';
 import { FriendsMomentsWall } from '@/components/FriendsMomentsWall';
 import { OpenMeetupTiles } from '@/components/OpenMeetupTiles';
-import { MemberHomeTop } from '@/components/MemberHomeTop';
+import { MemberLiveHome } from '@/components/home/MemberLiveHome';
+import { LiveCountsRow } from '@/components/home/LiveActivity';
+import { MomentSearchRow } from '@/components/home/MomentSearchRow';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
@@ -67,7 +69,7 @@ const JOIN_PERKS = [
 
 // Quick searches under the hero search box
 // White label pinned to a hero collage photo
-const HERO_LABEL = 'absolute z-10 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-3 py-1.5 text-xs lg:text-sm font-extrabold text-slate-900 shadow-md';
+const HERO_LABEL = 'absolute z-10 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-3 py-1.5 text-xs lg:text-sm font-bold text-slate-900 shadow-md';
 
 const QUICK_SEARCHES = ['คาเฟ่', 'วิ่ง', 'บอร์ดเกม', 'เชียงใหม่'];
 
@@ -319,6 +321,15 @@ function JourneyContent() {
     return { row, reasons };
   }, [communityEvents, activity.joinedIds, activity.hosted, likedCategories]);
 
+  // Member home: running challenges the member has not joined, the ones most people are doing first
+  const othersQuests = useMemo(
+    () =>
+      questList
+        .filter((q) => q.status !== 'ended' && (q.daysRemaining === undefined || q.daysRemaining > 0) && !myRewards.joinedQuestIds.includes(q.id))
+        .sort((a, b) => (b.participantsCount ?? 0) - (a.participantsCount ?? 0)),
+    [questList, myRewards.joinedQuestIds]
+  );
+
   // Open meetups (seats left) per category, shown on each box
   const categoryBoxes = useMemo(() => {
     const open = communityEvents.filter((e) => e.participantsCount < e.maxParticipants);
@@ -332,7 +343,7 @@ function JourneyContent() {
   // Every section opens the same way: a heading, one friendly line, and "ดูทั้งหมด"
   const sectionHead = (title: string, href: string, extra?: React.ReactNode) => (
     <div className="flex items-end justify-between gap-3">
-      <h2 className="min-w-0 text-xl sm:text-2xl font-black text-slate-900 tracking-tight">{title}</h2>
+      <h2 className="min-w-0 text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">{title}</h2>
       <div className="flex items-center gap-3 shrink-0">
         {extra}
         <Link href={href} className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">
@@ -393,7 +404,7 @@ function JourneyContent() {
     <div className="space-y-10 sm:space-y-14">
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-medium text-slate-600 min-w-0 truncate">
-          ผลการค้นหา <strong className="font-extrabold text-slate-900">{query}</strong>
+          ผลการค้นหา <strong className="font-bold text-slate-900">{query}</strong>
         </p>
         <button
           type="button"
@@ -414,6 +425,10 @@ function JourneyContent() {
       <section className="space-y-4">
         {sectionHead('งานแฟร์ & นิทรรศการ', withQuery('/fairs'))}
         {eventRow(fairRow)}
+      </section>
+      <section className="space-y-4">
+        {sectionHead('โมเมนต์', '/moments')}
+        <MomentSearchRow query={query} />
       </section>
     </div>
   );
@@ -440,18 +455,30 @@ function JourneyContent() {
 
       <main className="flex-1 pb-28 sm:pb-16">
         {isMember ? (
-          <MemberHomeTop
+          <MemberLiveHome
             name={sessionMember?.displayName ?? 'เพื่อน'}
+            avatar={sessionMember?.avatarUrl}
             now={now}
             xp={myRewards.balance}
             badges={myRewards.finished.length}
             redeemable={redeemable}
             nextEvent={nextEvent}
             challenge={challengeNow}
+            challengesDoing={myRewards.quests.filter((p) => p.joined && !p.completed).length}
+            savedCount={favorites.length + favoriteSpots.length}
             likedCategories={likedCategories}
             isLoaded={activity.isLoaded && myRewards.isLoaded && isQuestsLoaded}
+            meetups={memberMeetups.row}
+            reasons={memberMeetups.reasons}
+            isEventsLoaded={isEventsLoaded}
+            quests={othersQuests}
+            fairs={fairRow}
+            fairWhen={fairDates}
+            spots={featuredSpots}
+            isSpotsLoaded={isSpotsLoaded}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
+            searchResults={query ? searchResults : null}
           />
         ) : (
           <>
@@ -483,7 +510,7 @@ function JourneyContent() {
               </div>
 
               <div className="text-center md:text-left">
-                <h1 className="text-[26px] leading-snug sm:text-4xl md:text-[32px] lg:text-[38px] lg:leading-[1.12] font-black text-slate-900 tracking-tight">
+                <h1 className="text-[26px] leading-snug sm:text-4xl md:text-[32px] lg:text-[38px] lg:leading-[1.12] font-bold text-slate-900 tracking-tight">
                   ออกไปใช้ชีวิต{' '}
                   <img src={HERO_PHOTOS[0]} alt="" className="md:hidden inline-block align-middle w-9 h-9 sm:w-11 sm:h-11 rounded-full object-cover border-2 border-white shadow-md -rotate-6" aria-hidden="true" />
                   <span className="hidden md:inline-flex align-middle w-7 h-7 sm:w-10 sm:h-10 rounded-full bg-[#F26430] text-white items-center justify-center -rotate-6" aria-hidden="true">
@@ -553,6 +580,12 @@ function JourneyContent() {
                     </button>
                   ))}
                 </div>
+                {/* The safety promise next to where a visitor decides to start */}
+                <p className="mt-3 flex items-center sm:justify-center md:justify-start gap-1.5 text-xs sm:text-[13px] font-medium text-slate-600">
+                  <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-600" aria-hidden="true" />
+                  <span>เจอกันที่สถานที่จริง · <span className="whitespace-nowrap">รายงานหรือบล็อกได้ทุกเมื่อ</span></span>
+                  <Link href="/safety" className="font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">กติกา</Link>
+                </p>
               </div>
             </div>
           </section>
@@ -560,22 +593,23 @@ function JourneyContent() {
         )}
 
         <div id="journey-top" className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-6 space-y-12 sm:space-y-16 scroll-mt-20">
-          {query ? (
+          {/* Members get their own home above (MemberLiveHome); this part is the landing page for visitors */}
+          {isMember ? null : query ? (
             searchResults
           ) : (
             <>
               {/* How it works in three steps, plus the safety promise, for visitors who are not signed in */}
               {isAuthReady && !isLoggedIn && (
-                <section aria-label="ใช้งานยังไง" className="-mt-2 sm:-mt-6 xl:flex xl:items-center xl:justify-between xl:gap-6 xl:pb-6 xl:border-b xl:border-slate-200">
+                <section aria-label="ใช้งานยังไง" className="-mt-2 sm:-mt-6 mb-8! sm:mb-10! xl:flex xl:items-center xl:justify-between xl:gap-6">
                   <ol className="grid grid-cols-3 gap-2 xl:flex xl:gap-9">
                     {HOW_STEPS.map(({ Icon, bg, fg, title, line }, i) => (
                       <li key={title} className="flex flex-col items-center text-center gap-1.5 xl:flex-row xl:text-left xl:gap-3">
                         <span className={`relative w-11 h-11 shrink-0 rounded-2xl ${bg} ${fg} flex items-center justify-center`} aria-hidden="true">
                           <Icon className="w-5 h-5" />
-                          <span className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-slate-900 text-white text-[11px] font-black flex items-center justify-center">{i + 1}</span>
+                          <span className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-slate-900 text-white text-[11px] font-bold flex items-center justify-center">{i + 1}</span>
                         </span>
                         <span>
-                          <span className="block text-[13px] sm:text-sm xl:text-[15px] font-extrabold text-slate-900 leading-snug">
+                          <span className="block text-[13px] sm:text-sm xl:text-[15px] font-bold text-slate-900 leading-snug">
                             {/* Break only between words, never inside a Thai word */}
                             {title.split(' ').map((word) => <span key={word} className="inline-block whitespace-nowrap mx-0.5 xl:mx-0 xl:mr-1">{word}</span>)}
                           </span>
@@ -584,18 +618,15 @@ function JourneyContent() {
                       </li>
                     ))}
                   </ol>
-                  <p className="mt-4 xl:mt-0 flex items-center justify-center gap-1.5 text-xs sm:text-[13px] font-medium text-slate-600">
-                    <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-600" aria-hidden="true" />
-                    <span>เจอกันที่สถานที่จริง · <span className="whitespace-nowrap">รายงานหรือบล็อกได้ทุกเมื่อ</span></span>
-                    <Link href="/safety" className="font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">กติกา</Link>
-                  </p>
+                  {/* Signs of life without names: last week's joins, challenges and moments */}
+                  <LiveCountsRow className="mt-4 xl:mt-0 xl:justify-end" />
                 </section>
               )}
 
               {/* 2. What do you feel like doing: the eight community categories, each opening its meetups (landing page only) */}
-              {!isMember && (
+              {(
               <section className="space-y-4">
-                <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">เป็นสายไหน?</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">เป็นสายไหน?</h2>
                 <div className="grid grid-cols-4 lg:grid-cols-8 gap-2 sm:gap-3">
                   {categoryBoxes.map(({ cat, count }, i) => {
                     const Icon = cat.icon;
@@ -608,7 +639,7 @@ function JourneyContent() {
                       >
                         {/* The count sits on the corner like a sticker, so the box keeps its size */}
                         {count > 0 && (
-                          <span className={`absolute -top-2 -right-1.5 min-w-6 h-6 px-1.5 rounded-full border-2 border-white text-[11px] font-black flex items-center justify-center shadow-sm rotate-12 group-hover:rotate-0 transition-transform ${cat.colorScheme.activeBg}`} aria-hidden="true">
+                          <span className={`absolute -top-2 -right-1.5 min-w-6 h-6 px-1.5 rounded-full border-2 border-white text-[11px] font-bold flex items-center justify-center shadow-sm rotate-12 group-hover:rotate-0 transition-transform ${cat.colorScheme.activeBg}`} aria-hidden="true">
                             {count}
                           </span>
                         )}
@@ -616,7 +647,7 @@ function JourneyContent() {
                           <Icon className="w-5 h-5 sm:w-7 sm:h-7" aria-hidden="true" />
                         </span>
                         {/* Break only at the ampersand, never inside a Thai word */}
-                        <span className="text-[11px] sm:text-xs font-extrabold text-slate-800 text-center leading-tight" aria-hidden="true">
+                        <span className="text-[11px] sm:text-xs font-bold text-slate-800 text-center leading-tight" aria-hidden="true">
                           {cat.name.split(' & ').map((part, j, all) => (
                             <span key={part} className="block whitespace-nowrap">
                               {part}
@@ -633,10 +664,9 @@ function JourneyContent() {
 
               {/* 3. Who to go with; company is offered, never required */}
               <section id="journey-meetups" className="space-y-4 scroll-mt-24">
-                {sectionHead(isMember ? 'ตี้แนะนำสำหรับคุณ' : 'ตี้แนะนำ เปิดรับอยู่', '/community')}
+                {sectionHead('ตี้แนะนำ เปิดรับอยู่', '/community')}
                 <OpenMeetupTiles
-                  events={isMember ? memberMeetups.row : communityRow}
-                  reasons={isMember ? memberMeetups.reasons : undefined}
+                  events={communityRow}
                   isLoaded={isEventsLoaded}
                   onCreate={openCreateMeetup}
                 />
@@ -644,11 +674,10 @@ function JourneyContent() {
 
               {/* 4. A reason to go */}
               <section id="journey-challenges" className="space-y-4 scroll-mt-24">
-                {sectionHead(isMember && challengeNow ? 'ชาเลนจ์ของคุณ' : 'ชาเลนจ์สนุก แนะนำสำหรับคุณ', '/challenges')}
+                {sectionHead('ชาเลนจ์สนุก แนะนำสำหรับคุณ', '/challenges')}
                 <ChallengePicks
                   quests={questList}
                   joinedIds={isLoggedIn ? myRewards.joinedQuestIds : []}
-                  progress={isMember ? myRewards.quests : undefined}
                   isLoaded={isQuestsLoaded}
                 />
               </section>
@@ -662,7 +691,7 @@ function JourneyContent() {
                     ))}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight">มาเป็นส่วนหนึ่งของ <span className="whitespace-nowrap">Chill &amp; Connect กัน</span></p>
+                    <p className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight">มาเป็นส่วนหนึ่งของ <span className="whitespace-nowrap">Chill &amp; Connect กัน</span></p>
                     {/* What a member gets, kept general while the reward shop holds sample partners */}
                     <ul className="mt-3 flex flex-col sm:flex-row sm:flex-wrap gap-2.5 sm:gap-x-6 text-left">
                       {JOIN_PERKS.map(({ Icon, bg, fg, text }) => (
@@ -678,7 +707,7 @@ function JourneyContent() {
                   <button
                     type="button"
                     onClick={() => setIsAuthModalOpen(true)}
-                    className="shrink-0 w-full sm:w-auto h-12 px-8 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-base font-extrabold shadow-sm whitespace-nowrap cursor-pointer transition-colors"
+                    className="shrink-0 w-full sm:w-auto h-12 px-8 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-base font-bold shadow-sm whitespace-nowrap cursor-pointer transition-colors"
                   >
                     สมัครสมาชิกฟรี
                   </button>
@@ -705,7 +734,7 @@ function JourneyContent() {
                       <img src={d.imageUrl} alt={d.nameTh} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                       <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/75 to-transparent" aria-hidden="true" />
                       <div className="absolute inset-x-0 bottom-0 p-3">
-                        <p className="text-white text-sm sm:text-base font-black leading-tight">{d.nameTh}</p>
+                        <p className="text-white text-sm sm:text-base font-bold leading-tight">{d.nameTh}</p>
                         <p className="text-white/80 text-[11px] sm:text-xs font-medium line-clamp-2 mt-0.5">{d.tagline}</p>
                       </div>
                     </Link>
@@ -722,7 +751,7 @@ function JourneyContent() {
                 {isEventsLoaded && fairRow.length > 0 && (
                   <div className="pt-4 sm:pt-6 space-y-3">
                     <div className="flex items-end justify-between gap-3">
-                      <h3 className="text-base sm:text-lg font-black text-slate-900">งานแฟร์ งานวิ่ง งานคอน ช่วงนี้</h3>
+                      <h3 className="text-base sm:text-lg font-bold text-slate-900">งานแฟร์ งานวิ่ง งานคอน ช่วงนี้</h3>
                       <Link href="/fairs" className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">
                         ดูทั้งหมด {fairEvents.length.toLocaleString()} งาน
                       </Link>
@@ -734,11 +763,11 @@ function JourneyContent() {
                           <Link key={fair.id} href={`/fairs/${encodeURIComponent(fair.id)}`} className="group w-[72%] shrink-0 snap-start sm:w-auto">
                             <span className="relative block aspect-[16/10] rounded-2xl overflow-hidden bg-slate-200">
                               <img src={fair.image} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                              <span className={`absolute left-2.5 top-2.5 rounded-full px-2.5 py-1 text-[11px] font-extrabold shadow-sm ${isOn ? 'bg-[#F26430] text-white' : 'bg-white text-slate-900'}`}>
+                              <span className={`absolute left-2.5 top-2.5 rounded-full px-2.5 py-1 text-[11px] font-bold shadow-sm ${isOn ? 'bg-[#F26430] text-white' : 'bg-white text-slate-900'}`}>
                                 {isOn ? 'กำลังจัดอยู่' : 'เร็วๆ นี้'}
                               </span>
                             </span>
-                            <span className="block mt-2 text-sm sm:text-[15px] font-extrabold text-slate-900 leading-snug line-clamp-2 group-hover:underline">{fair.title}</span>
+                            <span className="block mt-2 text-sm sm:text-[15px] font-bold text-slate-900 leading-snug line-clamp-2 group-hover:underline">{fair.title}</span>
                             <span className="mt-0.5 flex items-center gap-1 text-xs font-medium text-slate-500 min-w-0">
                               <MapPin className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
                               <span className="truncate">{fairDates(fair)} · {fair.location}</span>
