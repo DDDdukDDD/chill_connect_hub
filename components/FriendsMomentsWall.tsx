@@ -178,7 +178,7 @@ export function FriendsMomentsWall() {
                 <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </Link>
             )}
-            <Link href={`/moments?momentId=${encodeURIComponent(active.id)}`} className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">
+            <Link href={`/moments?momentId=${encodeURIComponent(active.id)}`} className="text-sm font-semibold text-slate-900 underline decoration-slate-300 underline-offset-4 hover:decoration-slate-900 whitespace-nowrap">
               อ่านต่อและคุยกัน
             </Link>
           </div>

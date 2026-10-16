@@ -28,6 +28,9 @@ function dayLabel(event: EventItem, now: Date) {
   return `${WEEKDAYS[weekday]} ${event.date.replace(/\s*\d{4}$/, '')}`;
 }
 
+// Test-login meetups carry a "[ตัวอย่าง]" tag in the title; the tile shows the title alone
+const cleanTitle = (title: string) => title.replace(/^\[ตัวอย่าง\]\s*/, '');
+
 function seatsLine(event: EventItem) {
   const joined = event.participantsCount;
   const left = event.maxParticipants - joined;
@@ -82,8 +85,23 @@ function FaceStack({ event }: { event: EventItem }) {
  * the seats left on the photo, and the title, place and who is going below it.
  * The last tile invites the member to start their own. `reasons` (signed-in home) puts why a meetup is
  * suggested, such as "เพราะคุณชอบสายคาเฟ่", in place of the place.
+ * `onToggleSave` adds a heart on each photo (`savedIds` are the saved meetups).
  */
-export function OpenMeetupTiles({ events, isLoaded, onCreate, reasons }: { events: EventItem[]; isLoaded: boolean; onCreate: () => void; reasons?: Record<string, string> }) {
+export function OpenMeetupTiles({
+  events,
+  isLoaded,
+  onCreate,
+  reasons,
+  savedIds,
+  onToggleSave,
+}: {
+  events: EventItem[];
+  isLoaded: boolean;
+  onCreate: () => void;
+  reasons?: Record<string, string>;
+  savedIds?: string[];
+  onToggleSave?: (eventId: string) => void;
+}) {
   const row = 'flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar snap-x -mx-4 px-4 scroll-px-4 sm:mx-0 sm:px-1 sm:scroll-px-1 pt-1 pb-2';
 
   if (!isLoaded) {
@@ -103,6 +121,7 @@ export function OpenMeetupTiles({ events, isLoaded, onCreate, reasons }: { event
       {events.map((event) => {
         const startTime = event.time.split('-')[0].trim().replace(/\s*น\.$/, '');
         const reason = reasons?.[event.id];
+        const isSaved = savedIds?.includes(event.id) ?? false;
         return (
           <Link key={event.id} href={`/community/${encodeURIComponent(event.id)}`} className={`${TILE} group block`}>
             <span className="relative block aspect-square overflow-hidden rounded-3xl bg-slate-200 shadow-md">
@@ -113,8 +132,22 @@ export function OpenMeetupTiles({ events, isLoaded, onCreate, reasons }: { event
               <span className="absolute right-2.5 bottom-2.5 rounded-full bg-[#F26430] px-2.5 py-1 text-[11px] font-bold text-white whitespace-nowrap shadow-sm">
                 {seatsLine(event)}
               </span>
+              {onToggleSave && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onToggleSave(event.id);
+                  }}
+                  aria-label={isSaved ? 'เลิกบันทึกตี้นี้' : 'บันทึกตี้นี้'}
+                  aria-pressed={isSaved}
+                  className="absolute right-2.5 top-2.5 w-8 h-8 rounded-full bg-white/95 shadow-sm flex items-center justify-center cursor-pointer hover:scale-110 transition-transform"
+                >
+                  <Heart className={`w-4 h-4 ${isSaved ? 'fill-[#F26430] text-[#F26430]' : 'text-slate-900'}`} aria-hidden="true" />
+                </button>
+              )}
             </span>
-            <span className="mt-3 text-sm font-bold text-slate-900 leading-snug line-clamp-2 group-hover:underline">{event.title}</span>
+            <span className="mt-3 text-sm font-bold text-slate-900 leading-snug line-clamp-2 group-hover:underline">{cleanTitle(event.title)}</span>
             {reason ? (
               <span className="mt-1 flex items-center gap-1 text-xs font-bold text-orange-700 min-w-0">
                 <Heart className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />

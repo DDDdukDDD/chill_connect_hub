@@ -21,7 +21,8 @@ import {
   Sparkles,
   Heart,
   Bot,
-  Gift
+  Gift,
+  Search
 } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
 import { BrandLogo } from './BrandLogo';
@@ -36,6 +37,10 @@ interface NavbarProps {
   onOpenLogin?: () => void;
   onOpenLogout?: () => void;
   onOpenCreateEvent?: () => void;
+  /** Sign-up button for visitors; without it the button opens the login window */
+  onOpenSignup?: () => void;
+  /** Shows the search bar (wide screens) or icon (phones) that opens the page's search window */
+  onOpenSearch?: () => void;
   userName?: string;
   isAuthReady?: boolean;
 }
@@ -48,6 +53,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenLogin,
   onOpenLogout,
   onOpenCreateEvent,
+  onOpenSignup,
+  onOpenSearch,
   userName = '',
   isAuthReady,
 }) => {
@@ -101,7 +108,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <BrandLogo size="md" className="group-hover:scale-105 group-hover:shadow-md transition-all duration-300" />
             <div className="flex flex-col justify-center min-w-0">
-              <span className="font-bold text-[15px] min-[400px]:text-lg sm:text-[19px] tracking-tight text-[#0F172A] font-sans leading-none truncate">
+              <span className="font-bold text-sm min-[400px]:text-lg sm:text-[19px] tracking-tight text-[#0F172A] font-sans leading-none truncate">
                 Chill & Connect Hub
               </span>
               <p className="hidden sm:block text-[11px] text-slate-500 font-medium tracking-normal leading-none mt-1.5">
@@ -110,9 +117,33 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </Link>
 
+          {/* Search: a short bar next to the logo on wide screens */}
+          {onOpenSearch && (
+            <div className="hidden md:flex flex-1 min-w-0 ml-2 lg:ml-6">
+              <button
+                type="button"
+                onClick={onOpenSearch}
+                className="w-full max-w-[340px] flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 hover:bg-white hover:border-slate-300 px-4 py-2 text-sm text-slate-500 text-left cursor-pointer transition-colors"
+              >
+                <Search className="w-4 h-4 shrink-0" aria-hidden="true" />
+                <span className="flex-1 min-w-0 truncate">ค้นหาตี้ ที่เที่ยว หรือจังหวัด</span>
+              </button>
+            </div>
+          )}
+
           {/* Right: Actions */}
           <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-            
+            {onOpenSearch && (
+              <button
+                type="button"
+                onClick={onOpenSearch}
+                aria-label="ค้นหา"
+                className="md:hidden w-9 h-9 rounded-full border border-slate-200 bg-white flex items-center justify-center text-slate-800 cursor-pointer active:scale-95"
+              >
+                <Search className="w-4 h-4" aria-hidden="true" />
+              </button>
+            )}
+
             {/* Quick Action: Create Event Pill Button (Shown only for Logged-in Users) */}
             {isLoggedIn && onOpenCreateEvent && (
               <button
@@ -240,14 +271,23 @@ export const Navbar: React.FC<NavbarProps> = ({
                 )}
               </div>
             ) : (
-              <button 
-                onClick={() => onOpenLogin ? onOpenLogin() : setIsLoggedIn?.(true)}
-                className="rounded-full bg-[#1E293B] hover:bg-[#0F172A] text-white px-3 sm:px-5 py-2 text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95 cursor-pointer shrink-0 whitespace-nowrap"
-                title="คลิกเพื่อเข้าสู่ระบบ / สมัครสมาชิก"
-              >
-                <LogIn className="hidden min-[400px]:block w-3.5 h-3.5 text-emerald-400" />
-                <span>เข้าสู่ระบบ</span>
-              </button>
+              <>
+                {/* Visitors: log in as a quiet link (the menu has it on small phones), sign up as the dark button */}
+                <button
+                  type="button"
+                  onClick={() => onOpenLogin ? onOpenLogin() : setIsLoggedIn?.(true)}
+                  className="hidden min-[400px]:block px-1 py-2 text-sm font-semibold text-slate-900 hover:underline underline-offset-4 cursor-pointer whitespace-nowrap"
+                >
+                  เข้าสู่ระบบ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => (onOpenSignup ? onOpenSignup() : onOpenLogin ? onOpenLogin() : setIsLoggedIn?.(true))}
+                  className="rounded-full bg-[#F26430] hover:bg-[#E2551F] text-white px-3.5 sm:px-5 py-2 text-sm font-semibold transition-all shadow-sm active:scale-95 cursor-pointer shrink-0 whitespace-nowrap"
+                >
+                  สมัครฟรี
+                </button>
+              </>
             )}
 
             {/* Universal Luxury Hamburger / Menu Button (Active on Mobile, iPad, and Desktop) */}
