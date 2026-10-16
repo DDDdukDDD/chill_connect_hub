@@ -32,6 +32,9 @@ export const joinedQuestIdsOf = (memberId: string): string[] => joinsOf(memberId
 export const joinersOf = (questId: string) =>
   store.read().filter((join) => join.questId === questId).map(({ memberId, joinedAt }) => ({ memberId, joinedAt }));
 
+/** Every join, for the home page's live activity */
+export const allQuestJoins = (): readonly QuestJoin[] => store.read();
+
 /** Members who joined each challenge */
 export function joinCounts(): Map<string, number> {
   const counts = new Map<string, number>();
