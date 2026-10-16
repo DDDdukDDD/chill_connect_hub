@@ -257,7 +257,7 @@ const inputClass = (bad?: boolean) =>
 function Field({ label, optional, hint, error, children, htmlFor }: { label: string; optional?: boolean; hint?: string; error?: string; children: React.ReactNode; htmlFor?: string }) {
   return (
     <div data-field-error={error ? 'true' : undefined}>
-      <label htmlFor={htmlFor} className="block text-sm font-extrabold text-slate-900 mb-1.5">
+      <label htmlFor={htmlFor} className="block text-sm font-bold text-slate-900 mb-1.5">
         {label}
         {optional && <span className="ml-1.5 text-xs font-medium text-slate-500">(ไม่บังคับ)</span>}
       </label>
@@ -592,7 +592,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
           return (
             <button key={item.id} type="button" aria-pressed={selected} onClick={() => set('category', item.id as Category)}
               className={`relative text-left p-3 rounded-2xl border cursor-pointer transition-colors ${selected ? 'border-[#2563EB] ring-1 ring-[#2563EB]' : 'border-slate-300 hover:border-slate-400'}`}>
-              <span className="block text-sm font-extrabold text-slate-900 pr-5">{item.name}</span>
+              <span className="block text-sm font-bold text-slate-900 pr-5">{item.name}</span>
               <span className="block mt-0.5 text-xs font-medium text-slate-500">{item.desc}</span>
               {selected && <Check className="absolute top-3 right-3 w-4 h-4 text-[#2563EB]" aria-hidden="true" />}
             </button>
@@ -609,7 +609,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
           return (
             <button key={item.id} type="button" aria-pressed={selected} onClick={() => set('category', item.id)}
               className={`relative text-left p-3 rounded-2xl border cursor-pointer transition-colors ${selected ? 'border-[#2563EB] ring-1 ring-[#2563EB]' : 'border-slate-300 hover:border-slate-400'}`}>
-              <span className="block text-sm font-extrabold text-slate-900">{item.label}</span>
+              <span className="block text-sm font-bold text-slate-900">{item.label}</span>
               <span className="block mt-0.5 text-xs font-medium text-slate-500">{item.hint}</span>
               {selected && <Check className="absolute top-3 right-3 w-4 h-4 text-[#2563EB]" aria-hidden="true" />}
             </button>
@@ -894,7 +894,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
             <div className="space-y-2">
               {form.steps.map((item, index) => (
                 <div key={index} className="flex gap-2 items-center">
-                  <span className="w-6 text-center text-sm font-extrabold text-slate-500" aria-hidden="true">{index + 1}</span>
+                  <span className="w-6 text-center text-sm font-bold text-slate-500" aria-hidden="true">{index + 1}</span>
                   <input aria-label={`ขั้นตอนที่ ${index + 1}`} value={item} maxLength={160} onChange={(e) => set('steps', form.steps.map((value, i) => (i === index ? e.target.value : value)))} placeholder={index === 0 ? 'เช่น ไปร้านกาแฟในย่านอารีย์' : 'ขั้นตอนถัดไป'} className={inputClass(Boolean(errors.steps) && !item.trim())} />
                   {form.steps.length > 1 && (
                     <button type="button" aria-label={`ลบขั้นตอนที่ ${index + 1}`} onClick={() => set('steps', form.steps.filter((_, i) => i !== index))} className="w-12 h-12 shrink-0 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer">
@@ -932,7 +932,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
             <Field label="รับกี่คน" error={errors.maxParticipants} hint="รวมตัวคุณด้วย 2 ถึง 15 คน">
               <div className="flex items-center gap-2">
                 <button type="button" aria-label="ลดจำนวนคน" disabled={form.maxParticipants <= 2} onClick={() => set('maxParticipants', form.maxParticipants - 1)} className="w-12 h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 disabled:text-slate-300 text-slate-700 text-xl font-bold cursor-pointer disabled:cursor-not-allowed">−</button>
-                <output aria-live="polite" className="flex-1 h-12 rounded-2xl border border-slate-300 flex items-center justify-center text-base font-extrabold text-slate-900">{form.maxParticipants} คน</output>
+                <output aria-live="polite" className="flex-1 h-12 rounded-2xl border border-slate-300 flex items-center justify-center text-base font-bold text-slate-900">{form.maxParticipants} คน</output>
                 <button type="button" aria-label="เพิ่มจำนวนคน" disabled={form.maxParticipants >= 15} onClick={() => set('maxParticipants', form.maxParticipants + 1)} className="w-12 h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 disabled:text-slate-300 text-slate-700 text-xl font-bold cursor-pointer disabled:cursor-not-allowed">+</button>
               </div>
             </Field>
@@ -941,7 +941,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
           <details className="group rounded-2xl border border-slate-200">
             <summary className="flex items-center justify-between gap-3 px-4 py-3.5 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
               <span>
-                <span className="block text-sm font-extrabold text-slate-900">ตัวเลือกเพิ่มเติม</span>
+                <span className="block text-sm font-bold text-slate-900">ตัวเลือกเพิ่มเติม</span>
                 <span className="block text-xs font-medium text-slate-500">ใครเข้าร่วมได้ ของที่ควรเตรียม กำหนดการ การยกเลิก</span>
               </span>
               <ChevronRight className="w-5 h-5 text-slate-500 transition-transform group-open:rotate-90" aria-hidden="true" />
@@ -1027,7 +1027,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
     const section = (target: number, children: React.ReactNode) => (
       <section className="rounded-2xl border border-slate-200 px-4 py-2">
         <div className="flex items-center justify-between gap-3 pt-1.5">
-          <h3 className="text-sm font-extrabold text-slate-900">{info!.steps[target]}</h3>
+          <h3 className="text-sm font-bold text-slate-900">{info!.steps[target]}</h3>
           {editLink(target)}
         </div>
         <dl className="divide-y divide-slate-100">{children}</dl>
@@ -1040,7 +1040,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
           <img src={form.image} alt="" className="w-24 sm:w-28 aspect-[4/3] rounded-2xl object-cover bg-slate-100 shrink-0" />
           <div className="min-w-0">
             <p className="text-xs font-bold text-slate-500">{info!.title}</p>
-            <p className="text-lg font-black text-slate-900 leading-snug break-words">{form.title.trim()}</p>
+            <p className="text-lg font-bold text-slate-900 leading-snug break-words">{form.title.trim()}</p>
           </div>
         </div>
 
@@ -1142,14 +1142,14 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
     return (
       <DialogShell onClose={onClose} size="md" bare labelledBy={titleId}>
         <header className="px-5 sm:px-8 pt-6 sm:pt-8 pb-4 shrink-0">
-          <h2 id={titleId} className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 pr-12">อยากสร้างอะไร</h2>
+          <h2 id={titleId} className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 pr-12">อยากสร้างอะไร</h2>
           <p className="mt-1 text-sm font-medium text-slate-500">เลือกหนึ่งอย่าง แล้วกรอกทีละขั้นสั้นๆ</p>
         </header>
         <div className="px-5 sm:px-8 pb-6 sm:pb-8 overflow-y-auto flex-1 space-y-2.5">
           {isLoaded && !canCreate && (
             <div role="alert" className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-sm font-medium text-amber-900 leading-relaxed">
               {member ? 'ยืนยันอีเมลและรับคำมั่นของคอมมูนิตี้ก่อน จึงจะสร้างได้ ' : 'เข้าสู่ระบบก่อน จึงจะสร้างได้ '}
-              <a href={member ? '/profile' : '/login'} className="font-extrabold underline whitespace-nowrap">{member ? 'ไปที่โปรไฟล์' : 'เข้าสู่ระบบ'}</a>
+              <a href={member ? '/profile' : '/login'} className="font-bold underline whitespace-nowrap">{member ? 'ไปที่โปรไฟล์' : 'เข้าสู่ระบบ'}</a>
             </div>
           )}
           {options.map((option) => {
@@ -1163,7 +1163,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
                   <Icon className="w-5 h-5" aria-hidden="true" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className={`block text-base font-extrabold ${disabled ? 'text-slate-500' : 'text-slate-900'}`}>{item.title}</span>
+                  <span className={`block text-base font-bold ${disabled ? 'text-slate-500' : 'text-slate-900'}`}>{item.title}</span>
                   <span className="block text-sm font-medium text-slate-500 leading-snug">{item.text}</span>
                   <span className="block mt-1 text-xs font-bold text-slate-500">{option.note}</span>
                 </span>
@@ -1174,7 +1174,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
           {canCreate && (!isHost || !canCreateFair) && (
             <p className="pt-2 text-sm font-medium text-slate-500 leading-relaxed">
               {!isHost && !canCreateFair ? 'อยากให้กิจกรรมเผยแพร่ทันที หรืออยากลงงานแฟร์ ' : 'อยากลงงานแฟร์ '}
-              <a href="/profile#host" className="font-extrabold text-[#2563EB] hover:underline whitespace-nowrap">ส่งคำขอที่หน้าโปรไฟล์</a>
+              <a href="/profile#host" className="font-bold text-[#2563EB] hover:underline whitespace-nowrap">ส่งคำขอที่หน้าโปรไฟล์</a>
             </p>
           )}
         </div>
@@ -1187,7 +1187,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
     <DialogShell onClose={onClose} size="lg" bare labelledBy={titleId}>
       <header className="px-5 sm:px-8 pt-6 sm:pt-7 pb-4 border-b border-slate-100 shrink-0">
         <p className="text-xs font-bold text-slate-500">{info.title} · ขั้นที่ {step + 1} จาก {info.steps.length}</p>
-        <h2 id={titleId} className="mt-0.5 text-xl sm:text-2xl font-black tracking-tight text-slate-900 pr-12">{info.steps[step]}</h2>
+        <h2 id={titleId} className="mt-0.5 text-xl sm:text-2xl font-bold tracking-tight text-slate-900 pr-12">{info.steps[step]}</h2>
         <div className="mt-3 flex gap-1.5" aria-hidden="true">
           {info.steps.map((label, index) => <span key={label} className={`h-1.5 flex-1 rounded-full ${index <= step ? 'bg-[#2563EB]' : 'bg-slate-200'}`} />)}
         </div>

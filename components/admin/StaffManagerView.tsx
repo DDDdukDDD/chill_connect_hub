@@ -132,7 +132,7 @@ export function StaffManagerView() {
       {showCreate && (
         <form onSubmit={handleCreate} className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4">
           <div>
-            <h2 className="text-sm sm:text-base font-extrabold text-slate-900">เพิ่มบัญชีทีมงาน</h2>
+            <h2 className="text-sm sm:text-base font-bold text-slate-900">เพิ่มบัญชีทีมงาน</h2>
             <p className="text-xs text-slate-500 mt-0.5">ระบบยังไม่ส่งอีเมลเชิญ ตั้งรหัสผ่านชั่วคราวแล้วแจ้งเจ้าตัวเอง</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -215,7 +215,7 @@ export function StaffManagerView() {
                         </select>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`px-2 py-0.5 rounded-full border text-[10px] sm:text-xs font-extrabold ${account.status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+                        <span className={`px-2 py-0.5 rounded-full border text-[10px] sm:text-xs font-bold ${account.status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
                           {account.status === 'active' ? 'ใช้งาน' : 'ปิดแล้ว'}
                         </span>
                       </td>

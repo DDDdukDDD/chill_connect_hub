@@ -102,7 +102,7 @@ export function FriendsMomentsWall() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={m.userAvatar} alt="" className="absolute -bottom-0.5 -right-0.5 w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover border-2 border-white" />
               </span>
-              <span className={`max-w-full truncate text-[11px] sm:text-xs ${selected ? 'font-extrabold text-slate-900' : 'font-bold text-slate-600'}`}>
+              <span className={`max-w-full truncate text-[11px] sm:text-xs ${selected ? 'font-bold text-slate-900' : 'font-bold text-slate-600'}`}>
                 {shortName(m.userName)}
               </span>
             </button>
@@ -136,7 +136,7 @@ export function FriendsMomentsWall() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={active.userAvatar} alt="" className="w-10 h-10 rounded-full object-cover" />
             <span>
-              <span className="block text-sm font-extrabold text-slate-900 group-hover:underline">{shortName(active.userName)}</span>
+              <span className="block text-sm font-bold text-slate-900 group-hover:underline">{shortName(active.userName)}</span>
               <span className="block text-xs font-medium text-slate-500">{active.timeAgo}</span>
             </span>
           </Link>
@@ -148,7 +148,7 @@ export function FriendsMomentsWall() {
             </p>
           )}
 
-          <blockquote className="mt-2 text-lg sm:text-xl font-black text-slate-900 leading-snug tracking-tight line-clamp-3">
+          <blockquote className="mt-2 text-lg sm:text-xl font-bold text-slate-900 leading-snug tracking-tight line-clamp-3">
             “{active.caption}”
           </blockquote>
 
@@ -162,7 +162,7 @@ export function FriendsMomentsWall() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={reply.userAvatar} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
               <p className="min-w-0 rounded-2xl rounded-tl-sm bg-slate-100 px-3.5 py-2.5 text-sm text-slate-700">
-                <span className="block text-xs font-extrabold text-slate-900">{shortName(reply.userName)}</span>
+                <span className="block text-xs font-bold text-slate-900">{shortName(reply.userName)}</span>
                 <span className="line-clamp-2">{reply.text}</span>
               </p>
             </div>

@@ -19,7 +19,7 @@ export const PlatformTrustAndPerks: React.FC<PlatformTrustAndPerksProps> = () =>
       
       {/* Header */}
       <div className="space-y-1.5 text-left">
-        <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
           ทำไมต้อง Chill & Connect Hub?
         </h2>
         <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed max-w-none lg:whitespace-nowrap">
@@ -49,7 +49,7 @@ export const PlatformTrustAndPerks: React.FC<PlatformTrustAndPerksProps> = () =>
                 <Users className="w-3.5 h-3.5 text-[#F26430]" />
                 <span>ผู้ใช้งานต่อวัน</span>
               </div>
-              <p className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight">10,000+</p>
+              <p className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight">10,000+</p>
             </div>
 
             <div className="p-2 space-y-1">
@@ -57,7 +57,7 @@ export const PlatformTrustAndPerks: React.FC<PlatformTrustAndPerksProps> = () =>
                 <Compass className="w-3.5 h-3.5 text-[#4A7C59]" />
                 <span>สถานที่ & อีเวนต์</span>
               </div>
-              <p className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight">1,000+</p>
+              <p className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight">1,000+</p>
             </div>
 
             <div className="p-2 space-y-1">
@@ -65,7 +65,7 @@ export const PlatformTrustAndPerks: React.FC<PlatformTrustAndPerksProps> = () =>
                 <Sparkles className="w-3.5 h-3.5 text-[#7C3AED]" />
                 <span>มิตรภาพ & ตี้กลุ่มย่อย</span>
               </div>
-              <p className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight">3,500+</p>
+              <p className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight">3,500+</p>
             </div>
 
             <div className="p-2 space-y-1">
@@ -73,7 +73,7 @@ export const PlatformTrustAndPerks: React.FC<PlatformTrustAndPerksProps> = () =>
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                 <span>Safe Space Community</span>
               </div>
-              <p className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight">100%</p>
+              <p className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight">100%</p>
             </div>
 
           </div>

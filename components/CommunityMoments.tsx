@@ -103,7 +103,7 @@ export const CommunityMoments: React.FC<CommunityMomentsProps> = ({
       {/* Section Header with Create Post CTA */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E8E2D8] pb-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-extrabold text-[#1E293B] tracking-tight flex items-center gap-2">
+          <h2 className="text-xl sm:text-2xl font-bold text-[#1E293B] tracking-tight flex items-center gap-2">
             <span>📸 โมเมนต์จากเพื่อนๆ (Community Moments)</span>
           </h2>
           <p className="text-xs sm:text-sm text-[#64748B] font-medium mt-0.5">
@@ -286,7 +286,7 @@ export const CommunityMoments: React.FC<CommunityMomentsProps> = ({
           >
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-extrabold text-lg text-[#1E293B] flex items-center gap-2">
+              <h3 className="font-bold text-lg text-[#1E293B] flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-[#F26430]" />
                 <span>แชร์โมเมนต์กิจกรรมของคุณ</span>
               </h3>

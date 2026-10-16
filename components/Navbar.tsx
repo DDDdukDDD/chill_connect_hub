@@ -101,7 +101,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <BrandLogo size="md" className="group-hover:scale-105 group-hover:shadow-md transition-all duration-300" />
             <div className="flex flex-col justify-center min-w-0">
-              <span className="font-black text-[15px] min-[400px]:text-lg sm:text-[19px] tracking-tight text-[#0F172A] font-sans leading-none truncate">
+              <span className="font-bold text-[15px] min-[400px]:text-lg sm:text-[19px] tracking-tight text-[#0F172A] font-sans leading-none truncate">
                 Chill & Connect Hub
               </span>
               <p className="hidden sm:block text-[11px] text-slate-500 font-medium tracking-normal leading-none mt-1.5">
@@ -170,7 +170,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <span className="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h4 className="font-extrabold text-sm text-[#1E293B] truncate" title={userProfile.name || userName}>
+                        <h4 className="font-bold text-sm text-[#1E293B] truncate" title={userProfile.name || userName}>
                           {userProfile.name || userName}
                         </h4>
                         <div className="flex items-center gap-1 text-[11px] text-[#4A7C59] font-bold">
@@ -286,7 +286,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div className="flex items-center justify-between border-b border-slate-200 pb-4">
                 <div className="flex items-center gap-2.5">
                   <BrandLogo size="sm" />
-                  <span className="font-extrabold text-base text-[#1E293B]">เมนูหลัก</span>
+                  <span className="font-bold text-base text-[#1E293B]">เมนูหลัก</span>
                 </div>
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}

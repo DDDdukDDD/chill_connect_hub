@@ -134,7 +134,7 @@ export function AuditLogView() {
                         <p className="text-[11px] text-slate-400">{entry.actorRole}</p>
                       </td>
                       <td className="px-4 py-2.5">
-                        <span className={`px-2 py-0.5 rounded-full border text-[10px] sm:text-xs font-extrabold whitespace-nowrap ${actionTone(entry.action)}`}>{entry.action}</span>
+                        <span className={`px-2 py-0.5 rounded-full border text-[10px] sm:text-xs font-bold whitespace-nowrap ${actionTone(entry.action)}`}>{entry.action}</span>
                       </td>
                       <td className="px-4 py-2.5 text-xs text-slate-700">{entry.summary}</td>
                     </tr>

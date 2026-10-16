@@ -217,7 +217,7 @@ export function AdminSidebar({ activeModule, onModuleChange }: AdminSidebarProps
                         {count > 0 && (
                           <span
                             title="รายการรอตรวจ"
-                            className="min-w-[20px] text-center text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-amber-500 text-white shrink-0 tabular-nums"
+                            className="min-w-[20px] text-center text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500 text-white shrink-0 tabular-nums"
                           >
                             {count}
                           </span>

@@ -233,7 +233,7 @@ export const SurpriseModal: React.FC<SurpriseModalProps> = ({
               <Dices className={`w-5 h-5 ${isSpinning ? 'animate-spin' : ''}`} />
             </div>
             <div className="min-w-0">
-              <h3 className="font-extrabold text-sm sm:text-base leading-tight truncate">
+              <h3 className="font-bold text-sm sm:text-base leading-tight truncate">
                 {headerConfig.title}
               </h3>
               <p className="text-[11px] text-white/80 font-medium truncate">
@@ -260,7 +260,7 @@ export const SurpriseModal: React.FC<SurpriseModalProps> = ({
                 <Sparkles className="w-8 h-8 animate-pulse text-[#F26430]" />
               </div>
               <div className="space-y-1">
-                <p className="text-sm font-extrabold text-[#1E293B] animate-pulse">
+                <p className="text-sm font-bold text-[#1E293B] animate-pulse">
                   {headerConfig.spinningText}
                 </p>
                 <p className="text-xs text-slate-500">
@@ -279,7 +279,7 @@ export const SurpriseModal: React.FC<SurpriseModalProps> = ({
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute top-2.5 left-2.5">
-                  <span className="text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-black/65 backdrop-blur-md text-white border border-white/20 flex items-center gap-1.5 shadow-xs">
+                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-black/65 backdrop-blur-md text-white border border-white/20 flex items-center gap-1.5 shadow-xs">
                     {pickedItem.kind === 'spot' && <Mountain className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
                     {pickedItem.kind === 'community' && <Users className="w-3.5 h-3.5 text-orange-400 shrink-0" />}
                     {pickedItem.kind === 'fair' && <Building2 className="w-3.5 h-3.5 text-sky-400 shrink-0" />}
@@ -288,7 +288,7 @@ export const SurpriseModal: React.FC<SurpriseModalProps> = ({
                 </div>
                 {pickedItem.kind !== 'spot' && hasKnownPrice(pickedItem.price) && (
                   <div className="absolute top-2.5 right-2.5">
-                    <span className={`text-[11px] font-extrabold px-2.5 py-1 rounded-full text-white shadow-md ${
+                    <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full text-white shadow-md ${
                       pickedItem.kind === 'fair' ? 'bg-[#2B527A]' : 'bg-[#F26430]'
                     }`}>
                       {formatEventBadgePrice(pickedItem.price, pickedItem.kind === 'fair' ? 'เข้าชมฟรี' : 'เข้าร่วมฟรี')}
@@ -299,7 +299,7 @@ export const SurpriseModal: React.FC<SurpriseModalProps> = ({
 
               {/* Details */}
               <div className="space-y-2">
-                <h4 className="font-extrabold text-base text-slate-900 leading-snug line-clamp-2">
+                <h4 className="font-bold text-base text-slate-900 leading-snug line-clamp-2">
                   {pickedItem.title}
                 </h4>
 

@@ -416,7 +416,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         return [
           {
             id: 'b1',
-            icon: <span className="text-emerald-400 font-extrabold">✓</span>,
+            icon: <span className="text-emerald-400 font-bold">✓</span>,
             text: 'รวมกิจกรรมสำหรับออกไปใช้ชีวิต',
           },
           {
@@ -434,7 +434,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         return [
           {
             id: 'b1',
-            icon: <span className="text-emerald-400 font-extrabold">✓</span>,
+            icon: <span className="text-emerald-400 font-bold">✓</span>,
             text: 'รวมกิจกรรมสาธารณะ',
           },
           {
@@ -452,7 +452,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         return [
           {
             id: 'b1',
-            icon: <span className="text-emerald-400 font-extrabold">✓</span>,
+            icon: <span className="text-emerald-400 font-bold">✓</span>,
             text: 'คัดสรรพิกัดเที่ยวทั่วไทย',
           },
           {
@@ -471,7 +471,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         return [
           {
             id: 'b1',
-            icon: <span className="text-emerald-400 font-extrabold">✓</span>,
+            icon: <span className="text-emerald-400 font-bold">✓</span>,
             text: 'คัดสรรกิจกรรมและสถานที่คุณภาพ',
           },
           {
@@ -620,7 +620,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 {matchedCommunity.length > 0 && (
                   <div className="space-y-1">
                     <div className="px-2 py-1 flex items-center justify-between">
-                      <span className="text-[11px] font-extrabold text-[#C2410C] uppercase tracking-wider flex items-center gap-1.5">
+                      <span className="text-[11px] font-bold text-[#C2410C] uppercase tracking-wider flex items-center gap-1.5">
                         <Flame className="w-3.5 h-3.5 text-[#F26430]" />
                         <span>กิจกรรมคอมมูนิตี้ & ตี้เพื่อนใหม่</span>
                       </span>
@@ -671,7 +671,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 {matchedFairs.length > 0 && (
                   <div className={`space-y-1 ${matchedCommunity.length > 0 ? 'pt-2 border-t border-slate-100' : ''}`}>
                     <div className="px-2 py-1 flex items-center justify-between">
-                      <span className="text-[11px] font-extrabold text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
+                      <span className="text-[11px] font-bold text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
                         <Building2 className="w-3.5 h-3.5 text-blue-700" />
                         <span>งานมหกรรม & เอ็กซ์โป</span>
                       </span>
@@ -716,7 +716,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 {matchedSpots.length > 0 && (
                   <div className={`space-y-1 ${matchedCommunity.length > 0 || matchedFairs.length > 0 ? 'pt-2 border-t border-slate-100' : ''}`}>
                     <div className="px-2 py-1 flex items-center justify-between">
-                      <span className="text-[11px] font-extrabold text-[#2D5A3C] uppercase tracking-wider flex items-center gap-1.5">
+                      <span className="text-[11px] font-bold text-[#2D5A3C] uppercase tracking-wider flex items-center gap-1.5">
                         <Mountain className="w-3.5 h-3.5 text-[#4A7C59]" />
                         <span>พิกัดเที่ยว & จุดฮีลใจ</span>
                       </span>
@@ -835,7 +835,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             {(activeModeTab === 'all' || activeModeTab === 'community') && (
               <div className="space-y-2">
                 <div className="px-1 flex items-center justify-between">
-                  <p className="text-[11px] font-black text-[#C2410C] uppercase tracking-wider flex items-center gap-1.5">
+                  <p className="text-[11px] font-bold text-[#C2410C] uppercase tracking-wider flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#F26430]" />
                     <span>กิจกรรมคอมมูนิตี้ & ตี้เพื่อนใหม่</span>
                   </p>
@@ -882,7 +882,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             {(activeModeTab === 'all' || activeModeTab === 'fairs') && (
               <div className={`space-y-2 ${activeModeTab === 'all' ? 'pt-2 border-t border-slate-100' : ''}`}>
                 <div className="px-1 flex items-center justify-between">
-                  <p className="text-[11px] font-black text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <p className="text-[11px] font-bold text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-blue-700" />
                     <span>งานมหกรรม นิทรรศการ & เอ็กซ์โป</span>
                   </p>
@@ -929,7 +929,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             {(activeModeTab === 'all' || activeModeTab === 'spots') && (
               <div className={`space-y-2 ${activeModeTab === 'all' ? 'pt-2 border-t border-slate-100' : ''}`}>
                 <div className="px-1 flex items-center justify-between">
-                  <p className="text-[11px] font-black text-[#2D5A3C] uppercase tracking-wider flex items-center gap-1.5">
+                  <p className="text-[11px] font-bold text-[#2D5A3C] uppercase tracking-wider flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#4A7C59]" />
                     <span>พิกัดเที่ยว & จุดฮีลใจ 77 จังหวัด</span>
                   </p>
@@ -1033,7 +1033,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               {/* Centerpiece Content */}
               <div className="relative z-10 text-center space-y-1 sm:space-y-2 max-w-3xl mx-auto w-full">
                 {/* Headline (Crisp Bold White with Bright Accent) */}
-                <h1 className="text-lg sm:text-2xl md:text-3xl font-black text-white tracking-tight leading-snug [text-shadow:_0_2px_14px_rgba(0,0,0,0.85),_0_1px_3px_rgba(0,0,0,0.9)]">
+                <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-white tracking-tight leading-snug [text-shadow:_0_2px_14px_rgba(0,0,0,0.85),_0_1px_3px_rgba(0,0,0,0.9)]">
                   {displayTitleLead}{' '}
                   <span className="text-[#FFD166] inline-block transition-all duration-300">
                     {displayTitleHighlight}
@@ -1087,7 +1087,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   <button
                     type="button"
                     onClick={() => handleJourneyTabScroll('home')}
-                    className={`flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 rounded-full text-xs font-black transition-all cursor-pointer shrink-0 ${
+                    className={`flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shrink-0 ${
                       activeJourneyPill === 'home'
                         ? 'bg-[#2563EB] text-white shadow-xs'
                         : 'text-slate-600 hover:text-[#2563EB] hover:bg-blue-50/70'
@@ -1186,7 +1186,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                         activeModeTab === 'all' ? 'text-[#2563EB]' : 'text-slate-400 group-hover:text-slate-600'
                       }`} />
                       <span className={`text-[11px] sm:text-xs md:text-sm whitespace-nowrap transition-colors ${
-                        activeModeTab === 'all' ? 'font-black text-[#2563EB]' : 'font-semibold text-slate-500 group-hover:text-slate-800'
+                        activeModeTab === 'all' ? 'font-bold text-[#2563EB]' : 'font-semibold text-slate-500 group-hover:text-slate-800'
                       }`}>
                         ทั้งหมด
                       </span>
@@ -1205,7 +1205,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                         activeModeTab === 'community' ? 'text-[#F26430]' : 'text-slate-400 group-hover:text-slate-600'
                       }`} />
                       <span className={`text-[11px] sm:text-xs md:text-sm whitespace-nowrap transition-colors ${
-                        activeModeTab === 'community' ? 'font-black text-[#F26430]' : 'font-semibold text-slate-500 group-hover:text-slate-800'
+                        activeModeTab === 'community' ? 'font-bold text-[#F26430]' : 'font-semibold text-slate-500 group-hover:text-slate-800'
                       }`}>
                         กิจกรรมคอมมูนิตี้
                       </span>
@@ -1224,7 +1224,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                         activeModeTab === 'fairs' ? 'text-[#2B527A]' : 'text-slate-400 group-hover:text-slate-600'
                       }`} />
                       <span className={`text-[11px] sm:text-xs md:text-sm whitespace-nowrap transition-colors ${
-                        activeModeTab === 'fairs' ? 'font-black text-[#2B527A]' : 'font-semibold text-slate-500 group-hover:text-slate-800'
+                        activeModeTab === 'fairs' ? 'font-bold text-[#2B527A]' : 'font-semibold text-slate-500 group-hover:text-slate-800'
                       }`}>
                         งานมหกรรม & เอ็กซ์โป
                       </span>
@@ -1243,7 +1243,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                         activeModeTab === 'spots' ? 'text-[#2D5A3C]' : 'text-slate-400 group-hover:text-slate-600'
                       }`} />
                       <span className={`text-[11px] sm:text-xs md:text-sm whitespace-nowrap transition-colors ${
-                        activeModeTab === 'spots' ? 'font-black text-[#2D5A3C]' : 'font-semibold text-slate-500 group-hover:text-slate-800'
+                        activeModeTab === 'spots' ? 'font-bold text-[#2D5A3C]' : 'font-semibold text-slate-500 group-hover:text-slate-800'
                       }`}>
                         พิกัดเที่ยว & จุดฮีลใจ
                       </span>
@@ -1311,7 +1311,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                             setIsFocused(false);
                             if (onSearchSubmit) onSearchSubmit();
                           }}
-                          className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 sm:px-6 py-1.5 sm:py-2 rounded-lg sm:rounded-full font-extrabold text-xs sm:text-sm transition-all shadow-sm flex items-center justify-center gap-1.5 shrink-0 active:scale-95 cursor-pointer leading-normal"
+                          className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 sm:px-6 py-1.5 sm:py-2 rounded-lg sm:rounded-full font-bold text-xs sm:text-sm transition-all shadow-sm flex items-center justify-center gap-1.5 shrink-0 active:scale-95 cursor-pointer leading-normal"
                         >
                           <Search className="w-3.5 h-3.5" />
                           <span>ค้นหา</span>
@@ -1438,17 +1438,17 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                                   <option value="custom">ระบุวัน...</option>
                                 </select>
                                 {activeTime === 'weekend' && (
-                                  <span className="text-[9px] font-black text-[#2B527A] bg-blue-50 px-1 py-0.5 rounded border border-blue-100 shrink-0">
+                                  <span className="text-[9px] font-bold text-[#2B527A] bg-blue-50 px-1 py-0.5 rounded border border-blue-100 shrink-0">
                                     ส.-อา.
                                   </span>
                                 )}
                                 {activeTime === 'today' && (
-                                  <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-100 shrink-0">
+                                  <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-100 shrink-0">
                                     วันนี้
                                   </span>
                                 )}
                                 {activeTime === 'tomorrow' && (
-                                  <span className="text-[9px] font-black text-amber-700 bg-amber-50 px-1 py-0.5 rounded border border-amber-100 shrink-0">
+                                  <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1 py-0.5 rounded border border-amber-100 shrink-0">
                                     พรุ่งนี้
                                   </span>
                                 )}
@@ -1466,7 +1466,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                             setIsFocused(false);
                             if (onSearchSubmit) onSearchSubmit();
                           }}
-                          className="w-full lg:w-auto bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-6 sm:px-8 py-2 sm:py-2.5 rounded-xl font-extrabold text-sm sm:text-base transition-all shadow-sm flex items-center justify-center gap-2 shrink-0 active:scale-95 cursor-pointer leading-normal"
+                          className="w-full lg:w-auto bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-6 sm:px-8 py-2 sm:py-2.5 rounded-xl font-bold text-sm sm:text-base transition-all shadow-sm flex items-center justify-center gap-2 shrink-0 active:scale-95 cursor-pointer leading-normal"
                         >
                           <Search className="w-4 h-4" />
                           <span>ค้นหา</span>

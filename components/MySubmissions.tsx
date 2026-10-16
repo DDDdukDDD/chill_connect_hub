@@ -54,7 +54,7 @@ export function MySubmissions() {
   if (rows.length === 0) return null;
   return (
     <section aria-label="สิ่งที่คุณส่งให้ทีมงาน" className="mt-4 bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
-      <h2 className="text-sm sm:text-base font-extrabold text-slate-900">สิ่งที่คุณส่งให้ทีมงาน</h2>
+      <h2 className="text-sm sm:text-base font-bold text-slate-900">สิ่งที่คุณส่งให้ทีมงาน</h2>
       <ul className="mt-3 divide-y divide-slate-100">
         {rows.map((row) => (
           <li key={row.id} className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3">

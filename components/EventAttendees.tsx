@@ -90,7 +90,7 @@ export function EventAttendees({ src, title = 'ใครจะไปบ้าง
           ? <span key={t.key} className="blur-[0.5px]"><Face name={t.name} avatar={t.avatar} size="sm" /></span>
           : <span key={t.key} className="w-5 h-5 rounded-full bg-slate-200" />)}
         {rest.length > 3 && (
-          <span className="w-5 h-5 rounded-full bg-rose-500 text-white text-[9px] font-extrabold flex items-center justify-center">+{rest.length - 3}</span>
+          <span className="w-5 h-5 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center">+{rest.length - 3}</span>
         )}
       </span>
       <span className="text-xs font-bold text-slate-800">อีก {rest.length} คน</span>
@@ -105,7 +105,7 @@ export function EventAttendees({ src, title = 'ใครจะไปบ้าง
     >
       <Face name={t.name} avatar={t.avatar} verified={t.verified} />
       <span className="mt-0.5 w-full truncate text-xs font-bold text-slate-900">{t.name}</span>
-      <span className={`text-[11px] font-extrabold ${t.tone === 'host' ? 'text-indigo-700' : t.tone === 'me' ? 'text-emerald-700' : 'text-slate-500'}`}>{t.label}</span>
+      <span className={`text-[11px] font-bold ${t.tone === 'host' ? 'text-indigo-700' : t.tone === 'me' ? 'text-emerald-700' : 'text-slate-500'}`}>{t.label}</span>
     </Link>
   ) : (
     <div key={t.key} className={`${className} flex-col items-center gap-1 rounded-2xl border border-slate-200 bg-white px-1 py-3 text-center`}>
@@ -117,9 +117,9 @@ export function EventAttendees({ src, title = 'ใครจะไปบ้าง
   return (
     <section className="space-y-3" aria-labelledby="attendees-title">
       <div className="flex items-center justify-between gap-3">
-        <h2 id="attendees-title" className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
+        <h2 id="attendees-title" className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
           <span>{title}</span>
-          <span className="text-[11px] sm:text-xs font-extrabold text-slate-700 border border-slate-200 rounded-full px-2.5 py-0.5">{total} คน</span>
+          <span className="text-[11px] sm:text-xs font-bold text-slate-700 border border-slate-200 rounded-full px-2.5 py-0.5">{total} คน</span>
         </h2>
         {tiles.length > MOBILE_SHOWN + 1 && (
           <button

@@ -51,7 +51,7 @@ export const CommunityTrustSection: React.FC = () => {
     <section className="space-y-4 pt-2 scroll-mt-24">
       {/* Header */}
       <div className="space-y-1 text-left">
-        <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
           ทำไมต้องร่วมกิจกรรมคอมมูนิตี้กับเรา?
         </h2>
         <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed max-w-2xl">
@@ -72,7 +72,7 @@ export const CommunityTrustSection: React.FC = () => {
                 <div className={`w-9 h-9 rounded-xl ${item.iconBg} border flex items-center justify-center ${item.iconColor} shadow-2xs`}>
                   <Icon className="w-4.5 h-4.5" />
                 </div>
-                <h3 className="font-black text-sm sm:text-base text-slate-900 leading-snug">
+                <h3 className="font-bold text-sm sm:text-base text-slate-900 leading-snug">
                   {item.title}
                 </h3>
                 <p className="text-xs text-slate-600 font-normal leading-relaxed">

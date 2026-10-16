@@ -164,12 +164,12 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
       {/* Header Strip: Editorial Banner or Minimal Unboxed Header */}
       {minimalHeader ? (
         <div className="flex items-center justify-between gap-4 pb-1 pt-2">
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
             {title}
           </h2>
           <Link
             href="/challenges"
-            className="inline-flex items-center gap-1.5 min-h-10 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-full whitespace-nowrap text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer active:scale-95 leading-none"
+            className="inline-flex items-center gap-1.5 min-h-10 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-full whitespace-nowrap text-xs font-bold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer active:scale-95 leading-none"
           >
             <span>ดูชาเลนจ์ทั้งหมด ({activeQuests.length})</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
@@ -179,7 +179,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-[#F5F3FF] p-3.5 sm:p-4 rounded-2xl border border-slate-200">
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
                 <span>ชาเลนจ์ชวนออกไปใช้ชีวิต</span>
               </h2>
             </div>
@@ -191,7 +191,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
           {/* Right Actions: Clean Glassmorphic Pill Link */}
           <Link
             href="/challenges"
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full text-xs font-extrabold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full text-xs font-bold shadow-2xs hover:shadow-md transition-all duration-200 group/btn shrink-0 cursor-pointer self-end sm:self-auto"
           >
             <span>ดูชาเลนจ์ทั้งหมด ({activeQuests.length})</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
@@ -210,7 +210,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
           <button
             type="button"
             onClick={() => setFilterType('all')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shrink-0 shadow-2xs ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 shadow-2xs ${
               filterType === 'all'
                 ? 'bg-[#F5F3FF] border border-[#7C3AED] text-[#5B21B6]'
                 : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200/80'
@@ -334,13 +334,13 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                     {/* Top Badges Row */}
                     <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between z-10 gap-1.5">
                       {/* Left: Medal Badge */}
-                      <span className="inline-flex items-center gap-1 text-[11px] font-black text-white/95 bg-black/45 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-white/20 truncate max-w-[calc(100%-68px)]">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-white/95 bg-black/45 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-white/20 truncate max-w-[calc(100%-68px)]">
                         <Award className="w-2.5 h-2.5 text-amber-400 shrink-0" />
                         <span className="truncate">เหรียญ {quest.badgeLabel}</span>
                       </span>
 
                       {/* Right: XP Reward Pill */}
-                      <span className="inline-flex items-center gap-0.5 text-[11px] font-black text-amber-300 bg-black/45 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/20 shrink-0">
+                      <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-amber-300 bg-black/45 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/20 shrink-0">
                         <Zap className="w-2.5 h-2.5 text-amber-400 fill-amber-300" />
                         <span>{quest.rule ? `+${quest.rewardPoints ?? 0} XP` : 'บันทึกเอง'}</span>
                       </span>
@@ -349,7 +349,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                     {/* Bottom Overlaid Details (Pure Moments Style) */}
                     <div className="absolute inset-x-0 bottom-0 p-3 sm:p-3.5 flex flex-col justify-end space-y-1.5 z-10">
                       {/* Host / Partner Tag */}
-                      <div className="text-[11px] font-extrabold uppercase tracking-wider text-purple-300 drop-shadow-sm truncate">
+                      <div className="text-[11px] font-bold uppercase tracking-wider text-purple-300 drop-shadow-sm truncate">
                         {brandReward.type === 'brand_partner' ? brandReward.partnerName : 'Official • Chill & Connect'}
                       </div>
 
@@ -375,7 +375,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                         {/* Right: Status or Participants */}
                         <div className="shrink-0 font-bold flex items-center gap-1">
                           {isDone ? (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-black text-purple-200 bg-purple-900/60 backdrop-blur-sm px-2 py-0.5 rounded-full border border-purple-400/40">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-purple-200 bg-purple-900/60 backdrop-blur-sm px-2 py-0.5 rounded-full border border-purple-400/40">
                               <Trophy className="w-2.5 h-2.5 text-purple-300" />
                               <span>พิชิตแล้ว</span>
                             </span>
@@ -412,7 +412,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                   {brandReward.type === 'brand_partner' ? (
                     <span
                       title={`ชาเลนจ์พาร์ทเนอร์ทางการ: ${brandReward.partnerName}`}
-                      className="text-[11px] font-black text-amber-950 bg-amber-100/90 px-2 py-0.5 rounded-full flex items-center gap-1 border border-amber-300/80 truncate max-w-[calc(100%-70px)]"
+                      className="text-[11px] font-bold text-amber-950 bg-amber-100/90 px-2 py-0.5 rounded-full flex items-center gap-1 border border-amber-300/80 truncate max-w-[calc(100%-70px)]"
                     >
                       <Crown className="w-2.5 h-2.5 text-amber-600 fill-amber-500 shrink-0" />
                       <span className="truncate">Official • {brandReward.partnerName}</span>
@@ -420,14 +420,14 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                   ) : (
                     <span
                       title="ชาเลนจ์กิจกรรมกลางของ Chill & Connect Hub (สะสม XP แลกรางวัลอิสระ)"
-                      className="text-[11px] font-black text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-full flex items-center gap-1 border border-purple-300/80 truncate max-w-[calc(100%-70px)]"
+                      className="text-[11px] font-bold text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-full flex items-center gap-1 border border-purple-300/80 truncate max-w-[calc(100%-70px)]"
                     >
                       <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500 shrink-0" />
                       <span className="truncate">Official • Chill & Connect</span>
                     </span>
                   )}
 
-                  <span className="text-[11px] font-black text-purple-800 bg-[#F5F3FF] border border-purple-200/90 px-2 py-0.5 rounded-full flex items-center gap-0.5 shrink-0 shadow-2xs">
+                  <span className="text-[11px] font-bold text-purple-800 bg-[#F5F3FF] border border-purple-200/90 px-2 py-0.5 rounded-full flex items-center gap-0.5 shrink-0 shadow-2xs">
                     <Zap className="w-3 h-3 text-purple-600 fill-purple-500" />
                     <span>{quest.rule ? `+${quest.rewardPoints ?? 0} XP` : 'บันทึกเอง'}</span>
                   </span>
@@ -446,7 +446,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
 
                   {/* Bottom-Left Floating Glass Medal Badge */}
                   <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
-                    <div className="inline-flex items-center gap-1.5 text-[11px] font-black text-white bg-slate-900/80 backdrop-blur-md px-2.5 py-1 rounded-xl border border-white/20 shadow-md truncate max-w-full">
+                    <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-white bg-slate-900/80 backdrop-blur-md px-2.5 py-1 rounded-xl border border-white/20 shadow-md truncate max-w-full">
                       <Award className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                       <span className="truncate">เหรียญ {quest.badgeLabel}</span>
                     </div>
@@ -457,7 +457,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                 <div className="space-y-1.5 flex-1">
                   <h3
                     title={quest.title}
-                    className="font-black text-sm sm:text-base text-slate-900 group-hover/card:text-purple-700 transition-colors leading-snug line-clamp-2 min-h-[2.25rem] sm:min-h-[2.5rem]"
+                    className="font-bold text-sm sm:text-base text-slate-900 group-hover/card:text-purple-700 transition-colors leading-snug line-clamp-2 min-h-[2.25rem] sm:min-h-[2.5rem]"
                   >
                     {quest.title}
                   </h3>
@@ -498,7 +498,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
 
                   <div className="flex items-center gap-2">
                     {isDone ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-black text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200/80">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200/80">
                         <Trophy className="w-3 h-3 text-purple-600" />
                         <span>พิชิตแล้ว</span>
                       </span>

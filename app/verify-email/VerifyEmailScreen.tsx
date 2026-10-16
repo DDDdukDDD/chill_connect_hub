@@ -38,7 +38,7 @@ export function VerifyEmailScreen({ token }: { token: string }) {
       <header className="px-4 sm:px-8 py-4 border-b border-[#E8E2D8] bg-white/80">
         <Link href="/" className="inline-flex items-center gap-2">
           <BrandLogo size="sm" />
-          <span className="font-extrabold text-sm sm:text-base text-[#1E293B]">Chill & Connect Hub</span>
+          <span className="font-bold text-sm sm:text-base text-[#1E293B]">Chill & Connect Hub</span>
         </Link>
       </header>
       <main className="flex-1 w-full max-w-[480px] mx-auto px-4 py-10 flex flex-col justify-center">
@@ -54,11 +54,11 @@ export function VerifyEmailScreen({ token }: { token: string }) {
               <span className="w-16 h-16 rounded-3xl bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto mb-5 border border-emerald-200">
                 <MailCheck className="w-8 h-8" aria-hidden="true" />
               </span>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight">ยืนยันอีเมลแล้ว</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">ยืนยันอีเมลแล้ว</h1>
               <p className="text-sm text-slate-500 font-medium mt-2 mb-6">
                 <PhraseText text="ตอนนี้คุณโพสต์โมเมนต์ และคอมเมนต์ได้แล้ว" />
               </p>
-              <Link href="/profile" className="inline-flex items-center justify-center w-full px-6 py-3.5 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm sm:text-base font-extrabold shadow-sm">
+              <Link href="/profile" className="inline-flex items-center justify-center w-full px-6 py-3.5 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm sm:text-base font-bold shadow-sm">
                 ไปที่โปรไฟล์ของฉัน
               </Link>
             </>
@@ -68,11 +68,11 @@ export function VerifyEmailScreen({ token }: { token: string }) {
               <span className="w-16 h-16 rounded-3xl bg-rose-50 text-rose-700 flex items-center justify-center mx-auto mb-5 border border-rose-200">
                 <AlertCircle className="w-8 h-8" aria-hidden="true" />
               </span>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight">ยืนยันไม่สำเร็จ</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">ยืนยันไม่สำเร็จ</h1>
               <p className="text-sm text-slate-600 font-medium mt-2 mb-6" role="alert">
                 <PhraseText text={state.message} />
               </p>
-              <Link href="/profile#trust" className="inline-flex items-center justify-center w-full px-6 py-3.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm sm:text-base font-extrabold">
+              <Link href="/profile#trust" className="inline-flex items-center justify-center w-full px-6 py-3.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm sm:text-base font-bold">
                 ขอลิงก์ใหม่ที่หน้าโปรไฟล์
               </Link>
             </>

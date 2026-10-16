@@ -115,7 +115,7 @@ export const SmartSpotPlanModal: React.FC<SmartSpotPlanModalProps> = ({
         <div className="px-4 sm:px-5 py-3.5 border-b border-[#E2EAE4] flex items-center justify-between gap-3 relative z-10">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-[#2D5A3C] to-[#3B6E4C] text-white">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-[#2D5A3C] to-[#3B6E4C] text-white">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#86EFAC] animate-pulse shrink-0" />
                 <span>Smart Plan</span>
               </span>
@@ -123,7 +123,7 @@ export const SmartSpotPlanModal: React.FC<SmartSpotPlanModalProps> = ({
                 {stops.length} จุดเช็คอิน
               </span>
             </div>
-            <h2 className="text-sm sm:text-base font-black text-slate-900 tracking-tight pt-1 truncate">
+            <h2 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight pt-1 truncate">
               แผนเที่ยวรอบย่าน {cleanText(currentSpot.district || currentSpot.province)}
             </h2>
           </div>
@@ -133,7 +133,7 @@ export const SmartSpotPlanModal: React.FC<SmartSpotPlanModalProps> = ({
               <button
                 type="button"
                 onClick={onShuffle}
-                className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#2D5A3C] hover:text-[#1B432C] bg-white hover:bg-[#F4F8F5] px-2.5 py-1 rounded-xl border border-[#C5DEC9] shadow-2xs transition-all active:scale-95 cursor-pointer"
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-[#2D5A3C] hover:text-[#1B432C] bg-white hover:bg-[#F4F8F5] px-2.5 py-1 rounded-xl border border-[#C5DEC9] shadow-2xs transition-all active:scale-95 cursor-pointer"
                 title="สลับพิกัดทางเลือกใหม่"
               >
                 <span>สลับทริป</span>
@@ -166,7 +166,7 @@ export const SmartSpotPlanModal: React.FC<SmartSpotPlanModalProps> = ({
 
               {/* Step Node Circle */}
               <div
-                className={`absolute left-2.5 top-2.5 -translate-x-1/2 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shadow-2xs z-10 ${
+                className={`absolute left-2.5 top-2.5 -translate-x-1/2 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shadow-2xs z-10 ${
                   item.isCurrentSpot
                     ? 'bg-[#2D5A3C] text-white ring-3 ring-[#DDF0E1]'
                     : 'bg-white text-[#2D5A3C] border-[1.5px] border-[#A8CEB3] ring-2 ring-white'
@@ -187,7 +187,7 @@ export const SmartSpotPlanModal: React.FC<SmartSpotPlanModalProps> = ({
                 <div className="flex items-center justify-between gap-1.5">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span
-                      className={`font-black text-[10.5px] px-2 py-0.5 rounded-md border shrink-0 ${
+                      className={`font-bold text-[10.5px] px-2 py-0.5 rounded-md border shrink-0 ${
                         item.isCurrentSpot
                           ? 'text-[#2D5A3C] bg-[#DDF0E1] border-[#BBDDC3]'
                           : 'text-slate-800 bg-slate-100 border-slate-200'
@@ -202,14 +202,14 @@ export const SmartSpotPlanModal: React.FC<SmartSpotPlanModalProps> = ({
 
                   <div className="flex items-center gap-1.5 shrink-0">
                     {item.isCurrentSpot ? (
-                      <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[9.5px] font-black bg-[#2D5A3C] text-white shadow-2xs">
+                      <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[9.5px] font-bold bg-[#2D5A3C] text-white shadow-2xs">
                         ★ พิกัดนี้
                       </span>
                     ) : (
                       <Link
                         href={`/spots/${item.spot.id}`}
                         onClick={onClose}
-                        className="text-[10.5px] font-extrabold text-[#2D5A3C] hover:text-[#1B432C] hover:underline"
+                        className="text-[10.5px] font-bold text-[#2D5A3C] hover:text-[#1B432C] hover:underline"
                       >
                         ดูข้อมูล
                       </Link>
@@ -239,7 +239,7 @@ export const SmartSpotPlanModal: React.FC<SmartSpotPlanModalProps> = ({
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <div className="text-xs sm:text-[13px] font-black text-slate-900 leading-snug line-clamp-1">
+                    <div className="text-xs sm:text-[13px] font-bold text-slate-900 leading-snug line-clamp-1">
                       {cleanText(item.spot.title)}
                     </div>
                     <div className="text-[10.5px] text-slate-500 font-medium truncate pt-0.5">
@@ -269,7 +269,7 @@ export const SmartSpotPlanModal: React.FC<SmartSpotPlanModalProps> = ({
                   <button
                     type="button"
                     onClick={onAddStop}
-                    className="py-1.5 px-2.5 rounded-lg font-black text-[11px] bg-[#EBF3ED] hover:bg-[#DDF0E1] text-[#20442D] border border-[#BBDDC3] transition-all cursor-pointer shadow-2xs active:scale-95 whitespace-nowrap"
+                    className="py-1.5 px-2.5 rounded-lg font-bold text-[11px] bg-[#EBF3ED] hover:bg-[#DDF0E1] text-[#20442D] border border-[#BBDDC3] transition-all cursor-pointer shadow-2xs active:scale-95 whitespace-nowrap"
                   >
                     + เพิ่มสถานที่ ({stopCount}/6)
                   </button>
@@ -277,7 +277,7 @@ export const SmartSpotPlanModal: React.FC<SmartSpotPlanModalProps> = ({
                   <button
                     type="button"
                     onClick={onResetStops}
-                    className="py-1.5 px-2.5 rounded-lg font-black text-[11px] bg-[#EBF3ED] hover:bg-[#DDF0E1] text-[#20442D] border border-[#BBDDC3] transition-all cursor-pointer shadow-2xs active:scale-95 whitespace-nowrap"
+                    className="py-1.5 px-2.5 rounded-lg font-bold text-[11px] bg-[#EBF3ED] hover:bg-[#DDF0E1] text-[#20442D] border border-[#BBDDC3] transition-all cursor-pointer shadow-2xs active:scale-95 whitespace-nowrap"
                   >
                     รีเซ็ต (3 จุด)
                   </button>
@@ -298,7 +298,7 @@ export const SmartSpotPlanModal: React.FC<SmartSpotPlanModalProps> = ({
             href={multiStopMapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="py-1.5 px-3 rounded-lg bg-gradient-to-r from-[#2D5A3C] via-[#366846] to-[#2D5A3C] hover:from-[#234E32] hover:via-[#2C573A] hover:to-[#234E32] text-white text-[11px] font-black transition-all shadow-xs active:scale-98 flex items-center justify-center cursor-pointer text-center whitespace-nowrap"
+            className="py-1.5 px-3 rounded-lg bg-gradient-to-r from-[#2D5A3C] via-[#366846] to-[#2D5A3C] hover:from-[#234E32] hover:via-[#2C573A] hover:to-[#234E32] text-white text-[11px] font-bold transition-all shadow-xs active:scale-98 flex items-center justify-center cursor-pointer text-center whitespace-nowrap"
           >
             เปิดบน Google Maps ({stops.length} จุด)
           </a>

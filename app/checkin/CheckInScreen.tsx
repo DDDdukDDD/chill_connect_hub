@@ -34,7 +34,7 @@ export function CheckInScreen({ eventId, code }: { eventId: string; code: string
   }, [isAuthReady, isLoggedIn, eventId, code]);
 
   const returnTo = encodeURIComponent(`/checkin?event=${eventId}&code=${code}`);
-  const button = 'inline-flex items-center justify-center px-6 py-3 rounded-full text-sm sm:text-base font-extrabold whitespace-nowrap';
+  const button = 'inline-flex items-center justify-center px-6 py-3 rounded-full text-sm sm:text-base font-bold whitespace-nowrap';
 
   return (
     <div className="min-h-screen bg-[#FCFBF9] text-slate-900 font-sans flex flex-col">
@@ -44,13 +44,13 @@ export function CheckInScreen({ eventId, code }: { eventId: string; code: string
           {result.state === 'working' && (
             <>
               <Loader2 className="w-10 h-10 mx-auto text-slate-400 animate-spin" aria-hidden="true" />
-              <h1 className="mt-4 text-xl font-extrabold">กำลังเช็กอิน…</h1>
+              <h1 className="mt-4 text-xl font-bold">กำลังเช็กอิน…</h1>
             </>
           )}
           {result.state === 'done' && (
             <>
               <CheckCircle2 className="w-12 h-12 mx-auto text-emerald-600" aria-hidden="true" />
-              <h1 className="mt-4 text-xl sm:text-2xl font-extrabold">เช็กอินแล้ว</h1>
+              <h1 className="mt-4 text-xl sm:text-2xl font-bold">เช็กอินแล้ว</h1>
               <p className="mt-2 text-base font-semibold text-slate-700">{result.name}</p>
               <p className="mt-1 text-sm font-medium text-slate-500">สแกนบัตรใบถัดไปได้เลย</p>
               <Link href="/myhub" className={`${button} mt-6 bg-slate-100 hover:bg-slate-200 text-slate-700`}>ดูรายชื่อในมายฮับ</Link>
@@ -59,7 +59,7 @@ export function CheckInScreen({ eventId, code }: { eventId: string; code: string
           {result.state === 'signin' && (
             <>
               <AlertCircle className="w-10 h-10 mx-auto text-slate-400" aria-hidden="true" />
-              <h1 className="mt-4 text-xl font-extrabold">เข้าสู่ระบบก่อน</h1>
+              <h1 className="mt-4 text-xl font-bold">เข้าสู่ระบบก่อน</h1>
               <p className="mt-2 text-sm font-medium text-slate-600">เฉพาะคนจัดกิจกรรมเท่านั้นที่เช็กอินผู้เข้าร่วมได้ เข้าสู่ระบบด้วยบัญชีที่ใช้จัดกิจกรรมนี้</p>
               <Link href={`/login?returnTo=${returnTo}`} className={`${button} mt-6 bg-[#2563EB] hover:bg-[#1D4ED8] text-white`}>เข้าสู่ระบบ</Link>
             </>
@@ -67,7 +67,7 @@ export function CheckInScreen({ eventId, code }: { eventId: string; code: string
           {result.state === 'failed' && (
             <>
               <AlertCircle className="w-10 h-10 mx-auto text-rose-600" aria-hidden="true" />
-              <h1 className="mt-4 text-xl font-extrabold">เช็กอินไม่ได้</h1>
+              <h1 className="mt-4 text-xl font-bold">เช็กอินไม่ได้</h1>
               <p role="alert" className="mt-2 text-sm font-semibold text-slate-700">{result.message}</p>
               <p className="mt-2 text-sm font-medium text-slate-500">QR นี้ใช้สำหรับคนจัดสแกนที่จุดนัดพบ ถ้าคุณเป็นผู้เข้าร่วม ให้เปิดบัตรของคุณให้คนจัดสแกน</p>
               <Link href="/myhub" className={`${button} mt-6 bg-slate-100 hover:bg-slate-200 text-slate-700`}>ไปที่มายฮับ</Link>

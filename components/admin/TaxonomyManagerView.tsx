@@ -70,11 +70,11 @@ function CategoryEditor({
           <div className={`flex items-center gap-3 rounded-2xl border bg-white p-3 ${color.border}`}>
             <CategoryChip entry={form} />
             <div className="min-w-0">
-              <p className="truncate text-sm font-extrabold text-slate-900">{form.name || 'ชื่อหมวด'}</p>
+              <p className="truncate text-sm font-bold text-slate-900">{form.name || 'ชื่อหมวด'}</p>
               {form.nameEn && <p className="truncate text-[11px] text-slate-500">{form.nameEn}</p>}
             </div>
           </div>
-          <span className={`inline-block rounded-full border px-2 py-0.5 text-[10px] sm:text-xs font-extrabold ${color.badgeBg} ${color.badgeText} ${color.border}`}>{form.name || 'ป้ายหมวด'}</span>
+          <span className={`inline-block rounded-full border px-2 py-0.5 text-[10px] sm:text-xs font-bold ${color.badgeBg} ${color.badgeText} ${color.border}`}>{form.name || 'ป้ายหมวด'}</span>
           {form.image && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={form.image} alt="" className="h-32 w-full rounded-xl object-cover" />

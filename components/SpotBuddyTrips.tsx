@@ -56,7 +56,7 @@ export function SpotBuddyTrips({ spot, isLoggedIn, onRequireLogin, onShowToast }
   return (
     <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/90 shadow-2xs space-y-3">
       <div className="space-y-0.5">
-        <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight">ชวนเพื่อนไปที่นี่</h3>
+        <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">ชวนเพื่อนไปที่นี่</h3>
         <p className="text-xs text-slate-600">
           {answer.trips.length > 0 ? `มี ${answer.trips.length} ทริปเปิดรับอยู่` : 'ยังไม่มีทริปเปิดรับ เปิดทริปแรกได้เลย'}
         </p>
@@ -73,7 +73,7 @@ export function SpotBuddyTrips({ spot, isLoggedIn, onRequireLogin, onShowToast }
                   className="block p-3 rounded-2xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-colors space-y-1.5"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <span className="text-xs sm:text-sm font-extrabold text-slate-900 leading-snug">{trip.title}</span>
+                    <span className="text-xs sm:text-sm font-bold text-slate-900 leading-snug">{trip.title}</span>
                     <ArrowRight className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
                   </div>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] sm:text-xs font-semibold text-slate-600">
@@ -87,7 +87,7 @@ export function SpotBuddyTrips({ spot, isLoggedIn, onRequireLogin, onShowToast }
                     </span>
                   </div>
                   <span
-                    className={`inline-block text-[11px] font-extrabold px-2 py-0.5 rounded-full ${
+                    className={`inline-block text-[11px] font-bold px-2 py-0.5 rounded-full ${
                       confirmed ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800'
                     }`}
                   >
@@ -104,7 +104,7 @@ export function SpotBuddyTrips({ spot, isLoggedIn, onRequireLogin, onShowToast }
         type="button"
         disabled={Boolean(blockedReason)}
         onClick={() => (isLoggedIn ? setIsModalOpen(true) : onRequireLogin())}
-        className={`w-full py-2.5 px-4 rounded-full text-sm font-extrabold whitespace-nowrap transition-colors ${
+        className={`w-full py-2.5 px-4 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${
           blockedReason ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm cursor-pointer'
         }`}
       >

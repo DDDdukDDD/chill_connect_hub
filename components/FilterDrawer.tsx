@@ -100,11 +100,11 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-extrabold text-base text-[#1E293B]">
+                <h3 className="font-bold text-base text-[#1E293B]">
                   {isSpotsMode ? 'ตัวกรองสถานที่ขั้นสูง' : 'ตัวกรองค้นหาขั้นสูง'}
                 </h3>
                 {activeCount > 0 && (
-                  <span className="text-[10px] font-black bg-[#F26430] text-white px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] font-bold bg-[#F26430] text-white px-2 py-0.5 rounded-full">
                     ใช้งาน {activeCount}
                   </span>
                 )}
@@ -137,7 +137,7 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
               {/* Spot Section 1: เลือกจังหวัดทั่วไทย (77 จังหวัด พร้อมช่องค้นหา) */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="font-extrabold text-xs text-[#1E293B] flex items-center gap-1.5">
+                  <label className="font-bold text-xs text-[#1E293B] flex items-center gap-1.5">
                     <MapPin className="w-4 h-4 text-[#F26430]" />
                     <span>ค้นหา & เลือกจังหวัดทั่วไทย (77 จังหวัด):</span>
                   </label>
@@ -201,7 +201,7 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
               {/* Spot Section 2: หมวดหมู่สถานที่ */}
               <div className="space-y-2.5 pt-4 border-t border-slate-100">
                 <div className="flex items-center justify-between">
-                  <label className="font-extrabold text-xs text-[#1E293B] flex items-center gap-1.5">
+                  <label className="font-bold text-xs text-[#1E293B] flex items-center gap-1.5">
                     <Compass className="w-4 h-4 text-[#4A7C59]" />
                     <span>หมวดหมู่สถานที่ & บรรยากาศ:</span>
                   </label>
@@ -240,7 +240,7 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
 
               {/* Spot Section 3: ค่าเข้าชม / ราคา */}
               <div className="space-y-2.5 pt-4 border-t border-slate-100">
-                <label className="font-extrabold text-xs text-[#1E293B] flex items-center gap-1.5">
+                <label className="font-bold text-xs text-[#1E293B] flex items-center gap-1.5">
                   <Tag className="w-4 h-4 text-emerald-600" />
                   <span>ค่าเข้าชมสถานที่:</span>
                 </label>
@@ -282,7 +282,7 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
               {/* Section 1: สถานที่ & ศูนย์จัดงานหลัก */}
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <label className="font-extrabold text-xs text-[#1E293B] flex items-center gap-1.5">
+                  <label className="font-bold text-xs text-[#1E293B] flex items-center gap-1.5">
                     <Building2 className="w-4 h-4 text-amber-600" />
                     <span>สถานที่ & ศูนย์แสดงสินค้าหลัก:</span>
                   </label>
@@ -332,7 +332,7 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
               {/* Section 2: ทำเล / ย่านในกรุงเทพฯ */}
               <div className="space-y-2.5 pt-4 border-t border-slate-100">
                 <div className="flex items-center justify-between">
-                  <label className="font-extrabold text-xs text-[#1E293B] flex items-center gap-1.5">
+                  <label className="font-bold text-xs text-[#1E293B] flex items-center gap-1.5">
                     <MapPin className="w-4 h-4 text-emerald-600" />
                     <span>ทำเล / ย่านในกรุงเทพฯ:</span>
                   </label>
@@ -385,7 +385,7 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
               {/* Section 3: หมวดหมู่อารมณ์กิจกรรม */}
               <div className="space-y-2.5 pt-4 border-t border-slate-100">
                 <div className="flex items-center justify-between">
-                  <label className="font-extrabold text-xs text-[#1E293B] flex items-center gap-1.5">
+                  <label className="font-bold text-xs text-[#1E293B] flex items-center gap-1.5">
                     <Tag className="w-4 h-4 text-[#F26430]" />
                     <span>หมวดหมู่อารมณ์ & สไตล์กิจกรรม:</span>
                   </label>
@@ -430,7 +430,7 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
 
               {/* Section 4: งบประมาณ / ค่าใช้จ่าย */}
               <div className="space-y-2.5 pt-4 border-t border-slate-100">
-                <label className="font-extrabold text-xs text-[#1E293B] flex items-center gap-1.5">
+                <label className="font-bold text-xs text-[#1E293B] flex items-center gap-1.5">
                   <Tag className="w-4 h-4 text-emerald-600" />
                   <span>งบประมาณ / ค่าใช้จ่าย:</span>
                 </label>
@@ -478,7 +478,7 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 bg-[#4A7C59] hover:bg-[#3D6649] text-white py-2.5 px-5 rounded-xl text-xs font-extrabold shadow-md transition-all cursor-pointer text-center"
+            className="flex-1 bg-[#4A7C59] hover:bg-[#3D6649] text-white py-2.5 px-5 rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer text-center"
           >
             <span>ดูผลลัพธ์ ({totalResultsCount} รายการ)</span>
           </button>

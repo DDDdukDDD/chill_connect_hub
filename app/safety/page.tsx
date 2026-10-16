@@ -46,7 +46,7 @@ export default function SafetyPage() {
                   Trust & Safety Architecture
                 </span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
                 แนวทางความปลอดภัยและข้อกำหนดชุมชน
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 font-medium">
@@ -61,7 +61,7 @@ export default function SafetyPage() {
           
           {/* Card 1: Platform Intermediary */}
           <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-3">
-            <div className="flex items-center gap-2.5 text-slate-900 font-black text-base">
+            <div className="flex items-center gap-2.5 text-slate-900 font-bold text-base">
               <Lock className="w-5 h-5 text-[#4A7C59]" />
               <h2>1. สถานะตัวกลางของแพลตฟอร์ม (Platform Intermediary Notice)</h2>
             </div>
@@ -76,7 +76,7 @@ export default function SafetyPage() {
 
           {/* Card 2: Public Space Meeting Only */}
           <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-3">
-            <div className="flex items-center gap-2.5 text-slate-900 font-black text-base">
+            <div className="flex items-center gap-2.5 text-slate-900 font-bold text-base">
               <MapPin className="w-5 h-5 text-[#4A7C59]" />
               <h2>2. กฎการนัดพบในพื้นที่สาธารณะเท่านั้น (Public Space Meeting Policy)</h2>
             </div>
@@ -88,7 +88,7 @@ export default function SafetyPage() {
 
           {/* Card 3: Assumption of Risk */}
           <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-3">
-            <div className="flex items-center gap-2.5 text-slate-900 font-black text-base">
+            <div className="flex items-center gap-2.5 text-slate-900 font-bold text-base">
               <AlertTriangle className="w-5 h-5 text-amber-600" />
               <h2>3. การยอมรับความเสี่ยงและสละสิทธิ์เรียกร้องค่าเสียหาย (Assumption of Risk & Waiver)</h2>
             </div>
@@ -99,7 +99,7 @@ export default function SafetyPage() {
 
           {/* Card 4: Zero Tolerance */}
           <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-3">
-            <div className="flex items-center gap-2.5 text-slate-900 font-black text-base">
+            <div className="flex items-center gap-2.5 text-slate-900 font-bold text-base">
               <CheckCircle2 className="w-5 h-5 text-[#4A7C59]" />
               <h2>4. มาตรการจัดการพฤติกรรมไม่เหมาะสม (Zero Tolerance Policy)</h2>
             </div>
@@ -110,7 +110,7 @@ export default function SafetyPage() {
 
           {/* Card 5: Safety Tips */}
           <div className="p-6 rounded-3xl bg-[#EBF3ED]/60 border border-[#A3CEB0]/60 shadow-2xs space-y-3">
-            <div className="flex items-center gap-2.5 text-[#2D5A3C] font-black text-base">
+            <div className="flex items-center gap-2.5 text-[#2D5A3C] font-bold text-base">
               <PhoneCall className="w-5 h-5 text-[#4A7C59]" />
               <h2>5. คำแนะนำเพื่อความปลอดภัยของตนเอง (Practical Safety Tips)</h2>
             </div>

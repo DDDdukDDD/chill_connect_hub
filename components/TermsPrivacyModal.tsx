@@ -133,7 +133,7 @@ function SectionList({ sections }: { sections: Section[] }) {
     <>
       {sections.map((section) => (
         <section key={section.title} className="space-y-2">
-          <h3 className="text-sm sm:text-base font-extrabold text-slate-900">{section.title}</h3>
+          <h3 className="text-sm sm:text-base font-bold text-slate-900">{section.title}</h3>
           <ul className="list-disc pl-5 space-y-1.5 text-sm text-slate-600 leading-relaxed">
             {section.items.map((item) => (
               <li key={item}>{item}</li>
@@ -252,7 +252,7 @@ export function LegalBody({ tab }: { tab: Tab }) {
       <SectionList sections={PRIVACY} />
       <MyDataActions />
       <section className="space-y-2">
-        <h3 className="text-sm sm:text-base font-extrabold text-slate-900">5. ติดต่อเรา</h3>
+        <h3 className="text-sm sm:text-base font-bold text-slate-900">5. ติดต่อเรา</h3>
         <p className="text-sm text-slate-600 leading-relaxed">
           มีคำถามหรือต้องการใช้สิทธิเกี่ยวกับข้อมูลส่วนบุคคล ติดต่อได้ที่{' '}
           <a href={`mailto:${CONTACT_EMAIL}`} className="font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline break-all">{CONTACT_EMAIL}</a>
@@ -269,7 +269,7 @@ function TermsPrivacyDialog({ onClose, initialTab }: { onClose: () => void; init
   return (
     <DialogShell onClose={onClose} size="lg" layer="top" bare labelledBy={titleId}>
       <header className="px-5 sm:px-8 pt-6 sm:pt-8 pb-4 border-b border-slate-100 shrink-0">
-        <h2 id={titleId} className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 pr-12">
+        <h2 id={titleId} className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 pr-12">
           ข้อตกลงและนโยบาย
         </h2>
         <div className="mt-4">

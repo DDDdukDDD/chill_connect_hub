@@ -267,12 +267,12 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
 
           {/* Bottom-Left Image Badges: Province & Rating */}
           <div className="absolute bottom-2.5 left-3 sm:bottom-3 sm:left-4 flex items-center gap-2 text-white z-10">
-            <span className="text-[11px] font-extrabold flex items-center gap-1 bg-black/50 backdrop-blur-md px-2 py-0.5 rounded-lg border border-white/20">
+            <span className="text-[11px] font-bold flex items-center gap-1 bg-black/50 backdrop-blur-md px-2 py-0.5 rounded-lg border border-white/20">
               <MapPin className="w-3 h-3 text-emerald-300 shrink-0" />
               <span>{spot.province} • {spot.district}</span>
             </span>
 
-            <span className="text-[11px] font-black bg-amber-400 text-slate-950 px-2 py-0.5 rounded-lg flex items-center gap-0.5 shadow-2xs">
+            <span className="text-[11px] font-bold bg-amber-400 text-slate-950 px-2 py-0.5 rounded-lg flex items-center gap-0.5 shadow-2xs">
               <Star className="w-3 h-3 fill-slate-950" />
               <span>{spot.rating} ({spot.reviewsCount} รีวิว)</span>
             </span>
@@ -290,7 +290,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
                   📍 {spot.categoryLabel}
                 </span>
 
-                <span className="text-[11px] sm:text-xs font-black px-2.5 py-0.5 rounded-full border bg-amber-50 text-amber-900 border-amber-300">
+                <span className="text-[11px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full border bg-amber-50 text-amber-900 border-amber-300">
                   {spot.price.includes('ฟรี') ? '🎉 เข้าฟรี!' : `🏷️ ${spot.price}`}
                 </span>
               </div>
@@ -305,7 +305,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
                 {isCopied ? (
                   <>
                     <Check className="w-3 h-3 text-emerald-600" />
-                    <span className="text-emerald-600 font-extrabold">คัดลอกลิงก์แล้ว!</span>
+                    <span className="text-emerald-600 font-bold">คัดลอกลิงก์แล้ว!</span>
                   </>
                 ) : (
                   <>
@@ -317,7 +317,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
             </div>
 
             {/* Title with sleek typography */}
-            <h2 className="text-base sm:text-lg font-black text-[#1E293B] mt-1 leading-snug tracking-tight">
+            <h2 className="text-base sm:text-lg font-bold text-[#1E293B] mt-1 leading-snug tracking-tight">
               {spot.title}
             </h2>
 
@@ -335,7 +335,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
                   ))}
                 </div>
                 <span className="text-slate-700 font-medium text-[11px] sm:text-xs">
-                  <strong className="text-slate-900 font-extrabold">{spot.interestedCount || 48} คน</strong> วางแผนจะไป
+                  <strong className="text-slate-900 font-bold">{spot.interestedCount || 48} คน</strong> วางแผนจะไป
                 </span>
               </div>
 
@@ -343,7 +343,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
               <Link
                 href={`/moments?location=${encodeURIComponent(spot.title)}`}
                 onClick={onClose}
-                className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#4A7C59] hover:text-[#3B6447] bg-white hover:bg-emerald-50 px-2.5 py-1 rounded-xl border border-[#4A7C59]/30 transition-all shrink-0 shadow-2xs"
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-[#4A7C59] hover:text-[#3B6447] bg-white hover:bg-emerald-50 px-2.5 py-1 rounded-xl border border-[#4A7C59]/30 transition-all shrink-0 shadow-2xs"
               >
                 <Camera className="w-3 h-3 text-[#4A7C59]" />
                 <span>ดูโมเมนต์จากเพื่อนๆ ➔</span>
@@ -390,7 +390,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
 
           {/* Description (ปรับขนาด Font ให้เล็กลงดูสบายตาและสวยงาม) */}
           <div className="space-y-1.5">
-            <h3 className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+            <h3 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
               <Compass className="w-3.5 h-3.5 text-[#4A7C59]" />
               <span>เกี่ยวกับสถานที่นี้</span>
             </h3>
@@ -402,7 +402,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
           {/* Highlights List */}
           {spot.highlights && spot.highlights.length > 0 && (
             <div className="space-y-1.5">
-              <h3 className="text-xs font-black text-slate-900">✨ จุดเด่นที่ไม่ควรพลาด</h3>
+              <h3 className="text-xs font-bold text-slate-900">✨ จุดเด่นที่ไม่ควรพลาด</h3>
               <div className="space-y-1">
                 {spot.highlights.map((highlight, idx) => (
                   <div key={idx} className="flex items-start gap-2 text-xs text-slate-700 font-medium">
@@ -416,7 +416,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
 
           {/* Facilities & Transit Guide */}
           <div className="space-y-2">
-            <h3 className="text-xs font-black text-slate-900">🚗 สิ่งอำนวยความสะดวก & การเดินทาง</h3>
+            <h3 className="text-xs font-bold text-slate-900">🚗 สิ่งอำนวยความสะดวก & การเดินทาง</h3>
             {spot.transitInfo && (
               <p className="text-xs text-slate-700 font-semibold bg-slate-100 p-2.5 rounded-xl">
                 {spot.transitInfo}
@@ -457,7 +457,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
             <Link
               href="/challenges"
               onClick={onClose}
-              className="inline-flex items-center gap-1 text-xs font-extrabold text-amber-900 hover:text-amber-950 bg-white hover:bg-amber-100/80 px-3 py-1.5 rounded-xl border border-amber-300/80 transition-all shrink-0 shadow-2xs active:scale-95 cursor-pointer"
+              className="inline-flex items-center gap-1 text-xs font-bold text-amber-900 hover:text-amber-950 bg-white hover:bg-amber-100/80 px-3 py-1.5 rounded-xl border border-amber-300/80 transition-all shrink-0 shadow-2xs active:scale-95 cursor-pointer"
             >
               <span>ดูชาเลนจ์</span>
               <ArrowRight className="w-3 h-3" />
@@ -528,7 +528,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
                     className="p-3.5 sm:p-4 bg-white rounded-2xl border border-amber-300/80 shadow-md space-y-3 animate-scale-up text-left text-xs"
                   >
                     <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                      <h4 className="font-extrabold text-[#1E293B] flex items-center gap-1.5">
+                      <h4 className="font-bold text-[#1E293B] flex items-center gap-1.5">
                         <Sparkles className="w-3.5 h-3.5 text-[#F26430]" />
                         <span>ตั้งกลุ่มชวนเพื่อนเที่ยวสถานที่นี้</span>
                       </h4>
@@ -699,7 +699,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
                           <div className="flex items-center gap-1.5 flex-wrap text-[10px] sm:text-[11px] text-[#64748B]">
                             <span className="flex items-center gap-1">
                               <span>จัดโดย <strong className="text-[#1E293B]">{sub.creatorName}</strong></span>
-                              <span className="inline-flex items-center gap-0.5 text-[9px] font-extrabold px-1.5 py-0.2 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
                                 <ShieldCheck className="w-2.5 h-2.5 text-emerald-600" />
                                 <span>ยืนยันตัวตน</span>
                               </span>
@@ -791,7 +791,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
               }
               onToggleFavorite(spot.id);
             }}
-            className={`py-2 px-5 rounded-2xl text-xs sm:text-sm font-extrabold border transition-all flex items-center gap-2 cursor-pointer shadow-md active:scale-95 ${
+            className={`py-2 px-5 rounded-2xl text-xs sm:text-sm font-bold border transition-all flex items-center gap-2 cursor-pointer shadow-md active:scale-95 ${
               isFavorite
                 ? 'bg-[#4A7C59] hover:bg-[#3B6447] border-[#4A7C59] text-white shadow-[#4A7C59]/20'
                 : 'bg-[#F26430] hover:bg-[#D95322] border-[#F26430] text-white shadow-[#F26430]/20'

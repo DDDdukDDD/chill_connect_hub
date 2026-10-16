@@ -32,8 +32,8 @@ const isEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim(
 const inputClass =
   'w-full px-4 py-3 bg-white border border-slate-300 rounded-2xl text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all aria-[invalid=true]:border-rose-400';
 const primaryButton =
-  'w-full bg-[#2563EB] hover:bg-[#1D4ED8] disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white py-3.5 px-6 rounded-full font-extrabold text-sm sm:text-base shadow-sm transition-all active:scale-98 flex items-center justify-center gap-2 cursor-pointer';
-const linkButton = 'font-extrabold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap';
+  'w-full bg-[#2563EB] hover:bg-[#1D4ED8] disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white py-3.5 px-6 rounded-full font-bold text-sm sm:text-base shadow-sm transition-all active:scale-98 flex items-center justify-center gap-2 cursor-pointer';
+const linkButton = 'font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap';
 
 function passwordStrength(value: string): { level: 0 | 1 | 2 | 3; label: string } {
   if (!value) return { level: 0, label: '' };
@@ -89,7 +89,7 @@ function SocialButtons({ verb, available, disabled, onPick }: { verb: string; av
             type="button"
             disabled={disabled || !ready}
             onClick={() => onPick(p.id)}
-            className="w-full bg-white hover:bg-slate-50 disabled:hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed text-slate-800 py-3.5 px-4 sm:px-6 rounded-full border border-slate-300 font-extrabold text-sm sm:text-base flex items-center justify-center gap-2.5 sm:gap-3 active:scale-98 disabled:active:scale-100 transition-all cursor-pointer"
+            className="w-full bg-white hover:bg-slate-50 disabled:hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed text-slate-800 py-3.5 px-4 sm:px-6 rounded-full border border-slate-300 font-bold text-sm sm:text-base flex items-center justify-center gap-2.5 sm:gap-3 active:scale-98 disabled:active:scale-100 transition-all cursor-pointer"
           >
             {p.icon}
             <span className="whitespace-nowrap"><span className="hidden min-[400px]:inline">{verb}ด้วย </span>{p.label}</span>
@@ -307,7 +307,7 @@ export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, on
           <X className="w-5 h-5" />
         </button>
       )}
-      <h2 id={titleId} className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 px-8"><PhraseText text={title} /></h2>
+      <h2 id={titleId} className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 px-8"><PhraseText text={title} /></h2>
       {subtitle && <p className="text-sm text-slate-500 font-medium mt-2 max-w-sm mx-auto leading-relaxed"><PhraseText text={subtitle} /></p>}
     </div>
   );
@@ -378,7 +378,7 @@ export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, on
             type="button"
             disabled={!consentGiven}
             onClick={() => go('signup-email')}
-            className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white py-3.5 px-6 rounded-full font-extrabold text-sm sm:text-base shadow-2xs transition-all active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white py-3.5 px-6 rounded-full font-bold text-sm sm:text-base shadow-2xs transition-all active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
           >
             <Mail className="w-5 h-5" aria-hidden="true" />
             <span>สมัครด้วยอีเมล</span>

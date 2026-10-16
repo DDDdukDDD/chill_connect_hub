@@ -328,7 +328,7 @@ function FairsPageContent() {
 
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4 bg-gradient-to-r from-blue-50/70 via-slate-50/40 to-transparent p-3.5 sm:p-4.5 rounded-2xl border border-blue-100/80 shadow-2xs">
             <div className="space-y-1 max-w-2xl">
-              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight">
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight leading-tight">
                 งานมหกรรม & เอ็กซ์โป
               </h1>
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">

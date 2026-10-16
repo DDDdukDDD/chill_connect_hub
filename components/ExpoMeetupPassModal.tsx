@@ -72,15 +72,15 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
         <div className="flex items-start justify-between border-b border-slate-100 pb-3.5">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-sky-800 bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200">
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-sky-800 bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200">
                 <Sparkles className="w-3 h-3 text-sky-600" />
                 <span>บัตรนัดพบในงาน</span>
               </span>
-              <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
                 ✓ ยืนยันร่วมกลุ่มแล้ว
               </span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
               ตั๋วนัดพบกลุ่มเดินดูงาน
             </h2>
             <p className="text-xs text-slate-500 font-medium">
@@ -103,10 +103,10 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
           
           {/* Top Event Context */}
           <div className="space-y-1">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-sky-700 block">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-sky-700 block">
               งานมหกรรม & นิทรรศการ
             </span>
-            <h3 className="text-base font-black text-slate-900 leading-snug">
+            <h3 className="text-base font-bold text-slate-900 leading-snug">
               {passData.fairTitle}
             </h3>
             <p className="text-xs text-slate-500 flex items-center gap-1">
@@ -125,10 +125,10 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
           {/* Group Details */}
           <div className="space-y-3">
             <div className="space-y-1">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
                 หัวข้อกลุ่มนัดเดินงาน
               </span>
-              <h4 className="text-sm font-black text-slate-900 leading-snug">
+              <h4 className="text-sm font-bold text-slate-900 leading-snug">
                 {passData.groupTitle}
               </h4>
             </div>
@@ -140,7 +140,7 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
                   <MapPin className="w-3 h-3 text-[#2B527A]" />
                   จุดนัดพบในงาน
                 </span>
-                <p className="text-xs font-black text-slate-900 leading-tight">
+                <p className="text-xs font-bold text-slate-900 leading-tight">
                   {passData.meetupPoint}
                 </p>
               </div>
@@ -150,7 +150,7 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
                   <Clock className="w-3 h-3 text-[#2B527A]" />
                   เวลานัดพบ
                 </span>
-                <p className="text-xs font-black text-slate-900 leading-tight">
+                <p className="text-xs font-bold text-slate-900 leading-tight">
                   {passData.time}
                 </p>
               </div>
@@ -173,7 +173,7 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
                   className="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0"
                 />
                 <div className="min-w-0">
-                  <span className="text-xs font-black text-slate-900 block truncate">
+                  <span className="text-xs font-bold text-slate-900 block truncate">
                     {passData.creatorName}
                   </span>
                   <span className="text-[11px] text-slate-500 block truncate">
@@ -241,7 +241,7 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="py-3 px-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+              className="py-3 px-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
             >
               <span>รับทราบ เข้าใจแล้ว</span>
             </button>
@@ -278,7 +278,7 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
                         setShowCancelConfirm(false);
                         onClose();
                       }}
-                      className="px-3 py-1 rounded-xl bg-rose-600 text-white text-xs font-black shadow-xs hover:bg-rose-700"
+                      className="px-3 py-1 rounded-xl bg-rose-600 text-white text-xs font-bold shadow-xs hover:bg-rose-700"
                     >
                       ยืนยันยกเลิก
                     </button>

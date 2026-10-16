@@ -159,7 +159,7 @@ export const TopVenuesRail: React.FC<TopVenuesRailProps> = ({
       {/* Header Row: Title & Quick Reset Pill */}
       <div className="flex items-center justify-between gap-3 px-0.5">
         <div>
-          <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 tracking-tight flex items-center gap-1.5 sm:gap-2">
+          <h3 className="text-xs sm:text-sm font-bold text-slate-900 tracking-tight flex items-center gap-1.5 sm:gap-2">
             <span>ศูนย์การประชุมและแลนด์มาร์กยอดนิยม</span>
             <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 font-sans uppercase tracking-wider hidden sm:inline">
               Top Exhibition Venues & Hubs
@@ -264,7 +264,7 @@ export const TopVenuesRail: React.FC<TopVenuesRailProps> = ({
                 {/* Venue Name & Subtitle below image */}
                 <div className="mt-1.5 w-full px-0.5 text-center">
                   <p
-                    className={`text-[11px] sm:text-xs font-extrabold truncate transition-colors leading-tight ${
+                    className={`text-[11px] sm:text-xs font-bold truncate transition-colors leading-tight ${
                       active ? 'text-[#2B527A]' : 'text-slate-900 group-hover:text-[#2B527A]'
                     }`}
                   >

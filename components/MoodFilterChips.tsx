@@ -112,7 +112,7 @@ export const MoodFilterChips: React.FC<MoodFilterChipsProps> = ({
                   }}
                   className={`shrink-0 rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all border cursor-pointer ${
                     isVenueSelected
-                      ? 'bg-amber-600 text-white border-amber-600 shadow-xs scale-102 font-extrabold'
+                      ? 'bg-amber-600 text-white border-amber-600 shadow-xs scale-102 font-bold'
                       : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-amber-400 hover:bg-white'
                   }`}
                 >
@@ -171,7 +171,7 @@ export const MoodFilterChips: React.FC<MoodFilterChipsProps> = ({
                   }}
                   className={`shrink-0 rounded-full px-4.5 py-2 text-xs font-bold transition-all border flex items-center gap-1.5 ${
                     isSelected
-                      ? 'bg-[#4A7C59] text-white border-[#4A7C59] shadow-xs scale-102 font-extrabold'
+                      ? 'bg-[#4A7C59] text-white border-[#4A7C59] shadow-xs scale-102 font-bold'
                       : 'bg-slate-50 text-[#334155] border-slate-200 hover:border-[#4A7C59] hover:bg-white'
                   }`}
                 >
@@ -212,7 +212,7 @@ export const MoodFilterChips: React.FC<MoodFilterChipsProps> = ({
                       }
                       className={`shrink-0 rounded-full px-3.5 py-1 text-xs font-bold transition-all border ${
                         isSubSelected
-                          ? 'bg-[#F26430] text-white border-[#F26430] font-extrabold'
+                          ? 'bg-[#F26430] text-white border-[#F26430] font-bold'
                           : 'bg-white text-[#334155] border-[#C5DCCB] hover:border-[#F26430] hover:text-[#F26430]'
                       }`}
                     >

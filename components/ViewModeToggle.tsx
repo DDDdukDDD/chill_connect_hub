@@ -33,7 +33,7 @@ export const ViewModeToggle: React.FC<ViewModeToggleProps> = ({
         aria-label="Grid View"
         className={`px-2 py-1 sm:px-2.5 sm:py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
           viewMode === 'grid'
-            ? 'bg-white text-slate-900 shadow-2xs font-extrabold'
+            ? 'bg-white text-slate-900 shadow-2xs font-bold'
             : 'text-slate-500 hover:text-slate-800'
         }`}
       >
@@ -48,7 +48,7 @@ export const ViewModeToggle: React.FC<ViewModeToggleProps> = ({
         aria-label="List View"
         className={`px-2 py-1 sm:px-2.5 sm:py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
           viewMode === 'list'
-            ? 'bg-white text-slate-900 shadow-2xs font-extrabold'
+            ? 'bg-white text-slate-900 shadow-2xs font-bold'
             : 'text-slate-500 hover:text-slate-800'
         }`}
       >

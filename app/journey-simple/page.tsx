@@ -296,7 +296,7 @@ function JourneyContent() {
               <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/30" aria-hidden="true" />
               <div className="relative px-5 py-7 sm:px-10 sm:py-12 lg:py-14 max-w-2xl space-y-4">
                 <div className="space-y-1.5">
-                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white leading-tight tracking-tight">
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white leading-tight tracking-tight">
                     วันหยุดนี้ ไปไหนดี
                   </h1>
                   <p className="text-sm font-medium text-white/90">รวมที่เที่ยว กิจกรรม และงานแฟร์ทั่วไทย จะไปเอง หรือหาเพื่อนไปด้วยก็ได้</p>
@@ -345,7 +345,7 @@ function JourneyContent() {
                     <Icon className={`w-5 h-5 ${color}`} aria-hidden="true" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm sm:text-base font-extrabold text-slate-900">{label}</span>
+                    <span className="block text-sm sm:text-base font-bold text-slate-900">{label}</span>
                     <span className="block min-h-[1rem] text-[11px] sm:text-xs font-semibold text-slate-500 tabular-nums truncate">{count}</span>
                   </span>
                   <ArrowRight className="hidden sm:block w-4 h-4 text-slate-400 group-hover:text-slate-700 group-hover:translate-x-0.5 transition-all" aria-hidden="true" />
@@ -366,7 +366,7 @@ function JourneyContent() {
                       mood === id ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-700'
                     }`}
                   >
-                    <span className="text-xl sm:text-2xl font-black tracking-tight leading-tight">{word}</span>
+                    <span className="text-xl sm:text-2xl font-bold tracking-tight leading-tight">{word}</span>
                     <span className="text-xs sm:text-sm font-medium">{line}</span>
                   </button>
                 ))}
@@ -400,7 +400,7 @@ function JourneyContent() {
             {query && (
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm font-medium text-slate-600 min-w-0 truncate">
-                  ผลการค้นหา <strong className="font-extrabold text-slate-900">{query}</strong>
+                  ผลการค้นหา <strong className="font-bold text-slate-900">{query}</strong>
                 </p>
                 <button
                   type="button"
@@ -549,7 +549,7 @@ function JourneyContent() {
 
           {/* 8. Why us, kept to what is true today */}
           <section className="space-y-4">
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">เที่ยวอย่างสบายใจ</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">เที่ยวอย่างสบายใจ</h2>
             <ul className="grid gap-3 sm:grid-cols-3 sm:gap-4">
               {[
                 { Icon: Users, text: 'ทริปชวนเพื่อนมีกติกา อย่างน้อย 3 คน นัดตอนกลางวัน และเจอกันที่สถานที่' },

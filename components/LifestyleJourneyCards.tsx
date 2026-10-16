@@ -46,7 +46,7 @@ export const LifestyleJourneyCards: React.FC = () => {
             {/* Header: Milestone Node + Tag */}
             <div className="flex items-center justify-between relative">
               <div className="flex items-center gap-2 relative z-10">
-                <span className="w-8 h-8 rounded-xl bg-white text-[#4A7C59] border-2 border-emerald-400 font-black text-xs flex items-center justify-center shadow-xs ring-4 ring-white group-hover:scale-110 group-hover:bg-[#4A7C59] group-hover:text-white group-hover:border-[#4A7C59] transition-all duration-300">
+                <span className="w-8 h-8 rounded-xl bg-white text-[#4A7C59] border-2 border-emerald-400 font-bold text-xs flex items-center justify-center shadow-xs ring-4 ring-white group-hover:scale-110 group-hover:bg-[#4A7C59] group-hover:text-white group-hover:border-[#4A7C59] transition-all duration-300">
                   01
                 </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-[#4A7C59] ring-2 ring-emerald-100" />
@@ -55,7 +55,7 @@ export const LifestyleJourneyCards: React.FC = () => {
 
             {/* Title & Description */}
             <div className="space-y-1">
-              <h3 className="text-sm sm:text-base font-black text-slate-900 group-hover:text-[#4A7C59] transition-colors leading-snug">
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-[#4A7C59] transition-colors leading-snug">
                 1. ปักหมุดพิกัดพักใจ & งานน่าไป
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed font-normal">
@@ -95,7 +95,7 @@ export const LifestyleJourneyCards: React.FC = () => {
             {/* Header: Milestone Node */}
             <div className="flex items-center justify-between relative">
               <div className="flex items-center gap-2 relative z-10">
-                <span className="w-8 h-8 rounded-xl bg-white text-[#F26430] border-2 border-orange-400 font-black text-xs flex items-center justify-center shadow-xs ring-4 ring-white group-hover:scale-110 group-hover:bg-[#F26430] group-hover:text-white group-hover:border-[#F26430] transition-all duration-300">
+                <span className="w-8 h-8 rounded-xl bg-white text-[#F26430] border-2 border-orange-400 font-bold text-xs flex items-center justify-center shadow-xs ring-4 ring-white group-hover:scale-110 group-hover:bg-[#F26430] group-hover:text-white group-hover:border-[#F26430] transition-all duration-300">
                   02
                 </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-[#F26430] ring-2 ring-orange-100" />
@@ -104,7 +104,7 @@ export const LifestyleJourneyCards: React.FC = () => {
 
             {/* Title & Description */}
             <div className="space-y-1">
-              <h3 className="text-sm sm:text-base font-black text-slate-900 group-hover:text-[#F26430] transition-colors leading-snug">
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-[#F26430] transition-colors leading-snug">
                 2. เจอเพื่อนใหม่คอเดียวกัน
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed font-normal">
@@ -144,7 +144,7 @@ export const LifestyleJourneyCards: React.FC = () => {
             {/* Header: Milestone Node */}
             <div className="flex items-center justify-between relative">
               <div className="flex items-center gap-2 relative z-10">
-                <span className="w-8 h-8 rounded-xl bg-white text-[#7C3AED] border-2 border-purple-400 font-black text-xs flex items-center justify-center shadow-xs ring-4 ring-white group-hover:scale-110 group-hover:bg-[#7C3AED] group-hover:text-white group-hover:border-[#7C3AED] transition-all duration-300">
+                <span className="w-8 h-8 rounded-xl bg-white text-[#7C3AED] border-2 border-purple-400 font-bold text-xs flex items-center justify-center shadow-xs ring-4 ring-white group-hover:scale-110 group-hover:bg-[#7C3AED] group-hover:text-white group-hover:border-[#7C3AED] transition-all duration-300">
                   03
                 </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-[#7C3AED] ring-2 ring-purple-100" />
@@ -153,7 +153,7 @@ export const LifestyleJourneyCards: React.FC = () => {
 
             {/* Title & Description */}
             <div className="space-y-1">
-              <h3 className="text-sm sm:text-base font-black text-slate-900 group-hover:text-[#7C3AED] transition-colors leading-snug">
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-[#7C3AED] transition-colors leading-snug">
                 3. สนุกกับชาเลนจ์ & เช็คอินง่าย
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed font-normal">
@@ -193,7 +193,7 @@ export const LifestyleJourneyCards: React.FC = () => {
             {/* Header: Milestone Node */}
             <div className="flex items-center justify-between relative">
               <div className="flex items-center gap-2 relative z-10">
-                <span className="w-8 h-8 rounded-xl bg-white text-rose-500 border-2 border-rose-400 font-black text-xs flex items-center justify-center shadow-xs ring-4 ring-white group-hover:scale-110 group-hover:bg-rose-500 group-hover:text-white group-hover:border-rose-500 transition-all duration-300">
+                <span className="w-8 h-8 rounded-xl bg-white text-rose-500 border-2 border-rose-400 font-bold text-xs flex items-center justify-center shadow-xs ring-4 ring-white group-hover:scale-110 group-hover:bg-rose-500 group-hover:text-white group-hover:border-rose-500 transition-all duration-300">
                   04
                 </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500 ring-2 ring-rose-100" />
@@ -202,7 +202,7 @@ export const LifestyleJourneyCards: React.FC = () => {
 
             {/* Title & Description */}
             <div className="space-y-1">
-              <h3 className="text-sm sm:text-base font-black text-slate-900 group-hover:text-rose-600 transition-colors leading-snug">
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-rose-600 transition-colors leading-snug">
                 4. แชร์ความทรงจำ & รับสิทธิพิเศษ
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed font-normal">

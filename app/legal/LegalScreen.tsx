@@ -15,7 +15,7 @@ export function LegalScreen({ initialTab }: { initialTab: Tab }) {
       <header className="px-4 sm:px-8 py-4 flex items-center justify-between gap-3 border-b border-[#E8E2D8] bg-white/80 backdrop-blur-md">
         <Link href="/" className="flex items-center gap-2 min-w-0">
           <BrandLogo size="sm" />
-          <span className="font-extrabold text-sm sm:text-base text-[#1E293B] truncate">Chill & Connect Hub</span>
+          <span className="font-bold text-sm sm:text-base text-[#1E293B] truncate">Chill & Connect Hub</span>
         </Link>
         <Link href="/" className="shrink-0 inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-2 rounded-full bg-slate-100 hover:bg-slate-200 whitespace-nowrap">
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
@@ -25,7 +25,7 @@ export function LegalScreen({ initialTab }: { initialTab: Tab }) {
 
       <main className="flex-1 w-full max-w-[720px] mx-auto px-4 py-8 sm:py-12">
         <div className="bg-white rounded-[32px] border border-slate-200 shadow-sm p-5 sm:p-10">
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight">ข้อตกลงและนโยบาย</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">ข้อตกลงและนโยบาย</h1>
           <div className="mt-4 mb-6">
             <LegalTabs tab={tab} onChange={setTab} />
           </div>

@@ -114,7 +114,7 @@ export const Pagination: React.FC<PaginationProps> = ({
               <button
                 key={pageNum}
                 onClick={() => handlePageSelect(pageNum)}
-                className={`w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-lg text-xs font-extrabold transition-all flex items-center justify-center cursor-pointer ${
+                className={`w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-lg text-xs font-bold transition-all flex items-center justify-center cursor-pointer ${
                   isActive
                     ? 'bg-[#4A7C59] text-white shadow-xs ring-1 ring-[#4A7C59]/30'
                     : 'bg-white text-[#475569] border border-slate-200/90 hover:bg-slate-50 hover:text-[#1E293B] active:scale-95'

@@ -53,7 +53,7 @@ export default function HeroComparisonLabPage() {
               ← กลับหน้าแรก
             </Link>
             <div className="h-4 w-px bg-slate-300 hidden sm:block" />
-            <h1 className="text-sm sm:text-base font-extrabold text-[#1E293B] flex items-center gap-2">
+            <h1 className="text-sm sm:text-base font-bold text-[#1E293B] flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[#F26430]" />
               Hero Section Comparison Lab (เปรียบเทียบดีไซน์หน้าแรก)
             </h1>
@@ -63,7 +63,7 @@ export default function HeroComparisonLabPage() {
           <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80 overflow-x-auto max-w-full">
             <button
               onClick={() => setActiveConcept('concept1')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                 activeConcept === 'concept1'
                   ? 'bg-[#4A7C59] text-white shadow-sm'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
@@ -75,7 +75,7 @@ export default function HeroComparisonLabPage() {
 
             <button
               onClick={() => setActiveConcept('concept2')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                 activeConcept === 'concept2'
                   ? 'bg-[#F26430] text-white shadow-sm'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
@@ -87,7 +87,7 @@ export default function HeroComparisonLabPage() {
 
             <button
               onClick={() => setActiveConcept('concept3')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                 activeConcept === 'concept3'
                   ? 'bg-slate-900 text-white shadow-sm'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
@@ -99,7 +99,7 @@ export default function HeroComparisonLabPage() {
 
             <button
               onClick={() => setActiveConcept('current')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                 activeConcept === 'current'
                   ? 'bg-slate-700 text-white shadow-sm'
                   : 'text-slate-500 hover:text-slate-800 hover:bg-white/60'
@@ -117,7 +117,7 @@ export default function HeroComparisonLabPage() {
         <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-emerald-100 text-[#4A7C59]">
+              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-[#4A7C59]">
                 {activeConcept === 'concept1' && 'แบบที่ 1: Clean Editorial & Floating Search Capsule'}
                 {activeConcept === 'concept2' && 'แบบที่ 2: Asymmetric Split Hero (Live Featured of the Day)'}
                 {activeConcept === 'concept3' && 'แบบที่ 3: Ultra Compact & Feed-First (เน้นเนื้อหาขึ้นมาเร็ว)'}
@@ -159,7 +159,7 @@ export default function HeroComparisonLabPage() {
 
               {/* High-Impact Clean Editorial Headline */}
               <div className="space-y-1.5">
-                <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#1E293B] tracking-tight leading-tight">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#1E293B] tracking-tight leading-tight">
                   วันหยุดนี้... <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#4A7C59] via-[#2D5A3C] to-[#F26430]">ไปไหนดี?</span>
                 </h1>
                 <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-2xl mx-auto">
@@ -217,7 +217,7 @@ export default function HeroComparisonLabPage() {
                   </button>
 
                   {/* CTA Search Button */}
-                  <button className="w-full sm:w-auto bg-[#4A7C59] hover:bg-[#3B6447] text-white px-5 sm:px-6 py-2 rounded-lg sm:rounded-full font-black text-xs sm:text-sm transition-all shadow-md shadow-[#4A7C59]/25 flex items-center justify-center gap-1.5 shrink-0 active:scale-95 cursor-pointer">
+                  <button className="w-full sm:w-auto bg-[#4A7C59] hover:bg-[#3B6447] text-white px-5 sm:px-6 py-2 rounded-lg sm:rounded-full font-bold text-xs sm:text-sm transition-all shadow-md shadow-[#4A7C59]/25 flex items-center justify-center gap-1.5 shrink-0 active:scale-95 cursor-pointer">
                     <Search className="w-3.5 h-3.5" />
                     <span>ค้นหาเลย</span>
                   </button>
@@ -244,7 +244,7 @@ export default function HeroComparisonLabPage() {
                     <span>Lifestyle & Community Discovery Platform</span>
                   </div>
 
-                  <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#1E293B] tracking-tight leading-[1.15]">
+                  <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#1E293B] tracking-tight leading-[1.15]">
                     ค้นพบจุดฮีลใจ <br />
                     และกิจกรรมที่ทำให้ <br />
                     <span className="text-[#F26430] underline decoration-[#F26430]/30 underline-offset-8">วันหยุดมีความหมาย</span>
@@ -267,7 +267,7 @@ export default function HeroComparisonLabPage() {
                         placeholder="พิมพ์สถานที่, ย่าน หรือกิจกรรมที่สนใจ..."
                         className="w-full bg-transparent text-sm sm:text-base text-[#1E293B] placeholder-slate-400 focus:outline-none font-medium pr-2"
                       />
-                      <button className="bg-[#F26430] hover:bg-[#D95322] text-white px-5 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all shadow-md shadow-[#F26430]/20 shrink-0">
+                      <button className="bg-[#F26430] hover:bg-[#D95322] text-white px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-md shadow-[#F26430]/20 shrink-0">
                         ค้นหา
                       </button>
                     </div>
@@ -276,17 +276,17 @@ export default function HeroComparisonLabPage() {
                   {/* Community Trust Stats */}
                   <div className="pt-2 flex items-center gap-6 border-t border-slate-100">
                     <div>
-                      <p className="text-xl font-black text-[#4A7C59]">460+</p>
+                      <p className="text-xl font-bold text-[#4A7C59]">460+</p>
                       <p className="text-[11px] font-bold text-slate-500">พิกัด 77 จังหวัด</p>
                     </div>
                     <div className="h-8 w-px bg-slate-200" />
                     <div>
-                      <p className="text-xl font-black text-[#F26430]">100%</p>
+                      <p className="text-xl font-bold text-[#F26430]">100%</p>
                       <p className="text-[11px] font-bold text-slate-500">Safe Community</p>
                     </div>
                     <div className="h-8 w-px bg-slate-200" />
                     <div>
-                      <p className="text-xl font-black text-slate-800">4.9 ★</p>
+                      <p className="text-xl font-bold text-slate-800">4.9 ★</p>
                       <p className="text-[11px] font-bold text-slate-500">เรตติ้งเฉลี่ย</p>
                     </div>
                   </div>
@@ -305,7 +305,7 @@ export default function HeroComparisonLabPage() {
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                       
                       {/* Badge */}
-                      <div className="absolute top-3 left-3 flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-md text-xs font-extrabold text-[#4A7C59] shadow-sm">
+                      <div className="absolute top-3 left-3 flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-md text-xs font-bold text-[#4A7C59] shadow-sm">
                         <Sparkles className="w-3.5 h-3.5 text-[#F26430]" />
                         <span>Spot of the Day (แนะนำวันนี้)</span>
                       </div>
@@ -317,7 +317,7 @@ export default function HeroComparisonLabPage() {
                           <span>•</span>
                           <span>★ 4.9 (1,240 รีวิว)</span>
                         </div>
-                        <h3 className="text-lg font-black text-white">สวนเบญจกิติ (ป่าใจกลางเมือง)</h3>
+                        <h3 className="text-lg font-bold text-white">สวนเบญจกิติ (ป่าใจกลางเมือง)</h3>
                         <p className="text-xs text-slate-200 line-clamp-1">พื้นที่สีเขียวขนาดใหญ่ สะพานลอยฟ้า Skywalk วิวพระอาทิตย์ตกดิน</p>
                       </div>
                     </div>
@@ -327,7 +327,7 @@ export default function HeroComparisonLabPage() {
                         <span className="bg-emerald-100 text-[#4A7C59] px-2 py-0.5 rounded-md">เข้าฟรี</span>
                         <span>เปิด 05:00 - 21:00 น.</span>
                       </div>
-                      <span className="text-xs font-extrabold text-[#F26430] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                      <span className="text-xs font-bold text-[#F26430] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
                         ดูรายละเอียด <ArrowRight className="w-3.5 h-3.5" />
                       </span>
                     </div>
@@ -351,11 +351,11 @@ export default function HeroComparisonLabPage() {
                 
                 {/* Micro Brand / Title */}
                 <div className="flex items-center gap-2 px-2 text-left w-full md:w-auto">
-                  <div className="w-8 h-8 rounded-xl bg-[#4A7C59] flex items-center justify-center text-white font-black text-sm">
+                  <div className="w-8 h-8 rounded-xl bg-[#4A7C59] flex items-center justify-center text-white font-bold text-sm">
                     🌿
                   </div>
                   <div>
-                    <h2 className="text-sm font-black text-[#1E293B] leading-none">Chill & Connect Hub</h2>
+                    <h2 className="text-sm font-bold text-[#1E293B] leading-none">Chill & Connect Hub</h2>
                     <p className="text-[11px] font-medium text-slate-500">460+ พิกัดเที่ยว & อีเวนต์ทั่วไทย</p>
                   </div>
                 </div>
@@ -426,7 +426,7 @@ export default function HeroComparisonLabPage() {
         
         {/* Tab Switcher Simulation */}
         <div className="bg-white rounded-2xl border border-slate-200 p-2 shadow-sm flex items-center justify-center gap-2 max-w-xl mx-auto mb-8">
-          <button className="flex-1 py-2.5 px-4 rounded-xl bg-[#4A7C59] text-white text-xs sm:text-sm font-black flex items-center justify-center gap-2 shadow-sm">
+          <button className="flex-1 py-2.5 px-4 rounded-xl bg-[#4A7C59] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-sm">
             <span>🌿 ที่เที่ยว & จุดฮีลใจ 77 จังหวัด</span>
           </button>
           <button className="flex-1 py-2.5 px-4 rounded-xl text-slate-600 hover:bg-slate-100 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-colors">
@@ -448,9 +448,9 @@ export default function HeroComparisonLabPage() {
             <div className="p-4 space-y-2 text-left">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-slate-400 font-bold">📍 กรุงเทพฯ</span>
-                <span className="text-xs font-extrabold text-amber-500">★ 4.9</span>
+                <span className="text-xs font-bold text-amber-500">★ 4.9</span>
               </div>
-              <h3 className="font-extrabold text-base text-[#1E293B]">สวนเบญจกิติ (ป่าใจกลางเมือง)</h3>
+              <h3 className="font-bold text-base text-[#1E293B]">สวนเบญจกิติ (ป่าใจกลางเมือง)</h3>
               <p className="text-xs text-slate-500 line-clamp-2">สะพาน Skywalk และพื้นที่ชุ่มน้ำขนาดใหญ่ใจกลางกรุงเทพฯ สเปซยอดฮิตในการวิ่งและนั่งรับลม</p>
             </div>
           </div>
@@ -463,9 +463,9 @@ export default function HeroComparisonLabPage() {
             <div className="p-4 space-y-2 text-left">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-slate-400 font-bold">📍 เชียงใหม่</span>
-                <span className="text-xs font-extrabold text-amber-500">★ 4.9</span>
+                <span className="text-xs font-bold text-amber-500">★ 4.9</span>
               </div>
-              <h3 className="font-extrabold text-base text-[#1E293B]">บ้านข้างวัด (Baan Kang Wat)</h3>
+              <h3 className="font-bold text-base text-[#1E293B]">บ้านข้างวัด (Baan Kang Wat)</h3>
               <p className="text-xs text-slate-500 line-clamp-2">ชุมชนคราฟต์ไม้และคาเฟ่ท่ามกลางสวนร่มรื่น สัมผัสความสโลว์ไลฟ์และงานศิลปะ</p>
             </div>
           </div>
@@ -478,9 +478,9 @@ export default function HeroComparisonLabPage() {
             <div className="p-4 space-y-2 text-left">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-slate-400 font-bold">📍 ภูเก็ต</span>
-                <span className="text-xs font-extrabold text-amber-500">★ 4.8</span>
+                <span className="text-xs font-bold text-amber-500">★ 4.8</span>
               </div>
-              <h3 className="font-extrabold text-base text-[#1E293B]">แหลมพรหมเทพ (Promthep Cape)</h3>
+              <h3 className="font-bold text-base text-[#1E293B]">แหลมพรหมเทพ (Promthep Cape)</h3>
               <p className="text-xs text-slate-500 line-clamp-2">จุดชมพระอาทิตย์ตกดินที่สวยและมีชื่อเสียงที่สุดแห่งหนึ่งในเอเชีย บรรยากาศโรแมนติก</p>
             </div>
           </div>

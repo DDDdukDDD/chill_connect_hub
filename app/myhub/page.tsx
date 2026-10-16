@@ -861,7 +861,7 @@ function MyHubContent() {
           <p className="text-xs font-medium text-slate-500 truncate">{ev.location}</p>
         </div>
         <p className="shrink-0 text-xs font-semibold text-slate-600 tabular-nums">
-          <span className="text-sm font-extrabold text-slate-900">{ev.participantsCount ?? 0}</span>/{ev.maxParticipants ?? 0} คน
+          <span className="text-sm font-bold text-slate-900">{ev.participantsCount ?? 0}</span>/{ev.maxParticipants ?? 0} คน
         </p>
         <div className="flex items-center gap-2 shrink-0">
           {ev.approvalStatus !== 'approved' ? (
@@ -898,7 +898,7 @@ function MyHubContent() {
     return (
       <div className="space-y-4">
         <section aria-label="งานที่กำลังจะถึง" className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
-          <h2 className="text-sm sm:text-base font-extrabold text-slate-900">
+          <h2 className="text-sm sm:text-base font-bold text-slate-900">
             งานที่กำลังจะถึง <span className="text-slate-500 font-bold tabular-nums">({hostedUpcoming.length})</span>
           </h2>
           {hostedUpcoming.length > 0 ? (
@@ -909,7 +909,7 @@ function MyHubContent() {
         </section>
         {pastHosted.length > 0 && (
           <section aria-label="งานที่จัดไปแล้ว" className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
-            <h2 className="text-sm sm:text-base font-extrabold text-slate-900">
+            <h2 className="text-sm sm:text-base font-bold text-slate-900">
               งานที่จัดไปแล้ว <span className="text-slate-500 font-bold tabular-nums">({pastHosted.length})</span>
             </h2>
             <ul className="mt-3 divide-y divide-slate-100">{pastHosted.map((ev) => row(ev, true))}</ul>
@@ -934,7 +934,7 @@ function MyHubContent() {
       return (
         <section aria-label="ชาเลนจ์และ XP" className="bg-white rounded-2xl px-4 py-3 border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3">
           <p className="text-sm font-medium text-slate-600 min-w-0">
-            <span className="font-extrabold text-slate-900">ชาเลนจ์ &amp; XP</span>
+            <span className="font-bold text-slate-900">ชาเลนจ์ &amp; XP</span>
             <span className="ml-2 px-2.5 py-0.5 rounded-full bg-[#F5F3FF] text-[#5B21B6] text-xs font-bold tabular-nums">{userXp} XP</span>
             <span className="block text-xs text-slate-500 mt-1 tabular-nums">
               {finishedCount > 0 ? `ทำครบแล้ว ${finishedCount} ชาเลนจ์` : 'ยังไม่ได้เริ่มชาเลนจ์ เริ่มอันแรกเพื่อเก็บ XP'}
@@ -947,7 +947,7 @@ function MyHubContent() {
     return (
       <section aria-label="กำลังทำอยู่" className="bg-white rounded-2xl px-4 py-3 border border-slate-200/90 shadow-2xs">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-extrabold text-slate-900">
+          <h2 className="text-sm font-bold text-slate-900">
             กำลังทำอยู่
             <span className="ml-2 px-2.5 py-0.5 rounded-full bg-[#F5F3FF] text-[#5B21B6] text-xs font-bold tabular-nums">{userXp} XP</span>
           </h2>
@@ -996,11 +996,11 @@ function MyHubContent() {
     const openLink = 'py-2 -my-2 text-xs font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap';
     return (
       <section aria-label="ที่สนใจ" className="space-y-3">
-        <h2 className="text-base font-extrabold text-slate-900">ที่สนใจ</h2>
+        <h2 className="text-base font-bold text-slate-900">ที่สนใจ</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-3 lg:gap-5">
         <section aria-label="ที่บันทึกไว้" className={card}>
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-sm font-extrabold text-slate-900">ที่เที่ยวที่บันทึกไว้</h2>
+            <h2 className="text-sm font-bold text-slate-900">ที่เที่ยวที่บันทึกไว้</h2>
             <button type="button" onClick={() => openView('scrapbook')} className={openLink}>ดูทั้งหมด</button>
           </div>
           {savedSpotIds.length > 0 ? (
@@ -1027,7 +1027,7 @@ function MyHubContent() {
         </section>
         {savedNotJoined.length > 0 && (
           <section aria-label="งานที่บันทึกไว้" className={card}>
-            <h2 className="text-sm font-extrabold text-slate-900">งานที่บันทึกไว้</h2>
+            <h2 className="text-sm font-bold text-slate-900">งานที่บันทึกไว้</h2>
             <p className="text-xs font-medium text-slate-500 mt-0.5">ยังไม่ได้กดเข้าร่วม</p>
             <ul className="mt-3 space-y-3">
               {savedNotJoined.slice(0, 3).map((ev) => (
@@ -1060,7 +1060,7 @@ function MyHubContent() {
     ];
     return (
       <section aria-label="เริ่มที่ไหนดี" className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200/90 shadow-2xs">
-        <h2 className="text-base sm:text-lg font-extrabold text-slate-900">เริ่มที่ไหนดี</h2>
+        <h2 className="text-base sm:text-lg font-bold text-slate-900">เริ่มที่ไหนดี</h2>
         <p className="mt-1 text-sm font-medium text-slate-600">มายฮับของคุณยังว่างอยู่ เลือกสักอย่างที่อยากลอง แล้วนัดจะมารออยู่ตรงนี้</p>
 
         {/* Real meetups that are open now: something to say yes to, not only doors to other pages */}
@@ -1077,7 +1077,7 @@ function MyHubContent() {
                 return (
                   <li key={ev.id} className="py-3 flex flex-wrap items-center gap-x-3 gap-y-2.5">
                     <div className="w-10 shrink-0 text-center">
-                      <span className="block text-lg font-extrabold text-slate-900 leading-tight tabular-nums">{when ? when.getDate() : '-'}</span>
+                      <span className="block text-lg font-bold text-slate-900 leading-tight tabular-nums">{when ? when.getDate() : '-'}</span>
                       <span className="block text-[11px] font-semibold text-slate-500">{when ? THAI_MONTH_SHORT[when.getMonth()] : ''}</span>
                     </div>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1129,7 +1129,7 @@ function MyHubContent() {
         <div className="space-y-4">
           {/* One schedule, two ways to look at it: the list and the month show the same events through the same filters */}
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-            <h2 className="text-base sm:text-lg font-extrabold text-slate-900">กำหนดการ</h2>
+            <h2 className="text-base sm:text-lg font-bold text-slate-900">กำหนดการ</h2>
             <div className="flex flex-wrap items-center gap-2">
               {scheduleView === 'list' && (
                 <div className="inline-flex items-center p-1 bg-slate-100 rounded-full border border-slate-200/90" role="group" aria-label="ช่วงเวลา">
@@ -1411,7 +1411,7 @@ function MyHubContent() {
                           : isQuestDeadlineDay && isQuestMode
                           ? 'bg-slate-900 text-white shadow-2xs'
                           : eventsOnDay.length > 0
-                          ? 'text-slate-900 font-black'
+                          ? 'text-slate-900 font-bold'
                           : 'text-slate-400'
                       }`}>
                         {day}
@@ -1488,7 +1488,7 @@ function MyHubContent() {
           <div className={`items-center justify-between gap-3 flex-wrap ${scheduleView === 'month' ? 'flex' : 'hidden'}`}>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-[#2D5A3C]" />
-                <h3 className="text-sm sm:text-base font-black text-slate-900">
+                <h3 className="text-sm sm:text-base font-bold text-slate-900">
                   {calendarTimeScope === 'all'
                     ? 'กำหนดการทั้งหมดตลอดทั้งปี'
                     : selectedCalDay !== null
@@ -1614,7 +1614,7 @@ function MyHubContent() {
                       <div className={`py-3 flex flex-wrap items-center gap-x-3 gap-y-2.5 ${monthLabel || idx === 0 ? '' : 'border-t border-slate-100'} ${isCancelled ? 'opacity-80' : ''}`}>
                         {/* The day, a small photo to know the event by, then what it is */}
                         <div className="w-10 shrink-0 text-center">
-                          <span className="block text-lg font-extrabold text-slate-900 leading-tight tabular-nums">{when ? when.getDate() : '-'}</span>
+                          <span className="block text-lg font-bold text-slate-900 leading-tight tabular-nums">{when ? when.getDate() : '-'}</span>
                           <span className="block text-[11px] font-semibold text-slate-500">{when ? THAI_DAY_SHORT[when.getDay()] : ''}</span>
                         </div>
                         <Link href={detailHref} className="shrink-0" title={`ดูรายละเอียด ${ev.title}`}>
@@ -1931,7 +1931,7 @@ function MyHubContent() {
             {/* An invitation, not a feature list: what free time could hold, and the two ways in */}
             <div>
               <p className="text-xs font-bold text-slate-500">มายฮับ</p>
-              <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight text-balance">Hub กิจกรรมและคอมมูนิตี้ สำหรับคนชอบออกไปใช้ชีวิต</h1>
+              <h1 className="mt-1 text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight leading-tight text-balance">Hub กิจกรรมและคอมมูนิตี้ สำหรับคนชอบออกไปใช้ชีวิต</h1>
               <p className="mt-3 text-sm sm:text-base font-medium text-slate-600 leading-relaxed text-pretty">
                 เราคัดสรรและรวบรวมทุกมิติของการออกไปใช้ชีวิต ตั้งแต่ค้นหาพิกัดใจฟู ชวนเพื่อนรู้ใจ ชาเลนจ์สนุกๆ ไปจนถึงรับรางวัลพิเศษ ให้ทุกการพักผ่อนมีความหมาย
               </p>
@@ -1965,7 +1965,7 @@ function MyHubContent() {
               const rowLink = 'shrink-0 hidden sm:inline-flex items-center h-9 px-3.5 rounded-full bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 text-xs font-bold whitespace-nowrap';
               return (
                 <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
-                  <h2 className="text-sm font-extrabold text-slate-900">วันหยุดของคุณอาจเป็นแบบนี้</h2>
+                  <h2 className="text-sm font-bold text-slate-900">วันหยุดของคุณอาจเป็นแบบนี้</h2>
                   <ul className="mt-2 divide-y divide-slate-100">
                     {liveEvents.map((ev) => {
                       const ts = parseEventDateToTimestamp(ev.date);
@@ -1974,7 +1974,7 @@ function MyHubContent() {
                       return (
                         <li key={ev.id} className="py-3 flex items-center gap-3">
                           <div className="w-10 shrink-0 text-center">
-                            <span className="block text-lg font-extrabold text-slate-900 leading-tight tabular-nums">{when ? when.getDate() : '-'}</span>
+                            <span className="block text-lg font-bold text-slate-900 leading-tight tabular-nums">{when ? when.getDate() : '-'}</span>
                             <span className="block text-[11px] font-semibold text-slate-500">{when ? THAI_MONTH_SHORT[when.getMonth()] : ''}</span>
                           </div>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1991,7 +1991,7 @@ function MyHubContent() {
                     {liveQuest && (
                       <li className="py-3 flex items-center gap-3">
                         <div className="w-10 shrink-0 text-center">
-                          <span className="block text-sm font-extrabold text-[#7C3AED] leading-tight tabular-nums">+{liveQuest.rewardPoints}</span>
+                          <span className="block text-sm font-bold text-[#7C3AED] leading-tight tabular-nums">+{liveQuest.rewardPoints}</span>
                           <span className="block text-[11px] font-semibold text-slate-500">XP</span>
                         </div>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -2029,7 +2029,7 @@ function MyHubContent() {
                         {nameInitial(hubName)}
                       </span>
                     )}
-                    <h1 className="text-xl sm:text-2xl lg:text-xl font-extrabold tracking-tight text-slate-900 truncate">มายฮับของ{hubName ? ` ${hubName}` : 'คุณ'}</h1>
+                    <h1 className="text-xl sm:text-2xl lg:text-xl font-bold tracking-tight text-slate-900 truncate">มายฮับของ{hubName ? ` ${hubName}` : 'คุณ'}</h1>
                   </div>
 
                   {activity.hosted.length > 0 && (
@@ -2095,10 +2095,10 @@ function MyHubContent() {
                       const isFair = nextEvent.eventType === 'public_venue';
                       return (
                         <section aria-label="ถัดไปของคุณ" className="bg-white rounded-2xl px-4 py-3 border border-slate-200/90 shadow-2xs">
-                          <h2 className="text-sm font-extrabold text-slate-900">ถัดไปของคุณ</h2>
+                          <h2 className="text-sm font-bold text-slate-900">ถัดไปของคุณ</h2>
                           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2.5">
                             <div className="w-12 shrink-0 text-center rounded-xl bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE] py-1.5">
-                              <span className="block text-lg font-extrabold leading-tight tabular-nums">{when.getDate()}</span>
+                              <span className="block text-lg font-bold leading-tight tabular-nums">{when.getDate()}</span>
                               <span className="block text-[11px] font-semibold text-[#1D4ED8]">{THAI_MONTH_SHORT[when.getMonth()]}</span>
                             </div>
                             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -2339,7 +2339,7 @@ function MyHubContent() {
                       <>
                         {myRewards.finished.length > 0 && (
                           <section className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 space-y-3" aria-labelledby="my-badges-title">
-                            <h4 id="my-badges-title" className="text-sm sm:text-base font-extrabold text-slate-900">
+                            <h4 id="my-badges-title" className="text-sm sm:text-base font-bold text-slate-900">
                               เหรียญของคุณ <span className="tabular-nums">({myRewards.finished.length})</span>
                             </h4>
                             <ul className="space-y-2">
@@ -2350,7 +2350,7 @@ function MyHubContent() {
                                       <Award className="w-5 h-5" aria-hidden="true" />
                                     </span>
                                     <span className="min-w-0 flex-1">
-                                      <span className="block text-sm font-extrabold text-slate-900 truncate">{done.badgeLabel}</span>
+                                      <span className="block text-sm font-bold text-slate-900 truncate">{done.badgeLabel}</span>
                                       <span className="block text-[11px] sm:text-xs font-semibold text-slate-500 truncate">{done.title}</span>
                                       {done.voucherCode && (
                                         <span className="block mt-1 text-xs sm:text-sm font-bold text-slate-800 tabular-nums break-all">
@@ -2463,16 +2463,16 @@ function MyHubContent() {
                     <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-transparent p-5 sm:p-6 rounded-3xl border border-amber-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
                       <div className="space-y-1.5 max-w-xl">
                         <div className="flex items-center gap-2">
-                          <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-[#F26430] text-white shadow-2xs">
+                          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-[#F26430] text-white shadow-2xs">
                             ของรางวัล
                           </span>
                           <span className="text-xs text-slate-500 font-bold">แลก XP เป็นของรางวัล</span>
                         </div>
-                        <h4 className="font-black text-sm sm:text-base text-slate-900">
+                        <h4 className="font-bold text-sm sm:text-base text-slate-900">
                           แลกรับส่วนลดคาเฟ่ บอร์ดเกม และของขวัญพิเศษ
                         </h4>
                         <p className="text-xs text-slate-500 leading-relaxed">
-                          คุณมี <strong className="text-[#D04A1B] font-black">{userXp} XP</strong> พร้อมแลกรับสิทธิพิเศษจากพาร์ทเนอร์ทางการในหน้าศูนย์ของรางวัล
+                          คุณมี <strong className="text-[#D04A1B] font-bold">{userXp} XP</strong> พร้อมแลกรับสิทธิพิเศษจากพาร์ทเนอร์ทางการในหน้าศูนย์ของรางวัล
                         </p>
                       </div>
 
@@ -2553,7 +2553,7 @@ function MyHubContent() {
                               </div>
 
                               <div className="bg-slate-50 rounded-xl border border-dashed border-slate-200 p-2 flex items-center justify-between gap-2">
-                                <span className="font-mono text-xs font-black text-slate-900 tracking-wider">
+                                <span className="font-mono text-xs font-bold text-slate-900 tracking-wider">
                                   {item.voucherCode}
                                 </span>
                                 <button

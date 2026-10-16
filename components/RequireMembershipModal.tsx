@@ -47,7 +47,7 @@ export const RequireMembershipModal: React.FC<RequireMembershipModalProps> = ({
                 <Icon className="w-5 h-5" aria-hidden="true" />
               </span>
               <span className="min-w-0">
-                <span className="block text-sm font-extrabold text-slate-900 leading-snug"><PhraseText text={perk.title} /></span>
+                <span className="block text-sm font-bold text-slate-900 leading-snug"><PhraseText text={perk.title} /></span>
                 <span className="block text-xs font-medium text-slate-500 mt-0.5"><PhraseText text={perk.desc} /></span>
               </span>
             </li>
@@ -79,7 +79,7 @@ export const RequireMembershipModal: React.FC<RequireMembershipModalProps> = ({
             onClose();
             onOpenLogin();
           }}
-          className="font-extrabold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap"
+          className="font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap"
         >
           เข้าสู่ระบบ
         </button>

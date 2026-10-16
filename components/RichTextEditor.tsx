@@ -83,7 +83,7 @@ export const renderDescriptionContent = (content: string) => {
   if (/<[a-z][\s\S]*>/i.test(content)) {
     return (
       <div
-        className="space-y-2.5 leading-relaxed font-normal text-slate-700 [&_strong]:font-extrabold [&_strong]:text-slate-900 [&_strong]:block [&_strong]:mt-3.5 [&_strong]:mb-1 [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_li]:leading-relaxed"
+        className="space-y-2.5 leading-relaxed font-normal text-slate-700 [&_strong]:font-bold [&_strong]:text-slate-900 [&_strong]:block [&_strong]:mt-3.5 [&_strong]:mb-1 [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_li]:leading-relaxed"
         dangerouslySetInnerHTML={{ __html: content }}
       />
     );
@@ -100,7 +100,7 @@ export const renderDescriptionContent = (content: string) => {
 
         if (isHeader) {
           return (
-            <h4 key={idx} className="font-extrabold text-slate-900 text-sm sm:text-base pt-2">
+            <h4 key={idx} className="font-bold text-slate-900 text-sm sm:text-base pt-2">
               {cleanedPara}
             </h4>
           );
@@ -187,7 +187,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <button
             type="button"
             onClick={() => exec('bold')}
-            className="min-h-8 px-2.5 rounded-lg bg-white hover:bg-slate-200 text-slate-800 font-extrabold flex items-center gap-1 cursor-pointer shadow-2xs text-[11px] transition-colors active:scale-95"
+            className="min-h-8 px-2.5 rounded-lg bg-white hover:bg-slate-200 text-slate-800 font-bold flex items-center gap-1 cursor-pointer shadow-2xs text-[11px] transition-colors active:scale-95"
             title="ทำให้ตัวหนา (Ctrl+B)"
             aria-label="ทำให้ตัวหนา (Ctrl+B)"
           >
@@ -267,7 +267,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         onBlur={handleInput}
         style={{ minHeight: minHeight || '240px' }}
         data-placeholder={placeholder}
-        className="w-full px-3.5 py-3 rounded-b-xl border border-slate-200 text-base sm:text-sm leading-relaxed outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]/30 bg-white text-slate-800 overflow-y-auto max-h-[380px] empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400 [&_strong]:font-black [&_strong]:text-slate-950 [&_ul]:list-disc [&_ul]:pl-5 [&_p]:mb-1.5"
+        className="w-full px-3.5 py-3 rounded-b-xl border border-slate-200 text-base sm:text-sm leading-relaxed outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]/30 bg-white text-slate-800 overflow-y-auto max-h-[380px] empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400 [&_strong]:font-bold [&_strong]:text-slate-950 [&_ul]:list-disc [&_ul]:pl-5 [&_p]:mb-1.5"
       />
 
       {/* Character Counter & Helper Footer */}

@@ -114,7 +114,7 @@ export const CustomDatePickerModal: React.FC<CustomDatePickerModalProps> = ({
         {/* Modal Header */}
         <div className="p-4 sm:p-5 border-b border-slate-100 bg-gradient-to-r from-blue-50/50 via-slate-50/40 to-transparent flex items-start justify-between gap-3">
           <div className="space-y-1">
-            <h3 className="font-black text-base sm:text-lg text-slate-900 tracking-tight">
+            <h3 className="font-bold text-base sm:text-lg text-slate-900 tracking-tight">
               ระบุช่วงเวลาตามใจคุณ
             </h3>
             <p className="text-xs text-slate-500 font-normal">
@@ -145,7 +145,7 @@ export const CustomDatePickerModal: React.FC<CustomDatePickerModalProps> = ({
               }}
               className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center cursor-pointer ${
                 mode === 'single'
-                  ? 'bg-white text-slate-900 shadow-xs font-black'
+                  ? 'bg-white text-slate-900 shadow-xs font-bold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -156,7 +156,7 @@ export const CustomDatePickerModal: React.FC<CustomDatePickerModalProps> = ({
               onClick={() => setMode('range')}
               className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center cursor-pointer ${
                 mode === 'range'
-                  ? 'bg-white text-slate-900 shadow-xs font-black'
+                  ? 'bg-white text-slate-900 shadow-xs font-bold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -199,7 +199,7 @@ export const CustomDatePickerModal: React.FC<CustomDatePickerModalProps> = ({
                 ระบุวันที่ต้องการไป:
               </label>
               <div className="relative bg-white border border-slate-200 hover:border-[#2563EB] focus-within:border-[#2563EB] focus-within:ring-2 focus-within:ring-blue-100 rounded-xl p-3 flex items-center justify-between shadow-2xs transition-all cursor-pointer group">
-                <span className="text-sm font-extrabold text-slate-900 tracking-wide font-mono">
+                <span className="text-sm font-bold text-slate-900 tracking-wide font-mono">
                   {displayStartDMY}
                 </span>
                 <Calendar className="w-4 h-4 text-[#2563EB] group-hover:scale-110 transition-transform shrink-0" />
@@ -224,7 +224,7 @@ export const CustomDatePickerModal: React.FC<CustomDatePickerModalProps> = ({
                     วันที่เริ่มต้น:
                   </label>
                   <div className="relative bg-white border border-slate-200 hover:border-[#2563EB] focus-within:border-[#2563EB] focus-within:ring-2 focus-within:ring-blue-100 rounded-xl p-2.5 flex items-center justify-between shadow-2xs transition-all cursor-pointer group">
-                    <span className="text-xs sm:text-sm font-extrabold text-slate-900 tracking-wide font-mono">
+                    <span className="text-xs sm:text-sm font-bold text-slate-900 tracking-wide font-mono">
                       {displayStartDMY}
                     </span>
                     <Calendar className="w-3.5 h-3.5 text-[#2563EB] group-hover:scale-110 transition-transform shrink-0" />
@@ -244,7 +244,7 @@ export const CustomDatePickerModal: React.FC<CustomDatePickerModalProps> = ({
                     ถึงวันที่:
                   </label>
                   <div className="relative bg-white border border-slate-200 hover:border-[#2563EB] focus-within:border-[#2563EB] focus-within:ring-2 focus-within:ring-blue-100 rounded-xl p-2.5 flex items-center justify-between shadow-2xs transition-all cursor-pointer group">
-                    <span className="text-xs sm:text-sm font-extrabold text-slate-900 tracking-wide font-mono">
+                    <span className="text-xs sm:text-sm font-bold text-slate-900 tracking-wide font-mono">
                       {displayEndDMY}
                     </span>
                     <Calendar className="w-3.5 h-3.5 text-[#2563EB] group-hover:scale-110 transition-transform shrink-0" />
@@ -290,7 +290,7 @@ export const CustomDatePickerModal: React.FC<CustomDatePickerModalProps> = ({
           <button
             type="button"
             onClick={handleApply}
-            className="flex-1 py-2.5 sm:py-3 text-xs sm:text-sm font-black text-white bg-[#2563EB] hover:bg-[#1D4ED8] rounded-xl shadow-md shadow-blue-600/20 hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
+            className="flex-1 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] rounded-xl shadow-md shadow-blue-600/20 hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
           >
             <Check className="w-4 h-4" />
             <span>นำไปใช้</span>

@@ -44,7 +44,7 @@ export function ResetPasswordScreen({ token }: { token: string }) {
       <header className="px-4 sm:px-8 py-4 border-b border-[#E8E2D8] bg-white/80">
         <Link href="/" className="inline-flex items-center gap-2">
           <BrandLogo size="sm" />
-          <span className="font-extrabold text-sm sm:text-base text-[#1E293B]">Chill & Connect Hub</span>
+          <span className="font-bold text-sm sm:text-base text-[#1E293B]">Chill & Connect Hub</span>
         </Link>
       </header>
       <main className="flex-1 w-full max-w-[480px] mx-auto px-4 py-10 flex flex-col justify-center">
@@ -52,7 +52,7 @@ export function ResetPasswordScreen({ token }: { token: string }) {
           <div className="w-14 h-14 rounded-2xl bg-blue-50 text-[#2563EB] flex items-center justify-center mx-auto mb-4 border border-blue-100">
             <KeyRound className="w-7 h-7" aria-hidden="true" />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-center">ตั้งรหัสผ่านใหม่</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-center">ตั้งรหัสผ่านใหม่</h1>
           <p className="text-sm text-slate-500 font-medium text-center mt-2 mb-6">ตั้งแล้วอุปกรณ์อื่นที่เคยเข้าสู่ระบบไว้จะถูกออกจากระบบ</p>
           <form onSubmit={submit} noValidate className="space-y-4">
             <div className="space-y-1.5">
@@ -79,7 +79,7 @@ export function ResetPasswordScreen({ token }: { token: string }) {
                 </span>
               </div>
             )}
-            <button type="submit" disabled={busy || !token} className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] disabled:bg-slate-200 disabled:text-slate-400 text-white py-3.5 px-6 rounded-full font-extrabold text-sm sm:text-base shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed">
+            <button type="submit" disabled={busy || !token} className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] disabled:bg-slate-200 disabled:text-slate-400 text-white py-3.5 px-6 rounded-full font-bold text-sm sm:text-base shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed">
               {busy && <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />}
               <span>{busy ? 'กำลังบันทึก…' : 'บันทึกรหัสผ่านใหม่'}</span>
             </button>

@@ -428,7 +428,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
         <div className="flex items-start justify-between border-b border-slate-100 pb-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
                 {mode === 'fair' ? 'เปิดกลุ่มนัดเดินดูงาน & หาเพื่อนแวะจิบกาแฟ' : 'เปิดวงชวนเพื่อนเที่ยว / สร้างกิจกรรมใหม่'}
               </h2>
             </div>
@@ -636,7 +636,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                 <div className="space-y-2 pt-1">
                   {itinerary.map((item, idx) => (
                     <div key={idx} className="flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-full bg-emerald-100 text-[#1D4ED8] text-[11px] font-black flex items-center justify-center shrink-0">
+                      <span className="w-6 h-6 rounded-full bg-emerald-100 text-[#1D4ED8] text-[11px] font-bold flex items-center justify-center shrink-0">
                         {idx + 1}
                       </span>
                       <input
@@ -920,7 +920,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                 <button
                   type="button"
                   onClick={() => setIsSafetyModalOpen(true)}
-                  className="font-black text-[#2563EB] underline hover:text-[#1D4ED8]"
+                  className="font-bold text-[#2563EB] underline hover:text-[#1D4ED8]"
                 >
                   แนวทางความปลอดภัยและข้อกำหนดชุมชน
                 </button>{' '}

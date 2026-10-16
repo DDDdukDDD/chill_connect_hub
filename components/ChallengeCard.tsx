@@ -44,14 +44,14 @@ export function ChallengeCard({ quest, isJoined, mine }: { quest: ChallengeQuest
             <span className="truncate">{isPartner ? brandReward.partnerName : 'Chill & Connect Hub'}</span>
           </span>
           {isEnded ? (
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-200 text-xs font-extrabold text-slate-600 whitespace-nowrap shrink-0">จบแล้ว</span>
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-200 text-xs font-bold text-slate-600 whitespace-nowrap shrink-0">จบแล้ว</span>
           ) : quest.rule ? (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#7C3AED] text-xs font-extrabold text-white whitespace-nowrap shrink-0 tabular-nums">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#7C3AED] text-xs font-bold text-white whitespace-nowrap shrink-0 tabular-nums">
               <Zap className="w-3.5 h-3.5" aria-hidden="true" />
               +{(quest.rewardPoints ?? 0).toLocaleString()} XP
             </span>
           ) : (
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-100 text-xs font-extrabold text-slate-600 whitespace-nowrap shrink-0">บันทึกเอง</span>
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-100 text-xs font-bold text-slate-600 whitespace-nowrap shrink-0">บันทึกเอง</span>
           )}
         </div>
   
@@ -76,7 +76,7 @@ export function ChallengeCard({ quest, isJoined, mine }: { quest: ChallengeQuest
   
         {/* Title, then what to do in one line */}
         <div className="space-y-1.5">
-          <h3 title={quest.title} className={`text-sm sm:text-base font-extrabold leading-snug line-clamp-2 sm:min-h-[2.75rem] ${isEnded ? 'text-slate-700' : 'text-slate-900'}`}>
+          <h3 title={quest.title} className={`text-sm sm:text-base font-bold leading-snug line-clamp-2 sm:min-h-[2.75rem] ${isEnded ? 'text-slate-700' : 'text-slate-900'}`}>
             {quest.title}
           </h3>
           <p title={quest.targetGoal} className="text-xs sm:text-sm font-medium text-slate-600 leading-snug line-clamp-1">

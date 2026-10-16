@@ -26,11 +26,11 @@ function RailCardPreview({ form }: { form: GroupForm }) {
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
       {form.badgeLabel && (
-        <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-extrabold text-slate-800">{form.badgeLabel}</span>
+        <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-slate-800">{form.badgeLabel}</span>
       )}
       <div className="absolute bottom-3 left-3 right-3 text-white">
-        <p className="text-[10px] font-extrabold uppercase tracking-wide opacity-80">{form.nameEn || ' '}</p>
-        <p className="text-sm font-black leading-tight">{form.name || 'ชื่อการ์ด'}</p>
+        <p className="text-[10px] font-bold uppercase tracking-wide opacity-80">{form.nameEn || ' '}</p>
+        <p className="text-sm font-bold leading-tight">{form.name || 'ชื่อการ์ด'}</p>
         {form.subtitle && <p className="mt-0.5 line-clamp-1 text-[11px] opacity-90">{form.subtitle}</p>}
       </div>
     </div>

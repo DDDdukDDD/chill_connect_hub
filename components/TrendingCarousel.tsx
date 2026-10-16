@@ -124,10 +124,10 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
       <div className="flex items-end justify-between gap-2 px-0.5">
         <div className="min-w-0 flex-1 space-y-0.5">
           <div className="flex items-center gap-2">
-            <h2 className="text-xs sm:text-sm md:text-base font-black text-[#1E293B] tracking-tight truncate">
+            <h2 className="text-xs sm:text-sm md:text-base font-bold text-[#1E293B] tracking-tight truncate">
               {title}
             </h2>
-            <span className={`text-[9px] sm:text-[9.5px] font-extrabold px-2 py-0.5 rounded-full shadow-2xs shrink-0 tracking-wider ${
+            <span className={`text-[9px] sm:text-[9.5px] font-bold px-2 py-0.5 rounded-full shadow-2xs shrink-0 tracking-wider ${
               badgeColor || 'bg-rose-50 text-rose-600 border border-rose-200/80'
             }`}>
               {badgeText}
@@ -143,7 +143,7 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
             const el = document.getElementById('catalog-section');
             if (el) el.scrollIntoView({ behavior: 'smooth' });
           }}
-          className="text-[11px] sm:text-xs font-extrabold text-[#4A7C59] hover:text-[#2D5A3C] hover:underline flex items-center gap-1 cursor-pointer transition-colors shrink-0 whitespace-nowrap"
+          className="text-[11px] sm:text-xs font-bold text-[#4A7C59] hover:text-[#2D5A3C] hover:underline flex items-center gap-1 cursor-pointer transition-colors shrink-0 whitespace-nowrap"
         >
           <span>สำรวจทั้งหมด</span>
           <ArrowRight className="w-3.5 h-3.5" />
@@ -244,7 +244,7 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
                     <div className="flex items-center justify-between gap-1.5">
                       {reason ? (
                         // Why this item is in the row, in the pillar color
-                        <span className="text-[11px] font-extrabold truncate tabular-nums" style={{ color: PILLAR_COLORS[pillar] }}>
+                        <span className="text-[11px] font-bold truncate tabular-nums" style={{ color: PILLAR_COLORS[pillar] }}>
                           {reason}
                         </span>
                       ) : (

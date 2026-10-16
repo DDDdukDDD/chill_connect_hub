@@ -132,7 +132,7 @@ export function AdminDashboardView({ onNavigate }: { onNavigate: (module: AdminM
             {(['community', 'fairs', 'spots', 'quests'] as const).map((pillar) => (
               <button key={pillar} type="button" onClick={() => onNavigate('review')} className="px-4 py-3 text-left hover:bg-slate-50">
                 <PillarBadge pillar={pillar} />
-                <p className="mt-2 text-2xl font-black tabular-nums text-slate-900">{isLoading && !data ? '—' : data?.counts[pillar] ?? 0}</p>
+                <p className="mt-2 text-2xl font-bold tabular-nums text-slate-900">{isLoading && !data ? '—' : data?.counts[pillar] ?? 0}</p>
                 <p className="text-[11px] text-slate-500">รอตรวจ</p>
               </button>
             ))}
@@ -149,7 +149,7 @@ export function AdminDashboardView({ onNavigate }: { onNavigate: (module: AdminM
                     <PillarBadge pillar={item.pillar} />
                     <span className="flex-1 min-w-0 truncate text-sm font-semibold text-slate-800">{item.title}</span>
                     <span className="text-[11px] text-slate-500 shrink-0">{item.province}</span>
-                    <span className={`shrink-0 text-[11px] font-extrabold tabular-nums ${item.quality.requiredFailures ? 'text-rose-600' : 'text-emerald-700'}`}>{item.quality.score}%</span>
+                    <span className={`shrink-0 text-[11px] font-bold tabular-nums ${item.quality.requiredFailures ? 'text-rose-600' : 'text-emerald-700'}`}>{item.quality.score}%</span>
                   </button>
                 </li>
               ))}

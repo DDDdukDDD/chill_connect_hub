@@ -27,7 +27,7 @@ export const SafetyGuidelinesModal: React.FC<SafetyGuidelinesModalProps> = ({
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-black text-base sm:text-lg text-slate-900 tracking-tight">
+              <h3 className="font-bold text-base sm:text-lg text-slate-900 tracking-tight">
                 แนวทางความปลอดภัยและข้อกำหนดชุมชน (Community Safety & Legal Disclaimer)
               </h3>
               <p className="text-xs text-slate-500 font-medium">

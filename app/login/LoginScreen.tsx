@@ -23,7 +23,7 @@ export function LoginScreen({ initialView, returnTo, initialError }: { initialVi
       <header className="px-4 sm:px-8 py-4 flex items-center justify-between border-b border-[#E8E2D8] bg-white/80 backdrop-blur-md">
         <Link href="/" className="flex items-center gap-2">
           <BrandLogo size="sm" />
-          <span className="font-extrabold text-sm sm:text-base text-[#1E293B] leading-tight">Chill & Connect Hub</span>
+          <span className="font-bold text-sm sm:text-base text-[#1E293B] leading-tight">Chill & Connect Hub</span>
         </Link>
         <Link href="/" className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-2 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors">
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />

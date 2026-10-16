@@ -101,7 +101,7 @@ export function DialogShell({ onClose, children, title, subtitle, labelledBy, si
         )}
         {title && !bare && (
           <div className="text-center pb-6 px-8">
-            <h2 id={ownTitleId} className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 leading-tight">
+            <h2 id={ownTitleId} className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 leading-tight">
               <PhraseText text={title} />
             </h2>
             {subtitle && (
@@ -121,11 +121,11 @@ export function DialogShell({ onClose, children, title, subtitle, labelledBy, si
 /* Button styles shared by the account dialogs (DESIGN_SYSTEM.md → Buttons) */
 export const dialogButton = {
   primary:
-    'inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-sm sm:text-base font-extrabold shadow-sm cursor-pointer whitespace-nowrap transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]/50 focus-visible:ring-offset-2',
+    'inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-sm sm:text-base font-bold shadow-sm cursor-pointer whitespace-nowrap transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]/50 focus-visible:ring-offset-2',
   secondary:
-    'inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-sm sm:text-base font-extrabold cursor-pointer whitespace-nowrap transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]/50 focus-visible:ring-offset-2',
+    'inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-sm sm:text-base font-bold cursor-pointer whitespace-nowrap transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]/50 focus-visible:ring-offset-2',
   quiet:
     'inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm sm:text-base font-bold cursor-pointer whitespace-nowrap transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]/50 focus-visible:ring-offset-2',
   danger:
-    'inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-rose-600 hover:bg-rose-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-sm sm:text-base font-extrabold cursor-pointer whitespace-nowrap transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]/50 focus-visible:ring-offset-2',
+    'inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-rose-600 hover:bg-rose-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-sm sm:text-base font-bold cursor-pointer whitespace-nowrap transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]/50 focus-visible:ring-offset-2',
 };

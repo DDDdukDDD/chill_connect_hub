@@ -264,7 +264,7 @@ export default function ChallengesDiscoveryPage() {
         {/* 1. What this page is, with the side actions. No box: the cards below carry the weight */}
         <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 pt-1 sm:pt-3">
           <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">ชาเลนจ์ชวนออกไปใช้ชีวิต</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight leading-tight">ชาเลนจ์ชวนออกไปใช้ชีวิต</h1>
             <p className="mt-1 text-sm font-medium text-slate-600">ไปให้ครบ แล้วรับ XP กับของรางวัลกลับมา</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
