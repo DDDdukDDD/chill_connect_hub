@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useDeferredValue, Suspense } from 'react';
 import Link from 'next/link';
-import { Search, X, Users, ShieldCheck, Trophy, Camera, Footprints, MapPin, Gift, Award } from 'lucide-react';
+import { Search, X, Trophy, Camera, Footprints, MapPin, Gift, Award } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { BrandLogo } from '@/components/BrandLogo';
@@ -27,7 +27,7 @@ import { useMyActivity } from '@/lib/useMyActivity';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { REWARD_SHOP_ITEMS } from '@/data/rewardsData';
 import { usePublishedSpots, getCachedSpotSearchText, getCachedSpotVibeCategory } from '@/lib/usePublishedSpots';
-import { getCommunityEventCategory, type SpotVibeId } from '@/data/masterHub';
+import { getCommunityEventCategory, MASTER_77_PROVINCES, type SpotVibeId } from '@/data/masterHub';
 import { matchSearchQuery } from '@/lib/searchUtils';
 import { isTradeEvent } from '@/lib/highlights';
 import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
@@ -38,15 +38,15 @@ const ROW_SIZE = 5;
 // Order of the vibes in the places row: what the audience looks for on a day off comes first
 const VIBE_ORDER: SpotVibeId[] = ['cafe_slowbar', 'nature_camping', 'art_creative', 'sea_island', 'mountain_mist', 'wellness_retreat', 'oldtown_culture'];
 
-// The core loop (docs/PRODUCT_DIRECTION.md) in three steps, shown under the hero to visitors who are not signed in
-const HOW_STEPS = [
-  { Icon: Users, bg: 'bg-orange-100', fg: 'text-[#F26430]', title: 'เลือกตี้ที่ชอบ', line: 'วิ่ง คาเฟ่ เวิร์กช็อป ทริป' },
-  { Icon: Footprints, bg: 'bg-blue-100', fg: 'text-[#2563EB]', title: 'ออกไปใช้ชีวิต', line: 'ไปกับตี้ หรือไปเองก็ได้' },
-  { Icon: Camera, bg: 'bg-rose-100', fg: 'text-rose-500', title: 'เก็บแต้ม แชร์โมเมนต์', line: 'ทำชาเลนจ์ครบ รับของรางวัล' },
-];
 
 // Photos for the hero collage and the join block (local files, shown on /spots too)
-const HERO_PHOTOS = ['/images/destinations/chiangmai.jpg', '/images/destinations/krabi.jpg', '/images/destinations/bkk.jpg'];
+// Province picker in the hero search box: popular ones first, then all 77 (names as stored on events and places)
+const POPULAR_PROVINCES = ['กรุงเทพฯ', 'เชียงใหม่', 'ชลบุรี', 'ภูเก็ต', 'นครราชสีมา', 'กาญจนบุรี'];
+const OTHER_PROVINCES = MASTER_77_PROVINCES.filter((p) => !POPULAR_PROVINCES.includes(p));
+const isBangkok = (p: string) => p === 'กรุงเทพฯ' || p === 'กรุงเทพมหานคร';
+const isSameProvince = (a: string | undefined, b: string) => !!a && (a === b || (isBangkok(a) && isBangkok(b)));
+
+const HERO_PHOTOS = ['/event-board-games.png', '/hero-bkk-community-golden.jpg', '/event-city-run.png'];
 
 // Short names for the reason under a suggested meetup ("เพราะคุณชอบสายคาเฟ่")
 const CATEGORY_SHORT: Record<string, string> = {
@@ -119,6 +119,10 @@ function JourneyContent() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const query = useDeferredValue(searchQuery.trim());
+  // Province picked at the end of the hero search box; empty means every province
+  const [province, setProvince] = useState('');
+  const searching = Boolean(query || province);
+  const inProvince = (p?: string) => !province || isSameProvince(p, province);
 
   // Modals state
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -265,28 +269,34 @@ function JourneyContent() {
 
   // One search box covers meetups, places and fairs; the full pages keep the detailed filters
   const spotRow = useMemo(
-    () => (query ? rankedSpots.filter((s) => matchSearchQuery(getCachedSpotSearchText(s), query)).slice(0, ROW_SIZE) : featuredSpots),
-    [rankedSpots, featuredSpots, query]
+    () =>
+      searching
+        ? rankedSpots.filter((s) => inProvince(s.province) && (!query || matchSearchQuery(getCachedSpotSearchText(s), query))).slice(0, ROW_SIZE)
+        : featuredSpots,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rankedSpots, featuredSpots, query, province]
   );
   const communityRow = useMemo(
     () =>
       communityEvents
         .filter((e) => e.participantsCount < e.maxParticipants)
-        .filter((e) => !query || matchSearchQuery(eventSearchText(e), query))
+        .filter((e) => inProvince(e.province) && (!query || matchSearchQuery(eventSearchText(e), query)))
         .slice(0, ROW_SIZE),
-    [communityEvents, query]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [communityEvents, query, province]
   );
   const fairRow = useMemo(() => {
     const matched = fairEvents
-      .filter((e) => !query || matchSearchQuery(eventSearchText(e), query))
+      .filter((e) => inProvince(e.province) && (!query || matchSearchQuery(eventSearchText(e), query)))
       // Trade shows stay listed on /fairs but go last here (the sort keeps the date order within each group)
       .sort((a, b) => Number(isTradeEvent(a)) - Number(isTradeEvent(b)));
-    if (query) return matched.slice(0, ROW_SIZE);
+    if (searching) return matched.slice(0, ROW_SIZE);
     // The heading promises "งานแฟร์ งานวิ่ง งานคอน", so the row starts with the soonest of each kind, then fills by date
     const firsts = FAIR_ROW_KINDS.map((kind) => matched.find((e) => fairKind(e) === kind)).filter((e): e is EventItem => !!e);
     const picked = [...firsts, ...matched.filter((e) => !firsts.includes(e))].slice(0, FAIR_ROW_SHOWN);
     return matched.filter((e) => picked.includes(e));
-  }, [fairEvents, query]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fairEvents, query, province]);
 
   // Member home: the next meetup or fair they go to or host, and the challenge in progress that closes first
   const nextEvent = useMemo(
@@ -338,7 +348,12 @@ function JourneyContent() {
 
   const destinations = DESTINATION_IDS.flatMap((id) => TOP_DESTINATIONS.filter((d) => d.id === id));
 
-  const withQuery = (path: string) => (query ? `${path}?q=${encodeURIComponent(query)}` : path);
+  const withQuery = (path: string) => {
+    const params = new URLSearchParams();
+    if (query) params.set('q', query);
+    if (province) params.set('province', province);
+    return params.size ? `${path}?${params}` : path;
+  };
 
   // Every section opens the same way: a heading, one friendly line, and "ดูทั้งหมด"
   const sectionHead = (title: string, href: string, extra?: React.ReactNode) => (
@@ -404,11 +419,11 @@ function JourneyContent() {
     <div className="space-y-10 sm:space-y-14">
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-medium text-slate-600 min-w-0 truncate">
-          ผลการค้นหา <strong className="font-bold text-slate-900">{query}</strong>
+          ผลการค้นหา <strong className="font-bold text-slate-900">{[query, province].filter(Boolean).join(' · ')}</strong>
         </p>
         <button
           type="button"
-          onClick={() => setSearchQuery('')}
+          onClick={() => { setSearchQuery(''); setProvince(''); }}
           className="shrink-0 h-8 px-3 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold whitespace-nowrap cursor-pointer transition-colors"
         >
           ล้างคำค้นหา
@@ -428,7 +443,7 @@ function JourneyContent() {
       </section>
       <section className="space-y-4">
         {sectionHead('โมเมนต์', '/moments')}
-        <MomentSearchRow query={query} />
+        <MomentSearchRow query={query || province} />
       </section>
     </div>
   );
@@ -492,47 +507,38 @@ function JourneyContent() {
                 <figure className="absolute left-[3%] top-[6%] w-[46%] h-[80%]">
                   <img src={HERO_PHOTOS[0]} alt="" className="-rotate-3 w-full h-full object-cover rounded-[2rem] shadow-lg border-4 border-white" />
                   <span className={`${HERO_LABEL} -bottom-3 left-1/2 -translate-x-1/2`}>
-                    <Trophy className="w-4 h-4 text-amber-500" /> ทำชาเลนจ์ รับแต้ม
+                    <Search className="w-4 h-4 text-amber-500" /> หากิจกรรมที่ใช่
                   </span>
                 </figure>
                 <figure className="absolute right-[8%] top-0 w-[36%] aspect-square">
                   <img src={HERO_PHOTOS[1]} alt="" className="w-full h-full object-cover rounded-full shadow-lg border-4 border-white" />
                   <span className={`${HERO_LABEL} top-[12%] -left-[30%]`}>
-                    <Users className="w-4 h-4 text-[#2563EB]" /> ไปกับตี้
+                    <Footprints className="w-4 h-4 text-[#2563EB]" /> ออกไปใช้ชีวิต
                   </span>
                 </figure>
                 <figure className="absolute right-0 bottom-[2%] w-[44%] h-[44%]">
                   <img src={HERO_PHOTOS[2]} alt="" className="rotate-3 w-full h-full object-cover rounded-[2rem] shadow-lg border-4 border-white" />
                   <span className={`${HERO_LABEL} -bottom-3 right-4`}>
-                    <Camera className="w-4 h-4 text-rose-500" /> แชร์โมเมนต์
+                    <Camera className="w-4 h-4 text-rose-500" /> แบ่งปันเรื่องราว
                   </span>
                 </figure>
               </div>
 
               <div className="text-center md:text-left">
-                <h1 className="text-[26px] leading-snug sm:text-4xl md:text-[32px] lg:text-[38px] lg:leading-[1.12] font-bold text-slate-900 tracking-tight">
-                  ออกไปใช้ชีวิต{' '}
+                {/* What the site is, as the headline; the promise and the everyday activities under it */}
+                <h1 className="text-[30px] leading-snug sm:text-[40px] md:text-[36px] lg:text-[46px] lg:leading-[1.15] font-bold text-slate-900 tracking-tight">
+                  คอมมูนิตี้ของคน{' '}
                   <img src={HERO_PHOTOS[0]} alt="" className="md:hidden inline-block align-middle w-9 h-9 sm:w-11 sm:h-11 rounded-full object-cover border-2 border-white shadow-md -rotate-6" aria-hidden="true" />
-                  <span className="hidden md:inline-flex align-middle w-7 h-7 sm:w-10 sm:h-10 rounded-full bg-[#F26430] text-white items-center justify-center -rotate-6" aria-hidden="true">
-                    <Footprints className="w-4 h-4 sm:w-6 sm:h-6" />
-                  </span>
                   <br />
-                  พบเจอ<span className="text-[#F26430]">มิตรภาพ</span>ใหม่{' '}
-                  <img src={HERO_PHOTOS[1]} alt="" className="md:hidden inline-block align-middle w-9 h-9 sm:w-11 sm:h-11 rounded-full object-cover border-2 border-white shadow-md rotate-6" aria-hidden="true" />
-                  <span className="hidden md:inline-flex align-middle w-7 h-7 sm:w-10 sm:h-10 rounded-full bg-[#2563EB] text-white items-center justify-center rotate-6" aria-hidden="true">
-                    <Users className="w-4 h-4 sm:w-6 sm:h-6" />
-                  </span>
-                  <br />
-                  ส่งต่อ<span className="text-[#2563EB]">ความประทับใจ</span>{' '}
-                  <img src={HERO_PHOTOS[2]} alt="" className="md:hidden inline-block align-middle w-9 h-9 sm:w-11 sm:h-11 rounded-full object-cover border-2 border-white shadow-md -rotate-3" aria-hidden="true" />
-                  <span className="hidden md:inline-flex align-middle w-7 h-7 sm:w-10 sm:h-10 rounded-full bg-rose-500 text-white items-center justify-center -rotate-3" aria-hidden="true">
-                    <Camera className="w-4 h-4 sm:w-6 sm:h-6" />
+                  ชอบ<span className="text-[#F26430]">ออกไปใช้ชีวิต</span>{' '}
+                  <img src={HERO_PHOTOS[2]} alt="" className="md:hidden inline-block align-middle w-9 h-9 sm:w-11 sm:h-11 rounded-full object-cover border-2 border-white shadow-md rotate-6" aria-hidden="true" />
+                  <span className="hidden md:inline-flex align-middle w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-[#F26430] text-white items-center justify-center -rotate-6" aria-hidden="true">
+                    <Footprints className="w-5 h-5 lg:w-6 lg:h-6" />
                   </span>
                 </h1>
-                <p className="mt-2.5 text-sm sm:text-base font-medium text-slate-600 max-w-lg mx-auto md:mx-0">
-                  หาเพื่อนไปวิ่ง ไปคาเฟ่ ไปเที่ยว <span className="whitespace-nowrap">ด้วยกัน ใกล้ๆ ตัวคุณ</span>
+                <p className="mt-3 text-base sm:text-lg lg:text-xl font-semibold text-slate-800">
+                  พบเจอมิตรภาพใหม่ <span className="whitespace-nowrap">ส่งต่อความประทับใจ</span>
                 </p>
-
                 <form
                   role="search"
                   onSubmit={(e) => {
@@ -546,7 +552,7 @@ function JourneyContent() {
                     type="search"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="ค้นหาตี้ ที่เที่ยว หรือจังหวัด"
+                    placeholder="ค้นหาตี้ หรือที่เที่ยว"
                     aria-label="ค้นหา"
                     className="flex-1 min-w-0 bg-transparent text-sm sm:text-base text-slate-900 placeholder:text-slate-400 outline-hidden [&::-webkit-search-cancel-button]:hidden"
                   />
@@ -560,6 +566,25 @@ function JourneyContent() {
                       <X className="w-4 h-4" />
                     </button>
                   )}
+                  {/* Where: the province, last before the button (as in the classic hero) */}
+                  <span className="w-px h-6 bg-slate-200 shrink-0" aria-hidden="true" />
+                  <label className="relative flex items-center gap-1 shrink-0 cursor-pointer">
+                    <MapPin className="w-4 h-4 text-[#F26430] shrink-0" aria-hidden="true" />
+                    <span className="sr-only">จังหวัด</span>
+                    <select
+                      value={province}
+                      onChange={(e) => setProvince(e.target.value)}
+                      className="max-w-[92px] sm:max-w-[132px] truncate bg-transparent text-sm font-semibold text-slate-700 outline-hidden cursor-pointer"
+                    >
+                      <option value="">ทุกจังหวัด</option>
+                      <optgroup label="ยอดนิยม">
+                        {POPULAR_PROVINCES.map((p) => <option key={p} value={p}>{p}</option>)}
+                      </optgroup>
+                      <optgroup label="จังหวัดอื่นๆ">
+                        {OTHER_PROVINCES.map((p) => <option key={p} value={p}>{p}</option>)}
+                      </optgroup>
+                    </select>
+                  </label>
                   <button
                     type="submit"
                     className="h-10 px-5 shrink-0 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-bold shadow-sm whitespace-nowrap cursor-pointer transition-colors"
@@ -580,12 +605,8 @@ function JourneyContent() {
                     </button>
                   ))}
                 </div>
-                {/* The safety promise next to where a visitor decides to start */}
-                <p className="mt-3 flex items-center sm:justify-center md:justify-start gap-1.5 text-xs sm:text-[13px] font-medium text-slate-600">
-                  <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-600" aria-hidden="true" />
-                  <span>เจอกันที่สถานที่จริง · <span className="whitespace-nowrap">รายงานหรือบล็อกได้ทุกเมื่อ</span></span>
-                  <Link href="/safety" className="font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">กติกา</Link>
-                </p>
+                {/* Signs of life without names: last week's joins, challenges and moments */}
+                <LiveCountsRow className="mt-4 md:justify-start" />
               </div>
             </div>
           </section>
@@ -594,35 +615,10 @@ function JourneyContent() {
 
         <div id="journey-top" className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-6 space-y-12 sm:space-y-16 scroll-mt-20">
           {/* Members get their own home above (MemberLiveHome); this part is the landing page for visitors */}
-          {isMember ? null : query ? (
+          {isMember ? null : searching ? (
             searchResults
           ) : (
             <>
-              {/* How it works in three steps, plus the safety promise, for visitors who are not signed in */}
-              {isAuthReady && !isLoggedIn && (
-                <section aria-label="ใช้งานยังไง" className="-mt-2 sm:-mt-6 mb-8! sm:mb-10! xl:flex xl:items-center xl:justify-between xl:gap-6">
-                  <ol className="grid grid-cols-3 gap-2 xl:flex xl:gap-9">
-                    {HOW_STEPS.map(({ Icon, bg, fg, title, line }, i) => (
-                      <li key={title} className="flex flex-col items-center text-center gap-1.5 xl:flex-row xl:text-left xl:gap-3">
-                        <span className={`relative w-11 h-11 shrink-0 rounded-2xl ${bg} ${fg} flex items-center justify-center`} aria-hidden="true">
-                          <Icon className="w-5 h-5" />
-                          <span className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-slate-900 text-white text-[11px] font-bold flex items-center justify-center">{i + 1}</span>
-                        </span>
-                        <span>
-                          <span className="block text-[13px] sm:text-sm xl:text-[15px] font-bold text-slate-900 leading-snug">
-                            {/* Break only between words, never inside a Thai word */}
-                            {title.split(' ').map((word) => <span key={word} className="inline-block whitespace-nowrap mx-0.5 xl:mx-0 xl:mr-1">{word}</span>)}
-                          </span>
-                          <span className="hidden sm:block text-xs xl:text-[13px] font-medium text-slate-500">{line}</span>
-                        </span>
-                      </li>
-                    ))}
-                  </ol>
-                  {/* Signs of life without names: last week's joins, challenges and moments */}
-                  <LiveCountsRow className="mt-4 xl:mt-0 xl:justify-end" />
-                </section>
-              )}
-
               {/* 2. What do you feel like doing: the eight community categories, each opening its meetups (landing page only) */}
               {(
               <section className="space-y-4">

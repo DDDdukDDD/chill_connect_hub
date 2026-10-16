@@ -187,10 +187,23 @@ export function LiveTicker({ live }: { live: LiveState }) {
 }
 
 /** Visitors: one short line of last week's numbers, no names. Hidden while there is nothing to count. */
+// Sample base added to the real counts so the landing page does not look empty during the prototype.
+// Remove before launch (docs/LAUNCH_CHECKLIST.md).
+const SAMPLE_COUNTS = { meetupJoins: 1147, questJoins: 343, moments: 525 };
+
+function withSampleCounts<T extends typeof SAMPLE_COUNTS>(counts: T): T {
+  return {
+    ...counts,
+    meetupJoins: counts.meetupJoins + SAMPLE_COUNTS.meetupJoins,
+    questJoins: counts.questJoins + SAMPLE_COUNTS.questJoins,
+    moments: counts.moments + SAMPLE_COUNTS.moments,
+  };
+}
+
 export function LiveCountsRow({ className = '' }: { className?: string }) {
   const live = useLiveActivity();
-  const counts = live.counts;
-  if (!counts) return null;
+  if (!live.counts) return null;
+  const counts = withSampleCounts(live.counts);
   const parts = [
     counts.meetupJoins > 0 && { Icon: Users, fg: 'text-[#F26430]', text: `เข้าร่วมตี้ ${counts.meetupJoins.toLocaleString()} ครั้ง` },
     counts.questJoins > 0 && { Icon: Flag, fg: 'text-[#7C3AED]', text: `เริ่มชาเลนจ์ ${counts.questJoins.toLocaleString()} คน` },
