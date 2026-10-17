@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { SITE_URL } from "@/lib/site";
 import { IBM_Plex_Sans_Thai, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
@@ -22,7 +23,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://chillconnecthub.com"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Chill & Connect Hub | Hub กิจกรรมและคอมมูนิตี้สำหรับคนชอบออกไปใช้ชีวิต",
     template: "%s | Chill & Connect Hub",
@@ -45,7 +46,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "th_TH",
-    url: "https://chillconnecthub.com",
+    url: SITE_URL,
     siteName: "Chill & Connect Hub",
     title: "Chill & Connect Hub | Hub กิจกรรมและคอมมูนิตี้สำหรับคนชอบออกไปใช้ชีวิต",
     description: "Hub กิจกรรมและคอมมูนิตี้สำหรับคนชอบออกไปใช้ชีวิต ที่เปลี่ยนทุกการไปเที่ยวให้เป็นเรื่องสนุกและต่อยอดมิตรภาพ",
@@ -96,8 +97,8 @@ export default function RootLayout({
     "@context": "https://schema.org",
     "@type": "Organization",
     name: "Chill & Connect Hub",
-    url: "https://chillconnecthub.com",
-    logo: "https://chillconnecthub.com/hero-bg-70.png",
+    url: SITE_URL,
+    logo: `${SITE_URL}/hero-bg-70.png`,
     description: "แพลตฟอร์มศูนย์รวมกิจกรรมยามว่าง ฮีลใจ ออกกำลังกาย และคอมมูนิตี้สำหรับคนรุ่นใหม่",
     sameAs: [
       "https://facebook.com/chillconnecthub",
@@ -109,10 +110,10 @@ export default function RootLayout({
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: "Chill & Connect Hub",
-    url: "https://chillconnecthub.com",
+    url: SITE_URL,
     potentialAction: {
       "@type": "SearchAction",
-      target: "https://chillconnecthub.com/?search={search_term_string}",
+      target: `${SITE_URL}/community?q={search_term_string}`,
       "query-input": "required name=search_term_string",
     },
   };

@@ -1319,3 +1319,53 @@ New placeholder content in a page must be behind `eventOrigin(...) === 'sample'`
 - **Action for Frontend:** none.
 - **Review pass (same day):** hero button now says "ดูตี้ที่เปิดรับอยู่" (the row is not limited to this week); the blue hero circle moved off the trust line; fair status is a dot and words instead of a filled chip (on phones it leads the second line); the fairs link drops the count on phones; "อ่านต่อและคุยกัน" on the moment wall is an ink link; the sample Benjakitti moment's first photo is now `/hero-bkk-park-sunny.jpg` instead of a desert canyon (`data/mockData.ts`, and the local gitignored `data/moments.json`).
 - **Owner tweaks (same day):** the "/" hint is gone from the header search bar (the key still opens it); the header "สมัครฟรี" is orange on every page (it was near-black); the "ทั้งหมด" card is soft grey (grey bottom border and sticker), and a picked category card shows a light grey background and a lift instead of a black frame.
+
+### BE-079 · Landing page fixes from the owner (2026-10-17)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-17 · `claude`
+- **What changed:**
+  - **Meetup row** (`app/page.tsx`, `components/OpenMeetupTiles.tsx`): the last "ไม่เจอที่ใช่? ตั้งตี้เองเลย" tile is gone from the landing page, which now shows six real meetups (`MEETUP_ROW_SIZE`). `onCreate` is optional on `OpenMeetupTiles`; the member home still passes it and keeps the tile.
+  - **Header** (`components/Navbar.tsx`): the "เมนู" button is hidden on `/` for visitors. Members and every other page still get it.
+  - **Sign-up band:** the three faces no longer squeeze into the heading on iPad (their wrapper could shrink; it is now `shrink-0`).
+  - **Fairs list:** one column up to 1024px wide, two columns from `lg` (it was two from `md`).
+  - **Sliding rows** (new `components/ScrollRow.tsx`): meetups, challenge picks and places get round arrows floating over the photos from `md` up (phones swipe). An arrow shows only when there is more that way. Photos carry `data-row-photo` so the arrows sit on their middle. A picked category now shows up to 12 meetups ("ทั้งหมด" stays at 6); over 12, the heading link says "ดูทั้งหมด N ตี้". Challenges and places stay at 6.
+  - **AGENTS.md section 4** (shared file): new owner rule that every public page must work for Google and AI search.
+- **Action for Frontend:** none.
+
+### BE-080 · Search and AI search, step 1: sitemap, page titles, private pages (owner rule, 2026-10-17)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-17 · `claude`
+- **Why:** the owner's new rule (AGENTS.md section 4). The owner confirmed `chillconnecthub.com` is ours.
+- **What changed:**
+  - **`lib/site.ts`** (new): `SITE_URL` (override with `NEXT_PUBLIC_SITE_URL`), `pageMetadata()` (full title, description, canonical, Open Graph, Twitter), `metaDescription()` (plain text, cut near 160 chars), `PRIVATE_PAGE` (noindex). `app/layout.tsx` uses `SITE_URL` instead of the written-out domain; its search box entry now points to `/community?q=` (the home page never read `?search=`).
+  - **Own title and preview per page:** server `layout.tsx` with `generateMetadata` for `/community/[id]`, `/fairs/[id]`, `/spots/[id]` (and `/challenges/[id]` now uses the same helper); static metadata for `/community`, `/fairs`, `/spots`, `/challenges`, `/moments`, `/about`, `/safety`, `/legal`.
+  - **Private pages are noindex:** `/myhub`, `/profile`, `/onboarding`, `/rewards`, `/login`, `/checkin`, `/reset-password`, `/verify-email`, `/events/[id]` (redirect), the preview pages and `/journey-simple`. They are not blocked in robots.txt, so crawlers can read the noindex. Titles no longer repeat "· Chill & Connect Hub" (the root template adds it).
+  - **`app/sitemap.ts`** is built from the database, refreshed hourly: static public pages, every not-ended meetup and fair at its real address (was `/?event=` links), open challenges and all published places (2,244 addresses today). Private pages removed.
+  - **`app/robots.ts`:** one rule for every crawler (AI search crawlers included), only `/api/` and `/admin` blocked.
+- **Next (not started):** step 2 JSON-LD `Event` / `Place` on detail pages; step 3 render list and detail content on the server (today the HTML has no meetups because pages fetch in the browser).
+- **Action for Frontend:** a new public page needs its own `layout.tsx` with `pageMetadata()`; a signed-in page gets `PRIVATE_PAGE`.
+
+### BE-081 · Search and AI search, steps 2 and 3: structured data and content in the server HTML (2026-10-17)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-17 · `claude`
+- **Step 2, JSON-LD** (`lib/structuredData.ts`, new): meetup and fair pages carry an `Event` (date and time in Thai time, place with map point, organizer, free entry when the price says so, capacity for meetups); place pages carry a `TouristAttraction` (address, map point, map link, phone, website). Every detail page, challenges included, also has a `BreadcrumbList`. A date the text does not name a month for gets no `Event` rather than a guessed one. Place ratings are left out until they come from real visitors.
+- **Step 3, content on the server:** each public route's `page.tsx` is now a server file that reads the data and hands it to the old page, moved next to it as `*View.tsx`:
+  - Detail: `app/community/[id]`, `app/fairs/[id]`, `app/spots/[id]` (`getPublicEvent` / `getPublicSpot` in `lib/publicContent.ts`, shared with `generateMetadata` through React `cache`); the browser no longer refetches what the server sent. `app/challenges/[id]` gets the public part from the server; the member's progress still loads in the browser. The metadata moved from the step 1 `layout.tsx` files into these pages.
+  - Lists: `/community`, `/fairs` and `/challenges` get their whole public list; `/spots` gets its first 60 places in the page's own order (`lib/spotRanking.ts`, shared by both), and the full catalog still loads in the browser. List pages render per request (`connection()`), so the `?q=` / `?category=` / `?province=` filters render on the server too.
+  - `lib/social/questDetail.ts` (new) holds what `GET /api/quests/[id]` returns; the route calls it, the answer is unchanged.
+- **Checked:** every page above has its title, text and links in the HTML from `curl`, one `<h1>`, and opens in headless Chrome with no console errors (no hydration warnings).
+- **Follow-up, same day:**
+  - **Real 404:** a meetup, fair, place or challenge id that does not exist now answers 404 (`notFound()` in each server page; sample ids from the bundled data still render). New `app/not-found.tsx` + `components/NotFoundScreen.tsx`: one friendly screen with links to the four sections, `noindex`.
+  - **Home page:** `app/page.tsx` is a server file now; the old page moved to `app/HomeView.tsx`. It sends the approved events that are not over and the challenges, so the visitor landing (meetups, challenge picks, fairs) is in the HTML and visitors no longer fetch those lists. A signed-in member still loads the full event list in the browser, as before.
+- **Deferred to docs/LAUNCH_CHECKLIST.md:** moments in search (needs a decision on whether members' posts should be indexed), and the per-category place counts on `/spots` that show the first 60 places' numbers until the full catalog loads.
+- **Action for Frontend:** a new public page reads its data in a server `page.tsx` and passes it to the client view; do not fetch the main content only in `useEffect`.
+
+### BE-082 · ค้นพบ: one header for meetups, fairs and places (2026-10-17)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-17 · `claude`
+- **Why:** the owner chose a Meetup-style Find area (sketch v2): the three lists stay separate pages (each with its own address and title for search), under one ค้นพบ header.
+- **What changed:**
+  - **`components/discover/DiscoverHeader.tsx`** (new) on `/community`, `/fairs`, `/spots`: the three kinds as pills with how many the search finds (links carry `?q=` and `?province=`), a title that names the province ("มีตอัปใน เชียงใหม่", "มีตอัปออนไลน์"), the search word as a chip with ×, and "ชาเลนจ์ที่ตรงกับ “…” N อัน · ดูชาเลนจ์ →" to `/challenges?q=` when challenges match. Under it each page's filters as pills (`FilterSelect`, `filterPillClass`: a picked filter wears its pillar tint), the result count with "ล้างตัวกรองทั้งหมด", sort and grid/list.
+  - **`components/discover/DiscoverSearch.tsx`** (new): word | province | blue search button. In the top bar on wide screens (new Navbar prop `searchSlot`), above the pills on phones. The list still filters while typing.
+  - **Shared matching, `lib/discoverMatch.ts`** (new): province and search-word matching moved out of the three pages (and `/challenges`, which now matches with synonyms too, e.g. "วิ่ง" finds "running"). `GET /api/discover/counts` (new, in docs/API.md) counts with the same code, so a tab's number equals what that page shows. The server pages send the counts for the address they were opened with.
+  - **Removed per page:** the breadcrumb, the coloured header box with its description, the in-page search box and province select, and the big filter box (every filter is still there, as pills). The "create" buttons sit beside the title ("ตั้งตี้เอง", "เพิ่มงานแฟร์", "แนะนำที่ใหม่"). The clubs / venues / destinations rails moved below the list; picking one scrolls back up to the results.
+  - **Menu:** "ค้นพบ" in the Navbar menu and the phone bottom bar now goes to `/community` (was `/`); the logo goes home. The home page no longer marks "ค้นพบ" as active.
+  - **Cards are unchanged.**
+- **Checked:** desktop and phone screenshots of all three pages; tab counts equal the page counts for "วิ่ง", for กรุงเทพฯ, and for "คาเฟ่" in เชียงใหม่; `/challenges?q=วิ่ง` opens with the word filled in; no console errors.
+- **Action for Frontend:** none. A new filter on these pages goes in the pill row; matching changes go in `lib/discoverMatch.ts` so the counts follow.

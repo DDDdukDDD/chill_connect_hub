@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { fetchAllContentPages } from '@/lib/contentClient';
 import { LifestyleSpotItem, MOCK_SPOTS, getSpotVibeCategory } from '@/data/spotsData';
 import { SpotVibeId } from '@/data/masterHub';
+import { spotSearchText } from '@/lib/discoverMatch';
 
 /**
  * High-performance WeakMap caches for O(1) instantaneous lookups.
@@ -24,7 +25,7 @@ export function getCachedSpotVibeCategory(spot: LifestyleSpotItem): SpotVibeId {
 export function getCachedSpotSearchText(spot: LifestyleSpotItem): string {
   let text = searchTextCache.get(spot);
   if (!text) {
-    text = `${spot.province} ${spot.district || ''} ${spot.title} ${(spot.vibeTags || []).join(' ')} ${spot.categoryLabel || ''} ${spot.description}`.toLowerCase();
+    text = spotSearchText(spot);
     searchTextCache.set(spot, text);
   }
   return text;

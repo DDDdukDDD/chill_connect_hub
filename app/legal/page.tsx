@@ -1,6 +1,6 @@
 import { LegalScreen } from './LegalScreen';
 
-export const metadata = { title: 'ข้อตกลงและนโยบาย · Chill & Connect Hub' };
+export const metadata = { title: 'ข้อตกลงและนโยบาย', alternates: { canonical: '/legal' } };
 
 // /legal · /legal?tab=privacy — the same text as the terms and privacy popup, reachable by signed-in members
 export default async function LegalPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {

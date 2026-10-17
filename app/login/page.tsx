@@ -1,7 +1,7 @@
 import { LoginScreen } from './LoginScreen';
 import { safeReturnPath } from '@/components/auth/returnTo';
 
-export const metadata = { title: 'เข้าสู่ระบบ · Chill & Connect Hub' };
+export const metadata = { title: 'เข้าสู่ระบบ', robots: { index: false, follow: true } };
 
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
 

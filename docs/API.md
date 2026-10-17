@@ -314,6 +314,15 @@ brandReward?: {
 ```
 `brand_partner` quests always have `partnerName` and `title`. Quests without `brandReward` have no declared reward type yet — treat them as `hub_central`. `image` (optional cover URL) is also available.
 
+### `GET /api/discover/counts` — numbers on the ค้นพบ tabs (added 2026-10-17, BE-082)
+
+Query: `q` (search word, optional), `province` (`all` or a province name; `ออนไลน์` for online meetups).
+Response: `{ success: true, counts: { meetups, fairs, spots, challenges } }`.
+
+- `meetups`, `fairs`: approved and not over; `spots`: published places; `challenges`: open challenges, counted only when `q` is given (it ignores `province`).
+- Matching is `lib/discoverMatch.ts`, the same code `/community`, `/fairs`, `/spots` and `/challenges` filter with, so a tab's number equals the cards that page shows for the same word and province with its other filters at their defaults.
+- Cached for 60 seconds (`s-maxage=60`).
+
 ### `POST /api/upload` — image upload
 
 `multipart/form-data`:

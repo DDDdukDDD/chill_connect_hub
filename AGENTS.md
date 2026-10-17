@@ -85,3 +85,14 @@ Pillar facts every agent needs (data side):
 - **Spot Buddy safety rules**: trips open only for places staff marked `meetupAllowed`, and the server applies the rules in `lib/social/spotTrips.ts` (3 people minimum, daytime, meet at the place, no shared rides, no contact channel). Never loosen them in the form alone; see `docs/API.md` ("Spot Buddy trips").
 
 
+
+---
+
+## 🔎 4. Search & AI Search Readiness (owner rule, 2026-10-17)
+
+Every change to a public page must keep it findable by Google and by AI search (ChatGPT, Claude, Perplexity, Google AI Overviews):
+- **Content in the server HTML.** AI crawlers mostly do not run JavaScript. Titles, dates, places and descriptions a visitor reads must be rendered on the server, not only fetched in `useEffect`.
+- **Own metadata per page:** title, description, canonical URL and Open Graph image via `generateMetadata` (server `page.tsx` or `layout.tsx`).
+- **Structured data on detail pages:** JSON-LD for meetups and fairs (`Event`), places (`Place`/`TouristAttraction`), challenges where it fits.
+- **Crawlable structure:** one `<h1>` per page, real `<a href>` links between pages, readable Thai text (not text inside images), `alt` on content images.
+- **Private pages stay out:** `/myhub`, `/profile`, `/onboarding`, auth pages are `noindex` and not in `app/sitemap.ts`; public detail pages are in it.

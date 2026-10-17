@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { ScrollRow } from '@/components/ScrollRow';
 import { Plus, MapPin, Heart } from 'lucide-react';
 import type { EventItem } from '@/data/mockData';
 import { parseEventDateToTimestamp } from '@/lib/dateUtils';
@@ -83,7 +84,7 @@ function FaceStack({ event }: { event: EventItem }) {
 /**
  * "ตี้แนะนำ เปิดรับอยู่" on the homepage: square photos the size of the challenge picks, with the day and
  * the seats left on the photo, and the title, place and who is going below it.
- * The last tile invites the member to start their own. `reasons` (signed-in home) puts why a meetup is
+ * With `onCreate`, a last tile invites the member to start their own. `reasons` (signed-in home) puts why a meetup is
  * suggested, such as "เพราะคุณชอบสายคาเฟ่", in place of the place.
  * `onToggleSave` adds a heart on each photo (`savedIds` are the saved meetups).
  */
@@ -97,7 +98,7 @@ export function OpenMeetupTiles({
 }: {
   events: EventItem[];
   isLoaded: boolean;
-  onCreate: () => void;
+  onCreate?: () => void;
   reasons?: Record<string, string>;
   savedIds?: string[];
   onToggleSave?: (eventId: string) => void;
@@ -117,14 +118,14 @@ export function OpenMeetupTiles({
   const now = new Date();
 
   return (
-    <div className={row}>
+    <ScrollRow className={row}>
       {events.map((event) => {
         const startTime = event.time.split('-')[0].trim().replace(/\s*น\.$/, '');
         const reason = reasons?.[event.id];
         const isSaved = savedIds?.includes(event.id) ?? false;
         return (
           <Link key={event.id} href={`/community/${encodeURIComponent(event.id)}`} className={`${TILE} group block`}>
-            <span className="relative block aspect-square overflow-hidden rounded-3xl bg-slate-200 shadow-md">
+            <span data-row-photo className="relative block aspect-square overflow-hidden rounded-3xl bg-slate-200 shadow-md">
               <img src={event.image} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
               <span className="absolute left-2.5 top-2.5 rounded-full bg-white px-2.5 py-1 text-xs font-bold text-slate-900 shadow-sm">
                 {dayLabel(event, now)} · {startTime}
@@ -165,6 +166,7 @@ export function OpenMeetupTiles({
           </Link>
         );
       })}
+      {onCreate && (
       <button
         type="button"
         onClick={onCreate}
@@ -178,6 +180,7 @@ export function OpenMeetupTiles({
           <span className="block mt-0.5 text-xs font-bold text-slate-600">ตั้งตี้เองเลย แล้วรอเพื่อนๆ มาร่วม</span>
         </span>
       </button>
-    </div>
+      )}
+    </ScrollRow>
   );
 }

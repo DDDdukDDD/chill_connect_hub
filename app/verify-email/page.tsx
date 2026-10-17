@@ -1,6 +1,6 @@
 import { VerifyEmailScreen } from './VerifyEmailScreen';
 
-export const metadata = { title: 'ยืนยันอีเมล · Chill & Connect Hub', robots: { index: false } };
+export const metadata = { title: 'ยืนยันอีเมล', robots: { index: false } };
 
 // Opened from the "confirm your email" message: /verify-email?token=...
 export default async function VerifyEmailPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {

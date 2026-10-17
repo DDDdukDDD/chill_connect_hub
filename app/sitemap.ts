@@ -1,55 +1,52 @@
-import { MetadataRoute } from 'next';
-import { MOCK_EVENTS } from '@/data/mockData';
+import type { MetadataRoute } from 'next';
+import { db } from '@/lib/db';
+import { isEventEnded } from '@/lib/dateUtils';
+import { absoluteUrl } from '@/lib/site';
+import type { LifestyleSpotItem } from '@/data/spotsData';
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://chillconnecthub.com';
+// Built on request so new meetups, fairs and places show up without a deploy; cached for an hour
+export const revalidate = 3600;
 
-  const staticPages: MetadataRoute.Sitemap = [
-    {
-      url: `${baseUrl}/`,
-      lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: 1.0,
-    },
-    {
-      url: `${baseUrl}/challenges`,
-      lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: 0.95,
-    },
-    {
-      url: `${baseUrl}/moments`,
-      lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/myhub`,
-      lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: 0.85,
-    },
-    {
-      url: `${baseUrl}/about`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.75,
-    },
-    {
-      url: `${baseUrl}/profile`,
-      lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: 0.8,
-    },
+/** Public pages only. Signed-in pages (my hub, profile, onboarding) and auth screens stay out. */
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const now = new Date();
+  const page = (path: string, changeFrequency: 'daily' | 'weekly' | 'monthly', priority: number): MetadataRoute.Sitemap[number] => ({
+    url: absoluteUrl(path),
+    lastModified: now,
+    changeFrequency,
+    priority,
+  });
+
+  const staticPages = [
+    page('/', 'daily', 1),
+    page('/community', 'daily', 0.9),
+    page('/challenges', 'daily', 0.9),
+    page('/fairs', 'daily', 0.85),
+    page('/spots', 'weekly', 0.85),
+    page('/moments', 'daily', 0.7),
+    page('/about', 'monthly', 0.5),
+    page('/safety', 'monthly', 0.5),
+    page('/legal', 'monthly', 0.3),
   ];
 
-  // Dynamic Event Pages for Search Engines & AI indexers
-  const eventEntries: MetadataRoute.Sitemap = MOCK_EVENTS.slice(0, 30).map((ev) => ({
-    url: `${baseUrl}/?event=${ev.id}`,
-    lastModified: new Date(),
-    changeFrequency: 'daily',
-    priority: 0.8,
-  }));
+  const [events, quests, spots] = await Promise.all([db.listAllEvents(), db.findQuests({ status: 'all', limit: 100 }), allPublishedSpots()]);
 
-  return [...staticPages, ...eventEntries];
+  const eventPages = events
+    .filter((e) => !isEventEnded(e))
+    .map((e) => page(`/${e.eventType === 'public_venue' ? 'fairs' : 'community'}/${encodeURIComponent(e.id)}`, 'daily', 0.8));
+  const questPages = quests.items
+    .filter((q) => q.status !== 'draft' && q.status !== 'ended')
+    .map((q) => page(`/challenges/${encodeURIComponent(q.id)}`, 'weekly', 0.7));
+  const spotPages = spots.map((s) => page(`/spots/${encodeURIComponent(s.id)}`, 'monthly', 0.6));
+
+  return [...staticPages, ...eventPages, ...questPages, ...spotPages];
+}
+
+async function allPublishedSpots(): Promise<LifestyleSpotItem[]> {
+  const spots: LifestyleSpotItem[] = [];
+  for (let p = 1; ; p++) {
+    const res = await db.findSpots({ page: p, limit: 100 });
+    spots.push(...res.items.filter((s) => s.publicationStatus !== 'draft'));
+    if (p >= res.totalPages) return spots;
+  }
 }
