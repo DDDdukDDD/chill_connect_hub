@@ -1,6 +1,6 @@
 import { ProfileScreen } from './ProfileScreen';
 
-export const metadata = { title: 'โปรไฟล์ · Chill & Connect Hub' };
+export const metadata = { title: 'โปรไฟล์', robots: { index: false, follow: false } };
 
 // /profile (my own) · /profile?id=mem_… (a member's public profile) · /profile?id=host-… (sample profile)
 export default async function ProfilePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {

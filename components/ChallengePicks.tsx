@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import Link from 'next/link';
+import { ScrollRow } from '@/components/ScrollRow';
 import { Zap, Gift, Clock, Flame, CalendarClock, Footprints } from 'lucide-react';
 import type { ChallengeQuest } from '@/data/mockData';
 import { getQuestBrandReward } from '@/lib/questDisplay';
@@ -110,7 +111,7 @@ export function ChallengePicks({ quests, joinedIds, isLoaded, progress }: { ques
   }
 
   return (
-    <ul className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar snap-x -mx-4 px-4 scroll-px-4 sm:mx-0 sm:px-1 sm:scroll-px-1 pt-3 pb-2">
+    <ScrollRow as="ul" className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar snap-x -mx-4 px-4 scroll-px-4 sm:mx-0 sm:px-1 sm:scroll-px-1 pt-3 pb-2">
       {picks.map((quest, i) => {
         const doing = mine.get(quest.id);
         const reason = reasons.get(quest.id);
@@ -120,6 +121,7 @@ export function ChallengePicks({ quests, joinedIds, isLoaded, progress }: { ques
               <span className={`relative block ${TILTS[i % TILTS.length]} group-hover:rotate-0 group-hover:-translate-y-1 transition-transform duration-300`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
+                  data-row-photo
                   src={quest.image || quest.badgeCoverImg || FALLBACK_IMAGE}
                   alt=""
                   loading="lazy"
@@ -153,6 +155,6 @@ export function ChallengePicks({ quests, joinedIds, isLoaded, progress }: { ques
           </li>
         );
       })}
-    </ul>
+    </ScrollRow>
   );
 }

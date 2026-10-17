@@ -41,6 +41,8 @@ interface NavbarProps {
   onOpenSignup?: () => void;
   /** Shows the search bar (wide screens) or icon (phones) that opens the page's search window */
   onOpenSearch?: () => void;
+  /** A search box shown in place of the search bar on wide screens (the ค้นพบ pages) */
+  searchSlot?: React.ReactNode;
   userName?: string;
   isAuthReady?: boolean;
 }
@@ -55,6 +57,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenCreateEvent,
   onOpenSignup,
   onOpenSearch,
+  searchSlot,
   userName = '',
   isAuthReady,
 }) => {
@@ -88,7 +91,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   }, []);
 
   const navItems = [
-    { id: 'explore', label: 'ค้นพบ', href: '/', icon: Compass },
+    // ค้นพบ = meetups, fairs and places (/community, /fairs, /spots); the logo goes home
+    { id: 'explore', label: 'ค้นพบ', href: '/community', icon: Compass },
     { id: 'moments', label: 'โมเมนต์', href: '/moments', icon: Camera },
     { id: 'challenges', label: 'ชาเลนจ์', href: '/challenges', icon: Zap },
     // About sits in the footer of this menu
@@ -103,7 +107,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Left: Brand Logo & Name */}
           <Link 
             href="/"
-            onClick={() => setActiveTab('explore')}
+            onClick={() => setActiveTab('home')}
             className="flex items-center gap-2 sm:gap-3 cursor-pointer group py-1 min-w-0"
           >
             <BrandLogo size="md" className="group-hover:scale-105 group-hover:shadow-md transition-all duration-300" />
@@ -117,8 +121,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </Link>
 
+          {/* The ค้นพบ pages bring their own search box */}
+          {searchSlot && <div className="hidden md:flex flex-1 min-w-0 max-w-[480px] ml-2 lg:ml-6">{searchSlot}</div>}
+
           {/* Search: a short bar next to the logo on wide screens */}
-          {onOpenSearch && (
+          {!searchSlot && onOpenSearch && (
             <div className="hidden md:flex flex-1 min-w-0 ml-2 lg:ml-6">
               <button
                 type="button"
@@ -290,7 +297,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               </>
             )}
 
-            {/* Universal Luxury Hamburger / Menu Button (Active on Mobile, iPad, and Desktop) */}
+            {/* Universal Luxury Hamburger / Menu Button (Active on Mobile, iPad, and Desktop).
+                The visitor landing page leaves it out: log in and sign up are its only actions. */}
+            {!(pathname === '/' && !isLoggedIn) && (
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(true)}
@@ -303,6 +312,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 เมนู
               </span>
             </button>
+            )}
 
           </div>
 

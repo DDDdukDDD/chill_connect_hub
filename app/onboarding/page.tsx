@@ -1,7 +1,7 @@
 import { OnboardingFlow } from './OnboardingFlow';
 import { safeReturnPath } from '@/components/auth/returnTo';
 
-export const metadata = { title: 'เริ่มต้นใช้งาน · Chill & Connect Hub' };
+export const metadata = { title: 'เริ่มต้นใช้งาน', robots: { index: false, follow: false } };
 
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
 

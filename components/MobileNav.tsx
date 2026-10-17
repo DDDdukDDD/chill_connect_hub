@@ -18,7 +18,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
 }) => {
   const { isLoggedIn } = useMemberSession();
   const navItems = [
-    { id: 'explore', label: 'ค้นพบ', href: '/', icon: Compass },
+    { id: 'explore', label: 'ค้นพบ', href: '/community', icon: Compass },
     { id: 'moments', label: 'โมเมนต์', href: '/moments', icon: Camera },
     { id: 'challenges', label: 'ชาเลนจ์', href: '/challenges', icon: Zap },
     // My Hub is personal: a visitor who is not signed in has nothing there

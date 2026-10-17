@@ -1,6 +1,6 @@
 import { CheckInScreen } from './CheckInScreen';
 
-export const metadata = { title: 'เช็กอินผู้เข้าร่วม · Chill & Connect Hub', robots: { index: false } };
+export const metadata = { title: 'เช็กอินผู้เข้าร่วม', robots: { index: false } };
 
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value) ?? '';
 

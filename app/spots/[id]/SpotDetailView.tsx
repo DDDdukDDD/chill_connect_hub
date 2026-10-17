@@ -1,0 +1,1327 @@
+'use client';
+
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import { Navbar } from '@/components/Navbar';
+import { MobileNav } from '@/components/MobileNav';
+import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
+import { RequireMembershipModal } from '@/components/RequireMembershipModal';
+import { useAuth } from '@/lib/useAuth';
+import { useMyActivity } from '@/lib/useMyActivity';
+import { CreateEventModal } from '@/components/CreateEventModal';
+import { MOCK_EVENTS, EventItem } from '@/data/mockData';
+import {
+  getSpotById,
+  getNearbySpots,
+  getNearbyRecommendationInfo,
+  LifestyleSpotItem,
+  MOCK_SPOTS
+} from '@/data/spotsData';
+import { SpotCard, formatSpotBadgePrice } from '@/components/SpotCard';
+import { spotOrigin } from '@/lib/contentOrigin';
+import { resolveSpotGallery, resolveSpotImage } from '@/lib/spotImageResolver';
+import { usePublishedSpots } from '@/lib/usePublishedSpots';
+import { renderDescriptionContent } from '@/components/RichTextEditor';
+import { ReportSafetyModal } from '@/components/ReportSafetyModal';
+import { SmartSpotPlanCard } from '@/components/SmartSpotPlanCard';
+import { SpotBuddyTrips } from '@/components/SpotBuddyTrips';
+import { VisitPanel } from '@/components/VisitPanel';
+import { NearbyDiningSection } from '@/components/NearbyDiningSection';
+import {
+  MapPin,
+  Clock,
+  Phone,
+  Globe,
+  Heart,
+  Star,
+  Share2,
+  Check,
+  CheckCircle2,
+  Sparkles,
+  Compass,
+  ArrowLeft,
+  ArrowRight,
+  ExternalLink,
+  Camera,
+  Trophy,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Maximize2,
+  Calendar,
+  ShieldCheck,
+  Navigation,
+  Car,
+  Tag,
+  Building2,
+  Ticket,
+  BookOpen,
+  BookMarked,
+  Flag
+} from 'lucide-react';
+
+// Helper to strip rogue emojis from text fields for clean, elegant typography
+const cleanText = (str?: string): string => {
+  if (!str) return '';
+  return str
+    .replace(/[\p{Extended_Pictographic}\p{Emoji_Presentation}\u200d\uFE0F\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+export interface SpotOpenStatus {
+  isOpen: boolean;
+  statusText: string;
+  subText?: string;
+  badgeVariant: 'open' | 'closed' | 'unspecified';
+}
+
+export function parseSpotOpenStatus(openHours?: string): SpotOpenStatus {
+  if (!openHours || /ไม่ระบุ/i.test(openHours)) {
+    return {
+      isOpen: false,
+      statusText: 'เวลาทำการตามประกาศ',
+      subText: 'โปรดตรวจสอบก่อนเดินทาง',
+      badgeVariant: 'unspecified',
+    };
+  }
+
+  const clean = openHours.trim();
+
+  // 24 hours check
+  if (/24\s*(ชั่วโมง|ชม)/i.test(clean) || /00:00\s*[-–]\s*23:59/i.test(clean) || /00:00\s*[-–]\s*24:00/i.test(clean)) {
+    return {
+      isOpen: true,
+      statusText: 'เปิดตลอด 24 ชั่วโมง',
+      badgeVariant: 'open',
+    };
+  }
+
+  // Check current Thailand time (UTC+7)
+  const now = new Date();
+  const utcHours = now.getUTCHours();
+  const utcMinutes = now.getUTCMinutes();
+  const thaiHours = (utcHours + 7) % 24;
+  const currentMinutes = thaiHours * 60 + utcMinutes;
+  const currentDay = (now.getUTCDay() + (utcHours + 7 >= 24 ? 1 : 0)) % 7; // 0=Sun, 1=Mon, ..., 6=Sat
+
+  // Check day restrictions
+  if (/จ\.-ศ\./.test(clean) && (currentDay === 0 || currentDay === 6)) {
+    return {
+      isOpen: false,
+      statusText: 'ปิดทำการวันนี้',
+      subText: 'เปิดวันจันทร์ - ศุกร์',
+      badgeVariant: 'closed',
+    };
+  }
+  if (/ส\.-อา\./.test(clean) && currentDay >= 1 && currentDay <= 5) {
+    return {
+      isOpen: false,
+      statusText: 'ปิดทำการวันนี้',
+      subText: 'เปิดเฉพาะ เสาร์ - อาทิตย์',
+      badgeVariant: 'closed',
+    };
+  }
+  if (/ปิดวันจันทร์/.test(clean) && currentDay === 1) {
+    return {
+      isOpen: false,
+      statusText: 'ปิดทำการวันนี้',
+      subText: 'ปิดทุกวันจันทร์',
+      badgeVariant: 'closed',
+    };
+  }
+
+  // Parse time range: e.g. 08:00 - 17:00
+  const match = clean.match(/(\d{1,2})[:.](\d{2})\s*[-–]\s*(\d{1,2})[:.](\d{2})/);
+  if (match) {
+    const openH = parseInt(match[1], 10);
+    const openM = parseInt(match[2], 10);
+    const closeH = parseInt(match[3], 10);
+    const closeM = parseInt(match[4], 10);
+
+    const openMinutes = openH * 60 + openM;
+    const closeMinutes = closeH * 60 + closeM;
+
+    if (currentMinutes >= openMinutes && currentMinutes < closeMinutes) {
+      return {
+        isOpen: true,
+        statusText: 'เปิดให้บริการอยู่',
+        subText: `ปิด ${match[3]}:${match[4]} น.`,
+        badgeVariant: 'open',
+      };
+    } else {
+      return {
+        isOpen: false,
+        statusText: 'ปิดให้บริการแล้ว',
+        subText: `เปิด ${match[1]}:${match[2]} น.`,
+        badgeVariant: 'closed',
+      };
+    }
+  }
+
+  return {
+    isOpen: true,
+    statusText: clean.length > 25 ? 'เปิดให้บริการ' : clean,
+    badgeVariant: 'open',
+  };
+}
+
+/** The page itself: `initialSpot` comes from the server page, so the content is in the HTML search engines read. */
+export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: LifestyleSpotItem | null }) {
+  const params = useParams();
+  const router = useRouter();
+  const rawId = params?.id as string;
+  const decodedId = rawId ? decodeURIComponent(rawId) : '';
+
+  const [activeNavTab, setActiveNavTab] = useState('spots');
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
+  // What the member joined comes from the account; this keeps the page in step with it
+  const myActivity = useMyActivity();
+  useEffect(() => {
+    if (myActivity.isLoaded) setJoinedEventIds(myActivity.joinedIds);
+  }, [myActivity.isLoaded, myActivity.joinedIds]);
+  const [isCopied, setIsCopied] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
+  const [membershipActionTitle, setMembershipActionTitle] = useState('เพื่อดำเนินการต่อ');
+  const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
+
+  // Fullscreen Photo Lightbox Modal State
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+
+  // Retrieve spot: the API holds the live catalog (incl. imported spots); bundled data renders instantly as a fallback
+  const staticSpot: LifestyleSpotItem | undefined = useMemo(() => {
+    if (!decodedId) return undefined;
+    return getSpotById(decodedId) || MOCK_SPOTS.find((s) => s.id === decodedId || s.title === decodedId);
+  }, [decodedId]);
+  const [apiSpot, setApiSpot] = useState<LifestyleSpotItem | null>(initialSpot);
+  const [isSpotLoading, setIsSpotLoading] = useState(!initialSpot);
+  useEffect(() => {
+    // The server already sent this place
+    if (!decodedId || initialSpot) return;
+    let active = true;
+    fetch(`/api/spots/${encodeURIComponent(decodedId)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (active && data?.spot) setApiSpot(data.spot as LifestyleSpotItem);
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (active) setIsSpotLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [decodedId, initialSpot]);
+  const spot: LifestyleSpotItem | undefined = apiSpot || staticSpot;
+  const { spots: publishedSpots } = usePublishedSpots();
+
+  // Gallery Photos (Adaptive resolution)
+  const galleryImages: string[] = useMemo(() => {
+    if (!spot) return [];
+    return resolveSpotGallery(spot);
+  }, [spot]);
+
+  // Real-time open/closed status parsing
+  const openStatus = useMemo(() => parseSpotOpenStatus(spot?.openHours), [spot?.openHours]);
+
+  // Nearby spots recommendation info (smart zonal & distance proximity)
+  const recommendation = useMemo(() => {
+    if (!spot) return { spots: [], sectionTitle: '', sectionSubtitle: '', zoneName: '' };
+    return getNearbyRecommendationInfo(spot, 5, publishedSpots.length > 0 ? publishedSpots : MOCK_SPOTS);
+  }, [spot, publishedSpots]);
+
+  const nearbySpots = recommendation.spots;
+
+  // Separate Public Transit & Private Car Info for real-world clarity (with clean text)
+  const { publicTransitText, parkingText } = useMemo(() => {
+    if (!spot?.transitInfo) {
+      // Placeholder lines are for seed places only
+      if (spot && spotOrigin(spot) !== 'sample') return { publicTransitText: '', parkingText: '' };
+      return {
+        publicTransitText: 'เดินทางด้วยรถไฟฟ้าหรือรถประจำทางที่ผ่านบริเวณใกล้เคียง',
+        parkingText: 'มีพื้นที่จอดรถสำหรับผู้มาติดต่อ หรือจุดจอดรถบริเวณใกล้เคียง'
+      };
+    }
+
+    const raw = cleanText(spot.transitInfo);
+    const parts = raw.split(/,|และ|พร้อม/).map((s) => s.trim()).filter(Boolean);
+    const publicParts = parts.filter((p) =>
+      /bts|mrt|รถไฟฟ้า|เรือ|แอร์พอร์ต|รถเมล์|รถสองแถว|สถานี|เดินต่อ|สาย/i.test(p)
+    );
+    const parkingParts = parts.filter((p) =>
+      /จอด|รถยนต์|ลานจอด|ถนน|ทางหลวง|ขับรถ|อาคารจอด/i.test(p)
+    );
+
+    return {
+      publicTransitText: publicParts.length > 0 ? publicParts.join(', ') : raw,
+      parkingText: parkingParts.length > 0 ? parkingParts.join(', ') : 'มีจุดจอดรถยนต์บริเวณสถานที่ หรือเดินทางตามพิกัด GPS'
+    };
+  }, [spot]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    if (!isLoggedIn) {
+      setFavorites([]);
+      setJoinedEventIds([]);
+      return;
+    }
+
+    const savedFavs = localStorage.getItem('favorite_spots');
+    if (savedFavs) {
+      try {
+        setFavorites(JSON.parse(savedFavs));
+      } catch {
+        // ignore
+      }
+    }
+    const savedJoined = localStorage.getItem('joined_event_ids');
+    if (savedJoined) {
+      try {
+        setJoinedEventIds(JSON.parse(savedJoined));
+      } catch {
+        // ignore
+      }
+    }
+  }, [decodedId, isLoggedIn]);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const toggleFavorite = (spotId: string) => {
+    if (!isLoggedIn) {
+      setMembershipActionTitle('เพื่อบันทึกสถานที่ลงในสมุดบันทึกการเดินทาง (Travel Scrapbook)');
+      setIsRequireMembershipOpen(true);
+      return;
+    }
+    setFavorites((prev) => {
+      const isFav = prev.includes(spotId);
+      let updated: string[];
+      if (isFav) {
+        updated = prev.filter((id) => id !== spotId);
+        showToast('นำออกจากสมุดบันทึกสถานที่เที่ยวแล้ว');
+      } else {
+        updated = [...prev, spotId];
+        const addedSpotTitle = spotId === spot?.id ? spot?.title : (nearbySpots.find((s) => s.id === spotId)?.title || spot?.title);
+        showToast(`เพิ่ม "${cleanText(addedSpotTitle)}" ลงในสมุดบันทึกสถานที่เที่ยวแล้ว`);
+      }
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('favorite_spots', JSON.stringify(updated));
+      }
+      return updated;
+    });
+  };
+
+  const handleShare = async () => {
+    if (typeof window === 'undefined' || !spot) return;
+    const url = window.location.href;
+    const shareData = {
+      title: `${spot.title} | Chill & Connect Hub`,
+      text: `แนะนำจุดเช็คอิน & จุดฮีลใจ: ${spot.title} (${spot.province})`,
+      url: url,
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+        showToast('แชร์สถานที่เรียบร้อย');
+        return;
+      } catch (err) {
+        // User cancelled or fallback
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+      setIsCopied(true);
+      showToast('คัดลอกลิงก์สถานที่แล้ว ส่งให้เพื่อนได้เลย');
+      setTimeout(() => setIsCopied(false), 2500);
+    } catch {
+      showToast('คัดลอกลิงก์เรียบร้อย');
+    }
+  };
+
+  // Keyboard navigation for lightbox
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isLightboxOpen) return;
+      if (e.key === 'Escape') setIsLightboxOpen(false);
+      if (e.key === 'ArrowRight') {
+        setActivePhotoIndex((prev) => (prev + 1) % galleryImages.length);
+      }
+      if (e.key === 'ArrowLeft') {
+        setActivePhotoIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isLightboxOpen, galleryImages.length]);
+
+  if (!spot && isSpotLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <p className="text-sm font-semibold text-slate-500">กำลังโหลดข้อมูลสถานที่...</p>
+      </div>
+    );
+  }
+
+  if (!spot) {
+    return (
+      <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans">
+        <Navbar
+          activeTab={activeNavTab}
+          setActiveTab={setActiveNavTab}
+          isLoggedIn={isLoggedIn}
+          isAuthReady={isAuthReady}
+          setIsLoggedIn={handleSetIsLoggedIn}
+          onOpenLogin={() => setIsAuthModalOpen(true)}
+          onOpenLogout={() => setIsLogoutModalOpen(true)}
+          onOpenCreateEvent={() => setIsCreateEventModalOpen(true)}
+        />
+        <main className="flex-1 max-w-4xl mx-auto px-4 py-20 text-center space-y-4">
+          <div className="w-16 h-16 bg-slate-100 text-slate-700 rounded-2xl flex items-center justify-center mx-auto">
+            <MapPin className="w-8 h-8 text-slate-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900">ไม่พบข้อมูลสถานที่ท่องเที่ยวนี้</h1>
+          <p className="text-sm text-slate-600">สถานที่นี้อาจถูกย้ายหรือไม่มีอยู่ในระบบ</p>
+          <div className="flex items-center justify-center gap-3 pt-2">
+            <Link
+              href="/spots"
+              className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-2xs transition-all cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>กลับสู่หน้ารวมพิกัดเที่ยว</span>
+            </Link>
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer"
+            >
+              <span>กลับสู่หน้าแรก</span>
+            </Link>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  const isFavorite = isLoggedIn && favorites.includes(spot.id);
+
+  return (
+    <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans selection:bg-[#2D5A3C] selection:text-white">
+      
+      {/* 1. Header Navbar */}
+      <Navbar
+        activeTab={activeNavTab}
+        setActiveTab={setActiveNavTab}
+        isLoggedIn={isLoggedIn}
+        isAuthReady={isAuthReady}
+        setIsLoggedIn={handleSetIsLoggedIn}
+        onOpenLogin={() => setIsAuthModalOpen(true)}
+        onOpenLogout={() => setIsLogoutModalOpen(true)}
+        onOpenCreateEvent={() => setIsCreateEventModalOpen(true)}
+      />
+
+      {/* Main Container */}
+      <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 pt-1.5 pb-28 sm:pt-2 sm:pb-12 space-y-3 sm:space-y-4">
+        
+
+        {/* =========================================================================
+            TOP BREADCRUMBS & ACTION BAR
+           ========================================================================= */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1.5 border-b border-slate-100">
+          
+          {/* Left: Clean Breadcrumbs */}
+          <nav className="text-xs text-slate-500 font-medium overflow-x-auto whitespace-nowrap scrollbar-none flex items-center gap-1.5 py-1 min-w-0">
+            <Link href="/" className="hover:text-[#4A7C59] transition-colors font-semibold py-1 px-1">หน้าแรก</Link>
+            <span>/</span>
+            <Link href="/spots" className="hover:text-[#4A7C59] transition-colors py-1 px-1 font-semibold">พิกัดเที่ยว & จุดฮีลใจ</Link>
+            <span>/</span>
+            <span className="text-slate-700 font-semibold py-1 px-1">{spot.province}</span>
+            <span>/</span>
+            <span className="text-slate-900 font-bold truncate max-w-[180px] sm:max-w-[280px] py-1 px-1">{cleanText(spot.title)}</span>
+          </nav>
+
+          {/* Right: Favorite & Share Buttons */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => toggleFavorite(spot.id)}
+              className={`inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-2xs border cursor-pointer active:scale-95 ${
+                isFavorite
+                  ? 'bg-[#EBF3ED] text-[#2D5A3C] border-[#C5DEC9]'
+                  : 'bg-white text-slate-700 border-slate-200 hover:bg-emerald-50 hover:text-[#4A7C59]'
+              }`}
+            >
+              <BookMarked className={`w-3.5 h-3.5 ${isFavorite ? 'text-[#2D5A3C]' : 'text-slate-500'}`} />
+              <span className="hidden sm:inline">{isFavorite ? 'บันทึกในสมุดแล้ว' : 'บันทึกในสมุด'}</span>
+              <span className="sm:hidden">{isFavorite ? 'บันทึกแล้ว' : 'บันทึก'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleShare}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-[#F4F8F5] text-slate-700 hover:text-[#2D5A3C] text-xs font-bold transition-all shadow-2xs border border-slate-200 hover:border-[#C5DEC9] cursor-pointer active:scale-95"
+            >
+              {isCopied ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="text-emerald-600 font-bold">คัดลอกลิงก์แล้ว!</span>
+                </>
+              ) : (
+                <>
+                  <Share2 className="w-3.5 h-3.5 text-slate-500" />
+                  <span>แชร์สถานที่</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsReportModalOpen(true)}
+              className="w-8 h-8 rounded-xl border border-slate-200 hover:border-rose-300 text-slate-400 hover:text-rose-600 flex items-center justify-center transition-colors cursor-pointer active:scale-95"
+              title="รายงานข้อมูลสถานที่ปิด / พิกัดไม่ถูกต้อง"
+            >
+              <Flag className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+        </div>
+
+        {/* =========================================================================
+            EDITORIAL ADAPTIVE PHOTO GALLERY (1-Photo Hero, 2/3-Photo Split, 5-Mosaic)
+           ========================================================================= */}
+        <section className="space-y-2">
+          {galleryImages.length <= 1 ? (
+            /* Single Hero Photo Banner */
+            <div
+              onClick={() => {
+                setActivePhotoIndex(0);
+                setIsLightboxOpen(true);
+              }}
+              className="w-full h-64 sm:h-80 md:h-[360px] rounded-3xl overflow-hidden relative group cursor-pointer bg-slate-200 shadow-sm"
+            >
+              <img
+                src={galleryImages[0] || spot.image}
+                alt={`${spot.title} ภาพบรรยากาศ`}
+                className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-40 group-hover:opacity-25 transition-opacity" />
+              
+              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white">
+                <div className="inline-flex items-center gap-2 bg-slate-900/75 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-semibold border border-white/20">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>{spotOrigin(spot) === 'member' ? 'ภาพจากสมาชิกที่แนะนำ' : spotOrigin(spot) === 'source' ? 'ภาพจากแหล่งข้อมูลต้นทาง' : 'ภาพถ่ายอย่างเป็นทางการ'}</span>
+                </div>
+                <div className="inline-flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md border border-white/20 group-hover:bg-slate-900 transition-colors">
+                  <Camera className="w-3.5 h-3.5" />
+                  <span>ดูภาพขนาดเต็ม</span>
+                </div>
+              </div>
+            </div>
+          ) : galleryImages.length === 2 ? (
+            /* 2 Photos Split Layout */
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 rounded-3xl overflow-hidden h-64 sm:h-80 md:h-[340px] relative group">
+              {galleryImages.slice(0, 2).map((imgUrl, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => {
+                    setActivePhotoIndex(idx);
+                    setIsLightboxOpen(true);
+                  }}
+                  className="relative h-full overflow-hidden cursor-pointer bg-slate-200"
+                >
+                  <img
+                    src={imgUrl}
+                    alt={`${spot.title} บรรยากาศ ${idx + 1}`}
+                    className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors" />
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  setActivePhotoIndex(0);
+                  setIsLightboxOpen(true);
+                }}
+                className="absolute bottom-3 right-3 bg-slate-900/85 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg border border-white/20 active:scale-95"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                <span>ดูรูปทั้งหมด (2)</span>
+              </button>
+            </div>
+          ) : galleryImages.length === 3 ? (
+            /* 3 Photos Split Layout */
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 rounded-3xl overflow-hidden h-56 sm:h-72 md:h-[320px] relative group">
+              {galleryImages.slice(0, 3).map((imgUrl, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => {
+                    setActivePhotoIndex(idx);
+                    setIsLightboxOpen(true);
+                  }}
+                  className="relative h-full overflow-hidden cursor-pointer bg-slate-200"
+                >
+                  <img
+                    src={imgUrl}
+                    alt={`${spot.title} บรรยากาศ ${idx + 1}`}
+                    className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors" />
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  setActivePhotoIndex(0);
+                  setIsLightboxOpen(true);
+                }}
+                className="absolute bottom-3 right-3 bg-slate-900/85 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg border border-white/20 active:scale-95"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                <span>ดูรูปทั้งหมด (3)</span>
+              </button>
+            </div>
+          ) : (
+            /* 4+ Photos Mosaic Grid */
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-2.5 rounded-3xl overflow-hidden bg-slate-100 h-56 sm:h-72 md:h-[320px] max-h-[320px] relative group">
+              {/* Main Big Photo (Left - 2 Cols x 2 Rows) */}
+              <div
+                onClick={() => {
+                  setActivePhotoIndex(0);
+                  setIsLightboxOpen(true);
+                }}
+                className="md:col-span-2 md:row-span-2 relative h-56 sm:h-72 md:h-[320px] overflow-hidden cursor-pointer bg-slate-200"
+              >
+                <img
+                  src={galleryImages[0] || spot.image}
+                  alt={`${spot.title} บรรยากาศ 1`}
+                  className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-40 hover:opacity-20 transition-opacity" />
+              </div>
+
+              {/* Secondary Photos */}
+              {galleryImages.slice(1, 5).map((imgUrl, idx) => {
+                const photoIdx = idx + 1;
+                const isLast = idx === Math.min(3, galleryImages.length - 2);
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => {
+                      setActivePhotoIndex(photoIdx);
+                      setIsLightboxOpen(true);
+                    }}
+                    className="hidden md:block relative h-[155px] overflow-hidden cursor-pointer bg-slate-200"
+                  >
+                    <img
+                      src={imgUrl}
+                      alt={`${spot.title} บรรยากาศ ${photoIdx + 1}`}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-black/10 hover:bg-black/0 transition-colors" />
+
+                    {/* View All Photos Button Overlay on the last thumbnail */}
+                    {isLast && galleryImages.length > 5 && (
+                      <div className="absolute inset-0 bg-slate-900/60 hover:bg-slate-900/50 backdrop-blur-2xs flex flex-col items-center justify-center text-white transition-all">
+                        <Camera className="w-6 h-6 mb-1 text-white" />
+                        <span className="font-bold text-xs sm:text-sm">ดูรูปทั้งหมด</span>
+                        <span className="text-[11px] text-slate-200 font-medium">({galleryImages.length} รูป)</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Floating Mobile View All Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActivePhotoIndex(0);
+                  setIsLightboxOpen(true);
+                }}
+                className="md:hidden absolute bottom-3 right-3 bg-slate-900/85 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg border border-white/20 active:scale-95"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                <span>ดูรูปทั้งหมด ({galleryImages.length})</span>
+              </button>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between text-xs text-slate-500 px-1 font-medium">
+            <span className="inline-flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-slate-400" />
+              <span>แตะที่รูปเพื่อเปิดดูภาพบรรยากาศขนาดใหญ่ (Fullscreen Lightbox)</span>
+            </span>
+            <span className="hidden sm:inline">คลังภาพบรรยากาศ {galleryImages.length} มุมมอง</span>
+          </div>
+        </section>
+
+        {/* =========================================================================
+            CORE CONTENT: 2-COLUMN EDITORIAL LAYOUT (Clean Editorial Flow)
+           ========================================================================= */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-10 items-start pt-3">
+          
+          {/* LEFT COLUMN: PRIMARY DETAILS (2 Cols - Editorial Focus) */}
+          <div className="lg:col-span-2 space-y-7">
+            
+            {/* 1. Header Title, Badges & Ratings */}
+            <div className="space-y-3 pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Category Badge - Forest Green */}
+                <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#EBF3ED] text-[#2D5A3C] border border-emerald-200">
+                  {spot.categoryLabel}
+                </span>
+
+                {/* Star Rating & Reviews (only real values; imported spots have none) */}
+                {spot.rating > 0 && (
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-2xs ml-auto sm:ml-0">
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                    <span>{spot.rating}</span>
+                    {spot.reviewsCount > 0 && <span className="text-slate-400 font-normal">({spot.reviewsCount} รีวิว)</span>}
+                  </div>
+                )}
+              </div>
+
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 tracking-tight leading-tight break-words">
+                {cleanText(spot.title)}
+              </h1>
+
+              {/* Vibe Tags */}
+              {spot.vibeTags && spot.vibeTags.length > 0 && (
+                <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                  {spot.vibeTags.map((vibe, idx) => (
+                    <span
+                      key={idx}
+                      className="text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1 rounded-xl transition-colors"
+                    >
+                      {cleanText(vibe)}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* About / Story Section (Clean Editorial Paragraphs & Rich Content) */}
+            <div className="space-y-3 pt-1">
+              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
+                เกี่ยวกับสถานที่นี้
+              </h2>
+              {renderDescriptionContent(spot.description)}
+            </div>
+
+            {/* 4. Highlights Section (Clean Minimal Bullets) */}
+            {spot.highlights && spot.highlights.length > 0 && (
+              <div className="space-y-3.5 pt-5 border-t border-slate-100">
+                <h2 className="text-lg font-bold text-slate-900 tracking-tight">
+                  จุดเด่น & ไฮไลต์ที่ไม่ควรพลาด
+                </h2>
+                <ul className="space-y-3 pt-1">
+                  {spot.highlights.map((h, idx) => (
+                    <li
+                      key={idx}
+                      className="flex items-start gap-3 text-xs sm:text-sm text-slate-800 leading-relaxed font-medium"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-slate-800 shrink-0 mt-2" />
+                      <span className="flex-1">{cleanText(h)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* 5. Transit & Facilities Section (2-Column Structured Rhythm) */}
+            {(publicTransitText || parkingText || (spot.facilities && spot.facilities.length > 0)) && (
+            <div className="space-y-4 pt-5 border-t border-slate-100">
+              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
+                การเดินทาง & สิ่งอำนวยความสะดวก
+              </h2>
+
+              {(publicTransitText || parkingText) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-1">
+                {/* 1. Public Transit */}
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                    รถสาธารณะ & รถไฟฟ้า
+                  </span>
+                  <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
+                    {cleanText(publicTransitText)}
+                  </p>
+                </div>
+
+                {/* 2. Private Car & Parking */}
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                    รถยนต์ส่วนตัว & ที่จอดรถ
+                  </span>
+                  <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
+                    {cleanText(parkingText)}
+                  </p>
+                </div>
+              </div>
+              )}
+
+              {/* Facilities tags */}
+              {spot.facilities && spot.facilities.length > 0 && (
+                <div className="space-y-2 pt-2">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                    สิ่งอำนวยความสะดวก
+                  </span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {spot.facilities.map((fac, idx) => (
+                      <span
+                        key={idx}
+                        className="text-xs font-semibold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-xl"
+                      >
+                        {cleanText(fac)}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            )}
+
+            {/* 6. Interactive Google Map */}
+            <div className="space-y-3.5 pt-5 border-t border-slate-100">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-lg font-bold text-slate-900 tracking-tight">
+                  พิกัดแผนที่ & เส้นทาง
+                </h3>
+
+                <a
+                  href={spot.googleMapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-[#4A7C59] hover:underline shrink-0"
+                >
+                  <span>เปิดดูใน Google Maps</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
+
+              <div className="relative w-full h-60 sm:h-72 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-2xs">
+                <iframe
+                  title={`Google Map - ${cleanText(spot.title)}`}
+                  src={`https://maps.google.com/maps?q=${spot.latitude},${spot.longitude}&hl=th&z=15&output=embed`}
+                  className="w-full h-full border-0"
+                  loading="lazy"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
+            </div>
+
+            {/* 7. Nearby Popular Cafes & Restaurants (Fills blank space with high-value dining) */}
+            <NearbyDiningSection spot={spot} />
+
+          </div>
+
+          {/* RIGHT COLUMN: STICKY PLACE SUMMARY & DIRECTIONS CARD (1 Col) */}
+          <div className="lg:col-span-1 space-y-4 lg:sticky lg:top-24">
+            
+            {/* Quick Info Action Box */}
+            <div className={`p-5 sm:p-6 rounded-3xl transition-all space-y-4 ${
+              isFavorite
+                ? 'bg-gradient-to-b from-[#EBF3ED]/40 via-white to-white border-2 border-[#4A7C59] shadow-md ring-2 ring-[#4A7C59]/25'
+                : 'bg-white border border-slate-200/90 shadow-sm'
+            }`}>
+              
+              {/* Header Status & District */}
+              <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
+                <div className="flex flex-col gap-0.5">
+                  <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
+                    openStatus.badgeVariant === 'open'
+                      ? 'bg-emerald-50 border border-emerald-200/80 text-emerald-800'
+                      : openStatus.badgeVariant === 'closed'
+                      ? 'bg-rose-50 border border-rose-200/80 text-rose-800'
+                      : 'bg-slate-100 border border-slate-200 text-slate-700'
+                  }`}>
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${
+                      openStatus.badgeVariant === 'open'
+                        ? 'bg-emerald-500 animate-pulse'
+                        : openStatus.badgeVariant === 'closed'
+                        ? 'bg-rose-500'
+                        : 'bg-slate-400'
+                    }`} />
+                    <span className="whitespace-nowrap">{openStatus.statusText}</span>
+                  </div>
+                  {openStatus.subText && (
+                    <span className="text-[11px] text-slate-500 font-medium pl-1">
+                      {openStatus.subText}
+                    </span>
+                  )}
+                </div>
+                <span className="text-xs font-semibold text-slate-400 truncate max-w-[130px]" title={`${spot.district}, จังหวัด${spot.province}`}>
+                  {spot.district}
+                </span>
+              </div>
+
+              {/* Spot Specs Summary */}
+              <div className="space-y-3 text-xs">
+                <div className="flex items-start gap-2.5">
+                  <Clock className="w-4 h-4 text-[#4A7C59] shrink-0 mt-0.5" />
+                  <div>
+                    <span className="text-slate-400 text-[10px] block font-bold">เวลาทำการ</span>
+                    <span className="font-bold text-slate-900">{cleanText(spot.openHours) || 'เปิดทุกวัน'}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <Ticket className="w-4 h-4 text-[#4A7C59] shrink-0 mt-0.5" />
+                  <div>
+                    <span className="text-slate-400 text-[10px] block font-bold">ค่าเข้าชม</span>
+                    <span className="font-bold text-slate-900">{cleanText(spot.price) || 'เข้าฟรี'}</span>
+                  </div>
+                </div>
+
+                {spot.bestTime && (
+                  <div className="flex items-start gap-2.5">
+                    <Sparkles className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="text-slate-400 text-[10px] block font-bold">ช่วงเวลาแนะนำ</span>
+                      <span className="font-bold text-slate-900">{cleanText(spot.bestTime)}</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-start gap-2.5">
+                  <MapPin className="w-4 h-4 text-[#4A7C59] shrink-0 mt-0.5" />
+                  <div>
+                    <span className="text-slate-400 text-[10px] block font-bold">ที่ตั้ง & ย่าน</span>
+                    <span className="font-bold text-slate-900 leading-snug">{spot.district}, จังหวัด{spot.province}</span>
+                  </div>
+                </div>
+
+                {spot.contact?.phone && (
+                  <div className="flex items-start gap-2.5">
+                    <Phone className="w-4 h-4 text-[#4A7C59] shrink-0 mt-0.5" />
+                    <div>
+                      <span className="text-slate-400 text-[11px] block font-semibold">โทรศัพท์</span>
+                      <a href={`tel:${spot.contact.phone.split(',')[0].replace(/[^\d+]/g, '')}`} className="font-bold text-slate-900 hover:underline">
+                        {spot.contact.phone}
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {(spot.contact?.website || spot.contact?.facebook) && (
+                  <div className="flex items-start gap-2.5">
+                    <Globe className="w-4 h-4 text-[#4A7C59] shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <span className="text-slate-400 text-[11px] block font-semibold">ช่องทางติดต่อ</span>
+                      <div className="flex flex-wrap gap-x-3 gap-y-1">
+                        {spot.contact?.website && (
+                          <a href={spot.contact.website} target="_blank" rel="noopener noreferrer" className="font-bold text-slate-900 hover:underline">เว็บไซต์</a>
+                        )}
+                        {spot.contact?.facebook && (
+                          <a href={spot.contact.facebook} target="_blank" rel="noopener noreferrer" className="font-bold text-slate-900 hover:underline">Facebook</a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {spot.sourceName && spot.sourceUrl && (
+                <p className="text-[11px] font-semibold text-slate-400">
+                  ข้อมูล:{' '}
+                  <a href={spot.sourceUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                    {spot.sourceName.replace(/\s*\(.*\)\s*$/, '')}
+                  </a>
+                </p>
+              )}
+
+              {/* Centralized Two-Tier Button System */}
+              <div className="space-y-2 pt-1">
+                {/* 1. Personal Scrapbook Save */}
+                <button
+                  type="button"
+                  onClick={() => toggleFavorite(spot.id)}
+                  className={`group w-full py-3 px-4 rounded-2xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 border ${
+                    isFavorite
+                      ? 'bg-[#EBF3ED] text-[#2D5A3C] border-[#C5DEC9] hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 shadow-2xs'
+                      : 'bg-slate-900 hover:bg-slate-800 text-white border-transparent shadow-2xs'
+                  }`}
+                >
+                  {isFavorite ? (
+                    <>
+                      <span className="flex items-center gap-2 group-hover:hidden">
+                        <Check className="w-4 h-4 text-[#2D5A3C]" />
+                        <span>บันทึกในสมุดท่องเที่ยวแล้ว</span>
+                      </span>
+                      <span className="hidden items-center gap-2 group-hover:flex text-rose-600">
+                        <X className="w-4 h-4 text-rose-500" />
+                        <span>นำออกจากสมุดท่องเที่ยว</span>
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <BookMarked className="w-4 h-4 text-slate-300" />
+                      <span>บันทึกลงสมุดท่องเที่ยว</span>
+                    </>
+                  )}
+                </button>
+
+                {isFavorite && (
+                  <Link
+                    href="/myhub?tab=scrapbook"
+                    className="w-full text-center inline-flex items-center justify-center gap-1 text-[11px] font-bold text-[#4A7C59] hover:text-[#2D5A3C] hover:underline pt-0.5"
+                  >
+                    <span>เปิดดูสมุดบันทึกเที่ยวของฉันใน MyHub</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
+                )}
+              </div>
+
+            </div>
+
+            {/* Who has been here, and what going earns */}
+            <VisitPanel
+              targetType="spot"
+              targetId={spot.id}
+              title={spot.title}
+              location={spot.title}
+              isLoggedIn={isLoggedIn}
+              onRequireLogin={() => {
+                setMembershipActionTitle('เพื่อบันทึกว่าคุณไปที่นี่มาแล้ว');
+                setIsRequireMembershipOpen(true);
+              }}
+              onShowToast={showToast}
+            />
+
+            {/* Spot Buddy: shown only for places staff opened for meet-ups */}
+            <SpotBuddyTrips
+              spot={spot}
+              isLoggedIn={isLoggedIn}
+              onRequireLogin={() => {
+                setMembershipActionTitle('เพื่อชวนเพื่อนไปที่นี่');
+                setIsRequireMembershipOpen(true);
+              }}
+              onShowToast={showToast}
+            />
+
+            {/* Sub-Card: Smart Spot Plan Itinerary Card */}
+            <SmartSpotPlanCard
+              currentSpot={spot}
+              onShowToast={showToast}
+            />
+
+            {/* Native Travel Perks & Partner Deals (Curated Lifestyle Affiliate Block) */}
+            <div className="bg-gradient-to-b from-white to-slate-50/60 p-4 sm:p-5 rounded-3xl border border-slate-200/90 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Tag className="w-3.5 h-3.5 text-[#2D5A3C]" />
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 tracking-tight">
+                    สิทธิพิเศษ & ดีลการเดินทาง
+                  </h3>
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#EBF3ED] text-[#2D5A3C] border border-[#C5DEC9]">
+                  Travel Perks
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                บริการพาร์ทเนอร์และเอกสิทธิ์การเดินทางรอบย่าน {cleanText(spot.district || spot.province)}
+              </p>
+
+              <div className="space-y-2">
+                {/* 1. Grab / Transit Affiliate */}
+                <a
+                  href="https://www.grab.com/th/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2.5 rounded-2xl bg-white border border-slate-200/80 hover:border-emerald-300 hover:shadow-xs transition-all flex items-center justify-between gap-2.5 group"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-sm font-bold shrink-0">
+                      <Car className="w-4 h-4 text-emerald-700" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-slate-900 group-hover:text-emerald-700 transition-colors truncate">
+                        เรียกรถไปจุดนี้ รับส่วนลด 15%
+                      </div>
+                      <div className="text-[10px] text-slate-400 truncate">
+                        GrabCar ไปยัง {spot.district}
+                      </div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg shrink-0 inline-flex items-center gap-1">
+                    <span>รับสิทธิ์</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </span>
+                </a>
+
+                {/* 2. Agoda / Hotels nearby */}
+                <a
+                  href={`https://www.agoda.com/search?city=${encodeURIComponent(spot.province)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2.5 rounded-2xl bg-white border border-slate-200/80 hover:border-blue-300 hover:shadow-xs transition-all flex items-center justify-between gap-2.5 group"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center text-sm font-bold shrink-0">
+                      <Building2 className="w-4 h-4 text-sky-700" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-slate-900 group-hover:text-sky-700 transition-colors truncate">
+                        ค้นหาที่พัก & โฮสเทลใกล้เคียง
+                      </div>
+                      <div className="text-[10px] text-slate-400 truncate">
+                        ในย่าน {spot.district || spot.province}
+                      </div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold text-sky-700 bg-sky-50 px-2 py-1 rounded-lg shrink-0 inline-flex items-center gap-1">
+                    <span>ดูราคา</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </span>
+                </a>
+
+                {/* 3. Klook / Workshop & Passes */}
+                <a
+                  href="https://www.klook.com/th/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2.5 rounded-2xl bg-white border border-slate-200/80 hover:border-amber-300 hover:shadow-xs transition-all flex items-center justify-between gap-2.5 group"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center text-sm font-bold shrink-0">
+                      <Ticket className="w-4 h-4 text-amber-700" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-slate-900 group-hover:text-amber-700 transition-colors truncate">
+                        บัตรกิจกรรม & เวิร์กช็อปพิเศษ
+                      </div>
+                      <div className="text-[10px] text-slate-400 truncate">
+                        ดีลไลฟ์สไตล์ Klook ประจำย่าน
+                      </div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded-lg shrink-0 inline-flex items-center gap-1">
+                    <span>สำรวจ</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </span>
+                </a>
+              </div>
+
+              <div className="pt-0.5 text-center">
+                <span className="text-[10px] text-slate-400">
+                  สิทธิพิเศษพาร์ทเนอร์อย่างเป็นทางการ สนับสนุนคอมมูนิตี้ท่องเที่ยว
+                </span>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* =========================================================================
+            NEARBY RECOMMENDED SPOTS (SMART ZONAL & PROXIMITY DISCOVERY)
+           ========================================================================= */}
+        {nearbySpots.length > 0 && (
+          <section className="pt-8 sm:pt-10 border-t border-slate-100 space-y-4 sm:space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+              <div className="space-y-1">
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight pt-0.5">
+                  {recommendation.sectionTitle}
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-600">
+                  {recommendation.sectionSubtitle}
+                </p>
+              </div>
+
+              <Link
+                href={`/spots?province=${encodeURIComponent(spot.province)}`}
+                className="text-xs font-bold text-[#2D5A3C] hover:text-[#1B432C] hover:underline flex items-center gap-1 shrink-0"
+              >
+                <span>ดูทั้งหมดใน {spot.province}</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
+              {nearbySpots.map((item) => (
+                <SpotCard
+                  key={item.id}
+                  spot={item}
+                  isFavorite={isLoggedIn && favorites.includes(item.id)}
+                  isJoined={isLoggedIn && joinedEventIds.includes(item.id)}
+                  onToggleFavorite={toggleFavorite}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+      </main>
+
+      {/* =========================================================================
+          INTERACTIVE FULLSCREEN PHOTO LIGHTBOX MODAL
+         ========================================================================= */}
+      {isLightboxOpen && (
+        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col justify-between p-4 sm:p-6 animate-fade-in select-none">
+          
+          {/* Top Bar: Title, Counter & Close Button */}
+          <div className="flex items-center justify-between text-white pb-3">
+            <div className="space-y-0.5">
+              <h3 className="text-sm sm:text-base font-bold truncate max-w-xs sm:max-w-md">{spot.title}</h3>
+              <p className="text-xs text-slate-400">รูปที่ {activePhotoIndex + 1} จาก {galleryImages.length} รูป</p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsLightboxOpen(false)}
+              className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
+              title="ปิดหน้าต่างรูปภาพ (Esc)"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Main Photo Center Container with Navigation Arrows */}
+          <div className="relative flex-1 flex items-center justify-center my-2 max-h-[70vh]">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setActivePhotoIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
+              }}
+              className="absolute left-2 sm:left-4 z-10 w-11 h-11 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs border border-white/10"
+              title="รูปก่อนหน้า (←)"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+
+            <img
+              src={galleryImages[activePhotoIndex]}
+              alt={`${spot.title} บรรยากาศภาพที่ ${activePhotoIndex + 1}`}
+              className="max-h-full max-w-full object-contain rounded-2xl shadow-2xl transition-all duration-300"
+            />
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setActivePhotoIndex((prev) => (prev + 1) % galleryImages.length);
+              }}
+              className="absolute right-2 sm:right-4 z-10 w-11 h-11 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs border border-white/10"
+              title="รูปถัดไป (→)"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* Bottom Thumbnail Strip */}
+          <div className="flex items-center justify-center gap-2 overflow-x-auto py-2">
+            {galleryImages.map((thumbUrl, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setActivePhotoIndex(idx)}
+                className={`relative w-14 sm:w-16 h-10 sm:h-12 rounded-xl overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${
+                  activePhotoIndex === idx
+                    ? 'border-emerald-400 scale-105 ring-2 ring-emerald-400/50'
+                    : 'border-white/20 opacity-60 hover:opacity-100'
+                }`}
+              >
+                <img src={thumbUrl} alt="Thumbnail" className="w-full h-full object-cover" />
+              </button>
+            ))}
+          </div>
+
+        </div>
+      )}
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-slate-200/90 py-6 text-center text-xs text-slate-500 space-y-2 mt-10">
+        <p className="font-medium text-slate-600 text-xs">Lifestyle Discovery & Community Engagement Platform ระดับประเทศ</p>
+        <div className="flex items-center justify-center gap-2.5 sm:gap-3 text-xs text-slate-500 pt-0.5 flex-wrap">
+          <Link href="/about" className="hover:text-slate-800 hover:underline">เกี่ยวกับเรา</Link>
+          <span className="text-slate-300">•</span>
+          <Link href="/safety" className="hover:text-slate-800 hover:underline">คู่มือความปลอดภัย</Link>
+          <span className="text-slate-300">•</span>
+          <Link href="/legal" className="hover:text-slate-800 hover:underline">ข้อตกลงการใช้งาน</Link>
+          <span className="text-slate-300">•</span>
+          <Link href="/legal?tab=privacy" className="hover:text-slate-800 hover:underline">นโยบายความเป็นส่วนตัว</Link>
+        </div>
+        <p className="text-[11px] text-slate-400">© 2026 Chill & Connect Hub. All rights reserved.</p>
+      </footer>
+
+      {/* Auth Modals */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onLoginSuccess={(name) => {
+          handleSetIsLoggedIn(true);
+          showToast(`ยินดีต้อนรับ ${name}! เข้าสู่ระบบเรียบร้อย`);
+        }}
+      />
+      <LogoutConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirmLogout={() => {
+          handleSetIsLoggedIn(false);
+          showToast('ออกจากระบบเรียบร้อยแล้ว');
+        }}
+      />
+      <RequireMembershipModal
+        isOpen={isRequireMembershipOpen}
+        onClose={() => setIsRequireMembershipOpen(false)}
+        onOpenLogin={() => {
+          setIsRequireMembershipOpen(false);
+          setIsAuthModalOpen(true);
+        }}
+        actionTitle={membershipActionTitle}
+      />
+      <CreateEventModal
+        isOpen={isCreateEventModalOpen}
+        onClose={() => setIsCreateEventModalOpen(false)}
+        initialLocation={spot ? `${spot.title}, ${spot.district}, จังหวัด${spot.province}` : undefined}
+        initialTitle={spot ? `ชวนไปเที่ยว ${spot.title}` : undefined}
+        initialImage={spot?.image}
+        onCreateSuccess={(newEvent: EventItem) => {
+          if (newEvent.approvalStatus === 'pending') {
+            showToast(`ส่งข้อมูล "${newEvent.title}" เรียบร้อยแล้ว (รอตรวจสอบและอนุมัติโดยทีมงาน)`);
+          } else {
+            showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จเรียบร้อย`);
+          }
+        }}
+      />
+      {spot && (
+        <ReportSafetyModal
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          targetType="spot"
+          targetId={spot.id}
+          targetTitle={spot.title}
+          onReportSubmitted={() => {
+            showToast('ส่งรายงานข้อมูลสถานที่เรียบร้อย ทีมงานจะตรวจสอบโดยเร็ว');
+          }}
+        />
+      )}
+      <MobileNav
+        activeTab={activeNavTab}
+        setActiveTab={setActiveNavTab}
+      />
+
+      {/* Toast */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 bg-[#1E293B] text-white px-5 py-3 rounded-2xl shadow-xl border border-slate-700 text-sm font-medium flex items-center gap-2.5 animate-slide-up">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+    </div>
+  );
+}

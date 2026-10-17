@@ -1,31 +1,12 @@
-import { MetadataRoute } from 'next';
+import type { MetadataRoute } from 'next';
+import { absoluteUrl, SITE_URL } from '@/lib/site';
 
+// Search engines and AI search crawlers are welcome on public pages. Signed-in and utility pages are not
+// blocked here but carry a noindex tag (lib/site.ts PRIVATE_PAGE): a blocked page's noindex is never read.
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: [
-      {
-        userAgent: '*',
-        allow: '/',
-        disallow: ['/api/', '/admin'],
-      },
-      {
-        // Explicit allowance for AI Search & LLM Engines
-        userAgent: [
-          'Googlebot',
-          'Google-Extended',
-          'GPTBot',
-          'ChatGPT-User',
-          'ClaudeBot',
-          'anthropic-ai',
-          'PerplexityBot',
-          'Applebot-Extended',
-          'Bingbot',
-        ],
-        allow: '/',
-        disallow: ['/api/', '/admin'],
-      },
-    ],
-    sitemap: 'https://chillconnecthub.com/sitemap.xml',
-    host: 'https://chillconnecthub.com',
+    rules: [{ userAgent: '*', allow: '/', disallow: ['/api/', '/admin'] }],
+    sitemap: absoluteUrl('/sitemap.xml'),
+    host: SITE_URL,
   };
 }
