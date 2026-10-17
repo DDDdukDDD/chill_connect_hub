@@ -1,21 +1,17 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, useDeferredValue, Suspense } from 'react';
+import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { MapPin, CheckCircle2, LayoutGrid } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { BrandLogo } from '@/components/BrandLogo';
-import { EventGrid } from '@/components/EventGrid';
-import { SpotCard, SpotCardSkeleton } from '@/components/SpotCard';
 import { ChallengePicks } from '@/components/ChallengePicks';
 import { FriendsMomentsWall } from '@/components/FriendsMomentsWall';
 import { OpenMeetupTiles } from '@/components/OpenMeetupTiles';
 import { ScrollRow } from '@/components/ScrollRow';
 import { MemberLiveHome } from '@/components/home/MemberLiveHome';
 import { LiveJoinsLine } from '@/components/home/LiveActivity';
-import { MomentSearchRow } from '@/components/home/MomentSearchRow';
-import { SearchPanel } from '@/components/home/SearchPanel';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
@@ -28,9 +24,8 @@ import { useMyRewards } from '@/lib/useMyRewards';
 import { useMyActivity } from '@/lib/useMyActivity';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { REWARD_SHOP_ITEMS } from '@/data/rewardsData';
-import { usePublishedSpots, getCachedSpotSearchText, getCachedSpotVibeCategory } from '@/lib/usePublishedSpots';
-import { getCommunityEventCategory, MASTER_77_PROVINCES, type SpotVibeId } from '@/data/masterHub';
-import { matchSearchQuery } from '@/lib/searchUtils';
+import { usePublishedSpots, getCachedSpotVibeCategory } from '@/lib/usePublishedSpots';
+import { getCommunityEventCategory, type SpotVibeId } from '@/data/masterHub';
 import { isTradeEvent } from '@/lib/highlights';
 import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
 import { TOP_DESTINATIONS } from '@/components/TopDestinationsRail';
@@ -46,11 +41,6 @@ const VIBE_ORDER: SpotVibeId[] = ['cafe_slowbar', 'nature_camping', 'art_creativ
 
 
 // Photos for the hero collage and the join block (local files, shown on /spots too)
-// Province picker in the hero search box: popular ones first, then all 77 (names as stored on events and places)
-const POPULAR_PROVINCES = ['กรุงเทพฯ', 'เชียงใหม่', 'ชลบุรี', 'ภูเก็ต', 'นครราชสีมา', 'กาญจนบุรี'];
-const OTHER_PROVINCES = MASTER_77_PROVINCES.filter((p) => !POPULAR_PROVINCES.includes(p));
-const isBangkok = (p: string) => p === 'กรุงเทพฯ' || p === 'กรุงเทพมหานคร';
-const isSameProvince = (a: string | undefined, b: string) => !!a && (a === b || (isBangkok(a) && isBangkok(b)));
 
 const HERO_PHOTOS = ['/event-board-games.png', '/hero-bkk-community-golden.jpg', '/event-city-run.png'];
 
@@ -70,8 +60,6 @@ const CATEGORY_SHORT: Record<string, string> = {
 const HERO_LABEL = 'absolute z-10 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-white pl-1.5 pr-3 py-1 text-xs lg:text-sm font-semibold text-slate-900 shadow-md';
 const HERO_STEPS = ['หากิจกรรมที่ใช่', 'ไปกับเพื่อนใหม่', 'แบ่งปันเรื่องราว'];
 
-// Searches offered in the header search window
-const QUICK_SEARCHES = ['คาเฟ่', 'วิ่ง', 'บอร์ดเกม', 'เดินป่า', 'ทะเล'];
 
 // Small round photos standing in for the people, beside the live line and in the sign-up band
 const photoFaces = (size: string, ring: string) => (
@@ -97,9 +85,6 @@ const fairKind = (e: EventItem): (typeof FAIR_ROW_KINDS)[number] => {
   if (/คอนเสิร์ต|ดนตรีสด|concert|live music/i.test(text)) return 'concert';
   return 'fair';
 };
-
-const eventSearchText = (e: EventItem) =>
-  `${e.title} ${e.description} ${e.tag} ${e.location} ${e.hostName || ''} ${e.province || ''}`.toLowerCase();
 
 // "12 ต.ค. – 18 ต.ค." for a fair, years left out
 const fairDates = (e: EventItem) => {
@@ -132,15 +117,8 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
   const [favoriteSpots, setFavoriteSpots] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const query = useDeferredValue(searchQuery.trim());
-  // Province picked at the end of the hero search box; empty means every province
-  const [province, setProvince] = useState('');
-  const searching = Boolean(query || province);
-  const inProvince = (p?: string) => !province || isSameProvince(p, province);
 
-  // Landing page: the header search window, and the two filters over the meetup row
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  // Landing page: the filter over the meetup row
   const [meetupCategory, setMeetupCategory] = useState('all');
 
   // Modals state
@@ -176,19 +154,6 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
     return () => {
       alive = false;
     };
-  }, [isMember]);
-
-  // "/" opens the search window on the landing page, as on most sites
-  useEffect(() => {
-    if (isMember) return;
-    const onKey = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (e.key !== '/' || /INPUT|SELECT|TEXTAREA/.test(target?.tagName ?? '') || target?.isContentEditable) return;
-      e.preventDefault();
-      setIsSearchOpen(true);
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
   }, [isMember]);
 
   const showToast = (msg: string) => {
@@ -260,22 +225,6 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
     });
   };
 
-  const toggleFavoriteSpot = (spotId: string) => {
-    if (!isLoggedIn) {
-      triggerMembershipPrompt('เพื่อบันทึกสถานที่โปรด');
-      return;
-    }
-    setFavoriteSpots((prev) => {
-      const isFav = prev.includes(spotId);
-      const updated = isFav ? prev.filter((id) => id !== spotId) : [...prev, spotId];
-      showToast(isFav ? 'ลบสถานที่ออกจากรายการโปรดแล้ว' : 'บันทึกสถานที่โปรดแล้ว');
-      try {
-        localStorage.setItem('favorite_spots', JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-  };
-
   const communityEvents = useMemo(() => upcomingByDate(eventsList, 'community'), [eventsList]);
   const fairEvents = useMemo(() => upcomingByDate(eventsList, 'public_venue'), [eventsList]);
 
@@ -306,36 +255,15 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
     return picked;
   }, [rankedSpots]);
 
-  // One search box covers meetups, places and fairs; the full pages keep the detailed filters
-  const spotRow = useMemo(
-    () =>
-      searching
-        ? rankedSpots.filter((s) => inProvince(s.province) && (!query || matchSearchQuery(getCachedSpotSearchText(s), query))).slice(0, ROW_SIZE)
-        : featuredSpots,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rankedSpots, featuredSpots, query, province]
-  );
-  const communityRow = useMemo(
-    () =>
-      communityEvents
-        .filter((e) => e.participantsCount < e.maxParticipants)
-        .filter((e) => inProvince(e.province) && (!query || matchSearchQuery(eventSearchText(e), query)))
-        .slice(0, ROW_SIZE),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [communityEvents, query, province]
-  );
   const fairRow = useMemo(() => {
-    const matched = fairEvents
-      .filter((e) => inProvince(e.province) && (!query || matchSearchQuery(eventSearchText(e), query)))
+    const matched = [...fairEvents]
       // Trade shows stay listed on /fairs but go last here (the sort keeps the date order within each group)
       .sort((a, b) => Number(isTradeEvent(a)) - Number(isTradeEvent(b)));
-    if (searching) return matched.slice(0, ROW_SIZE);
     // The heading promises "งานแฟร์ งานวิ่ง งานคอน", so the row starts with the soonest of each kind, then fills by date
     const firsts = FAIR_ROW_KINDS.map((kind) => matched.find((e) => fairKind(e) === kind)).filter((e): e is EventItem => !!e);
     const picked = [...firsts, ...matched.filter((e) => !firsts.includes(e))].slice(0, FAIR_ROW_SHOWN);
     return matched.filter((e) => picked.includes(e));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fairEvents, query, province]);
+  }, [fairEvents]);
 
   // Member home: the next meetup or fair they go to or host, and the challenge in progress that closes first
   const nextEvent = useMemo(
@@ -403,19 +331,13 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
   );
   const landingMeetups = landingMatches.slice(0, meetupCategory === 'all' ? MEETUP_ROW_SIZE : MEETUP_ROW_PICKED);
   const meetupsHref = (() => {
-    const params = new URLSearchParams();
+    // The row shows meetups with seats left, so the full list opens with the same filter
+    const params = new URLSearchParams({ seats: 'open' });
     if (meetupCategory !== 'all') params.set('category', meetupCategory);
-    return params.size ? `/community?${params}` : '/community';
+    return `/community?${params}`;
   })();
 
   const destinations = DESTINATION_IDS.flatMap((id) => TOP_DESTINATIONS.filter((d) => d.id === id));
-
-  const withQuery = (path: string) => {
-    const params = new URLSearchParams();
-    if (query) params.set('q', query);
-    if (province) params.set('province', province);
-    return params.size ? `${path}?${params}` : path;
-  };
 
   const scrollToId = (id: string) =>
     document.getElementById(id)?.scrollIntoView({
@@ -444,86 +366,6 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
     </div>
   );
 
-  const rowSkeleton = (
-    <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4">
-      {Array.from({ length: ROW_SIZE }).map((_, i) => (
-        <div key={i} className="h-64 rounded-2xl bg-slate-100" />
-      ))}
-    </div>
-  );
-
-  const eventRow = (events: EventItem[]) =>
-    !isEventsLoaded ? (
-      rowSkeleton
-    ) : (
-      <EventGrid
-        events={events}
-        responsiveLimit={{ mobile: 4, desktop: ROW_SIZE }}
-        columns={5}
-        layout="carousel"
-        onSelectEvent={() => { }}
-        favorites={isLoggedIn ? favorites : []}
-        toggleFavorite={toggleFavoriteEvent}
-        onResetFilters={() => setSearchQuery('')}
-      />
-    );
-
-  const spotCards = !isSpotsLoaded ? (
-    <div className="flex overflow-x-auto no-scrollbar snap-x snap-mandatory sm:grid sm:overflow-visible sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4">
-      {Array.from({ length: ROW_SIZE }).map((_, i) => (
-        <SpotCardSkeleton key={i} />
-      ))}
-    </div>
-  ) : spotRow.length === 0 ? (
-    <p className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm font-medium text-slate-600">
-      ไม่พบที่เที่ยวที่ตรงกับคำค้นหา
-    </p>
-  ) : (
-    <div className="flex overflow-x-auto no-scrollbar snap-x snap-mandatory sm:grid sm:overflow-visible sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4">
-      {spotRow.map((spot) => (
-        // On phones the row scrolls sideways, like the event rows
-        <div key={spot.id} className="h-full w-[62%] shrink-0 snap-start sm:w-auto">
-          <SpotCard spot={spot} isFavorite={isLoggedIn && favoriteSpots.includes(spot.id)} onToggleFavorite={toggleFavoriteSpot} />
-        </div>
-      ))}
-    </div>
-  );
-
-
-  // A search shows its matches in three rows; the story of the page comes back when it is cleared
-  const searchResults = (
-    <div className="space-y-10 sm:space-y-14">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-medium text-slate-600 min-w-0 truncate">
-          ผลการค้นหา <strong className="font-bold text-slate-900">{[query, province].filter(Boolean).join(' · ')}</strong>
-        </p>
-        <button
-          type="button"
-          onClick={() => { setSearchQuery(''); setProvince(''); }}
-          className="shrink-0 h-8 px-3 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold whitespace-nowrap cursor-pointer transition-colors"
-        >
-          ล้างคำค้นหา
-        </button>
-      </div>
-      <section className="space-y-4">
-        {sectionHead('ตี้ที่เปิดรับอยู่', withQuery('/community'))}
-        {eventRow(communityRow)}
-      </section>
-      <section className="space-y-4">
-        {sectionHead('ที่เที่ยว', withQuery('/spots'))}
-        {spotCards}
-      </section>
-      <section className="space-y-4">
-        {sectionHead('งานแฟร์ & นิทรรศการ', withQuery('/fairs'))}
-        {eventRow(fairRow)}
-      </section>
-      <section className="space-y-4">
-        {sectionHead('โมเมนต์', '/moments')}
-        <MomentSearchRow query={query || province} />
-      </section>
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans selection:bg-[#F26430] selection:text-white">
       <Navbar
@@ -536,7 +378,6 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
         onOpenSignup={() => openAuth('signup')}
         onOpenLogout={() => setIsLogoutModalOpen(true)}
         onOpenCreateEvent={openCreateMeetup}
-        onOpenSearch={isMember ? undefined : () => setIsSearchOpen(true)}
       />
 
       {/* Toast Notification */}
@@ -569,9 +410,6 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
             fairWhen={fairDates}
             spots={featuredSpots}
             isSpotsLoaded={isSpotsLoaded}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            searchResults={query ? searchResults : null}
           />
         ) : (
           /* 1. Hero: the collage tells the loop in three numbered steps, the words say what the site is, one orange button */
@@ -624,14 +462,8 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
         )}
 
         {/* Members get their own home above (MemberLiveHome); the rest is the landing page for visitors.
-            A search from the header window shows its matches in place of the landing sections. */}
-        {!isMember && searching && (
-          <div id="journey-top" className={`${CONTAINER} pt-8 sm:pt-12 scroll-mt-20`}>
-            {searchResults}
-          </div>
-        )}
-
-        {!isMember && !searching && (
+            A search from the header window opens the ค้นพบ pages. */}
+        {!isMember && (
           <>
             <div id="journey-top" className={`${CONTAINER} pt-8 sm:pt-12 space-y-12 sm:space-y-16 scroll-mt-20`}>
               {/* 2. Meetups, picked by the category cards; company is offered, never required */}
@@ -841,22 +673,6 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
       <MobileNav activeTab={activeNavTab} setActiveTab={setActiveNavTab} favoritesCount={favorites.length} />
 
       {/* Global Modals */}
-      {isSearchOpen && (
-      <SearchPanel
-        onClose={() => setIsSearchOpen(false)}
-        initialQuery={searchQuery}
-        initialProvince={province}
-        popularProvinces={POPULAR_PROVINCES}
-        otherProvinces={OTHER_PROVINCES}
-        quickSearches={QUICK_SEARCHES}
-        onSearch={(q, p) => {
-          setSearchQuery(q);
-          setProvince(p);
-          setIsSearchOpen(false);
-          requestAnimationFrame(() => scrollToId(q || p ? 'journey-top' : 'journey-meetups'));
-        }}
-      />
-      )}
 
       <AuthModal
         key={authMode}

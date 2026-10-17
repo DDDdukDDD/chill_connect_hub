@@ -15,14 +15,20 @@ type Props = {
   onProvinceChange: (province: string) => void;
   /** Tells the two copies (top bar, phone) apart for their labels */
   idPrefix: string;
+  /** The narrow phone copy: a short hint for this page so it is not cut off */
+  compact?: boolean;
+  /** Runs on Enter or the search button (pages outside ค้นพบ open it); the list pages filter while typing instead */
+  onSubmit?: () => void;
   className?: string;
 };
+
+const SHORT_PLACEHOLDER: Record<DiscoverKind, string> = { meetups: 'ค้นหาตี้', fairs: 'ค้นหางานแฟร์', spots: 'ค้นหาที่เที่ยว' };
 
 /**
  * The ค้นพบ search: word | province | search button, one rounded box. In the top bar on wide screens and
  * above the tabs on phones. The list filters while typing; the button only closes the phone keyboard.
  */
-export function DiscoverSearch({ kind, query, onQueryChange, province, onProvinceChange, idPrefix, className = '' }: Props) {
+export function DiscoverSearch({ kind, query, onQueryChange, province, onProvinceChange, idPrefix, compact = false, onSubmit, className = '' }: Props) {
   const inputRef = React.useRef<HTMLInputElement>(null);
   return (
     <form
@@ -30,6 +36,7 @@ export function DiscoverSearch({ kind, query, onQueryChange, province, onProvinc
       onSubmit={(e) => {
         e.preventDefault();
         inputRef.current?.blur();
+        onSubmit?.();
       }}
       className={`flex items-center h-11 w-full rounded-full border border-slate-300 bg-white pl-4 pr-1 focus-within:border-[#2563EB] focus-within:ring-2 focus-within:ring-[#2563EB]/20 transition-colors ${className}`}
     >
@@ -40,7 +47,7 @@ export function DiscoverSearch({ kind, query, onQueryChange, province, onProvinc
         type="search"
         value={query}
         onChange={(e) => onQueryChange(e.target.value)}
-        placeholder="ค้นหาตี้ งานแฟร์ ที่เที่ยว"
+        placeholder={compact ? SHORT_PLACEHOLDER[kind] : 'ค้นหาตี้ งานแฟร์ ที่เที่ยว'}
         className="flex-1 min-w-0 bg-transparent text-sm font-semibold text-slate-900 placeholder:font-medium placeholder:text-slate-400 focus:outline-none [&::-webkit-search-cancel-button]:hidden"
       />
       {query && (

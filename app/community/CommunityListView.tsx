@@ -18,7 +18,8 @@ import { MobileNav } from '@/components/MobileNav';
 import { EventGrid } from '@/components/EventGrid';
 import { ViewModeToggle, ViewMode } from '@/components/ViewModeToggle';
 import { Pagination } from '@/components/Pagination';
-import { CommunityCategoryRail, COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
+import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
+import { DiscoverCategoryTabs } from '@/components/discover/DiscoverCategoryTabs';
 import { TopCommunityRail, TOP_COMMUNITY_CLUBS } from '@/components/TopCommunityRail';
 import { getCommunityEventCategory } from '@/data/masterHub';
 import { CustomDatePickerModal } from '@/components/CustomDatePickerModal';
@@ -54,6 +55,8 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
   const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'tomorrow' | 'weekend' | 'custom'>('all');
   const [statusFilter, setStatusFilter] = useState<'upcoming' | 'ended' | 'all'>('upcoming');
   const [priceFilter, setPriceFilter] = useState<'all' | 'free'>((searchParams.get('price') as any) || 'all');
+  // "มีที่ว่าง": only meetups with seats left (the home page links here with seats=open)
+  const [openOnly, setOpenOnly] = useState(searchParams.get('seats') === 'open');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [activeVibeFilter, setActiveVibeFilter] = useState<VibeFilter>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -192,6 +195,7 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
       const ended = isEventEnded(ev);
       if (statusFilter === 'upcoming' && ended) return false;
       if (statusFilter === 'ended' && !ended) return false;
+      if (openOnly && ev.participantsCount >= ev.maxParticipants) return false;
 
       const eventText = `${ev.title} ${ev.description || ''} ${ev.tag || ''} ${ev.location || ''} ${ev.hostName || ''} ${ev.province || ''}`.toLowerCase();
 
@@ -295,7 +299,7 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
       // Default: newest
       return (b.createdAtTimestamp || 0) - (a.createdAtTimestamp || 0);
     });
-  }, [eventsList, statusFilter, selectedClub, selectedCategory, selectedProvince, activeVibeFilter, priceFilter, sortBy, favorites, searchQuery, customStartDate, customEndDate]);
+  }, [eventsList, statusFilter, openOnly, selectedClub, selectedCategory, selectedProvince, activeVibeFilter, priceFilter, sortBy, favorites, searchQuery, customStartDate, customEndDate]);
 
   // Calculate dynamic event counts per lifestyle category (supports selectedClub filter context)
   const categoryEventCounts = useMemo(() => {
@@ -304,6 +308,7 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
       if ((event.eventType || 'community') !== 'community') return false;
       if (statusFilter === 'upcoming' && isEventEnded(event)) return false;
       if (statusFilter === 'ended' && !isEventEnded(event)) return false;
+      if (openOnly && event.participantsCount >= event.maxParticipants) return false;
 
       // Filter by selected community club if active
       if (selectedClub && selectedClub !== 'all') {
@@ -323,7 +328,7 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
     });
 
     return counts;
-  }, [eventsList, statusFilter, selectedClub]);
+  }, [eventsList, statusFilter, openOnly, selectedClub]);
 
   const totalPages = Math.ceil(filteredEvents.length / itemsPerPage) || 1;
 
@@ -360,6 +365,7 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
     setTimeFilter('all');
     setStatusFilter('upcoming');
     setPriceFilter('all');
+    setOpenOnly(false);
     setSortBy('newest');
     setCurrentPage(1);
     showToast('ล้างตัวกรองทั้งหมดแล้ว');
@@ -413,11 +419,42 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
             <button
               type="button"
               onClick={openCreate}
-              className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold whitespace-nowrap cursor-pointer active:scale-95 transition-all"
+              aria-label="ตั้งตี้เอง"
+              title="ตั้งตี้เอง"
+              className="inline-flex items-center justify-center gap-1.5 h-9 w-9 sm:w-auto sm:px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-semibold whitespace-nowrap cursor-pointer active:scale-95 transition-all"
             >
               <Plus className="w-4 h-4" strokeWidth={2.5} aria-hidden="true" />
-              <span>ตั้งตี้เอง</span>
+              <span className="hidden sm:inline">ตั้งตี้เอง</span>
             </button>
+          }
+          summary={
+            <>
+              พบ <span className="font-semibold text-slate-900 tabular-nums">{filteredEvents.length}</span> ตี้
+              {(searchQuery || selectedCategory !== 'all' || selectedProvince !== 'all' || customStartDate || priceFilter !== 'all' || openOnly || sortBy !== 'newest' || activeVibeFilter !== 'all' || statusFilter !== 'upcoming' || selectedClub) && (
+                <button type="button" onClick={handleResetAll} className="ml-3 font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer">
+                  ล้างตัวกรองทั้งหมด
+                </button>
+              )}
+            </>
+          }
+          tools={
+            <>
+              <FilterSelect
+                kind="meetups"
+                label="เรียงตาม"
+                value={sortBy === 'favorites' ? 'newest' : sortBy}
+                emptyValue="newest"
+                onChange={(v) => {
+                  setSortBy(v as SortOption);
+                  setCurrentPage(1);
+                }}
+              >
+                <option value="newest">มาใหม่ล่าสุด</option>
+                <option value="popular">ยอดนิยม</option>
+                <option value="soonest">จัดขึ้นเร็วๆ นี้</option>
+              </FilterSelect>
+              <ViewModeToggle viewMode={viewMode} onChange={handleViewModeChange} />
+            </>
           }
         >
           {/* Filters as pills: one row that scrolls on phones */}
@@ -467,6 +504,17 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
             >
               เข้าร่วมฟรี
             </button>
+            <button
+              type="button"
+              onClick={() => {
+                setOpenOnly(!openOnly);
+                setCurrentPage(1);
+              }}
+              aria-pressed={openOnly}
+              className={filterPillClass('meetups', openOnly)}
+            >
+              มีที่ว่าง
+            </button>
             <FilterSelect
               kind="meetups"
               label="สถานะ"
@@ -500,45 +548,18 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
               <span>ที่บันทึกไว้ ({favorites.length})</span>
             </button>
           </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-            <p className="text-slate-500 font-medium">
-              พบ <span className="font-semibold text-slate-900 tabular-nums">{filteredEvents.length}</span> ตี้
-              {(searchQuery || selectedCategory !== 'all' || selectedProvince !== 'all' || customStartDate || priceFilter !== 'all' || sortBy !== 'newest' || activeVibeFilter !== 'all' || statusFilter !== 'upcoming' || selectedClub) && (
-                <button type="button" onClick={handleResetAll} className="ml-3 font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer">
-                  ล้างตัวกรองทั้งหมด
-                </button>
-              )}
-            </p>
-            <div className="flex items-center gap-2">
-              <FilterSelect
-                kind="meetups"
-                label="เรียงตาม"
-                value={sortBy === 'favorites' ? 'newest' : sortBy}
-                emptyValue="newest"
-                onChange={(v) => {
-                  setSortBy(v as SortOption);
-                  setCurrentPage(1);
-                }}
-              >
-                <option value="newest">มาใหม่ล่าสุด</option>
-                <option value="popular">ยอดนิยม</option>
-                <option value="soonest">จัดขึ้นเร็วๆ นี้</option>
-              </FilterSelect>
-              <ViewModeToggle viewMode={viewMode} onChange={handleViewModeChange} />
-            </div>
-          </div>
         </DiscoverHeader>
 
-        {/* Category rail (same as the home page) */}
-        <CommunityCategoryRail
-          selectedCategoryId={selectedCategory === 'all' ? null : selectedCategory}
-          onSelectCategory={(catId) => {
-            setSelectedCategory(catId || 'all');
+        {/* Categories as icon tabs, right above the list */}
+        <DiscoverCategoryTabs
+          kind="meetups"
+          categories={COMMUNITY_LIFESTYLE_CATEGORIES}
+          counts={categoryEventCounts}
+          selectedId={selectedCategory === 'all' ? null : selectedCategory}
+          onSelect={(id) => {
+            setSelectedCategory(id || 'all');
             setCurrentPage(1);
           }}
-          eventCounts={categoryEventCounts}
-          variant="rail"
         />
 
         {/* High-Density Community Events Grid / List */}

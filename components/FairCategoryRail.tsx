@@ -132,6 +132,8 @@ export const FairCategoryRail: React.FC<FairCategoryRailProps> = ({
           const isSelected = selectedCategoryId === cat.id;
           const count = fairCounts[cat.id] ?? 0;
           const isDisabled = count === 0;
+          // An empty kind of fair is left out, unless it is the one picked (so it can be turned off)
+          if (isDisabled && !isSelected) return null;
 
           return (
             <button

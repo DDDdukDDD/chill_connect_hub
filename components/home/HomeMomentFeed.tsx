@@ -332,7 +332,7 @@ function PhotoViewer({ images, start, onClose }: { images: string[]; start: numb
 export interface HomeMomentFeedProps {
   avatar?: string;
   name: string;
-  /** Shown above the feed heading, e.g. the live ticker */
+  /** Shown under the "share a moment" box, before the posts, e.g. the live ticker */
   top?: React.ReactNode;
   /** Which moments to show; the left column's shortcuts change it too */
   view: FeedView;
@@ -526,8 +526,6 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
 
   return (
     <div ref={topRef} className="scroll-mt-24">
-      {/* The live line sits above the heading: a status for the whole page, not part of the feed */}
-      {top && <div className="mb-5">{top}</div>}
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">โมเมนต์จากเพื่อนๆ</h2>
         {PERSONAL[sort] ? (
@@ -607,6 +605,9 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
         <span className="flex-1 min-w-0 truncate text-sm font-medium text-slate-500">วันนี้ไปไหนมา แชร์โมเมนต์ให้เพื่อนๆ ดูหน่อย</span>
         <Camera className="w-5 h-5 text-[#F43F5E] shrink-0" aria-hidden="true" />
       </button>
+
+      {/* The live line opens the feed: what friends are doing now, right before their moments */}
+      {top && <div className="mt-5">{top}</div>}
 
       {newCount > 0 && (
         <div className="sticky top-20 z-10 flex justify-center h-0 overflow-visible">

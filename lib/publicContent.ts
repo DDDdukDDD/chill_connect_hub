@@ -87,7 +87,7 @@ export async function discoverCounts(query: string, province: string): Promise<D
     query.trim() ? listPublicQuests() : Promise.resolve([]),
   ]);
   return {
-    meetups: meetups.filter((event) => eventInProvince(event, province) && matchesQuery(meetupSearchText(event), query)).length,
+    meetups: meetups.filter((event) => !isEventEnded(event) && eventInProvince(event, province) && matchesQuery(meetupSearchText(event), query)).length,
     fairs: fairs.filter((event) => !isEventEnded(event) && eventInProvince(event, province) && matchesQuery(fairSearchText(event), query)).length,
     spots: spots.filter((spot) => {
       const text = spotSearchText(spot);
