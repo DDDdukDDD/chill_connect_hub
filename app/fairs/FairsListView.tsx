@@ -2,14 +2,7 @@
 
 import React, { useState, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import {
-  Building2,
-  Heart,
-  X,
-  Calendar,
-  CheckCircle2,
-  Plus,
-} from 'lucide-react';
+import { Building2, Heart, X, Calendar, CheckCircle2, Plus } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { EventGrid } from '@/components/EventGrid';
@@ -25,9 +18,10 @@ import { MOCK_EVENTS, EventItem } from '@/data/mockData';
 import { isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp } from '@/lib/dateUtils';
 import { NATIONWIDE_FAIR_CATEGORIES } from '@/components/FairCategoryRail';
 import { DiscoverCategoryTabs } from '@/components/discover/DiscoverCategoryTabs';
+import { EventDateList } from '@/components/discover/EventDateList';
 import { getFairEventCategory } from '@/data/masterHub';
 import { TopVenuesRail } from '@/components/TopVenuesRail';
-import {  } from '@/data/spotsData';
+import {} from '@/data/spotsData';
 
 import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
 import { eventInProvince, fairSearchText, matchesQuery, type DiscoverCounts } from '@/lib/discoverMatch';
@@ -195,11 +189,30 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
         if (vLower === 'qsncc' && !text.includes('สิริกิติ์') && !text.includes('qsncc')) return false;
         else if (vLower === 'bitec' && !text.includes('ไบเทค') && !text.includes('bitec')) return false;
         else if (vLower === 'impact' && !text.includes('อิมแพ็ค') && !text.includes('impact') && !text.includes('เมืองทอง')) return false;
-        else if (vLower === 'paragon' && !text.includes('paragon') && !text.includes('พารากอน') && !text.includes('iconsiam') && !text.includes('ไอคอนสยาม') && !text.includes('สยาม')) return false;
-        else if (vLower === 'bacc' && !text.includes('bacc') && !text.includes('หอศิลป') && !text.includes('เจริญกรุง') && !text.includes('ปทุมวัน')) return false;
+        else if (
+          vLower === 'paragon' &&
+          !text.includes('paragon') &&
+          !text.includes('พารากอน') &&
+          !text.includes('iconsiam') &&
+          !text.includes('ไอคอนสยาม') &&
+          !text.includes('สยาม')
+        )
+          return false;
+        else if (vLower === 'bacc' && !text.includes('bacc') && !text.includes('หอศิลป') && !text.includes('เจริญกรุง') && !text.includes('ปทุมวัน'))
+          return false;
         else if (vLower === 'park' && !text.includes('สวน') && !text.includes('park') && !text.includes('สนามหลวง')) return false;
-        else if (vLower === 'regional' && !text.includes('kice') && !text.includes('ขอนแก่น') && !text.includes('cmecc') && !text.includes('เชียงใหม่') && !text.includes('สงขลา') && !text.includes('ภูเก็ต')) return false;
-        else if (!['qsncc', 'bitec', 'impact', 'paragon', 'bacc', 'park', 'regional'].includes(vLower) && !loc.includes(vLower) && !vTag.includes(vLower)) return false;
+        else if (
+          vLower === 'regional' &&
+          !text.includes('kice') &&
+          !text.includes('ขอนแก่น') &&
+          !text.includes('cmecc') &&
+          !text.includes('เชียงใหม่') &&
+          !text.includes('สงขลา') &&
+          !text.includes('ภูเก็ต')
+        )
+          return false;
+        else if (!['qsncc', 'bitec', 'impact', 'paragon', 'bacc', 'park', 'regional'].includes(vLower) && !loc.includes(vLower) && !vTag.includes(vLower))
+          return false;
       }
       if (sortBy === 'favorites' && !favorites.includes(ev.id)) return false;
       if (priceFilter === 'free' && (!ev.price || !ev.price.includes('ฟรี'))) return false;
@@ -219,7 +232,19 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
       if (!matchesQuery(fairSearchText(ev), searchQuery)) return false;
       return true;
     });
-  }, [eventsList, statusFilter, selectedCategory, selectedProvince, selectedVenue, priceFilter, sortBy, favorites, searchQuery, customStartDate, customEndDate]);
+  }, [
+    eventsList,
+    statusFilter,
+    selectedCategory,
+    selectedProvince,
+    selectedVenue,
+    priceFilter,
+    sortBy,
+    favorites,
+    searchQuery,
+    customStartDate,
+    customEndDate,
+  ]);
 
   // Dynamic fair counts (supports selectedVenue filter context)
   const fairCounts = useMemo(() => {
@@ -238,11 +263,30 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
         if (vLower === 'qsncc' && !text.includes('สิริกิติ์') && !text.includes('qsncc')) return false;
         else if (vLower === 'bitec' && !text.includes('ไบเทค') && !text.includes('bitec')) return false;
         else if (vLower === 'impact' && !text.includes('อิมแพ็ค') && !text.includes('impact') && !text.includes('เมืองทอง')) return false;
-        else if (vLower === 'paragon' && !text.includes('paragon') && !text.includes('พารากอน') && !text.includes('iconsiam') && !text.includes('ไอคอนสยาม') && !text.includes('สยาม')) return false;
-        else if (vLower === 'bacc' && !text.includes('bacc') && !text.includes('หอศิลป') && !text.includes('เจริญกรุง') && !text.includes('ปทุมวัน')) return false;
+        else if (
+          vLower === 'paragon' &&
+          !text.includes('paragon') &&
+          !text.includes('พารากอน') &&
+          !text.includes('iconsiam') &&
+          !text.includes('ไอคอนสยาม') &&
+          !text.includes('สยาม')
+        )
+          return false;
+        else if (vLower === 'bacc' && !text.includes('bacc') && !text.includes('หอศิลป') && !text.includes('เจริญกรุง') && !text.includes('ปทุมวัน'))
+          return false;
         else if (vLower === 'park' && !text.includes('สวน') && !text.includes('park') && !text.includes('สนามหลวง')) return false;
-        else if (vLower === 'regional' && !text.includes('kice') && !text.includes('ขอนแก่น') && !text.includes('cmecc') && !text.includes('เชียงใหม่') && !text.includes('สงขลา') && !text.includes('ภูเก็ต')) return false;
-        else if (!['qsncc', 'bitec', 'impact', 'paragon', 'bacc', 'park', 'regional'].includes(vLower) && !loc.includes(vLower) && !vTag.includes(vLower)) return false;
+        else if (
+          vLower === 'regional' &&
+          !text.includes('kice') &&
+          !text.includes('ขอนแก่น') &&
+          !text.includes('cmecc') &&
+          !text.includes('เชียงใหม่') &&
+          !text.includes('สงขลา') &&
+          !text.includes('ภูเก็ต')
+        )
+          return false;
+        else if (!['qsncc', 'bitec', 'impact', 'paragon', 'bacc', 'park', 'regional'].includes(vLower) && !loc.includes(vLower) && !vTag.includes(vLower))
+          return false;
       }
       return true;
     });
@@ -318,7 +362,6 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
       />
 
       <main className="flex-1 max-w-7xl 2xl:max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-28 sm:pb-12 space-y-6">
-        
         <DiscoverHeader
           kind="fairs"
           query={searchQuery}
@@ -355,7 +398,14 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
           summary={
             <>
               พบ <span className="font-semibold text-slate-900 tabular-nums">{filteredEvents.length}</span> งาน
-              {(searchQuery || selectedCategory || selectedProvince !== 'all' || selectedVenue !== 'all' || customStartDate || priceFilter !== 'all' || sortBy === 'favorites' || statusFilter !== 'upcoming') && (
+              {(searchQuery ||
+                selectedCategory ||
+                selectedProvince !== 'all' ||
+                selectedVenue !== 'all' ||
+                customStartDate ||
+                priceFilter !== 'all' ||
+                sortBy === 'favorites' ||
+                statusFilter !== 'upcoming') && (
                 <button type="button" onClick={handleResetAll} className="ml-3 font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer">
                   ล้างตัวกรองทั้งหมด
                 </button>
@@ -399,7 +449,9 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
               }}
             >
               {VENUE_FILTERS.map((v) => (
-                <option key={v.id} value={v.id}>{v.id === 'all' ? 'ทุกสถานที่' : v.label}</option>
+                <option key={v.id} value={v.id}>
+                  {v.id === 'all' ? 'ทุกสถานที่' : v.label}
+                </option>
               ))}
             </FilterSelect>
             <button
@@ -463,18 +515,23 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
         {/* High-Density Exhibitions Grid / List */}
         {filteredEvents.length > 0 ? (
           <>
-            <EventGrid
-              events={paginatedEvents}
-              onSelectEvent={() => {}}
-              favorites={isLoggedIn ? favorites : []}
-              toggleFavorite={toggleFavorite}
-              joinedEventIds={isLoggedIn ? joinedEventIds : []}
-              onResetFilters={handleResetAll}
-              viewMode={viewMode}
-            />
+            {/* The list view is dated, like /challenges: on now on top, then by month */}
+            {viewMode === 'list' ? (
+              <EventDateList kind="fairs" events={filteredEvents} />
+            ) : (
+              <EventGrid
+                events={paginatedEvents}
+                onSelectEvent={() => {}}
+                favorites={isLoggedIn ? favorites : []}
+                toggleFavorite={toggleFavorite}
+                joinedEventIds={isLoggedIn ? joinedEventIds : []}
+                onResetFilters={handleResetAll}
+                viewMode={viewMode}
+              />
+            )}
 
             {/* Standard Pagination */}
-            {filteredEvents.length > itemsPerPage && (
+            {viewMode === 'grid' && filteredEvents.length > itemsPerPage && (
               <div className="pt-4">
                 <Pagination
                   currentPage={currentPage}
@@ -493,12 +550,8 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
         ) : (
           <div className="bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200 flex items-center justify-between gap-4 text-left">
             <div className="space-y-0.5">
-              <h3 className="text-xs sm:text-sm font-bold text-slate-800">
-                ไม่พบงานมหกรรมหรือเอ็กซ์โปตามเงื่อนไขที่เลือก
-              </h3>
-              <p className="text-[11px] text-slate-500">
-                ลองปรับเปลี่ยนคำค้นหา หรือเลือกศูนย์การประชุมและช่วงเวลาอื่น
-              </p>
+              <h3 className="text-xs sm:text-sm font-bold text-slate-800">ไม่พบงานมหกรรมหรือเอ็กซ์โปตามเงื่อนไขที่เลือก</h3>
+              <p className="text-[11px] text-slate-500">ลองปรับเปลี่ยนคำค้นหา หรือเลือกศูนย์การประชุมและช่วงเวลาอื่น</p>
             </div>
             <button
               type="button"
@@ -509,7 +562,6 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
             </button>
           </div>
         )}
-
 
         {/* Venues: below the list so the fairs come first; picking one goes back up to the results */}
         <TopVenuesRail
@@ -602,11 +654,7 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
         }}
       />
 
-      <MobileNav
-        activeTab={activeNavTab}
-        setActiveTab={setActiveNavTab}
-        favoritesCount={favorites.length}
-      />
+      <MobileNav activeTab={activeNavTab} setActiveTab={setActiveNavTab} favoritesCount={favorites.length} />
 
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-[#1E293B] text-white px-5 py-3 rounded-2xl shadow-xl border border-slate-700 text-sm font-medium flex items-center gap-2.5 animate-slide-up">
@@ -614,7 +662,6 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
           <span>{toastMessage}</span>
         </div>
       )}
-
     </div>
   );
 }

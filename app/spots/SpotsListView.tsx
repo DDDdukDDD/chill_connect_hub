@@ -26,7 +26,7 @@ import { compareSpotsByRank } from '@/lib/spotRanking';
 import { MOCK_SPOTS, LifestyleSpotItem } from '@/data/spotsData';
 import { NATIONWIDE_SPOT_CATEGORIES } from '@/components/SpotCategoryRail';
 import { DiscoverCategoryTabs } from '@/components/discover/DiscoverCategoryTabs';
-import { TopDestinationsRail } from '@/components/TopDestinationsRail';
+import { DestinationCircles } from '@/components/discover/DestinationCircles';
 import { EventItem } from '@/data/mockData';
 import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
 import { matchesQuery, spotInProvince, type DiscoverCounts } from '@/lib/discoverMatch';
@@ -344,6 +344,16 @@ function SpotsPageContent({ initialSpots, initialCounts }: ServerProps) {
               <span className="hidden sm:inline">แนะนำที่ใหม่</span>
             </button>
           }
+          lead={
+            <DestinationCircles
+              selected={selectedProvince}
+              onSelect={(prov) => {
+                setSelectedProvince(prov ?? 'all');
+                setSelectedCategory('all');
+                setCurrentPage(1);
+              }}
+            />
+          }
           summary={
             <>
               พบ <span className="font-semibold text-slate-900 tabular-nums">{isLoaded || liveSpots.length > 0 ? filteredSpots.length.toLocaleString() : '…'}</span> แห่ง
@@ -496,16 +506,6 @@ function SpotsPageContent({ initialSpots, initialCounts }: ServerProps) {
         )}
 
 
-        {/* Destinations: below the list so the places come first; picking one goes back up to the results */}
-        <TopDestinationsRail
-          selectedProvince={selectedProvince}
-          onSelectProvince={(prov) => {
-            setSelectedProvince(prov);
-            setSelectedCategory('all');
-            setCurrentPage(1);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-        />
       </main>
 
       {/* Modals & Helpers */}

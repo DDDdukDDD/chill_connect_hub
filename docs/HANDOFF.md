@@ -1405,3 +1405,10 @@ New placeholder content in a page must be behind `eventOrigin(...) === 'sample'`
 - **Removed:** the search window `components/home/SearchPanel.tsx` and the Navbar prop `onOpenSearch`; the member home's two search boxes (the top bar has it). On phones the top bar's search icon links to `/community`, whose search box sits at the top.
 - **Checked:** top bar screenshots of `/`, `/community`, `/challenges` (same place); from `/` and `/challenges`, "/" focuses the box and Enter lands on `/community?q=…` with the word filled in; `tsc` clean.
 - **Action for Frontend:** none.
+
+### BE-087 · ค้นพบ: destination circles on /spots, a dated list view for meetups and fairs (owner request, 2026-10-17)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-17 · `claude`
+- **/spots, where first:** **`components/discover/DestinationCircles.tsx`** (new): the popular places (`TOP_DESTINATIONS`) as round photos with the short name people say ("เขาใหญ่", "หัวหิน") right under the heading (`DiscoverHeader` prop `lead`). A tap narrows to that province (green ring, heading "… ใน เชียงใหม่"); a second tap clears it. The big destination rail under the list is gone from /spots (`TopDestinationsRail` stays for its data).
+- **รายการ on /community and /fairs, like /challenges:** **`components/discover/EventDateList.tsx`** (new): a strip of small cards on top ("สัปดาห์นี้" = the next 7 days for meetups; "กำลังจัดอยู่ตอนนี้" = open today for fairs), then the rest by date under month headings ("พฤศจิกายน 2569"), then ended ones when the status filter shows them. Rows: a calendar leaf (weekday, day), photo, the time (or a fair's range) in the pillar color, title, place and seats left / entry ("เริ่ม ฿1,800" for ticket tiers). No boxes; 40 rows then "ดูเพิ่ม" instead of page numbers. The sort menu hides in this view (the list is in date order). The card view is unchanged.
+- **Checked:** screenshots at 375px and 1440px of both list views and of /spots with and without a province; `tsc` clean.
+- **Action for Frontend:** none.

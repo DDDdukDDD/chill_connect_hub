@@ -78,6 +78,8 @@ type Props = {
   action?: React.ReactNode;
   /** How the list is shown (sort, card or list), beside the title */
   tools?: React.ReactNode;
+  /** A row right under the heading, before the filters (the destination circles on /spots) */
+  lead?: React.ReactNode;
   /** How many the page shows ("พบ 57 ตี้"), a quiet line under the title */
   summary?: React.ReactNode;
   /** The page's own filter pills */
@@ -89,7 +91,7 @@ type Props = {
  * how many the search finds, the title, the search word, matching challenges, then the page's filters.
  * Wide screens get the search in the top bar instead (Navbar `searchSlot`).
  */
-export function DiscoverHeader({ kind, query, onQueryChange, province, onProvinceChange, initialCounts, action, tools, summary, children }: Props) {
+export function DiscoverHeader({ kind, query, onQueryChange, province, onProvinceChange, initialCounts, action, tools, lead, summary, children }: Props) {
   const counts = useDiscoverCounts(initialCounts, query, province);
   const word = query.trim();
 
@@ -167,6 +169,8 @@ export function DiscoverHeader({ kind, query, onQueryChange, province, onProvinc
           )}
         </div>
       )}
+
+      {lead}
 
       {/* Phones: how many and how they are shown, with the create button, on one short row */}
       <div className="sm:hidden flex items-center justify-between gap-3">
