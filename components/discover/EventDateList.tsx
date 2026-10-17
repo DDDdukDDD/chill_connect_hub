@@ -129,9 +129,10 @@ const heading = (title: string, count: number) => (
  */
 export function EventDateList({ kind, events }: { kind: Kind; events: EventItem[] }) {
   const [shown, setShown] = useState(PAGE);
+  // The clock is read once when the list opens; what counts as "this week" does not shift while scrolling
+  const [now] = useState(() => Date.now());
 
   const { strip, months, ended } = useMemo(() => {
-    const now = Date.now();
     const isOver = (e: EventItem) => isEventEnded(e) || endOf(e) < now;
     const live = events.filter((e) => !isOver(e)).sort((a, b) => startOf(a) - startOf(b));
     const isSoon = kind === 'meetups' ? (e: EventItem) => startOf(e) < now + 7 * DAY : (e: EventItem) => startOf(e) <= now;
@@ -151,18 +152,14 @@ export function EventDateList({ kind, events }: { kind: Kind; events: EventItem[
     }
     const ended = events.filter(isOver).sort((a, b) => startOf(b) - startOf(a));
     return { strip, months, ended };
-  }, [events, kind]);
+  }, [events, kind, now]);
 
-  // Rows past the first pages wait behind "ดูเพิ่ม"; the strip always shows
-  let budget = shown;
-  const take = (items: EventItem[]) => {
-    const part = items.slice(0, Math.max(0, budget));
-    budget -= part.length;
-    return part;
-  };
-  const visibleMonths = months.map((m) => ({ ...m, visible: take(m.items) })).filter((m) => m.visible.length > 0);
-  const visibleEnded = take(ended);
-  const total = months.reduce((n, m) => n + m.items.length, 0) + ended.length;
+  // Rows past the first pages wait behind "ดูเพิ่ม"; the strip always shows. Each group shows what is left of the budget.
+  const before = months.map((_, i) => months.slice(0, i).reduce((n, m) => n + m.items.length, 0));
+  const visibleMonths = months.map((m, i) => ({ ...m, visible: m.items.slice(0, Math.max(0, shown - before[i])) })).filter((m) => m.visible.length > 0);
+  const monthRows = months.reduce((n, m) => n + m.items.length, 0);
+  const visibleEnded = ended.slice(0, Math.max(0, shown - monthRows));
+  const total = monthRows + ended.length;
 
   return (
     <div className="space-y-8 sm:space-y-10">
