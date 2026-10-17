@@ -1369,3 +1369,46 @@ New placeholder content in a page must be behind `eventOrigin(...) === 'sample'`
   - **Cards are unchanged.**
 - **Checked:** desktop and phone screenshots of all three pages; tab counts equal the page counts for "วิ่ง", for กรุงเทพฯ, and for "คาเฟ่" in เชียงใหม่; `/challenges?q=วิ่ง` opens with the word filled in; no console errors.
 - **Action for Frontend:** none. A new filter on these pages goes in the pill row; matching changes go in `lib/discoverMatch.ts` so the counts follow.
+
+### BE-083 · ค้นพบ: shorter top on phones, matching counts, "มีที่ว่าง" (2026-10-17)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-17 · `claude`
+- **Why:** a check of the ค้นพบ pages after BE-082 (owner request).
+- **What changed:**
+  - **Meetup tab count:** `discoverCounts` in `lib/publicContent.ts` counted ended meetups (58 on the tab, 57 in the list). It now leaves them out, like fairs.
+  - **One row less:** `DiscoverHeader` takes a `summary` prop; "พบ N ตี้/งาน/แห่ง" with "ล้างตัวกรองทั้งหมด" sits under the title. Sort (meetups) and the grid/list switch close the filter pill row (`sm:ml-auto` on wide screens, at the end of the scrolling row on phones).
+  - **Phone search hint:** `DiscoverSearch` takes `compact`; the phone copy says "ค้นหาตี้" / "ค้นหางานแฟร์" / "ค้นหาที่เที่ยว" instead of the cut-off full line.
+  - **"มีที่ว่าง" on `/community`:** a filter pill for meetups with seats left, also opened by `?seats=open`. The home page's "เลือกกิจกรรมตามสายที่ชอบ" row shows only open meetups, so its "ดูทั้งหมด" link now carries `seats=open` and the numbers match (29 on both).
+  - **Empty categories hidden:** `FairCategoryRail` and `CommunityCategoryRail` (rail variant) leave out a category with 0, unless it is the picked one.
+- **Checked:** phone (375px) and desktop (1440px) screenshots of all three pages; `/community?seats=open` shows 29, งานวิ่ง 6, as on the home page; `tsc` clean.
+- **Action for Frontend:** none.
+
+### BE-084 · Member home: left column scrolls, live line under the share box (2026-10-17)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-17 · `claude`
+- **What changed:** the left column of `MemberLiveHome` (wide screens) is capped at the screen height and scrolls on its own, like the right one, so its lower shortcuts can be reached. `HomeMomentFeed` shows its `top` slot (the live ticker) under "วันนี้ไปไหนมา…" and right before the posts, instead of above the heading.
+- **Action for Frontend:** none.
+
+### BE-085 · Search opens ค้นพบ; a calmer ค้นพบ top (owner request, 2026-10-17)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-17 · `claude`
+- **Search goes to ค้นพบ:** the visitor home's search window (`SearchPanel`) and the member home's search boxes now open `/community?q=…&province=…` (`discoverHref`) instead of showing results on the home page. The home page's own results (rows of meetups, places, fairs, moments) are gone, with `components/home/MomentSearchRow.tsx`. Moments are left out of search for now (owner decision). With nothing typed, the window still scrolls to the meetup row.
+- **ค้นพบ top, after Meetup's Find page:**
+  - Row 1: the three page tabs, the "create" button at the end (just "+" on phones, where it sits beside the title so the tabs keep the row).
+  - Row 2: the title with "พบ N" under it; sort and card/list on the right (`DiscoverHeader` prop `tools`).
+  - Row 3: filter pills, lighter (36px, 13px text, slate-200 border).
+  - Row 4: **`components/discover/DiscoverCategoryTabs.tsx`** (new): categories as icon tabs, a line in the pillar color under the picked one, no boxes, empty ones left out, arrows on wide screens. Replaces `CommunityCategoryRail`, `FairCategoryRail` and `SpotCategoryRail` on the three ค้นพบ pages (`/challenges` keeps `CommunityCategoryRail`).
+- **Follow-up (owner, same day):** the page tabs are plain text (no pills); the current one is bold over a tilted highlighter stroke in its pillar color, others get a short stroke on hover; a visible `<h1>` in a friend's voice sits right under the tabs and says where: "กิจกรรมออกไปใช้ชีวิต ทั่วไทย" (or "… ใน เชียงใหม่", "กิจกรรมออนไลน์"), "งานแฟร์ งานวิ่ง งานคอน ทั่วไทย", "ที่เที่ยว ที่ชิล ทั่วไทย". "พบ N", sort and card/list sit at the right end of the filter row on wide screens, and on one short row with "+" under the tabs on phones. The search word chip and the matching-challenges line show under the tabs only while searching.
+- **Checked:** screenshots at 375px and 1440px; no console errors; `tsc` clean.
+- **Action for Frontend:** none.
+
+### BE-086 · One search box in the top bar on every page (owner request, 2026-10-17)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-17 · `claude`
+- **What changed:** the Navbar shows the ค้นพบ search box (word | province | blue button) on every page, left-aligned right after the logo, same look and place everywhere. On `/community`, `/fairs`, `/spots` it is the page's own box (`searchSlot`, filters while typing); elsewhere it is **`components/discover/SiteSearch.tsx`** (new): Enter or the button opens `/community?q=…&province=…`. "/" jumps into it. `DiscoverSearch` takes `onSubmit`.
+- **Removed:** the search window `components/home/SearchPanel.tsx` and the Navbar prop `onOpenSearch`; the member home's two search boxes (the top bar has it). On phones the top bar's search icon links to `/community`, whose search box sits at the top.
+- **Checked:** top bar screenshots of `/`, `/community`, `/challenges` (same place); from `/` and `/challenges`, "/" focuses the box and Enter lands on `/community?q=…` with the word filled in; `tsc` clean.
+- **Action for Frontend:** none.
+
+### BE-087 · ค้นพบ: destination circles on /spots, a dated list view for meetups and fairs (owner request, 2026-10-17)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-17 · `claude`
+- **/spots, where first:** **`components/discover/DestinationCircles.tsx`** (new): the popular places (`TOP_DESTINATIONS`) as round photos with the short name people say ("เขาใหญ่", "หัวหิน") right under the heading (`DiscoverHeader` prop `lead`). A tap narrows to that province (green ring, heading "… ใน เชียงใหม่"); a second tap clears it. The big destination rail under the list is gone from /spots (`TopDestinationsRail` stays for its data).
+- **รายการ on /community and /fairs, like /challenges:** **`components/discover/EventDateList.tsx`** (new): a strip of small cards on top ("สัปดาห์นี้" = the next 7 days for meetups; "กำลังจัดอยู่ตอนนี้" = open today for fairs), then the rest by date under month headings ("พฤศจิกายน 2569"), then ended ones when the status filter shows them. Rows: a calendar leaf (weekday, day), photo, the time (or a fair's range) in the pillar color, title, place and seats left / entry ("เริ่ม ฿1,800" for ticket tiers). No boxes; 40 rows then "ดูเพิ่ม" instead of page numbers. The sort menu hides in this view (the list is in date order). The card view is unchanged.
+- **Checked:** screenshots at 375px and 1440px of both list views and of /spots with and without a province; `tsc` clean.
+- **Action for Frontend:** none.

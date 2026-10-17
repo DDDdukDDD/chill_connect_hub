@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
 import { BrandLogo } from './BrandLogo';
+import { SiteSearch } from './discover/SiteSearch';
 import { NotificationBell } from './NotificationBell';
 import { useActivitySync } from '@/lib/useMyActivity';
 
@@ -39,9 +40,7 @@ interface NavbarProps {
   onOpenCreateEvent?: () => void;
   /** Sign-up button for visitors; without it the button opens the login window */
   onOpenSignup?: () => void;
-  /** Shows the search bar (wide screens) or icon (phones) that opens the page's search window */
-  onOpenSearch?: () => void;
-  /** A search box shown in place of the search bar on wide screens (the ค้นพบ pages) */
+  /** The ค้นพบ pages' own search box, in place of the site search (same look and place) */
   searchSlot?: React.ReactNode;
   userName?: string;
   isAuthReady?: boolean;
@@ -56,7 +55,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenLogout,
   onOpenCreateEvent,
   onOpenSignup,
-  onOpenSearch,
   searchSlot,
   userName = '',
   isAuthReady,
@@ -121,34 +119,21 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </Link>
 
-          {/* The ค้นพบ pages bring their own search box */}
-          {searchSlot && <div className="hidden md:flex flex-1 min-w-0 max-w-[480px] ml-2 lg:ml-6">{searchSlot}</div>}
-
-          {/* Search: a short bar next to the logo on wide screens */}
-          {!searchSlot && onOpenSearch && (
-            <div className="hidden md:flex flex-1 min-w-0 ml-2 lg:ml-6">
-              <button
-                type="button"
-                onClick={onOpenSearch}
-                className="w-full max-w-[340px] flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 hover:bg-white hover:border-slate-300 px-4 py-2 text-sm text-slate-500 text-left cursor-pointer transition-colors"
-              >
-                <Search className="w-4 h-4 shrink-0" aria-hidden="true" />
-                <span className="flex-1 min-w-0 truncate">ค้นหาตี้ ที่เที่ยว หรือจังหวัด</span>
-              </button>
-            </div>
-          )}
+          {/* Search: the same box in the same place on every page. The ค้นพบ pages bring theirs (it filters while typing);
+              everywhere else Enter opens ค้นพบ. */}
+          <div className="hidden md:flex flex-1 min-w-0 max-w-[480px] ml-2 lg:ml-8 mr-auto">{searchSlot ?? <SiteSearch />}</div>
 
           {/* Right: Actions */}
           <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-            {onOpenSearch && (
-              <button
-                type="button"
-                onClick={onOpenSearch}
+            {/* Phones: the search lives at the top of ค้นพบ */}
+            {!searchSlot && (
+              <Link
+                href="/community"
                 aria-label="ค้นหา"
-                className="md:hidden w-9 h-9 rounded-full border border-slate-200 bg-white flex items-center justify-center text-slate-800 cursor-pointer active:scale-95"
+                className="md:hidden w-9 h-9 rounded-full border border-slate-200 bg-white flex items-center justify-center text-slate-800 active:scale-95"
               >
                 <Search className="w-4 h-4" aria-hidden="true" />
-              </button>
+              </Link>
             )}
 
             {/* Quick Action: Create Event Pill Button (Shown only for Logged-in Users) */}

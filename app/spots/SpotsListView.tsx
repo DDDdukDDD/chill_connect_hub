@@ -24,8 +24,9 @@ import { useMyActivity } from '@/lib/useMyActivity';
 import { usePublishedSpots, getCachedSpotVibeCategory, getCachedSpotSearchText } from '@/lib/usePublishedSpots';
 import { compareSpotsByRank } from '@/lib/spotRanking';
 import { MOCK_SPOTS, LifestyleSpotItem } from '@/data/spotsData';
-import { SpotCategoryRail, NATIONWIDE_SPOT_CATEGORIES } from '@/components/SpotCategoryRail';
-import { TopDestinationsRail } from '@/components/TopDestinationsRail';
+import { NATIONWIDE_SPOT_CATEGORIES } from '@/components/SpotCategoryRail';
+import { DiscoverCategoryTabs } from '@/components/discover/DiscoverCategoryTabs';
+import { DestinationCircles } from '@/components/discover/DestinationCircles';
 import { EventItem } from '@/data/mockData';
 import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
 import { matchesQuery, spotInProvince, type DiscoverCounts } from '@/lib/discoverMatch';
@@ -335,11 +336,38 @@ function SpotsPageContent({ initialSpots, initialCounts }: ServerProps) {
                   setIsCreateEventModalOpen(true);
                 }
               }}
-              className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold whitespace-nowrap cursor-pointer active:scale-95 transition-all"
+              aria-label="แนะนำที่ใหม่"
+              title="แนะนำที่ใหม่"
+              className="inline-flex items-center justify-center gap-1.5 h-9 w-9 sm:w-auto sm:px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-semibold whitespace-nowrap cursor-pointer active:scale-95 transition-all"
             >
               <Plus className="w-4 h-4" strokeWidth={2.5} aria-hidden="true" />
-              <span>แนะนำที่ใหม่</span>
+              <span className="hidden sm:inline">แนะนำที่ใหม่</span>
             </button>
+          }
+          lead={
+            <DestinationCircles
+              selected={selectedProvince}
+              onSelect={(prov) => {
+                setSelectedProvince(prov ?? 'all');
+                setSelectedCategory('all');
+                setCurrentPage(1);
+              }}
+            />
+          }
+          summary={
+            <>
+              พบ <span className="font-semibold text-slate-900 tabular-nums">{isLoaded || liveSpots.length > 0 ? filteredSpots.length.toLocaleString() : '…'}</span> แห่ง
+              {(searchQuery || selectedCategory !== 'all' || selectedProvince !== 'all' || priceFilter !== 'all' || sortBy === 'favorites' || sortByNearMe) && (
+                <button type="button" onClick={handleResetAll} className="ml-3 font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer">
+                  ล้างตัวกรองทั้งหมด
+                </button>
+              )}
+            </>
+          }
+          tools={
+            <>
+              <ViewModeToggle viewMode={viewMode} onChange={handleViewModeChange} />
+            </>
           }
         >
           {/* Filters as pills: one row that scrolls on phones */}
@@ -377,28 +405,18 @@ function SpotsPageContent({ initialSpots, initialCounts }: ServerProps) {
               <span>ที่บันทึกไว้ ({favoriteSpots.length})</span>
             </button>
           </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-            <p className="text-slate-500 font-medium">
-              พบ <span className="font-semibold text-slate-900 tabular-nums">{isLoaded || liveSpots.length > 0 ? filteredSpots.length.toLocaleString() : '…'}</span> แห่ง
-              {(searchQuery || selectedCategory !== 'all' || selectedProvince !== 'all' || priceFilter !== 'all' || sortBy === 'favorites' || sortByNearMe) && (
-                <button type="button" onClick={handleResetAll} className="ml-3 font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer">
-                  ล้างตัวกรองทั้งหมด
-                </button>
-              )}
-            </p>
-            <ViewModeToggle viewMode={viewMode} onChange={handleViewModeChange} />
-          </div>
         </DiscoverHeader>
 
-        {/* Category rail */}
-        <SpotCategoryRail
-          selectedCategoryId={selectedCategory === 'all' ? null : selectedCategory}
-          onSelectCategory={(catId) => {
-            setSelectedCategory(catId || 'all');
+        {/* Categories as icon tabs, right above the list */}
+        <DiscoverCategoryTabs
+          kind="spots"
+          categories={NATIONWIDE_SPOT_CATEGORIES}
+          counts={spotCounts}
+          selectedId={selectedCategory === 'all' ? null : selectedCategory}
+          onSelect={(id) => {
+            setSelectedCategory(id || 'all');
             setCurrentPage(1);
           }}
-          spotCounts={spotCounts}
         />
 
         {/* High-Density Spots Grid / List */}
@@ -488,16 +506,6 @@ function SpotsPageContent({ initialSpots, initialCounts }: ServerProps) {
         )}
 
 
-        {/* Destinations: below the list so the places come first; picking one goes back up to the results */}
-        <TopDestinationsRail
-          selectedProvince={selectedProvince}
-          onSelectProvince={(prov) => {
-            setSelectedProvince(prov);
-            setSelectedCategory('all');
-            setCurrentPage(1);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-        />
       </main>
 
       {/* Modals & Helpers */}

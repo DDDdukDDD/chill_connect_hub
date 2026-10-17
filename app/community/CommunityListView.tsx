@@ -2,23 +2,16 @@
 
 import React, { useState, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import {
-  Users,
-  Heart,
-  X,
-  Calendar,
-  LocateFixed,
-  Loader2,
-  CheckCircle2,
-  Plus,
-} from 'lucide-react';
+import { Users, Heart, X, Calendar, LocateFixed, Loader2, CheckCircle2, Plus } from 'lucide-react';
 import { isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp } from '@/lib/dateUtils';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { EventGrid } from '@/components/EventGrid';
 import { ViewModeToggle, ViewMode } from '@/components/ViewModeToggle';
 import { Pagination } from '@/components/Pagination';
-import { CommunityCategoryRail, COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
+import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
+import { DiscoverCategoryTabs } from '@/components/discover/DiscoverCategoryTabs';
+import { EventDateList } from '@/components/discover/EventDateList';
 import { TopCommunityRail, TOP_COMMUNITY_CLUBS } from '@/components/TopCommunityRail';
 import { getCommunityEventCategory } from '@/data/masterHub';
 import { CustomDatePickerModal } from '@/components/CustomDatePickerModal';
@@ -30,7 +23,7 @@ import { useMyActivity } from '@/lib/useMyActivity';
 import { fetchAllContentPages } from '@/lib/contentClient';
 import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
 import { MOCK_EVENTS, EventItem } from '@/data/mockData';
-import {  } from '@/data/spotsData';
+import {} from '@/data/spotsData';
 import { eventInProvince, matchesQuery, meetupSearchText, type DiscoverCounts } from '@/lib/discoverMatch';
 import { DiscoverHeader, FilterSelect, filterPillClass } from '@/components/discover/DiscoverHeader';
 import { DiscoverSearch } from '@/components/discover/DiscoverSearch';
@@ -54,6 +47,8 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
   const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'tomorrow' | 'weekend' | 'custom'>('all');
   const [statusFilter, setStatusFilter] = useState<'upcoming' | 'ended' | 'all'>('upcoming');
   const [priceFilter, setPriceFilter] = useState<'all' | 'free'>((searchParams.get('price') as any) || 'all');
+  // "มีที่ว่าง": only meetups with seats left (the home page links here with seats=open)
+  const [openOnly, setOpenOnly] = useState(searchParams.get('seats') === 'open');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [activeVibeFilter, setActiveVibeFilter] = useState<VibeFilter>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -192,6 +187,7 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
       const ended = isEventEnded(ev);
       if (statusFilter === 'upcoming' && ended) return false;
       if (statusFilter === 'ended' && !ended) return false;
+      if (openOnly && ev.participantsCount >= ev.maxParticipants) return false;
 
       const eventText = `${ev.title} ${ev.description || ''} ${ev.tag || ''} ${ev.location || ''} ${ev.hostName || ''} ${ev.province || ''}`.toLowerCase();
 
@@ -199,7 +195,8 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
       if (selectedClub && selectedClub !== 'all') {
         const clubDef = TOP_COMMUNITY_CLUBS.find((c) => c.clubKey === selectedClub);
         if (clubDef) {
-          const eventText = `${ev.title} ${ev.description || ''} ${ev.tag || ''} ${ev.badgeText || ''} ${ev.location} ${ev.hostName || ''} ${ev.category || ''} ${ev.zone || ''}`.toLowerCase();
+          const eventText =
+            `${ev.title} ${ev.description || ''} ${ev.tag || ''} ${ev.badgeText || ''} ${ev.location} ${ev.hostName || ''} ${ev.category || ''} ${ev.zone || ''}`.toLowerCase();
           const matches = clubDef.keywords.some((kw) => eventText.includes(kw.toLowerCase()));
           if (!matches) return false;
         }
@@ -216,39 +213,44 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
 
       if (!eventInProvince(ev, selectedProvince)) return false;
 
-      const isOnlineEv = ev.province === 'ออนไลน์' || ev.locationType === 'online' || ev.location?.includes('ออนไลน์') || ev.location?.toLowerCase().includes('online');
+      const isOnlineEv =
+        ev.province === 'ออนไลน์' || ev.locationType === 'online' || ev.location?.includes('ออนไลน์') || ev.location?.toLowerCase().includes('online');
 
       // Quick Vibe Filter Chips (Agoda / Airbnb style curation)
       if (activeVibeFilter === 'solo') {
         if (isOnlineEv) return false;
         const isExplicit = ev.isSoloFriendly;
-        const isSolo = isExplicit !== undefined
-          ? isExplicit
-          : (eventText.includes('คนเดียว') ||
-             eventText.includes('เพื่อนใหม่') ||
-             eventText.includes('จิบกาแฟ') ||
-             eventText.includes('บอร์ดเกม') ||
-             eventText.includes('cafe') ||
-             eventText.includes('คาเฟ่') ||
-             eventText.includes('introvert') ||
-             eventText.includes('หนังสือ') ||
-             ev.category === 'chill' ||
-             ev.category === 'learn');
+        const isSolo =
+          isExplicit !== undefined
+            ? isExplicit
+            : eventText.includes('คนเดียว') ||
+              eventText.includes('เพื่อนใหม่') ||
+              eventText.includes('จิบกาแฟ') ||
+              eventText.includes('บอร์ดเกม') ||
+              eventText.includes('cafe') ||
+              eventText.includes('คาเฟ่') ||
+              eventText.includes('introvert') ||
+              eventText.includes('หนังสือ') ||
+              ev.category === 'chill' ||
+              ev.category === 'learn';
         if (!isSolo) return false;
       } else if (activeVibeFilter === 'free') {
         if (!ev.price || !ev.price.includes('ฟรี')) return false;
       } else if (activeVibeFilter === 'pets') {
         if (isOnlineEv) return false;
         const isExplicit = ev.isPetFriendly;
-        const isPet = isExplicit !== undefined
-          ? isExplicit
-          : ['pet', 'หมา', 'แมว', 'dog', 'cat', 'สัตว์เลี้ยง'].some((k) => eventText.includes(k));
+        const isPet = isExplicit !== undefined ? isExplicit : ['pet', 'หมา', 'แมว', 'dog', 'cat', 'สัตว์เลี้ยง'].some((k) => eventText.includes(k));
         if (!isPet) return false;
       } else if (activeVibeFilter === 'beginners') {
         const isExplicit = ev.isBeginnerFriendly;
-        const isBeginner = isExplicit !== undefined
-          ? isExplicit
-          : (['มือใหม่', 'beginner', 'เวิร์กช็อป', 'workshop', 'ปั้นดิน', 'บอร์ดเกม', 'ชิลล์', 'วิ่งเบาๆ', 'jogging', 'โยคะ', 'yoga'].some((k) => eventText.includes(k)) || ev.category === 'learn' || ev.category === 'chill');
+        const isBeginner =
+          isExplicit !== undefined
+            ? isExplicit
+            : ['มือใหม่', 'beginner', 'เวิร์กช็อป', 'workshop', 'ปั้นดิน', 'บอร์ดเกม', 'ชิลล์', 'วิ่งเบาๆ', 'jogging', 'โยคะ', 'yoga'].some((k) =>
+                eventText.includes(k),
+              ) ||
+              ev.category === 'learn' ||
+              ev.category === 'chill';
         if (!isBeginner) return false;
       } else if (activeVibeFilter === 'soon') {
         // eslint-disable-next-line react-hooks/purity
@@ -295,7 +297,21 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
       // Default: newest
       return (b.createdAtTimestamp || 0) - (a.createdAtTimestamp || 0);
     });
-  }, [eventsList, statusFilter, selectedClub, selectedCategory, selectedProvince, activeVibeFilter, priceFilter, sortBy, favorites, searchQuery, customStartDate, customEndDate]);
+  }, [
+    eventsList,
+    statusFilter,
+    openOnly,
+    selectedClub,
+    selectedCategory,
+    selectedProvince,
+    activeVibeFilter,
+    priceFilter,
+    sortBy,
+    favorites,
+    searchQuery,
+    customStartDate,
+    customEndDate,
+  ]);
 
   // Calculate dynamic event counts per lifestyle category (supports selectedClub filter context)
   const categoryEventCounts = useMemo(() => {
@@ -304,12 +320,14 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
       if ((event.eventType || 'community') !== 'community') return false;
       if (statusFilter === 'upcoming' && isEventEnded(event)) return false;
       if (statusFilter === 'ended' && !isEventEnded(event)) return false;
+      if (openOnly && event.participantsCount >= event.maxParticipants) return false;
 
       // Filter by selected community club if active
       if (selectedClub && selectedClub !== 'all') {
         const clubDef = TOP_COMMUNITY_CLUBS.find((c) => c.clubKey === selectedClub);
         if (clubDef) {
-          const eventText = `${event.title} ${event.description || ''} ${event.tag || ''} ${event.badgeText || ''} ${event.location} ${event.hostName || ''} ${event.category || ''} ${event.zone || ''}`.toLowerCase();
+          const eventText =
+            `${event.title} ${event.description || ''} ${event.tag || ''} ${event.badgeText || ''} ${event.location} ${event.hostName || ''} ${event.category || ''} ${event.zone || ''}`.toLowerCase();
           const matches = clubDef.keywords.some((kw) => eventText.includes(kw.toLowerCase()));
           if (!matches) return false;
         }
@@ -323,7 +341,7 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
     });
 
     return counts;
-  }, [eventsList, statusFilter, selectedClub]);
+  }, [eventsList, statusFilter, openOnly, selectedClub]);
 
   const totalPages = Math.ceil(filteredEvents.length / itemsPerPage) || 1;
 
@@ -360,6 +378,7 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
     setTimeFilter('all');
     setStatusFilter('upcoming');
     setPriceFilter('all');
+    setOpenOnly(false);
     setSortBy('newest');
     setCurrentPage(1);
     showToast('ล้างตัวกรองทั้งหมดแล้ว');
@@ -395,7 +414,6 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
       />
 
       <main className="flex-1 max-w-7xl 2xl:max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-28 sm:pb-12 space-y-6">
-        
         <DiscoverHeader
           kind="meetups"
           query={searchQuery}
@@ -413,11 +431,54 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
             <button
               type="button"
               onClick={openCreate}
-              className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold whitespace-nowrap cursor-pointer active:scale-95 transition-all"
+              aria-label="ตั้งตี้เอง"
+              title="ตั้งตี้เอง"
+              className="inline-flex items-center justify-center gap-1.5 h-9 w-9 sm:w-auto sm:px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-semibold whitespace-nowrap cursor-pointer active:scale-95 transition-all"
             >
               <Plus className="w-4 h-4" strokeWidth={2.5} aria-hidden="true" />
-              <span>ตั้งตี้เอง</span>
+              <span className="hidden sm:inline">ตั้งตี้เอง</span>
             </button>
+          }
+          summary={
+            <>
+              พบ <span className="font-semibold text-slate-900 tabular-nums">{filteredEvents.length}</span> ตี้
+              {(searchQuery ||
+                selectedCategory !== 'all' ||
+                selectedProvince !== 'all' ||
+                customStartDate ||
+                priceFilter !== 'all' ||
+                openOnly ||
+                sortBy !== 'newest' ||
+                activeVibeFilter !== 'all' ||
+                statusFilter !== 'upcoming' ||
+                selectedClub) && (
+                <button type="button" onClick={handleResetAll} className="ml-3 font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer">
+                  ล้างตัวกรองทั้งหมด
+                </button>
+              )}
+            </>
+          }
+          tools={
+            <>
+              {/* Sorting is for the cards; the list is in date order */}
+              {viewMode === 'grid' && (
+                <FilterSelect
+                  kind="meetups"
+                  label="เรียงตาม"
+                  value={sortBy === 'favorites' ? 'newest' : sortBy}
+                  emptyValue="newest"
+                  onChange={(v) => {
+                    setSortBy(v as SortOption);
+                    setCurrentPage(1);
+                  }}
+                >
+                  <option value="newest">มาใหม่ล่าสุด</option>
+                  <option value="popular">ยอดนิยม</option>
+                  <option value="soonest">จัดขึ้นเร็วๆ นี้</option>
+                </FilterSelect>
+              )}
+              <ViewModeToggle viewMode={viewMode} onChange={handleViewModeChange} />
+            </>
           }
         >
           {/* Filters as pills: one row that scrolls on phones */}
@@ -467,6 +528,17 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
             >
               เข้าร่วมฟรี
             </button>
+            <button
+              type="button"
+              onClick={() => {
+                setOpenOnly(!openOnly);
+                setCurrentPage(1);
+              }}
+              aria-pressed={openOnly}
+              className={filterPillClass('meetups', openOnly)}
+            >
+              มีที่ว่าง
+            </button>
             <FilterSelect
               kind="meetups"
               label="สถานะ"
@@ -500,60 +572,38 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
               <span>ที่บันทึกไว้ ({favorites.length})</span>
             </button>
           </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-            <p className="text-slate-500 font-medium">
-              พบ <span className="font-semibold text-slate-900 tabular-nums">{filteredEvents.length}</span> ตี้
-              {(searchQuery || selectedCategory !== 'all' || selectedProvince !== 'all' || customStartDate || priceFilter !== 'all' || sortBy !== 'newest' || activeVibeFilter !== 'all' || statusFilter !== 'upcoming' || selectedClub) && (
-                <button type="button" onClick={handleResetAll} className="ml-3 font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer">
-                  ล้างตัวกรองทั้งหมด
-                </button>
-              )}
-            </p>
-            <div className="flex items-center gap-2">
-              <FilterSelect
-                kind="meetups"
-                label="เรียงตาม"
-                value={sortBy === 'favorites' ? 'newest' : sortBy}
-                emptyValue="newest"
-                onChange={(v) => {
-                  setSortBy(v as SortOption);
-                  setCurrentPage(1);
-                }}
-              >
-                <option value="newest">มาใหม่ล่าสุด</option>
-                <option value="popular">ยอดนิยม</option>
-                <option value="soonest">จัดขึ้นเร็วๆ นี้</option>
-              </FilterSelect>
-              <ViewModeToggle viewMode={viewMode} onChange={handleViewModeChange} />
-            </div>
-          </div>
         </DiscoverHeader>
 
-        {/* Category rail (same as the home page) */}
-        <CommunityCategoryRail
-          selectedCategoryId={selectedCategory === 'all' ? null : selectedCategory}
-          onSelectCategory={(catId) => {
-            setSelectedCategory(catId || 'all');
+        {/* Categories as icon tabs, right above the list */}
+        <DiscoverCategoryTabs
+          kind="meetups"
+          categories={COMMUNITY_LIFESTYLE_CATEGORIES}
+          counts={categoryEventCounts}
+          selectedId={selectedCategory === 'all' ? null : selectedCategory}
+          onSelect={(id) => {
+            setSelectedCategory(id || 'all');
             setCurrentPage(1);
           }}
-          eventCounts={categoryEventCounts}
-          variant="rail"
         />
 
         {/* High-Density Community Events Grid / List */}
-        <EventGrid
-          events={paginatedEvents}
-          onSelectEvent={() => {}}
-          favorites={isLoggedIn ? favorites : []}
-          toggleFavorite={toggleFavorite}
-          joinedEventIds={isLoggedIn ? joinedEventIds : []}
-          onResetFilters={handleResetAll}
-          isFavoritesOnly={sortBy === 'favorites'}
-          viewMode={viewMode}
-        />
+        {/* The list view is dated, like /challenges: this week on top, then by month */}
+        {viewMode === 'list' && filteredEvents.length > 0 ? (
+          <EventDateList kind="meetups" events={filteredEvents} />
+        ) : (
+          <EventGrid
+            events={paginatedEvents}
+            onSelectEvent={() => {}}
+            favorites={isLoggedIn ? favorites : []}
+            toggleFavorite={toggleFavorite}
+            joinedEventIds={isLoggedIn ? joinedEventIds : []}
+            onResetFilters={handleResetAll}
+            isFavoritesOnly={sortBy === 'favorites'}
+            viewMode={viewMode}
+          />
+        )}
 
-        {filteredEvents.length > itemsPerPage && (
+        {viewMode === 'grid' && filteredEvents.length > itemsPerPage && (
           <div className="pt-4">
             <Pagination
               currentPage={currentPage}
@@ -567,7 +617,6 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
             />
           </div>
         )}
-
 
         {/* Clubs: below the list so the meetups come first; picking one goes back up to the results */}
         <TopCommunityRail
@@ -675,11 +724,7 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
         }}
       />
 
-      <MobileNav
-        activeTab={activeNavTab}
-        setActiveTab={setActiveNavTab}
-        favoritesCount={favorites.length}
-      />
+      <MobileNav activeTab={activeNavTab} setActiveTab={setActiveNavTab} favoritesCount={favorites.length} />
 
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-[#1E293B] text-white px-5 py-3 rounded-2xl shadow-xl border border-slate-700 text-sm font-medium flex items-center gap-2.5 animate-slide-up">
@@ -687,7 +732,6 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
           <span>{toastMessage}</span>
         </div>
       )}
-
     </div>
   );
 }

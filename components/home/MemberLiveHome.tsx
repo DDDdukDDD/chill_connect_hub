@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Bookmark, CalendarDays, Camera, Flag, Gift, Search, X, Zap } from 'lucide-react';
+import { Bookmark, CalendarDays, Camera, Flag, Gift, Zap } from 'lucide-react';
 import type { ChallengeQuest, EventItem } from '@/data/mockData';
 import type { QuestProgress } from '@/lib/useMyRewards';
 import { parseEventDateToTimestamp } from '@/lib/dateUtils';
@@ -78,10 +78,6 @@ export interface MemberLiveHomeProps {
   /** Places worth a visit, one per vibe in turn */
   spots: LifestyleSpotItem[];
   isSpotsLoaded: boolean;
-  searchQuery: string;
-  setSearchQuery: (value: string) => void;
-  /** While a search is typed, its results take the place of the three columns */
-  searchResults: React.ReactNode | null;
 }
 
 /**
@@ -91,18 +87,9 @@ export interface MemberLiveHomeProps {
  * live strip on top and meetups and challenges between the posts.
  */
 export function MemberLiveHome(props: MemberLiveHomeProps) {
-  const { name, avatar, xp, badges, redeemable, searchQuery, setSearchQuery, searchResults } = props;
+  const { name, avatar, xp, badges, redeemable } = props;
   const live = useLiveActivity();
   const [feedView, setFeedView] = useState<FeedView>('all');
-  // Typing in the right column's search box swaps the columns for the results; the cursor follows to the top row's box
-  const headerSearch = useRef<HTMLInputElement>(null);
-  const railSearch = useRef<HTMLInputElement>(null);
-  const typedInRail = useRef(false);
-  const isSearching = Boolean(searchResults);
-  useEffect(() => {
-    if (isSearching && typedInRail.current) headerSearch.current?.focus();
-    typedInRail.current = false;
-  }, [isSearching]);
   // A shortcut on the left switches the feed and brings it into view
   const showFeed = (view: FeedView) => {
     setFeedView(view);
@@ -111,8 +98,8 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
 
   return (
     <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 pt-5 sm:pt-7">
-      {/* Greeting, points and search in one row. On wide screens they move into the side columns, so the feed starts at the top; a search brings the row back for its results. */}
-      <div className={`flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-8 ${searchResults ? '' : 'xl:hidden'}`}>
+      {/* Greeting and points. On wide screens they move into the left column, so the feed starts at the top. */}
+      <div className={`flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-8 xl:hidden`}>
         <div className="min-w-0">
           <h1 className="text-[22px] sm:text-[28px] font-bold text-slate-900 tracking-tight truncate">สวัสดี {name}</h1>
           {/* Points as plain text, the rewards link on its own: one line each, nothing underlined */}
@@ -128,114 +115,74 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
             {redeemable > 0 ? `แลกของรางวัลได้ ${redeemable} อย่าง` : 'ดูของรางวัล'} →
           </Link>
         </div>
-        <form role="search" onSubmit={(e) => e.preventDefault()} className="md:w-[400px] shrink-0 flex items-center gap-2 rounded-full bg-slate-50 border border-slate-200 p-1 pl-4">
-          <Search className="w-4 h-4 text-slate-400 shrink-0" aria-hidden="true" />
-          <input
-            ref={headerSearch}
-            type="search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="ค้นหาตี้ ที่เที่ยว หรือจังหวัด"
-            aria-label="ค้นหา"
-            className="flex-1 min-w-0 h-9 bg-transparent text-sm text-slate-900 placeholder:text-slate-400 outline-hidden [&::-webkit-search-cancel-button]:hidden"
-          />
-          {searchQuery && (
-            <button type="button" onClick={() => setSearchQuery('')} aria-label="ล้างคำค้นหา" className="w-8 h-8 shrink-0 rounded-full hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer">
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </form>
       </div>
 
-      {searchResults ? (
-        <div className="pt-8 sm:pt-10">{searchResults}</div>
-      ) : (
-        <div className="pt-6 sm:pt-8 xl:pt-0 grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[260px_minmax(0,1fr)_320px] lg:gap-10">
-          {/* Left (wide screens): what the member is doing */}
-          <aside className="hidden xl:block sticky top-24 self-start space-y-8">
-            <div className="min-w-0">
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight truncate">สวัสดี {name}</h1>
-              {/* Points as plain text, the rewards link on its own: one line each, nothing underlined */}
-              <p className="mt-1 flex items-center gap-2 text-[13px] text-slate-600 whitespace-nowrap">
-                <span className="inline-flex items-center gap-1 font-semibold text-[#7C3AED] tabular-nums">
-                  <Zap className="w-3.5 h-3.5 fill-current" aria-hidden="true" />
-                  {xp.toLocaleString()} XP
-                </span>
-                <span className="text-slate-300" aria-hidden="true">·</span>
-                <span>{badges > 0 ? `${badges} เหรียญ` : 'ยังไม่มีเหรียญ'}</span>
-              </p>
-              <Link href="/rewards" className="mt-0.5 inline-block text-[13px] font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline">
-                {redeemable > 0 ? `แลกของรางวัลได้ ${redeemable} อย่าง` : 'ดูของรางวัล'} →
-              </Link>
-            </div>
-            <NextUp {...props} layout="column" />
-            <Shortcuts {...props} feedView={feedView} onShowFeed={showFeed} />
-          </aside>
+      <div className="pt-6 sm:pt-8 xl:pt-0 grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[260px_minmax(0,1fr)_320px] lg:gap-10">
+        {/* Left (wide screens): what the member is doing */}
+        {/* Scrolls on its own when taller than the screen, like the right column */}
+        <aside className="hidden xl:block sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto no-scrollbar space-y-8 pb-4">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight truncate">สวัสดี {name}</h1>
+            {/* Points as plain text, the rewards link on its own: one line each, nothing underlined */}
+            <p className="mt-1 flex items-center gap-2 text-[13px] text-slate-600 whitespace-nowrap">
+              <span className="inline-flex items-center gap-1 font-semibold text-[#7C3AED] tabular-nums">
+                <Zap className="w-3.5 h-3.5 fill-current" aria-hidden="true" />
+                {xp.toLocaleString()} XP
+              </span>
+              <span className="text-slate-300" aria-hidden="true">·</span>
+              <span>{badges > 0 ? `${badges} เหรียญ` : 'ยังไม่มีเหรียญ'}</span>
+            </p>
+            <Link href="/rewards" className="mt-0.5 inline-block text-[13px] font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline">
+              {redeemable > 0 ? `แลกของรางวัลได้ ${redeemable} อย่าง` : 'ดูของรางวัล'} →
+            </Link>
+          </div>
+          <NextUp {...props} layout="column" />
+          <Shortcuts {...props} feedView={feedView} onShowFeed={showFeed} />
+        </aside>
 
-          <main id="home-feed" className="min-w-0 w-full max-w-[560px] mx-auto scroll-mt-24">
-            <div className="xl:hidden mb-8">
-              <NextUp {...props} layout="row" />
-            </div>
-            <HomeMomentFeed
-              view={feedView}
-              onViewChange={setFeedView}
-              name={name}
-              avatar={avatar}
-              top={<LiveTicker live={live} />}
-              inserts={{
-                1: (
-                  <section className="lg:hidden py-5 border-b border-slate-200">
-                    <MeetupsBlock {...props} layout="tiles" />
-                  </section>
-                ),
-                3: (
-                  <section className="lg:hidden py-5 border-b border-slate-200">
-                    <QuestsBlock {...props} />
-                  </section>
-                ),
-                5: (
-                  <section className="lg:hidden py-5 border-b border-slate-200">
-                    <FairsBlock {...props} layout="tiles" />
-                  </section>
-                ),
-                7: (
-                  <section className="lg:hidden py-5 border-b border-slate-200">
-                    <SpotsBlock {...props} layout="tiles" />
-                  </section>
-                ),
-              }}
-            />
-          </main>
+        <main id="home-feed" className="min-w-0 w-full max-w-[560px] mx-auto scroll-mt-24">
+          <div className="xl:hidden mb-8">
+            <NextUp {...props} layout="row" />
+          </div>
+          <HomeMomentFeed
+            view={feedView}
+            onViewChange={setFeedView}
+            name={name}
+            avatar={avatar}
+            top={<LiveTicker live={live} />}
+            inserts={{
+              1: (
+                <section className="lg:hidden py-5 border-b border-slate-200">
+                  <MeetupsBlock {...props} layout="tiles" />
+                </section>
+              ),
+              3: (
+                <section className="lg:hidden py-5 border-b border-slate-200">
+                  <QuestsBlock {...props} />
+                </section>
+              ),
+              5: (
+                <section className="lg:hidden py-5 border-b border-slate-200">
+                  <FairsBlock {...props} layout="tiles" />
+                </section>
+              ),
+              7: (
+                <section className="lg:hidden py-5 border-b border-slate-200">
+                  <SpotsBlock {...props} layout="tiles" />
+                </section>
+              ),
+            }}
+          />
+        </main>
 
-          {/* Right (laptops and up): where to go next, one short list per kind */}
-          <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto no-scrollbar space-y-8 pb-4">
-            <form role="search" onSubmit={(e) => e.preventDefault()} className="hidden xl:flex flex items-center gap-2 rounded-full bg-slate-50 border border-slate-200 p-1 pl-4">
-              <Search className="w-4 h-4 text-slate-400 shrink-0" aria-hidden="true" />
-              <input
-                ref={railSearch}
-                type="search"
-                value={searchQuery}
-                onChange={(e) => {
-                  typedInRail.current = true;
-                  setSearchQuery(e.target.value);
-                }}
-                placeholder="ค้นหาตี้ ที่เที่ยว หรือจังหวัด"
-                aria-label="ค้นหา"
-                className="flex-1 min-w-0 h-9 bg-transparent text-sm text-slate-900 placeholder:text-slate-400 outline-hidden [&::-webkit-search-cancel-button]:hidden"
-              />
-              {searchQuery && (
-                <button type="button" onClick={() => setSearchQuery('')} aria-label="ล้างคำค้นหา" className="w-8 h-8 shrink-0 rounded-full hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer">
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </form>
-            <MeetupsBlock {...props} layout="rows" />
-            <QuestsBlock {...props} />
-            <FairsBlock {...props} layout="rows" />
-            <SpotsBlock {...props} layout="rows" />
-          </aside>
-        </div>
-      )}
+        {/* Right (laptops and up): where to go next, one short list per kind */}
+        <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto no-scrollbar space-y-8 pb-4">
+          <MeetupsBlock {...props} layout="rows" />
+          <QuestsBlock {...props} />
+          <FairsBlock {...props} layout="rows" />
+          <SpotsBlock {...props} layout="rows" />
+        </aside>
+      </div>
     </div>
   );
 }
