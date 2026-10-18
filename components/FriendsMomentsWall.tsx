@@ -64,7 +64,7 @@ export function FriendsMomentsWall() {
     return (
       <p className="bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200 text-sm font-medium text-slate-600">
         ยังไม่มีโมเมนต์ ไปที่ไหนมาแล้ว{' '}
-        <Link href="/moments" className="font-bold text-[#2563EB] hover:underline">แชร์เป็นคนแรก</Link>
+        <Link href="/?share=new" className="font-bold text-[#2563EB] hover:underline">แชร์เป็นคนแรก</Link>
       </p>
     );
   }
@@ -79,7 +79,7 @@ export function FriendsMomentsWall() {
     <div className="space-y-6 sm:space-y-8">
       {/* Friends: tap one to read their story */}
       <div className="flex gap-3 sm:gap-5 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 pb-1" role="tablist" aria-label="เพื่อนที่แชร์โมเมนต์">
-        <Link href="/moments" className="group flex flex-col items-center gap-1.5 w-16 sm:w-20 shrink-0">
+        <Link href="/?share=new" className="group flex flex-col items-center gap-1.5 w-16 sm:w-20 shrink-0">
           <span className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-dashed border-slate-300 group-hover:border-[#2563EB] flex items-center justify-center text-slate-500 group-hover:text-[#2563EB] transition-colors">
             <Plus className="w-6 h-6" aria-hidden="true" />
           </span>
@@ -113,7 +113,7 @@ export function FriendsMomentsWall() {
       {/* The chosen moment, told openly */}
       <div key={active.id} className="grid lg:grid-cols-[1.2fr_1fr] gap-4 lg:gap-10 items-center animate-fade-in">
         <Link
-          href={`/moments?momentId=${encodeURIComponent(active.id)}`}
+          href={`/moments/${encodeURIComponent(active.id)}`}
           className={`grid gap-2 sm:gap-3 h-52 sm:h-[300px] overflow-hidden ${photos.length > 1 ? 'grid-cols-3 grid-rows-2' : 'grid-cols-1 grid-rows-1'}`}
           aria-label={`ดูโมเมนต์ของ ${shortName(active.userName)}`}
         >
@@ -132,7 +132,7 @@ export function FriendsMomentsWall() {
         </Link>
 
         <div className="min-w-0">
-          <Link href={active.authorId ? `/profile?id=${encodeURIComponent(active.authorId)}` : `/moments?momentId=${encodeURIComponent(active.id)}`} className="inline-flex items-center gap-2.5 group">
+          <Link href={active.authorId ? `/profile?id=${encodeURIComponent(active.authorId)}` : `/moments/${encodeURIComponent(active.id)}`} className="inline-flex items-center gap-2.5 group">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={active.userAvatar} alt="" className="w-10 h-10 rounded-full object-cover" />
             <span>
@@ -178,7 +178,7 @@ export function FriendsMomentsWall() {
                 <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </Link>
             )}
-            <Link href={`/moments?momentId=${encodeURIComponent(active.id)}`} className="text-sm font-semibold text-slate-900 underline decoration-slate-300 underline-offset-4 hover:decoration-slate-900 whitespace-nowrap">
+            <Link href={`/moments/${encodeURIComponent(active.id)}`} className="text-sm font-semibold text-slate-900 underline decoration-slate-300 underline-offset-4 hover:decoration-slate-900 whitespace-nowrap">
               อ่านต่อและคุยกัน
             </Link>
           </div>

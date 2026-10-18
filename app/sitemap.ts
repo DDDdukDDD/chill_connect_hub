@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { isEventEnded } from '@/lib/dateUtils';
 import { absoluteUrl } from '@/lib/site';
 import type { LifestyleSpotItem } from '@/data/spotsData';
+import { listMoments, type FeedItem } from '@/lib/moments/service';
 
 // Built on request so new meetups, fairs and places show up without a deploy; cached for an hour
 export const revalidate = 3600;
@@ -29,7 +30,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     page('/legal', 'monthly', 0.3),
   ];
 
-  const [events, quests, spots] = await Promise.all([db.listAllEvents(), db.findQuests({ status: 'all', limit: 100 }), allPublishedSpots()]);
+  const [events, quests, spots, moments] = await Promise.all([db.listAllEvents(), db.findQuests({ status: 'all', limit: 100 }), allPublishedSpots(), allPublicMoments()]);
 
   const eventPages = events
     .filter((e) => !isEventEnded(e))
@@ -39,7 +40,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .map((q) => page(`/challenges/${encodeURIComponent(q.id)}`, 'weekly', 0.7));
   const spotPages = spots.map((s) => page(`/spots/${encodeURIComponent(s.id)}`, 'monthly', 0.6));
 
-  return [...staticPages, ...eventPages, ...questPages, ...spotPages];
+  // Members' moments: published only (hidden, removed and banned authors' posts drop out)
+  const momentPages = moments.map((m) => ({ ...page(`/moments/${encodeURIComponent(m.id)}`, 'weekly', 0.5), lastModified: new Date(m.createdAt) }));
+
+  return [...staticPages, ...eventPages, ...questPages, ...spotPages, ...momentPages];
+}
+
+async function allPublicMoments(): Promise<FeedItem[]> {
+  const moments: FeedItem[] = [];
+  for (let p = 1; ; p++) {
+    const res = await listMoments(null, { page: p, limit: 30 });
+    moments.push(...res.moments);
+    if (!res.pagination.hasNextPage) return moments;
+  }
 }
 
 async function allPublishedSpots(): Promise<LifestyleSpotItem[]> {

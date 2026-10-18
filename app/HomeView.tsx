@@ -69,7 +69,7 @@ const CATEGORY_SHORT: Record<string, string> = {
 
 // White label pinned to a hero collage photo; the numbers tell the loop in order
 const HERO_LABEL = 'absolute z-10 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-white pl-1.5 pr-3 py-1 text-xs lg:text-sm font-semibold text-slate-900 shadow-md';
-const HERO_STEPS = ['หากิจกรรมที่ใช่', 'ไปกับเพื่อนใหม่', 'แบ่งปันเรื่องราว'];
+const HERO_STEPS = ['หากิจกรรมที่ใช่', 'ออกไปใช้ชีวิต', 'แบ่งปันเรื่องราว'];
 
 
 // Small round photos standing in for the people, beside the live line and in the sign-up band

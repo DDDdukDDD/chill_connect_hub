@@ -9,6 +9,7 @@ import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { MySubmissions } from '@/components/MySubmissions';
 import { MyMonthSection } from '@/components/myhub/MyMonthSection';
+import { MomentComposer, CountedQuestNotice, type CountedQuest, type MomentComposerInitial } from '@/components/moments/MomentComposer';
 import { StampPassport, buildPassport } from '@/components/home/StampPassport';
 import { ChallengeList } from '@/components/ChallengeList';
 import { useAuth } from '@/lib/useAuth';
@@ -166,6 +167,9 @@ function MyHubContent() {
     else if (myRewards.isLoaded && questCatalog) setMyChallenges(syncMyChallenges(myRewards.joinedQuestIds, questCatalog));
   }, [isLoggedIn, myRewards.isLoaded, myRewards.joinedQuestIds, questCatalog]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  // "แชร์โมเมนต์" on an attended event opens the share form here, tied to that event
+  const [shareInitial, setShareInitial] = useState<MomentComposerInitial | null>(null);
+  const [countedQuest, setCountedQuest] = useState<CountedQuest | null>(null);
 
   // Travel Scrapbook state & quick filters
   const [savedSpotIds, setSavedSpotIds] = useState<string[]>([]);
@@ -1710,13 +1714,20 @@ function MyHubContent() {
                             The only solid button on the page is in "ถัดไปของคุณ", so this list stays quiet */}
                         <div className={`flex items-center justify-end gap-1.5 sm:pl-0 sm:w-auto sm:shrink-0 ml-auto ${hasRowAction ? 'w-full pl-[52px]' : ''}`}>
                           {isQuest || isCancelled || isMissed ? null : isAttended ? (
-                            <Link
-                              href={`/moments?createForEvent=${encodeURIComponent(ev.id)}&eventTitle=${encodeURIComponent(ev.title)}&location=${encodeURIComponent(ev.location)}&image=${encodeURIComponent(ev.image || '')}`}
-                              className={rowBtn}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setShareInitial({
+                                  target: { type: ev.eventType === 'public_venue' ? 'fair' : 'community', id: ev.id, title: ev.title, location: ev.location },
+                                  location: ev.location,
+                                  caption: ev.eventType === 'public_venue' ? `ไปมาแล้ว "${ev.title}"\n` : `แชร์ความประทับใจจากกิจกรรม "${ev.title}"\n`,
+                                })
+                              }
+                              className={`${rowBtn} cursor-pointer`}
                             >
                               <Camera className="w-3.5 h-3.5" aria-hidden="true" />
                               แชร์โมเมนต์
-                            </Link>
+                            </button>
                           ) : isHost ? (
                             <Link href={`/community/${encodeURIComponent(ev.id)}`} className={rowBtn}>
                               <Crown className="w-3.5 h-3.5 text-amber-500" aria-hidden="true" />
@@ -1971,6 +1982,20 @@ function MyHubContent() {
             }
           }}
         />
+
+        {shareInitial && (
+          <MomentComposer
+            initial={shareInitial}
+            onClose={() => setShareInitial(null)}
+            onToast={showToast}
+            onPosted={(_moment, counted) => {
+              setShareInitial(null);
+              if (counted) setCountedQuest(counted);
+              else showToast('แชร์โมเมนต์แล้ว');
+            }}
+          />
+        )}
+        {countedQuest && <CountedQuestNotice counted={countedQuest} onClose={() => setCountedQuest(null)} />}
 
         {/* Toast Notification */}
         {toastMessage && (

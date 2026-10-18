@@ -2,26 +2,22 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowUp, Bookmark, Camera, ChevronLeft, ChevronRight, Flag, Heart, Link2, MapPin, MessageCircle, MoreHorizontal, Pencil, Plus, Send, Tent, Trash2, Users, X } from 'lucide-react';
+import { ArrowUp, Bookmark, Camera, ChevronLeft, ChevronRight, Flag, Heart, Link2, MessageCircle, MoreHorizontal, Pencil, Plus, Send, Trash2, X } from 'lucide-react';
 import { StoriesRail } from '@/components/moments/StoriesRail';
 import type { FeedItem } from '@/lib/moments/service';
 import { nameInitial } from '@/lib/displayName';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { MomentPhotos } from '@/components/moments/MomentPhotos';
-import { MomentComposer, CountedQuestNotice, type CountedQuest } from '@/components/moments/MomentComposer';
+import { MomentComposer, CountedQuestNotice, type CountedQuest, type MomentComposerInitial } from '@/components/moments/MomentComposer';
 import { liveHref } from '@/components/home/LiveActivity';
+import { MOMENT_TARGETS } from '@/components/moments/momentTargets';
 
 const PAGE_SIZE = 8;
 const NEW_CHECK_MS = 60_000;
-const REPORT_REASONS = ['ชวนลงทุน ขายของ หรือขายประกัน', 'หลอกลวงหรือขอข้อมูลส่วนตัว', 'เนื้อหาไม่เหมาะสม', 'คุกคามหรือพูดจาไม่ดี', 'อื่นๆ'];
+export const REPORT_REASONS = ['ชวนลงทุน ขายของ หรือขายประกัน', 'หลอกลวงหรือขอข้อมูลส่วนตัว', 'เนื้อหาไม่เหมาะสม', 'คุกคามหรือพูดจาไม่ดี', 'อื่นๆ'];
 
 // Where the moment came from, in its pillar's colors, and what the reader can do there
-const TARGETS = {
-  spot: { label: 'สถานที่', go: 'ไปที่นี่บ้าง', Icon: MapPin, box: 'bg-[#EBF3ED] text-[#2D5A3C]', icon: 'text-[#4A7C59]' },
-  fair: { label: 'งานแฟร์', go: 'ดูงานนี้', Icon: Tent, box: 'bg-[#EEF4FA] text-[#1F3D5C]', icon: 'text-[#2B527A]' },
-  community: { label: 'ตี้', go: 'ดูตี้นี้', Icon: Users, box: 'bg-[#FFF4EE] text-[#D04A1B]', icon: 'text-[#F26430]' },
-  challenge: { label: 'ชาเลนจ์', go: 'ทำชาเลนจ์นี้', Icon: Flag, box: 'bg-[#F5F3FF] text-[#6D28D9]', icon: 'text-[#7C3AED]' },
-} as const;
+const TARGETS = MOMENT_TARGETS;
 
 /** The three tabs, plus two personal views opened from the shortcuts or the ⋯ next to the tabs */
 export type FeedView = 'all' | 'following' | 'popular' | 'saved' | 'mine';
@@ -40,7 +36,7 @@ const EMPTY: Record<FeedView, string> = {
 };
 type Action = 'like' | 'unlike' | 'save' | 'unsave';
 
-async function call(url: string, method: string, body?: unknown): Promise<{ ok: boolean; message: string; moment?: FeedItem; autoHidden?: boolean }> {
+export async function call(url: string, method: string, body?: unknown): Promise<{ ok: boolean; message: string; moment?: FeedItem; autoHidden?: boolean }> {
   try {
     const res = await fetch(url, { method, headers: body ? { 'Content-Type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined });
     const json = await res.json().catch(() => null);
@@ -262,7 +258,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
 }
 
 /** Full-screen photos: arrows, swipe and Esc */
-function PhotoViewer({ images, start, onClose }: { images: string[]; start: number; onClose: () => void }) {
+export function PhotoViewer({ images, start, onClose }: { images: string[]; start: number; onClose: () => void }) {
   const [index, setIndex] = useState(start);
   const touchX = useRef<number | null>(null);
   const step = useCallback((by: number) => setIndex((i) => (i + by + images.length) % images.length), [images.length]);
@@ -343,8 +339,8 @@ export interface HomeMomentFeedProps {
 
 /**
  * The middle of the member home: every moment, newest or most liked, loading more as the member scrolls.
- * Posting, comments, likes, saves, editing, deleting and reporting all happen here; /moments keeps
- * stories, the following and saved tabs and search.
+ * Posting, comments, likes, saves, editing, deleting and reporting all happen here; /moments is the
+ * photo showcase for browsing (no posting there).
  */
 export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: setSort, inserts = {} }: HomeMomentFeedProps) {
   const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
@@ -356,6 +352,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [newCount, setNewCount] = useState(0);
   const [isComposerOpen, setIsComposerOpen] = useState(false);
+  const [composerInitial, setComposerInitial] = useState<MomentComposerInitial | null>(null);
   // The "+ สตอรี่" button beside the composer opens the story form inside the rail
   const [storySignal, setStorySignal] = useState(0);
   const [counted, setCounted] = useState<CountedQuest | null>(null);
@@ -367,6 +364,25 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
   const [isBusy, setIsBusy] = useState(false);
   const topRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // Old share links (/moments?createForEvent=…) forward here as /?share=<type>:<id>&title=&location=; the form opens tied to that event
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const share = params.get('share');
+    if (!share) return;
+    const [type, ...rest] = share.split(':');
+    const id = rest.join(':');
+    const title = params.get('title') ?? '';
+    const location = params.get('location') ?? '';
+    const targetType = type === 'spot' || type === 'fair' ? type : 'community';
+    setComposerInitial({
+      target: id && title ? { type: targetType, id, title, location } : undefined,
+      location,
+      caption: title ? (targetType === 'community' ? `แชร์ความประทับใจจากกิจกรรม "${title}"\n` : `ไปมาแล้ว "${title}"\n`) : undefined,
+    });
+    setIsComposerOpen(true);
+    window.history.replaceState(null, '', window.location.pathname);
+  }, []);
 
   const showToast = useCallback((message: string) => {
     setToast(message);
@@ -476,7 +492,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       if (choice === 'delete') setConfirmDelete(moment);
       if (choice === 'report') setReporting({ moment, reason: '' });
       if (choice === 'copy') {
-        const url = `${window.location.origin}/moments?momentId=${encodeURIComponent(moment.id)}`;
+        const url = `${window.location.origin}/moments/${encodeURIComponent(moment.id)}`;
         if (!navigator.clipboard) return showToast(url);
         navigator.clipboard.writeText(url).then(
           () => showToast('คัดลอกลิงก์โมเมนต์แล้ว'),
@@ -673,11 +689,16 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
 
       {isComposerOpen && (
         <MomentComposer
-          onClose={() => setIsComposerOpen(false)}
+          initial={composerInitial}
+          onClose={() => {
+            setIsComposerOpen(false);
+            setComposerInitial(null);
+          }}
           onToast={showToast}
           onPosted={(moment, countedQuest) => {
             setMoments((list) => [moment as unknown as FeedItem, ...list.filter((m) => m.id !== moment.id)]);
             setIsComposerOpen(false);
+            setComposerInitial(null);
             if (countedQuest) setCounted(countedQuest);
             else showToast('แชร์โมเมนต์แล้ว');
             topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });

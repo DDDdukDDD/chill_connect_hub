@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Camera, Check, Loader2, Star, Trophy } from 'lucide-react';
+import { MomentComposer, CountedQuestNotice, type CountedQuest } from '@/components/moments/MomentComposer';
 
 type TargetType = 'spot' | 'community' | 'fair';
 
@@ -59,6 +60,11 @@ export const VisitPanel: React.FC<VisitPanelProps> = ({ targetType, targetId, ti
   const [myRating, setMyRating] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [myPart, setMyPart] = useState<MyPart | null>(null);
+  // The share form opens right here, already tied to this place or event
+  const [isComposerOpen, setIsComposerOpen] = useState(false);
+  const [counted, setCounted] = useState<CountedQuest | null>(null);
+  // Bumped after a post so the photos and the member's progress are read again
+  const [reloadCount, setReloadCount] = useState(0);
   const key = `${targetType}:${targetId}`;
   const canMark = targetType !== 'community';
   const [openedAt] = useState(() => Date.now());
@@ -76,7 +82,7 @@ export const VisitPanel: React.FC<VisitPanelProps> = ({ targetType, targetId, ti
     return () => {
       isActive = false;
     };
-  }, [key]);
+  }, [key, reloadCount]);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -104,7 +110,7 @@ export const VisitPanel: React.FC<VisitPanelProps> = ({ targetType, targetId, ti
       isActive = false;
     };
     // Pressing "been here" changes what counts, so the member's part is read again
-  }, [isLoggedIn, targetType, targetId, isMarked]);
+  }, [isLoggedIn, targetType, targetId, isMarked, reloadCount]);
 
   const send = useCallback(
     async (action: 'mark' | 'unmark', rating?: number) => {
@@ -141,9 +147,6 @@ export const VisitPanel: React.FC<VisitPanelProps> = ({ targetType, targetId, ti
 
   if (!proof) return null;
 
-  const composeHref = `/moments?createForEvent=${encodeURIComponent(targetId)}&createForType=${targetType}&eventTitle=${encodeURIComponent(title)}${
-    location ? `&location=${encodeURIComponent(location)}` : ''
-  }`;
   // Fair pages never show a head count (DESIGN_SYSTEM.md, Pillars); photos and faces still show
   const showCount = targetType !== 'fair' && proof.beenCount > 0;
   const hasProof = proof.beenCount > 0 || proof.photos.length > 0;
@@ -192,7 +195,7 @@ export const VisitPanel: React.FC<VisitPanelProps> = ({ targetType, targetId, ti
                 {proof.photos.map((photo) => (
                   <Link
                     key={photo.momentId}
-                    href={`/moments?momentId=${encodeURIComponent(photo.momentId)}`}
+                    href={`/moments/${encodeURIComponent(photo.momentId)}`}
                     className="block w-[calc((100%-16px)/3)] max-w-28 aspect-square rounded-2xl overflow-hidden bg-slate-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element -- member photos come from uploads */}
@@ -245,19 +248,14 @@ export const VisitPanel: React.FC<VisitPanelProps> = ({ targetType, targetId, ti
 
       {/* Actions: share a moment first; "been here" is the quiet second step */}
       <div className={wide ? 'grid gap-2.5 sm:grid-cols-2 sm:items-start' : 'space-y-2.5'}>
-        <Link
-          href={composeHref}
-          onClick={(e) => {
-            if (!isLoggedIn) {
-              e.preventDefault();
-              onRequireLogin();
-            }
-          }}
-          className="w-full h-11 inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold whitespace-nowrap transition-colors duration-200 active:scale-[0.98] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#2563EB]"
+        <button
+          type="button"
+          onClick={() => (isLoggedIn ? setIsComposerOpen(true) : onRequireLogin())}
+          className="cursor-pointer w-full h-11 inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold whitespace-nowrap transition-colors duration-200 active:scale-[0.98] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#2563EB]"
         >
           <Camera className="w-4 h-4" aria-hidden="true" />
           ร่วมแชร์โมเมนต์
-        </Link>
+        </button>
         {canMark && markUnavailableNote && !isMarked && (
           <p className="min-h-11 flex items-center justify-center rounded-full bg-slate-50 px-4 text-xs font-medium text-slate-600 text-center">{markUnavailableNote}</p>
         )}
@@ -310,6 +308,25 @@ export const VisitPanel: React.FC<VisitPanelProps> = ({ targetType, targetId, ti
             </button>
           ))}
       </div>
+
+      {isComposerOpen && (
+        <MomentComposer
+          initial={{
+            target: { type: targetType, id: targetId, title, location: location ?? '' },
+            location,
+            caption: targetType === 'community' ? `แชร์ความประทับใจจากกิจกรรม "${title}"\n` : `ไปมาแล้ว "${title}"\n`,
+          }}
+          onClose={() => setIsComposerOpen(false)}
+          onToast={onShowToast}
+          onPosted={(_moment, countedQuest) => {
+            setIsComposerOpen(false);
+            setReloadCount((n) => n + 1);
+            if (countedQuest) setCounted(countedQuest);
+            else onShowToast('แชร์โมเมนต์แล้ว');
+          }}
+        />
+      )}
+      {counted && <CountedQuestNotice counted={counted} onClose={() => setCounted(null)} />}
     </div>
   );
 };

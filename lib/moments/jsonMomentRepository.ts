@@ -15,6 +15,14 @@ const FILE = IS_SERVERLESS ? path.join(os.tmpdir(), 'moments.json') : path.join(
 const globalForMoments = globalThis as unknown as { _cchMoments?: Moment[]; _cchMomentsMutex?: AsyncMutex };
 const mutex = (globalForMoments._cchMomentsMutex ??= new AsyncMutex());
 
+/** Width / height of each sample's first photo (measured from the files in public/), so the /moments grid shows their real shapes */
+const SAMPLE_IMAGE_RATIOS: Record<string, number> = {
+  'post-spot-1': 1.792, 'post-general-1': 1.46, 'post-fair-1': 1.501, 'post-4': 1.501, 'post-challenge-1': 1.501, 'post-1': 1, 'post-2': 1,
+  'post-3': 1, 'post-5': 1.501, 'post-6': 1.501, 'post-7': 0.667, 'post-8': 1, 'post-9': 0.667, 'post-10': 0.667, 'post-11': 1.333,
+  'post-12': 1.501, 'post-13': 1.384, 'post-14': 1.547, 'post-15': 1.498, 'post-16': 1.581, 'post-17': 1.504, 'post-18': 1.501,
+  'post-19': 1, 'post-20': 1.333,
+};
+
 function seedSamples(): Moment[] {
   const now = Date.now();
   return MOCK_POSTS.map((post, index) => {
@@ -28,6 +36,7 @@ function seedSamples(): Moment[] {
       authorBadge: post.userBadge,
       caption: post.caption,
       images: post.images,
+      imageRatio: SAMPLE_IMAGE_RATIOS[post.id],
       location: post.location,
       category: post.category,
       targetType: post.targetType ?? 'general',
@@ -53,17 +62,28 @@ function seedSamples(): Moment[] {
 }
 
 /**
- * Stored samples follow the bundled ones in what they are tied to (place or event, and the location text),
- * so a store seeded earlier picks up new links. Everything else on a stored sample is left alone.
+ * Stored samples follow the bundled ones in what they are tied to (place or event, and the location text)
+ * and in their photo shape, so a store seeded earlier picks up new links. Sample comments added to the bundle later are
+ * added too (members' own comments stay). Everything else on a stored sample is left alone.
  */
 function syncSampleTargets(moments: Moment[]): { moments: Moment[]; changed: boolean } {
   const seedById = new Map(seedSamples().map((seed) => [seed.id, seed]));
   let changed = false;
   const synced = moments.map((moment) => {
     const seed = moment.isSample ? seedById.get(moment.id) : undefined;
-    if (!seed || (moment.targetType === seed.targetType && moment.targetId === seed.targetId && moment.targetTitle === seed.targetTitle && moment.location === seed.location)) return moment;
+    if (!seed) return moment;
+    const known = new Set(moment.comments.map((comment) => comment.id));
+    const newSampleComments = seed.comments
+      .map((comment, index) => ({ ...comment, createdAt: new Date(new Date(moment.createdAt).getTime() + (index + 1) * 20 * 60 * 1000).toISOString() }))
+      .filter((comment) => !known.has(comment.id));
+    if (
+      newSampleComments.length === 0 &&
+      moment.targetType === seed.targetType && moment.targetId === seed.targetId && moment.targetTitle === seed.targetTitle && moment.location === seed.location && moment.imageRatio === seed.imageRatio
+    )
+      return moment;
     changed = true;
-    return { ...moment, targetType: seed.targetType, targetId: seed.targetId, targetTitle: seed.targetTitle, location: seed.location };
+    const comments = [...moment.comments, ...newSampleComments].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    return { ...moment, targetType: seed.targetType, targetId: seed.targetId, targetTitle: seed.targetTitle, location: seed.location, imageRatio: seed.imageRatio, comments };
   });
   return { moments: synced, changed };
 }

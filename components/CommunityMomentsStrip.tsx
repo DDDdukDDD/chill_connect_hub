@@ -173,7 +173,7 @@ export const CommunityMomentsStrip: React.FC<CommunityMomentsStripProps> = ({
               className="w-[calc((100%-12px)/2)] sm:w-[calc((100%-2*14px)/3)] md:w-[calc((100%-3*14px)/4)] lg:w-[calc((100%-4*14px)/5)] shrink-0 snap-start"
             >
               <Link
-                href="/moments"
+                href={`/moments/${encodeURIComponent(post.id)}`}
                 className="group relative block aspect-[4/5] rounded-2xl overflow-hidden bg-slate-900 shadow-2xs hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer w-full select-none"
               >
                 {/* Full-bleed Photo */}
