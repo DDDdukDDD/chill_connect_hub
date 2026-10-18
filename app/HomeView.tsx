@@ -17,7 +17,7 @@ import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { MOCK_EVENTS, EventItem, ChallengeQuest } from '@/data/mockData';
 import { MOCK_SPOTS, LifestyleSpotItem } from '@/data/spotsData';
-import { isEventEnded, parseEventDateToTimestamp } from '@/lib/dateUtils';
+import { isEventEnded, nearDayLabel, parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { useAuth } from '@/lib/useAuth';
 import { fetchAllContentPages } from '@/lib/contentClient';
 import { useMyRewards } from '@/lib/useMyRewards';
@@ -98,9 +98,17 @@ const fairKind = (e: EventItem): (typeof FAIR_ROW_KINDS)[number] => {
 };
 
 // "12 ต.ค. – 18 ต.ค." for a fair, years left out
-const fairDates = (e: EventItem) => {
+// "23 ต.ค. – 25 ต.ค."; with `near` (member home, rendered in the browser only, so server and phone clocks never disagree)
+// close days are words: "วันนี้", "พรุ่งนี้ – 25 ต.ค.", "วันนี้วันสุดท้าย"
+const fairDates = (e: EventItem, near = false) => {
   const short = (d: string) => d.replace(/\s*\d{4}$/, '');
-  return e.endDate && e.endDate !== e.date ? `${short(e.date)} – ${short(e.endDate)}` : short(e.date);
+  const isRange = !!e.endDate && e.endDate !== e.date;
+  if (!near) return isRange ? `${short(e.date)} – ${short(e.endDate!)}` : short(e.date);
+  if (!isRange) return nearDayLabel(e.date) ?? short(e.date);
+  if (nearDayLabel(e.endDate!) === 'วันนี้') return 'วันนี้วันสุดท้าย';
+  // A fair already running reads "วันนี้ – 25 ต.ค."
+  const isOn = parseEventDateToTimestamp(e.date) <= Date.now();
+  return `${isOn ? 'วันนี้' : nearDayLabel(e.date) ?? short(e.date)} – ${short(e.endDate!)}`;
 };
 
 // Each kind, soonest first; ended events never show on the homepage
@@ -315,18 +323,6 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
     [questList, myRewards.joinedQuestIds]
   );
 
-  // Member home: the stamp passport. Each finished challenge is a stamp; joined ones show the steps still to go
-  const passport = useMemo(() => {
-    const image = (id: string) => {
-      const quest = questList.find((q) => q.id === id);
-      return quest?.badgeCoverImg || quest?.image;
-    };
-    const earned = myRewards.finished.map((f) => ({ questId: f.questId, label: f.badgeLabel || f.title, image: image(f.questId) }));
-    const pending = myRewards.quests
-      .filter((p) => p.joined && !p.completed)
-      .map((p) => ({ questId: p.questId, label: p.title, image: image(p.questId), left: Math.max(1, p.total - p.current) }));
-    return { earned, pending, more: othersQuests.length };
-  }, [myRewards.finished, myRewards.quests, questList, othersQuests.length]);
   // Landing page: open meetups (seats left), counted per category card, and the row the cards filter
   const openMeetups = useMemo(() => communityEvents.filter((e) => e.participantsCount < e.maxParticipants), [communityEvents]);
   const categoryCards = useMemo(
@@ -420,7 +416,6 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
             hostedIds={activity.hosted.map((e) => e.id)}
             savedIds={activity.savedEventIds}
             month={monthCounts}
-            challengesDoing={myRewards.quests.filter((p) => p.joined && !p.completed).length}
             savedCount={favorites.length + favoriteSpots.length}
             likedCategories={likedCategories}
             isLoaded={activity.isLoaded && myRewards.isLoaded && isQuestsLoaded}
@@ -429,10 +424,10 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
             isEventsLoaded={isEventsLoaded}
             quests={othersQuests}
             fairs={fairRow}
-            fairWhen={fairDates}
+            fairWhen={(fair) => fairDates(fair, true)}
             spots={featuredSpots}
             isSpotsLoaded={isSpotsLoaded}
-            passport={passport}
+            stampCount={myRewards.finished.length}
           />
         ) : (
           /* 1. Hero: the collage tells the loop in three numbered steps, the words say what the site is, one orange button */
@@ -499,8 +494,8 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
                   meetupCategory !== 'all' && landingMatches.length > landingMeetups.length ? `ดูทั้งหมด ${landingMatches.length} ตี้` : undefined
                 )}
 
-                {/* The category cards filter the row right below; a phone scrolls them sideways */}
-                <div role="group" aria-label="เลือกสาย" className="flex gap-2.5 overflow-x-auto no-scrollbar -mx-4 px-4 pt-3 pb-2 md:grid md:grid-cols-5 lg:grid-cols-9 md:gap-3 md:mx-0 md:px-0 md:overflow-visible">
+                {/* The category cards filter the row right below; one row that slides (phones swipe, iPad and up get arrows) */}
+                <ScrollRow label="เลือกสาย" className="flex gap-2.5 md:gap-3 overflow-x-auto no-scrollbar snap-x -mx-4 px-4 scroll-px-4 pt-3 pb-2 md:mx-0 md:px-1 md:scroll-px-1">
                   {categoryCards.map(({ id, name, Icon, iconBg, iconColor, borderBottom, sticker, count }, i) => {
                     const isPicked = meetupCategory === id;
                     const isDimmed = meetupCategory !== 'all' && !isPicked;
@@ -511,7 +506,8 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
                         aria-pressed={isPicked}
                         onClick={() => setMeetupCategory(id)}
                         aria-label={count > 0 ? `${name} ${count} ตี้เปิดรับ` : name}
-                        className={`group relative w-24 shrink-0 md:w-auto flex flex-col items-center gap-2 rounded-2xl border-2 border-b-4 ${borderBottom} px-1 py-3 sm:py-4 cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg active:translate-y-0 ${isPicked ? 'bg-slate-50 border-x-slate-200 border-t-slate-200 -translate-y-1 shadow-lg' : 'bg-white border-x-slate-100 border-t-slate-100'} ${isDimmed ? 'opacity-60 hover:opacity-100' : ''}`}
+                        data-row-photo={i === 0 ? '' : undefined}
+                        className={`group relative w-24 shrink-0 md:w-32 lg:w-36 snap-start flex flex-col items-center gap-2 rounded-2xl border-2 border-b-4 ${borderBottom} px-1 py-3 sm:py-4 cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg active:translate-y-0 ${isPicked ? 'bg-slate-50 border-x-slate-200 border-t-slate-200 -translate-y-1 shadow-lg' : 'bg-white border-x-slate-100 border-t-slate-100'} ${isDimmed ? 'opacity-60 hover:opacity-100' : ''}`}
                       >
                         {/* The count sits on the corner like a sticker, so the card keeps its size */}
                         {count > 0 && (
@@ -534,7 +530,7 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
                       </button>
                     );
                   })}
-                </div>
+                </ScrollRow>
 
                 {isEventsLoaded && landingMeetups.length === 0 && (
                   <p className="text-sm text-slate-500">ยังไม่มีตี้แบบนี้ เปิดตี้แรกเองเลยไหม?</p>

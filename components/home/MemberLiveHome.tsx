@@ -2,15 +2,15 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Bookmark, CalendarDays, Camera, Flag, Gift, Zap } from 'lucide-react';
+import { Bookmark, CalendarDays, Gift, Stamp, Zap } from 'lucide-react';
 import type { ChallengeQuest, EventItem } from '@/data/mockData';
-import { parseEventDateToTimestamp } from '@/lib/dateUtils';
+import { nearDayLabel, parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { nameInitial } from '@/lib/displayName';
 import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
 import { HomeMomentFeed, type FeedView } from '@/components/home/HomeMomentFeed';
 import { LiveTicker, useLiveActivity } from '@/components/home/LiveActivity';
 import type { LifestyleSpotItem } from '@/data/spotsData';
-import { StampPassport, type PassportPending, type PassportStamp } from '@/components/home/StampPassport';
+import { PASSPORT_HREF } from '@/components/home/StampPassport';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const WEEKDAYS = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
@@ -28,8 +28,9 @@ function startsAt(event: EventItem) {
   return match ? day + (Number(match[1]) * 60 + Number(match[2])) * 60_000 : day;
 }
 
-// "ส. 17 ต.ค. · 06:30"
-const dayLine = (event: EventItem) => `${WEEKDAYS[new Date(parseEventDateToTimestamp(event.date)).getDay()]} ${event.date.replace(/\s*\d{4}$/, '')} · ${startTime(event)}`;
+// "ส. 17 ต.ค. · 06:30", or "วันนี้ · 06:30" / "พรุ่งนี้ · 06:30" when it is that close
+const dayLine = (event: EventItem) =>
+  `${nearDayLabel(event.date) ?? `${WEEKDAYS[new Date(parseEventDateToTimestamp(event.date)).getDay()]} ${event.date.replace(/\s*\d{4}$/, '')}`} · ${startTime(event)}`;
 
 /** "อีก 15 ชม. 42 นาที" inside a day, then "อีก 2 วัน 6 ชม." */
 function awayLabel(event: EventItem, now: number) {
@@ -98,8 +99,6 @@ export interface MemberLiveHomeProps {
   savedIds: string[];
   /** This month's count behind "Chill · Connect"; null until it loads */
   month: { chill: number; connect: number } | null;
-  /** Challenges the member has joined and not finished */
-  challengesDoing: number;
   savedCount: number;
   likedCategories: string[];
   isLoaded: boolean;
@@ -115,8 +114,8 @@ export interface MemberLiveHomeProps {
   /** Places worth a visit, one per vibe in turn */
   spots: LifestyleSpotItem[];
   isSpotsLoaded: boolean;
-  /** Badges as stamps: finished challenges, the ones under way, and how many other challenges are running */
-  passport: { earned: PassportStamp[]; pending: PassportPending[]; more: number };
+  /** Finished challenges: the stamps in the passport, which lives in My Hub */
+  stampCount: number;
 }
 
 /**
@@ -131,24 +130,18 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
   const { name, plans, isLoaded } = props;
   const live = useLiveActivity();
   const [feedView, setFeedView] = useState<FeedView>('all');
-  // A shortcut on the left switches the feed and brings it into view
-  const showFeed = (view: FeedView) => {
-    setFeedView(view);
-    document.getElementById('home-feed')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
   const hasPlans = plans.length > 0;
   const showPicks = isLoaded && !hasPlans;
 
   return (
     <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 pt-5 sm:pt-7">
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[260px_minmax(0,1fr)_320px] lg:gap-10">
-        {/* Left (wide screens): me, my next plans, my stamps */}
+        {/* Left (wide screens): me, my next plans, shortcuts (the stamp passport opens in My Hub) */}
         {/* Scrolls on its own when taller than the screen, like the right column */}
         <aside className="hidden xl:block sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto no-scrollbar space-y-8 pb-4">
           <Greeting {...props} layout="column" />
           <NextUp {...props} />
-          <StampPassport {...props.passport} />
-          <Shortcuts {...props} feedView={feedView} onShowFeed={showFeed} />
+          <Shortcuts {...props} />
         </aside>
 
         <main id="home-feed" className="min-w-0 w-full max-w-[560px] mx-auto scroll-mt-24">
@@ -213,16 +206,16 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
 
 /**
  * "สวัสดี Duke" with this month's Chill (places) and Connect (meetups), which open the month in My Hub.
- * Before anything counts the numbers sit in grey and one line says how the first one comes.
+ * The words keep their brand colours even at 0; before anything counts, one line says how the first one comes.
  */
 function Greeting({ name, now, xp, redeemable, month, plans, layout }: MemberLiveHomeProps & { layout: 'row' | 'column' }) {
   const isNew = month !== null && month.chill + month.connect === 0;
   const counter = month && (
-    <Link href={MY_MONTH_HREF} className={`font-bold whitespace-nowrap hover:opacity-80 ${layout === 'row' ? 'text-sm' : 'text-xl'} ${isNew ? 'text-slate-400' : 'text-slate-900'}`} aria-label={`เดือนนี้ ไปที่เที่ยว ${month.chill} แห่ง ไปตี้ ${month.connect} ครั้ง ดูในมายฮับ`}>
+    <Link href={MY_MONTH_HREF} className={`font-bold whitespace-nowrap text-slate-900 hover:opacity-80 ${layout === 'row' ? 'text-sm' : 'text-xl'}`} aria-label={`เดือนนี้ ไปที่เที่ยว ${month.chill} แห่ง ไปตี้ ${month.connect} ครั้ง ดูในมายฮับ`}>
       {/* The two words are the brand's: Latin, heavier than the Thai around them */}
-      <span className={`font-extrabold ${isNew ? '' : 'text-[#2D5A3C]'}`}>Chill</span> <span className="tabular-nums">{month.chill}</span>
+      <span className="font-extrabold text-[#2D5A3C]">Chill</span> <span className="tabular-nums">{month.chill}</span>
       <span className="mx-1.5 font-normal text-slate-300" aria-hidden="true">·</span>
-      <span className={`font-extrabold ${isNew ? '' : 'text-[#D04A1B]'}`}>Connect</span> <span className="tabular-nums">{month.connect}</span>
+      <span className="font-extrabold text-[#D04A1B]">Connect</span> <span className="tabular-nums">{month.connect}</span>
       {layout === 'row' && <span className="ml-1 font-normal text-slate-400" aria-hidden="true">›</span>}
     </Link>
   );
@@ -443,44 +436,32 @@ function FirstPicks({ meetups, likedCategories, xp }: MemberLiveHomeProps) {
   );
 }
 
-function Shortcuts({ challengesDoing, savedCount, redeemable, feedView, onShowFeed }: MemberLiveHomeProps & { feedView: FeedView; onShowFeed: (view: FeedView) => void }) {
-  // Pages elsewhere, and two views of the feed in the middle
-  const items: { label: string; Icon: typeof Flag; box: string; count?: number; href?: string; view?: FeedView }[] = [
+/**
+ * "ของฉัน": the four places a member goes back to, all outside this page. Own and saved moments are not here;
+ * they are views of the feed, in its ··· menu.
+ */
+function Shortcuts({ savedCount, redeemable, stampCount }: MemberLiveHomeProps) {
+  const items: { href: string; label: string; Icon: typeof Gift; box: string; count?: number }[] = [
     { href: '/myhub', label: 'ตารางของฉัน', Icon: CalendarDays, box: 'bg-slate-100 text-slate-700' },
-    { href: '/myhub', label: 'ชาเลนจ์ที่ทำอยู่', Icon: Flag, box: 'bg-[#F5F3FF] text-[#7C3AED]', count: challengesDoing },
+    { href: PASSPORT_HREF, label: 'พาสปอร์ตของฉัน', Icon: Stamp, box: 'bg-[#F5F3FF] text-[#7C3AED]', count: stampCount },
     { href: '/myhub', label: 'ตี้และที่เที่ยวที่บันทึก', Icon: Bookmark, box: 'bg-slate-100 text-slate-700', count: savedCount },
-    { view: 'mine', label: 'โมเมนต์ของฉัน', Icon: Camera, box: 'bg-[#FFF1F2] text-[#F43F5E]' },
-    { view: 'saved', label: 'โมเมนต์ที่บันทึก', Icon: Bookmark, box: 'bg-[#FFF1F2] text-[#F43F5E]' },
-    { href: '/rewards', label: 'ของรางวัล', Icon: Gift, box: 'bg-amber-50 text-amber-600', count: redeemable || undefined },
+    { href: '/rewards', label: 'ของรางวัล', Icon: Gift, box: 'bg-amber-50 text-amber-600', count: redeemable },
   ];
-  const row = 'w-full flex items-center gap-3 rounded-xl px-2 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-50 cursor-pointer';
   return (
-    <nav aria-label="ทางลัด">
-      <ul className="space-y-0.5">
-        {items.map(({ href, view, label, Icon, box, count }) => {
-          const inner = (
-            <>
-              <span className={`w-8 h-8 rounded-lg ${box} flex items-center justify-center shrink-0`} aria-hidden="true">
-                <Icon className="w-4 h-4" />
+    <nav aria-labelledby="home-shortcuts-title">
+      <h2 id="home-shortcuts-title" className="text-base font-bold text-slate-900 mb-2">ของฉัน</h2>
+      <ul>
+        {items.map(({ href, label, Icon, box, count }) => (
+          <li key={label}>
+            <Link href={href} className="-mx-2 flex items-center gap-2.5 rounded-xl px-2 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 cursor-pointer">
+              <span className={`w-7 h-7 rounded-lg ${box} flex items-center justify-center shrink-0`} aria-hidden="true">
+                <Icon className="w-3.5 h-3.5" />
               </span>
               <span className="flex-1 min-w-0 truncate">{label}</span>
               {count !== undefined && count > 0 && <span className="text-xs font-medium text-slate-400 tabular-nums">{count}</span>}
-            </>
-          );
-          return (
-            <li key={label}>
-              {view ? (
-                <button type="button" onClick={() => onShowFeed(feedView === view ? 'all' : view)} aria-pressed={feedView === view} className={`${row} ${feedView === view ? 'bg-[#FFF1F2]' : ''}`}>
-                  {inner}
-                </button>
-              ) : (
-                <Link href={href!} className={row}>
-                  {inner}
-                </Link>
-              )}
-            </li>
-          );
-        })}
+            </Link>
+          </li>
+        ))}
       </ul>
     </nav>
   );
@@ -535,25 +516,29 @@ function MeetupsBlock({ meetups, isEventsLoaded }: MemberLiveHomeProps) {
   );
 }
 
+/** The running challenges most people are doing (the list comes sorted by participants) */
 function QuestsBlock({ quests }: MemberLiveHomeProps) {
   if (quests.length === 0) return null;
   return (
-    <section aria-label="ชาเลนจ์ที่เพื่อนๆ กำลังทำ">
+    <section aria-label="ชาเลนจ์ยอดฮิตตอนนี้">
       <div className="flex items-end justify-between gap-3 mb-3">
-        <h2 className="text-base font-bold text-slate-900">ชาเลนจ์ที่เพื่อนๆ กำลังทำ</h2>
+        <h2 className="text-base font-bold text-slate-900">ชาเลนจ์ยอดฮิตตอนนี้</h2>
         <Link href="/challenges" className="text-[13px] font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">ดูทั้งหมด</Link>
       </div>
-      <ul className="space-y-3.5">
+      <ul className="space-y-4">
         {quests.slice(0, 3).map((quest) => (
           <li key={quest.id}>
             <Link href={`/challenges/${encodeURIComponent(quest.id)}`} className="group flex items-center gap-3 min-w-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={quest.image || quest.badgeCoverImg || FALLBACK_IMAGE} alt="" className="w-14 h-14 shrink-0 rounded-xl object-cover bg-slate-100" />
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold text-slate-900 leading-snug line-clamp-2 group-hover:underline">{quest.title}</span>
-                <span className="block text-xs text-slate-500">
+                {/* Same three lines as every row in this column: when, what, who */}
+                {quest.daysRemaining !== undefined && quest.daysRemaining > 0 && (
+                  <span className="block text-xs font-semibold text-[#7C3AED] tabular-nums">เหลือ {quest.daysRemaining} วัน</span>
+                )}
+                <span className="block text-sm font-semibold text-slate-900 leading-snug truncate group-hover:underline">{quest.title}</span>
+                <span className="block text-xs text-slate-500 truncate">
                   {(quest.participantsCount ?? 0) > 0 ? `กำลังทำ ${(quest.participantsCount ?? 0).toLocaleString()} คน` : 'ยังไม่มีใครเริ่ม เป็นคนแรกเลย'}
-                  {quest.daysRemaining !== undefined && quest.daysRemaining > 0 && ` · เหลือ ${quest.daysRemaining} วัน`}
                 </span>
               </span>
             </Link>
@@ -583,15 +568,16 @@ function ItemsBlock({ title, href, items, kickerClass, layout }: { title: string
         <Link href={href} className="text-[13px] font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">ดูทั้งหมด</Link>
       </div>
       {layout === 'rows' ? (
-        <ul className="space-y-3.5">
+        <ul className="space-y-4">
           {items.slice(0, 3).map((item) => (
             <li key={item.key}>
               <Link href={item.href} className="group flex items-center gap-3 min-w-0">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={item.image || FALLBACK_IMAGE} alt="" className="w-14 h-14 shrink-0 rounded-xl object-cover bg-slate-100" />
+                {/* One title line, like the meetup rows above, so every row in the column has the same height */}
                 <span className="min-w-0 flex-1">
                   {item.kicker && <span className={`block text-xs font-semibold ${kickerClass}`}>{item.kicker}</span>}
-                  <span className="block text-sm font-semibold text-slate-900 leading-snug line-clamp-2 group-hover:underline">{item.title}</span>
+                  <span className="block text-sm font-semibold text-slate-900 leading-snug truncate group-hover:underline">{item.title}</span>
                   <span className="block text-xs text-slate-500 truncate">{item.sub}</span>
                 </span>
               </Link>

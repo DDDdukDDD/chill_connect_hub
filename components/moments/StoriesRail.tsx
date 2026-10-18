@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Flag, Image as ImageIcon, Plus, Trash2, X } from 'lucide-react';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
@@ -39,11 +39,15 @@ export interface StoriesRailProps {
   onToast: (message: string) => void;
   /** More items at the end of the row, e.g. the highlights on /moments */
   after?: React.ReactNode;
+  /** Home feed: no row at all until someone has a story (adding one starts from `addSignal`) */
+  hideWhenEmpty?: boolean;
+  /** Bump to open the "เพิ่มสตอรี่" form from a button outside the row */
+  addSignal?: number;
   /** Item size: 64px on the home feed, 64 → 72px on /moments */
   size?: 'sm' | 'md';
 }
 
-export function StoriesRail({ isLoggedIn, onNeedLogin, onToast, after, size = 'md' }: StoriesRailProps) {
+export function StoriesRail({ isLoggedIn, onNeedLogin, onToast, after, size = 'md', hideWhenEmpty = false, addSignal = 0 }: StoriesRailProps) {
   const session = useMemberSession();
   const [groups, setGroups] = useState<StoryGroup[]>([]);
   const [reload, setReload] = useState(0);
@@ -70,6 +74,13 @@ export function StoriesRail({ isLoggedIn, onNeedLogin, onToast, after, size = 'm
     if (trust && !(trust.emailVerified && trust.pledged)) return setIsVerifyOpen(true);
     setDraft({ file: null, preview: '', caption: '' });
   };
+  // A button outside the row (the home composer) asks for the form by bumping the number
+  const seenSignal = useRef(addSignal);
+  useEffect(() => {
+    if (addSignal === seenSignal.current) return;
+    seenSignal.current = addSignal;
+    openForm();
+  });
 
   const pickImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const picked = e.target.files?.[0];
@@ -178,6 +189,7 @@ export function StoriesRail({ isLoggedIn, onNeedLogin, onToast, after, size = 'm
 
   return (
     <>
+      {!(hideWhenEmpty && groups.length === 0) && (
       <ul className="flex gap-3 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1" aria-label="สตอรี่">
         <li className={`shrink-0 ${box}`}>
           <button type="button" onClick={openForm} className="w-full flex flex-col items-center gap-1.5 cursor-pointer group">
@@ -205,6 +217,7 @@ export function StoriesRail({ isLoggedIn, onNeedLogin, onToast, after, size = 'm
         ))}
         {after}
       </ul>
+      )}
 
       {draft && (
         <DialogShell onClose={() => setDraft(null)} title="เพิ่มสตอรี่" subtitle="รูปเดียว แสดง 24 ชั่วโมง แล้วหายไปเอง" size="sm">
