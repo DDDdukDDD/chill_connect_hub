@@ -337,7 +337,7 @@ export interface HomeMomentFeedProps {
   /** Which moments to show; the left column's shortcuts change it too */
   view: FeedView;
   onViewChange: (view: FeedView) => void;
-  /** Rendered after a given post on phones and tablets, where the right column is not shown */
+  /** Rendered after a given post (0 = the first). Each insert sets its own screen sizes */
   inserts?: Record<number, React.ReactNode>;
 }
 
@@ -635,7 +635,11 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
           ))}
         </div>
       ) : moments.length === 0 ? (
-        <p className="py-10 text-center text-sm font-medium text-slate-500">{EMPTY[sort]}</p>
+        <>
+          <p className="py-10 text-center text-sm font-medium text-slate-500">{EMPTY[sort]}</p>
+          {/* What would follow the first post still shows on an empty feed */}
+          {inserts[0]}
+        </>
       ) : (
         <>
           {moments.map((moment, i) => (

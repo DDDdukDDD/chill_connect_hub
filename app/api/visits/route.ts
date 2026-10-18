@@ -4,6 +4,7 @@ import { parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { isRateLimited } from '@/lib/rateLimit';
 import { VISIT_POINTS, progressOf, rewardsForTargets } from '@/lib/social/questProgress';
+import { monthOf } from '@/lib/social/myMonth';
 import { rewardsOf } from '@/lib/social/rewardsLedger';
 import { type VisitTargetType, isVisitTargetType, markVisit, markedVisitOf, marksOf, socialProofFor, targetKey, unmarkVisit } from '@/lib/social/visits';
 
@@ -12,6 +13,7 @@ const MAX_TARGETS = 40;
 /**
  * GET ?targets=spot:ID,community:ID,fair:ID  who has been to each target and what going earns (public)
  * GET ?mine=1                                the signed-in member's visits, own marks, challenge progress and points
+ *     &month=1                               adds `month`: this month's places and fairs (Chill) and meetups (Connect)
  */
 export async function GET(request: Request) {
   try {
@@ -23,7 +25,8 @@ export async function GET(request: Request) {
       if (!member) {
         return NextResponse.json({ success: true, requiresLogin: true, visits: [], marks: [], quests: [], points: { total: 0, fromVisits: 0, fromQuests: 0 } }, { headers });
       }
-      return NextResponse.json({ success: true, ...(await progressOf(member.id)), marks: marksOf(member.id) }, { headers });
+      const [progress, month] = await Promise.all([progressOf(member.id), searchParams.get('month') === '1' ? monthOf(member.id) : null]);
+      return NextResponse.json({ success: true, ...progress, marks: marksOf(member.id), ...(month && { month }) }, { headers });
     }
 
     const targets = (searchParams.get('targets') ?? '')

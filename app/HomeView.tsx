@@ -21,6 +21,7 @@ import { isEventEnded, parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { useAuth } from '@/lib/useAuth';
 import { fetchAllContentPages } from '@/lib/contentClient';
 import { useMyRewards } from '@/lib/useMyRewards';
+import { useMyMonth } from '@/lib/useMyMonth';
 import { useMyActivity } from '@/lib/useMyActivity';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { REWARD_SHOP_ITEMS } from '@/data/rewardsData';
@@ -275,23 +276,20 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
     return matched.filter((e) => picked.includes(e));
   }, [fairEvents]);
 
-  // Member home: the next meetup or fair they go to or host, and the challenge in progress that closes first
-  const nextEvent = useMemo(
-    () =>
-      [...activity.joined, ...activity.hosted]
-        .filter((e) => !isEventEnded(e))
-        .sort((a, b) => parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date))[0] ?? null,
-    [activity.joined, activity.hosted]
-  );
-  const challengeNow = useMemo(() => {
-    const doing = myRewards.quests.flatMap((progress) => {
-      const quest = questList.find((q) => q.id === progress.questId);
-      if (!progress.joined || progress.completed || !quest) return [];
-      if (quest.status === 'ended' || (quest.daysRemaining !== undefined && quest.daysRemaining <= 0)) return [];
-      return [{ quest, progress }];
-    });
-    return doing.sort((a, b) => (a.quest.daysRemaining ?? 999) - (b.quest.daysRemaining ?? 999))[0] ?? null;
-  }, [myRewards.quests, questList]);
+  // Member home: the next three things they go to: meetups and fairs they joined or host, then fairs they saved
+  const plans = useMemo(() => {
+    const going = [...activity.joined, ...activity.hosted];
+    const goingIds = new Set(going.map((e) => e.id));
+    const saved = fairEvents.filter((e) => activity.savedEventIds.includes(e.id) && !goingIds.has(e.id));
+    const seen = new Set<string>();
+    return [...going, ...saved]
+      .filter((e) => !isEventEnded(e) && !seen.has(e.id) && seen.add(e.id))
+      .sort((a, b) => parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date))
+      .slice(0, 3);
+  }, [activity.joined, activity.hosted, activity.savedEventIds, fairEvents]);
+  // This month's Chill (places) and Connect (meetups) behind the greeting
+  const myMonth = useMyMonth(isMember);
+  const monthCounts = myMonth.month ? { chill: myMonth.month.chill.length, connect: myMonth.month.connect.length } : null;
   const redeemable = REWARD_SHOP_ITEMS.filter((item) => !myRewards.redeemedRewardIds.includes(item.id) && item.costXp <= myRewards.balance).length;
 
   // Member home: open meetups they have not joined, the categories they picked at onboarding first, each with its reason
@@ -317,6 +315,18 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
     [questList, myRewards.joinedQuestIds]
   );
 
+  // Member home: the stamp passport. Each finished challenge is a stamp; joined ones show the steps still to go
+  const passport = useMemo(() => {
+    const image = (id: string) => {
+      const quest = questList.find((q) => q.id === id);
+      return quest?.badgeCoverImg || quest?.image;
+    };
+    const earned = myRewards.finished.map((f) => ({ questId: f.questId, label: f.badgeLabel || f.title, image: image(f.questId) }));
+    const pending = myRewards.quests
+      .filter((p) => p.joined && !p.completed)
+      .map((p) => ({ questId: p.questId, label: p.title, image: image(p.questId), left: Math.max(1, p.total - p.current) }));
+    return { earned, pending, more: othersQuests.length };
+  }, [myRewards.finished, myRewards.quests, questList, othersQuests.length]);
   // Landing page: open meetups (seats left), counted per category card, and the row the cards filter
   const openMeetups = useMemo(() => communityEvents.filter((e) => e.participantsCount < e.maxParticipants), [communityEvents]);
   const categoryCards = useMemo(
@@ -406,8 +416,10 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
             xp={myRewards.balance}
             badges={myRewards.finished.length}
             redeemable={redeemable}
-            nextEvent={nextEvent}
-            challenge={challengeNow}
+            plans={plans}
+            hostedIds={activity.hosted.map((e) => e.id)}
+            savedIds={activity.savedEventIds}
+            month={monthCounts}
             challengesDoing={myRewards.quests.filter((p) => p.joined && !p.completed).length}
             savedCount={favorites.length + favoriteSpots.length}
             likedCategories={likedCategories}
@@ -420,6 +432,7 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
             fairWhen={fairDates}
             spots={featuredSpots}
             isSpotsLoaded={isSpotsLoaded}
+            passport={passport}
           />
         ) : (
           /* 1. Hero: the collage tells the loop in three numbered steps, the words say what the site is, one orange button */

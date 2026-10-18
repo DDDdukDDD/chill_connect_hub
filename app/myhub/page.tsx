@@ -8,6 +8,7 @@ import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { MySubmissions } from '@/components/MySubmissions';
+import { MyMonthSection } from '@/components/myhub/MyMonthSection';
 import { ChallengeList } from '@/components/ChallengeList';
 import { useAuth } from '@/lib/useAuth';
 import { ETicketModal } from '@/components/ETicketModal';
@@ -74,6 +75,7 @@ import {
   X,
   AlertCircle,
   Search,
+  CalendarRange,
 } from 'lucide-react';
 
 const THAI_MONTH_NAMES = [
@@ -179,7 +181,9 @@ function MyHubContent() {
   // 'calendar' is the member's schedule (list or month); 'categories' holds the saved places and the challenges views
   const [hubMainMode, setHubMainMode] = useState<'categories' | 'calendar' | 'hosting'>('calendar');
   const [scheduleWhen, setScheduleWhen] = useState<'upcoming' | 'past'>('upcoming');
-  const [scheduleView, setScheduleView] = useState<'list' | 'month'>('list');
+  // The schedule opens on the week: seven days from today, then the full list or the month
+  const [scheduleView, setScheduleView] = useState<'week' | 'list' | 'month'>('week');
+  const [weekDayIdx, setWeekDayIdx] = useState<number | null>(null);
   const [openedAt] = useState(() => Date.now());
   // User Created Events (Host)
   const [userCreatedEvents, setUserCreatedEvents] = useState<EventItem[]>([]);
@@ -840,12 +844,31 @@ function MyHubContent() {
   const listRows = listPool
     .filter((ev) => calendarCategoryFilter === 'all' || calGroupOf(ev) === calendarCategoryFilter)
     .sort((a, b) => (scheduleWhen === 'upcoming' ? scheduleTs(a) - scheduleTs(b) : scheduleTs(b) - scheduleTs(a)));
-  // Under the month grid the rows run in date order, like the list
-  const scheduleRows = scheduleView === 'month' ? [...dailyAgendaEvents].sort((a, b) => scheduleTs(a) - scheduleTs(b)) : listRows;
-  const countIn = (group: string) => listPool.filter((ev) => calGroupOf(ev) === group).length;
-  const chipCounts = scheduleView === 'month'
-    ? masterCategoryCounts
-    : { all: listPool.length, community: countIn('community'), fairs: countIn('fairs'), spots: countIn('spots'), quests: countIn('quests') };
+  // The week: seven days from today, each with what is on it. A challenge sits on the day it shows in the schedule
+  const weekStart = new Date(openedAt);
+  weekStart.setHours(0, 0, 0, 0);
+  const weekDays = Array.from({ length: 7 }, (_, i) => new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + i));
+  const isOnDate = (ev: EventItem, day: Date) => {
+    const start = day.getTime();
+    const end = start + 24 * 60 * 60 * 1000 - 1;
+    if (isQuestEntry(ev)) return scheduleTs(ev) >= start && scheduleTs(ev) <= end;
+    if (!ev.date || !/[0-9]/.test(ev.date)) return false;
+    return parseEventDateToTimestamp(ev.date) <= end && parseEventEndDateToTimestamp(ev.date) >= start;
+  };
+  const weekItems = weekDays.map((day) => guestEvents.filter((ev) => isOnDate(ev, day)));
+  // Opens on the first day with something on it (today when the week is empty)
+  const shownWeekDay = weekDayIdx ?? Math.max(0, weekItems.findIndex((items) => items.length > 0));
+  const weekPool = weekItems[shownWeekDay];
+  // Under the month grid and the week strip the rows run in date order, like the list
+  const scheduleRows =
+    scheduleView === 'month'
+      ? [...dailyAgendaEvents].sort((a, b) => scheduleTs(a) - scheduleTs(b))
+      : scheduleView === 'week'
+      ? weekPool.filter((ev) => calendarCategoryFilter === 'all' || calGroupOf(ev) === calendarCategoryFilter).sort((a, b) => scheduleTs(a) - scheduleTs(b))
+      : listRows;
+  const countIn = (pool: EventItem[], group: string) => pool.filter((ev) => calGroupOf(ev) === group).length;
+  const countsOf = (pool: EventItem[]) => ({ all: pool.length, community: countIn(pool, 'community'), fairs: countIn(pool, 'fairs'), spots: countIn(pool, 'spots'), quests: countIn(pool, 'quests') });
+  const chipCounts = scheduleView === 'month' ? masterCategoryCounts : countsOf(scheduleView === 'week' ? weekPool : listPool);
 
   // The host's side of My Hub: what is still to run (who is coming, check-in, team chat) and what has been run
   const renderHostingView = () => {
@@ -1151,6 +1174,7 @@ function MyHubContent() {
               )}
               <div className="inline-flex items-center p-1 bg-slate-100 rounded-full border border-slate-200/90" role="group" aria-label="วิธีมอง">
                 {([
+                  { id: 'week', label: 'สัปดาห์', Icon: CalendarRange },
                   { id: 'list', label: 'รายการ', Icon: Layers },
                   { id: 'month', label: 'เดือน', Icon: CalendarDays },
                 ] as const).map(({ id, label, Icon }) => (
@@ -1347,6 +1371,34 @@ function MyHubContent() {
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>มุมมองรวมทั้งหมด</span>
               </button>
+            </div>
+          )}
+
+          {/* The week strip: seven days from today, a dot in the pillar colour for each thing on that day */}
+          {scheduleView === 'week' && (
+            <div className="grid grid-cols-7 gap-1" role="group" aria-label="เลือกวัน">
+              {weekDays.map((day, i) => {
+                const items = weekItems[i];
+                const isOn = i === shownWeekDay;
+                return (
+                  <button
+                    key={day.getTime()}
+                    type="button"
+                    aria-pressed={isOn}
+                    aria-label={`${THAI_DAY_NAMES[day.getDay()]}ที่ ${day.getDate()} ${THAI_MONTH_SHORT[day.getMonth()]}${items.length ? ` มี ${items.length} รายการ` : ''}`}
+                    onClick={() => setWeekDayIdx(i)}
+                    className={`rounded-2xl py-2 flex flex-col items-center gap-1 border transition-colors cursor-pointer ${isOn ? 'border-[#2563EB] ring-1 ring-[#2563EB] bg-blue-50 text-[#1D4ED8]' : 'border-transparent text-slate-900 hover:bg-slate-50'}`}
+                  >
+                    <span className={`text-[11px] font-medium ${isOn ? 'text-[#1D4ED8]' : 'text-slate-500'}`}>{i === 0 ? 'วันนี้' : THAI_DAY_SHORT[day.getDay()]}</span>
+                    <span className="text-base font-bold tabular-nums leading-none">{day.getDate()}</span>
+                    <span className="h-2 flex items-center gap-0.5" aria-hidden="true">
+                      {items.slice(0, 4).map((ev) => (
+                        <span key={ev.id} className={`w-1.5 h-1.5 rounded-full ${getEventPillarMeta(ev).dotColor}`} />
+                      ))}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           )}
 
@@ -1547,6 +1599,8 @@ function MyHubContent() {
                   <p className="text-xs sm:text-sm font-bold text-slate-800">
                     {scheduleView === 'list'
                       ? scheduleWhen === 'past' ? 'ยังไม่มีรายการที่ผ่านมา' : calendarCategoryFilter === 'quests' && hasJoinedQuests ? 'ชาเลนจ์ที่ทำอยู่แสดงอยู่ใน "กำลังทำอยู่" ด้านบน' : nextEvent && calendarCategoryFilter === 'all' ? 'ยังไม่มีนัดอื่นหลังจากนี้' : 'ยังไม่มีนัดที่กำลังจะมาถึง'
+                      : scheduleView === 'week'
+                      ? shownWeekDay === 0 ? 'วันนี้ยังว่างอยู่' : 'วันนี้ยังไม่มีนัด'
                       : selectedCalDay !== null ? 'ไม่มีกำหนดการในวันที่เลือก' : 'ยังไม่มีกำหนดการในเดือนนี้'}
                   </p>
                   <p className="text-[11px] sm:text-xs text-slate-500">
@@ -2057,6 +2111,12 @@ function MyHubContent() {
                 </div>
 
                 </div>
+                {/* What "Chill · Connect" on the home page opens: the month behind the numbers */}
+                {isLoggedIn && (
+                  <div className="order-3 lg:order-none empty:hidden bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs">
+                    <MyMonthSection isLoggedIn={isLoggedIn} onToast={showToast} />
+                  </div>
+                )}
                 <div className="order-5 lg:order-none">{renderSummaryCards()}</div>
                 <div className="order-6 lg:order-none">
                 {/* Places and challenge ideas sent to staff */}
