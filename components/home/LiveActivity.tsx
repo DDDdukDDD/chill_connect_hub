@@ -76,7 +76,7 @@ export function liveHref(target: LiveItem['target']): string {
     case 'fair':
       return `/fairs/${id}`;
     default:
-      return `/moments?momentId=${id}`;
+      return `/moments/${encodeURIComponent(id)}`;
   }
 }
 

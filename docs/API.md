@@ -252,7 +252,7 @@ Posts go live at once. **3 distinct member reports hide a post** until a moderat
 
 | Method & path | Body / params | Response |
 |---|---|---|
-| `GET /api/moments` | `?tab=all\|popular\|saved\|mine&location&targetType&targetId&q&page&limit(≤30)` | `{ moments: FeedItem[], pagination }`; `saved`/`mine` without login → `{ moments: [], requiresLogin: true }` |
+| `GET /api/moments` | `?tab=all|popular|following|saved|mine&category=heal|move|chill|learn&location&targetType&targetId&q&page&limit(≤30)`\|popular\|saved\|mine&location&targetType&targetId&q&page&limit(≤30)` | `{ moments: FeedItem[], pagination }`; `saved`/`mine` without login → `{ moments: [], requiresLogin: true }` |
 | `POST /api/moments` | `{ caption (1–500), images: string[] (1–10, URLs returned by /api/upload), location?, category?: heal\|move\|chill\|learn, targetType?: spot\|community\|fair\|challenge\|general, targetId?, targetTitle? }` | `201 { moment: FeedItem }` · `400` (Thai `message`) · `429` (10 posts/hour) |
 | `GET /api/moments/[id]` | — | `{ moment }` (published, or the viewer's own) · `404` |
 | `PATCH /api/moments/[id]` | `{ caption?, location? }` | own posts only (`403`) |

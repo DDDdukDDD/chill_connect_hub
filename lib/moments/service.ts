@@ -112,6 +112,74 @@ export function toFeedItem(moment: Moment, viewer: Member | null, people: Map<st
 
 export type FeedItem = ReturnType<typeof toFeedItem>;
 
+export interface MomentListOptions {
+  /** all | popular | following | saved | mine */
+  tab?: string;
+  author?: string;
+  category?: string;
+  targetType?: string;
+  targetId?: string;
+  location?: string;
+  q?: string;
+  page?: number;
+  limit?: number;
+}
+
+const pagination = (totalCount: number, page: number, limit: number) => {
+  const totalPages = Math.max(1, Math.ceil(totalCount / limit));
+  return { totalCount, page, limit, totalPages, hasNextPage: page < totalPages, hasPrevPage: page > 1 };
+};
+
+/**
+ * One page of published moments the viewer may see (GET /api/moments and the server-rendered /moments).
+ * Posts by members the viewer has blocked are left out; "saved", "mine" and "following" need a viewer.
+ */
+export async function listMoments(viewer: Member | null, options: MomentListOptions) {
+  const tab = options.tab ?? 'all';
+  const page = Math.max(1, options.page ?? 1);
+  const limit = Math.min(30, Math.max(1, options.limit ?? 12));
+  if ((tab === 'saved' || tab === 'mine' || tab === 'following') && !viewer) {
+    return { moments: [] as FeedItem[], requiresLogin: true, pagination: pagination(0, 1, limit) };
+  }
+  const targetType = options.targetType && TARGET_TYPES.has(options.targetType as MomentTargetType) ? (options.targetType as MomentTargetType) : undefined;
+  const category = options.category && CATEGORIES.has(options.category as MomentCategory) ? options.category : undefined;
+  const result = await momentRepository.query({
+    statuses: ['published'],
+    authorId: tab === 'mine' ? viewer!.id : options.author || undefined,
+    savedBy: tab === 'saved' ? viewer!.id : undefined,
+    targetType,
+    targetId: options.targetId || undefined,
+    location: options.location || undefined,
+    q: options.q || undefined,
+    sort: tab === 'popular' ? 'popular' : 'newest',
+    page: 1,
+    limit: 10_000,
+  });
+  const people = await loadPeople(result.items);
+  const blocked = new Set(viewer?.blockedIds ?? []);
+  const following = tab === 'following' ? new Set(viewer?.followingIds ?? []) : null;
+  const visible = result.items.filter(
+    (moment) =>
+      isPubliclyVisible(moment, people) &&
+      !(moment.authorId && blocked.has(moment.authorId)) &&
+      (!following || (moment.authorId !== null && following.has(moment.authorId))) &&
+      (!category || moment.category === category)
+  );
+  return {
+    moments: visible.slice((page - 1) * limit, page * limit).map((moment) => toFeedItem(moment, viewer, people)),
+    requiresLogin: false,
+    pagination: pagination(visible.length, page, limit),
+  };
+}
+
+/** A published moment for its public page, or null (hidden, removed, banned author, unknown id) */
+export async function findPublicMoment(id: string): Promise<FeedItem | null> {
+  const moment = await momentRepository.findById(id);
+  if (!moment) return null;
+  const people = await loadPeople([moment]);
+  return isPubliclyVisible(moment, people) ? toFeedItem(moment, null, people) : null;
+}
+
 export async function createMoment(member: Member, input: Record<string, unknown>): Promise<Moment> {
   const caption = text(input.caption, MAX_CAPTION_LENGTH + 1);
   if (!caption) throw new MomentError('กรุณาเขียนคำบรรยาย');

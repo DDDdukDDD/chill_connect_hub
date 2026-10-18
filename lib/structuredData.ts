@@ -88,6 +88,35 @@ export function placeJsonLd(spot: LifestyleSpotItem, path: string): JsonLd {
   };
 }
 
+/**
+ * A member's moment as a schema.org SocialMediaPosting: who posted it (display name only), when, the photos,
+ * and the place, event or challenge page it is about.
+ */
+export function momentJsonLd(
+  moment: { caption: string; images: string[]; userName: string; createdAt: string; likesCount: number; commentsCount: number; location: string; targetTitle?: string },
+  path: string,
+  title: string,
+  aboutPath: string | null
+): JsonLd {
+  const place = moment.targetTitle || moment.location;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'SocialMediaPosting',
+    headline: metaDescription(title, 110),
+    articleBody: metaDescription(moment.caption, 500),
+    url: absoluteUrl(path),
+    datePublished: moment.createdAt,
+    image: moment.images.map(imageUrl).filter(Boolean).slice(0, 5),
+    author: { '@type': 'Person', name: moment.userName },
+    ...(place && { contentLocation: { '@type': 'Place', name: place } }),
+    ...(aboutPath && place && { about: { '@type': 'Thing', name: place, url: absoluteUrl(aboutPath) } }),
+    interactionStatistic: [
+      { '@type': 'InteractionCounter', interactionType: 'https://schema.org/LikeAction', userInteractionCount: moment.likesCount },
+      { '@type': 'InteractionCounter', interactionType: 'https://schema.org/CommentAction', userInteractionCount: moment.commentsCount },
+    ],
+  };
+}
+
 /** Home › list › this page, for the path shown under the title in search results. */
 export function breadcrumbJsonLd(items: { name: string; path: string }[]): JsonLd {
   return {

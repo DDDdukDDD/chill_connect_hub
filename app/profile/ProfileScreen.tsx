@@ -810,15 +810,17 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                 <ul className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                   {state.moments.map((m) => (
                     <li key={m.id} className="aspect-square rounded-2xl overflow-hidden bg-slate-100">
-                      {/* eslint-disable-next-line @next/next/no-img-element -- remote content images */}
-                      <img src={m.image} alt={m.caption.slice(0, 60)} loading="lazy" className="w-full h-full object-cover" />
+                      <Link href={`/moments/${encodeURIComponent(m.id)}`} className="block w-full h-full">
+                        {/* eslint-disable-next-line @next/next/no-img-element -- remote content images */}
+                        <img src={m.image} alt={m.caption.slice(0, 60)} loading="lazy" className="w-full h-full object-cover" />
+                      </Link>
                     </li>
                   ))}
                 </ul>
               ) : (
                 <div className="bg-slate-50/80 rounded-2xl p-4 border border-dashed border-slate-200 flex flex-wrap items-center justify-between gap-3">
                   <p className="text-sm font-semibold text-slate-600"><PhraseText text={profile.isMe ? 'ยังไม่มีโมเมนต์ ไปกิจกรรมแล้ว กลับมาแชร์ภาพกันนะ' : 'ยังไม่มีโมเมนต์'} /></p>
-                  {profile.isMe && <Link href="/moments" className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">ไปหน้าโมเมนต์</Link>}
+                  {profile.isMe && <Link href="/?share=new" className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">แชร์โมเมนต์</Link>}
                 </div>
               )}
             </section>
