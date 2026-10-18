@@ -37,7 +37,7 @@ const MEETUP_ROW_PICKED = 12;
 const CONTAINER = 'max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8';
 
 // Order of the vibes in the places row: what the audience looks for on a day off comes first
-const VIBE_ORDER: SpotVibeId[] = ['cafe_slowbar', 'nature_camping', 'art_creative', 'sea_island', 'mountain_mist', 'wellness_retreat', 'oldtown_culture'];
+const VIBE_ORDER: SpotVibeId[] = ['cafe_slowbar', 'nature_camping', 'views_rooftop', 'temple_mu', 'art_creative', 'sea_island', 'food_street', 'mountain_mist', 'market_walking', 'wellness_retreat', 'oldtown_culture', 'museum_learning', 'city_parks', 'fun_activities', 'nightlife_bars', 'shopping_mall'];
 
 
 // Photos for the hero collage and the join block (local files, shown on /spots too)
@@ -52,8 +52,18 @@ const CATEGORY_SHORT: Record<string, string> = {
   boardgames_party: 'สายบอร์ดเกม',
   arts_crafts: 'สายศิลปะ',
   travel_outdoor: 'สายเที่ยว',
-  tech_skills: 'สายเรียนรู้',
+  tech_skills: 'สายพัฒนาตัวเอง',
   pets_family: 'สายสัตว์เลี้ยง',
+  food_hunt: 'สายกิน',
+  gaming_anime: 'สายเกม & อนิเมะ',
+  movies_music: 'สายดนตรี',
+  sports_club: 'สายกีฬา',
+  dance_move: 'สายเต้น',
+  beauty_selfcare: 'สายบิวตี้',
+  volunteer: 'สายจิตอาสา',
+  photo_content: 'สายถ่ายรูป',
+  cooking_baking: 'สายทำขนม',
+  books_language: 'สายหนังสือ',
 };
 
 // White label pinned to a hero collage photo; the numbers tell the loop in order
@@ -81,7 +91,7 @@ const FAIR_ROW_KINDS = ['fair', 'run', 'concert'] as const;
 const FAIR_ROW_SHOWN = 4;
 const fairKind = (e: EventItem): (typeof FAIR_ROW_KINDS)[number] => {
   const text = `${e.title} ${e.tag}`;
-  if (/วิ่ง|มาราธอน|เทรล|marathon|run|trail/i.test(text)) return 'run';
+  if (/วิ่ง|มาราธอน|เทรล|marathon|\brun\b|trail/i.test(text)) return 'run';
   if (/คอนเสิร์ต|ดนตรีสด|concert|live music/i.test(text)) return 'concert';
   return 'fair';
 };

@@ -398,6 +398,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
     return (
       <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans">
         <Navbar
+        showMenuOnMobile
           activeTab={activeNavTab}
           setActiveTab={setActiveNavTab}
           isLoggedIn={isLoggedIn}
@@ -419,6 +420,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
     return (
       <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans">
         <Navbar
+        showMenuOnMobile
           activeTab={activeNavTab}
           setActiveTab={setActiveNavTab}
           isLoggedIn={isLoggedIn}
@@ -460,6 +462,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
       
       {/* 1. Header Navbar */}
       <Navbar
+        showMenuOnMobile
         activeTab={activeNavTab}
         setActiveTab={setActiveNavTab}
         isLoggedIn={isLoggedIn}

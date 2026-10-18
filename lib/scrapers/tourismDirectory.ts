@@ -137,6 +137,7 @@ export const DEFAULT_LABELS: Record<LifestyleSpotItem['category'], string> = {
   beach: 'ทะเล & ชายหาด', temple: 'วัด & ศาสนสถาน', museum: 'พิพิธภัณฑ์', art: 'ศิลปะ & งานคราฟต์', market: 'ตลาด & ถนนคนเดิน',
   viewpoint: 'จุดชมวิว & ภูเขา', nature: 'ธรรมชาติ & อุทยาน', park: 'สวน & พื้นที่สีเขียว', oldtown: 'ย่านเก่า & วิถีชุมชน',
   cafe: 'คาเฟ่ & ร้านกาแฟ', bar: 'บาร์', workspace: 'พื้นที่ทำงาน', coworking: 'Co-working',
+  restaurant: 'ร้านอาหาร & สตรีทฟู้ด', attraction: 'สวนสนุก & กิจกรรม', mall: 'ห้างสรรพสินค้า & ไลฟ์สไตล์มอลล์',
 };
 
 // Generic visiting advice by kind of place; the source has no "best time" field

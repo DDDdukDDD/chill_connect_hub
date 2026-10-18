@@ -42,6 +42,8 @@ interface NavbarProps {
   onOpenSignup?: () => void;
   /** The ค้นพบ pages' own search box, in place of the site search (same look and place) */
   searchSlot?: React.ReactNode;
+  /** Pages without the floating bottom bar keep the menu button on phones and tablets */
+  showMenuOnMobile?: boolean;
   userName?: string;
   isAuthReady?: boolean;
 }
@@ -56,6 +58,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenCreateEvent,
   onOpenSignup,
   searchSlot,
+  showMenuOnMobile = false,
   userName = '',
   isAuthReady,
 }) => {
@@ -136,18 +139,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               </Link>
             )}
 
-            {/* Quick Action: Create Event Pill Button (Shown only for Logged-in Users) */}
-            {isLoggedIn && onOpenCreateEvent && (
-              <button
-                type="button"
-                onClick={onOpenCreateEvent}
-                className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-[#4A7C59] text-white text-xs font-bold shadow-xs hover:shadow-md transition-all duration-200 active:scale-95 cursor-pointer shrink-0"
-              >
-                <PlusCircle className="w-3.5 h-3.5" />
-                <span>สร้างกิจกรรม</span>
-              </button>
-            )}
-            
             {/* Notifications (renders only for a signed-in member) */}
             {isAuthReady && isLoggedIn && <NotificationBell />}
 
@@ -205,6 +196,20 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                     {/* Quick Menu Links */}
                     <div className="py-1.5 px-2 space-y-0.5 text-xs font-semibold text-[#334155]">
+                      {/* Creating lives here, not in the top bar, so the bar stays calm */}
+                      {onOpenCreateEvent && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileDropdownOpen(false);
+                            onOpenCreateEvent();
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 hover:text-[#1E293B] transition-colors cursor-pointer"
+                        >
+                          <PlusCircle className="w-4 h-4 text-[#2563EB]" />
+                          <span>สร้างกิจกรรม</span>
+                        </button>
+                      )}
                       <Link
                         href="/profile?id=me"
                         onClick={() => {
@@ -264,11 +269,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             ) : (
               <>
-                {/* Visitors: log in as a quiet link (the menu has it on small phones), sign up as the dark button */}
+                {/* Visitors: log in as a quiet link, sign up as the orange button (no menu below desktop width to hide it in) */}
                 <button
                   type="button"
                   onClick={() => onOpenLogin ? onOpenLogin() : setIsLoggedIn?.(true)}
-                  className="hidden min-[400px]:block px-1 py-2 text-sm font-semibold text-slate-900 hover:underline underline-offset-4 cursor-pointer whitespace-nowrap"
+                  className="block px-1 py-2 text-[13px] sm:text-sm font-semibold text-slate-900 hover:underline underline-offset-4 cursor-pointer whitespace-nowrap"
                 >
                   เข้าสู่ระบบ
                 </button>
@@ -283,12 +288,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
 
             {/* Universal Luxury Hamburger / Menu Button (Active on Mobile, iPad, and Desktop).
-                The visitor landing page leaves it out: log in and sign up are its only actions. */}
+                The visitor landing page leaves it out: log in and sign up are its only actions.
+                Below desktop width the floating bottom bar does its job, so it shows there only when a page has no bar. */}
             {!(pathname === '/' && !isLoggedIn) && (
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(true)}
-              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-200/90 shadow-2xs transition-all duration-200 active:scale-95 cursor-pointer select-none group shrink-0"
+              className={`${showMenuOnMobile ? 'flex' : 'hidden lg:flex'} items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-200/90 shadow-2xs transition-all duration-200 active:scale-95 cursor-pointer select-none group shrink-0`}
               title="เปิดเมนูนำทาง"
               aria-label="Toggle Navigation Menu"
             >

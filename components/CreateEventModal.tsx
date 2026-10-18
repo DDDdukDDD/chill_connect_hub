@@ -134,6 +134,9 @@ const initialForm = (type: CreationEntityType, seed: { title?: string; location?
   cancellationPolicy: 'free_24h' as (typeof CANCEL_OPTIONS)[number]['id'],
   // fair
   organizer: '',
+  // The group on the ค้นพบ tabs: a meetup category (its mood follows) or a fair group
+  lifestyleCategory: '',
+  fairCategory: '',
   venueId: 'qsncc',
   startDate: '',
   endDate: '',
@@ -198,6 +201,8 @@ function validate(type: CreationEntityType, step: number, f: Form, minDate: stri
   const need = (key: keyof Form, ok: boolean, message: string) => { if (!ok && !e[key]) e[key] = message; };
   if (step === 0) {
     need('title', f.title.trim().length >= 5, 'ตั้งชื่ออย่างน้อย 5 ตัวอักษร');
+    if (type === 'community') need('lifestyleCategory', Boolean(f.lifestyleCategory), 'เลือกหมวดกิจกรรม');
+    if (type === 'fair') need('fairCategory', Boolean(f.fairCategory), 'เลือกประเภทงาน');
     if (type === 'fair') need('organizer', f.organizer.trim().length >= 2, 'ใส่ชื่อผู้จัดงาน');
     if (type === 'spot') need('spotCategory', Boolean(f.spotCategory), 'เลือกประเภทสถานที่');
   }
@@ -482,6 +487,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
         province: form.province,
         location: fairLocation,
         venueTag: venue.tag,
+        fairCategory: form.fairCategory || undefined,
         hostName: form.organizer.trim(),
         participantsCount: 0,
         maxParticipants: 9999,
@@ -495,6 +501,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
       ...base,
       id: `comm-user-${Date.now()}`,
       category: form.category,
+      lifestyleCategory: form.lifestyleCategory || undefined,
       eventType: 'community',
       badgeText: 'เปิดรับสมัคร',
       tag: category.tag,
@@ -583,7 +590,9 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
     </Field>
   );
 
-  const { communityCategories: questCategories } = useMasterData();
+  const { communityCategories: questCategories, fairCategories } = useMasterData();
+  const pillClass = (selected: boolean) =>
+    `inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border text-[13px] font-semibold cursor-pointer transition-colors ${selected ? 'border-[#2563EB] bg-[#EFF6FF] text-[#1D4ED8]' : 'border-slate-300 text-slate-700 hover:border-slate-400'}`;
   const questCategoryField = (
     <Field label="หมวด">
       <div className="grid grid-cols-2 gap-2">
@@ -601,17 +610,47 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
       </div>
     </Field>
   );
+  // A meetup picks one of the categories, shown under its mood; the mood is set from it
   const categoryField = (
-    <Field label="หมวด">
-      <div className="grid grid-cols-2 gap-2">
-        {CATEGORIES.map((item) => {
-          const selected = form.category === item.id;
+    <Field label="หมวดกิจกรรม" error={errors.lifestyleCategory}>
+      <div className="space-y-3">
+        {CATEGORIES.map((mood) => {
+          const items = questCategories.filter((item) => item.coreMood === mood.id);
+          if (items.length === 0) return null;
           return (
-            <button key={item.id} type="button" aria-pressed={selected} onClick={() => set('category', item.id)}
-              className={`relative text-left p-3 rounded-2xl border cursor-pointer transition-colors ${selected ? 'border-[#2563EB] ring-1 ring-[#2563EB]' : 'border-slate-300 hover:border-slate-400'}`}>
-              <span className="block text-sm font-bold text-slate-900">{item.label}</span>
-              <span className="block mt-0.5 text-xs font-medium text-slate-500">{item.hint}</span>
-              {selected && <Check className="absolute top-3 right-3 w-4 h-4 text-[#2563EB]" aria-hidden="true" />}
+            <div key={mood.id} role="group" aria-label={mood.label}>
+              <p className="text-xs font-semibold text-slate-500 mb-1.5">{mood.label}</p>
+              <div className="flex flex-wrap gap-2">
+                {items.map((item) => {
+                  const selected = form.lifestyleCategory === item.id;
+                  return (
+                    <button key={item.id} type="button" aria-pressed={selected} title={item.desc}
+                      onClick={() => {
+                        set('lifestyleCategory', item.id);
+                        set('category', mood.id);
+                      }}
+                      className={pillClass(selected)}>
+                      {selected && <Check className="w-3.5 h-3.5" aria-hidden="true" />}
+                      {item.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </Field>
+  );
+  const fairCategoryField = (
+    <Field label="ประเภทงาน" error={errors.fairCategory}>
+      <div className="flex flex-wrap gap-2">
+        {fairCategories.map((item) => {
+          const selected = form.fairCategory === item.id;
+          return (
+            <button key={item.id} type="button" aria-pressed={selected} onClick={() => set('fairCategory', item.id)} className={pillClass(selected)}>
+              {selected && <Check className="w-3.5 h-3.5" aria-hidden="true" />}
+              {item.name}
             </button>
           );
         })}
@@ -751,6 +790,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
           {type === 'challenge' && titleField('ชื่อชาเลนจ์', 'เช่น ตะลุย 3 คาเฟ่ย่านอารีย์')}
           {type === 'community' && categoryField}
           {type === 'challenge' && questCategoryField}
+          {type === 'fair' && fairCategoryField}
           {type === 'fair' && (
             <Field label="ผู้จัดงาน" htmlFor={id('organizer')} error={errors.organizer} hint="ชื่อองค์กรหรือทีมที่จัดงานนี้">
               <input id={id('organizer')} value={form.organizer} maxLength={80} onChange={(e) => set('organizer', e.target.value)} className={inputClass(Boolean(errors.organizer))} />
@@ -1046,7 +1086,9 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
 
         {section(0, (
           <>
-            {(type === 'community' || type === 'challenge') && <SummaryRow label="หมวด">{CATEGORIES.find((item) => item.id === form.category)?.label}</SummaryRow>}
+            {type === 'community' && <SummaryRow label="หมวด">{questCategories.find((item) => item.id === form.lifestyleCategory)?.name}</SummaryRow>}
+            {type === 'challenge' && <SummaryRow label="หมวด">{questCategories.find((item) => item.id === form.category)?.name}</SummaryRow>}
+            {type === 'fair' && <SummaryRow label="ประเภทงาน">{fairCategories.find((item) => item.id === form.fairCategory)?.name}</SummaryRow>}
             {type === 'fair' && <SummaryRow label="ผู้จัดงาน">{form.organizer.trim()}</SummaryRow>}
             {type === 'spot' && <SummaryRow label="ประเภท">{SPOT_CATEGORY_OPTIONS.find((option) => option.id === form.spotCategory)?.label}</SummaryRow>}
           </>

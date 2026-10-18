@@ -1,7 +1,9 @@
 import {
   Bike, BookOpen, Building, Building2, Camera, Coffee, Dices, Dumbbell, Flame, Gamepad2, HeartHandshake,
   Landmark, Laptop, LucideIcon, Mountain, Music, Palette, PawPrint, ShoppingBag, Sparkles, Sun, Tent,
-  Trees, Utensils, Waves, Wine,
+  Trees, Utensils, Waves, Wine, MicVocal, PartyPopper, Trophy, HeartPulse, Drama, House, Car,
+  Clapperboard, Disc3, Gem, HandHeart, ChefHat,
+  Sunset, TreeDeciduous, Flower2, Library, Store, Martini, FerrisWheel,
 } from 'lucide-react';
 import {
   MASTER_COMMUNITY_LIFESTYLE_CATEGORIES, MASTER_COMMUNITY_MOODS, MASTER_FAIR_CATEGORIES, MASTER_POPULAR_PROVINCE_TAGS,
@@ -25,6 +27,9 @@ import { BANGKOK_ZONES } from '@/data/mockData';
 export const ICON_OPTIONS: Record<string, LucideIcon> = {
   Mountain, Waves, Trees, Coffee, Landmark, Palette, Sparkles, Building, Building2, Flame, ShoppingBag, Dices,
   Laptop, HeartHandshake, Bike, BookOpen, Camera, Dumbbell, Gamepad2, Music, PawPrint, Sun, Tent, Utensils, Wine,
+  MicVocal, PartyPopper, Trophy, HeartPulse, Drama, House, Car,
+  Clapperboard, Disc3, Gem, HandHeart, ChefHat,
+  Sunset, TreeDeciduous, Flower2, Library, Store, Martini, FerrisWheel,
 };
 
 export const COLOR_PRESETS = {

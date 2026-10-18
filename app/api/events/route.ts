@@ -8,6 +8,7 @@ import { MemberAuthError } from '@/lib/members/accounts';
 import { guardCreator } from '@/lib/members/submissions';
 import { prepareSpotTrip } from '@/lib/social/spotTrips';
 import type { EventItem } from '@/data/mockData';
+import { checkedEventCategories } from '@/lib/eventCategories';
 
 function parsePositiveInteger(value: string | null, fallback: number, max?: number): number {
   if (!value) return fallback;
@@ -210,6 +211,8 @@ export async function POST(req: Request) {
     const savedEvent = await createAdminEvent({
       ...eventData,
       ...tripFields,
+      // Only a real, active group is kept; a meetup's mood follows its category
+      ...checkedEventCategories(eventData),
       id: eventData.id || `user-event-${Date.now()}`,
       approvalStatus,
       source: isAdmin ? 'Chill & Connect Official' : 'Community Member',

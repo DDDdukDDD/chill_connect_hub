@@ -18,12 +18,38 @@ import {
   Palette,
   Sparkles,
   Building2,
+  Music,
   Flame,
   ShoppingBag,
   Dices,
   Laptop,
   HeartHandshake,
   LucideIcon,
+  MicVocal,
+  PartyPopper,
+  Trophy,
+  Utensils,
+  Gamepad2,
+  HeartPulse,
+  Drama,
+  BookOpen,
+  Tent,
+  House,
+  PawPrint,
+  Car,
+  Clapperboard,
+  Disc3,
+  Gem,
+  HandHeart,
+  Camera,
+  ChefHat,
+  Sunset,
+  TreeDeciduous,
+  Flower2,
+  Library,
+  Store,
+  Martini,
+  FerrisWheel,
 } from 'lucide-react';
 
 // =========================================================================
@@ -36,7 +62,16 @@ export type SpotVibeId =
   | 'cafe_slowbar'
   | 'oldtown_culture'
   | 'art_creative'
-  | 'wellness_retreat';
+  | 'wellness_retreat'
+  | 'views_rooftop'
+  | 'city_parks'
+  | 'temple_mu'
+  | 'museum_learning'
+  | 'food_street'
+  | 'market_walking'
+  | 'nightlife_bars'
+  | 'fun_activities'
+  | 'shopping_mall';
 
 export interface MasterSpotCategory {
   id: SpotVibeId;
@@ -90,7 +125,7 @@ export const MASTER_SPOT_CATEGORIES: MasterSpotCategory[] = [
   },
   {
     id: 'nature_camping',
-    name: 'ป่าธรรมชาติ & กางเต็นท์',
+    name: 'ป่า น้ำตก & กางเต็นท์',
     nameEn: 'Nature & Camping',
     iconChar: '🌿',
     icon: Trees,
@@ -105,11 +140,43 @@ export const MASTER_SPOT_CATEGORIES: MasterSpotCategory[] = [
     description: 'อุทยานแห่งชาติ ป่าเขียวขจี น้ำตก ลานกางเต็นท์ และกิจกรรมเอาต์ดอร์',
   },
   {
-    id: 'cafe_slowbar',
-    name: 'คาเฟ่ & สเปซนั่งชิลล์',
-    nameEn: 'Cafe & Slow Bar',
-    iconChar: '☕',
-    icon: Coffee,
+    id: 'views_rooftop',
+    name: 'จุดชมวิว & รูฟท็อป',
+    nameEn: 'Views & Rooftops',
+    iconChar: '',
+    icon: Sunset,
+    colorScheme: {
+      iconBg: 'bg-orange-100/70',
+      iconColor: 'text-orange-700',
+      badgeBg: 'bg-orange-50',
+      badgeText: 'text-orange-800',
+      border: 'border-orange-200',
+    },
+    keywords: ['จุดชมวิว', 'viewpoint', 'sunset', 'พระอาทิตย์ตก', 'rooftop', 'รูฟท็อป', 'วิวเมือง', 'skywalk'],
+    description: 'จุดชมพระอาทิตย์ตก วิวเมือง จุดชมวิวริมน้ำ และดาดฟ้าวิวสวย',
+  },
+  {
+    id: 'city_parks',
+    name: 'สวน & พื้นที่สีเขียวในเมือง',
+    nameEn: 'City Parks',
+    iconChar: '',
+    icon: TreeDeciduous,
+    colorScheme: {
+      iconBg: 'bg-emerald-100/70',
+      iconColor: 'text-emerald-700',
+      badgeBg: 'bg-emerald-50',
+      badgeText: 'text-emerald-800',
+      border: 'border-emerald-200',
+    },
+    keywords: ['สวนสาธารณะ', 'park', 'สวนพฤกษศาสตร์', 'ปิกนิก', 'picnic', 'green space'],
+    description: 'สวนสาธารณะ สวนพฤกษศาสตร์ ลานปิกนิก และทางเดินเขียวๆ กลางเมือง',
+  },
+  {
+    id: 'temple_mu',
+    name: 'วัด & สายมู',
+    nameEn: 'Temples & Lucky Spots',
+    iconChar: '',
+    icon: Flower2,
     colorScheme: {
       iconBg: 'bg-amber-100/70',
       iconColor: 'text-amber-700',
@@ -117,8 +184,8 @@ export const MASTER_SPOT_CATEGORIES: MasterSpotCategory[] = [
       badgeText: 'text-amber-800',
       border: 'border-amber-200',
     },
-    keywords: ['cafe', 'คาเฟ่', 'coffee', 'กาแฟ', 'slow bar', 'เบเกอรี่', 'tea', 'ชา', 'matcha', 'มัทฉะ', 'สโลว์บาร์'],
-    description: 'กาแฟ Specialty ดริปสโลว์บาร์ คาเฟ่แสงสวย และที่นั่งอ่านหนังสือชิลล์ๆ',
+    keywords: ['วัด', 'temple', 'ศาลเจ้า', 'พระธาตุ', 'เจดีย์', 'ขอพร', 'สายมู', 'ไหว้พระ', 'shrine'],
+    description: 'วัดสวย ศาลเจ้า พระธาตุ และจุดขอพรสายมู',
   },
   {
     id: 'oldtown_culture',
@@ -137,6 +204,22 @@ export const MASTER_SPOT_CATEGORIES: MasterSpotCategory[] = [
     description: 'สถาปัตยกรรมคลาสสิก ชุมชนดั้งเดิม ตลาดเก่า และมนต์เสน่ห์ประวัติศาสตร์',
   },
   {
+    id: 'museum_learning',
+    name: 'พิพิธภัณฑ์ & แหล่งเรียนรู้',
+    nameEn: 'Museums & Learning',
+    iconChar: '',
+    icon: Library,
+    colorScheme: {
+      iconBg: 'bg-blue-100/70',
+      iconColor: 'text-blue-700',
+      badgeBg: 'bg-blue-50',
+      badgeText: 'text-blue-800',
+      border: 'border-blue-200',
+    },
+    keywords: ['พิพิธภัณฑ์', 'museum', 'มิวเซียม', 'ศูนย์วิทยาศาสตร์', 'science', 'อควาเรียม', 'aquarium', 'แหล่งเรียนรู้', 'ท้องฟ้าจำลอง'],
+    description: 'พิพิธภัณฑ์ ศูนย์วิทยาศาสตร์ อควาเรียม และแหล่งเรียนรู้',
+  },
+  {
     id: 'art_creative',
     name: 'หอศิลป์ & สเปซศิลปะ',
     nameEn: 'Art & Creative Hubs',
@@ -151,6 +234,102 @@ export const MASTER_SPOT_CATEGORIES: MasterSpotCategory[] = [
     },
     keywords: ['art', 'ศิลปะ', 'หอศิลป์', 'museum', 'มิวเซียม', 'แกลเลอรี', 'gallery', 'craft', 'คราฟต์', 'นิทรรศการ', 'ครีเอทีฟ'],
     description: 'หอศิลป์ แกลเลอรีผลงานศิลปะ มิวเซียม และสเปซงานคราฟต์ร่วมสมัย',
+  },
+  {
+    id: 'cafe_slowbar',
+    name: 'คาเฟ่ & สเปซนั่งชิลล์',
+    nameEn: 'Cafe & Slow Bar',
+    iconChar: '☕',
+    icon: Coffee,
+    colorScheme: {
+      iconBg: 'bg-amber-100/70',
+      iconColor: 'text-amber-700',
+      badgeBg: 'bg-amber-50',
+      badgeText: 'text-amber-800',
+      border: 'border-amber-200',
+    },
+    keywords: ['cafe', 'คาเฟ่', 'coffee', 'กาแฟ', 'slow bar', 'เบเกอรี่', 'tea', 'ชา', 'matcha', 'มัทฉะ', 'สโลว์บาร์'],
+    description: 'กาแฟ Specialty ดริปสโลว์บาร์ คาเฟ่แสงสวย และที่นั่งอ่านหนังสือชิลล์ๆ',
+  },
+  {
+    id: 'food_street',
+    name: 'ร้านอร่อย & สตรีทฟู้ด',
+    nameEn: 'Food & Street Food',
+    iconChar: '',
+    icon: Utensils,
+    colorScheme: {
+      iconBg: 'bg-rose-100/70',
+      iconColor: 'text-rose-700',
+      badgeBg: 'bg-rose-50',
+      badgeText: 'text-rose-800',
+      border: 'border-rose-200',
+    },
+    keywords: ['ร้านอาหาร', 'restaurant', 'สตรีทฟู้ด', 'street food', 'ก๋วยเตี๋ยว', 'ร้านข้าว', 'ภัตตาคาร', 'โอมากาเสะ', 'อาหารท้องถิ่น'],
+    description: 'ร้านดังประจำเมือง สตรีทฟู้ด และอาหารท้องถิ่นที่ต้องลอง',
+  },
+  {
+    id: 'market_walking',
+    name: 'ตลาด & ถนนคนเดิน',
+    nameEn: 'Markets & Walking Streets',
+    iconChar: '',
+    icon: Store,
+    colorScheme: {
+      iconBg: 'bg-orange-100/70',
+      iconColor: 'text-orange-700',
+      badgeBg: 'bg-orange-50',
+      badgeText: 'text-orange-800',
+      border: 'border-orange-200',
+    },
+    keywords: ['ตลาด', 'market', 'ถนนคนเดิน', 'walking street', 'ตลาดน้ำ', 'ตลาดนัด', 'night market'],
+    description: 'ตลาดนัดกลางคืน ตลาดน้ำ ถนนคนเดิน และตลาดชุมชน',
+  },
+  {
+    id: 'nightlife_bars',
+    name: 'บาร์ & ไนท์ไลฟ์',
+    nameEn: 'Bars & Nightlife',
+    iconChar: '',
+    icon: Martini,
+    colorScheme: {
+      iconBg: 'bg-indigo-100/70',
+      iconColor: 'text-indigo-700',
+      badgeBg: 'bg-indigo-50',
+      badgeText: 'text-indigo-800',
+      border: 'border-indigo-200',
+    },
+    keywords: ['บาร์', 'bar', 'ผับ', 'pub', 'ค็อกเทล', 'cocktail', 'speakeasy', 'ไนท์ไลฟ์', 'nightlife', 'ดนตรีสด'],
+    description: 'บาร์ค็อกเทล รูฟท็อปบาร์ บาร์ดนตรีสด และย่านกลางคืน',
+  },
+  {
+    id: 'fun_activities',
+    name: 'สวนสนุก & กิจกรรม',
+    nameEn: 'Fun & Activities',
+    iconChar: '',
+    icon: FerrisWheel,
+    colorScheme: {
+      iconBg: 'bg-sky-100/70',
+      iconColor: 'text-sky-700',
+      badgeBg: 'bg-sky-50',
+      badgeText: 'text-sky-800',
+      border: 'border-sky-200',
+    },
+    keywords: ['สวนสนุก', 'theme park', 'สวนน้ำ', 'water park', 'สวนสัตว์', 'zoo', 'ซาฟารี', 'โกคาร์ท', 'go-kart', 'โบว์ลิ่ง', 'bowling', 'escape room'],
+    description: 'สวนสนุก สวนน้ำ สวนสัตว์ โกคาร์ท โบว์ลิ่ง และห้องปริศนา',
+  },
+  {
+    id: 'shopping_mall',
+    name: 'ช้อปปิ้ง & ไลฟ์สไตล์มอลล์',
+    nameEn: 'Shopping & Lifestyle Malls',
+    iconChar: '',
+    icon: ShoppingBag,
+    colorScheme: {
+      iconBg: 'bg-purple-100/70',
+      iconColor: 'text-purple-700',
+      badgeBg: 'bg-purple-50',
+      badgeText: 'text-purple-800',
+      border: 'border-purple-200',
+    },
+    keywords: ['ห้างสรรพสินค้า', 'มอลล์', 'mall', 'community mall', 'ช้อปปิ้ง', 'shopping', 'ร้านดีไซน์'],
+    description: 'คอมมูนิตี้มอลล์ ไลฟ์สไตล์มอลล์ และร้านดีไซน์',
   },
   {
     id: 'wellness_retreat',
@@ -262,11 +441,125 @@ export interface MasterCommunityLifestyleCategory {
 
 export const MASTER_COMMUNITY_LIFESTYLE_CATEGORIES: MasterCommunityLifestyleCategory[] = [
   {
+    id: 'cafe_social',
+    name: 'คาเฟ่ & พบปะชิลล์',
+    nameEn: 'Cafes & Hangouts',
+    desc: 'คาเฟ่ฮอปปิ้ง นั่งคุย นั่งทำงานด้วยกัน หาเพื่อนใหม่',
+    iconChar: '',
+    icon: Coffee,
+    coreMood: 'chill',
+    colorScheme: {
+      badgeBg: 'bg-amber-50',
+      badgeText: 'text-amber-700',
+      borderHover: 'hover:border-amber-400',
+      borderBottom: 'border-b-amber-500',
+      iconBg: 'bg-amber-100/70',
+      iconColor: 'text-amber-600',
+      activeBg: 'bg-amber-500 text-white',
+    },
+    keywords: ['คาเฟ่', 'cafe', 'coffee', 'กาแฟ', 'matcha', 'มัทฉะ', 'ชิล', 'ชิลล์', 'chill', 'จิบชา', 'coworking', 'นั่งทำงาน', 'brunch', 'บรันช์', 'พบปะ', 'เพื่อนใหม่', 'introvert'],
+  },
+  {
+    id: 'food_hunt',
+    name: 'ตะลุยกิน & ร้านเด็ด',
+    nameEn: 'Food Hunting',
+    desc: 'ตะลุยกินเยาวราช สตรีทฟู้ด โอมากาเสะ ชาบู หมูกระทะ',
+    iconChar: '',
+    icon: Utensils,
+    coreMood: 'chill',
+    colorScheme: {
+      badgeBg: 'bg-orange-50',
+      badgeText: 'text-orange-700',
+      borderHover: 'hover:border-orange-400',
+      borderBottom: 'border-b-orange-500',
+      iconBg: 'bg-orange-100/70',
+      iconColor: 'text-orange-600',
+      activeBg: 'bg-orange-500 text-white',
+    },
+    keywords: ['ตะลุยกิน', 'กิน', 'food', 'foodie', 'street food', 'สตรีทฟู้ด', 'ร้านอาหาร', 'ร้านเด็ด', 'omakase', 'โอมากาเสะ', 'บุฟเฟต์', 'buffet', 'หมูกระทะ', 'ชาบู', 'ปิ้งย่าง', 'ของกิน', 'food tour'],
+  },
+  {
+    id: 'boardgames_party',
+    name: 'บอร์ดเกม & ปาร์ตี้',
+    nameEn: 'Board Games & Parties',
+    desc: 'บอร์ดเกม Werewolf ควิซไนต์ ปาร์ตี้เล็กๆ',
+    iconChar: '',
+    icon: Dices,
+    coreMood: 'chill',
+    colorScheme: {
+      badgeBg: 'bg-sky-50',
+      badgeText: 'text-sky-700',
+      borderHover: 'hover:border-sky-400',
+      borderBottom: 'border-b-sky-500',
+      iconBg: 'bg-sky-100/70',
+      iconColor: 'text-sky-600',
+      activeBg: 'bg-sky-500 text-white',
+    },
+    keywords: ['บอร์ดเกม', 'board game', 'board games', 'boardgame', 'boardgames', 'werewolf', 'มาเฟีย', 'pub quiz', 'quiz', 'ควิซ', 'trivia', 'party', 'ปาร์ตี้', 'game night'],
+  },
+  {
+    id: 'gaming_anime',
+    name: 'เกม อนิเมะ & ป๊อปคัลเจอร์',
+    nameEn: 'Games, Anime & Pop Culture',
+    desc: 'เล่นเกมด้วยกัน อนิเมะ คอสเพลย์ แฟนคลับ K-pop อาร์ตทอย',
+    iconChar: '',
+    icon: Gamepad2,
+    coreMood: 'chill',
+    colorScheme: {
+      badgeBg: 'bg-indigo-50',
+      badgeText: 'text-indigo-700',
+      borderHover: 'hover:border-indigo-400',
+      borderBottom: 'border-b-indigo-500',
+      iconBg: 'bg-indigo-100/70',
+      iconColor: 'text-indigo-600',
+      activeBg: 'bg-indigo-500 text-white',
+    },
+    keywords: ['เกม', 'game', 'games', 'gaming', 'esports', 'อนิเมะ', 'anime', 'manga', 'มังงะ', 'cosplay', 'คอสเพลย์', 'k-pop', 'kpop', 'idol', 'ไอดอล', 'art toy', 'อาร์ตทอย', 'figure', 'otaku', 'การ์ตูน', 'comic'],
+  },
+  {
+    id: 'movies_music',
+    name: 'ดูหนัง ฟังเพลง & คอนเสิร์ต',
+    nameEn: 'Movies, Music & Concerts',
+    desc: 'หาเพื่อนไปคอนเสิร์ต ดูหนังอินดี้ ฟังดนตรีสด แผ่นเสียง',
+    iconChar: '',
+    icon: Clapperboard,
+    coreMood: 'chill',
+    colorScheme: {
+      badgeBg: 'bg-purple-50',
+      badgeText: 'text-purple-700',
+      borderHover: 'hover:border-purple-400',
+      borderBottom: 'border-b-purple-500',
+      iconBg: 'bg-purple-100/70',
+      iconColor: 'text-purple-600',
+      activeBg: 'bg-purple-500 text-white',
+    },
+    keywords: ['ดูหนัง', 'ภาพยนตร์', 'movie', 'movies', 'cinema', 'film', 'คอนเสิร์ต', 'concert', 'ดนตรี', 'music', 'เพลง', 'vinyl', 'แผ่นเสียง', 'jazz', 'แจ๊ส', 'live music', 'guitar', 'กีตาร์', 'karaoke', 'คาราโอเกะ', 'เดี่ยวไมโครโฟน', 'stand-up'],
+  },
+  {
+    id: 'pets_family',
+    name: 'สัตว์เลี้ยง & ครอบครัว',
+    nameEn: 'Pets & Family',
+    desc: 'พาน้องหมาเดินเล่น คาเฟ่แมว กิจกรรมครอบครัว',
+    iconChar: '',
+    icon: HeartHandshake,
+    coreMood: 'chill',
+    colorScheme: {
+      badgeBg: 'bg-rose-50',
+      badgeText: 'text-rose-700',
+      borderHover: 'hover:border-rose-400',
+      borderBottom: 'border-b-rose-500',
+      iconBg: 'bg-rose-100/70',
+      iconColor: 'text-rose-600',
+      activeBg: 'bg-rose-500 text-white',
+    },
+    keywords: ['สัตว์เลี้ยง', 'น้องหมา', 'สุนัข', 'แมว', 'ทาสแมว', 'pet', 'pets', 'dog', 'dogs', 'cat cafe', 'ครอบครัว', 'family', 'kids'],
+  },
+  {
     id: 'running_fitness',
     name: 'งานวิ่ง & ฟิตเนส',
     nameEn: 'Running & Fitness',
-    desc: 'งานวิ่ง ซิตี้รัน HYROX บอดี้เวท ปีนผา แบดมินตัน',
-    iconChar: '🏃',
+    desc: 'ชวนวิ่ง ซิตี้รัน HYROX บอดี้เวท ปีนผา ปั่นจักรยาน',
+    iconChar: '',
     icon: Flame,
     coreMood: 'move',
     colorScheme: {
@@ -278,90 +571,52 @@ export const MASTER_COMMUNITY_LIFESTYLE_CATEGORIES: MasterCommunityLifestyleCate
       iconColor: 'text-orange-600',
       activeBg: 'bg-orange-500 text-white',
     },
-    keywords: ['วิ่ง', 'running', 'marathon', 'hyrox', 'fitness', 'กีฬา', 'sport', 'climbing', 'ปีน', 'badminton'],
+    keywords: ['วิ่ง', 'run', 'running', 'runner', 'marathon', 'มาราธอน', 'hyrox', 'fitness', 'ฟิตเนส', 'gym', 'ยิม', 'workout', 'บอดี้เวท', 'bodyweight', 'ปีน', 'climbing', 'bouldering', 'crossfit', 'pilates', 'พิลาทิส', 'ออกกำลังกาย', 'ปั่นจักรยาน', 'cycling', 'bike'],
   },
   {
-    id: 'wellness_mind',
-    name: 'ฮีลใจ & สมาธิ',
-    nameEn: 'Health & Wellness',
-    desc: 'โยคะ Sound Bath นั่งสมาธิ ผ่อนคลายจิตใจ',
-    iconChar: '🌱',
-    icon: Sparkles,
-    coreMood: 'heal',
-    colorScheme: {
-      badgeBg: 'bg-emerald-50',
-      badgeText: 'text-emerald-700',
-      borderHover: 'hover:border-emerald-400',
-      borderBottom: 'border-b-emerald-500',
-      iconBg: 'bg-emerald-100/70',
-      iconColor: 'text-emerald-600',
-      activeBg: 'bg-emerald-600 text-white',
-    },
-    keywords: ['sound bath', 'soundbath', 'yoga', 'โยคะ', 'สมาธิ', 'mindfulness', 'heal', 'ฮีลใจ', 'บำบัด', 'introvert'],
-  },
-  {
-    id: 'cafe_social',
-    name: 'คาเฟ่ & พบปะชิลล์',
-    nameEn: 'Social & Hangout',
-    desc: 'Slow Bar จิบกาแฟ แลกเปลี่ยน สนทนาหาเพื่อนใหม่',
-    iconChar: '☕',
-    icon: Coffee,
-    coreMood: 'chill',
+    id: 'sports_club',
+    name: 'กีฬาทีม & แร็กเกต',
+    nameEn: 'Team & Racket Sports',
+    desc: 'แบดมินตัน พิกเคิลบอล ฟุตซอล เทนนิส บาส',
+    iconChar: '',
+    icon: Trophy,
+    coreMood: 'move',
     colorScheme: {
       badgeBg: 'bg-amber-50',
-      badgeText: 'text-amber-800',
+      badgeText: 'text-amber-700',
       borderHover: 'hover:border-amber-400',
       borderBottom: 'border-b-amber-500',
       iconBg: 'bg-amber-100/70',
-      iconColor: 'text-amber-700',
-      activeBg: 'bg-amber-600 text-white',
+      iconColor: 'text-amber-600',
+      activeBg: 'bg-amber-500 text-white',
     },
-    keywords: ['cafe', 'คาเฟ่', 'coffee', 'กาแฟ', 'slow bar', 'hangout', 'จิบกาแฟ', 'พูดคุย', 'อาหาร', 'tea', 'ชา', 'มัทฉะ'],
+    keywords: ['แบดมินตัน', 'แบด', 'badminton', 'pickleball', 'พิกเคิลบอล', 'tennis', 'เทนนิส', 'ฟุตบอล', 'football', 'futsal', 'ฟุตซอล', 'บาส', 'basketball', 'วอลเลย์', 'volleyball', 'ปิงปอง', 'table tennis', 'padel', 'กอล์ฟ', 'golf', 'แร็กเกต'],
   },
   {
-    id: 'boardgames_party',
-    name: 'บอร์ดเกม & ปาร์ตี้',
-    nameEn: 'Board Games & Fun',
-    desc: 'ปาร์ตี้บอร์ดเกม เล่นเกมกลุ่ม พูดคุยสนุกสนาน',
-    iconChar: '🎲',
-    icon: Dices,
-    coreMood: 'chill',
+    id: 'dance_move',
+    name: 'เต้น & ขยับ',
+    nameEn: 'Dance',
+    desc: 'คัฟเวอร์แดนซ์ K-pop ซุมบ้า โซเชียลแดนซ์ ซัลซ่า',
+    iconChar: '',
+    icon: Disc3,
+    coreMood: 'move',
     colorScheme: {
-      badgeBg: 'bg-sky-50',
-      badgeText: 'text-sky-700',
-      borderHover: 'hover:border-sky-400',
-      borderBottom: 'border-b-sky-500',
-      iconBg: 'bg-sky-100/70',
-      iconColor: 'text-sky-600',
-      activeBg: 'bg-sky-600 text-white',
+      badgeBg: 'bg-rose-50',
+      badgeText: 'text-rose-700',
+      borderHover: 'hover:border-rose-400',
+      borderBottom: 'border-b-rose-500',
+      iconBg: 'bg-rose-100/70',
+      iconColor: 'text-rose-600',
+      activeBg: 'bg-rose-500 text-white',
     },
-    keywords: ['board game', 'boardgame', 'บอร์ดเกม', 'เกม', 'catan', 'quiz', 'party', 'เกมกลุ่ม', 'เพื่อนใหม่'],
-  },
-  {
-    id: 'arts_crafts',
-    name: 'ศิลปะ & งานคราฟต์',
-    nameEn: 'Arts & Creative',
-    desc: 'ปั้นดิน เซรามิก วาดภาพสีน้ำ เวิร์กช็อปศิลปะ',
-    iconChar: '🎨',
-    icon: Palette,
-    coreMood: 'learn',
-    colorScheme: {
-      badgeBg: 'bg-purple-50',
-      badgeText: 'text-purple-700',
-      borderHover: 'hover:border-purple-400',
-      borderBottom: 'border-b-purple-500',
-      iconBg: 'bg-purple-100/70',
-      iconColor: 'text-purple-600',
-      activeBg: 'bg-purple-600 text-white',
-    },
-    keywords: ['workshop', 'เวิร์กช็อป', 'art', 'ศิลปะ', 'craft', 'คราฟต์', 'เซรามิก', 'pottery', 'ปั้นดิน', 'painting', 'สีน้ำ', 'เทียน', 'candle', 'ภาพวาด'],
+    keywords: ['เต้น', 'dance', 'dancing', 'zumba', 'ซุมบ้า', 'cover dance', 'salsa', 'ซัลซ่า', 'bachata', 'swing', 'social dance', 'hip hop'],
   },
   {
     id: 'travel_outdoor',
     name: 'ท่องเที่ยว & เอาต์ดอร์',
-    nameEn: 'Travel & Outdoor',
-    desc: 'เดินป่า กางเต็นท์ พายคายัค ซับบอร์ด ถ่ายรูป',
-    iconChar: '🌿',
+    nameEn: 'Travel & Outdoors',
+    desc: 'ทริปวันเดียว เดินป่า แคมป์ปิ้ง ทะเล พายซับบอร์ด',
+    iconChar: '',
     icon: Trees,
     coreMood: 'move',
     colorScheme: {
@@ -371,16 +626,149 @@ export const MASTER_COMMUNITY_LIFESTYLE_CATEGORIES: MasterCommunityLifestyleCate
       borderBottom: 'border-b-teal-500',
       iconBg: 'bg-teal-100/70',
       iconColor: 'text-teal-600',
-      activeBg: 'bg-teal-600 text-white',
+      activeBg: 'bg-teal-500 text-white',
     },
-    keywords: ['outdoor', 'เอาต์ดอร์', 'camping', 'กางเต็นท์', 'เดินป่า', 'คายัค', 'sup board', 'ซับบอร์ด', 'ธรรมชาติ', 'photowalk', 'ถ่ายรูป'],
+    keywords: ['เที่ยว', 'ท่องเที่ยว', 'travel', 'trip', 'ทริป', 'เดินป่า', 'hiking', 'hike', 'trekking', 'camping', 'แคมป์', 'camp', 'ทะเล', 'beach', 'ดำน้ำ', 'diving', 'snorkel', 'ซับบอร์ด', 'sup', 'kayak', 'พายเรือ', 'ภูเขา', 'น้ำตก', 'ธรรมชาติ', 'nature', 'watersports', 'water sports', 'เดินเล่น', 'ปิกนิก', 'picnic', 'สวน'],
+  },
+  {
+    id: 'wellness_mind',
+    name: 'ฮีลใจ & สมาธิ',
+    nameEn: 'Mind & Wellness',
+    desc: 'นั่งสมาธิ โยคะ ซาวด์ฮีลลิ่ง อโรมา เขียนบันทึก',
+    iconChar: '',
+    icon: Sparkles,
+    coreMood: 'heal',
+    colorScheme: {
+      badgeBg: 'bg-emerald-50',
+      badgeText: 'text-emerald-700',
+      borderHover: 'hover:border-emerald-400',
+      borderBottom: 'border-b-emerald-500',
+      iconBg: 'bg-emerald-100/70',
+      iconColor: 'text-emerald-600',
+      activeBg: 'bg-emerald-500 text-white',
+    },
+    keywords: ['สมาธิ', 'meditation', 'mindfulness', 'โยคะ', 'yoga', 'ฮีลใจ', 'ฮีล', 'healing', 'sound healing', 'sound bath', 'aromatherapy', 'อโรมา', 'บำบัด', 'therapy', 'ผ่อนคลาย', 'retreat', 'breathwork', 'journaling'],
+  },
+  {
+    id: 'beauty_selfcare',
+    name: 'ดูแลตัวเอง & บิวตี้',
+    nameEn: 'Self-care & Beauty',
+    desc: 'เวิร์กช็อปแต่งหน้า สกินแคร์ ทริปช้อปมือสอง แฟชั่น',
+    iconChar: '',
+    icon: Gem,
+    coreMood: 'heal',
+    colorScheme: {
+      badgeBg: 'bg-rose-50',
+      badgeText: 'text-rose-700',
+      borderHover: 'hover:border-rose-400',
+      borderBottom: 'border-b-rose-500',
+      iconBg: 'bg-rose-100/70',
+      iconColor: 'text-rose-600',
+      activeBg: 'bg-rose-500 text-white',
+    },
+    keywords: ['บิวตี้', 'beauty', 'แต่งหน้า', 'makeup', 'skincare', 'สกินแคร์', 'แฟชั่น', 'fashion', 'แต่งตัว', 'thrift', 'มือสอง', 'ช้อปปิ้ง', 'shopping', 'nail', 'ทำเล็บ', 'น้ำหอม', 'perfume', 'self-care', 'selfcare', 'ดูแลตัวเอง'],
+  },
+  {
+    id: 'volunteer',
+    name: 'จิตอาสา & ทำดี',
+    nameEn: 'Volunteering',
+    desc: 'เก็บขยะชายหาด ช่วยงานบ้านสัตว์ ปลูกป่า',
+    iconChar: '',
+    icon: HandHeart,
+    coreMood: 'heal',
+    colorScheme: {
+      badgeBg: 'bg-emerald-50',
+      badgeText: 'text-emerald-700',
+      borderHover: 'hover:border-emerald-400',
+      borderBottom: 'border-b-emerald-500',
+      iconBg: 'bg-emerald-100/70',
+      iconColor: 'text-emerald-600',
+      activeBg: 'bg-emerald-500 text-white',
+    },
+    keywords: ['จิตอาสา', 'อาสา', 'volunteer', 'volunteering', 'เก็บขยะ', 'beach clean', 'cleanup', 'clean up', 'ปลูกป่า', 'ปลูกต้นไม้', 'บริจาค', 'charity'],
+  },
+  {
+    id: 'arts_crafts',
+    name: 'ศิลปะ & งานคราฟต์',
+    nameEn: 'Arts & Crafts',
+    desc: 'ปั้นเซรามิก วาดรูป เครื่องหนัง เทอราเรียม งานปัก',
+    iconChar: '',
+    icon: Palette,
+    coreMood: 'learn',
+    colorScheme: {
+      badgeBg: 'bg-purple-50',
+      badgeText: 'text-purple-700',
+      borderHover: 'hover:border-purple-400',
+      borderBottom: 'border-b-purple-500',
+      iconBg: 'bg-purple-100/70',
+      iconColor: 'text-purple-600',
+      activeBg: 'bg-purple-500 text-white',
+    },
+    keywords: ['ศิลปะ', 'art', 'arts', 'อาร์ต', 'แกลเลอรี', 'gallery', 'นิทรรศการ', 'painting', 'วาดรูป', 'วาด', 'ระบายสี', 'pottery', 'เซรามิก', 'ceramic', 'ปั้น', 'craft', 'คราฟต์', 'handmade', 'งานฝีมือ', 'leather', 'leatherwork', 'เครื่องหนัง', 'หนังแท้', 'terrarium', 'เทอราเรียม', 'จัดสวน', 'ดอกไม้', 'flower', 'candle', 'เทียนหอม', 'embroidery', 'ปักผ้า'],
+  },
+  {
+    id: 'photo_content',
+    name: 'ถ่ายรูป & ทำคอนเทนต์',
+    nameEn: 'Photography & Content',
+    desc: 'โฟโต้วอล์ก กล้องฟิล์ม แต่งรูป ทำคอนเทนต์ด้วยกัน',
+    iconChar: '',
+    icon: Camera,
+    coreMood: 'learn',
+    colorScheme: {
+      badgeBg: 'bg-sky-50',
+      badgeText: 'text-sky-700',
+      borderHover: 'hover:border-sky-400',
+      borderBottom: 'border-b-sky-500',
+      iconBg: 'bg-sky-100/70',
+      iconColor: 'text-sky-600',
+      activeBg: 'bg-sky-500 text-white',
+    },
+    keywords: ['ถ่ายรูป', 'ถ่ายภาพ', 'photo', 'photography', 'photowalk', 'photo walk', 'street photo', 'streetphoto', 'กล้อง', 'camera', 'ฟิล์ม', 'analog film', 'darkroom', 'content', 'คอนเทนต์', 'creator', 'vlog', 'tiktok', 'reels'],
+  },
+  {
+    id: 'cooking_baking',
+    name: 'ทำอาหาร & เบเกอรี่',
+    nameEn: 'Cooking & Baking',
+    desc: 'อบซาวร์โดว์ คลาสทำอาหาร ทำขนม',
+    iconChar: '',
+    icon: ChefHat,
+    coreMood: 'learn',
+    colorScheme: {
+      badgeBg: 'bg-orange-50',
+      badgeText: 'text-orange-700',
+      borderHover: 'hover:border-orange-400',
+      borderBottom: 'border-b-orange-500',
+      iconBg: 'bg-orange-100/70',
+      iconColor: 'text-orange-600',
+      activeBg: 'bg-orange-500 text-white',
+    },
+    keywords: ['ทำอาหาร', 'cooking', 'cook', 'baking', 'bake', 'เบเกอรี่', 'bakery', 'ขนมปัง', 'sourdough', 'ซาวร์โดว์', 'อบขนม', 'ทำขนม'],
+  },
+  {
+    id: 'books_language',
+    name: 'หนังสือ & ภาษา',
+    nameEn: 'Books & Languages',
+    desc: 'บุ๊คคลับ นัดอ่านหนังสือเงียบๆ แลกเปลี่ยนภาษา',
+    iconChar: '',
+    icon: BookOpen,
+    coreMood: 'learn',
+    colorScheme: {
+      badgeBg: 'bg-blue-50',
+      badgeText: 'text-blue-700',
+      borderHover: 'hover:border-blue-400',
+      borderBottom: 'border-b-blue-500',
+      iconBg: 'bg-blue-100/70',
+      iconColor: 'text-blue-600',
+      activeBg: 'bg-blue-500 text-white',
+    },
+    keywords: ['หนังสือ', 'book', 'books', 'book club', 'reading', 'อ่าน', 'ภาษา', 'language', 'language exchange', 'ฝึกภาษา', 'english'],
   },
   {
     id: 'tech_skills',
-    name: 'ทักษะ & เทคโนโลยี',
-    nameEn: 'Tech & Learning',
-    desc: 'Tech Meetup, Coding, AI, ธุรกิจ, เสวนาหนังสือ',
-    iconChar: '💻',
+    name: 'อาชีพ เทค & การเงิน',
+    nameEn: 'Career, Tech & Money',
+    desc: 'วางแผนการเงิน ลงทุน เขียนโค้ด AI งานเสริม',
+    iconChar: '',
     icon: Laptop,
     coreMood: 'learn',
     colorScheme: {
@@ -390,28 +778,9 @@ export const MASTER_COMMUNITY_LIFESTYLE_CATEGORIES: MasterCommunityLifestyleCate
       borderBottom: 'border-b-indigo-500',
       iconBg: 'bg-indigo-100/70',
       iconColor: 'text-indigo-600',
-      activeBg: 'bg-indigo-600 text-white',
+      activeBg: 'bg-indigo-500 text-white',
     },
-    keywords: ['tech', 'ai', 'coding', 'developer', 'startup', 'business', 'networking', 'หนังสือ', 'book', 'talk', 'เสวนา'],
-  },
-  {
-    id: 'pets_family',
-    name: 'สัตว์เลี้ยง & ครอบครัว',
-    nameEn: 'Pets & Family',
-    desc: 'พาน้องหมาน้องแมวเที่ยว สังคมคนรักสัตว์ กิจกรรมครอบครัว',
-    iconChar: '🐾',
-    icon: HeartHandshake,
-    coreMood: 'chill',
-    colorScheme: {
-      badgeBg: 'bg-rose-50',
-      badgeText: 'text-rose-700',
-      borderHover: 'hover:border-rose-400',
-      borderBottom: 'border-b-rose-500',
-      iconBg: 'bg-rose-100/70',
-      iconColor: 'text-rose-600',
-      activeBg: 'bg-rose-600 text-white',
-    },
-    keywords: ['pet', 'สัตว์เลี้ยง', 'หมา', 'แมว', 'dog', 'cat', 'family', 'ครอบครัว', 'เด็ก', 'kids'],
+    keywords: ['ai', 'coding', 'code', 'developer', 'hack night', 'tech', 'startup', 'เทคโนโลยี', 'การเงิน', 'ลงทุน', 'หุ้น', 'finance', 'invest', 'investing', 'investor', 'ภาษี', 'career', 'อาชีพ', 'side hustle', 'freelance', 'networking'],
   },
 ];
 
@@ -433,76 +802,208 @@ export interface MasterFairCategory {
 
 export const MASTER_FAIR_CATEGORIES: MasterFairCategory[] = [
   {
-    id: 'convention_centers',
-    name: 'ศูนย์ประชุม & ฮอลล์ใหญ่',
-    nameEn: 'Convention Centers',
-    iconChar: '🏛️',
-    icon: Building2,
+    id: 'parks_openair',
+    name: 'คอนเสิร์ต & แฟนมีต',
+    nameEn: 'Concerts & Fan Meetings',
+    iconChar: '',
+    icon: MicVocal,
     colorScheme: {
-      iconBg: 'bg-blue-100/70',
-      iconColor: 'text-blue-700',
+      iconBg: 'bg-rose-100/70',
+      iconColor: 'text-rose-700',
     },
-    keywords: ['qsncc', 'สิริกิติ์', 'bitec', 'ไบเทค', 'impact', 'อิมแพ็ค', 'เมืองทอง', 'paragon', 'พารากอน', 'iconsiam', 'ไอคอนสยาม', 'kice', 'cmecc'],
+    keywords: ['คอนเสิร์ต', 'concert', 'แฟนมีต', 'fan meet', 'fanmeet', 'fancon', 'world tour', 'asia tour', 'live', 'ไลฟ์', 'ดนตรี', 'music', 'มิวสิค', 'jazz', 'แจ๊ส', 'showcase', 'recital'],
   },
   {
-    id: 'art_festivals',
-    name: 'เทศกาลเมือง & งานศิลป์',
-    nameEn: 'Design & Art Festivals',
-    iconChar: '🎨',
-    icon: Palette,
+    id: 'music_festivals',
+    name: 'เทศกาลดนตรี',
+    nameEn: 'Music Festivals',
+    iconChar: '',
+    icon: PartyPopper,
     colorScheme: {
       iconBg: 'bg-purple-100/70',
       iconColor: 'text-purple-700',
     },
-    keywords: ['design week', 'biennale', 'art', 'ศิลปะ', 'creative', 'เทศกาล', 'festival', 'นิทรรศการ', 'gallery'],
+    keywords: ['เทศกาลดนตรี', 'music festival', 'music fest', 'มิวสิคเฟสติวัล', 'เฟสติวัลดนตรี', 'wonderfruit', 'big mountain', 's2o', 'summer sonic', 'rolling loud', 'edc', 'edm', 'rave', 'electronic festival', 'ดนตรีในสวน'],
   },
   {
     id: 'marathon_sports',
-    name: 'งานวิ่งมาราธอน & กีฬา',
-    nameEn: 'Marathons & Sports',
-    iconChar: '🏃',
+    name: 'งานวิ่ง',
+    nameEn: 'Running',
+    iconChar: '',
     icon: Flame,
     colorScheme: {
       iconBg: 'bg-orange-100/70',
       iconColor: 'text-orange-700',
     },
-    keywords: ['วิ่ง', 'marathon', 'มาราธอน', 'กีฬา', 'sport', 'race', 'ไตรกีฬา', 'triathlon', 'แข่งขัน'],
+    keywords: ['วิ่ง', 'run', 'running', 'runner', 'marathon', 'มาราธอน', 'fun run', 'trail', 'เทรล', 'ultra'],
   },
   {
-    id: 'heritage_local',
-    name: 'งานประเพณี & งานประจำปี',
-    nameEn: 'Local Heritage Fairs',
-    iconChar: '🏮',
-    icon: Landmark,
+    id: 'sports_esports',
+    name: 'กีฬา & อีสปอร์ต',
+    nameEn: 'Sports & E-sports',
+    iconChar: '',
+    icon: Trophy,
     colorScheme: {
       iconBg: 'bg-amber-100/70',
       iconColor: 'text-amber-700',
     },
-    keywords: ['ประเพณี', 'กาชาด', 'เกษตรแฟร์', 'งานวัด', 'heritage', 'วัฒนธรรม', 'ประจำปี', 'สมโภช'],
+    keywords: ['กีฬา', 'sport', 'sports', 'esport', 'esports', 'e-sport', 'e-sports', 'อีสปอร์ต', 'ไตรกีฬา', 'triathlon', 'ปั่นจักรยาน', 'cycling', 'ride', 'แข่งขัน', 'tournament', 'championship', 'มวย', 'boxing', 'muay', 'ฟุตบอล', 'football', 'บาสเกตบอล', 'basketball', 'วอลเลย์บอล', 'volleyball', 'กอล์ฟ', 'golf', 'ว่ายน้ำ', 'swim'],
+  },
+  {
+    id: 'food_drinks',
+    name: 'อาหาร & เครื่องดื่ม',
+    nameEn: 'Food & Drinks',
+    iconChar: '',
+    icon: Utensils,
+    colorScheme: {
+      iconBg: 'bg-orange-100/70',
+      iconColor: 'text-orange-700',
+    },
+    keywords: ['อาหาร', 'food', 'กาแฟ', 'coffee', 'drink', 'drinks', 'เครื่องดื่ม', 'beer', 'เบียร์', 'wine', 'ไวน์', 'tea', 'ชานม', 'ชาไทย', 'ขนม', 'dessert', 'bakery', 'เบเกอรี่', 'street food', 'chef', 'เชฟ', 'buffet', 'บุฟเฟต์', 'gastronomy'],
   },
   {
     id: 'craft_market',
-    name: 'ตลาดนัด & คราฟต์แฟร์',
-    nameEn: 'Creative & Craft Fairs',
-    iconChar: '🛍️',
+    name: 'ตลาด & คราฟต์',
+    nameEn: 'Markets & Crafts',
+    iconChar: '',
     icon: ShoppingBag,
     colorScheme: {
       iconBg: 'bg-rose-100/70',
       iconColor: 'text-rose-700',
     },
-    keywords: ['craft', 'คราฟต์', 'ตลาดนัด', 'market', 'flea market', 'fair', 'แฟร์', 'สินค้าทำมือ', 'art toy', 'อาร์ตทอย'],
+    keywords: ['craft', 'crafting', 'คราฟต์', 'ตลาด', 'market', 'flea', 'handmade', 'ทำมือ', 'vintage', 'วินเทจ', 'มือสอง', 'thrift'],
   },
   {
-    id: 'parks_openair',
-    name: 'สวนสาธารณะ & ลานดนตรี',
-    nameEn: 'Parks & Open-Air',
-    iconChar: '🌳',
-    icon: Trees,
+    id: 'pop_culture',
+    name: 'การ์ตูน เกม & ป๊อปคัลเจอร์',
+    nameEn: 'Comics, Games & Pop Culture',
+    iconChar: '',
+    icon: Gamepad2,
+    colorScheme: {
+      iconBg: 'bg-indigo-100/70',
+      iconColor: 'text-indigo-700',
+    },
+    keywords: ['game', 'games', 'gaming', 'เกม', 'comic', 'comics', 'การ์ตูน', 'anime', 'อนิเมะ', 'manga', 'มังงะ', 'cosplay', 'คอสเพลย์', 'toy', 'toys', 'art toy', 'อาร์ตทอย', 'figure', 'ฟิกเกอร์', 'otaku', 'idol'],
+  },
+  {
+    id: 'art_festivals',
+    name: 'ศิลปะ & นิทรรศการ',
+    nameEn: 'Art & Exhibitions',
+    iconChar: '',
+    icon: Palette,
+    colorScheme: {
+      iconBg: 'bg-purple-100/70',
+      iconColor: 'text-purple-700',
+    },
+    keywords: ['art', 'arts', 'ศิลปะ', 'ศิลป์', 'design week', 'biennale', 'นิทรรศการ', 'gallery', 'แกลเลอรี', 'museum', 'พิพิธภัณฑ์', 'photo', 'ภาพถ่าย'],
+  },
+  {
+    id: 'wellness',
+    name: 'สุขภาพ & เวลเนส',
+    nameEn: 'Health & Wellness',
+    iconChar: '',
+    icon: HeartPulse,
     colorScheme: {
       iconBg: 'bg-emerald-100/70',
       iconColor: 'text-emerald-700',
     },
-    keywords: ['สวน', 'park', 'ดนตรีในสวน', 'open air', 'คอนเสิร์ต', 'music', 'ลานคนเมือง', 'สนามหลวง'],
+    keywords: ['สุขภาพ', 'health', 'healthy', 'wellness', 'เวลเนส', 'wellbeing', 'longevity', 'อายุยืน', 'anti-aging', 'anti aging', 'ชะลอวัย', 'yoga', 'โยคะ', 'meditation', 'สมาธิ', 'spa', 'สปา', 'beauty', 'ความงาม', 'nutrition', 'โภชนาการ', 'supplement', 'healing', 'retreat', 'รีทรีต', 'ออร์แกนิก', 'organic'],
+  },
+  {
+    id: 'performing_arts',
+    name: 'ละครเวที & การแสดง',
+    nameEn: 'Theatre & Shows',
+    iconChar: '',
+    icon: Drama,
+    colorScheme: {
+      iconBg: 'bg-sky-100/70',
+      iconColor: 'text-sky-700',
+    },
+    keywords: ['ละคร', 'musical', 'musicals', 'มิวสิคัล', 'stand-up', 'stand up', 'standup', 'ทอล์คโชว์', 'เดี่ยวไมโครโฟน', 'ballet', 'บัลเลต์', 'dance', 'การแสดง', 'theatre', 'theater', 'โขน', 'circus', 'magic show'],
+  },
+  {
+    id: 'books_learning',
+    name: 'หนังสือ & การเรียนรู้',
+    nameEn: 'Books & Learning',
+    iconChar: '',
+    icon: BookOpen,
+    colorScheme: {
+      iconBg: 'bg-blue-100/70',
+      iconColor: 'text-blue-700',
+    },
+    keywords: ['หนังสือ', 'book', 'books', 'workshop', 'เวิร์คช็อป', 'เวิร์กช็อป', 'talk', 'เสวนา', 'สัมมนา', 'การศึกษา', 'education', 'learning', 'ศึกษาต่อ', 'career', 'job fair', 'งานอาชีพ'],
+  },
+  {
+    id: 'heritage_local',
+    name: 'เทศกาล & ประเพณี',
+    nameEn: 'Festivals & Traditions',
+    iconChar: '',
+    icon: Landmark,
+    colorScheme: {
+      iconBg: 'bg-amber-100/70',
+      iconColor: 'text-amber-700',
+    },
+    keywords: ['ประเพณี', 'กาชาด', 'เกษตรแฟร์', 'งานวัด', 'heritage', 'วัฒนธรรม', 'ประจำปี', 'สมโภช', 'สงกรานต์', 'songkran', 'ลอยกระทง', 'loy krathong', 'countdown', 'เคานต์ดาวน์', 'light festival', 'เทศกาลไฟ', 'เทศกาล', 'festival'],
+  },
+  {
+    id: 'travel_outdoor',
+    name: 'ท่องเที่ยว & เอาท์ดอร์',
+    nameEn: 'Travel & Outdoors',
+    iconChar: '',
+    icon: Tent,
+    colorScheme: {
+      iconBg: 'bg-teal-100/70',
+      iconColor: 'text-teal-700',
+    },
+    keywords: ['ท่องเที่ยว', 'เที่ยว', 'travel', 'tourism', 'แคมป์', 'camp', 'camping', 'แคมปิ้ง', 'outdoor', 'เอาท์ดอร์', 'dive', 'diving', 'ดำน้ำ', 'trekking', 'เดินป่า', 'hotel', 'โรงแรม'],
+  },
+  {
+    id: 'home_lifestyle',
+    name: 'บ้าน & ไลฟ์สไตล์',
+    nameEn: 'Home & Lifestyle',
+    iconChar: '',
+    icon: House,
+    colorScheme: {
+      iconBg: 'bg-teal-100/70',
+      iconColor: 'text-teal-700',
+    },
+    keywords: ['บ้าน', 'home', 'furniture', 'เฟอร์นิเจอร์', 'decor', 'ตกแต่ง', 'living', 'garden', 'wedding', 'แต่งงาน', 'baby', 'แม่และเด็ก', 'mom', 'lifestyle', 'ไลฟ์สไตล์', 'fashion', 'แฟชั่น'],
+  },
+  {
+    id: 'pets',
+    name: 'สัตว์เลี้ยง',
+    nameEn: 'Pets',
+    iconChar: '',
+    icon: PawPrint,
+    colorScheme: {
+      iconBg: 'bg-amber-100/70',
+      iconColor: 'text-amber-700',
+    },
+    keywords: ['สัตว์เลี้ยง', 'pet', 'pets', 'สุนัข', 'หมา', 'แมว', 'dog', 'dogs', 'cat', 'cats'],
+  },
+  {
+    id: 'tech_motor',
+    name: 'ไอที รถยนต์ & เทคโนโลยี',
+    nameEn: 'Tech & Motor',
+    iconChar: '',
+    icon: Car,
+    colorScheme: {
+      iconBg: 'bg-slate-100/70',
+      iconColor: 'text-slate-700',
+    },
+    keywords: ['ไอที', 'tech', 'technology', 'เทคโนโลยี', 'gadget', 'commart', 'คอมมาร์ท', 'motor', 'มอเตอร์', 'รถยนต์', 'car', 'cars', 'ev', 'บิ๊กไบค์', 'ai', 'startup'],
+  },
+  {
+    id: 'convention_centers',
+    name: 'งานแฟร์ & เอ็กซ์โป',
+    nameEn: 'Fairs & Expos',
+    iconChar: '',
+    icon: Building2,
+    colorScheme: {
+      iconBg: 'bg-blue-100/70',
+      iconColor: 'text-blue-700',
+    },
+    keywords: ['expo', 'เอ็กซ์โป', 'แฟร์', 'fair', 'มหกรรม', 'งานแสดงสินค้า', 'trade show', 'congress', 'conference', 'ประชุม'],
   },
 ];
 
@@ -639,9 +1140,13 @@ export const questCategoryId = (category: string | undefined): string => (catego
 // 6. 🎯 DETERMINISTIC SINGLE-CATEGORY CLASSIFIERS (1 Card = Exactly 1 Category)
 // =========================================================================
 
+/** Which meetup group wins when a title fits several: the most specific first (a photo walk before a walk, a cooking
+ * class before a food hunt, board games before games, a dog walk is pets). Anything left is a cafe hangout. */
+const MEETUP_MATCH_ORDER = ['tech_skills', 'pets_family', 'volunteer', 'photo_content', 'cooking_baking', 'food_hunt', 'books_language', 'dance_move', 'sports_club', 'running_fitness', 'wellness_mind', 'beauty_selfcare', 'boardgames_party', 'gaming_anime', 'movies_music', 'arts_crafts', 'travel_outdoor', 'cafe_social'];
+
 /**
- * Maps any community event to EXACTLY ONE of the 8 Community Lifestyle Categories.
- * Guarantees zero multi-category bleeding and ensures category rail counts sum to 100% of cards.
+ * Maps any community event to EXACTLY ONE of the Community Lifestyle Categories, so category rail counts sum to
+ * 100% of cards. Reads the title first, then the host's tag (tags are broad: "🎨 เวิร์กช็อป"), then the old mood.
  */
 export function getCommunityEventCategory(event: {
   lifestyleCategory?: string;
@@ -652,120 +1157,13 @@ export function getCommunityEventCategory(event: {
   category?: string;
 }): string {
   if (event.lifestyleCategory) return event.lifestyleCategory;
-
-  const tag = (event.tag || '').toLowerCase();
-  const title = (event.title || '').toLowerCase();
-
-  // Priority 1: High-specificity indicators in title or tag
-  if (
-    tag.includes('เทคโนโลยี') ||
-    tag.includes('ai') ||
-    title.includes('ai') ||
-    title.includes('hack night') ||
-    title.includes('coding') ||
-    title.includes('developer')
-  ) {
-    return 'tech_skills';
-  }
-  if (
-    title.includes('ทาสแมว') ||
-    title.includes('หมา') ||
-    title.includes('สัตว์เลี้ยง') ||
-    title.includes('pet ') ||
-    title.includes('cat cafe') ||
-    tag.includes('pet')
-  ) {
-    return 'pets_family';
-  }
-  if (
-    tag.includes('บอร์ดเกม') ||
-    tag.includes('boardgame') ||
-    tag.includes('#boardgame') ||
-    title.includes('บอร์ดเกม') ||
-    tag.includes('#pubquiz')
-  ) {
-    return 'boardgames_party';
-  }
-  if (
-    tag.includes('วิ่ง') ||
-    title.includes('วิ่ง') ||
-    title.includes('jogging') ||
-    tag.includes('bouldering') ||
-    tag.includes('ปีนผา') ||
-    title.includes('ปีนผา') ||
-    tag.includes('ฟิตเนส') ||
-    tag.includes('ออกกำลังกาย') ||
-    tag.includes('#badminton') ||
-    tag.includes('#pilates') ||
-    tag.includes('hyrox') ||
-    title.includes('surf skate')
-  ) {
-    return 'running_fitness';
-  }
-  if (
-    tag.includes('เวิร์กช็อป') ||
-    tag.includes('#workshop') ||
-    tag.includes('#art') ||
-    tag.includes('เซรามิก') ||
-    title.includes('เซรามิก') ||
-    title.includes('pottery') ||
-    title.includes('วาดภาพ') ||
-    title.includes('เทียนหอม') ||
-    tag.includes('#candle') ||
-    title.includes('อบคุกกี้') ||
-    tag.includes('#baking') ||
-    title.includes('แหวนเงิน') ||
-    tag.includes('#leatherwork')
-  ) {
-    return 'arts_crafts';
-  }
-  if (
-    tag.includes('ซับบอร์ด') ||
-    title.includes('ซับบอร์ด') ||
-    title.includes('sup board') ||
-    tag.includes('แคมป์') ||
-    title.includes('เดินป่า') ||
-    tag.includes('#streetphoto') ||
-    title.includes('photo walk')
-  ) {
-    return 'travel_outdoor';
-  }
-  if (
-    tag.includes('ฮีลใจ') ||
-    tag.includes('บำบัด') ||
-    tag.includes('สมาธิ') ||
-    tag.includes('sound bath') ||
-    tag.includes('soundbath') ||
-    title.includes('sound bath') ||
-    title.includes('มัทฉะ') ||
-    tag.includes('#mindfulness') ||
-    tag.includes('#aromatherapy') ||
-    tag.includes('โยคะ') ||
-    tag.includes('#introvert')
-  ) {
-    return 'wellness_mind';
-  }
-  if (
-    tag.includes('กาแฟ') ||
-    tag.includes('คาเฟ่') ||
-    tag.includes('slow bar') ||
-    tag.includes('นัดชิลล์') ||
-    tag.includes('#coffeelover') ||
-    tag.includes('#matchalover') ||
-    tag.includes('#vinylculture') ||
-    title.includes('กาแฟ') ||
-    title.includes('drip') ||
-    title.includes('ชิมกาแฟ') ||
-    title.includes('ค็อกเทล') ||
-    title.includes('จิบชา') ||
-    title.includes('ดูหนัง') ||
-    title.includes('เดี่ยวไมโครโฟน') ||
-    title.includes('guitar') ||
-    title.includes('ดนตรี') ||
-    title.includes('ฝึกภาษา') ||
-    title.includes('coworking')
-  ) {
-    return 'cafe_social';
+  for (const text of [event.title, event.tag]) {
+    const lower = (text || '').toLowerCase();
+    if (!lower) continue;
+    for (const id of MEETUP_MATCH_ORDER) {
+      const cat = MASTER_COMMUNITY_LIFESTYLE_CATEGORIES.find((c) => c.id === id);
+      if (cat?.keywords.some((kw) => keywordHit(lower, kw))) return id;
+    }
   }
 
   // Fallback by legacy coreMood category
@@ -775,9 +1173,18 @@ export function getCommunityEventCategory(event: {
   return 'cafe_social';
 }
 
+/** Which fair group wins when a title fits several: the most specific first (a music festival before music,
+ * a musical before a concert, healthy food before food, an art toy before art). Anything left is a fair or expo. */
+const FAIR_MATCH_ORDER = ['music_festivals', 'pets', 'tech_motor', 'marathon_sports', 'sports_esports', 'performing_arts', 'parks_openair', 'pop_culture', 'wellness', 'food_drinks', 'craft_market', 'home_lifestyle', 'travel_outdoor', 'art_festivals', 'books_learning', 'heritage_local'];
+
+/** Latin words match whole words ("cat" not "catering", "art" not "party"); Thai has no spaces, so it matches inside text */
+const keywordHit = (text: string, kw: string) =>
+  /^[a-z0-9 &'-]+$/.test(kw) ? new RegExp(`(^|[^a-z0-9])${kw}([^a-z0-9]|$)`).test(text) : text.includes(kw);
+
 /**
- * Maps any major fair or public venue event to EXACTLY ONE of the Master Fair Categories.
- * Guarantees zero multi-category bleeding and ensures category rail counts sum to 100% of cards.
+ * Maps any major fair or public venue event to EXACTLY ONE of the Master Fair Categories, by what the event is
+ * (its title; fair tags are too loose to trust, e.g. a game show tagged as a workshop), never by where it is. Category rail counts sum to 100% of cards.
+ * Ids kept from the first version: parks_openair = concerts, marathon_sports = running, heritage_local = festivals.
  */
 export function getFairEventCategory(event: {
   fairCategory?: string;
@@ -788,63 +1195,11 @@ export function getFairEventCategory(event: {
   location?: string;
 }): string {
   if (event.fairCategory) return event.fairCategory;
-  const tag = (event.tag || '').toLowerCase();
+  if ((event.venueTag || '').toLowerCase() === 'marathon') return 'marathon_sports';
   const title = (event.title || '').toLowerCase();
-  const venueTag = (event.venueTag || '').toLowerCase();
-  const text = `${title} ${tag}`;
-
-  if (
-    text.includes('วิ่ง') ||
-    text.includes('marathon') ||
-    text.includes('มาราธอน') ||
-    text.includes('กีฬา') ||
-    text.includes('sport') ||
-    venueTag === 'marathon'
-  ) {
-    return 'marathon_sports';
-  }
-  if (
-    venueTag === 'park' ||
-    text.includes('ดนตรีในสวน') ||
-    text.includes('open air') ||
-    text.includes('ลานคนเมือง') ||
-    text.includes('สนามหลวง')
-  ) {
-    return 'parks_openair';
-  }
-  if (
-    text.includes('ประเพณี') ||
-    text.includes('กาชาด') ||
-    text.includes('เกษตรแฟร์') ||
-    text.includes('งานวัด') ||
-    text.includes('heritage') ||
-    text.includes('วัฒนธรรม')
-  ) {
-    return 'heritage_local';
-  }
-  if (
-    text.includes('design week') ||
-    text.includes('biennale') ||
-    text.includes('art') ||
-    text.includes('ศิลปะ') ||
-    text.includes('creative') ||
-    text.includes('นิทรรศการ') ||
-    text.includes('gallery') ||
-    venueTag === 'bacc'
-  ) {
-    return 'art_festivals';
-  }
-  if (
-    text.includes('craft') ||
-    text.includes('คราฟต์') ||
-    text.includes('ตลาดนัด') ||
-    text.includes('flea market') ||
-    text.includes('art toy') ||
-    text.includes('อาร์ตทอย') ||
-    text.includes('book') ||
-    text.includes('หนังสือ')
-  ) {
-    return 'craft_market';
+  for (const id of FAIR_MATCH_ORDER) {
+    const cat = MASTER_FAIR_CATEGORIES.find((c) => c.id === id);
+    if (cat?.keywords.some((kw) => keywordHit(title, kw))) return id;
   }
   return 'convention_centers';
 }
