@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowUp, Bookmark, Camera, ChevronLeft, ChevronRight, Flag, Heart, Link2, MapPin, MessageCircle, MoreHorizontal, Pencil, Send, Tent, Trash2, Users, X } from 'lucide-react';
+import { ArrowUp, Bookmark, Camera, ChevronLeft, ChevronRight, Flag, Heart, Link2, MapPin, MessageCircle, MoreHorizontal, Pencil, Plus, Send, Tent, Trash2, Users, X } from 'lucide-react';
 import { StoriesRail } from '@/components/moments/StoriesRail';
 import type { FeedItem } from '@/lib/moments/service';
 import { nameInitial } from '@/lib/displayName';
@@ -356,6 +356,8 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [newCount, setNewCount] = useState(0);
   const [isComposerOpen, setIsComposerOpen] = useState(false);
+  // The "+ สตอรี่" button beside the composer opens the story form inside the rail
+  const [storySignal, setStorySignal] = useState(0);
   const [counted, setCounted] = useState<CountedQuest | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [viewer, setViewer] = useState<{ images: string[]; index: number } | null>(null);
@@ -591,20 +593,31 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
         )}
       </div>
 
-      <div className="mt-3">
-        <StoriesRail isLoggedIn onToast={showToast} size="sm" />
+      {/* The row of circles only shows once someone has a story; a lone "+" read as an empty room */}
+      <div className="mt-3 empty:hidden">
+        <StoriesRail isLoggedIn onToast={showToast} size="sm" hideWhenEmpty addSignal={storySignal} />
       </div>
 
-
-      <button
-        type="button"
-        onClick={() => setIsComposerOpen(true)}
-        className="mt-3 w-full flex items-center gap-3 rounded-full border border-slate-200 py-2 pl-2 pr-4 text-left hover:bg-slate-50 transition-colors cursor-pointer"
-      >
-        <Avatar name={name} src={avatar} className="w-9 h-9 text-sm" />
-        <span className="flex-1 min-w-0 truncate text-sm font-medium text-slate-500">วันนี้ไปไหนมา แชร์โมเมนต์ให้เพื่อนๆ ดูหน่อย</span>
-        <Camera className="w-5 h-5 text-[#F43F5E] shrink-0" aria-hidden="true" />
-      </button>
+      <div className="mt-3 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setIsComposerOpen(true)}
+          className="flex-1 min-w-0 flex items-center gap-3 rounded-full border border-slate-200 py-2 pl-2 pr-4 text-left hover:bg-slate-50 transition-colors cursor-pointer"
+        >
+          <Avatar name={name} src={avatar} className="w-9 h-9 text-sm" />
+          <span className="flex-1 min-w-0 truncate text-sm font-medium text-slate-500">วันนี้ไปไหนมา แชร์โมเมนต์ให้เพื่อนๆ ดูหน่อย</span>
+          <Camera className="w-5 h-5 text-[#F43F5E] shrink-0" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setStorySignal((n) => n + 1)}
+          aria-label="เพิ่มสตอรี่ รูปเดียว แสดง 24 ชั่วโมง"
+          className="shrink-0 h-[54px] flex items-center gap-1 rounded-full border border-dashed border-slate-300 px-3.5 text-[13px] font-medium text-slate-600 hover:border-[#2563EB] hover:text-[#2563EB] transition-colors cursor-pointer"
+        >
+          <Plus className="w-4 h-4" aria-hidden="true" />
+          สตอรี่
+        </button>
+      </div>
 
       {/* The live line opens the feed: what friends are doing now, right before their moments */}
       {top && <div className="mt-5">{top}</div>}

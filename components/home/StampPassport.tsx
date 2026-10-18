@@ -14,6 +14,30 @@ export interface PassportPending extends PassportStamp {
   left: number;
 }
 
+export const PASSPORT_HREF = '/myhub#my-passport';
+
+/**
+ * The stamps from the member's challenge record (GET /api/rewards) and the challenge catalog:
+ * finished ones earned, joined ones pending, and the other running challenges counted as "more".
+ */
+export function buildPassport(
+  finished: { questId: string; title: string; badgeLabel?: string }[],
+  progress: { questId: string; title: string; joined?: boolean; completed?: boolean; current: number; total: number }[],
+  catalog: { id: string; image?: string; badgeCoverImg?: string; status?: string; daysRemaining?: number }[]
+): { earned: PassportStamp[]; pending: PassportPending[]; more: number } {
+  const image = (id: string) => {
+    const quest = catalog.find((q) => q.id === id);
+    return quest?.badgeCoverImg || quest?.image;
+  };
+  const earned = finished.map((f) => ({ questId: f.questId, label: f.badgeLabel || f.title, image: image(f.questId) }));
+  const pending = progress
+    .filter((p) => p.joined && !p.completed)
+    .map((p) => ({ questId: p.questId, label: p.title, image: image(p.questId), left: Math.max(1, p.total - p.current) }));
+  const mine = new Set(progress.filter((p) => p.joined).map((p) => p.questId));
+  const more = catalog.filter((q) => q.status !== 'ended' && (q.daysRemaining === undefined || q.daysRemaining > 0) && !mine.has(q.id)).length;
+  return { earned, pending, more };
+}
+
 /**
  * Badges as stamps in a passport: one stamp per finished challenge, in colour; the challenges the member is doing
  * as dashed outlines with the steps still to go; the rest of the running challenges as one "+N" slot.
@@ -25,7 +49,7 @@ export function StampPassport({ earned, pending, more }: { earned: PassportStamp
   const rest = total - shownEarned.length - shownPending.length;
 
   return (
-    <section aria-label="พาสปอร์ตของฉัน">
+    <section id="my-passport" aria-label="พาสปอร์ตของฉัน" className="scroll-mt-24">
       <div className="flex items-end justify-between gap-3 mb-3">
         <h2 className="text-base font-bold text-slate-900">พาสปอร์ตของฉัน</h2>
         <span className="text-xs text-slate-500 tabular-nums">{earned.length}/{total} แสตมป์</span>

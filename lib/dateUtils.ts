@@ -240,3 +240,13 @@ export function formatThaiDateBE(isoDate: string): string {
   if (!year || !month || !day) return isoDate;
   return `${day} ${THAI_SHORT_MONTH_LABELS[month - 1]} ${year + 543}`;
 }
+
+/** "วันนี้" or "พรุ่งนี้" when an event date (e.g. "18 ต.ค. 2026") is today or tomorrow on this device; otherwise null */
+export function nearDayLabel(dateStr: string, now: number = Date.now()): 'วันนี้' | 'พรุ่งนี้' | null {
+  const ts = parseEventDateToTimestamp(dateStr);
+  if (ts >= 9999999999999) return null;
+  const day = new Date(ts).toDateString();
+  if (day === new Date(now).toDateString()) return 'วันนี้';
+  if (day === new Date(now + 86_400_000).toDateString()) return 'พรุ่งนี้';
+  return null;
+}

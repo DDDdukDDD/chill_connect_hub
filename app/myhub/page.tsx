@@ -9,6 +9,7 @@ import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { MySubmissions } from '@/components/MySubmissions';
 import { MyMonthSection } from '@/components/myhub/MyMonthSection';
+import { StampPassport, buildPassport } from '@/components/home/StampPassport';
 import { ChallengeList } from '@/components/ChallengeList';
 import { useAuth } from '@/lib/useAuth';
 import { ETicketModal } from '@/components/ETicketModal';
@@ -2115,6 +2116,12 @@ function MyHubContent() {
                 {isLoggedIn && (
                   <div className="order-3 lg:order-none empty:hidden bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs">
                     <MyMonthSection isLoggedIn={isLoggedIn} onToast={showToast} />
+                  </div>
+                )}
+                {/* The stamp passport: one stamp per finished challenge; the home page links here */}
+                {isLoggedIn && myRewards.isLoaded && questCatalog && (
+                  <div className="order-5 lg:order-none bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs">
+                    <StampPassport {...buildPassport(myRewards.finished, myRewards.quests, questCatalog)} />
                   </div>
                 )}
                 <div className="order-5 lg:order-none">{renderSummaryCards()}</div>

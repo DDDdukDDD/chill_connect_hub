@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Compass, Camera, Ticket, Zap } from 'lucide-react';
+import { Compass, Camera, Home, Ticket, Zap } from 'lucide-react';
 import { useMemberSession } from '@/lib/useMemberSession';
 
 interface MobileNavProps {
@@ -18,6 +18,8 @@ export const MobileNav: React.FC<MobileNavProps> = ({
 }) => {
   const { isLoggedIn } = useMemberSession();
   const navItems = [
+    // Home is the member's live feed (and the visitor's landing), so it stays one tap away
+    { id: 'home', label: 'หน้าแรก', href: '/', icon: Home },
     { id: 'explore', label: 'ค้นพบ', href: '/community', icon: Compass },
     { id: 'moments', label: 'โมเมนต์', href: '/moments', icon: Camera },
     { id: 'challenges', label: 'ชาเลนจ์', href: '/challenges', icon: Zap },
