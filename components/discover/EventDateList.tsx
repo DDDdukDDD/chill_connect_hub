@@ -27,7 +27,8 @@ const hasValue = (text: string | undefined) => Boolean(text && !/ไม่ระ
 
 /** The time ("06:30 - 07:30 น."); a fair over several days leads with its range ("23 ต.ค. – 1 พ.ย."). The day itself is on the leaf. */
 function whenLine(kind: Kind, e: EventItem) {
-  const time = hasValue(e.time) ? e.time : '';
+  // "16:00 - 16:00" (no end time given) reads as one time
+  const time = hasValue(e.time) ? e.time!.replace(/^(\d{1,2}[:.]\d{2})\s*-\s*\1\b/, '$1') : '';
   if (kind === 'fairs' && e.endDate && e.endDate !== e.date) {
     const range = `${shortDate(startOf(e))} – ${shortDate(parseEventEndDateToTimestamp(e.endDate))}`;
     return time ? `${range} · ${time}` : range;
@@ -56,16 +57,10 @@ const placeOf = (e: EventItem) => [e.province, e.location].filter(Boolean).join(
 const hrefOf = (kind: Kind, e: EventItem) => `/${kind === 'meetups' ? 'community' : 'fairs'}/${encodeURIComponent(e.id)}`;
 
 function Row({ kind, event }: { kind: Kind; event: EventItem }) {
-  const start = new Date(startOf(event));
   const status = statusOf(kind, event);
   return (
-    <li>
-      <Link href={hrefOf(kind, event)} className="group flex items-center gap-3 sm:gap-4 py-3">
-        {/* A calendar leaf: weekday over the day */}
-        <span className="w-11 shrink-0 text-center">
-          <span className="block text-[11px] font-medium text-slate-500">{THAI_WEEKDAYS[start.getDay()]}</span>
-          <span className="block text-xl font-bold text-slate-900 tabular-nums leading-tight">{start.getDate()}</span>
-        </span>
+    <li className="min-w-0">
+      <Link href={hrefOf(kind, event)} className="group flex items-center gap-3 sm:gap-4 py-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={event.image || FALLBACK_IMAGE}
@@ -86,6 +81,35 @@ function Row({ kind, event }: { kind: Kind; event: EventItem }) {
         </span>
       </Link>
     </li>
+  );
+}
+
+/** One calendar leaf (weekday over the day) per day, that day's events beside it: two columns on wide screens */
+function DayGroups({ kind, events }: { kind: Kind; events: EventItem[] }) {
+  const days: { key: string; start: Date; items: EventItem[] }[] = [];
+  for (const e of events) {
+    const start = new Date(startOf(e));
+    const key = start.toDateString();
+    const last = days[days.length - 1];
+    if (last?.key === key) last.items.push(e);
+    else days.push({ key, start, items: [e] });
+  }
+  return (
+    <ul className="divide-y divide-slate-100">
+      {days.map((d) => (
+        <li key={d.key} className="flex gap-3 sm:gap-4 py-2">
+          <span className="w-11 shrink-0 pt-3 text-center">
+            <span className="block text-[11px] font-medium text-slate-500">{THAI_WEEKDAYS[d.start.getDay()]}</span>
+            <span className="block text-xl font-bold text-slate-900 tabular-nums leading-tight">{d.start.getDate()}</span>
+          </span>
+          <ul className="flex-1 min-w-0 grid lg:grid-cols-2 gap-x-8">
+            {d.items.map((e) => (
+              <Row key={e.id} kind={kind} event={e} />
+            ))}
+          </ul>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -177,22 +201,16 @@ export function EventDateList({ kind, events }: { kind: Kind; events: EventItem[
       {visibleMonths.map((m) => (
         <section key={m.key} aria-label={m.label}>
           <div className="pb-2 border-b border-slate-200">{heading(m.label, m.items.length)}</div>
-          <ul className="divide-y divide-slate-100">
-            {m.visible.map((e) => (
-              <Row key={e.id} kind={kind} event={e} />
-            ))}
-          </ul>
+          <DayGroups kind={kind} events={m.visible} />
         </section>
       ))}
 
       {visibleEnded.length > 0 && (
         <section aria-label="ที่ผ่านมาแล้ว">
           <div className="pb-2 border-b border-slate-200">{heading('ที่ผ่านมาแล้ว', ended.length)}</div>
-          <ul className="divide-y divide-slate-100 opacity-80">
-            {visibleEnded.map((e) => (
-              <Row key={e.id} kind={kind} event={e} />
-            ))}
-          </ul>
+          <div className="opacity-80">
+            <DayGroups kind={kind} events={visibleEnded} />
+          </div>
         </section>
       )}
 

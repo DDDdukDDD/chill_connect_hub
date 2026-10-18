@@ -20,7 +20,7 @@ import { NATIONWIDE_FAIR_CATEGORIES } from '@/components/FairCategoryRail';
 import { DiscoverCategoryTabs } from '@/components/discover/DiscoverCategoryTabs';
 import { EventDateList } from '@/components/discover/EventDateList';
 import { getFairEventCategory } from '@/data/masterHub';
-import { TopVenuesRail } from '@/components/TopVenuesRail';
+import { VenueCircles } from '@/components/discover/VenueCircles';
 import {} from '@/data/spotsData';
 
 import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
@@ -375,6 +375,16 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
             setCurrentPage(1);
           }}
           initialCounts={initialCounts}
+          lead={
+            <VenueCircles
+              selected={selectedVenue}
+              onSelect={(v) => {
+                setSelectedVenue(v ?? 'all');
+                setSelectedCategory(null);
+                setCurrentPage(1);
+              }}
+            />
+          }
           action={
             <button
               type="button"
@@ -563,17 +573,6 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
           </div>
         )}
 
-        {/* Venues: below the list so the fairs come first; picking one goes back up to the results */}
-        <TopVenuesRail
-          selectedVenue={selectedVenue === 'all' ? null : selectedVenue}
-          onSelectVenue={(v) => {
-            setSelectedVenue(v || 'all');
-            setSelectedCategory(null);
-            setCurrentPage(1);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          eventsList={eventsList}
-        />
       </main>
 
       <CustomDatePickerModal
