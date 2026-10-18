@@ -2,7 +2,7 @@ import type { LifestyleSpotItem } from '@/data/spotsData';
 
 /**
  * Stored spot categories (LifestyleSpotItem['category']) with their default Thai labels.
- * These are the data categories, not the 7 frontend vibes (getSpotVibeCategory maps one to the other).
+ * These are the data categories, not the frontend vibes (getSpotVibeCategory maps one to the other).
  * Labels follow FE-004 and contain no emoji.
  */
 export const SPOT_CATEGORY_OPTIONS: Array<{ id: LifestyleSpotItem['category']; label: string }> = [
@@ -11,12 +11,15 @@ export const SPOT_CATEGORY_OPTIONS: Array<{ id: LifestyleSpotItem['category']; l
   { id: 'oldtown', label: 'ย่านเก่า & วัฒนธรรม' },
   { id: 'cafe', label: 'คาเฟ่ & สเปซนั่งชิลล์' },
   { id: 'beach', label: 'ทะเล & เกาะสวย' },
-  { id: 'market', label: 'ตลาด & ไลฟ์สไตล์มอลล์' },
-  { id: 'viewpoint', label: 'จุดชมวิว & ยอดดอย' },
+  { id: 'market', label: 'ตลาด & ถนนคนเดิน' },
+  { id: 'mall', label: 'ห้างสรรพสินค้า & ไลฟ์สไตล์มอลล์' },
+  { id: 'restaurant', label: 'ร้านอาหาร & สตรีทฟู้ด' },
+  { id: 'attraction', label: 'สวนสนุก & กิจกรรม' },
+  { id: 'viewpoint', label: 'จุดชมวิว & รูฟท็อป' },
   { id: 'park', label: 'สวนสาธารณะ & พื้นที่สีเขียว' },
   { id: 'museum', label: 'พิพิธภัณฑ์' },
   { id: 'art', label: 'หอศิลป์ & สเปซศิลปะ' },
-  { id: 'bar', label: 'บาร์ & สโลว์บาร์' },
+  { id: 'bar', label: 'บาร์ & ไนท์ไลฟ์' },
   { id: 'workspace', label: 'ที่นั่งทำงาน' },
   { id: 'coworking', label: 'Co-working Space' },
 ];

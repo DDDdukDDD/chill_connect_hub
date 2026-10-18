@@ -31,7 +31,7 @@ const ROW_SIZE = 10;
 const CARD_SLOT = 'w-[46%] sm:w-[calc((100%-2*14px)/3)] md:w-[calc((100%-3*14px)/4)] lg:w-[calc((100%-4*14px)/5)] shrink-0 snap-start';
 
 // Order of the vibes in the first row: what the audience looks for on a day off comes first
-const VIBE_ORDER: SpotVibeId[] = ['cafe_slowbar', 'nature_camping', 'art_creative', 'sea_island', 'mountain_mist', 'wellness_retreat', 'oldtown_culture'];
+const VIBE_ORDER: SpotVibeId[] = ['cafe_slowbar', 'nature_camping', 'views_rooftop', 'temple_mu', 'art_creative', 'sea_island', 'food_street', 'mountain_mist', 'market_walking', 'wellness_retreat', 'oldtown_culture', 'museum_learning', 'city_parks', 'fun_activities', 'nightlife_bars', 'shopping_mall'];
 
 // The two words of the brand, as the one choice a visitor makes on this page
 const MOODS: { id: Mood; word: string; line: string }[] = [

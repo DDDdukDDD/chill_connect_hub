@@ -10,7 +10,7 @@ import { autoEnrichSpotImages } from '@/lib/spotImageResolver';
 
 const SPOT_CATEGORY_IDS = new Set<LifestyleSpotItem['category']>([
   'park', 'art', 'cafe', 'oldtown', 'workspace', 'viewpoint', 'nature',
-  'temple', 'beach', 'market', 'museum', 'bar', 'coworking',
+  'temple', 'beach', 'market', 'museum', 'bar', 'coworking', 'restaurant', 'attraction', 'mall',
 ]);
 const MUTABLE_SPOT_FIELDS = new Set<keyof LifestyleSpotItem>([
   'title', 'category', 'categoryLabel', 'province', 'district', 'transitInfo',
