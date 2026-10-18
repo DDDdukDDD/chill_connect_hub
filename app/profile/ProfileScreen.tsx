@@ -563,6 +563,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-slate-900 font-sans flex flex-col">
       <Navbar
+        showMenuOnMobile
         activeTab="profile"
         setActiveTab={() => undefined}
         isLoggedIn={isLoggedIn}

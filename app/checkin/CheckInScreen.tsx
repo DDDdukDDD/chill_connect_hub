@@ -38,7 +38,7 @@ export function CheckInScreen({ eventId, code }: { eventId: string; code: string
 
   return (
     <div className="min-h-screen bg-[#FCFBF9] text-slate-900 font-sans flex flex-col">
-      <Navbar activeTab="myhub" setActiveTab={() => undefined} isLoggedIn={isLoggedIn} isAuthReady={isAuthReady} onOpenLogin={() => undefined} onOpenLogout={() => undefined} />
+      <Navbar showMenuOnMobile activeTab="myhub" setActiveTab={() => undefined} isLoggedIn={isLoggedIn} isAuthReady={isAuthReady} onOpenLogin={() => undefined} onOpenLogout={() => undefined} />
       <main className="flex-1 w-full max-w-md mx-auto px-4 py-10 sm:py-16">
         <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 text-center">
           {result.state === 'working' && (

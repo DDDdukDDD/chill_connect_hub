@@ -23,6 +23,7 @@ export function NotFoundScreen() {
   return (
     <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans">
       <Navbar
+        showMenuOnMobile
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         isLoggedIn={isLoggedIn}
