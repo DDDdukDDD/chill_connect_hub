@@ -20,6 +20,7 @@ import {
 import { handleAdminUnauthorized } from './admin/adminAuthUtils';
 import { RichTextEditor } from './RichTextEditor';
 import { compressImageToDataUrl } from '@/lib/media/compressor';
+import { useMasterData } from '@/lib/useMasterData';
 
 interface AdminCreateEventModalProps {
   isOpen: boolean;
@@ -83,6 +84,9 @@ export const AdminCreateEventModal: React.FC<AdminCreateEventModalProps> = ({
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<'heal' | 'move' | 'chill' | 'learn'>('learn');
   const [tag, setTag] = useState('Exhibition');
+  // The group on the ค้นพบ tabs; empty lets the title decide
+  const [group, setGroup] = useState('');
+  const { communityCategories, fairCategories } = useMasterData();
   const [date, setDate] = useState('28 ก.พ. - 3 มี.ค. 2569');
   const [time, setTime] = useState('10:00 - 20:00 น.');
   const [location, setLocation] = useState('');
@@ -255,6 +259,7 @@ export const AdminCreateEventModal: React.FC<AdminCreateEventModalProps> = ({
       const eventData = {
         title: title.trim(),
         category,
+        ...(group && (isPublic ? { fairCategory: group } : { lifestyleCategory: group })),
         tag: tag.trim() || (isPublic ? 'Exhibition' : 'Community'),
         date: date.trim(),
         time: time.trim(),
@@ -358,6 +363,7 @@ export const AdminCreateEventModal: React.FC<AdminCreateEventModalProps> = ({
               type="button"
               onClick={() => {
                 setEventType('public_venue');
+                setGroup('');
                 setCoverImage(PRESET_PUBLIC_IMAGES[0]);
                 handleLoadTemplate('public');
               }}
@@ -375,6 +381,7 @@ export const AdminCreateEventModal: React.FC<AdminCreateEventModalProps> = ({
               type="button"
               onClick={() => {
                 setEventType('community');
+                setGroup('');
                 setCoverImage(PRESET_COMMUNITY_IMAGES[0]);
                 handleLoadTemplate('community');
               }}
@@ -420,16 +427,29 @@ export const AdminCreateEventModal: React.FC<AdminCreateEventModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-300">หมวดหมู่หลัก:</label>
+                <label className="block text-xs font-bold text-slate-300">{eventType === 'public_venue' ? 'ประเภทงาน:' : 'หมวดกิจกรรม:'}</label>
                 <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value as any)}
+                  value={group}
+                  onChange={(e) => {
+                    setGroup(e.target.value);
+                    // A meetup's mood follows its category
+                    const mood = communityCategories.find((c) => c.id === e.target.value)?.coreMood;
+                    if (eventType === 'community' && mood) setCategory(mood);
+                  }}
                   className="w-full bg-slate-900 text-white text-xs px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-hidden cursor-pointer"
                 >
-                  <option value="learn">🎨 สร้างสรรค์ (Learn)</option>
-                  <option value="chill">☕ ชิลล์ & คาเฟ่ (Chill)</option>
-                  <option value="heal">🌱 ฮีลใจ (Heal)</option>
-                  <option value="move">🏃 ขยับกาย / กีฬา (Move)</option>
+                  <option value="">ให้ระบบเลือกจากชื่องาน</option>
+                  {eventType === 'public_venue'
+                    ? fairCategories.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))
+                    : (['chill', 'move', 'heal', 'learn'] as const).map((mood) => (
+                        <optgroup key={mood} label={{ chill: 'นัดชิลล์', move: 'ขยับร่างกาย', heal: 'ฮีลใจ', learn: 'เรียนรู้' }[mood]}>
+                          {communityCategories.filter((c) => c.coreMood === mood).map((c) => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </optgroup>
+                      ))}
                 </select>
               </div>
 

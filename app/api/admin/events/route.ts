@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { actorCan, getAdminActor, requireAdminApiAccess } from '@/lib/adminApiAuth';
 import { recordAudit } from '@/lib/auditLog';
+import { checkedEventCategories } from '@/lib/eventCategories';
 import {
   listAdminEvents,
   updateEventApproval,
@@ -24,7 +25,7 @@ const MUTABLE_EVENT_FIELDS = new Set<string>([
   'hostAvatar', 'venueTag', 'price', 'image', 'galleryImages', 'externalUrl', 'sourceUrl', 'link',
   'latitude', 'longitude', 'status', 'rules', 'whatToBring', 'itinerary', 'instructions', 'contactChannel',
   'transportation', 'targetGender', 'targetAge', 'energyLevel', 'isSoloFriendly', 'isPetFriendly',
-  'isBeginnerFriendly', 'cancellationPolicy', 'subActivities',
+  'isBeginnerFriendly', 'cancellationPolicy', 'subActivities', 'lifestyleCategory', 'fairCategory',
 ]);
 
 const plainLength = (html: unknown) => (typeof html === 'string' ? html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().length : 0);
@@ -128,6 +129,7 @@ export async function POST(req: Request) {
       const safeCreate = Object.fromEntries(Object.entries(eventData).filter(([key]) => MUTABLE_EVENT_FIELDS.has(key)));
       const created = await createAdminEvent({
         ...safeCreate,
+        ...checkedEventCategories({ ...safeCreate, eventType: eventData.eventType }),
         eventType: eventData.eventType,
         approvalStatus: eventData.approvalStatus === 'approved' ? 'approved' : 'pending',
         participantsCount: eventData.eventType === 'community' ? 1 : 0,
@@ -173,7 +175,11 @@ export async function POST(req: Request) {
 
     if (action === 'update_fields' && id && updatedFields) {
       if (!target) return NextResponse.json({ success: false, error: 'ไม่พบกิจกรรม' }, { status: 404 });
-      const safeFields = Object.fromEntries(Object.entries(updatedFields as Record<string, unknown>).filter(([key]) => MUTABLE_EVENT_FIELDS.has(key)));
+      const safeFields: Record<string, unknown> = Object.fromEntries(Object.entries(updatedFields as Record<string, unknown>).filter(([key]) => MUTABLE_EVENT_FIELDS.has(key)));
+      // A changed group is checked like on create (an empty value clears it, so the title decides again)
+      if ('lifestyleCategory' in safeFields || 'fairCategory' in safeFields) {
+        Object.assign(safeFields, checkedEventCategories({ ...safeFields, eventType: target.eventType }));
+      }
       const updateError = getEventValidationError(safeFields, target.eventType, false);
       if (updateError) return NextResponse.json({ success: false, error: updateError }, { status: 400 });
       const updated = await updateAdminEvent(id, safeFields);

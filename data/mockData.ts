@@ -27,6 +27,10 @@ export interface EventItem {
   location: string;
   tag: string;
   category: 'heal' | 'move' | 'chill' | 'learn';
+  /** Meetup group on the ค้นพบ tabs (a communityCategories id), picked by the host; checked by the server */
+  lifestyleCategory?: string;
+  /** Fair group on the ค้นพบ tabs (a fairCategories id), picked by the organizer; checked by the server */
+  fairCategory?: string;
   image: string;
   participantsCount: number;
   maxParticipants: number;
