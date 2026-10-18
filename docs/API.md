@@ -565,6 +565,8 @@ The full list of a target's moments is the paged moments feed: `GET /api/moments
 ### `GET /api/visits?mine=1` — the signed-in member
 `{ success, visits: [{ targetType, targetId, evidence, at }], marks: [{ targetType, targetId, rating?, createdAt }], quests: [{ questId, title, current, total, completed, rewardPoints }], points: { total, fromVisits, fromQuests } }`. Signed out: `requiresLogin: true` with empty lists. `quests` lists every non-draft challenge that has a rule, joined or not.
 
+With `&month=1` the answer adds `month: { month: "2026-10", chill: MonthItem[], connect: MonthItem[] }` (Bangkok month). `MonthItem` = `{ targetType, targetId, title, image?, place?, at, hasMoment, people?: [{ name, avatar? }], peopleCount? }`. **Chill** = places and fairs with a visit this month (marked, a moment or a check-in). **Connect** = meetups the member joined that took place this month, checked in or not; `people` are up to three others who joined. Used by the home greeting (counts) and My Hub "เดือนนี้ของฉัน" (lists).
+
 ### `POST /api/visits` — the signed-in member
 - `{ action: 'mark', targetType: 'spot' | 'fair', targetId, rating? }`: "I have been here". `rating` is a whole number 1 to 5 and is optional; sending the action again updates the rating. A fair can be marked from its start date. `community` is refused: the host's check-in is its evidence.
 - `{ action: 'unmark', targetType, targetId }`.
