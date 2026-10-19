@@ -19,9 +19,9 @@ interface RequireMembershipModalProps {
 
 // What an account unlocks today (only things that work)
 const PERKS = [
-  { icon: Users, title: 'เข้าร่วมกิจกรรม และชาเลนจ์', desc: 'จองที่ในกิจกรรมคอมมูนิตี้ และรับภารกิจสะสม XP' },
+  { icon: Users, title: 'เข้าร่วมตี้ และชาเลนจ์', desc: 'จองที่ในตี้ และรับภารกิจสะสม XP' },
   { icon: Camera, title: 'แชร์โมเมนต์ของคุณ', desc: 'โพสต์รูป กดไลก์ และคอมเมนต์โมเมนต์ของเพื่อน' },
-  { icon: Bookmark, title: 'เก็บสิ่งที่ชอบ ไว้ดูทีหลัง', desc: 'บันทึกกิจกรรม ที่เที่ยว และโมเมนต์ที่ถูกใจ' },
+  { icon: Bookmark, title: 'เก็บสิ่งที่ชอบ ไว้ดูทีหลัง', desc: 'บันทึกตี้ ที่เที่ยว และโมเมนต์ที่ถูกใจ' },
 ];
 
 /** Shown when a visitor tries something that needs an account */

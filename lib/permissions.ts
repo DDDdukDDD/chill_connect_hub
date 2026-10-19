@@ -27,13 +27,13 @@ export const ROLE_LABELS: Record<StaffRole, string> = {
 export const ROLE_DESCRIPTIONS: Record<StaffRole, string> = {
   owner: 'ทำได้ทุกอย่าง รวมถึงจัดการทีมงานและสิทธิ์',
   editor: 'ตรวจ แก้ไข และเผยแพร่เนื้อหาทุกเสา รันการดึงข้อมูลได้',
-  moderator: 'ตรวจและอนุมัติกิจกรรมคอมมูนิตี้ และดูแลสมาชิก',
+  moderator: 'ตรวจและอนุมัติตี้ และดูแลสมาชิก',
   data_ops: 'ดูแลแหล่งข้อมูล การดึงข้อมูล ข้อมูลหลัก รูปภาพ และ cache',
 };
 
 export const PERMISSION_LABELS: Record<AdminPermission, string> = {
   'content.view': 'ดูทุกหน้า',
-  'community.review': 'ตรวจ / อนุมัติกิจกรรมคอมมูนิตี้',
+  'community.review': 'ตรวจ / อนุมัติตี้',
   'content.edit': 'แก้ไข / เผยแพร่สถานที่ งานแฟร์ ชาเลนจ์',
   'sources.run': 'จัดการแหล่งข้อมูล / รันการดึงข้อมูล',
   'system.manage': 'ข้อมูลหลัก รูปภาพ cache',

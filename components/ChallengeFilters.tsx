@@ -2,6 +2,11 @@
 
 import React, { useEffect, useRef } from 'react';
 import { Check, ChevronDown } from 'lucide-react';
+import { FILTER_PILL } from '@/components/discover/DiscoverHeader';
+
+/** A filter pill on /challenges: the ค้นพบ pill shape, violet when picked */
+export const challengePillClass = (picked: boolean) =>
+  `${FILTER_PILL} ${picked ? 'bg-[#F5F3FF] border-[#7C3AED] text-[#5B21B6] font-semibold' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:text-slate-900'}`;
 
 /**
  * A filter folded into one pill: tapping it opens a short menu. Once set away from its default the pill turns violet
@@ -55,9 +60,7 @@ export function FilterMenu<T extends string>({
         aria-haspopup="menu"
         aria-expanded={isOpen}
         onClick={() => setOpenId(isOpen ? null : id)}
-        className={`inline-flex items-center gap-1.5 min-h-9 px-3.5 rounded-full border text-sm font-bold whitespace-nowrap transition-colors cursor-pointer ${
-          isSet ? 'bg-[#F5F3FF] border-[#7C3AED] text-[#5B21B6]' : 'bg-white border-slate-300 text-slate-800 hover:border-slate-400'
-        }`}
+        className={challengePillClass(isSet)}
       >
         {isSet && current ? current.label : label}
         <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true" />

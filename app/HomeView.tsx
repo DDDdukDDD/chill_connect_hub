@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { MapPin, CheckCircle2, LayoutGrid } from 'lucide-react';
+import { MapPin, CheckCircle2 } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { BrandLogo } from '@/components/BrandLogo';
@@ -10,6 +10,7 @@ import { ChallengePicks } from '@/components/ChallengePicks';
 import { FriendsMomentsWall } from '@/components/FriendsMomentsWall';
 import { OpenMeetupTiles } from '@/components/OpenMeetupTiles';
 import { ScrollRow } from '@/components/ScrollRow';
+import { CategoryStickerCards, communityCategoryCards } from '@/components/CategoryStickerCards';
 import { MemberLiveHome } from '@/components/home/MemberLiveHome';
 import { LiveJoinsLine } from '@/components/home/LiveActivity';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
@@ -326,19 +327,7 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
   // Landing page: open meetups (seats left), counted per category card, and the row the cards filter
   const openMeetups = useMemo(() => communityEvents.filter((e) => e.participantsCount < e.maxParticipants), [communityEvents]);
   const categoryCards = useMemo(
-    () => [
-      { id: 'all', name: 'ทั้งหมด', Icon: LayoutGrid, iconBg: 'bg-slate-100', iconColor: 'text-slate-600', borderBottom: 'border-b-slate-300', sticker: 'bg-slate-500 text-white', count: openMeetups.length },
-      ...COMMUNITY_LIFESTYLE_CATEGORIES.map((cat) => ({
-        id: cat.id,
-        name: cat.name,
-        Icon: cat.icon,
-        iconBg: cat.colorScheme.iconBg,
-        iconColor: cat.colorScheme.iconColor,
-        borderBottom: cat.colorScheme.borderBottom,
-        sticker: cat.colorScheme.activeBg,
-        count: openMeetups.filter((e) => getCommunityEventCategory(e) === cat.id).length,
-      })),
-    ],
+    () => communityCategoryCards(openMeetups.length, (id) => openMeetups.filter((e) => getCommunityEventCategory(e) === id).length),
     [openMeetups]
   );
   const landingMatches = useMemo(
@@ -495,42 +484,7 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
                 )}
 
                 {/* The category cards filter the row right below; one row that slides (phones swipe, iPad and up get arrows) */}
-                <ScrollRow label="เลือกสาย" className="flex gap-2.5 md:gap-3 overflow-x-auto no-scrollbar snap-x -mx-4 px-4 scroll-px-4 pt-3 pb-2 md:mx-0 md:px-1 md:scroll-px-1">
-                  {categoryCards.map(({ id, name, Icon, iconBg, iconColor, borderBottom, sticker, count }, i) => {
-                    const isPicked = meetupCategory === id;
-                    const isDimmed = meetupCategory !== 'all' && !isPicked;
-                    return (
-                      <button
-                        key={id}
-                        type="button"
-                        aria-pressed={isPicked}
-                        onClick={() => setMeetupCategory(id)}
-                        aria-label={count > 0 ? `${name} ${count} ตี้เปิดรับ` : name}
-                        data-row-photo={i === 0 ? '' : undefined}
-                        className={`group relative w-24 shrink-0 md:w-32 lg:w-36 snap-start flex flex-col items-center gap-2 rounded-2xl border-2 border-b-4 ${borderBottom} px-1 py-3 sm:py-4 cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg active:translate-y-0 ${isPicked ? 'bg-slate-50 border-x-slate-200 border-t-slate-200 -translate-y-1 shadow-lg' : 'bg-white border-x-slate-100 border-t-slate-100'} ${isDimmed ? 'opacity-60 hover:opacity-100' : ''}`}
-                      >
-                        {/* The count sits on the corner like a sticker, so the card keeps its size */}
-                        {count > 0 && (
-                          <span className={`absolute -top-2 -right-1.5 min-w-6 h-6 px-1.5 rounded-full border-2 border-white text-[11px] font-bold flex items-center justify-center shadow-sm rotate-12 group-hover:rotate-0 transition-transform ${sticker}`} aria-hidden="true">
-                            {count}
-                          </span>
-                        )}
-                        <span className={`w-11 h-11 md:w-[54px] md:h-[54px] rounded-2xl flex items-center justify-center ${iconBg} ${iconColor} ${isPicked ? 'scale-110' : i % 2 ? 'rotate-6' : '-rotate-6'} group-hover:rotate-0 group-hover:scale-110 transition-transform`}>
-                          <Icon className="w-5 h-5 md:w-7 md:h-7" aria-hidden="true" />
-                        </span>
-                        {/* Break only at the ampersand, never inside a Thai word */}
-                        <span className="text-[11px] sm:text-xs font-bold text-slate-800 text-center leading-tight">
-                          {name.split(' & ').map((part, j, all) => (
-                            <span key={part} className="block whitespace-nowrap">
-                              {part}
-                              {j < all.length - 1 ? ' &' : ''}
-                            </span>
-                          ))}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </ScrollRow>
+                <CategoryStickerCards cards={categoryCards} selectedId={meetupCategory} onSelect={setMeetupCategory} label="เลือกสาย" countUnit="ตี้เปิดรับ" />
 
                 {isEventsLoaded && landingMeetups.length === 0 && (
                   <p className="text-sm text-slate-500">ยังไม่มีตี้แบบนี้ เปิดตี้แรกเองเลยไหม?</p>

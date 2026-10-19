@@ -307,13 +307,14 @@ Response `200`: `{ success: true, quests: ChallengeQuest[], pagination: Paginati
 brandReward?: {
   type: 'brand_partner' | 'hub_central';
   title: string;            // the reward / exclusive privilege
+  shortTitle?: string;      // card label, at most 24 characters (Thai letter + marks = 1); 400 when longer
   partnerName: string;      // brand name; always "Chill & Connect Hub" for hub_central
   voucherCodePrefix?: string; exclusiveNotice?: string;   // brand_partner only
   hubRewardNote?: string;                                 // hub_central only
   terms?: string;
 }
 ```
-`brand_partner` quests always have `partnerName` and `title`. Quests without `brandReward` have no declared reward type yet — treat them as `hub_central`. `image` (optional cover URL) is also available.
+`brand_partner` quests always have `partnerName` and `title`. Cards show the prize with `questPrizeLabel(quest)` from `@/lib/questDisplay`: `shortTitle`, else `title` without "(มูลค่า …)" and a trailing "+ N XP", empty for the generic "สะสม XP…" line (added 2026-10-19). Quests without `brandReward` have no declared reward type yet — treat them as `hub_central`. `image` (optional cover URL) is also available.
 
 ### `GET /api/discover/counts` — numbers on the ค้นพบ tabs (added 2026-10-17, BE-082)
 

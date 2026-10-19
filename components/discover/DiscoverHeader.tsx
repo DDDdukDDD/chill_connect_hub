@@ -9,7 +9,7 @@ import { DiscoverSearch } from '@/components/discover/DiscoverSearch';
 
 /** The three ค้นพบ pages, in tab order, with their pillar colors (DESIGN_SYSTEM.md) */
 const KINDS: { kind: DiscoverKind; label: string; dot: string; marker: string }[] = [
-  { kind: 'meetups', label: 'มีตอัป', dot: 'bg-[#F26430]', marker: 'bg-[#F26430]/30' },
+  { kind: 'meetups', label: 'ตี้', dot: 'bg-[#F26430]', marker: 'bg-[#F26430]/30' },
   { kind: 'fairs', label: 'งานแฟร์', dot: 'bg-[#2B527A]', marker: 'bg-[#2B527A]/20' },
   { kind: 'spots', label: 'ที่เที่ยว', dot: 'bg-[#4A7C59]', marker: 'bg-[#4A7C59]/25' },
 ];
@@ -21,12 +21,13 @@ const PICKED: Record<DiscoverKind, string> = {
   spots: 'bg-[#EBF3ED] border-[#4A7C59] text-[#2D5A3C]',
 };
 
-const PILL =
+/** The shape of every filter pill (ค้นพบ pages and /challenges) */
+export const FILTER_PILL =
   'inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-full border text-[13px] font-medium whitespace-nowrap shrink-0 transition-colors cursor-pointer';
 
 /** Classes for a filter pill on a ค้นพบ page */
 export const filterPillClass = (kind: DiscoverKind, picked: boolean) =>
-  `${PILL} ${picked ? `${PICKED[kind]} font-semibold` : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:text-slate-900'}`;
+  `${FILTER_PILL} ${picked ? `${PICKED[kind]} font-semibold` : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:text-slate-900'}`;
 
 /** A dropdown filter drawn as a pill; it shows as picked when its value is not `emptyValue` */
 export function FilterSelect({
@@ -61,8 +62,8 @@ export function FilterSelect({
 
 /** The page heading in a friend's voice, saying where (like Meetup's "Events near Bangkok"); each page names itself for search */
 const titleOf = (kind: DiscoverKind, province: string) => {
-  const base = kind === 'meetups' ? 'กิจกรรมออกไปใช้ชีวิต' : kind === 'fairs' ? 'งานแฟร์ งานวิ่ง งานคอน' : 'ที่เที่ยว ที่ชิล';
-  if (province === ONLINE && kind === 'meetups') return 'กิจกรรมออนไลน์';
+  const base = kind === 'meetups' ? 'ตี้ชวนออกไปใช้ชีวิต' : kind === 'fairs' ? 'งานแฟร์ งานวิ่ง งานคอน' : 'ที่เที่ยว ที่ชิล';
+  if (province === ONLINE && kind === 'meetups') return 'ตี้ออนไลน์';
   return province && province !== ALL_PROVINCES && province !== ONLINE ? `${base} ใน ${province}` : `${base} ทั่วไทย`;
 };
 

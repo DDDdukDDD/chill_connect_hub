@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { 
   Sprout, 
   LogIn, 
@@ -62,7 +61,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   userName = '',
   isAuthReady,
 }) => {
-  const pathname = usePathname();
   const { userProfile, handleSetRole } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
@@ -288,9 +286,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
 
             {/* Universal Luxury Hamburger / Menu Button (Active on Mobile, iPad, and Desktop).
-                The visitor landing page leaves it out: log in and sign up are its only actions.
+                Members only (owner 2026-10-19): for visitors, log in and sign up are the top bar's only actions, on every page.
                 Below desktop width the floating bottom bar does its job, so it shows there only when a page has no bar. */}
-            {!(pathname === '/' && !isLoggedIn) && (
+            {isLoggedIn && (
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(true)}

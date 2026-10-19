@@ -66,7 +66,7 @@ export const SafetyGuidelinesModal: React.FC<SafetyGuidelinesModalProps> = ({
               <span>2. กฎการนัดหมายในพื้นที่สาธารณะเท่านั้น (Public Space Policy)</span>
             </div>
             <ul className="text-xs text-slate-600 space-y-1.5 list-disc list-inside font-normal">
-              <li>กิจกรรมชุมชนทุกกิจกรรม <strong className="font-bold text-slate-800">ต้องนัดพบในพื้นที่สาธารณะ</strong> ที่มีผู้คนพลุกพล่าน เช่น สวนสาธารณะ, คาเฟ่, หอศิลป์, หรือห้างสรรพสินค้า</li>
+              <li>ทุกตี้ <strong className="font-bold text-slate-800">ต้องนัดพบในพื้นที่สาธารณะ</strong> ที่มีผู้คนพลุกพล่าน เช่น สวนสาธารณะ, คาเฟ่, หอศิลป์, หรือห้างสรรพสินค้า</li>
               <li><strong>ห้ามเด็ดขาด:</strong> การนัดหมายในสถานที่ปิดลับตา, ที่พักอาศัยส่วนบุคคล, หรือสถานที่ที่มีความเสี่ยง</li>
             </ul>
           </div>

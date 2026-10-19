@@ -338,12 +338,12 @@ export class JsonFileAdapter implements IDataRepository {
     return this.mutex.runExclusive(async () => {
       const event = this.events.find((e) => e.id === eventId);
       if (!event) {
-        return { success: false, message: 'ไม่พบกิจกรรมที่ระบุ', status: 'not_found' };
+        return { success: false, message: 'ไม่พบตี้ที่ระบุ', status: 'not_found' };
       }
 
       // Sample meetups are shown with a rolled-forward date; judge "ended" by the date people see
       if (isEventEnded(rollSampleEventDate(event))) {
-        return { success: false, message: 'กิจกรรมนี้สิ้นสุดแล้ว', status: 'event_ended' };
+        return { success: false, message: 'ตี้นี้สิ้นสุดแล้ว', status: 'event_ended' };
       }
 
       const list = this.participants[eventId] || [];
@@ -351,7 +351,7 @@ export class JsonFileAdapter implements IDataRepository {
       if (alreadyJoined) {
         return {
           success: false,
-          message: 'คุณได้เข้าร่วมกิจกรรมนี้แล้ว',
+          message: 'คุณได้เข้าร่วมตี้นี้แล้ว',
           status: 'already_joined',
           updatedEvent: event,
         };
@@ -366,7 +366,7 @@ export class JsonFileAdapter implements IDataRepository {
         event.status = 'full';
         return {
           success: false,
-          message: 'กิจกรรมนี้มีผู้เข้าร่วมเต็มจำนวนแล้ว',
+          message: 'ตี้นี้มีผู้เข้าร่วมเต็มจำนวนแล้ว',
           status: 'event_full',
           participantsCount: currentCount,
           maxParticipants: maxAllowed,
@@ -392,7 +392,7 @@ export class JsonFileAdapter implements IDataRepository {
 
       return {
         success: true,
-        message: 'เข้าร่วมกิจกรรมสำเร็จ!',
+        message: 'เข้าร่วมตี้สำเร็จ!',
         status: 'joined',
         updatedEvent: event,
         participantsCount: newCount,
@@ -405,11 +405,11 @@ export class JsonFileAdapter implements IDataRepository {
     await this.ensureInitialized();
     return this.mutex.runExclusive(async () => {
       const event = this.events.find((e) => e.id === eventId);
-      if (!event) return { success: false, message: 'ไม่พบกิจกรรม' };
+      if (!event) return { success: false, message: 'ไม่พบตี้' };
 
       const list = this.participants[eventId] || [];
       const idx = list.findIndex((p) => p.userId === userId);
-      if (idx === -1) return { success: false, message: 'คุณยังไม่ได้เข้าร่วมกิจกรรมนี้' };
+      if (idx === -1) return { success: false, message: 'คุณยังไม่ได้เข้าร่วมตี้นี้' };
 
       list.splice(idx, 1);
       this.participants[eventId] = list;

@@ -79,11 +79,11 @@ export const ETicketModal: React.FC<ETicketModalProps> = ({ isOpen, onClose, eve
   const needsCheckIn = Boolean(ticket && !ticket.isHost && !isFair);
   const hint =
     state === 'none'
-      ? 'ไม่พบบัตรของคุณสำหรับกิจกรรมนี้ ลองเข้าร่วมกิจกรรมอีกครั้ง'
+      ? 'ไม่พบบัตรของคุณสำหรับตี้นี้ ลองเข้าร่วมตี้อีกครั้ง'
       : ticket?.isHost
-      ? 'คุณเป็นคนจัดกิจกรรมนี้ เช็กอินผู้เข้าร่วมได้ที่มายฮับ'
+      ? 'คุณเป็นคนจัดตี้นี้ เช็กอินผู้เข้าร่วมได้ที่มายฮับ'
       : ticket?.checkedInAt
-      ? 'คนจัดเช็กอินให้คุณแล้ว ขอให้สนุกกับกิจกรรม'
+      ? 'คนจัดเช็กอินให้คุณแล้ว ขอให้สนุกกับตี้นะ'
       : needsCheckIn
       ? 'ให้คนจัดสแกน QR นี้ที่จุดนัดพบ หรือบอกรหัสด้านล่าง'
       : 'งานนี้ไม่ต้องเช็กอิน เก็บรหัสไว้เป็นหลักฐานการลงทะเบียน';
@@ -130,8 +130,8 @@ export const ETicketModal: React.FC<ETicketModalProps> = ({ isOpen, onClose, eve
           <div className="sm:col-span-7 p-5 sm:p-6 space-y-4 border-b sm:border-b-0 sm:border-r border-dashed border-slate-300">
             <div>
               <span className="inline-block px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold">
-                {isFair ? 'งานแฟร์' : 'กิจกรรมคอมมูนิตี้'}
-                {event.tag && plain(event.tag) && !['กิจกรรมคอมมูนิตี้', 'งานแฟร์'].includes(plain(event.tag)) ? ` · ${plain(event.tag)}` : ''}
+                {isFair ? 'งานแฟร์' : 'ตี้'}
+                {event.tag && plain(event.tag) && !['กิจกรรมคอมมูนิตี้', 'ตี้', 'งานแฟร์'].includes(plain(event.tag)) ? ` · ${plain(event.tag)}` : ''}
               </span>
               <h3 id="ticket-title" className="mt-2 text-lg sm:text-xl font-bold text-slate-900 leading-snug">{event.title}</h3>
             </div>
@@ -191,7 +191,7 @@ export const ETicketModal: React.FC<ETicketModalProps> = ({ isOpen, onClose, eve
                 <span className="w-11 h-11 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center">
                   {ticket?.isHost ? <Users className="w-5 h-5" aria-hidden="true" /> : <QrCode className="w-5 h-5" aria-hidden="true" />}
                 </span>
-                <p className="text-sm font-bold text-slate-900">{ticket?.isHost ? 'คุณเป็นคนจัดกิจกรรมนี้' : 'งานแฟร์ไม่ใช้ QR'}</p>
+                <p className="text-sm font-bold text-slate-900">{ticket?.isHost ? 'คุณเป็นคนจัดตี้นี้' : 'งานแฟร์ไม่ใช้ QR'}</p>
                 <p className="text-xs font-medium text-slate-600 leading-relaxed">
                   {ticket?.isHost ? 'ผู้เข้าร่วมจะเปิด QR ให้คุณสแกน เปิดรายชื่อได้ที่มายฮับ ส่วน "กิจกรรมที่คุณจัด"' : 'งานนี้บันทึกไว้ในแผนของคุณแล้ว เข้างานตามเงื่อนไขของผู้จัดงานได้เลย ไม่ต้องเช็กอินกับเรา'}
                 </p>

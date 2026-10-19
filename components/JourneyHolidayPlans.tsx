@@ -12,7 +12,7 @@ interface JourneyHolidayPlansProps {
 
 const PILLARS: Record<PlanPillar, { color: string; label: string }> = {
   spots: { color: '#4A7C59', label: 'ที่เที่ยว' },
-  community: { color: '#F26430', label: 'กิจกรรม' },
+  community: { color: '#F26430', label: 'ตี้' },
   fairs: { color: '#2B527A', label: 'งานแฟร์' },
 };
 

@@ -48,7 +48,7 @@ export const TipHostModal: React.FC<TipHostModalProps> = ({ isOpen, onClose, eve
   };
 
   return (
-    <DialogShell onClose={onClose} title="รีวิวกิจกรรม" subtitle={event.hostName ? `${event.title} · จัดโดย ${plain(event.hostName)}` : event.title} size="sm">
+    <DialogShell onClose={onClose} title="รีวิวตี้" subtitle={event.hostName ? `${event.title} · จัดโดย ${plain(event.hostName)}` : event.title} size="sm">
       <form onSubmit={submit}>
         <fieldset className="mb-5">
           <legend className="text-sm font-bold text-slate-900 mb-2">ให้คะแนน</legend>

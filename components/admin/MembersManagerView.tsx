@@ -41,7 +41,7 @@ interface AdminMember {
 
 type Queue = 'none' | 'flagged' | 'hosts';
 const TRUST_LABELS: Record<MemberTrust['level'], string> = { new: 'บัญชีใหม่', verified: 'ยืนยันแล้ว', trusted: 'เชื่อถือได้' };
-const HOST_KIND_LABELS: Record<HostApplication['kind'], string> = { host: 'เปิดกิจกรรมคอมมูนิตี้', venue: 'ร้านหรือพื้นที่', organizer: 'ผู้จัดงานหรือแบรนด์' };
+const HOST_KIND_LABELS: Record<HostApplication['kind'], string> = { host: 'เปิดตี้', venue: 'ร้านหรือพื้นที่', organizer: 'ผู้จัดงานหรือแบรนด์' };
 const HOST_STATUS_LABELS: Record<HostApplication['status'], string> = { pending: 'รอตรวจ', approved: 'อนุมัติแล้ว', rejected: 'ไม่อนุมัติ' };
 
 interface Overview {
@@ -58,12 +58,12 @@ interface Overview {
   readiness: { sessionSecret: boolean; providers: Record<LoginMethod, boolean>; mailer: boolean; durableStorage: boolean };
 }
 
-const INTENT_LABELS: Record<MemberPreferences['intent'], string> = { member: 'ผู้เข้าร่วม', host: 'อยากเปิดกิจกรรม', venue: 'มีร้านหรือพื้นที่', organizer: 'ผู้จัดงานหรือแบรนด์' };
+const INTENT_LABELS: Record<MemberPreferences['intent'], string> = { member: 'ผู้เข้าร่วม', host: 'อยากเปิดตี้', venue: 'มีร้านหรือพื้นที่', organizer: 'ผู้จัดงานหรือแบรนด์' };
 const GENDER_LABELS: Record<NonNullable<MemberPreferences['gender']>, string> = { female: 'หญิง', male: 'ชาย', lgbtq: 'LGBTQ+' };
 const GOAL_LABELS: Record<string, string> = {
   explore_spots: 'หาที่สงบๆ ไว้พักใจ', heal_self: 'ดูแลใจและร่างกาย', earn_xp: 'มีเป้าหมายเล็กๆ ให้ตัวเอง',
   find_friends: 'เจอเพื่อนใหม่', join_community: 'ออกไปขยับตัวกับคนอื่น', explore_fairs: 'ไปงานสนุกๆ',
-  community_host: 'ชวนคนมาทำกิจกรรม', venue_space: 'มีร้านหรือพื้นที่', event_organizer: 'จัดงานอีเวนต์', brand_org: 'แบรนด์หรือองค์กร',
+  community_host: 'ชวนคนมาเปิดตี้', venue_space: 'มีร้านหรือพื้นที่', event_organizer: 'จัดงานอีเวนต์', brand_org: 'แบรนด์หรือองค์กร',
 };
 
 /** Names for the ids stored in preferences (interests and provinces come from master data) */
@@ -249,7 +249,7 @@ function ModerationDrawer({ member, onClose, onDone }: { member: AdminMember; on
         </FormSection>
       )}
       {application && (
-        <FormSection title="คำขอเป็นโฮสต์" hint="เมื่ออนุมัติ กิจกรรมคอมมูนิตี้ที่สมาชิกคนนี้สร้างจะเผยแพร่ทันทีโดยไม่ต้องรอตรวจทีละงาน">
+        <FormSection title="คำขอเป็นโฮสต์" hint="เมื่ออนุมัติ ตี้ที่สมาชิกคนนี้สร้างจะเผยแพร่ทันทีโดยไม่ต้องรอตรวจทีละงาน">
           <div className="sm:col-span-2 space-y-2 text-sm text-slate-700">
             <p><span className="text-slate-500">ประเภท:</span> {HOST_KIND_LABELS[application.kind]} · <span className="text-slate-500">สถานะ:</span> <span className="font-bold">{HOST_STATUS_LABELS[application.status]}</span> · ส่งเมื่อ {formatDate(application.submittedAt)}</p>
             <p className="whitespace-pre-line rounded-xl bg-slate-50 p-3">{application.about}</p>

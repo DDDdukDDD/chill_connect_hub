@@ -16,8 +16,6 @@ import {
   Compass, 
   ChevronRight, 
   Search, 
-  List, 
-  LayoutGrid, 
   CheckCircle2, 
   Zap, 
   MapPin, 
@@ -26,7 +24,6 @@ import {
   Medal,
   Clock,
   AlertCircle,
-  X,
   ShieldCheck,
   Check,
   Sprout,
@@ -41,12 +38,16 @@ import { getQuestBrandReward } from '@/lib/questDisplay';
 import { matchesQuery, questSearchText } from '@/lib/discoverMatch';
 import { ChallengeCard } from '@/components/ChallengeCard';
 import { ChallengeList } from '@/components/ChallengeList';
-import { FilterMenu } from '@/components/ChallengeFilters';
-import { CommunityCategoryRail, COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
+import { FilterMenu, challengePillClass } from '@/components/ChallengeFilters';
+import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
+import { DiscoverCategoryTabs } from '@/components/discover/DiscoverCategoryTabs';
+import { ViewModeToggle } from '@/components/ViewModeToggle';
+import { ChallengeSearch } from '@/components/ChallengeSearch';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { BrandLogo } from '@/components/BrandLogo';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { Pagination } from '@/components/Pagination';
+import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
 import { ChallengeQuest } from '@/data/mockData';
 import { syncMyChallenges, useMyRewards, withRealProgress } from '@/lib/useMyRewards';
 import { fetchAllContentPages } from '@/lib/contentClient';
@@ -94,6 +95,12 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
       if (localStorage.getItem('cch_challenges_view') === 'cards') setViewMode('cards');
     } catch {}
   }, []);
+  // The top bar box (computers) and the box on the page (phones) both search challenges here
+  const changeSearch = (q: string) => {
+    setSearchQuery(q);
+    setCurrentPage(1);
+  };
+
   const chooseView = (mode: 'list' | 'cards') => {
     setViewMode(mode);
     try {
@@ -111,7 +118,8 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const itemsPerPage = 18;
+  // Whole rows at every width (4 columns: 24, 5 columns: 25), like the ค้นพบ pages
+  const itemsPerPage = useResponsiveItemsPerPage();
   const [storedQuestList, setQuestList] = useState<QuestWithDuration[]>(() => (initialQuests ?? []).map(toListQuest));
   // Points and the progress of challenges that count visits come from the account (GET /api/rewards)
   const myRewards = useMyRewards(isLoggedIn);
@@ -248,6 +256,7 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
         setIsLoggedIn={handleSetIsLoggedIn}
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}
+        searchSlot={<ChallengeSearch idPrefix="challenge-top" query={searchQuery} onQueryChange={changeSearch} />}
       />
 
       {/* Toast Notification */}
@@ -287,7 +296,7 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
             <button
               type="button"
               onClick={() => (isLoggedIn ? setIsProposeOpen(true) : setIsRequireMembershipOpen(true))}
-              className="inline-flex items-center justify-center gap-1.5 min-h-10 px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold cursor-pointer whitespace-nowrap"
+              className="inline-flex items-center justify-center gap-1.5 min-h-10 px-4 rounded-full bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-sm font-bold cursor-pointer whitespace-nowrap"
             >
               <Plus className="w-4 h-4" aria-hidden="true" />
               เสนอชาเลนจ์
@@ -295,26 +304,12 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
           </div>
         </header>
 
-        {/* 2. Choosing: topics as a row of icons, then the other filters folded into pills, the view and a search */}
+        {/* 2. Choosing, laid out like the ค้นพบ pages: filters on the left, what is mine and how to view on the right,
+            then the category tabs right above the list (owner 2026-10-19) */}
         <section className="space-y-4 sm:space-y-5">
           <div className="space-y-3">
-            {/* Same category rail as the community page */}
-            <div className="bg-slate-50/60 p-2.5 sm:p-3 rounded-2xl border border-slate-200/70 shadow-2xs">
-              <CommunityCategoryRail
-                selectedCategoryId={selectedCategory}
-                onSelectCategory={(id) => {
-                  setSelectedCategory(id);
-                  setCurrentPage(1);
-                }}
-                eventCounts={{
-                  all: relevantQuests.length,
-                  ...Object.fromEntries(COMMUNITY_LIFESTYLE_CATEGORIES.map((category) => [category.id, relevantQuests.filter((quest) => quest.category === category.id).length])),
-                }}
-                allLabelEn="All Challenges"
-                variant="rail"
-              />
-            </div>
-
+            {/* Searches challenges in place; computers have the same box in the top bar */}
+            <ChallengeSearch idPrefix="challenge-phone" query={searchQuery} onQueryChange={changeSearch} className="md:hidden" />
             <div className="flex flex-wrap items-center gap-2">
               <FilterMenu
                 id="when"
@@ -369,60 +364,45 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
                   setCurrentPage(1);
                 }}
               />
-              {isLoggedIn && (
-                <button
-                  type="button"
-                  aria-pressed={mineOnly}
-                  onClick={() => {
-                    setMineOnly(!mineOnly);
-                    setCurrentPage(1);
-                  }}
-                  className={`inline-flex items-center min-h-9 px-3.5 rounded-full border text-sm font-bold whitespace-nowrap transition-colors cursor-pointer ${
-                    mineOnly ? 'bg-[#F5F3FF] border-[#7C3AED] text-[#5B21B6]' : 'bg-white border-slate-300 text-slate-800 hover:border-slate-400'
-                  }`}
-                >
-                  ที่ฉันทำอยู่
-                </button>
-              )}
               {isFiltered && (
-                <button type="button" onClick={clearFilters} className="min-h-9 px-2 text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap">
+                <button type="button" onClick={clearFilters} className="h-9 px-2 text-[13px] font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap">
                   ล้างตัวกรอง
                 </button>
               )}
 
-              <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-auto">
-                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-full shrink-0" role="group" aria-label="วิธีดู">
-                  {([['list', 'รายการ', List], ['cards', 'การ์ด', LayoutGrid]] as const).map(([value, label, Icon]) => (
-                    <button
-                      key={value}
-                      type="button"
-                      aria-pressed={viewMode === value}
-                      onClick={() => chooseView(value)}
-                      className={`inline-flex items-center gap-1 min-h-8 px-3 rounded-full text-xs sm:text-sm font-bold whitespace-nowrap transition-colors cursor-pointer ${
-                        viewMode === value ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" aria-hidden="true" />
-                      <span className="hidden sm:inline">{label}</span>
-                    </button>
-                  ))}
-                </div>
-                <label className="relative flex-1 sm:flex-none sm:w-52 min-w-0">
-                  <span className="sr-only">ค้นหาชาเลนจ์</span>
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" aria-hidden="true" />
-                  <input
-                    type="search"
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
+              <div className="flex items-center gap-2 ml-auto">
+                {/* What I am doing sits with the view, like ♡ ที่บันทึกไว้ on the ค้นพบ pages */}
+                {isLoggedIn && (
+                  <button
+                    type="button"
+                    aria-pressed={mineOnly}
+                    onClick={() => {
+                      setMineOnly(!mineOnly);
                       setCurrentPage(1);
                     }}
-                    placeholder="ค้นหา"
-                    className="w-full min-h-10 pl-9 pr-3 text-sm font-medium bg-white rounded-full border border-slate-300 focus:outline-hidden focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20"
-                  />
-                </label>
+                    className={challengePillClass(mineOnly)}
+                  >
+                    ที่ฉันทำอยู่
+                  </button>
+                )}
+                <ViewModeToggle viewMode={viewMode === 'cards' ? 'grid' : 'list'} onChange={(mode) => chooseView(mode === 'grid' ? 'cards' : 'list')} />
               </div>
             </div>
+
+            {/* The ค้นพบ category tabs, violet; only categories that have challenges */}
+            <DiscoverCategoryTabs
+              kind="challenges"
+              categories={COMMUNITY_LIFESTYLE_CATEGORIES}
+              counts={{
+                all: relevantQuests.length,
+                ...Object.fromEntries(COMMUNITY_LIFESTYLE_CATEGORIES.map((category) => [category.id, relevantQuests.filter((quest) => quest.category === category.id).length])),
+              }}
+              selectedId={selectedCategory}
+              onSelect={(id) => {
+                setSelectedCategory(id);
+                setCurrentPage(1);
+              }}
+            />
           </div>
 
           <div id="catalog-section" className="space-y-4">
@@ -467,12 +447,12 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
                   />
                 ) : (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {paginatedQuests.map((quest) => {
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-x-5 gap-y-9 pt-3">
+                  {paginatedQuests.map((quest, i) => {
                     const isEnded = quest.status === 'ended' || (quest.daysRemaining !== undefined && quest.daysRemaining <= 0);
                     const isJoined = joinedQuestIds.includes(quest.id);
                     const mine = isJoined && !isEnded ? myRewards.quests.find((progress) => progress.questId === quest.id) : undefined;
-                    return <ChallengeCard key={quest.id} quest={quest} isJoined={isJoined} mine={mine} />;
+                    return <ChallengeCard key={quest.id} quest={quest} isJoined={isJoined} mine={mine} index={i} />;
                   })}
                 </div>
 

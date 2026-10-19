@@ -11,7 +11,7 @@ const titleOf = (title: string) => title.replace(/^\[ตัวอย่าง\]\
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const event = await getPublicEvent(decodeURIComponent((await params).id), 'community');
-  if (!event) return { title: 'กิจกรรมคอมมูนิตี้' };
+  if (!event) return { title: 'ตี้' };
   return pageMetadata({
     title: titleOf(event.title),
     description: metaDescription(`${event.date} · ${event.location} · ${metaDescription(event.description, 300)}`),
@@ -35,7 +35,7 @@ export default async function CommunityDetailPage({ params }: Props) {
       {event && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={jsonLdHtml(breadcrumbJsonLd([{ name: 'มีตอัป', path: '/community' }, { name: titleOf(event.title), path }]))}
+          dangerouslySetInnerHTML={jsonLdHtml(breadcrumbJsonLd([{ name: 'ตี้', path: '/community' }, { name: titleOf(event.title), path }]))}
         />
       )}
       <CommunityDetailView initialEvent={event} />

@@ -58,7 +58,7 @@ type PillarId = 'spots' | 'community' | 'fairs' | 'challenges' | 'moments';
 // Pillar colors are allowed on badges and icons inside cards (DESIGN_SYSTEM.md section 3)
 const PILLARS: Record<PillarId, { name: string; short: string; line: string; icon: LucideIcon; color: string; href: string }> = {
   spots: { name: 'พิกัดเที่ยว', short: 'พิกัดเที่ยว', line: 'ที่พักใจ คัดมาแล้ว ทั่วไทย', icon: MapPin, color: '#4A7C59', href: '/spots' },
-  community: { name: 'กิจกรรมคอมมูนิตี้', short: 'คอมมูนิตี้', line: 'กลุ่มเล็กๆ ของคนที่ชอบ อะไรเหมือนกัน', icon: Users, color: '#F26430', href: '/community' },
+  community: { name: 'ตี้', short: 'คอมมูนิตี้', line: 'กลุ่มเล็กๆ ของคนที่ชอบ อะไรเหมือนกัน', icon: Users, color: '#F26430', href: '/community' },
   fairs: { name: 'งานแฟร์และอีเวนต์', short: 'งานแฟร์', line: 'งานใหญ่ ที่ไม่อยากพลาด', icon: Ticket, color: '#2B527A', href: '/fairs' },
   challenges: { name: 'ชาเลนจ์', short: 'ชาเลนจ์', line: 'ภารกิจสนุกๆ ทำแล้วได้ XP', icon: Trophy, color: '#7C3AED', href: '/challenges' },
   // Moments is where every other pillar ends up: it lights up as soon as the visitor picks anything
@@ -90,7 +90,7 @@ const MEMBER_GOALS: Goal[] = [
 const ALL_GOALS = () => [...MEMBER_GOALS, ...HOST_GOALS];
 
 const HOST_GOALS: Goal[] = [
-  { id: 'community_host', group: 'host', title: 'ชวนคน มาทำกิจกรรมด้วยกัน', desc: 'นำวิ่ง เปิดวงบอร์ดเกม สอนเวิร์กช็อป', image: '/event-city-run.png', pillar: 'community', role: 'host', icon: CalendarPlus },
+  { id: 'community_host', group: 'host', title: 'ชวนคน มาเปิดตี้ด้วยกัน', desc: 'นำวิ่ง เปิดวงบอร์ดเกม สอนเวิร์กช็อป', image: '/event-city-run.png', pillar: 'community', role: 'host', icon: CalendarPlus },
   { id: 'venue_space', group: 'host', title: 'มีร้านหรือพื้นที่ อยากให้คนรู้จัก', desc: 'คาเฟ่ สตูดิโอ แกลเลอรี', image: '/images/venues/bacc.jpg', pillar: 'spots', role: 'venue', icon: Store },
   { id: 'event_organizer', group: 'host', title: 'จัดงานอยู่ อยากให้คนมาเยอะขึ้น', desc: 'งานแฟร์ นิทรรศการ งานวิ่ง', image: '/images/venues/bitec.jpg', pillar: 'fairs', role: 'organizer', icon: Ticket },
   { id: 'brand_org', group: 'host', title: 'ทำกิจกรรม ในนามแบรนด์ หรือองค์กร', desc: 'กิจกรรมพนักงาน แคมเปญ ชาเลนจ์', image: '/images/venues/paragon.jpg', pillar: 'challenges', role: 'organizer', icon: Building2 },

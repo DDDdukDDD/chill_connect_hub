@@ -31,6 +31,7 @@ export function questDay(value: string | undefined): string {
 export interface QuestRewardProfile {
   type: 'brand_partner' | 'hub_central';
   title: string;
+  shortTitle?: string;
   partnerName: string;
   voucherCodePrefix?: string;
   exclusiveNotice?: string;
@@ -39,6 +40,25 @@ export interface QuestRewardProfile {
 }
 
 export type BrandVoucherReward = QuestRewardProfile;
+
+/** The most characters a short prize label may have, so it fits the strip on a challenge card */
+export const PRIZE_LABEL_MAX = 24;
+
+/** Characters as people count them: a Thai letter with its vowel and tone marks is one */
+export function prizeLabelLength(text: string): number {
+  return [...new Intl.Segmenter('th', { granularity: 'grapheme' }).segment(text)].length;
+}
+
+/**
+ * The prize as the challenge card shows it: the host's short label, else the full title without its
+ * "(มูลค่า ...)" part and a trailing "+ N XP" (the XP sticker says that). Empty when the challenge gives XP only.
+ */
+export function questPrizeLabel(quest: Pick<ChallengeQuest, 'brandReward'>): string {
+  const reward = quest.brandReward;
+  if (!reward) return '';
+  const label = reward.shortTitle?.trim() || reward.title.replace(/\s*\(มูลค่า[^)]*\)/g, '').replace(/\s*\+\s*[\d,]+\s*XP\s*$/i, '').trim();
+  return label.startsWith('สะสม XP') ? '' : label;
+}
 
 export function getQuestBrandReward(quest: Pick<ChallengeQuest, 'brandReward'> | null | undefined): QuestRewardProfile {
   if (quest?.brandReward) return quest.brandReward as QuestRewardProfile;
@@ -85,21 +105,21 @@ export interface QuestDetail {
 export const EVIDENCE_HINTS: Record<Evidence, string> = {
   marked: 'ไปถึงแล้วเปิดหน้าสถานที่ กด "มาที่นี่แล้ว" ระบบจะนับให้ทันที',
   moment: 'ไปถึงแล้วแชร์โมเมนต์พร้อมรูปจากที่นั่น ระบบจะนับให้ทันที',
-  checkin: 'ไปร่วมกิจกรรมแล้วให้โฮสต์เช็กอินให้ ระบบจะนับให้ทันที',
+  checkin: 'ไปร่วมตี้แล้วให้โฮสต์เช็กอินให้ ระบบจะนับให้ทันที',
 };
 
 /** How each visit is confirmed, in the wording of the rules */
 const PROOF_LINES: Record<Evidence, string> = {
   marked: 'กดยืนยัน "มาที่นี่แล้ว" ด้วยตนเองในหน้าของสถานที่นั้น',
   moment: 'โพสต์โมเมนต์พร้อมรูปถ่ายจากสถานที่นั้น',
-  checkin: 'โฮสต์ผู้จัดกิจกรรมเช็กอินให้ ณ จุดนัดพบ',
+  checkin: 'โฮสต์ผู้จัดตี้เช็กอินให้ ณ จุดนัดพบ',
 };
 
 export const SELF_NOTED_HINT = 'ชาเลนจ์นี้ยังไม่มีระบบตรวจให้ คุณบันทึกเองได้เพื่อเตือนตัวเองว่าทำไปถึงไหนแล้ว การบันทึกเองยังไม่ได้ XP หรือของรางวัล';
 
 const KINDS = {
   spot: { noun: 'สถานที่', unit: 'แห่ง' },
-  community: { noun: 'กิจกรรมคอมมูนิตี้', unit: 'ครั้ง' },
+  community: { noun: 'ตี้', unit: 'ครั้ง' },
   fair: { noun: 'งานแฟร์', unit: 'งาน' },
 } as const;
 

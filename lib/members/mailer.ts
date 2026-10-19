@@ -32,7 +32,7 @@ export function verifyEmailMessage(name: string, url: string, hours: number) {
     text: `สวัสดีคุณ ${name}\n\nกดลิงก์นี้เพื่อยืนยันอีเมล (ใช้ได้ ${hours} ชั่วโมง):\n${url}\n\nถ้าคุณไม่ได้สมัครสมาชิก ไม่ต้องทำอะไร`,
     html: `<div style="font-family:sans-serif;max-width:480px;margin:auto;color:#1e293b">
 <p>สวัสดีคุณ ${safeName}</p>
-<p>กดปุ่มด้านล่างเพื่อยืนยันอีเมล แล้วเริ่มโพสต์และเข้าร่วมกิจกรรมได้เลย ลิงก์ใช้ได้ ${hours} ชั่วโมง</p>
+<p>กดปุ่มด้านล่างเพื่อยืนยันอีเมล แล้วเริ่มโพสต์และเข้าร่วมตี้ได้เลย ลิงก์ใช้ได้ ${hours} ชั่วโมง</p>
 <p><a href="${escapeHtml(url)}" style="display:inline-block;background:#2563EB;color:#fff;padding:12px 20px;border-radius:12px;text-decoration:none;font-weight:bold">ยืนยันอีเมล</a></p>
 <p style="color:#64748b;font-size:13px">ถ้าคุณไม่ได้สมัครสมาชิก ไม่ต้องทำอะไร</p>
 </div>`,

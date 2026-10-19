@@ -64,6 +64,7 @@ Filters in one section never affect another section.
 
 - **Allowed on:** cards, category chips and rails, badges, icons inside a card, and section headings of that pillar.
 - **Never on:** action buttons, links, or screens that belong to no pillar (login, onboarding, account, dialogs shared across pillars).
+- **One exception (owner, 2026-10-19):** the create button at the top of a pillar page (ตั้งตี้เอง, เพิ่มงานแฟร์, แนะนำที่ใหม่, เสนอชาเลนจ์) is filled with its pillar colour, flat (no gradient), white text: meetups `bg-[#F26430] hover:bg-[#E2551F]` (the plain pillar orange, like สมัครฟรี; owner chose it over the darker `#D04A1B` although white on it is 3.2:1), fairs `bg-[#2B527A] hover:bg-[#1F3D5C]`, spots `bg-[#4A7C59] hover:bg-[#2D5A3C]`, challenges `bg-[#7C3AED] hover:bg-[#6D28D9]`. Every other button keeps the rules below.
 - Forest Green is the Spots color and the logo color. It is **not** a general brand color for buttons.
 
 ### Status colors
@@ -232,6 +233,7 @@ Bright, sharp photos of real Thai places. A dark overlay is allowed for text con
 - **Speak from the visitor's side.** Ask what they feel like doing (`ช่วงนี้ อยากทำอะไรบ้าง`), not which module they want (`เลือกหมวดหมู่กิจกรรมคอมมูนิตี้`).
 - **No claims about things that do not exist.** Do not mention AI matching, chat rooms, identity checks, rewards or points unless the feature works today.
 - **One name per thing.** Points are **XP**. Do not also call them Points, Connect Points or เหรียญ.
+- **A meetup is a ตี้ (owner's decision, 2026-10-19),** on member screens and in the admin console: the tab, titles, buttons, messages (`ตั้งตี้เอง`, `เข้าร่วมตี้`, `ตี้เปิดรับ`, `ไม่พบตี้นี้`). Do not write มีตอัป or กิจกรรมคอมมูนิตี้. **กิจกรรม** is only the umbrella for everything people can go and do (meetups, fairs, places, challenges): `กิจกรรมออกไปใช้ชีวิต`, `เลือกกิจกรรมตามสายที่ชอบ`. Search keywords and page descriptions may still use กิจกรรม next to ตี้ (`ตี้หาเพื่อนไปทำกิจกรรมด้วยกัน`).
 - **Short and plain.** One idea per sentence. No marketing filler.
 - **Errors say what to do next,** in a friendly tone: `เลือกสักข้อก่อนนะ`.
 - **No fake people or data** presented as real: no sample member names as the signed-in user, no stock photos as a member's avatar.

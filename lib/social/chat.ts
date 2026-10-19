@@ -34,7 +34,7 @@ async function roomOf(member: Member, roomId: string): Promise<{ title: string; 
   const event = await db.findEventById(roomId);
   if (!event) throw new MemberAuthError('ไม่พบห้องแชต', 404);
   const isHost = (event as { createdByMemberId?: string }).createdByMemberId === member.id;
-  if (!isHost && !(await db.getParticipant(roomId, member.id))) throw new MemberAuthError('แชตนี้สำหรับคนที่เข้าร่วมกิจกรรมเท่านั้น', 403);
+  if (!isHost && !(await db.getParticipant(roomId, member.id))) throw new MemberAuthError('แชตนี้สำหรับคนที่เข้าร่วมตี้เท่านั้น', 403);
   return { title: event.title, members: (await db.listParticipants(roomId)).length };
 }
 

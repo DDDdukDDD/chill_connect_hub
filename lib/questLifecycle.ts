@@ -110,14 +110,15 @@ export function addNewSeedQuests(
 }
 
 /** Raise this when the texts or rule wording of the seed quests change, so stores pick the change up once */
-export const SEED_QUEST_TEXT_VERSION = 4;
+export const SEED_QUEST_TEXT_VERSION = 6;
 
 /** Seed quests whose title changed: id -> the title stores may still hold */
 const RENAMED_SEED_QUESTS: Record<string, string> = { '1': 'Cafe Hunter 5: ตามรอย 5 คาเฟ่ Specialty ย่านอารีย์-ทองหล่อ' };
 
 /**
  * Brings the stored copies of the seed quests in line with the seed's wording: the goal, the description,
- * and the spelling of a rule's title words (a rule that staff changed in any other way is left alone).
+ * and the spelling of a rule's title words (a rule that staff changed in any other way is left alone),
+ * and (v5) the short prize label when the stored prize is still the seed's.
  * Runs once per SEED_QUEST_TEXT_VERSION; quests staff created are never touched.
  */
 export function refreshSeedQuestTexts(
@@ -131,7 +132,11 @@ export function refreshSeedQuestTexts(
   const quests = stored.map((quest) => {
     const seed = seedById.get(quest.id);
     if (!seed || (quest.title !== seed.title && quest.title !== RENAMED_SEED_QUESTS[quest.id])) return quest;
-    return { ...quest, title: seed.title, category: seed.category, targetGoal: seed.targetGoal, objective: seed.objective, rule: sameRule(quest.rule, seed.rule) ? seed.rule : quest.rule };
+    const brandReward =
+      quest.brandReward && !quest.brandReward.shortTitle && seed.brandReward?.shortTitle && quest.brandReward.title === seed.brandReward.title
+        ? { ...quest.brandReward, shortTitle: seed.brandReward.shortTitle }
+        : quest.brandReward;
+    return { ...quest, title: seed.title, category: seed.category, targetGoal: seed.targetGoal, objective: seed.objective, rule: sameRule(quest.rule, seed.rule) ? seed.rule : quest.rule, brandReward };
   });
   return { quests, changed: true };
 }

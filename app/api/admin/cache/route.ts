@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
       supportedTags: [
         { tag: 'spots', label: 'Lifestyle Spots (77 จังหวัด)', description: 'แคชรายการจุดเที่ยวและหมวดหมู่ไลฟ์สไตล์' },
-        { tag: 'events', label: 'Community Meetups', description: 'แคชกิจกรรมนัดพบ สมาชิก และสถานะสมัคร' },
+        { tag: 'events', label: 'Community Meetups', description: 'แคชตี้ สมาชิก และสถานะสมัคร' },
         { tag: 'fairs', label: 'Fairs & Public Venues', description: 'แคชงานแฟร์ นิทรรศการ และศูนย์จัดแสดง' },
         { tag: 'taxonomy', label: 'Master Taxonomy Hub', description: 'แคชโครงสร้างหมวดหมู่, Mood/Vibe, แท็กกลาง' },
         { tag: 'venues', label: 'Venue Hub Master', description: 'แคชศูนย์ประชุมและจุดจัดแสดงหลัก' },

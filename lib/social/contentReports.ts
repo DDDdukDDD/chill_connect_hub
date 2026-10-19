@@ -68,7 +68,7 @@ export async function fileContentReport(reporter: Member, input: Record<string, 
   if (targetType === 'review') {
     const review = reviewById(targetId);
     if (!review) throw new MemberAuthError('ไม่พบรีวิวนี้ อาจถูกลบไปแล้ว', 404);
-    targetTitle = `รีวิวของกิจกรรม "${review.eventTitle}"`;
+    targetTitle = `รีวิวของตี้ "${review.eventTitle}"`;
     hostMemberId = review.authorId;
     excerpt = review.text;
   } else if (targetType === 'chat_message') {

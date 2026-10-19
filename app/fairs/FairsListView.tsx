@@ -7,7 +7,7 @@ import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { EventGrid } from '@/components/EventGrid';
 import { ViewModeToggle, ViewMode } from '@/components/ViewModeToggle';
-import { Pagination } from '@/components/Pagination';
+import { ShowMoreButton } from '@/components/discover/ShowMoreButton';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
@@ -27,15 +27,6 @@ import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
 import { eventInProvince, fairSearchText, matchesQuery, type DiscoverCounts } from '@/lib/discoverMatch';
 import { DiscoverHeader, FilterSelect, filterPillClass } from '@/components/discover/DiscoverHeader';
 import { DiscoverSearch } from '@/components/discover/DiscoverSearch';
-
-const VENUE_FILTERS = [
-  { id: 'all', label: 'ทุกศูนย์ประชุม & ฮอลล์' },
-  { id: 'QSNCC', label: 'ศูนย์การประชุมแห่งชาติสิริกิติ์ (QSNCC)' },
-  { id: 'BITEC', label: 'ไบเทค บางนา (BITEC)' },
-  { id: 'IMPACT', label: 'อิมแพ็ค เมืองทองธานี (IMPACT)' },
-  { id: 'SIAM_PARAGON', label: 'พารากอน ฮอลล์ (Paragon Hall)' },
-  { id: 'ICONSIAM', label: 'ทรู ไอคอน ฮอลล์ (ICONSIAM)' },
-];
 
 type ServerProps = { initialEvents?: EventItem[]; initialCounts?: { query: string; province: string; counts: DiscoverCounts } };
 
@@ -308,8 +299,8 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
   }, [currentPage, totalPages]);
 
   const paginatedEvents = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredEvents.slice(start, start + itemsPerPage);
+    // "Show more" grows the list: currentPage = how many batches are on screen
+    return filteredEvents.slice(0, currentPage * itemsPerPage);
   }, [filteredEvents, currentPage, itemsPerPage]);
 
   const handleResetAll = () => {
@@ -399,31 +390,49 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
               }}
               aria-label="เพิ่มงานแฟร์"
               title="เพิ่มงานแฟร์"
-              className="inline-flex items-center justify-center gap-1.5 h-9 w-9 sm:w-auto sm:px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-semibold whitespace-nowrap cursor-pointer active:scale-95 transition-all"
+              className="inline-flex items-center justify-center gap-1.5 h-9 w-9 sm:w-auto sm:px-4 rounded-full bg-[#2B527A] hover:bg-[#1F3D5C] text-white text-[13px] font-semibold whitespace-nowrap cursor-pointer active:scale-95 transition-all"
             >
               <Plus className="w-4 h-4" strokeWidth={2.5} aria-hidden="true" />
               <span className="hidden sm:inline">เพิ่มงานแฟร์</span>
             </button>
           }
           summary={
-            <>
-              พบ <span className="font-semibold text-slate-900 tabular-nums">{filteredEvents.length}</span> งาน
-              {(searchQuery ||
-                selectedCategory ||
-                selectedProvince !== 'all' ||
-                selectedVenue !== 'all' ||
-                customStartDate ||
-                priceFilter !== 'all' ||
-                sortBy === 'favorites' ||
-                statusFilter !== 'upcoming') && (
-                <button type="button" onClick={handleResetAll} className="ml-3 font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer">
-                  ล้างตัวกรองทั้งหมด
-                </button>
-              )}
-            </>
+            (searchQuery ||
+              selectedCategory ||
+              selectedProvince !== 'all' ||
+              selectedVenue !== 'all' ||
+              customStartDate ||
+              priceFilter !== 'all' ||
+              sortBy === 'favorites' ||
+              statusFilter !== 'upcoming') && (
+              <button type="button" onClick={handleResetAll} className="font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer">
+                ล้างตัวกรองทั้งหมด
+              </button>
+            )
           }
           tools={
             <>
+              {/* Saved list sits with the view tools; on phones only the heart and count */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isLoggedIn) {
+                    setMembershipActionTitle('เพื่อดูรายการงานแฟร์ที่บันทึกไว้');
+                    setPendingAction('favorites_filter');
+                    setIsRequireMembershipOpen(true);
+                    return;
+                  }
+                  setSortBy(sortBy === 'favorites' ? 'newest' : 'favorites');
+                  setCurrentPage(1);
+                }}
+                aria-pressed={sortBy === 'favorites'}
+                aria-label={`ที่บันทึกไว้ (${favorites.length})`}
+                className={filterPillClass('fairs', sortBy === 'favorites')}
+              >
+                <Heart className={`w-4 h-4 ${sortBy === 'favorites' ? 'fill-current' : ''}`} aria-hidden="true" />
+                <span className="hidden sm:inline">ที่บันทึกไว้ ({favorites.length})</span>
+                <span className="sm:hidden tabular-nums">{favorites.length}</span>
+              </button>
               <ViewModeToggle viewMode={viewMode} onChange={handleViewModeChange} />
             </>
           }
@@ -448,22 +457,6 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
                 <X className="w-4 h-4" aria-hidden="true" />
               </button>
             )}
-            <FilterSelect
-              kind="fairs"
-              label="สถานที่จัด"
-              value={selectedVenue}
-              emptyValue="all"
-              onChange={(v) => {
-                setSelectedVenue(v);
-                setCurrentPage(1);
-              }}
-            >
-              {VENUE_FILTERS.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.id === 'all' ? 'ทุกสถานที่' : v.label}
-                </option>
-              ))}
-            </FilterSelect>
             <button
               type="button"
               onClick={() => {
@@ -489,24 +482,6 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
               <option value="ended">งานที่ผ่านมา</option>
               <option value="all">ทุกสถานะ</option>
             </FilterSelect>
-            <button
-              type="button"
-              onClick={() => {
-                if (!isLoggedIn) {
-                  setMembershipActionTitle('เพื่อดูรายการงานแฟร์ที่บันทึกไว้');
-                  setPendingAction('favorites_filter');
-                  setIsRequireMembershipOpen(true);
-                  return;
-                }
-                setSortBy(sortBy === 'favorites' ? 'newest' : 'favorites');
-                setCurrentPage(1);
-              }}
-              aria-pressed={sortBy === 'favorites'}
-              className={filterPillClass('fairs', sortBy === 'favorites')}
-            >
-              <Heart className={`w-4 h-4 ${sortBy === 'favorites' ? 'fill-current' : ''}`} aria-hidden="true" />
-              <span>ที่บันทึกไว้ ({favorites.length})</span>
-            </button>
           </div>
         </DiscoverHeader>
 
@@ -540,21 +515,9 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
               />
             )}
 
-            {/* Standard Pagination */}
+            {/* Show more, Meetup-style */}
             {viewMode === 'grid' && filteredEvents.length > itemsPerPage && (
-              <div className="pt-4">
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={(page) => {
-                    setCurrentPage(page);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  totalItems={filteredEvents.length}
-                  itemsPerPage={itemsPerPage}
-                  itemUnit="งานมหกรรม"
-                />
-              </div>
+              <ShowMoreButton shown={paginatedEvents.length} total={filteredEvents.length} onClick={() => setCurrentPage(currentPage + 1)} />
             )}
           </>
         ) : (

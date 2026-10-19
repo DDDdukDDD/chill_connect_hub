@@ -111,7 +111,9 @@ export function ChallengePicks({ quests, joinedIds, isLoaded, progress }: { ques
   }
 
   return (
-    <ScrollRow as="ul" className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar snap-x -mx-4 px-4 scroll-px-4 sm:mx-0 sm:px-1 sm:scroll-px-1 pt-3 pb-2">
+    // The row scrolls, so it clips whatever leaves its box: the padding gives tilted photos and XP stickers room,
+    // and the matching negative margin keeps the photos lined up with the section heading
+    <ScrollRow as="ul" className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar snap-x -mx-4 px-4 scroll-px-4 sm:-mx-3 sm:px-3 sm:scroll-px-3 pt-4 pb-3">
       {picks.map((quest, i) => {
         const doing = mine.get(quest.id);
         const reason = reasons.get(quest.id);

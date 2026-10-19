@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { ChallengeQuest, QuestReward } from '@/data/mockData';
 import { getQuestDateError, parseQuestDate } from '@/lib/questLifecycle';
+import { PRIZE_LABEL_MAX, prizeLabelLength } from '@/lib/questDisplay';
 import { db, CreateQuestDTO, UpdateQuestDTO } from '@/lib/db';
 import { getAdminActor, requireAdminApiAccess } from '@/lib/adminApiAuth';
 import { recordAudit } from '@/lib/auditLog';
@@ -45,9 +46,13 @@ function parseBrandReward(value: unknown): QuestReward | null | string {
   if (!title || title.length < 3) return 'กรุณาระบุชื่อสิทธิพิเศษ/รางวัล (อย่างน้อย 3 ตัวอักษร)';
   const partnerName = type === 'hub_central' ? PLATFORM_PARTNER_NAME : optionalText(value.partnerName, 120);
   if (!partnerName) return 'ภารกิจพาร์ทเนอร์ต้องระบุชื่อแบรนด์พาร์ทเนอร์';
+  // The card's short label; optional (the card trims the title without it)
+  const shortTitle = optionalText(value.shortTitle, 80);
+  if (shortTitle && prizeLabelLength(shortTitle) > PRIZE_LABEL_MAX) return `ชื่อรางวัลแบบสั้นยาวได้ไม่เกิน ${PRIZE_LABEL_MAX} ตัวอักษร`;
   return {
     type,
     title,
+    shortTitle,
     partnerName,
     voucherCodePrefix: type === 'brand_partner' ? optionalText(value.voucherCodePrefix, 32) : undefined,
     exclusiveNotice: type === 'brand_partner' ? optionalText(value.exclusiveNotice, 300) : undefined,
