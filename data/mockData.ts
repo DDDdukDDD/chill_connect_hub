@@ -132,6 +132,8 @@ export interface MoodCategory {
 export interface QuestReward {
   type: 'brand_partner' | 'hub_central';
   title: string;
+  /** Short prize label for the challenge card (at most PRIZE_LABEL_MAX characters); the card falls back to a trimmed title */
+  shortTitle?: string;
   partnerName: string;
   voucherCodePrefix?: string;
   exclusiveNotice?: string;
@@ -4787,6 +4789,7 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
     brandReward: {
       type: 'brand_partner',
       title: 'ฟรี Signature Cold Brew 1 แก้ว (มูลค่า 140.-)',
+      shortTitle: 'ฟรี Cold Brew 1 แก้ว',
       partnerName: 'Ari Specialty Coffee Club',
       voucherCodePrefix: 'ARI-BREW-',
       exclusiveNotice: 'สิทธิ์เฉพาะหน้าร้าน Ari Specialty Coffee Club ทุกสาขาเท่านั้น',
@@ -4894,6 +4897,7 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
     brandReward: {
       type: 'brand_partner',
       title: 'ส่วนลด 20% อุปกรณ์ซ้อม HYROX Official Training Gear',
+      shortTitle: 'ลด 20% อุปกรณ์ HYROX',
       partnerName: 'HYROX Thailand',
       voucherCodePrefix: 'HYROX-GEAR-',
       exclusiveNotice: 'สิทธิ์เฉพาะช่องทาง Official Store ของ HYROX Thailand เท่านั้น',
@@ -4906,6 +4910,7 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
     brandReward: {
       type: 'brand_partner',
       title: 'ฟรี Signature Cold Brew 1 แก้ว (มูลค่า 140.-)',
+      shortTitle: 'ฟรี Cold Brew 1 แก้ว',
       partnerName: 'Ari Specialty Coffee Club',
       voucherCodePrefix: 'ARI-BREW-',
       exclusiveNotice: 'สิทธิ์เฉพาะหน้าร้าน Ari Specialty Coffee Club ทุกสาขาเท่านั้น (แบรนด์อื่นไม่สามารถใช้ได้)',
@@ -4945,6 +4950,7 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
     brandReward: {
       type: 'brand_partner',
       title: 'สิทธิ์วิ่งฟรี BMA City Mini Marathon 2026 พร้อมเสื้อ Finisher',
+      shortTitle: 'วิ่งฟรี BMA Mini Marathon',
       partnerName: 'BMA Sports Hub (สำนักการกีฬา กทม.)',
       voucherCodePrefix: 'BMA-RUN-',
       exclusiveNotice: 'สิทธิ์เฉพาะงานวิ่งในสังกัด BMA Sports กรุงเทพมหานครเท่านั้น',
@@ -4985,6 +4991,7 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
     brandReward: {
       type: 'brand_partner',
       title: 'ส่วนลด 20% อุปกรณ์ซ้อม HYROX Official Training Gear',
+      shortTitle: 'ลด 20% อุปกรณ์ HYROX',
       partnerName: 'HYROX Thailand',
       voucherCodePrefix: 'HYROX-GEAR-',
       exclusiveNotice: 'สิทธิ์เฉพาะช่องทาง Official Store ของ HYROX Thailand เท่านั้น',
@@ -5084,7 +5091,7 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
     participantsCount: 95,
     rewardPoints: 180,
     isOfficial: true,
-    targetGoal: 'วางมือถือ แล้วไปร่วมกิจกรรมคอมมูนิตี้ 1 ครั้ง ใช้เวลากับคนตรงหน้าให้เต็มที่',
+    targetGoal: 'วางมือถือ แล้วไปร่วมตี้ 1 ครั้ง ใช้เวลากับคนตรงหน้าให้เต็มที่',
     objective: 'ลองใช้เวลาสองสามชั่วโมงโดยไม่มีหน้าจอคั่นกลาง เลือกกิจกรรมที่สนใจ จะเป็นบอร์ดเกม งานคราฟต์ หรือวงคุยเรื่องหนังสือก็ได้ เปิดโหมดไม่รบกวนแล้วอยู่กับสิ่งที่ทำและคนที่นั่งข้างๆ หลายคนบอกว่าแค่ครั้งเดียวก็รู้สึกว่าหัวโล่งขึ้น เหมาะกับคนที่รู้ตัวว่าติดจอและอยากพักจริงๆ สักครั้ง',
     steps: [
       'เข้าร่วมกิจกรรมออฟไลน์ เช่น บอร์ดเกม งานคราฟต์ หรือเวิร์กช็อป',
@@ -5101,6 +5108,7 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
     brandReward: {
       type: 'brand_partner',
       title: 'บัตรเข้าชม Exclusive Art Exhibition ฟรี 1 ใบ (มูลค่า 350.-)',
+      shortTitle: 'บัตรชมงานศิลป์ฟรี 1 ใบ',
       partnerName: 'River City Bangkok',
       voucherCodePrefix: 'RCB-ART-',
       exclusiveNotice: 'สิทธิ์เฉพาะที่ริเวอร์ ซิตี้ แบงค็อก (River City Bangkok) เท่านั้น',
@@ -5140,6 +5148,7 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
     brandReward: {
       type: 'brand_partner',
       title: 'ฟรี ชั่วโมงเล่นบอร์ดเกม 2 ชั่วโมง หรือส่วนลดซื้อบอร์ดเกม 15%',
+      shortTitle: 'เล่นบอร์ดเกมฟรี 2 ชม.',
       partnerName: 'Thailand Board Game Club',
       voucherCodePrefix: 'TBG-PLAY-',
       exclusiveNotice: 'ใช้ได้เฉพาะร้านบอร์ดเกมคาเฟ่ในเครือ Thailand Board Game Club เท่านั้น',
@@ -5180,6 +5189,7 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
     brandReward: {
       type: 'brand_partner',
       title: 'คูปองเงินสด 100 บาท ใช้ซื้อหนังสือในงานสัปดาห์หนังสือแห่งชาติ QSNCC',
+      shortTitle: 'คูปองหนังสือ 100 บาท',
       partnerName: 'PUBAT Thailand (สมาคมผู้จัดพิมพ์ฯ)',
       voucherCodePrefix: 'PUBAT-BOOK-',
       exclusiveNotice: 'ใช้ได้เฉพาะบูธหนังสือที่ร่วมรายการ ณ ศูนย์ฯ สิริกิติ์ (QSNCC) เท่านั้น',
@@ -5218,6 +5228,7 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
     brandReward: {
       type: 'hub_central',
       title: 'เหรียญตราทองเกียรติยศ + แต้มสะสมอิสระ Hub Rewards',
+      shortTitle: 'เหรียญตราทองเกียรติยศ',
       partnerName: 'Chill & Connect Hub',
       hubRewardNote: 'ปลดล็อกเหรียญทอง Zen Inner Peace ลงบนโปรไฟล์ และรับแต้มสะสมเลือกของรางวัลในศูนย์กลาง',
       terms: 'นำแต้ม XP ไปแลกรับสิทธิ์เวิร์กช็อปหรือของพรีเมียมในศูนย์ของรางวัล',
@@ -5277,6 +5288,7 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
     brandReward: {
       type: 'brand_partner',
       title: 'ส่วนลด 20% รองเท้าวิ่ง Ari Running',
+      shortTitle: 'ลด 20% รองเท้าวิ่ง Ari',
       partnerName: 'Ari Running',
       voucherCodePrefix: 'ARI-RUN-',
       exclusiveNotice: 'สิทธิ์เฉพาะหน้าร้าน Ari Running ทุกสาขาเท่านั้น',

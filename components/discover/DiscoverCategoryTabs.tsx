@@ -7,7 +7,8 @@ import type { DiscoverKind } from '@/lib/discoverMatch';
 type Category = { id: string; name: string; icon: LucideIcon; colorScheme: { iconColor: string } };
 
 type Props = {
-  kind: DiscoverKind;
+  /** The ค้นพบ pages, and /challenges (same tabs, violet) */
+  kind: DiscoverKind | 'challenges';
   categories: Category[];
   /** How many each category holds under the other filters; an empty one is left out unless it is picked */
   counts: Record<string, number>;
@@ -16,10 +17,11 @@ type Props = {
 };
 
 /** The picked tab: the pillar's dark text over a line in the pillar color (DESIGN_SYSTEM.md, selected state) */
-const PICKED: Record<DiscoverKind, string> = {
+const PICKED: Record<Props['kind'], string> = {
   meetups: 'border-[#F26430] text-[#D04A1B]',
   fairs: 'border-[#2B527A] text-[#1F3D5C]',
   spots: 'border-[#4A7C59] text-[#2D5A3C]',
+  challenges: 'border-[#7C3AED] text-[#5B21B6]',
 };
 
 /**

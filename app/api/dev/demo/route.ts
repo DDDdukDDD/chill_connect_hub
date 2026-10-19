@@ -66,7 +66,7 @@ export async function POST(request: Request) {
   const [kee, mint, praew] = samples;
 
   // 3. An event the member hosts, with two people coming (one already checked in) and a chat
-  const base = { category: 'chill', tag: 'กิจกรรมคอมมูนิตี้', price: 'เข้าร่วมฟรี', eventType: 'community', province: 'กรุงเทพฯ', approvalStatus: 'approved', source: 'Community Member', participantsCount: 0, createdAtTimestamp: Date.now(), createdAt: now };
+  const base = { category: 'chill', tag: 'ตี้', price: 'เข้าร่วมฟรี', eventType: 'community', province: 'กรุงเทพฯ', approvalStatus: 'approved', source: 'Community Member', participantsCount: 0, createdAtTimestamp: Date.now(), createdAt: now };
   await createAdminEvent({
     ...base,
     id: hostedId(member.id),

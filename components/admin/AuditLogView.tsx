@@ -9,7 +9,7 @@ import { handleAdminUnauthorized } from './adminAuthUtils';
 
 const ACTION_GROUPS = [
   { id: '', label: 'ทุกประเภท' },
-  { id: 'event', label: 'กิจกรรม / งานแฟร์' },
+  { id: 'event', label: 'ตี้ / งานแฟร์' },
   { id: 'spot', label: 'สถานที่' },
   { id: 'quest', label: 'ชาเลนจ์' },
   { id: 'scrape', label: 'การดึงข้อมูล' },

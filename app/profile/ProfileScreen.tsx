@@ -77,7 +77,7 @@ interface MomentThumb {
 }
 
 const GENDER_LABELS: Record<NonNullable<MemberPreferences['gender']>, string> = { female: 'หญิง', male: 'ชาย', lgbtq: 'LGBTQ+' };
-const HOST_KIND_LABELS: Record<HostApplication['kind'], string> = { host: 'เปิดกิจกรรมคอมมูนิตี้', venue: 'ร้านหรือพื้นที่', organizer: 'ผู้จัดงานหรือแบรนด์' };
+const HOST_KIND_LABELS: Record<HostApplication['kind'], string> = { host: 'เปิดตี้', venue: 'ร้านหรือพื้นที่', organizer: 'ผู้จัดงานหรือแบรนด์' };
 const ABOUT_ORDER: ProfileFieldKey[] = ['connectGoal', 'occupation', 'workplace', 'education', 'livingArea', 'hometown', 'relationshipStatus'];
 const card = 'bg-white rounded-3xl border border-slate-200 p-5 sm:p-7';
 const inputClass =
@@ -267,13 +267,13 @@ function HostCard({ member, application, onChanged }: { member: PublicMember; ap
       {status === 'approved' && (
         <p className="flex items-start gap-2 text-sm font-semibold text-emerald-800">
           <CircleCheck className="w-5 h-5 shrink-0" aria-hidden="true" />
-          <span><PhraseText text={`ทีมงานอนุมัติแล้ว (${HOST_KIND_LABELS[application!.kind]}) กิจกรรมที่คุณสร้าง จะเผยแพร่ได้ทันที`} /></span>
+          <span><PhraseText text={`ทีมงานอนุมัติแล้ว (${HOST_KIND_LABELS[application!.kind]}) ตี้ที่คุณตั้ง จะเผยแพร่ได้ทันที`} /></span>
         </p>
       )}
       {status === 'pending' && (
         <p className="flex items-start gap-2 text-sm font-semibold text-slate-700">
           <Clock className="w-5 h-5 shrink-0 text-slate-500" aria-hidden="true" />
-          <span><PhraseText text="ส่งคำขอแล้ว ทีมงานกำลังตรวจ ระหว่างนี้กิจกรรมที่คุณสร้าง จะรอทีมงานอนุมัติก่อนเผยแพร่" /></span>
+          <span><PhraseText text="ส่งคำขอแล้ว ทีมงานกำลังตรวจ ระหว่างนี้ตี้ที่คุณตั้ง จะรอทีมงานอนุมัติก่อนเผยแพร่" /></span>
         </p>
       )}
       {status === 'rejected' && !again && (
@@ -293,7 +293,7 @@ function HostCard({ member, application, onChanged }: { member: PublicMember; ap
           <div className="space-y-1.5">
             <label htmlFor="host-kind" className="block text-xs sm:text-sm font-bold text-slate-800">คุณเป็น</label>
             <select id="host-kind" value={kind} onChange={(e) => setKind(e.target.value as HostApplication['kind'])} className={inputClass} disabled={!canApply}>
-              <option value="host">คนที่อยากเปิดกิจกรรมคอมมูนิตี้</option>
+              <option value="host">คนที่อยากเปิดตี้</option>
               <option value="venue">เจ้าของร้านหรือพื้นที่</option>
               <option value="organizer">ผู้จัดงานหรือแบรนด์</option>
             </select>
@@ -718,7 +718,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
               <section className={card}>
                 <SectionTitle action={profile.isMe ? <Link href="/myhub" className="text-xs font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">จัดการใน My Hub</Link> : undefined}>กิจกรรมที่จัด</SectionTitle>
                 <p className="-mt-2 mb-4 text-xs font-semibold text-slate-500">
-                  <PhraseText text={`จัดมาแล้ว ${hosted.filter((ev) => ev.approvalStatus === 'approved').length} กิจกรรม`} />
+                  <PhraseText text={`จัดมาแล้ว ${hosted.filter((ev) => ev.approvalStatus === 'approved').length} ตี้`} />
                 </p>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {hosted.slice(0, 6).map((ev) => {
@@ -796,7 +796,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                         )}
                       </p>
                       {r.text && <p className="mt-2 text-sm text-slate-700 leading-relaxed">{r.text}</p>}
-                      <p className="mt-2 text-xs text-slate-500 truncate">กิจกรรม: {r.eventTitle}</p>
+                      <p className="mt-2 text-xs text-slate-500 truncate">ตี้: {r.eventTitle}</p>
                     </li>
                   ))}
                 </ul>
@@ -845,7 +845,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
         />
       )}
       {reportingReview && (
-        <ReportSafetyModal isOpen onClose={() => setReportingReview(null)} targetType="review" targetId={reportingReview.id} targetTitle={`รีวิวของกิจกรรม "${reportingReview.eventTitle}"`} />
+        <ReportSafetyModal isOpen onClose={() => setReportingReview(null)} targetType="review" targetId={reportingReview.id} targetTitle={`รีวิวของตี้ "${reportingReview.eventTitle}"`} />
       )}
       {isReporting && profile && (
         <ReportDialog

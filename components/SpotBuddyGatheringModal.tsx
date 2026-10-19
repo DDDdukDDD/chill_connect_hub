@@ -268,7 +268,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
 
     // Validation
     if (!title.trim()) {
-      setErrorMessage('กรุณาระบุชื่อกิจกรรม / หัวข้อทริปชวนเพื่อน');
+      setErrorMessage('กรุณาระบุชื่อตี้ / หัวข้อทริปชวนเพื่อน');
       return;
     }
     if (!date) {
@@ -276,7 +276,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
       return;
     }
     if (!locationName.trim()) {
-      setErrorMessage('กรุณาระบุสถานที่จัดกิจกรรม');
+      setErrorMessage('กรุณาระบุสถานที่นัด');
       return;
     }
     if (!meetingPoint.trim()) {
@@ -285,7 +285,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
     }
     const plainDesc = stripHtmlToPlainText(description);
     if (!plainDesc || plainDesc.length < 15) {
-      setErrorMessage('กรุณาระบุรายละเอียดกิจกรรมอย่างน้อย 15 ตัวอักษร เพื่อให้ข้อมูลครบถ้วน');
+      setErrorMessage('กรุณาระบุรายละเอียดตี้อย่างน้อย 15 ตัวอักษร เพื่อให้ข้อมูลครบถ้วน');
       return;
     }
     const minPeople = isSpotTrip ? SPOT_TRIP_MIN_PEOPLE : 2;
@@ -313,7 +313,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
       participantsCount: 1,
       maxParticipants: maxParticipants || 6,
       description: description.trim(),
-      tag: mode === 'fair' ? 'นัดเดินดูงาน' : 'กิจกรรมชวนเที่ยว',
+      tag: mode === 'fair' ? 'นัดเดินดูงาน' : 'ตี้ชวนเที่ยว',
       meetingPoint: meetingPoint.trim(),
       targetGender: targetGender,
       targetAge: targetAge,
@@ -461,7 +461,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-slate-800">
-                    {mode === 'fair' ? 'ชื่อกลุ่มนัดเดินดูงาน' : 'ชื่อกิจกรรม / หัวข้อทริปชวนเพื่อน'} <span className="text-rose-500">*</span>
+                    {mode === 'fair' ? 'ชื่อกลุ่มนัดเดินดูงาน' : 'ชื่อตี้ / หัวข้อทริปชวนเพื่อน'} <span className="text-rose-500">*</span>
                   </label>
                   <span className="text-[11px] text-slate-400 font-medium">หัวข้อกระชับ เข้าใจง่าย</span>
                 </div>
@@ -500,7 +500,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                 <div className="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200 space-y-2">
                   <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5 text-slate-500" />
-                    <span>ช่วงเวลากิจกรรม <span className="text-rose-500">*</span></span>
+                    <span>ช่วงเวลาของตี้ <span className="text-rose-500">*</span></span>
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
@@ -537,7 +537,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                       <MapPin className="w-3.5 h-3.5 text-[#2563EB]" />
-                      <span>สถานที่จัดกิจกรรม <span className="text-rose-500">*</span></span>
+                      <span>สถานที่นัด <span className="text-rose-500">*</span></span>
                     </label>
                     <span className="text-[11px] text-slate-400">ระบุสถานที่นัดพบ</span>
                   </div>
@@ -619,7 +619,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                   <div className="space-y-0.5">
                     <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                       <Clock className="w-3.5 h-3.5 text-slate-500" />
-                      <span>กำหนดการกิจกรรม</span>
+                      <span>กำหนดการของตี้</span>
                     </h4>
                     <p className="text-[11px] text-slate-400">ระบุไทม์ไลน์คร่าวๆ ให้เพื่อนๆ ทราบขั้นตอน</p>
                   </div>
@@ -676,7 +676,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <ImageIcon className="w-3.5 h-3.5 text-[#2563EB]" />
-                    <span>รูปภาพปกกิจกรรม:</span>
+                    <span>รูปปกของตี้:</span>
                   </label>
                   <span className="text-[11px] text-slate-400">อัปโหลดหรือเลือกรูปสำเร็จ</span>
                 </div>

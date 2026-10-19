@@ -78,7 +78,7 @@ const PRESET_IMAGES: Record<CreationEntityType, Array<{ label: string; url: stri
 };
 
 const TYPE_INFO: Record<CreationEntityType, { title: string; text: string; steps: string[]; icon: React.ElementType }> = {
-  community: { title: 'กิจกรรมคอมมูนิตี้', text: 'นัดกลุ่มเล็ก เช่น วิ่งเช้า บอร์ดเกม เวิร์กช็อป', steps: ['เรื่องพื้นฐาน', 'วันเวลาและสถานที่', 'รายละเอียด', 'ตรวจและส่ง'], icon: Users },
+  community: { title: 'ตี้', text: 'นัดกลุ่มเล็ก เช่น วิ่งเช้า บอร์ดเกม เวิร์กช็อป', steps: ['เรื่องพื้นฐาน', 'วันเวลาและสถานที่', 'รายละเอียด', 'ตรวจและส่ง'], icon: Users },
   fair: { title: 'งานแฟร์และมหกรรม', text: 'งานจัดแสดง นิทรรศการ เอ็กซ์โป งานวิ่ง', steps: ['เรื่องพื้นฐาน', 'วันและสถานที่', 'รายละเอียด', 'ตรวจและส่ง'], icon: Building },
   spot: { title: 'แนะนำสถานที่', text: 'ที่เที่ยว คาเฟ่ หรือมุมพักใจที่อยากให้คนอื่นรู้จัก', steps: ['เรื่องพื้นฐาน', 'ที่ตั้งและเวลาเปิด', 'รายละเอียด', 'ตรวจและส่ง'], icon: MapPin },
   challenge: { title: 'เสนอชาเลนจ์', text: 'ภารกิจให้คนในคอมมูนิตี้ทำร่วมกัน', steps: ['เรื่องพื้นฐาน', 'ภารกิจ', 'ช่วงเวลาและเหรียญ', 'ตรวจและส่ง'], icon: Target },
@@ -201,7 +201,7 @@ function validate(type: CreationEntityType, step: number, f: Form, minDate: stri
   const need = (key: keyof Form, ok: boolean, message: string) => { if (!ok && !e[key]) e[key] = message; };
   if (step === 0) {
     need('title', f.title.trim().length >= 5, 'ตั้งชื่ออย่างน้อย 5 ตัวอักษร');
-    if (type === 'community') need('lifestyleCategory', Boolean(f.lifestyleCategory), 'เลือกหมวดกิจกรรม');
+    if (type === 'community') need('lifestyleCategory', Boolean(f.lifestyleCategory), 'เลือกหมวดตี้');
     if (type === 'fair') need('fairCategory', Boolean(f.fairCategory), 'เลือกประเภทงาน');
     if (type === 'fair') need('organizer', f.organizer.trim().length >= 2, 'ใส่ชื่อผู้จัดงาน');
     if (type === 'spot') need('spotCategory', Boolean(f.spotCategory), 'เลือกประเภทสถานที่');
@@ -612,7 +612,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
   );
   // A meetup picks one of the categories, shown under its mood; the mood is set from it
   const categoryField = (
-    <Field label="หมวดกิจกรรม" error={errors.lifestyleCategory}>
+    <Field label="หมวดตี้" error={errors.lifestyleCategory}>
       <div className="space-y-3">
         {CATEGORIES.map((mood) => {
           const items = questCategories.filter((item) => item.coreMood === mood.id);
@@ -784,7 +784,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
     if (step === 0) {
       return (
         <>
-          {type === 'community' && titleField('ชื่อกิจกรรม', 'เช่น วิ่งเช้าสวนเบญจกิติ แล้วไปกินกาแฟ')}
+          {type === 'community' && titleField('ชื่อตี้', 'เช่น วิ่งเช้าสวนเบญจกิติ แล้วไปกินกาแฟ')}
           {type === 'fair' && titleField('ชื่องาน', 'เช่น สัปดาห์หนังสือแห่งชาติ ครั้งที่ 54')}
           {type === 'spot' && titleField('ชื่อสถานที่', 'เช่น ไร่ชาลุงเดช')}
           {type === 'challenge' && titleField('ชื่อชาเลนจ์', 'เช่น ตะลุย 3 คาเฟ่ย่านอารีย์')}
@@ -1015,7 +1015,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
             </div>
           </details>
           <p className="text-xs font-medium text-slate-600 leading-relaxed p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
-            ผู้เข้าร่วมคุยกับคุณได้ในแชตกลุ่มของกิจกรรม ซึ่งเปิดให้อัตโนมัติ จึงไม่ต้องใส่ไลน์หรือเบอร์โทร
+            ผู้เข้าร่วมคุยกับคุณได้ในแชตกลุ่มของตี้ ซึ่งเปิดให้อัตโนมัติ จึงไม่ต้องใส่ไลน์หรือเบอร์โทร
           </p>
         </>
       );
@@ -1156,7 +1156,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
           <span className="text-sm font-medium text-slate-700 leading-relaxed">
             {type === 'spot'
               ? 'ข้อมูลนี้เป็นความจริงเท่าที่ฉันทราบ รูปที่ใช้เป็นรูปของฉันหรือรูปที่ใช้ได้ และไม่ใช่การโฆษณาแอบแฝง'
-              : 'ข้อมูลนี้เป็นความจริง กิจกรรมนัดในที่สาธารณะ ไม่ขายของ ไม่ชวนลงทุน และเป็นไปตามคำมั่นของคอมมูนิตี้'}
+              : 'ข้อมูลนี้เป็นความจริง ตี้นัดในที่สาธารณะ ไม่ขายของ ไม่ชวนลงทุน และเป็นไปตามคำมั่นของคอมมูนิตี้'}
           </span>
         </label>
       </>
@@ -1215,7 +1215,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
           })}
           {canCreate && (!isHost || !canCreateFair) && (
             <p className="pt-2 text-sm font-medium text-slate-500 leading-relaxed">
-              {!isHost && !canCreateFair ? 'อยากให้กิจกรรมเผยแพร่ทันที หรืออยากลงงานแฟร์ ' : 'อยากลงงานแฟร์ '}
+              {!isHost && !canCreateFair ? 'อยากให้ตี้เผยแพร่ทันที หรืออยากลงงานแฟร์ ' : 'อยากลงงานแฟร์ '}
               <a href="/profile#host" className="font-bold text-[#2563EB] hover:underline whitespace-nowrap">ส่งคำขอที่หน้าโปรไฟล์</a>
             </p>
           )}

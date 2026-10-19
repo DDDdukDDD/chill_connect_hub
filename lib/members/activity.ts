@@ -25,12 +25,12 @@ const hostOf = (event: EventItem) => (event as { createdByMemberId?: string }).c
 
 export async function joinEvent(member: Member, eventId: string): Promise<{ status: JoinStatus; message: string; event?: EventItem }> {
   const event = await db.findEventById(eventId);
-  if (!event || event.approvalStatus !== 'approved') return { status: 'not_found', message: 'ไม่พบกิจกรรมนี้ หรือกิจกรรมยังไม่เปิดให้เข้าร่วม' };
+  if (!event || event.approvalStatus !== 'approved') return { status: 'not_found', message: 'ไม่พบตี้นี้ หรือตี้ยังไม่เปิดให้เข้าร่วม' };
   // Meeting strangers in person needs a verified account; saving a public fair to one's plan does not
   if (isCommunity(event) && trustLevel(member) === 'new') {
     return {
       status: 'not_allowed',
-      message: member.emailVerified ? 'รับคำมั่นของคอมมูนิตี้ก่อนนะ แล้วจะเข้าร่วมกิจกรรมได้ (ดูที่หน้าโปรไฟล์)' : 'ยืนยันอีเมลก่อนนะ แล้วจะเข้าร่วมกิจกรรมได้ (ดูที่หน้าโปรไฟล์)',
+      message: member.emailVerified ? 'รับคำมั่นของคอมมูนิตี้ก่อนนะ แล้วจะเข้าร่วมตี้ได้ (ดูที่หน้าโปรไฟล์)' : 'ยืนยันอีเมลก่อนนะ แล้วจะเข้าร่วมตี้ได้ (ดูที่หน้าโปรไฟล์)',
     };
   }
   const result = await db.atomicJoinEvent(eventId, { userId: member.id, userName: member.displayName, userAvatar: member.avatarUrl });
@@ -45,7 +45,7 @@ export async function joinEvent(member: Member, eventId: string): Promise<{ stat
 
 export async function leaveEvent(member: Member, eventId: string): Promise<{ event: EventItem | null }> {
   const event = await db.findEventById(eventId);
-  if (event && hostOf(event) === member.id) throw new MemberAuthError('คุณเป็นคนจัดกิจกรรมนี้ จึงยกเลิกการเข้าร่วมไม่ได้ ถ้าจะยกเลิกกิจกรรม ให้แจ้งทีมงาน', 409);
+  if (event && hostOf(event) === member.id) throw new MemberAuthError('คุณเป็นคนจัดตี้นี้ จึงยกเลิกการเข้าร่วมไม่ได้ ถ้าจะยกเลิกตี้ ให้แจ้งทีมงาน', 409);
   const result = await db.atomicLeaveEvent(eventId, member.id);
   if (!result.success) throw new MemberAuthError(result.message, 404);
   const history = [{ eventId, at: new Date().toISOString() }, ...(member.cancelledEvents ?? []).filter((c) => c.eventId !== eventId)].slice(0, MAX_CANCELLED_HISTORY);
@@ -101,7 +101,7 @@ export async function activityOf(member: Member) {
 /** The member's own ticket for an event they joined */
 export async function ticketOf(member: Member, eventId: string) {
   const [event, record] = await Promise.all([db.findEventById(eventId), db.getParticipant(eventId, member.id)]);
-  if (!event || !record) throw new MemberAuthError('คุณยังไม่ได้เข้าร่วมกิจกรรมนี้', 404);
+  if (!event || !record) throw new MemberAuthError('คุณยังไม่ได้เข้าร่วมตี้นี้', 404);
   return {
     code: record.ticketCode ?? '',
     joinedAt: record.joinedAt,
@@ -153,8 +153,8 @@ async function publicPeople(records: { userId: string; userName?: string; userAv
 
 async function requireHost(member: Member, eventId: string) {
   const event = await db.findEventById(eventId);
-  if (!event) throw new MemberAuthError('ไม่พบกิจกรรม', 404);
-  if (hostOf(event) !== member.id) throw new MemberAuthError('เฉพาะคนจัดกิจกรรมนี้เท่านั้น', 403);
+  if (!event) throw new MemberAuthError('ไม่พบตี้', 404);
+  if (hostOf(event) !== member.id) throw new MemberAuthError('เฉพาะคนจัดตี้นี้เท่านั้น', 403);
   return event;
 }
 
@@ -171,18 +171,18 @@ export async function participantsForHost(member: Member, eventId: string) {
 export async function checkInByHost(member: Member, eventId: string, target: { code?: string; userId?: string }, checkedIn: boolean) {
   await requireHost(member, eventId);
   const record = await db.setCheckIn(eventId, target, checkedIn);
-  if (!record) throw new MemberAuthError(target.code ? 'ไม่พบรหัสบัตรนี้ในกิจกรรม ลองตรวจตัวอักษรอีกครั้ง' : 'ไม่พบผู้เข้าร่วมคนนี้', 404);
+  if (!record) throw new MemberAuthError(target.code ? 'ไม่พบรหัสบัตรนี้ในตี้ ลองตรวจตัวอักษรอีกครั้ง' : 'ไม่พบผู้เข้าร่วมคนนี้', 404);
   return { userId: record.userId, userName: record.userName, checkedInAt: record.checkedInAt };
 }
 
 /** One review per participant per event, after the event (or after being checked in) */
 export async function reviewEvent(member: Member, eventId: string, input: Record<string, unknown>) {
   const [event, record] = await Promise.all([db.findEventById(eventId), db.getParticipant(eventId, member.id)]);
-  if (!event || !record) throw new MemberAuthError('รีวิวได้เฉพาะกิจกรรมที่คุณเข้าร่วม', 403);
-  if (hostOf(event) === member.id) throw new MemberAuthError('รีวิวกิจกรรมของตัวเองไม่ได้');
-  if (!record.checkedInAt && !isEventEnded(event)) throw new MemberAuthError('รีวิวได้หลังกิจกรรมจบ หรือหลังเช็กอินแล้ว');
+  if (!event || !record) throw new MemberAuthError('รีวิวได้เฉพาะตี้ที่คุณเข้าร่วม', 403);
+  if (hostOf(event) === member.id) throw new MemberAuthError('รีวิวตี้ของตัวเองไม่ได้');
+  if (!record.checkedInAt && !isEventEnded(event)) throw new MemberAuthError('รีวิวได้หลังตี้จบ หรือหลังเช็กอินแล้ว');
   if (hostOf(event) && !record.checkedInAt) throw new MemberAuthError('รีวิวได้เฉพาะคนที่โฮสต์เช็กอินให้แล้ว', 403);
-  if (hasReviewed(member.id, eventId)) throw new MemberAuthError('คุณรีวิวกิจกรรมนี้ไปแล้ว', 409);
+  if (hasReviewed(member.id, eventId)) throw new MemberAuthError('คุณรีวิวตี้นี้ไปแล้ว', 409);
   const rating = Math.round(Number(input.rating));
   if (!(rating >= 1 && rating <= 5)) throw new MemberAuthError('ให้คะแนน 1 ถึง 5 ดาว');
   const text = typeof input.text === 'string' ? input.text.replace(/\s+/g, ' ').trim().slice(0, MAX_REVIEW_LENGTH) : '';

@@ -1293,7 +1293,7 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
           if (newEvent.approvalStatus === 'pending') {
             showToast(`ส่งข้อมูล "${newEvent.title}" เรียบร้อยแล้ว (รอตรวจสอบและอนุมัติโดยทีมงาน)`);
           } else {
-            showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จเรียบร้อย`);
+            showToast(`ตั้งตี้ "${newEvent.title}" สำเร็จเรียบร้อย`);
           }
         }}
       />

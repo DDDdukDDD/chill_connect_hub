@@ -60,7 +60,7 @@ export function CheckInScreen({ eventId, code }: { eventId: string; code: string
             <>
               <AlertCircle className="w-10 h-10 mx-auto text-slate-400" aria-hidden="true" />
               <h1 className="mt-4 text-xl font-bold">เข้าสู่ระบบก่อน</h1>
-              <p className="mt-2 text-sm font-medium text-slate-600">เฉพาะคนจัดกิจกรรมเท่านั้นที่เช็กอินผู้เข้าร่วมได้ เข้าสู่ระบบด้วยบัญชีที่ใช้จัดกิจกรรมนี้</p>
+              <p className="mt-2 text-sm font-medium text-slate-600">เฉพาะคนจัดตี้เท่านั้นที่เช็กอินผู้เข้าร่วมได้ เข้าสู่ระบบด้วยบัญชีที่ใช้จัดตี้นี้</p>
               <Link href={`/login?returnTo=${returnTo}`} className={`${button} mt-6 bg-[#2563EB] hover:bg-[#1D4ED8] text-white`}>เข้าสู่ระบบ</Link>
             </>
           )}

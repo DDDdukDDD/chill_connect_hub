@@ -225,7 +225,7 @@ export async function POST(request: Request) {
   const needsEdit = spots.length > 0 || quests.length > 0 || events.some((event) => event.eventType !== 'community');
   if (needsEdit && !actorCan(actor, 'content.edit')) {
     return NextResponse.json(
-      { success: false, error: 'บัญชีนี้ตรวจได้เฉพาะกิจกรรมคอมมูนิตี้', permission: 'content.edit' },
+      { success: false, error: 'บัญชีนี้ตรวจได้เฉพาะตี้', permission: 'content.edit' },
       { status: 403 }
     );
   }
@@ -255,7 +255,7 @@ export async function POST(request: Request) {
 
   const verb = action === 'approve' ? 'อนุมัติ' : 'ปฏิเสธ';
   for (const event of events) {
-    recordAudit(actor, `event.${action}`, `${verb}${event.eventType === 'community' ? 'กิจกรรม' : 'งานแฟร์'} "${event.title}"${reason && action === 'reject' ? ` · เหตุผล: ${reason}` : ''}`, { type: 'event', id: event.id });
+    recordAudit(actor, `event.${action}`, `${verb}${event.eventType === 'community' ? 'ตี้' : 'งานแฟร์'} "${event.title}"${reason && action === 'reject' ? ` · เหตุผล: ${reason}` : ''}`, { type: 'event', id: event.id });
   }
   for (const spot of spots) {
     recordAudit(actor, `spot.${action}`, `${verb}สถานที่ "${spot.title}"${reason && action === 'reject' ? ` · เหตุผล: ${reason}` : ''}`, { type: 'spot', id: spot.id });

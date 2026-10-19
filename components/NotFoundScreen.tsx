@@ -7,7 +7,7 @@ import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { useAuth } from '@/lib/useAuth';
 
 const PLACES_TO_GO = [
-  { href: '/community', label: 'มีตอัป' },
+  { href: '/community', label: 'ตี้' },
   { href: '/fairs', label: 'งานแฟร์' },
   { href: '/spots', label: 'ที่เที่ยว' },
   { href: '/challenges', label: 'ชาเลนจ์' },

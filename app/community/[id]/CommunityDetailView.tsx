@@ -195,7 +195,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
 
   const toggleFavorite = (eventId: string) => {
     if (!isLoggedIn) {
-      setMembershipActionTitle('เพื่อบันทึกกิจกรรมโปรด');
+      setMembershipActionTitle('เพื่อบันทึกตี้ที่ชอบ');
       setPendingAction(`favorite:${eventId}`);
       setIsRequireMembershipOpen(true);
       return;
@@ -220,7 +220,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
 
   const handleJoinEvent = () => {
     if (!isLoggedIn) {
-      setMembershipActionTitle('เพื่อลงทะเบียนเข้าร่วมกิจกรรม');
+      setMembershipActionTitle('เพื่อลงทะเบียนเข้าร่วมตี้');
       setPendingAction('join');
       setIsRequireMembershipOpen(true);
       return;
@@ -267,7 +267,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
           creatorAvatar: eventData.hostAvatar,
           eventType: 'community',
           category: eventData.category || 'heal',
-          tag: eventData.tag || 'กิจกรรมคอมมูนิตี้',
+          tag: eventData.tag || 'ตี้',
           description: eventData.description,
           price: eventData.price,
           participantsCount: updatedParticipants,
@@ -305,7 +305,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
     }
 
     setIsCancelModalOpen(false);
-    showToast(`ยกเลิกการเข้าร่วมกิจกรรมเรียบร้อย`);
+    showToast(`ยกเลิกการเข้าร่วมตี้เรียบร้อย`);
   };
 
   const handleShare = async () => {
@@ -313,14 +313,14 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
     const url = window.location.href;
     const shareData = {
       title: `${eventData.title} | Chill & Connect Hub`,
-      text: `ชวนไปตี้กิจกรรมนี้: ${eventData.title} (${eventData.date} @ ${eventData.location})`,
+      text: `ชวนไปตี้นี้: ${eventData.title} (${eventData.date} @ ${eventData.location})`,
       url: url,
     };
 
     if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
       try {
         await navigator.share(shareData);
-        showToast('แชร์กิจกรรมเรียบร้อย! 🎉');
+        showToast('แชร์ตี้เรียบร้อย! 🎉');
         return;
       } catch {}
     }
@@ -328,7 +328,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
     try {
       await navigator.clipboard.writeText(url);
       setIsCopied(true);
-      showToast('คัดลอกลิงก์กิจกรรมแล้ว ส่งชวนเพื่อนใน LINE ได้เลย! 📋✨');
+      showToast('คัดลอกลิงก์ตี้แล้ว ส่งชวนเพื่อนใน LINE ได้เลย! 📋✨');
       setTimeout(() => setIsCopied(false), 2500);
     } catch {
       showToast('คัดลอกลิงก์เรียบร้อย');
@@ -357,11 +357,11 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
   const communityHighlights = useMemo(() => {
     if (!isSample) return [];
     return [
-      'กิจกรรมกลุ่มขนาดกะทัดรัด (Small Group) เน้นความเป็นมิตรและเปิดรับทุกคนอย่างอบอุ่น',
-      'ดำเนินกิจกรรมโดย Verified Host ที่มีประสบการณ์ พร้อมดูแลให้ทุกคนรู้สึกผ่อนคลาย',
+      'ตี้กลุ่มเล็ก (Small Group) เน้นความเป็นมิตรและเปิดรับทุกคนอย่างอบอุ่น',
+      'ดูแลตี้โดย Verified Host ที่มีประสบการณ์ พร้อมดูแลให้ทุกคนรู้สึกผ่อนคลาย',
       'บรรยากาศ Safe Space 100% ปราศจากความกดดัน เป็นตัวของตัวเองได้อย่างสบายใจ',
       'ได้ทั้งเปิดรับความรู้ ทักษะใหม่ๆ และได้รู้จักเพื่อนใหม่ที่มีไลฟ์สไตล์ตรงกัน',
-      'มีตั๋ว E-Ticket ในระบบและห้องแชตกลุ่มสำหรับเตรียมนัดพบก่อนเริ่มกิจกรรม'
+      'มีตั๋ว E-Ticket ในระบบและห้องแชตกลุ่มสำหรับเตรียมนัดพบก่อนเริ่มตี้'
     ];
   }, [isSample]);
 
@@ -378,7 +378,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
     }
     return {
       publicTransitText: 'สามารถเดินทางด้วยรถไฟฟ้า BTS, MRT หรือรถประจำทางที่ผ่านบริเวณจุดนัดพบ',
-      parkingText: 'มีพื้นที่จอดรถสำหรับผู้เข้าร่วมกิจกรรม หรือจุดจอดรถบริเวณใกล้เคียง'
+      parkingText: 'มีพื้นที่จอดรถสำหรับผู้เข้าร่วมตี้ หรือจุดจอดรถบริเวณใกล้เคียง'
     };
   }, [eventData, isSample]);
 
@@ -386,7 +386,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
     ? [
       'แต่งกายสุภาพและสวมใส่ชุดที่เคลื่อนไหวสะดวก',
       'พกสมาร์ตโฟนที่มีแบตเตอรี่พร้อมเปิดตั๋ว E-Ticket และเข้าห้องแชต',
-      'เปิดใจรับฟังและรักษามารยาทต่อเพื่อนร่วมกิจกรรมทุกคน',
+      'เปิดใจรับฟังและรักษามารยาทต่อเพื่อนร่วมตี้ทุกคน',
       'หากไม่สะดวกมาร่วมตี้ กรุณากดยกเลิกล่วงหน้า 24 ชม. เพื่อเปิดสิทธิ์ให้ผู้อื่น',
     ]
     : eventData?.whatToBring ?? [];
@@ -434,14 +434,14 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
           <div className="w-16 h-16 bg-orange-50 text-[#F26430] rounded-2xl flex items-center justify-center mx-auto text-2xl">
             🌿
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">ไม่พบข้อมูลกิจกรรมคอมมูนิตี้นี้</h1>
-          <p className="text-sm text-slate-600">กิจกรรมนี้อาจสิ้นสุดลงแล้วหรือถูกยกเลิก</p>
+          <h1 className="text-2xl font-bold text-slate-900">ไม่พบข้อมูลตี้นี้</h1>
+          <p className="text-sm text-slate-600">ตี้นี้อาจสิ้นสุดลงแล้วหรือถูกยกเลิก</p>
           <Link
             href="/community"
             className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-2xs hover:shadow-md transition-all cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>กลับสู่หน้ากิจกรรมคอมมูนิตี้</span>
+            <span>กลับไปดูตี้ทั้งหมด</span>
           </Link>
         </main>
       </div>
@@ -472,7 +472,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
         onOpenLogout={() => setIsLogoutModalOpen(true)}
         onOpenCreateEvent={() => {
           if (!isLoggedIn) {
-            setMembershipActionTitle('เพื่อเปิดตี้หรือสร้างกิจกรรมใหม่');
+            setMembershipActionTitle('เพื่อตั้งตี้ใหม่');
             setPendingAction('create');
             setIsRequireMembershipOpen(true);
           } else {
@@ -497,7 +497,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
               href="/community"
               className="hover:text-[#F26430] transition-colors py-1 px-1 font-semibold text-slate-800"
             >
-              กิจกรรมคอมมูนิตี้
+              ตี้
             </Link>
             <span>/</span>
             <span className="text-slate-700 font-semibold py-1 px-1">{cleanText(catStyle.label)}</span>
@@ -517,7 +517,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
               }`}
             >
               <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-[#F26430] text-[#F26430]' : 'text-slate-500'}`} />
-              <span className="hidden sm:inline">{isFav ? 'บันทึกใน MyHub แล้ว' : isEnded ? 'ติดตามรอบถัดไป' : 'บันทึกกิจกรรม'}</span>
+              <span className="hidden sm:inline">{isFav ? 'บันทึกใน MyHub แล้ว' : isEnded ? 'ติดตามรอบถัดไป' : 'บันทึกตี้'}</span>
               <span className="sm:hidden">{isFav ? 'บันทึกแล้ว' : isEnded ? 'ติดตาม' : 'บันทึก'}</span>
             </button>
 
@@ -534,7 +534,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
               ) : (
                 <>
                   <Share2 className="w-3.5 h-3.5 text-slate-500" />
-                  <span>แชร์กิจกรรม</span>
+                  <span>แชร์ตี้</span>
                 </>
               )}
             </button>
@@ -543,7 +543,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
               type="button"
               onClick={() => setIsReportModalOpen(true)}
               className="w-8 h-8 rounded-xl border border-slate-200 hover:border-rose-300 text-slate-400 hover:text-rose-600 flex items-center justify-center transition-colors cursor-pointer active:scale-95"
-              title="รายงานกิจกรรม / พฤติกรรมไม่เหมาะสม"
+              title="รายงานตี้ / พฤติกรรมไม่เหมาะสม"
             >
               <Flag className="w-3.5 h-3.5" />
             </button>
@@ -570,7 +570,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
             >
               <img
                 src={galleryImages[0] || eventData.image}
-                alt={`${eventData.title} ภาพบรรยากาศกิจกรรม`}
+                alt={`${eventData.title} ภาพบรรยากาศตี้`}
                 className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-40 hover:opacity-20 transition-opacity" />
@@ -646,7 +646,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
 
                 {isEnded ? (
                   <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-                    กิจกรรมสิ้นสุดแล้ว
+                    ตี้นี้จบแล้ว
                   </span>
                 ) : eventData.participantsCount >= eventData.maxParticipants ? (
                   <span className="text-xs font-bold px-3 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1.5">
@@ -822,7 +822,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
                   </div>
                   {(isSample || eventData.hostHostedCount) && (
                   <p className="text-xs text-slate-500 mt-0.5">
-                    จัดกิจกรรมมาแล้ว {eventData.hostHostedCount || 12} ครั้ง • เรตติ้ง {eventData.hostRating || 4.9}/5.0 ({eventData.hostReviewsCount || 58} รีวิว)
+                    จัดตี้มาแล้ว {eventData.hostHostedCount || 12} ครั้ง • เรตติ้ง {eventData.hostRating || 4.9}/5.0 ({eventData.hostReviewsCount || 58} รีวิว)
                   </p>
                   )}
                 </div>
@@ -841,7 +841,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
                   type="button"
                   onClick={() => setIsReportModalOpen(true)}
                   className="p-1.5 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
-                  title="รายงานกิจกรรมไม่เหมาะสม"
+                  title="รายงานตี้ไม่เหมาะสม"
                 >
                   <Flag className="w-4 h-4" />
                 </button>
@@ -851,7 +851,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
             {/* 4. About Story */}
             <div className="space-y-3 pt-1">
               <h2 className="text-lg font-bold text-slate-900 tracking-tight">
-                รายละเอียดกิจกรรม & วัตถุประสงค์
+                รายละเอียดตี้ & วัตถุประสงค์
               </h2>
               {renderDescriptionContent(eventData.description)}
             </div>
@@ -860,7 +860,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
             {communityHighlights.length > 0 && (
             <div className="space-y-3.5 pt-5 border-t border-slate-100">
               <h2 className="text-lg font-bold text-slate-900 tracking-tight">
-                จุดเด่นของกิจกรรมนี้
+                จุดเด่นของตี้นี้
               </h2>
               <ul className="space-y-3 pt-1">
                 {communityHighlights.map((h, idx) => (
@@ -905,7 +905,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
                   {eventData.locationType === 'online' || eventData.province === 'ออนไลน์' ? (
                     <>
                       <Globe className="w-4 h-4 text-sky-600" />
-                      <span>ช่องทางและแพลตฟอร์มกิจกรรมออนไลน์</span>
+                      <span>ช่องทางและแพลตฟอร์มตี้ออนไลน์</span>
                     </>
                   ) : (
                     <span>จุดนัดพบ & การเดินทาง</span>
@@ -934,7 +934,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
                     <span>รวมตัวผ่านแพลตฟอร์มออนไลน์</span>
                   </div>
                   <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
-                    {eventData.meetingPoint || 'กิจกรรมนี้จัดในรูปแบบออนไลน์ สามารถเข้าร่วมพูดคุยและแลกเปลี่ยนความรู้ได้จากทุกที่'}
+                    {eventData.meetingPoint || 'ตี้นี้จัดในรูปแบบออนไลน์ สามารถเข้าร่วมพูดคุยและแลกเปลี่ยนความรู้ได้จากทุกที่'}
                   </p>
                   <div className="pt-2 flex items-center gap-3">
                     {isJoined ? (
@@ -946,16 +946,16 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
                           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs shadow-xs transition-colors"
                         >
                           <ExternalLink className="w-3.5 h-3.5" />
-                          <span>เปิดห้องกิจกรรม ({eventData.onlinePlatform || 'Online'})</span>
+                          <span>เปิดห้องตี้ ({eventData.onlinePlatform || 'Online'})</span>
                         </a>
                       ) : (
                         <div className="text-xs text-sky-800 font-bold bg-white/90 px-3.5 py-2 rounded-xl border border-sky-200">
-                          🔗 ลิงก์ห้องกิจกรรมจะส่งให้ผ่านช่องทางติดต่อกลุ่มก่อนเริ่มงาน
+                          🔗 ลิงก์ห้องตี้จะส่งให้ผ่านช่องทางติดต่อกลุ่มก่อนเริ่มงาน
                         </div>
                       )
                     ) : (
                       <div className="text-xs text-slate-500 italic bg-white/80 px-3.5 py-2 rounded-xl border border-sky-200/60">
-                        🔒 ลิงก์ห้องกิจกรรมจะเปิดเผยให้เห็นหลังจากกดเข้าร่วมกิจกรรม
+                        🔒 ลิงก์ห้องตี้จะเปิดเผยให้เห็นหลังจากกดเข้าร่วมตี้
                       </div>
                     )}
                   </div>
@@ -1104,7 +1104,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
                   )}
                   <div>
                     <span className="text-slate-400 text-[10px] block font-bold">
-                      {eventData.scheduleType === 'recurring' ? 'กำหนดการประจำ' : 'วันที่จัดกิจกรรม'}
+                      {eventData.scheduleType === 'recurring' ? 'กำหนดการประจำ' : 'วันที่จัดตี้'}
                     </span>
                     <span className="font-bold text-slate-900">
                       {eventData.scheduleType === 'recurring' && eventData.recurrence?.customSummary
@@ -1180,7 +1180,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
                     disabled
                     className="hidden lg:block w-full bg-slate-100 text-slate-400 py-3 rounded-2xl font-bold text-xs cursor-not-allowed text-center"
                   >
-                    ปิดรับการลงทะเบียน (กิจกรรมสิ้นสุดแล้ว)
+                    ปิดรับการลงทะเบียน (ตี้นี้จบแล้ว)
                   </button>
                 ) : eventData.participantsCount >= eventData.maxParticipants && !isJoined ? (
                   <button
@@ -1232,7 +1232,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
                       onClick={() => setIsCancelModalOpen(true)}
                       className="w-full text-rose-500 hover:text-rose-700 font-bold text-xs py-1.5 transition-colors text-center hover:underline cursor-pointer"
                     >
-                      ยกเลิกการเข้าร่วมกิจกรรม
+                      ยกเลิกการเข้าร่วมตี้
                     </button>
                   </>
                 ) : (
@@ -1251,7 +1251,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
                     href="/myhub?type=community"
                     className="w-full text-center inline-flex items-center justify-center gap-1 text-[11px] font-bold text-slate-600 hover:text-slate-900 hover:underline pt-0.5"
                   >
-                    <span>ดูกิจกรรมใน MyHub ของคุณ</span>
+                    <span>ดูตี้ใน MyHub ของคุณ</span>
                   </Link>
                 )}
               </div>
@@ -1267,7 +1267,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
               location={eventData.location}
               isLoggedIn={isLoggedIn}
               onRequireLogin={() => {
-                setMembershipActionTitle('เพื่อโพสต์โมเมนต์จากกิจกรรมนี้');
+                setMembershipActionTitle('เพื่อโพสต์โมเมนต์จากตี้นี้');
                 setIsRequireMembershipOpen(true);
               }}
               onShowToast={showToast}
@@ -1284,10 +1284,10 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
-                  กิจกรรมคอมมูนิตี้ที่คุณอาจสนใจ
+                  ตี้ที่คุณอาจสนใจ
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-600">
-                  กิจกรรมไลฟ์สไตล์และเวิร์กช็อปอื่นๆ ที่เปิดรับเพื่อนใหม่
+                  ตี้อื่นๆ ที่เปิดรับเพื่อนใหม่
                 </p>
               </div>
 
@@ -1295,7 +1295,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
                 href="/community"
                 className="text-xs sm:text-sm font-bold text-slate-900 hover:text-[#F26430] hover:underline flex items-center gap-1"
               >
-                <span>ดูกิจกรรมทั้งหมด</span>
+                <span>ดูตี้ทั้งหมด</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
@@ -1456,7 +1456,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
           if (newEvent.approvalStatus === 'pending') {
             showToast(`ส่งข้อมูล "${newEvent.title}" เรียบร้อยแล้ว (รอตรวจสอบและอนุมัติโดยทีมงาน)`);
           } else {
-            showToast(`สร้างกิจกรรม "${newEvent.title}" สำเร็จแล้ว! 🎉`);
+            showToast(`ตั้งตี้ "${newEvent.title}" สำเร็จแล้ว! 🎉`);
           }
           setIsCreateEventModalOpen(false);
         }}
@@ -1475,7 +1475,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
             {/* Top Bar: Category Pill & Close Button */}
             <div className="flex items-center justify-between">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-[#F26430] text-xs font-bold tracking-wide">
-                <span>กิจกรรมคอมมูนิตี้</span>
+                <span>ตี้</span>
               </div>
               <button
                 type="button"
@@ -1493,7 +1493,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
                 ยืนยันการลงทะเบียน
               </h3>
               <p className="text-xs sm:text-sm text-slate-500 font-medium">
-                ร่วมกิจกรรมและพบปะเพื่อนใหม่ในบรรยากาศที่เป็นกันเองและปลอดภัย
+                ร่วมตี้และพบปะเพื่อนใหม่ในบรรยากาศที่เป็นกันเองและปลอดภัย
               </p>
             </div>
 
@@ -1640,9 +1640,9 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
               isEnded ? 'text-slate-500' : isJoined ? 'text-emerald-700' : fillRatio >= 1 ? 'text-rose-600' : isAlmostFull ? 'text-amber-700' : 'text-emerald-700'
             }`}>
               {isEnded
-                ? 'กิจกรรมสิ้นสุดแล้ว'
+                ? 'ตี้นี้จบแล้ว'
                 : isHost
-                ? 'คุณเป็นผู้จัดกิจกรรมนี้'
+                ? 'คุณเป็นผู้จัดตี้นี้'
                 : isJoined
                 ? 'คุณลงทะเบียนแล้ว'
                 : fillRatio >= 1
@@ -1653,7 +1653,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
           <button
             type="button"
             onClick={() => toggleFavorite(eventData.id)}
-            aria-label={isFav ? 'เอาออกจากที่บันทึก' : 'บันทึกกิจกรรม'}
+            aria-label={isFav ? 'เอาออกจากที่บันทึก' : 'บันทึกตี้'}
             className={`w-10 h-10 rounded-full border flex items-center justify-center shrink-0 cursor-pointer active:scale-95 ${isFav ? 'bg-orange-50 border-orange-200' : 'bg-white border-slate-200'}`}
           >
             <Heart className={`w-4 h-4 ${isFav ? 'fill-[#F26430] text-[#F26430]' : 'text-slate-600'}`} />
@@ -1661,7 +1661,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
           <button
             type="button"
             onClick={handleShare}
-            aria-label="แชร์กิจกรรม"
+            aria-label="แชร์ตี้"
             className="w-10 h-10 rounded-full border border-slate-200 bg-white flex items-center justify-center shrink-0 cursor-pointer active:scale-95"
           >
             {isCopied ? <Check className="w-4 h-4 text-emerald-600" /> : <Share2 className="w-4 h-4 text-slate-600" />}

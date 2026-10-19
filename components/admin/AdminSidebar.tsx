@@ -75,7 +75,7 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
   {
     groupLabel: 'เนื้อหา',
     modules: [
-      { id: 'community', label: 'กิจกรรมคอมมูนิตี้', icon: Users, pillarColor: '#F26430' },
+      { id: 'community', label: 'ตี้', icon: Users, pillarColor: '#F26430' },
       { id: 'fairs', label: 'งานมหกรรม & เอ็กซ์โป', icon: Trophy, pillarColor: '#2B527A' },
       { id: 'spots', label: 'พิกัดเที่ยว 77 จังหวัด', icon: Leaf, pillarColor: '#4A7C59' },
       { id: 'quests', label: 'ชาเลนจ์ & ภารกิจ', icon: Zap, pillarColor: '#7C3AED' },

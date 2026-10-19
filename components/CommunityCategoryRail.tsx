@@ -89,7 +89,7 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
                   if (isDisabled) return;
                   onSelectCategory(isSelected ? null : cat.id);
                 }}
-                title={isDisabled ? `${cat.name} (ยังไม่มีกิจกรรมในหมวดนี้)` : `${cat.name} (${count} ตี้กิจกรรม)`}
+                title={isDisabled ? `${cat.name} (ยังไม่มีตี้ในหมวดนี้)` : `${cat.name} (${count} ตี้)`}
                 className={`p-3.5 rounded-2xl border transition-all duration-200 text-left flex flex-col justify-between gap-2.5 select-none relative ${
                   isDisabled
                     ? 'opacity-40 bg-slate-50/70 border-slate-200/50 text-slate-400 cursor-not-allowed shadow-none'
@@ -247,7 +247,7 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
                 if (isDisabled) return;
                 onSelectCategory(isSelected ? null : cat.id);
               }}
-              title={isDisabled ? `${cat.name} (ยังไม่มีกิจกรรมในหมวดนี้)` : `${cat.name} (${count} ตี้กิจกรรม)`}
+              title={isDisabled ? `${cat.name} (ยังไม่มีตี้ในหมวดนี้)` : `${cat.name} (${count} ตี้)`}
               className={`shrink-0 2xl:flex-1 h-[82px] min-w-[145px] sm:min-w-[155px] 2xl:min-w-0 p-3 rounded-2xl border transition-all duration-200 flex flex-col justify-between select-none ${
                 isDisabled
                   ? 'opacity-40 bg-slate-50/70 border-slate-200/50 text-slate-400 cursor-not-allowed shadow-none hover:bg-slate-50/70 hover:border-slate-200/50'

@@ -5,6 +5,7 @@ import { AlertCircle, Check, Clock3, Pencil, Plus, RefreshCw, Search, Trash2, Tr
 import { AdminPageHeader, adminButton } from './AdminUI';
 import { ChallengeQuest, QuestReward } from '@/data/mockData';
 import { parseQuestDate } from '@/lib/questLifecycle';
+import { PRIZE_LABEL_MAX, prizeLabelLength } from '@/lib/questDisplay';
 import { handleAdminUnauthorized } from './adminAuthUtils';
 import { useMasterData } from '@/lib/useMasterData';
 import { SPOT_CATEGORY_OPTIONS } from '@/lib/spotCategories';
@@ -29,6 +30,7 @@ interface QuestDraft {
   rewardType: QuestReward['type'];
   partnerName: string;
   rewardTitle: string;
+  rewardShortTitle: string;
   voucherCodePrefix: string;
   exclusiveNotice: string;
   hubRewardNote: string;
@@ -45,7 +47,7 @@ interface QuestDraft {
   ruleVibes: string;
 }
 
-const RULE_TYPE_LABELS = { spot: 'ไปสถานที่', community: 'ร่วมกิจกรรมคอมมูนิตี้', fair: 'ไปงานแฟร์' } as const;
+const RULE_TYPE_LABELS = { spot: 'ไปสถานที่', community: 'ร่วมตี้', fair: 'ไปงานแฟร์' } as const;
 // The categories a rule can name, by their names: places use the data categories, events the four moods
 const EVENT_CATEGORY_OPTIONS = [
   { id: 'chill', label: 'จิบกาแฟ & ชิลล์' },
@@ -100,6 +102,7 @@ const EMPTY_DRAFT: QuestDraft = {
   rewardType: 'hub_central',
   partnerName: '',
   rewardTitle: 'สะสม XP แลกของรางวัลที่ชอบ',
+  rewardShortTitle: '',
   voucherCodePrefix: '',
   exclusiveNotice: '',
   hubRewardNote: '',
@@ -137,6 +140,7 @@ function toPayload(draft: QuestDraft) {
     brandReward: {
       type: draft.rewardType,
       title: draft.rewardTitle,
+      shortTitle: draft.rewardShortTitle.trim() || undefined,
       partnerName: isPartner ? draft.partnerName : undefined,
       voucherCodePrefix: isPartner ? draft.voucherCodePrefix : undefined,
       exclusiveNotice: isPartner ? draft.exclusiveNotice : undefined,
@@ -335,6 +339,7 @@ export function QuestsManagerView() {
       rewardType: quest.brandReward?.type || 'hub_central',
       partnerName: quest.brandReward?.type === 'brand_partner' ? quest.brandReward.partnerName : '',
       rewardTitle: quest.brandReward?.title || EMPTY_DRAFT.rewardTitle,
+      rewardShortTitle: quest.brandReward?.shortTitle || '',
       voucherCodePrefix: quest.brandReward?.voucherCodePrefix || '',
       exclusiveNotice: quest.brandReward?.exclusiveNotice || '',
       hubRewardNote: quest.brandReward?.hubRewardNote || '',
@@ -651,7 +656,7 @@ export function QuestsManagerView() {
                       </div>
                     )}
                     <div className="space-y-1.5">
-                      <p className="text-sm font-medium text-slate-800">{draft.ruleType === 'spot' ? 'ประเภทสถานที่' : 'หมวดกิจกรรม'}</p>
+                      <p className="text-sm font-medium text-slate-800">{draft.ruleType === 'spot' ? 'ประเภทสถานที่' : 'หมวดตี้'}</p>
                       <div className="flex flex-wrap gap-1.5">
                         {(draft.ruleType === 'spot' ? SPOT_CATEGORY_OPTIONS : EVENT_CATEGORY_OPTIONS).map((option) => (
                           <RuleChip key={option.id} label={option.label} isOn={splitList(draft.ruleCategories).includes(option.id)} onToggle={() => setDraft({ ...draft, ruleCategories: toggleInList(draft.ruleCategories, option.id) })} />
@@ -706,8 +711,31 @@ export function QuestsManagerView() {
                   </label>
                 )}
                 <label className="block space-y-1.5 text-sm font-medium text-slate-800">{draft.rewardType === 'brand_partner' ? 'สิทธิพิเศษจากแบรนด์' : 'รางวัลจาก Hub'}
-                  <input required minLength={3} value={draft.rewardTitle} onChange={(event) => setDraft({ ...draft, rewardTitle: event.target.value })} placeholder={draft.rewardType === 'brand_partner' ? 'เช่น ฟรี Cold Brew 1 แก้ว (มูลค่า 140.-)' : ''} className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                  <input required minLength={3} value={draft.rewardTitle} onChange={(event) => setDraft({ ...draft, rewardTitle: event.target.value })} placeholder={draft.rewardType === 'brand_partner' ? 'เช่น ฟรี Signature Cold Brew 1 แก้ว (มูลค่า 140.-)' : ''} className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
                 </label>
+                {/* The card shows this on the photo's lower edge; the full prize above is on the challenge page */}
+                {(() => {
+                  const used = prizeLabelLength(draft.rewardShortTitle.trim());
+                  const tooLong = used > PRIZE_LABEL_MAX;
+                  return (
+                    <label className="block space-y-1.5 text-sm font-medium text-slate-800">
+                      <span className="flex items-baseline justify-between gap-2">
+                        <span>ชื่อรางวัลแบบสั้น (บนการ์ด)</span>
+                        <span className={`text-xs tabular-nums ${tooLong ? 'font-bold text-rose-700' : 'text-slate-500'}`}>{used}/{PRIZE_LABEL_MAX}</span>
+                      </span>
+                      <input
+                        value={draft.rewardShortTitle}
+                        onChange={(event) => setDraft({ ...draft, rewardShortTitle: event.target.value })}
+                        placeholder="เช่น ฟรี Cold Brew 1 แก้ว"
+                        aria-invalid={tooLong}
+                        className={`h-10 w-full rounded-md border px-3 text-sm focus:outline-none focus:ring-2 ${tooLong ? 'border-rose-500 focus:ring-rose-100' : 'border-slate-300 focus:border-blue-600 focus:ring-blue-100'}`}
+                      />
+                      <span className="block text-xs font-normal text-slate-500">
+                        {tooLong ? `ยาวเกิน ${PRIZE_LABEL_MAX} ตัวอักษร ลองตัดให้สั้นลงอีกนิด` : 'เว้นว่างได้ ระบบจะใช้ชื่อรางวัลด้านบนโดยตัดส่วน "(มูลค่า ...)" ออก'}
+                      </span>
+                    </label>
+                  );
+                })()}
                 {draft.rewardType === 'brand_partner' ? (
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <label className="block space-y-1.5 text-sm font-medium text-slate-800">คำนำหน้ารหัสคูปอง

@@ -15,7 +15,7 @@ import { MobileNav } from '@/components/MobileNav';
 import { SpotCard, SpotCardSkeleton } from '@/components/SpotCard';
 import { SpotListItem, SpotListItemSkeleton } from '@/components/SpotListItem';
 import { ViewModeToggle, ViewMode } from '@/components/ViewModeToggle';
-import { Pagination } from '@/components/Pagination';
+import { ShowMoreButton } from '@/components/discover/ShowMoreButton';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
@@ -259,8 +259,8 @@ function SpotsPageContent({ initialSpots, initialCounts }: ServerProps) {
   }, [currentPage, totalPages]);
 
   const paginatedSpots = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredSpots.slice(start, start + itemsPerPage);
+    // "Show more" grows the list: currentPage = how many batches are on screen
+    return filteredSpots.slice(0, currentPage * itemsPerPage);
   }, [filteredSpots, currentPage, itemsPerPage]);
 
   const handleResetAll = () => {
@@ -338,7 +338,7 @@ function SpotsPageContent({ initialSpots, initialCounts }: ServerProps) {
               }}
               aria-label="แนะนำที่ใหม่"
               title="แนะนำที่ใหม่"
-              className="inline-flex items-center justify-center gap-1.5 h-9 w-9 sm:w-auto sm:px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-semibold whitespace-nowrap cursor-pointer active:scale-95 transition-all"
+              className="inline-flex items-center justify-center gap-1.5 h-9 w-9 sm:w-auto sm:px-4 rounded-full bg-[#4A7C59] hover:bg-[#2D5A3C] text-white text-[13px] font-semibold whitespace-nowrap cursor-pointer active:scale-95 transition-all"
             >
               <Plus className="w-4 h-4" strokeWidth={2.5} aria-hidden="true" />
               <span className="hidden sm:inline">แนะนำที่ใหม่</span>
@@ -355,17 +355,34 @@ function SpotsPageContent({ initialSpots, initialCounts }: ServerProps) {
             />
           }
           summary={
-            <>
-              พบ <span className="font-semibold text-slate-900 tabular-nums">{isLoaded || liveSpots.length > 0 ? filteredSpots.length.toLocaleString() : '…'}</span> แห่ง
-              {(searchQuery || selectedCategory !== 'all' || selectedProvince !== 'all' || priceFilter !== 'all' || sortBy === 'favorites' || sortByNearMe) && (
-                <button type="button" onClick={handleResetAll} className="ml-3 font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer">
-                  ล้างตัวกรองทั้งหมด
-                </button>
-              )}
-            </>
+            (searchQuery || selectedCategory !== 'all' || selectedProvince !== 'all' || priceFilter !== 'all' || sortBy === 'favorites' || sortByNearMe) && (
+              <button type="button" onClick={handleResetAll} className="font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer">
+                ล้างตัวกรองทั้งหมด
+              </button>
+            )
           }
           tools={
             <>
+              {/* Saved list sits with the view tools; on phones only the heart and count */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isLoggedIn) {
+                    setMembershipActionTitle('เพื่อดูสถานที่ที่บันทึกไว้ใน Bucket List');
+                    setIsRequireMembershipOpen(true);
+                    return;
+                  }
+                  setSortBy(sortBy === 'favorites' ? 'newest' : 'favorites');
+                  setCurrentPage(1);
+                }}
+                aria-pressed={sortBy === 'favorites'}
+                aria-label={`ที่บันทึกไว้ (${favoriteSpots.length})`}
+                className={filterPillClass('spots', sortBy === 'favorites')}
+              >
+                <Heart className={`w-4 h-4 ${sortBy === 'favorites' ? 'fill-current' : ''}`} aria-hidden="true" />
+                <span className="hidden sm:inline">ที่บันทึกไว้ ({favoriteSpots.length})</span>
+                <span className="sm:hidden tabular-nums">{favoriteSpots.length}</span>
+              </button>
               <ViewModeToggle viewMode={viewMode} onChange={handleViewModeChange} />
             </>
           }
@@ -386,23 +403,6 @@ function SpotsPageContent({ initialSpots, initialCounts }: ServerProps) {
               className={filterPillClass('spots', priceFilter === 'free')}
             >
               เข้าฟรี
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (!isLoggedIn) {
-                  setMembershipActionTitle('เพื่อดูสถานที่ที่บันทึกไว้ใน Bucket List');
-                  setIsRequireMembershipOpen(true);
-                  return;
-                }
-                setSortBy(sortBy === 'favorites' ? 'newest' : 'favorites');
-                setCurrentPage(1);
-              }}
-              aria-pressed={sortBy === 'favorites'}
-              className={filterPillClass('spots', sortBy === 'favorites')}
-            >
-              <Heart className={`w-4 h-4 ${sortBy === 'favorites' ? 'fill-current' : ''}`} aria-hidden="true" />
-              <span>ที่บันทึกไว้ ({favoriteSpots.length})</span>
             </button>
           </div>
         </DiscoverHeader>
@@ -464,20 +464,8 @@ function SpotsPageContent({ initialSpots, initialCounts }: ServerProps) {
               </div>
             )}
 
-            {/* Pagination Bar */}
-            <div className="pt-4">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={(page) => {
-                  setCurrentPage(page);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                totalItems={filteredSpots.length}
-                itemsPerPage={itemsPerPage}
-                itemUnit="สถานที่"
-              />
-            </div>
+            {/* Show more, Meetup-style */}
+            <ShowMoreButton shown={paginatedSpots.length} total={filteredSpots.length} onClick={() => setCurrentPage(currentPage + 1)} />
           </>
         ) : (
           <div className="w-full bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200/90 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">

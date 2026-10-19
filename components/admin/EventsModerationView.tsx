@@ -229,10 +229,10 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
 
       <AdminPageHeader
         icon={isCommunity ? Users : Trophy}
-        title={isCommunity ? 'กิจกรรมคอมมูนิตี้' : 'งานมหกรรม & เอ็กซ์โป'}
+        title={isCommunity ? 'ตี้' : 'งานมหกรรม & เอ็กซ์โป'}
         description={
           isCommunity
-            ? 'ตรวจกิจกรรมคอมมูนิตี้ นัดประจำ และความปลอดภัยของลิงก์ห้องประชุมออนไลน์'
+            ? 'ตรวจตี้ นัดประจำ และความปลอดภัยของลิงก์ห้องประชุมออนไลน์'
             : 'ตรวจงานแฟร์ นิทรรศการ และเอ็กซ์โปที่มาจาก Scraper หรือผู้ใช้ส่งเข้ามา'
         }
         actions={
@@ -244,7 +244,7 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
             {canEdit && type !== 'all' && (
               <button onClick={() => setEditing(null)} className={adminButton.primary}>
                 <Plus size={14} />
-                {isCommunity ? 'สร้างกิจกรรม' : 'เพิ่มงานแฟร์'}
+                {isCommunity ? 'ตั้งตี้' : 'เพิ่มงานแฟร์'}
               </button>
             )}
             {counts.pending > 0 && (

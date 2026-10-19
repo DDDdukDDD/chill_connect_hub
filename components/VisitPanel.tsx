@@ -314,7 +314,7 @@ export const VisitPanel: React.FC<VisitPanelProps> = ({ targetType, targetId, ti
           initial={{
             target: { type: targetType, id: targetId, title, location: location ?? '' },
             location,
-            caption: targetType === 'community' ? `แชร์ความประทับใจจากกิจกรรม "${title}"\n` : `ไปมาแล้ว "${title}"\n`,
+            caption: targetType === 'community' ? `แชร์ความประทับใจจากตี้ "${title}"\n` : `ไปมาแล้ว "${title}"\n`,
           }}
           onClose={() => setIsComposerOpen(false)}
           onToast={onShowToast}

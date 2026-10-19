@@ -27,6 +27,6 @@ export function getBlockedSourceReason(value: string | URL | undefined): string 
   }
   const blocked = BLOCKED_SOURCE_HOSTS.find(({ host }) => hostname === host || hostname.endsWith(`.${host}`));
   return blocked
-    ? `ไม่รองรับการดึงข้อมูลจาก ${blocked.platform}: กิจกรรมคอมมูนิตี้ต้องสร้างโดยสมาชิกของเราเอง ไม่คัดลอกจากแพลตฟอร์มอื่น`
+    ? `ไม่รองรับการดึงข้อมูลจาก ${blocked.platform}: ตี้ต้องสร้างโดยสมาชิกของเราเอง ไม่คัดลอกจากแพลตฟอร์มอื่น`
     : null;
 }

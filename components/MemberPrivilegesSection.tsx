@@ -180,7 +180,7 @@ export const MemberPrivilegesSection: React.FC<MemberPrivilegesSectionProps> = (
             <div className="w-14 sm:w-16 shrink-0 flex flex-col items-center justify-center p-2 bg-orange-50/70 rounded-r-xl border-l border-dashed border-slate-200">
               <Ticket className="w-4 h-4 sm:w-5 sm:h-5 text-orange-700 group-hover:scale-105 transition-transform" />
               <span className="text-[9.5px] font-bold text-orange-800 mt-1 text-center truncate">
-                มีตอัป
+                ตี้
               </span>
             </div>
           </div>

@@ -385,7 +385,7 @@ function MyHubContent() {
           id: sub.eventId,
           title: sub.eventTitle || 'กิจกรรมที่คุณเข้าร่วม',
           category: sub.category || (sub.eventType === 'community' ? 'heal' : 'chill'),
-          tag: sub.tag || (sub.eventType === 'community' ? 'กิจกรรมคอมมูนิตี้' : 'งานมหกรรม & ชวนเพื่อน'),
+          tag: sub.tag || (sub.eventType === 'community' ? 'ตี้' : 'งานมหกรรม & ชวนเพื่อน'),
           date: sub.eventDate || '28 มี.ค. 2569',
           time: sub.eventTime || '10:00 - 20:00 น.',
           location: sub.eventLocation || 'ศูนย์การประชุมแห่งชาติสิริกิติ์',
@@ -1720,7 +1720,7 @@ function MyHubContent() {
                                 setShareInitial({
                                   target: { type: ev.eventType === 'public_venue' ? 'fair' : 'community', id: ev.id, title: ev.title, location: ev.location },
                                   location: ev.location,
-                                  caption: ev.eventType === 'public_venue' ? `ไปมาแล้ว "${ev.title}"\n` : `แชร์ความประทับใจจากกิจกรรม "${ev.title}"\n`,
+                                  caption: ev.eventType === 'public_venue' ? `ไปมาแล้ว "${ev.title}"\n` : `แชร์ความประทับใจจากตี้ "${ev.title}"\n`,
                                 })
                               }
                               className={`${rowBtn} cursor-pointer`}
@@ -1976,7 +1976,7 @@ function MyHubContent() {
           onOpenCreateEvent={() => {
             if (!isLoggedIn) {
               setIsAuthModalOpen(true);
-              showToast('กรุณาเข้าสู่ระบบก่อนสร้างกิจกรรมหรือเปิดตี้ใหม่');
+              showToast('กรุณาเข้าสู่ระบบก่อนตั้งตี้ใหม่');
             } else {
               setIsCreateEventModalOpen(true);
             }

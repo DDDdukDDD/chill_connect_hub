@@ -143,8 +143,8 @@ export const FIXED_COLLECTIONS: MasterCollection[] = ['spotVibes', 'communityMoo
 
 export const COLLECTION_LABELS: Record<MasterCollection, string> = {
   spotVibes: 'vibe ของพิกัดเที่ยว',
-  communityMoods: 'อารมณ์ของกิจกรรมคอมมูนิตี้',
-  communityCategories: 'หมวดกิจกรรมคอมมูนิตี้',
+  communityMoods: 'อารมณ์ของตี้',
+  communityCategories: 'หมวดตี้',
   fairCategories: 'หมวดงานมหกรรม & เอ็กซ์โป',
   questCategories: 'หมวดชาเลนจ์',
   venues: 'สถานที่จัดงาน',

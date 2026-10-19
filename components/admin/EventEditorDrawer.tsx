@@ -170,7 +170,7 @@ export function EventEditorDrawer({ event, type, onClose, onSaved }: EventEditor
     }
   };
 
-  const pillarLabel = isCommunity ? 'กิจกรรมคอมมูนิตี้' : 'งานมหกรรม & เอ็กซ์โป';
+  const pillarLabel = isCommunity ? 'ตี้' : 'งานมหกรรม & เอ็กซ์โป';
   const isRecurring = event?.scheduleType === 'recurring' || Boolean(event?.recurrence);
 
   return (
@@ -244,7 +244,7 @@ export function EventEditorDrawer({ event, type, onClose, onSaved }: EventEditor
         </Field>
       </FormSection>
 
-      <FormSection title="วันและเวลา" hint={isRecurring ? 'กิจกรรมนี้จัดประจำ: ตารางนัดประจำแก้จากหน้าเว็บของผู้จัด' : undefined}>
+      <FormSection title="วันและเวลา" hint={isRecurring ? 'ตี้นี้จัดประจำ: ตารางนัดประจำแก้จากหน้าเว็บของผู้จัด' : undefined}>
         <Field label="วันเริ่ม:" htmlFor="event-date" hint='รูปแบบ "12 ต.ค. 2569"'>
           <input id="event-date" value={form.date} onChange={set('date')} className={fieldInputClass} />
         </Field>

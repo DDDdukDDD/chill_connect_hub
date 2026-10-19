@@ -378,7 +378,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
     setComposerInitial({
       target: id && title ? { type: targetType, id, title, location } : undefined,
       location,
-      caption: title ? (targetType === 'community' ? `แชร์ความประทับใจจากกิจกรรม "${title}"\n` : `ไปมาแล้ว "${title}"\n`) : undefined,
+      caption: title ? (targetType === 'community' ? `แชร์ความประทับใจจากตี้ "${title}"\n` : `ไปมาแล้ว "${title}"\n`) : undefined,
     });
     setIsComposerOpen(true);
     window.history.replaceState(null, '', window.location.pathname);
