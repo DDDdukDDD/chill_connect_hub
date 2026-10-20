@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { MapPin, CheckCircle2 } from 'lucide-react';
+import { MapPin, Camera } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { BrandLogo } from '@/components/BrandLogo';
@@ -70,7 +70,7 @@ const CATEGORY_SHORT: Record<string, string> = {
 
 // White label pinned to a hero collage photo; the numbers tell the loop in order
 const HERO_LABEL = 'absolute z-10 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-white pl-1.5 pr-3 py-1 text-xs lg:text-sm font-semibold text-slate-900 shadow-md';
-const HERO_STEPS = ['หากิจกรรมที่ใช่', 'ออกไปใช้ชีวิต', 'แบ่งปันเรื่องราว'];
+const HERO_STEPS = ['เลือกกิจกรรมที่ใช่', 'ออกไปใช้ชีวิต', 'แชร์โมเมนต์'];
 
 
 // Small round photos standing in for the people, beside the live line and in the sign-up band
@@ -162,13 +162,17 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
   const activity = useMyActivity();
   const [now] = useState(() => Date.now());
   const [likedCategories, setLikedCategories] = useState<string[]>([]);
+  // Onboarding goals pick the journey band's first tab (a ตี้ or a challenge)
+  const [goals, setGoals] = useState<string[]>([]);
   useEffect(() => {
     if (!isMember) return;
     let alive = true;
     fetch('/api/auth/member/preferences', { cache: 'no-store' })
       .then((res) => res.json())
       .then((json) => {
-        if (alive) setLikedCategories(json?.preferences?.interests?.communityCategories ?? []);
+        if (!alive) return;
+        setLikedCategories(json?.preferences?.interests?.communityCategories ?? []);
+        setGoals(json?.preferences?.goals ?? []);
       })
       .catch(() => undefined);
     return () => {
@@ -296,6 +300,8 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
       .sort((a, b) => parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date))
       .slice(0, 3);
   }, [activity.joined, activity.hosted, activity.savedEventIds, fairEvents]);
+  // Everything the member joined or hosts, ended ones too: the journey band asks for a moment from a ตี้ they went to
+  const myEvents = useMemo(() => [...activity.joined, ...activity.hosted], [activity.joined, activity.hosted]);
   // This month's Chill (places) and Connect (meetups) behind the greeting
   const myMonth = useMyMonth(isMember);
   const monthCounts = myMonth.month ? { chill: myMonth.month.chill.length, connect: myMonth.month.connect.length } : null;
@@ -402,6 +408,11 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
             badges={myRewards.finished.length}
             redeemable={redeemable}
             plans={plans}
+            memberId={sessionMember?.id ?? null}
+            goals={goals}
+            mine={myEvents}
+            questProgress={myRewards.quests}
+            allQuests={questList}
             hostedIds={activity.hosted.map((e) => e.id)}
             savedIds={activity.savedEventIds}
             month={monthCounts}
@@ -448,20 +459,27 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
                 <p className="mt-3 text-[15px] sm:text-lg lg:text-xl font-semibold text-slate-700">
                   พบเจอมิตรภาพใหม่ <span className="whitespace-nowrap">ส่งต่อความประทับใจ</span>
                 </p>
-                <button
-                  type="button"
-                  onClick={() => scrollToId('journey-meetups')}
-                  className="mt-5 lg:mt-6 w-full sm:w-auto h-13 px-8 rounded-full bg-[#F26430] hover:bg-[#E2551F] text-white text-base lg:text-[17px] font-semibold shadow-[0_8px_20px_rgba(242,100,48,0.28)] whitespace-nowrap cursor-pointer transition-colors"
-                >
-                  ดูตี้ที่เปิดรับอยู่
-                </button>
-                {/* Signs of life without names, and the one thing a visitor worries about first */}
+                {/* Two ways in: the open ตี้ photos (main) and friends' moments, each scrolls to its section below */}
+                <div className="mt-5 lg:mt-6 flex items-center justify-center md:justify-start gap-2.5 sm:gap-3">
+                  <button
+                    type="button"
+                    onClick={() => scrollToId('journey-meetup-tiles')}
+                    className="flex-1 sm:flex-none h-13 px-4 sm:px-8 rounded-full bg-[#F26430] hover:bg-[#E2551F] text-white text-[15px] sm:text-base lg:text-[17px] font-semibold shadow-[0_8px_20px_rgba(242,100,48,0.28)] whitespace-nowrap cursor-pointer transition-colors"
+                  >
+                    ดูตี้ที่เปิดรับอยู่
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => scrollToId('journey-moments')}
+                    className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 h-13 px-4 sm:px-7 rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 text-[15px] sm:text-base lg:text-[17px] font-semibold shadow-sm whitespace-nowrap cursor-pointer transition-colors"
+                  >
+                    <Camera className="w-5 h-5 text-[#F43F5E]" aria-hidden="true" />
+                    ดูโมเมนต์
+                  </button>
+                </div>
+                {/* Signs of life without names (the top bar already says สมัครฟรี) */}
                 <div className="mt-5 lg:mt-6 flex flex-wrap items-center justify-center md:justify-start gap-x-5 gap-y-2 text-[13px] sm:text-sm text-slate-700">
                   <LiveJoinsLine faces={photoFaces('w-6 h-6', 'border-[#FFF8F1]')} />
-                  <span className="inline-flex items-center gap-1.5 text-slate-500">
-                    <CheckCircle2 className="w-4 h-4 text-green-700" aria-hidden="true" />
-                    สมัครฟรี ไม่มีค่าใช้จ่าย
-                  </span>
                 </div>
               </div>
             </div>
@@ -489,12 +507,15 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
                 {isEventsLoaded && landingMeetups.length === 0 && (
                   <p className="text-sm text-slate-500">ยังไม่มีตี้แบบนี้ เปิดตี้แรกเองเลยไหม?</p>
                 )}
-                <OpenMeetupTiles
-                  events={landingMeetups}
-                  isLoaded={isEventsLoaded}
-                  savedIds={isLoggedIn ? favorites : []}
-                  onToggleSave={toggleFavoriteEvent}
-                />
+                {/* The hero's "ดูตี้ที่เปิดรับอยู่" lands here, on the photos, not on the category heading */}
+                <div id="journey-meetup-tiles" className="scroll-mt-24">
+                  <OpenMeetupTiles
+                    events={landingMeetups}
+                    isLoaded={isEventsLoaded}
+                    savedIds={isLoggedIn ? favorites : []}
+                    onToggleSave={toggleFavoriteEvent}
+                  />
+                </div>
               </section>
 
               {/* 3. A reason to go */}

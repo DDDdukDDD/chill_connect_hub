@@ -39,6 +39,7 @@ import { compressImage } from '@/lib/media/compressor';
 import { resolveSpotImage } from '@/lib/spotImageResolver';
 import { useMasterData } from '@/lib/useMasterData';
 import { memberActions, useMemberSession } from '@/lib/useMemberSession';
+import { JOURNEY_STEPS } from '@/components/home/JourneyBand';
 
 /**
  * Onboarding for new members. It tells the brand story while it asks:
@@ -626,13 +627,28 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
                 )}
               </span>
               <div className="min-w-0">
+                {/* The photo above already says "พร้อมแล้ว ออกไปใช้ชีวิตกัน"; the steps below say how */}
                 <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 leading-tight">
                   <PhraseText text={firstName ? `ยินดีที่ได้รู้จัก คุณ ${firstName}` : 'ยินดีที่ได้รู้จัก'} />
                 </h1>
-                <p className="text-sm text-slate-500 font-medium mt-1">
-                  <PhraseText text="เราเลือก 3 อย่างนี้ มาให้คุณโดยเฉพาะ" />
-                </p>
               </div>
+            </div>
+            {/* The same three steps as the landing hero and the member home's journey band */}
+            <div className="mb-5">
+              <p className="text-sm font-semibold text-slate-700">
+                <PhraseText text="เส้นทางของคุณที่นี่ มีแค่ 3 ขั้น" />
+              </p>
+              <ol className="mt-2.5 flex flex-wrap gap-2">
+                {JOURNEY_STEPS.map((label, i) => (
+                  <li key={label} className={`inline-flex items-center gap-1.5 rounded-full bg-white pl-1 pr-3 py-1 text-[13px] font-semibold text-slate-900 shadow-[0_3px_10px_rgba(15,23,42,0.10)] border border-slate-100 ${['-rotate-2', 'rotate-[1.5deg]', '-rotate-1'][i]}`}>
+                    <span className="w-5.5 h-5.5 rounded-full bg-slate-900 text-white text-xs flex items-center justify-center" aria-hidden="true">{i + 1}</span>
+                    {label}
+                  </li>
+                ))}
+              </ol>
+              <p className="mt-3 text-sm text-slate-500">
+                <PhraseText text="เริ่มขั้นแรกจากที่เราเลือกมาให้ด้านล่าง หรือที่หน้าแรกของคุณ" />
+              </p>
             </div>
 
             {!preview && session.member && (!session.member.trust.emailVerified || role !== 'member') && (

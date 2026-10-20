@@ -6,6 +6,7 @@ import { Camera, Heart, Loader2, MessageCircle, X } from 'lucide-react';
 import type { FeedItem } from '@/lib/moments/service';
 import { nameInitial } from '@/lib/displayName';
 import { MomentsChrome } from '@/components/moments/MomentsChrome';
+import { call } from '@/components/home/HomeMomentFeed';
 import { MOMENT_TARGETS, isMomentTarget, momentImageSrc, momentTargetHref, momentTitle, type MomentTargetKey } from '@/components/moments/momentTargets';
 
 const PAGE_SIZE = 24;
@@ -34,6 +35,19 @@ interface MomentShowcaseProps {
   initialHasMore: boolean;
   initialChip: Chip;
   place: ShowcasePlace | null;
+  /** How many moments each tab holds (counted on the server); left out on one place's moments */
+  counts?: Record<Chip, number>;
+}
+
+/** The server HTML is the same for everyone, so a signed-in member's own hearts are read once in the browser */
+function WhenSignedIn({ isLoggedIn, run }: { isLoggedIn: boolean; run: () => void }) {
+  const done = useRef(false);
+  useEffect(() => {
+    if (!isLoggedIn || done.current) return;
+    done.current = true;
+    run();
+  }, [isLoggedIn, run]);
+  return null;
 }
 
 /** One frame for every photo so the rows line up: 3:4 on phones and iPads (like Lemon8), square on computers (like the Home post) */
@@ -52,7 +66,7 @@ function Avatar({ name, src }: { name: string; src?: string }) {
 }
 
 /** A moment the way the Home feed shows a post, in a smaller size: who, the photo, the words, where it was, and the reactions */
-function MomentCard({ moment, index }: { moment: FeedItem; index: number }) {
+function MomentCard({ moment, index, onLike }: { moment: FeedItem; index: number; onLike?: (moment: FeedItem) => void }) {
   const title = momentTitle(moment.caption);
   const target = isMomentTarget(moment.targetType) ? MOMENT_TARGETS[moment.targetType] : null;
   const targetHref = momentTargetHref(moment.targetType, moment.targetId);
@@ -111,11 +125,25 @@ function MomentCard({ moment, index }: { moment: FeedItem; index: number }) {
       )}
 
       <div className="mt-2 px-0.5 flex items-center gap-3 lg:gap-4 text-xs lg:text-sm font-medium text-slate-600 tabular-nums">
-        <span className="inline-flex items-center gap-1">
-          <Heart className={`w-3.5 h-3.5 lg:w-4.5 lg:h-4.5 ${moment.isLiked ? 'fill-rose-500 text-rose-500' : ''}`} aria-hidden="true" />
-          {moment.likesCount.toLocaleString()}
-          <span className="sr-only">ถูกใจ</span>
-        </span>
+        {onLike ? (
+          // Liked straight from the grid; the padding gives a finger-sized target without moving the row
+          <button
+            type="button"
+            onClick={() => onLike(moment)}
+            aria-pressed={moment.isLiked}
+            aria-label={`${moment.isLiked ? 'เลิกถูกใจ' : 'ถูกใจ'} (${moment.likesCount.toLocaleString()})`}
+            className={`-m-2 p-2 inline-flex items-center gap-1 rounded-full cursor-pointer active:scale-90 transition-transform ${moment.isLiked ? 'text-rose-600' : 'hover:text-rose-600'} ${focusRing}`}
+          >
+            <Heart className={`w-3.5 h-3.5 lg:w-4.5 lg:h-4.5 ${moment.isLiked ? 'fill-rose-500 text-rose-500' : ''}`} aria-hidden="true" />
+            {moment.likesCount.toLocaleString()}
+          </button>
+        ) : (
+          <span className="inline-flex items-center gap-1">
+            <Heart className={`w-3.5 h-3.5 lg:w-4.5 lg:h-4.5 ${moment.isLiked ? 'fill-rose-500 text-rose-500' : ''}`} aria-hidden="true" />
+            {moment.likesCount.toLocaleString()}
+            <span className="sr-only">ถูกใจ</span>
+          </span>
+        )}
         <span className="inline-flex items-center gap-1">
           <MessageCircle className="w-3.5 h-3.5 lg:w-4.5 lg:h-4.5" aria-hidden="true" />
           {moment.commentsCount.toLocaleString()}
@@ -127,12 +155,12 @@ function MomentCard({ moment, index }: { moment: FeedItem; index: number }) {
 }
 
 /** Rows that line up: two across on phones and iPads, three on computers */
-export function MomentGrid({ items }: { items: FeedItem[] }) {
+export function MomentGrid({ items, onLike }: { items: FeedItem[]; onLike?: (moment: FeedItem) => void }) {
   if (items.length === 0) return null;
   return (
     <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-7 sm:gap-x-4 lg:gap-x-8 lg:gap-y-12">
       {items.map((moment, index) => (
-        <MomentCard key={moment.id} moment={moment} index={index} />
+        <MomentCard key={moment.id} moment={moment} index={index} onLike={onLike} />
       ))}
     </div>
   );
@@ -191,7 +219,7 @@ const listUrl = (chip: Chip, place: ShowcasePlace | null, page: number) => {
  * /moments: a playful header (the landing page's cream band, tilted prints and stickers) over a full-width grid
  * of moment posts. Posting happens on Home; a card opens the moment's own page.
  */
-export function MomentShowcase({ initialMoments, initialHasMore, initialChip, place }: MomentShowcaseProps) {
+export function MomentShowcase({ initialMoments, initialHasMore, initialChip, place, counts }: MomentShowcaseProps) {
   const [chip, setChip] = useState<Chip>(initialChip);
   const [moments, setMoments] = useState(initialMoments);
   const [page, setPage] = useState(1);
@@ -238,12 +266,29 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialChip, pl
     return () => observer.disconnect();
   }, [chip, hasMore, isLoading, load, page]);
 
+  const reloadFirstPage = useCallback(() => void load(chip, 1), [load, chip]);
+
+  // Optimistic heart, put back with a message if the server says no (same as the moment's own page)
+  const toggleLike = (moment: FeedItem, showToast: (message: string) => void) => {
+    const action = moment.isLiked ? 'unlike' : 'like';
+    const flip = (liked: boolean) =>
+      setMoments((prev) => prev.map((m) => (m.id === moment.id ? { ...m, isLiked: liked, likesCount: m.likesCount + (liked ? 1 : -1) } : m)));
+    flip(action === 'like');
+    call(`/api/moments/${encodeURIComponent(moment.id)}/actions`, 'POST', { action }).then((result) => {
+      if (!result.ok) {
+        flip(action !== 'like');
+        showToast(result.message);
+      }
+    });
+  };
+
   const placeName = place?.location;
 
   return (
     <MomentsChrome>
-      {({ isLoggedIn, requireLogin }) => (
+      {({ isLoggedIn, requireLogin, showToast }) => (
         <main className="flex-1 pb-28 lg:pb-16">
+          <WhenSignedIn isLoggedIn={isLoggedIn} run={reloadFirstPage} />
           {/* Header band: the landing page's cream with soft circles, tilted prints on one side and the words on the other */}
           <section className="relative overflow-hidden bg-[#FFF8F1]">
             <div className="pointer-events-none absolute -top-20 -left-20 w-56 h-56 rounded-full bg-[#FFE4E8]" aria-hidden="true" />
@@ -318,6 +363,7 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialChip, pl
                       />
                       <span className={`w-1.5 h-1.5 rounded-full ${tab.dot}`} aria-hidden="true" />
                       <span>{tab.label}</span>
+                      {counts && <span className="text-xs sm:text-[13px] font-medium text-slate-400 tabular-nums">{counts[tab.chip].toLocaleString()}</span>}
                     </button>
                   );
                 })}
@@ -328,7 +374,7 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialChip, pl
               {moments.length === 0 && !isLoading ? (
                 <p className="py-16 text-center text-sm font-medium text-slate-500">ยังไม่มีโมเมนต์ในหมวดนี้ ไปที่ไหนมาแล้ว มาแชร์เป็นคนแรกกัน</p>
               ) : (
-                <MomentGrid items={moments} />
+                <MomentGrid items={moments} onLike={(moment) => (isLoggedIn ? toggleLike(moment, showToast) : requireLogin())} />
               )}
             </div>
 

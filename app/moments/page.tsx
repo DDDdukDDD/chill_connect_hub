@@ -40,5 +40,21 @@ export default async function MomentsPage({ searchParams }: Props) {
     limit: 24,
   });
 
-  return <MomentShowcase initialMoments={list.moments.filter((moment) => moment.images[0])} initialHasMore={list.pagination.hasNextPage} initialChip={chip} place={place} />;
+  // A count beside each tab (not on one place's moments, which has no tabs)
+  const total = async (targetType?: string) => (await listMoments(null, { targetType, limit: 1 })).pagination.totalCount;
+  const counts = place
+    ? undefined
+    : await Promise.all([total(), total('spot'), total('community'), total('fair'), total('challenge')]).then(
+        ([all, spot, community, fair, challenge]) => ({ all, spot, community, fair, challenge })
+      );
+
+  return (
+    <MomentShowcase
+      initialMoments={list.moments.filter((moment) => moment.images[0])}
+      initialHasMore={list.pagination.hasNextPage}
+      initialChip={chip}
+      place={place}
+      counts={counts}
+    />
+  );
 }
