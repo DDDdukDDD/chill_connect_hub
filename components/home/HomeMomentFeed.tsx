@@ -335,6 +335,28 @@ export interface HomeMomentFeedProps {
   onViewChange: (view: FeedView) => void;
   /** Rendered after a given post (0 = the first). Each insert sets its own screen sizes */
   inserts?: Record<number, React.ReactNode>;
+  /** Opens the share form tied to a place or event (the journey band's "แชร์โมเมนต์แรก"); a new `key` opens it again */
+  shareRequest?: ShareRequest | null;
+  /** Told after the member posts a moment */
+  onPosted?: () => void;
+}
+
+export interface ShareRequest {
+  key: number;
+  type?: string;
+  id?: string;
+  title?: string;
+  location?: string;
+}
+
+/** The share form's opening state for a place or event ("community", "spot", "fair") */
+function shareInitial(type: string, id: string, title: string, location: string): MomentComposerInitial {
+  const targetType = type === 'spot' || type === 'fair' ? type : 'community';
+  return {
+    target: id && title ? { type: targetType, id, title, location } : undefined,
+    location,
+    caption: title ? (targetType === 'community' ? `แชร์ความประทับใจจากตี้ "${title}"\n` : `ไปมาแล้ว "${title}"\n`) : undefined,
+  };
 }
 
 /**
@@ -342,7 +364,7 @@ export interface HomeMomentFeedProps {
  * Posting, comments, likes, saves, editing, deleting and reporting all happen here; /moments is the
  * photo showcase for browsing (no posting there).
  */
-export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: setSort, inserts = {} }: HomeMomentFeedProps) {
+export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: setSort, inserts = {}, shareRequest, onPosted }: HomeMomentFeedProps) {
   const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
   const [moments, setMoments] = useState<FeedItem[]>([]);
   const [page, setPage] = useState(1);
@@ -371,18 +393,18 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
     const share = params.get('share');
     if (!share) return;
     const [type, ...rest] = share.split(':');
-    const id = rest.join(':');
-    const title = params.get('title') ?? '';
-    const location = params.get('location') ?? '';
-    const targetType = type === 'spot' || type === 'fair' ? type : 'community';
-    setComposerInitial({
-      target: id && title ? { type: targetType, id, title, location } : undefined,
-      location,
-      caption: title ? (targetType === 'community' ? `แชร์ความประทับใจจากตี้ "${title}"\n` : `ไปมาแล้ว "${title}"\n`) : undefined,
-    });
+    setComposerInitial(shareInitial(type, rest.join(':'), params.get('title') ?? '', params.get('location') ?? ''));
     setIsComposerOpen(true);
     window.history.replaceState(null, '', window.location.pathname);
   }, []);
+
+  // The journey band asks for the form without leaving the page
+  useEffect(() => {
+    if (!shareRequest) return;
+    const { type = '', id = '', title = '', location = '' } = shareRequest;
+    setComposerInitial(shareInitial(type, id, title, location));
+    setIsComposerOpen(true);
+  }, [shareRequest]);
 
   const showToast = useCallback((message: string) => {
     setToast(message);
@@ -701,6 +723,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
             setComposerInitial(null);
             if (countedQuest) setCounted(countedQuest);
             else showToast('แชร์โมเมนต์แล้ว');
+            onPosted?.();
             topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }}
         />

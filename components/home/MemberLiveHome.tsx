@@ -1,89 +1,20 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { Bookmark, CalendarDays, Gift, Stamp, Zap } from 'lucide-react';
 import type { ChallengeQuest, EventItem } from '@/data/mockData';
-import { nearDayLabel, parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { nameInitial } from '@/lib/displayName';
 import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
-import { HomeMomentFeed, type FeedView } from '@/components/home/HomeMomentFeed';
+import { HomeMomentFeed, type FeedView, type ShareRequest } from '@/components/home/HomeMomentFeed';
+import { JourneyBand, flavourFromGoals, useJourney } from '@/components/home/JourneyBand';
+import type { QuestProgress } from '@/lib/useMyRewards';
 import { LiveTicker, useLiveActivity } from '@/components/home/LiveActivity';
 import type { LifestyleSpotItem } from '@/data/spotsData';
 import { PASSPORT_HREF } from '@/components/home/StampPassport';
+import { FALLBACK_IMAGE, Faces, awayLabel, dayLine, dayPart, eventHref, useGoingWith, useMinuteClock } from '@/components/home/planHelpers';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-const WEEKDAYS = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
-const WEEKDAY_NAMES = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
-const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80';
-const FACE_COLORS = ['bg-amber-500', 'bg-pink-500', 'bg-sky-500'];
 const MY_MONTH_HREF = '/myhub#my-month';
-
-const startTime = (event: EventItem) => event.time.split('-')[0].trim().replace(/\s*น\.$/, '');
-
-/** When the event starts, from its date and the first time in "06:30 - 08:00" */
-function startsAt(event: EventItem) {
-  const day = parseEventDateToTimestamp(event.date);
-  const match = startTime(event).match(/^(\d{1,2})[:.](\d{2})/);
-  return match ? day + (Number(match[1]) * 60 + Number(match[2])) * 60_000 : day;
-}
-
-// "ส. 17 ต.ค. · 06:30", or "วันนี้ · 06:30" / "พรุ่งนี้ · 06:30" when it is that close
-const dayLine = (event: EventItem) =>
-  `${nearDayLabel(event.date) ?? `${WEEKDAYS[new Date(parseEventDateToTimestamp(event.date)).getDay()]} ${event.date.replace(/\s*\d{4}$/, '')}`} · ${startTime(event)}`;
-
-/** "อีก 15 ชม. 42 นาที" inside a day, then "อีก 2 วัน 6 ชม." */
-function awayLabel(event: EventItem, now: number) {
-  const left = startsAt(event) - now;
-  if (left <= 0) return 'เริ่มแล้ว';
-  if (left < DAY_MS) {
-    const hours = Math.floor(left / 3_600_000);
-    const minutes = Math.floor((left % 3_600_000) / 60_000);
-    return hours > 0 ? `อีก ${hours} ชม. ${minutes} นาที` : `อีก ${minutes} นาที`;
-  }
-  const days = Math.floor(left / DAY_MS);
-  const hours = Math.floor((left % DAY_MS) / 3_600_000);
-  return hours > 0 ? `อีก ${days} วัน ${hours} ชม.` : `อีก ${days} วัน`;
-}
-
-/** "บ่ายวันอาทิตย์": the greeting carries the time of day instead of a coloured theme */
-function dayPart(now: number) {
-  const date = new Date(now);
-  const hour = date.getHours();
-  const part = hour >= 5 && hour < 11 ? 'เช้า' : hour >= 11 && hour < 16 ? 'บ่าย' : hour >= 16 && hour < 19 ? 'เย็น' : 'ค่ำ';
-  return `${part}วัน${WEEKDAY_NAMES[date.getDay()]}`;
-}
-
-/** A clock that ticks once a minute, for the countdown */
-function useMinuteClock(start: number) {
-  const [now, setNow] = useState(start);
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 60_000);
-    return () => clearInterval(timer);
-  }, []);
-  return now;
-}
-
-/** Who else is going to a meetup (the list is open to everyone), for the faces on a row */
-function useGoingWith(eventId: string, enabled: boolean) {
-  const [people, setPeople] = useState<{ name: string; avatar: string }[] | null>(null);
-  useEffect(() => {
-    if (!enabled) return;
-    let alive = true;
-    fetch(`/api/events/${encodeURIComponent(eventId)}/attendees`, { cache: 'no-store' })
-      .then((res) => res.json())
-      .then((json) => {
-        if (alive && json?.success) setPeople((json.attendees as { name: string; avatar: string; isMe?: boolean }[]).filter((p) => !p.isMe));
-      })
-      .catch(() => undefined);
-    return () => {
-      alive = false;
-    };
-  }, [eventId, enabled]);
-  return people;
-}
-
-const eventHref = (event: EventItem) => `/${event.eventType === 'public_venue' ? 'fairs' : 'community'}/${encodeURIComponent(event.id)}`;
 
 export interface MemberLiveHomeProps {
   name: string;
@@ -116,6 +47,13 @@ export interface MemberLiveHomeProps {
   isSpotsLoaded: boolean;
   /** Finished challenges: the stamps in the passport, which lives in My Hub */
   stampCount: number;
+  /** For the journey band: who is signed in, their onboarding goals, every meetup they joined or host (ended ones too),
+      their challenge progress and every challenge */
+  memberId: string | null;
+  goals: string[];
+  mine: EventItem[];
+  questProgress: QuestProgress[];
+  allQuests: ChallengeQuest[];
 }
 
 /**
@@ -131,38 +69,80 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
   const live = useLiveActivity();
   const [feedView, setFeedView] = useState<FeedView>('all');
   const hasPlans = plans.length > 0;
-  const showPicks = isLoaded && !hasPlans;
+  // A new member gets the journey band (① เลือก ② ไป ③ แชร์) in place of the greeting and plans, until their first moment
+  const { journey, skip, markPosted } = useJourney({
+    memberId: props.memberId,
+    now: props.now,
+    mine: props.mine,
+    questProgress: props.questProgress,
+    allQuests: props.allQuests,
+    isLoaded,
+  });
+  const [shareRequest, setShareRequest] = useState<ShareRequest | null>(null);
+  // The band already offers first picks, so the picks between posts wait until it is gone
+  const showPicks = isLoaded && !hasPlans && !journey;
 
   return (
+    <>
+    {journey && (
+      <JourneyBand
+        name={name}
+        now={props.now}
+        journey={journey}
+        firstFlavour={flavourFromGoals(props.goals)}
+        meetups={props.meetups}
+        reasons={props.reasons}
+        quests={props.quests}
+        month={props.month}
+        xp={props.xp}
+        onShare={(request) => setShareRequest({ ...request, key: Date.now() })}
+        onSkip={skip}
+      />
+    )}
     <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 pt-5 sm:pt-7">
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[260px_minmax(0,1fr)_320px] lg:gap-10">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[260px_minmax(0,1fr)_320px] 2xl:grid-cols-[300px_minmax(0,1fr)_360px] lg:gap-10">
         {/* Left (wide screens): me, my next plans, shortcuts (the stamp passport opens in My Hub) */}
         {/* Scrolls on its own when taller than the screen, like the right column */}
         <aside className="hidden xl:block sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto no-scrollbar space-y-8 pb-4">
-          <Greeting {...props} layout="column" />
-          <NextUp {...props} />
+          {!journey && (
+            <>
+              <Greeting {...props} layout="column" />
+              <NextUp {...props} />
+            </>
+          )}
           <Shortcuts {...props} />
         </aside>
 
-        <main id="home-feed" className="min-w-0 w-full max-w-[560px] mx-auto scroll-mt-24">
+        <main id="home-feed" className="min-w-0 w-full max-w-[560px] 2xl:max-w-[600px] mx-auto scroll-mt-24">
           {/* Below wide screens the greeting and plans sit in the feed's own column, on its left edge */}
-          <div className="xl:hidden mb-7 space-y-6">
-            <Greeting {...props} layout="row" />
-            <NextUp {...props} />
-          </div>
+          {!journey && (
+            <div className="xl:hidden mb-7 space-y-6">
+              <Greeting {...props} layout="row" />
+              <NextUp {...props} />
+            </div>
+          )}
           <HomeMomentFeed
             view={feedView}
             onViewChange={setFeedView}
+            shareRequest={shareRequest}
+            onPosted={markPosted}
             name={name}
             avatar={props.avatar}
-            top={<LiveTicker live={live} />}
             inserts={{
-              // Without plans, picks for a first meetup come right after the first post, on every screen size
-              0: showPicks ? (
-                <section className="py-5 border-y border-slate-100 my-2">
-                  <FirstPicks {...props} />
-                </section>
-              ) : undefined,
+              // After the first post: the live line ("สด"), so the feed opens on a post rather than a stack of controls;
+              // then, without plans, picks for a first meetup, on every screen size
+              0: (
+                <>
+                  <div className="py-3">
+                    <LiveTicker live={live} />
+                  </div>
+                  {showPicks && (
+                    <section className="py-5 border-y border-slate-100 my-2">
+                      <FirstPicks {...props} />
+                    </section>
+                  )}
+                </>
+              ),
               1: !showPicks && props.meetups[0] ? (
                 <section className="lg:hidden py-5 border-b border-slate-200">
                   <InvitePost event={props.meetups[0]} reason={props.reasons[props.meetups[0].id]} />
@@ -193,14 +173,15 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
         </main>
 
         {/* Right (laptops and up): where to go next, one short list per kind */}
-        <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto no-scrollbar space-y-8 pb-4">
-          <MeetupsBlock {...props} />
+        <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto no-scrollbar space-y-11 pb-4">
+          <MeetupsBlock {...props} skip={journey?.step === 'pick' ? 3 : 0} />
           <QuestsBlock {...props} />
           <FairsBlock {...props} layout="rows" />
           <SpotsBlock {...props} layout="rows" />
         </aside>
       </div>
     </div>
+    </>
   );
 }
 
@@ -318,23 +299,6 @@ function PlanRow({ event, countdown, hostedIds, savedIds, fairWhen }: MemberLive
         </span>
       </Link>
     </li>
-  );
-}
-
-function Faces({ people }: { people: { name: string; avatar?: string }[] }) {
-  return (
-    <span className="flex -space-x-1.5 shrink-0" aria-hidden="true">
-      {people.map((p, i) =>
-        p.avatar ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img key={i} src={p.avatar} alt="" className="w-5 h-5 rounded-full ring-2 ring-white object-cover bg-slate-100" />
-        ) : (
-          <span key={i} className={`w-5 h-5 rounded-full ring-2 ring-white ${FACE_COLORS[i % FACE_COLORS.length]} text-white text-[9px] font-bold flex items-center justify-center`}>
-            {nameInitial(p.name)}
-          </span>
-        )
-      )}
-    </span>
   );
 }
 
@@ -467,14 +431,28 @@ function Shortcuts({ savedCount, redeemable, stampCount }: MemberLiveHomeProps) 
   );
 }
 
-/** Right column: open meetups told as invites, the host's face on the photo and the seats as dots */
-function MeetupsBlock({ meetups, isEventsLoaded }: MemberLiveHomeProps) {
-  const shown = meetups.slice(0, 3);
+// Right column rows, kept calm (owner 2026-10-20): only the section headings are bold; a row is a quiet grey line with a
+// small dot in its pillar colour, a regular-weight title that may take two lines, and one grey detail line
+const VIEW_ALL = 'text-[13px] font-medium text-slate-500 hover:text-slate-900 hover:underline whitespace-nowrap';
+const ROW_TITLE = 'block mt-0.5 text-sm font-medium text-slate-800 leading-snug line-clamp-2 group-hover:underline';
+
+function Kicker({ dot, children }: { dot: string; children: React.ReactNode }) {
+  return (
+    <span className="flex items-center gap-1.5 text-xs font-medium text-slate-600 tabular-nums min-w-0">
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} aria-hidden="true" />
+      <span className="truncate">{children}</span>
+    </span>
+  );
+}
+
+/** Right column: open meetups told as invites, the host's face on the photo. `skip` leaves out the ones the journey band shows. */
+function MeetupsBlock({ meetups, isEventsLoaded, skip = 0 }: MemberLiveHomeProps & { skip?: number }) {
+  const shown = meetups.slice(skip, skip + 3);
   return (
     <section aria-label="ชวนไปด้วยกัน">
       <div className="flex items-end justify-between gap-3 mb-3">
         <h2 className="text-base font-bold text-slate-900">ชวนไปด้วยกัน</h2>
-        <Link href="/community" className="text-[13px] font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">ดูทั้งหมด</Link>
+        <Link href="/community" className={VIEW_ALL}>ดูทั้งหมด</Link>
       </div>
       {!isEventsLoaded ? (
         <div className="space-y-3" aria-hidden="true">
@@ -485,10 +463,10 @@ function MeetupsBlock({ meetups, isEventsLoaded }: MemberLiveHomeProps) {
       ) : shown.length === 0 ? (
         <p className="text-sm font-medium text-slate-500">ตอนนี้ยังไม่มีตี้เปิดรับ ลองตั้งตี้เองดูไหม</p>
       ) : (
-        <ul className="space-y-4">
+        <ul className="space-y-5">
           {shown.map((event) => (
             <li key={event.id}>
-              <Link href={eventHref(event)} className="group flex items-center gap-3 min-w-0">
+              <Link href={eventHref(event)} className="group flex items-start gap-3 min-w-0">
                 <span className="relative w-14 h-14 shrink-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={event.image || FALLBACK_IMAGE} alt="" className="w-14 h-14 rounded-xl object-cover bg-slate-100" />
@@ -498,13 +476,10 @@ function MeetupsBlock({ meetups, isEventsLoaded }: MemberLiveHomeProps) {
                   )}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-xs text-slate-500 truncate">
-                    <span className="font-semibold text-slate-700">{event.hostName}</span> ชวนไป · <span className="text-[#D04A1B] font-semibold">{dayLine(event)}</span>
-                  </span>
-                  <span className="block text-sm font-semibold text-slate-900 leading-snug truncate group-hover:underline">{event.title}</span>
-                  <span className="mt-1 flex items-center gap-1.5">
-                    <SeatDots event={event} />
-                    <span className="text-xs text-slate-500 tabular-nums whitespace-nowrap">เหลือ {seatsLeft(event)} ที่</span>
+                  <Kicker dot="bg-[#F26430]">{dayLine(event)}</Kicker>
+                  <span className={ROW_TITLE}>{event.title}</span>
+                  <span className="block mt-0.5 text-xs text-slate-500 truncate">
+                    {event.hostName} ชวนไป · เหลือ {seatsLeft(event)} ที่
                   </span>
                 </span>
               </Link>
@@ -523,21 +498,19 @@ function QuestsBlock({ quests }: MemberLiveHomeProps) {
     <section aria-label="ชาเลนจ์ยอดฮิตตอนนี้">
       <div className="flex items-end justify-between gap-3 mb-3">
         <h2 className="text-base font-bold text-slate-900">ชาเลนจ์ยอดฮิตตอนนี้</h2>
-        <Link href="/challenges" className="text-[13px] font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">ดูทั้งหมด</Link>
+        <Link href="/challenges" className={VIEW_ALL}>ดูทั้งหมด</Link>
       </div>
-      <ul className="space-y-4">
+      <ul className="space-y-5">
         {quests.slice(0, 3).map((quest) => (
           <li key={quest.id}>
-            <Link href={`/challenges/${encodeURIComponent(quest.id)}`} className="group flex items-center gap-3 min-w-0">
+            <Link href={`/challenges/${encodeURIComponent(quest.id)}`} className="group flex items-start gap-3 min-w-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={quest.image || quest.badgeCoverImg || FALLBACK_IMAGE} alt="" className="w-14 h-14 shrink-0 rounded-xl object-cover bg-slate-100" />
               <span className="min-w-0 flex-1">
                 {/* Same three lines as every row in this column: when, what, who */}
-                {quest.daysRemaining !== undefined && quest.daysRemaining > 0 && (
-                  <span className="block text-xs font-semibold text-[#7C3AED] tabular-nums">เหลือ {quest.daysRemaining} วัน</span>
-                )}
-                <span className="block text-sm font-semibold text-slate-900 leading-snug truncate group-hover:underline">{quest.title}</span>
-                <span className="block text-xs text-slate-500 truncate">
+                {quest.daysRemaining !== undefined && quest.daysRemaining > 0 && <Kicker dot="bg-[#7C3AED]">เหลือ {quest.daysRemaining} วัน</Kicker>}
+                <span className={ROW_TITLE}>{quest.title}</span>
+                <span className="block mt-0.5 text-xs text-slate-500 truncate">
                   {(quest.participantsCount ?? 0) > 0 ? `กำลังทำ ${(quest.participantsCount ?? 0).toLocaleString()} คน` : 'ยังไม่มีใครเริ่ม เป็นคนแรกเลย'}
                 </span>
               </span>
@@ -559,26 +532,25 @@ interface ListItem {
 }
 
 /** A short titled list: rows in the right column, a sideways row of photos between posts on phones */
-function ItemsBlock({ title, href, items, kickerClass, layout }: { title: string; href: string; items: ListItem[]; kickerClass: string; layout: 'rows' | 'tiles' }) {
+function ItemsBlock({ title, href, items, dot, layout }: { title: string; href: string; items: ListItem[]; dot: string; layout: 'rows' | 'tiles' }) {
   if (items.length === 0) return null;
   return (
     <section aria-label={title}>
       <div className="flex items-end justify-between gap-3 mb-3">
         <h2 className="text-base font-bold text-slate-900">{title}</h2>
-        <Link href={href} className="text-[13px] font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">ดูทั้งหมด</Link>
+        <Link href={href} className={VIEW_ALL}>ดูทั้งหมด</Link>
       </div>
       {layout === 'rows' ? (
-        <ul className="space-y-4">
+        <ul className="space-y-5">
           {items.slice(0, 3).map((item) => (
             <li key={item.key}>
-              <Link href={item.href} className="group flex items-center gap-3 min-w-0">
+              <Link href={item.href} className="group flex items-start gap-3 min-w-0">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={item.image || FALLBACK_IMAGE} alt="" className="w-14 h-14 shrink-0 rounded-xl object-cover bg-slate-100" />
-                {/* One title line, like the meetup rows above, so every row in the column has the same height */}
                 <span className="min-w-0 flex-1">
-                  {item.kicker && <span className={`block text-xs font-semibold ${kickerClass}`}>{item.kicker}</span>}
-                  <span className="block text-sm font-semibold text-slate-900 leading-snug truncate group-hover:underline">{item.title}</span>
-                  <span className="block text-xs text-slate-500 truncate">{item.sub}</span>
+                  {item.kicker && <Kicker dot={dot}>{item.kicker}</Kicker>}
+                  <span className={ROW_TITLE}>{item.title}</span>
+                  <span className="block mt-0.5 text-xs text-slate-500 truncate">{item.sub}</span>
                 </span>
               </Link>
             </li>
@@ -590,7 +562,7 @@ function ItemsBlock({ title, href, items, kickerClass, layout }: { title: string
             <Link key={item.key} href={item.href} className="group w-[200px] shrink-0 space-y-1.5">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={item.image || FALLBACK_IMAGE} alt="" className="w-full aspect-[4/3] rounded-2xl object-cover bg-slate-100" />
-              {item.kicker && <span className={`block text-xs font-semibold ${kickerClass}`}>{item.kicker}</span>}
+              {item.kicker && <Kicker dot={dot}>{item.kicker}</Kicker>}
               <span className="block text-sm font-semibold text-slate-900 leading-snug line-clamp-2 group-hover:underline">{item.title}</span>
               <span className="block text-xs text-slate-500 truncate">{item.sub}</span>
             </Link>
@@ -603,10 +575,10 @@ function ItemsBlock({ title, href, items, kickerClass, layout }: { title: string
 
 function FairsBlock({ fairs, fairWhen, layout }: MemberLiveHomeProps & { layout: 'rows' | 'tiles' }) {
   const items = fairs.map((fair) => ({ key: fair.id, href: eventHref(fair), image: fair.image, kicker: fairWhen(fair), title: fair.title, sub: fair.location }));
-  return <ItemsBlock title="งานแฟร์ งานวิ่ง งานคอน ช่วงนี้" href="/fairs" items={items} kickerClass="text-[#2B527A]" layout={layout} />;
+  return <ItemsBlock title="งานแฟร์ งานวิ่ง งานคอน ช่วงนี้" href="/fairs" items={items} dot="bg-[#2B527A]" layout={layout} />;
 }
 
 function SpotsBlock({ spots, layout }: MemberLiveHomeProps & { layout: 'rows' | 'tiles' }) {
   const items = spots.map((spot) => ({ key: spot.id, href: `/spots/${encodeURIComponent(spot.id)}`, image: spot.image, title: spot.title, sub: [spot.district, spot.province].filter(Boolean).join(', ') }));
-  return <ItemsBlock title="ที่เที่ยวน่าไป" href="/spots" items={items} kickerClass="text-[#4A7C59]" layout={layout} />;
+  return <ItemsBlock title="ที่เที่ยวน่าไป" href="/spots" items={items} dot="bg-[#4A7C59]" layout={layout} />;
 }

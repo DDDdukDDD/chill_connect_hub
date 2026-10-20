@@ -1,8 +1,12 @@
 import { connection } from 'next/server';
+import { discoverMetadata } from '@/lib/discoverMetadata';
 import { discoverStart, listTopSpots } from '@/lib/publicContent';
 import SpotsListView from './SpotsListView';
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
+
+/** A picked province gets its own title and canonical URL ("ตี้ในเชียงใหม่") */
+export const generateMetadata = ({ searchParams }: Props) => discoverMetadata('spots', searchParams);
 
 /** Places sent in the HTML: the first pages of the list. Every place page is also in the sitemap. */
 const SERVER_SPOTS = 60;

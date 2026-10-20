@@ -2,7 +2,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { 
+import { usePathname } from 'next/navigation';
+import {
   Sprout, 
   LogIn, 
   User, 
@@ -98,6 +99,16 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'myhub', label: 'มายฮับ', href: '/myhub', icon: Ticket },
   ];
 
+  // Wide screens: the three public sections sit in the top bar for everyone (the drawer keeps them too).
+  // Not below xl: at 1024px they squeeze the search box's word field away.
+  const pathname = usePathname() ?? '';
+  const topLinks = [
+    { label: 'ค้นพบ', href: '/community', match: ['/community', '/fairs', '/spots'] },
+    { label: 'โมเมนต์', href: '/moments', match: ['/moments'] },
+    { label: 'ชาเลนจ์', href: '/challenges', match: ['/challenges'] },
+  ];
+  const isOn = (paths: string[]) => paths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
   return (
     <>
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 transition-all duration-300 shadow-2xs">
@@ -123,6 +134,25 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Search: the same box in the same place on every page. The ค้นพบ pages bring theirs (it filters while typing);
               everywhere else Enter opens ค้นพบ. */}
           <div className="hidden md:flex flex-1 min-w-0 max-w-[480px] ml-2 lg:ml-8 mr-auto">{searchSlot ?? <SiteSearch />}</div>
+
+          <nav aria-label="เมนูหลัก" className="hidden xl:flex items-center gap-1 shrink-0">
+            {topLinks.map((link) => {
+              const on = isOn(link.match);
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  aria-current={on ? 'page' : undefined}
+                  className={`relative px-3 py-2 text-[15px] rounded-lg transition-colors ${
+                    on ? 'font-semibold text-slate-900' : 'font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                >
+                  {link.label}
+                  {on && <span className="absolute left-3 right-3 -bottom-[13px] h-0.5 rounded-full bg-slate-900" aria-hidden="true" />}
+                </Link>
+              );
+            })}
+          </nav>
 
           {/* Right: Actions */}
           <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
