@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { CheckCircle2, Image as ImageIcon, MapPin, Navigation, Search, Trophy, X } from 'lucide-react';
 import type { EventItem } from '@/data/mockData';
 import type { LifestyleSpotItem } from '@/data/spotsData';
-import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
+import { VerifyToPostDialog } from '@/components/moments/VerifyToPostDialog';
 import { parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { compressImage } from '@/lib/media/compressor';
 import { useMemberSession } from '@/lib/useMemberSession';
@@ -297,16 +297,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
     }
   };
 
-  if (needsVerification) {
-    return (
-      <DialogShell onClose={onClose} title="อีกนิดเดียว ก็โพสต์ได้แล้ว" subtitle="ยืนยันอีเมลและรับคำมั่นของคอมมูนิตี้ก่อน เพื่อให้ที่นี่ปลอดภัยสำหรับทุกคน" size="sm">
-        <div className="flex flex-wrap justify-end gap-2.5">
-          <button type="button" className={dialogButton.quiet} onClick={onClose}>ไว้ทีหลัง</button>
-          <Link href="/profile#trust" className={dialogButton.primary}>ไปยืนยันที่โปรไฟล์</Link>
-        </div>
-      </DialogShell>
-    );
-  }
+  if (needsVerification) return <VerifyToPostDialog onClose={onClose} />;
 
   const renderLinkRow = (r: MomentLinkTarget) => (
     <li key={`${r.type}-${r.id}`}>

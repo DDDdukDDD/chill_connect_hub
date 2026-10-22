@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useId } from 'react';
+import React, { useId, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { AuthPanel } from './auth/AuthPanel';
 import { DialogShell, dialogButton } from './auth/DialogShell';
@@ -21,20 +22,36 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSu
   const router = useRouter();
   const pathname = usePathname();
   const titleId = useId();
+  const [toOnboarding, setToOnboarding] = useState(false);
   if (!isOpen) return null;
 
   const here = typeof window !== 'undefined' ? window.location.pathname + window.location.search : pathname || '/';
 
+  // A new member goes straight to onboarding. The page behind already redraws as a member's page once the
+  // account exists, so cover it until onboarding opens (this page, and with it the cover, then unmounts)
+  if (toOnboarding) {
+    return (
+      <div className="fixed inset-0 z-[100003] bg-white flex items-center justify-center" role="status" aria-live="polite">
+        <Loader2 className="w-6 h-6 text-slate-400 animate-spin" aria-hidden="true" />
+        <span className="sr-only">กำลังพาไปตั้งค่าบัญชี</span>
+      </div>
+    );
+  }
+
   return (
-    <DialogShell onClose={onClose} labelledBy={titleId}>
+    <DialogShell onClose={onClose} labelledBy={titleId} align="top">
       <AuthPanel
         initialView={initialMode}
         returnTo={here}
         titleId={titleId}
         onAuthenticated={(member, { isNew }) => {
+          if (isNew) {
+            setToOnboarding(true);
+            router.push(`/onboarding?returnTo=${encodeURIComponent(here)}`);
+            return;
+          }
           onLoginSuccess(member.displayName);
           onClose();
-          if (isNew) router.push(`/onboarding?returnTo=${encodeURIComponent(here)}`);
         }}
       />
     </DialogShell>

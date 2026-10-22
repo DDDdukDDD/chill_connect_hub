@@ -12,6 +12,9 @@ const STRAY_THAI_MARK = new RegExp('(?<![' + THAI_CONSONANT + THAI_MARK + '])[' 
 const INVISIBLE = new RegExp('[\\u0000-\\u001F\\u007F\\u200B-\\u200F\\u2028-\\u202F\\uFEFF]', 'g');
 const THAI_LEADING_VOWEL = new RegExp('[\\u0E40-\\u0E44]');
 
+/** Name given to an email sign-up until the member picks one in onboarding (sign-up no longer asks) */
+export const NEW_MEMBER_NAME = 'สมาชิกใหม่';
+
 /**
  * Removes marks that cannot be part of the name (typed by accident with the Thai keyboard on),
  * other stray combining marks at the start, invisible characters, and repeated spaces.

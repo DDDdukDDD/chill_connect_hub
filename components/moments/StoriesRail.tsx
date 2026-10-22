@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Flag, Image as ImageIcon, Plus, Trash2, X } from 'lucide-react';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
+import { VerifyToPostDialog } from '@/components/moments/VerifyToPostDialog';
 import { compressImage } from '@/lib/media/compressor';
 import { nameInitial } from '@/lib/displayName';
 import { useMemberSession } from '@/lib/useMemberSession';
@@ -343,14 +344,7 @@ export function StoriesRail({ isLoggedIn, onNeedLogin, onToast, after, size = 'm
         </DialogShell>
       )}
 
-      {isVerifyOpen && (
-        <DialogShell onClose={() => setIsVerifyOpen(false)} title="อีกนิดเดียว ก็โพสต์ได้แล้ว" subtitle="ยืนยันอีเมลและรับคำมั่นของคอมมูนิตี้ก่อน เพื่อให้ที่นี่ปลอดภัยสำหรับทุกคน" size="sm">
-          <div className="flex flex-wrap justify-end gap-2.5">
-            <button type="button" className={dialogButton.quiet} onClick={() => setIsVerifyOpen(false)}>ไว้ทีหลัง</button>
-            <Link href="/profile#trust" className={dialogButton.primary}>ไปยืนยันที่โปรไฟล์</Link>
-          </div>
-        </DialogShell>
-      )}
+      {isVerifyOpen && <VerifyToPostDialog onClose={() => setIsVerifyOpen(false)} />}
     </>
   );
 }
