@@ -1577,3 +1577,46 @@ New placeholder content in a page must be behind `eventOrigin(...) === 'sample'`
 - Tabs only list สาย that have challenges, so /challenges shows 5 now (คาเฟ่, งานวิ่ง, ท่องเที่ยว, ฮีลใจ, ศิลปะ); the other 13 appear when challenges are added (LAUNCH_CHECKLIST).
 - **Admin** (`components/admin/QuestsManagerView.tsx`): a new challenge no longer defaults to the non-existent `social`; the สาย select starts on "เลือกสาย" and is required. The list shows the สาย name instead of its id.
 - **ค้นพบ pages too (owner 2026-10-23):** /community, /fairs and /spots put the member's own categories first with the same dot (`communityCategories`, `fairCategories`, `spotVibes` from onboarding; fairs and places are the ones onboarding inferred from the สาย). Nothing is selected for them: every category stays one tap away. One hook, `lib/useMyInterests.ts`, feeds the three pages and /challenges.
+
+### BE-103 · Sign-up to join keeps the ตี้; email verification said up front (owner 2026-10-23)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-23 · `claude`
+- Found by walking landing → ตี้ → sign up → onboarding → join: the join intent was lost, onboarding suggested a different ตี้, and "verify your email" appeared only as a 3-second toast after "ยืนยันการเข้าร่วม".
+- `RequireMembershipModal` and `AuthModal` take `returnTo`; the ตี้ page passes `/community/<id>?join=1`, and on return the page opens the join dialog by itself (then drops `join=1`).
+- Onboarding (`app/onboarding/page.tsx`) reads that ตี้ on the server; the summary leads with "ตี้ที่คุณเลือกไว้" and the finish button returns there. Its สาย is pre-picked in step 2.
+- The join dialog shows what the account still needs (`components/JoinReadinessNotice.tsx`: confirm email, with "ส่งลิงก์ยืนยันอีกครั้ง", or accept the pledge) and disables the button until then.
+- The verification email carries `next` (a same-site path, checked with `safeReturnPath` when sending and when opening); "ยืนยันอีเมลแล้ว" offers "กลับไปเข้าร่วมตี้ต่อ". The profile line and the verified screen now say verification is needed to join ตี้ too. `/login`'s back link goes back to the ตี้ when it came from one.
+- Removed "แชร์ของคุณ" from the landing's friends row (visitors have nothing to share yet; owner).
+
+### BE-104 · One header for the four detail pages, link strip, live related ตี้ (owner 2026-10-23)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-23 · `claude`
+- Owner-approved draft: https://claude.ai/artifact/Le2sWRDHC6vGeCRne4dRWT (detail pages for ก่อน / ระหว่าง / จบ).
+- `components/detail/DetailHero.tsx`: photo left (4:3, whole photo, no more cropped 320px band), pillar tag, chips, one `<h1>`, the facts needed to decide, one blue main action. Used by `/community/[id]`, `/fairs/[id]`, `/spots/[id]`; the challenge page was the model and keeps its layout. Server-rendered (title, facts and action are in the HTML; JSON-LD unchanged).
+- Main actions: ตี้ = ลงทะเบียนเข้าร่วม (ดูบัตร / แชตกลุ่ม after joining); งานแฟร์ = บันทึกงานนี้ (+ เว็บไซต์งาน or ซื้อบัตร); ที่เที่ยว = บันทึกที่นี่ (+ นำทาง). Buttons follow DESIGN_SYSTEM (blue primary); the phone bar on the ตี้ page is blue too.
+- `components/detail/PillarLinks.tsx`: the strip under the header (challenge it counts toward, place it meets at, moments) read from `GET /api/visits?targets=`.
+- Removed the 5-photo grid, the "(Fullscreen Lightbox)" hint and the duplicate facts in the side cards.
+- The "ตี้อื่น" row on a ตี้ page used the bundled sample list (ticketed fairs showed up); it now lists open ตี้ from `/api/events?type=community&status=recruiting`, same สาย first.
+
+### BE-105 · After a ตี้: review, "อยากเจออีก", moment (owner 2026-10-23)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-23 · `claude`
+- `components/detail/AfterTeePanel.tsx` on the ตี้ page, once the host confirmed the member came (or the ตี้ ended): stars + tags + short text (`POST /api/events/{id}/review`, existing), "อยากเจอใครอีก", "แชร์โมเมนต์จากตี้นี้".
+- New: `GET/POST /api/events/{id}/meet-again` (`lib/social/meetAgain.ts`). Only the host and checked-in participants can pick each other; picks are private; a mutual pick opens a two-person chat room `pair~a~b` (`lib/social/chat.ts`) and notifies the other person (`match` notification). Picks are removed with the account.
+- `useMyActivity()` now carries `reviewedEventIds`, and joined events carry `checkedInAt` / `hasHostCheckIn`.
+
+### BE-106 · Challenges count only checkable proof (owner 2026-10-23)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-23 · `claude`
+- Owner rule: proof of going matters for ตี้ (host check-in) and challenges; going to a place or fair on your own is personal and needs no proof.
+- "มาที่นี่แล้ว" (`marked`) never counts toward a challenge any more, whatever the rule says (`minEvidenceOf`).
+- A moment at a place or fair records `evidence` (`lib/moments/evidence.ts`): `auto` when the phone's location at posting time is within 300 m of the place (fresh, accurate fix), else `pending` until staff pass it. Pending photos do not count. Older posts without `evidence` count as before.
+- The composer asks for the location when posting at a place or fair and says what happens. Staff see "รอตรวจ" with the reason and pass it ("ผ่าน นับเป็นการไป") in Moments → ใช้นับชาเลนจ์ (`accept_evidence` now also passes a pending photo).
+- Limit (web prototype): the browser cannot prove a photo came from the camera, and a location can be faked; staff review and partner QR codes later cover that (LAUNCH_CHECKLIST).
+
+### BE-107 · The rest of the detail-page draft: during, waiting list, questions, attendance, recurring dates, reviews, checklist (owner 2026-10-23)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-23 · `claude`
+- **Recurring ตี้ by date** (`lib/social/recurring.ts`): a recurring ตี้ is a series; each date becomes its own event `<seriesId>--YYYY-MM-DD` (field `seriesId`) the first time someone joins it, so tickets, check-in, chat, reviews and the waiting list work per date. `GET /api/events/{id}/dates` lists the next 8 dates with seats; `POST /api/auth/member/activity {action:'join', eventId, date}` joins one. Dates are hidden from listings (`queryEngine` and the `/api/events` fallback) and their pages use the series as canonical URL. Page: `components/detail/SeriesDates.tsx` ("เลือกวันที่จะไป"); the header and the phone bar point there, the side booking card is hidden on a series. **The running dev server needs one restart** for the listing filter (the database object is kept across hot reloads).
+- **During (the day):** `components/detail/DayOfPanel.tsx` for participants (countdown, ticket, way there, group chat, "แจ้งว่าไปสาย" posts in the chat, who has arrived); `components/detail/HostCheckIn.tsx` for the host (ticket code or confirm each person, with their attendance record). `GET /api/events/{id}/attendees` adds `arrived` (only for people in the ตี้) and `attendance`.
+- **Attendance record** (`lib/social/attendance.ts`): "มาตามนัด x/y" over ended ตี้ run by a member host; shown on attendee tiles and in the host's list. No-shows are people not confirmed by the host who did not cancel.
+- **Waiting list** (`lib/social/waitlist.ts`, `GET/POST /api/events/{id}/waitlist`): a full ตี้ offers "ต่อคิวรายชื่อสำรอง"; when a seat frees up the first in line is notified (`seat`) and the seat is held for 2 hours (others get "ที่ว่างนี้กันไว้ให้คนในรายชื่อสำรองอยู่"). No scheduler: the queue moves on whenever it is read or changed.
+- **Questions to the host** (`lib/social/eventQuestions.ts`, `GET/POST /api/events/{id}/questions`): public Q&A on every ตี้, server-rendered for search engines; members ask, the host answers (notifications `question` / `answer`), the asker can delete, the host can hide.
+- **Rating places and fairs:** `POST /api/visits {action:'mark', rating, review}` takes a short review; `GET /api/visits?reviews=spot:ID` lists them. `components/detail/VisitReviews.tsx` on both pages (form for members who marked "มาที่นี่แล้ว").
+- **Challenge checklist:** `GET /api/quests/{id}/checklist` → counted / pending / rejected per place; `components/detail/ChallengeChecklist.tsx` on the challenge page for members who joined ("ส่งรูปใหม่" for rejected ones).
+- Account deletion also removes waiting-list entries and the member's questions.
