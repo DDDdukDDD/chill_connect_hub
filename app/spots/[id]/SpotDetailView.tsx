@@ -28,6 +28,9 @@ import { SmartSpotPlanCard } from '@/components/SmartSpotPlanCard';
 import { SpotBuddyTrips } from '@/components/SpotBuddyTrips';
 import { VisitPanel } from '@/components/VisitPanel';
 import { NearbyDiningSection } from '@/components/NearbyDiningSection';
+import { DetailHero, PillarChip, StatusChip, heroButton } from '@/components/detail/DetailHero';
+import { PillarLinks } from '@/components/detail/PillarLinks';
+import { VisitReviews } from '@/components/detail/VisitReviews';
 import {
   MapPin,
   Clock,
@@ -498,174 +501,66 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
         </div>
 
         {/* =========================================================================
-            EDITORIAL ADAPTIVE PHOTO GALLERY (1-Photo Hero, 2/3-Photo Split, 5-Mosaic)
+            HEADER: photo left, what is needed to decide and the one main action right (shared with
+            meetups, fairs and challenges: components/detail/DetailHero.tsx)
            ========================================================================= */}
-        <section className="space-y-2">
-          {galleryImages.length <= 1 ? (
-            /* Single Hero Photo Banner */
-            <div
-              onClick={() => {
-                setActivePhotoIndex(0);
-                setIsLightboxOpen(true);
-              }}
-              className="w-full h-64 sm:h-80 md:h-[360px] rounded-3xl overflow-hidden relative group cursor-pointer bg-slate-200 shadow-sm"
-            >
-              <img
-                src={galleryImages[0] || spot.image}
-                alt={`${spot.title} ภาพบรรยากาศ`}
-                className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-40 group-hover:opacity-25 transition-opacity" />
-              
-              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white">
-                <div className="inline-flex items-center gap-2 bg-slate-900/75 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-semibold border border-white/20">
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>{spotOrigin(spot) === 'member' ? 'ภาพจากสมาชิกที่แนะนำ' : spotOrigin(spot) === 'source' ? 'ภาพจากแหล่งข้อมูลต้นทาง' : 'ภาพถ่ายอย่างเป็นทางการ'}</span>
-                </div>
-                <div className="inline-flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md border border-white/20 group-hover:bg-slate-900 transition-colors">
-                  <Camera className="w-3.5 h-3.5" />
-                  <span>ดูภาพขนาดเต็ม</span>
-                </div>
-              </div>
-            </div>
-          ) : galleryImages.length === 2 ? (
-            /* 2 Photos Split Layout */
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 rounded-3xl overflow-hidden h-64 sm:h-80 md:h-[340px] relative group">
-              {galleryImages.slice(0, 2).map((imgUrl, idx) => (
-                <div
-                  key={idx}
-                  onClick={() => {
-                    setActivePhotoIndex(idx);
-                    setIsLightboxOpen(true);
-                  }}
-                  className="relative h-full overflow-hidden cursor-pointer bg-slate-200"
-                >
-                  <img
-                    src={imgUrl}
-                    alt={`${spot.title} บรรยากาศ ${idx + 1}`}
-                    className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors" />
-                </div>
+        <DetailHero
+          pillar="spot"
+          image={galleryImages[0] || resolveSpotImage(spot)}
+          imageAlt={`${cleanText(spot.title)} ${spot.district || ''} ${spot.province || ''}`.trim()}
+          photoCount={galleryImages.length}
+          onOpenPhotos={() => {
+            setActivePhotoIndex(0);
+            setIsLightboxOpen(true);
+          }}
+          chips={
+            <>
+              <PillarChip pillar="spot">{spot.categoryLabel}</PillarChip>
+              <StatusChip tone={openStatus.badgeVariant === 'open' ? 'open' : openStatus.badgeVariant === 'closed' ? 'live' : 'muted'}>{openStatus.statusText}</StatusChip>
+              {spot.rating > 0 && (
+                <StatusChip tone="muted">
+                  ★ {spot.rating}
+                  {spot.reviewsCount > 0 ? ` (${spot.reviewsCount} รีวิว)` : ''}
+                </StatusChip>
+              )}
+              {(spot.vibeTags ?? []).filter((vibe) => cleanText(vibe) !== cleanText(spot.categoryLabel)).slice(0, 2).map((vibe) => (
+                <StatusChip key={vibe} tone="muted">{cleanText(vibe)}</StatusChip>
               ))}
+            </>
+          }
+          title={cleanText(spot.title)}
+          facts={[
+            { icon: Clock, title: cleanText(spot.openHours) || 'เปิดทุกวัน', sub: openStatus.subText || (spot.bestTime ? `ช่วงที่ดีที่สุด: ${cleanText(spot.bestTime)}` : undefined) },
+            { icon: MapPin, title: [spot.district, spot.province ? `จังหวัด${spot.province}` : ''].filter(Boolean).join(', ') },
+            { icon: Ticket, title: cleanText(spot.price) || 'เข้าฟรี' },
+          ]}
+          actions={
+            <>
               <button
                 type="button"
-                onClick={() => {
-                  setActivePhotoIndex(0);
-                  setIsLightboxOpen(true);
-                }}
-                className="absolute bottom-3 right-3 bg-slate-900/85 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg border border-white/20 active:scale-95"
+                onClick={() => toggleFavorite(spot.id)}
+                aria-pressed={isFavorite}
+                className={isFavorite ? heroButton.done : heroButton.primary}
               >
-                <Camera className="w-3.5 h-3.5" />
-                <span>ดูรูปทั้งหมด (2)</span>
+                {isFavorite ? <Check className="w-5 h-5" aria-hidden="true" /> : <BookMarked className="w-5 h-5" aria-hidden="true" />}
+                {isFavorite ? 'บันทึกแล้ว' : 'บันทึกที่นี่'}
               </button>
-            </div>
-          ) : galleryImages.length === 3 ? (
-            /* 3 Photos Split Layout */
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 rounded-3xl overflow-hidden h-56 sm:h-72 md:h-[320px] relative group">
-              {galleryImages.slice(0, 3).map((imgUrl, idx) => (
-                <div
-                  key={idx}
-                  onClick={() => {
-                    setActivePhotoIndex(idx);
-                    setIsLightboxOpen(true);
-                  }}
-                  className="relative h-full overflow-hidden cursor-pointer bg-slate-200"
-                >
-                  <img
-                    src={imgUrl}
-                    alt={`${spot.title} บรรยากาศ ${idx + 1}`}
-                    className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors" />
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => {
-                  setActivePhotoIndex(0);
-                  setIsLightboxOpen(true);
-                }}
-                className="absolute bottom-3 right-3 bg-slate-900/85 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg border border-white/20 active:scale-95"
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([spot.title, spot.district, spot.province].filter(Boolean).join(' '))}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={heroButton.secondary}
               >
-                <Camera className="w-3.5 h-3.5" />
-                <span>ดูรูปทั้งหมด (3)</span>
-              </button>
-            </div>
-          ) : (
-            /* 4+ Photos Mosaic Grid */
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-2.5 rounded-3xl overflow-hidden bg-slate-100 h-56 sm:h-72 md:h-[320px] max-h-[320px] relative group">
-              {/* Main Big Photo (Left - 2 Cols x 2 Rows) */}
-              <div
-                onClick={() => {
-                  setActivePhotoIndex(0);
-                  setIsLightboxOpen(true);
-                }}
-                className="md:col-span-2 md:row-span-2 relative h-56 sm:h-72 md:h-[320px] overflow-hidden cursor-pointer bg-slate-200"
-              >
-                <img
-                  src={galleryImages[0] || spot.image}
-                  alt={`${spot.title} บรรยากาศ 1`}
-                  className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-40 hover:opacity-20 transition-opacity" />
-              </div>
+                <Navigation className="w-5 h-5" aria-hidden="true" />
+                นำทาง
+              </a>
+            </>
+          }
+          note={!isFavorite ? 'บันทึกลงสมุดท่องเที่ยว ไว้วางแผนไปทีหลัง' : undefined}
+        />
 
-              {/* Secondary Photos */}
-              {galleryImages.slice(1, 5).map((imgUrl, idx) => {
-                const photoIdx = idx + 1;
-                const isLast = idx === Math.min(3, galleryImages.length - 2);
-                return (
-                  <div
-                    key={idx}
-                    onClick={() => {
-                      setActivePhotoIndex(photoIdx);
-                      setIsLightboxOpen(true);
-                    }}
-                    className="hidden md:block relative h-[155px] overflow-hidden cursor-pointer bg-slate-200"
-                  >
-                    <img
-                      src={imgUrl}
-                      alt={`${spot.title} บรรยากาศ ${photoIdx + 1}`}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-black/10 hover:bg-black/0 transition-colors" />
-
-                    {/* View All Photos Button Overlay on the last thumbnail */}
-                    {isLast && galleryImages.length > 5 && (
-                      <div className="absolute inset-0 bg-slate-900/60 hover:bg-slate-900/50 backdrop-blur-2xs flex flex-col items-center justify-center text-white transition-all">
-                        <Camera className="w-6 h-6 mb-1 text-white" />
-                        <span className="font-bold text-xs sm:text-sm">ดูรูปทั้งหมด</span>
-                        <span className="text-[11px] text-slate-200 font-medium">({galleryImages.length} รูป)</span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-
-              {/* Floating Mobile View All Button */}
-              <button
-                type="button"
-                onClick={() => {
-                  setActivePhotoIndex(0);
-                  setIsLightboxOpen(true);
-                }}
-                className="md:hidden absolute bottom-3 right-3 bg-slate-900/85 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg border border-white/20 active:scale-95"
-              >
-                <Camera className="w-3.5 h-3.5" />
-                <span>ดูรูปทั้งหมด ({galleryImages.length})</span>
-              </button>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between text-xs text-slate-500 px-1 font-medium">
-            <span className="inline-flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-slate-400" />
-              <span>แตะที่รูปเพื่อเปิดดูภาพบรรยากาศขนาดใหญ่ (Fullscreen Lightbox)</span>
-            </span>
-            <span className="hidden sm:inline">คลังภาพบรรยากาศ {galleryImages.length} มุมมอง</span>
-          </div>
-        </section>
+        {/* The challenge this counts toward and the moments people shared here */}
+        <PillarLinks target={{ type: 'spot', id: spot.id, title: cleanText(spot.title) }} />
 
         {/* =========================================================================
             CORE CONTENT: 2-COLUMN EDITORIAL LAYOUT (Clean Editorial Flow)
@@ -675,43 +570,6 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
           {/* LEFT COLUMN: PRIMARY DETAILS (2 Cols - Editorial Focus) */}
           <div className="lg:col-span-2 space-y-7">
             
-            {/* 1. Header Title, Badges & Ratings */}
-            <div className="space-y-3 pb-4 border-b border-slate-100">
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* Category Badge - Forest Green */}
-                <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#EBF3ED] text-[#2D5A3C] border border-emerald-200">
-                  {spot.categoryLabel}
-                </span>
-
-                {/* Star Rating & Reviews (only real values; imported spots have none) */}
-                {spot.rating > 0 && (
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-2xs ml-auto sm:ml-0">
-                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                    <span>{spot.rating}</span>
-                    {spot.reviewsCount > 0 && <span className="text-slate-400 font-normal">({spot.reviewsCount} รีวิว)</span>}
-                  </div>
-                )}
-              </div>
-
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 tracking-tight leading-tight break-words">
-                {cleanText(spot.title)}
-              </h1>
-
-              {/* Vibe Tags */}
-              {spot.vibeTags && spot.vibeTags.length > 0 && (
-                <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                  {spot.vibeTags.map((vibe, idx) => (
-                    <span
-                      key={idx}
-                      className="text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1 rounded-xl transition-colors"
-                    >
-                      {cleanText(vibe)}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-
             {/* About / Story Section (Clean Editorial Paragraphs & Rich Content) */}
             <div className="space-y-3 pt-1">
               <h2 className="text-lg font-bold text-slate-900 tracking-tight">
@@ -822,6 +680,11 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
               </div>
             </div>
 
+            {/* Ratings and tips from people who have been (the "จบ" phase of a place) */}
+            <div className="pt-5 border-t border-slate-100">
+              <VisitReviews targetType="spot" targetId={spot.id} isLoggedIn={isLoggedIn} />
+            </div>
+
             {/* 7. Nearby Popular Cafes & Restaurants (Fills blank space with high-value dining) */}
             <NearbyDiningSection spot={spot} />
 
@@ -837,54 +700,8 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
                 : 'bg-white border border-slate-200/90 shadow-sm'
             }`}>
               
-              {/* Header Status & District */}
-              <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
-                <div className="flex flex-col gap-0.5">
-                  <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
-                    openStatus.badgeVariant === 'open'
-                      ? 'bg-emerald-50 border border-emerald-200/80 text-emerald-800'
-                      : openStatus.badgeVariant === 'closed'
-                      ? 'bg-rose-50 border border-rose-200/80 text-rose-800'
-                      : 'bg-slate-100 border border-slate-200 text-slate-700'
-                  }`}>
-                    <span className={`w-2 h-2 rounded-full shrink-0 ${
-                      openStatus.badgeVariant === 'open'
-                        ? 'bg-emerald-500 animate-pulse'
-                        : openStatus.badgeVariant === 'closed'
-                        ? 'bg-rose-500'
-                        : 'bg-slate-400'
-                    }`} />
-                    <span className="whitespace-nowrap">{openStatus.statusText}</span>
-                  </div>
-                  {openStatus.subText && (
-                    <span className="text-[11px] text-slate-500 font-medium pl-1">
-                      {openStatus.subText}
-                    </span>
-                  )}
-                </div>
-                <span className="text-xs font-semibold text-slate-400 truncate max-w-[130px]" title={`${spot.district}, จังหวัด${spot.province}`}>
-                  {spot.district}
-                </span>
-              </div>
-
               {/* Spot Specs Summary */}
               <div className="space-y-3 text-xs">
-                <div className="flex items-start gap-2.5">
-                  <Clock className="w-4 h-4 text-[#4A7C59] shrink-0 mt-0.5" />
-                  <div>
-                    <span className="text-slate-400 text-[10px] block font-bold">เวลาทำการ</span>
-                    <span className="font-bold text-slate-900">{cleanText(spot.openHours) || 'เปิดทุกวัน'}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-2.5">
-                  <Ticket className="w-4 h-4 text-[#4A7C59] shrink-0 mt-0.5" />
-                  <div>
-                    <span className="text-slate-400 text-[10px] block font-bold">ค่าเข้าชม</span>
-                    <span className="font-bold text-slate-900">{cleanText(spot.price) || 'เข้าฟรี'}</span>
-                  </div>
-                </div>
-
                 {spot.bestTime && (
                   <div className="flex items-start gap-2.5">
                     <Sparkles className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
@@ -894,14 +711,6 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
                     </div>
                   </div>
                 )}
-
-                <div className="flex items-start gap-2.5">
-                  <MapPin className="w-4 h-4 text-[#4A7C59] shrink-0 mt-0.5" />
-                  <div>
-                    <span className="text-slate-400 text-[10px] block font-bold">ที่ตั้ง & ย่าน</span>
-                    <span className="font-bold text-slate-900 leading-snug">{spot.district}, จังหวัด{spot.province}</span>
-                  </div>
-                </div>
 
                 {spot.contact?.phone && (
                   <div className="flex items-start gap-2.5">
@@ -951,7 +760,7 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
                   className={`group w-full py-3 px-4 rounded-2xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 border ${
                     isFavorite
                       ? 'bg-[#EBF3ED] text-[#2D5A3C] border-[#C5DEC9] hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 shadow-2xs'
-                      : 'bg-slate-900 hover:bg-slate-800 text-white border-transparent shadow-2xs'
+                      : 'bg-[#2563EB] hover:bg-[#1D4ED8] text-white border-transparent shadow-2xs'
                   }`}
                 >
                   {isFavorite ? (
@@ -967,7 +776,7 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
                     </>
                   ) : (
                     <>
-                      <BookMarked className="w-4 h-4 text-slate-300" />
+                      <BookMarked className="w-4 h-4 text-white" />
                       <span>บันทึกลงสมุดท่องเที่ยว</span>
                     </>
                   )}

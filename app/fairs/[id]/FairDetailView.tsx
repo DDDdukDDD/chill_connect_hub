@@ -27,6 +27,9 @@ import { SpotBuddyGatheringModal, SpotBuddyPostItem } from '@/components/SpotBud
 import { ExpoMeetupPassModal, ExpoMeetupPassData } from '@/components/ExpoMeetupPassModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { EventGrid } from '@/components/EventGrid';
+import { DetailHero, PillarChip, StatusChip, heroButton } from '@/components/detail/DetailHero';
+import { PillarLinks } from '@/components/detail/PillarLinks';
+import { VisitReviews } from '@/components/detail/VisitReviews';
 
 export interface FairSubActivityItem {
   id: string;
@@ -504,6 +507,8 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
   const isEnded = isEventEnded(eventData);
   // In My Hub: on the schedule while the fair is ahead, kept to follow once it has ended
   const isFav = isEnded ? favorites.includes(eventData.id) : joinedEventIds.includes(eventData.id);
+  // Started and not ended: "กำลังจัดอยู่" (the landing's fair list uses the same rule)
+  const isOngoing = !isEnded && parseEventDateToTimestamp(eventData.date) <= Date.now();
 
   return (
     <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans selection:bg-[#2B527A] selection:text-white">
@@ -592,80 +597,57 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
         </div>
 
         {/* =========================================================================
-            EDITORIAL 5-PHOTO MOSAIC GALLERY (Expos & Fairs)
+            HEADER: photo left, what is needed to decide and the one main action right (shared with
+            meetups, places and challenges: components/detail/DetailHero.tsx). Fairs show no head count.
            ========================================================================= */}
-        <section className="space-y-2">
-          
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-2.5 rounded-3xl overflow-hidden bg-slate-100 h-56 sm:h-72 md:h-[320px] max-h-[320px] relative group">
-            
-            {/* Main Big Photo (Left - 2 Cols x 2 Rows) */}
-            <div
-              onClick={() => {
-                setActivePhotoIndex(0);
-                setIsLightboxOpen(true);
-              }}
-              className={`${galleryImages.length >= 5 ? 'md:col-span-2' : 'md:col-span-4'} md:row-span-2 relative h-56 sm:h-72 md:h-[320px] overflow-hidden cursor-pointer bg-slate-200`}
-            >
-              <img
-                src={galleryImages[0] || eventData.image}
-                alt={`${eventData.title} บรรยากาศงาน`}
-                className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-50 hover:opacity-25 transition-opacity" />
-            </div>
+        <DetailHero
+          pillar="fair"
+          image={galleryImages[0] || eventData.image}
+          imageAlt={`${cleanText(eventData.title)} บรรยากาศงาน`}
+          photoCount={galleryImages.length}
+          onOpenPhotos={() => {
+            setActivePhotoIndex(0);
+            setIsLightboxOpen(true);
+          }}
+          chips={
+            <>
+              <PillarChip pillar="fair">{cleanText(eventData.tag) || 'งานแฟร์'}</PillarChip>
+              {isEnded ? (
+                <StatusChip tone="muted">งานจบแล้ว</StatusChip>
+              ) : isOngoing ? (
+                <StatusChip tone="live">กำลังจัดอยู่</StatusChip>
+              ) : (
+                <StatusChip tone="muted">เร็วๆ นี้</StatusChip>
+              )}
+            </>
+          }
+          title={cleanText(eventData.title)}
+          facts={[
+            { icon: Calendar, title: cleanText(eventData.date), sub: cleanText(eventData.time) },
+            { icon: MapPin, title: cleanText(eventData.location) },
+            { icon: Ticket, title: parsedPrice.displayPrice },
+            { icon: Building2, title: <>จัดโดย {venueOrganizerName}</> },
+          ]}
+          actions={
+            <>
+              <button type="button" onClick={toggleInHub} aria-pressed={isFav} className={isFav ? heroButton.done : heroButton.primary}>
+                {isFav ? <Check className="w-5 h-5" aria-hidden="true" /> : <BookMarked className="w-5 h-5" aria-hidden="true" />}
+                {isFav ? 'บันทึกแล้ว' : isEnded ? 'ติดตามงานรอบหน้า' : 'บันทึกงานนี้'}
+              </button>
+              {officialWebsiteUrl && (
+                <a href={officialWebsiteUrl} target="_blank" rel="noopener noreferrer" className={heroButton.secondary}>
+                  {parsedPrice.isFree ? <Globe className="w-5 h-5" aria-hidden="true" /> : <Ticket className="w-5 h-5" aria-hidden="true" />}
+                  {parsedPrice.isFree ? 'เว็บไซต์งาน' : 'ซื้อบัตร'}
+                  <ExternalLink className="w-4 h-4 opacity-60" aria-hidden="true" />
+                </a>
+              )}
+            </>
+          }
+          note={!isEnded && !isFav ? 'บันทึกไว้ แล้วเราจะเตือนก่อนวันงาน' : undefined}
+        />
 
-            {/* 4 Secondary Thumbnail Photos (Right 2x2 Grid) */}
-            {galleryImages.length >= 5 && galleryImages.slice(1, 5).map((imgUrl, idx) => {
-              const photoIdx = idx + 1;
-              const isLast = idx === 3;
-              return (
-                <div
-                  key={idx}
-                  onClick={() => {
-                    setActivePhotoIndex(photoIdx);
-                    setIsLightboxOpen(true);
-                  }}
-                  className="hidden md:block relative h-[155px] overflow-hidden cursor-pointer bg-slate-200"
-                >
-                  <img
-                    src={imgUrl}
-                    alt={`${eventData.title} บรรยากาศ ${photoIdx + 1}`}
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-black/10 hover:bg-black/0 transition-colors" />
-
-                  {isLast && (
-                    <div className="absolute inset-0 bg-slate-900/60 hover:bg-slate-900/50 backdrop-blur-2xs flex flex-col items-center justify-center text-white transition-all">
-                      <Camera className="w-6 h-6 mb-1 text-white" />
-                      <span className="font-bold text-xs sm:text-sm">ดูภาพบรรยากาศทั้งหมด</span>
-                      <span className="text-[11px] text-slate-200 font-medium">({galleryImages.length} รูป)</span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-
-            {/* Mobile View All Photos Button */}
-            <button
-              type="button"
-              onClick={() => {
-                setActivePhotoIndex(0);
-                setIsLightboxOpen(true);
-              }}
-              className="md:hidden absolute bottom-3 right-3 bg-slate-900/85 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg border border-white/20 active:scale-95"
-            >
-              <Camera className="w-3.5 h-3.5" />
-              <span>ดูรูปทั้งหมด ({galleryImages.length})</span>
-            </button>
-
-          </div>
-
-          <div className="flex items-center justify-between text-xs text-slate-500 px-1 font-medium">
-            <span>แตะที่รูปเพื่อเปิดดูภาพบรรยากาศขนาดใหญ่ (Fullscreen Lightbox)</span>
-            <span className="hidden sm:inline">คลังภาพนิทรรศการและบูท {galleryImages.length} มุมมอง</span>
-          </div>
-
-        </section>
+        {/* The challenge this counts toward and the moments people shared */}
+        <PillarLinks target={{ type: 'fair', id: eventData.id, title: cleanText(eventData.title) }} momentsNoun="งานนี้" />
 
         {/* =========================================================================
             CORE CONTENT: 2-COLUMN EDITORIAL LAYOUT
@@ -675,30 +657,6 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
           {/* LEFT COLUMN: PRIMARY DETAILS (2 Cols) */}
           <div className="lg:col-span-2 space-y-7">
             
-            {/* 1. Title, Category Tag & Status */}
-            <div className="space-y-3 pb-4 border-b border-slate-100">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-bold px-3 py-1 rounded-full bg-sky-50 text-sky-800 border border-sky-200">
-                  {cleanText(eventData.tag) || 'งานมหกรรม & งานแฟร์'}
-                </span>
-
-                {isEnded ? (
-                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-                    งานสิ้นสุดลงแล้ว
-                  </span>
-                ) : (
-                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>กำลังเปิดจัดแสดง / กำลังจะมาถึง</span>
-                  </span>
-                )}
-              </div>
-
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 tracking-tight leading-tight break-words">
-                {cleanText(eventData.title)}
-              </h1>
-            </div>
-
             {/* Official Partner Card */}
             <div className="p-4 sm:p-5 rounded-3xl bg-[#FAF7F2] border border-[#E8E2D8] flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 shadow-2xs">
               <div className="flex items-center gap-3.5 min-w-0">
@@ -866,6 +824,11 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
                   referrerPolicy="no-referrer-when-downgrade"
                 />
               </div>
+            </div>
+
+            {/* Ratings and tips from people who went (the "จบ" phase of a fair) */}
+            <div className="pt-5 border-t border-slate-100">
+              <VisitReviews targetType="fair" targetId={eventData.id} isLoggedIn={isLoggedIn} />
             </div>
 
             {/* 8. Sub-Activities: กลุ่มนัดเดินดูงาน & หาเพื่อนแวะจิบกาแฟ (Relocated Under Map) */}
@@ -1050,41 +1013,6 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
                 </div>
               )}
 
-              {/* Date & Time Summary */}
-              <div className="space-y-3 text-xs">
-                <div className="flex items-start gap-2.5">
-                  <Calendar className="w-4 h-4 text-[#2B527A] shrink-0 mt-0.5" />
-                  <div>
-                    <span className="text-slate-400 text-[10px] block font-bold">วันที่จัดแสดง</span>
-                    <span className="font-bold text-slate-900">{cleanText(eventData.date)}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-2.5">
-                  <Clock className="w-4 h-4 text-[#2B527A] shrink-0 mt-0.5" />
-                  <div>
-                    <span className="text-slate-400 text-[10px] block font-bold">เวลาเปิด-ปิด</span>
-                    <span className="font-bold text-slate-900">{cleanText(eventData.time)}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-2.5">
-                  <MapPin className="w-4 h-4 text-[#2B527A] shrink-0 mt-0.5" />
-                  <div>
-                    <span className="text-slate-400 text-[10px] block font-bold">สถานที่จัดงาน</span>
-                    <span className="font-bold text-slate-900 leading-snug">{cleanText(eventData.location)}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-2.5">
-                  <Layers className="w-4 h-4 text-[#2B527A] shrink-0 mt-0.5" />
-                  <div>
-                    <span className="text-slate-400 text-[10px] block font-bold">ประเภทงาน</span>
-                    <span className="font-bold text-slate-900">{cleanText(eventData.tag) || 'มหกรรม & งานแฟร์ระดับชาติ'}</span>
-                  </div>
-                </div>
-              </div>
-
               {/* Action Buttons: Pure Retention Hero CTA */}
               <div className="space-y-2 pt-2">
                 <button
@@ -1093,7 +1021,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
                   className={`group w-full py-3.5 px-4 rounded-2xl font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer ${
                     isFav
                       ? 'bg-sky-50 text-[#2B527A] border border-sky-300 shadow-sky-900/10 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200'
-                      : 'bg-slate-900 hover:bg-slate-800 text-white shadow-sm'
+                      : 'bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm'
                   }`}
                 >
                   {isFav ? (

@@ -14,7 +14,7 @@ export async function GET(request: Request) {
 }
 
 /**
- * { action: 'join' | 'leave' | 'forget_cancelled', eventId }
+ * { action: 'join' | 'leave' | 'forget_cancelled', eventId, date? (YYYY-MM-DD, one date of a recurring ตี้) }
  * { action: 'save' | 'unsave', kind: 'spot' | 'event', id }
  */
 export async function POST(request: Request) {
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       if (isRateLimited(`event-join:${member.id}`, 40, 60 * 60 * 1000)) {
         return NextResponse.json({ success: false, message: 'ทำรายการบ่อยเกินไป กรุณารอสักครู่' }, { status: 429 });
       }
-      const result = await joinEvent(member, eventId);
+      const result = await joinEvent(member, eventId, typeof body.date === 'string' ? body.date : undefined);
       const ok = result.status === 'joined' || result.status === 'already_joined';
       const status = ok ? 200 : result.status === 'not_found' ? 404 : result.status === 'not_allowed' ? 403 : 409;
       return NextResponse.json({ success: ok, ...result }, { status });

@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import { removeNotificationsOf } from '@/lib/social/notifications';
+import { removeMeetAgainOf } from '@/lib/social/meetAgain';
+import { removeWaitlistOf } from '@/lib/social/waitlist';
+import { removeQuestionsOf } from '@/lib/social/eventQuestions';
 import { removeStoriesOf, storyImagesInUse } from '@/lib/social/stories';
 import { deleteMemberUploads } from '@/lib/media/cleanup';
 import { removeReviewsBy } from '@/lib/social/reviews';
@@ -53,6 +56,9 @@ export async function DELETE(request: Request) {
   await removeChatMessagesBy(member.id);
   await db.removeParticipantEverywhere(member.id);
   await removeNotificationsOf(member.id);
+  await removeMeetAgainOf(member.id);
+  await removeWaitlistOf(member.id);
+  await removeQuestionsOf(member.id);
   await memberRepository.remove(member.id);
   // The photos themselves go too, unless something that remains still shows them
   const { items: remaining } = await momentRepository.query({ statuses: ['published', 'hidden'], sort: 'newest', page: 1, limit: 10_000 });

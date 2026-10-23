@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import { removeNotificationsOf } from '@/lib/social/notifications';
+import { removeMeetAgainOf } from '@/lib/social/meetAgain';
+import { removeWaitlistOf } from '@/lib/social/waitlist';
+import { removeQuestionsOf } from '@/lib/social/eventQuestions';
 import { removeStoriesOf } from '@/lib/social/stories';
 import { removeReviewsBy } from '@/lib/social/reviews';
 import { removeVisitsBy } from '@/lib/social/visits';
@@ -216,6 +219,9 @@ export async function POST(request: Request) {
     await removeChatMessagesBy(member.id);
     await db.removeParticipantEverywhere(member.id);
     await removeNotificationsOf(member.id);
+    await removeMeetAgainOf(member.id);
+  await removeWaitlistOf(member.id);
+  await removeQuestionsOf(member.id);
     await memberRepository.remove(member.id);
     // The audit entry keeps the id and the reason, not the member's name or email
     recordAudit(actor, 'member.delete', `ลบบัญชีสมาชิกถาวร (โมเมนต์ ${removedMoments} คอมเมนต์ ${removedComments}) · เหตุผล: ${reason}`, { type: 'member', id: member.id });

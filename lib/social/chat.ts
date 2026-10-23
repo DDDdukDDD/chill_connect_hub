@@ -5,12 +5,14 @@ import { memberRepository } from '../members';
 import { MemberAuthError } from '../members/accounts';
 import type { Member } from '../members/types';
 import { fairGroupById, isFairGroupMember } from './fairGroups';
+import { isMutual, pairMembersOf } from './meetAgain';
 import { createJsonStore } from './jsonStore';
 import { guardMemberText } from './textRules';
 
 /**
- * Group chat of an event (room id = event id) or of a fair meet-up group (room id = grp_…).
- * Only the people who joined, and the event's host, can read or write.
+ * Group chat of an event (room id = event id) or of a fair meet-up group (room id = grp_…), and the two-person
+ * room of a mutual "อยากเจออีก" (room id = pair~a~b). Only the people who joined, the event's host, or the pair
+ * can read or write.
  */
 interface ChatMessage {
   id: string;
@@ -26,6 +28,15 @@ const KEEP_PER_ROOM = 500;
 const PAGE = 100;
 
 async function roomOf(member: Member, roomId: string): Promise<{ title: string; members: number }> {
+  // Two people who picked each other after a ตี้ ("อยากเจออีก", lib/social/meetAgain.ts)
+  const pair = pairMembersOf(roomId);
+  if (pair) {
+    const otherId = pair[0] === member.id ? pair[1] : pair[1] === member.id ? pair[0] : null;
+    if (!otherId || !isMutual(member.id, otherId)) throw new MemberAuthError('แชตนี้เปิดเมื่อเลือกอยากเจอกันอีกทั้งสองฝ่าย', 403);
+    const other = await memberRepository.findById(otherId);
+    if (!other || other.status !== 'active' || other.blockedIds?.includes(member.id) || member.blockedIds?.includes(otherId)) throw new MemberAuthError('ห้องแชตนี้ปิดแล้ว', 403);
+    return { title: tidyDisplayName(other.displayName).trim() || other.displayName, members: 2 };
+  }
   if (roomId.startsWith('grp_')) {
     const group = fairGroupById(roomId);
     if (!group || !isFairGroupMember(roomId, member.id)) throw new MemberAuthError('แชตนี้สำหรับสมาชิกของกลุ่มเท่านั้น', 403);

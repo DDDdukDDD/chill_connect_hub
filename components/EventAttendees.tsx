@@ -4,7 +4,10 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { BadgeCheck } from 'lucide-react';
 
-type Attendee = { id: string; name: string; avatar: string; verified: boolean; isHost: boolean; isMe: boolean };
+type Attendee = { id: string; name: string; avatar: string; verified: boolean; isHost: boolean; isMe: boolean; attendance?: { attended: number; total: number } };
+
+/** "มาตามนัด 9/10" from host check-ins on ended ตี้ (lib/social/attendance.ts); a first-timer has none yet */
+const attendanceLabel = (a: Attendee) => (a.attendance ? (a.attendance.total > 0 ? `มาตามนัด ${a.attendance.attended}/${a.attendance.total}` : 'ตี้แรก') : null);
 
 type Tile =
   | { kind: 'person'; key: string; name: string; avatar: string; href: string; label: string; tone: 'host' | 'me' | 'plain'; verified: boolean }
@@ -71,7 +74,7 @@ export function EventAttendees({ src, title = 'ใครจะไปบ้าง
       name: a.isMe ? 'คุณ' : a.name,
       avatar: a.avatar,
       href: `/profile?id=${encodeURIComponent(a.id)}`,
-      label: a.isHost ? 'ผู้จัด' : a.isMe ? 'คุณเอง' : a.verified ? 'ยืนยันแล้ว' : 'สมาชิก',
+      label: a.isHost ? 'ผู้จัด' : a.isMe ? 'คุณเอง' : attendanceLabel(a) ?? (a.verified ? 'ยืนยันแล้ว' : 'สมาชิก'),
       tone: a.isHost ? 'host' : a.isMe ? 'me' : 'plain',
       verified: a.verified,
     });

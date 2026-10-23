@@ -1,14 +1,9 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { Plus, MapPin, Heart, MessageCircle, ArrowRight } from 'lucide-react';
-import type { FeedItem } from '@/lib/moments/service';
+import { MapPin, Heart, MessageCircle, ArrowRight } from 'lucide-react';
 import { LANDING_MOMENTS_SAMPLE, type WallMoment } from '@/data/landingMomentsSample';
-
-const WALL_LIMIT = 8;
-/** Fewer real moments with photos than this, and the wall shows its fixed example instead (owner 2026-10-23) */
-const MIN_REAL_MOMENTS = 5;
 
 // "คุณกี้ (Kee_Explorer)" reads as "คุณกี้"
 const shortName = (name: string) => name.split(' (')[0];
@@ -28,59 +23,11 @@ const targetHref = (m: WallMoment) => {
  * moment told openly: photos, their words, a friend's reply, and a way to go there too. No card frames.
  */
 export function FriendsMomentsWall() {
-  const [moments, setMoments] = useState<WallMoment[]>([]);
-  // The fixed example has no pages of its own: its links go to /moments
-  const [isSample, setIsSample] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
+  // Always the fixed example set (owner 2026-10-23): the landing should not show whatever was posted last,
+  // test posts included. Being static, it is also in the server HTML. The example has no pages of its own: links go to /moments
+  const moments: WallMoment[] = LANDING_MOMENTS_SAMPLE;
+  const isSample = true;
   const [activeId, setActiveId] = useState<string | null>(null);
-
-  useEffect(() => {
-    let isActive = true;
-    fetch(`/api/moments?tab=all&limit=${WALL_LIMIT}`)
-      .then((response) => response.json())
-      .then((result) => {
-        if (!isActive || !result?.success || !Array.isArray(result.moments)) return;
-        const withPhotos = (result.moments as FeedItem[]).filter((m) => m.images?.length > 0);
-        const enough = withPhotos.length >= MIN_REAL_MOMENTS;
-        setIsSample(!enough);
-        setMoments(enough ? withPhotos : LANDING_MOMENTS_SAMPLE);
-      })
-      .catch((error) => {
-        console.warn('Could not load moments:', error);
-        if (isActive) {
-          setIsSample(true);
-          setMoments(LANDING_MOMENTS_SAMPLE);
-        }
-      })
-      .finally(() => {
-        if (isActive) setIsLoaded(true);
-      });
-    return () => {
-      isActive = false;
-    };
-  }, []);
-
-  if (!isLoaded) {
-    return (
-      <div className="space-y-6" aria-hidden="true">
-        <div className="flex gap-4 overflow-hidden">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-slate-100 shrink-0" />
-          ))}
-        </div>
-        <div className="h-72 sm:h-96 rounded-3xl bg-slate-100" />
-      </div>
-    );
-  }
-
-  if (moments.length === 0) {
-    return (
-      <p className="bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200 text-sm font-medium text-slate-600">
-        ยังไม่มีโมเมนต์ ไปที่ไหนมาแล้ว{' '}
-        <Link href="/?share=new" className="font-bold text-[#2563EB] hover:underline">แชร์เป็นคนแรก</Link>
-      </p>
-    );
-  }
 
   const active = moments.find((m) => m.id === activeId) ?? moments[0];
   const reply = active.comments?.find((c) => !c.isMine);
@@ -91,14 +38,8 @@ export function FriendsMomentsWall() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      {/* Friends: tap one to read their story */}
+      {/* Friends: tap one to read their story (no share button: visitors have nothing to share yet, owner 2026-10-23) */}
       <div className="flex gap-3 sm:gap-5 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 pb-1" role="tablist" aria-label="เพื่อนที่แชร์โมเมนต์">
-        <Link href="/?share=new" className="group flex flex-col items-center gap-1.5 w-16 sm:w-20 shrink-0">
-          <span className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-dashed border-slate-300 group-hover:border-[#2563EB] flex items-center justify-center text-slate-500 group-hover:text-[#2563EB] transition-colors">
-            <Plus className="w-6 h-6" aria-hidden="true" />
-          </span>
-          <span className="text-[11px] sm:text-xs font-bold text-slate-700 whitespace-nowrap">แชร์ของคุณ</span>
-        </Link>
         {moments.map((m) => {
           const selected = m.id === active.id;
           return (

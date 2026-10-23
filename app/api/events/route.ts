@@ -101,7 +101,8 @@ export async function GET(request: Request) {
 
     // Default backward-compatible fallback
     const events = await db.listAllEvents();
-    const approved = withoutBlocked(events.filter((ev) => ev.approvalStatus === 'approved'));
+    // One date of a recurring ตี้ is reached through its series (lib/social/recurring.ts)
+    const approved = withoutBlocked(events.filter((ev) => ev.approvalStatus === 'approved' && !ev.seriesId));
     return NextResponse.json(
       {
         success: true,

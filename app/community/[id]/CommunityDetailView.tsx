@@ -14,11 +14,19 @@ import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import { useAuth } from '@/lib/useAuth';
 import { VisitPanel } from '@/components/VisitPanel';
 import { EventAttendees } from '@/components/EventAttendees';
+import { JoinReadinessNotice, joinBlocker } from '@/components/JoinReadinessNotice';
+import { DetailHero, PillarChip, StatusChip, heroButton } from '@/components/detail/DetailHero';
+import { PillarLinks } from '@/components/detail/PillarLinks';
+import { AfterTeePanel } from '@/components/detail/AfterTeePanel';
+import { SeriesDates } from '@/components/detail/SeriesDates';
+import { DayOfPanel, isToday } from '@/components/detail/DayOfPanel';
+import { HostCheckIn } from '@/components/detail/HostCheckIn';
+import { WaitlistAction } from '@/components/detail/WaitlistAction';
+import { EventQuestions, type QuestionItem } from '@/components/detail/EventQuestions';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { activityActions, useMyActivity } from '@/lib/useMyActivity';
 import {
   getEventById,
-  getRelatedEvents,
   EventItem,
   MOCK_EVENTS
 } from '@/data/mockData';
@@ -76,7 +84,14 @@ const CATEGORY_STYLES: Record<string, { bg: string; text: string; border: string
 };
 
 /** The page itself: `initialEvent` comes from the server page, so the content is in the HTML search engines read. */
-export default function CommunityDetailPage({ initialEvent = null }: { initialEvent?: EventItem | null }) {
+export default function CommunityDetailPage({
+  initialEvent = null,
+  initialQuestions = null,
+}: {
+  initialEvent?: EventItem | null;
+  /** "ถามผู้จัดก่อนไป" read on the server, so questions and answers are in the HTML */
+  initialQuestions?: { canAnswer: boolean; hostName?: string; questions: QuestionItem[] } | null;
+}) {
   const params = useParams();
   const router = useRouter();
   const rawId = params?.id as string;
@@ -92,6 +107,11 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  // Sign-up from "ลงทะเบียนเข้าร่วม" comes back here with ?join=1 (through onboarding and the email link),
+  // so the join dialog opens again instead of the member having to find the button
+  const [pairChat, setPairChat] = useState<{ roomId: string; title: string } | null>(null);
+  const [membershipReturnTo, setMembershipReturnTo] = useState<string | null>(null);
+  const joinReturnPath = `/community/${encodeURIComponent(decodedId)}?join=1`;
 
   // Favorites & Joined Events State
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -162,6 +182,22 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
       .finally(() => setIsLoading(false));
   }, [decodedId, initialEvent]);
 
+  const [liveMeetups, setLiveMeetups] = useState<EventItem[]>([]);
+  useEffect(() => {
+    let active = true;
+    fetch('/api/events?type=community&status=recruiting&limit=24')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (active && Array.isArray(data?.events)) setLiveMeetups(data.events);
+      })
+      .catch(() => {
+        /* the row stays hidden */
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   // Gallery Photos
   const galleryImages: string[] = useMemo(() => {
     if (!eventData) return [];
@@ -219,6 +255,11 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
   };
 
   const handleJoinEvent = () => {
+    // A recurring ตี้ is joined one date at a time: the date list does it
+    if (eventData && eventData.scheduleType === 'recurring' && eventData.recurrence?.daysOfWeek?.length && !eventData.seriesId) {
+      document.getElementById('dates')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
     if (!isLoggedIn) {
       setMembershipActionTitle('เพื่อลงทะเบียนเข้าร่วมตี้');
       setPendingAction('join');
@@ -392,7 +433,24 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
     : eventData?.whatToBring ?? [];
 
   // Related Community Activities (never ones that are over)
-  const relatedActivities = eventData ? getRelatedEvents(eventData, 40).filter((event) => !isEventEnded(event)).slice(0, 5) : [];
+  // Back from sign-up (?join=1): open the join dialog once, then drop the flag so a reload does not reopen it
+  useEffect(() => {
+    if (!isAuthReady || !isLoggedIn || !eventData || typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('join') !== '1') return;
+    url.searchParams.delete('join');
+    window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+    if (!joinedEventIds.includes(eventData.id) && !isEventEnded(eventData)) setIsConfirmJoinModalOpen(true);
+  }, [isAuthReady, isLoggedIn, eventData, joinedEventIds]);
+
+  // Other ตี้ open now, same สาย first (live data; the old sample list mixed in ticketed fairs)
+  const sameSai = (e: EventItem) => (eventData?.lifestyleCategory && e.lifestyleCategory === eventData.lifestyleCategory ? 0 : e.category === eventData?.category ? 1 : 2);
+  const relatedActivities = eventData
+    ? liveMeetups
+        .filter((e) => e.id !== eventData.id && e.eventType !== 'public_venue' && !isEventEnded(e))
+        .sort((x, y) => sameSai(x) - sameSai(y))
+        .slice(0, 5)
+    : [];
 
   if (isLoading) {
     return (
@@ -451,9 +509,30 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
   const isFav = favorites.includes(eventData.id);
   const isHost = Boolean(eventData.isHost || (hostCheckMember && (eventData as { createdByMemberId?: string }).createdByMemberId === hostCheckMember.id));
   const isJoined = isHost || joinedEventIds.includes(eventData.id);
-  const isEnded = isEventEnded(eventData);
+  // A recurring ตี้ (the series, not one of its dates) goes on: seats and dates come from its dates
+  const isSeriesEvent = eventData.scheduleType === 'recurring' && Boolean(eventData.recurrence?.daysOfWeek?.length) && !eventData.seriesId;
+  const isEnded = !isSeriesEvent && isEventEnded(eventData);
   const fillRatio = eventData.participantsCount / eventData.maxParticipants;
   const isAlmostFull = fillRatio >= 0.8;
+  const seatsLeft = Math.max(eventData.maxParticipants - eventData.participantsCount, 0);
+  const isFull = !isSeriesEvent && seatsLeft === 0 && !isJoined;
+  const isOnline = eventData.locationType === 'online' || eventData.province === 'ออนไลน์';
+  // A recurring ตี้ is a series: members pick a date (each date is its own event, lib/social/recurring.ts)
+  const isSeriesPage = isSeriesEvent;
+  const memberHost = Boolean((eventData as { createdByMemberId?: string }).createdByMemberId);
+  const askToJoin = (title: string, returnTo: string | null) => {
+    setMembershipActionTitle(title);
+    setMembershipReturnTo(returnTo);
+    setIsRequireMembershipOpen(true);
+  };
+  const cancellationText =
+    eventData.cancellationPolicy === 'free_anytime'
+      ? 'ยกเลิกได้ตลอด'
+      : eventData.cancellationPolicy === 'free_48h'
+      ? 'ยกเลิกได้ก่อนเริ่ม 48 ชม.'
+      : eventData.cancellationPolicy === 'chat_notice'
+      ? 'ไปไม่ได้ แจ้งในแชตกลุ่ม'
+      : 'ยกเลิกได้ก่อนเริ่ม 24 ชม.';
   const catStyle = CATEGORY_STYLES[eventData.category] || CATEGORY_STYLES.heal;
   const profileHref = `/profile?id=${encodeURIComponent(eventData.hostId || 'host-mind')}&name=${encodeURIComponent(eventData.hostName)}`;
 
@@ -554,80 +633,133 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
 
 
         {/* =========================================================================
-            EDITORIAL 5-PHOTO MOSAIC GALLERY (Community Vibe)
+            HEADER: photo left, what is needed to decide and the one main action right (shared with
+            fairs, places and challenges: components/detail/DetailHero.tsx)
            ========================================================================= */}
-        <section className="space-y-2">
-          
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-2.5 rounded-3xl overflow-hidden bg-slate-100 h-56 sm:h-72 md:h-[320px] max-h-[320px] relative group">
-            
-            {/* Main Big Photo (Left - 2 Cols x 2 Rows) */}
-            <div
-              onClick={() => {
-                setActivePhotoIndex(0);
-                setIsLightboxOpen(true);
-              }}
-              className={`${galleryImages.length >= 5 ? 'md:col-span-2' : 'md:col-span-4'} md:row-span-2 relative h-56 sm:h-72 md:h-[320px] overflow-hidden cursor-pointer bg-slate-200`}
-            >
-              <img
-                src={galleryImages[0] || eventData.image}
-                alt={`${eventData.title} ภาพบรรยากาศตี้`}
-                className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-40 hover:opacity-20 transition-opacity" />
-            </div>
+        <DetailHero
+          pillar="community"
+          image={galleryImages[0] || eventData.image}
+          imageAlt={`${cleanText(eventData.title)} ภาพบรรยากาศตี้`}
+          photoCount={galleryImages.length}
+          onOpenPhotos={() => {
+            setActivePhotoIndex(0);
+            setIsLightboxOpen(true);
+          }}
+          chips={
+            <>
+              <PillarChip pillar="community">{catStyle.label}</PillarChip>
+              {isEnded ? (
+                <StatusChip tone="muted">ตี้นี้จบแล้ว</StatusChip>
+              ) : isFull ? (
+                <StatusChip tone="muted">เต็มแล้ว</StatusChip>
+              ) : isAlmostFull ? (
+                <StatusChip tone="warn">ใกล้เต็ม เหลือ {seatsLeft} ที่</StatusChip>
+              ) : (
+                <StatusChip tone="open">เปิดรับสมัคร</StatusChip>
+              )}
+              {eventData.scheduleType === 'recurring' && <StatusChip tone="muted">จัดประจำ</StatusChip>}
+              {isOnline && <StatusChip tone="muted">ออนไลน์</StatusChip>}
+              {!isOnline && eventData.isSoloFriendly !== false && <StatusChip tone="muted">มาคนเดียวได้</StatusChip>}
+              {eventData.isBeginnerFriendly && <StatusChip tone="muted">มือใหม่มาได้</StatusChip>}
+              {!isOnline && eventData.isPetFriendly && <StatusChip tone="muted">พาสัตว์เลี้ยงมาได้</StatusChip>}
+            </>
+          }
+          title={cleanText(eventData.title)}
+          facts={[
+            {
+              icon: eventData.scheduleType === 'recurring' ? Repeat : Calendar,
+              title: eventData.scheduleType === 'recurring' && eventData.recurrence?.customSummary ? eventData.recurrence.customSummary : cleanText(eventData.date),
+              sub: cleanText(eventData.time),
+            },
+            {
+              icon: isOnline ? Globe : MapPin,
+              title: isOnline ? `ออนไลน์ผ่าน ${eventData.onlinePlatform ? eventData.onlinePlatform.replace('_', ' ') : 'วิดีโอคอล'}` : cleanText(eventData.location),
+              sub: isOnline
+                ? 'ลิงก์เข้าห้องอยู่ในบัตรของคุณหลังลงทะเบียน'
+                : eventData.meetingPoint && cleanText(eventData.meetingPoint) !== cleanText(eventData.location)
+                ? `จุดนัด: ${cleanText(eventData.meetingPoint)}`
+                : undefined,
+            },
+            {
+              icon: Users,
+              title: isSeriesEvent ? `รับวันละ ${eventData.maxParticipants} คน · เลือกวันด้านล่าง` : `${eventData.participantsCount} จาก ${eventData.maxParticipants} คน${!isEnded && !isFull ? ` · เหลือ ${seatsLeft} ที่` : ''}`,
+              sub: eventData.minParticipants
+                ? eventData.participantsCount >= eventData.minParticipants
+                  ? `ครบขั้นต่ำ ${eventData.minParticipants} คนแล้ว ตี้นี้ไปแน่นอน`
+                  : `ออกเดินทางเมื่อครบ ${eventData.minParticipants} คน ถ้ายังไม่ครบ อย่าเพิ่งไปเจอกันสองต่อสอง`
+                : undefined,
+            },
+            { icon: Ticket, title: parsedPrice.displayPrice, sub: cancellationText },
+          ]}
+          actions={
+            <>
+              {isHost ? (
+                <button type="button" onClick={() => setIsChatOpen(true)} className={heroButton.primary}>
+                  <MessageCircle className="w-5 h-5" aria-hidden="true" />
+                  แชตกับคนในตี้
+                </button>
+              ) : isJoined ? (
+                <>
+                  <button type="button" onClick={() => setIsETicketOpen(true)} className={heroButton.done}>
+                    <CheckCircle2 className="w-5 h-5" aria-hidden="true" />
+                    ลงทะเบียนแล้ว · ดูบัตร
+                  </button>
+                  <button type="button" onClick={() => setIsChatOpen(true)} className={heroButton.secondary}>
+                    <MessageCircle className="w-5 h-5" aria-hidden="true" />
+                    แชตกลุ่ม
+                  </button>
+                </>
+              ) : isEnded ? (
+                <button type="button" disabled className={heroButton.primary}>ตี้นี้จบแล้ว</button>
+              ) : isSeriesPage ? (
+                <a href="#dates" className={heroButton.primary}>เลือกวันที่จะไป</a>
+              ) : isFull ? (
+                <WaitlistAction
+                  eventId={eventData.id}
+                  isLoggedIn={isLoggedIn}
+                  onRequireLogin={() => askToJoin('เพื่อต่อคิวรายชื่อสำรอง', `/community/${encodeURIComponent(eventData.id)}`)}
+                  onJoin={handleJoinEvent}
+                />
+              ) : (
+                <button type="button" onClick={handleJoinEvent} className={heroButton.primary}>
+                  ลงทะเบียนเข้าร่วม
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => toggleFavorite(eventData.id)}
+                aria-pressed={isFav}
+                aria-label={isFav ? 'บันทึกตี้นี้แล้ว' : 'บันทึกตี้นี้'}
+                className={heroButton.icon}
+              >
+                <Heart className={`w-5 h-5 ${isFav ? 'fill-[#F26430] text-[#F26430]' : ''}`} aria-hidden="true" />
+              </button>
+            </>
+          }
+        />
 
-            {/* 4 Secondary Thumbnail Photos (Right 2x2 Grid) */}
-            {galleryImages.length >= 5 && galleryImages.slice(1, 5).map((imgUrl, idx) => {
-              const photoIdx = idx + 1;
-              const isLast = idx === 3;
-              return (
-                <div
-                  key={idx}
-                  onClick={() => {
-                    setActivePhotoIndex(photoIdx);
-                    setIsLightboxOpen(true);
-                  }}
-                  className="hidden md:block relative h-[155px] overflow-hidden cursor-pointer bg-slate-200"
-                >
-                  <img
-                    src={imgUrl}
-                    alt={`${eventData.title} บรรยากาศ ${photoIdx + 1}`}
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-black/10 hover:bg-black/0 transition-colors" />
+        {/* The challenge this counts toward, the place it meets at, and the moments people shared */}
+        <PillarLinks
+          target={{ type: 'community', id: eventData.id, title: cleanText(eventData.title) }}
+          momentsNoun="ตี้นี้"
+          links={[
+            ...(eventData.seriesId ? [{ pillar: 'community' as const, label: 'ตี้ประจำ', text: 'ดูวันอื่นของตี้นี้', href: `/community/${encodeURIComponent(eventData.seriesId)}` }] : []),
+            ...((eventData as { spotId?: string }).spotId
+              ? [{ pillar: 'spot' as const, label: 'ที่นัดเจอ', text: (eventData as { spotTitle?: string }).spotTitle || cleanText(eventData.location), href: `/spots/${encodeURIComponent((eventData as { spotId?: string }).spotId as string)}` }]
+              : []),
+          ]}
+        />
 
-                  {isLast && (
-                    <div className="absolute inset-0 bg-slate-900/60 hover:bg-slate-900/50 backdrop-blur-2xs flex flex-col items-center justify-center text-white transition-all">
-                      <Camera className="w-6 h-6 mb-1 text-white" />
-                      <span className="font-bold text-xs sm:text-sm">ดูรูปทั้งหมด</span>
-                      <span className="text-[11px] text-slate-200 font-medium">({galleryImages.length} รูป)</span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+        {isSeriesPage && <SeriesDates series={eventData} onRequireLogin={(returnTo) => askToJoin('เพื่อลงทะเบียนเข้าร่วมตี้', returnTo)} />}
 
-            {/* Mobile View All Button */}
-            <button
-              type="button"
-              onClick={() => {
-                setActivePhotoIndex(0);
-                setIsLightboxOpen(true);
-              }}
-              className="md:hidden absolute bottom-3 right-3 bg-slate-900/85 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg border border-white/20 active:scale-95"
-            >
-              <Camera className="w-3.5 h-3.5" />
-              <span>ดูรูปทั้งหมด ({galleryImages.length})</span>
-            </button>
+        {/* The day itself: ticket, way there, chat, who has arrived (participant) and the check-in (host) */}
+        {isJoined && !isHost && isToday(eventData) && (
+          <DayOfPanel event={eventData} onOpenTicket={() => setIsETicketOpen(true)} onOpenChat={() => setIsChatOpen(true)} onCancel={() => setIsCancelModalOpen(true)} />
+        )}
+        {isHost && memberHost && (isToday(eventData) || isEnded) && <HostCheckIn eventId={eventData.id} />}
 
-          </div>
-
-          <div className="hidden lg:flex items-center justify-between text-xs text-slate-500 px-1 font-medium">
-            <span>💡 แตะที่รูปเพื่อเปิดดูภาพบรรยากาศขนาดใหญ่ (Fullscreen Lightbox)</span>
-            <span className="hidden sm:inline">คลังภาพบรรยากาศ {galleryImages.length} มุมมอง</span>
-          </div>
-
-        </section>
+        {/* After the ตี้: review, "อยากเจออีก" and a moment (shown once the host confirmed the member came, or it ended) */}
+        <AfterTeePanel event={eventData} isHost={isHost} onOpenPairChat={(roomId, title) => setPairChat({ roomId, title })} />
 
         {/* =========================================================================
             CORE CONTENT: 2-COLUMN EDITORIAL LAYOUT
@@ -637,155 +769,6 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
           {/* LEFT COLUMN: PRIMARY DETAILS (2 Cols) */}
           <div className="lg:col-span-2 space-y-7">
             
-            {/* 1. Header Title, Badges & Ratings */}
-            <div className="space-y-3 pb-4 border-b border-slate-100">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className={`text-xs font-bold px-3 py-1 rounded-full border ${catStyle.bg} ${catStyle.text} ${catStyle.border}`}>
-                  {catStyle.label}
-                </span>
-
-                {isEnded ? (
-                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-                    ตี้นี้จบแล้ว
-                  </span>
-                ) : eventData.participantsCount >= eventData.maxParticipants ? (
-                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-rose-500" />
-                    <span>ที่นั่งเต็มแล้ว</span>
-                  </span>
-                ) : isAlmostFull ? (
-                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                    <span>ที่นั่งใกล้เต็ม (เหลือ {Math.max(eventData.maxParticipants - eventData.participantsCount, 0)} ที่)</span>
-                  </span>
-                ) : (
-                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>เปิดรับสมัคร</span>
-                  </span>
-                )}
-
-                {/* Frosted Trust Micro-Pills (AGENTS.md Rule 1.2) */}
-                {!(eventData.province === 'ออนไลน์' || eventData.locationType === 'online') && eventData.isSoloFriendly !== false && (
-                  <span className="text-xs font-medium text-slate-600 bg-slate-100/90 px-2.5 py-0.5 rounded-full border border-slate-200/60">
-                    มาคนเดียวได้
-                  </span>
-                )}
-                {!(eventData.province === 'ออนไลน์' || eventData.locationType === 'online') && eventData.isPetFriendly && (
-                  <span className="text-xs font-medium text-slate-600 bg-slate-100/90 px-2.5 py-0.5 rounded-full border border-slate-200/60">
-                    สัตว์เลี้ยงร่วมได้
-                  </span>
-                )}
-                {eventData.isBeginnerFriendly && (
-                  <span className="text-xs font-medium text-slate-600 bg-slate-100/90 px-2.5 py-0.5 rounded-full border border-slate-200/60">
-                    เหมาะกับมือใหม่
-                  </span>
-                )}
-                {(eventData.province === 'ออนไลน์' || eventData.locationType === 'online') && (
-                  <span className="text-xs font-medium text-sky-700 bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200/60">
-                    รวมตัวออนไลน์
-                  </span>
-                )}
-              </div>
-
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 tracking-tight leading-tight break-words">
-                {cleanText(eventData.title)}
-              </h1>
-            </div>
-
-            {/* When, where and how much, right under the title on phones (the sidebar card shows them on desktop) */}
-            <div className="lg:hidden rounded-2xl border border-slate-200 divide-y divide-slate-100 px-4">
-              <div className="flex items-start gap-3 py-3">
-                {eventData.scheduleType === 'recurring' ? (
-                  <Repeat className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                ) : (
-                  <Calendar className="w-4 h-4 text-[#F26430] shrink-0 mt-0.5" />
-                )}
-                <div className="min-w-0">
-                  <p className="text-xs sm:text-sm font-bold text-slate-900">
-                    {eventData.scheduleType === 'recurring' && eventData.recurrence?.customSummary
-                      ? eventData.recurrence.customSummary
-                      : cleanText(eventData.date)}
-                  </p>
-                  <p className="text-[11px] sm:text-xs font-semibold text-slate-500">{cleanText(eventData.time)}</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 py-3">
-                {eventData.locationType === 'online' || eventData.province === 'ออนไลน์' ? (
-                  <Globe className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
-                ) : (
-                  <MapPin className="w-4 h-4 text-[#F26430] shrink-0 mt-0.5" />
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs sm:text-sm font-bold text-slate-900 leading-snug">
-                    {eventData.locationType === 'online' || eventData.province === 'ออนไลน์'
-                      ? `ออนไลน์ (${eventData.onlinePlatform?.toUpperCase() || 'Virtual'})`
-                      : cleanText(eventData.location)}
-                  </p>
-                  {eventData.meetingPoint && cleanText(eventData.meetingPoint) !== cleanText(eventData.location) && (
-                    <p className="text-[11px] sm:text-xs font-semibold text-slate-500">จุดนัดพบ: {cleanText(eventData.meetingPoint)}</p>
-                  )}
-                </div>
-                {eventData.locationType !== 'online' && eventData.province !== 'ออนไลน์' && (
-                  <a
-                    href={`https://maps.google.com/?q=${encodeURIComponent(eventData.location)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline shrink-0"
-                  >
-                    แผนที่
-                  </a>
-                )}
-              </div>
-              <div className="flex items-start gap-3 py-3">
-                <Ticket className="w-4 h-4 text-[#F26430] shrink-0 mt-0.5" />
-                <p className="text-xs sm:text-sm font-bold text-slate-900 min-w-0">{parsedPrice.displayPrice}</p>
-              </div>
-            </div>
-
-            {/* Linked Spot Pill / Card */}
-            {((eventData as any).spotId || (eventData as any).spotTitle) && (
-              <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
-                    <MapPin className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider block">
-                      พิกัดจุดเที่ยวที่นัดหมาย
-                    </span>
-                    <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
-                      {(eventData as any).spotTitle || cleanText(eventData.location)}
-                    </p>
-                  </div>
-                </div>
-                {(eventData as any).spotId && (
-                  <Link
-                    href={`/spots/${encodeURIComponent((eventData as any).spotId)}`}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-white hover:bg-slate-900 text-slate-800 hover:text-white border border-slate-200 rounded-xl text-xs font-bold transition-all shadow-2xs shrink-0"
-                  >
-                    <span>ดูข้อมูลสถานที่</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                )}
-              </div>
-            )}
-
-            {/* Spot Buddy trip: confirmed only once enough people are in */}
-            {eventData.minParticipants && (
-              <p
-                className={`p-3 rounded-2xl text-xs sm:text-sm font-semibold border ${
-                  eventData.participantsCount >= eventData.minParticipants
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                    : 'bg-amber-50 border-amber-200 text-amber-900'
-                }`}
-              >
-                {eventData.participantsCount >= eventData.minParticipants
-                  ? `ทริปนี้ยืนยันแล้ว มีคนเข้าร่วมครบ ${eventData.minParticipants} คน`
-                  : `ทริปนี้จะยืนยันเมื่อมีคนครบ ${eventData.minParticipants} คน ตอนนี้มี ${eventData.participantsCount} คน ถ้ายังไม่ครบ อย่าเพิ่งไปเจอกันสองต่อสอง`}
-              </p>
-            )}
-
             {/* Verified Host Card (Community Core) */}
             <div className="p-4 sm:p-5 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 shadow-2xs">
               <Link
@@ -854,6 +837,16 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
                 รายละเอียดตี้ & วัตถุประสงค์
               </h2>
               {renderDescriptionContent(eventData.description)}
+            </div>
+
+            {/* Questions to the host before going (public) */}
+            <div className="pt-5 border-t border-slate-100">
+              <EventQuestions
+                eventId={eventData.id}
+                initial={initialQuestions}
+                isLoggedIn={isLoggedIn}
+                onRequireLogin={() => askToJoin('เพื่อถามคนจัด', `/community/${encodeURIComponent(eventData.id)}#questions`)}
+              />
             </div>
 
             {/* 6. Highlights */}
@@ -1016,6 +1009,8 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
           {/* RIGHT COLUMN: STICKY REGISTRATION & E-TICKET SIDEBAR (1 Col) */}
           <div className="lg:col-span-1 space-y-5 lg:sticky lg:top-24">
             
+            {/* The booking card is per date for a recurring ตี้: the date list above takes its place */}
+            {!isSeriesEvent && (
             <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm space-y-5">
               
               {/* Joined Status Badge */}
@@ -1092,68 +1087,6 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
                     </span>
                   )}
                 </div>
-              </div>
-
-              {/* Date & Time Summary */}
-              <div className="hidden lg:block space-y-2.5 pt-1 text-xs">
-                <div className="flex items-start gap-2.5">
-                  {eventData.scheduleType === 'recurring' ? (
-                    <Repeat className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  ) : (
-                    <Calendar className="w-4 h-4 text-[#F26430] shrink-0 mt-0.5" />
-                  )}
-                  <div>
-                    <span className="text-slate-400 text-[10px] block font-bold">
-                      {eventData.scheduleType === 'recurring' ? 'กำหนดการประจำ' : 'วันที่จัดตี้'}
-                    </span>
-                    <span className="font-bold text-slate-900">
-                      {eventData.scheduleType === 'recurring' && eventData.recurrence?.customSummary
-                        ? eventData.recurrence.customSummary
-                        : cleanText(eventData.date)}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-2.5">
-                  <Clock className="w-4 h-4 text-[#F26430] shrink-0 mt-0.5" />
-                  <div>
-                    <span className="text-slate-400 text-[10px] block font-bold">เวลา</span>
-                    <span className="font-bold text-slate-900">{cleanText(eventData.time)}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-2.5">
-                  {eventData.locationType === 'online' || eventData.province === 'ออนไลน์' ? (
-                    <Globe className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
-                  ) : (
-                    <MapPin className="w-4 h-4 text-[#F26430] shrink-0 mt-0.5" />
-                  )}
-                  <div>
-                    <span className="text-slate-400 text-[10px] block font-bold">
-                      {eventData.locationType === 'online' || eventData.province === 'ออนไลน์' ? 'ช่องทาง' : 'สถานที่จัด & จุดนัดพบ'}
-                    </span>
-                    <span className="font-bold text-slate-900 leading-snug">
-                      {eventData.locationType === 'online' || eventData.province === 'ออนไลน์'
-                        ? `ออนไลน์ (${eventData.onlinePlatform?.toUpperCase() || 'Virtual'})`
-                        : cleanText(eventData.location)}
-                    </span>
-                    {eventData.meetingPoint && cleanText(eventData.meetingPoint) !== cleanText(eventData.location) && (
-                      <p className="text-[11px] text-slate-600 font-medium mt-0.5">
-                        <span className="font-semibold text-slate-700">จุดนัดพบเจาะจง:</span> {cleanText(eventData.meetingPoint)}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {eventData.transportation && (
-                  <div className="flex items-start gap-2.5">
-                    <Navigation className="w-4 h-4 text-[#F26430] shrink-0 mt-0.5" />
-                    <div>
-                      <span className="text-slate-400 text-[10px] block font-bold">การเดินทาง</span>
-                      <span className="font-bold text-slate-900 leading-snug">{cleanText(eventData.transportation)}</span>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Trust Signal & Cancellation Policy in Sidebar */}
@@ -1257,7 +1190,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
               </div>
 
             </div>
-
+            )}
 
             {/* Moments from members here, and how to share one (same place as on the place page) */}
             <VisitPanel
@@ -1390,6 +1323,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
       {/* Modals */}
       <AuthModal
         isOpen={isAuthModalOpen}
+        returnTo={membershipReturnTo ?? (pendingAction === 'join' ? joinReturnPath : undefined)}
         onClose={() => {
           setIsAuthModalOpen(false);
           setPendingAction(null);
@@ -1420,6 +1354,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
 
       <RequireMembershipModal
         isOpen={isRequireMembershipOpen}
+        returnTo={pendingAction === 'join' ? joinReturnPath : undefined}
         onClose={() => {
           setIsRequireMembershipOpen(false);
           setPendingAction(null);
@@ -1471,6 +1406,9 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
           <div
             className="bg-white rounded-3xl p-5 sm:p-7 max-w-lg sm:max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200 text-left space-y-5 animate-scale-up relative"
             onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="ยืนยันการลงทะเบียน"
           >
             {/* Top Bar: Category Pill & Close Button */}
             <div className="flex items-center justify-between">
@@ -1572,6 +1510,9 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
               </div>
             </div>
 
+            {/* What the account still needs, said before the button rather than as a refusal after it */}
+            {hostCheckMember && <JoinReadinessNotice member={hostCheckMember} returnTo={joinReturnPath} />}
+
             {/* Action Buttons */}
             <div className="grid grid-cols-2 gap-3.5 pt-1">
               <button
@@ -1584,7 +1525,8 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
               <button
                 type="button"
                 onClick={handleExecuteJoin}
-                className="w-full py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold shadow-2xs hover:shadow-md transition-all active:scale-98 cursor-pointer flex items-center justify-center gap-2"
+                disabled={Boolean(joinBlocker(hostCheckMember))}
+                className="w-full py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold shadow-2xs hover:shadow-md transition-all active:scale-98 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <span>ยืนยันการเข้าร่วม</span>
                 <ArrowRight className="w-4 h-4" />
@@ -1610,6 +1552,7 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
             onOpenChat={() => setIsChatOpen(true)}
           />
           <GroupChatModal isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} event={eventData} />
+          {pairChat && <GroupChatModal isOpen onClose={() => setPairChat(null)} event={eventData} roomId={pairChat.roomId} roomTitle={pairChat.title} />}
           <CancelTicketModal
             isOpen={isCancelModalOpen}
             onClose={() => setIsCancelModalOpen(false)}
@@ -1678,9 +1621,11 @@ export default function CommunityDetailPage({ initialEvent = null }: { initialEv
             <button
               type="button"
               onClick={isHost ? () => setIsChatOpen(true) : isJoined ? () => setIsETicketOpen(true) : handleJoinEvent}
-              className="px-4 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold shrink-0 cursor-pointer active:scale-95"
+              className={isJoined || isHost
+                ? 'px-4 py-2.5 rounded-full border-[1.5px] border-[#2563EB] bg-white text-[#1D4ED8] text-sm font-semibold shrink-0 cursor-pointer active:scale-95'
+                : 'px-5 py-2.5 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-semibold shrink-0 cursor-pointer active:scale-95'}
             >
-              {isHost ? 'เปิดแชตลูกทีม' : isJoined ? 'ดูตั๋ว' : 'ลงทะเบียนเข้าร่วม'}
+              {isHost ? 'แชตกับคนในตี้' : isJoined ? 'ดูบัตร' : 'ลงทะเบียน'}
             </button>
           )}
         </div>

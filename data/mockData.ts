@@ -65,6 +65,8 @@ export interface EventItem {
   province?: string;
   scheduleType?: 'single' | 'recurring';
   recurrence?: EventRecurrence;
+  /** One date of a recurring ตี้: the series it belongs to (lib/social/recurring.ts). Not listed on its own. */
+  seriesId?: string;
   locationType?: 'physical' | 'online';
   onlinePlatform?: 'zoom' | 'google_meet' | 'discord' | 'teams' | 'other' | string;
   onlineJoinUrl?: string;
