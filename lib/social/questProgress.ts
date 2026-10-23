@@ -70,12 +70,13 @@ export function parseQuestRule(input: unknown): QuestRule | null {
 }
 
 /**
- * The weakest evidence that counts for a challenge. A partner brand gives something real, so pressing
- * "I have been here" (which nothing checks) is not enough for its challenges, whatever their rule says.
+ * The weakest evidence that counts for a challenge. Pressing "I have been here" (which nothing checks) never
+ * counts, whatever the rule says (owner 2026-10-23: challenges need proof that can be checked): a photo moment
+ * that passed (lib/moments/evidence.ts) or a host's check-in.
  */
 export function minEvidenceOf(quest: Pick<ChallengeQuest, 'rule' | 'brandReward'>): VisitEvidence {
-  const asked = quest.rule?.minEvidence ?? 'marked';
-  return quest.brandReward?.type === 'brand_partner' && EVIDENCE_RANK[asked] < EVIDENCE_RANK.moment ? 'moment' : asked;
+  const asked = quest.rule?.minEvidence ?? 'moment';
+  return EVIDENCE_RANK[asked] < EVIDENCE_RANK.moment ? 'moment' : asked;
 }
 
 /** Every filter the rule gives must match; a rule with only targetTypes counts any target of those types */
@@ -144,6 +145,8 @@ export interface QuestProgress {
 function visitCounts(quest: ChallengeQuest & { rule: QuestRule }, visit: Visit, target: RuleTarget | null | undefined): boolean {
   if (!target || !ruleMatchesTarget(quest.rule, target)) return false;
   if (EVIDENCE_RANK[visit.evidence] < EVIDENCE_RANK[minEvidenceOf(quest)]) return false;
+  // A photo still waiting for staff review counts once it passes
+  if (visit.pending) return false;
   const at = Date.parse(visit.at);
   const start = parseQuestDate(quest.startDate, false);
   const end = parseQuestDate(quest.endDate, true);
@@ -291,4 +294,69 @@ export async function progressOf(memberId: string) {
   const questPoints = quests.reduce((sum, quest) => sum + (quest.completed && quest.joined ? quest.rewardPoints : 0), 0);
 
   return { visits, quests, points: { total: visitPoints + questPoints, fromVisits: visitPoints, fromQuests: questPoints } };
+}
+
+/** One line of a challenge's checklist for the member */
+export interface QuestCheckItem {
+  targetType: VisitTargetType;
+  id: string;
+  title: string;
+  image?: string;
+  href: string;
+  at: string;
+  /** counted = proven; pending = photo waiting for staff; rejected = staff did not count the photo */
+  status: 'counted' | 'pending' | 'rejected';
+  /** How it was proven or why not ("คนจัดยืนยัน", the staff note) */
+  note?: string;
+  momentId?: string;
+}
+
+/**
+ * The checklist on a challenge page (owner 2026-10-23): every place the member went that fits the challenge, with
+ * whether it counts, waits for review, or was not counted (so they can send another photo).
+ */
+export async function checklistOf(quest: ChallengeQuest, memberId: string): Promise<{ items: QuestCheckItem[]; current: number; total: number } | null> {
+  if (!quest.rule) return null;
+  const ruled = quest as ChallengeQuest & { rule: QuestRule };
+  const items: QuestCheckItem[] = [];
+  const seen = new Set<string>();
+  const describe = async (targetType: VisitTargetType, targetId: string) => {
+    const place = targetType === 'spot' ? await db.findSpotById(targetId) : await db.findEventById(targetId);
+    return place ? { title: place.title, image: place.image, href: `${TARGET_PATHS[targetType]}/${encodeURIComponent(targetId)}` } : null;
+  };
+
+  for (const visit of await visitsOf(memberId)) {
+    const target = await loadRuleTarget(visit.targetType, visit.targetId);
+    if (!target || !ruleMatchesTarget(ruled.rule, target)) continue;
+    const inPeriod = visitCounts(ruled, { ...visit, pending: false }, target);
+    if (!inPeriod) continue;
+    const place = await describe(visit.targetType, visit.targetId);
+    if (!place) continue;
+    seen.add(targetKey(visit.targetType, visit.targetId));
+    items.push({
+      targetType: visit.targetType,
+      id: visit.targetId,
+      ...place,
+      at: visit.at,
+      status: visit.pending ? 'pending' : 'counted',
+      note: visit.evidence === 'checkin' ? 'คนจัดยืนยันว่ามาแล้ว' : visit.pending ? 'รอทีมงานตรวจรูป' : 'ยืนยันจากรูปที่ถ่ายที่นั่น',
+    });
+  }
+
+  // Photos staff did not count, so the member knows why and can send another
+  const { items: moments } = await momentRepository.query({ statuses: ['published'], authorId: memberId, sort: 'newest', page: 1, limit: 500 });
+  for (const moment of moments) {
+    if (!moment.evidenceRejected || !isVisitTargetType(moment.targetType) || !moment.targetId) continue;
+    const key = targetKey(moment.targetType, moment.targetId);
+    if (seen.has(key)) continue;
+    const target = await loadRuleTarget(moment.targetType, moment.targetId);
+    if (!target || !ruleMatchesTarget(ruled.rule, target)) continue;
+    const place = await describe(moment.targetType, moment.targetId);
+    if (!place) continue;
+    seen.add(key);
+    items.push({ targetType: moment.targetType, id: moment.targetId, ...place, at: moment.createdAt, status: 'rejected', note: moment.evidenceRejected.note, momentId: moment.id });
+  }
+
+  items.sort((a, b) => a.at.localeCompare(b.at));
+  return { items, current: Math.min(ruled.rule.count, items.filter((i) => i.status === 'counted').length), total: ruled.rule.count };
 }

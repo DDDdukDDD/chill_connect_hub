@@ -57,10 +57,24 @@ export interface Moment {
   moderationNote?: string;
   /** A moderator decided the photo does not show the place or event it is tied to: the post stays, but it is not a visit and counts toward no challenge */
   evidenceRejected?: { at: string; note: string };
+  /**
+   * Proof of going for challenges (lib/moments/evidence.ts): 'auto' = the phone was at the place when posting,
+   * 'pending' = waiting for staff, 'approved' = staff passed it. Missing on older posts (they count as before).
+   */
+  evidence?: MomentEvidence;
   /** Seeded from MOCK_POSTS, not written by a member */
   isSample: boolean;
   createdAt: string;
   updatedAt?: string;
+}
+
+export interface MomentEvidence {
+  status: 'auto' | 'pending' | 'approved';
+  at: string;
+  /** Distance from the place when posting, in metres (when the member shared a location) */
+  distanceM?: number;
+  /** Why it waits: no_location, no_place_coordinates, stale_location, imprecise_location, too_far */
+  reason?: string;
 }
 
 export interface MomentQuery {

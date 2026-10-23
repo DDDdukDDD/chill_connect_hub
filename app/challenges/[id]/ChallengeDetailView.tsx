@@ -14,6 +14,7 @@ import { EventAttendees } from '@/components/EventAttendees';
 import { useAuth } from '@/lib/useAuth';
 import { useMyRewards } from '@/lib/useMyRewards';
 import { useMasterData } from '@/lib/useMasterData';
+import { ChallengeChecklist } from '@/components/detail/ChallengeChecklist';
 
 /**
  * One challenge on its own page. It answers one question for the state the visitor is in:
@@ -325,6 +326,8 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
   // Where to go for the challenge; shown in the right column on a desktop and after the rules on phones and tablets
   const placesSection = (anchorId: string) => (
     <section id={anchorId} className="space-y-4 scroll-mt-24">
+      {/* The member's checklist: counted, waiting for review, not counted (owner 2026-10-23) */}
+      {joined && <ChallengeChecklist questId={questId} />}
       <div className="flex items-end justify-between gap-3">
         <h2 className={SECTION_TITLE}>ที่ที่นับในชาเลนจ์นี้</h2>
         {detail.browseHref && detail.targetsTotal > detail.targets.length && (

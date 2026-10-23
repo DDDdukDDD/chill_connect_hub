@@ -5,6 +5,8 @@ import { momentRepository } from '../moments';
 import { isPubliclyVisible, loadPeople } from '../moments/service';
 import type { Moment } from '../moments/types';
 import { createJsonStore } from './jsonStore';
+import { evidencePassed } from '../moments/evidence';
+import { memberRepository } from '../members';
 
 /**
  * A visit: one member went to one place or event, with evidence. It is the link between the parts
@@ -24,6 +26,8 @@ export interface Visit {
   targetId: string;
   evidence: VisitEvidence;
   at: string;
+  /** A photo moment still waiting for staff review: the member has been, but it does not count toward challenges yet */
+  pending?: boolean;
 }
 
 /** "I have been here" on a place or a fair, with an optional 1 to 5 rating */
@@ -33,6 +37,9 @@ export interface MarkedVisit {
   targetType: 'spot' | 'fair';
   targetId: string;
   rating?: number;
+  /** A short review with the rating ("มาเช้าวันธรรมดาคนน้อย"), shown on the place or fair page */
+  review?: string;
+  reviewedAt?: string;
   createdAt: string;
 }
 
@@ -136,7 +143,7 @@ export async function visitsOf(memberId: string): Promise<Visit[]> {
   const { items: moments } = await momentRepository.query({ statuses: ['published'], authorId: memberId, sort: 'newest', page: 1, limit: 500 });
   for (const moment of moments) {
     if (isVisitTargetType(moment.targetType) && moment.targetId && !moment.evidenceRejected) {
-      add({ targetType: moment.targetType, targetId: moment.targetId, evidence: 'moment', at: moment.createdAt });
+      add({ targetType: moment.targetType, targetId: moment.targetId, evidence: 'moment', at: moment.createdAt, pending: !evidencePassed(moment) || undefined });
     }
   }
 
@@ -148,6 +155,26 @@ export async function visitsOf(memberId: string): Promise<Visit[]> {
   return [...best.values()].sort((a, b) => b.at.localeCompare(a.at));
 }
 
+/**
+ * Reviews of a place or fair: ratings with words from members who marked they have been, newest first.
+ * Going there on your own needs no proof (owner 2026-10-23), so these are personal reviews, not verified visits.
+ */
+export async function reviewsOf(targetType: 'spot' | 'fair', targetId: string, viewer: { blockedIds?: string[] } | null, limit = 10) {
+  const blocked = new Set(viewer?.blockedIds ?? []);
+  const marks = store.read().filter((m) => m.targetType === targetType && m.targetId === targetId && m.rating && !blocked.has(m.memberId));
+  const withText = marks.filter((m) => m.review).sort((a, b) => (b.reviewedAt ?? b.createdAt).localeCompare(a.reviewedAt ?? a.createdAt)).slice(0, limit);
+  const people = await Promise.all(withText.map((m) => memberRepository.findById(m.memberId)));
+  return {
+    count: marks.length,
+    average: marks.length ? Math.round((marks.reduce((sum, m) => sum + (m.rating ?? 0), 0) / marks.length) * 10) / 10 : 0,
+    reviews: withText.flatMap((m, i) => {
+      const author = people[i];
+      if (!author || author.status !== 'active') return [];
+      return [{ id: m.id, authorId: m.memberId, authorName: tidyDisplayName(author.displayName).trim() || author.displayName, authorAvatar: author.avatarUrl ?? '', rating: m.rating!, text: m.review!, at: m.reviewedAt ?? m.createdAt }];
+    }),
+  };
+}
+
 /** The member's own marks, with the ratings they gave */
 export const marksOf = (memberId: string) =>
   store.read().filter((m) => m.memberId === memberId).map(({ targetType, targetId, rating, createdAt }) => ({ targetType, targetId, rating, createdAt }));
@@ -156,7 +183,7 @@ export const markedVisitOf = (memberId: string, targetType: 'spot' | 'fair', tar
   store.read().find((m) => m.memberId === memberId && m.targetType === targetType && m.targetId === targetId);
 
 /** Marks (or updates the rating of) the member's visit; one per member per target */
-export async function markVisit(memberId: string, targetType: 'spot' | 'fair', targetId: string, rating?: number): Promise<MarkedVisit> {
+export async function markVisit(memberId: string, targetType: 'spot' | 'fair', targetId: string, rating?: number, review?: string): Promise<MarkedVisit> {
   const existing = markedVisitOf(memberId, targetType, targetId);
   const saved: MarkedVisit = {
     id: existing?.id ?? `vis_${randomUUID()}`,
@@ -164,6 +191,8 @@ export async function markVisit(memberId: string, targetType: 'spot' | 'fair', t
     targetType,
     targetId,
     rating: rating ?? existing?.rating,
+    review: review !== undefined ? review || undefined : existing?.review,
+    reviewedAt: review !== undefined ? new Date().toISOString() : existing?.reviewedAt,
     createdAt: existing?.createdAt ?? new Date().toISOString(),
   };
   await store.update((items) => [saved, ...items.filter((m) => m.id !== saved.id)]);

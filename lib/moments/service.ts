@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { memberRepository } from '../members';
 import type { Member } from '../members/types';
+import { evidenceForNewMoment } from './evidence';
 import {
   AUTO_HIDE_REPORTS, MAX_CAPTION_LENGTH, MAX_COMMENT_LENGTH, MAX_MOMENT_IMAGES, Moment, MomentCategory, MomentComment,
   momentRepository, MomentTargetType,
@@ -205,6 +206,9 @@ export async function createMoment(member: Member, input: Record<string, unknown
   const targetType = (TARGET_TYPES.has(input.targetType as MomentTargetType) ? input.targetType : 'general') as MomentTargetType;
   const category = CATEGORIES.has(input.category as MomentCategory) ? (input.category as MomentCategory) : undefined;
   const location = text(input.location, 120) || text(input.targetTitle, 120) || 'ไลฟ์สไตล์ทั่วไป';
+  const targetId = text(input.targetId, 120) || undefined;
+  // A photo at a place or fair is proof for challenges when the phone was there; otherwise staff check it
+  const evidence = await evidenceForNewMoment(targetType, targetId, input.capture);
 
   return momentRepository.create({
     id: `mom_${randomUUID()}`,
@@ -217,8 +221,9 @@ export async function createMoment(member: Member, input: Record<string, unknown
     location,
     category,
     targetType,
-    targetId: text(input.targetId, 120) || undefined,
+    targetId,
     targetTitle: text(input.targetTitle, 200) || undefined,
+    evidence,
     likedBy: [],
     savedBy: [],
     sampleLikes: 0,
