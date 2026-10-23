@@ -237,7 +237,7 @@ export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, on
     void run(async () => {
       try {
         // No name here: onboarding asks "เพื่อนใหม่ จะเรียกคุณว่าอะไรดี" right after
-        const member = await session.register({ email: email.trim(), password, consent: agreed, ageConfirmed: agreed });
+        const member = await session.register({ email: email.trim(), password, consent: agreed, ageConfirmed: agreed, returnTo });
         onAuthenticated(member, { isNew: true });
       } catch (err) {
         if (err instanceof Error && err.message.includes('มีบัญชีอยู่แล้ว')) setEmailExists(true);

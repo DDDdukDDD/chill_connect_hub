@@ -12,6 +12,10 @@ export function LoginScreen({ initialView, returnTo, initialError }: { initialVi
   const router = useRouter();
   const { isLoaded, member } = useMemberSession();
   const navigating = useRef(false);
+  // Back goes where the visitor came from (the ตี้ they were joining), not always to the home page
+  const fromDetail = /^\/(community|fairs|spots|challenges)\//.test(returnTo);
+  const backHref = fromDetail ? returnTo.replace(/[?&]join=1/, '') : '/';
+  const backLabel = returnTo.startsWith('/community/') ? 'กลับไปที่ตี้' : fromDetail ? 'กลับไปหน้าเดิม' : 'กลับหน้าแรก';
 
   // Already signed in (e.g. opened /login in a second tab): continue
   useEffect(() => {
@@ -25,9 +29,9 @@ export function LoginScreen({ initialView, returnTo, initialError }: { initialVi
           <BrandLogo size="sm" />
           <span className="font-bold text-sm sm:text-base text-[#1E293B] leading-tight">Chill & Connect Hub</span>
         </Link>
-        <Link href="/" className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-2 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors">
+        <Link href={backHref} className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-2 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors">
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-          <span>กลับหน้าแรก</span>
+          <span>{backLabel}</span>
         </Link>
       </header>
 

@@ -15,12 +15,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, message: 'สมัครบ่อยเกินไป กรุณาลองใหม่ภายหลัง' }, { status: 429 });
   }
   try {
-    const created = await registerWithEmail(await request.json());
+    const body = await request.json();
+    const created = await registerWithEmail(body);
     // Warning signs for staff (throwaway email, many accounts from one place, risky name); never blocks sign-up
     const checked = await applySignupChecks(created, hashIp(clientIp(request), getSessionSecret() ?? ''));
     // Prototype deployments without a mailer skip the email link (SKIP_EMAIL_VERIFICATION)
     const member = isEmailVerificationSkipped() ? await autoVerifyEmail(checked) : checked;
-    const verification = member.emailVerified ? { sent: false } : await sendVerification(request, member);
+    // The link brings the member back to what they were doing (e.g. the ตี้ they came to join); checked as a same-site path
+    const returnTo = typeof body?.returnTo === 'string' ? body.returnTo : undefined;
+    const verification = member.emailVerified ? { sent: false } : await sendVerification(request, member, returnTo);
     const response = NextResponse.json({ success: true, member: toPublicMember(member), verification });
     setMemberSessionCookie(response, member);
     return response;

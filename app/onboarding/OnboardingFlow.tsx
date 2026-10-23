@@ -232,6 +232,18 @@ interface Pick {
   reason?: string;
   /** A ตี้ pick keeps its event, so the home band can show the same ตี้ first (FIRST_STEP_KEY) */
   event?: EventItem;
+  /** The ตี้ the visitor was joining when they signed up (it leads the summary instead of a suggestion) */
+  chosen?: boolean;
+}
+
+/** The ตี้ a visitor was joining when they signed up, read on the server from returnTo (app/onboarding/page.tsx) */
+export interface CameFor {
+  id: string;
+  title: string;
+  meta: string;
+  image: string;
+  href: string;
+  lifestyleCategory?: string;
 }
 
 /* ---------- Small UI pieces ---------- */
@@ -393,7 +405,7 @@ const clearFinishedRun = () => {
 
 /* ---------- Flow ---------- */
 
-export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { preview: boolean; pledgeOnly?: boolean; returnTo: string }) {
+export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor }: { preview: boolean; pledgeOnly?: boolean; returnTo: string; cameFor?: CameFor }) {
   const router = useRouter();
   const session = useMemberSession();
   const master = useMasterData();
@@ -422,7 +434,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
   const [birthYear, setBirthYear] = useState(saved?.birthYear ?? '');
   const [gender, setGender] = useState(saved?.gender ?? '');
   // Step 3
-  const [communityInterests, setCommunityInterests] = useState<string[]>(saved?.communityInterests ?? []);
+  const [communityInterests, setCommunityInterests] = useState<string[]>(saved?.communityInterests ?? (cameFor?.lifestyleCategory ? [cameFor.lifestyleCategory] : []));
   const [spotInterests, setSpotInterests] = useState<string[]>(saved?.spotInterests ?? []);
   const [fairInterests, setFairInterests] = useState<string[]>(saved?.fairInterests ?? []);
   const [province, setProvince] = useState(saved?.province ?? '');
@@ -623,6 +635,12 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
     const chosen: Pick[] = [];
     for (let round = 0; round < 3 && chosen.length < 3; round++) {
       for (const list of result) if (list[round] && chosen.length < 3) chosen.push(list[round]);
+    }
+    // Signed up to join a ตี้: that ตี้ leads, the suggestions follow as "หรือ …"
+    if (cameFor) {
+      const own: Pick = { pillar: 'community', id: cameFor.id, title: cameFor.title, meta: cameFor.meta, image: cameFor.image, href: cameFor.href, reason: 'ตี้ที่คุณเลือกไว้ กลับไปลงทะเบียนต่อได้เลย', chosen: true };
+      setPicks([own, ...chosen.filter((p) => p.id !== cameFor.id)].slice(0, 3));
+      return;
     }
     setPicks(chosen);
   };
@@ -1103,7 +1121,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
                   </div>
                 ) : (
                   <div>
-                    <h2 className="text-base sm:text-lg font-bold text-slate-900 mb-2.5">{picks?.[0] ? FIRST_STEP_HEADING[picks[0].pillar] : 'ก้าวแรกที่ใช่สำหรับคุณ'}</h2>
+                    <h2 className="text-base sm:text-lg font-bold text-slate-900 mb-2.5">{picks?.[0]?.chosen ? 'ตี้ที่คุณเลือกไว้' : picks?.[0] ? FIRST_STEP_HEADING[picks[0].pillar] : 'ก้าวแรกที่ใช่สำหรับคุณ'}</h2>
                     {picks === null && (
                       <div className="flex items-center gap-2 h-[140px] text-sm font-bold text-slate-500" role="status">
                         <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />

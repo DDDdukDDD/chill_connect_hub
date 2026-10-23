@@ -9,7 +9,8 @@ import { memberActions } from '@/lib/useMemberSession';
 
 type State = { status: 'working' } | { status: 'done' } | { status: 'error'; message: string };
 
-export function VerifyEmailScreen({ token }: { token: string }) {
+/** `next`: where the member was going when they asked for the link (already checked as a same-site path) */
+export function VerifyEmailScreen({ token, next = '' }: { token: string; next?: string }) {
   const [state, setState] = useState<State>(token ? { status: 'working' } : { status: 'error', message: 'ลิงก์ไม่ครบ กรุณาเปิดลิงก์จากอีเมลอีกครั้ง' });
 
   useEffect(() => {
@@ -56,11 +57,22 @@ export function VerifyEmailScreen({ token }: { token: string }) {
               </span>
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">ยืนยันอีเมลแล้ว</h1>
               <p className="text-sm text-slate-500 font-medium mt-2 mb-6">
-                <PhraseText text="ตอนนี้คุณโพสต์โมเมนต์ และคอมเมนต์ได้แล้ว" />
+                <PhraseText text="ตอนนี้คุณเข้าร่วมตี้ โพสต์โมเมนต์ และคอมเมนต์ได้แล้ว" />
               </p>
-              <Link href="/profile" className="inline-flex items-center justify-center w-full px-6 py-3.5 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm sm:text-base font-bold shadow-sm">
-                ไปที่โปรไฟล์ของฉัน
-              </Link>
+              {next ? (
+                <>
+                  <Link href={next} className="inline-flex items-center justify-center w-full px-6 py-3.5 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm sm:text-base font-bold shadow-sm">
+                    {next.startsWith('/community/') ? 'กลับไปเข้าร่วมตี้ต่อ' : 'ไปต่อจากที่ค้างไว้'}
+                  </Link>
+                  <Link href="/profile" className="inline-block mt-4 text-sm font-bold text-slate-600 hover:text-slate-900">
+                    ไปที่โปรไฟล์ของฉัน
+                  </Link>
+                </>
+              ) : (
+                <Link href="/profile" className="inline-flex items-center justify-center w-full px-6 py-3.5 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm sm:text-base font-bold shadow-sm">
+                  ไปที่โปรไฟล์ของฉัน
+                </Link>
+              )}
             </>
           )}
           {state.status === 'error' && (

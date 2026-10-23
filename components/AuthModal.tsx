@@ -12,20 +12,22 @@ interface AuthModalProps {
   /** Called with the member's display name after a successful email login or sign-up */
   onLoginSuccess: (userName: string) => void;
   initialMode?: 'login' | 'signup';
+  /** Where a new member lands after onboarding (default: this page), e.g. "/community/<id>?join=1" */
+  returnTo?: string;
 }
 
 /**
  * Login / sign-up popup. The content is the shared AuthPanel (also used by /login and /onboarding).
  * New members continue to /onboarding, then come back to this page.
  */
-export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, initialMode = 'login' }) => {
+export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, initialMode = 'login', returnTo }) => {
   const router = useRouter();
   const pathname = usePathname();
   const titleId = useId();
   const [toOnboarding, setToOnboarding] = useState(false);
   if (!isOpen) return null;
 
-  const here = typeof window !== 'undefined' ? window.location.pathname + window.location.search : pathname || '/';
+  const here = returnTo || (typeof window !== 'undefined' ? window.location.pathname + window.location.search : pathname || '/');
 
   // A new member goes straight to onboarding. The page behind already redraws as a member's page once the
   // account exists, so cover it until onboarding opens (this page, and with it the cover, then unmounts)

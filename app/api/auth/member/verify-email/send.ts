@@ -1,16 +1,19 @@
 import type { Member } from '@/lib/members';
 import { isMailerConfigured, sendMail, verifyEmailMessage } from '@/lib/members/mailer';
 import { EMAIL_VERIFY_HOURS, createEmailVerification } from '@/lib/members/safety';
+import { safeReturnPath } from '@/components/auth/returnTo';
 
 /**
  * Creates a verification link and emails it. Without a mailer (development) the link is logged on the
- * server and returned as devVerifyUrl so the flow can still be tested.
+ * server and returned as devVerifyUrl so the flow can still be tested. `returnTo` (a same-site path, e.g. the ตี้
+ * the member was joining) rides along so the "verified" screen can send them back there.
  */
-export async function sendVerification(request: Request, member: Member): Promise<{ sent: boolean; devVerifyUrl?: string }> {
+export async function sendVerification(request: Request, member: Member, returnTo?: string): Promise<{ sent: boolean; devVerifyUrl?: string }> {
   const token = await createEmailVerification(member);
   if (!token || !member.email) return { sent: false };
   const origin = process.env.APP_URL?.replace(/\/+$/, '') || new URL(request.url).origin;
-  const url = `${origin}/verify-email?token=${encodeURIComponent(token)}`;
+  const next = safeReturnPath(returnTo, '');
+  const url = `${origin}/verify-email?token=${encodeURIComponent(token)}${next ? `&next=${encodeURIComponent(next)}` : ''}`;
   if (isMailerConfigured()) {
     return { sent: await sendMail({ to: member.email, ...verifyEmailMessage(member.displayName, url, EMAIL_VERIFY_HOURS) }) };
   }
