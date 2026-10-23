@@ -90,7 +90,7 @@ function MomentCard({ moment, index, onLike }: { moment: FeedItem; index: number
       <Link href={href} className={`group block rounded-xl lg:rounded-2xl ${focusRing}`}>
         <span className="relative block">
           <span className={`${frameClass} transition-transform duration-300 group-hover:-translate-y-1 group-hover:shadow-lg ${tilt}`}>
-            {/* eslint-disable-next-line @next/next/no-img-element -- member photos come from uploads */}
+            {/* eslint-disable-next-line @next/next/no-img-element -- remote and local photos */}
             <img src={momentImageSrc(moment.images[0], 828)} alt={title || `โมเมนต์จาก ${place}`} loading="lazy" className="w-full h-full object-cover" />
             {moment.images.length > 1 && (
               <span className="absolute top-2 right-2 rounded-full bg-black/50 px-2 py-0.5 text-[11px] font-bold text-white tabular-nums">
@@ -166,38 +166,43 @@ export function MomentGrid({ items, onLike }: { items: FeedItem[]; onLike?: (mom
   );
 }
 
-/** Three of the moments as tilted prints with stickers, like the collage on the landing page */
-function Collage({ moments }: { moments: FeedItem[] }) {
-  const [a, b, c] = moments;
-  if (!a) return null;
+/**
+ * Fixed photos for the header collage (owner 2026-10-23): the header is decoration,
+ * so it must not change with whatever members posted last.
+ */
+const COLLAGE = {
+  a: { image: '/images/onboarding/friends-start.jpg', likesCount: 128 },
+  b: { image: '/images/onboarding/challenge-cheer.jpg' },
+  c: { image: '/images/onboarding/fair-festival.jpg' },
+};
+
+/** Three photos as tilted prints with stickers, like the collage on the landing page */
+function Collage() {
+  const { a, b, c } = COLLAGE;
   const print = 'w-full h-full object-cover shadow-lg border-4 border-white';
   return (
     <div className="relative h-[170px] sm:h-[200px] md:h-[240px] lg:h-[270px] w-full max-w-[320px] md:max-w-[440px] mx-auto" aria-hidden="true">
       <figure className="absolute left-[2%] top-[8%] w-[44%] h-[78%]">
-        {/* eslint-disable-next-line @next/next/no-img-element -- member photos come from uploads */}
-        <img src={momentImageSrc(a.images[0])} alt="" className={`${print} -rotate-6 rounded-[1.5rem] lg:rounded-[1.75rem]`} />
+        {/* eslint-disable-next-line @next/next/no-img-element -- remote and local photos */}
+        <img src={momentImageSrc(a.image)} alt="" className={`${print} -rotate-6 rounded-[1.5rem] lg:rounded-[1.75rem]`} />
         <span className={`${STICKER} -bottom-3 left-1/2 -translate-x-1/2 -rotate-3`}>
           <Heart className="w-3.5 h-3.5 fill-[#F43F5E] text-[#F43F5E]" />
           {a.likesCount.toLocaleString()}
         </span>
       </figure>
-      {b && (
-        <figure className="absolute right-[6%] top-0 w-[34%] aspect-square">
-          {/* eslint-disable-next-line @next/next/no-img-element -- member photos come from uploads */}
-          <img src={momentImageSrc(b.images[0])} alt="" className={`${print} rounded-full`} />
-          <span className={`${STICKER} top-[8%] -left-[38%] rotate-3`}>ไปมาแล้ว!</span>
-        </figure>
-      )}
-      {c && (
-        <figure className="absolute right-0 bottom-[2%] w-[42%] h-[46%]">
-          {/* eslint-disable-next-line @next/next/no-img-element -- member photos come from uploads */}
-          <img src={momentImageSrc(c.images[0])} alt="" className={`${print} rotate-3 rounded-[1.5rem] lg:rounded-[1.75rem]`} />
-          <span className={`${STICKER} -bottom-3 right-3 rotate-2`}>
-            <Camera className="w-3.5 h-3.5 text-[#F43F5E]" />
-            ภาพจริง
-          </span>
-        </figure>
-      )}
+      <figure className="absolute right-[6%] top-0 w-[34%] aspect-square">
+        {/* eslint-disable-next-line @next/next/no-img-element -- remote and local photos */}
+        <img src={momentImageSrc(b.image)} alt="" className={`${print} rounded-full`} />
+        <span className={`${STICKER} top-[8%] -left-[38%] rotate-3`}>ไปมาแล้ว!</span>
+      </figure>
+      <figure className="absolute right-0 bottom-[2%] w-[42%] h-[46%]">
+        {/* eslint-disable-next-line @next/next/no-img-element -- remote and local photos */}
+        <img src={momentImageSrc(c.image)} alt="" className={`${print} rotate-3 rounded-[1.5rem] lg:rounded-[1.75rem]`} />
+        <span className={`${STICKER} -bottom-3 right-3 rotate-2`}>
+          <Camera className="w-3.5 h-3.5 text-[#F43F5E]" />
+          ภาพจริง
+        </span>
+      </figure>
     </div>
   );
 }
@@ -225,8 +230,6 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialChip, pl
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [isLoading, setIsLoading] = useState(false);
-  // The collage keeps the photos it opened with, so it does not jump when a tab changes the grid
-  const [collage] = useState(() => initialMoments.slice(0, 3));
   const sentinelRef = useRef<HTMLDivElement>(null);
   const requestRef = useRef(0);
 
@@ -336,7 +339,7 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialChip, pl
                 </div>
               </div>
               <div className="order-1 md:order-2">
-                <Collage moments={collage} />
+                <Collage />
               </div>
             </div>
           </section>
