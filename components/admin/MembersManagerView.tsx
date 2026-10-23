@@ -61,10 +61,10 @@ interface Overview {
 const INTENT_LABELS: Record<MemberPreferences['intent'], string> = { member: 'ผู้เข้าร่วม', host: 'อยากเปิดตี้', venue: 'มีร้านหรือพื้นที่', organizer: 'ผู้จัดงานหรือแบรนด์' };
 const GENDER_LABELS: Record<NonNullable<MemberPreferences['gender']>, string> = { female: 'หญิง', male: 'ชาย', lgbtq: 'LGBTQ+' };
 const GOAL_LABELS: Record<string, string> = {
-  explore_fairs: 'เดินงานสนุก สุดสัปดาห์', explore_spots: 'หาที่เที่ยว ร้านชิล', browse_moments: 'ดูโมเมนต์จากเพื่อน',
-  join_community: 'หากิจกรรมออกไปใช้ชีวิต', earn_xp: 'ทำชาเลนจ์สนุกๆ', find_friends: 'พบเพื่อน มิตรภาพใหม่',
-  // Goals from before 2026-10-22, still on older accounts
-  heal_self: 'ดูแลใจและร่างกาย',
+  earn_xp: 'หาชาเลนจ์สนุกๆ', explore_spots: 'ออกไปใช้ชีวิต ที่ใหม่ๆ', explore_fairs: 'เดินงานสนุก สุดสัปดาห์',
+  join_community: 'เข้าตี้ เจอเพื่อนใหม่', share_moments: 'แชร์ความประทับใจ', browse_moments: 'ส่องโมเมนต์ เพื่อนๆ',
+  // Goals no longer offered, still on older accounts
+  find_friends: 'พบเพื่อน มิตรภาพใหม่', heal_self: 'ดูแลใจและร่างกาย',
   community_host: 'ชวนคนมาเปิดตี้', venue_space: 'มีร้านหรือพื้นที่', event_organizer: 'จัดงานอีเวนต์', brand_org: 'แบรนด์หรือองค์กร',
 };
 

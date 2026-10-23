@@ -36,11 +36,17 @@ const EMPTY: Record<FeedView, string> = {
 };
 type Action = 'like' | 'unlike' | 'save' | 'unsave';
 
+export const MOMENT_REACTED_EVENT = 'cch:moment-reacted';
+
 export async function call(url: string, method: string, body?: unknown): Promise<{ ok: boolean; message: string; moment?: FeedItem; autoHidden?: boolean }> {
   try {
     const res = await fetch(url, { method, headers: body ? { 'Content-Type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined });
     const json = await res.json().catch(() => null);
-    return { ok: res.ok && json?.success !== false, message: json?.message || 'ทำรายการไม่สำเร็จ ลองอีกครั้งนะ', moment: json?.moment, autoHidden: json?.autoHidden };
+    const ok = res.ok && json?.success !== false;
+    // The journey band's moments path (JourneyBand) moves on at the first like or comment
+    const action = (body as { action?: string } | undefined)?.action;
+    if (ok && (action === 'like' || action === 'comment')) window.dispatchEvent(new Event(MOMENT_REACTED_EVENT));
+    return { ok, message: json?.message || 'ทำรายการไม่สำเร็จ ลองอีกครั้งนะ', moment: json?.moment, autoHidden: json?.autoHidden };
   } catch {
     return { ok: false, message: 'เชื่อมต่อไม่ได้ ลองอีกครั้งนะ' };
   }

@@ -7,7 +7,7 @@ import type { ChallengeQuest, EventItem } from '@/data/mockData';
 import { nameInitial } from '@/lib/displayName';
 import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
 import { HomeMomentFeed, type FeedView, type ShareRequest } from '@/components/home/HomeMomentFeed';
-import { JourneyBand, flavourFromGoals, useJourney } from '@/components/home/JourneyBand';
+import { JourneyBand, flavourFromGoals, isSocialOnly, useJourney } from '@/components/home/JourneyBand';
 import type { QuestProgress } from '@/lib/useMyRewards';
 import { LiveTicker, useLiveActivity } from '@/components/home/LiveActivity';
 import type { LifestyleSpotItem } from '@/data/spotsData';
@@ -70,8 +70,9 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
   const [feedView, setFeedView] = useState<FeedView>('all');
   const hasPlans = plans.length > 0;
   // A new member gets the journey band (① เลือก ② ไป ③ แชร์) in place of the greeting and plans, until their first moment
-  const { journey, skip, markPosted } = useJourney({
+  const { journey, skip, markPosted, followed, finishFollow } = useJourney({
     memberId: props.memberId,
+    socialOnly: isSocialOnly(props.goals),
     now: props.now,
     mine: props.mine,
     questProgress: props.questProgress,
@@ -87,6 +88,7 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
     {journey && (
       <JourneyBand
         name={name}
+        memberId={props.memberId}
         now={props.now}
         journey={journey}
         firstFlavour={flavourFromGoals(props.goals)}
@@ -97,6 +99,8 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
         xp={props.xp}
         onShare={(request) => setShareRequest({ ...request, key: Date.now() })}
         onSkip={skip}
+        onFollowed={followed}
+        onFollowDone={finishFollow}
       />
     )}
     <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 pt-5 sm:pt-7">

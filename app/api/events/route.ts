@@ -47,7 +47,7 @@ export async function GET(request: Request) {
 
     const hasFilterParams = [
       'page', 'limit', 'province', 'type', 'category', 'q', 'zone',
-      'venueTag', 'status', 'includeEnded', 'sortBy', 'spotId',
+      'venueTag', 'status', 'includeEnded', 'sortBy', 'spotId', 'lifestyleCategory',
     ].some((param) => searchParams.has(param));
 
     if (hasFilterParams) {
@@ -71,6 +71,7 @@ export async function GET(request: Request) {
         province,
         zone,
         venueTag,
+        lifestyleCategory: searchParams.get('lifestyleCategory'),
         spotId: searchParams.get('spotId'),
         searchQuery,
         status: status || 'all',
