@@ -27,6 +27,7 @@ import {} from '@/data/spotsData';
 import { eventInProvince, matchesQuery, meetupSearchText, type DiscoverCounts } from '@/lib/discoverMatch';
 import { DiscoverHeader, FilterSelect, filterPillClass } from '@/components/discover/DiscoverHeader';
 import { DiscoverSearch } from '@/components/discover/DiscoverSearch';
+import { useMyInterests } from '@/lib/useMyInterests';
 
 type SortOption = 'newest' | 'popular' | 'soonest' | 'favorites';
 type VibeFilter = 'all' | 'solo' | 'free' | 'pets' | 'beginners' | 'soon';
@@ -37,6 +38,8 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
+  // The member's own categories from onboarding come first on the tabs, marked (owner 2026-10-23)
+  const myInterests = useMyInterests(isLoggedIn);
   const itemsPerPage = useResponsiveItemsPerPage();
 
   const [activeNavTab, setActiveNavTab] = useState('explore');
@@ -534,6 +537,7 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
           kind="meetups"
           categories={COMMUNITY_LIFESTYLE_CATEGORIES}
           counts={categoryEventCounts}
+          mineIds={myInterests.communityCategories}
           selectedId={selectedCategory === 'all' ? null : selectedCategory}
           onSelect={(id) => {
             setSelectedCategory(id || 'all');

@@ -172,6 +172,20 @@ export async function listMoments(viewer: Member | null, options: MomentListOpti
   };
 }
 
+/**
+ * How far a member is on the moments path of the home journey band: people followed, whether they have
+ * liked or commented on someone else's moment, and whether they have posted one themselves
+ */
+export async function momentJourneyOf(member: Member): Promise<{ following: number; reacted: boolean; posted: boolean }> {
+  const { items } = await momentRepository.query({ statuses: ['published'], sort: 'newest', page: 1, limit: 10_000 });
+  const others = items.filter((m) => m.authorId !== member.id);
+  return {
+    following: member.followingIds?.length ?? 0,
+    reacted: others.some((m) => m.likedBy.includes(member.id) || m.comments.some((c) => c.authorId === member.id)),
+    posted: items.some((m) => m.authorId === member.id),
+  };
+}
+
 /** A published moment for its public page, or null (hidden, removed, banned author, unknown id) */
 export async function findPublicMoment(id: string): Promise<FeedItem | null> {
   const moment = await momentRepository.findById(id);

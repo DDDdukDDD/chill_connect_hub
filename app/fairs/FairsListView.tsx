@@ -27,6 +27,7 @@ import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
 import { eventInProvince, fairSearchText, matchesQuery, type DiscoverCounts } from '@/lib/discoverMatch';
 import { DiscoverHeader, FilterSelect, filterPillClass } from '@/components/discover/DiscoverHeader';
 import { DiscoverSearch } from '@/components/discover/DiscoverSearch';
+import { useMyInterests } from '@/lib/useMyInterests';
 
 type ServerProps = { initialEvents?: EventItem[]; initialCounts?: { query: string; province: string; counts: DiscoverCounts } };
 
@@ -34,6 +35,8 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
+  // The member's own categories from onboarding come first on the tabs, marked (owner 2026-10-23)
+  const myInterests = useMyInterests(isLoggedIn);
   const itemsPerPage = useResponsiveItemsPerPage();
 
   const [activeNavTab, setActiveNavTab] = useState('explore');
@@ -490,6 +493,7 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
           kind="fairs"
           categories={NATIONWIDE_FAIR_CATEGORIES}
           counts={fairCounts}
+          mineIds={myInterests.fairCategories}
           selectedId={selectedCategory}
           onSelect={(id) => {
             setSelectedCategory(id);

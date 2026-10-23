@@ -41,7 +41,7 @@ import { compressImage } from '@/lib/media/compressor';
 import { resolveSpotImage } from '@/lib/spotImageResolver';
 import { useMasterData } from '@/lib/useMasterData';
 import { memberActions, useMemberSession } from '@/lib/useMemberSession';
-import { JOURNEY_STEPS } from '@/components/home/JourneyBand';
+import { FIRST_STEP_KEY, FollowRow, flavourFromGoals, isSocialOnly, type FirstStep } from '@/components/home/JourneyBand';
 
 /**
  * Onboarding for new members, continuing the landing hero ("คอมมูนิตี้ของคนชอบออกไปใช้ชีวิต").
@@ -66,7 +66,8 @@ const PILLARS: Record<PillarId, { name: string; short: string; line: string; ico
   // Moments is where every other pillar ends up: it lights up as soon as the visitor picks anything
   moments: { name: 'โมเมนต์', short: 'โมเมนต์', line: 'เก็บภาพดีๆ แล้วแชร์ให้เพื่อนเห็น', icon: Camera, color: '#F43F5E', href: '/moments' },
 };
-const PILLAR_ORDER: PillarId[] = ['spots', 'community', 'fairs', 'challenges', 'moments'];
+// Same order as the landing (owner 2026-10-23): the core three first, then places and fairs
+const PILLAR_ORDER: PillarId[] = ['community', 'challenges', 'moments', 'spots', 'fairs'];
 
 interface Goal {
   id: string;
@@ -80,15 +81,18 @@ interface Goal {
 }
 
 // Spaces mark where a line may wrap (see PhraseText)
-// The feelings of going out (owner 2026-10-22): Chill = look around at your own pace, Connect = do things with people.
-// Ids kept where the meaning stayed, so answers saved before still read right.
+// Chill = go out at your own pace, no one to arrange; Connect = people, in a ตี้ or through moments (owner 2026-10-23:
+// moments are a core pillar, so members who come only to share and follow friends are a target too).
+// Ids kept where the meaning stayed, so answers saved before still read right; `find_friends` is no longer offered
+// (folded into the ตี้ card) but still counts for older accounts. Order (owner 2026-10-23): the core pillar leads each
+// group, challenges for Chill and ตี้ for Connect.
 const MEMBER_GOALS: Goal[] = [
-  { id: 'explore_fairs', group: 'chill', title: 'เดินงานสนุก สุดสัปดาห์', desc: 'งานแฟร์ นิทรรศการ เทศกาล', image: '/images/venues/qsncc.jpg', pillar: 'fairs', role: 'member' },
-  { id: 'explore_spots', group: 'chill', title: 'หาที่เที่ยว ร้านชิล', desc: 'คาเฟ่ วิวสวย ทริปสั้นๆ', image: '/images/destinations/nan.jpg', pillar: 'spots', role: 'member' },
-  { id: 'browse_moments', group: 'chill', title: 'ดูโมเมนต์ จากเพื่อน', desc: 'ภาพสวยๆ จากคนที่ไปมาแล้ว', image: '/images/venues/benjakitti.jpg', pillar: 'moments', role: 'member' },
-  { id: 'join_community', group: 'connect', title: 'หากิจกรรม ออกไปใช้ชีวิต', desc: 'วิ่ง เวิร์กช็อป บอร์ดเกม', image: '/event-city-run.png', pillar: 'community', role: 'member' },
-  { id: 'earn_xp', group: 'connect', title: 'ทำชาเลนจ์ สนุกๆ', desc: 'ภารกิจเล็กๆ สะสม XP', image: '/images/challenges/cafe-hunter.jpg', pillar: 'challenges', role: 'member' },
-  { id: 'find_friends', group: 'connect', title: 'พบเพื่อน มิตรภาพใหม่', desc: 'เริ่มจากกลุ่มเล็กๆ ไม่ต้องรู้จักใคร', image: '/event-board-games.png', pillar: 'community', role: 'member' },
+  { id: 'earn_xp', group: 'chill', title: 'หาชาเลนจ์ สนุกๆ', desc: 'สะสม XP รับของรางวัล', image: '/images/onboarding/challenge-cheer.jpg', pillar: 'challenges', role: 'member' },
+  { id: 'explore_spots', group: 'chill', title: 'ออกไปใช้ชีวิต ที่ใหม่ๆ', desc: 'คาเฟ่ วิวสวย ทริปสั้นๆ', image: '/images/onboarding/chill-cafe.jpg', pillar: 'spots', role: 'member' },
+  { id: 'explore_fairs', group: 'chill', title: 'เดินงานสนุก สุดสัปดาห์', desc: 'งานแฟร์ งานวิ่ง งานคอน', image: '/images/onboarding/fair-festival.jpg', pillar: 'fairs', role: 'member' },
+  { id: 'join_community', group: 'connect', title: 'เข้าตี้ เจอเพื่อนใหม่', desc: 'กิจกรรมกลุ่มคอเดียวกัน', image: '/event-board-games.png', pillar: 'community', role: 'member' },
+  { id: 'share_moments', group: 'connect', title: 'แชร์ความประทับใจ', desc: 'ไปไหนมา เก็บไว้ให้เพื่อนเห็น', image: '/images/onboarding/share-moment.jpg', pillar: 'moments', role: 'member' },
+  { id: 'browse_moments', group: 'connect', title: 'ส่องโมเมนต์ เพื่อนๆ', desc: 'กดใจ คอมเมนต์ ติดตามเพื่อน', image: '/images/onboarding/browse-moments.jpg', pillar: 'moments', role: 'member' },
 ];
 
 const ALL_GOALS = () => [...MEMBER_GOALS, ...HOST_GOALS];
@@ -103,7 +107,7 @@ const HOST_GOALS: Goal[] = [
 // The brand's two words in their own colors, as on the member home (components/home/MemberLiveHome.tsx)
 const GOAL_GROUPS: { id: Goal['group']; word: string; line: string; color: string }[] = [
   { id: 'chill', word: 'Chill', line: 'ให้เวลากับตัวเอง', color: 'text-[#2D5A3C]' },
-  { id: 'connect', word: 'Connect', line: 'ออกไปเจอผู้คน', color: 'text-[#D04A1B]' },
+  { id: 'connect', word: 'Connect', line: 'เจอเพื่อนสายเดียวกัน', color: 'text-[#D04A1B]' },
 ];
 
 const GENDERS = [
@@ -128,7 +132,8 @@ const QUESTION_STEPS = 3;
 const GOAL_INTERESTS: Record<string, { community?: string[]; spots?: string[]; fairs?: string[] }> = {
   explore_fairs: { community: ['movies_music', 'arts_crafts', 'food_hunt'], fairs: ['parks_openair', 'music_festivals', 'food_drinks', 'craft_market', 'art_festivals', 'convention_centers'] },
   explore_spots: { community: ['cafe_social', 'travel_outdoor', 'food_hunt'], spots: ['cafe_slowbar', 'views_rooftop', 'mountain_mist', 'sea_island', 'city_parks', 'food_street'] },
-  browse_moments: { community: ['photo_content', 'cafe_social'], spots: ['views_rooftop', 'art_creative'] },
+  share_moments: { community: ['photo_content', 'cafe_social', 'food_hunt', 'travel_outdoor'], spots: ['views_rooftop', 'cafe_slowbar'] },
+  browse_moments: { community: ['photo_content', 'cafe_social', 'movies_music'], spots: ['views_rooftop', 'art_creative'] },
   join_community: { community: ['running_fitness', 'arts_crafts', 'boardgames_party', 'wellness_mind', 'sports_club', 'cooking_baking'] },
   earn_xp: { community: ['running_fitness', 'photo_content'], spots: ['cafe_slowbar', 'temple_mu'] },
   find_friends: { community: ['cafe_social', 'food_hunt', 'boardgames_party', 'gaming_anime', 'movies_music'] },
@@ -159,16 +164,6 @@ const SAI_FAIRS: Record<string, string[]> = {
 /** The landing cards' colors per สาย (components/CategoryStickerCards.tsx draws the same) */
 const SAI_LOOK = new Map(MASTER_COMMUNITY_LIFESTYLE_CATEGORIES.map((c) => [c.id, c.colorScheme]));
 
-/** Which shared moments fit a goal, by what the moment is tied to and its mood */
-const GOAL_MOMENTS: Record<string, { targets?: string[]; moods?: string[] }> = {
-  explore_fairs: { targets: ['fair'] },
-  explore_spots: { targets: ['spot'], moods: ['chill'] },
-  browse_moments: { moods: ['chill', 'heal', 'learn', 'move'] },
-  join_community: { targets: ['community'], moods: ['move'] },
-  earn_xp: { targets: ['challenge'] },
-  find_friends: { targets: ['community'], moods: ['chill', 'learn'] },
-};
-
 // The community pledge: what every member promises. Accepting it is recorded on the account
 // and is the stated ground for suspending an account that breaks it.
 const PLEDGE: { icon: LucideIcon; title: string; desc: string }[] = [
@@ -178,14 +173,52 @@ const PLEDGE: { icon: LucideIcon; title: string; desc: string }[] = [
   { icon: Flag, title: 'ช่วยกันดูแล', desc: 'เห็นสิ่งที่ไม่ปลอดภัย ฉันจะกดรายงานให้ทีมงานรู้' },
 ];
 const MIN_AGE = 18;
+/** The side panel shows the number only above this many members who share the สาย; below it, a welcome line (owner 2026-10-23) */
+const SAME_PEOPLE_MIN = 1000;
+/**
+ * "บอกสิ่งที่ชอบ": a fixed example of friends' moments (stories row + one post), drawn like the landing's
+ * "เพื่อน & โมเมนต์". Fixed rather than live so it always reads well, even before members post (owner 2026-10-23).
+ * Names and photos are illustrations, not members.
+ */
+// The first story (orange ring) is the person whose post is shown below it
+const STORY_SAMPLES = [
+  { name: 'แพรว', image: '/images/destinations/chiangmai.jpg', avatar: '/images/onboarding/people/a.jpg' },
+  { name: 'บีม', image: '/event-city-run.png', avatar: '/images/onboarding/people/c.jpg' },
+  { name: 'ฝน', image: '/images/destinations/krabi.jpg', avatar: '/images/onboarding/people/d.jpg' },
+  { name: 'มิว', image: '/event-board-games.png', avatar: '/images/onboarding/people/e.jpg' },
+  { name: 'ข้าว', image: '/images/destinations/khaoyai.jpg', avatar: '/images/onboarding/people/f.jpg' },
+];
+/**
+ * "บอกเราเกี่ยวกับคุณ": the example on "โมเมนต์แรกของคุณ" follows the first สาย picked that has one (owner 2026-10-23),
+ * so the step carries on from the choices before it; the member's province is added to the caption
+ */
+const FIRST_MOMENT_DEFAULT = { image: '/images/onboarding/chill-cafe.jpg', caption: 'ออกไปใช้ชีวิตวันแรก กับเพื่อนใหม่ที่คุยกันถูกคอ' };
+const FIRST_MOMENT_BY_SAI: Record<string, { image: string; caption: string }> = {
+  running_fitness: { image: '/event-city-run.png', caption: 'วิ่งเช้าวันแรกกับเพื่อนใหม่ สดชื่นสุดๆ' },
+  cafe_social: { image: '/images/onboarding/chill-cafe.jpg', caption: 'คาเฟ่ใหม่กับเพื่อนใหม่ คุยกันถูกคอ' },
+  food_hunt: { image: '/images/onboarding/chill-cafe.jpg', caption: 'ตะลุยกินกับเพื่อนใหม่ ร้านเด็ดทั้งนั้น' },
+  boardgames_party: { image: '/event-board-games.png', caption: 'วงบอร์ดเกมวันแรก หัวเราะกันทั้งคืน' },
+  travel_outdoor: { image: '/images/destinations/khaoyai.jpg', caption: 'ทริปแรกกับเพื่อนใหม่ วิวสวยกว่าที่คิด' },
+  photo_content: { image: '/images/onboarding/share-moment.jpg', caption: 'ออกไปเดินถ่ายรูปกับเพื่อนสายเดียวกัน' },
+  movies_music: { image: '/images/onboarding/fair-festival.jpg', caption: 'คืนดนตรีสดกับเพื่อนใหม่ สนุกเกินคาด' },
+  wellness_mind: { image: '/event-sound-bath.png', caption: 'ฮีลใจวันหยุด กับเพื่อนที่เข้าใจกัน' },
+  sports_club: { image: '/event-hyrox.png', caption: 'ซ้อมวันแรก ได้ทั้งเหงื่อ ได้ทั้งเพื่อน' },
+};
+const POST_SAMPLE = {
+  name: 'แพรว', avatar: '/images/onboarding/people/a.jpg', time: '2 ชม.', image: '/images/destinations/chiangmai.jpg',
+  place: 'คาเฟ่บนดอย เชียงใหม่', caption: 'ทริปแรกกับตี้ใหม่ ตื่นมาเจอทะเลหมอกด้วยกัน คุยกันเหมือนรู้จักมานาน รอบหน้าใครไปด้วย',
+  likes: 128, comments: 24, comment: { name: 'ต้น', text: 'รอบหน้าขอไปด้วยคนนะ!' },
+};
 
 // Side panel: one photo and one brand line per screen, carrying the landing hero's words
 // ("คอมมูนิตี้ของคนชอบออกไปใช้ชีวิต" / "พบเจอมิตรภาพใหม่ ส่งต่อความประทับใจ"); `accent` is drawn in the landing orange
 const SCENES = [
   { image: '/hero-bkk-community-golden.jpg', lead: 'คอมมูนิตี้ของคน', pre: 'ชอบ', accent: 'ออกไปใช้ชีวิต', tail: '', position: 'object-[30%_center]' },
-  { image: '/hero-koh-phi-phi.jpg', lead: 'เลือกกิจกรรม ตามสายที่ชอบ', accent: '', tail: '', position: 'object-center' },
+  // "บอกสิ่งที่ชอบ": friends setting off together (owner 2026-10-23: Gen Z/Y starting the fun, not a beach)
+  { image: '/images/onboarding/friends-start.jpg', lead: 'เลือกกิจกรรม ตามสายที่ชอบ', accent: '', tail: '', position: 'object-[center_35%]' },
   { image: '/event-board-games.png', lead: '', accent: 'มิตรภาพใหม่', tail: ' เริ่มจากรู้จักชื่อกัน', position: 'object-center' },
-  { image: '/hero-bkk-park-sunny.jpg', lead: 'พบเจอ', accent: 'มิตรภาพใหม่', tail: ' ส่งต่อความประทับใจ', position: 'object-center' },
+  // The summary (owner 2026-10-23): "พร้อมออกไปใช้ชีวิตกัน" big, the rest of the sentence as a smaller line
+  { image: '/hero-bkk-park-sunny.jpg', lead: 'พร้อม', accent: 'ออกไปใช้ชีวิต', after: 'กัน', tail: '', sub: 'พบเจอมิตรภาพใหม่ และส่งต่อความประทับใจ', position: 'object-center' },
 ];
 
 interface Pick {
@@ -195,35 +228,13 @@ interface Pick {
   meta: string;
   image: string;
   href: string;
-}
-
-interface MomentThumb {
-  id: string;
-  image: string;
-  caption: string;
-  /** What the moment is tied to (spot, community, fair, challenge, general) and its mood: used to match goals */
-  targetType?: string;
-  mood?: string;
-}
-
-interface SideMeetup {
-  id: string;
-  title: string;
-  date: string;
-  image: string;
+  /** Why it was picked, shown on the summary's first-step card ("เพราะคุณชอบถ่ายรูป") */
+  reason?: string;
+  /** A ตี้ pick keeps its event, so the home band can show the same ตี้ first (FIRST_STEP_KEY) */
+  event?: EventItem;
 }
 
 /* ---------- Small UI pieces ---------- */
-
-function PillarTag({ pillar }: { pillar: PillarId }) {
-  const p = PILLARS[pillar];
-  return (
-    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/95 text-[11px] font-bold text-slate-800 whitespace-nowrap">
-      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: p.color }} aria-hidden="true" />
-      {p.short}
-    </span>
-  );
-}
 
 function StepHeading({ title, subtitle }: { title: string; subtitle: string }) {
   return (
@@ -261,41 +272,68 @@ function SelectCard({ selected, onClick, children, className = '', hideCheck = f
 /** How the summary button names a card tapped before the pledge ("รับคำมั่น แล้วไปดูตี้นี้") */
 const PICK_WORD: Record<PillarId, string> = { community: 'ตี้นี้', challenges: 'ชาเลนจ์นี้', spots: 'ที่นี่', fairs: 'งานนี้', moments: 'โมเมนต์นี้' };
 
-/** A recommended item on the summary: the photo fills the card and the text sits on it */
-function PickCard({ item, big, delay, onOpen }: { item: Pick; big: boolean; delay: number; onOpen: (e: React.MouseEvent, href: string, label: string) => void }) {
+/** The summary's heading over the one first step, by what it is */
+const FIRST_STEP_HEADING: Record<PillarId, string> = {
+  community: 'ตี้แรกที่ใช่สำหรับคุณ', challenges: 'ชาเลนจ์แรกที่ใช่สำหรับคุณ', spots: 'ที่แรกที่น่าไป', fairs: 'งานแรกที่น่าไป', moments: 'โมเมนต์ที่น่าดู',
+};
+
+/**
+ * The one first step on the summary: the words lead (title, why it was picked, when and where) and the photo sits
+ * beside them, so a dark or plain cover photo cannot sink the card
+ */
+function FirstStepCard({ item, onOpen }: { item: Pick; onOpen: (e: React.MouseEvent, href: string, label: string) => void }) {
+  const pillar = PILLARS[item.pillar];
   return (
     <Link
       href={item.href}
       onClick={(e) => onOpen(e, item.href, PICK_WORD[item.pillar])}
-      style={{ animationDelay: `${delay}ms` }}
-      className="cch-rise group relative block h-full min-h-[120px] sm:min-h-0 rounded-3xl overflow-hidden bg-slate-200 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+      className="cch-rise group flex items-stretch gap-4 rounded-3xl border border-slate-200 bg-white p-2.5 pr-4 hover:border-slate-300 hover:shadow-md transition-shadow focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]"
     >
-      {item.image && (
-        // eslint-disable-next-line @next/next/no-img-element -- remote content images
-        <img src={item.image} alt="" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none" />
-      )}
-      {/* Dark overlay keeps the text on the photo readable */}
-      <span className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" aria-hidden="true" />
-      <span className="absolute top-3 left-3">
-        <PillarTag pillar={item.pillar} />
+      <span className="relative w-[32%] max-w-[176px] shrink-0 overflow-hidden rounded-2xl bg-slate-100 aspect-[4/3]">
+        {item.image && (
+          // eslint-disable-next-line @next/next/no-img-element -- remote content images
+          <img src={item.image} alt="" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none" />
+        )}
       </span>
-      <span className="absolute inset-x-0 bottom-0 p-3.5 sm:p-4">
-        <span className={`font-bold text-white leading-snug line-clamp-2 ${big ? 'text-base sm:text-xl' : 'text-sm sm:text-base'}`}>{item.title}</span>
-        <span className="text-xs font-semibold text-white/85 mt-1 line-clamp-1">{item.meta}</span>
+      <span className="min-w-0 flex-1 flex flex-col justify-center py-1">
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: pillar.color }} aria-hidden="true" />
+          {pillar.short}
+        </span>
+        <span className="mt-1 text-base sm:text-lg font-bold text-slate-900 leading-snug line-clamp-2 group-hover:underline">{item.title}</span>
+        {item.reason && <span className="mt-1 text-sm font-semibold line-clamp-1" style={{ color: pillar.color }}>{item.reason}</span>}
+        {item.meta && <span className="mt-1 text-xs sm:text-sm text-slate-500 line-clamp-1">{item.meta}</span>}
       </span>
     </Link>
   );
 }
 
-function GoalCard({ goal, selected, onClick, wide }: { goal: Goal; selected: boolean; onClick: () => void; wide: boolean }) {
+/**
+ * A goal on "เลือกสิ่งที่ใช่". Phones: one row per goal, the same size each (photo left, words right, easy to read);
+ * from iPad up: the photo fills the card and the words sit on it (owner 2026-10-23)
+ */
+function GoalCard({ goal, selected, onClick }: { goal: Goal; selected: boolean; onClick: () => void }) {
   return (
-    <SelectCard selected={selected} onClick={onClick} className={`overflow-hidden ${wide ? 'col-span-2 sm:col-span-1' : ''}`}>
-      <span className={`relative block sm:aspect-[4/3] ${wide ? 'aspect-[2/1]' : 'aspect-square'}`}>
-        <Image src={goal.image} alt="" fill sizes="(min-width: 1024px) 220px, (min-width: 640px) 33vw, 50vw" className="object-cover" />
+    <SelectCard selected={selected} onClick={onClick} className="overflow-hidden">
+      <span className="sm:hidden flex items-center gap-3 p-2 pr-10">
+        <span className="relative w-20 h-20 shrink-0 overflow-hidden rounded-xl">
+          <Image src={goal.image} alt="" fill sizes="80px" className="object-cover" />
+        </span>
+        <span className="min-w-0">
+          <span className="block text-[15px] font-bold text-slate-900 leading-snug">
+            <PhraseText text={goal.title} />
+          </span>
+          <span className="block text-xs text-slate-500 font-medium mt-0.5">
+            <PhraseText text={goal.desc} />
+          </span>
+        </span>
+      </span>
+      <span className="hidden sm:block relative aspect-[4/3]">
+        <Image src={goal.image} alt="" fill sizes="(min-width: 1024px) 220px, 33vw" className="object-cover" />
         {/* Dark overlay keeps the text on the photo readable */}
         <span className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" aria-hidden="true" />
         <span className="absolute inset-x-0 bottom-0 p-3">
-          <span className="block text-sm sm:text-base font-bold text-white leading-snug">
+          <span className="block text-base font-bold text-white leading-snug">
             <PhraseText text={goal.title} />
           </span>
           <span className="block text-xs text-white/85 font-medium mt-0.5">
@@ -346,7 +384,6 @@ interface FinishedRun {
   fairInterests: string[];
   province: string;
   picks: Pick[] | null;
-  moments: MomentThumb[];
 }
 let finishedRun: FinishedRun | null = null;
 /** Leaving the summary for good (or starting over) forgets the kept run */
@@ -370,12 +407,10 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
   const [birthYearMissing, setBirthYearMissing] = useState(false);
   const [provinceMissing, setProvinceMissing] = useState(false);
   const [picks, setPicks] = useState<Pick[] | null>(saved?.picks ?? null);
-  const [moments, setMoments] = useState<MomentThumb[]>(saved?.moments ?? []);
   // Summary: a card tapped before the pledge waits here; the button then says where it goes (owner option ข)
   const [pendingOpen, setPendingOpen] = useState<{ href: string; label: string } | null>(null);
-  // Side panel: a pool of shared moments (filtered by goals) and meetups that fit the interests picked so far
-  const [momentPool, setMomentPool] = useState<MomentThumb[]>([]);
-  const [sideMeetups, setSideMeetups] = useState<SideMeetup[]>([]);
+  // "บอกสิ่งที่ชอบ": active members who share at least one picked สาย (null until loaded)
+  const [samePeople, setSamePeople] = useState<number | null>(null);
 
   // Step 1
   const [goals, setGoals] = useState<string[]>(saved?.goals ?? []);
@@ -408,8 +443,8 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
 
   // Keep the finished run current (picks and moments arrive after the screen opens)
   useEffect(() => {
-    if (done) finishedRun = { preview, memberId: session.member?.id ?? null, goals, displayName, photo, birthYear, gender, communityInterests, spotInterests, fairInterests, province, picks, moments };
-  }, [done, preview, session.member?.id, goals, displayName, photo, birthYear, gender, communityInterests, spotInterests, fairInterests, province, picks, moments]);
+    if (done) finishedRun = { preview, memberId: session.member?.id ?? null, goals, displayName, photo, birthYear, gender, communityInterests, spotInterests, fairInterests, province, picks };
+  }, [done, preview, session.member?.id, goals, displayName, photo, birthYear, gender, communityInterests, spotInterests, fairInterests, province, picks]);
 
   // A visitor may pick member and host goals together; any host goal decides the role
   const role: OnboardingRole = useMemo(() => HOST_GOALS.find((g) => goals.includes(g.id))?.role ?? 'member', [goals]);
@@ -433,7 +468,18 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
   const isSignUpOpen = !preview && session.isLoaded && !session.member;
   const scene = SCENES[done ? SCENES.length - 1 : step];
   const firstName = displayName.trim();
-  const provinceName = province ? master.provinces.find((p) => p.id === province)?.displayName || province : '';
+  // Came for moments only: the summary leads with moments and people to follow, outings come after
+  const socialOnly = isSocialOnly(goals);
+  // The summary's member card: the สาย picked, and the month they joined ("ต.ค. 2569")
+  const pickedSai = communityInterests.map((id) => master.communityCategories.find((c) => c.id === id)).filter((c): c is (typeof master.communityCategories)[number] => Boolean(c));
+  const joinedMonth = new Date().toLocaleDateString('th-TH', { month: 'short', year: 'numeric' });
+  // "บอกเราเกี่ยวกับคุณ": the first-moment example, and which required answers are in (ticks and "อีก N ข้อ")
+  const firstMomentBase = FIRST_MOMENT_BY_SAI[communityInterests.find((id) => FIRST_MOMENT_BY_SAI[id]) ?? ''] ?? FIRST_MOMENT_DEFAULT;
+  const firstMoment = { image: firstMomentBase.image, caption: province ? `${firstMomentBase.caption} ที่${province}` : firstMomentBase.caption };
+  const nameOk = displayName.trim().length >= 2;
+  const aboutLeft = [!nameOk, !birthYear, !province].filter(Boolean).length;
+  // The province's own name (the landing tiles' "หาดใหญ่ • สงขลา" style is for travel picks, not where someone lives)
+  const provinceName = province;
   const alreadyPledged = Boolean(session.member?.trust.pledged);
 
   // Step 3 shows what fits the goals; with no goal (skipped), a few popular ones
@@ -461,15 +507,6 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
     () => [...new Set([...fairInterests, ...communityInterests.flatMap((id) => SAI_FAIRS[id] ?? []), ...(goalBased ? suggested.fairs : [])])],
     [fairInterests, communityInterests, goalBased, suggested]
   );
-
-  // Side panel: shared moments that fit the goals (or the most liked when nothing fits)
-  const sideMoments = useMemo(() => {
-    const rules = goals.map((g) => GOAL_MOMENTS[g]).filter(Boolean);
-    const fit = rules.length ? momentPool.filter((m) => rules.some((r) => r.targets?.includes(m.targetType ?? '') || r.moods?.includes(m.mood ?? ''))) : [];
-    return (fit.length >= 3 ? fit : [...fit, ...momentPool.filter((m) => !fit.includes(m))]).slice(0, 3);
-  }, [goals, momentPool]);
-  // The summary keeps the moments chosen when it opened; if the pool was still loading then, use it once it arrives
-  const summaryMoments = moments.length ? moments : momentPool.slice(0, 6);
 
   const next = () => {
     setError('');
@@ -529,7 +566,8 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
   /** Real content matching the answers, for the summary: a ตี้ and a ชาเลนจ์ (the two drivers), then a place or a fair */
   const loadPicks = async () => {
     const support: PillarId = litPillars.has('fairs') && !litPillars.has('spots') ? 'fairs' : 'spots';
-    const pillars: PillarId[] = ['community', 'challenges', support];
+    // The first card is the summary's one first step: a challenge for members who came for challenges, else a ตี้
+    const pillars: PillarId[] = flavourFromGoals(goals) === 'challenge' ? ['challenges', 'community', support] : ['community', 'challenges', support];
     const prov = province ? `&province=${encodeURIComponent(province)}` : '';
     const mood = master.communityCategories.find((c) => communityInterests.includes(c.id))?.coreMood;
     const vibeWord = master.spotVibes.find((v) => inferredSpots.includes(v.id))?.keywords[0];
@@ -542,15 +580,32 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
         if (pillar === 'community') {
           const base = '/api/events?type=community&status=recruiting&sortBy=popular&limit=3';
           const cat = mood ? `&category=${mood}` : '';
+          // The สาย picked themselves first (near home, then anywhere), so the card can say why; the mood and
+          // popular ones only when none of them has a ตี้
+          for (const near of [prov, '']) {
+            const found = await Promise.all(communityInterests.slice(0, 8).map(async (id) => ({ id, events: readEvents(await fetchJson(`${base}&lifestyleCategory=${id}${near}`)) })));
+            const hit = found.find((f) => f.events.length);
+            if (hit) {
+              const name = master.communityCategories.find((c) => c.id === hit.id)?.name.split(' & ')[0];
+              return hit.events.slice(0, 3).map((e) => ({ ...eventPick('community', '/community')(e), reason: name ? `เพราะคุณชอบ${name}` : undefined, event: e }));
+            }
+          }
           const events = await firstNonEmpty([`${base}${cat}${prov}`, `${base}${prov}`, `${base}${cat}`, base], readEvents);
-          return events.slice(0, 3).map(eventPick('community', '/community'));
+          return events.slice(0, 3).map((e) => ({ ...eventPick('community', '/community')(e), reason: 'ตี้ที่คนสนใจเยอะตอนนี้', event: e }));
         }
         if (pillar === 'challenges') {
-          const json = await fetchJson<{ quests?: { id: string; title: string; image?: string; status?: string; rewardPoints?: number; daysRemaining?: number }[] }>('/api/quests?limit=12');
-          return (json?.quests ?? [])
-            .filter((q) => q.status !== 'ended' && q.image)
+          // Challenges share the ตี้ สาย (owner 2026-10-16): the ones in the สาย picked come first, in the order picked
+          const json = await fetchJson<{ quests?: { id: string; title: string; image?: string; badgeCoverImg?: string; status?: string; category?: string; rewardPoints?: number; daysRemaining?: number }[] }>('/api/quests?limit=50');
+          // The cover falls back to the badge picture, as the home band does
+          const open = (json?.quests ?? []).map((q) => ({ ...q, image: q.image || q.badgeCoverImg })).filter((q) => q.status !== 'ended' && q.image);
+          const rank = (q: { category?: string }) => { const i = communityInterests.indexOf(q.category ?? ''); return i < 0 ? communityInterests.length : i; };
+          return [...open]
+            .sort((a, b) => rank(a) - rank(b))
             .slice(0, 3)
-            .map((q): Pick => ({ pillar: 'challenges', id: q.id, title: q.title, meta: [q.rewardPoints ? `+${q.rewardPoints} XP` : '', q.daysRemaining ? `เหลือ ${q.daysRemaining} วัน` : ''].filter(Boolean).join(' · '), image: q.image ?? '', href: `/challenges/${q.id}` }));
+            .map((q): Pick => {
+              const sai = communityInterests.includes(q.category ?? '') ? master.communityCategories.find((c) => c.id === q.category)?.name.split(' & ')[0] : undefined;
+              return { pillar: 'challenges', id: q.id, title: q.title, meta: [q.rewardPoints ? `+${q.rewardPoints} XP` : '', q.daysRemaining ? `เหลือ ${q.daysRemaining} วัน` : ''].filter(Boolean).join(' · '), image: q.image ?? '', href: `/challenges/${q.id}`, reason: sai ? `เพราะคุณชอบ${sai}` : 'ไปคนเดียวก็ได้ ตามจังหวะตัวเอง' };
+            });
         }
         if (pillar === 'fairs') {
           const base = '/api/events?type=public_venue&limit=3';
@@ -572,38 +627,19 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
     setPicks(chosen);
   };
 
-  // Shared moments for the side panel and the summary, loaded once
-  useEffect(() => {
-    let active = true;
-    void fetchJson<{ moments?: { id: string; images: string[]; caption: string; targetType?: string; category?: string }[] }>('/api/moments?tab=popular&limit=40').then((json) => {
-      if (!active) return;
-      setMomentPool((json?.moments ?? []).filter((m) => m.images?.[0]).map((m) => ({ id: m.id, image: m.images[0], caption: m.caption, targetType: m.targetType, mood: m.category })));
-    });
-    return () => { active = false; };
-  }, []);
-
-  // Step 3: meetups that fit the interests picked so far, refreshed as the member taps (side panel)
+  // "บอกสิ่งที่ชอบ" side panel: how many members share the สาย picked so far. One number, no ตี้ and no names: a ตี้
+  // could be the wrong one for a newcomer, and interests are private answers (owner 2026-10-23)
   useEffect(() => {
     if (done || step !== STEP_LIKES) return;
-    const mood = master.communityCategories.find((c) => communityInterests.includes(c.id))?.coreMood;
-    const base = '/api/events?type=community&status=recruiting&sortBy=popular&limit=2';
-    const prov = province ? `&province=${encodeURIComponent(province)}` : '';
-    const cat = mood ? `&category=${mood}` : '';
+    if (!communityInterests.length) return; // the panel shows its "เลือกสายที่ชอบ" line then
     let active = true;
     const timer = setTimeout(() => {
-      void firstNonEmpty([`${base}${cat}${prov}`, `${base}${cat}`, `${base}${prov}`, base], (json) => ((json as { events?: EventItem[] } | null)?.events ?? [])).then((events) => {
-        if (active) setSideMeetups(events.slice(0, 2).map((e) => ({ id: e.id, title: e.title, date: [e.date, e.time].filter(Boolean).join(' · '), image: e.image })));
+      void fetchJson<{ people?: number }>(`/api/members/interest-count?ids=${communityInterests.join(',')}`).then((json) => {
+        if (active) setSamePeople(json?.people ?? 0);
       });
-    }, 300);
+    }, 250);
     return () => { active = false; clearTimeout(timer); };
-  }, [done, step, communityInterests, province, master.communityCategories]);
-
-  /** Moments for the summary: the ones that fit the goals first */
-  const loadMoments = () => {
-    const rules = goals.map((g) => GOAL_MOMENTS[g]).filter(Boolean);
-    const fit = momentPool.filter((m) => rules.some((r) => r.targets?.includes(m.targetType ?? '') || r.moods?.includes(m.mood ?? '')));
-    setMoments([...fit, ...momentPool.filter((m) => !fit.includes(m))].slice(0, 6));
-  };
+  }, [done, step, communityInterests]);
 
   /** Saves the answers and opens the summary. The pledge is accepted there, with its button (owner 2026-10-22). */
   const finish = async () => {
@@ -634,7 +670,6 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
       setDone(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       void loadPicks();
-      loadMoments();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'บันทึกไม่สำเร็จ ลองอีกครั้งนะ');
     } finally {
@@ -654,6 +689,16 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
       if (!preview && !alreadyPledged) {
         if (!session.member) throw new Error('เข้าสู่ระบบก่อน แล้วลองอีกครั้งนะ');
         await memberActions.acceptPledge();
+      }
+      // The home band opens on the same first step the summary offered, with the same reason
+      const first = picks?.[0];
+      if (!preview && session.member && first && (first.pillar === 'community' || first.pillar === 'challenges')) {
+        try {
+          const saved: FirstStep = { pillar: first.pillar, id: first.id, reason: first.reason, event: first.event };
+          localStorage.setItem(FIRST_STEP_KEY(session.member.id), JSON.stringify(saved));
+        } catch {
+          /* storage unavailable: the band keeps its own order */
+        }
       }
       clearFinishedRun();
       if (pledgeOnly) router.replace(returnTo || '/profile');
@@ -690,7 +735,6 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
     clearFinishedRun();
     setDone(false);
     setPicks(null);
-    setMoments([]);
     setPendingOpen(null);
     setStep(0);
     setGoals([]);
@@ -735,7 +779,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
   // Progress: each step named under its bar; the summary is step 4 ("ออกไปใช้ชีวิตกัน")
   const current = done ? STEPS.length - 1 : step;
   const progress = (
-    <div className="mb-8 lg:mb-10 flex items-start gap-4">
+    <div className={`${done ? 'mb-5 lg:mb-6' : 'mb-8 lg:mb-10'} flex items-start gap-4`}>
       <div className="flex-1 min-w-0">
         <ol className="grid grid-cols-4 gap-2" aria-label={`ขั้นที่ ${current + 1} จาก ${STEPS.length}`}>
           {STEPS.map((label, i) => (
@@ -759,12 +803,12 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
 
   // The four pledge lines, short enough to read in a few seconds
   const pledgeList = (
-    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 rounded-2xl bg-slate-50 p-4">
+    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5 rounded-2xl bg-slate-50 p-3.5">
       {PLEDGE.map((item) => {
         const Icon = item.icon;
         return (
           <li key={item.title} className="flex items-start gap-3">
-            <span className="w-9 h-9 rounded-full bg-white text-[#2563EB] flex items-center justify-center shrink-0 shadow-xs">
+            <span className="w-8 h-8 rounded-full bg-white text-[#2563EB] flex items-center justify-center shrink-0 shadow-xs">
               <Icon className="w-4 h-4" aria-hidden="true" />
             </span>
             <span className="min-w-0">
@@ -809,7 +853,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
               <span className="hidden sm:block text-[11px] text-white/80 font-medium tracking-normal leading-none mt-1.5">Curated Lifestyle & Meaningful Activities</span>
             </span>
           </Link>
-          <div>
+          <div className={done && !pledgeOnly ? 'lg:my-auto' : undefined}>
             {/* The landing hero's words, one line per screen; the accent in the landing orange */}
             <p key={scene.image} className="cch-rise text-xl sm:text-2xl lg:text-4xl font-bold leading-tight tracking-tight max-w-md">
               {scene.lead && <PhraseText text={scene.lead} />}
@@ -819,11 +863,52 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
                 <span className="whitespace-nowrap">
                   {'pre' in scene && scene.pre}
                   <span className="text-[#FF8A5B]">{scene.accent}</span>
+                  {'after' in scene && scene.after}
                 </span>
               )}
               {/* PhraseText drops a leading space, so the gap after the accent is written out */}
               {scene.tail && <>{' '}<PhraseText text={scene.tail.trim()} /></>}
             </p>
+            {'sub' in scene && (
+              <p key={`${scene.image}-sub`} className="cch-rise mt-2 lg:mt-3 text-sm sm:text-base lg:text-xl font-semibold text-white/85 max-w-md">
+                <PhraseText text={scene.sub ?? ''} />
+              </p>
+            )}
+
+            {/* The summary: the member card they just made, with the สาย they picked as stickers (computers) */}
+            {done && !pledgeOnly && (
+              <div className="hidden lg:block mt-8 max-w-sm cch-rise">
+                <div className="relative -rotate-2 rounded-3xl bg-white text-slate-900 p-5 shadow-2xl">
+                  <span className="absolute -top-3 -right-3 rotate-6 rounded-full bg-[#F26430] px-3 py-1 text-xs font-bold text-white shadow-md">ยินดีต้อนรับ!</span>
+                  <div className="flex items-center gap-3.5">
+                    <span className="w-16 h-16 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-[#2563EB] text-white text-2xl font-bold ring-4 ring-blue-50">
+                      {photo ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- local object URL preview
+                        <img src={photo.preview} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        nameInitial(firstName, 'C')
+                      )}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-xl font-bold leading-tight truncate">{firstName || 'สมาชิกใหม่'}</span>
+                      <span className="block mt-0.5 text-xs font-semibold text-slate-500">สมาชิก Chill & Connect Hub</span>
+                      <span className="block mt-0.5 text-xs text-slate-500 truncate">{[provinceName, joinedMonth].filter(Boolean).join(' · ')}</span>
+                    </span>
+                  </div>
+                  {pickedSai.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-dashed border-slate-200 flex flex-wrap gap-1.5">
+                      {pickedSai.slice(0, 5).map((cat, i) => (
+                        <span key={cat.id} className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${SAI_LOOK.get(cat.id)?.iconBg ?? 'bg-slate-100'} ${SAI_LOOK.get(cat.id)?.iconColor ?? 'text-slate-700'} ${i % 2 ? 'rotate-2' : '-rotate-1'}`}>
+                          <cat.icon className="w-3.5 h-3.5" aria-hidden="true" />
+                          {cat.name.split(' & ')[0]}
+                        </span>
+                      ))}
+                      {pickedSai.length > 5 && <span className="px-1 py-1 text-xs font-semibold text-slate-500">+{pickedSai.length - 5} สาย</span>}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* A live preview of what the answers lead to (computers; phones get the thumbnails below) */}
             {!done && !pledgeOnly && (
@@ -867,11 +952,10 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
                           <span className="block text-xs text-slate-500 truncate">เพิ่งแชร์{provinceName ? ` · ${provinceName}` : ''}</span>
                         </span>
                       </div>
-                      {sideMoments[0] && (
-                        // eslint-disable-next-line @next/next/no-img-element -- remote content images
-                        <img src={sideMoments[0].image} alt="" className="mt-3 w-full aspect-[4/3] object-cover rounded-2xl" />
-                      )}
-                      <p className="mt-2.5 px-1 text-sm font-semibold text-slate-800 leading-snug">ออกไปใช้ชีวิตวันแรก กับเพื่อนใหม่ที่คุยกันถูกคอ</p>
+                      {/* A fixed photo for the first สาย picked, so it fits the caption (a live one could be anything) */}
+                      {/* eslint-disable-next-line @next/next/no-img-element -- small local illustration */}
+                      <img key={firstMoment.image} src={firstMoment.image} alt="" className="cch-rise mt-3 w-full aspect-[4/3] object-cover rounded-2xl" />
+                      <p className="mt-2.5 px-1 text-sm font-semibold text-slate-800 leading-snug">{firstMoment.caption}</p>
                       <p className="mt-2 px-1 flex items-center gap-4 text-xs font-bold text-slate-500">
                         <span className="inline-flex items-center gap-1"><Heart className="w-3.5 h-3.5 text-rose-500" aria-hidden="true" />เพื่อนๆ กดถูกใจ</span>
                         <span className="inline-flex items-center gap-1"><MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />ทักทายกัน</span>
@@ -880,36 +964,60 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
                   </div>
                 ) : (
                   <div className="space-y-5">
-                    {step === STEP_LIKES && sideMeetups.length > 0 && (
-                      <div>
-                        <p className="text-sm font-semibold text-white/80 mb-2.5">ตี้ที่ตรงกับคุณตอนนี้</p>
-                        <ul className="space-y-2">
-                          {sideMeetups.map((m) => (
-                            <li key={m.id} className="flex items-center gap-3 rounded-2xl bg-white/10 backdrop-blur-sm p-2">
-                              {/* eslint-disable-next-line @next/next/no-img-element -- remote content images */}
-                              <img src={m.image} alt="" className="w-12 h-12 rounded-xl object-cover shrink-0" />
-                              <span className="min-w-0">
-                                <span className="block text-xs font-semibold text-[#FFB08F]">{m.date}</span>
-                                <span className="block text-sm font-bold leading-snug line-clamp-1">{m.title}</span>
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
+                    {/* One number of people who share the สาย picked (owner 2026-10-23); small numbers read as empty, so a
+                        friendly line until there are enough */}
+                    <p className="text-base font-semibold leading-snug text-white/90">
+                      {samePeople !== null && samePeople > SAME_PEOPLE_MIN ? (
+                        <>
+                          เพื่อนสายเดียวกัน <span className="mx-0.5 text-[28px] font-bold text-[#FFB08F] tabular-nums align-[-3px]">{samePeople.toLocaleString()}</span> คน รออยู่ที่นี่แล้ว
+                        </>
+                      ) : communityInterests.length ? (
+                        <PhraseText text="มาร่วมเป็นส่วนหนึ่งของคอมมูนิตี้สำหรับคุณรุ่นใหม่ แล้วออกไปใช้ชีวิตกัน" />
+                      ) : (
+                        'เลือกสายที่ชอบ แล้วไปเจอเพื่อนสายเดียวกัน'
+                      )}
+                    </p>
+                    {/* Friends' moments the way the landing's "เพื่อน & โมเมนต์" shows them: a stories row, then one post (a fixed example) */}
+                    <div aria-hidden="true">
+                      <p className="text-sm font-semibold text-white/80 mb-3">โมเมนต์จากเพื่อนๆ</p>
+                      <ul className="flex gap-3 mb-4">
+                        {STORY_SAMPLES.map((story, i) => (
+                          <li key={story.name} className="w-14 text-center">
+                            <span className={`relative block w-14 h-14 rounded-full p-[2px] ${i === 0 ? 'bg-[#F26430]' : 'bg-white/70'}`}>
+                              {/* eslint-disable-next-line @next/next/no-img-element -- small local illustration */}
+                              <img src={story.image} alt="" className="w-full h-full rounded-full object-cover border-2 border-black/20" />
+                              {/* eslint-disable-next-line @next/next/no-img-element -- small local illustration */}
+                              <img src={story.avatar} alt="" className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full object-cover border-2 border-white" />
+                            </span>
+                            <span className="block mt-1 text-[11px] font-semibold text-white/90 truncate">{story.name}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="flex gap-3 bg-white text-slate-900 rounded-3xl p-3 shadow-2xl max-w-md">
+                        {/* eslint-disable-next-line @next/next/no-img-element -- small local illustration */}
+                        <img src={POST_SAMPLE.image} alt="" className="w-28 h-28 xl:w-32 xl:h-32 rounded-2xl object-cover shrink-0" />
+                        <div className="min-w-0 flex-1 py-0.5">
+                          <p className="flex items-center gap-2 min-w-0">
+                            {/* eslint-disable-next-line @next/next/no-img-element -- small local illustration */}
+                            <img src={POST_SAMPLE.avatar} alt="" className="w-7 h-7 rounded-full object-cover shrink-0" />
+                            <span className="min-w-0 text-sm font-bold truncate">{POST_SAMPLE.name}</span>
+                            <span className="shrink-0 text-[11px] text-slate-500">{POST_SAMPLE.time}</span>
+                          </p>
+                          <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-[#D04A1B] min-w-0">
+                            <MapPin className="w-3.5 h-3.5 shrink-0" />
+                            <span className="truncate">ไปที่ {POST_SAMPLE.place}</span>
+                          </p>
+                          <p className="mt-1 text-[13px] font-semibold leading-snug line-clamp-2">{POST_SAMPLE.caption}</p>
+                          <p className="mt-1.5 flex items-center gap-3 text-xs font-semibold text-slate-500 tabular-nums">
+                            <span className="inline-flex items-center gap-1"><Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />{POST_SAMPLE.likes}</span>
+                            <span className="inline-flex items-center gap-1"><MessageCircle className="w-3.5 h-3.5" />{POST_SAMPLE.comments} ความเห็น</span>
+                          </p>
+                          <p className="mt-2 rounded-2xl bg-slate-100 px-2.5 py-1.5 text-xs leading-snug line-clamp-1">
+                            <span className="font-bold">{POST_SAMPLE.comment.name}</span> {POST_SAMPLE.comment.text}
+                          </p>
+                        </div>
                       </div>
-                    )}
-                    {sideMoments.length > 0 && (
-                      <div>
-                        <p className="text-sm font-semibold text-white/80 mb-2.5">{goals.length ? 'ความประทับใจที่เพื่อนๆ ส่งต่อ' : 'คนที่นี่ ออกไปใช้ชีวิตแบบนี้'}</p>
-                        <ul className="grid grid-cols-3 gap-2.5">
-                          {sideMoments.map((m, i) => (
-                            <li key={m.id} className={`${['-rotate-2', 'rotate-[1.5deg]', '-rotate-1'][i]}`}>
-                              {/* eslint-disable-next-line @next/next/no-img-element -- remote content images */}
-                              <img src={m.image} alt="" className="w-full aspect-square object-cover rounded-2xl border-4 border-white shadow-lg" />
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -917,11 +1025,11 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
           </div>
         </div>
         {/* Phones: the same shared moments as three small prints on the photo band */}
-        {!done && !pledgeOnly && step > 0 && sideMoments.length > 0 && (
+        {!done && !pledgeOnly && step === STEP_ABOUT && (
           <ul className="lg:hidden absolute right-4 top-4 flex" aria-hidden="true">
-            {sideMoments.map((m, i) => (
-              <li key={m.id} className={`${i ? '-ml-3' : ''} ${['-rotate-6', 'rotate-3', '-rotate-2'][i]}`}>
-                {/* eslint-disable-next-line @next/next/no-img-element -- remote content images */}
+            {STORY_SAMPLES.slice(0, 3).map((m, i) => (
+              <li key={m.name} className={`${i ? '-ml-3' : ''} ${['-rotate-6', 'rotate-3', '-rotate-2'][i]}`}>
+                {/* eslint-disable-next-line @next/next/no-img-element -- small local illustration */}
                 <img src={m.image} alt="" className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl object-cover border-2 border-white shadow-md" />
               </li>
             ))}
@@ -931,7 +1039,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
 
       {/* Question side */}
       {/* Full height on computers so the buttons always sit at the bottom of the screen, even on short steps */}
-      <main className="w-full max-w-2xl mx-auto px-4 sm:px-8 py-6 lg:py-12 flex flex-col min-h-0 lg:min-h-screen">
+      <main className={`w-full max-w-2xl mx-auto px-4 sm:px-8 py-6 ${done ? 'lg:py-8' : 'lg:py-12'} flex flex-col min-h-0 lg:min-h-screen`}>
         {pledgeOnly ? (
           // /onboarding?step=pledge: a member who skipped onboarding accepts the pledge before posting
           <section className="cch-rise flex-1 flex flex-col">
@@ -956,9 +1064,9 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
             {progress}
             {done ? (
               <section className="cch-rise flex-1 flex flex-col">
-                {/* Welcome: who they are */}
-                <div className="flex items-center gap-4 mb-6">
-                  <span className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-[#2563EB] text-white text-xl sm:text-2xl font-bold ring-4 ring-blue-50">
+                {/* Welcome (owner 2026-10-23: the summary has one job, "you are in", then the pledge and one first step) */}
+                <div className="flex items-center gap-4 mb-5">
+                  <span className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-[#2563EB] text-white text-xl sm:text-2xl font-bold ring-4 ring-blue-50">
                     {photo ? (
                       // eslint-disable-next-line @next/next/no-img-element -- local object URL preview
                       <img src={photo.preview} alt="" className="w-full h-full object-cover" />
@@ -966,75 +1074,70 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
                       nameInitial(firstName, 'C')
                     )}
                   </span>
-                  <h1 className="text-2xl sm:text-3xl lg:text-[34px] font-bold tracking-tight text-slate-900 leading-tight min-w-0">
-                    <PhraseText text={firstName ? `ยินดีต้อนรับสู่คอมมูนิตี้ คุณ ${firstName}` : 'ยินดีต้อนรับสู่คอมมูนิตี้'} />
-                  </h1>
+                  <div className="min-w-0">
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 leading-tight">
+                      <PhraseText text={firstName ? `ยินดีต้อนรับ คุณ ${firstName}` : 'ยินดีต้อนรับสู่คอมมูนิตี้'} />
+                    </h1>
+                    <p className="mt-0.5 text-sm text-slate-500 font-medium">ก้าวแรกของคุณ เริ่มจากตรงนี้</p>
+                  </div>
                 </div>
-
-                {/* The landing hero's three steps, as what comes next */}
-                <div className="mb-6">
-                  <p className="text-sm font-semibold text-slate-700">ต่อไป แค่ 3 ขั้น</p>
-                  <ol className="mt-2.5 flex flex-wrap gap-2">
-                    {JOURNEY_STEPS.map((label, i) => (
-                      <li key={label} className={`inline-flex items-center gap-1.5 rounded-full bg-white pl-1 pr-3 py-1 text-[13px] font-semibold text-slate-900 shadow-[0_3px_10px_rgba(15,23,42,0.10)] border border-slate-100 ${['-rotate-2', 'rotate-[1.5deg]', '-rotate-1'][i]}`}>
-                        <span className="w-5.5 h-5.5 rounded-full bg-slate-900 text-white text-xs flex items-center justify-center" aria-hidden="true">{i + 1}</span>
-                        {label}
-                      </li>
+                {/* Phones have no member card on the photo side: the สาย picked as a line under the welcome */}
+                {pickedSai.length > 0 && (
+                  <p className="lg:hidden -mt-3 mb-6 flex flex-wrap gap-1.5">
+                    {pickedSai.slice(0, 4).map((cat) => (
+                      <span key={cat.id} className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${SAI_LOOK.get(cat.id)?.iconBg ?? 'bg-slate-100'} ${SAI_LOOK.get(cat.id)?.iconColor ?? 'text-slate-700'}`}>
+                        <cat.icon className="w-3.5 h-3.5" aria-hidden="true" />
+                        {cat.name.split(' & ')[0]}
+                      </span>
                     ))}
-                  </ol>
-                </div>
-
-                {/* What is waiting: a ตี้, a ชาเลนจ์, a place or fair */}
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-3">ที่รออยู่สำหรับคุณ</h2>
-                {picks === null && (
-                  <div className="flex items-center gap-2 py-10 text-sm font-bold text-slate-500" role="status">
-                    <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
-                    กำลังหาสิ่งที่ใช่ให้คุณ…
-                  </div>
-                )}
-                {picks && picks.length > 0 && (
-                  <ul className={`grid gap-3 ${picks.length < 3 ? 'grid-cols-1 sm:grid-cols-2 sm:h-[240px]' : 'grid-cols-2 sm:grid-cols-5 sm:grid-rows-2 sm:h-[264px]'}`}>
-                    {picks.map((item, index) => {
-                      const first = index === 0 && picks.length >= 3;
-                      return (
-                        <li key={`${item.pillar}-${item.id}`} className={picks.length < 3 ? 'aspect-[16/10] sm:aspect-auto' : first ? 'col-span-2 aspect-[16/10] sm:aspect-auto sm:col-span-3 sm:row-span-2' : 'aspect-square sm:aspect-auto sm:col-span-2'}>
-                          <PickCard item={item} big={first} delay={index * 90} onOpen={openFromSummary} />
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-                {picks?.length === 0 && (
-                  <div className="bg-slate-50/80 rounded-2xl p-4 border border-dashed border-slate-200 text-sm font-semibold text-slate-600">
-                    <PhraseText text="ยังไม่มีรายการที่ตรงพอดี แต่มีอีกเยอะให้ดู ในหน้าแรก" />
-                  </div>
+                    {pickedSai.length > 4 && <span className="px-1 py-1 text-xs font-semibold text-slate-500">+{pickedSai.length - 4}</span>}
+                  </p>
                 )}
 
-                {/* Moments: what friends pass on */}
-                {summaryMoments.length > 0 && (
-                  <div className="mt-6">
-                    <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2 mb-2.5">
-                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: PILLARS.moments.color }} aria-hidden="true" />
-                      ความประทับใจที่เพื่อนๆ ส่งต่อ
-                    </h2>
-                    <ul className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                      {summaryMoments.map((m, i) => (
-                        <li key={m.id} className={i >= 4 ? 'hidden sm:block' : ''}>
-                          <Link href={`/moments/${encodeURIComponent(m.id)}`} onClick={(e) => openFromSummary(e, `/moments/${encodeURIComponent(m.id)}`, 'โมเมนต์นี้')} aria-label={m.caption.slice(0, 60)} className="group block aspect-square rounded-2xl overflow-hidden bg-slate-100">
-                            {/* eslint-disable-next-line @next/next/no-img-element -- remote content images */}
-                            <img src={m.image} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 motion-reduce:transition-none" />
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
+                {/* The first step: one card that fits the answers, with why. Moments-only members: people to follow */}
+                {socialOnly ? (
+                  <div>
+                    <h2 className="text-lg sm:text-xl font-bold text-slate-900">ติดตามเพื่อนสายเดียวกัน</h2>
+                    <p className="mt-1 mb-4 text-sm text-slate-500 font-medium">โมเมนต์ของเขาจะขึ้นในหน้าแรกของคุณ</p>
+                    <FollowRow emptyText="เดี๋ยวจะมีเพื่อนๆ ให้ติดตามในหน้าแรกนะ" />
+                  </div>
+                ) : (
+                  <div>
+                    <h2 className="text-base sm:text-lg font-bold text-slate-900 mb-2.5">{picks?.[0] ? FIRST_STEP_HEADING[picks[0].pillar] : 'ก้าวแรกที่ใช่สำหรับคุณ'}</h2>
+                    {picks === null && (
+                      <div className="flex items-center gap-2 h-[140px] text-sm font-bold text-slate-500" role="status">
+                        <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
+                        กำลังหาสิ่งที่ใช่ให้คุณ…
+                      </div>
+                    )}
+                    {picks?.[0] && <FirstStepCard item={picks[0]} onOpen={openFromSummary} />}
+                    {picks && picks.length > 1 && (
+                      <p className="mt-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm text-slate-500">
+                        <span>หรือ</span>
+                        {picks.slice(1, 3).map((item, i) => (
+                          <span key={`${item.pillar}-${item.id}`} className="min-w-0">
+                            {i > 0 && <span className="mr-2" aria-hidden="true">·</span>}
+                            <span className="font-medium">{PILLARS[item.pillar].short}</span>{' '}
+                            <Link href={item.href} onClick={(e) => openFromSummary(e, item.href, PICK_WORD[item.pillar])} className="font-semibold text-slate-900 hover:underline">
+                              {item.title}
+                            </Link>
+                          </span>
+                        ))}
+                      </p>
+                    )}
+                    {picks?.length === 0 && (
+                      <div className="bg-slate-50/80 rounded-2xl p-4 border border-dashed border-slate-200 text-sm font-semibold text-slate-600">
+                        <PhraseText text="ยังไม่มีรายการที่ตรงพอดี แต่มีอีกเยอะให้ดู ในหน้าแรก" />
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {/* The pledge, accepted with the button below (no page of its own, owner 2026-10-22) */}
+                {/* The pledge sits right above the button that accepts it (no page of its own, owner 2026-10-22) */}
                 {!alreadyPledged && (
-                  <div id="onb-pledge" className="mt-8 scroll-mt-24">
-                    <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-1">ก่อนออกไปเจอกัน เราดูแลกันแบบนี้</h2>
-                    <p className="text-sm text-slate-500 font-medium mb-3">คำมั่น 4 ข้อ ที่สมาชิกทุกคนรับร่วมกัน</p>
+                  <div id="onb-pledge" className="mt-6 scroll-mt-24">
+                    <h2 className="text-base sm:text-lg font-bold text-slate-900">ก่อนออกไปเจอกัน เราดูแลกันแบบนี้</h2>
+                    <p className="text-xs sm:text-sm text-slate-500 font-medium mb-2.5">คำมั่น 4 ข้อ ที่สมาชิกทุกคนรับร่วมกัน</p>
                     {pledgeList}
                   </div>
                 )}
@@ -1049,7 +1152,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
                 )}
 
                 <div className="flex-1" aria-hidden="true" />
-                <div className="sticky bottom-0 z-10 -mx-4 px-4 sm:-mx-8 sm:px-8 mt-6 py-3 bg-white/95 backdrop-blur-sm border-t border-slate-100">
+                <div className="sticky bottom-0 z-10 -mx-4 px-4 sm:-mx-8 sm:px-8 mt-4 py-3 bg-white/95 backdrop-blur-sm border-t border-slate-100">
                   {errorBox}
                   <div className="flex items-center justify-between gap-3">
                     <span className="flex items-center gap-2">
@@ -1090,12 +1193,11 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
                         <span className={`text-lg sm:text-xl font-bold ${group.color}`}>{group.word}</span>
                         <span className="text-xs sm:text-sm font-semibold text-slate-500">{group.line}</span>
                       </h2>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {MEMBER_GOALS.filter((g) => g.group === group.id).map((goal, index, list) => (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+                        {MEMBER_GOALS.filter((g) => g.group === group.id).map((goal) => (
                           <GoalCard
                             key={goal.id}
                             goal={goal}
-                            wide={list.length % 2 === 1 && index === list.length - 1}
                             selected={goals.includes(goal.id)}
                             onClick={() => {
                               setGoals((g) => toggle(g, goal.id));
@@ -1106,6 +1208,11 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
                       </div>
                     </div>
                   ))}
+
+                  {/* With no title, say that several cards may be picked (owner's words, 2026-10-23) */}
+                  <p className="-mt-2 mb-4 text-xs sm:text-sm font-medium text-slate-500">
+                    <PhraseText text="เลือกได้มากกว่า 1 ข้อ เลือกสิ่งที่ใช่ เพื่อสัมผัสทุกประสบการณ์ การใช้ชีวิตกับเรา" />
+                  </p>
 
                   {/* Small screens have no side panel: say what the choices lead to here */}
                   {litPillars.size > 0 && (
@@ -1127,6 +1234,16 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
                 <section>
                   {/* No visible title, like step 1 (owner 2026-10-23) */}
                   <h1 className="sr-only">บอกเราเกี่ยวกับคุณ</h1>
+                  {/* Phones have no side panel: the first-moment example as one small card */}
+                  <div className="lg:hidden mb-6 flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm" aria-hidden="true">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- small local illustration */}
+                    <img src={firstMoment.image} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0" />
+                    <span className="min-w-0">
+                      <span className="block text-[11px] font-semibold text-slate-500">โมเมนต์แรกของคุณ จะหน้าตาแบบนี้</span>
+                      <span className={`block text-sm font-bold truncate ${firstName ? 'text-slate-900' : 'text-slate-400'}`}>{firstName || 'ชื่อของคุณ'}{provinceName && <span className="font-medium text-slate-500"> · {provinceName}</span>}</span>
+                      <span className="block text-xs text-slate-600 line-clamp-1">{firstMoment.caption}</span>
+                    </span>
+                  </div>
                   <div className="flex flex-col sm:flex-row gap-6">
                     <div className="flex sm:flex-col items-center gap-4 sm:w-40 shrink-0">
                       <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
@@ -1151,7 +1268,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
                           </button>
                         ) : (
                           <span className="text-xs font-semibold text-slate-500">
-                            <PhraseText text="ไม่ใส่ก็ได้ แต่มีรูป เพื่อนจะจำได้ง่ายขึ้น" />
+                            <PhraseText text="ใส่รูปจริง เพื่อนจะทักง่ายขึ้น ไม่ใส่ก็ได้" />
                           </span>
                         )}
                       </div>
@@ -1159,14 +1276,14 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
 
                     <div className="flex-1 space-y-5 min-w-0">
                       <div className="space-y-1.5">
-                        <label htmlFor="onb-name" className="block text-xs sm:text-sm font-bold text-slate-800">ชื่อที่อยากให้เรียก</label>
+                        <label htmlFor="onb-name" className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-800">ชื่อที่อยากให้เรียก {nameOk && <Check className="w-4 h-4 text-emerald-600 stroke-[3]" aria-label="กรอกแล้ว" />}</label>
                         <input id="onb-name" type="text" autoComplete="nickname" maxLength={40} value={displayName} onChange={(e) => { setDisplayName(tidyDisplayName(e.target.value)); setNameError(''); setError(''); }} placeholder="เช่น ส้ม หรือ Som" aria-invalid={Boolean(nameError) || undefined} aria-describedby={nameError ? 'onb-name-error' : undefined} className={`${inputClass} aria-[invalid=true]:border-rose-400`} />
                         {nameError && <p id="onb-name-error" className="text-xs font-bold text-rose-600">{nameError}</p>}
                       </div>
 
                       <div className="grid grid-cols-1 gap-5">
                       <div className="space-y-1.5">
-                        <label htmlFor="onb-birth-year" className="block text-xs sm:text-sm font-bold text-slate-800">เกิดปีไหน</label>
+                        <label htmlFor="onb-birth-year" className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-800">เกิดปีไหน {Boolean(birthYear) && <Check className="w-4 h-4 text-emerald-600 stroke-[3]" aria-label="กรอกแล้ว" />}</label>
                         <select id="onb-birth-year" value={birthYear} onChange={(e) => { setBirthYear(e.target.value); setBirthYearMissing(false); setError(''); }} aria-invalid={birthYearMissing || undefined} aria-describedby={birthYearMissing ? 'onb-birth-year-error' : undefined} className={`${inputClass} aria-[invalid=true]:border-rose-400 ${birthYear ? '' : 'text-slate-400'}`}>
                           <option value="" disabled>เลือกปีเกิด (พ.ศ.)</option>
                           {birthYears.map((y) => (
@@ -1178,17 +1295,17 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
 
                       {/* One list, popular provinces first so most people pick without scrolling (owner 2026-10-23: no photos, no extra buttons) */}
                       <div className="space-y-1.5">
-                        <label htmlFor="onb-province" className="block text-xs sm:text-sm font-bold text-slate-800">ปกติอยู่แถวไหน</label>
+                        <label htmlFor="onb-province" className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-800">ปกติอยู่แถวไหน {Boolean(province) && <Check className="w-4 h-4 text-emerald-600 stroke-[3]" aria-label="กรอกแล้ว" />}</label>
                         <select id="onb-province" value={province} onChange={(e) => { setProvince(e.target.value); setProvinceMissing(false); setError(''); }} aria-invalid={provinceMissing || undefined} aria-describedby={provinceMissing ? 'onb-province-error' : undefined} className={`${inputClass} aria-[invalid=true]:border-rose-400 ${province ? '' : 'text-slate-400'}`}>
                           <option value="" disabled>เลือกจังหวัด</option>
                           <optgroup label="ยอดนิยม">
                             {featuredProvinces.map((p) => (
-                              <option key={p.id} value={p.id} className="text-slate-800">{p.displayName || p.id}</option>
+                              <option key={p.id} value={p.id} className="text-slate-800">{p.id}</option>
                             ))}
                           </optgroup>
                           <optgroup label="ทุกจังหวัด">
                             {master.provinces.filter((p) => !featuredProvinces.some((f) => f.id === p.id)).map((p) => (
-                              <option key={p.id} value={p.id} className="text-slate-800">{p.displayName || p.id}</option>
+                              <option key={p.id} value={p.id} className="text-slate-800">{p.id}</option>
                             ))}
                           </optgroup>
                         </select>
@@ -1230,6 +1347,30 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
                 <section className="space-y-9">
                   {/* No visible title, like step 1 (owner 2026-10-23) */}
                   <h1 className="sr-only">บอกสิ่งที่ชอบ</h1>
+
+                  {/* Phones have no side panel: the welcome line and friends' stories sit above the สาย cards */}
+                  <div className="lg:hidden -mt-2" aria-hidden="true">
+                    <p className="text-sm font-semibold text-slate-700 leading-snug">
+                      {samePeople !== null && samePeople > SAME_PEOPLE_MIN ? (
+                        <>เพื่อนสายเดียวกัน <span className="text-[#D04A1B] font-bold tabular-nums">{samePeople.toLocaleString()}</span> คน รออยู่ที่นี่แล้ว</>
+                      ) : (
+                        <PhraseText text="มาร่วมเป็นส่วนหนึ่งของคอมมูนิตี้สำหรับคุณรุ่นใหม่ แล้วออกไปใช้ชีวิตกัน" />
+                      )}
+                    </p>
+                    <ul className="mt-3 flex gap-3">
+                      {STORY_SAMPLES.map((story, i) => (
+                        <li key={story.name} className="w-14 text-center">
+                          <span className={`relative block w-14 h-14 rounded-full p-[2px] ${i === 0 ? 'bg-[#F26430]' : 'bg-slate-200'}`}>
+                            {/* eslint-disable-next-line @next/next/no-img-element -- small local illustration */}
+                            <img src={story.image} alt="" className="w-full h-full rounded-full object-cover border-2 border-white" />
+                            {/* eslint-disable-next-line @next/next/no-img-element -- small local illustration */}
+                            <img src={story.avatar} alt="" className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full object-cover border-2 border-white" />
+                          </span>
+                          <span className="block mt-1 text-[11px] font-semibold text-slate-700 truncate">{story.name}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
 
                   {/* The landing's สาย cards (tilted icon tile, colored base), many may be picked; no counts (owner 2026-10-23) */}
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-2.5 gap-y-4 pt-2">
@@ -1287,6 +1428,11 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo }: { prev
               )}
               <span className="flex items-center gap-2 sm:gap-3 min-w-0">
               {previewNote}
+              {step === STEP_ABOUT && (
+                <span className={`text-xs sm:text-sm font-bold whitespace-nowrap ${aboutLeft ? 'text-slate-500' : 'text-[#2563EB]'}`} aria-live="polite">
+                  {aboutLeft ? `อีก ${aboutLeft} ข้อ` : 'ครบแล้ว'}
+                </span>
+              )}
               {step === STEP_LIKES && (
                 <span className={`text-xs sm:text-sm font-bold whitespace-nowrap ${saiPicked >= MIN_SAI ? 'text-[#2563EB]' : 'text-slate-500'}`} aria-live="polite">
                   เลือกแล้ว {saiPicked}{saiPicked < MIN_SAI ? `/${MIN_SAI}` : ""}

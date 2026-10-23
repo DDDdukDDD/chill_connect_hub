@@ -321,13 +321,14 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
     return { row, reasons };
   }, [communityEvents, activity.joinedIds, activity.hosted, likedCategories]);
 
-  // Member home: running challenges the member has not joined, the ones most people are doing first
+  // Member home: running challenges the member has not joined; the ones in the สาย they picked in onboarding first,
+  // then the ones most people are doing
   const othersQuests = useMemo(
     () =>
       questList
         .filter((q) => q.status !== 'ended' && (q.daysRemaining === undefined || q.daysRemaining > 0) && !myRewards.joinedQuestIds.includes(q.id))
-        .sort((a, b) => (b.participantsCount ?? 0) - (a.participantsCount ?? 0)),
-    [questList, myRewards.joinedQuestIds]
+        .sort((a, b) => Number(likedCategories.includes(b.category ?? '')) - Number(likedCategories.includes(a.category ?? '')) || (b.participantsCount ?? 0) - (a.participantsCount ?? 0)),
+    [questList, myRewards.joinedQuestIds, likedCategories]
   );
 
   // Landing page: open meetups (seats left), counted per category card, and the row the cards filter
@@ -463,7 +464,7 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
                 <div className="mt-5 lg:mt-6 flex items-center justify-center md:justify-start gap-2.5 sm:gap-3">
                   <button
                     type="button"
-                    onClick={() => scrollToId('journey-meetup-tiles')}
+                    onClick={() => scrollToId('journey-meetups')}
                     className="flex-1 sm:flex-none h-13 px-4 sm:px-8 rounded-full bg-[#F26430] hover:bg-[#E2551F] text-white text-[15px] sm:text-base lg:text-[17px] font-semibold shadow-[0_8px_20px_rgba(242,100,48,0.28)] whitespace-nowrap cursor-pointer transition-colors"
                   >
                     ดูตี้ที่เปิดรับอยู่
@@ -491,7 +492,14 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
         {!isMember && (
           <>
             <div id="journey-top" className={`${CONTAINER} pt-8 sm:pt-12 space-y-12 sm:space-y-16 scroll-mt-20`}>
-              {/* 2. Meetups, picked by the category cards; company is offered, never required */}
+              {/* 2. Proof of the community the hero names ("คอมมูนิตี้ของคนชอบออกไปใช้ชีวิต"): people and their moments
+                  first, then how to start (owner 2026-10-23) */}
+              <section id="journey-moments" className="space-y-4 scroll-mt-24">
+                {sectionHead('เพื่อน & โมเมนต์', '/moments')}
+                <FriendsMomentsWall />
+              </section>
+
+              {/* 3. Meetups, picked by the category cards; company is offered, never required */}
               <section id="journey-meetups" className="space-y-4 scroll-mt-24">
                 {/* A picked category with more than the row holds names the full count on its link */}
                 {sectionHead(
@@ -507,7 +515,7 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
                 {isEventsLoaded && landingMeetups.length === 0 && (
                   <p className="text-sm text-slate-500">ยังไม่มีตี้แบบนี้ เปิดตี้แรกเองเลยไหม?</p>
                 )}
-                {/* The hero's "ดูตี้ที่เปิดรับอยู่" lands here, on the photos, not on the category heading */}
+                {/* The hero's "ดูตี้ที่เปิดรับอยู่" lands on the section heading, so "เลือกกิจกรรมตามสายที่ชอบ" and the สาย cards show too (owner 2026-10-23) */}
                 <div id="journey-meetup-tiles" className="scroll-mt-24">
                   <OpenMeetupTiles
                     events={landingMeetups}
@@ -518,7 +526,7 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
                 </div>
               </section>
 
-              {/* 3. A reason to go */}
+              {/* 4. A reason to go */}
               <section id="journey-challenges" className="space-y-4 scroll-mt-24">
                 {sectionHead('ชาเลนจ์สนุก แนะนำสำหรับคุณ', '/challenges')}
                 <ChallengePicks
@@ -529,7 +537,7 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
               </section>
             </div>
 
-            {/* 4. Signed out only: the invitation to join, an open band across the page after the meetups and challenges */}
+            {/* 5. Signed out only: the invitation to join, after the meetups and challenges its words name (owner 2026-10-23) */}
             {isAuthReady && !isLoggedIn && (
               <section className="mt-12 sm:mt-16 relative overflow-hidden bg-[#FFF8F1]">
                 <div className="pointer-events-none absolute -right-16 -top-24 w-64 h-64 rounded-full bg-[#FFE7D6]" aria-hidden="true" />
@@ -561,12 +569,6 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
             )}
 
             <div className={`${CONTAINER} pt-12 sm:pt-16 space-y-12 sm:space-y-16`}>
-              {/* 5. Proof that people went, which makes the next person go */}
-              <section id="journey-moments" className="space-y-4 scroll-mt-24">
-                {sectionHead('เพื่อน & โมเมนต์', '/moments')}
-                <FriendsMomentsWall />
-              </section>
-
               {/* 6. Support: provinces to explore */}
               <section className="space-y-4">
                 {sectionHead('สายเที่ยว สายชิล ไปไหนดี?', '/spots')}

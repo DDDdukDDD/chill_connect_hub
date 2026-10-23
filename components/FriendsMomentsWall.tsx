@@ -4,13 +4,16 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Plus, MapPin, Heart, MessageCircle, ArrowRight } from 'lucide-react';
 import type { FeedItem } from '@/lib/moments/service';
+import { LANDING_MOMENTS_SAMPLE, type WallMoment } from '@/data/landingMomentsSample';
 
 const WALL_LIMIT = 8;
+/** Fewer real moments with photos than this, and the wall shows its fixed example instead (owner 2026-10-23) */
+const MIN_REAL_MOMENTS = 5;
 
 // "คุณกี้ (Kee_Explorer)" reads as "คุณกี้"
 const shortName = (name: string) => name.split(' (')[0];
 
-const targetHref = (m: FeedItem) => {
+const targetHref = (m: WallMoment) => {
   if (!m.targetId) return null;
   const id = encodeURIComponent(m.targetId);
   if (m.targetType === 'spot') return `/spots/${id}`;
@@ -25,7 +28,9 @@ const targetHref = (m: FeedItem) => {
  * moment told openly: photos, their words, a friend's reply, and a way to go there too. No card frames.
  */
 export function FriendsMomentsWall() {
-  const [moments, setMoments] = useState<FeedItem[]>([]);
+  const [moments, setMoments] = useState<WallMoment[]>([]);
+  // The fixed example has no pages of its own: its links go to /moments
+  const [isSample, setIsSample] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -36,9 +41,17 @@ export function FriendsMomentsWall() {
       .then((result) => {
         if (!isActive || !result?.success || !Array.isArray(result.moments)) return;
         const withPhotos = (result.moments as FeedItem[]).filter((m) => m.images?.length > 0);
-        setMoments(withPhotos);
+        const enough = withPhotos.length >= MIN_REAL_MOMENTS;
+        setIsSample(!enough);
+        setMoments(enough ? withPhotos : LANDING_MOMENTS_SAMPLE);
       })
-      .catch((error) => console.warn('Could not load moments:', error))
+      .catch((error) => {
+        console.warn('Could not load moments:', error);
+        if (isActive) {
+          setIsSample(true);
+          setMoments(LANDING_MOMENTS_SAMPLE);
+        }
+      })
       .finally(() => {
         if (isActive) setIsLoaded(true);
       });
@@ -74,6 +87,7 @@ export function FriendsMomentsWall() {
   const placeHref = targetHref(active);
   const placeName = active.targetTitle || active.location;
   const photos = active.images.slice(0, 3);
+  const momentHref = isSample ? '/moments' : `/moments/${encodeURIComponent(active.id)}`;
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -113,7 +127,7 @@ export function FriendsMomentsWall() {
       {/* The chosen moment, told openly */}
       <div key={active.id} className="grid lg:grid-cols-[1.2fr_1fr] gap-4 lg:gap-10 items-center animate-fade-in">
         <Link
-          href={`/moments/${encodeURIComponent(active.id)}`}
+          href={momentHref}
           className={`grid gap-2 sm:gap-3 h-52 sm:h-[300px] overflow-hidden ${photos.length > 1 ? 'grid-cols-3 grid-rows-2' : 'grid-cols-1 grid-rows-1'}`}
           aria-label={`ดูโมเมนต์ของ ${shortName(active.userName)}`}
         >
@@ -132,7 +146,7 @@ export function FriendsMomentsWall() {
         </Link>
 
         <div className="min-w-0">
-          <Link href={active.authorId ? `/profile?id=${encodeURIComponent(active.authorId)}` : `/moments/${encodeURIComponent(active.id)}`} className="inline-flex items-center gap-2.5 group">
+          <Link href={!isSample && active.authorId ? `/profile?id=${encodeURIComponent(active.authorId)}` : momentHref} className="inline-flex items-center gap-2.5 group">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={active.userAvatar} alt="" className="w-10 h-10 rounded-full object-cover" />
             <span>
@@ -178,7 +192,7 @@ export function FriendsMomentsWall() {
                 <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </Link>
             )}
-            <Link href={`/moments/${encodeURIComponent(active.id)}`} className="text-sm font-semibold text-slate-900 underline decoration-slate-300 underline-offset-4 hover:decoration-slate-900 whitespace-nowrap">
+            <Link href={momentHref} className="text-sm font-semibold text-slate-900 underline decoration-slate-300 underline-offset-4 hover:decoration-slate-900 whitespace-nowrap">
               อ่านต่อและคุยกัน
             </Link>
           </div>

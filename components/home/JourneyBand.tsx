@@ -2,12 +2,13 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Camera, Check, Zap } from 'lucide-react';
+import { Camera, Check, Heart, Zap } from 'lucide-react';
 import type { ChallengeQuest, EventItem } from '@/data/mockData';
 import { isEventEnded } from '@/lib/dateUtils';
 import type { QuestProgress } from '@/lib/useMyRewards';
 import { EVIDENCE_HINTS, type QuestDetail } from '@/lib/questDisplay';
-import type { ShareRequest } from '@/components/home/HomeMomentFeed';
+import { MOMENT_REACTED_EVENT, type ShareRequest } from '@/components/home/HomeMomentFeed';
+import { nameInitial } from '@/lib/displayName';
 import { DAY_MS, FALLBACK_IMAGE, Faces, awayLabel, dayLine, dayPart, endsAt, eventHref, startsAt, useGoingWith, useMinuteClock } from '@/components/home/planHelpers';
 
 /**
@@ -15,28 +16,62 @@ import { DAY_MS, FALLBACK_IMAGE, Faces, awayLabel, dayLine, dayPart, endsAt, eve
  * landing hero and the end of onboarding. A cream band above the feed says which step the member is on and
  * gives the one next thing to do. It goes away for good once the member has shared a moment, or taps ข้าม.
  * Two flavours: a ตี้ (orange, Connect) or a challenge (violet, Chill); the member switches only at step ①.
+ * A third path for members who came for moments only (owner 2026-10-23): ① ติดตามเพื่อน ② กดใจ คอมเมนต์
+ * ③ แชร์โมเมนต์แรก, in rose. It gives way to the usual steps once they join a ตี้ or a challenge.
  */
 
 export const JOURNEY_STEPS = ['เลือกกิจกรรมที่ใช่', 'ออกไปใช้ชีวิต', 'แชร์โมเมนต์'] as const;
+export const MOMENT_STEPS = ['ติดตามเพื่อน', 'กดใจ คอมเมนต์', 'แชร์โมเมนต์แรก'] as const;
 
-type Flavour = 'meetup' | 'challenge';
+type Flavour = 'meetup' | 'challenge' | 'moments';
 
 export type Journey =
   | { step: 'pick' }
   | { step: 'go-meetup'; event: EventItem }
   | { step: 'go-challenge'; quest: ChallengeQuest; progress: QuestProgress }
-  | { step: 'share'; event?: EventItem; quest?: ChallengeQuest };
+  | { step: 'share'; event?: EventItem; quest?: ChallengeQuest }
+  | { step: 'follow'; following: number }
+  | { step: 'react' }
+  | { step: 'post' };
 
 // Onboarding goals (app/onboarding/OnboardingFlow.tsx): "ทำชาเลนจ์สนุกๆ" asks for a challenge first; the meetup goals for a ตี้
 const CHALLENGE_GOALS = ['earn_xp'];
 const MEETUP_GOALS = ['find_friends', 'join_community'];
+const SOCIAL_GOALS = ['share_moments', 'browse_moments'];
+/** Only moment goals picked: the moments path on home and moments first on the onboarding summary */
+export const isSocialOnly = (goals: string[]) => goals.length > 0 && goals.every((g) => SOCIAL_GOALS.includes(g));
+/** People to follow before step ① counts as done (the member may move on after the first one) */
+const FOLLOW_TARGET = 3;
 /** A ตี้ that ended this long ago still asks for its moment */
 const SHARE_WINDOW_MS = 14 * DAY_MS;
 
 const skipKey = (memberId: string) => `cch_journey_skipped_${memberId}`;
 
+/** The first step the onboarding summary offered (app/onboarding/OnboardingFlow.tsx): step ① shows it first */
+export interface FirstStep {
+  pillar: 'community' | 'challenges';
+  id: string;
+  reason?: string;
+  /** The ตี้ itself, in case it is not among the band's own picks */
+  event?: EventItem;
+}
+export const FIRST_STEP_KEY = (memberId: string) => `cch_first_step_${memberId}`;
+
+function readFirstStep(memberId: string | null): FirstStep | null {
+  if (!memberId || typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(FIRST_STEP_KEY(memberId));
+    return raw ? (JSON.parse(raw) as FirstStep) : null;
+  } catch {
+    return null;
+  }
+}
+const followDoneKey = (memberId: string) => `cch_journey_follow_done_${memberId}`;
+
 interface JourneyInput {
   memberId: string | null;
+  /** The member picked only moment goals in onboarding */
+  socialOnly: boolean;
   now: number;
   /** Meetups and fairs the member joined or hosts, ended ones included */
   mine: EventItem[];
@@ -46,9 +81,11 @@ interface JourneyInput {
 }
 
 /** Which step the member is on; `journey` is null when the band is off (a moment shared, or skipped) */
-export function useJourney({ memberId, now, mine, questProgress, allQuests, isLoaded }: JourneyInput) {
+export function useJourney({ memberId, socialOnly, now, mine, questProgress, allQuests, isLoaded }: JourneyInput) {
   const [momentCount, setMomentCount] = useState<number | null>(null);
   const [skipped, setSkipped] = useState<boolean | null>(null);
+  // Moments path only: people followed and a first like or comment; null until loaded
+  const [social, setSocial] = useState<{ following: number; reacted: boolean; followDone: boolean } | null>(null);
 
   useEffect(() => {
     if (!memberId) return;
@@ -65,6 +102,34 @@ export function useJourney({ memberId, now, mine, questProgress, allQuests, isLo
     return () => {
       alive = false;
     };
+  }, [memberId]);
+
+  useEffect(() => {
+    if (!memberId || !socialOnly) return;
+    let alive = true;
+    let followDone = false;
+    try {
+      followDone = localStorage.getItem(followDoneKey(memberId)) === '1';
+    } catch {}
+    fetch('/api/moments/journey', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((json) => alive && setSocial({ following: Number(json?.following ?? 0), reacted: Boolean(json?.reacted), followDone }))
+      .catch(() => alive && setSocial({ following: 0, reacted: false, followDone }));
+    // A like or comment in the feed below moves step ② on without a reload
+    const onReacted = () => setSocial((s) => (s ? { ...s, reacted: true } : s));
+    window.addEventListener(MOMENT_REACTED_EVENT, onReacted);
+    return () => {
+      alive = false;
+      window.removeEventListener(MOMENT_REACTED_EVENT, onReacted);
+    };
+  }, [memberId, socialOnly]);
+
+  const followed = useCallback(() => setSocial((s) => (s ? { ...s, following: s.following + 1 } : s)), []);
+  const finishFollow = useCallback(() => {
+    setSocial((s) => (s ? { ...s, followDone: true } : s));
+    try {
+      if (memberId) localStorage.setItem(followDoneKey(memberId), '1');
+    } catch {}
   }, [memberId]);
 
   const skip = useCallback(() => {
@@ -88,19 +153,25 @@ export function useJourney({ memberId, now, mine, questProgress, allQuests, isLo
     const questOf = (id: string) => allQuests.find((q) => q.id === id);
     const visited = running.find((q) => q.current > 0 && questOf(q.questId));
     const next = upcoming[0];
+    const doing = running.find((q) => questOf(q.questId));
+
+    // Moments path, until the member signs up for something to go out to
+    if (socialOnly && social && !next && !ended[0] && !doing) {
+      if (social.following < FOLLOW_TARGET && !social.followDone) return { step: 'follow', following: social.following };
+      return social.reacted ? { step: 'post' } : { step: 'react' };
+    }
 
     // A ตี้ within a day comes first; then a moment for somewhere they went; then what is coming up
     if (next && startsAt(next) - now < DAY_MS) return { step: 'go-meetup', event: next };
     if (ended[0]) return { step: 'share', event: ended[0] };
     if (visited) return { step: 'share', quest: questOf(visited.questId) };
     if (next) return { step: 'go-meetup', event: next };
-    const doing = running.find((q) => questOf(q.questId));
     if (doing) return { step: 'go-challenge', quest: questOf(doing.questId)!, progress: doing };
     return { step: 'pick' };
-  }, [skipped, momentCount, mine, questProgress, allQuests, now]);
+  }, [skipped, momentCount, mine, questProgress, allQuests, now, socialOnly, social]);
 
-  const isReady = isLoaded && momentCount !== null && skipped !== null;
-  return { journey: isReady ? journey : null, isReady, skip, markPosted };
+  const isReady = isLoaded && momentCount !== null && skipped !== null && (!socialOnly || social !== null);
+  return { journey: isReady ? journey : null, isReady, skip, markPosted, followed, finishFollow };
 }
 
 /** The tab shown first at step ①: a challenge when the member chose challenges and no meetup goal, else a ตี้ */
@@ -113,7 +184,9 @@ export function flavourFromGoals(goals: string[]): Flavour {
 const ACCENT: Record<Flavour, { bar: string; text: string }> = {
   meetup: { bar: 'bg-[#F26430]', text: 'text-[#D04A1B]' },
   challenge: { bar: 'bg-[#7C3AED]', text: 'text-[#6D28D9]' },
+  moments: { bar: 'bg-[#F43F5E]', text: 'text-[#E11D48]' },
 };
+const RING: Record<Flavour, string> = { meetup: 'ring-[#F26430] text-[#D04A1B]', challenge: 'ring-[#7C3AED] text-[#6D28D9]', moments: 'ring-[#F43F5E] text-[#E11D48]' };
 const TILTS = ['-rotate-2', 'rotate-[1.5deg]', '-rotate-1'];
 const PRINT = 'block w-full object-cover rounded-2xl border-[3px] border-white bg-slate-100 shadow-[0_6px_14px_rgba(15,23,42,0.14)]';
 const STICKER = 'absolute whitespace-nowrap rounded-full bg-white px-2.5 py-0.5 text-[11px] font-semibold text-slate-900 shadow-[0_3px_10px_rgba(15,23,42,0.14)]';
@@ -125,14 +198,15 @@ const HEADLINE = 'block text-base sm:text-lg font-bold text-slate-900 leading-sn
 const PHOTO_BOX = 'relative w-[104px] sm:w-[128px] shrink-0 -rotate-3';
 
 function Tracker({ at, flavour, vertical = false }: { at: number; flavour: Flavour; vertical?: boolean }) {
+  const steps = flavour === 'moments' ? MOMENT_STEPS : JOURNEY_STEPS;
   // The narrow left column (wide screens) lists the steps down, like a short checklist
   if (vertical) {
     return (
       <ol className="flex flex-col gap-2" aria-label="เส้นทางของคุณ">
-        {JOURNEY_STEPS.map((label, i) => {
+        {steps.map((label, i) => {
           const done = i < at;
           const here = i === at;
-          const ring = here && i === 2 ? 'ring-[#F43F5E] text-[#E11D48]' : flavour === 'meetup' ? 'ring-[#F26430] text-[#D04A1B]' : 'ring-[#7C3AED] text-[#6D28D9]';
+          const ring = here && i === 2 ? RING.moments : RING[flavour];
           return (
             <li key={label} className={`flex items-center gap-2.5 text-[13px] ${here ? 'font-semibold text-slate-900' : done ? 'text-slate-600' : 'text-slate-500'}`} aria-current={here ? 'step' : undefined}>
               <span className={`w-5 h-5 rounded-full shrink-0 flex items-center justify-center text-[11px] font-semibold ${
@@ -149,7 +223,7 @@ function Tracker({ at, flavour, vertical = false }: { at: number; flavour: Flavo
   }
   return (
     <ol className="grid grid-cols-3 gap-1.5 sm:gap-2" aria-label="เส้นทางของคุณ">
-      {JOURNEY_STEPS.map((label, i) => {
+      {steps.map((label, i) => {
         const done = i < at;
         const here = i === at;
         const bar = done || here ? (here && i === 2 ? 'bg-[#F43F5E]' : ACCENT[flavour].bar) : 'bg-[#F1E4D6]';
@@ -331,8 +405,147 @@ function Share({ event, quest, onShare }: { event?: EventItem; quest?: Challenge
   );
 }
 
+interface Suggested {
+  id: string;
+  displayName: string;
+  avatarUrl?: string;
+  momentCount: number;
+}
+
+/**
+ * People worth following (verified members who post, GET /api/members/suggested), each with a follow button.
+ * Used by the moments path on home and the onboarding summary. `onLoaded` tells how many came back.
+ */
+export function FollowRow({ onFollowed, onLoaded, emptyText }: { onFollowed?: () => void; onLoaded?: (count: number) => void; emptyText: string }) {
+  const [people, setPeople] = useState<Suggested[] | null>(null);
+  const [done, setDone] = useState<string[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/members/suggested', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((json) => json?.members ?? [])
+      .catch(() => [])
+      .then((list: Suggested[]) => {
+        if (!alive) return;
+        setPeople(list);
+        onLoaded?.(list.length);
+      });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once
+  }, []);
+  const follow = async (id: string) => {
+    setBusy(id);
+    const res = await fetch(`/api/members/${encodeURIComponent(id)}/actions`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'follow' }),
+    }).catch(() => null);
+    setBusy(null);
+    if (res?.ok) {
+      setDone((d) => [...d, id]);
+      onFollowed?.();
+    }
+  };
+  if (people === null) return <div className="h-[92px]" aria-hidden="true" />;
+  if (people.length === 0) return <p className="text-sm text-slate-600">{emptyText}</p>;
+  return (
+    <ul className="flex gap-4 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
+      {people.slice(0, 5).map((p) => {
+        const isDone = done.includes(p.id);
+        return (
+          <li key={p.id} className="w-[84px] shrink-0 flex flex-col items-center text-center">
+            <Link href={`/profile?id=${encodeURIComponent(p.id)}`} className="group flex flex-col items-center min-w-0 w-full">
+              {p.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={p.avatarUrl} alt="" className="w-12 h-12 rounded-full object-cover bg-slate-100 border-2 border-white shadow-sm" />
+              ) : (
+                <span className="w-12 h-12 rounded-full bg-slate-200 text-slate-600 font-bold flex items-center justify-center border-2 border-white shadow-sm" aria-hidden="true">{nameInitial(p.displayName)}</span>
+              )}
+              <span className="mt-1 w-full text-xs font-semibold text-slate-900 truncate group-hover:underline">{p.displayName}</span>
+              <span className="text-[11px] text-slate-500">{p.momentCount} โมเมนต์</span>
+            </Link>
+            <button type="button" disabled={isDone || busy === p.id} onClick={() => follow(p.id)} aria-label={isDone ? `ติดตาม ${p.displayName} แล้ว` : `ติดตาม ${p.displayName}`}
+              className={`mt-1.5 h-7 px-3 rounded-full text-xs font-semibold whitespace-nowrap ${isDone ? 'bg-white border border-slate-200 text-slate-600' : 'bg-slate-900 hover:bg-slate-800 text-white cursor-pointer'}`}>
+              {isDone ? 'ติดตามแล้ว' : 'ติดตาม'}
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** Moments path ①: people who post, followed right here */
+function FollowPeople({ following, onFollowed, onNext }: { following: number; onFollowed: () => void; onNext: () => void }) {
+  const [count, setCount] = useState<number | null>(null);
+  return (
+    <div className="flex flex-col gap-3">
+      <div>
+        <p className="flex items-baseline justify-between gap-3 text-[13px] font-semibold text-[#E11D48] tabular-nums">
+          ติดตามแล้ว {Math.min(following, FOLLOW_TARGET)}/{FOLLOW_TARGET}
+          {/* Three is the aim, but one is enough to move on */}
+          {(following > 0 || count === 0) && (
+            <button type="button" onClick={onNext} className="shrink-0 font-semibold text-slate-900 hover:underline cursor-pointer">ไปขั้นต่อไป →</button>
+          )}
+        </p>
+        <h2 className={`${HEADLINE} mt-0.5`}>ติดตามเพื่อนสายเดียวกัน</h2>
+        <p className="mt-0.5 text-[13px] text-slate-600">โมเมนต์ของเขาจะขึ้นในแท็บติดตาม ไม่พลาดที่เที่ยวใหม่ๆ</p>
+      </div>
+      <FollowRow onFollowed={onFollowed} onLoaded={setCount} emptyText="ตอนนี้ยังไม่มีคนให้แนะนำ ลองส่องโมเมนต์ในฟีดด้านล่างก่อนนะ" />
+    </div>
+  );
+}
+
+/** Moments path ②: a first like or comment in the feed below */
+function ReactFirst({ name }: { name: string }) {
+  return (
+    <div className="flex items-center gap-5 sm:gap-6">
+      <div className={PHOTO_BOX} aria-hidden="true">
+        <span className="flex aspect-square w-full items-center justify-center rounded-2xl border-[3px] border-white bg-[#FFE4E8] shadow-[0_6px_14px_rgba(15,23,42,0.14)]">
+          <Heart className="w-12 h-12 text-[#F43F5E] fill-current" />
+        </span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[13px] font-semibold text-[#E11D48]">เพื่อนๆ แชร์อะไรกันอยู่</p>
+        <p className={`${HEADLINE} mt-0.5`}>ส่งใจให้โมเมนต์ที่ชอบ</p>
+        <p className="mt-1 text-xs text-slate-600 line-clamp-2">กดใจหรือคอมเมนต์สักโพสต์ในฟีดด้านล่าง ให้เขารู้ว่าคุณ{name ? ` ${name}` : ''} แวะมาเจอ</p>
+        <a href="#home-feed" className={`mt-3 ${DARK_BUTTON}`}>ไปที่ฟีด</a>
+      </div>
+    </div>
+  );
+}
+
+/** Moments path ③: the member's own first moment */
+function PostFirst({ onShare }: { onShare: (request: Omit<ShareRequest, 'key'>) => void }) {
+  return (
+    <div className="flex items-center gap-5 sm:gap-6">
+      <div className={PHOTO_BOX} aria-hidden="true">
+        <span className="flex aspect-square w-full items-center justify-center rounded-2xl border-[3px] border-white bg-[#FFE4E8] shadow-[0_6px_14px_rgba(15,23,42,0.14)]">
+          <Camera className="w-12 h-12 text-[#F43F5E]" />
+        </span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[13px] font-semibold text-[#E11D48]">ถึงตาคุณแล้ว</p>
+        <p className={`${HEADLINE} mt-0.5`}>แชร์โมเมนต์แรกของคุณ</p>
+        <p className="mt-1 text-xs text-slate-600 line-clamp-2">คาเฟ่ที่ชอบ วิวที่เพิ่งไป หรือมื้ออร่อยวันนี้ ส่งต่อให้เพื่อนๆ เห็น</p>
+        <button
+          type="button"
+          onClick={() => onShare({})}
+          className="mt-3 inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-[#F43F5E] hover:bg-[#E11D48] text-white text-sm font-semibold shadow-[0_6px_16px_rgba(244,63,94,0.25)] whitespace-nowrap cursor-pointer"
+        >
+          <Camera className="w-4 h-4" aria-hidden="true" />
+          แชร์โมเมนต์
+        </button>
+      </div>
+    </div>
+  );
+}
+
 interface JourneyBandProps {
   name: string;
+  /** Reads the first step the onboarding summary offered, so step ① opens on it */
+  memberId: string | null;
   now: number;
   journey: Journey;
   firstFlavour: Flavour;
@@ -344,17 +557,38 @@ interface JourneyBandProps {
   xp: number;
   onShare: (request: Omit<ShareRequest, 'key'>) => void;
   onSkip: () => void;
+  /** Moments path ①: a person was followed, or the member moves on */
+  onFollowed: () => void;
+  onFollowDone: () => void;
 }
 
 /**
  * Laid on the member home's own three columns (MemberLiveHome) so it lines up with the page below:
  * greeting and progress over "ของฉัน", the step over the feed (same width), the month and ข้าม over the right column.
  */
-export function JourneyBand({ name, now, journey, firstFlavour, meetups, reasons, quests, month, xp, onShare, onSkip }: JourneyBandProps) {
-  const [picked, setPicked] = useState<Flavour | null>(null);
-  const flavour: Flavour =
-    journey.step === 'pick' ? picked ?? firstFlavour : journey.step === 'go-challenge' || (journey.step === 'share' && journey.quest) ? 'challenge' : 'meetup';
-  const at = journey.step === 'pick' ? 0 : journey.step === 'share' ? 2 : 1;
+export function JourneyBand({ name, memberId, now, journey, firstFlavour, meetups, reasons, quests, month, xp, onShare, onSkip, onFollowed, onFollowDone }: JourneyBandProps) {
+  // The band only mounts in the browser (after the member's data loads), so storage can be read on first render
+  const [firstStep] = useState(() => readFirstStep(memberId));
+  const [picked, setPicked] = useState<Flavour | null>(firstStep ? (firstStep.pillar === 'challenges' ? 'challenge' : 'meetup') : null);
+  // Step ①: the summary's first step leads, with the reason it gave there
+  const pickMeetups = useMemo(() => {
+    if (firstStep?.pillar !== 'community') return meetups;
+    const event = meetups.find((e) => e.id === firstStep.id) ?? firstStep.event;
+    return event ? [event, ...meetups.filter((e) => e.id !== firstStep.id)] : meetups;
+  }, [firstStep, meetups]);
+  const pickReasons = useMemo(
+    () => (firstStep?.pillar === 'community' && firstStep.reason ? { ...reasons, [firstStep.id]: firstStep.reason } : reasons),
+    [firstStep, reasons]
+  );
+  const pickQuests = useMemo(() => {
+    const quest = firstStep?.pillar === 'challenges' ? quests.find((q) => q.id === firstStep.id) : undefined;
+    return quest ? [quest, ...quests.filter((q) => q.id !== quest.id)] : quests;
+  }, [firstStep, quests]);
+  const isMoments = journey.step === 'follow' || journey.step === 'react' || journey.step === 'post';
+  const flavour: Flavour = isMoments
+    ? 'moments'
+    : journey.step === 'pick' ? picked ?? firstFlavour : journey.step === 'go-challenge' || (journey.step === 'share' && journey.quest) ? 'challenge' : 'meetup';
+  const at = journey.step === 'pick' || journey.step === 'follow' ? 0 : journey.step === 'share' || journey.step === 'post' ? 2 : 1;
 
   const skip = (
     <button type="button" onClick={onSkip} className="shrink-0 -mr-2 px-2.5 py-1.5 rounded-lg text-[13px] font-medium text-slate-600 hover:text-slate-900 hover:bg-white/70 cursor-pointer" aria-label="ข้ามเส้นทางนี้ แล้วใช้หน้าแรกแบบปกติ">
@@ -388,10 +622,13 @@ export function JourneyBand({ name, now, journey, firstFlavour, meetups, reasons
               </div>
               <Tracker at={at} flavour={flavour} />
             </div>
-            {journey.step === 'pick' && <Picks flavour={flavour} setFlavour={setPicked} meetups={meetups} reasons={reasons} quests={quests} />}
+            {journey.step === 'pick' && <Picks flavour={flavour} setFlavour={setPicked} meetups={pickMeetups} reasons={pickReasons} quests={pickQuests} />}
             {journey.step === 'go-meetup' && <GoMeetup event={journey.event} now={now} />}
             {journey.step === 'go-challenge' && <GoChallenge quest={journey.quest} progress={journey.progress} />}
             {journey.step === 'share' && <Share event={journey.event} quest={journey.quest} onShare={onShare} />}
+            {journey.step === 'follow' && <FollowPeople following={journey.following} onFollowed={onFollowed} onNext={onFollowDone} />}
+            {journey.step === 'react' && <ReactFirst name={name} />}
+            {journey.step === 'post' && <PostFirst onShare={onShare} />}
           </div>
 
           {/* Over the right column (laptops up): this month, and ข้าม */}

@@ -51,6 +51,7 @@ import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
 import { ChallengeQuest } from '@/data/mockData';
 import { syncMyChallenges, useMyRewards, withRealProgress } from '@/lib/useMyRewards';
 import { fetchAllContentPages } from '@/lib/contentClient';
+import { useMyInterests } from '@/lib/useMyInterests';
 
 // Extended Quest Interface with Date, Duration & Image
 export interface QuestWithDuration extends ChallengeQuest {
@@ -114,6 +115,8 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
   
   // Auth state
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn, userProfile } = useAuth();
+  // The member's สาย from onboarding: their tabs come first, marked (owner 2026-10-23)
+  const myInterests = useMyInterests(isLoggedIn);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
@@ -393,6 +396,7 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
             <DiscoverCategoryTabs
               kind="challenges"
               categories={COMMUNITY_LIFESTYLE_CATEGORIES}
+              mineIds={myInterests.communityCategories}
               counts={{
                 all: relevantQuests.length,
                 ...Object.fromEntries(COMMUNITY_LIFESTYLE_CATEGORIES.map((category) => [category.id, relevantQuests.filter((quest) => quest.category === category.id).length])),

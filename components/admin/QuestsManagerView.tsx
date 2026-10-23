@@ -93,7 +93,7 @@ const EMPTY_DRAFT: QuestDraft = {
   badgeLabel: '',
   targetGoal: '',
   objective: '',
-  category: 'social',
+  category: '', // staff pick one of the ตี้ สาย (the old 'social' default was not one of them)
   total: '1',
   rewardPoints: '100',
   startDate: '',
@@ -330,7 +330,7 @@ export function QuestsManagerView() {
       badgeLabel: quest.badgeLabel,
       targetGoal: quest.targetGoal || '',
       objective: quest.objective && quest.objective !== quest.targetGoal ? quest.objective : '',
-      category: quest.category || 'social',
+      category: quest.category || '',
       total: quest.total || '1',
       rewardPoints: String(quest.rewardPoints || 0),
       startDate: toIsoDate(quest.startDate),
@@ -545,7 +545,7 @@ export function QuestsManagerView() {
                     {describeTimeLeft(quest) && <span className="text-[11px] font-semibold text-slate-500">{describeTimeLeft(quest)}</span>}
                   </div>
                 </div>
-                <span className="text-xs font-medium capitalize text-slate-700">{quest.category || 'ไม่ระบุ'}</span>
+                <span className="text-xs font-medium text-slate-700">{questCategories.find((category) => category.id === quest.category)?.name ?? (quest.category || 'ไม่ระบุ')}</span>
                 <div className="min-w-0 text-xs text-slate-700">
                   <p className="font-bold tabular-nums">{quest.rewardPoints || 0} XP</p>
                   <p className="text-slate-500 line-clamp-2" title={quest.badgeLabel}>{quest.badgeLabel}</p>
@@ -594,7 +594,8 @@ export function QuestsManagerView() {
                   <input required value={draft.badgeLabel} onChange={(event) => setDraft({ ...draft, badgeLabel: event.target.value })} className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
                 </label>
                 <label className="block space-y-1.5 text-sm font-medium text-slate-800">หมวดหมู่
-                  <select value={draft.category} onChange={(event) => setDraft({ ...draft, category: event.target.value as QuestCategory })} className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                  <select required value={draft.category} onChange={(event) => setDraft({ ...draft, category: event.target.value as QuestCategory })} className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                    <option value="" disabled>เลือกสาย</option>
                     {questCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
                   </select>
                 </label>

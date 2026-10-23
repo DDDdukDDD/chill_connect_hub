@@ -307,3 +307,14 @@ export async function suggestedMembers(viewer: Member | null, limit = 5) {
 }
 
 export { accountAgeDays };
+
+/**
+ * How many active members picked at least one of these สาย (communityCategories) in onboarding. A number only:
+ * never who they are, since interests are private answers. Used by the onboarding "บอกสิ่งที่ชอบ" side panel.
+ */
+export async function interestPeopleCount(ids: string[]): Promise<number> {
+  if (!ids.length) return 0;
+  const wanted = new Set(ids);
+  const { items } = await memberRepository.query({ status: 'active', page: 1, limit: 100_000 });
+  return items.filter((m) => m.preferences?.interests?.communityCategories?.some((id) => wanted.has(id))).length;
+}

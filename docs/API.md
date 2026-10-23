@@ -46,6 +46,7 @@ Two modes:
 | `province` | Thai province name, `online` / `ออนไลน์`, `ทั่วไทย` | — | Fuzzy; Bangkok spellings (กทม/กรุงเทพ/bangkok) are equivalent |
 | `zone` | zone id, e.g. `ari`, `siam` | — | Matches `zone` or `location` text |
 | `venueTag` | `qsncc` \| `bitec` \| `impact` \| `marathon` \| `park` | — | Fairs |
+| `lifestyleCategory` | a `communityCategories` id, e.g. `boardgames_party` | — | Meetups in that group: their own `lifestyleCategory`, or the group their title maps to (as on the ค้นพบ tabs). Added 2026-10-23 |
 | `status` | `recruiting` \| `full` \| `ended` \| `all` | `all` | Capacity-based |
 | `includeEnded` | `true` | `false` | |
 | `q` | text | — | Searches title, description, location, host, tag, category |
@@ -418,7 +419,9 @@ All writes are `POST` with an `action` field unless noted.
 - `POST /api/members/{id}/actions` with `{ action: 'follow' | 'unfollow' }` → `{ success, following, followerCount }`. Signed-in members only; blocking a member also unfollows them.
 - `GET /api/members/{id}` and `GET /api/auth/member/profile` (`publicView`) now include `followerCount`, `followingCount`; `viewer.isFollowing` on another member's profile.
 - `GET /api/members/suggested` → `{ success, members: [{ id, displayName, avatarUrl, momentCount, trusted, approvedHost }] }`: up to 5 verified members with published moments, without the viewer, people they follow or blocked, and accounts with open risk flags.
+- `GET /api/members/interest-count?ids=cafe_social,running_fitness` (added 2026-10-23) → `{ success, people }`: how many active members picked at least one of these `communityCategories` ids in onboarding. A number only, never names (interests are private answers). Used by the onboarding "บอกสิ่งที่ชอบ" side panel.
 - `GET /api/moments?tab=following`: moments by members the viewer follows (signed out: empty list with `requiresLogin`).
+- `GET /api/moments/journey` (added 2026-10-23) → `{ success, following, reacted, posted }`: the signed-in member's steps on the moments path of the home journey band (people followed; has liked or commented on someone else's published moment; has posted one). `401` signed out.
 
 ## Stories and notifications (added 2026-10-11)
 - `GET /api/stories` → `{ success, groups: [{ author: { id, displayName, avatarUrl }, isMine, isFollowing, allSeen, stories: [{ id, image, caption, createdAt, hoursLeft, seen, views? }] }] }`. Only stories younger than 24 hours; `views` is sent to the author only. Order: own, followed, unseen, seen.
