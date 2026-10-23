@@ -1,6 +1,6 @@
 {
   "version": "2.0.0",
-  "lastUpdated": "2026-10-23T07:07:24.641Z",
+  "lastUpdated": "2026-10-23T15:31:20.300Z",
   "autoPublish": false,
   "events": [
     {
@@ -85,7 +85,10 @@
         "/event-city-run.png"
       ],
       "subActivities": [],
-      "status": "recruiting"
+      "status": "recruiting",
+      "externalUrl": "https://www.qsncc.com/en/whats-on/event-calendar",
+      "link": "https://www.qsncc.com/en/whats-on/event-calendar",
+      "sourceUrl": "https://www.qsncc.com/en/whats-on/event-calendar"
     },
     {
       "category": "chill",
@@ -169,7 +172,10 @@
         "/event-city-run.png"
       ],
       "subActivities": [],
-      "status": "full"
+      "status": "full",
+      "externalUrl": "https://www.qsncc.com/en/whats-on/event-calendar",
+      "link": "https://www.qsncc.com/en/whats-on/event-calendar",
+      "sourceUrl": "https://www.qsncc.com/en/whats-on/event-calendar"
     },
     {
       "title": "Late Night Virtual Coworking: เปิดเพลง Lo-Fi นั่งทำงานเงียบๆ ด้วยกัน (Discord)",
@@ -285,7 +291,10 @@
         "/event-city-run.png"
       ],
       "subActivities": [],
-      "status": "recruiting"
+      "status": "recruiting",
+      "externalUrl": "https://www.qsncc.com/en/whats-on/event-calendar",
+      "link": "https://www.qsncc.com/en/whats-on/event-calendar",
+      "sourceUrl": "https://www.qsncc.com/en/whats-on/event-calendar"
     },
     {
       "category": "chill",
@@ -369,7 +378,10 @@
         "/event-city-run.png"
       ],
       "subActivities": [],
-      "status": "recruiting"
+      "status": "recruiting",
+      "externalUrl": "https://www.qsncc.com/en/whats-on/event-calendar",
+      "link": "https://www.qsncc.com/en/whats-on/event-calendar",
+      "sourceUrl": "https://www.qsncc.com/en/whats-on/event-calendar"
     },
     {
       "category": "chill",
@@ -6705,36 +6717,6 @@
       "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร",
       "zone": "siam"
-    },
-    {
-      "id": "fair-book-expo-2026",
-      "title": "มหกรรมหนังสือระดับชาติ ครั้งที่ 31 (Book Expo Thailand 2026)",
-      "date": "15 ต.ค. - 26 ต.ค. 2026",
-      "time": "10:00 - 21:00 น.",
-      "location": "ศูนย์การประชุมแห่งชาติสิริกิติ์ (QSNCC Hall 5-7 ชั้น LG)",
-      "tag": "งานมหกรรม",
-      "category": "learn",
-      "image": "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 0,
-      "maxParticipants": 9999,
-      "hostName": "สมาคมผู้จัดพิมพ์และผู้จำหน่ายหนังสือแห่งประเทศไทย (PUBAT)",
-      "hostAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
-      "price": "เข้าชมฟรี",
-      "description": "<p><strong>เทศกาลหนังสือที่ทุกคนรอคอย:</strong></p><p>รวมกว่า 300 สำนักพิมพ์ชั้นนำทั่วประเทศ พร้อมกิจกรรมเสวนาเปิดตัวหนังสือใหม่ นิทรรศการวรรณกรรมสร้างสรรค์ และโปรโมชั่นลดราคาพิเศษตลอด 12 วันเต็ม</p>",
-      "isNew": true,
-      "isTrending": true,
-      "badgeText": "ศูนย์ฯ สิริกิติ์",
-      "createdAtTimestamp": 1788258000000,
-      "eventType": "public_venue",
-      "venueTag": "qsncc",
-      "externalUrl": "https://www.qsncc.com/en/whats-on/event-calendar",
-      "transportation": "MRT ศูนย์การประชุมแห่งชาติสิริกิติ์ ทางออก 3 เดินเชื่อมเข้าสู่อาคารโดยตรง",
-      "approvalStatus": "approved",
-      "source": "Chill & Connect Official",
-      "sourceUrl": "https://www.qsncc.com/en/whats-on/event-calendar",
-      "province": "กรุงเทพมหานคร",
-      "zone": "silom",
-      "link": "https://www.qsncc.com/en/whats-on/event-calendar"
     },
     {
       "id": "fair-kice-isan-expo-2026",
