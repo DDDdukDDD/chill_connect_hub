@@ -54,6 +54,13 @@ export interface MemberLiveHomeProps {
   mine: EventItem[];
   questProgress: QuestProgress[];
   allQuests: ChallengeQuest[];
+  /** Saved places, every place and every event: the band's plans ("อยากไป") and where the member went */
+  savedSpotIds: string[];
+  allSpots: LifestyleSpotItem[];
+  allEvents: EventItem[];
+  /** Places and fairs the band picks from at step ① */
+  bandSpots: LifestyleSpotItem[];
+  bandFairs: EventItem[];
 }
 
 /**
@@ -70,13 +77,18 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
   const [feedView, setFeedView] = useState<FeedView>('all');
   const hasPlans = plans.length > 0;
   // The journey band (① เลือก ② ไป ③ แชร์) stays on top of home in place of the greeting and plans
-  const { journey, isReady: isJourneyReady, returning, markPosted, followed, finishFollow } = useJourney({
+  const { journey, isReady: isJourneyReady, returning, markPosted, markVisited, followed, finishFollow } = useJourney({
     memberId: props.memberId,
     socialOnly: isSocialOnly(props.goals),
     now: props.now,
     mine: props.mine,
+    hostedIds: props.hostedIds,
     questProgress: props.questProgress,
     allQuests: props.allQuests,
+    savedSpotIds: props.savedSpotIds,
+    savedEventIds: props.savedIds,
+    allSpots: props.allSpots,
+    allEvents: props.allEvents,
     isLoaded,
   });
   const [shareRequest, setShareRequest] = useState<ShareRequest | null>(null);
@@ -95,9 +107,12 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
         meetups={props.meetups}
         reasons={props.reasons}
         quests={props.quests}
+        spots={props.bandSpots}
+        fairs={props.bandFairs}
         month={props.month}
         xp={props.xp}
         onShare={(request) => setShareRequest({ ...request, key: Date.now() })}
+        onMark={markVisited}
         onFollowed={followed}
         onFollowDone={finishFollow}
         returning={returning}
@@ -178,7 +193,7 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
 
         {/* Right (laptops and up): where to go next, one short list per kind */}
         <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto no-scrollbar space-y-11 pb-4">
-          <MeetupsBlock {...props} skip={journey?.step === 'pick' ? 3 : 0} />
+          <MeetupsBlock {...props} skip={journey?.mode === 'loop' && journey.open === 0 ? 3 : 0} />
           <QuestsBlock {...props} />
           <FairsBlock {...props} layout="rows" />
           <SpotsBlock {...props} layout="rows" />

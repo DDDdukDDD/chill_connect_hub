@@ -91,6 +91,8 @@ const DESTINATION_IDS = ['bkk', 'chiangmai', 'chonburi', 'khaoyai', 'krabi', 'na
 // The kinds named in the home page fair heading, and how many fairs that row shows
 const FAIR_ROW_KINDS = ['fair', 'run', 'concert'] as const;
 const FAIR_ROW_SHOWN = 4;
+/** Places and fairs the member home's journey band picks from, three at a time ("สุ่มใหม่") */
+const BAND_PICK_POOL = 30;
 const fairKind = (e: EventItem): (typeof FAIR_ROW_KINDS)[number] => {
   const text = `${e.title} ${e.tag}`;
   if (/วิ่ง|มาราธอน|เทรล|marathon|\brun\b|trail/i.test(text)) return 'run';
@@ -417,6 +419,11 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
             allQuests={questList}
             hostedIds={activity.hosted.map((e) => e.id)}
             savedIds={activity.savedEventIds}
+            savedSpotIds={activity.savedSpotIds}
+            allSpots={spotsList}
+            allEvents={eventsList}
+            bandSpots={rankedSpots.slice(0, BAND_PICK_POOL)}
+            bandFairs={fairEvents.slice(0, BAND_PICK_POOL)}
             month={monthCounts}
             savedCount={favorites.length + favoriteSpots.length}
             likedCategories={likedCategories}
