@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { MapPin, Camera } from 'lucide-react';
+import { Camera } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { BrandLogo } from '@/components/BrandLogo';
@@ -18,7 +18,7 @@ import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
 import { MOCK_EVENTS, EventItem, ChallengeQuest } from '@/data/mockData';
 import { MOCK_SPOTS, LifestyleSpotItem } from '@/data/spotsData';
-import { isEventEnded, nearDayLabel, parseEventDateToTimestamp } from '@/lib/dateUtils';
+import { formatEventDateRange, isEventEnded, nearDayLabel, parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { useAuth } from '@/lib/useAuth';
 import { fetchAllContentPages } from '@/lib/contentClient';
 import { useMyRewards } from '@/lib/useMyRewards';
@@ -91,6 +91,8 @@ const DESTINATION_IDS = ['bkk', 'chiangmai', 'chonburi', 'khaoyai', 'krabi', 'na
 // The kinds named in the home page fair heading, and how many fairs that row shows
 const FAIR_ROW_KINDS = ['fair', 'run', 'concert'] as const;
 const FAIR_ROW_SHOWN = 4;
+/** Places and fairs the member home's journey band picks from, three at a time ("สุ่มใหม่") */
+const BAND_PICK_POOL = 30;
 const fairKind = (e: EventItem): (typeof FAIR_ROW_KINDS)[number] => {
   const text = `${e.title} ${e.tag}`;
   if (/วิ่ง|มาราธอน|เทรล|marathon|\brun\b|trail/i.test(text)) return 'run';
@@ -104,7 +106,8 @@ const fairKind = (e: EventItem): (typeof FAIR_ROW_KINDS)[number] => {
 const fairDates = (e: EventItem, near = false) => {
   const short = (d: string) => d.replace(/\s*\d{4}$/, '');
   const isRange = !!e.endDate && e.endDate !== e.date;
-  if (!near) return isRange ? `${short(e.date)} – ${short(e.endDate!)}` : short(e.date);
+  // "15 - 26 ต.ค.": the shared range, without the year (this list is about the next weeks)
+  if (!near) return short(formatEventDateRange(e));
   if (!isRange) return nearDayLabel(e.date) ?? short(e.date);
   if (nearDayLabel(e.endDate!) === 'วันนี้') return 'วันนี้วันสุดท้าย';
   // A fair already running reads "วันนี้ – 25 ต.ค."
@@ -416,6 +419,11 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
             allQuests={questList}
             hostedIds={activity.hosted.map((e) => e.id)}
             savedIds={activity.savedEventIds}
+            savedSpotIds={activity.savedSpotIds}
+            allSpots={spotsList}
+            allEvents={eventsList}
+            bandSpots={rankedSpots.slice(0, BAND_PICK_POOL)}
+            bandFairs={fairEvents.slice(0, BAND_PICK_POOL)}
             month={monthCounts}
             savedCount={favorites.length + favoriteSpots.length}
             likedCategories={likedCategories}
@@ -571,7 +579,8 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
             <div className={`${CONTAINER} pt-12 sm:pt-16 space-y-12 sm:space-y-16`}>
               {/* 6. Support: provinces to explore */}
               <section className="space-y-4">
-                {sectionHead('สายเที่ยว สายชิล ไปไหนดี?', '/spots')}
+                {/* The count sits in the head link, the same way as the fairs below */}
+                {sectionHead('สายเที่ยว สายชิล ไปไหนดี?', '/spots', undefined, <>ดูทั้งหมด{isSpotsLoaded && <span className="hidden sm:inline"> {spotsList.length.toLocaleString()} แห่ง</span>}</>)}
                 {/* Same size and row as the challenge picks: square photos, scrolling sideways until all six fit */}
                 <ScrollRow className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar snap-x -mx-4 px-4 scroll-px-4 sm:mx-0 sm:px-0 sm:scroll-px-0">
                   {destinations.map((d) => (
@@ -590,12 +599,6 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
                     </Link>
                   ))}
                 </ScrollRow>
-                <div className="flex flex-wrap gap-2">
-                  <Link href="/spots" className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold whitespace-nowrap transition-colors">
-                    <MapPin className="w-4 h-4" aria-hidden="true" />
-                    ที่เที่ยวทั้งหมด{isSpotsLoaded ? ` ${spotsList.length.toLocaleString()} แห่ง` : ''}
-                  </Link>
-                </div>
               </section>
 
               {/* 7. Fairs, runs and concerts as a dated list, soonest first (trade shows last) */}
@@ -612,9 +615,9 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
                             <span className="block text-[22px] font-bold">{start.getDate()}</span>
                             <span className="text-xs font-semibold">{THAI_MONTHS[start.getMonth()]}</span>
                           </span>
-                          <img src={fair.image} alt="" loading="lazy" className="hidden sm:block w-32 h-[88px] shrink-0 rounded-xl object-cover bg-slate-200" />
+                          <img src={fair.image} alt="" loading="lazy" className="w-14 h-14 sm:w-32 sm:h-[88px] shrink-0 rounded-xl object-cover bg-slate-200" />
                           <span className="flex-1 min-w-0 grid">
-                            <span className="font-semibold text-slate-900 leading-snug truncate group-hover:underline">{fair.title}</span>
+                            <span className="font-semibold text-slate-900 leading-snug line-clamp-2 sm:truncate group-hover:underline">{fair.title}</span>
                             <span className="text-[13px] text-slate-500 truncate">
                               {/* Phones: the status leads the second line, so the title keeps the full width */}
                               <span className={`sm:hidden font-semibold ${isOn ? 'text-rose-600' : 'text-[#2B527A]'}`}>{isOn ? 'กำลังจัดอยู่' : 'เร็วๆ นี้'} · </span>

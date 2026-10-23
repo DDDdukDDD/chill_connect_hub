@@ -241,6 +241,24 @@ export function formatThaiDateBE(isoDate: string): string {
   return `${day} ${THAI_SHORT_MONTH_LABELS[month - 1]} ${year + 543}`;
 }
 
+/**
+ * The days an event runs, in B.E.: "23 ต.ค. - 1 พ.ย. 2569", "29 - 31 ต.ค. 2569", or one day when there is no end date.
+ * Dates that are not "day month year" text are joined as they are.
+ */
+export function formatEventDateRange(event: { date?: string; endDate?: string }): string {
+  const start = toBuddhistEra(event.date?.trim() ?? '');
+  const end = toBuddhistEra(event.endDate?.trim() ?? '');
+  if (!end || end === start) return start;
+  if (!start) return end;
+  const DAY_MONTH_YEAR = /^(\d{1,2})\s+(\S+)\s+(\d{4})$/;
+  const a = start.match(DAY_MONTH_YEAR);
+  const b = end.match(DAY_MONTH_YEAR);
+  if (!a || !b) return `${start} - ${end}`;
+  if (a[3] !== b[3]) return `${start} - ${end}`;
+  if (a[2] !== b[2]) return `${a[1]} ${a[2]} - ${end}`;
+  return `${a[1]} - ${end}`;
+}
+
 /** "วันนี้" or "พรุ่งนี้" when an event date (e.g. "18 ต.ค. 2026") is today or tomorrow on this device; otherwise null */
 export function nearDayLabel(dateStr: string, now: number = Date.now()): 'วันนี้' | 'พรุ่งนี้' | null {
   const ts = parseEventDateToTimestamp(dateStr);

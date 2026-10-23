@@ -19,7 +19,7 @@ import {
   MOCK_EVENTS
 } from '@/data/mockData';
 import { eventOrigin } from '@/lib/contentOrigin';
-import { isEventEnded, parseEventDateToTimestamp } from '@/lib/dateUtils';
+import { formatEventDateRange, isEventEnded, parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { resolveEventGallery } from '@/lib/eventImageResolver';
 import { parseEventPrice } from '@/lib/priceUtils';
 import { renderDescriptionContent, stripHtmlToPlainText } from '@/components/RichTextEditor';
@@ -254,7 +254,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
     const url = window.location.href;
     const shareData = {
       title: `${eventData.title} | Chill & Connect Hub`,
-      text: `ชวนไปงานแฟร์นี้: ${eventData.title} (${eventData.date} @ ${eventData.location})`,
+      text: `ชวนไปงานแฟร์นี้: ${eventData.title} (${formatEventDateRange(eventData)} @ ${eventData.location})`,
       url: url,
     };
 
@@ -623,7 +623,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
           }
           title={cleanText(eventData.title)}
           facts={[
-            { icon: Calendar, title: cleanText(eventData.date), sub: cleanText(eventData.time) },
+            { icon: Calendar, title: cleanText(formatEventDateRange(eventData)), sub: cleanText(eventData.time) },
             { icon: MapPin, title: cleanText(eventData.location) },
             { icon: Ticket, title: parsedPrice.displayPrice },
             { icon: Building2, title: <>จัดโดย {venueOrganizerName}</> },

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getPublicEvent, isBundledEvent } from '@/lib/publicContent';
+import { formatEventDateRange } from '@/lib/dateUtils';
 import { metaDescription, pageMetadata } from '@/lib/site';
 import { breadcrumbJsonLd, eventJsonLd, jsonLdHtml } from '@/lib/structuredData';
 import FairDetailView from './FairDetailView';
@@ -12,7 +13,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!event) return { title: 'งานแฟร์และอีเวนต์' };
   return pageMetadata({
     title: event.title,
-    description: metaDescription(`${event.date} · ${event.location} · ${metaDescription(event.description, 300)}`),
+    description: metaDescription(`${formatEventDateRange(event)} · ${event.location} · ${metaDescription(event.description, 300)}`),
     path: `/fairs/${encodeURIComponent(event.id)}`,
     image: event.image,
     type: 'article',

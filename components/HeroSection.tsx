@@ -34,6 +34,7 @@ import {
   Gift,
   Check,
 } from 'lucide-react';
+import { formatEventDateRange } from '@/lib/dateUtils';
 import { useAuth } from '@/lib/useAuth';
 import { ALL_THAI_PROVINCES, MOCK_SPOTS, LifestyleSpotItem } from '@/data/spotsData';
 import { usePublishedSpots } from '@/lib/usePublishedSpots';
@@ -699,7 +700,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                             <p className="text-[11px] text-slate-400 truncate flex items-center gap-1.5 mt-0.5">
                               <span>{fair.location}</span>
                               <span>•</span>
-                              <span>{fair.date}</span>
+                              <span>{formatEventDateRange(fair)}</span>
                             </p>
                           </div>
                           <span className="text-[10px] font-bold text-blue-900 bg-blue-50 px-2 py-1 rounded-md shrink-0 border border-blue-100 group-hover:border-blue-200 flex items-center gap-1">

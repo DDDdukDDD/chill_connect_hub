@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { EventItem } from '@/data/mockData';
 import { Heart, Calendar, MapPin, Users, Star, RotateCcw, Search, Globe, Repeat, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { isEventEnded } from '@/lib/dateUtils';
+import { formatEventDateRange, isEventEnded } from '@/lib/dateUtils';
 import { formatEventBadgePrice, hasKnownPrice, isPriceFree } from '@/lib/priceUtils';
 import { FloatingCarousel } from '@/components/FloatingCarousel';
 
@@ -242,7 +242,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                         <span className="truncate">
                           {event.scheduleType === 'recurring' && event.recurrence?.customSummary
                             ? `${event.recurrence.customSummary} • ${event.time}`
-                            : `${event.date} • ${event.time}`}
+                            : `${event.eventType === 'public_venue' ? formatEventDateRange(event) : event.date} • ${event.time}`}
                         </span>
                       </div>
 
@@ -413,7 +413,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                   <span className="truncate">
                     {event.scheduleType === 'recurring' && event.recurrence?.customSummary
                       ? `${event.recurrence.customSummary} • ${event.time}`
-                      : `${event.date} • ${event.time}`}
+                      : `${event.eventType === 'public_venue' ? formatEventDateRange(event) : event.date} • ${event.time}`}
                   </span>
                 </div>
               </div>
