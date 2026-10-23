@@ -32,6 +32,7 @@ import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
 import { matchesQuery, spotInProvince, type DiscoverCounts } from '@/lib/discoverMatch';
 import { DiscoverHeader, filterPillClass } from '@/components/discover/DiscoverHeader';
 import { DiscoverSearch } from '@/components/discover/DiscoverSearch';
+import { useMyInterests } from '@/lib/useMyInterests';
 
 function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
@@ -53,6 +54,8 @@ function SpotsPageContent({ initialSpots, initialCounts }: ServerProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
+  // The member's own categories from onboarding come first on the tabs, marked (owner 2026-10-23)
+  const myInterests = useMyInterests(isLoggedIn);
   const itemsPerPage = useResponsiveItemsPerPage();
 
   const [activeNavTab, setActiveNavTab] = useState('explore');
@@ -412,6 +415,7 @@ function SpotsPageContent({ initialSpots, initialCounts }: ServerProps) {
           kind="spots"
           categories={NATIONWIDE_SPOT_CATEGORIES}
           counts={spotCounts}
+          mineIds={myInterests.spotVibes}
           selectedId={selectedCategory === 'all' ? null : selectedCategory}
           onSelect={(id) => {
             setSelectedCategory(id || 'all');
