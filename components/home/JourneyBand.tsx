@@ -14,7 +14,8 @@ import { DAY_MS, FALLBACK_IMAGE, Faces, awayLabel, dayLine, dayPart, endsAt, eve
 /**
  * The member journey on home: ① เลือกกิจกรรมที่ใช่ ② ออกไปใช้ชีวิต ③ แชร์โมเมนต์, the same three steps as the
  * landing hero and the end of onboarding. A cream band above the feed says which step the member is on and
- * gives the one next thing to do. It goes away for good once the member has shared a moment, or taps ข้าม.
+ * gives the one next thing to do. It stays on home for good (owner 2026-10-23: the call to go out, no ข้าม);
+ * after a moment is shared it keeps running the loop: pick something, go, share it.
  * Two flavours: a ตี้ (orange, Connect) or a challenge (violet, Chill); the member switches only at step ①.
  * A third path for members who came for moments only (owner 2026-10-23): ① ติดตามเพื่อน ② กดใจ คอมเมนต์
  * ③ แชร์โมเมนต์แรก, in rose. It gives way to the usual steps once they join a ตี้ or a challenge.
@@ -45,7 +46,6 @@ const FOLLOW_TARGET = 3;
 /** A ตี้ that ended this long ago still asks for its moment */
 const SHARE_WINDOW_MS = 14 * DAY_MS;
 
-const skipKey = (memberId: string) => `cch_journey_skipped_${memberId}`;
 
 /** The first step the onboarding summary offered (app/onboarding/OnboardingFlow.tsx): step ① shows it first */
 export interface FirstStep {
@@ -80,24 +80,24 @@ interface JourneyInput {
   isLoaded: boolean;
 }
 
-/** Which step the member is on; `journey` is null when the band is off (a moment shared, or skipped) */
+/** Which step the member is on; `journey` is null only until the member's data has loaded */
 export function useJourney({ memberId, socialOnly, now, mine, questProgress, allQuests, isLoaded }: JourneyInput) {
   const [momentCount, setMomentCount] = useState<number | null>(null);
-  const [skipped, setSkipped] = useState<boolean | null>(null);
+  // When the newest moment was posted: a ตี้ that ended before it no longer asks for one
+  const [lastMomentAt, setLastMomentAt] = useState(0);
   // Moments path only: people followed and a first like or comment; null until loaded
   const [social, setSocial] = useState<{ following: number; reacted: boolean; followDone: boolean } | null>(null);
 
   useEffect(() => {
     if (!memberId) return;
     let alive = true;
-    try {
-      setSkipped(localStorage.getItem(skipKey(memberId)) === '1');
-    } catch {
-      setSkipped(false);
-    }
     fetch('/api/moments?tab=mine&limit=1', { cache: 'no-store' })
       .then((res) => res.json())
-      .then((json) => alive && setMomentCount(Number(json?.pagination?.totalCount ?? 0)))
+      .then((json) => {
+        if (!alive) return;
+        setMomentCount(Number(json?.pagination?.totalCount ?? 0));
+        setLastMomentAt(Date.parse(json?.moments?.[0]?.createdAt ?? '') || 0);
+      })
       .catch(() => alive && setMomentCount(0));
     return () => {
       alive = false;
@@ -132,31 +132,29 @@ export function useJourney({ memberId, socialOnly, now, mine, questProgress, all
     } catch {}
   }, [memberId]);
 
-  const skip = useCallback(() => {
-    setSkipped(true);
-    try {
-      if (memberId) localStorage.setItem(skipKey(memberId), '1');
-    } catch {}
-  }, [memberId]);
-  const markPosted = useCallback(() => setMomentCount((count) => (count ?? 0) + 1), []);
+  const markPosted = useCallback(() => {
+    setMomentCount((count) => (count ?? 0) + 1);
+    setLastMomentAt(Date.now());
+  }, []);
 
   const journey = useMemo<Journey | null>(() => {
-    if (skipped || (momentCount ?? 0) > 0) return null;
+    const hasPosted = (momentCount ?? 0) > 0;
     const meetups = mine.filter((e) => (e.eventType || 'community') === 'community');
     // Over once its end time has passed ("06:30 - 08:00"), not only at the end of the day
     const isOver = (e: EventItem) => isEventEnded(e) || endsAt(e) <= now;
     const upcoming = meetups.filter((e) => !isOver(e)).sort((a, b) => startsAt(a) - startsAt(b));
     const ended = meetups
-      .filter((e) => isOver(e) && now - endsAt(e) < SHARE_WINDOW_MS)
+      .filter((e) => isOver(e) && now - endsAt(e) < SHARE_WINDOW_MS && endsAt(e) > lastMomentAt)
       .sort((a, b) => endsAt(b) - endsAt(a));
     const running = questProgress.filter((q) => q.joined && !q.completed);
     const questOf = (id: string) => allQuests.find((q) => q.id === id);
-    const visited = running.find((q) => q.current > 0 && questOf(q.questId));
+    // A challenge visit asks for a moment only until the first one is shared
+    const visited = hasPosted ? undefined : running.find((q) => q.current > 0 && questOf(q.questId));
     const next = upcoming[0];
     const doing = running.find((q) => questOf(q.questId));
 
-    // Moments path, until the member signs up for something to go out to
-    if (socialOnly && social && !next && !ended[0] && !doing) {
+    // Moments path, until the member shares a first moment or signs up for something to go out to
+    if (socialOnly && social && !hasPosted && !next && !ended[0] && !doing) {
       if (social.following < FOLLOW_TARGET && !social.followDone) return { step: 'follow', following: social.following };
       return social.reacted ? { step: 'post' } : { step: 'react' };
     }
@@ -168,10 +166,12 @@ export function useJourney({ memberId, socialOnly, now, mine, questProgress, all
     if (next) return { step: 'go-meetup', event: next };
     if (doing) return { step: 'go-challenge', quest: questOf(doing.questId)!, progress: doing };
     return { step: 'pick' };
-  }, [skipped, momentCount, mine, questProgress, allQuests, now, socialOnly, social]);
+  }, [momentCount, lastMomentAt, mine, questProgress, allQuests, now, socialOnly, social]);
 
-  const isReady = isLoaded && momentCount !== null && skipped !== null && (!socialOnly || social !== null);
-  return { journey: isReady ? journey : null, isReady, skip, markPosted, followed, finishFollow };
+  const isReady = isLoaded && momentCount !== null && (!socialOnly || social !== null);
+  // Been out before (joined something or shared a moment): the steps stop saying "แรก"
+  const returning = (momentCount ?? 0) > 0 || mine.length > 0 || questProgress.some((q) => q.joined);
+  return { journey: isReady ? journey : null, isReady, returning, markPosted, followed, finishFollow };
 }
 
 /** The tab shown first at step ①: a challenge when the member chose challenges and no meetup goal, else a ตี้ */
@@ -249,25 +249,25 @@ function Print({ href, image, alt, index, sticker, when, whenClass, title, meta 
     <Link href={href} className={`group w-[140px] sm:w-auto shrink-0 ${TILTS[index % TILTS.length]} hover:rotate-0 transition-transform`}>
       <span className="relative block">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={image} alt={alt} loading="lazy" className={`${PRINT} aspect-[4/3]`} />
+        <img src={image} alt={alt} loading="lazy" className={`${PRINT} aspect-[16/9]`} />
         {sticker && <span className="absolute -top-2 -right-1.5 rotate-6 rounded-full bg-[#7C3AED] px-2 py-0.5 text-[11px] font-semibold text-white">{sticker}</span>}
       </span>
-      <span className={`block mt-2 text-[11px] font-semibold ${whenClass}`}>{when}</span>
-      <span className="block mt-0.5 text-[13px] font-semibold text-slate-900 leading-snug line-clamp-2 group-hover:underline">{title}</span>
+      <span className={`block mt-1.5 text-[11px] font-semibold ${whenClass}`}>{when}</span>
+      <span className="block mt-0.5 text-[13px] font-semibold text-slate-900 leading-snug truncate group-hover:underline">{title}</span>
       {meta && <span className="block mt-0.5 text-xs text-slate-500 truncate">{meta}</span>}
     </Link>
   );
 }
 
-function Picks({ flavour, setFlavour, meetups, reasons, quests }: {
-  flavour: Flavour; setFlavour: (f: Flavour) => void; meetups: EventItem[]; reasons: Record<string, string>; quests: ChallengeQuest[];
+function Picks({ flavour, setFlavour, meetups, reasons, quests, returning }: {
+  flavour: Flavour; setFlavour: (f: Flavour) => void; meetups: EventItem[]; reasons: Record<string, string>; quests: ChallengeQuest[]; returning: boolean;
 }) {
   const isMeetup = flavour === 'meetup';
   const allHref = isMeetup ? '/community?seats=open' : '/challenges';
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-base sm:text-lg font-bold text-slate-900">{isMeetup ? 'เลือกตี้แรกของคุณ' : 'เลือกชาเลนจ์แรกของคุณ'}</h2>
+        <h2 className="text-base sm:text-lg font-bold text-slate-900">{returning ? (isMeetup ? 'หาตี้ต่อไปของคุณ' : 'เลือกชาเลนจ์ต่อไป') : isMeetup ? 'เลือกตี้แรกของคุณ' : 'เลือกชาเลนจ์แรกของคุณ'}</h2>
         <div className="flex gap-0.5 p-0.5 rounded-full bg-white shrink-0 shadow-[0_2px_8px_rgba(15,23,42,0.06)]" role="group" aria-label="เลือกแบบไหนก่อน">
           {(['meetup', 'challenge'] as const).map((f) => (
             <button key={f} type="button" aria-pressed={flavour === f} onClick={() => setFlavour(f)}
@@ -388,7 +388,7 @@ function Share({ event, quest, onShare }: { event?: EventItem; quest?: Challenge
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-[13px] font-semibold text-[#E11D48]">สนุกไหม?</p>
-        <p className={`${HEADLINE} mt-0.5`}>แชร์โมเมนต์แรกของคุณ</p>
+        <p className={`${HEADLINE} mt-0.5`}>แชร์โมเมนต์จากวันนั้น</p>
         <p className="mt-1 text-xs text-slate-600 line-clamp-2">
           รูปจาก {title} {event ? 'ให้เพื่อนในตี้เห็น' : 'ให้เพื่อนๆ เห็น'}
         </p>
@@ -552,11 +552,12 @@ interface JourneyBandProps {
   meetups: EventItem[];
   reasons: Record<string, string>;
   quests: ChallengeQuest[];
+  /** Been out before: step ① stops saying "แรก" */
+  returning: boolean;
   /** This month's Chill (places) and Connect (meetups), shown on the right on laptops; null until it loads */
   month: { chill: number; connect: number } | null;
   xp: number;
   onShare: (request: Omit<ShareRequest, 'key'>) => void;
-  onSkip: () => void;
   /** Moments path ①: a person was followed, or the member moves on */
   onFollowed: () => void;
   onFollowDone: () => void;
@@ -564,9 +565,9 @@ interface JourneyBandProps {
 
 /**
  * Laid on the member home's own three columns (MemberLiveHome) so it lines up with the page below:
- * greeting and progress over "ของฉัน", the step over the feed (same width), the month and ข้าม over the right column.
+ * greeting and progress over "ของฉัน", the step over the feed (same width), the month over the right column.
  */
-export function JourneyBand({ name, memberId, now, journey, firstFlavour, meetups, reasons, quests, month, xp, onShare, onSkip, onFollowed, onFollowDone }: JourneyBandProps) {
+export function JourneyBand({ name, memberId, now, journey, firstFlavour, meetups, reasons, quests, month, xp, onShare, onFollowed, returning, onFollowDone }: JourneyBandProps) {
   // The band only mounts in the browser (after the member's data loads), so storage can be read on first render
   const [firstStep] = useState(() => readFirstStep(memberId));
   const [picked, setPicked] = useState<Flavour | null>(firstStep ? (firstStep.pillar === 'challenges' ? 'challenge' : 'meetup') : null);
@@ -590,11 +591,6 @@ export function JourneyBand({ name, memberId, now, journey, firstFlavour, meetup
     : journey.step === 'pick' ? picked ?? firstFlavour : journey.step === 'go-challenge' || (journey.step === 'share' && journey.quest) ? 'challenge' : 'meetup';
   const at = journey.step === 'pick' || journey.step === 'follow' ? 0 : journey.step === 'share' || journey.step === 'post' ? 2 : 1;
 
-  const skip = (
-    <button type="button" onClick={onSkip} className="shrink-0 -mr-2 px-2.5 py-1.5 rounded-lg text-[13px] font-medium text-slate-600 hover:text-slate-900 hover:bg-white/70 cursor-pointer" aria-label="ข้ามเส้นทางนี้ แล้วใช้หน้าแรกแบบปกติ">
-      ข้าม
-    </button>
-  );
   const greeting = (
     <div className="min-w-0">
       <p className="text-xs text-slate-500">{dayPart(now)}</p>
@@ -616,13 +612,10 @@ export function JourneyBand({ name, memberId, now, journey, firstFlavour, meetup
           {/* Over the feed, the same width */}
           <div className="min-w-0 w-full max-w-[560px] 2xl:max-w-[600px] mx-auto flex flex-col gap-4">
             <div className="xl:hidden flex flex-col gap-3">
-              <div className="flex items-start justify-between gap-3">
-                {greeting}
-                <span className="lg:hidden">{skip}</span>
-              </div>
+              {greeting}
               <Tracker at={at} flavour={flavour} />
             </div>
-            {journey.step === 'pick' && <Picks flavour={flavour} setFlavour={setPicked} meetups={pickMeetups} reasons={pickReasons} quests={pickQuests} />}
+            {journey.step === 'pick' && <Picks flavour={flavour} setFlavour={setPicked} meetups={pickMeetups} reasons={pickReasons} quests={pickQuests} returning={returning} />}
             {journey.step === 'go-meetup' && <GoMeetup event={journey.event} now={now} />}
             {journey.step === 'go-challenge' && <GoChallenge quest={journey.quest} progress={journey.progress} />}
             {journey.step === 'share' && <Share event={journey.event} quest={journey.quest} onShare={onShare} />}
@@ -631,11 +624,10 @@ export function JourneyBand({ name, memberId, now, journey, firstFlavour, meetup
             {journey.step === 'post' && <PostFirst onShare={onShare} />}
           </div>
 
-          {/* Over the right column (laptops up): this month, and ข้าม */}
+          {/* Over the right column (laptops up): this month */}
           <div className="hidden lg:flex flex-col gap-2 self-stretch">
-            <div className="flex justify-end">{skip}</div>
             {month && (
-              <Link href="/myhub#my-month" className="group mt-auto mb-auto block" aria-label={`เดือนนี้ ไปที่เที่ยว ${month.chill} แห่ง ไปตี้ ${month.connect} ครั้ง ดูในมายฮับ`}>
+              <Link href="/myhub#my-month" className="group my-auto block" aria-label={`เดือนนี้ ไปที่เที่ยว ${month.chill} แห่ง ไปตี้ ${month.connect} ครั้ง ดูในมายฮับ`}>
                 <span className="block text-xs text-slate-500">เดือนนี้ของคุณ</span>
                 <span className="mt-0.5 block text-xl font-bold text-slate-900 group-hover:opacity-80">
                   <span className="font-extrabold text-[#2D5A3C]">Chill</span> <span className="tabular-nums">{month.chill}</span>

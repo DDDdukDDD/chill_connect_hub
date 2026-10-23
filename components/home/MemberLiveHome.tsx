@@ -69,8 +69,8 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
   const live = useLiveActivity();
   const [feedView, setFeedView] = useState<FeedView>('all');
   const hasPlans = plans.length > 0;
-  // A new member gets the journey band (① เลือก ② ไป ③ แชร์) in place of the greeting and plans, until their first moment
-  const { journey, skip, markPosted, followed, finishFollow } = useJourney({
+  // The journey band (① เลือก ② ไป ③ แชร์) stays on top of home in place of the greeting and plans
+  const { journey, isReady: isJourneyReady, returning, markPosted, followed, finishFollow } = useJourney({
     memberId: props.memberId,
     socialOnly: isSocialOnly(props.goals),
     now: props.now,
@@ -98,9 +98,9 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
         month={props.month}
         xp={props.xp}
         onShare={(request) => setShareRequest({ ...request, key: Date.now() })}
-        onSkip={skip}
         onFollowed={followed}
         onFollowDone={finishFollow}
+        returning={returning}
       />
     )}
     <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 pt-5 sm:pt-7">
@@ -108,7 +108,7 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
         {/* Left (wide screens): me, my next plans, shortcuts (the stamp passport opens in My Hub) */}
         {/* Scrolls on its own when taller than the screen, like the right column */}
         <aside className="hidden xl:block sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto no-scrollbar space-y-8 pb-4">
-          {!journey && (
+          {isJourneyReady && !journey && (
             <>
               <Greeting {...props} layout="column" />
               <NextUp {...props} />
@@ -119,7 +119,7 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
 
         <main id="home-feed" className="min-w-0 w-full max-w-[560px] 2xl:max-w-[600px] mx-auto scroll-mt-24">
           {/* Below wide screens the greeting and plans sit in the feed's own column, on its left edge */}
-          {!journey && (
+          {isJourneyReady && !journey && (
             <div className="xl:hidden mb-7 space-y-6">
               <Greeting {...props} layout="row" />
               <NextUp {...props} />
