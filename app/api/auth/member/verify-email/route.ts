@@ -19,6 +19,7 @@ export async function POST(request: Request) {
   if (isRateLimited(`verify-email:${member.id}`, 5, 60 * 60 * 1000)) {
     return NextResponse.json({ success: false, message: 'ขอลิงก์บ่อยเกินไป กรุณาลองใหม่ภายหลัง' }, { status: 429 });
   }
-  const result = await sendVerification(request, member);
+  const body = (await request.json().catch(() => ({}))) as { returnTo?: unknown };
+  const result = await sendVerification(request, member, typeof body.returnTo === 'string' ? body.returnTo : undefined);
   return NextResponse.json({ success: true, ...result });
 }

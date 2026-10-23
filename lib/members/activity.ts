@@ -10,6 +10,9 @@ import { trustLevel } from './trust';
 import { tidyDisplayName } from '../displayName';
 import { joinersOf } from '../social/questJoins';
 import type { Member } from './types';
+import { ensureInstance, isSeries, nextDatesOf } from '../social/recurring';
+import { heldSeats, leftLineByJoining, moveQueue } from '../social/waitlist';
+import { attendanceOf } from '../social/attendance';
 
 /**
  * What a member does with events and places: join, cancel, save for later.
@@ -23,9 +26,23 @@ export type JoinStatus = 'joined' | 'already_joined' | 'event_full' | 'event_end
 const isCommunity = (event: EventItem) => event.eventType !== 'public_venue';
 const hostOf = (event: EventItem) => (event as { createdByMemberId?: string }).createdByMemberId;
 
-export async function joinEvent(member: Member, eventId: string): Promise<{ status: JoinStatus; message: string; event?: EventItem }> {
+export async function joinEvent(member: Member, eventId: string, date?: string): Promise<{ status: JoinStatus; message: string; event?: EventItem }> {
   const event = await db.findEventById(eventId);
   if (!event || event.approvalStatus !== 'approved') return { status: 'not_found', message: 'ไม่พบตี้นี้ หรือตี้ยังไม่เปิดให้เข้าร่วม' };
+  // A recurring ตี้ is joined one date at a time: the date's own event is created on first join (lib/social/recurring.ts)
+  if (isSeries(event)) {
+    if (!date || !nextDatesOf(event).includes(date)) return { status: 'not_allowed', message: 'เลือกวันที่จะไปก่อนนะ' };
+    if (isCommunity(event) && trustLevel(member) === 'new') {
+      return { status: 'not_allowed', message: member.emailVerified ? 'รับคำมั่นของคอมมูนิตี้ก่อนนะ แล้วจะเข้าร่วมตี้ได้ (ดูที่หน้าโปรไฟล์)' : 'ยืนยันอีเมลก่อนนะ แล้วจะเข้าร่วมตี้ได้ (ดูที่หน้าโปรไฟล์)' };
+    }
+    const instance = await ensureInstance(event, date);
+    return joinEvent(member, instance.id);
+  }
+  // Someone else holds an offered seat from the waiting list: the last seats wait for them (lib/social/waitlist.ts)
+  const held = await heldSeats(eventId, member.id);
+  if (held > 0 && (event.participantsCount ?? 0) + held >= (event.maxParticipants ?? 0)) {
+    return { status: 'event_full', message: 'ที่ว่างนี้กันไว้ให้คนในรายชื่อสำรองอยู่ ต่อคิวไว้ได้นะ' };
+  }
   // Meeting strangers in person needs a verified account; saving a public fair to one's plan does not
   if (isCommunity(event) && trustLevel(member) === 'new') {
     return {
@@ -35,6 +52,7 @@ export async function joinEvent(member: Member, eventId: string): Promise<{ stat
   }
   const result = await db.atomicJoinEvent(eventId, { userId: member.id, userName: member.displayName, userAvatar: member.avatarUrl });
   if (result.success || result.status === 'already_joined') {
+    await leftLineByJoining(eventId, member.id);
     // Joining again clears the "cancelled" mark
     if (member.cancelledEvents?.some((c) => c.eventId === eventId)) {
       await memberRepository.update(member.id, { cancelledEvents: member.cancelledEvents.filter((c) => c.eventId !== eventId) });
@@ -50,6 +68,8 @@ export async function leaveEvent(member: Member, eventId: string): Promise<{ eve
   if (!result.success) throw new MemberAuthError(result.message, 404);
   const history = [{ eventId, at: new Date().toISOString() }, ...(member.cancelledEvents ?? []).filter((c) => c.eventId !== eventId)].slice(0, MAX_CANCELLED_HISTORY);
   await memberRepository.update(member.id, { cancelledEvents: history });
+  // The freed seat goes to the first person on the waiting list
+  await moveQueue(eventId);
   return { event: await db.findEventById(eventId) };
 }
 
@@ -121,7 +141,13 @@ export async function attendeesOf(eventId: string, viewer: Member | null) {
   const event = await db.findEventById(eventId);
   if (!event || event.eventType === 'public_venue') return null;
   const records = await db.listParticipants(eventId);
-  const attendees = await publicPeople(records.map((p) => ({ userId: p.userId, userName: p.userName, userAvatar: p.userAvatar, joinedAt: p.joinedAt })), viewer, hostOf(event));
+  const people = await publicPeople(records.map((p) => ({ userId: p.userId, userName: p.userName, userAvatar: p.userAvatar, joinedAt: p.joinedAt })), viewer, hostOf(event));
+  // Who has arrived is shown only to the people in the ตี้ (on the day it says where someone is right now)
+  const viewerIsIn = Boolean(viewer && (hostOf(event) === viewer.id || records.some((r) => r.userId === viewer.id)));
+  const arrived = new Set(records.filter((r) => r.checkedInAt).map((r) => r.userId));
+  const attendees = await Promise.all(
+    people.map(async (person) => ({ ...person, attendance: hostOf(event) ? await attendanceOf(person.id) : undefined, arrived: viewerIsIn ? arrived.has(person.id) || person.isHost : undefined }))
+  );
   return { total: Math.max(event.participantsCount ?? 0, attendees.length), attendees };
 }
 
@@ -164,7 +190,7 @@ export async function participantsForHost(member: Member, eventId: string) {
   const list = await db.listParticipants(eventId);
   return {
     event: { id: event.id, title: event.title, date: event.date, time: event.time, participantsCount: event.participantsCount, maxParticipants: event.maxParticipants },
-    participants: list.map((p) => ({ userId: p.userId, userName: p.userName, userAvatar: p.userAvatar ?? '', joinedAt: p.joinedAt, checkedInAt: p.checkedInAt, isHost: p.userId === member.id })),
+    participants: await Promise.all(list.map(async (p) => ({ userId: p.userId, userName: p.userName, userAvatar: p.userAvatar ?? '', joinedAt: p.joinedAt, checkedInAt: p.checkedInAt, isHost: p.userId === member.id, attendance: await attendanceOf(p.userId) }))),
   };
 }
 

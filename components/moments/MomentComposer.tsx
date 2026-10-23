@@ -241,6 +241,20 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
     }
   };
 
+  /**
+   * Where the phone is right now, for a post at a place or fair: when it is at the place, the photo counts toward
+   * challenges at once; without it (declined, no GPS) the photo waits for staff (lib/moments/evidence.ts)
+   */
+  const currentPosition = () =>
+    new Promise<{ lat: number; lng: number; accuracy: number; at: number } | undefined>((resolve) => {
+      if (typeof navigator === 'undefined' || !navigator.geolocation) return resolve(undefined);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, at: pos.timestamp }),
+        () => resolve(undefined),
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 }
+      );
+    });
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!caption.trim() || isPosting) return;
@@ -270,6 +284,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
         probe.onerror = () => resolve(undefined);
         probe.src = images[0];
       });
+      const capture = linkedTarget && (linkedTarget.type === 'spot' || linkedTarget.type === 'fair') ? await currentPosition() : undefined;
       const result = await postJson('/api/moments', {
         caption: caption.trim(),
         images: imageUrls,
@@ -279,6 +294,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
         targetType: linkedTarget ? linkedTarget.type : 'general',
         targetId: linkedTarget?.id,
         targetTitle: linkedTarget ? linkedTarget.title : location,
+        capture,
       });
       if (!result.ok || !result.moment) return onToast(result.message);
 
@@ -427,6 +443,11 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
                     <p className="mt-2 flex items-start gap-1.5 text-xs font-bold text-[#5B21B6] leading-relaxed">
                       <Trophy className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden="true" />
                       <span className="min-w-0 line-clamp-2">ที่นี่นับในชาเลนจ์ {linkedQuest.title}</span>
+                    </p>
+                  )}
+                  {linkedQuest && (linkedTarget.type === 'spot' || linkedTarget.type === 'fair') && (
+                    <p className="mt-1 text-xs text-slate-600 leading-relaxed">
+                      โพสต์ตอนอยู่ที่นี่ แล้วกดอนุญาตตำแหน่ง รูปจะนับทันที ถ้าไม่ได้อยู่ที่นี่ ทีมงานจะตรวจรูปภายใน 24 ชม.
                     </p>
                   )}
                 </div>

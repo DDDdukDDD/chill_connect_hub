@@ -187,7 +187,7 @@ function TrustCard({ member, onChanged }: { member: PublicMember; onChanged: () 
     {
       done: t.emailVerified,
       title: 'ยืนยันอีเมล',
-      desc: t.emailVerified ? 'ยืนยันแล้ว' : t.hasEmail ? 'กดลิงก์ในอีเมลที่เราส่งให้ จึงจะโพสต์และคอมเมนต์ได้' : 'บัญชีนี้ยังไม่มีอีเมล',
+      desc: t.emailVerified ? 'ยืนยันแล้ว' : t.hasEmail ? 'กดลิงก์ในอีเมลที่เราส่งให้ จึงจะเข้าร่วมตี้ โพสต์ และคอมเมนต์ได้' : 'บัญชีนี้ยังไม่มีอีเมล',
       action: !t.emailVerified && t.hasEmail && (
         <button type="button" onClick={send} disabled={busy} className="inline-flex items-center gap-1.5 text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap disabled:opacity-60">
           {busy && <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />}

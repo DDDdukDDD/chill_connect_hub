@@ -15,6 +15,8 @@ interface RequireMembershipModalProps {
   onOpenSignup?: () => void;
   /** Completes "เข้าสู่ระบบ …", e.g. "เพื่อเข้าร่วมกิจกรรม" */
   actionTitle?: string;
+  /** Where sign-up comes back to (default: this page), e.g. "/community/<id>?join=1" to finish the join */
+  returnTo?: string;
 }
 
 // What an account unlocks today (only things that work)
@@ -31,10 +33,11 @@ export const RequireMembershipModal: React.FC<RequireMembershipModalProps> = ({
   onOpenLogin,
   onOpenSignup,
   actionTitle = 'เพื่อดำเนินการต่อ',
+  returnTo,
 }) => {
   const pathname = usePathname();
   if (!isOpen) return null;
-  const signupHref = `/login?mode=signup&returnTo=${encodeURIComponent(pathname || '/')}`;
+  const signupHref = `/login?mode=signup&returnTo=${encodeURIComponent(returnTo || pathname || '/')}`;
 
   return (
     <DialogShell onClose={onClose} title={`เข้าสู่ระบบ ${actionTitle}`} subtitle="สมัครฟรี ใช้เวลาไม่ถึง 1 นาที">

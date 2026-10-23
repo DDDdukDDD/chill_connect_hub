@@ -1,8 +1,550 @@
 {
   "version": "2.0.0",
-  "lastUpdated": "2026-10-13T06:43:26.902Z",
+  "lastUpdated": "2026-10-23T07:07:24.641Z",
   "autoPublish": false,
   "events": [
+    {
+      "category": "chill",
+      "tag": "ตี้",
+      "price": "เข้าร่วมฟรี",
+      "eventType": "community",
+      "province": "กรุงเทพฯ",
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "participantsCount": 2,
+      "createdAtTimestamp": 1792739244377,
+      "createdAt": "2026-10-23T07:07:24.285Z",
+      "id": "demo-past-mem_8e8fc154-09de-4592-964b-adf7bcf04123",
+      "title": "[ตัวอย่าง] เดินชมงานอาร์ตแฟร์ด้วยกัน",
+      "date": "20 ต.ค. 2569",
+      "time": "14:00 - 16:00 น.",
+      "location": "หอศิลปวัฒนธรรมแห่งกรุงเทพมหานคร",
+      "image": "/event-board-games.png",
+      "description": "กิจกรรมตัวอย่างสำหรับทดสอบมายฮับ: กิจกรรมที่คุณไปร่วมมาแล้ว และคนจัดเช็กอินให้เรียบร้อย",
+      "hostName": "คุณแพรว (Praew_Art)",
+      "hostAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
+      "maxParticipants": 6,
+      "createdByMemberId": "mem_sample_praew_art",
+      "galleryImages": [
+        "/event-board-games.png"
+      ],
+      "subActivities": [],
+      "status": "recruiting"
+    },
+    {
+      "category": "chill",
+      "tag": "ตี้",
+      "price": "เข้าร่วมฟรี",
+      "eventType": "community",
+      "province": "กรุงเทพฯ",
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "participantsCount": 2,
+      "createdAtTimestamp": 1792739244377,
+      "createdAt": "2026-10-23T07:07:24.285Z",
+      "id": "demo-join-mem_8e8fc154-09de-4592-964b-adf7bcf04123",
+      "title": "[ตัวอย่าง] วิ่งเบาๆ รอบสวนลุมพินี",
+      "date": "27 ต.ค. 2569",
+      "time": "06:30 - 07:30 น.",
+      "location": "สวนลุมพินี (จุดนัดพบ: ประตูฝั่งถนนพระราม 4)",
+      "image": "/event-city-run.png",
+      "description": "กิจกรรมตัวอย่างสำหรับทดสอบมายฮับ: กิจกรรมที่คุณลงชื่อไว้ และคนจัดจะสแกน QR บนบัตรของคุณที่จุดนัดพบ",
+      "hostName": "คุณกี้ (Kee_Explorer)",
+      "hostAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+      "maxParticipants": 8,
+      "createdByMemberId": "mem_sample_kee_explorer",
+      "galleryImages": [
+        "/event-city-run.png"
+      ],
+      "subActivities": [],
+      "status": "recruiting"
+    },
+    {
+      "category": "chill",
+      "tag": "ตี้",
+      "price": "เข้าร่วมฟรี",
+      "eventType": "community",
+      "province": "กรุงเทพฯ",
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "participantsCount": 3,
+      "createdAtTimestamp": 1792739244377,
+      "createdAt": "2026-10-23T07:07:24.285Z",
+      "id": "demo-host-mem_8e8fc154-09de-4592-964b-adf7bcf04123",
+      "title": "[ตัวอย่าง] เดินเล่นสวนเบญจกิติยามเย็น",
+      "date": "30 ต.ค. 2569",
+      "time": "17:30 - 19:00 น.",
+      "location": "สวนเบญจกิติ (จุดนัดพบ: ทางเข้าฝั่งศูนย์สิริกิติ์)",
+      "image": "/event-city-run.png",
+      "description": "กิจกรรมตัวอย่างสำหรับทดสอบมายฮับ: เดินเล่นคุยกันสบายๆ รอบสวน แล้วนั่งพักดูพระอาทิตย์ตก",
+      "hostName": "ทดสอบวันนัด",
+      "hostAvatar": "",
+      "maxParticipants": 8,
+      "createdByMemberId": "mem_8e8fc154-09de-4592-964b-adf7bcf04123",
+      "galleryImages": [
+        "/event-city-run.png"
+      ],
+      "subActivities": [],
+      "status": "recruiting"
+    },
+    {
+      "category": "chill",
+      "tag": "ตี้",
+      "price": "เข้าร่วมฟรี",
+      "eventType": "community",
+      "province": "กรุงเทพฯ",
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "participantsCount": 2,
+      "createdAtTimestamp": 1792738741645,
+      "createdAt": "2026-10-23T06:59:00.560Z",
+      "id": "demo-past-mem_8bc43d0b-4b80-4706-9230-5b899ab0d41f",
+      "title": "[ตัวอย่าง] เดินชมงานอาร์ตแฟร์ด้วยกัน",
+      "date": "20 ต.ค. 2569",
+      "time": "14:00 - 16:00 น.",
+      "location": "หอศิลปวัฒนธรรมแห่งกรุงเทพมหานคร",
+      "image": "/event-board-games.png",
+      "description": "กิจกรรมตัวอย่างสำหรับทดสอบมายฮับ: กิจกรรมที่คุณไปร่วมมาแล้ว และคนจัดเช็กอินให้เรียบร้อย",
+      "hostName": "คุณแพรว (Praew_Art)",
+      "hostAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
+      "maxParticipants": 6,
+      "createdByMemberId": "mem_sample_praew_art",
+      "galleryImages": [
+        "/event-board-games.png"
+      ],
+      "subActivities": [],
+      "status": "recruiting"
+    },
+    {
+      "category": "chill",
+      "tag": "ตี้",
+      "price": "เข้าร่วมฟรี",
+      "eventType": "community",
+      "province": "กรุงเทพฯ",
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "participantsCount": 2,
+      "createdAtTimestamp": 1792738741645,
+      "createdAt": "2026-10-23T06:59:00.560Z",
+      "id": "demo-join-mem_8bc43d0b-4b80-4706-9230-5b899ab0d41f",
+      "title": "[ตัวอย่าง] วิ่งเบาๆ รอบสวนลุมพินี",
+      "date": "27 ต.ค. 2569",
+      "time": "06:30 - 07:30 น.",
+      "location": "สวนลุมพินี (จุดนัดพบ: ประตูฝั่งถนนพระราม 4)",
+      "image": "/event-city-run.png",
+      "description": "กิจกรรมตัวอย่างสำหรับทดสอบมายฮับ: กิจกรรมที่คุณลงชื่อไว้ และคนจัดจะสแกน QR บนบัตรของคุณที่จุดนัดพบ",
+      "hostName": "คุณกี้ (Kee_Explorer)",
+      "hostAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+      "maxParticipants": 8,
+      "createdByMemberId": "mem_sample_kee_explorer",
+      "galleryImages": [
+        "/event-city-run.png"
+      ],
+      "subActivities": [],
+      "status": "recruiting"
+    },
+    {
+      "category": "chill",
+      "tag": "ตี้",
+      "price": "เข้าร่วมฟรี",
+      "eventType": "community",
+      "province": "กรุงเทพฯ",
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "participantsCount": 8,
+      "createdAtTimestamp": 1792738741645,
+      "createdAt": "2026-10-23T06:59:00.560Z",
+      "id": "demo-host-mem_8bc43d0b-4b80-4706-9230-5b899ab0d41f",
+      "title": "[ตัวอย่าง] เดินเล่นสวนเบญจกิติยามเย็น",
+      "date": "30 ต.ค. 2569",
+      "time": "17:30 - 19:00 น.",
+      "location": "สวนเบญจกิติ (จุดนัดพบ: ทางเข้าฝั่งศูนย์สิริกิติ์)",
+      "image": "/event-city-run.png",
+      "description": "กิจกรรมตัวอย่างสำหรับทดสอบมายฮับ: เดินเล่นคุยกันสบายๆ รอบสวน แล้วนั่งพักดูพระอาทิตย์ตก",
+      "hostName": "ทดสอบA",
+      "hostAvatar": "",
+      "maxParticipants": 8,
+      "createdByMemberId": "mem_8bc43d0b-4b80-4706-9230-5b899ab0d41f",
+      "galleryImages": [
+        "/event-city-run.png"
+      ],
+      "subActivities": [],
+      "status": "full"
+    },
+    {
+      "title": "Late Night Virtual Coworking: เปิดเพลง Lo-Fi นั่งทำงานเงียบๆ ด้วยกัน (Discord)",
+      "category": "chill",
+      "eventType": "community",
+      "image": "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=800&q=80",
+      "badgeText": "เปิดรับสมัคร",
+      "tag": "ทำงาน & นั่งชิลล์",
+      "date": "23 ต.ค. 2569",
+      "time": "20:00 - 23:00 น.",
+      "location": "ออนไลน์ (Discord Community Voice)",
+      "province": "ออนไลน์",
+      "zone": "online",
+      "locationType": "online",
+      "onlinePlatform": "discord",
+      "scheduleType": "single",
+      "hostName": "น้องพีช Freelancer Club",
+      "hostAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
+      "participantsCount": 3,
+      "maxParticipants": 30,
+      "description": "สเปซจำลองบรรยากาศร้านกาแฟและห้องสมุด นั่งเปิดกล้อง/ปิดกล้อง ทำงาน อ่านหนังสือ หรือทำงานฝีมือไปพร้อมเพลง Lo-Fi แวะคุยพักเบรกชิลล์ๆ ได้ตามใจชอบ",
+      "price": "ฟรี",
+      "rating": 4.9,
+      "reviewsCount": 35,
+      "status": "upcoming",
+      "isNew": true,
+      "approvalStatus": "approved",
+      "source": "Chill & Connect Official",
+      "sourceUrl": "https://chill-connect-hub.vercel.app",
+      "id": "regional-online-3--2026-10-23",
+      "seriesId": "regional-online-3",
+      "createdAtTimestamp": 1792738737162
+    },
+    {
+      "category": "chill",
+      "tag": "ตี้",
+      "price": "เข้าร่วมฟรี",
+      "eventType": "community",
+      "province": "กรุงเทพฯ",
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "participantsCount": 2,
+      "createdAtTimestamp": 1792737403132,
+      "createdAt": "2026-10-23T06:36:43.017Z",
+      "id": "demo-past-mem_4fb1d9cf-3cda-4001-8f8b-42724e92dbd8",
+      "title": "[ตัวอย่าง] เดินชมงานอาร์ตแฟร์ด้วยกัน",
+      "date": "20 ต.ค. 2569",
+      "time": "14:00 - 16:00 น.",
+      "location": "หอศิลปวัฒนธรรมแห่งกรุงเทพมหานคร",
+      "image": "/event-board-games.png",
+      "description": "กิจกรรมตัวอย่างสำหรับทดสอบมายฮับ: กิจกรรมที่คุณไปร่วมมาแล้ว และคนจัดเช็กอินให้เรียบร้อย",
+      "hostName": "คุณแพรว (Praew_Art)",
+      "hostAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
+      "maxParticipants": 6,
+      "createdByMemberId": "mem_sample_praew_art",
+      "galleryImages": [
+        "/event-board-games.png"
+      ],
+      "subActivities": [],
+      "status": "recruiting"
+    },
+    {
+      "category": "chill",
+      "tag": "ตี้",
+      "price": "เข้าร่วมฟรี",
+      "eventType": "community",
+      "province": "กรุงเทพฯ",
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "participantsCount": 2,
+      "createdAtTimestamp": 1792737403132,
+      "createdAt": "2026-10-23T06:36:43.017Z",
+      "id": "demo-join-mem_4fb1d9cf-3cda-4001-8f8b-42724e92dbd8",
+      "title": "[ตัวอย่าง] วิ่งเบาๆ รอบสวนลุมพินี",
+      "date": "27 ต.ค. 2569",
+      "time": "06:30 - 07:30 น.",
+      "location": "สวนลุมพินี (จุดนัดพบ: ประตูฝั่งถนนพระราม 4)",
+      "image": "/event-city-run.png",
+      "description": "กิจกรรมตัวอย่างสำหรับทดสอบมายฮับ: กิจกรรมที่คุณลงชื่อไว้ และคนจัดจะสแกน QR บนบัตรของคุณที่จุดนัดพบ",
+      "hostName": "คุณกี้ (Kee_Explorer)",
+      "hostAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+      "maxParticipants": 8,
+      "createdByMemberId": "mem_sample_kee_explorer",
+      "galleryImages": [
+        "/event-city-run.png"
+      ],
+      "subActivities": [],
+      "status": "recruiting"
+    },
+    {
+      "category": "chill",
+      "tag": "ตี้",
+      "price": "เข้าร่วมฟรี",
+      "eventType": "community",
+      "province": "กรุงเทพฯ",
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "participantsCount": 3,
+      "createdAtTimestamp": 1792737403132,
+      "createdAt": "2026-10-23T06:36:43.017Z",
+      "id": "demo-host-mem_4fb1d9cf-3cda-4001-8f8b-42724e92dbd8",
+      "title": "[ตัวอย่าง] เดินเล่นสวนเบญจกิติยามเย็น",
+      "date": "30 ต.ค. 2569",
+      "time": "17:30 - 19:00 น.",
+      "location": "สวนเบญจกิติ (จุดนัดพบ: ทางเข้าฝั่งศูนย์สิริกิติ์)",
+      "image": "/event-city-run.png",
+      "description": "กิจกรรมตัวอย่างสำหรับทดสอบมายฮับ: เดินเล่นคุยกันสบายๆ รอบสวน แล้วนั่งพักดูพระอาทิตย์ตก",
+      "hostName": "ทดสอบจบ",
+      "hostAvatar": "",
+      "maxParticipants": 8,
+      "createdByMemberId": "mem_4fb1d9cf-3cda-4001-8f8b-42724e92dbd8",
+      "galleryImages": [
+        "/event-city-run.png"
+      ],
+      "subActivities": [],
+      "status": "recruiting"
+    },
+    {
+      "category": "chill",
+      "tag": "ตี้",
+      "price": "เข้าร่วมฟรี",
+      "eventType": "community",
+      "province": "กรุงเทพฯ",
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "participantsCount": 2,
+      "createdAtTimestamp": 1792737358755,
+      "createdAt": "2026-10-23T06:35:58.644Z",
+      "id": "demo-past-mem_146af1be-53d4-4a6f-95f8-d97d0b34dff5",
+      "title": "[ตัวอย่าง] เดินชมงานอาร์ตแฟร์ด้วยกัน",
+      "date": "20 ต.ค. 2569",
+      "time": "14:00 - 16:00 น.",
+      "location": "หอศิลปวัฒนธรรมแห่งกรุงเทพมหานคร",
+      "image": "/event-board-games.png",
+      "description": "กิจกรรมตัวอย่างสำหรับทดสอบมายฮับ: กิจกรรมที่คุณไปร่วมมาแล้ว และคนจัดเช็กอินให้เรียบร้อย",
+      "hostName": "คุณแพรว (Praew_Art)",
+      "hostAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
+      "maxParticipants": 6,
+      "createdByMemberId": "mem_sample_praew_art",
+      "galleryImages": [
+        "/event-board-games.png"
+      ],
+      "subActivities": [],
+      "status": "recruiting"
+    },
+    {
+      "category": "chill",
+      "tag": "ตี้",
+      "price": "เข้าร่วมฟรี",
+      "eventType": "community",
+      "province": "กรุงเทพฯ",
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "participantsCount": 2,
+      "createdAtTimestamp": 1792737358755,
+      "createdAt": "2026-10-23T06:35:58.644Z",
+      "id": "demo-join-mem_146af1be-53d4-4a6f-95f8-d97d0b34dff5",
+      "title": "[ตัวอย่าง] วิ่งเบาๆ รอบสวนลุมพินี",
+      "date": "27 ต.ค. 2569",
+      "time": "06:30 - 07:30 น.",
+      "location": "สวนลุมพินี (จุดนัดพบ: ประตูฝั่งถนนพระราม 4)",
+      "image": "/event-city-run.png",
+      "description": "กิจกรรมตัวอย่างสำหรับทดสอบมายฮับ: กิจกรรมที่คุณลงชื่อไว้ และคนจัดจะสแกน QR บนบัตรของคุณที่จุดนัดพบ",
+      "hostName": "คุณกี้ (Kee_Explorer)",
+      "hostAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+      "maxParticipants": 8,
+      "createdByMemberId": "mem_sample_kee_explorer",
+      "galleryImages": [
+        "/event-city-run.png"
+      ],
+      "subActivities": [],
+      "status": "recruiting"
+    },
+    {
+      "category": "chill",
+      "tag": "ตี้",
+      "price": "เข้าร่วมฟรี",
+      "eventType": "community",
+      "province": "กรุงเทพฯ",
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "participantsCount": 4,
+      "createdAtTimestamp": 1792737358755,
+      "createdAt": "2026-10-23T06:35:58.644Z",
+      "id": "demo-host-mem_146af1be-53d4-4a6f-95f8-d97d0b34dff5",
+      "title": "[ตัวอย่าง] เดินเล่นสวนเบญจกิติยามเย็น",
+      "date": "30 ต.ค. 2569",
+      "time": "17:30 - 19:00 น.",
+      "location": "สวนเบญจกิติ (จุดนัดพบ: ทางเข้าฝั่งศูนย์สิริกิติ์)",
+      "image": "/event-city-run.png",
+      "description": "กิจกรรมตัวอย่างสำหรับทดสอบมายฮับ: เดินเล่นคุยกันสบายๆ รอบสวน แล้วนั่งพักดูพระอาทิตย์ตก",
+      "hostName": "ทดสอบA",
+      "hostAvatar": "",
+      "maxParticipants": 8,
+      "createdByMemberId": "mem_146af1be-53d4-4a6f-95f8-d97d0b34dff5",
+      "galleryImages": [
+        "/event-city-run.png"
+      ],
+      "subActivities": [],
+      "status": "recruiting"
+    },
+    {
+      "category": "chill",
+      "tag": "กิจกรรมคอมมูนิตี้",
+      "price": "เข้าร่วมฟรี",
+      "eventType": "community",
+      "province": "กรุงเทพฯ",
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "participantsCount": 2,
+      "createdAtTimestamp": 1792119406291,
+      "createdAt": "2026-10-16T02:56:46.245Z",
+      "id": "demo-past-mem_demo_tester",
+      "title": "[ตัวอย่าง] เดินชมงานอาร์ตแฟร์ด้วยกัน",
+      "date": "13 ต.ค. 2569",
+      "time": "14:00 - 16:00 น.",
+      "location": "หอศิลปวัฒนธรรมแห่งกรุงเทพมหานคร",
+      "image": "/event-board-games.png",
+      "description": "กิจกรรมตัวอย่างสำหรับทดสอบมายฮับ: กิจกรรมที่คุณไปร่วมมาแล้ว และคนจัดเช็กอินให้เรียบร้อย",
+      "hostName": "คุณแพรว (Praew_Art)",
+      "hostAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
+      "maxParticipants": 6,
+      "createdByMemberId": "mem_sample_praew_art",
+      "galleryImages": [
+        "/event-board-games.png"
+      ],
+      "subActivities": [],
+      "status": "recruiting"
+    },
+    {
+      "category": "chill",
+      "tag": "กิจกรรมคอมมูนิตี้",
+      "price": "เข้าร่วมฟรี",
+      "eventType": "community",
+      "province": "กรุงเทพฯ",
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "participantsCount": 2,
+      "createdAtTimestamp": 1792119406291,
+      "createdAt": "2026-10-16T02:56:46.245Z",
+      "id": "demo-join-mem_demo_tester",
+      "title": "[ตัวอย่าง] วิ่งเบาๆ รอบสวนลุมพินี",
+      "date": "20 ต.ค. 2569",
+      "time": "06:30 - 07:30 น.",
+      "location": "สวนลุมพินี (จุดนัดพบ: ประตูฝั่งถนนพระราม 4)",
+      "image": "/event-city-run.png",
+      "description": "กิจกรรมตัวอย่างสำหรับทดสอบมายฮับ: กิจกรรมที่คุณลงชื่อไว้ และคนจัดจะสแกน QR บนบัตรของคุณที่จุดนัดพบ",
+      "hostName": "คุณกี้ (Kee_Explorer)",
+      "hostAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+      "maxParticipants": 8,
+      "createdByMemberId": "mem_sample_kee_explorer",
+      "galleryImages": [
+        "/event-city-run.png"
+      ],
+      "subActivities": [],
+      "status": "recruiting"
+    },
+    {
+      "category": "chill",
+      "tag": "กิจกรรมคอมมูนิตี้",
+      "price": "เข้าร่วมฟรี",
+      "eventType": "community",
+      "province": "กรุงเทพฯ",
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "participantsCount": 6,
+      "createdAtTimestamp": 1792119406291,
+      "createdAt": "2026-10-16T02:56:46.245Z",
+      "id": "demo-host-mem_demo_tester",
+      "title": "[ตัวอย่าง] เดินเล่นสวนเบญจกิติยามเย็น",
+      "date": "23 ต.ค. 2569",
+      "time": "17:30 - 19:00 น.",
+      "location": "สวนเบญจกิติ (จุดนัดพบ: ทางเข้าฝั่งศูนย์สิริกิติ์)",
+      "image": "/event-city-run.png",
+      "description": "กิจกรรมตัวอย่างสำหรับทดสอบมายฮับ: เดินเล่นคุยกันสบายๆ รอบสวน แล้วนั่งพักดูพระอาทิตย์ตก",
+      "hostName": "ผู้ทดลองใช้",
+      "hostAvatar": "",
+      "maxParticipants": 8,
+      "createdByMemberId": "mem_demo_tester",
+      "galleryImages": [
+        "/event-city-run.png"
+      ],
+      "subActivities": [],
+      "status": "recruiting",
+      "externalUrl": "https://www.qsncc.com/en/whats-on/event-calendar",
+      "link": "https://www.qsncc.com/en/whats-on/event-calendar",
+      "sourceUrl": "https://www.qsncc.com/en/whats-on/event-calendar"
+    },
+    {
+      "category": "chill",
+      "tag": "กิจกรรมคอมมูนิตี้",
+      "price": "เข้าร่วมฟรี",
+      "eventType": "community",
+      "province": "กรุงเทพฯ",
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "participantsCount": 2,
+      "createdAtTimestamp": 1791907186709,
+      "createdAt": "2026-10-13T15:59:46.636Z",
+      "id": "demo-past-mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
+      "title": "[ตัวอย่าง] เดินชมงานอาร์ตแฟร์ด้วยกัน",
+      "date": "10 ต.ค. 2569",
+      "time": "14:00 - 16:00 น.",
+      "location": "หอศิลปวัฒนธรรมแห่งกรุงเทพมหานคร",
+      "image": "/event-board-games.png",
+      "description": "กิจกรรมตัวอย่างสำหรับทดสอบมายฮับ: กิจกรรมที่คุณไปร่วมมาแล้ว และคนจัดเช็กอินให้เรียบร้อย",
+      "hostName": "คุณแพรว (Praew_Art)",
+      "hostAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
+      "maxParticipants": 6,
+      "createdByMemberId": "mem_sample_praew_art",
+      "galleryImages": [
+        "/event-board-games.png"
+      ],
+      "subActivities": [],
+      "status": "recruiting"
+    },
+    {
+      "category": "chill",
+      "tag": "กิจกรรมคอมมูนิตี้",
+      "price": "เข้าร่วมฟรี",
+      "eventType": "community",
+      "province": "กรุงเทพฯ",
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "participantsCount": 8,
+      "createdAtTimestamp": 1791907186709,
+      "createdAt": "2026-10-13T15:59:46.636Z",
+      "id": "demo-join-mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
+      "title": "[ตัวอย่าง] วิ่งเบาๆ รอบสวนลุมพินี",
+      "date": "17 ต.ค. 2569",
+      "time": "06:30 - 07:30 น.",
+      "location": "สวนลุมพินี (จุดนัดพบ: ประตูฝั่งถนนพระราม 4)",
+      "image": "/event-city-run.png",
+      "description": "กิจกรรมตัวอย่างสำหรับทดสอบมายฮับ: กิจกรรมที่คุณลงชื่อไว้ และคนจัดจะสแกน QR บนบัตรของคุณที่จุดนัดพบ",
+      "hostName": "คุณกี้ (Kee_Explorer)",
+      "hostAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+      "maxParticipants": 8,
+      "createdByMemberId": "mem_sample_kee_explorer",
+      "galleryImages": [
+        "/event-city-run.png"
+      ],
+      "subActivities": [],
+      "status": "full"
+    },
+    {
+      "category": "chill",
+      "tag": "กิจกรรมคอมมูนิตี้",
+      "price": "เข้าร่วมฟรี",
+      "eventType": "community",
+      "province": "กรุงเทพฯ",
+      "approvalStatus": "approved",
+      "source": "Community Member",
+      "participantsCount": 8,
+      "createdAtTimestamp": 1791907186709,
+      "createdAt": "2026-10-13T15:59:46.636Z",
+      "id": "demo-host-mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
+      "title": "[ตัวอย่าง] เดินเล่นสวนเบญจกิติยามเย็น",
+      "date": "20 ต.ค. 2569",
+      "time": "17:30 - 19:00 น.",
+      "location": "สวนเบญจกิติ (จุดนัดพบ: ทางเข้าฝั่งศูนย์สิริกิติ์)",
+      "image": "/event-city-run.png",
+      "description": "กิจกรรมตัวอย่างสำหรับทดสอบมายฮับ: เดินเล่นคุยกันสบายๆ รอบสวน แล้วนั่งพักดูพระอาทิตย์ตก",
+      "hostName": "Duke",
+      "hostAvatar": "/uploads/avatars/1791617032836-cha9k7c.webp",
+      "maxParticipants": 8,
+      "createdByMemberId": "mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
+      "galleryImages": [
+        "/event-city-run.png"
+      ],
+      "subActivities": [],
+      "status": "full",
+      "externalUrl": "https://www.qsncc.com/en/whats-on/event-calendar",
+      "link": "https://www.qsncc.com/en/whats-on/event-calendar",
+      "sourceUrl": "https://www.qsncc.com/en/whats-on/event-calendar"
+    },
     {
       "id": "comm-hyrox-2",
       "title": "HYROX Run & Sled ซ้อมวิ่งสลับสถานี Sled Push สุขุมวิท 39",
@@ -12,7 +554,7 @@
       "tag": "🏋️ ออกกำลังกาย & ฟิตเนส",
       "category": "move",
       "image": "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 6,
+      "participantsCount": 10,
       "maxParticipants": 10,
       "hostName": "โค้ชแม็กซ์ HYROX Coach",
       "hostAvatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80",
@@ -26,7 +568,7 @@
       "badgeText": "ฟิตเนส & HYROX บูทแคมป์",
       "createdAtTimestamp": 1788171683948,
       "eventType": "community",
-      "status": "active",
+      "status": "full",
       "latitude": 13.7365,
       "longitude": 100.5701,
       "zone": "sukhumvit",
@@ -44,7 +586,7 @@
       "tag": "🏋️ ออกกำลังกาย & ฟิตเนส",
       "category": "move",
       "image": "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 7,
+      "participantsCount": 10,
       "maxParticipants": 10,
       "hostName": "โค้ชแม็กซ์ HYROX Coach",
       "hostAvatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80",
@@ -58,7 +600,7 @@
       "badgeText": "ฟิตเนส & HYROX บูทแคมป์",
       "createdAtTimestamp": 1788171683949,
       "eventType": "community",
-      "status": "active",
+      "status": "full",
       "latitude": 13.7307,
       "longitude": 100.5418,
       "zone": "silom",
@@ -76,7 +618,7 @@
       "tag": "🏋️ ออกกำลังกาย & ฟิตเนส",
       "category": "move",
       "image": "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 5,
+      "participantsCount": 10,
       "maxParticipants": 10,
       "hostName": "โค้ชแม็กซ์ HYROX Coach",
       "hostAvatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80",
@@ -90,7 +632,7 @@
       "badgeText": "ฟิตเนส & HYROX บูทแคมป์",
       "createdAtTimestamp": 1788171683950,
       "eventType": "community",
-      "status": "active",
+      "status": "full",
       "latitude": 13.7365,
       "longitude": 100.5701,
       "zone": "sukhumvit",
@@ -185,7 +727,7 @@
       "scheduleType": "single",
       "locationType": "physical",
       "hostName": "Duke",
-      "participantsCount": 2,
+      "participantsCount": 8,
       "maxParticipants": 8,
       "targetGender": "all",
       "targetAge": "20-35",
@@ -203,7 +745,7 @@
         "https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=800&q=80"
       ],
       "subActivities": [],
-      "status": "recruiting",
+      "status": "full",
       "moderatedAt": 1791724843131
     },
     {
@@ -1648,7 +2190,7 @@
       "zone": "muangthong",
       "province": "นนทบุรี",
       "hostName": "IMPACT",
-      "participantsCount": 0,
+      "participantsCount": 40,
       "maxParticipants": 0,
       "description": "ประเภทงาน: งานแสดงสินค้าเฉพาะธุรกิจ (B2B)",
       "price": "ฟรี",
@@ -3100,7 +3642,7 @@
       "location": "เชียงใหม่ (จุดปล่อยตัวตามประกาศผู้จัด)",
       "province": "เชียงใหม่",
       "hostName": "ThaiRun",
-      "participantsCount": 0,
+      "participantsCount": 1,
       "maxParticipants": 0,
       "description": "งานวิ่งจากปฏิทิน ThaiRun · จัดโดย Five Sports Creator x Mae Khanin Club · เปิดรับสมัคร",
       "price": "ไม่ระบุราคา",
@@ -3375,7 +3917,7 @@
       "location": "กรุงเทพมหานคร (ดูสถานที่ในรายละเอียด)",
       "province": "กรุงเทพมหานคร",
       "hostName": "Visit Bangkok (กทม.)",
-      "participantsCount": 1,
+      "participantsCount": 45,
       "maxParticipants": 0,
       "description": "กำหนดการฝึกซ้อมขบวนพยุหยาตราทางชลมารค 2569 พร้อมวันพระราชพิธี\nมีการอัปเดตกำหนดการฝึกซ้อมและวันพระราชพิธีการจัดขบวนพยุหยาตราทางชลมารค ในการเสด็จพระราชดำเนินไปทรงบำเพ็ญพระราชกุศลถวายผ้าพระกฐิน พุทธศักราช 2569 เนื่องในโอกาสพระราชพิธีมหามงคลเฉลิมพระชนมพรรษา 4 รอบ สมเด็จพระนางเจ้าฯ พระบรมราชินี\nการฝึกซ้อมจะเริ่มเวลาประมาณ 14.30 น. โดยประชาชนสามารถติดตามการฝึกซ้อมและร่วมเฝ้ารับเสด็จฯ ได้บริเวณสองฝั่งแม่น้ำเจ้าพระยา ตั้งแต่ สะพานกรุงธนบุรี ถึง วัดอรุณราชวราราม\nไฮไลท์\nฝึกซ้อมย่อยรวม 10 ครั้ง ระหว่างเดือนสิงหาคม–ตุลาคม 2569\nฝึกซ้อมใหญ่ 2 ครั้ง วันที่ 21 และ 28 ตุลาคม 2569\nพระราชพิธีจัดขึ้นในวันศุกร์ที่ 6 พฤศจิกายน 2569\nประชาชนสามารถร่วมชมการฝึกซ้อมได้ตลอดแนวแม่น้ำเจ้าพระยา ตั้งแต่สะพานกรุงธนบุรีถึงวัดอรุณราชวราราม\nมีการปิดเส้นทางเดินเรือในพื้นที่ควบคุมระหว่างการฝึกซ้อมและวันพระราชพิธี\nกำหนดการฝึกซ้อม\nฝึกซ้อมย่อย\nเดือนสิงหาคม 2569\n17 สิงหาคม\n20 สิงหาคม\n27 สิงหาคม\nเดือนกันยายน 2569\n3 กันยายน\n8 กันยายน\n17 กันยายน\n23 กันยายน\nเดือนตุลาคม 2569\n5 ตุลาคม\n8 ตุลาคม\n15 ตุลาคม\nฝึกซ้อมใหญ่\n21 ตุลาคม 2569\n28 ตุลาคม 2569\nวันพระราชพิธี\nวันศุกร์ที่ 6 พฤศจิกายน 2569\nข้อควรรู้สำหรับการเดินเรือ\nในวันฝึกซ้อมและวันพระราชพิธี ตั้งแต่เวลา 12.00 น. เป็นต้นไป จนกว่าจะแล้วเสร็จ จะมีการปิดการเดินเรือในพื้นที่ควบคุม โดยห้ามเรือทุกชนิดผ่านบริเวณตั้งแต่ สะพานกรุงธนบุรี–สะพานสมเด็จพระปิ่นเกล้า รวมถึงบริเวณ ปากคลองบางกอกน้อย–วัดสุวรรณารามราชวรวิหาร\nสำหรับเรือด่วนเจ้าพระยาและเรือไฟฟ้า\nฝั่งเหนือ เปิดให้รับ–ส่งผู้โดยสารได้ตั้งแต่ ท่าเรือพายัพ ขึ้นไป\nฝั่งใต้ เปิดให้รับ–ส่งผู้โดยสารได้ตั้งแต่ ท่าเรือราชวงศ์ ลงไป\nทั้งนี้ ห…",
       "price": "ไม่ระบุราคา",
@@ -6081,7 +6623,7 @@
       "tag": "ออกกำลังกาย",
       "category": "move",
       "image": "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 3,
+      "participantsCount": 8,
       "maxParticipants": 8,
       "hostName": "คุณส้ม (Som_Chill)",
       "hostAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
@@ -6105,7 +6647,8 @@
       "source": "Chill & Connect Official",
       "sourceUrl": "https://chill-connect-hub.vercel.app",
       "province": "กรุงเทพมหานคร",
-      "zone": "silom"
+      "zone": "silom",
+      "status": "full"
     },
     {
       "id": "fair-bkk-art-design-2026",
@@ -6416,7 +6959,7 @@
       "tag": "🎲 บอร์ดเกม",
       "category": "chill",
       "image": "https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 6,
+      "participantsCount": 8,
       "maxParticipants": 8,
       "hostName": "พี่ต้น สายบอร์ดเกม",
       "hostAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
@@ -6431,7 +6974,7 @@
       "badgeText": "บอร์ดเกมกระชับมิตร",
       "createdAtTimestamp": 1788171663947,
       "eventType": "community",
-      "status": "active",
+      "status": "full",
       "latitude": 13.7445,
       "longitude": 100.5332,
       "zone": "siam",
@@ -6449,7 +6992,7 @@
       "tag": "🤖 เทคโนโลยี & AI",
       "category": "learn",
       "image": "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 7,
+      "participantsCount": 10,
       "maxParticipants": 10,
       "hostName": "ภูมิ AI & Tech Builders",
       "hostAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
@@ -6465,7 +7008,7 @@
       "badgeText": "AI & Tech Meetup",
       "createdAtTimestamp": 1788171673947,
       "eventType": "community",
-      "status": "active",
+      "status": "full",
       "latitude": 13.7336,
       "longitude": 100.5283,
       "zone": "siam",
@@ -6483,7 +7026,7 @@
       "tag": "🏋️ ออกกำลังกาย & ฟิตเนส",
       "category": "move",
       "image": "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 8,
+      "participantsCount": 10,
       "maxParticipants": 10,
       "hostName": "โค้ชแม็กซ์ HYROX Coach",
       "hostAvatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80",
@@ -6499,7 +7042,7 @@
       "badgeText": "ฟิตเนส & HYROX บูทแคมป์",
       "createdAtTimestamp": 1788171683947,
       "eventType": "community",
-      "status": "active",
+      "status": "full",
       "latitude": 13.7365,
       "longitude": 100.5701,
       "zone": "sukhumvit",
@@ -6517,7 +7060,7 @@
       "tag": "🧗 ออกกำลังกาย & ผจญภัย",
       "category": "move",
       "image": "https://images.unsplash.com/photo-1522163182402-834f871fd851?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 5,
+      "participantsCount": 6,
       "maxParticipants": 6,
       "hostName": "กานต์ นักปีนผา",
       "hostAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
@@ -6532,7 +7075,7 @@
       "badgeText": "ปีนผาจำลองมือใหม่",
       "createdAtTimestamp": 1788171693947,
       "eventType": "community",
-      "status": "active",
+      "status": "full",
       "latitude": 13.7382,
       "longitude": 100.5784,
       "zone": "sukhumvit",
@@ -6550,7 +7093,7 @@
       "tag": "☕ นัดชิลล์",
       "category": "chill",
       "image": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 5,
+      "participantsCount": 6,
       "maxParticipants": 6,
       "hostName": "บาริสต้าเบนซ์",
       "hostAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
@@ -6566,7 +7109,7 @@
       "badgeText": "กาแฟดริปสเปเชียลตี้",
       "createdAtTimestamp": 1788171653947,
       "eventType": "community",
-      "status": "active",
+      "status": "full",
       "latitude": 13.7797,
       "longitude": 100.5428,
       "zone": "ari",
@@ -6584,7 +7127,7 @@
       "tag": "🏃 ออกกำลังกาย",
       "category": "move",
       "image": "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 8,
+      "participantsCount": 10,
       "maxParticipants": 10,
       "hostName": "แนน ซิตี้รันเนอร์",
       "hostAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
@@ -6599,7 +7142,7 @@
       "badgeText": "วิ่งเบาๆ รับลมเย็น",
       "createdAtTimestamp": 1788171643947,
       "eventType": "community",
-      "status": "active",
+      "status": "full",
       "latitude": 13.7297,
       "longitude": 100.5583,
       "zone": "sukhumvit",
@@ -6617,7 +7160,7 @@
       "tag": "🌱 ธรรมชาติ & ฮีลใจ",
       "category": "heal",
       "image": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 7,
+      "participantsCount": 8,
       "maxParticipants": 8,
       "hostName": "ครูพลอย สมาธิ & โยคะ",
       "hostAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80",
@@ -6631,7 +7174,7 @@
       "badgeText": "พักผ่อนฮีลใจ",
       "createdAtTimestamp": 1788171633947,
       "eventType": "community",
-      "status": "active",
+      "status": "full",
       "latitude": 13.7314,
       "longitude": 100.5414,
       "zone": "silom",
@@ -6649,7 +7192,7 @@
       "tag": "🎨 เวิร์กช็อป",
       "category": "learn",
       "image": "https://images.unsplash.com/photo-1606744824163-985d376605aa?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 4,
+      "participantsCount": 5,
       "maxParticipants": 5,
       "hostName": "โฮสต์ป่าน สตูดิโอคราฟต์",
       "hostAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
@@ -6663,7 +7206,7 @@
       "badgeText": "คราฟต์พรมแฮนด์เมด",
       "createdAtTimestamp": 1788171623947,
       "eventType": "community",
-      "status": "active",
+      "status": "full",
       "latitude": 13.7345,
       "longitude": 100.5824,
       "zone": "thonglor",
@@ -6681,7 +7224,7 @@
       "tag": "🏃 ออกกำลังกาย",
       "category": "move",
       "image": "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 5,
+      "participantsCount": 6,
       "maxParticipants": 6,
       "hostName": "โฮสต์บิ๊ก",
       "hostAvatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80",
@@ -6695,7 +7238,7 @@
       "badgeText": "แบดมินตันสายสนุก",
       "createdAtTimestamp": 1788171613947,
       "eventType": "community",
-      "status": "active",
+      "status": "full",
       "latitude": 13.7583,
       "longitude": 100.5732,
       "zone": "ladprao",
@@ -6745,7 +7288,7 @@
       "tag": "🌱 ธรรมชาติ & ฮีลใจ",
       "category": "heal",
       "image": "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 5,
+      "participantsCount": 7,
       "maxParticipants": 7,
       "hostName": "โฮสต์มิ้นท์ Bookworm",
       "hostAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
@@ -6759,7 +7302,7 @@
       "badgeText": "สนทนาหนังสือเล่มโปรด",
       "createdAtTimestamp": 1788171593947,
       "eventType": "community",
-      "status": "active",
+      "status": "full",
       "latitude": 13.7301,
       "longitude": 100.5695,
       "zone": "sukhumvit",
@@ -6777,7 +7320,7 @@
       "tag": "🎨 เวิร์กช็อป",
       "category": "learn",
       "image": "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 3,
+      "participantsCount": 5,
       "maxParticipants": 5,
       "hostName": "เชฟแพรว Le Cordon",
       "hostAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
@@ -6791,7 +7334,7 @@
       "badgeText": "เบเกอรี่โฮมเมด",
       "createdAtTimestamp": 1788171583947,
       "eventType": "community",
-      "status": "active",
+      "status": "full",
       "latitude": 13.7258,
       "longitude": 100.5312,
       "zone": "silom",
@@ -6809,7 +7352,7 @@
       "tag": "🌱 ธรรมชาติ & ฮีลใจ",
       "category": "heal",
       "image": "https://images.unsplash.com/photo-1576092768241-dec231879fc3?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 4,
+      "participantsCount": 6,
       "maxParticipants": 6,
       "hostName": "โฮสต์เคน",
       "hostAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
@@ -6823,7 +7366,7 @@
       "badgeText": "วิถีชามัทฉะฮีลใจ",
       "createdAtTimestamp": 1788171573947,
       "eventType": "community",
-      "status": "active",
+      "status": "full",
       "latitude": 13.7392,
       "longitude": 100.5604,
       "zone": "sukhumvit",
@@ -6841,7 +7384,7 @@
       "tag": "☕ นัดชิลล์",
       "category": "chill",
       "image": "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 7,
+      "participantsCount": 10,
       "maxParticipants": 10,
       "hostName": "ชมรมภาพยนตร์อิสระ",
       "hostAvatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80",
@@ -6855,7 +7398,7 @@
       "badgeText": "ดูหนังอินดี้ในโกดัง",
       "createdAtTimestamp": 1788171563947,
       "eventType": "community",
-      "status": "active",
+      "status": "full",
       "latitude": 13.7388,
       "longitude": 100.5097,
       "zone": "silom",
@@ -6873,7 +7416,7 @@
       "tag": "🎨 เวิร์กช็อป",
       "category": "learn",
       "image": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 6,
+      "participantsCount": 8,
       "maxParticipants": 8,
       "hostName": "วิน ช่างภาพสตรีท",
       "hostAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
@@ -6887,7 +7430,7 @@
       "badgeText": "โฟโต้วอล์กสตรีท",
       "createdAtTimestamp": 1788171553947,
       "eventType": "community",
-      "status": "active",
+      "status": "full",
       "latitude": 13.7329,
       "longitude": 100.5135,
       "zone": "silom",
@@ -6905,7 +7448,7 @@
       "tag": "🌱 ธรรมชาติ & ฮีลใจ",
       "category": "heal",
       "image": "https://images.unsplash.com/photo-1603006905003-be475563bc59?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 4,
+      "participantsCount": 5,
       "maxParticipants": 6,
       "hostName": "โฮสต์ฟ้า Aroma Therapy",
       "hostAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80",
@@ -7161,7 +7704,7 @@
       "tag": "☕ นัดชิลล์",
       "category": "chill",
       "image": "https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&w=800&q=80",
-      "participantsCount": 6,
+      "participantsCount": 8,
       "maxParticipants": 8,
       "hostName": "แพรวา กาแฟดริป",
       "hostAvatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80",
@@ -7175,7 +7718,7 @@
       "badgeText": "รูฟท็อปอะคูสติก",
       "createdAtTimestamp": 1788258000000,
       "eventType": "community",
-      "status": "active",
+      "status": "full",
       "latitude": 13.7802,
       "longitude": 100.5448,
       "zone": "ari",
@@ -7802,13 +8345,13 @@
       "longitude": 98.9535,
       "hostName": "กานต์ นิมมาน รันเนอร์",
       "hostAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
-      "participantsCount": 6,
+      "participantsCount": 12,
       "maxParticipants": 12,
       "description": "วิ่งเบาๆ รับลมหนาวรอบอ่างแก้ว จังหวะช้าๆ เน้นคุยกันจบแล้วไปนั่งดริปกาแฟชิลล์ๆ ยินดีต้อนรับทั้งคนเชียงใหม่และคนที่มาเที่ยวครับ",
       "price": "ฟรี",
       "rating": 4.9,
       "reviewsCount": 15,
-      "status": "recruiting",
+      "status": "full",
       "isNew": true,
       "createdAtTimestamp": 1788597016632,
       "approvalStatus": "approved",
@@ -7832,13 +8375,13 @@
       "longitude": 100.9168,
       "hostName": "เบิร์ด วอนนภาคลับ",
       "hostAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80",
-      "participantsCount": 4,
+      "participantsCount": 8,
       "maxParticipants": 8,
       "description": "พายซับบอร์ดชมพระอาทิตย์ตกริมทะเลบางแสน บรรยากาศผ่อนคลาย มือใหม่มีคนสอนเบื้องต้นให้ครับ",
       "price": "฿350 (รวมเช่าบอร์ด)",
       "rating": 4.8,
       "reviewsCount": 8,
-      "status": "recruiting",
+      "status": "full",
       "isNew": true,
       "createdAtTimestamp": 1788597016632,
       "approvalStatus": "approved",
@@ -7863,13 +8406,13 @@
       "scheduleType": "single",
       "hostName": "มนัสวี บุ๊กเลิฟเวอร์",
       "hostAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80",
-      "participantsCount": 8,
+      "participantsCount": 15,
       "maxParticipants": 15,
       "description": "นัดพบปะผ่าน Zoom พูดคุยแลกเปลี่ยนข้อคิดจากหนังสือฮีลใจประจำสัปดาห์ ไม่ต้องอ่านจบก็มาร่วมฟังและแชร์มุมมองได้ บรรยากาศอบอุ่นเป็นกันเอง",
       "price": "ฟรี",
       "rating": 4.95,
       "reviewsCount": 18,
-      "status": "recruiting",
+      "status": "full",
       "isNew": true,
       "createdAtTimestamp": 1788597016632,
       "approvalStatus": "approved",
@@ -7894,13 +8437,13 @@
       "scheduleType": "single",
       "hostName": "ครูกานต์ Sound Healer",
       "hostAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=100&q=80",
-      "participantsCount": 6,
+      "participantsCount": 20,
       "maxParticipants": 20,
       "description": "เซสชันคลื่นเสียงบำบัด Singing Bowl และเทคนิคการฝึกหายใจ Breathwork เตรียมหูฟังและพื้นที่นอนสบายๆ ผ่อนคลายกล้ามเนื้อและความเครียดสะสมตลอดสัปดาห์",
       "price": "ฟรี",
       "rating": 4.98,
       "reviewsCount": 24,
-      "status": "recruiting",
+      "status": "full",
       "isNew": true,
       "createdAtTimestamp": 1788597016633,
       "approvalStatus": "approved",
@@ -7933,13 +8476,13 @@
       },
       "hostName": "น้องพีช Freelancer Club",
       "hostAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
-      "participantsCount": 12,
+      "participantsCount": 30,
       "maxParticipants": 30,
       "description": "สเปซจำลองบรรยากาศร้านกาแฟและห้องสมุด นั่งเปิดกล้อง/ปิดกล้อง ทำงาน อ่านหนังสือ หรือทำงานฝีมือไปพร้อมเพลง Lo-Fi แวะคุยพักเบรกชิลล์ๆ ได้ตามใจชอบ",
       "price": "ฟรี",
       "rating": 4.9,
       "reviewsCount": 35,
-      "status": "recruiting",
+      "status": "full",
       "isNew": true,
       "createdAtTimestamp": 1788597016634,
       "approvalStatus": "approved",
@@ -7964,13 +8507,13 @@
       "scheduleType": "single",
       "hostName": "โค้ชพลอย Fit & Flow",
       "hostAvatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=100&q=80",
-      "participantsCount": 10,
+      "participantsCount": 15,
       "maxParticipants": 15,
       "description": "คลาสโยคะเบาๆ ระดับเริ่มต้น ไม่ต้องมีพื้นฐาน เน้นยืดกล้ามเนื้อคอบ่าไหล่และสะโพก บรรเทาอาการเมื่อยล้าจากการนั่งทำงานหน้าคอมพิวเตอร์เป็นเวลานาน",
       "price": "ฟรี",
       "rating": 4.96,
       "reviewsCount": 22,
-      "status": "recruiting",
+      "status": "full",
       "isNew": true,
       "createdAtTimestamp": 1788597016635,
       "approvalStatus": "approved",
@@ -8354,6 +8897,42 @@
         "note": "host",
         "joinedAt": "2026-10-11T13:19:41.520Z",
         "ticketCode": "HKEZTN"
+      },
+      {
+        "userId": "mem_cabf7d10-62ed-45e4-8bcc-8154ba5012ee",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:30:53.001Z",
+        "ticketCode": "DKEH2Q"
+      },
+      {
+        "userId": "mem_662c9cad-f735-40ab-9d72-56aa7c575ad4",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:31:12.973Z",
+        "ticketCode": "WBV3X3"
+      },
+      {
+        "userId": "mem_cfc62ab1-898b-4cd4-8d2c-c3599c41ac63",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:31:30.694Z",
+        "ticketCode": "J5W3TQ"
+      },
+      {
+        "userId": "mem_ff403991-0d5d-444c-ae43-025392634566",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:31:55.289Z",
+        "ticketCode": "U9YCMF"
+      },
+      {
+        "userId": "mem_576b974e-e1ef-45ee-a760-b945dc346eac",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:42:31.514Z",
+        "ticketCode": "BNTXL9"
+      },
+      {
+        "userId": "mem_f82ef61e-ddfc-4e17-9562-5a24493a7894",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:50:23.978Z",
+        "ticketCode": "WA588P"
       }
     ],
     "regional-online-4": [
@@ -8363,6 +8942,36 @@
         "userAvatar": "/uploads/avatars/1791617032836-cha9k7c.webp",
         "joinedAt": "2026-10-11T14:00:12.896Z",
         "ticketCode": "F96X2N"
+      },
+      {
+        "userId": "mem_cabf7d10-62ed-45e4-8bcc-8154ba5012ee",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:30:53.063Z",
+        "ticketCode": "QEESB5"
+      },
+      {
+        "userId": "mem_662c9cad-f735-40ab-9d72-56aa7c575ad4",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:31:13.001Z",
+        "ticketCode": "CQXQSC"
+      },
+      {
+        "userId": "mem_cfc62ab1-898b-4cd4-8d2c-c3599c41ac63",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:31:30.760Z",
+        "ticketCode": "VVWAH6"
+      },
+      {
+        "userId": "mem_ff403991-0d5d-444c-ae43-025392634566",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:31:55.328Z",
+        "ticketCode": "CHX2GQ"
+      },
+      {
+        "userId": "mem_576b974e-e1ef-45ee-a760-b945dc346eac",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:42:31.586Z",
+        "ticketCode": "PG25M2"
       }
     ],
     "live-agg-a7df1f298b9c9bfef87f": [
@@ -8372,6 +8981,270 @@
         "userAvatar": "/uploads/avatars/1791617032836-cha9k7c.webp",
         "joinedAt": "2026-10-11T14:00:12.916Z",
         "ticketCode": "ABS9B7"
+      },
+      {
+        "userId": "mem_704773da-7409-4afa-aa7d-d032eea18a0e",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T15:57:18.828Z",
+        "ticketCode": "UWHV78"
+      },
+      {
+        "userId": "mem_bbe5a759-4130-4904-8f8a-69ac61617665",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:02:23.391Z",
+        "ticketCode": "WXB3AP"
+      },
+      {
+        "userId": "mem_db7647d7-7bc1-4066-8868-e7f3d6a7bc7f",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:19:15.206Z",
+        "ticketCode": "NPYFMK"
+      },
+      {
+        "userId": "mem_d085162a-6c6b-4106-b83d-69c62669bac8",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:19:46.742Z",
+        "ticketCode": "MZYYCX"
+      },
+      {
+        "userId": "mem_a2bd0ada-582f-48c2-8218-d86f4d8f6be9",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:20:36.641Z",
+        "ticketCode": "MKLTTH"
+      },
+      {
+        "userId": "mem_727a7cc0-0b1d-46ae-b8db-336111970a68",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:21:47.221Z",
+        "ticketCode": "5TGPX6"
+      },
+      {
+        "userId": "mem_06f6c979-85b6-42f5-a7e4-f6724b508297",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:29:30.390Z",
+        "ticketCode": "F38NGQ"
+      },
+      {
+        "userId": "mem_d32473cc-112e-4313-ae3b-9f90308e6ea7",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:30:11.061Z",
+        "ticketCode": "LQLHSB"
+      },
+      {
+        "userId": "mem_645992fe-f881-4f54-abc3-3f7c9c69e4d4",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:30:29.694Z",
+        "ticketCode": "7L9XFA"
+      },
+      {
+        "userId": "mem_8199c566-e8f2-4aaf-bc2b-c057792b159d",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:55:32.305Z",
+        "ticketCode": "G5ESWT"
+      },
+      {
+        "userId": "mem_0c1af511-7408-406f-9b1f-21a1d642acda",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:55:53.076Z",
+        "ticketCode": "TEMGX8"
+      },
+      {
+        "userId": "mem_7570af43-7da3-4bda-b61b-588dd2f37152",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:05:57.396Z",
+        "ticketCode": "2NKUEK"
+      },
+      {
+        "userId": "mem_78e1433f-8b0c-4c1d-a7c4-a985d1ed0871",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:06:14.294Z",
+        "ticketCode": "U7Q7JT"
+      },
+      {
+        "userId": "mem_9ea3676c-a27c-4b4b-8617-f881398ac356",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:15:51.393Z",
+        "ticketCode": "R6BK3L"
+      },
+      {
+        "userId": "mem_6637677b-ecb0-45a4-b85c-276f39011da9",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:23:22.187Z",
+        "ticketCode": "3LWL49"
+      },
+      {
+        "userId": "mem_4115ab1f-e8aa-46a8-9c76-9a2d4d1d4bcc",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:34:26.753Z",
+        "ticketCode": "86LCAY"
+      },
+      {
+        "userId": "mem_9c91393f-0842-48f9-bcbe-c7c41d57d606",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:35:38.206Z",
+        "ticketCode": "J3CQQP"
+      },
+      {
+        "userId": "mem_c19cb3a1-d3d7-4b3e-abbd-451cfcbf181a",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:36:06.278Z",
+        "ticketCode": "TYJWMF"
+      },
+      {
+        "userId": "mem_51cd87c4-ef64-4bcb-8638-e4047b576e6c",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:38:37.665Z",
+        "ticketCode": "5G3LA9"
+      },
+      {
+        "userId": "mem_d95581b2-6dd6-4f4b-a55d-485079c3d33d",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:41:14.701Z",
+        "ticketCode": "ZS3E3Q"
+      },
+      {
+        "userId": "mem_903d7e89-6709-4010-ad35-3182e1ddf452",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:50:39.726Z",
+        "ticketCode": "TNUGLD"
+      },
+      {
+        "userId": "mem_f188353c-5bb8-489c-863d-a5c875807be7",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:51:08.025Z",
+        "ticketCode": "T22C3H"
+      },
+      {
+        "userId": "mem_fa8f193a-a607-40ba-8e0b-5e5dd0607dc7",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:51:23.698Z",
+        "ticketCode": "4LKSX4"
+      },
+      {
+        "userId": "mem_a0fe275b-dbb1-4664-bbd3-c30cd15c99cc",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:51:53.308Z",
+        "ticketCode": "QMUPLG"
+      },
+      {
+        "userId": "mem_0f6d1ebb-961d-416a-8106-484ee72a9d76",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:53:30.766Z",
+        "ticketCode": "NXAA6S"
+      },
+      {
+        "userId": "mem_c557e258-ed9c-41c5-859d-c6b22d24a4d8",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:56:26.356Z",
+        "ticketCode": "D7ZSSX"
+      },
+      {
+        "userId": "mem_933540eb-e989-4ec2-8b27-4a4632b1af6f",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:56:43.425Z",
+        "ticketCode": "NMHCQV"
+      },
+      {
+        "userId": "mem_ed09dc89-5e2a-40b3-97f3-17918c70fd4e",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:57:15.451Z",
+        "ticketCode": "H7WL27"
+      },
+      {
+        "userId": "mem_93d2159f-a0a8-4347-ab4b-ac5c707633ee",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:02:48.462Z",
+        "ticketCode": "JGASLW"
+      },
+      {
+        "userId": "mem_09461f1e-f4c7-4fe3-9212-e4690044b247",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:03:35.795Z",
+        "ticketCode": "4YG34B"
+      },
+      {
+        "userId": "mem_30187ff4-4373-46bc-9a8d-857d9c781d79",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:13:59.420Z",
+        "ticketCode": "YMYS3R"
+      },
+      {
+        "userId": "mem_ea25b390-c7cf-4dae-8082-0c7bb29d65dc",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:14:17.978Z",
+        "ticketCode": "NZZ46H"
+      },
+      {
+        "userId": "mem_25af6ab5-cc9d-4038-8acf-d57b79e8f45b",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:23:51.402Z",
+        "ticketCode": "QRGV3J"
+      },
+      {
+        "userId": "mem_890e90c0-965b-4a1f-8422-73bd216d08ed",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:28:00.667Z",
+        "ticketCode": "23V672"
+      },
+      {
+        "userId": "mem_27d19aae-80e2-4c31-8715-76433ef68ccc",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:28:18.848Z",
+        "ticketCode": "7RV2SW"
+      },
+      {
+        "userId": "mem_813fbc15-bb1a-4f8c-9b6c-efb4e644c0d8",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:33:45.395Z",
+        "ticketCode": "UUS2BE"
+      },
+      {
+        "userId": "mem_91468dff-0d04-4ae0-9a3d-3f899cc22199",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:34:02.191Z",
+        "ticketCode": "BUWUNY"
+      },
+      {
+        "userId": "mem_0b701815-0274-4130-9d9f-c6f91e292a9f",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:38:15.020Z",
+        "ticketCode": "KCJWG8"
+      },
+      {
+        "userId": "mem_d5de4e62-ee41-45c4-af27-a82debb81e24",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:38:32.338Z",
+        "ticketCode": "EAEPAG"
+      },
+      {
+        "userId": "mem_demo_tester",
+        "userName": "ผู้ทดลองใช้",
+        "joinedAt": "2026-10-16T02:48:20.655Z",
+        "ticketCode": "9JB6YX"
+      },
+      {
+        "userId": "mem_146af1be-53d4-4a6f-95f8-d97d0b34dff5",
+        "userName": "ทดสอบA",
+        "joinedAt": "2026-10-23T06:35:58.727Z",
+        "ticketCode": "5HYQWZ"
+      },
+      {
+        "userId": "mem_4fb1d9cf-3cda-4001-8f8b-42724e92dbd8",
+        "userName": "ทดสอบจบ",
+        "joinedAt": "2026-10-23T06:36:43.109Z",
+        "ticketCode": "8C256N"
+      },
+      {
+        "userId": "mem_8bc43d0b-4b80-4706-9230-5b899ab0d41f",
+        "userName": "ทดสอบA",
+        "joinedAt": "2026-10-23T06:59:01.471Z",
+        "ticketCode": "W655M8"
+      },
+      {
+        "userId": "mem_8e8fc154-09de-4592-964b-adf7bcf04123",
+        "userName": "ทดสอบวันนัด",
+        "joinedAt": "2026-10-23T07:07:24.349Z",
+        "ticketCode": "WU49RD"
       }
     ],
     "spot-buddy-1791731960279": [
@@ -8382,6 +9255,1358 @@
         "note": "host",
         "joinedAt": "2026-10-11T15:19:20.337Z",
         "ticketCode": "U7XU9E"
+      }
+    ],
+    "comm-hyrox-4": [
+      {
+        "userId": "mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
+        "userName": "Duke",
+        "userAvatar": "/uploads/avatars/1791617032836-cha9k7c.webp",
+        "joinedAt": "2026-10-13T15:50:17.078Z",
+        "ticketCode": "F79Q6S"
+      },
+      {
+        "userId": "mem_f188353c-5bb8-489c-863d-a5c875807be7",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:51:08.230Z",
+        "ticketCode": "U2EBJ7"
+      },
+      {
+        "userId": "mem_fa8f193a-a607-40ba-8e0b-5e5dd0607dc7",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:51:23.888Z",
+        "ticketCode": "2RSNU8"
+      },
+      {
+        "userId": "mem_a0fe275b-dbb1-4664-bbd3-c30cd15c99cc",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:51:53.785Z",
+        "ticketCode": "H87797"
+      },
+      {
+        "userId": "mem_0f6d1ebb-961d-416a-8106-484ee72a9d76",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:53:31.013Z",
+        "ticketCode": "A8V6WS"
+      }
+    ],
+    "demo-host-mem_268dbfac-299b-4ccb-8a59-1286e68e9124": [
+      {
+        "userId": "mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
+        "userName": "Duke",
+        "userAvatar": "/uploads/avatars/1791617032836-cha9k7c.webp",
+        "note": "host",
+        "joinedAt": "2026-10-13T15:59:46.721Z",
+        "ticketCode": "BVX9VU"
+      },
+      {
+        "userId": "mem_sample_kee_explorer",
+        "userName": "คุณกี้ (Kee_Explorer)",
+        "userAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+        "joinedAt": "2026-10-13T15:59:46.739Z",
+        "ticketCode": "WCFN7E",
+        "checkedInAt": "2026-10-13T15:59:46.764Z"
+      },
+      {
+        "userId": "mem_sample_mint_vibes",
+        "userName": "คุณมิ้นท์ (Mint_Vibes)",
+        "userAvatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80",
+        "joinedAt": "2026-10-13T15:59:46.752Z",
+        "ticketCode": "233ZRJ"
+      },
+      {
+        "userId": "mem_a2bd0ada-582f-48c2-8218-d86f4d8f6be9",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:20:37.698Z",
+        "ticketCode": "ZXSREL"
+      },
+      {
+        "userId": "mem_727a7cc0-0b1d-46ae-b8db-336111970a68",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:21:49.577Z",
+        "ticketCode": "8NXEUK"
+      },
+      {
+        "userId": "mem_06f6c979-85b6-42f5-a7e4-f6724b508297",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:29:30.586Z",
+        "ticketCode": "CDTRQT"
+      },
+      {
+        "userId": "mem_d32473cc-112e-4313-ae3b-9f90308e6ea7",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:30:11.292Z",
+        "ticketCode": "XNWWB6"
+      },
+      {
+        "userId": "mem_645992fe-f881-4f54-abc3-3f7c9c69e4d4",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:30:29.941Z",
+        "ticketCode": "49SGN6"
+      }
+    ],
+    "demo-join-mem_268dbfac-299b-4ccb-8a59-1286e68e9124": [
+      {
+        "userId": "mem_sample_kee_explorer",
+        "userName": "คุณกี้ (Kee_Explorer)",
+        "userAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+        "note": "host",
+        "joinedAt": "2026-10-13T15:59:46.794Z",
+        "ticketCode": "PB9863"
+      },
+      {
+        "userId": "mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
+        "userName": "Duke",
+        "userAvatar": "/uploads/avatars/1791617032836-cha9k7c.webp",
+        "joinedAt": "2026-10-13T15:59:46.806Z",
+        "ticketCode": "LRW3U5"
+      },
+      {
+        "userId": "mem_a2bd0ada-582f-48c2-8218-d86f4d8f6be9",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:20:37.662Z",
+        "ticketCode": "TQH2FB"
+      },
+      {
+        "userId": "mem_727a7cc0-0b1d-46ae-b8db-336111970a68",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:21:49.534Z",
+        "ticketCode": "38J3B6"
+      },
+      {
+        "userId": "mem_06f6c979-85b6-42f5-a7e4-f6724b508297",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:29:30.558Z",
+        "ticketCode": "BWT8DM"
+      },
+      {
+        "userId": "mem_d32473cc-112e-4313-ae3b-9f90308e6ea7",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:30:11.259Z",
+        "ticketCode": "FLSAPJ"
+      },
+      {
+        "userId": "mem_645992fe-f881-4f54-abc3-3f7c9c69e4d4",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:30:29.896Z",
+        "ticketCode": "BAEXYG"
+      },
+      {
+        "userId": "mem_cabf7d10-62ed-45e4-8bcc-8154ba5012ee",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:30:52.947Z",
+        "ticketCode": "7S5KN3"
+      }
+    ],
+    "demo-past-mem_268dbfac-299b-4ccb-8a59-1286e68e9124": [
+      {
+        "userId": "mem_sample_praew_art",
+        "userName": "คุณแพรว (Praew_Art)",
+        "userAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
+        "note": "host",
+        "joinedAt": "2026-10-13T15:59:46.833Z",
+        "ticketCode": "F76CT7"
+      },
+      {
+        "userId": "mem_268dbfac-299b-4ccb-8a59-1286e68e9124",
+        "userName": "Duke",
+        "userAvatar": "/uploads/avatars/1791617032836-cha9k7c.webp",
+        "joinedAt": "2026-10-13T15:59:46.848Z",
+        "ticketCode": "4TL7SC",
+        "checkedInAt": "2026-10-13T15:59:46.860Z"
+      }
+    ],
+    "live-agg-952235aea6b073ac6c4f": [
+      {
+        "userId": "mem_704773da-7409-4afa-aa7d-d032eea18a0e",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T15:57:18.878Z",
+        "ticketCode": "BM7H75"
+      }
+    ],
+    "live-agg-b9811e21135f92628e07": [
+      {
+        "userId": "mem_bbe5a759-4130-4904-8f8a-69ac61617665",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:02:23.430Z",
+        "ticketCode": "EFUNHC"
+      },
+      {
+        "userId": "mem_db7647d7-7bc1-4066-8868-e7f3d6a7bc7f",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:19:15.254Z",
+        "ticketCode": "W477MB"
+      },
+      {
+        "userId": "mem_d085162a-6c6b-4106-b83d-69c62669bac8",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:19:46.773Z",
+        "ticketCode": "4QD9TJ"
+      },
+      {
+        "userId": "mem_a2bd0ada-582f-48c2-8218-d86f4d8f6be9",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:20:36.685Z",
+        "ticketCode": "9SDNU6"
+      },
+      {
+        "userId": "mem_727a7cc0-0b1d-46ae-b8db-336111970a68",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:21:47.254Z",
+        "ticketCode": "NFPEB2"
+      },
+      {
+        "userId": "mem_06f6c979-85b6-42f5-a7e4-f6724b508297",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:29:30.437Z",
+        "ticketCode": "L4A77H"
+      },
+      {
+        "userId": "mem_d32473cc-112e-4313-ae3b-9f90308e6ea7",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:30:11.102Z",
+        "ticketCode": "8RA5D8"
+      },
+      {
+        "userId": "mem_645992fe-f881-4f54-abc3-3f7c9c69e4d4",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:30:29.752Z",
+        "ticketCode": "KDS9HS"
+      },
+      {
+        "userId": "mem_cabf7d10-62ed-45e4-8bcc-8154ba5012ee",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:30:52.574Z",
+        "ticketCode": "3RSYTD"
+      },
+      {
+        "userId": "mem_662c9cad-f735-40ab-9d72-56aa7c575ad4",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:31:12.844Z",
+        "ticketCode": "YS9QMM"
+      },
+      {
+        "userId": "mem_8199c566-e8f2-4aaf-bc2b-c057792b159d",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:55:32.385Z",
+        "ticketCode": "M3ZCFD"
+      },
+      {
+        "userId": "mem_0c1af511-7408-406f-9b1f-21a1d642acda",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:55:53.107Z",
+        "ticketCode": "T6ZH8T"
+      },
+      {
+        "userId": "mem_7570af43-7da3-4bda-b61b-588dd2f37152",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:05:57.433Z",
+        "ticketCode": "XKHC24"
+      },
+      {
+        "userId": "mem_78e1433f-8b0c-4c1d-a7c4-a985d1ed0871",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:06:14.323Z",
+        "ticketCode": "B67RXY"
+      },
+      {
+        "userId": "mem_9ea3676c-a27c-4b4b-8617-f881398ac356",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:15:51.441Z",
+        "ticketCode": "5FSGQC"
+      },
+      {
+        "userId": "mem_6637677b-ecb0-45a4-b85c-276f39011da9",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:23:22.232Z",
+        "ticketCode": "787CYU"
+      },
+      {
+        "userId": "mem_4115ab1f-e8aa-46a8-9c76-9a2d4d1d4bcc",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:34:26.795Z",
+        "ticketCode": "B9STJ6"
+      },
+      {
+        "userId": "mem_9c91393f-0842-48f9-bcbe-c7c41d57d606",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:35:38.237Z",
+        "ticketCode": "CHA6CQ"
+      },
+      {
+        "userId": "mem_c19cb3a1-d3d7-4b3e-abbd-451cfcbf181a",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:36:06.313Z",
+        "ticketCode": "W9H7MT"
+      },
+      {
+        "userId": "mem_51cd87c4-ef64-4bcb-8638-e4047b576e6c",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:38:37.695Z",
+        "ticketCode": "7FX8DS"
+      },
+      {
+        "userId": "mem_d95581b2-6dd6-4f4b-a55d-485079c3d33d",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:41:14.739Z",
+        "ticketCode": "3K286U"
+      },
+      {
+        "userId": "mem_903d7e89-6709-4010-ad35-3182e1ddf452",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:50:39.765Z",
+        "ticketCode": "P7CBXJ"
+      },
+      {
+        "userId": "mem_f188353c-5bb8-489c-863d-a5c875807be7",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:51:08.063Z",
+        "ticketCode": "4Y2F4J"
+      },
+      {
+        "userId": "mem_fa8f193a-a607-40ba-8e0b-5e5dd0607dc7",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:51:23.735Z",
+        "ticketCode": "7Z9J93"
+      },
+      {
+        "userId": "mem_a0fe275b-dbb1-4664-bbd3-c30cd15c99cc",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:51:53.398Z",
+        "ticketCode": "92ULS6"
+      },
+      {
+        "userId": "mem_0f6d1ebb-961d-416a-8106-484ee72a9d76",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:53:30.824Z",
+        "ticketCode": "LVZN9Z"
+      },
+      {
+        "userId": "mem_c557e258-ed9c-41c5-859d-c6b22d24a4d8",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:56:26.424Z",
+        "ticketCode": "DBX653"
+      },
+      {
+        "userId": "mem_933540eb-e989-4ec2-8b27-4a4632b1af6f",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:56:43.460Z",
+        "ticketCode": "KHRDBK"
+      },
+      {
+        "userId": "mem_ed09dc89-5e2a-40b3-97f3-17918c70fd4e",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:57:15.562Z",
+        "ticketCode": "P53ZXE"
+      },
+      {
+        "userId": "mem_93d2159f-a0a8-4347-ab4b-ac5c707633ee",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:02:48.554Z",
+        "ticketCode": "CTV74D"
+      },
+      {
+        "userId": "mem_09461f1e-f4c7-4fe3-9212-e4690044b247",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:03:35.845Z",
+        "ticketCode": "U4TW24"
+      },
+      {
+        "userId": "mem_30187ff4-4373-46bc-9a8d-857d9c781d79",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:13:59.474Z",
+        "ticketCode": "UDGRX3"
+      },
+      {
+        "userId": "mem_ea25b390-c7cf-4dae-8082-0c7bb29d65dc",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:14:18.017Z",
+        "ticketCode": "QD2VLJ"
+      },
+      {
+        "userId": "mem_25af6ab5-cc9d-4038-8acf-d57b79e8f45b",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:23:51.566Z",
+        "ticketCode": "55BU8H"
+      },
+      {
+        "userId": "mem_890e90c0-965b-4a1f-8422-73bd216d08ed",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:28:01.243Z",
+        "ticketCode": "UNYKH5"
+      },
+      {
+        "userId": "mem_27d19aae-80e2-4c31-8715-76433ef68ccc",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:28:18.890Z",
+        "ticketCode": "XHECWZ"
+      },
+      {
+        "userId": "mem_813fbc15-bb1a-4f8c-9b6c-efb4e644c0d8",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:33:45.450Z",
+        "ticketCode": "XB5MVE"
+      },
+      {
+        "userId": "mem_91468dff-0d04-4ae0-9a3d-3f899cc22199",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:34:02.231Z",
+        "ticketCode": "CJLNCL"
+      },
+      {
+        "userId": "mem_0b701815-0274-4130-9d9f-c6f91e292a9f",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:38:15.097Z",
+        "ticketCode": "2Q7WDA"
+      },
+      {
+        "userId": "mem_d5de4e62-ee41-45c4-af27-a82debb81e24",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:38:32.379Z",
+        "ticketCode": "XCQVB7"
+      }
+    ],
+    "regional-online-3": [
+      {
+        "userId": "mem_662c9cad-f735-40ab-9d72-56aa7c575ad4",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:31:13.038Z",
+        "ticketCode": "TRALAF"
+      },
+      {
+        "userId": "mem_cfc62ab1-898b-4cd4-8d2c-c3599c41ac63",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:31:30.816Z",
+        "ticketCode": "NMBKBX"
+      },
+      {
+        "userId": "mem_ff403991-0d5d-444c-ae43-025392634566",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:31:55.373Z",
+        "ticketCode": "ERELN2"
+      },
+      {
+        "userId": "mem_576b974e-e1ef-45ee-a760-b945dc346eac",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:42:31.633Z",
+        "ticketCode": "RU4R3F"
+      },
+      {
+        "userId": "mem_f82ef61e-ddfc-4e17-9562-5a24493a7894",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:50:24.064Z",
+        "ticketCode": "D6U94G"
+      },
+      {
+        "userId": "mem_264f0532-3231-4e8b-8fd7-be3fec19c97c",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:50:44.653Z",
+        "ticketCode": "PME735"
+      },
+      {
+        "userId": "mem_249e6ac1-4472-4676-9726-ed21709cb6e0",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:51:09.452Z",
+        "ticketCode": "BR79DM"
+      },
+      {
+        "userId": "mem_4ad63d03-fc64-444f-8852-022ee05306c3",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:53:09.514Z",
+        "ticketCode": "SEPPHS"
+      },
+      {
+        "userId": "mem_01b3671d-1946-4059-9744-32f465eeed37",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:54:34.990Z",
+        "ticketCode": "7PZ89K"
+      },
+      {
+        "userId": "mem_8199c566-e8f2-4aaf-bc2b-c057792b159d",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:55:35.452Z",
+        "ticketCode": "SGGDDC"
+      },
+      {
+        "userId": "mem_0c1af511-7408-406f-9b1f-21a1d642acda",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:55:53.281Z",
+        "ticketCode": "CN9Q7E"
+      },
+      {
+        "userId": "mem_7570af43-7da3-4bda-b61b-588dd2f37152",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:05:57.577Z",
+        "ticketCode": "UX6DCK"
+      },
+      {
+        "userId": "mem_78e1433f-8b0c-4c1d-a7c4-a985d1ed0871",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:06:14.453Z",
+        "ticketCode": "2E2VJZ"
+      },
+      {
+        "userId": "mem_9ea3676c-a27c-4b4b-8617-f881398ac356",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:15:51.618Z",
+        "ticketCode": "THCCWQ"
+      },
+      {
+        "userId": "mem_6637677b-ecb0-45a4-b85c-276f39011da9",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:23:22.413Z",
+        "ticketCode": "YVEQYB"
+      },
+      {
+        "userId": "mem_4115ab1f-e8aa-46a8-9c76-9a2d4d1d4bcc",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:34:27.091Z",
+        "ticketCode": "S6927W"
+      },
+      {
+        "userId": "mem_9c91393f-0842-48f9-bcbe-c7c41d57d606",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:35:38.378Z",
+        "ticketCode": "3TK6ZQ"
+      },
+      {
+        "userId": "mem_c19cb3a1-d3d7-4b3e-abbd-451cfcbf181a",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:36:06.458Z",
+        "ticketCode": "ZFSHSE"
+      }
+    ],
+    "regional-online-2": [
+      {
+        "userId": "mem_cfc62ab1-898b-4cd4-8d2c-c3599c41ac63",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:31:30.864Z",
+        "ticketCode": "W47A7E"
+      },
+      {
+        "userId": "mem_ff403991-0d5d-444c-ae43-025392634566",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:31:55.410Z",
+        "ticketCode": "F54L4W"
+      },
+      {
+        "userId": "mem_576b974e-e1ef-45ee-a760-b945dc346eac",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:42:31.685Z",
+        "ticketCode": "3MQPPC"
+      },
+      {
+        "userId": "mem_f82ef61e-ddfc-4e17-9562-5a24493a7894",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:50:24.143Z",
+        "ticketCode": "3JR542"
+      },
+      {
+        "userId": "mem_264f0532-3231-4e8b-8fd7-be3fec19c97c",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:50:44.691Z",
+        "ticketCode": "3Q9LAR"
+      },
+      {
+        "userId": "mem_249e6ac1-4472-4676-9726-ed21709cb6e0",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:51:09.490Z",
+        "ticketCode": "8JD7CH"
+      },
+      {
+        "userId": "mem_4ad63d03-fc64-444f-8852-022ee05306c3",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:53:09.564Z",
+        "ticketCode": "EL3M27"
+      },
+      {
+        "userId": "mem_01b3671d-1946-4059-9744-32f465eeed37",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:54:35.099Z",
+        "ticketCode": "64A24U"
+      },
+      {
+        "userId": "mem_8199c566-e8f2-4aaf-bc2b-c057792b159d",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:55:42.237Z",
+        "ticketCode": "YF859L"
+      },
+      {
+        "userId": "mem_0c1af511-7408-406f-9b1f-21a1d642acda",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:55:53.317Z",
+        "ticketCode": "65MB9D"
+      },
+      {
+        "userId": "mem_7570af43-7da3-4bda-b61b-588dd2f37152",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:05:57.605Z",
+        "ticketCode": "KJA2Z7"
+      },
+      {
+        "userId": "mem_78e1433f-8b0c-4c1d-a7c4-a985d1ed0871",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:06:14.477Z",
+        "ticketCode": "YZ6D6K"
+      },
+      {
+        "userId": "mem_9ea3676c-a27c-4b4b-8617-f881398ac356",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:15:51.653Z",
+        "ticketCode": "HBWNF9"
+      },
+      {
+        "userId": "mem_6637677b-ecb0-45a4-b85c-276f39011da9",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:23:22.449Z",
+        "ticketCode": "B9X9A9"
+      }
+    ],
+    "regional-cm-1": [
+      {
+        "userId": "mem_f82ef61e-ddfc-4e17-9562-5a24493a7894",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:50:24.207Z",
+        "ticketCode": "5DS3MA"
+      },
+      {
+        "userId": "mem_264f0532-3231-4e8b-8fd7-be3fec19c97c",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:50:44.728Z",
+        "ticketCode": "4HNACT"
+      },
+      {
+        "userId": "mem_249e6ac1-4472-4676-9726-ed21709cb6e0",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:51:09.542Z",
+        "ticketCode": "ZGWV7U"
+      },
+      {
+        "userId": "mem_4ad63d03-fc64-444f-8852-022ee05306c3",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:53:09.599Z",
+        "ticketCode": "R58DUJ"
+      },
+      {
+        "userId": "mem_01b3671d-1946-4059-9744-32f465eeed37",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:54:35.152Z",
+        "ticketCode": "EGNXYW"
+      },
+      {
+        "userId": "mem_4115ab1f-e8aa-46a8-9c76-9a2d4d1d4bcc",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:34:27.117Z",
+        "ticketCode": "N7AVN3"
+      }
+    ],
+    "regional-chon-1": [
+      {
+        "userId": "mem_264f0532-3231-4e8b-8fd7-be3fec19c97c",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:50:44.771Z",
+        "ticketCode": "ZZ2U9P"
+      },
+      {
+        "userId": "mem_249e6ac1-4472-4676-9726-ed21709cb6e0",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:51:09.584Z",
+        "ticketCode": "MSZ8L8"
+      },
+      {
+        "userId": "mem_4ad63d03-fc64-444f-8852-022ee05306c3",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:53:09.642Z",
+        "ticketCode": "ZYVK97"
+      },
+      {
+        "userId": "mem_01b3671d-1946-4059-9744-32f465eeed37",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T16:54:35.207Z",
+        "ticketCode": "2CWFW8"
+      }
+    ],
+    "regional-online-1": [
+      {
+        "userId": "mem_9c91393f-0842-48f9-bcbe-c7c41d57d606",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:35:38.403Z",
+        "ticketCode": "AT2STJ"
+      },
+      {
+        "userId": "mem_c19cb3a1-d3d7-4b3e-abbd-451cfcbf181a",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:36:06.507Z",
+        "ticketCode": "9A3PYY"
+      },
+      {
+        "userId": "mem_51cd87c4-ef64-4bcb-8638-e4047b576e6c",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:38:37.838Z",
+        "ticketCode": "S5WTLV"
+      },
+      {
+        "userId": "mem_d95581b2-6dd6-4f4b-a55d-485079c3d33d",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:41:14.897Z",
+        "ticketCode": "C5F9GB"
+      },
+      {
+        "userId": "mem_903d7e89-6709-4010-ad35-3182e1ddf452",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:50:39.902Z",
+        "ticketCode": "2XWDNT"
+      },
+      {
+        "userId": "mem_f188353c-5bb8-489c-863d-a5c875807be7",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:51:08.201Z",
+        "ticketCode": "U5AA6Q"
+      },
+      {
+        "userId": "mem_fa8f193a-a607-40ba-8e0b-5e5dd0607dc7",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:51:23.857Z",
+        "ticketCode": "PY587P"
+      }
+    ],
+    "comm-oct-special-1": [
+      {
+        "userId": "mem_51cd87c4-ef64-4bcb-8638-e4047b576e6c",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:38:37.887Z",
+        "ticketCode": "5WQ89C"
+      },
+      {
+        "userId": "mem_d95581b2-6dd6-4f4b-a55d-485079c3d33d",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:41:14.931Z",
+        "ticketCode": "TMC57P"
+      }
+    ],
+    "comm-climb-1": [
+      {
+        "userId": "mem_903d7e89-6709-4010-ad35-3182e1ddf452",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:50:39.929Z",
+        "ticketCode": "5SHRZH"
+      }
+    ],
+    "comm-hyrox-3": [
+      {
+        "userId": "mem_a0fe275b-dbb1-4664-bbd3-c30cd15c99cc",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:51:53.815Z",
+        "ticketCode": "NJKWHR"
+      },
+      {
+        "userId": "mem_0f6d1ebb-961d-416a-8106-484ee72a9d76",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:53:31.041Z",
+        "ticketCode": "32DSUP"
+      },
+      {
+        "userId": "mem_c557e258-ed9c-41c5-859d-c6b22d24a4d8",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:56:27.329Z",
+        "ticketCode": "4YYME7"
+      }
+    ],
+    "comm-hyrox-2": [
+      {
+        "userId": "mem_c557e258-ed9c-41c5-859d-c6b22d24a4d8",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:56:27.398Z",
+        "ticketCode": "KR6GTH"
+      },
+      {
+        "userId": "mem_933540eb-e989-4ec2-8b27-4a4632b1af6f",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:56:43.626Z",
+        "ticketCode": "FZNAMN"
+      },
+      {
+        "userId": "mem_ed09dc89-5e2a-40b3-97f3-17918c70fd4e",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:57:15.902Z",
+        "ticketCode": "R65ZYX"
+      },
+      {
+        "userId": "mem_93d2159f-a0a8-4347-ab4b-ac5c707633ee",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:02:48.788Z",
+        "ticketCode": "HZD4BN"
+      }
+    ],
+    "comm-fitness-1": [
+      {
+        "userId": "mem_933540eb-e989-4ec2-8b27-4a4632b1af6f",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:56:43.684Z",
+        "ticketCode": "DEUP7L"
+      },
+      {
+        "userId": "mem_ed09dc89-5e2a-40b3-97f3-17918c70fd4e",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T17:57:15.945Z",
+        "ticketCode": "DHU3MY"
+      }
+    ],
+    "comm-benjakitti-morning-run": [
+      {
+        "userId": "mem_93d2159f-a0a8-4347-ab4b-ac5c707633ee",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:02:48.847Z",
+        "ticketCode": "F8LZFJ"
+      },
+      {
+        "userId": "mem_09461f1e-f4c7-4fe3-9212-e4690044b247",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:03:36.014Z",
+        "ticketCode": "GCPADW"
+      },
+      {
+        "userId": "mem_30187ff4-4373-46bc-9a8d-857d9c781d79",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:13:59.638Z",
+        "ticketCode": "799F74"
+      },
+      {
+        "userId": "mem_ea25b390-c7cf-4dae-8082-0c7bb29d65dc",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:14:18.148Z",
+        "ticketCode": "SAGEB5"
+      },
+      {
+        "userId": "mem_25af6ab5-cc9d-4038-8acf-d57b79e8f45b",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:23:52.458Z",
+        "ticketCode": "KQ4FXU"
+      }
+    ],
+    "comm-ai-1": [
+      {
+        "userId": "mem_09461f1e-f4c7-4fe3-9212-e4690044b247",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:03:36.055Z",
+        "ticketCode": "T3RWR8"
+      },
+      {
+        "userId": "mem_30187ff4-4373-46bc-9a8d-857d9c781d79",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:13:59.668Z",
+        "ticketCode": "TDCWEX"
+      },
+      {
+        "userId": "mem_ea25b390-c7cf-4dae-8082-0c7bb29d65dc",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:14:18.181Z",
+        "ticketCode": "WSRA4G"
+      }
+    ],
+    "comm-1": [
+      {
+        "userId": "mem_25af6ab5-cc9d-4038-8acf-d57b79e8f45b",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:23:52.744Z",
+        "ticketCode": "Y8UZR6"
+      },
+      {
+        "userId": "mem_890e90c0-965b-4a1f-8422-73bd216d08ed",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:28:01.685Z",
+        "ticketCode": "SMLR2A"
+      }
+    ],
+    "comm-2": [
+      {
+        "userId": "mem_890e90c0-965b-4a1f-8422-73bd216d08ed",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:28:01.757Z",
+        "ticketCode": "6Z5LRS"
+      }
+    ],
+    "comm-3": [
+      {
+        "userId": "mem_27d19aae-80e2-4c31-8715-76433ef68ccc",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:28:19.045Z",
+        "ticketCode": "HW3H24"
+      },
+      {
+        "userId": "mem_813fbc15-bb1a-4f8c-9b6c-efb4e644c0d8",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:33:45.708Z",
+        "ticketCode": "KSQLCN"
+      }
+    ],
+    "comm-4": [
+      {
+        "userId": "mem_27d19aae-80e2-4c31-8715-76433ef68ccc",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:28:19.095Z",
+        "ticketCode": "QTXETE"
+      }
+    ],
+    "comm-5": [
+      {
+        "userId": "mem_813fbc15-bb1a-4f8c-9b6c-efb4e644c0d8",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:33:45.754Z",
+        "ticketCode": "38WUSW"
+      }
+    ],
+    "comm-6": [
+      {
+        "userId": "mem_91468dff-0d04-4ae0-9a3d-3f899cc22199",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:34:02.391Z",
+        "ticketCode": "VBA4NT"
+      }
+    ],
+    "comm-8": [
+      {
+        "userId": "mem_91468dff-0d04-4ae0-9a3d-3f899cc22199",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:34:02.443Z",
+        "ticketCode": "48ZE87"
+      },
+      {
+        "userId": "mem_0b701815-0274-4130-9d9f-c6f91e292a9f",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:38:15.342Z",
+        "ticketCode": "PQ92YP"
+      }
+    ],
+    "comm-9": [
+      {
+        "userId": "mem_0b701815-0274-4130-9d9f-c6f91e292a9f",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:38:15.392Z",
+        "ticketCode": "WZYVAP"
+      },
+      {
+        "userId": "mem_d5de4e62-ee41-45c4-af27-a82debb81e24",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:38:32.520Z",
+        "ticketCode": "BCMTVR"
+      }
+    ],
+    "comm-10": [
+      {
+        "userId": "mem_d5de4e62-ee41-45c4-af27-a82debb81e24",
+        "userName": "ทดสอบแฟร์",
+        "joinedAt": "2026-10-14T18:38:32.552Z",
+        "ticketCode": "LA9LPA"
+      },
+      {
+        "userId": "mem_demo_tester",
+        "userName": "ผู้ทดลองใช้",
+        "joinedAt": "2026-10-16T02:48:20.620Z",
+        "ticketCode": "7WAFVH"
+      }
+    ],
+    "live-agg-028c0ae644aceafb04da": [],
+    "comm-11": [
+      {
+        "userId": "mem_demo_tester",
+        "userName": "ผู้ทดลองใช้",
+        "joinedAt": "2026-10-16T02:48:20.641Z",
+        "ticketCode": "CR7WMQ"
+      },
+      {
+        "userId": "mem_146af1be-53d4-4a6f-95f8-d97d0b34dff5",
+        "userName": "ทดสอบA",
+        "joinedAt": "2026-10-23T06:35:58.659Z",
+        "ticketCode": "7ZEXVZ"
+      },
+      {
+        "userId": "mem_4fb1d9cf-3cda-4001-8f8b-42724e92dbd8",
+        "userName": "ทดสอบจบ",
+        "joinedAt": "2026-10-23T06:36:43.030Z",
+        "ticketCode": "DMCY23"
+      }
+    ],
+    "comm-12": [
+      {
+        "userId": "mem_demo_tester",
+        "userName": "ผู้ทดลองใช้",
+        "joinedAt": "2026-10-16T02:55:50.036Z",
+        "ticketCode": "MFKKTA"
+      },
+      {
+        "userId": "mem_146af1be-53d4-4a6f-95f8-d97d0b34dff5",
+        "userName": "ทดสอบA",
+        "joinedAt": "2026-10-23T06:35:58.695Z",
+        "ticketCode": "J6VXGU"
+      }
+    ],
+    "demo-host-mem_demo_tester": [
+      {
+        "userId": "mem_demo_tester",
+        "userName": "ผู้ทดลองใช้",
+        "note": "host",
+        "joinedAt": "2026-10-16T02:56:46.307Z",
+        "ticketCode": "JBW334"
+      },
+      {
+        "userId": "mem_sample_kee_explorer",
+        "userName": "คุณกี้ (Kee_Explorer)",
+        "userAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+        "joinedAt": "2026-10-16T02:56:46.317Z",
+        "ticketCode": "X9X82D",
+        "checkedInAt": "2026-10-16T02:56:46.342Z"
+      },
+      {
+        "userId": "mem_sample_mint_vibes",
+        "userName": "คุณมิ้นท์ (Mint_Vibes)",
+        "userAvatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80",
+        "joinedAt": "2026-10-16T02:56:46.328Z",
+        "ticketCode": "2MGS6F"
+      },
+      {
+        "userId": "mem_b83016d4-a1e0-4b76-96dd-1ebca1bc4b5d",
+        "userName": "ทดลองเดิน",
+        "joinedAt": "2026-10-23T04:23:22.697Z",
+        "ticketCode": "74HQ3F"
+      },
+      {
+        "userId": "mem_6843616f-7fb3-462a-8b23-aa660469699c",
+        "userName": "ทดลองกลับ",
+        "joinedAt": "2026-10-23T06:21:10.638Z",
+        "ticketCode": "LF9USD"
+      },
+      {
+        "userId": "mem_895a5b24-fc15-48e5-8888-3a40483324f2",
+        "userName": "ทดลองกลับ",
+        "joinedAt": "2026-10-23T06:42:37.536Z",
+        "ticketCode": "UVEY5Q"
+      }
+    ],
+    "demo-join-mem_demo_tester": [
+      {
+        "userId": "mem_sample_kee_explorer",
+        "userName": "คุณกี้ (Kee_Explorer)",
+        "userAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+        "note": "host",
+        "joinedAt": "2026-10-16T02:56:46.368Z",
+        "ticketCode": "C6WC3R"
+      },
+      {
+        "userId": "mem_demo_tester",
+        "userName": "ผู้ทดลองใช้",
+        "joinedAt": "2026-10-16T02:56:46.380Z",
+        "ticketCode": "QH3J6L"
+      }
+    ],
+    "demo-past-mem_demo_tester": [
+      {
+        "userId": "mem_sample_praew_art",
+        "userName": "คุณแพรว (Praew_Art)",
+        "userAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
+        "note": "host",
+        "joinedAt": "2026-10-16T02:56:46.405Z",
+        "ticketCode": "7CGEBR"
+      },
+      {
+        "userId": "mem_demo_tester",
+        "userName": "ผู้ทดลองใช้",
+        "joinedAt": "2026-10-16T02:56:46.415Z",
+        "ticketCode": "JM2EQW",
+        "checkedInAt": "2026-10-16T02:56:46.429Z"
+      }
+    ],
+    "demo-host-mem_146af1be-53d4-4a6f-95f8-d97d0b34dff5": [
+      {
+        "userId": "mem_146af1be-53d4-4a6f-95f8-d97d0b34dff5",
+        "userName": "ทดสอบA",
+        "note": "host",
+        "joinedAt": "2026-10-23T06:35:58.782Z",
+        "ticketCode": "WS68Q8"
+      },
+      {
+        "userId": "mem_sample_kee_explorer",
+        "userName": "คุณกี้ (Kee_Explorer)",
+        "userAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+        "joinedAt": "2026-10-23T06:35:58.801Z",
+        "ticketCode": "P259WJ",
+        "checkedInAt": "2026-10-23T06:35:58.854Z"
+      },
+      {
+        "userId": "mem_sample_mint_vibes",
+        "userName": "คุณมิ้นท์ (Mint_Vibes)",
+        "userAvatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80",
+        "joinedAt": "2026-10-23T06:35:58.822Z",
+        "ticketCode": "E52BQ8"
+      },
+      {
+        "userId": "mem_56e90c8b-bdd6-49bd-887e-75ab171e21af",
+        "userName": "ทดสอบB",
+        "joinedAt": "2026-10-23T06:35:59.137Z",
+        "ticketCode": "SJJS9M",
+        "checkedInAt": "2026-10-23T06:36:13.082Z"
+      }
+    ],
+    "demo-join-mem_146af1be-53d4-4a6f-95f8-d97d0b34dff5": [
+      {
+        "userId": "mem_sample_kee_explorer",
+        "userName": "คุณกี้ (Kee_Explorer)",
+        "userAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+        "note": "host",
+        "joinedAt": "2026-10-23T06:35:58.914Z",
+        "ticketCode": "7BQ4ER"
+      },
+      {
+        "userId": "mem_146af1be-53d4-4a6f-95f8-d97d0b34dff5",
+        "userName": "ทดสอบA",
+        "joinedAt": "2026-10-23T06:35:58.942Z",
+        "ticketCode": "AT2N8Y"
+      }
+    ],
+    "demo-past-mem_146af1be-53d4-4a6f-95f8-d97d0b34dff5": [
+      {
+        "userId": "mem_sample_praew_art",
+        "userName": "คุณแพรว (Praew_Art)",
+        "userAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
+        "note": "host",
+        "joinedAt": "2026-10-23T06:35:58.995Z",
+        "ticketCode": "DGW6Z9"
+      },
+      {
+        "userId": "mem_146af1be-53d4-4a6f-95f8-d97d0b34dff5",
+        "userName": "ทดสอบA",
+        "joinedAt": "2026-10-23T06:35:59.020Z",
+        "ticketCode": "KRMUX5",
+        "checkedInAt": "2026-10-23T06:35:59.049Z"
+      }
+    ],
+    "comm-13": [
+      {
+        "userId": "mem_4fb1d9cf-3cda-4001-8f8b-42724e92dbd8",
+        "userName": "ทดสอบจบ",
+        "joinedAt": "2026-10-23T06:36:43.087Z",
+        "ticketCode": "N53LJU"
+      }
+    ],
+    "demo-host-mem_4fb1d9cf-3cda-4001-8f8b-42724e92dbd8": [
+      {
+        "userId": "mem_4fb1d9cf-3cda-4001-8f8b-42724e92dbd8",
+        "userName": "ทดสอบจบ",
+        "note": "host",
+        "joinedAt": "2026-10-23T06:36:43.156Z",
+        "ticketCode": "LTCCV6"
+      },
+      {
+        "userId": "mem_sample_kee_explorer",
+        "userName": "คุณกี้ (Kee_Explorer)",
+        "userAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+        "joinedAt": "2026-10-23T06:36:43.176Z",
+        "ticketCode": "YUULPR",
+        "checkedInAt": "2026-10-23T06:36:43.211Z"
+      },
+      {
+        "userId": "mem_sample_mint_vibes",
+        "userName": "คุณมิ้นท์ (Mint_Vibes)",
+        "userAvatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80",
+        "joinedAt": "2026-10-23T06:36:43.195Z",
+        "ticketCode": "GVXTF6"
+      }
+    ],
+    "demo-join-mem_4fb1d9cf-3cda-4001-8f8b-42724e92dbd8": [
+      {
+        "userId": "mem_sample_kee_explorer",
+        "userName": "คุณกี้ (Kee_Explorer)",
+        "userAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+        "note": "host",
+        "joinedAt": "2026-10-23T06:36:43.254Z",
+        "ticketCode": "GKA83A"
+      },
+      {
+        "userId": "mem_4fb1d9cf-3cda-4001-8f8b-42724e92dbd8",
+        "userName": "ทดสอบจบ",
+        "joinedAt": "2026-10-23T06:36:43.276Z",
+        "ticketCode": "B6MGMF"
+      }
+    ],
+    "demo-past-mem_4fb1d9cf-3cda-4001-8f8b-42724e92dbd8": [
+      {
+        "userId": "mem_sample_praew_art",
+        "userName": "คุณแพรว (Praew_Art)",
+        "userAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
+        "note": "host",
+        "joinedAt": "2026-10-23T06:36:43.317Z",
+        "ticketCode": "6WKAFT"
+      },
+      {
+        "userId": "mem_4fb1d9cf-3cda-4001-8f8b-42724e92dbd8",
+        "userName": "ทดสอบจบ",
+        "joinedAt": "2026-10-23T06:36:43.340Z",
+        "ticketCode": "R7SQT5",
+        "checkedInAt": "2026-10-23T06:36:43.378Z"
+      }
+    ],
+    "regional-online-3--2026-10-23": [
+      {
+        "userId": "mem_95dcb67e-eac3-4095-b490-698707702a73",
+        "userName": "ทดสอบR",
+        "joinedAt": "2026-10-23T06:58:57.992Z",
+        "ticketCode": "26TSKG"
+      },
+      {
+        "userId": "mem_8bc43d0b-4b80-4706-9230-5b899ab0d41f",
+        "userName": "ทดสอบA",
+        "joinedAt": "2026-10-23T06:59:00.576Z",
+        "ticketCode": "AVXXR8"
+      },
+      {
+        "userId": "mem_8e8fc154-09de-4592-964b-adf7bcf04123",
+        "userName": "ทดสอบวันนัด",
+        "joinedAt": "2026-10-23T07:07:24.307Z",
+        "ticketCode": "CH56W6"
+      }
+    ],
+    "demo-host-mem_8bc43d0b-4b80-4706-9230-5b899ab0d41f": [
+      {
+        "userId": "mem_8bc43d0b-4b80-4706-9230-5b899ab0d41f",
+        "userName": "ทดสอบA",
+        "note": "host",
+        "joinedAt": "2026-10-23T06:59:01.744Z",
+        "ticketCode": "9U8F3E"
+      },
+      {
+        "userId": "mem_sample_kee_explorer",
+        "userName": "คุณกี้ (Kee_Explorer)",
+        "userAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+        "joinedAt": "2026-10-23T06:59:01.900Z",
+        "ticketCode": "5VVB83",
+        "checkedInAt": "2026-10-23T06:59:02.084Z"
+      },
+      {
+        "userId": "mem_sample_mint_vibes",
+        "userName": "คุณมิ้นท์ (Mint_Vibes)",
+        "userAvatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80",
+        "joinedAt": "2026-10-23T06:59:01.960Z",
+        "ticketCode": "ZMDPCF"
+      },
+      {
+        "userId": "mem_8b30b090-b806-4dfe-9189-f8f786104ef8",
+        "userName": "ทดสอบF1",
+        "joinedAt": "2026-10-23T06:59:06.028Z",
+        "ticketCode": "A8LVFW"
+      },
+      {
+        "userId": "mem_635bf561-0cce-4446-9145-55c12a8b792d",
+        "userName": "ทดสอบF2",
+        "joinedAt": "2026-10-23T06:59:07.345Z",
+        "ticketCode": "7JX8WT"
+      },
+      {
+        "userId": "mem_5e5d0306-7e1d-431c-9300-9487fdadbb6d",
+        "userName": "ทดสอบF3",
+        "joinedAt": "2026-10-23T06:59:08.792Z",
+        "ticketCode": "J5YS46"
+      },
+      {
+        "userId": "mem_c7f88fea-57b4-42bc-a4c8-adc627421e4c",
+        "userName": "ทดสอบF4",
+        "joinedAt": "2026-10-23T06:59:09.280Z",
+        "ticketCode": "SE2W6N"
+      },
+      {
+        "userId": "mem_7629e90e-d495-4377-9771-984ce0b0c5d0",
+        "userName": "ทดสอบW",
+        "joinedAt": "2026-10-23T06:59:15.811Z",
+        "ticketCode": "44PN99"
+      }
+    ],
+    "demo-join-mem_8bc43d0b-4b80-4706-9230-5b899ab0d41f": [
+      {
+        "userId": "mem_sample_kee_explorer",
+        "userName": "คุณกี้ (Kee_Explorer)",
+        "userAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+        "note": "host",
+        "joinedAt": "2026-10-23T06:59:02.304Z",
+        "ticketCode": "MTXFNY"
+      },
+      {
+        "userId": "mem_8bc43d0b-4b80-4706-9230-5b899ab0d41f",
+        "userName": "ทดสอบA",
+        "joinedAt": "2026-10-23T06:59:02.341Z",
+        "ticketCode": "8HZJL2"
+      }
+    ],
+    "demo-past-mem_8bc43d0b-4b80-4706-9230-5b899ab0d41f": [
+      {
+        "userId": "mem_sample_praew_art",
+        "userName": "คุณแพรว (Praew_Art)",
+        "userAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
+        "note": "host",
+        "joinedAt": "2026-10-23T06:59:03.195Z",
+        "ticketCode": "A2FAW4"
+      },
+      {
+        "userId": "mem_8bc43d0b-4b80-4706-9230-5b899ab0d41f",
+        "userName": "ทดสอบA",
+        "joinedAt": "2026-10-23T06:59:03.247Z",
+        "ticketCode": "BLR82U",
+        "checkedInAt": "2026-10-23T06:59:03.288Z"
+      }
+    ],
+    "demo-host-mem_8e8fc154-09de-4592-964b-adf7bcf04123": [
+      {
+        "userId": "mem_8e8fc154-09de-4592-964b-adf7bcf04123",
+        "userName": "ทดสอบวันนัด",
+        "note": "host",
+        "joinedAt": "2026-10-23T07:07:24.419Z",
+        "ticketCode": "4PDY6G"
+      },
+      {
+        "userId": "mem_sample_kee_explorer",
+        "userName": "คุณกี้ (Kee_Explorer)",
+        "userAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+        "joinedAt": "2026-10-23T07:07:24.437Z",
+        "ticketCode": "P663KU",
+        "checkedInAt": "2026-10-23T07:07:24.469Z"
+      },
+      {
+        "userId": "mem_sample_mint_vibes",
+        "userName": "คุณมิ้นท์ (Mint_Vibes)",
+        "userAvatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80",
+        "joinedAt": "2026-10-23T07:07:24.454Z",
+        "ticketCode": "BT2VRH"
+      }
+    ],
+    "demo-join-mem_8e8fc154-09de-4592-964b-adf7bcf04123": [
+      {
+        "userId": "mem_sample_kee_explorer",
+        "userName": "คุณกี้ (Kee_Explorer)",
+        "userAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+        "note": "host",
+        "joinedAt": "2026-10-23T07:07:24.510Z",
+        "ticketCode": "MS394V"
+      },
+      {
+        "userId": "mem_8e8fc154-09de-4592-964b-adf7bcf04123",
+        "userName": "ทดสอบวันนัด",
+        "joinedAt": "2026-10-23T07:07:24.530Z",
+        "ticketCode": "9TSJFP"
+      }
+    ],
+    "demo-past-mem_8e8fc154-09de-4592-964b-adf7bcf04123": [
+      {
+        "userId": "mem_sample_praew_art",
+        "userName": "คุณแพรว (Praew_Art)",
+        "userAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
+        "note": "host",
+        "joinedAt": "2026-10-23T07:07:24.583Z",
+        "ticketCode": "JUBSBH"
+      },
+      {
+        "userId": "mem_8e8fc154-09de-4592-964b-adf7bcf04123",
+        "userName": "ทดสอบวันนัด",
+        "joinedAt": "2026-10-23T07:07:24.600Z",
+        "ticketCode": "Y39SHZ",
+        "checkedInAt": "2026-10-23T07:07:24.615Z"
       }
     ]
   }

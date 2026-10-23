@@ -65,7 +65,7 @@ async function postJson(url: string, body: unknown, method = 'POST') {
 
 export const memberActions = {
   /** Throws Error(message in Thai) on failure */
-  register: async (input: { displayName?: string; email: string; password: string; consent: boolean; ageConfirmed: boolean }) => {
+  register: async (input: { displayName?: string; email: string; password: string; consent: boolean; ageConfirmed: boolean; returnTo?: string }) => {
     const json = await postJson('/api/auth/member/register', input);
     setState({ isLoaded: true, member: json.member });
     // In development (no mailer) the server returns the verification link instead of emailing it
@@ -119,9 +119,12 @@ export const memberActions = {
     setState({ member: json.member });
     return json.member as PublicMember;
   },
-  /** Sends the "confirm your email" link again; resolves with devVerifyUrl when the server has no mailer */
-  sendEmailVerification: async () => {
-    const json = await postJson('/api/auth/member/verify-email', {});
+  /**
+   * Sends the "confirm your email" link again; resolves with devVerifyUrl when the server has no mailer.
+   * `returnTo` is where the "verified" screen sends the member back (e.g. the ตี้ they were joining).
+   */
+  sendEmailVerification: async (returnTo?: string) => {
+    const json = await postJson('/api/auth/member/verify-email', returnTo ? { returnTo } : {});
     return { sent: Boolean(json.sent), alreadyVerified: Boolean(json.alreadyVerified), devVerifyUrl: json.devVerifyUrl as string | undefined };
   },
   confirmEmailVerification: async (token: string) => {

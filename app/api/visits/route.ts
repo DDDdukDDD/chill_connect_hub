@@ -6,7 +6,9 @@ import { isRateLimited } from '@/lib/rateLimit';
 import { VISIT_POINTS, progressOf, rewardsForTargets } from '@/lib/social/questProgress';
 import { monthOf } from '@/lib/social/myMonth';
 import { rewardsOf } from '@/lib/social/rewardsLedger';
-import { type VisitTargetType, isVisitTargetType, markVisit, markedVisitOf, marksOf, socialProofFor, targetKey, unmarkVisit } from '@/lib/social/visits';
+import { type VisitTargetType, isVisitTargetType, markVisit, markedVisitOf, marksOf, reviewsOf, socialProofFor, targetKey, unmarkVisit } from '@/lib/social/visits';
+import { guardPosting } from '@/lib/members/safety';
+import { MemberAuthError } from '@/lib/members/accounts';
 
 const MAX_TARGETS = 40;
 
@@ -18,6 +20,17 @@ const MAX_TARGETS = 40;
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
+
+    // ?reviews=spot:ID or fair:ID → ratings with words from members who have been (public)
+    const reviewsKey = searchParams.get('reviews');
+    if (reviewsKey) {
+      const at = reviewsKey.indexOf(':');
+      const type = reviewsKey.slice(0, at);
+      const id = reviewsKey.slice(at + 1);
+      if ((type !== 'spot' && type !== 'fair') || !id) return NextResponse.json({ success: false, message: 'Invalid target' }, { status: 400 });
+      const viewer = await getSessionMember(request);
+      return NextResponse.json({ success: true, ...(await reviewsOf(type, id, viewer)) }, { headers: { 'Cache-Control': 'no-store' } });
+    }
 
     if (searchParams.get('mine') === '1') {
       const headers = { 'Cache-Control': 'private, no-store' };
@@ -90,7 +103,13 @@ export async function POST(request: Request) {
         rating = Math.round(Number(body.rating));
         if (!(rating >= 1 && rating <= 5)) return NextResponse.json({ success: false, message: 'ให้คะแนน 1 ถึง 5 ดาว' }, { status: 400 });
       }
-      await markVisit(member.id, targetType, targetId, rating);
+      // A short review with the rating; same text rules as a comment
+      let review: string | undefined;
+      if (typeof body.review === 'string') {
+        review = body.review.replace(/s+/g, ' ').trim().slice(0, 300);
+        if (review) await guardPosting(member, 'comment', review);
+      }
+      await markVisit(member.id, targetType, targetId, rating, review);
       await rewardsOf(member.id);
     } else {
       return NextResponse.json({ success: false, message: 'Unknown action' }, { status: 400 });
@@ -106,6 +125,7 @@ export async function POST(request: Request) {
       quests: progress.quests,
     });
   } catch (error) {
+    if (error instanceof MemberAuthError) return NextResponse.json({ success: false, message: error.message }, { status: error.status });
     console.error('Error in /api/visits POST:', error);
     return NextResponse.json({ success: false, message: 'บันทึกไม่สำเร็จ กรุณาลองใหม่' }, { status: 500 });
   }

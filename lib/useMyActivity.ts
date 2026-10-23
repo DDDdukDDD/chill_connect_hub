@@ -12,7 +12,7 @@ import { useMemberSession } from './useMemberSession';
  * (`joined_event_ids`, `favorites`, `favorite_spots`), and hearts toggled there are sent to the account.
  * Pages should move to `useMyActivity()` over time and stop touching localStorage.
  */
-export type ActivityEvent = EventItem & { joinedAt?: string; cancelledAt?: string; isHost?: boolean };
+export type ActivityEvent = EventItem & { joinedAt?: string; cancelledAt?: string; isHost?: boolean; checkedInAt?: string; hasHostCheckIn?: boolean };
 
 interface ActivityState {
   isLoaded: boolean;
@@ -22,9 +22,11 @@ interface ActivityState {
   joinedIds: string[];
   savedSpotIds: string[];
   savedEventIds: string[];
+  /** ตี้ the member already reviewed (one review per ตี้) */
+  reviewedEventIds: string[];
 }
 
-const EMPTY: ActivityState = { isLoaded: false, joined: [], hosted: [], cancelled: [], joinedIds: [], savedSpotIds: [], savedEventIds: [] };
+const EMPTY: ActivityState = { isLoaded: false, joined: [], hosted: [], cancelled: [], joinedIds: [], savedSpotIds: [], savedEventIds: [], reviewedEventIds: [] };
 const MIRROR = { joined: 'joined_event_ids', events: 'favorites', spots: 'favorite_spots' } as const;
 
 // Whose saved lists the browser copy holds. Without it, the lists of the member who used this browser before
@@ -119,12 +121,13 @@ export const activityActions = {
         /* storage unavailable */
       }
     }
-    setState({ isLoaded: true, joined: json.joined ?? [], hosted: json.hosted ?? [], cancelled: json.cancelled ?? [], joinedIds: json.joinedIds ?? [], savedEventIds, savedSpotIds });
+    setState({ isLoaded: true, joined: json.joined ?? [], hosted: json.hosted ?? [], cancelled: json.cancelled ?? [], joinedIds: json.joinedIds ?? [], savedEventIds, savedSpotIds, reviewedEventIds: json.reviewedEventIds ?? [] });
   },
 
   /** Joins an event. `ok` is false with a message to show when the server refuses (full, ended, account not verified, signed out). */
-  join: async (eventId: string): Promise<{ ok: boolean; message: string; status?: string; event?: EventItem }> => {
-    const res = await post({ action: 'join', eventId });
+  /** `date` (YYYY-MM-DD) picks one date of a recurring ตี้; the result's event is that date's own event */
+  join: async (eventId: string, date?: string): Promise<{ ok: boolean; message: string; status?: string; event?: EventItem }> => {
+    const res = await post({ action: 'join', eventId, ...(date ? { date } : {}) });
     if (!res.ok) return { ok: false, message: res.json?.message || (res.status === 401 ? 'กรุณาเข้าสู่ระบบก่อน' : 'เข้าร่วมไม่สำเร็จ ลองอีกครั้งนะ'), status: res.json?.status };
     await activityActions.refresh();
     return { ok: true, message: res.json.message, status: res.json.status, event: res.json.event };

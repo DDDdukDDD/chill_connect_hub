@@ -49,6 +49,7 @@ function toAdminItem(moment: Moment, people: Map<string, Member>, counted: Map<s
     // What the photo is used as evidence for; a challenge with a partner reward needs the photo ('moment' evidence)
     countsToward: (counted.get(moment.id) ?? []).map((q) => ({ questId: q.questId, title: q.title, needsPhoto: q.minEvidence === 'moment' })),
     evidenceRejected: moment.evidenceRejected,
+    evidence: moment.evidence,
     createdAt: moment.createdAt,
     timeAgo: thaiTimeAgo(moment.createdAt),
   };
@@ -75,6 +76,8 @@ export async function GET(request: Request) {
   // The evidence queue: members' moments whose place or event counts toward a running challenge
   const evidence = filter === 'evidence' ? await challengesCountedBy(result.items) : null;
   const items = filter === 'samples' ? result.items.filter((m) => m.isSample) : evidence ? result.items.filter((m) => (evidence.get(m.id) ?? []).length > 0) : result.items;
+  // Photos waiting for review first in the evidence queue
+  if (filter === 'evidence') items.sort((a, b) => Number(b.evidence?.status === 'pending' && !b.evidenceRejected) - Number(a.evidence?.status === 'pending' && !a.evidenceRejected));
   // Reported first in the reported view (most reports on top)
   if (filter === 'reported') items.sort((a, b) => b.reports.length - a.reports.length);
   const pageItems = items.slice((page - 1) * limit, page * limit);
@@ -136,7 +139,8 @@ export async function POST(request: Request) {
       break;
     }
     case 'accept_evidence':
-      await momentRepository.mutate(moment.id, (m) => ({ ...m, evidenceRejected: undefined }));
+      // Passes a photo waiting for review, or counts a rejected one again
+      await momentRepository.mutate(moment.id, (m) => ({ ...m, evidenceRejected: undefined, evidence: m.evidence ? { ...m.evidence, status: m.evidence.status === 'auto' ? 'auto' : 'approved', at: new Date().toISOString() } : undefined }));
       audit('accept_evidence', `กลับมานับโมเมนต์ ${label} เป็นการไป`);
       break;
     case 'hide_comment':

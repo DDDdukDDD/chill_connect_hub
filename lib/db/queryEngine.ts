@@ -100,6 +100,11 @@ export function filterEvents(
       return false;
     }
 
+    // 0b. One date of a recurring ตี้ is reached through its series, not listed on its own
+    if (ev.seriesId) {
+      return false;
+    }
+
     // 1. Ended Events auto-hide unless explicitly requested
     if (!includeEnded && isEventEnded(ev)) {
       return false;

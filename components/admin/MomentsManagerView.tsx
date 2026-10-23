@@ -32,6 +32,7 @@ interface AdminMoment {
   countsToward: Array<{ questId: string; title: string; needsPhoto: boolean }>;
   /** Staff decided the photo is not a visit */
   evidenceRejected?: { at: string; note: string };
+  evidence?: { status: 'auto' | 'pending' | 'approved'; at: string; distanceM?: number; reason?: string };
   timeAgo: string;
 }
 
@@ -57,6 +58,15 @@ const FILTERS: Array<{ id: Filter; label: string; count?: keyof Counts }> = [
   { id: 'published', label: 'แสดงอยู่', count: 'published' },
   { id: 'samples', label: 'ตัวอย่าง', count: 'samples' },
 ];
+
+/** Why a photo waits for review (lib/moments/evidence.ts) */
+const EVIDENCE_REASON: Record<string, string> = {
+  no_location: 'สมาชิกไม่ได้เปิดตำแหน่งตอนโพสต์',
+  no_place_coordinates: 'ที่นี่ยังไม่มีพิกัดในระบบ',
+  stale_location: 'ตำแหน่งเก่าเกิน 10 นาที',
+  imprecise_location: 'ตำแหน่งไม่แม่นพอ',
+  too_far: 'ตำแหน่งตอนโพสต์อยู่ไกลจากที่นั่น',
+};
 
 const TARGET_LABELS: Record<string, string> = { spot: 'พิกัดเที่ยว', community: 'คอมมูนิตี้', fair: 'งานแฟร์', challenge: 'ชาเลนจ์', general: 'ทั่วไป' };
 const statusOf = (moment: AdminMoment): AdminStatus => (moment.status === 'hidden' ? 'rejected' : 'published');
@@ -191,14 +201,29 @@ function MomentDrawer({ moment, canModerate, onClose, onDone }: { moment: AdminM
               <p className="text-xs font-semibold text-rose-700">
                 ไม่นับแล้ว · {moment.evidenceRejected.note} · {new Date(moment.evidenceRejected.at).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}
               </p>
+            ) : moment.evidence?.status === 'pending' ? (
+              <p className="text-xs font-semibold text-amber-800">
+                รอตรวจ · {EVIDENCE_REASON[moment.evidence.reason ?? ''] ?? 'ยังไม่ผ่านการเช็กตำแหน่ง'}
+                {typeof moment.evidence.distanceM === 'number' ? ` · ห่างจากที่นั่น ${moment.evidence.distanceM.toLocaleString()} ม.` : ''}
+              </p>
             ) : (
-              <p className="text-xs text-slate-500">ตอนนี้นับเป็นการไปอยู่</p>
+              <p className="text-xs text-slate-500">
+                ตอนนี้นับเป็นการไปอยู่
+                {moment.evidence?.status === 'auto' ? ` · ผ่านอัตโนมัติ ตำแหน่งตอนโพสต์ห่าง ${moment.evidence.distanceM ?? 0} ม.` : moment.evidence?.status === 'approved' ? ' · ทีมงานตรวจแล้ว' : ''}
+              </p>
             )}
             {canModerate &&
-              (moment.evidenceRejected ? (
-                <button type="button" disabled={Boolean(busy)} onClick={() => act({ action: 'accept_evidence' }, 'กลับมานับโมเมนต์นี้แล้ว', 'accept')} className={adminButton.secondarySm}>
-                  กลับมานับ
-                </button>
+              (moment.evidenceRejected || moment.evidence?.status === 'pending' ? (
+                <span className="flex flex-wrap gap-2">
+                  <button type="button" disabled={Boolean(busy)} onClick={() => act({ action: 'accept_evidence' }, 'นับโมเมนต์นี้เป็นการไปแล้ว', 'accept')} className={adminButton.secondarySm}>
+                    {moment.evidenceRejected ? 'กลับมานับ' : 'ผ่าน นับเป็นการไป'}
+                  </button>
+                  {!moment.evidenceRejected && (
+                    <button type="button" disabled={Boolean(busy) || !note.trim()} onClick={() => act({ action: 'reject_evidence', note }, 'ไม่นับโมเมนต์นี้เป็นการไปแล้ว และแจ้งสมาชิกแล้ว', 'reject')} className={adminButton.dangerSm} title={!note.trim() ? 'ใส่เหตุผลด้านล่างก่อน' : undefined}>
+                      ไม่นับเป็นการไป
+                    </button>
+                  )}
+                </span>
               ) : (
                 <button type="button" disabled={Boolean(busy) || !note.trim()} onClick={() => act({ action: 'reject_evidence', note }, 'ไม่นับโมเมนต์นี้เป็นการไปแล้ว และแจ้งสมาชิกแล้ว', 'reject')} className={adminButton.dangerSm} title={!note.trim() ? 'ใส่เหตุผลด้านล่างก่อน' : undefined}>
                   ไม่นับเป็นการไป
@@ -456,6 +481,7 @@ export function MomentsManagerView() {
                         <span className="inline-flex items-center gap-0.5 rounded-full bg-rose-600 px-1.5 py-0.5 text-[10px] font-bold text-white"><Flag size={10} />{moment.reports.length}</span>
                       )}
                       {moment.evidenceRejected && <span className="rounded-full bg-slate-900 px-1.5 py-0.5 text-[10px] font-bold text-white">ไม่นับ</span>}
+                      {!moment.evidenceRejected && moment.evidence?.status === 'pending' && <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">รอตรวจ</span>}
                     </div>
                     {moment.images.length > 1 && <span className="absolute right-2 top-2 rounded-full bg-black/60 px-1.5 py-0.5 text-[10px] font-bold text-white">{moment.images.length} รูป</span>}
                   </div>
