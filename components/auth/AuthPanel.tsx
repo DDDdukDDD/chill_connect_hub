@@ -4,7 +4,6 @@ import React, { useId, useState } from 'react';
 import { AlertCircle, ArrowLeft, Check, Eye, EyeOff, Loader2, Mail, MailCheck, X } from 'lucide-react';
 import { TermsPrivacyModal } from '@/components/TermsPrivacyModal';
 import { PhraseText } from './PhraseText';
-import { tidyDisplayName } from '@/lib/displayName';
 import { useMemberSession } from '@/lib/useMemberSession';
 import type { OAuthProvider, PublicMember } from '@/lib/members/types';
 
@@ -181,13 +180,11 @@ export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, on
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [isAdult, setIsAdult] = useState(false);
-  const [acceptsTerms, setAcceptsTerms] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const [resetInfo, setResetInfo] = useState<{ minutes: number; devResetUrl?: string } | null>(null);
   const [terms, setTerms] = useState<{ open: boolean; tab: 'terms' | 'privacy' }>({ open: false, tab: 'terms' });
 
-  const consentGiven = isAdult && acceptsTerms;
+  const hasSocial = PROVIDERS.some((p) => session.providers[p.id]);
   const strength = passwordStrength(password);
 
   const go = (next: AuthView) => {
@@ -213,8 +210,8 @@ export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, on
 
   const social = (provider: OAuthProvider) => {
     setBusy(true);
-    // Only the sign-up screen has the age and terms boxes; the server records which screen it was
-    session.loginWith(provider, returnTo, view === 'signup' && consentGiven);
+    // The sign-up screen says under these buttons that signing up confirms age and terms; the server records which screen it was
+    session.loginWith(provider, returnTo, view === 'signup');
   };
 
   const handleLogin = (e: React.FormEvent) => {
@@ -236,10 +233,11 @@ export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, on
   const handleSignup = (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
-    if (name.trim().length < 2 || !isEmail(email) || password.length < MIN_PASSWORD || !consentGiven) return;
+    if (!isEmail(email) || password.length < MIN_PASSWORD || !agreed) return;
     void run(async () => {
       try {
-        const member = await session.register({ displayName: name.trim(), email: email.trim(), password, consent: acceptsTerms, ageConfirmed: isAdult });
+        // No name here: onboarding asks "เพื่อนใหม่ จะเรียกคุณว่าอะไรดี" right after
+        const member = await session.register({ email: email.trim(), password, consent: agreed, ageConfirmed: agreed });
         onAuthenticated(member, { isNew: true });
       } catch (err) {
         if (err instanceof Error && err.message.includes('มีบัญชีอยู่แล้ว')) setEmailExists(true);
@@ -270,10 +268,8 @@ export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, on
   const ids = {
     email: `${uid}-email`,
     password: `${uid}-password`,
-    name: `${uid}-name`,
     pwHelp: `${uid}-pw-help`,
-    adult: `${uid}-adult`,
-    terms: `${uid}-terms`,
+    agree: `${uid}-agree`,
   };
   const emailInvalid = submitted && !isEmail(email);
 
@@ -317,6 +313,51 @@ export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, on
       {question}{' '}
       <button type="button" onClick={() => go(target)} className={linkButton}>{action}</button>
     </p>
+  );
+
+  const signupForm = (
+    <form onSubmit={handleSignup} noValidate className="space-y-4">
+      {emailField}
+      <div className="space-y-1.5">
+        <label htmlFor={ids.password} className="block text-sm font-bold text-slate-800">ตั้งรหัสผ่าน</label>
+        <PasswordInput id={ids.password} value={password} onChange={setPassword} autoComplete="new-password" invalid={submitted && password.length < MIN_PASSWORD} describedBy={ids.pwHelp} />
+        <div className="flex items-center gap-3 pt-1">
+          <div className="grid grid-cols-3 gap-1.5 flex-1" aria-hidden="true">
+            {[1, 2, 3].map((n) => (
+              <div
+                key={n}
+                className={`h-1.5 rounded-full transition-colors ${
+                  strength.level >= n ? (strength.level === 1 ? 'bg-rose-400' : strength.level === 2 ? 'bg-amber-400' : 'bg-emerald-500') : 'bg-slate-200'
+                }`}
+              />
+            ))}
+          </div>
+          <span className="text-xs font-bold text-slate-600 w-16 text-right">{strength.label}</span>
+        </div>
+        <p id={ids.pwHelp} className={`text-xs font-medium ${submitted && password.length < MIN_PASSWORD ? 'text-rose-600 font-bold' : 'text-slate-500'}`}>
+          <PhraseText text={`อย่างน้อย ${MIN_PASSWORD} ตัวอักษร ยาวขึ้น หรือผสมตัวเลขและสัญลักษณ์ จะปลอดภัยกว่า`} />
+        </p>
+      </div>
+      {/* One box for both: the server needs the age and the terms confirmed, the member needs one tick */}
+      <div className="space-y-1.5">
+        <Checkbox id={ids.agree} checked={agreed} onChange={setAgreed}>
+          ฉันอายุ 18 ปีขึ้นไป และยอมรับ{' '}{termsLinks}
+        </Checkbox>
+        {submitted && !agreed && <p className="pl-8 text-xs font-bold text-rose-600">ติ๊กยืนยันข้อนี้ก่อนสร้างบัญชี</p>}
+      </div>
+      <ErrorBox message={error}>
+        {emailExists && (
+          <>
+            {' '}
+            <button type="button" onClick={() => go('login')} className="underline cursor-pointer">ไปหน้าเข้าสู่ระบบ</button>
+          </>
+        )}
+      </ErrorBox>
+      <button type="submit" disabled={busy} className={primaryButton}>
+        {busy && <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />}
+        <span>{busy ? 'กำลังสร้างบัญชี…' : 'สร้างบัญชี'}</span>
+      </button>
+    </form>
   );
 
   return (
@@ -364,21 +405,16 @@ export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, on
 
       {view === 'signup' && (
         <div>
-          {header('สมัครสมาชิก', 'ฟรี ใช้เวลาไม่ถึง 1 นาที แล้วเริ่มหา กิจกรรม เพื่อนใหม่ และที่เที่ยวที่ใช่')}
-          <div className="space-y-3 p-4 rounded-2xl bg-slate-50 border border-slate-200 mb-5">
-            <Checkbox id={ids.adult} checked={isAdult} onChange={setIsAdult}>ฉันอายุ 18 ปีขึ้นไป</Checkbox>
-            <Checkbox id={ids.terms} checked={acceptsTerms} onChange={setAcceptsTerms}>
-              <span className="whitespace-nowrap">ฉันยอมรับ</span>{' '}{termsLinks}
-            </Checkbox>
-          </div>
-          {!consentGiven && <p className="text-xs font-bold text-slate-500 text-center mb-3">ติ๊กทั้ง 2 ข้อด้านบนก่อนสมัคร</p>}
-          <SocialButtons verb="สมัคร" available={session.providers} disabled={busy || !consentGiven} onPick={social} />
+          {header('สมัครสมาชิก', 'เข้าร่วมคอมมูนิตี้ของคนชอบออกไปใช้ชีวิต ฟรี ใช้เวลาไม่ถึง 1 นาที')}
+          <SocialButtons verb="สมัคร" available={session.providers} disabled={busy} onPick={social} />
+          <p className="mt-3 text-center text-xs text-slate-500 font-medium leading-relaxed">
+            <PhraseText text="การสมัครถือว่าคุณอายุ 18 ปีขึ้นไป และยอมรับ" />{' '}{termsLinks}
+          </p>
           <Divider label="หรือ" />
           <button
             type="button"
-            disabled={!consentGiven}
             onClick={() => go('signup-email')}
-            className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white py-3.5 px-6 rounded-full font-bold text-sm sm:text-base shadow-2xs transition-all active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
+            className={primaryButton}
           >
             <Mail className="w-5 h-5" aria-hidden="true" />
             <span>สมัครด้วยอีเมล</span>
@@ -391,64 +427,7 @@ export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, on
       {view === 'signup-email' && (
         <div>
           {header('สมัครด้วยอีเมล', undefined, () => go('signup'))}
-          <form onSubmit={handleSignup} noValidate className="space-y-4">
-            <div className="space-y-1.5">
-              <label htmlFor={ids.name} className="block text-sm font-bold text-slate-800">ชื่อที่แสดง</label>
-              <input
-                id={ids.name}
-                type="text"
-                autoComplete="nickname"
-                maxLength={40}
-                placeholder="เช่น ส้ม หรือ Som S."
-                value={name}
-                onChange={(e) => setName(tidyDisplayName(e.target.value))}
-                aria-invalid={(submitted && name.trim().length < 2) || undefined}
-                className={inputClass}
-              />
-              <p className={`text-xs font-medium ${submitted && name.trim().length < 2 ? 'text-rose-600 font-bold' : 'text-slate-500'}`}>
-                <PhraseText text={submitted && name.trim().length < 2 ? 'ตั้งชื่ออย่างน้อย 2 ตัวอักษร' : 'เพื่อนในกิจกรรมจะเห็นชื่อนี้ เปลี่ยนภายหลังได้'} />
-              </p>
-            </div>
-            {emailField}
-            <div className="space-y-1.5">
-              <label htmlFor={ids.password} className="block text-sm font-bold text-slate-800">ตั้งรหัสผ่าน</label>
-              <PasswordInput id={ids.password} value={password} onChange={setPassword} autoComplete="new-password" invalid={submitted && password.length < MIN_PASSWORD} describedBy={ids.pwHelp} />
-              <div className="flex items-center gap-3 pt-1">
-                <div className="grid grid-cols-3 gap-1.5 flex-1" aria-hidden="true">
-                  {[1, 2, 3].map((n) => (
-                    <div
-                      key={n}
-                      className={`h-1.5 rounded-full transition-colors ${
-                        strength.level >= n ? (strength.level === 1 ? 'bg-rose-400' : strength.level === 2 ? 'bg-amber-400' : 'bg-emerald-500') : 'bg-slate-200'
-                      }`}
-                    />
-                  ))}
-                </div>
-                <span className="text-xs font-bold text-slate-600 w-16 text-right">{strength.label}</span>
-              </div>
-              <p id={ids.pwHelp} className={`text-xs font-medium ${submitted && password.length < MIN_PASSWORD ? 'text-rose-600 font-bold' : 'text-slate-500'}`}>
-                <PhraseText text={`อย่างน้อย ${MIN_PASSWORD} ตัวอักษร ยาวขึ้น หรือผสมตัวเลขและสัญลักษณ์ จะปลอดภัยกว่า`} />
-              </p>
-            </div>
-            <div className="space-y-3 p-4 rounded-2xl bg-slate-50 border border-slate-200">
-              <Checkbox id={ids.adult} checked={isAdult} onChange={setIsAdult}>ฉันอายุ 18 ปีขึ้นไป</Checkbox>
-              <Checkbox id={ids.terms} checked={acceptsTerms} onChange={setAcceptsTerms}>
-                <span className="whitespace-nowrap">ฉันยอมรับ</span>{' '}{termsLinks}
-              </Checkbox>
-            </div>
-            <ErrorBox message={error}>
-              {emailExists && (
-                <>
-                  {' '}
-                  <button type="button" onClick={() => go('login')} className="underline cursor-pointer">ไปหน้าเข้าสู่ระบบ</button>
-                </>
-              )}
-            </ErrorBox>
-            <button type="submit" disabled={busy || !consentGiven} className={primaryButton}>
-              {busy && <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />}
-              <span>{busy ? 'กำลังสร้างบัญชี…' : 'สร้างบัญชี'}</span>
-            </button>
-          </form>
+          {signupForm}
           {switchLine('มีบัญชีอยู่แล้ว?', 'เข้าสู่ระบบ', 'login')}
         </div>
       )}
@@ -464,9 +443,11 @@ export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, on
               <span>{busy ? 'กำลังส่ง…' : 'ส่งลิงก์ตั้งรหัสผ่าน'}</span>
             </button>
           </form>
-          <p className="pt-4 text-center text-xs text-slate-500 font-medium leading-relaxed">
-            <PhraseText text="สมัครด้วย Google, Apple หรือ Facebook? ใช้ปุ่มนั้นเข้าสู่ระบบได้เลย ไม่ต้องใช้รหัสผ่าน" />
-          </p>
+          {hasSocial && (
+            <p className="pt-4 text-center text-xs text-slate-500 font-medium leading-relaxed">
+              <PhraseText text="สมัครด้วย Google, Apple หรือ Facebook? ใช้ปุ่มนั้นเข้าสู่ระบบได้เลย ไม่ต้องใช้รหัสผ่าน" />
+            </p>
+          )}
         </div>
       )}
 

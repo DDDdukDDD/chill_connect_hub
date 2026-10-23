@@ -6,7 +6,7 @@ import { getSessionSecret, isSameOrigin, setMemberSessionCookie } from '@/lib/me
 import { sendVerification } from '../verify-email/send';
 import { clientIp, isRateLimited } from '@/lib/rateLimit';
 
-// { displayName, email, password, consent: true, ageConfirmed: true } → creates the account, signs it in and emails a verification link
+// { email, password, consent: true, ageConfirmed: true, displayName? } (no name → "สมาชิกใหม่" until onboarding) → creates the account, signs it in and emails a verification link
 export async function POST(request: Request) {
   if (!getSessionSecret()) return NextResponse.json({ success: false, message: 'ระบบสมาชิกยังไม่ได้ตั้งค่า (AUTH_SECRET)' }, { status: 503 });
   if (!isSameOrigin(request)) return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });

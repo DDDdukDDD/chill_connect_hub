@@ -65,7 +65,7 @@ async function postJson(url: string, body: unknown, method = 'POST') {
 
 export const memberActions = {
   /** Throws Error(message in Thai) on failure */
-  register: async (input: { displayName: string; email: string; password: string; consent: boolean; ageConfirmed: boolean }) => {
+  register: async (input: { displayName?: string; email: string; password: string; consent: boolean; ageConfirmed: boolean }) => {
     const json = await postJson('/api/auth/member/register', input);
     setState({ isLoaded: true, member: json.member });
     // In development (no mailer) the server returns the verification link instead of emailing it

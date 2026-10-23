@@ -25,6 +25,7 @@ import {
   Search
 } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
+import { AuthModal } from './AuthModal';
 import { BrandLogo } from './BrandLogo';
 import { SiteSearch } from './discover/SiteSearch';
 import { NotificationBell } from './NotificationBell';
@@ -65,6 +66,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const { userProfile, handleSetRole } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [isOwnSignupOpen, setIsOwnSignupOpen] = useState(false);
   // Joined events and saved places come from the account (see lib/useMyActivity.ts)
   useActivitySync();
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -307,7 +309,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </button>
                 <button
                   type="button"
-                  onClick={() => (onOpenSignup ? onOpenSignup() : onOpenLogin ? onOpenLogin() : setIsLoggedIn?.(true))}
+                  onClick={() => (onOpenSignup ? onOpenSignup() : setIsOwnSignupOpen(true))}
                   className="rounded-full bg-[#F26430] hover:bg-[#E2551F] text-white px-3.5 sm:px-5 py-2 text-sm font-semibold transition-all shadow-sm active:scale-95 cursor-pointer shrink-0 whitespace-nowrap"
                 >
                   สมัครฟรี
@@ -433,6 +435,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
       )}
+
+      {/* Pages that do not pass onOpenSignup still get the sign-up screen, not the log-in one */}
+      <AuthModal isOpen={isOwnSignupOpen} onClose={() => setIsOwnSignupOpen(false)} onLoginSuccess={() => setIsLoggedIn?.(true)} initialMode="signup" />
     </>
   );
 };

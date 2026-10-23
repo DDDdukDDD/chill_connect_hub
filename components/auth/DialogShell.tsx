@@ -28,12 +28,14 @@ interface DialogShellProps {
   /** Fixed header/footer with a scrolling middle (long text). Children then manage their own padding. */
   bare?: boolean;
   showClose?: boolean;
+  /** 'top' keeps the heading in one place when the content changes height (multi-step dialogs such as sign-up) */
+  align?: 'center' | 'top';
 }
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select, textarea, summary, [tabindex]:not([tabindex="-1"])';
 const SIZES = { sm: 'max-w-[420px]', md: 'max-w-[520px]', lg: 'max-w-[680px]' };
 
-export function DialogShell({ onClose, children, title, subtitle, labelledBy, size = 'md', layer = 'base', bare = false, showClose = true }: DialogShellProps) {
+export function DialogShell({ onClose, children, title, subtitle, labelledBy, size = 'md', layer = 'base', bare = false, showClose = true, align = 'center' }: DialogShellProps) {
   const ownTitleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
@@ -84,7 +86,7 @@ export function DialogShell({ onClose, children, title, subtitle, labelledBy, si
   if (typeof document === 'undefined') return null;
 
   return createPortal(
-    <div className={`fixed inset-0 flex items-center justify-center p-4 sm:p-6 bg-black/65 backdrop-blur-xs ${layer === 'top' ? 'z-[100010]' : 'z-[100002]'}`}>
+    <div className={`fixed inset-0 flex justify-center p-4 sm:p-6 bg-black/65 ${align === 'top' ? 'items-start pt-[4vh] sm:pt-[8vh]' : 'items-center'} backdrop-blur-xs ${layer === 'top' ? 'z-[100010]' : 'z-[100002]'}`}>
       <div
         ref={panelRef}
         data-dialog-shell

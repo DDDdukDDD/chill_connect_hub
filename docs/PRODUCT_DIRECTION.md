@@ -10,6 +10,13 @@ Agreed with the project owner on 2026-10-16. Read this before deciding what a pa
 | Core | Places, meetups and fairs as three equal pillars | **Meetups + challenges + moments** |
 | Places and fairs | Pillars | **Support**: the places a challenge sends people to, and where meetups gather |
 
+## Positioning (owner, 2026-10-22)
+
+**"โซเชียลแพลตฟอร์มของคนชอบออกไปใช้ชีวิต ที่ทำให้ทุกการออกไปมีความหมาย"** (a social platform for people who love going out, where every outing counts).
+
+- **Three main pillars: ตี้ + ชาเลนจ์ + โมเมนต์.** ตี้ and ชาเลนจ์ drive people out; โมเมนต์ is what makes it a social platform at all (people see each other, what they did, and want to go too). None of the three is optional.
+- **Support: งานแฟร์ and สถานที่เที่ยว**, the places the pillars lead to.
+
 ## The core loop
 
 Each part answers one question, and each feeds the next:

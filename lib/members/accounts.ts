@@ -1,6 +1,6 @@
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { burnPasswordCheck, hashPassword, verifyPasswordHash } from '../passwordHash';
-import { tidyDisplayName } from '../displayName';
+import { NEW_MEMBER_NAME, tidyDisplayName } from '../displayName';
 import { memberRepository } from './index';
 import { MIN_MEMBER_AGE, cleanPreferences, newConsent } from './preferences';
 import { refreshMemberStatus } from './session';
@@ -36,10 +36,11 @@ async function markLogin(member: Member, method: LoginMethod): Promise<Member> {
   return memberRepository.update(member.id, { lastLoginAt: new Date().toISOString(), lastLoginMethod: method });
 }
 
-export async function registerWithEmail(input: { displayName: unknown; email: unknown; password: unknown; consent: unknown; ageConfirmed?: unknown }): Promise<Member> {
+export async function registerWithEmail(input: { displayName?: unknown; email: unknown; password: unknown; consent: unknown; ageConfirmed?: unknown }): Promise<Member> {
   if (input.consent !== true) throw new MemberAuthError('กรุณายอมรับข้อกำหนดการใช้งานและนโยบายความเป็นส่วนตัว');
   if (input.ageConfirmed !== true) throw new MemberAuthError(`กรุณายืนยันว่าคุณอายุ ${MIN_MEMBER_AGE} ปีขึ้นไป`);
-  const displayName = cleanDisplayName(input.displayName);
+  // The sign-up form no longer asks for a name: onboarding does. Never fall back to the email, which would show it to others
+  const displayName = input.displayName === undefined || input.displayName === '' ? NEW_MEMBER_NAME : cleanDisplayName(input.displayName);
   const email = typeof input.email === 'string' ? normalizeEmail(input.email) : '';
   if (!isEmail(email)) throw new MemberAuthError('อีเมลไม่ถูกต้อง');
   if (typeof input.password !== 'string' || input.password.length < MIN_MEMBER_PASSWORD) {

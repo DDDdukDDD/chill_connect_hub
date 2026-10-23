@@ -27,9 +27,9 @@ export type Journey =
   | { step: 'go-challenge'; quest: ChallengeQuest; progress: QuestProgress }
   | { step: 'share'; event?: EventItem; quest?: ChallengeQuest };
 
-// Onboarding goals (app/onboarding/OnboardingFlow.tsx) that lean to doing things on your own
-const CHILL_GOALS = ['explore_spots', 'heal_self', 'earn_xp'];
-const CONNECT_GOALS = ['find_friends', 'join_community', 'explore_fairs'];
+// Onboarding goals (app/onboarding/OnboardingFlow.tsx): "ทำชาเลนจ์สนุกๆ" asks for a challenge first; the meetup goals for a ตี้
+const CHALLENGE_GOALS = ['earn_xp'];
+const MEETUP_GOALS = ['find_friends', 'join_community'];
 /** A ตี้ that ended this long ago still asks for its moment */
 const SHARE_WINDOW_MS = 14 * DAY_MS;
 
@@ -103,11 +103,11 @@ export function useJourney({ memberId, now, mine, questProgress, allQuests, isLo
   return { journey: isReady ? journey : null, isReady, skip, markPosted };
 }
 
-/** The tab shown first at step ①: a challenge when the onboarding goals lean to Chill, else a ตี้ */
+/** The tab shown first at step ①: a challenge when the member chose challenges and no meetup goal, else a ตี้ */
 export function flavourFromGoals(goals: string[]): Flavour {
-  const chill = goals.filter((g) => CHILL_GOALS.includes(g)).length;
-  const connect = goals.filter((g) => CONNECT_GOALS.includes(g)).length;
-  return chill > connect ? 'challenge' : 'meetup';
+  const challenge = goals.some((g) => CHALLENGE_GOALS.includes(g));
+  const meetup = goals.some((g) => MEETUP_GOALS.includes(g));
+  return challenge && !meetup ? 'challenge' : 'meetup';
 }
 
 const ACCENT: Record<Flavour, { bar: string; text: string }> = {
