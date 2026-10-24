@@ -15,118 +15,128 @@ export type DetailPillar = keyof typeof PILLAR_STYLE;
 
 export interface DetailFact {
   icon: LucideIcon;
-  /** The line people decide on ("เสาร์ 25 ต.ค. 2569") */
-  title: React.ReactNode;
-  /** The detail under it ("17:30 – 19:00 น.") */
-  sub?: React.ReactNode;
+  /** One short fact, said once on the page ("เสาร์ 25 ต.ค. 2569 · 17:30 – 19:00 น.") */
+  text: React.ReactNode;
 }
 
 interface DetailHeroProps {
   pillar: Exclude<DetailPillar, 'moment'>;
   image: string;
   imageAlt: string;
-  /** More than one photo shows "ดูรูปทั้งหมด (n)" on the photo */
+  /** More than one photo shows "รูปทั้งหมด (n)" on the photo */
   photoCount?: number;
   onOpenPhotos?: () => void;
-  /** A sticker on the photo's corner, e.g. "+300 XP" on a challenge */
-  photoBadge?: React.ReactNode;
-  chips?: React.ReactNode;
+  /** One quiet grey line above the title: the category and who runs it */
+  kicker?: React.ReactNode;
   title: string;
   subtitle?: React.ReactNode;
   facts: DetailFact[];
   /** The one main action (blue) and its quiet neighbours */
   actions: React.ReactNode;
-  /** One short line under the actions ("ฟรี · ยกเลิกได้ก่อน 24 ชม.") */
+  /** One short line under the actions ("ยกเลิกได้ก่อนเริ่ม 24 ชม.") */
   note?: React.ReactNode;
 }
 
+const STICKER = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 border border-slate-200 shadow-2xs text-[11px] sm:text-xs font-bold text-slate-800';
+
 /**
- * The top of every detail page (ตี้, งานแฟร์, ที่เที่ยว, ชาเลนจ์): the photo on the left and, beside it, everything
- * needed to decide (what, when, where, how much) with the one main action. Server-renderable, so the title and
- * facts are in the HTML that search engines and AI crawlers read.
+ * The top of the ตี้, งานแฟร์ and ที่เที่ยว pages, drawn like the challenge page's (owner 2026-10-24: clean and simple):
+ * the photo with one small label, then a grey line, the title, one row of grey facts and the main action.
+ * Every fact is said here once; the rest of the page does not repeat it. Server-renderable, so the title and facts
+ * are in the HTML that search engines and AI crawlers read.
  */
-export function DetailHero({ pillar, image, imageAlt, photoCount = 1, onOpenPhotos, photoBadge, chips, title, subtitle, facts, actions, note }: DetailHeroProps) {
+export function DetailHero({ pillar, image, imageAlt, photoCount = 1, onOpenPhotos, kicker, title, subtitle, facts, actions, note }: DetailHeroProps) {
   const style = PILLAR_STYLE[pillar];
   return (
-    <section className="grid md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-5 md:gap-10 items-center">
-      <figure className="relative m-0">
+    <section className="mt-2 grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:gap-10 lg:items-center">
+      <figure className="relative m-0 aspect-[16/10] rounded-3xl overflow-hidden bg-slate-100">
         {/* eslint-disable-next-line @next/next/no-img-element -- content images come from many hosts */}
         <img
           src={image}
           alt={imageAlt}
-          className={`block w-full aspect-[4/3] object-cover rounded-3xl bg-slate-100 ${onOpenPhotos ? 'cursor-zoom-in' : ''}`}
+          className={`w-full h-full object-cover ${onOpenPhotos ? 'cursor-zoom-in' : ''}`}
           onClick={onOpenPhotos}
           fetchPriority="high"
         />
-        <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs sm:text-[13px] font-semibold text-slate-900">
-          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: style.color }} aria-hidden="true" />
+        <span className={`absolute top-3 left-3 ${STICKER}`}>
+          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: style.color }} aria-hidden="true" />
           {style.name}
         </span>
-        {photoBadge && <span className="absolute right-3 bottom-3">{photoBadge}</span>}
-        {!photoBadge && onOpenPhotos && photoCount > 1 && (
-          <button
-            type="button"
-            onClick={onOpenPhotos}
-            className="absolute right-3 bottom-3 inline-flex items-center gap-1.5 rounded-full bg-slate-900/85 px-3.5 py-2 text-xs sm:text-[13px] font-semibold text-white cursor-pointer"
-          >
+        {onOpenPhotos && photoCount > 1 && (
+          <button type="button" onClick={onOpenPhotos} className={`absolute right-3 bottom-3 ${STICKER} cursor-pointer hover:bg-white`}>
             <Camera className="w-3.5 h-3.5" aria-hidden="true" />
-            ดูรูปทั้งหมด ({photoCount})
+            รูปทั้งหมด {photoCount}
           </button>
         )}
       </figure>
 
-      <div className="flex flex-col gap-4">
-        {chips && <div className="flex flex-wrap gap-2">{chips}</div>}
-        <h1 className="text-2xl sm:text-3xl lg:text-[34px] lg:leading-[1.3] font-bold text-slate-900 tracking-tight break-words">{title}</h1>
-        {subtitle && <p className="text-[15px] sm:text-base text-slate-600 leading-relaxed">{subtitle}</p>}
+      <div className="space-y-4 min-w-0">
+        {kicker && <p className="text-xs sm:text-sm font-semibold text-slate-500">{kicker}</p>}
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 leading-tight tracking-tight break-words">{title}</h1>
+        {subtitle && <p className="text-sm font-medium text-slate-600 leading-relaxed max-w-prose">{subtitle}</p>}
         {facts.length > 0 && (
-          <ul className="flex flex-col gap-3 text-sm sm:text-[15px]">
+          <ul className="flex flex-wrap gap-x-5 gap-y-2">
             {facts.map((fact, i) => {
               const Icon = fact.icon;
               return (
-                <li key={i} className="flex items-start gap-3">
-                  <Icon className="w-5 h-5 shrink-0 mt-0.5" style={{ color: style.color }} aria-hidden="true" />
-                  <div className="min-w-0 flex-1">
-                    <div className="font-semibold text-slate-900">{fact.title}</div>
-                    {fact.sub && <div className="text-[13px] sm:text-sm text-slate-500">{fact.sub}</div>}
-                  </div>
+                <li key={i} className="inline-flex items-start gap-1.5 text-xs sm:text-sm font-bold text-slate-700 min-w-0">
+                  <Icon className="w-4 h-4 mt-0.5 shrink-0 text-slate-500" aria-hidden="true" />
+                  <span className="min-w-0 tabular-nums">{fact.text}</span>
                 </li>
               );
             })}
           </ul>
         )}
-        <div className="flex flex-wrap items-center gap-2.5">{actions}</div>
-        {note && <p className="-mt-1 text-[13px] text-slate-500">{note}</p>}
+        <div className="flex flex-wrap items-center gap-2 pt-1">{actions}</div>
+        {note && <p className="-mt-1 text-xs sm:text-[13px] font-medium text-slate-500">{note}</p>}
       </div>
     </section>
   );
 }
 
-/** A tinted chip in the pillar's colours (category name) */
-export function PillarChip({ pillar, children }: { pillar: DetailPillar; children: React.ReactNode }) {
-  const style = PILLAR_STYLE[pillar];
+/** The blue main action and its quiet neighbours share one height (as on the challenge page) */
+export const heroButton = {
+  primary: 'inline-flex items-center justify-center gap-2 h-12 px-7 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[15px] sm:text-base font-bold cursor-pointer whitespace-nowrap transition-colors disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed',
+  done: 'inline-flex items-center justify-center gap-2 h-12 px-6 rounded-full border-[1.5px] border-[#2563EB] bg-white text-[#1D4ED8] text-[15px] sm:text-base font-bold cursor-pointer whitespace-nowrap',
+  /** Share, chat, cancel: grey, never competing with the blue one */
+  quiet: 'inline-flex items-center justify-center gap-2 h-12 px-5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-[15px] sm:text-base font-bold cursor-pointer whitespace-nowrap transition-colors',
+  icon: 'inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer transition-colors',
+};
+
+/** The host's schedule ("กำหนดการ" in the ตั้งตี้ / งานแฟร์ form), times down the left; nothing when there is none */
+export function ItineraryList({ items }: { items?: { time: string; title: string }[] }) {
+  const rows = (items ?? []).filter((row) => row.title?.trim());
+  if (rows.length === 0) return null;
   return (
-    <span className="text-xs font-semibold px-3 py-1 rounded-full border" style={{ backgroundColor: style.tint, color: style.dark, borderColor: `${style.color}55` }}>
-      {children}
-    </span>
+    <section className="space-y-3">
+      <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">กำหนดการ</h2>
+      <ol className="space-y-3">
+        {rows.map((row, i) => (
+          <li key={i} className="grid grid-cols-[4rem_1fr] gap-3 items-baseline">
+            <span className="text-sm font-bold text-slate-900 tabular-nums">{row.time || '–'}</span>
+            <span className="text-sm font-medium text-slate-700 leading-relaxed">{row.title}</span>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }
 
-/** A status chip: open (green), soon (pillar tint), closed or ended (grey) */
-export function StatusChip({ tone, children }: { tone: 'open' | 'warn' | 'muted' | 'live'; children: React.ReactNode }) {
-  const cls = {
-    open: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-    warn: 'bg-amber-50 text-amber-900 border-amber-200',
-    muted: 'bg-slate-100 text-slate-700 border-slate-200',
-    live: 'bg-rose-50 text-rose-700 border-rose-200',
-  }[tone];
-  return <span className={`text-xs font-semibold px-3 py-1 rounded-full border ${cls}`}>{children}</span>;
+/** A grey key / value table for the rules and details below the header, like the challenge page's กติกาและเงื่อนไข */
+export function DetailTable({ title, rows }: { title: string; rows: { label: string; value: React.ReactNode }[] }) {
+  const shown = rows.filter((row) => row.value !== undefined && row.value !== null && row.value !== '' && row.value !== false);
+  if (shown.length === 0) return null;
+  return (
+    <section className="space-y-3">
+      <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">{title}</h2>
+      <dl className="divide-y divide-slate-200 border-y border-slate-200">
+        {shown.map((row) => (
+          <div key={row.label} className="grid grid-cols-[7rem_1fr] sm:grid-cols-[10rem_1fr] gap-3 py-3">
+            <dt className="text-xs sm:text-sm font-medium text-slate-500">{row.label}</dt>
+            <dd className="text-sm font-medium text-slate-800 leading-relaxed">{row.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
 }
-
-/** The blue main action and its quiet neighbours share one height */
-export const heroButton = {
-  primary: 'inline-flex items-center justify-center gap-2 h-12 px-7 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[15px] sm:text-base font-semibold cursor-pointer transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed',
-  done: 'inline-flex items-center justify-center gap-2 h-12 px-6 rounded-full border-[1.5px] border-[#2563EB] bg-white text-[#1D4ED8] text-[15px] sm:text-base font-semibold cursor-pointer',
-  secondary: 'inline-flex items-center justify-center gap-2 h-12 px-5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-900 text-[15px] font-semibold cursor-pointer transition-colors',
-  icon: 'inline-flex items-center justify-center w-12 h-12 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 cursor-pointer transition-colors',
-};

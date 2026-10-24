@@ -28,8 +28,7 @@ import { SmartSpotPlanCard } from '@/components/SmartSpotPlanCard';
 import { SpotBuddyTrips } from '@/components/SpotBuddyTrips';
 import { VisitPanel } from '@/components/VisitPanel';
 import { NearbyDiningSection } from '@/components/NearbyDiningSection';
-import { DetailHero, PillarChip, StatusChip, heroButton } from '@/components/detail/DetailHero';
-import { PillarLinks } from '@/components/detail/PillarLinks';
+import { DetailHero, DetailTable, heroButton } from '@/components/detail/DetailHero';
 import { VisitReviews } from '@/components/detail/VisitReviews';
 import {
   MapPin,
@@ -434,76 +433,13 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
         onOpenCreateEvent={() => setIsCreateEventModalOpen(true)}
       />
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 pt-1.5 pb-28 sm:pt-2 sm:pb-12 space-y-3 sm:space-y-4">
-        
+      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-28 lg:pb-16">
+        <Link href="/spots" className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
+          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+          ที่เที่ยวทั้งหมด
+        </Link>
 
-        {/* =========================================================================
-            TOP BREADCRUMBS & ACTION BAR
-           ========================================================================= */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1.5 border-b border-slate-100">
-          
-          {/* Left: Clean Breadcrumbs */}
-          <nav className="text-xs text-slate-500 font-medium overflow-x-auto whitespace-nowrap scrollbar-none flex items-center gap-1.5 py-1 min-w-0">
-            <Link href="/" className="hover:text-[#4A7C59] transition-colors font-semibold py-1 px-1">หน้าแรก</Link>
-            <span>/</span>
-            <Link href="/spots" className="hover:text-[#4A7C59] transition-colors py-1 px-1 font-semibold">พิกัดเที่ยว & จุดฮีลใจ</Link>
-            <span>/</span>
-            <span className="text-slate-700 font-semibold py-1 px-1">{spot.province}</span>
-            <span>/</span>
-            <span className="text-slate-900 font-bold truncate max-w-[180px] sm:max-w-[280px] py-1 px-1">{cleanText(spot.title)}</span>
-          </nav>
-
-          {/* Right: Favorite & Share Buttons */}
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={() => toggleFavorite(spot.id)}
-              className={`inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-2xs border cursor-pointer active:scale-95 ${
-                isFavorite
-                  ? 'bg-[#EBF3ED] text-[#2D5A3C] border-[#C5DEC9]'
-                  : 'bg-white text-slate-700 border-slate-200 hover:bg-emerald-50 hover:text-[#4A7C59]'
-              }`}
-            >
-              <BookMarked className={`w-3.5 h-3.5 ${isFavorite ? 'text-[#2D5A3C]' : 'text-slate-500'}`} />
-              <span className="hidden sm:inline">{isFavorite ? 'บันทึกในสมุดแล้ว' : 'บันทึกในสมุด'}</span>
-              <span className="sm:hidden">{isFavorite ? 'บันทึกแล้ว' : 'บันทึก'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleShare}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-[#F4F8F5] text-slate-700 hover:text-[#2D5A3C] text-xs font-bold transition-all shadow-2xs border border-slate-200 hover:border-[#C5DEC9] cursor-pointer active:scale-95"
-            >
-              {isCopied ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="text-emerald-600 font-bold">คัดลอกลิงก์แล้ว!</span>
-                </>
-              ) : (
-                <>
-                  <Share2 className="w-3.5 h-3.5 text-slate-500" />
-                  <span>แชร์สถานที่</span>
-                </>
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setIsReportModalOpen(true)}
-              className="w-8 h-8 rounded-xl border border-slate-200 hover:border-rose-300 text-slate-400 hover:text-rose-600 flex items-center justify-center transition-colors cursor-pointer active:scale-95"
-              title="รายงานข้อมูลสถานที่ปิด / พิกัดไม่ถูกต้อง"
-            >
-              <Flag className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-        </div>
-
-        {/* =========================================================================
-            HEADER: photo left, what is needed to decide and the one main action right (shared with
-            meetups, fairs and challenges: components/detail/DetailHero.tsx)
-           ========================================================================= */}
+        {/* Header, drawn like the challenge page (components/detail/DetailHero.tsx): every fact here once */}
         <DetailHero
           pillar="spot"
           image={galleryImages[0] || resolveSpotImage(spot)}
@@ -513,26 +449,13 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
             setActivePhotoIndex(0);
             setIsLightboxOpen(true);
           }}
-          chips={
-            <>
-              <PillarChip pillar="spot">{spot.categoryLabel}</PillarChip>
-              <StatusChip tone={openStatus.badgeVariant === 'open' ? 'open' : openStatus.badgeVariant === 'closed' ? 'live' : 'muted'}>{openStatus.statusText}</StatusChip>
-              {spot.rating > 0 && (
-                <StatusChip tone="muted">
-                  ★ {spot.rating}
-                  {spot.reviewsCount > 0 ? ` (${spot.reviewsCount} รีวิว)` : ''}
-                </StatusChip>
-              )}
-              {(spot.vibeTags ?? []).filter((vibe) => cleanText(vibe) !== cleanText(spot.categoryLabel)).slice(0, 2).map((vibe) => (
-                <StatusChip key={vibe} tone="muted">{cleanText(vibe)}</StatusChip>
-              ))}
-            </>
-          }
+          kicker={[cleanText(spot.categoryLabel), openStatus.statusText].filter(Boolean).join(' · ')}
           title={cleanText(spot.title)}
           facts={[
-            { icon: Clock, title: cleanText(spot.openHours) || 'เปิดทุกวัน', sub: openStatus.subText || (spot.bestTime ? `ช่วงที่ดีที่สุด: ${cleanText(spot.bestTime)}` : undefined) },
-            { icon: MapPin, title: [spot.district, spot.province ? `จังหวัด${spot.province}` : ''].filter(Boolean).join(', ') },
-            { icon: Ticket, title: cleanText(spot.price) || 'เข้าฟรี' },
+            { icon: Clock, text: cleanText(spot.openHours) || 'เปิดทุกวัน' },
+            { icon: MapPin, text: [spot.district, spot.province ? `จังหวัด${spot.province}` : ''].filter(Boolean).join(', ') },
+            { icon: Ticket, text: cleanText(spot.price) || 'เข้าฟรี' },
+            ...(spot.rating > 0 ? [{ icon: Star, text: `${spot.rating}${spot.reviewsCount > 0 ? ` (${spot.reviewsCount} รีวิว)` : ''}` }] : []),
           ]}
           actions={
             <>
@@ -549,253 +472,62 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([spot.title, spot.district, spot.province].filter(Boolean).join(' '))}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={heroButton.secondary}
+                className={heroButton.quiet}
               >
-                <Navigation className="w-5 h-5" aria-hidden="true" />
+                <Navigation className="w-4 h-4" aria-hidden="true" />
                 นำทาง
               </a>
+              <button type="button" onClick={handleShare} className={heroButton.quiet}>
+                {isCopied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Share2 className="w-4 h-4" aria-hidden="true" />}
+                {isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'}
+              </button>
             </>
           }
           note={!isFavorite ? 'บันทึกลงสมุดท่องเที่ยว ไว้วางแผนไปทีหลัง' : undefined}
         />
 
-        {/* The challenge this counts toward and the moments people shared here */}
-        <PillarLinks target={{ type: 'spot', id: spot.id, title: cleanText(spot.title) }} />
-
-        {/* =========================================================================
-            CORE CONTENT: 2-COLUMN EDITORIAL LAYOUT (Clean Editorial Flow)
-           ========================================================================= */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-10 items-start pt-3">
-          
-          {/* LEFT COLUMN: PRIMARY DETAILS (2 Cols - Editorial Focus) */}
-          <div className="lg:col-span-2 space-y-7">
-            
-            {/* About / Story Section (Clean Editorial Paragraphs & Rich Content) */}
-            <div className="space-y-3 pt-1">
-              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
-                เกี่ยวกับสถานที่นี้
-              </h2>
-              {renderDescriptionContent(spot.description)}
-            </div>
-
-            {/* 4. Highlights Section (Clean Minimal Bullets) */}
-            {spot.highlights && spot.highlights.length > 0 && (
-              <div className="space-y-3.5 pt-5 border-t border-slate-100">
-                <h2 className="text-lg font-bold text-slate-900 tracking-tight">
-                  จุดเด่น & ไฮไลต์ที่ไม่ควรพลาด
-                </h2>
-                <ul className="space-y-3 pt-1">
-                  {spot.highlights.map((h, idx) => (
-                    <li
-                      key={idx}
-                      className="flex items-start gap-3 text-xs sm:text-sm text-slate-800 leading-relaxed font-medium"
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-slate-800 shrink-0 mt-2" />
-                      <span className="flex-1">{cleanText(h)}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* 5. Transit & Facilities Section (2-Column Structured Rhythm) */}
-            {(publicTransitText || parkingText || (spot.facilities && spot.facilities.length > 0)) && (
-            <div className="space-y-4 pt-5 border-t border-slate-100">
-              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
-                การเดินทาง & สิ่งอำนวยความสะดวก
-              </h2>
-
-              {(publicTransitText || parkingText) && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-1">
-                {/* 1. Public Transit */}
-                <div className="space-y-1">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-                    รถสาธารณะ & รถไฟฟ้า
-                  </span>
-                  <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
-                    {cleanText(publicTransitText)}
-                  </p>
-                </div>
-
-                {/* 2. Private Car & Parking */}
-                <div className="space-y-1">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-                    รถยนต์ส่วนตัว & ที่จอดรถ
-                  </span>
-                  <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
-                    {cleanText(parkingText)}
-                  </p>
-                </div>
-              </div>
-              )}
-
-              {/* Facilities tags */}
-              {spot.facilities && spot.facilities.length > 0 && (
-                <div className="space-y-2 pt-2">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-                    สิ่งอำนวยความสะดวก
-                  </span>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {spot.facilities.map((fac, idx) => (
-                      <span
-                        key={idx}
-                        className="text-xs font-semibold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-xl"
-                      >
-                        {cleanText(fac)}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-            )}
-
-            {/* 6. Interactive Google Map */}
-            <div className="space-y-3.5 pt-5 border-t border-slate-100">
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="text-lg font-bold text-slate-900 tracking-tight">
-                  พิกัดแผนที่ & เส้นทาง
-                </h3>
-
-                <a
-                  href={spot.googleMapsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs font-bold text-[#4A7C59] hover:underline shrink-0"
-                >
-                  <span>เปิดดูใน Google Maps</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-              </div>
-
-              <div className="relative w-full h-60 sm:h-72 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-2xs">
-                <iframe
-                  title={`Google Map - ${cleanText(spot.title)}`}
-                  src={`https://maps.google.com/maps?q=${spot.latitude},${spot.longitude}&hl=th&z=15&output=embed`}
-                  className="w-full h-full border-0"
-                  loading="lazy"
-                  allowFullScreen
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
-              </div>
-            </div>
-
-            {/* Ratings and tips from people who have been (the "จบ" phase of a place) */}
-            <div className="pt-5 border-t border-slate-100">
-              <VisitReviews targetType="spot" targetId={spot.id} isLoggedIn={isLoggedIn} />
-            </div>
-
-            {/* 7. Nearby Popular Cafes & Restaurants (Fills blank space with high-value dining) */}
-            <NearbyDiningSection spot={spot} />
-
-          </div>
-
-          {/* RIGHT COLUMN: STICKY PLACE SUMMARY & DIRECTIONS CARD (1 Col) */}
-          <div className="lg:col-span-1 space-y-4 lg:sticky lg:top-24">
-            
-            {/* Quick Info Action Box */}
-            <div className={`p-5 sm:p-6 rounded-3xl transition-all space-y-4 ${
-              isFavorite
-                ? 'bg-gradient-to-b from-[#EBF3ED]/40 via-white to-white border-2 border-[#4A7C59] shadow-md ring-2 ring-[#4A7C59]/25'
-                : 'bg-white border border-slate-200/90 shadow-sm'
-            }`}>
-              
-              {/* Spot Specs Summary */}
-              <div className="space-y-3 text-xs">
-                {spot.bestTime && (
-                  <div className="flex items-start gap-2.5">
-                    <Sparkles className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="text-slate-400 text-[10px] block font-bold">ช่วงเวลาแนะนำ</span>
-                      <span className="font-bold text-slate-900">{cleanText(spot.bestTime)}</span>
-                    </div>
-                  </div>
-                )}
-
+        {/* Like the challenge page: the story, the details as a plain table and the map on the left; on the right
+            how to reach the place, then moments and the challenge it counts toward, going together and a day plan */}
+        <div className="mt-10 sm:mt-14 grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:gap-10 lg:items-start">
+          <aside className="lg:order-2 space-y-6">
+            {(spot.contact?.phone || spot.contact?.website || spot.contact?.facebook || (spot.sourceName && spot.sourceUrl)) && (
+              <section className="p-5 sm:p-6 rounded-3xl bg-[#EBF3ED] border border-slate-200 space-y-3">
+                <h2 className="text-sm sm:text-base font-bold text-slate-900">ติดต่อที่นี่</h2>
                 {spot.contact?.phone && (
-                  <div className="flex items-start gap-2.5">
-                    <Phone className="w-4 h-4 text-[#4A7C59] shrink-0 mt-0.5" />
-                    <div>
-                      <span className="text-slate-400 text-[11px] block font-semibold">โทรศัพท์</span>
-                      <a href={`tel:${spot.contact.phone.split(',')[0].replace(/[^\d+]/g, '')}`} className="font-bold text-slate-900 hover:underline">
-                        {spot.contact.phone}
-                      </a>
-                    </div>
-                  </div>
+                  <p className="flex items-center gap-2 text-sm font-medium text-slate-800">
+                    <Phone className="w-4 h-4 text-slate-500 shrink-0" aria-hidden="true" />
+                    <a href={`tel:${spot.contact.phone.split(',')[0].replace(/[^\d+]/g, '')}`} className="hover:underline">{spot.contact.phone}</a>
+                  </p>
                 )}
-
                 {(spot.contact?.website || spot.contact?.facebook) && (
-                  <div className="flex items-start gap-2.5">
-                    <Globe className="w-4 h-4 text-[#4A7C59] shrink-0 mt-0.5" />
-                    <div className="min-w-0">
-                      <span className="text-slate-400 text-[11px] block font-semibold">ช่องทางติดต่อ</span>
-                      <div className="flex flex-wrap gap-x-3 gap-y-1">
-                        {spot.contact?.website && (
-                          <a href={spot.contact.website} target="_blank" rel="noopener noreferrer" className="font-bold text-slate-900 hover:underline">เว็บไซต์</a>
-                        )}
-                        {spot.contact?.facebook && (
-                          <a href={spot.contact.facebook} target="_blank" rel="noopener noreferrer" className="font-bold text-slate-900 hover:underline">Facebook</a>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                  <p className="flex items-center gap-2 text-sm font-semibold">
+                    <Globe className="w-4 h-4 text-slate-500 shrink-0" aria-hidden="true" />
+                    {spot.contact?.website && (
+                      <a href={spot.contact.website} target="_blank" rel="noopener noreferrer" className="text-[#2563EB] hover:text-[#1D4ED8] hover:underline">เว็บไซต์</a>
+                    )}
+                    {spot.contact?.website && spot.contact?.facebook && <span className="text-slate-300" aria-hidden="true">·</span>}
+                    {spot.contact?.facebook && (
+                      <a href={spot.contact.facebook} target="_blank" rel="noopener noreferrer" className="text-[#2563EB] hover:text-[#1D4ED8] hover:underline">Facebook</a>
+                    )}
+                  </p>
                 )}
-              </div>
-
-              {spot.sourceName && spot.sourceUrl && (
-                <p className="text-[11px] font-semibold text-slate-400">
-                  ข้อมูล:{' '}
-                  <a href={spot.sourceUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                    {spot.sourceName.replace(/\s*\(.*\)\s*$/, '')}
-                  </a>
-                </p>
-              )}
-
-              {/* Centralized Two-Tier Button System */}
-              <div className="space-y-2 pt-1">
-                {/* 1. Personal Scrapbook Save */}
-                <button
-                  type="button"
-                  onClick={() => toggleFavorite(spot.id)}
-                  className={`group w-full py-3 px-4 rounded-2xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 border ${
-                    isFavorite
-                      ? 'bg-[#EBF3ED] text-[#2D5A3C] border-[#C5DEC9] hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 shadow-2xs'
-                      : 'bg-[#2563EB] hover:bg-[#1D4ED8] text-white border-transparent shadow-2xs'
-                  }`}
-                >
-                  {isFavorite ? (
-                    <>
-                      <span className="flex items-center gap-2 group-hover:hidden">
-                        <Check className="w-4 h-4 text-[#2D5A3C]" />
-                        <span>บันทึกในสมุดท่องเที่ยวแล้ว</span>
-                      </span>
-                      <span className="hidden items-center gap-2 group-hover:flex text-rose-600">
-                        <X className="w-4 h-4 text-rose-500" />
-                        <span>นำออกจากสมุดท่องเที่ยว</span>
-                      </span>
-                    </>
+                <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-3 text-xs sm:text-sm font-semibold">
+                  {spot.sourceName && spot.sourceUrl ? (
+                    <a href={spot.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-slate-800 hover:underline">
+                      ข้อมูล: {spot.sourceName.replace(/\s*\(.*\)\s*$/, '')}
+                    </a>
                   ) : (
-                    <>
-                      <BookMarked className="w-4 h-4 text-white" />
-                      <span>บันทึกลงสมุดท่องเที่ยว</span>
-                    </>
+                    <span />
                   )}
-                </button>
+                  <button type="button" onClick={() => setIsReportModalOpen(true)} className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-800 cursor-pointer">
+                    <Flag className="w-3.5 h-3.5" aria-hidden="true" />
+                    แจ้งข้อมูลผิด
+                  </button>
+                </div>
+              </section>
+            )}
 
-                {isFavorite && (
-                  <Link
-                    href="/myhub?tab=scrapbook"
-                    className="w-full text-center inline-flex items-center justify-center gap-1 text-[11px] font-bold text-[#4A7C59] hover:text-[#2D5A3C] hover:underline pt-0.5"
-                  >
-                    <span>เปิดดูสมุดบันทึกเที่ยวของฉันใน MyHub</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </Link>
-                )}
-              </div>
-
-            </div>
-
-            {/* Who has been here, and what going earns */}
+            {/* Moments from members here, and the challenge this counts toward (said once, here) */}
             <VisitPanel
               targetType="spot"
               targetId={spot.id}
@@ -820,125 +552,56 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
               onShowToast={showToast}
             />
 
-            {/* Sub-Card: Smart Spot Plan Itinerary Card */}
-            <SmartSpotPlanCard
-              currentSpot={spot}
-              onShowToast={showToast}
+            <SmartSpotPlanCard currentSpot={spot} onShowToast={showToast} />
+          </aside>
+
+          <div className="lg:order-1 min-w-0 space-y-10">
+            <section className="space-y-3">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">เกี่ยวกับที่นี่</h2>
+              {renderDescriptionContent(spot.description)}
+            </section>
+
+            <DetailTable
+              title="ก่อนไป"
+              rows={[
+                { label: 'ช่วงที่ดีที่สุด', value: spot.bestTime ? cleanText(spot.bestTime) : '' },
+                {
+                  label: 'จุดเด่น',
+                  value: (spot.highlights ?? []).map((h) => cleanText(h)).filter((h) => h && h !== cleanText(spot.categoryLabel)).join(' · '),
+                },
+                { label: 'รถสาธารณะ', value: publicTransitText ? cleanText(publicTransitText) : '' },
+                { label: 'ที่จอดรถ', value: parkingText ? cleanText(parkingText) : '' },
+                { label: 'สิ่งอำนวยความสะดวก', value: (spot.facilities ?? []).map((fac) => cleanText(fac)).join(' · ') },
+              ]}
             />
 
-            {/* Native Travel Perks & Partner Deals (Curated Lifestyle Affiliate Block) */}
-            <div className="bg-gradient-to-b from-white to-slate-50/60 p-4 sm:p-5 rounded-3xl border border-slate-200/90 shadow-2xs space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Tag className="w-3.5 h-3.5 text-[#2D5A3C]" />
-                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 tracking-tight">
-                    สิทธิพิเศษ & ดีลการเดินทาง
-                  </h3>
-                </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#EBF3ED] text-[#2D5A3C] border border-[#C5DEC9]">
-                  Travel Perks
-                </span>
+            <section className="space-y-4">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">แผนที่</h2>
+              <div className="relative w-full h-60 sm:h-72 rounded-3xl overflow-hidden bg-slate-100">
+                <iframe
+                  title={`Google Map - ${cleanText(spot.title)}`}
+                  src={`https://maps.google.com/maps?q=${spot.latitude},${spot.longitude}&hl=th&z=15&output=embed`}
+                  className="w-full h-full border-0"
+                  loading="lazy"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
               </div>
-              <p className="text-[11px] text-slate-500 leading-relaxed">
-                บริการพาร์ทเนอร์และเอกสิทธิ์การเดินทางรอบย่าน {cleanText(spot.district || spot.province)}
-              </p>
+            </section>
 
-              <div className="space-y-2">
-                {/* 1. Grab / Transit Affiliate */}
-                <a
-                  href="https://www.grab.com/th/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2.5 rounded-2xl bg-white border border-slate-200/80 hover:border-emerald-300 hover:shadow-xs transition-all flex items-center justify-between gap-2.5 group"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-sm font-bold shrink-0">
-                      <Car className="w-4 h-4 text-emerald-700" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-slate-900 group-hover:text-emerald-700 transition-colors truncate">
-                        เรียกรถไปจุดนี้ รับส่วนลด 15%
-                      </div>
-                      <div className="text-[10px] text-slate-400 truncate">
-                        GrabCar ไปยัง {spot.district}
-                      </div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg shrink-0 inline-flex items-center gap-1">
-                    <span>รับสิทธิ์</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </span>
-                </a>
+            {/* Ratings and tips from people who have been (the "จบ" phase of a place) */}
+            <VisitReviews targetType="spot" targetId={spot.id} isLoggedIn={isLoggedIn} />
 
-                {/* 2. Agoda / Hotels nearby */}
-                <a
-                  href={`https://www.agoda.com/search?city=${encodeURIComponent(spot.province)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2.5 rounded-2xl bg-white border border-slate-200/80 hover:border-blue-300 hover:shadow-xs transition-all flex items-center justify-between gap-2.5 group"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center text-sm font-bold shrink-0">
-                      <Building2 className="w-4 h-4 text-sky-700" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-slate-900 group-hover:text-sky-700 transition-colors truncate">
-                        ค้นหาที่พัก & โฮสเทลใกล้เคียง
-                      </div>
-                      <div className="text-[10px] text-slate-400 truncate">
-                        ในย่าน {spot.district || spot.province}
-                      </div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-bold text-sky-700 bg-sky-50 px-2 py-1 rounded-lg shrink-0 inline-flex items-center gap-1">
-                    <span>ดูราคา</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </span>
-                </a>
-
-                {/* 3. Klook / Workshop & Passes */}
-                <a
-                  href="https://www.klook.com/th/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2.5 rounded-2xl bg-white border border-slate-200/80 hover:border-amber-300 hover:shadow-xs transition-all flex items-center justify-between gap-2.5 group"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center text-sm font-bold shrink-0">
-                      <Ticket className="w-4 h-4 text-amber-700" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-slate-900 group-hover:text-amber-700 transition-colors truncate">
-                        บัตรกิจกรรม & เวิร์กช็อปพิเศษ
-                      </div>
-                      <div className="text-[10px] text-slate-400 truncate">
-                        ดีลไลฟ์สไตล์ Klook ประจำย่าน
-                      </div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded-lg shrink-0 inline-flex items-center gap-1">
-                    <span>สำรวจ</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </span>
-                </a>
-              </div>
-
-              <div className="pt-0.5 text-center">
-                <span className="text-[10px] text-slate-400">
-                  สิทธิพิเศษพาร์ทเนอร์อย่างเป็นทางการ สนับสนุนคอมมูนิตี้ท่องเที่ยว
-                </span>
-              </div>
-            </div>
-
+            {/* Cafés and restaurants close by */}
+            <NearbyDiningSection spot={spot} />
           </div>
-
         </div>
 
         {/* =========================================================================
             NEARBY RECOMMENDED SPOTS (SMART ZONAL & PROXIMITY DISCOVERY)
            ========================================================================= */}
         {nearbySpots.length > 0 && (
-          <section className="pt-8 sm:pt-10 border-t border-slate-100 space-y-4 sm:space-y-5">
+          <section className="mt-14 sm:mt-20 space-y-4 sm:space-y-5">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
               <div className="space-y-1">
                 <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight pt-0.5">
@@ -959,7 +622,7 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
-              {nearbySpots.map((item) => (
+              {nearbySpots.slice(0, 4).map((item) => (
                 <SpotCard
                   key={item.id}
                   spot={item}

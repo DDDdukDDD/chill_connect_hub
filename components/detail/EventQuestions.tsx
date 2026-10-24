@@ -58,7 +58,7 @@ export function EventQuestions({ eventId, initial, isLoggedIn, onRequireLogin }:
 
   return (
     <section id="questions" className="scroll-mt-24 space-y-3">
-      <h2 className="text-lg sm:text-xl font-bold text-slate-900">ถาม{host}ก่อนไป</h2>
+      <h2 className="text-lg sm:text-xl font-bold text-slate-900">ถาม {host} ก่อนไป</h2>
       {state.questions.length === 0 && <p className="text-sm text-slate-500">ยังไม่มีคำถาม มีอะไรอยากรู้ก่อนไป ถามได้เลย</p>}
       <ul className="divide-y divide-slate-100">
         {state.questions.map((q) => (

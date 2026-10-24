@@ -15,7 +15,7 @@ import { useAuth } from '@/lib/useAuth';
 import { VisitPanel } from '@/components/VisitPanel';
 import { EventAttendees } from '@/components/EventAttendees';
 import { JoinReadinessNotice, joinBlocker } from '@/components/JoinReadinessNotice';
-import { DetailHero, PillarChip, StatusChip, heroButton } from '@/components/detail/DetailHero';
+import { DetailHero, DetailTable, ItineraryList, heroButton } from '@/components/detail/DetailHero';
 import { PillarLinks } from '@/components/detail/PillarLinks';
 import { AfterTeePanel } from '@/components/detail/AfterTeePanel';
 import { SeriesDates } from '@/components/detail/SeriesDates';
@@ -395,17 +395,6 @@ export default function CommunityDetailPage({
   // Placeholder text below is for seed events only; a member's event shows what the member entered
   const isSample = !eventData || eventOrigin(eventData) === 'sample';
 
-  const communityHighlights = useMemo(() => {
-    if (!isSample) return [];
-    return [
-      'ตี้กลุ่มเล็ก (Small Group) เน้นความเป็นมิตรและเปิดรับทุกคนอย่างอบอุ่น',
-      'ดูแลตี้โดย Verified Host ที่มีประสบการณ์ พร้อมดูแลให้ทุกคนรู้สึกผ่อนคลาย',
-      'บรรยากาศ Safe Space 100% ปราศจากความกดดัน เป็นตัวของตัวเองได้อย่างสบายใจ',
-      'ได้ทั้งเปิดรับความรู้ ทักษะใหม่ๆ และได้รู้จักเพื่อนใหม่ที่มีไลฟ์สไตล์ตรงกัน',
-      'มีตั๋ว E-Ticket ในระบบและห้องแชตกลุ่มสำหรับเตรียมนัดพบก่อนเริ่มตี้'
-    ];
-  }, [isSample]);
-
   // Transit details
   const { publicTransitText, parkingText } = useMemo(() => {
     if (!eventData) return { publicTransitText: '', parkingText: '' };
@@ -449,7 +438,7 @@ export default function CommunityDetailPage({
     ? liveMeetups
         .filter((e) => e.id !== eventData.id && e.eventType !== 'public_venue' && !isEventEnded(e))
         .sort((x, y) => sameSai(x) - sameSai(y))
-        .slice(0, 5)
+        .slice(0, 4)
     : [];
 
   if (isLoading) {
@@ -561,81 +550,13 @@ export default function CommunityDetailPage({
       />
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 pt-1.5 pb-28 sm:pt-2 lg:pb-12 space-y-3 sm:space-y-4">
-        
-        {/* =========================================================================
-            TOP BREADCRUMBS & ACTION BAR
-           ========================================================================= */}
-        <div className="flex flex-row items-center justify-between gap-2.5 pb-1.5 border-b border-slate-100">
-          
-          {/* Left: Clean Breadcrumbs */}
-          <nav className="text-xs text-slate-500 font-medium overflow-x-auto whitespace-nowrap scrollbar-none flex items-center gap-1.5 py-1 min-w-0">
-            <Link href="/" className="hover:text-slate-900 transition-colors font-semibold py-1 px-1">หน้าแรก</Link>
-            <span>/</span>
-            <Link
-              href="/community"
-              className="hover:text-[#F26430] transition-colors py-1 px-1 font-semibold text-slate-800"
-            >
-              ตี้
-            </Link>
-            <span>/</span>
-            <span className="text-slate-700 font-semibold py-1 px-1">{cleanText(catStyle.label)}</span>
-            <span>/</span>
-            <span className="text-slate-900 font-bold truncate max-w-[180px] sm:max-w-[280px] py-1 px-1">{cleanText(eventData.title)}</span>
-          </nav>
+      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-28 lg:pb-16">
+        <Link href="/community" className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
+          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+          ตี้ทั้งหมด
+        </Link>
 
-          {/* Right: Favorite, Share & Report Buttons */}
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={() => toggleFavorite(eventData.id)}
-              className={`hidden lg:inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-2xs border cursor-pointer active:scale-95 ${
-                isFav
-                  ? 'bg-orange-50 text-[#F26430] border-orange-200'
-                  : 'bg-white text-slate-700 border-slate-200 hover:bg-orange-50 hover:text-[#F26430]'
-              }`}
-            >
-              <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-[#F26430] text-[#F26430]' : 'text-slate-500'}`} />
-              <span className="hidden sm:inline">{isFav ? 'บันทึกใน MyHub แล้ว' : isEnded ? 'ติดตามรอบถัดไป' : 'บันทึกตี้'}</span>
-              <span className="sm:hidden">{isFav ? 'บันทึกแล้ว' : isEnded ? 'ติดตาม' : 'บันทึก'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleShare}
-              className="hidden lg:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 text-xs font-bold transition-all shadow-2xs border border-slate-200 cursor-pointer active:scale-95"
-            >
-              {isCopied ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="text-emerald-600 font-bold">คัดลอกลิงก์แล้ว!</span>
-                </>
-              ) : (
-                <>
-                  <Share2 className="w-3.5 h-3.5 text-slate-500" />
-                  <span>แชร์ตี้</span>
-                </>
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setIsReportModalOpen(true)}
-              className="w-8 h-8 rounded-xl border border-slate-200 hover:border-rose-300 text-slate-400 hover:text-rose-600 flex items-center justify-center transition-colors cursor-pointer active:scale-95"
-              title="รายงานตี้ / พฤติกรรมไม่เหมาะสม"
-            >
-              <Flag className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-        </div>
-
-
-
-        {/* =========================================================================
-            HEADER: photo left, what is needed to decide and the one main action right (shared with
-            fairs, places and challenges: components/detail/DetailHero.tsx)
-           ========================================================================= */}
+        {/* Header, drawn like the challenge page (components/detail/DetailHero.tsx): every fact here once */}
         <DetailHero
           pillar="community"
           image={galleryImages[0] || eventData.image}
@@ -645,66 +566,56 @@ export default function CommunityDetailPage({
             setActivePhotoIndex(0);
             setIsLightboxOpen(true);
           }}
-          chips={
-            <>
-              <PillarChip pillar="community">{catStyle.label}</PillarChip>
-              {isEnded ? (
-                <StatusChip tone="muted">ตี้นี้จบแล้ว</StatusChip>
-              ) : isFull ? (
-                <StatusChip tone="muted">เต็มแล้ว</StatusChip>
-              ) : isAlmostFull ? (
-                <StatusChip tone="warn">ใกล้เต็ม เหลือ {seatsLeft} ที่</StatusChip>
-              ) : (
-                <StatusChip tone="open">เปิดรับสมัคร</StatusChip>
-              )}
-              {eventData.scheduleType === 'recurring' && <StatusChip tone="muted">จัดประจำ</StatusChip>}
-              {isOnline && <StatusChip tone="muted">ออนไลน์</StatusChip>}
-              {!isOnline && eventData.isSoloFriendly !== false && <StatusChip tone="muted">มาคนเดียวได้</StatusChip>}
-              {eventData.isBeginnerFriendly && <StatusChip tone="muted">มือใหม่มาได้</StatusChip>}
-              {!isOnline && eventData.isPetFriendly && <StatusChip tone="muted">พาสัตว์เลี้ยงมาได้</StatusChip>}
-            </>
-          }
+          kicker={[cleanText(catStyle.label), eventData.scheduleType === 'recurring' ? 'จัดประจำ' : '', `โดย ${eventData.hostName}`].filter(Boolean).join(' · ')}
           title={cleanText(eventData.title)}
           facts={[
             {
               icon: eventData.scheduleType === 'recurring' ? Repeat : Calendar,
-              title: eventData.scheduleType === 'recurring' && eventData.recurrence?.customSummary ? eventData.recurrence.customSummary : cleanText(eventData.date),
-              sub: cleanText(eventData.time),
+              text:
+                eventData.scheduleType === 'recurring' && eventData.recurrence?.customSummary
+                  ? eventData.recurrence.customSummary
+                  : `${cleanText(eventData.date)} · ${cleanText(eventData.time)}`,
             },
             {
               icon: isOnline ? Globe : MapPin,
-              title: isOnline ? `ออนไลน์ผ่าน ${eventData.onlinePlatform ? eventData.onlinePlatform.replace('_', ' ') : 'วิดีโอคอล'}` : cleanText(eventData.location),
-              sub: isOnline
-                ? 'ลิงก์เข้าห้องอยู่ในบัตรของคุณหลังลงทะเบียน'
-                : eventData.meetingPoint && cleanText(eventData.meetingPoint) !== cleanText(eventData.location)
-                ? `จุดนัด: ${cleanText(eventData.meetingPoint)}`
-                : undefined,
+              text: isOnline ? `ออนไลน์ผ่าน ${eventData.onlinePlatform ? eventData.onlinePlatform.replace('_', ' ') : 'วิดีโอคอล'}` : cleanText(eventData.location),
             },
             {
               icon: Users,
-              title: isSeriesEvent ? `รับวันละ ${eventData.maxParticipants} คน · เลือกวันด้านล่าง` : `${eventData.participantsCount} จาก ${eventData.maxParticipants} คน${!isEnded && !isFull ? ` · เหลือ ${seatsLeft} ที่` : ''}`,
-              sub: eventData.minParticipants
-                ? eventData.participantsCount >= eventData.minParticipants
-                  ? `ครบขั้นต่ำ ${eventData.minParticipants} คนแล้ว ตี้นี้ไปแน่นอน`
-                  : `ออกเดินทางเมื่อครบ ${eventData.minParticipants} คน ถ้ายังไม่ครบ อย่าเพิ่งไปเจอกันสองต่อสอง`
-                : undefined,
+              text: isSeriesEvent
+                ? `รับวันละ ${eventData.maxParticipants} คน`
+                : isEnded
+                ? `ไป ${eventData.participantsCount} คน · ตี้นี้จบแล้ว`
+                : isFull
+                ? `${eventData.participantsCount}/${eventData.maxParticipants} คน · เต็มแล้ว`
+                : `${eventData.participantsCount}/${eventData.maxParticipants} คน · เหลือ ${seatsLeft} ที่`,
             },
-            { icon: Ticket, title: parsedPrice.displayPrice, sub: cancellationText },
+            { icon: Ticket, text: parsedPrice.displayPrice },
           ]}
+          note={
+            isJoined && !isHost && !isEnded ? (
+              <button type="button" onClick={() => setIsCancelModalOpen(true)} className="font-semibold text-slate-500 hover:text-slate-800 hover:underline cursor-pointer">
+                ไปไม่ได้แล้ว? ยกเลิกการเข้าร่วม
+              </button>
+            ) : undefined
+          }
           actions={
             <>
               {isHost ? (
-                <button type="button" onClick={() => setIsChatOpen(true)} className={heroButton.primary}>
-                  <MessageCircle className="w-5 h-5" aria-hidden="true" />
-                  แชตกับคนในตี้
-                </button>
+                <>
+                  <button type="button" onClick={() => setIsChatOpen(true)} className={heroButton.primary}>
+                    <MessageCircle className="w-5 h-5" aria-hidden="true" />
+                    แชตกับคนในตี้
+                  </button>
+                  <Link href="/myhub?tab=community" className={heroButton.quiet}>จัดการในมายฮับ</Link>
+                </>
               ) : isJoined ? (
                 <>
                   <button type="button" onClick={() => setIsETicketOpen(true)} className={heroButton.done}>
                     <CheckCircle2 className="w-5 h-5" aria-hidden="true" />
                     ลงทะเบียนแล้ว · ดูบัตร
                   </button>
-                  <button type="button" onClick={() => setIsChatOpen(true)} className={heroButton.secondary}>
+                  <button type="button" onClick={() => setIsChatOpen(true)} className={heroButton.quiet}>
                     <MessageCircle className="w-5 h-5" aria-hidden="true" />
                     แชตกลุ่ม
                   </button>
@@ -725,6 +636,10 @@ export default function CommunityDetailPage({
                   ลงทะเบียนเข้าร่วม
                 </button>
               )}
+              <button type="button" onClick={handleShare} className={heroButton.quiet}>
+                {isCopied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Share2 className="w-4 h-4" aria-hidden="true" />}
+                {isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'}
+              </button>
               <button
                 type="button"
                 onClick={() => toggleFavorite(eventData.id)}
@@ -738,10 +653,10 @@ export default function CommunityDetailPage({
           }
         />
 
-        {/* The challenge this counts toward, the place it meets at, and the moments people shared */}
+        {/* Other dates of a recurring ตี้ and the place it meets at, the date list, and the day-of and after panels:
+            each only when it applies (empty wrapper hides) */}
+        <div className="mt-8 space-y-6 empty:hidden">
         <PillarLinks
-          target={{ type: 'community', id: eventData.id, title: cleanText(eventData.title) }}
-          momentsNoun="ตี้นี้"
           links={[
             ...(eventData.seriesId ? [{ pillar: 'community' as const, label: 'ตี้ประจำ', text: 'ดูวันอื่นของตี้นี้', href: `/community/${encodeURIComponent(eventData.seriesId)}` }] : []),
             ...((eventData as { spotId?: string }).spotId
@@ -760,439 +675,43 @@ export default function CommunityDetailPage({
 
         {/* After the ตี้: review, "อยากเจออีก" and a moment (shown once the host confirmed the member came, or it ended) */}
         <AfterTeePanel event={eventData} isHost={isHost} onOpenPairChat={(roomId, title) => setPairChat({ roomId, title })} />
+        </div>
 
-        {/* =========================================================================
-            CORE CONTENT: 2-COLUMN EDITORIAL LAYOUT
-           ========================================================================= */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-10 items-start pt-3">
-          
-          {/* LEFT COLUMN: PRIMARY DETAILS (2 Cols) */}
-          <div className="lg:col-span-2 space-y-7">
-            
-            {/* Verified Host Card (Community Core) */}
-            <div className="p-4 sm:p-5 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 shadow-2xs">
-              <Link
-                href={profileHref}
-                className="flex items-center gap-3.5 min-w-0 group cursor-pointer"
-                title={`คลิกเพื่อดูโปรไฟล์และรีวิวของ ${eventData.hostName}`}
-              >
-                <div className="relative shrink-0">
-                  <img
-                    src={eventData.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80'}
-                    alt={eventData.hostName}
-                    className="w-12 h-12 rounded-full object-cover ring-2 ring-white shadow-xs group-hover:scale-105 transition-transform"
-                  />
-                  <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white" />
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <h3 className="font-bold text-sm text-slate-900 group-hover:text-[#F26430] transition-colors truncate">
-                      {eventData.hostName}
-                    </h3>
-                    {(isSample || eventData.hostRating) && (<>
-                    <span
-                      className="inline-flex items-center gap-0.5 text-[10.5px] font-bold text-amber-700 bg-amber-50 border border-amber-200/80 px-1.5 py-0.2 rounded shrink-0"
-                      title={`คะแนนโฮสต์ ${(eventData.hostRating || eventData.rating || 4.9).toFixed(1)} / 5`}
-                    >
-                      <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
-                      <span>{(eventData.hostRating || eventData.rating || 4.9).toFixed(1)}</span>
+        {/* Like the challenge page: the story, the rules as a plain table and the way there on the left; on the right
+            the one thing the header does not say, who runs it, then moments and the challenge it counts toward */}
+        <div className="mt-10 sm:mt-14 grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:gap-10 lg:items-start">
+          <aside className="lg:order-2 space-y-6 lg:sticky lg:top-24">
+            <section className="p-5 sm:p-6 rounded-3xl bg-[#FFF4EE] border border-slate-200 space-y-4">
+              <h2 className="text-sm sm:text-base font-bold text-slate-900">คนจัดตี้นี้</h2>
+              <Link href={profileHref} className="flex items-center gap-3 min-w-0 group">
+                {/* eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers */}
+                <img
+                  src={eventData.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80'}
+                  alt=""
+                  className="w-12 h-12 rounded-full object-cover bg-white shrink-0"
+                />
+                <span className="min-w-0">
+                  <span className="block text-sm sm:text-base font-bold text-slate-900 truncate group-hover:underline">{eventData.hostName}</span>
+                  {(isSample || eventData.hostRating || eventData.hostHostedCount) && (
+                    <span className="flex items-center gap-1 text-xs sm:text-sm font-medium text-slate-600 tabular-nums">
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" aria-hidden="true" />
+                      {(eventData.hostRating || eventData.rating || 4.9).toFixed(1)}
+                      <span aria-hidden="true">·</span>
+                      จัดมาแล้ว {eventData.hostHostedCount || 12} ครั้ง
                     </span>
-                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                      <span>Verified Host</span>
-                    </span>
-                    </>)}
-                  </div>
-                  {(isSample || eventData.hostHostedCount) && (
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    จัดตี้มาแล้ว {eventData.hostHostedCount || 12} ครั้ง • เรตติ้ง {eventData.hostRating || 4.9}/5.0 ({eventData.hostReviewsCount || 58} รีวิว)
-                  </p>
                   )}
-                </div>
+                </span>
               </Link>
-
-              <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
-                <Link
-                  href={profileHref}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold shadow-2xs transition-all active:scale-95 cursor-pointer"
-                >
-                  <User className="w-3.5 h-3.5 text-slate-500" />
-                  <span>ดูโปรไฟล์</span>
-                </Link>
-
-                <button
-                  type="button"
-                  onClick={() => setIsReportModalOpen(true)}
-                  className="p-1.5 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
-                  title="รายงานตี้ไม่เหมาะสม"
-                >
-                  <Flag className="w-4 h-4" />
+              <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-3 text-xs sm:text-sm font-semibold">
+                <Link href={profileHref} className="text-[#2563EB] hover:text-[#1D4ED8] hover:underline">ดูโปรไฟล์และรีวิว</Link>
+                <button type="button" onClick={() => setIsReportModalOpen(true)} className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-800 cursor-pointer">
+                  <Flag className="w-3.5 h-3.5" aria-hidden="true" />
+                  รายงาน
                 </button>
               </div>
-            </div>
+            </section>
 
-            {/* 4. About Story */}
-            <div className="space-y-3 pt-1">
-              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
-                รายละเอียดตี้ & วัตถุประสงค์
-              </h2>
-              {renderDescriptionContent(eventData.description)}
-            </div>
-
-            {/* Questions to the host before going (public) */}
-            <div className="pt-5 border-t border-slate-100">
-              <EventQuestions
-                eventId={eventData.id}
-                initial={initialQuestions}
-                isLoggedIn={isLoggedIn}
-                onRequireLogin={() => askToJoin('เพื่อถามคนจัด', `/community/${encodeURIComponent(eventData.id)}#questions`)}
-              />
-            </div>
-
-            {/* 6. Highlights */}
-            {communityHighlights.length > 0 && (
-            <div className="space-y-3.5 pt-5 border-t border-slate-100">
-              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
-                จุดเด่นของตี้นี้
-              </h2>
-              <ul className="space-y-3 pt-1">
-                {communityHighlights.map((h, idx) => (
-                  <li
-                    key={idx}
-                    className="flex items-start gap-3 text-xs sm:text-sm text-slate-800 leading-relaxed font-medium"
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-800 shrink-0 mt-2" />
-                    <span className="flex-1">{cleanText(h)}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            )}
-
-            {/* 7. Checklist */}
-            {checklist.length > 0 && (
-            <div className="space-y-3.5 pt-5 border-t border-slate-100">
-              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
-                {isSample ? 'สิ่งที่ควรเตรียมมา & กฎการอยู่ร่วมกัน' : 'สิ่งที่ควรเตรียมมา'}
-              </h2>
-
-              <ul className="space-y-3 pt-1">
-                {checklist.map((rule, idx) => (
-                  <li
-                    key={idx}
-                    className="flex items-start gap-3 text-xs sm:text-sm text-slate-800 leading-relaxed font-medium"
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-800 shrink-0 mt-2" />
-                    <span className="flex-1">{cleanText(rule)}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            )}
-
-            {/* 8. Transit & Map OR Virtual Gathering Info */}
-            <div className="space-y-4 pt-5 border-t border-slate-100">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                  {eventData.locationType === 'online' || eventData.province === 'ออนไลน์' ? (
-                    <>
-                      <Globe className="w-4 h-4 text-sky-600" />
-                      <span>ช่องทางและแพลตฟอร์มตี้ออนไลน์</span>
-                    </>
-                  ) : (
-                    <span>จุดนัดพบ & การเดินทาง</span>
-                  )}
-                </h2>
-
-                {eventData.locationType !== 'online' && eventData.province !== 'ออนไลน์' && (
-                  <a
-                    href={`https://maps.google.com/?q=${encodeURIComponent(eventData.location)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-slate-900 hover:underline shrink-0"
-                  >
-                    <span>เปิดดูใน Google Maps</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                )}
-              </div>
-
-              {eventData.locationType === 'online' || eventData.province === 'ออนไลน์' ? (
-                <div className="p-5 rounded-2xl bg-sky-50/60 border border-sky-200/80 space-y-3">
-                  <div className="flex items-center gap-2 text-sm font-bold text-sky-950">
-                    <span className="px-2.5 py-1 rounded-full bg-sky-100 text-sky-800 text-xs font-bold uppercase tracking-wider">
-                      {eventData.onlinePlatform ? eventData.onlinePlatform.toUpperCase() : 'VIRTUAL'}
-                    </span>
-                    <span>รวมตัวผ่านแพลตฟอร์มออนไลน์</span>
-                  </div>
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
-                    {eventData.meetingPoint || 'ตี้นี้จัดในรูปแบบออนไลน์ สามารถเข้าร่วมพูดคุยและแลกเปลี่ยนความรู้ได้จากทุกที่'}
-                  </p>
-                  <div className="pt-2 flex items-center gap-3">
-                    {isJoined ? (
-                      eventData.onlineJoinUrl ? (
-                        <a
-                          href={eventData.onlineJoinUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs shadow-xs transition-colors"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                          <span>เปิดห้องตี้ ({eventData.onlinePlatform || 'Online'})</span>
-                        </a>
-                      ) : (
-                        <div className="text-xs text-sky-800 font-bold bg-white/90 px-3.5 py-2 rounded-xl border border-sky-200">
-                          🔗 ลิงก์ห้องตี้จะส่งให้ผ่านช่องทางติดต่อกลุ่มก่อนเริ่มงาน
-                        </div>
-                      )
-                    ) : (
-                      <div className="text-xs text-slate-500 italic bg-white/80 px-3.5 py-2 rounded-xl border border-sky-200/60">
-                        🔒 ลิงก์ห้องตี้จะเปิดเผยให้เห็นหลังจากกดเข้าร่วมตี้
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <>
-                  {(publicTransitText || parkingText) && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-1">
-                    {publicTransitText && (
-                    <div className="space-y-1">
-                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-                        {isSample ? 'รถสาธารณะ & รถไฟฟ้า' : 'การเดินทาง'}
-                      </span>
-                      <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
-                        {cleanText(publicTransitText)}
-                      </p>
-                    </div>
-                    )}
-
-                    {parkingText && (
-                    <div className="space-y-1">
-                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-                        รถยนต์ส่วนตัว & ที่จอดรถ
-                      </span>
-                      <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
-                        {cleanText(parkingText)}
-                      </p>
-                    </div>
-                    )}
-                  </div>
-                  )}
-
-                  <div className="relative w-full h-60 sm:h-72 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-2xs">
-                    <iframe
-                      title={`Google Map - ${cleanText(eventData.title)}`}
-                      src={`https://maps.google.com/maps?q=${encodeURIComponent(eventData.location)}&hl=th&z=15&output=embed`}
-                      className="w-full h-full border-0"
-                      loading="lazy"
-                      allowFullScreen
-                      referrerPolicy="no-referrer-when-downgrade"
-                    />
-                  </div>
-                </>
-              )}
-            </div>
-
-            <EventAttendees
-              src={`/api/events/${encodeURIComponent(eventData.id)}/attendees`}
-              total={eventData.participantsCount}
-              hostName={eventData.hostName}
-              hostAvatar={eventData.hostAvatar}
-              hostHref={profileHref}
-              refreshKey={`${isJoined}-${eventData.participantsCount}`}
-            />
-
-          </div>
-
-          {/* RIGHT COLUMN: STICKY REGISTRATION & E-TICKET SIDEBAR (1 Col) */}
-          <div className="lg:col-span-1 space-y-5 lg:sticky lg:top-24">
-            
-            {/* The booking card is per date for a recurring ตี้: the date list above takes its place */}
-            {!isSeriesEvent && (
-            <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm space-y-5">
-              
-              {/* Joined Status Badge */}
-              {isJoined && (
-                <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-xs font-bold shadow-2xs">
-                  <span className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>{isHost ? 'คุณเป็นโฮสต์ผู้จัดตี้' : 'คุณลงทะเบียนเรียบร้อยแล้ว'}</span>
-                  </span>
-                </div>
-              )}
-
-              {/* Header Price */}
-              <div className="hidden lg:flex items-center justify-between pb-3 border-b border-slate-100 gap-2">
-                <span className="text-xs font-bold text-slate-500 shrink-0">ค่าลงทะเบียน</span>
-                <span className="text-base sm:text-lg font-bold text-slate-900 text-right">
-                  {parsedPrice.displayPrice}
-                </span>
-              </div>
-
-              {/* Multi-Tier Chips in Sidebar */}
-              {parsedPrice.hasMultipleTiers && (
-                <div className="bg-slate-50/90 rounded-2xl p-3 border border-slate-200/80 space-y-2">
-                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-600">
-                    <span className="flex items-center gap-1.5">
-                      <Ticket className="w-3.5 h-3.5 text-[#F26430]" />
-                      <span>ประเภทและอัตราค่าลงทะเบียน ({parsedPrice.tiers.length} รูปแบบ)</span>
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 pt-0.5 max-h-36 overflow-y-auto">
-                    {parsedPrice.tiers.map((t, idx) => (
-                      <span
-                        key={idx}
-                        className="text-[10.5px] font-bold px-2 py-0.5 rounded-md border bg-white text-slate-800 border-slate-200/80 shadow-2xs"
-                      >
-                        {t.label ? `${t.label}: ` : ''}{t.price}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Progress & Remaining Seats */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs font-bold">
-                  <span className="text-slate-600 flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-[#F26430]" />
-                    <span>ผู้ลงทะเบียน</span>
-                  </span>
-                  <span className="text-slate-900 font-bold">
-                    {eventData.participantsCount} / {eventData.maxParticipants} คน
-                  </span>
-                </div>
-
-                <div className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${
-                      fillRatio >= 1
-                        ? 'bg-rose-500'
-                        : isAlmostFull
-                        ? 'bg-amber-500'
-                        : 'bg-[#F26430]'
-                    }`}
-                    style={{ width: `${Math.min(fillRatio * 100, 100)}%` }}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between text-[11px] text-slate-500 font-medium">
-                  <span>เหลืออีก {Math.max(eventData.maxParticipants - eventData.participantsCount, 0)} ที่นั่ง</span>
-                  {isAlmostFull && fillRatio < 1 && !isEnded && (
-                    <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 animate-pulse">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                      <span>ใกล้เต็มแล้ว! เหลือ {Math.max(eventData.maxParticipants - eventData.participantsCount, 0)} ที่</span>
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Trust Signal & Cancellation Policy in Sidebar */}
-              <div className="px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-xs">
-                <span className="flex items-center gap-1.5 text-slate-500 font-medium">
-                  <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
-                  <span>เงื่อนไขยกเลิก:</span>
-                </span>
-                <span className="font-bold text-slate-800">
-                  {eventData.cancellationPolicy === 'free_anytime'
-                    ? 'ยกเลิกฟรีตลอดเวลา'
-                    : eventData.cancellationPolicy === 'free_48h'
-                    ? 'ยกเลิกฟรีก่อน 48 ชม.'
-                    : eventData.cancellationPolicy === 'chat_notice'
-                    ? 'แจ้งในกลุ่มแชท'
-                    : 'ยกเลิกฟรีก่อน 24 ชม.'}
-                </span>
-              </div>
-
-              {/* ACTION BUTTONS (Join / View E-Ticket / Group Chat) */}
-              <div className="space-y-2.5 pt-2">
-                {isEnded ? (
-                  <button
-                    disabled
-                    className="hidden lg:block w-full bg-slate-100 text-slate-400 py-3 rounded-2xl font-bold text-xs cursor-not-allowed text-center"
-                  >
-                    ปิดรับการลงทะเบียน (ตี้นี้จบแล้ว)
-                  </button>
-                ) : eventData.participantsCount >= eventData.maxParticipants && !isJoined ? (
-                  <button
-                    disabled
-                    className="hidden lg:block w-full bg-slate-100 text-slate-400 py-3 rounded-2xl font-bold text-xs cursor-not-allowed text-center"
-                  >
-                    ที่นั่งเต็มแล้ว (Full)
-                  </button>
-                ) : isHost ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setIsChatOpen(true)}
-                      className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 px-4 rounded-2xl font-bold text-xs sm:text-sm shadow-2xs hover:shadow-md transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      <span>เปิดแชตลูกทีม ({eventData.participantsCount} คน)</span>
-                    </button>
-                    <Link
-                      href="/myhub?tab=community"
-                      className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 py-2.5 px-4 rounded-2xl font-bold text-xs transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
-                    >
-                      <span>จัดการตี้ใน My Hub</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-                  </>
-                ) : isJoined ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setIsETicketOpen(true)}
-                      className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 px-4 rounded-2xl font-bold text-xs sm:text-sm shadow-2xs hover:shadow-md transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
-                    >
-                      <QrCode className="w-4 h-4" />
-                      <span>ดูตั๋ว E-Ticket ของคุณ</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setIsChatOpen(true)}
-                      className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 py-2.5 px-4 rounded-2xl font-bold text-xs transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      <span>ห้องแชตกลุ่มเตรียมนัดพบ</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setIsCancelModalOpen(true)}
-                      className="w-full text-rose-500 hover:text-rose-700 font-bold text-xs py-1.5 transition-colors text-center hover:underline cursor-pointer"
-                    >
-                      ยกเลิกการเข้าร่วมตี้
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleJoinEvent}
-                    className="hidden lg:flex w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 px-4 rounded-2xl font-bold text-xs sm:text-sm shadow-2xs hover:shadow-md transition-all items-center justify-center gap-2 active:scale-98 cursor-pointer"
-                  >
-                    <span>ลงทะเบียนเข้าร่วม</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                )}
-
-                {isJoined && (
-                  <Link
-                    href="/myhub?type=community"
-                    className="w-full text-center inline-flex items-center justify-center gap-1 text-[11px] font-bold text-slate-600 hover:text-slate-900 hover:underline pt-0.5"
-                  >
-                    <span>ดูตี้ใน MyHub ของคุณ</span>
-                  </Link>
-                )}
-              </div>
-
-            </div>
-            )}
-
-            {/* Moments from members here, and how to share one (same place as on the place page) */}
+            {/* Moments from members here, and the challenge this counts toward (said once, here) */}
             <VisitPanel
               targetType="community"
               targetId={eventData.id}
@@ -1205,15 +724,151 @@ export default function CommunityDetailPage({
               }}
               onShowToast={showToast}
             />
-          </div>
+          </aside>
 
+          <div className="lg:order-1 min-w-0 space-y-10">
+            <section className="space-y-3">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">รายละเอียดตี้</h2>
+              {renderDescriptionContent(eventData.description)}
+            </section>
+
+            {/* The schedule the host filled in (ตั้งตี้ form, "กำหนดการ"): what happens, hour by hour */}
+            <ItineraryList items={eventData.itinerary} />
+
+            <DetailTable
+              title="ก่อนไป"
+              rows={[
+                {
+                  label: 'เหมาะกับ',
+                  value: [
+                    !isOnline && eventData.isSoloFriendly !== false ? 'มาคนเดียวได้' : '',
+                    eventData.isBeginnerFriendly ? 'มือใหม่มาได้' : '',
+                    !isOnline && eventData.isPetFriendly ? 'พาสัตว์เลี้ยงมาได้' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' · '),
+                },
+                {
+                  label: 'จำนวนคน',
+                  value: eventData.minParticipants
+                    ? eventData.participantsCount >= eventData.minParticipants
+                      ? `ครบขั้นต่ำ ${eventData.minParticipants} คนแล้ว ตี้นี้ไปแน่นอน`
+                      : `ออกเดินทางเมื่อครบ ${eventData.minParticipants} คน ถ้ายังไม่ครบ อย่าเพิ่งไปเจอกันสองต่อสอง`
+                    : '',
+                },
+                {
+                  label: 'ค่าใช้จ่าย',
+                  value: parsedPrice.hasMultipleTiers ? parsedPrice.tiers.map((t) => `${t.label ? `${t.label}: ` : ''}${t.price}`).join(' · ') : '',
+                },
+                { label: 'การยกเลิก', value: isEnded ? '' : cancellationText },
+                { label: 'สิ่งที่ควรเตรียม', value: isSample ? '' : checklist.map((rule) => cleanText(rule)).join(' · ') },
+                {
+                  label: 'กติกา',
+                  value: (
+                    <>
+                      นัดเจอที่สาธารณะเท่านั้น เดินทางเอง ไม่สบายใจขอตัวกลับได้ทุกเมื่อ{' '}
+                      <Link href="/safety" className="font-semibold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">อ่านคู่มือความปลอดภัย</Link>
+                    </>
+                  ),
+                },
+              ]}
+            />
+
+            {/* Where to meet, or how to join online */}
+            <section className="space-y-4">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">{isOnline ? 'เข้าร่วมออนไลน์' : 'จุดนัดพบ & การเดินทาง'}</h2>
+                {!isOnline && (
+                  <a
+                    href={`https://maps.google.com/?q=${encodeURIComponent(eventData.location)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-[#2563EB] hover:text-[#1D4ED8] hover:underline shrink-0"
+                  >
+                    เปิดใน Google Maps
+                    <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                  </a>
+                )}
+              </div>
+
+              {isOnline ? (
+                <div className="space-y-3">
+                  <p className="text-sm font-medium text-slate-700 leading-relaxed">
+                    {eventData.meetingPoint || `รวมตัวกันผ่าน ${eventData.onlinePlatform ? eventData.onlinePlatform.replace('_', ' ') : 'วิดีโอคอล'} เข้าร่วมได้จากทุกที่`}
+                  </p>
+                  {isJoined && eventData.onlineJoinUrl ? (
+                    <a href={eventData.onlineJoinUrl} target="_blank" rel="noopener noreferrer" className={heroButton.quiet}>
+                      <ExternalLink className="w-4 h-4" aria-hidden="true" />
+                      เปิดห้องตี้
+                    </a>
+                  ) : (
+                    <p className="text-sm font-medium text-slate-500">
+                      {isJoined ? 'ลิงก์ห้องจะส่งในแชตกลุ่มก่อนเริ่ม' : 'ลิงก์ห้องจะเปิดให้เห็นหลังลงทะเบียน'}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <>
+                  {eventData.meetingPoint && cleanText(eventData.meetingPoint) !== cleanText(eventData.location) && (
+                    <p className="text-sm font-medium text-slate-700">
+                      <span className="text-slate-500">จุดนัด </span>
+                      {cleanText(eventData.meetingPoint)}
+                    </p>
+                  )}
+                  {(publicTransitText || parkingText) && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {publicTransitText && (
+                        <div className="space-y-1">
+                          <p className="text-xs sm:text-sm font-medium text-slate-500">{isSample ? 'รถสาธารณะ & รถไฟฟ้า' : 'การเดินทาง'}</p>
+                          <p className="text-sm font-medium text-slate-800 leading-relaxed">{cleanText(publicTransitText)}</p>
+                        </div>
+                      )}
+                      {parkingText && (
+                        <div className="space-y-1">
+                          <p className="text-xs sm:text-sm font-medium text-slate-500">รถยนต์ส่วนตัว & ที่จอดรถ</p>
+                          <p className="text-sm font-medium text-slate-800 leading-relaxed">{cleanText(parkingText)}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <div className="relative w-full h-60 sm:h-72 rounded-3xl overflow-hidden bg-slate-100">
+                    <iframe
+                      title={`Google Map - ${cleanText(eventData.title)}`}
+                      src={`https://maps.google.com/maps?q=${encodeURIComponent(eventData.location)}&hl=th&z=15&output=embed`}
+                      className="w-full h-full border-0"
+                      loading="lazy"
+                      allowFullScreen
+                      referrerPolicy="no-referrer-when-downgrade"
+                    />
+                  </div>
+                </>
+              )}
+            </section>
+
+            {/* Questions to the host, once the plan and the meeting point are read (owner 2026-10-24) */}
+            <EventQuestions
+              eventId={eventData.id}
+              initial={initialQuestions}
+              isLoggedIn={isLoggedIn}
+              onRequireLogin={() => askToJoin('เพื่อถามคนจัด', `/community/${encodeURIComponent(eventData.id)}#questions`)}
+            />
+
+            <EventAttendees
+              src={`/api/events/${encodeURIComponent(eventData.id)}/attendees`}
+              total={eventData.participantsCount}
+              hostName={eventData.hostName}
+              hostAvatar={eventData.hostAvatar}
+              hostHref={profileHref}
+              refreshKey={`${isJoined}-${eventData.participantsCount}`}
+            />
+          </div>
         </div>
 
         {/* =========================================================================
             RELATED ACTIVITIES SECTION (REUSE STANDARD EVENTGRID)
            ========================================================================= */}
         {relatedActivities.length > 0 && (
-          <section className="pt-10 border-t border-slate-100 space-y-5">
+          <section className="mt-14 sm:mt-20 space-y-5">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
@@ -1239,7 +894,7 @@ export default function CommunityDetailPage({
               toggleFavorite={toggleFavorite}
               joinedEventIds={isLoggedIn ? joinedEventIds : []}
               onSelectEvent={() => {}}
-              columns={5}
+              columns={4}
             />
           </section>
         )}
