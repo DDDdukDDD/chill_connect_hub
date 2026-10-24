@@ -1658,3 +1658,44 @@ New placeholder content in a page must be behind `eventOrigin(...) === 'sample'`
 - ตี้ order: รายละเอียด → กำหนดการ (the host's `itinerary`, which no page showed before) → ก่อนไป (with a กติกา row from `/safety`) → จุดนัดพบ → ถามคนจัด → ใครจะไปบ้าง. Fairs show `itinerary` too, reviews only once the fair has started, and no "0 กลุ่ม". Places lose only the travel-perks box (sample partner deals); Smart Plan and nearby dining stay.
 - Spot Buddy trips (`lib/social/spotTrips.ts`) store the date as "12 ต.ค. 2569" like other ตี้, not the `YYYY-MM-DD` the form sends (docs/API.md updated).
 - Next (owner, tonight): finish the remaining sub-page design and link the journey together.
+
+### BE-112 · Journey walk fixes, one related-card row on every detail page (owner 2026-10-24)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-24 · `claude`
+- Walked the member journey with the demo account (join a ตี้ → My Hub → ticket → past ตี้ review / อยากเจออีก / moment → challenge → rewards). Two bugs fixed:
+  - A ตี้ or fair page said "นับในชาเลนจ์" for challenges whose period does not include the event's date (a 26 ต.ค. ตี้ offered a challenge that starts 5 ม.ค.). `rewardsForTargets` in `lib/social/questProgress.ts` now keeps only challenges whose period overlaps the event; places are unchanged. docs/API.md updated.
+  - Challenge `quest-1792000872542` had its `targetGoal` saved as "????" in `data/discovery_content.json`; replaced with Thai text.
+- New `components/detail/RelatedCards.tsx` (with `teeCard` / `fairCard`): the quiet card of "ชาเลนจ์อื่นที่น่าลอง" (photo, date, title, one bottom row) is now the related row on ตี้, งานแฟร์ and ชาเลนจ์ pages, 2 per row on phones instead of one full-width card each. ตี้ show seats left and price; fairs show province and price (no head count). `EventGrid` is no longer used on detail pages.
+- `components/VisitPanel.tsx`: the challenge lines sit in their own block "นับในชาเลนจ์" above the moments box, instead of inside it; the line says "ไปครบ N ตี้ / งาน / แห่ง" by page type.
+- Challenge page: the targets heading names the kind ("ตี้ที่นับในชาเลนจ์นี้", "งานแฟร์ที่นับในชาเลนจ์นี้", else "ที่ที่นับในชาเลนจ์นี้").
+- Owner 2026-10-24: the grey line above the title ("หมวด · โดย …") is gone on all four detail pages; the category did not help a decision and the host / organizer repeated the card below. `DetailHero` takes `highlight` instead of `kicker`: one bold coloured line under the title — ตี้ "7/8 คน · เหลือ 1 ที่" (orange when 2 or fewer, grey when full or ended), place "เปิดอยู่ / ปิดให้บริการแล้ว", fair "กำลังจัดอยู่ตอนนี้ / งานจบแล้ว" (no head count). The people fact left the grey row on ตี้.
+- Owner decision: `/moments/[id]` stays a page you open and go back from; no onward sections.
+- Next: drafts for `/rewards` and `/profile` (old boxed style), then `/safety` copy.
+
+### BE-113 · The งานแฟร์ pillar is now "อีเวนต์" (owner 2026-10-24)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-24 · `claude`
+- The pillar holds fairs, expos, runs, concerts and sports, so the owner renamed it from "งานแฟร์" to **อีเวนต์** on every screen: discover tab, back links, photo label, related row, list page buttons and toasts, My Hub, moments, tickets, challenge rule labels, onboarding, admin console, API messages and legal text. "งานแฟร์" stays only where it names one kind among others ("งานแฟร์ งานวิ่ง งานคอน", the /fairs h1, home section heading, seed and scraper text).
+- `/fairs` metadata title: "อีเวนต์ช่วงนี้: งานแฟร์ งานวิ่ง คอนเสิร์ต" (in a province: "อีเวนต์ใน… ช่วงนี้: …"), so searches for the kinds still find the page.
+- URL `/fairs` and data `eventType: 'public_venue'` are unchanged; moving to `/events` would need redirects and is deferred.
+- Not changed yet: `components/home/JourneyBand.tsx` and `MemberLiveHome.tsx`, which hold the paused band work; rename their labels when that work resumes.
+- AGENTS.md (pillar facts), DESIGN_SYSTEM.md and docs/PRODUCT_DIRECTION.md updated.
+
+### BE-114 · /rewards drawn like the challenge page (owner 2026-10-24)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-24 · `claude`
+- `app/rewards/page.tsx` rewritten in the open style of `/challenges/[id]`: h1 "แลกของรางวัล", the member's XP in one line with how to earn more (ไปตี้ +50 · แชร์โมเมนต์ +30 · ทำชาเลนจ์ครบ), category chips and "แลกได้ตอนนี้", then quiet cards (partner · title · สิทธิ์ · XP pill and "ขาดอีก N XP" / "แลกได้เลย" / "แลกแล้ว"), 2 per row on phones.
+- Removed: breadcrumbs, the hard-coded "Level 2: Active Explorer" badge (it was the same for everyone), the search box (8 items), the catalog/vouchers tab bar, the decorative gradients, the fake "SCAN TO REDEEM" QR picture and the page's own footer.
+- One dialog per reward (`DialogShell`): details, conditions, then "แลกด้วย N XP" which asks once to confirm; once redeemed it shows the code with a copy button. "คูปองของฉัน" is a second view opened from the top (`?tab=my_vouchers` still works): a list of codes to show at the shop.
+- Same data and API as before (`useMyRewards`, `POST /api/rewards`); the catalog is still sample data in `data/rewardsData.ts`.
+
+### BE-115 · /safety in a friendly voice, place page tidy, heart hidden once joined (owner 2026-10-24)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-24 · `claude`
+- `app/safety/page.tsx`: open layout like the challenge page, no English in brackets and no "Trust & Safety Architecture" badge. Order: ก่อนออกไป (4 numbered tips) → กติกาของทุกตี้ (grey `DetailTable`: where to meet, where not, Spot Buddy trip rules, host scans the ticket) → สิ่งที่เราไม่ยอมให้เกิด → เจอปัญหา บอกเราได้เลย (report, block from the profile, call 191) → เราเป็นพื้นที่กลาง (with a link to /legal for the binding terms). Metadata unchanged.
+- Place page: the related row uses `RelatedCards` (new `spotCard`: district and province, entry price; "ไม่ระบุ" leaves the corner empty), heading without the decorative emoji. `VisitReviews` now renders nothing when there are no reviews and the member cannot write one (no more "รีวิว · ยังไม่มีรีวิว").
+- ตี้ page: the heart (save) button is hidden for a member who joined or hosts the ตี้; it is already on their schedule. The action row fits one line again.
+
+### BE-116 · /profile open and people first (owner 2026-10-24)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-24 · `claude`
+- `app/profile/ProfileScreen.tsx`: the seven boxes are now open sections divided by a line on white, like the challenge page. Order: header → ตี้ที่จัด → รีวิวจากคนที่ไป → เหรียญจากชาเลนจ์ → โมเมนต์ → เกี่ยวกับ (grey rows) → owner only: อยากเป็นคนชวน, บัญชีของฉัน.
+- Header adds the facts a visitor decides on: "★ 4.9 จาก 12 รีวิว · จัดมาแล้ว N ตี้" (links to the reviews). Follow is the one button; report and block are quiet text buttons.
+- ตี้ที่จัด uses `RelatedCards` (now with optional `allHref`, `allLabel`, `className`, and cards without a link for ตี้ still waiting for review). The owner sees "จัดการในมายฮับ" (was "จัดการใน My Hub").
+- The trust checklist shows only until the account is trusted; after that the badges say it. "อยากเป็นคนชวน" is one line with "ส่งคำขอ"; the form opens in a dialog. A visitor sees the moments section only when there are moments.
+- Seen on the way: one Spot Buddy trip in the data still has the date "2026-10-12" (saved before BE-111 fixed the format); it shows as is.

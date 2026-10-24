@@ -564,7 +564,7 @@ Up to 40 targets in one call, so a row of cards needs one request. Shared-cached
     photos: [{ url, momentId }],       // up to 3, newest first (a preview)
     momentsCount,                      // all published moments tied to the target; the full list is the feed below
     rating?: { average, count },       // from the ratings given with a mark
-    quests: [{ questId, title, badgeLabel, rewardPoints, rewardTitle?, count, minEvidence }]  // running challenges a visit here counts toward
+    quests: [{ questId, title, badgeLabel, rewardPoints, rewardTitle?, count, minEvidence }]  // running challenges a visit here counts toward; for a ตี้ or fair, only those whose period overlaps the event's date
   } } }
 ```
 A mark or a check-in adds to `beenCount` but never publishes the member's name; names and photos come only from moments the member posted publicly. Do not show `beenCount` on fair cards or fair pages (the fair pillar shows no head count); photos and faces are fine.

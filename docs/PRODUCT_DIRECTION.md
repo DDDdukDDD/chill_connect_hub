@@ -15,7 +15,7 @@ Agreed with the project owner on 2026-10-16. Read this before deciding what a pa
 **"โซเชียลแพลตฟอร์มของคนชอบออกไปใช้ชีวิต ที่ทำให้ทุกการออกไปมีความหมาย"** (a social platform for people who love going out, where every outing counts).
 
 - **Three main pillars: ตี้ + ชาเลนจ์ + โมเมนต์.** ตี้ and ชาเลนจ์ drive people out; โมเมนต์ is what makes it a social platform at all (people see each other, what they did, and want to go too). None of the three is optional.
-- **Support: งานแฟร์ and สถานที่เที่ยว**, the places the pillars lead to.
+- **Support: อีเวนต์ (fairs, runs, concerts, sports; called งานแฟร์ before 2026-10-24) and สถานที่เที่ยว**, the places the pillars lead to.
 
 ## The core loop
 
