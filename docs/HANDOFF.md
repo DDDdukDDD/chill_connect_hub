@@ -1641,3 +1641,20 @@ New placeholder content in a page must be behind `eventOrigin(...) === 'sample'`
 - "พับ" folds the band to one line with the next thing ("② ตี้ · พรุ่งนี้ · 12:00 · …"), remembered per member in `localStorage` (`cch_journey_folded_<id>`); it opens again by itself when what the band would show changes. Every tab keeps one height from iPad up (285px on desktop).
 - New `MemberLiveHome` props from `app/HomeView.tsx`: `savedSpotIds`, `allSpots`, `allEvents`, `bandSpots`, `bandFairs` (30 each to pick from). The moments-only path (follow, react, first post) is unchanged.
 - Walked signed in with a throwaway account in headless Chrome (desktop and phone): pick → อยากไป → ② → ไปมาแล้ว → ③, fold, reload, open. Account deleted afterwards.
+
+### BE-110 · Landing hero height, full ตี้ on lists, two quick filters, one home fix (owner 2026-10-24)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-24 · `claude`
+- Landing hero (`app/HomeView.tsx`) is the height of the `/moments` hero: same padding and collage sizes (350px from laptop up). On phones the live line ("ไปตี้กันแล้ว 1,147 ครั้ง") rides on the collage as a sticker (`LiveJoinsLine short`), so the phone hero is 428px against 421px.
+- Member home: the host's own ตี้ was in `mine` twice (a host is also among the joined), so the journey band showed it twice. `myEvents` is now one per id.
+- Cards (`components/EventGrid.tsx`): a full ตี้ says "เต็มแล้ว"; "ใกล้เต็ม" and "เหลือ N ที่" only while seats remain (it said "เหลือ 1 ที่" on full ones).
+- `/community`: full ตี้ sort after open ones in every order, and two pills next to เข้าร่วมฟรี: "ยังมีที่ว่าง" (the existing `seats=open`) and "ออนไลน์" (the same as ออนไลน์ in the province menu). "มาคนเดียวได้" / "มือใหม่ก็มาได้" were left out on purpose: the ตั้งตี้ form ticks both by default, so they would filter nearly nothing.
+- Not in this push: the journey band rework (`JourneyBand.tsx`, `MemberLiveHome.tsx`), paused by the owner for a design pass.
+
+### BE-111 · Detail pages drawn like the challenge page (owner 2026-10-24)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-24 · `claude`
+- The owner liked `/challenges/[id]` for being clean; ตี้, งานแฟร์ and ที่เที่ยว said the same facts 2-4 times in chips, a sticky box and the top bar. Now every fact is said once.
+- `components/detail/DetailHero.tsx`: 16:10 photo with one small white label (as on the challenge), a grey `kicker` line instead of `chips`, facts as one grey row (`DetailFact` is `{ icon, text }` now), `heroButton.quiet` for share and the like. `PillarChip` / `StatusChip` are gone. New `DetailTable` (grey key/value rows like กติกาและเงื่อนไข) and `ItineraryList`.
+- All three pages: a back link instead of breadcrumbs and top-bar buttons; save, share and the main action once in the header; the right column holds only what the header does not say (ตี้: the host · งานแฟร์: the organizer · ที่เที่ยว: contact) then `VisitPanel`. The challenge link is shown only in `VisitPanel` (with the member's own progress); `PillarLinks` no longer fetches it. Generic sample bullets ("จุดเด่น", "สิ่งที่ควรเตรียม & กฎ" on every ตี้ and fair) removed; real `whatToBring`, transit, parking, facilities and highlights sit in one "ก่อนไป" table.
+- ตี้ order: รายละเอียด → กำหนดการ (the host's `itinerary`, which no page showed before) → ก่อนไป (with a กติกา row from `/safety`) → จุดนัดพบ → ถามคนจัด → ใครจะไปบ้าง. Fairs show `itinerary` too, reviews only once the fair has started, and no "0 กลุ่ม". Places lose only the travel-perks box (sample partner deals); Smart Plan and nearby dining stay.
+- Spot Buddy trips (`lib/social/spotTrips.ts`) store the date as "12 ต.ค. 2569" like other ตี้, not the `YYYY-MM-DD` the form sends (docs/API.md updated).
+- Next (owner, tonight): finish the remaining sub-page design and link the journey together.

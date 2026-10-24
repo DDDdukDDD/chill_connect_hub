@@ -304,7 +304,8 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
       .slice(0, 3);
   }, [activity.joined, activity.hosted, activity.savedEventIds, fairEvents]);
   // Everything the member joined or hosts, ended ones too: the journey band asks for a moment from a ตี้ they went to
-  const myEvents = useMemo(() => [...activity.joined, ...activity.hosted], [activity.joined, activity.hosted]);
+  // A host is also among the joined, so their own ตี้ comes once
+  const myEvents = useMemo(() => [...new Map([...activity.joined, ...activity.hosted].map((e) => [e.id, e])).values()], [activity.joined, activity.hosted]);
   // This month's Chill (places) and Connect (meetups) behind the greeting
   const myMonth = useMyMonth(isMember);
   const monthCounts = myMonth.month ? { chill: myMonth.month.chill.length, connect: myMonth.month.connect.length } : null;
@@ -443,8 +444,9 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
           <section className="relative overflow-hidden bg-[#FFF8F1]">
             <div className="pointer-events-none absolute -top-20 -left-20 w-56 h-56 rounded-full bg-[#FFE7D6]" aria-hidden="true" />
             <div className="pointer-events-none absolute -bottom-40 -right-28 w-80 h-80 rounded-full bg-[#E3EDFF]" aria-hidden="true" />
-            <div className={`relative ${CONTAINER} pt-5 pb-7 md:py-10 grid md:grid-cols-[1fr_1.05fr] gap-5 md:gap-10 items-center`}>
-              <div className="relative h-[210px] md:h-[260px] lg:h-[300px] w-full max-w-[340px] md:max-w-[500px] mx-auto" aria-hidden="true">
+            {/* Same height as the /moments hero (MomentShowcase): same padding and collage sizes (owner 2026-10-24) */}
+            <div className={`relative ${CONTAINER} pt-5 pb-8 md:py-10 grid md:grid-cols-[1fr_1.05fr] gap-6 md:gap-10 items-center`}>
+              <div className="relative h-[170px] sm:h-[200px] md:h-[240px] lg:h-[270px] w-full max-w-[320px] md:max-w-[440px] mx-auto" aria-hidden="true">
                 <figure className="absolute left-[3%] top-[6%] w-[46%] h-[80%]">
                   <img src={HERO_PHOTOS[0]} alt="" className="-rotate-3 w-full h-full object-cover rounded-[1.75rem] lg:rounded-[2rem] shadow-lg border-4 border-white" />
                   <span className={`${HERO_LABEL} -bottom-3 left-1/2 -translate-x-1/2`}>{heroStep(0)}</span>
@@ -457,6 +459,10 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
                   <img src={HERO_PHOTOS[2]} alt="" className="rotate-3 w-full h-full object-cover rounded-[1.75rem] lg:rounded-[2rem] shadow-lg border-4 border-white" />
                   <span className={`${HERO_LABEL} -bottom-3 right-3.5`}>{heroStep(2)}</span>
                 </figure>
+                {/* Phones: the live line rides on the photos as a sticker, so the hero keeps the /moments height */}
+                <span className="md:hidden empty:hidden absolute z-10 left-0 top-[-4%] -rotate-3 inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[11px] text-slate-700 shadow-md">
+                  <LiveJoinsLine short />
+                </span>
               </div>
 
               <div className="text-center md:text-left">
@@ -486,8 +492,8 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
                     ดูโมเมนต์
                   </button>
                 </div>
-                {/* Signs of life without names (the top bar already says สมัครฟรี) */}
-                <div className="mt-5 lg:mt-6 flex flex-wrap items-center justify-center md:justify-start gap-x-5 gap-y-2 text-[13px] sm:text-sm text-slate-700">
+                {/* Signs of life without names (the top bar already says สมัครฟรี); on phones it sits on the photos */}
+                <div className="hidden mt-5 lg:mt-6 md:flex flex-wrap items-center justify-center md:justify-start gap-x-5 gap-y-2 text-[13px] sm:text-sm text-slate-700">
                   <LiveJoinsLine faces={photoFaces('w-6 h-6', 'border-[#FFF8F1]')} />
                 </div>
               </div>

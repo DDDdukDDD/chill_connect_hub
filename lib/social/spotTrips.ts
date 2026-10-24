@@ -1,7 +1,7 @@
 import type { EventItem } from '@/data/mockData';
 import type { LifestyleSpotItem } from '@/data/spotsData';
 import { db } from '../db';
-import { isEventEnded } from '../dateUtils';
+import { formatThaiDateBE, isEventEnded } from '../dateUtils';
 import { MemberAuthError } from '../members/accounts';
 import { hasOpenRisk } from '../members/trust';
 import type { Member } from '../members/types';
@@ -93,6 +93,8 @@ export async function prepareSpotTrip(member: Member | null, eventData: Record<s
     eventType: 'community',
     locationType: 'physical',
     scheduleType: 'single',
+    // Stored like every other ตี้ ("12 ต.ค. 2569"); the form sends the date input value "2026-10-12"
+    date: formatThaiDateBE(date),
     endDate: undefined,
     spotId: spot.id,
     spotTitle: spot.title,

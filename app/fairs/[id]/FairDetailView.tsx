@@ -27,8 +27,7 @@ import { SpotBuddyGatheringModal, SpotBuddyPostItem } from '@/components/SpotBud
 import { ExpoMeetupPassModal, ExpoMeetupPassData } from '@/components/ExpoMeetupPassModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { EventGrid } from '@/components/EventGrid';
-import { DetailHero, PillarChip, StatusChip, heroButton } from '@/components/detail/DetailHero';
-import { PillarLinks } from '@/components/detail/PillarLinks';
+import { DetailHero, DetailTable, ItineraryList, heroButton } from '@/components/detail/DetailHero';
 import { VisitReviews } from '@/components/detail/VisitReviews';
 
 export interface FairSubActivityItem {
@@ -395,17 +394,6 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
   const origin = eventData ? eventOrigin(eventData) : 'sample';
   const isSample = origin === 'sample';
 
-  const fairHighlights = useMemo(() => {
-    if (!isSample) return [];
-    return [
-      'นิทรรศการและมหกรรมจัดแสดงผลงานระดับประเทศ รวมแบรนด์และผู้เชี่ยวชาญชั้นนำ',
-      'เวทีกิจกรรมสัมมนา เปิดมุมมอง และแลกเปลี่ยนองค์ความรู้สร้างสรรค์ใหม่ๆ ตลอดงาน',
-      'โซนเวิร์กช็อปและกิจกรรมสัมผัสประสบการณ์จริง (Hands-on Interactive Showcase)',
-      'พื้นที่พักผ่อน คาเฟ่ Slow Bar และโซนอาหารรองรับผู้เข้าร่วมงานอย่างทั่วถึง',
-      'การเดินทางสะดวกสบายด้วยทางเชื่อมรถไฟฟ้า MRT / BTS Skywalk และที่จอดรถในร่มขนาดใหญ่'
-    ];
-  }, [isSample]);
-
   // Hall & Transit breakdown
   const { publicTransitText, parkingText, venueOrganizerName, officialWebsiteUrl } = useMemo(() => {
     if (!eventData) return { publicTransitText: '', parkingText: '', venueOrganizerName: '', officialWebsiteUrl: null };
@@ -449,7 +437,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
   // Related Fairs
   const relatedFairs = useMemo(() => {
     if (!eventData) return [];
-    return getRelatedEvents(eventData, 40).filter((event) => !isEventEnded(event)).slice(0, 5);
+    return getRelatedEvents(eventData, 40).filter((event) => !isEventEnded(event)).slice(0, 4);
   }, [eventData]);
 
   if (isLoading) {
@@ -525,81 +513,13 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
         onOpenCreateEvent={() => setIsCreateEventModalOpen(true)}
       />
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 pt-1.5 pb-28 sm:pt-2 sm:pb-12 space-y-3 sm:space-y-4">
-        
-        {/* =========================================================================
-            TOP BREADCRUMBS & ACTION BAR
-           ========================================================================= */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1.5 border-b border-slate-100">
-          
-          {/* Left: Clean Breadcrumbs */}
-          <nav className="text-xs text-slate-500 font-medium overflow-x-auto whitespace-nowrap scrollbar-none flex items-center gap-1.5 py-1 min-w-0">
-            <Link href="/" className="hover:text-[#2B527A] transition-colors font-semibold py-1 px-1">หน้าแรก</Link>
-            <span>/</span>
-            <Link
-              href="/fairs"
-              className="hover:text-[#2B527A] transition-colors py-1 px-1 font-semibold text-sky-800"
-            >
-              งานมหกรรม & เอ็กซ์โป
-            </Link>
-            <span>/</span>
-            <span className="text-slate-700 font-semibold py-1 px-1">{cleanText(venueOrganizerName)}</span>
-            <span>/</span>
-            <span className="text-slate-900 font-bold truncate max-w-[180px] sm:max-w-[280px] py-1 px-1">{cleanText(eventData.title)}</span>
-          </nav>
+      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-28 lg:pb-16">
+        <Link href="/fairs" className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
+          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+          งานแฟร์ทั้งหมด
+        </Link>
 
-          {/* Right: Favorite & Share Buttons */}
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={toggleInHub}
-              className={`inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-2xs border cursor-pointer active:scale-95 ${
-                isFav
-                  ? 'bg-sky-50 text-[#2B527A] border-sky-200'
-                  : 'bg-white text-slate-700 border-slate-200 hover:bg-sky-50 hover:text-[#2B527A]'
-              }`}
-            >
-              <BookMarked className={`w-3.5 h-3.5 ${isFav ? 'text-[#2B527A]' : 'text-slate-500'}`} />
-              <span className="hidden sm:inline">
-                {isFav
-                  ? isEnded
-                    ? 'บันทึกในคลัง MyHub แล้ว'
-                    : 'บันทึกใน MyHub แล้ว'
-                  : isEnded
-                  ? 'ติดตามรอบถัดไป'
-                  : 'บันทึกงานนี้'}
-              </span>
-              <span className="sm:hidden">
-                {isFav ? 'บันทึกแล้ว' : isEnded ? 'ติดตาม' : 'บันทึก'}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleShare}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-sky-50 text-slate-700 hover:text-[#2B527A] text-xs font-bold transition-all shadow-2xs border border-slate-200 hover:border-sky-200 cursor-pointer active:scale-95"
-            >
-              {isCopied ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="text-emerald-600 font-bold">คัดลอกลิงก์แล้ว</span>
-                </>
-              ) : (
-                <>
-                  <Share2 className="w-3.5 h-3.5 text-slate-500" />
-                  <span>แชร์งาน</span>
-                </>
-              )}
-            </button>
-          </div>
-
-        </div>
-
-        {/* =========================================================================
-            HEADER: photo left, what is needed to decide and the one main action right (shared with
-            meetups, places and challenges: components/detail/DetailHero.tsx). Fairs show no head count.
-           ========================================================================= */}
+        {/* Header, drawn like the challenge page (components/detail/DetailHero.tsx). Fairs show no head count. */}
         <DetailHero
           pillar="fair"
           image={galleryImages[0] || eventData.image}
@@ -609,24 +529,13 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
             setActivePhotoIndex(0);
             setIsLightboxOpen(true);
           }}
-          chips={
-            <>
-              <PillarChip pillar="fair">{cleanText(eventData.tag) || 'งานแฟร์'}</PillarChip>
-              {isEnded ? (
-                <StatusChip tone="muted">งานจบแล้ว</StatusChip>
-              ) : isOngoing ? (
-                <StatusChip tone="live">กำลังจัดอยู่</StatusChip>
-              ) : (
-                <StatusChip tone="muted">เร็วๆ นี้</StatusChip>
-              )}
-            </>
-          }
+          kicker={[cleanText(eventData.tag) || 'งานแฟร์', isEnded ? 'งานจบแล้ว' : isOngoing ? 'กำลังจัดอยู่' : '', `จัดโดย ${venueOrganizerName}`].filter(Boolean).join(' · ')}
           title={cleanText(eventData.title)}
           facts={[
-            { icon: Calendar, title: cleanText(formatEventDateRange(eventData)), sub: cleanText(eventData.time) },
-            { icon: MapPin, title: cleanText(eventData.location) },
-            { icon: Ticket, title: parsedPrice.displayPrice },
-            { icon: Building2, title: <>จัดโดย {venueOrganizerName}</> },
+            // "ไม่ระบุ…" is not a fact: leave it out rather than print it
+            { icon: Calendar, text: [cleanText(formatEventDateRange(eventData)), cleanText(eventData.time)].filter((part) => part && !part.startsWith('ไม่ระบุ')).join(' · ') },
+            { icon: MapPin, text: cleanText(eventData.location) },
+            ...(parsedPrice.displayPrice && !parsedPrice.displayPrice.startsWith('ไม่ระบุ') ? [{ icon: Ticket, text: parsedPrice.displayPrice }] : []),
           ]}
           actions={
             <>
@@ -635,186 +544,103 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
                 {isFav ? 'บันทึกแล้ว' : isEnded ? 'ติดตามงานรอบหน้า' : 'บันทึกงานนี้'}
               </button>
               {officialWebsiteUrl && (
-                <a href={officialWebsiteUrl} target="_blank" rel="noopener noreferrer" className={heroButton.secondary}>
-                  {parsedPrice.isFree ? <Globe className="w-5 h-5" aria-hidden="true" /> : <Ticket className="w-5 h-5" aria-hidden="true" />}
+                <a href={officialWebsiteUrl} target="_blank" rel="noopener noreferrer" className={heroButton.quiet}>
                   {parsedPrice.isFree ? 'เว็บไซต์งาน' : 'ซื้อบัตร'}
-                  <ExternalLink className="w-4 h-4 opacity-60" aria-hidden="true" />
+                  <ExternalLink className="w-4 h-4" aria-hidden="true" />
                 </a>
               )}
+              <button type="button" onClick={handleShare} className={heroButton.quiet}>
+                {isCopied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Share2 className="w-4 h-4" aria-hidden="true" />}
+                {isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'}
+              </button>
             </>
           }
           note={!isEnded && !isFav ? 'บันทึกไว้ แล้วเราจะเตือนก่อนวันงาน' : undefined}
         />
 
-        {/* The challenge this counts toward and the moments people shared */}
-        <PillarLinks target={{ type: 'fair', id: eventData.id, title: cleanText(eventData.title) }} momentsNoun="งานนี้" />
-
-        {/* =========================================================================
-            CORE CONTENT: 2-COLUMN EDITORIAL LAYOUT
-           ========================================================================= */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-10 items-start pt-3">
-          
-          {/* LEFT COLUMN: PRIMARY DETAILS (2 Cols) */}
-          <div className="lg:col-span-2 space-y-7">
-            
-            {/* Official Partner Card */}
-            <div className="p-4 sm:p-5 rounded-3xl bg-[#FAF7F2] border border-[#E8E2D8] flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 shadow-2xs">
-              <div className="flex items-center gap-3.5 min-w-0">
-                <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex items-center justify-center shrink-0">
-                  <Building2 className="w-6 h-6 text-[#2B527A]" />
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <h3 className="font-bold text-sm text-slate-900 truncate">{venueOrganizerName}</h3>
-                    <span className="text-[10px] font-bold text-sky-800 bg-sky-100/90 px-2 py-0.5 rounded-full border border-sky-200">
-                      {origin === 'member' ? 'ผู้จัดงานลงประกาศเอง' : origin === 'source' ? 'ข้อมูลจากแหล่งทางการ' : 'Official Venue & Partner'}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {origin === 'member'
-                      ? 'ผู้จัดงานที่ยืนยันตัวตนแล้ว • ตรวจโดยทีมงาน Chill & Connect Hub ก่อนเผยแพร่'
-                      : origin === 'source'
-                        ? 'ทีมงานรวบรวมจากเว็บไซต์ทางการของผู้จัดหรือสถานที่ • ตรวจรายละเอียดล่าสุดที่เว็บไซต์งานก่อนเดินทาง'
-                        : 'งานแฟร์ทางการ • คัดสรรและตรวจสอบข้อมูลโดย Chill & Connect Hub'}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
-                {officialWebsiteUrl && (
-                  <a
-                    href={officialWebsiteUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-sky-50 text-sky-900 border border-sky-200 text-xs font-bold shadow-2xs transition-all active:scale-95 cursor-pointer"
-                  >
-                    <Globe className="w-3.5 h-3.5 text-sky-600" />
-                    <span>เว็บไซต์งาน</span>
-                    <ExternalLink className="w-3 h-3 opacity-70" />
+        {/* Like the challenge page: the story, the details as a plain table and the way there on the left; on the
+            right the one thing the header does not say, who runs it, then moments and the challenge it counts toward */}
+        <div className="mt-10 sm:mt-14 grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:gap-10 lg:items-start">
+          <aside className="lg:order-2 space-y-6 lg:sticky lg:top-24">
+            <section className="p-5 sm:p-6 rounded-3xl bg-[#EEF4FA] border border-slate-200 space-y-3">
+              <h2 className="text-sm sm:text-base font-bold text-slate-900">ผู้จัดงาน</h2>
+              <p className="text-sm sm:text-base font-bold text-slate-900">{venueOrganizerName}</p>
+              <p className="text-xs sm:text-sm font-medium text-slate-600 leading-relaxed">
+                {origin === 'member'
+                  ? 'ผู้จัดงานลงประกาศเอง ทีมงานตรวจก่อนเผยแพร่'
+                  : origin === 'source'
+                    ? 'ทีมงานรวบรวมจากเว็บไซต์ทางการ เช็กรายละเอียดล่าสุดที่เว็บไซต์งานก่อนเดินทาง'
+                    : 'งานแฟร์ที่ทีมงานคัดและตรวจข้อมูล'}
+              </p>
+              <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-3 text-xs sm:text-sm font-semibold">
+                {officialWebsiteUrl ? (
+                  <a href={officialWebsiteUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[#2563EB] hover:text-[#1D4ED8] hover:underline">
+                    เว็บไซต์งาน
+                    <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
                   </a>
+                ) : (
+                  <span />
                 )}
-
-                <button
-                  type="button"
-                  onClick={() => setIsReportModalOpen(true)}
-                  className="p-1.5 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer"
-                  title="รายงานข้อมูลไม่ถูกต้อง"
-                >
-                  <Flag className="w-4 h-4" />
+                <button type="button" onClick={() => setIsReportModalOpen(true)} className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-800 cursor-pointer">
+                  <Flag className="w-3.5 h-3.5" aria-hidden="true" />
+                  แจ้งข้อมูลผิด
                 </button>
               </div>
-            </div>
+            </section>
 
-            {/* 4. About the Fair / Story */}
-            <div className="space-y-3 pt-1">
-              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
-                เกี่ยวกับงานและนิทรรศการนี้
-              </h2>
+            {/* Moments from members here, and the challenge this counts toward (said once, here) */}
+            <VisitPanel
+              targetType="fair"
+              markOpensAt={parseEventDateToTimestamp(eventData.date)}
+              targetId={eventData.id}
+              title={eventData.title}
+              location={eventData.location}
+              isLoggedIn={isLoggedIn}
+              onRequireLogin={() => {
+                setMembershipActionTitle('เพื่อบันทึกว่าคุณไปงานนี้มาแล้ว');
+                setIsRequireMembershipOpen(true);
+              }}
+              onShowToast={showToast}
+            />
+          </aside>
+
+          <div className="lg:order-1 min-w-0 space-y-10">
+            <section className="space-y-3">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">เกี่ยวกับงาน</h2>
               {renderDescriptionContent(eventData.description)}
-            </div>
+            </section>
 
-            {/* Ticket & Admission Breakdown Section (If multiple tiers) */}
-            {parsedPrice.hasMultipleTiers && (
-              <div className="space-y-3.5 pt-5 border-t border-slate-100">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Ticket className="w-5 h-5 text-[#2B527A]" />
-                  <h2 className="text-lg font-bold text-slate-900 tracking-tight">
-                    ผังราคาและประเภทบัตรเข้าชม
-                  </h2>
-                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-800 border border-sky-200">
-                    ช่วงราคา {parsedPrice.displayPrice}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 pt-1">
-                  {parsedPrice.tiers.map((t, idx) => (
-                    <div
-                      key={idx}
-                      className={`p-3 rounded-2xl border text-center flex flex-col justify-center transition-all ${
-                        t.isOnline
-                          ? 'bg-gradient-to-b from-amber-50/50 to-white border-amber-200/70 shadow-2xs'
-                          : 'bg-slate-50/60 border-slate-200/80 hover:bg-white hover:shadow-2xs'
-                      }`}
-                    >
-                      <span className="text-[11px] font-semibold text-slate-500 block truncate">
-                        {t.label || (t.isOnline ? 'ออนไลน์' : 'บัตรเข้าชม')}
-                      </span>
-                      <span className="text-base font-bold text-slate-900 mt-0.5">
-                        {t.price}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* The schedule the organizer filled in ("กำหนดการ" in the form) */}
+            <ItineraryList items={eventData.itinerary} />
 
-            {/* 5. Verified Highlights */}
-            {fairHighlights.length > 0 && (
-            <div className="space-y-3.5 pt-5 border-t border-slate-100">
-              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
-                จุดเด่น & ไฮไลต์ที่ไม่ควรพลาดในงาน
-              </h2>
-              <ul className="space-y-3 pt-1">
-                {fairHighlights.map((h, idx) => (
-                  <li
-                    key={idx}
-                    className="flex items-start gap-3 text-xs sm:text-sm text-slate-800 leading-relaxed font-medium"
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-800 shrink-0 mt-2" />
-                    <span className="flex-1">{cleanText(h)}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            )}
+            <DetailTable
+              title="ก่อนไป"
+              rows={[
+                {
+                  label: 'บัตร',
+                  value: parsedPrice.hasMultipleTiers
+                    ? parsedPrice.tiers.map((t) => `${t.label || (t.isOnline ? 'ออนไลน์' : 'บัตรเข้าชม')}: ${t.price}`).join(' · ')
+                    : '',
+                },
+                { label: 'รถไฟฟ้า / รถสาธารณะ', value: publicTransitText ? cleanText(publicTransitText) : '' },
+                { label: 'ที่จอดรถ', value: parkingText ? cleanText(parkingText) : '' },
+              ]}
+            />
 
-            {/* 6. Hall Transit & Parking */}
-            {(publicTransitText || parkingText) && (
-            <div className="space-y-4 pt-5 border-t border-slate-100">
-              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
-                การเดินทางเข้าศูนย์นิทรรศการ & ที่จอดรถ
-              </h2>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-1">
-                <div className="space-y-1">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-                    รถไฟฟ้า MRT / BTS & ทางเชื่อมอาคาร
-                  </span>
-                  <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
-                    {cleanText(publicTransitText)}
-                  </p>
-                </div>
-
-                <div className="space-y-1">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-                    อาคารจอดรถ & จุดชาร์จ EV
-                  </span>
-                  <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
-                    {cleanText(parkingText)}
-                  </p>
-                </div>
-              </div>
-            </div>
-            )}
-
-            {/* 7. Interactive Google Maps */}
-            <div className="space-y-3.5 pt-5 border-t border-slate-100">
+            <section className="space-y-4">
               <div className="flex items-center justify-between gap-2">
-                <h3 className="text-lg font-bold text-slate-900 tracking-tight">
-                  พิกัดแผนที่ศูนย์นิทรรศการ
-                </h3>
-
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">สถานที่จัดงาน</h2>
                 <a
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(eventData.location)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs font-bold text-[#2B527A] hover:underline shrink-0"
+                  className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-[#2563EB] hover:text-[#1D4ED8] hover:underline shrink-0"
                 >
-                  <span>เปิดดูใน Google Maps</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
+                  เปิดใน Google Maps
+                  <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
                 </a>
               </div>
-
-              <div className="relative w-full h-60 sm:h-72 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-2xs">
+              <div className="relative w-full h-60 sm:h-72 rounded-3xl overflow-hidden bg-slate-100">
                 <iframe
                   title={`Google Map - ${cleanText(eventData.title)}`}
                   src={`https://maps.google.com/maps?q=${encodeURIComponent(eventData.location)}&hl=th&z=15&output=embed`}
@@ -824,39 +650,20 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
                   referrerPolicy="no-referrer-when-downgrade"
                 />
               </div>
-            </div>
+            </section>
 
-            {/* Ratings and tips from people who went (the "จบ" phase of a fair) */}
-            <div className="pt-5 border-t border-slate-100">
-              <VisitReviews targetType="fair" targetId={eventData.id} isLoggedIn={isLoggedIn} />
-            </div>
+            {/* Ratings and tips from people who went: only once the fair has started, so nothing reads "ยังไม่มีรีวิว" ahead of it */}
+            {(isOngoing || isEnded) && <VisitReviews targetType="fair" targetId={eventData.id} isLoggedIn={isLoggedIn} />}
 
-            {/* 8. Sub-Activities: กลุ่มนัดเดินดูงาน & หาเพื่อนแวะจิบกาแฟ (Relocated Under Map) */}
-            <div className="space-y-4 pt-6 border-t border-slate-100">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            {/* Groups walking the fair together; after it ends, only when there were some */}
+            {(!isEnded || fairSubActivities.length > 0) && (
+            <section className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-bold text-slate-900 tracking-tight">
-                      กลุ่มนัดเดินดูงาน & หาเพื่อนแวะจิบกาแฟ
-                    </h2>
-                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-800 border border-sky-200">
-                      {fairSubActivities.length} กลุ่มนัดหมาย
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 font-medium pt-0.5">
-                    ไปคนเดียวไม่ต้องกลัวเหงา มารวมกลุ่มหน้าบูธ หรือตั้งกลุ่มชวนเพื่อนเดินโซนที่ชอบได้เลย
-                  </p>
+                  <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">นัดเดินงานด้วยกัน</h2>
+                  <p className="mt-1 text-sm font-medium text-slate-600">ไปคนเดียวก็ไม่เหงา ขอแจมกลุ่มที่มีอยู่ หรือตั้งกลุ่มชวนเพื่อนเดินโซนที่ชอบ</p>
                 </div>
-
-                {isEnded ? (
-                  <button
-                    type="button"
-                    disabled
-                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold cursor-not-allowed shrink-0"
-                  >
-                    <span>ปิดรับการนัดหมาย (งานสิ้นสุดแล้ว)</span>
-                  </button>
-                ) : (
+                {!isEnded && (
                   <button
                     type="button"
                     onClick={() => {
@@ -868,15 +675,15 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
                         setIsFairBuddyModalOpen(true);
                       }
                     }}
-                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-sm transition-all cursor-pointer active:scale-95 shrink-0"
+                    className={heroButton.quiet}
                   >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>สร้างกลุ่มนัดเดินงาน</span>
+                    <Plus className="w-4 h-4" aria-hidden="true" />
+                    ตั้งกลุ่มเดินงาน
                   </button>
                 )}
               </div>
 
-              {/* Sub-Activities Grid */}
+              {fairSubActivities.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
                 {fairSubActivities.map((sub) => {
                   const isJoined = joinedSubIds.includes(sub.id);
@@ -966,119 +773,17 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
                   );
                 })}
               </div>
-            </div>
-
-          </div>
-
-          {/* RIGHT COLUMN: STICKY SCHEDULE & ACTION CARD (1 Col) */}
-          <div className="lg:col-span-1 space-y-5 lg:sticky lg:top-24">
-            
-            <div className={`p-6 rounded-3xl transition-all space-y-5 ${
-              isFav
-                ? 'bg-gradient-to-b from-sky-50/40 via-white to-white border-2 border-sky-400 shadow-md ring-2 ring-sky-300/40'
-                : 'bg-white border border-slate-200/90 shadow-sm'
-            }`}>
-              
-              {/* Header Price & Status */}
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100 gap-2">
-                <span className="text-xs font-bold text-slate-500 shrink-0">ค่าเข้าชมนิทรรศการ</span>
-                <span className="text-base sm:text-lg font-bold text-slate-900 text-right">
-                  {parsedPrice.displayPrice}
-                </span>
-              </div>
-
-              {/* Multi-Tier Chips in Sidebar */}
-              {parsedPrice.hasMultipleTiers && (
-                <div className="bg-slate-50/90 rounded-2xl p-3 border border-slate-200/80 space-y-2">
-                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-600">
-                    <span className="flex items-center gap-1.5">
-                      <Ticket className="w-3.5 h-3.5 text-[#2B527A]" />
-                      <span>ประเภทบัตรและราคา ({parsedPrice.tiers.length} รูปแบบ)</span>
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 pt-0.5 max-h-36 overflow-y-auto">
-                    {parsedPrice.tiers.map((t, idx) => (
-                      <span
-                        key={idx}
-                        className={`text-[10.5px] font-bold px-2 py-0.5 rounded-md border ${
-                          t.isOnline
-                            ? 'bg-amber-50 text-amber-900 border-amber-200/70'
-                            : 'bg-white text-slate-800 border-slate-200/80 shadow-2xs'
-                        }`}
-                      >
-                        {t.label ? `${t.label}: ` : ''}{t.price}
-                      </span>
-                    ))}
-                  </div>
-                </div>
               )}
-
-              {/* Action Buttons: Pure Retention Hero CTA */}
-              <div className="space-y-2 pt-2">
-                <button
-                  type="button"
-                  onClick={toggleInHub}
-                  className={`group w-full py-3.5 px-4 rounded-2xl font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer ${
-                    isFav
-                      ? 'bg-sky-50 text-[#2B527A] border border-sky-300 shadow-sky-900/10 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200'
-                      : 'bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm'
-                  }`}
-                >
-                  {isFav ? (
-                    <>
-                      <span className="flex items-center gap-2 group-hover:hidden">
-                        <Check className="w-4 h-4 text-[#2B527A]" />
-                        <span>{isEnded ? 'บันทึกในคลัง MyHub แล้ว' : 'บันทึกงานนี้ลง MyHub แล้ว'}</span>
-                      </span>
-                      <span className="hidden items-center gap-2 group-hover:flex text-rose-600">
-                        <X className="w-4 h-4 text-rose-500" />
-                        <span>{isEnded ? 'นำออกจากคลัง' : 'นำออกจาก MyHub'}</span>
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <BookMarked className="w-4 h-4 text-white" />
-                      <span>{isEnded ? 'เพิ่มเข้าคลังเพื่อติดตามรอบถัดไป' : 'บันทึกงานนี้ลง MyHub'}</span>
-                    </>
-                  )}
-                </button>
-
-                {isFav && (
-                  <Link
-                    href="/myhub?type=public_venue"
-                    className="text-center text-[11px] font-bold text-sky-800 hover:underline block pt-0.5"
-                  >
-                    <span>{isEnded ? 'ดูงานในคลัง MyHub ของคุณ' : 'ดูงานที่บันทึกไว้ใน MyHub ของคุณ'}</span>
-                  </Link>
-                )}
-              </div>
-
-            </div>
-
-
-            {/* Moments from members here, and how to share one (same place as on the place page) */}
-            <VisitPanel
-              targetType="fair"
-              markOpensAt={parseEventDateToTimestamp(eventData.date)}
-              targetId={eventData.id}
-              title={eventData.title}
-              location={eventData.location}
-              isLoggedIn={isLoggedIn}
-              onRequireLogin={() => {
-                setMembershipActionTitle('เพื่อบันทึกว่าคุณไปงานนี้มาแล้ว');
-                setIsRequireMembershipOpen(true);
-              }}
-              onShowToast={showToast}
-            />
+            </section>
+            )}
           </div>
-
         </div>
 
         {/* =========================================================================
             RELATED FAIRS & EXPOS SECTION (REUSE STANDARD EVENTGRID)
            ========================================================================= */}
         {relatedFairs.length > 0 && (
-          <section className="pt-10 border-t border-slate-100 space-y-5">
+          <section className="mt-14 sm:mt-20 space-y-5">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
@@ -1103,7 +808,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
               favorites={favorites}
               toggleFavorite={toggleFavorite}
               onSelectEvent={() => {}}
-              columns={5}
+              columns={4}
             />
           </section>
         )}
