@@ -24,7 +24,7 @@ import { fetchAllContentPages } from '@/lib/contentClient';
 import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
 import { MOCK_EVENTS, EventItem } from '@/data/mockData';
 import {} from '@/data/spotsData';
-import { eventInProvince, matchesQuery, meetupSearchText, type DiscoverCounts } from '@/lib/discoverMatch';
+import { ONLINE, eventInProvince, matchesQuery, meetupSearchText, type DiscoverCounts } from '@/lib/discoverMatch';
 import { DiscoverHeader, FilterSelect, filterPillClass } from '@/components/discover/DiscoverHeader';
 import { DiscoverSearch } from '@/components/discover/DiscoverSearch';
 import { useMyInterests } from '@/lib/useMyInterests';
@@ -284,6 +284,10 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
 
     // Dynamic Multi-Tier Sorting
     return [...list].sort((a, b) => {
+      // Full ตี้ come after the ones people can still join, whatever the order (owner 2026-10-24)
+      const fullA = a.status === 'full' || a.participantsCount >= a.maxParticipants;
+      const fullB = b.status === 'full' || b.participantsCount >= b.maxParticipants;
+      if (fullA !== fullB) return fullA ? 1 : -1;
       if (sortBy === 'popular') {
         const ratingA = a.hostRating || a.rating || 4.5;
         const ratingB = b.hostRating || b.rating || 4.5;
@@ -507,6 +511,17 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
             <button
               type="button"
               onClick={() => {
+                setOpenOnly(!openOnly);
+                setCurrentPage(1);
+              }}
+              aria-pressed={openOnly}
+              className={filterPillClass('meetups', openOnly)}
+            >
+              ยังมีที่ว่าง
+            </button>
+            <button
+              type="button"
+              onClick={() => {
                 setPriceFilter(priceFilter === 'free' ? 'all' : 'free');
                 setCurrentPage(1);
               }}
@@ -514,6 +529,18 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
               className={filterPillClass('meetups', priceFilter === 'free')}
             >
               เข้าร่วมฟรี
+            </button>
+            {/* The same choice as "ออนไลน์" in the province menu, one tap away */}
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedProvince(selectedProvince === ONLINE ? 'all' : ONLINE);
+                setCurrentPage(1);
+              }}
+              aria-pressed={selectedProvince === ONLINE}
+              className={filterPillClass('meetups', selectedProvince === ONLINE)}
+            >
+              ออนไลน์
             </button>
             <FilterSelect
               kind="meetups"

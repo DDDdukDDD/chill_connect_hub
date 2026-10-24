@@ -96,7 +96,9 @@ export const EventGrid: React.FC<EventGridProps> = ({
     const isJoined = joinedEventIds.includes(event.id);
     const isEnded = isEventEnded(event);
     const fillRatio = event.participantsCount / event.maxParticipants;
-    const isAlmostFull = fillRatio >= 0.8;
+    // Full has its own state; "almost full" only while seats remain (it said "เหลือ 1 ที่" on full ตี้)
+    const isFull = event.status === 'full' || event.participantsCount >= event.maxParticipants;
+    const isAlmostFull = !isFull && fillRatio >= 0.8;
     const catStyle = CATEGORY_COLORS[event.category] || CATEGORY_COLORS.heal;
 
     const detailHref = event.eventType === 'public_venue'
@@ -147,10 +149,10 @@ export const EventGrid: React.FC<EventGridProps> = ({
                         {event.distanceKm.toFixed(1)} กม.
                       </span>
                     )}
-                    {event.eventType !== 'public_venue' && isAlmostFull && !isJoined && !isEnded && (
+                    {event.eventType !== 'public_venue' && (isAlmostFull || isFull) && !isJoined && !isEnded && (
                       <span className="text-[10px] font-bold bg-slate-900/85 backdrop-blur-md text-white px-2 py-0.5 rounded-full shadow-2xs flex items-center gap-1 border border-white/10">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                        เหลือ {Math.max(1, event.maxParticipants - event.participantsCount)} ที่
+                        <span className={`w-1.5 h-1.5 rounded-full ${isFull ? 'bg-slate-400' : 'bg-amber-400 animate-pulse'}`} />
+                        {isFull ? 'เต็มแล้ว' : `เหลือ ${event.maxParticipants - event.participantsCount} ที่`}
                       </span>
                     )}
                   </div>
@@ -280,6 +282,8 @@ export const EventGrid: React.FC<EventGridProps> = ({
                         </span>
                       ) : isEnded ? (
                         <span className="text-[11px] font-medium text-slate-400">จบกิจกรรมแล้ว</span>
+                      ) : isFull ? (
+                        <span className="text-[11px] font-semibold text-slate-500">เต็มแล้ว</span>
                       ) : isAlmostFull ? (
                         <span className="text-[11px] font-semibold text-amber-600">ใกล้เต็มแล้ว</span>
                       ) : (
@@ -302,7 +306,9 @@ export const EventGrid: React.FC<EventGridProps> = ({
     const isJoined = joinedEventIds.includes(event.id);
     const isEnded = isEventEnded(event);
     const fillRatio = event.participantsCount / event.maxParticipants;
-    const isAlmostFull = fillRatio >= 0.8;
+    // Full has its own state; "almost full" only while seats remain (it said "เหลือ 1 ที่" on full ตี้)
+    const isFull = event.status === 'full' || event.participantsCount >= event.maxParticipants;
+    const isAlmostFull = !isFull && fillRatio >= 0.8;
 
     const detailHref = event.eventType === 'public_venue'
       ? `/fairs/${encodeURIComponent(event.id)}`
@@ -479,6 +485,8 @@ export const EventGrid: React.FC<EventGridProps> = ({
                   </span>
                 ) : isEnded ? (
                   <span className="text-[11px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">จบแล้ว</span>
+                ) : isFull ? (
+                  <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">เต็มแล้ว</span>
                 ) : isAlmostFull ? (
                   <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">ใกล้เต็ม</span>
                 ) : (

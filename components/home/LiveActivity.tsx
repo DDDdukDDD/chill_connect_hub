@@ -200,8 +200,8 @@ function withSampleCounts<T extends typeof SAMPLE_COUNTS>(counts: T): T {
   };
 }
 
-/** Visitor hero: one line, how many times people joined a meetup last week. `faces` sits before the words. */
-export function LiveJoinsLine({ faces }: { faces?: React.ReactNode }) {
+/** Visitor hero: one line, how many times people joined a meetup last week. `faces` sits before the words; `short` drops "สัปดาห์นี้" for the sticker on phones. */
+export function LiveJoinsLine({ faces, short = false }: { faces?: React.ReactNode; short?: boolean }) {
   const live = useLiveActivity();
   if (!live.counts) return null;
   const joins = withSampleCounts(live.counts).meetupJoins;
@@ -213,7 +213,7 @@ export function LiveJoinsLine({ faces }: { faces?: React.ReactNode }) {
         <span className="relative inline-flex w-2 h-2 rounded-full bg-red-500" />
       </span>
       {faces}
-      สัปดาห์นี้ไปตี้กันแล้ว <strong className="font-semibold text-slate-900">{joins.toLocaleString()} ครั้ง</strong>
+      {short ? 'ไปตี้กันแล้ว' : 'สัปดาห์นี้ไปตี้กันแล้ว'} <strong className="font-semibold text-slate-900">{joins.toLocaleString()} ครั้ง</strong>
     </span>
   );
 }
