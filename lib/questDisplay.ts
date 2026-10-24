@@ -120,7 +120,7 @@ export const SELF_NOTED_HINT = 'ชาเลนจ์นี้ยังไม่
 const KINDS = {
   spot: { noun: 'สถานที่', unit: 'แห่ง' },
   community: { noun: 'ตี้', unit: 'ครั้ง' },
-  fair: { noun: 'งานแฟร์', unit: 'งาน' },
+  fair: { noun: 'อีเวนต์', unit: 'งาน' },
 } as const;
 
 // A rule names categories by id; these are the words a visitor knows them by

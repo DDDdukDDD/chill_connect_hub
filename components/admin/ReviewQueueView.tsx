@@ -40,7 +40,7 @@ interface Counts {
 const TABS: Array<{ id: Pillar | 'all'; label: string }> = [
   { id: 'all', label: 'ทั้งหมด' },
   { id: 'community', label: 'คอมมูนิตี้' },
-  { id: 'fairs', label: 'งานแฟร์' },
+  { id: 'fairs', label: 'อีเวนต์' },
   { id: 'spots', label: 'พิกัดเที่ยว' },
   { id: 'quests', label: 'ชาเลนจ์' },
 ];

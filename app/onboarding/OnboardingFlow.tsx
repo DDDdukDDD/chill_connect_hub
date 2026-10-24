@@ -61,7 +61,7 @@ type PillarId = 'spots' | 'community' | 'fairs' | 'challenges' | 'moments';
 const PILLARS: Record<PillarId, { name: string; short: string; line: string; icon: LucideIcon; color: string; href: string }> = {
   spots: { name: 'พิกัดเที่ยว', short: 'พิกัดเที่ยว', line: 'ที่พักใจ คัดมาแล้ว ทั่วไทย', icon: MapPin, color: '#4A7C59', href: '/spots' },
   community: { name: 'ตี้', short: 'ตี้', line: 'กลุ่มเล็กๆ ของคนที่ชอบ อะไรเหมือนกัน', icon: Users, color: '#F26430', href: '/community' },
-  fairs: { name: 'งานแฟร์และอีเวนต์', short: 'งานแฟร์', line: 'งานใหญ่ ที่ไม่อยากพลาด', icon: Ticket, color: '#2B527A', href: '/fairs' },
+  fairs: { name: 'อีเวนต์', short: 'อีเวนต์', line: 'งานใหญ่ ที่ไม่อยากพลาด', icon: Ticket, color: '#2B527A', href: '/fairs' },
   challenges: { name: 'ชาเลนจ์', short: 'ชาเลนจ์', line: 'ภารกิจสนุกๆ ทำแล้วได้ XP', icon: Trophy, color: '#7C3AED', href: '/challenges' },
   // Moments is where every other pillar ends up: it lights up as soon as the visitor picks anything
   moments: { name: 'โมเมนต์', short: 'โมเมนต์', line: 'เก็บภาพดีๆ แล้วแชร์ให้เพื่อนเห็น', icon: Camera, color: '#F43F5E', href: '/moments' },

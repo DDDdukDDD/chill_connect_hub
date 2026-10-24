@@ -79,7 +79,7 @@ const PRESET_IMAGES: Record<CreationEntityType, Array<{ label: string; url: stri
 
 const TYPE_INFO: Record<CreationEntityType, { title: string; text: string; steps: string[]; icon: React.ElementType }> = {
   community: { title: 'ตี้', text: 'นัดกลุ่มเล็ก เช่น วิ่งเช้า บอร์ดเกม เวิร์กช็อป', steps: ['เรื่องพื้นฐาน', 'วันเวลาและสถานที่', 'รายละเอียด', 'ตรวจและส่ง'], icon: Users },
-  fair: { title: 'งานแฟร์และมหกรรม', text: 'งานจัดแสดง นิทรรศการ เอ็กซ์โป งานวิ่ง', steps: ['เรื่องพื้นฐาน', 'วันและสถานที่', 'รายละเอียด', 'ตรวจและส่ง'], icon: Building },
+  fair: { title: 'อีเวนต์', text: 'งานจัดแสดง นิทรรศการ เอ็กซ์โป งานวิ่ง', steps: ['เรื่องพื้นฐาน', 'วันและสถานที่', 'รายละเอียด', 'ตรวจและส่ง'], icon: Building },
   spot: { title: 'แนะนำสถานที่', text: 'ที่เที่ยว คาเฟ่ หรือมุมพักใจที่อยากให้คนอื่นรู้จัก', steps: ['เรื่องพื้นฐาน', 'ที่ตั้งและเวลาเปิด', 'รายละเอียด', 'ตรวจและส่ง'], icon: MapPin },
   challenge: { title: 'เสนอชาเลนจ์', text: 'ภารกิจให้คนในคอมมูนิตี้ทำร่วมกัน', steps: ['เรื่องพื้นฐาน', 'ภารกิจ', 'ช่วงเวลาและเหรียญ', 'ตรวจและส่ง'], icon: Target },
 };
@@ -1215,7 +1215,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
           })}
           {canCreate && (!isHost || !canCreateFair) && (
             <p className="pt-2 text-sm font-medium text-slate-500 leading-relaxed">
-              {!isHost && !canCreateFair ? 'อยากให้ตี้เผยแพร่ทันที หรืออยากลงงานแฟร์ ' : 'อยากลงงานแฟร์ '}
+              {!isHost && !canCreateFair ? 'อยากให้ตี้เผยแพร่ทันที หรืออยากลงอีเวนต์ ' : 'อยากลงอีเวนต์ '}
               <a href="/profile#host" className="font-bold text-[#2563EB] hover:underline whitespace-nowrap">ส่งคำขอที่หน้าโปรไฟล์</a>
             </p>
           )}

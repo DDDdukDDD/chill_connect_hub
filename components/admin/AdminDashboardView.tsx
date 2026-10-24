@@ -85,7 +85,7 @@ export function AdminDashboardView({ onNavigate }: { onNavigate: (module: AdminM
       module: 'scraper',
     },
     {
-      label: 'งานแฟร์ที่จะจบภายใน 7 วัน',
+      label: 'อีเวนต์ที่จะจบภายใน 7 วัน',
       value: String(health.fairsEndingSoon.length),
       problem: false,
       detail: health.fairsEndingSoon.slice(0, 3).map((f) => f.title).join(' · '),

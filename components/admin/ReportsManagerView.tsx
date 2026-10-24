@@ -26,7 +26,7 @@ interface Report {
   note?: string;
 }
 
-const TYPE_LABELS = { community: 'ตี้', fair: 'งานแฟร์', spot: 'สถานที่', review: 'รีวิว', chat_message: 'ข้อความแชตกลุ่ม' };
+const TYPE_LABELS = { community: 'ตี้', fair: 'อีเวนต์', spot: 'สถานที่', review: 'รีวิว', chat_message: 'ข้อความแชตกลุ่ม' };
 // Reviews and chat messages have no page of their own; staff read the reported words in the report
 const PUBLIC_PATHS: Partial<Record<Report['targetType'], string>> = { community: '/community/', fair: '/fairs/', spot: '/spots/' };
 const MODULES: Partial<Record<Report['targetType'], AdminModuleId>> = { community: 'community', fair: 'fairs', spot: 'spots' };
@@ -129,7 +129,7 @@ export function ReportsManagerView({ onNavigate }: { onNavigate: (module: AdminM
       <AdminPageHeader
         icon={Flag}
         title="รายงานความปลอดภัย"
-        description="สิ่งที่สมาชิกรายงานจากหน้าตี้ งานแฟร์ สถานที่ รีวิว และแชตกลุ่ม ผู้ถูกรายงานไม่เห็นว่าใครรายงาน"
+        description="สิ่งที่สมาชิกรายงานจากหน้าตี้ อีเวนต์ สถานที่ รีวิว และแชตกลุ่ม ผู้ถูกรายงานไม่เห็นว่าใครรายงาน"
         badge={openCount > 0 ? <AdminBadge tone="amber">{openCount} รอดู</AdminBadge> : undefined}
         actions={
           <button type="button" onClick={() => { setReports(null); setReloadToken((token) => token + 1); }} className={adminButton.secondary}>

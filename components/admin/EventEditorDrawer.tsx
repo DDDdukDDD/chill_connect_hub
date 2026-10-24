@@ -239,7 +239,7 @@ export function EventEditorDrawer({ event, type, onClose, onSaved }: EventEditor
           <input id="event-tag" value={form.tag} onChange={set('tag')} className={fieldInputClass} />
         </Field>
         <Field label={isCommunity ? 'ผู้จัด (โฮสต์):' : 'ผู้จัดอย่างเป็นทางการ:'} htmlFor="event-host" wide
-          hint={isCommunity ? undefined : 'บังคับสำหรับงานแฟร์ เช่น สมาคมผู้จัดพิมพ์ฯ (PUBAT)'}>
+          hint={isCommunity ? undefined : 'บังคับสำหรับอีเวนต์ เช่น สมาคมผู้จัดพิมพ์ฯ (PUBAT)'}>
           <input id="event-host" value={form.hostName} onChange={set('hostName')} className={fieldInputClass} />
         </Field>
       </FormSection>
@@ -248,7 +248,7 @@ export function EventEditorDrawer({ event, type, onClose, onSaved }: EventEditor
         <Field label="วันเริ่ม:" htmlFor="event-date" hint='รูปแบบ "12 ต.ค. 2569"'>
           <input id="event-date" value={form.date} onChange={set('date')} className={fieldInputClass} />
         </Field>
-        <Field label="วันสิ้นสุด:" htmlFor="event-end-date" hint={isCommunity ? 'เว้นว่างได้ถ้าจบในวันเดียว' : 'บังคับสำหรับงานแฟร์'}>
+        <Field label="วันสิ้นสุด:" htmlFor="event-end-date" hint={isCommunity ? 'เว้นว่างได้ถ้าจบในวันเดียว' : 'บังคับสำหรับอีเวนต์'}>
           <input id="event-end-date" value={form.endDate} onChange={set('endDate')} className={fieldInputClass} />
         </Field>
         <Field label="เวลา:" htmlFor="event-time" wide hint='เช่น "07:00 - 09:30 น."'>

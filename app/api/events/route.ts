@@ -188,7 +188,7 @@ export async function POST(req: Request) {
       }
       // Fairs come from approved organizers and venues only
       if (isPublicVenue && !(member.hostApplication?.status === 'approved' && ['organizer', 'venue'].includes(member.hostApplication.kind))) {
-        return NextResponse.json({ success: false, message: 'งานแฟร์สร้างได้เฉพาะผู้จัดงานหรือเจ้าของพื้นที่ที่ทีมงานอนุมัติแล้ว' }, { status: 403 });
+        return NextResponse.json({ success: false, message: 'อีเวนต์สร้างได้เฉพาะผู้จัดงานหรือเจ้าของพื้นที่ที่ทีมงานอนุมัติแล้ว' }, { status: 403 });
       }
     }
     const isApprovedHost = member?.hostApplication?.status === 'approved' && member.status === 'active';

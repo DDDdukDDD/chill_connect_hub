@@ -10,7 +10,7 @@ type Props = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const event = await getPublicEvent(decodeURIComponent((await params).id), 'public_venue');
-  if (!event) return { title: 'งานแฟร์และอีเวนต์' };
+  if (!event) return { title: 'อีเวนต์และอีเวนต์' };
   return pageMetadata({
     title: event.title,
     description: metaDescription(`${formatEventDateRange(event)} · ${event.location} · ${metaDescription(event.description, 300)}`),
@@ -34,7 +34,7 @@ export default async function FairDetailPage({ params }: Props) {
       {event && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={jsonLdHtml(breadcrumbJsonLd([{ name: 'งานแฟร์', path: '/fairs' }, { name: event.title, path }]))}
+          dangerouslySetInnerHTML={jsonLdHtml(breadcrumbJsonLd([{ name: 'อีเวนต์', path: '/fairs' }, { name: event.title, path }]))}
         />
       )}
       <FairDetailView initialEvent={event} />

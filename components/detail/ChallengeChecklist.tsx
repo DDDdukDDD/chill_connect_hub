@@ -82,7 +82,7 @@ export function ChallengeChecklist({ questId }: { questId: string }) {
           </li>
         ))}
       </ul>
-      <p className="mt-3 text-xs text-slate-600">ตี้นับเมื่อคนจัดยืนยันว่ามา · ที่เที่ยวและงานแฟร์นับเมื่อรูปที่ถ่ายตรงนั้นผ่าน · กด &quot;มาที่นี่แล้ว&quot; อย่างเดียวไม่นับ</p>
+      <p className="mt-3 text-xs text-slate-600">ตี้นับเมื่อคนจัดยืนยันว่ามา · ที่เที่ยวและอีเวนต์นับเมื่อรูปที่ถ่ายตรงนั้นผ่าน · กด &quot;มาที่นี่แล้ว&quot; อย่างเดียวไม่นับ</p>
     </section>
   );
 }

@@ -34,7 +34,7 @@ export const ROLE_DESCRIPTIONS: Record<StaffRole, string> = {
 export const PERMISSION_LABELS: Record<AdminPermission, string> = {
   'content.view': 'ดูทุกหน้า',
   'community.review': 'ตรวจ / อนุมัติตี้',
-  'content.edit': 'แก้ไข / เผยแพร่สถานที่ งานแฟร์ ชาเลนจ์',
+  'content.edit': 'แก้ไข / เผยแพร่สถานที่ อีเวนต์ ชาเลนจ์',
   'sources.run': 'จัดการแหล่งข้อมูล / รันการดึงข้อมูล',
   'system.manage': 'ข้อมูลหลัก รูปภาพ cache',
   'audit.view': 'ดูบันทึกการกระทำ',

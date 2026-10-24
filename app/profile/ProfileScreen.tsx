@@ -18,6 +18,7 @@ import { NEW_ACCOUNT_DAYS } from '@/lib/members/trust';
 import { useAuth } from '@/lib/useAuth';
 import { useMasterData } from '@/lib/useMasterData';
 import { memberActions } from '@/lib/useMemberSession';
+import { RelatedCards } from '@/components/detail/RelatedCards';
 import { EditProfileDialog, FIELD_LABELS } from './EditProfileDialog';
 
 /**
@@ -79,7 +80,8 @@ interface MomentThumb {
 const GENDER_LABELS: Record<NonNullable<MemberPreferences['gender']>, string> = { female: 'หญิง', male: 'ชาย', lgbtq: 'LGBTQ+' };
 const HOST_KIND_LABELS: Record<HostApplication['kind'], string> = { host: 'เปิดตี้', venue: 'ร้านหรือพื้นที่', organizer: 'ผู้จัดงานหรือแบรนด์' };
 const ABOUT_ORDER: ProfileFieldKey[] = ['connectGoal', 'occupation', 'workplace', 'education', 'livingArea', 'hometown', 'relationshipStatus'];
-const card = 'bg-white rounded-3xl border border-slate-200 p-5 sm:p-7';
+// Open sections divided by a line, not boxes (owner 2026-10-24: drawn like the challenge page, people first)
+const card = 'py-7 sm:py-8';
 const inputClass =
   'w-full px-4 py-3 bg-white border border-slate-300 rounded-2xl text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20';
 
@@ -137,7 +139,7 @@ function Badge({ icon: Icon, children }: { icon: LucideIcon; children: React.Rea
 function SectionTitle({ children, action }: { children: string; action?: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3 mb-4">
-      <h2 className="text-base sm:text-lg font-bold text-slate-900">{children}</h2>
+      <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">{children}</h2>
       {action}
     </div>
   );
@@ -244,6 +246,7 @@ function HostCard({ member, application, onChanged }: { member: PublicMember; ap
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [again, setAgain] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const canApply = member.trust.level !== 'new';
 
   const submit = async (e: React.FormEvent) => {
@@ -261,9 +264,20 @@ function HostCard({ member, application, onChanged }: { member: PublicMember; ap
   };
 
   const status = application?.status;
+  // Not applied yet (or trying again): one line here, the form opens in a dialog
+  const showOffer = !status || (status === 'rejected' && again);
   return (
     <section id="host" className={`${card} scroll-mt-24`}>
       <SectionTitle>อยากเป็นคนชวน</SectionTitle>
+      {showOffer && !isFormOpen && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <p className="text-sm font-medium text-slate-600"><PhraseText text="อยากเปิดตี้ให้คนอื่นมาร่วม? เมื่อทีมงานอนุมัติ ตี้ของคุณจะเผยแพร่ได้ทันที" /></p>
+          <button type="button" onClick={() => setIsFormOpen(true)} className={`${dialogButton.quiet} self-start sm:self-auto`}>
+            <CalendarPlus className="w-4 h-4" aria-hidden="true" />
+            ส่งคำขอ
+          </button>
+        </div>
+      )}
       {status === 'approved' && (
         <p className="flex items-start gap-2 text-sm font-semibold text-emerald-800">
           <CircleCheck className="w-5 h-5 shrink-0" aria-hidden="true" />
@@ -285,7 +299,8 @@ function HostCard({ member, application, onChanged }: { member: PublicMember; ap
           <button type="button" onClick={() => setAgain(true)} className={dialogButton.quiet}>ส่งคำขอใหม่</button>
         </div>
       )}
-      {(!status || (status === 'rejected' && again)) && (
+      {showOffer && isFormOpen && (
+        <DialogShell onClose={() => setIsFormOpen(false)} size="md" title="ส่งคำขอเป็นคนชวน">
         <form onSubmit={submit} className="space-y-4">
           <p className="text-sm font-medium text-slate-500 leading-relaxed">
             <PhraseText text="เล่าให้ทีมงานฟังสั้นๆ ว่าอยากจัดอะไร เมื่ออนุมัติแล้ว กิจกรรมของคุณจะเผยแพร่ได้ทันที ถ้ายังไม่อนุมัติ ก็สร้างกิจกรรมได้ แต่ต้องรอทีมงานตรวจทีละงาน" />
@@ -315,6 +330,7 @@ function HostCard({ member, application, onChanged }: { member: PublicMember; ap
             ส่งคำขอให้ทีมงาน
           </button>
         </form>
+        </DialogShell>
       )}
     </section>
   );
@@ -532,6 +548,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
   const interestNames = profile?.interests ? [...profile.interests.communityCategories, ...profile.interests.spotVibes, ...profile.interests.fairCategories].map(nameOf) : profile?.sampleInterests ?? [];
   const provinceName = profile?.province ? master.provinces.find((p) => p.id === profile.province)?.displayName ?? profile.province : undefined;
   const hiddenKeys = own?.details.hidden ?? [];
+  const liveHosted = hosted.filter((ev) => ev.approvalStatus === 'approved').length;
 
   const toggleFollow = async () => {
     if (!profile) return;
@@ -561,7 +578,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
   const bio = own ? own.details.bio : profile?.about.bio;
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] text-slate-900 font-sans flex flex-col">
+    <div className="min-h-screen bg-white text-slate-900 font-sans flex flex-col">
       <Navbar
         showMenuOnMobile
         activeTab="profile"
@@ -573,7 +590,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
         onOpenLogout={() => setIsLogoutOpen(true)}
       />
 
-      <main className="flex-1 w-full max-w-3xl mx-auto px-4 py-6 sm:py-10 space-y-5">
+      <main className="flex-1 w-full max-w-3xl mx-auto px-4 pt-2 pb-28 lg:pb-16 divide-y divide-slate-200">
         {state.status === 'loading' && (
           <div className={`${card} flex items-center gap-2 text-sm font-bold text-slate-500`} role="status">
             <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
@@ -634,6 +651,18 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                     {profile.gender && <span className="whitespace-nowrap">{GENDER_LABELS[profile.gender]}</span>}
                   </p>
 
+                  {(liveHosted > 0 || (profile.hostReviews?.count ?? 0) > 0) && (
+                    <p className="mt-2 flex flex-wrap items-center gap-x-2 text-sm sm:text-base font-bold text-slate-900 tabular-nums">
+                      {profile.hostReviews && profile.hostReviews.count > 0 && (
+                        <a href="#reviews" className="hover:underline">
+                          <span className="text-amber-500">★</span> {profile.hostReviews.average.toFixed(1)} <span className="font-semibold text-slate-600">จาก {profile.hostReviews.count} รีวิว</span>
+                        </a>
+                      )}
+                      {profile.hostReviews && profile.hostReviews.count > 0 && liveHosted > 0 && <span className="text-slate-300">·</span>}
+                      {liveHosted > 0 && <span>จัดมาแล้ว {liveHosted} ตี้</span>}
+                    </p>
+                  )}
+
                   {(profile.badges.emailVerified || profile.badges.pledged || profile.badges.trusted || profile.badges.approvedHost) && (
                     <p className="mt-3 flex flex-wrap gap-1.5">
                       {profile.badges.approvedHost && <Badge icon={BadgeCheck}>โฮสต์ที่ทีมงานตรวจแล้ว</Badge>}
@@ -655,7 +684,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
               </div>
 
               {!profile.isMe && !profile.isSample && isLoggedIn && (
-                <div className="mt-5 pt-4 border-t border-slate-100 flex flex-wrap gap-2">
+                <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
                   {!profile.viewer?.hasBlocked && (
                     <button
                       type="button"
@@ -666,11 +695,11 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                       {profile.viewer?.isFollowing ? 'กำลังติดตาม' : 'ติดตาม'}
                     </button>
                   )}
-                  <button type="button" onClick={() => setIsReporting(true)} disabled={profile.viewer?.hasReported} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold cursor-pointer whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed">
+                  <button type="button" onClick={() => setIsReporting(true)} disabled={profile.viewer?.hasReported} className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-500 hover:text-slate-800 cursor-pointer whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed">
                     <Flag className="w-4 h-4" aria-hidden="true" />
                     {profile.viewer?.hasReported ? 'รายงานแล้ว' : 'รายงาน'}
                   </button>
-                  <button type="button" onClick={toggleBlock} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold cursor-pointer whitespace-nowrap">
+                  <button type="button" onClick={toggleBlock} className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-500 hover:text-slate-800 cursor-pointer whitespace-nowrap">
                     <Ban className="w-4 h-4" aria-hidden="true" />
                     {profile.viewer?.hasBlocked ? 'เลิกบล็อก' : 'บล็อก'}
                   </button>
@@ -678,80 +707,56 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
               )}
             </section>
 
-            {own && <TrustCard member={own.member} onChanged={() => { handleSetIsLoggedIn(true); refresh(); }} />}
+            {/* The checklist matters only until the account is trusted; after that the badges say it */}
+            {own && own.member.trust.level !== 'trusted' && <TrustCard member={own.member} onChanged={() => { handleSetIsLoggedIn(true); refresh(); }} />}
 
-            {/* About and interests */}
-            {(aboutRows.length > 0 || interestNames.length > 0) && (
-              <section className={card}>
-                <SectionTitle>{`เกี่ยวกับ${profile.isMe ? 'ฉัน' : profile.displayName}`}</SectionTitle>
-                {aboutRows.length > 0 && (
-                  <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-                    {aboutRows.map((row) => (
-                      <div key={row.key} className="min-w-0">
-                        <dt className="text-[11px] sm:text-xs font-semibold text-slate-500">
-                          {FIELD_LABELS[row.key]}
-                          {own && hiddenKeys.includes(row.key) && <span className="ml-1.5 font-bold text-slate-400">(ซ่อนอยู่)</span>}
-                        </dt>
-                        <dd className="text-sm font-bold text-slate-800 break-words">{row.value}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                )}
-                {interestNames.length > 0 && (
-                  <div className={aboutRows.length > 0 ? 'mt-5 pt-4 border-t border-slate-100' : ''}>
-                    <h3 className="text-[11px] sm:text-xs font-semibold text-slate-500 mb-2">
-                      ความสนใจ
-                      {own && hiddenKeys.includes('interests') && <span className="ml-1.5 font-bold text-slate-400">(ซ่อนอยู่)</span>}
-                    </h3>
-                    <p className="flex flex-wrap gap-1.5">
-                      {interestNames.map((name) => (
-                        <span key={name} className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-800 text-xs font-bold whitespace-nowrap">{name}</span>
-                      ))}
-                    </p>
-                  </div>
-                )}
-              </section>
+            {/* ตี้ this member hosts: a visitor's best signal of who they are. Managing them happens in My Hub. */}
+            {hosted.length > 0 && (
+              <div className={card}>
+                <RelatedCards
+                  className=""
+                  title="ตี้ที่จัด"
+                  allHref={profile.isMe ? '/myhub' : undefined}
+                  allLabel="จัดการในมายฮับ"
+                  items={hosted.slice(0, 8).map((ev) => {
+                    const isLive = ev.approvalStatus === 'approved';
+                    return {
+                      id: ev.id,
+                      href: isLive ? `${ev.eventType === 'public_venue' ? '/fairs' : '/community'}/${encodeURIComponent(ev.id)}` : undefined,
+                      image: ev.image,
+                      dateText: ev.date,
+                      title: ev.title,
+                      note: !isLive ? (ev.approvalStatus === 'rejected' ? 'ไม่ผ่านการตรวจ' : 'รอทีมงานตรวจ') : ev.status === 'ended' ? 'จบแล้ว' : ev.location || '',
+                    };
+                  })}
+                />
+              </div>
             )}
 
-            {/* Events this member hosts: a visitor's best signal of who they are. Managing them happens in My Hub. */}
-            {hosted.length > 0 && (
-              <section className={card}>
-                <SectionTitle action={profile.isMe ? <Link href="/myhub" className="text-xs font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">จัดการใน My Hub</Link> : undefined}>กิจกรรมที่จัด</SectionTitle>
-                <p className="-mt-2 mb-4 text-xs font-semibold text-slate-500">
-                  <PhraseText text={`จัดมาแล้ว ${hosted.filter((ev) => ev.approvalStatus === 'approved').length} ตี้`} />
+            {/* Reviews from people who joined this member's ตี้ */}
+            {profile.hostReviews && profile.hostReviews.count > 0 && (
+              <section id="reviews" className={`${card} scroll-mt-24`}>
+                <SectionTitle>รีวิวจากคนที่ไป</SectionTitle>
+                <p className="-mt-2 mb-2 text-sm font-semibold text-slate-600 tabular-nums">
+                  <span className="text-amber-500">★</span> <span className="text-lg font-bold text-slate-900">{profile.hostReviews.average.toFixed(1)}</span> จาก 5 · {profile.hostReviews.count} รีวิว
                 </p>
-                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {hosted.slice(0, 6).map((ev) => {
-                    const isLive = ev.approvalStatus === 'approved';
-                    const body = (
-                      <>
-                        <span className="w-16 h-16 rounded-xl overflow-hidden bg-slate-100 shrink-0">
-                          {/* eslint-disable-next-line @next/next/no-img-element -- remote content images */}
-                          {ev.image && <img src={ev.image} alt="" loading="lazy" className="w-full h-full object-cover" />}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-sm font-bold text-slate-900 leading-snug line-clamp-2">{ev.title}</span>
-                          <span className="block text-xs font-medium text-slate-500 mt-1 truncate">{[ev.date, ev.location].filter(Boolean).join(' · ')}</span>
-                          {!isLive && (
-                            <span className="inline-block mt-1.5 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-900 text-[11px] font-bold whitespace-nowrap">
-                              {ev.approvalStatus === 'rejected' ? 'ไม่ผ่านการตรวจ' : 'รอทีมงานตรวจ'}
-                            </span>
-                          )}
-                          {isLive && ev.status === 'ended' && <span className="inline-block mt-1.5 px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold whitespace-nowrap">จบแล้ว</span>}
-                        </span>
-                      </>
-                    );
-                    const rowClass = 'flex items-start gap-3 p-3 rounded-2xl border border-slate-200';
-                    return (
-                      <li key={ev.id}>
-                        {isLive ? (
-                          <Link href={`${ev.eventType === 'public_venue' ? '/fairs' : '/community'}/${ev.id}`} className={`${rowClass} hover:border-slate-300 hover:bg-slate-50`}>{body}</Link>
-                        ) : (
-                          <div className={rowClass}>{body}</div>
+                <ul className="divide-y divide-slate-200">
+                  {profile.hostReviews.latest.map((r) => (
+                    <li key={r.id} className="py-4">
+                      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-slate-500">
+                        <span className="text-amber-600 font-bold whitespace-nowrap" aria-label={`${r.rating} จาก 5 ดาว`}>{'★'.repeat(r.rating)}<span className="text-slate-300">{'★'.repeat(5 - r.rating)}</span></span>
+                        <span className="text-slate-800 font-bold">{r.authorName}</span>
+                        <span>{r.timeAgo}</span>
+                        {isLoggedIn && r.authorId !== member?.id && (
+                          <button type="button" onClick={() => setReportingReview({ id: r.id, eventTitle: r.eventTitle })} className="ml-auto inline-flex items-center gap-1 text-slate-500 hover:text-rose-600 cursor-pointer" aria-label={`รายงานรีวิวของ ${r.authorName}`}>
+                            <Flag className="w-3.5 h-3.5" aria-hidden="true" /> รายงาน
+                          </button>
                         )}
-                      </li>
-                    );
-                  })}
+                      </p>
+                      {r.text && <p className="mt-1.5 text-sm text-slate-700 leading-relaxed">{r.text}</p>}
+                      <p className="mt-1 text-xs text-slate-500 truncate">ตี้: {r.eventTitle}</p>
+                    </li>
+                  ))}
                 </ul>
               </section>
             )}
@@ -759,10 +764,8 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
             {/* Badges of the challenges this member finished: proof of going out and doing */}
             {profile.challengeBadges && profile.challengeBadges.length > 0 && (
               <section className={card}>
-                <h2 className="text-sm sm:text-base font-bold text-slate-900">
-                  เหรียญจากชาเลนจ์ <span className="tabular-nums">({profile.challengeBadges.length})</span>
-                </h2>
-                <ul className="mt-3 flex flex-wrap gap-2">
+                <SectionTitle>{`เหรียญจากชาเลนจ์ (${profile.challengeBadges.length})`}</SectionTitle>
+                <ul className="flex flex-wrap gap-2">
                   {profile.challengeBadges.map((badge) => (
                     <li key={badge.questId}>
                       <Link href={`/challenges/${encodeURIComponent(badge.questId)}`} title={badge.title} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F5F3FF] border border-slate-200 text-xs sm:text-sm font-bold text-[#5B21B6] hover:border-[#7C3AED] transition-colors cursor-pointer">
@@ -775,55 +778,62 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
               </section>
             )}
 
-            {/* Reviews from people who joined this member's events */}
-            {profile.hostReviews && profile.hostReviews.count > 0 && (
+            {/* Moments; a visitor sees the section only when there are some */}
+            {(state.moments.length > 0 || profile.isMe) && (
               <section className={card}>
-                <SectionTitle>รีวิวจากผู้เข้าร่วม</SectionTitle>
-                <p className="-mt-2 mb-4 text-sm font-semibold text-slate-600">
-                  <span className="text-lg font-bold text-slate-900">{profile.hostReviews.average.toFixed(1)}</span> จาก 5 · {profile.hostReviews.count} รีวิว
-                </p>
-                <ul className="space-y-3">
-                  {profile.hostReviews.latest.map((r) => (
-                    <li key={r.id} className="p-4 rounded-2xl border border-slate-200">
-                      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-slate-500">
-                        <span className="text-amber-600 font-bold whitespace-nowrap" aria-label={`${r.rating} จาก 5 ดาว`}>{'★'.repeat(r.rating)}<span className="text-slate-300">{'★'.repeat(5 - r.rating)}</span></span>
-                        <span className="text-slate-800 font-bold">{r.authorName}</span>
-                        <span>{r.timeAgo}</span>
-                        {isLoggedIn && r.authorId !== member?.id && (
-                          <button type="button" onClick={() => setReportingReview({ id: r.id, eventTitle: r.eventTitle })} className="ml-auto inline-flex items-center gap-1 text-slate-500 hover:text-rose-600 cursor-pointer" aria-label={`รายงานรีวิวของ ${r.authorName}`}>
-                            <Flag className="w-3.5 h-3.5" aria-hidden="true" /> รายงาน
-                          </button>
-                        )}
-                      </p>
-                      {r.text && <p className="mt-2 text-sm text-slate-700 leading-relaxed">{r.text}</p>}
-                      <p className="mt-2 text-xs text-slate-500 truncate">ตี้: {r.eventTitle}</p>
-                    </li>
-                  ))}
-                </ul>
+                <SectionTitle action={state.moments.length > 0 ? <Link href="/moments" className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">ไปหน้าโมเมนต์</Link> : undefined}>โมเมนต์</SectionTitle>
+                {state.moments.length > 0 ? (
+                  <ul className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    {state.moments.map((m) => (
+                      <li key={m.id} className="aspect-square rounded-2xl overflow-hidden bg-slate-100">
+                        <Link href={`/moments/${encodeURIComponent(m.id)}`} className="block w-full h-full">
+                          {/* eslint-disable-next-line @next/next/no-img-element -- remote content images */}
+                          <img src={m.image} alt={m.caption.slice(0, 60)} loading="lazy" className="w-full h-full object-cover" />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="bg-slate-50/80 rounded-2xl p-4 border border-dashed border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-slate-600"><PhraseText text="ยังไม่มีโมเมนต์ ไปกิจกรรมแล้ว กลับมาแชร์ภาพกันนะ" /></p>
+                    <Link href="/?share=new" className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">แชร์โมเมนต์</Link>
+                  </div>
+                )}
               </section>
             )}
 
-            {/* Moments */}
-            <section className={card}>
-              <SectionTitle action={state.moments.length > 0 ? <Link href="/moments" className="text-xs font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">ไปหน้าโมเมนต์</Link> : undefined}>โมเมนต์</SectionTitle>
-              {state.moments.length > 0 ? (
-                <ul className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                  {state.moments.map((m) => (
-                    <li key={m.id} className="aspect-square rounded-2xl overflow-hidden bg-slate-100">
-                      <Link href={`/moments/${encodeURIComponent(m.id)}`} className="block w-full h-full">
-                        {/* eslint-disable-next-line @next/next/no-img-element -- remote content images */}
-                        <img src={m.image} alt={m.caption.slice(0, 60)} loading="lazy" className="w-full h-full object-cover" />
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="bg-slate-50/80 rounded-2xl p-4 border border-dashed border-slate-200 flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-slate-600"><PhraseText text={profile.isMe ? 'ยังไม่มีโมเมนต์ ไปกิจกรรมแล้ว กลับมาแชร์ภาพกันนะ' : 'ยังไม่มีโมเมนต์'} /></p>
-                  {profile.isMe && <Link href="/?share=new" className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">แชร์โมเมนต์</Link>}
-                </div>
-              )}
-            </section>
+            {/* About and interests, as grey rows */}
+            {(aboutRows.length > 0 || interestNames.length > 0) && (
+              <section className={card}>
+                <SectionTitle>{profile.isMe ? 'เกี่ยวกับฉัน' : `เกี่ยวกับ ${profile.displayName}`}</SectionTitle>
+                {aboutRows.length > 0 && (
+                  <dl className="divide-y divide-slate-200 border-y border-slate-200">
+                    {aboutRows.map((row) => (
+                      <div key={row.key} className="grid grid-cols-[7rem_1fr] sm:grid-cols-[10rem_1fr] gap-3 py-3">
+                        <dt className="text-xs sm:text-sm font-medium text-slate-500">
+                          {FIELD_LABELS[row.key]}
+                          {own && hiddenKeys.includes(row.key) && <span className="block font-bold text-slate-400">(ซ่อนอยู่)</span>}
+                        </dt>
+                        <dd className="text-sm font-medium text-slate-800 break-words">{row.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+                {interestNames.length > 0 && (
+                  <div className={aboutRows.length > 0 ? 'mt-5' : ''}>
+                    <h3 className="text-xs sm:text-sm font-medium text-slate-500 mb-2">
+                      ความสนใจ
+                      {own && hiddenKeys.includes('interests') && <span className="ml-1.5 font-bold text-slate-400">(ซ่อนอยู่)</span>}
+                    </h3>
+                    <p className="flex flex-wrap gap-1.5">
+                      {interestNames.map((name) => (
+                        <span key={name} className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-800 text-xs font-bold whitespace-nowrap">{name}</span>
+                      ))}
+                    </p>
+                  </div>
+                )}
+              </section>
+            )}
 
             {own && <HostCard member={own.member} application={own.hostApplication} onChanged={() => { handleSetIsLoggedIn(true); refresh(); }} />}
             {own && <AccountCard member={own.member} onLogout={() => setIsLogoutOpen(true)} />}

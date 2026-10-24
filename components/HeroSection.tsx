@@ -372,7 +372,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       case 'fairs':
         return 'ค้นหางานสัปดาห์หนังสือ งานกาแฟ งานสัตว์เลี้ยง QSNCC BITEC...';
       default:
-        return 'ค้นหาทุกกิจกรรม งานแฟร์ และพิกัดฮีลใจทั่วไทย... (เช่น บอร์ดเกม, สวนเบญจกิติ, BITEC)';
+        return 'ค้นหาทุกกิจกรรม อีเวนต์ และพิกัดฮีลใจทั่วไทย... (เช่น บอร์ดเกม, สวนเบญจกิติ, BITEC)';
     }
   };
 
@@ -604,7 +604,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     : activeModeTab === 'community'
                     ? 'ลองค้นหาด้วยคำสำคัญ เช่น วิ่ง, บอร์ดเกม, กาแฟ, เวิร์กช็อป หรือกดปุ่มค้นหาเพื่อดูกิจกรรมทั้งหมด'
                     : activeModeTab === 'fairs'
-                    ? 'ลองค้นหาด้วยคำสำคัญ เช่น หนังสือ, สัตว์เลี้ยง, กาแฟ, QSNCC หรือกดปุ่มค้นหาเพื่อดูงานแฟร์ทั้งหมด'
+                    ? 'ลองค้นหาด้วยคำสำคัญ เช่น หนังสือ, สัตว์เลี้ยง, กาแฟ, QSNCC หรือกดปุ่มค้นหาเพื่อดูอีเวนต์ทั้งหมด'
                     : 'ลองค้นหาด้วยคำสำคัญ เช่น คาเฟ่, วิ่ง, สวน, ทะเล หรือกดปุ่มค้นหาเพื่อดูผลทั้งหมดในระบบ'}
                 </p>
                 <button
@@ -704,7 +704,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                             </p>
                           </div>
                           <span className="text-[10px] font-bold text-blue-900 bg-blue-50 px-2 py-1 rounded-md shrink-0 border border-blue-100 group-hover:border-blue-200 flex items-center gap-1">
-                            <span>ดูงานแฟร์</span>
+                            <span>ดูอีเวนต์</span>
                             <ChevronRight className="w-3 h-3 text-blue-700" />
                           </span>
                         </Link>
@@ -1280,7 +1280,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       <div className="flex items-center gap-2 sm:gap-2.5 flex-1 min-w-0">
                         <Search className="w-4 h-4 text-slate-400 shrink-0" />
                         <div className="flex-1 min-w-0 text-left">
-                          <label className="sr-only">ค้นหาทุกกิจกรรม งานแฟร์ และพิกัดฮีลใจทั่วไทย</label>
+                          <label className="sr-only">ค้นหาทุกกิจกรรม อีเวนต์ และพิกัดฮีลใจทั่วไทย</label>
                           <input
                             type="text"
                             value={searchQuery}

@@ -677,7 +677,7 @@ function MyHubContent() {
     if (ev.eventType === 'public_venue') {
       return {
         pillar: 'fairs' as const,
-        label: 'งานแฟร์ & นิทรรศการ',
+        label: 'อีเวนต์',
         dotColor: 'bg-[#2B527A]',
         badgeBg: 'bg-[#EEF4FA]',
         badgeText: 'text-[#2B527A]',
@@ -1083,7 +1083,7 @@ function MyHubContent() {
   const renderFirstSteps = () => {
     const steps = [
       { href: '/community', Icon: Users, tint: 'bg-[#EBF3ED] text-[#2D5A3C]', title: 'ไปตี้กับเพื่อนใหม่', text: 'วิ่ง บอร์ดเกม เวิร์กช็อป หรือจิบกาแฟ กลุ่มเล็กๆ ไม่กดดัน', cta: 'หาตี้' },
-      { href: '/fairs', Icon: Calendar, tint: 'bg-[#EEF4FA] text-[#2B527A]', title: 'ปักหมุดงานแฟร์', text: 'งานหนังสือ งานกาแฟ นิทรรศการที่กำลังจะมา', cta: 'ดูงานแฟร์' },
+      { href: '/fairs', Icon: Calendar, tint: 'bg-[#EEF4FA] text-[#2B527A]', title: 'ปักหมุดอีเวนต์', text: 'งานหนังสือ งานกาแฟ นิทรรศการที่กำลังจะมา', cta: 'ดูอีเวนต์' },
       { href: '/challenges', Icon: Trophy, tint: 'bg-[#F5F3FF] text-[#7C3AED]', title: 'เริ่มชาเลนจ์แรก', text: 'ไปให้ครบตามเป้า แล้วรับ XP กับของรางวัล', cta: 'ดูชาเลนจ์' },
     ];
     return (
@@ -1316,7 +1316,7 @@ function MyHubContent() {
                   }`}
                 >
                   <span className="w-2 h-2 rounded-full bg-[#2B527A]" />
-                  <span>งานแฟร์ ({chipCounts.fairs})</span>
+                  <span>อีเวนต์ ({chipCounts.fairs})</span>
                 </button>
                 )}
 
@@ -1477,7 +1477,7 @@ function MyHubContent() {
                       {/* Multi-category Dots */}
                       <div className="flex items-center gap-1">
                         {hasCommunity && <span className="w-1.5 h-1.5 rounded-full bg-[#2D5A3C]" title="ตี้คอมมูนิตี้" />}
-                        {hasFairs && <span className="w-1.5 h-1.5 rounded-full bg-[#2B527A]" title="งานแฟร์" />}
+                        {hasFairs && <span className="w-1.5 h-1.5 rounded-full bg-[#2B527A]" title="อีเวนต์" />}
                         {hasSpots && <span className="w-1.5 h-1.5 rounded-full bg-[#F26430]" title="ทริปชวนเพื่อน" />}
                         {hasQuests && (
                           <span
@@ -1613,7 +1613,7 @@ function MyHubContent() {
                       ? 'งานที่ไปร่วมแล้วจะมาอยู่ตรงนี้ พร้อมปุ่มแชร์โมเมนต์และรีวิว'
                       : calendarCategoryFilter === 'quests' && hasJoinedQuests
                       ? 'แต่ละชาเลนจ์จะมาอยู่ในกำหนดการในวันเริ่ม และช่วง 7 วันสุดท้ายก่อนปิด'
-                      : 'ลองหาตี้ที่ชอบ หรืองานแฟร์ที่อยากไป แล้วนัดจะมาอยู่ตรงนี้'}
+                      : 'ลองหาตี้ที่ชอบ หรืออีเวนต์ที่อยากไป แล้วนัดจะมาอยู่ตรงนี้'}
                   </p>
                 </div>
                 <div className={`flex items-center justify-center gap-2 pt-1 ${calendarCategoryFilter === 'quests' ? 'hidden' : ''}`}>
@@ -1629,7 +1629,7 @@ function MyHubContent() {
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold border border-slate-200 transition-all"
                   >
                     <Calendar className="w-3.5 h-3.5" />
-                    <span>ดูงานแฟร์</span>
+                    <span>ดูอีเวนต์</span>
                   </Link>
                 </div>
               </div>
@@ -1688,7 +1688,7 @@ function MyHubContent() {
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold ${meta.badgeText}`}>
                               <span className={`w-1.5 h-1.5 rounded-full ${meta.dotColor}`} aria-hidden="true" />
-                              {meta.pillar === 'fairs' ? 'งานแฟร์' : meta.label}
+                              {meta.pillar === 'fairs' ? 'อีเวนต์' : meta.label}
                             </span>
                             {!isQuest && isCancelled && <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">ยกเลิก</span>}
                             {!isQuest && isMissed && <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">ไม่ได้ไป</span>}

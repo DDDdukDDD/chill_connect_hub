@@ -26,7 +26,7 @@ import { renderDescriptionContent, stripHtmlToPlainText } from '@/components/Ric
 import { SpotBuddyGatheringModal, SpotBuddyPostItem } from '@/components/SpotBuddyGatheringModal';
 import { ExpoMeetupPassModal, ExpoMeetupPassData } from '@/components/ExpoMeetupPassModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
-import { EventGrid } from '@/components/EventGrid';
+import { RelatedCards, fairCard } from '@/components/detail/RelatedCards';
 import { DetailHero, DetailTable, ItineraryList, heroButton } from '@/components/detail/DetailHero';
 import { VisitReviews } from '@/components/detail/VisitReviews';
 
@@ -54,6 +54,7 @@ import {
   Sparkles,
   ArrowLeft,
   ArrowRight,
+  CalendarCheck,
   ExternalLink,
   Users,
   ShieldCheck,
@@ -225,7 +226,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
     void activityActions.setSaved('event', eventId, !wasSaved).then((ok) => {
       if (!ok) return showToast('บันทึกไม่สำเร็จ ลองอีกครั้งนะ');
       const isTargetEnded = eventId === eventData?.id ? isEnded : false;
-      showToast(wasSaved ? 'ลบออกจากรายการบันทึกแล้ว' : isTargetEnded ? 'เพิ่มเข้าคลังเพื่อติดตามรอบถัดไปเรียบร้อย' : 'บันทึกงานแฟร์นี้ใน MyHub เรียบร้อย');
+      showToast(wasSaved ? 'ลบออกจากรายการบันทึกแล้ว' : isTargetEnded ? 'เพิ่มเข้าคลังเพื่อติดตามรอบถัดไปเรียบร้อย' : 'บันทึกอีเวนต์นี้ใน MyHub เรียบร้อย');
     });
   };
 
@@ -244,7 +245,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
     const wasIn = joinedEventIds.includes(id);
     void (wasIn ? activityActions.leave(id) : activityActions.join(id)).then((result) => {
       if (!result.ok) return showToast(result.message);
-      showToast(wasIn ? 'นำออกจาก MyHub แล้ว' : 'บันทึกงานแฟร์นี้ใน MyHub เรียบร้อย');
+      showToast(wasIn ? 'นำออกจาก MyHub แล้ว' : 'บันทึกอีเวนต์นี้ใน MyHub เรียบร้อย');
     });
   };
 
@@ -253,7 +254,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
     const url = window.location.href;
     const shareData = {
       title: `${eventData.title} | Chill & Connect Hub`,
-      text: `ชวนไปงานแฟร์นี้: ${eventData.title} (${formatEventDateRange(eventData)} @ ${eventData.location})`,
+      text: `ชวนไปอีเวนต์นี้: ${eventData.title} (${formatEventDateRange(eventData)} @ ${eventData.location})`,
       url: url,
     };
 
@@ -268,7 +269,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
     try {
       await navigator.clipboard.writeText(url);
       setIsCopied(true);
-      showToast('คัดลอกลิงก์งานแฟร์เรียบร้อย');
+      showToast('คัดลอกลิงก์อีเวนต์เรียบร้อย');
       setTimeout(() => setIsCopied(false), 2500);
     } catch {
       showToast('คัดลอกลิงก์เรียบร้อย');
@@ -280,7 +281,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
     const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
       eventData.title
     )}&dates=20260328T030000Z/20260328T120000Z&details=${encodeURIComponent(
-      `งานแฟร์: ${eventData.title}\nสถานที่: ${eventData.location}\nข้อมูลเพิ่มเติม: ${typeof window !== 'undefined' ? window.location.href : ''}`
+      `อีเวนต์: ${eventData.title}\nสถานที่: ${eventData.location}\nข้อมูลเพิ่มเติม: ${typeof window !== 'undefined' ? window.location.href : ''}`
     )}&location=${encodeURIComponent(eventData.location)}`;
 
     window.open(googleCalendarUrl, '_blank');
@@ -302,7 +303,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
       // Re-open existing pass
       setSelectedPassData({
         id: sub.id,
-        fairTitle: cleanText(eventData?.title) || 'งานมหกรรม & เอ็กซ์โป',
+        fairTitle: cleanText(eventData?.title) || 'อีเวนต์',
         fairLocation: cleanText(eventData?.location) || 'ศูนย์นิทรรศการ',
         fairDate: cleanText(eventData?.date) || 'วันจัดแสดง',
         groupTitle: sub.title,
@@ -332,7 +333,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
 
       setSelectedPassData({
         id: sub.id,
-        fairTitle: cleanText(eventData?.title) || 'งานมหกรรม & เอ็กซ์โป',
+        fairTitle: cleanText(eventData?.title) || 'อีเวนต์',
         fairLocation: cleanText(eventData?.location) || 'ศูนย์นิทรรศการ',
         fairDate: cleanText(eventData?.date) || 'วันจัดแสดง',
         groupTitle: sub.title,
@@ -485,7 +486,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
             className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-full font-bold text-xs sm:text-sm shadow-sm transition-all cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>กลับสู่หน้างามหกรรม & เอ็กซ์โป</span>
+            <span>กลับสู่หน้าอีเวนต์</span>
           </Link>
         </main>
       </div>
@@ -516,7 +517,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
       <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-28 lg:pb-16">
         <Link href="/fairs" className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-          งานแฟร์ทั้งหมด
+          อีเวนต์ทั้งหมด
         </Link>
 
         {/* Header, drawn like the challenge page (components/detail/DetailHero.tsx). Fairs show no head count. */}
@@ -529,7 +530,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
             setActivePhotoIndex(0);
             setIsLightboxOpen(true);
           }}
-          kicker={[cleanText(eventData.tag) || 'งานแฟร์', isEnded ? 'งานจบแล้ว' : isOngoing ? 'กำลังจัดอยู่' : '', `จัดโดย ${venueOrganizerName}`].filter(Boolean).join(' · ')}
+          highlight={isEnded ? { icon: CalendarCheck, text: 'งานจบแล้ว', tone: 'closed' } : isOngoing ? { icon: CalendarCheck, text: 'กำลังจัดอยู่ตอนนี้', tone: 'open' } : undefined}
           title={cleanText(eventData.title)}
           facts={[
             // "ไม่ระบุ…" is not a fact: leave it out rather than print it
@@ -570,7 +571,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
                   ? 'ผู้จัดงานลงประกาศเอง ทีมงานตรวจก่อนเผยแพร่'
                   : origin === 'source'
                     ? 'ทีมงานรวบรวมจากเว็บไซต์ทางการ เช็กรายละเอียดล่าสุดที่เว็บไซต์งานก่อนเดินทาง'
-                    : 'งานแฟร์ที่ทีมงานคัดและตรวจข้อมูล'}
+                    : 'อีเวนต์ที่ทีมงานคัดและตรวจข้อมูล'}
               </p>
               <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-3 text-xs sm:text-sm font-semibold">
                 {officialWebsiteUrl ? (
@@ -779,39 +780,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
           </div>
         </div>
 
-        {/* =========================================================================
-            RELATED FAIRS & EXPOS SECTION (REUSE STANDARD EVENTGRID)
-           ========================================================================= */}
-        {relatedFairs.length > 0 && (
-          <section className="mt-14 sm:mt-20 space-y-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
-                  งานมหกรรมและนิทรรศการที่น่าสนใจอื่นๆ
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-600">
-                  ค้นพบอีเวนต์ระดับฮอลล์และงานแฟร์ที่กำลังจะจัดขึ้นเร็วๆ นี้
-                </p>
-              </div>
-
-              <Link
-                href="/fairs"
-                className="text-xs font-bold text-[#2B527A] hover:underline flex items-center gap-1 shrink-0"
-              >
-                <span>สำรวจงานมหกรรม & เอ็กซ์โปทั้งหมด</span>
-                <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-
-            <EventGrid
-              events={relatedFairs}
-              favorites={favorites}
-              toggleFavorite={toggleFavorite}
-              onSelectEvent={() => {}}
-              columns={4}
-            />
-          </section>
-        )}
+        <RelatedCards title="อีเวนต์อื่นที่น่าไป" allHref="/fairs" items={relatedFairs.map(fairCard)} />
 
       </main>
 

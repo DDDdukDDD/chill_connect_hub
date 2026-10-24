@@ -51,7 +51,7 @@ function VenueEditor({ entry, onClose, onSave, isSaving }: { entry: MasterVenue 
         </>
       }
     >
-      <FormSection title="ข้อมูลสถานที่" hint="ชื่อมาตรฐานที่ใช้กับงานแฟร์และระบบจับคู่สถานที่">
+      <FormSection title="ข้อมูลสถานที่" hint="ชื่อมาตรฐานที่ใช้กับอีเวนต์และระบบจับคู่สถานที่">
         <Field label="ชื่อมาตรฐาน:" htmlFor="venue-name" wide hint="เช่น ไบเทค บางนา (BITEC)">
           <input id="venue-name" value={form.name} onChange={(e) => set('name', e.target.value)} className={fieldInputClass} />
         </Field>
@@ -105,7 +105,7 @@ export function VenuesManagerView() {
       <AdminPageHeader
         icon={Building2}
         title="สถานที่จัดงาน"
-        description="ศูนย์ประชุม ฮอลล์ และพื้นที่สาธารณะที่ใช้บ่อย เป็นตัวเลือกในฟอร์มงานแฟร์และใช้จับคู่สถานที่ตอนดึงข้อมูล"
+        description="ศูนย์ประชุม ฮอลล์ และพื้นที่สาธารณะที่ใช้บ่อย เป็นตัวเลือกในฟอร์มอีเวนต์และใช้จับคู่สถานที่ตอนดึงข้อมูล"
         actions={admin.canEdit && (
           <button type="button" onClick={() => setEditing(null)} className={adminButton.primary}>
             <Plus size={14} /> เพิ่มสถานที่

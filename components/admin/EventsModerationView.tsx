@@ -233,7 +233,7 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
         description={
           isCommunity
             ? 'ตรวจตี้ นัดประจำ และความปลอดภัยของลิงก์ห้องประชุมออนไลน์'
-            : 'ตรวจงานแฟร์ นิทรรศการ และเอ็กซ์โปที่มาจาก Scraper หรือผู้ใช้ส่งเข้ามา'
+            : 'ตรวจอีเวนต์ (อีเวนต์ นิทรรศการ งานวิ่ง คอนเสิร์ต)ที่มาจาก Scraper หรือผู้ใช้ส่งเข้ามา'
         }
         actions={
           <>
@@ -244,7 +244,7 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
             {canEdit && type !== 'all' && (
               <button onClick={() => setEditing(null)} className={adminButton.primary}>
                 <Plus size={14} />
-                {isCommunity ? 'ตั้งตี้' : 'เพิ่มงานแฟร์'}
+                {isCommunity ? 'ตั้งตี้' : 'เพิ่มอีเวนต์'}
               </button>
             )}
             {counts.pending > 0 && (

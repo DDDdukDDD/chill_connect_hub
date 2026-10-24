@@ -13,8 +13,8 @@ import { EVIDENCE_HINTS, NOTES_KEY, QuestDetail, SELF_NOTED_HINT, describeQuestR
 import { EventAttendees } from '@/components/EventAttendees';
 import { useAuth } from '@/lib/useAuth';
 import { useMyRewards } from '@/lib/useMyRewards';
-import { useMasterData } from '@/lib/useMasterData';
 import { ChallengeChecklist } from '@/components/detail/ChallengeChecklist';
+import { RelatedCards } from '@/components/detail/RelatedCards';
 
 /**
  * One challenge on its own page. It answers one question for the state the visitor is in:
@@ -37,7 +37,6 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
   const [activeTab, setActiveTab] = useState('challenges');
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
   const myRewards = useMyRewards(isLoggedIn);
-  const { communityCategories: questCategories } = useMasterData();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
@@ -323,23 +322,27 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
     </div>
   );
 
+  // A challenge that counts only ตี้ or only fairs names them; anything else is a place
+  const onlyKind = quest.rule?.targetTypes.length === 1 ? quest.rule.targetTypes[0] : 'spot';
+  const kindWords = { community: { heading: 'ตี้ที่นับในชาเลนจ์นี้', unit: 'ตี้', none: 'ยังไม่มีตี้เปิด' }, fair: { heading: 'อีเวนต์ที่นับในชาเลนจ์นี้', unit: 'งาน', none: 'ยังไม่มีอีเวนต์' }, spot: { heading: 'ที่ที่นับในชาเลนจ์นี้', unit: 'แห่ง', none: 'ยังไม่มีที่ไหนเปิด' } }[onlyKind];
+
   // Where to go for the challenge; shown in the right column on a desktop and after the rules on phones and tablets
   const placesSection = (anchorId: string) => (
     <section id={anchorId} className="space-y-4 scroll-mt-24">
       {/* The member's checklist: counted, waiting for review, not counted (owner 2026-10-23) */}
       {joined && <ChallengeChecklist questId={questId} />}
       <div className="flex items-end justify-between gap-3">
-        <h2 className={SECTION_TITLE}>ที่ที่นับในชาเลนจ์นี้</h2>
+        <h2 className={SECTION_TITLE}>{kindWords.heading}</h2>
         {detail.browseHref && detail.targetsTotal > detail.targets.length && (
           <Link href={detail.browseHref} className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline shrink-0">
-            ดูทั้งหมด <span className="tabular-nums">{detail.targetsTotal.toLocaleString()}</span> แห่ง
+            ดูทั้งหมด <span className="tabular-nums">{detail.targetsTotal.toLocaleString()}</span> {kindWords.unit}
           </Link>
         )}
       </div>
       {isDoing && <p className="text-sm font-medium text-slate-600 leading-relaxed">{EVIDENCE_HINTS[detail.minEvidence ?? 'marked']}</p>}
       {detail.targets.length === 0 && (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200">
-          <p className="text-sm font-medium text-slate-700">ยังไม่มีที่ไหนเปิดในช่วง {period} เลย เดี๋ยวมีเมื่อไรจะขึ้นตรงนี้</p>
+          <p className="text-sm font-medium text-slate-700">{kindWords.none}ในช่วง {period} เลย เดี๋ยวมีเมื่อไรจะขึ้นตรงนี้</p>
           {detail.browseHref && (
             <Link href={detail.browseHref} className="inline-flex items-center justify-center min-h-10 px-4 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold whitespace-nowrap cursor-pointer">
               ดูทั้งหมด
@@ -388,9 +391,6 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
               ทำสำเร็จแล้ว{finishedDate ? ` · ${finishedDate}` : ''}
             </p>
           )}
-          <p className="text-xs sm:text-sm font-semibold text-slate-500">
-            {[questCategories.find((category) => category.id === quest.category)?.name, `โดย ${reward.partnerName}`].filter(Boolean).join(' · ')}
-          </p>
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 leading-tight tracking-tight">{quest.title}</h1>
           {quest.targetGoal && <p className="text-sm font-medium text-slate-600 leading-relaxed max-w-prose">{quest.targetGoal}</p>}
 
@@ -641,42 +641,20 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
         </div>
       </div>
 
-      {(detail.related?.length ?? 0) > 0 && (
-        <section className="mt-12 sm:mt-16 space-y-4" aria-labelledby="related-title">
-          <div className="flex items-end justify-between gap-3">
-            <h2 id="related-title" className={SECTION_TITLE}>ชาเลนจ์อื่นที่น่าลอง</h2>
-            <Link href="/challenges" className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline shrink-0">ดูทั้งหมด</Link>
-          </div>
-          <ul className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {detail.related!.map((item) => (
-              <li key={item.id}>
-                <Link href={`/challenges/${encodeURIComponent(item.id)}`} className="group block h-full rounded-2xl border border-slate-200 bg-white overflow-hidden hover:shadow-md transition-shadow cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]">
-                  <div className="aspect-[16/9] bg-slate-100 overflow-hidden">
-                    <img src={item.image || FALLBACK_PHOTO} alt="" loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                  </div>
-                  <div className="p-3 space-y-1.5">
-                    {item.period && (
-                      <p className="flex items-center gap-1.5 text-[11px] sm:text-xs font-bold text-slate-700 tabular-nums">
-                        <Calendar className="w-3.5 h-3.5 text-slate-500" aria-hidden="true" />
-                        {item.period}
-                      </p>
-                    )}
-                    <p className="text-sm sm:text-base font-bold text-slate-900 line-clamp-2 min-h-[2.5rem]">{item.title}</p>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[11px] sm:text-xs font-semibold text-slate-500 tabular-nums truncate">
-                        {item.startsInDays > 0 ? `เริ่มในอีก ${item.startsInDays} วัน` : item.participantsCount > 0 ? `${item.participantsCount.toLocaleString()} คนร่วมทำ` : 'เปิดอยู่'}
-                      </span>
-                      {item.rewardPoints > 0 && (
-                        <span className="shrink-0 px-2 py-0.5 rounded-full bg-[#7C3AED] text-white text-[11px] font-bold tabular-nums">+{item.rewardPoints} XP</span>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <RelatedCards
+        title="ชาเลนจ์อื่นที่น่าลอง"
+        allHref="/challenges"
+        titleClassName={SECTION_TITLE}
+        items={(detail.related ?? []).map((item) => ({
+          id: item.id,
+          href: `/challenges/${encodeURIComponent(item.id)}`,
+          image: item.image,
+          dateText: item.period,
+          title: item.title,
+          note: item.startsInDays > 0 ? `เริ่มในอีก ${item.startsInDays} วัน` : item.participantsCount > 0 ? `${item.participantsCount.toLocaleString()} คนร่วมทำ` : 'เปิดอยู่',
+          pill: item.rewardPoints > 0 ? `+${item.rewardPoints} XP` : undefined,
+        }))}
+      />
 
       {isLeaveOpen && (
         <DialogShell onClose={() => setIsLeaveOpen(false)} size="sm" title="ยกเลิกชาเลนจ์นี้ใช่ไหม" subtitle={tracked ? 'ที่ที่คุณไปมาแล้วยังนับอยู่ กลับมาร่วมใหม่ได้ทุกเมื่อก่อนหมดเขต' : 'กลับมาร่วมใหม่ได้ทุกเมื่อก่อนหมดเขต'}>

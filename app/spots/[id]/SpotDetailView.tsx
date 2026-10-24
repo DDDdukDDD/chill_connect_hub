@@ -18,7 +18,7 @@ import {
   LifestyleSpotItem,
   MOCK_SPOTS
 } from '@/data/spotsData';
-import { SpotCard, formatSpotBadgePrice } from '@/components/SpotCard';
+import { RelatedCards, spotCard } from '@/components/detail/RelatedCards';
 import { spotOrigin } from '@/lib/contentOrigin';
 import { resolveSpotGallery, resolveSpotImage } from '@/lib/spotImageResolver';
 import { usePublishedSpots } from '@/lib/usePublishedSpots';
@@ -449,7 +449,7 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
             setActivePhotoIndex(0);
             setIsLightboxOpen(true);
           }}
-          kicker={[cleanText(spot.categoryLabel), openStatus.statusText].filter(Boolean).join(' · ')}
+          highlight={openStatus.badgeVariant === 'unspecified' ? undefined : { icon: Clock, text: [openStatus.statusText, openStatus.subText].filter(Boolean).join(' · '), tone: openStatus.isOpen ? 'open' : 'closed' }}
           title={cleanText(spot.title)}
           facts={[
             { icon: Clock, text: cleanText(spot.openHours) || 'เปิดทุกวัน' },
@@ -597,43 +597,7 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
           </div>
         </div>
 
-        {/* =========================================================================
-            NEARBY RECOMMENDED SPOTS (SMART ZONAL & PROXIMITY DISCOVERY)
-           ========================================================================= */}
-        {nearbySpots.length > 0 && (
-          <section className="mt-14 sm:mt-20 space-y-4 sm:space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-              <div className="space-y-1">
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight pt-0.5">
-                  {recommendation.sectionTitle}
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-600">
-                  {recommendation.sectionSubtitle}
-                </p>
-              </div>
-
-              <Link
-                href={`/spots?province=${encodeURIComponent(spot.province)}`}
-                className="text-xs font-bold text-[#2D5A3C] hover:text-[#1B432C] hover:underline flex items-center gap-1 shrink-0"
-              >
-                <span>ดูทั้งหมดใน {spot.province}</span>
-                <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
-              {nearbySpots.slice(0, 4).map((item) => (
-                <SpotCard
-                  key={item.id}
-                  spot={item}
-                  isFavorite={isLoggedIn && favorites.includes(item.id)}
-                  isJoined={isLoggedIn && joinedEventIds.includes(item.id)}
-                  onToggleFavorite={toggleFavorite}
-                />
-              ))}
-            </div>
-          </section>
-        )}
+        <RelatedCards title={recommendation.sectionTitle.replace(/\s*\p{Extended_Pictographic}️?/gu, '').trim()} allHref={`/spots?province=${encodeURIComponent(spot.province)}`} items={nearbySpots.slice(0, 4).map(spotCard)} />
 
       </main>
 

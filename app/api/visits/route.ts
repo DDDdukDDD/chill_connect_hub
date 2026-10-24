@@ -79,7 +79,7 @@ export async function POST(request: Request) {
     const targetType = body.targetType;
     const targetId = typeof body.targetId === 'string' ? body.targetId : '';
     if ((targetType !== 'spot' && targetType !== 'fair') || !targetId) {
-      return NextResponse.json({ success: false, message: 'บันทึกได้เฉพาะที่เที่ยวและงานแฟร์' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'บันทึกได้เฉพาะที่เที่ยวและอีเวนต์' }, { status: 400 });
     }
 
     if (body.action === 'unmark') {

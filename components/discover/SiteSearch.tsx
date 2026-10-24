@@ -8,7 +8,7 @@ import { DiscoverSearch } from '@/components/discover/DiscoverSearch';
 /**
  * The top bar's search on every page outside ค้นพบ: the same box (word | province | blue button) in the same place.
  * Enter or the button opens ค้นพบ with the word and province, on the first tab that has something for them:
- * ตี้, then งานแฟร์, then ที่เที่ยว (owner 2026-10-23: a province with no ตี้ or fair opens on its places).
+ * ตี้, then อีเวนต์, then ที่เที่ยว (owner 2026-10-23: a province with no ตี้ or fair opens on its places).
  * The numbers come from the same count the ค้นพบ tabs show; when nothing matches anywhere, ตี้ opens as before.
  */
 const TAB_ORDER: DiscoverKind[] = ['meetups', 'fairs', 'spots'];

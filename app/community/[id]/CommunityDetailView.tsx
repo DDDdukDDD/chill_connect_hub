@@ -35,7 +35,7 @@ import { isEventEnded } from '@/lib/dateUtils';
 import { resolveEventGallery } from '@/lib/eventImageResolver';
 import { parseEventPrice } from '@/lib/priceUtils';
 import { renderDescriptionContent } from '@/components/RichTextEditor';
-import { EventGrid } from '@/components/EventGrid';
+import { RelatedCards, teeCard } from '@/components/detail/RelatedCards';
 import {
   MapPin,
   Clock,
@@ -74,13 +74,6 @@ const cleanText = (str?: string): string => {
     .replace(/[\p{Extended_Pictographic}\p{Emoji_Presentation}\u200d\uFE0F\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
     .replace(/\s+/g, ' ')
     .trim();
-};
-
-const CATEGORY_STYLES: Record<string, { bg: string; text: string; border: string; label: string }> = {
-  heal: { bg: 'bg-[#FFF4EE]', text: 'text-[#F26430]', border: 'border-[#FCD9C6]', label: 'ฮีลใจ & สมาธิ' },
-  move: { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200', label: 'ขยับกาย & กีฬา' },
-  chill: { bg: 'bg-sky-50', text: 'text-sky-700', border: 'border-sky-200', label: 'จิบกาแฟ & ชิลล์' },
-  learn: { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', label: 'ศิลปะ & เรียนรู้' },
 };
 
 /** The page itself: `initialEvent` comes from the server page, so the content is in the HTML search engines read. */
@@ -522,7 +515,6 @@ export default function CommunityDetailPage({
       : eventData.cancellationPolicy === 'chat_notice'
       ? 'ไปไม่ได้ แจ้งในแชตกลุ่ม'
       : 'ยกเลิกได้ก่อนเริ่ม 24 ชม.';
-  const catStyle = CATEGORY_STYLES[eventData.category] || CATEGORY_STYLES.heal;
   const profileHref = `/profile?id=${encodeURIComponent(eventData.hostId || 'host-mind')}&name=${encodeURIComponent(eventData.hostName)}`;
 
   return (
@@ -566,7 +558,15 @@ export default function CommunityDetailPage({
             setActivePhotoIndex(0);
             setIsLightboxOpen(true);
           }}
-          kicker={[cleanText(catStyle.label), eventData.scheduleType === 'recurring' ? 'จัดประจำ' : '', `โดย ${eventData.hostName}`].filter(Boolean).join(' · ')}
+          highlight={
+            isSeriesEvent
+              ? { icon: Users, text: `จัดประจำ · รับวันละ ${eventData.maxParticipants} คน`, tone: 'open' }
+              : isEnded
+              ? { icon: Users, text: `ตี้นี้จบแล้ว · ไป ${eventData.participantsCount} คน`, tone: 'closed' }
+              : isFull
+              ? { icon: Users, text: `เต็มแล้ว · ${eventData.participantsCount}/${eventData.maxParticipants} คน`, tone: 'closed' }
+              : { icon: Users, text: `${eventData.participantsCount}/${eventData.maxParticipants} คน · เหลือ ${seatsLeft} ที่`, tone: seatsLeft <= 2 ? 'urgent' : 'open' }
+          }
           title={cleanText(eventData.title)}
           facts={[
             {
@@ -579,16 +579,6 @@ export default function CommunityDetailPage({
             {
               icon: isOnline ? Globe : MapPin,
               text: isOnline ? `ออนไลน์ผ่าน ${eventData.onlinePlatform ? eventData.onlinePlatform.replace('_', ' ') : 'วิดีโอคอล'}` : cleanText(eventData.location),
-            },
-            {
-              icon: Users,
-              text: isSeriesEvent
-                ? `รับวันละ ${eventData.maxParticipants} คน`
-                : isEnded
-                ? `ไป ${eventData.participantsCount} คน · ตี้นี้จบแล้ว`
-                : isFull
-                ? `${eventData.participantsCount}/${eventData.maxParticipants} คน · เต็มแล้ว`
-                : `${eventData.participantsCount}/${eventData.maxParticipants} คน · เหลือ ${seatsLeft} ที่`,
             },
             { icon: Ticket, text: parsedPrice.displayPrice },
           ]}
@@ -640,15 +630,18 @@ export default function CommunityDetailPage({
                 {isCopied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Share2 className="w-4 h-4" aria-hidden="true" />}
                 {isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'}
               </button>
-              <button
-                type="button"
-                onClick={() => toggleFavorite(eventData.id)}
-                aria-pressed={isFav}
-                aria-label={isFav ? 'บันทึกตี้นี้แล้ว' : 'บันทึกตี้นี้'}
-                className={heroButton.icon}
-              >
-                <Heart className={`w-5 h-5 ${isFav ? 'fill-[#F26430] text-[#F26430]' : ''}`} aria-hidden="true" />
-              </button>
+              {/* A ตี้ you joined or run is already on your schedule, so saving it says nothing more */}
+              {!isJoined && !isHost && (
+                <button
+                  type="button"
+                  onClick={() => toggleFavorite(eventData.id)}
+                  aria-pressed={isFav}
+                  aria-label={isFav ? 'บันทึกตี้นี้แล้ว' : 'บันทึกตี้นี้'}
+                  className={heroButton.icon}
+                >
+                  <Heart className={`w-5 h-5 ${isFav ? 'fill-[#F26430] text-[#F26430]' : ''}`} aria-hidden="true" />
+                </button>
+              )}
             </>
           }
         />
@@ -864,40 +857,7 @@ export default function CommunityDetailPage({
           </div>
         </div>
 
-        {/* =========================================================================
-            RELATED ACTIVITIES SECTION (REUSE STANDARD EVENTGRID)
-           ========================================================================= */}
-        {relatedActivities.length > 0 && (
-          <section className="mt-14 sm:mt-20 space-y-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
-                  ตี้ที่คุณอาจสนใจ
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-600">
-                  ตี้อื่นๆ ที่เปิดรับเพื่อนใหม่
-                </p>
-              </div>
-
-              <Link
-                href="/community"
-                className="text-xs sm:text-sm font-bold text-slate-900 hover:text-[#F26430] hover:underline flex items-center gap-1"
-              >
-                <span>ดูตี้ทั้งหมด</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-            <EventGrid
-              events={relatedActivities}
-              favorites={isLoggedIn ? favorites : []}
-              toggleFavorite={toggleFavorite}
-              joinedEventIds={isLoggedIn ? joinedEventIds : []}
-              onSelectEvent={() => {}}
-              columns={4}
-            />
-          </section>
-        )}
+        <RelatedCards title="ตี้ที่คุณอาจสนใจ" allHref="/community" items={relatedActivities.map(teeCard)} />
 
       </main>
 

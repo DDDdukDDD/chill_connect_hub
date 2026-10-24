@@ -55,7 +55,7 @@ export async function spotTripHostStatus(member: Member): Promise<{ canHost: boo
   if ((await openTripsOf(member.id)) >= MAX_OPEN_SPOT_TRIPS) return { canHost: false, reason: `เปิดทริปค้างไว้ได้ไม่เกิน ${MAX_OPEN_SPOT_TRIPS} ทริป รอให้ทริปเดิมจบก่อนนะ` };
   // Hosts the team approved are already vetted; everyone else joins something first
   if (member.hostApplication?.status !== 'approved' && !(await hasAttendedBefore(member))) {
-    return { canHost: false, reason: 'ไปร่วมตี้หรืองานแฟร์สักครั้งก่อนนะ แล้วจะชวนเพื่อนไปที่ต่างๆ ได้' };
+    return { canHost: false, reason: 'ไปร่วมตี้หรืออีเวนต์สักครั้งก่อนนะ แล้วจะชวนเพื่อนไปที่ต่างๆ ได้' };
   }
   return { canHost: true };
 }

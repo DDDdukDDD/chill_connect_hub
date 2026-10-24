@@ -135,7 +135,7 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
 
   const toggleFavorite = (eventId: string) => {
     if (!isLoggedIn) {
-      setMembershipActionTitle('เพื่อบันทึกงานแฟร์และนิทรรศการโปรด');
+      setMembershipActionTitle('เพื่อบันทึกอีเวนต์โปรด');
       setPendingAction(`favorite:${eventId}`);
       setIsRequireMembershipOpen(true);
       return;
@@ -384,19 +384,19 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
               type="button"
               onClick={() => {
                 if (!isLoggedIn) {
-                  setMembershipActionTitle('เพื่อสร้างงานมหกรรมหรือเอ็กซ์โป');
+                  setMembershipActionTitle('เพื่อสร้างอีเวนต์');
                   setPendingAction('create_fair');
                   setIsRequireMembershipOpen(true);
                 } else {
                   setIsCreateEventModalOpen(true);
                 }
               }}
-              aria-label="เพิ่มงานแฟร์"
-              title="เพิ่มงานแฟร์"
+              aria-label="เพิ่มอีเวนต์"
+              title="เพิ่มอีเวนต์"
               className="inline-flex items-center justify-center gap-1.5 h-9 w-9 sm:w-auto sm:px-4 rounded-full bg-[#2B527A] hover:bg-[#1F3D5C] text-white text-[13px] font-semibold whitespace-nowrap cursor-pointer active:scale-95 transition-all"
             >
               <Plus className="w-4 h-4" strokeWidth={2.5} aria-hidden="true" />
-              <span className="hidden sm:inline">เพิ่มงานแฟร์</span>
+              <span className="hidden sm:inline">เพิ่มอีเวนต์</span>
             </button>
           }
           summary={
@@ -420,7 +420,7 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
                 type="button"
                 onClick={() => {
                   if (!isLoggedIn) {
-                    setMembershipActionTitle('เพื่อดูรายการงานแฟร์ที่บันทึกไว้');
+                    setMembershipActionTitle('เพื่อดูรายการอีเวนต์ที่บันทึกไว้');
                     setPendingAction('favorites_filter');
                     setIsRequireMembershipOpen(true);
                     return;
@@ -527,7 +527,7 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
         ) : (
           <div className="bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200 flex items-center justify-between gap-4 text-left">
             <div className="space-y-0.5">
-              <h3 className="text-xs sm:text-sm font-bold text-slate-800">ไม่พบงานมหกรรมหรือเอ็กซ์โปตามเงื่อนไขที่เลือก</h3>
+              <h3 className="text-xs sm:text-sm font-bold text-slate-800">ไม่พบอีเวนต์ตามเงื่อนไขที่เลือก</h3>
               <p className="text-[11px] text-slate-500">ลองปรับเปลี่ยนคำค้นหา หรือเลือกศูนย์การประชุมและช่วงเวลาอื่น</p>
             </div>
             <button
@@ -568,7 +568,7 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
           if (newEvent.approvalStatus === 'pending') {
             showToast(`ส่งข้อมูลงาน "${newEvent.title}" เรียบร้อยแล้ว (รอตรวจสอบและอนุมัติโดยทีมงาน)`);
           } else {
-            showToast(`สร้างงานมหกรรม "${newEvent.title}" สำเร็จ`);
+            showToast(`สร้างอีเวนต์ "${newEvent.title}" สำเร็จ`);
           }
         }}
       />
@@ -635,7 +635,7 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
 /** `initialEvents` comes from the server page, so the list is in the HTML search engines read; the browser refreshes it. */
 export default function FairsPage(props: ServerProps) {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center text-slate-400 text-sm">กำลังโหลดงานแฟร์ & นิทรรศการ...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center text-slate-400 text-sm">กำลังโหลดอีเวนต์...</div>}>
       <FairsPageContent {...props} />
     </Suspense>
   );
