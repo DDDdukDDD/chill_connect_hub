@@ -15,6 +15,9 @@ export interface ScrapedRawEvent {
   rawImage: string;
   rawLatitude?: number;
   rawLongitude?: number;
+  /** Runs: distances in km and whether sign-up is open */
+  rawDistances?: number[];
+  rawRegistrationOpen?: boolean;
 }
 
 // Bangkok Known Venues & Landmarks Coordinate Database
@@ -309,6 +312,8 @@ export function processRawEventWithAI(raw: ScrapedRawEvent, idSuffix: number): E
     tag: classification.tag,
     date: raw.rawDate.trim(),
     endDate: raw.rawEndDate?.trim(),
+    ...(raw.rawDistances?.length && { raceDistances: raw.rawDistances }),
+    ...(raw.rawRegistrationOpen !== undefined && { registrationOpen: raw.rawRegistrationOpen }),
     time: [startTime, endTime].filter(Boolean).join(' - ') || 'ไม่ระบุเวลา',
     location: locationInfo.formattedLocation,
     venueTag: raw.rawLocation.toLowerCase().includes('qsncc') || raw.rawLocation.includes('สิริกิติ์')

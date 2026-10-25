@@ -14,11 +14,12 @@ import { activityActions, useMyActivity } from '@/lib/useMyActivity';
 import { GroupChatModal } from '@/components/GroupChatModal';
 import {
   getEventById,
-  getRelatedEvents,
   EventItem,
   MOCK_EVENTS
 } from '@/data/mockData';
+import { getFairEventCategory } from '@/data/masterHub';
 import { eventOrigin } from '@/lib/contentOrigin';
+import { fairPlace } from '@/lib/placeName';
 import { formatEventDateRange, isEventEnded, parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { resolveEventGallery } from '@/lib/eventImageResolver';
 import { parseEventPrice } from '@/lib/priceUtils';
@@ -359,7 +360,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
     }
 
     setIsPassModalOpen(false);
-    showToast('ยกเลิกการเข้าร่วมกลุ่มเดินงานแล้ว');
+    showToast(`ยกเลิกการเข้าร่วมกลุ่ม${groupWord}แล้ว`);
   };
 
   const handleBuddyModalSuccess = async (newTrip: SpotBuddyPostItem) => {
@@ -371,7 +372,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
       note: stripHtmlToPlainText(newTrip.description),
       maxMembers: newTrip.maxParticipants || 4,
     });
-    showToast(created.ok ? `เปิดกลุ่มนัดเดินงาน "${newTrip.title}" แล้ว` : created.message);
+    showToast(created.ok ? `เปิดกลุ่มนัด${groupWord} "${newTrip.title}" แล้ว` : created.message);
   };
 
   // Keyboard navigation for lightbox
@@ -436,10 +437,37 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
   }, [eventData, origin, isSample]);
 
   // Related Fairs
+  // Other อีเวนต์ still to come, from live data: the same group first, then the same province
+  // (it used to read the bundled samples only, matched by the old meetup mood)
+  const [liveFairs, setLiveFairs] = useState<EventItem[]>([]);
+  const fairGroup = eventData ? getFairEventCategory(eventData) : '';
+  useEffect(() => {
+    if (!fairGroup) return;
+    let active = true;
+    const read = (url: string) => fetch(url).then((res) => (res.ok ? res.json() : null)).then((data) => (Array.isArray(data?.events) ? (data.events as EventItem[]) : [])).catch(() => [] as EventItem[]);
+    // The same group asked for by name (it may be a small one), then a wider list to fill up with
+    Promise.all([read(`/api/events?type=public_venue&fairCategory=${encodeURIComponent(fairGroup)}&limit=12`), read('/api/events?type=public_venue&limit=60')]).then(([same, wide]) => {
+      if (active) setLiveFairs([...same, ...wide.filter((e) => !same.some((x) => x.id === e.id))]);
+    });
+    return () => {
+      active = false;
+    };
+  }, [fairGroup]);
+  // What the organizer's site is for: a run takes sign-ups, a ticketed show sells tickets, the rest is just the site
+  const isRun = eventData ? getFairEventCategory(eventData) === 'marathon_sports' : false;
+  const priceUnknown = !parsedPrice.displayPrice || parsedPrice.displayPrice.startsWith('ไม่ระบุ');
+  // A run's groups meet before the start; other อีเวนต์ walk the halls together
+  const groupWord = isRun ? 'ไปวิ่ง' : 'เดินงาน';
+  const officialLinkLabel = isRun ? 'สมัครวิ่ง' : parsedPrice.isFree ? 'เว็บไซต์งาน' : priceUnknown ? 'ดูรายละเอียดงาน' : 'ซื้อบัตร';
   const relatedFairs = useMemo(() => {
     if (!eventData) return [];
-    return getRelatedEvents(eventData, 40).filter((event) => !isEventEnded(event)).slice(0, 4);
-  }, [eventData]);
+    const group = getFairEventCategory(eventData);
+    const near = (e: EventItem) => (getFairEventCategory(e) === group ? 0 : 2) + (e.province === eventData.province ? 0 : 1);
+    return liveFairs
+      .filter((e) => e.id !== eventData.id && e.eventType === 'public_venue' && !isEventEnded(e))
+      .sort((x, y) => near(x) - near(y))
+      .slice(0, 4);
+  }, [eventData, liveFairs]);
 
   if (isLoading) {
     return (
@@ -535,7 +563,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
           facts={[
             // "ไม่ระบุ…" is not a fact: leave it out rather than print it
             { icon: Calendar, text: [cleanText(formatEventDateRange(eventData)), cleanText(eventData.time)].filter((part) => part && !part.startsWith('ไม่ระบุ')).join(' · ') },
-            { icon: MapPin, text: cleanText(eventData.location) },
+            { icon: MapPin, text: cleanText(fairPlace(eventData.location)) },
             ...(parsedPrice.displayPrice && !parsedPrice.displayPrice.startsWith('ไม่ระบุ') ? [{ icon: Ticket, text: parsedPrice.displayPrice }] : []),
           ]}
           actions={
@@ -546,7 +574,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
               </button>
               {officialWebsiteUrl && (
                 <a href={officialWebsiteUrl} target="_blank" rel="noopener noreferrer" className={heroButton.quiet}>
-                  {parsedPrice.isFree ? 'เว็บไซต์งาน' : 'ซื้อบัตร'}
+                  {officialLinkLabel}
                   <ExternalLink className="w-4 h-4" aria-hidden="true" />
                 </a>
               )}
@@ -564,7 +592,8 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
         <div className="mt-10 sm:mt-14 grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:gap-10 lg:items-start">
           <aside className="lg:order-2 space-y-6 lg:sticky lg:top-24">
             <section className="p-5 sm:p-6 rounded-3xl bg-[#EEF4FA] border border-slate-200 space-y-3">
-              <h2 className="text-sm sm:text-base font-bold text-slate-900">ผู้จัดงาน</h2>
+              {/* An imported อีเวนต์ names the site we read it from (a venue or a calendar such as ThaiRun), not its organizer */}
+              <h2 className="text-sm sm:text-base font-bold text-slate-900">{origin === 'source' ? 'ข้อมูลจาก' : 'ผู้จัดงาน'}</h2>
               <p className="text-sm sm:text-base font-bold text-slate-900">{venueOrganizerName}</p>
               <p className="text-xs sm:text-sm font-medium text-slate-600 leading-relaxed">
                 {origin === 'member'
@@ -608,15 +637,22 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
           <div className="lg:order-1 min-w-0 space-y-10">
             <section className="space-y-3">
               <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">เกี่ยวกับงาน</h2>
-              {renderDescriptionContent(eventData.description)}
+              {renderDescriptionContent(eventData.description, { linkify: true })}
             </section>
 
             {/* The schedule the organizer filled in ("กำหนดการ" in the form) */}
             <ItineraryList items={eventData.itinerary} />
 
             <DetailTable
-              title="ก่อนไป"
+              title="สิ่งที่ควรทราบ"
               rows={[
+                // Runs: what a runner decides on, from the race calendar (owner 2026-10-25)
+                { label: 'ระยะ', value: eventData.raceDistances?.length ? `${eventData.raceDistances.join(' / ')} กม.` : '' },
+                { label: 'ค่าสมัคร', value: isRun && !priceUnknown ? `${parsedPrice.displayPrice} ตามระยะและแบบบัตร` : '' },
+                {
+                  label: 'การรับสมัคร',
+                  value: eventData.registrationOpen === undefined ? '' : eventData.registrationOpen ? 'เปิดรับสมัครอยู่ สมัครที่เว็บไซต์ผู้จัด' : 'ปิดรับสมัครแล้ว',
+                },
                 {
                   label: 'บัตร',
                   value: parsedPrice.hasMultipleTiers
@@ -661,15 +697,15 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
             <section className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
                 <div>
-                  <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">นัดเดินงานด้วยกัน</h2>
-                  <p className="mt-1 text-sm font-medium text-slate-600">ไปคนเดียวก็ไม่เหงา ขอแจมกลุ่มที่มีอยู่ หรือตั้งกลุ่มชวนเพื่อนเดินโซนที่ชอบ</p>
+                  <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">{isRun ? 'นัดไปวิ่งด้วยกัน' : 'นัดเดินงานด้วยกัน'}</h2>
+                  <p className="mt-1 text-sm font-medium text-slate-600">{isRun ? 'ไปคนเดียวก็ไม่เหงา ขอแจมกลุ่มที่มีอยู่ หรือตั้งกลุ่มนัดเจอกันก่อนปล่อยตัว' : 'ไปคนเดียวก็ไม่เหงา ขอแจมกลุ่มที่มีอยู่ หรือตั้งกลุ่มชวนเพื่อนเดินโซนที่ชอบ'}</p>
                 </div>
                 {!isEnded && (
                   <button
                     type="button"
                     onClick={() => {
                       if (!isLoggedIn) {
-                        setMembershipActionTitle('เพื่อสร้างกลุ่มนัดเดินงาน');
+                        setMembershipActionTitle(`เพื่อสร้างกลุ่มนัด${groupWord}`);
                         setPendingAction('create_sub_trip');
                         setIsRequireMembershipOpen(true);
                       } else {
@@ -679,7 +715,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
                     className={heroButton.quiet}
                   >
                     <Plus className="w-4 h-4" aria-hidden="true" />
-                    ตั้งกลุ่มเดินงาน
+                    ตั้งกลุ่ม{groupWord}
                   </button>
                 )}
               </div>

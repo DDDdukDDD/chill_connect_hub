@@ -73,10 +73,37 @@ export const stripHtmlToPlainText = (html: string): string => {
     .trim();
 };
 
+const URL_PATTERN = /https?:\/\/[^\s<>"']+[^\s<>"'.,)]/g;
+const LINK_CLASS = 'text-[#2563EB] hover:underline break-all';
+
+/** Web addresses in HTML text turned into links, leaving existing links and tags alone */
+function linkifyHtml(html: string): string {
+  let insideLink = false;
+  return html
+    .split(/(<[^>]+>)/)
+    .map((part) => {
+      if (part.startsWith('<')) {
+        if (/^<a[\s>]/i.test(part)) insideLink = true;
+        if (/^<\/a>/i.test(part)) insideLink = false;
+        return part;
+      }
+      return insideLink ? part : part.replace(URL_PATTERN, (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer nofollow" class="${LINK_CLASS}">${url}</a>`);
+    })
+    .join('');
+}
+
+/** A plain-text line with its web addresses as links */
+function linkifyText(text: string): React.ReactNode {
+  const urls = text.match(URL_PATTERN) ?? [];
+  return text.split(URL_PATTERN).flatMap((part, i) => (i < urls.length ? [part, <a key={i} href={urls[i]} target="_blank" rel="noopener noreferrer nofollow" className={LINK_CLASS}>{urls[i]}</a>] : [part]));
+}
+
 /**
- * Formatter for rendering Description safely in Detail Pages
+ * Formatter for rendering Description safely in Detail Pages.
+ * `linkify` turns web addresses into links: for อีเวนต์ (ticket pages of organizers and official sites), not for members'
+ * ตี้, where personal links are not allowed.
  */
-export const renderDescriptionContent = (content: string) => {
+export const renderDescriptionContent = (content: string, { linkify = false }: { linkify?: boolean } = {}) => {
   if (!content) return null;
 
   // If content has HTML tags
@@ -84,7 +111,7 @@ export const renderDescriptionContent = (content: string) => {
     return (
       <div
         className="space-y-2.5 leading-relaxed font-normal text-slate-700 [&_strong]:font-bold [&_strong]:text-slate-900 [&_strong]:block [&_strong]:mt-3.5 [&_strong]:mb-1 [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_li]:leading-relaxed"
-        dangerouslySetInnerHTML={{ __html: content }}
+        dangerouslySetInnerHTML={{ __html: linkify ? linkifyHtml(content) : content }}
       />
     );
   }
@@ -117,7 +144,7 @@ export const renderDescriptionContent = (content: string) => {
 
         return (
           <p key={idx} className="leading-relaxed">
-            {cleanedPara}
+            {linkify ? linkifyText(cleanedPara) : cleanedPara}
           </p>
         );
       })}

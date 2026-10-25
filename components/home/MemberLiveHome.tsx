@@ -594,7 +594,7 @@ function ItemsBlock({ title, href, items, dot, layout }: { title: string; href: 
 
 function FairsBlock({ fairs, fairWhen, layout }: MemberLiveHomeProps & { layout: 'rows' | 'tiles' }) {
   const items = fairs.map((fair) => ({ key: fair.id, href: eventHref(fair), image: fair.image, kicker: fairWhen(fair), title: fair.title, sub: fair.location }));
-  return <ItemsBlock title="งานแฟร์ งานวิ่ง งานคอน ช่วงนี้" href="/fairs" items={items} dot="bg-[#2B527A]" layout={layout} />;
+  return <ItemsBlock title="เอ็กซ์โป งานวิ่ง คอนเสิร์ต ช่วงนี้" href="/fairs" items={items} dot="bg-[#2B527A]" layout={layout} />;
 }
 
 function SpotsBlock({ spots, layout }: MemberLiveHomeProps & { layout: 'rows' | 'tiles' }) {

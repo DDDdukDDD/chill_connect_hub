@@ -33,6 +33,8 @@ export interface EventQueryParams extends PaginationParams {
   venueTag?: string | null;
   /** Meetup group (a communityCategories id): the event's own lifestyleCategory, or the one its title maps to */
   lifestyleCategory?: string | null;
+  /** อีเวนต์ group (a fairCategories id): the event's own fairCategory, or the one its title maps to */
+  fairCategory?: string | null;
   /** Spot Buddy trips tied to one place */
   spotId?: string | null;
   searchQuery?: string | null;

@@ -427,7 +427,7 @@ export const AdminCreateEventModal: React.FC<AdminCreateEventModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-300">{eventType === 'public_venue' ? 'ประเภทงาน:' : 'หมวดกิจกรรม:'}</label>
+                <label className="block text-xs font-bold text-slate-300">{eventType === 'public_venue' ? 'ประเภทงาน:' : 'หมวดตี้:'}</label>
                 <select
                   value={group}
                   onChange={(e) => {
@@ -443,12 +443,8 @@ export const AdminCreateEventModal: React.FC<AdminCreateEventModalProps> = ({
                     ? fairCategories.map((c) => (
                         <option key={c.id} value={c.id}>{c.name}</option>
                       ))
-                    : (['chill', 'move', 'heal', 'learn'] as const).map((mood) => (
-                        <optgroup key={mood} label={{ chill: 'นัดชิลล์', move: 'ขยับร่างกาย', heal: 'ฮีลใจ', learn: 'เรียนรู้' }[mood]}>
-                          {communityCategories.filter((c) => c.coreMood === mood).map((c) => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                          ))}
-                        </optgroup>
+                    : communityCategories.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
                       ))}
                 </select>
               </div>

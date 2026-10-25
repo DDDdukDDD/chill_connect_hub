@@ -62,7 +62,7 @@ export function FilterSelect({
 
 /** The page heading in a friend's voice, saying where (like Meetup's "Events near Bangkok"); each page names itself for search */
 const titleOf = (kind: DiscoverKind, province: string) => {
-  const base = kind === 'meetups' ? 'ตี้ชวนออกไปใช้ชีวิต' : kind === 'fairs' ? 'งานแฟร์ งานวิ่ง งานคอน' : 'ที่เที่ยว ที่ชิล';
+  const base = kind === 'meetups' ? 'ตี้ชวนออกไปใช้ชีวิต' : kind === 'fairs' ? 'เอ็กซ์โป งานวิ่ง คอนเสิร์ต' : 'ที่เที่ยว ที่ชิล';
   if (province === ONLINE && kind === 'meetups') return 'ตี้ออนไลน์';
   return province && province !== ALL_PROVINCES && province !== ONLINE ? `${base} ใน ${province}` : `${base} ทั่วไทย`;
 };

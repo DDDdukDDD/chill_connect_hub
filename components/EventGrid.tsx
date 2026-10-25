@@ -7,6 +7,7 @@ import { Heart, Calendar, MapPin, Users, Star, RotateCcw, Search, Globe, Repeat,
 import { motion } from 'framer-motion';
 import { formatEventDateRange, isEventEnded } from '@/lib/dateUtils';
 import { formatEventBadgePrice, hasKnownPrice, isPriceFree } from '@/lib/priceUtils';
+import { fairPlace, placeName } from '@/lib/placeName';
 import { FloatingCarousel } from '@/components/FloatingCarousel';
 
 interface EventGridProps {
@@ -198,13 +199,13 @@ export const EventGrid: React.FC<EventGridProps> = ({
                         <span className="text-[11px] font-medium text-slate-500 truncate">
                           {event.hostName}
                         </span>
-                        {event.eventType !== 'public_venue' && (
+                        {event.eventType !== 'public_venue' && Boolean(event.hostRating || event.rating) && (
                           <span
                             className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-700 bg-amber-50/90 border border-amber-200/60 px-1 py-0.2 rounded shrink-0"
-                            title={`คะแนนโฮสต์ ${(event.hostRating || event.rating || 4.9).toFixed(1)} / 5`}
+                            title={`คะแนนโฮสต์ ${(event.hostRating || event.rating || 0).toFixed(1)} / 5`}
                           >
                             <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
-                            <span>{(event.hostRating || event.rating || 4.9).toFixed(1)}</span>
+                            <span>{(event.hostRating || event.rating || 0).toFixed(1)}</span>
                           </span>
                         )}
                       </div>
@@ -259,7 +260,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                             <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                             <span className="truncate">
                               {event.province ? `${event.province === 'กรุงเทพมหานคร' ? 'กรุงเทพฯ' : event.province.replace('จังหวัด', '')} • ` : ''}
-                              {event.location}
+                              {event.eventType === 'public_venue' ? fairPlace(event.location) : placeName(event.location)}
                             </span>
                           </>
                         )}
@@ -396,13 +397,13 @@ export const EventGrid: React.FC<EventGridProps> = ({
                   <span className="text-[11px] font-semibold text-slate-600 truncate max-w-[120px]">
                     {event.hostName}
                   </span>
-                  {event.eventType !== 'public_venue' && (
+                  {event.eventType !== 'public_venue' && Boolean(event.hostRating || event.rating) && (
                     <span
                       className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-700 bg-amber-50 px-1 py-0.2 rounded shrink-0"
-                      title={`คะแนนโฮสต์ ${(event.hostRating || event.rating || 4.9).toFixed(1)} / 5`}
+                      title={`คะแนนโฮสต์ ${(event.hostRating || event.rating || 0).toFixed(1)} / 5`}
                     >
                       <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
-                      <span>{(event.hostRating || event.rating || 4.9).toFixed(1)}</span>
+                      <span>{(event.hostRating || event.rating || 0).toFixed(1)}</span>
                     </span>
                   )}
                 </div>
@@ -446,7 +447,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                     <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                     <span className="truncate text-[11px] sm:text-xs">
                       {event.province ? `${event.province === 'กรุงเทพมหานคร' ? 'กรุงเทพฯ' : event.province.replace('จังหวัด', '')} • ` : ''}
-                      {event.location}
+                      {event.eventType === 'public_venue' ? fairPlace(event.location) : placeName(event.location)}
                     </span>
                   </>
                 )}

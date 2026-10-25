@@ -328,17 +328,11 @@ function SpotsPageContent({ initialSpots, initialCounts }: ServerProps) {
             setCurrentPage(1);
           }}
           initialCounts={initialCounts}
+          // Shown to members only: a visitor's job here is to find something to join (owner 2026-10-25)
           action={
-            <button
+            isLoggedIn && <button
               type="button"
-              onClick={() => {
-                if (!isLoggedIn) {
-                  setMembershipActionTitle('เพื่อแนะนำพิกัดสถานที่ใหม่');
-                  setIsRequireMembershipOpen(true);
-                } else {
-                  setIsCreateEventModalOpen(true);
-                }
-              }}
+              onClick={() => setIsCreateEventModalOpen(true)}
               aria-label="แนะนำที่ใหม่"
               title="แนะนำที่ใหม่"
               className="inline-flex items-center justify-center gap-1.5 h-9 w-9 sm:w-auto sm:px-4 rounded-full bg-[#4A7C59] hover:bg-[#2D5A3C] text-white text-[13px] font-semibold whitespace-nowrap cursor-pointer active:scale-95 transition-all"

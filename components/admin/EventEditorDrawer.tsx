@@ -4,7 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { ExternalLink, Loader2 } from 'lucide-react';
 import { EventGrid } from '@/components/EventGrid';
 import { RichTextEditor } from '@/components/RichTextEditor';
-import { MASTER_COMMUNITY_MOODS } from '@/data/masterHub';
+import { useMasterData } from '@/lib/useMasterData';
 import { ALL_THAI_PROVINCES } from '@/data/spotsData';
 import type { EventItem } from '@/data/mockData';
 import type { AdminEventItem } from '@/lib/eventsStore';
@@ -26,6 +26,8 @@ const VENUE_OPTIONS = [
 interface EventForm {
   title: string;
   category: EventItem['category'];
+  /** ตี้ category or อีเวนต์ type; empty = the title decides */
+  group: string;
   tag: string;
   description: string;
   date: string;
@@ -49,6 +51,7 @@ function toForm(event: AdminEventItem | null, isCommunity: boolean): EventForm {
   return {
     title: event?.title ?? '',
     category: event?.category ?? 'chill',
+    group: (isCommunity ? event?.lifestyleCategory : event?.fairCategory) ?? '',
     tag: event?.tag ?? '',
     description: event?.description ?? '',
     date: event?.date ?? '',
@@ -69,12 +72,12 @@ function toForm(event: AdminEventItem | null, isCommunity: boolean): EventForm {
   };
 }
 
-function toEventFields(form: EventForm, isCommunity: boolean): Partial<AdminEventItem> {
+function toEventFields(form: EventForm, isCommunity: boolean, groupName: string): Partial<AdminEventItem> {
   const officialUrl = form.officialUrl.trim();
   const common: Partial<AdminEventItem> = {
     title: form.title.trim(),
     category: form.category,
-    tag: form.tag.trim() || MASTER_COMMUNITY_MOODS.find((mood) => mood.id === form.category)?.label || '',
+    tag: form.tag.trim() || groupName,
     description: form.description,
     date: form.date.trim(),
     endDate: form.endDate.trim() || undefined,
@@ -89,6 +92,7 @@ function toEventFields(form: EventForm, isCommunity: boolean): Partial<AdminEven
     return {
       ...common,
       eventType: 'community',
+      lifestyleCategory: form.group,
       meetingPoint: form.meetingPoint.trim() || undefined,
       locationType: form.locationType,
       onlinePlatform: form.locationType === 'online' ? form.onlinePlatform.trim() || undefined : undefined,
@@ -99,6 +103,7 @@ function toEventFields(form: EventForm, isCommunity: boolean): Partial<AdminEven
   return {
     ...common,
     eventType: 'public_venue',
+    fairCategory: form.group,
     venueTag: (form.venueTag || undefined) as AdminEventItem['venueTag'],
     externalUrl: officialUrl || undefined,
     sourceUrl: officialUrl || undefined,
@@ -135,7 +140,11 @@ export function EventEditorDrawer({ event, type, onClose, onSaved }: EventEditor
   const set = <K extends keyof EventForm>(key: K) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm((current) => ({ ...current, [key]: e.target.value }));
 
-  const fields = useMemo(() => toEventFields(form, isCommunity), [form, isCommunity]);
+  // A ตี้'s mood follows its category on the server; it is not picked here (owner 2026-10-25)
+  const { communityCategories, fairCategories } = useMasterData();
+  const groups = isCommunity ? communityCategories : fairCategories;
+  const groupName = groups.find((g) => g.id === form.group)?.name ?? '';
+  const fields = useMemo(() => toEventFields(form, isCommunity, groupName), [form, isCommunity, groupName]);
   const previewEvent = useMemo(() => ({
     ...(event ?? {
       id: 'preview',
@@ -230,9 +239,10 @@ export function EventEditorDrawer({ event, type, onClose, onSaved }: EventEditor
         <Field label="ชื่อกิจกรรม:" htmlFor="event-title" wide hint="อย่างน้อย 5 ตัวอักษร ไม่ใส่ emoji">
           <input id="event-title" value={form.title} onChange={set('title')} className={fieldInputClass} />
         </Field>
-        <Field label="หมวด:" htmlFor="event-category">
-          <select id="event-category" value={form.category} onChange={set('category')} className={fieldInputClass}>
-            {MASTER_COMMUNITY_MOODS.map((mood) => <option key={mood.id} value={mood.id}>{mood.label}</option>)}
+        <Field label={isCommunity ? 'หมวดตี้:' : 'ประเภทงาน:'} htmlFor="event-category">
+          <select id="event-category" value={form.group} onChange={set('group')} className={fieldInputClass}>
+            <option value="">ให้ระบบเลือกจากชื่องาน</option>
+            {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
           </select>
         </Field>
         <Field label="ป้ายหมวดที่แสดง:" htmlFor="event-tag" hint="เว้นว่างได้ ระบบใช้ชื่อหมวด">

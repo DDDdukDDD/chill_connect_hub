@@ -25,7 +25,7 @@ const MUTABLE_EVENT_FIELDS = new Set<string>([
   'hostAvatar', 'venueTag', 'price', 'image', 'galleryImages', 'externalUrl', 'sourceUrl', 'link',
   'latitude', 'longitude', 'status', 'rules', 'whatToBring', 'itinerary', 'instructions', 'contactChannel',
   'transportation', 'targetGender', 'targetAge', 'energyLevel', 'isSoloFriendly', 'isPetFriendly',
-  'isBeginnerFriendly', 'cancellationPolicy', 'subActivities', 'lifestyleCategory', 'fairCategory',
+  'isBeginnerFriendly', 'cancellationPolicy', 'subActivities', 'lifestyleCategory', 'fairCategory', 'raceDistances', 'registrationOpen',
 ]);
 
 const plainLength = (html: unknown) => (typeof html === 'string' ? html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().length : 0);
