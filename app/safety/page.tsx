@@ -2,141 +2,98 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
+import { DetailTable } from '@/components/detail/DetailHero';
 import { useAuth } from '@/lib/useAuth';
-import { ShieldCheck, Lock, MapPin, AlertTriangle, CheckCircle2, PhoneCall, ArrowLeft } from 'lucide-react';
 
+const SECTION_TITLE = 'text-lg sm:text-xl font-bold text-slate-900 tracking-tight';
+const BODY = 'text-sm sm:text-base font-medium text-slate-700 leading-relaxed';
+
+/** Before you go: what a member does themselves */
+const TIPS = [
+  { title: 'บอกคนใกล้ตัวก่อนออกไป', text: 'ส่งลิงก์ตี้ให้เพื่อนหรือคนในบ้าน บอกว่าไปไหน กับใคร กลับประมาณกี่โมง' },
+  { title: 'เดินทางไปเอง กลับเอง', text: 'ไม่ขึ้นรถส่วนตัวของคนที่เพิ่งเจอกันครั้งแรก นั่งรถสาธารณะหรือเรียกรถเองจะสบายใจกว่า' },
+  { title: 'ไม่สบายใจ กลับได้ทันที', text: 'ถ้าบรรยากาศไม่เหมือนที่คุยกันไว้ ขอตัวกลับได้เลย ไม่ต้องเกรงใจใคร' },
+  { title: 'เก็บเรื่องเงินและข้อมูลส่วนตัวไว้', text: 'ไม่โอนเงินให้สมาชิกด้วยกัน และไม่ต้องบอกที่อยู่บ้านหรือเลขบัญชีกับใคร' },
+];
+
+/**
+ * คู่มือความปลอดภัย, drawn like the challenge page (owner 2026-10-24): open sections in a friendly voice, the rules
+ * as grey rows, no English in brackets. The binding terms live on /legal; this page says them in plain words.
+ */
 export default function SafetyPage() {
   const [activeTab, setActiveTab] = useState('safety');
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] text-slate-900 flex flex-col font-sans">
-      <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        isLoggedIn={isLoggedIn}
-        setIsLoggedIn={handleSetIsLoggedIn}
-        isAuthReady={isAuthReady}
-      />
+    <div className="min-h-screen bg-white text-slate-900 flex flex-col font-sans">
+      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} isLoggedIn={isLoggedIn} setIsLoggedIn={handleSetIsLoggedIn} isAuthReady={isAuthReady} />
 
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 pt-8 pb-28 sm:py-12 space-y-8">
-        
-        {/* Back Link */}
-        <div>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#4A7C59] hover:underline"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>กลับหน้าหลัก</span>
-          </Link>
-        </div>
+      <main className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 pt-4 pb-28 lg:pb-16">
+        <Link href="/" className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
+          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+          หน้าแรก
+        </Link>
 
-        {/* Title Header */}
-        <div className="space-y-3 pb-6 border-b border-slate-200">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-[#EBF3ED] text-[#2D5A3C] flex items-center justify-center border border-[#A3CEB0]/60 shrink-0 shadow-2xs">
-              <ShieldCheck className="w-6 h-6" />
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold tracking-wide uppercase bg-[#EBF3ED] text-[#2D5A3C] border border-[#A3CEB0]/60">
-                  Trust & Safety Architecture
-                </span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-                แนวทางความปลอดภัยและข้อกำหนดชุมชน
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-500 font-medium">
-                Community Safety Guidelines & Legal Terms of Service
-              </p>
-            </div>
-          </div>
-        </div>
+        <header className="mt-4 space-y-2">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 leading-tight tracking-tight">คู่มือความปลอดภัย</h1>
+          <p className={BODY}>ออกไปเจอเพื่อนใหม่ให้สนุกและสบายใจทุกครั้ง นี่คือสิ่งที่เราอยากให้ทุกคนรู้ก่อนไปตี้</p>
+        </header>
 
-        {/* Core Principles Cards */}
-        <div className="space-y-6">
-          
-          {/* Card 1: Platform Intermediary */}
-          <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-3">
-            <div className="flex items-center gap-2.5 text-slate-900 font-bold text-base">
-              <Lock className="w-5 h-5 text-[#4A7C59]" />
-              <h2>1. สถานะตัวกลางของแพลตฟอร์ม (Platform Intermediary Notice)</h2>
-            </div>
-            <p className="text-sm text-slate-600 leading-relaxed font-normal">
-              Chill & Connect Hub ให้บริการในฐานะ <strong>พื้นที่สื่อกลางออนไลน์ (Bulletin Board / Platform Intermediary)</strong> เพื่ออำนวยความสะดวกในการค้นพบสถานที่ท่องเที่ยว พักผ่อน ฮีลใจ และเปิดพื้นที่ให้สมาชิกในชุมชนได้แลกเปลี่ยนข้อมูลและนัดหมายทำกิจกรรมร่วมกันตามความสมัครใจ
+        <div className="mt-10 space-y-10">
+          <section className="space-y-4">
+            <h2 className={SECTION_TITLE}>ก่อนออกไป</h2>
+            <ol className="space-y-4">
+              {TIPS.map((tip, i) => (
+                <li key={tip.title} className="grid grid-cols-[2rem_1fr] gap-3">
+                  <span className="w-7 h-7 rounded-full bg-slate-100 text-slate-700 text-sm font-bold flex items-center justify-center tabular-nums">{i + 1}</span>
+                  <span>
+                    <span className="block text-sm sm:text-base font-bold text-slate-900">{tip.title}</span>
+                    <span className="block text-sm font-medium text-slate-600 leading-relaxed">{tip.text}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </section>
+
+          <DetailTable
+            title="กติกาของทุกตี้"
+            rows={[
+              { label: 'ที่นัดเจอ', value: 'ที่สาธารณะที่มีคนผ่านไปมา เช่น สวน คาเฟ่ หอศิลป์ พิพิธภัณฑ์ หรือสนามกีฬา' },
+              { label: 'ที่ที่ห้ามนัด', value: 'บ้านหรือห้องพักส่วนตัว และที่ลับตาคน' },
+              { label: 'เพื่อนร่วมทริป', value: 'ทริปไปที่เที่ยวด้วยกันต้องมีอย่างน้อย 3 คน ไปช่วงกลางวัน และเจอกันที่สถานที่เลย ไม่นัดรับส่งกัน' },
+              { label: 'การยืนยันว่ามา', value: 'คนจัดสแกนบัตรของคุณที่จุดนัดพบ' },
+            ]}
+          />
+
+          <section className="space-y-3">
+            <h2 className={SECTION_TITLE}>สิ่งที่เราไม่ยอมให้เกิด</h2>
+            <p className={BODY}>
+              การคุกคามทางเพศ ความรุนแรง การหลอกลวง ชวนเล่นพนัน หรือชวนทำธุรกิจลูกโซ่ ถ้าเจอ เราปิดบัญชีถาวรทันทีโดยไม่ต้องแจ้งก่อน และพร้อมส่งข้อมูลให้ตำรวจตามกฎหมาย
             </p>
-            <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-xs text-amber-900 leading-relaxed font-medium flex items-start gap-2.5">
-              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <span>แพลตฟอร์มไม่ได้เป็นผู้จัดกิจกรรม, ตัวแทน, นายหน้า หรือผู้ว่าจ้างของสมาชิกใดๆ สมาชิกผู้จัดกิจกรรม (Host) และผู้เข้าร่วม (Participants) เป็นผู้ตกลงและรับผิดชอบร่วมกันเองโดยตรง</span>
-            </div>
-          </div>
+          </section>
 
-          {/* Card 2: Public Space Meeting Only */}
-          <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-3">
-            <div className="flex items-center gap-2.5 text-slate-900 font-bold text-base">
-              <MapPin className="w-5 h-5 text-[#4A7C59]" />
-              <h2>2. กฎการนัดพบในพื้นที่สาธารณะเท่านั้น (Public Space Meeting Policy)</h2>
-            </div>
-            <ul className="text-sm text-slate-600 space-y-2 list-disc list-inside font-normal">
-              <li>การนัดหมายทุกกิจกรรม <strong>ต้องเกิดขึ้นในพื้นที่สาธารณะที่เปิดโล่ง ปลอดภัย และมีผู้คนพลุกพล่าน</strong> เช่น สวนสาธารณะ, คาเฟ่, หอศิลป์, พิพิธภัณฑ์ หรือสนามกีฬา</li>
-              <li><strong>ข้อห้ามเด็ดขาด:</strong> ไม่อนุญาตให้นัดพบในที่รโหฐาน, ที่พักอาศัยส่วนตัว, หรือสถานที่ลับตาคนโดยเด็ดขาด เพื่อความปลอดภัยสูงสุดของสมาชิกทุกคน</li>
-            </ul>
-          </div>
-
-          {/* Card 3: Assumption of Risk */}
-          <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-3">
-            <div className="flex items-center gap-2.5 text-slate-900 font-bold text-base">
-              <AlertTriangle className="w-5 h-5 text-amber-600" />
-              <h2>3. การยอมรับความเสี่ยงและสละสิทธิ์เรียกร้องค่าเสียหาย (Assumption of Risk & Waiver)</h2>
-            </div>
-            <p className="text-sm text-slate-600 leading-relaxed font-normal">
-              การตัดสินใจเข้าร่วมกิจกรรมใดๆ ถือเป็นการตัดสินใจโดยอิสระและสมัครใจของสมาชิก ผู้เข้าร่วมตกลงยอมรับความเสี่ยงส่วนบุคคลที่อาจเกิดขึ้นจากการเดินทางหรือการทำกิจกรรมภายนอก และสละสิทธิ์ในการฟ้องร้องดำเนินคดี หรือเรียกร้องค่าเสียหายใดๆ ต่อแพลตฟอร์ม ผู้บริหาร และทีมงานผู้พัฒนาในทุกกรณี
+          <section className="space-y-3">
+            <h2 className={SECTION_TITLE}>เจอปัญหา บอกเราได้เลย</h2>
+            <p className={BODY}>
+              กด <span className="font-bold text-slate-900">รายงาน</span> ได้ที่หน้าตี้ โปรไฟล์ รีวิว หรือข้อความในแชต ทีมงานจะเข้าไปดูให้ และบล็อกสมาชิกคนนั้นได้ทันทีจากโปรไฟล์ของเขา คุณจะไม่เห็นตี้และโมเมนต์ของเขาอีก ถ้าอยู่ในอันตราย โทร <span className="font-bold text-slate-900 tabular-nums">191</span> ก่อนเสมอ
             </p>
-          </div>
+          </section>
 
-          {/* Card 4: Zero Tolerance */}
-          <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-3">
-            <div className="flex items-center gap-2.5 text-slate-900 font-bold text-base">
-              <CheckCircle2 className="w-5 h-5 text-[#4A7C59]" />
-              <h2>4. มาตรการจัดการพฤติกรรมไม่เหมาะสม (Zero Tolerance Policy)</h2>
-            </div>
-            <p className="text-sm text-slate-600 leading-relaxed font-normal">
-              แพลตฟอร์มมีนโยบายไม่ประนีประนอมต่อพฤติกรรมคุกคามทางเพศ, การใช้ความรุนแรง, การหลอกลวง, การชักชวนเล่นการพนัน หรือการชักชวนทำธุรกิจลูกโซ่ หากตรวจพบหรือได้รับการรายงาน แพลตฟอร์มจะดำเนินการระงับบัญชีถาวรทันทีโดยไม่ต้องแจ้งล่วงหน้า และพร้อมประสานงานกับเจ้าหน้าที่ตำรวจตามกฎหมาย
+          <section className="space-y-3">
+            <h2 className={SECTION_TITLE}>เราเป็นพื้นที่กลาง</h2>
+            <p className={BODY}>
+              Chill &amp; Connect Hub เป็นที่ให้สมาชิกเจอกันและชวนกันไปทำกิจกรรม เราไม่ได้เป็นคนจัดตี้ ไม่ได้เป็นตัวแทนหรือนายหน้าของใคร คนจัดกับคนที่ไปตกลงและดูแลกันเอง การไปแต่ละครั้งเป็นการตัดสินใจของคุณเอง
+              รายละเอียดเต็มอยู่ใน{' '}
+              <Link href="/legal" className="font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline">
+                ข้อตกลงการใช้งาน
+              </Link>
             </p>
-          </div>
-
-          {/* Card 5: Safety Tips */}
-          <div className="p-6 rounded-3xl bg-[#EBF3ED]/60 border border-[#A3CEB0]/60 shadow-2xs space-y-3">
-            <div className="flex items-center gap-2.5 text-[#2D5A3C] font-bold text-base">
-              <PhoneCall className="w-5 h-5 text-[#4A7C59]" />
-              <h2>5. คำแนะนำเพื่อความปลอดภัยของตนเอง (Practical Safety Tips)</h2>
-            </div>
-            <div className="text-xs sm:text-sm text-[#2D5A3C] space-y-2 font-medium">
-              <p>• <strong>แจ้งคนใกล้ชิดเสมอ:</strong> ส่งลิงก์กิจกรรมและบอกคนในครอบครัวหรือเพื่อนสนิทก่อนออกไปทำกิจกรรม</p>
-              <p>• <strong>เดินทางด้วยตนเอง:</strong> หลีกเลี่ยงการขึ้นรถส่วนตัวของผู้ที่เพิ่งรู้จักกันครั้งแรก</p>
-              <p>• <strong>สิทธิในการออกจากกิจกรรม:</strong> หากรู้สึกไม่สบายใจหรือบรรยากาศไม่เป็นไปตามที่ตกลงไว้ สมาชิกสามารถขอตัวกลับได้ทันที</p>
-            </div>
-          </div>
-
+          </section>
         </div>
-
       </main>
-
-      {/* Footer */}
-      <footer className="bg-white border-t border-slate-200/90 py-6 text-center text-xs text-slate-500 space-y-2 mt-12">
-        <p className="font-medium text-slate-600 text-xs">Lifestyle Discovery & Safe Community Engagement Platform</p>
-        <div className="flex items-center justify-center gap-2.5 sm:gap-3 text-xs text-slate-500 pt-0.5 flex-wrap">
-          <Link href="/about" className="hover:text-slate-800 hover:underline">เกี่ยวกับเรา</Link>
-          <span className="text-slate-300">•</span>
-          <Link href="/legal" className="hover:text-slate-800 hover:underline">ข้อตกลงการใช้งาน</Link>
-          <span className="text-slate-300">•</span>
-          <Link href="/legal?tab=privacy" className="hover:text-slate-800 hover:underline">นโยบายความเป็นส่วนตัว</Link>
-        </div>
-        <p className="text-[11px] text-slate-400">© 2026 Chill & Connect Hub. All rights reserved.</p>
-      </footer>
 
       <MobileNav activeTab="safety" setActiveTab={() => {}} />
     </div>

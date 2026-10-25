@@ -58,6 +58,8 @@ const CANCEL_OPTIONS = [
 ] as const;
 
 const photo = (id: string) => `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=800&q=80`;
+/** Which community sample photo fits each mood (index into PRESET_IMAGES.community) */
+const MOOD_PRESET: Record<string, number> = { chill: 0, move: 1, heal: 2, learn: 3 };
 const PRESET_IMAGES: Record<CreationEntityType, Array<{ label: string; url: string }>> = {
   community: [
     { label: 'คาเฟ่', url: photo('1554118811-1e0d58224f24') }, { label: 'วิ่ง', url: photo('1476480862126-209bfaa8edc8') },
@@ -79,7 +81,7 @@ const PRESET_IMAGES: Record<CreationEntityType, Array<{ label: string; url: stri
 
 const TYPE_INFO: Record<CreationEntityType, { title: string; text: string; steps: string[]; icon: React.ElementType }> = {
   community: { title: 'ตี้', text: 'นัดกลุ่มเล็ก เช่น วิ่งเช้า บอร์ดเกม เวิร์กช็อป', steps: ['เรื่องพื้นฐาน', 'วันเวลาและสถานที่', 'รายละเอียด', 'ตรวจและส่ง'], icon: Users },
-  fair: { title: 'งานแฟร์และมหกรรม', text: 'งานจัดแสดง นิทรรศการ เอ็กซ์โป งานวิ่ง', steps: ['เรื่องพื้นฐาน', 'วันและสถานที่', 'รายละเอียด', 'ตรวจและส่ง'], icon: Building },
+  fair: { title: 'อีเวนต์', text: 'งานจัดแสดง นิทรรศการ เอ็กซ์โป งานวิ่ง', steps: ['เรื่องพื้นฐาน', 'วันและสถานที่', 'รายละเอียด', 'ตรวจและส่ง'], icon: Building },
   spot: { title: 'แนะนำสถานที่', text: 'ที่เที่ยว คาเฟ่ หรือมุมพักใจที่อยากให้คนอื่นรู้จัก', steps: ['เรื่องพื้นฐาน', 'ที่ตั้งและเวลาเปิด', 'รายละเอียด', 'ตรวจและส่ง'], icon: MapPin },
   challenge: { title: 'เสนอชาเลนจ์', text: 'ภารกิจให้คนในคอมมูนิตี้ทำร่วมกัน', steps: ['เรื่องพื้นฐาน', 'ภารกิจ', 'ช่วงเวลาและเหรียญ', 'ตรวจและส่ง'], icon: Target },
 };
@@ -196,7 +198,7 @@ const DESCRIPTION_TEMPLATES: Partial<Record<CreationEntityType, string>> = {
 const hasTemplatePrompt = (description: string): boolean => /\[[^\]]{3,}\]/.test(stripHtmlToPlainText(description));
 
 /** What must be filled in on each step; the server checks again */
-function validate(type: CreationEntityType, step: number, f: Form, minDate: string): Errors {
+function validate(type: CreationEntityType, step: number, f: Form, minDate: string, publishesNow = false): Errors {
   const e: Errors = {};
   const need = (key: keyof Form, ok: boolean, message: string) => { if (!ok && !e[key]) e[key] = message; };
   if (step === 0) {
@@ -209,7 +211,7 @@ function validate(type: CreationEntityType, step: number, f: Form, minDate: stri
   if (step === 1 && type === 'community') {
     if (f.scheduleType === 'single') {
       need('date', Boolean(f.date), 'เลือกวันที่');
-      need('date', !f.date || f.date >= minDate, 'เลือกวันล่วงหน้าอย่างน้อย 3 วัน เพื่อให้ทีมงานตรวจทัน');
+      need('date', !f.date || f.date >= minDate, publishesNow ? 'เลือกวันตั้งแต่พรุ่งนี้ เพื่อให้คนมีเวลาเห็นและสมัคร' : 'เลือกวันล่วงหน้าอย่างน้อย 3 วัน เพื่อให้ทีมงานตรวจทัน');
     } else {
       need('days', f.days.length > 0, 'เลือกอย่างน้อย 1 วัน');
     }
@@ -396,8 +398,9 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
 
   const info = type ? TYPE_INFO[type] : null;
   const lastStep = info ? info.steps.length - 1 : 0;
-  const minDate = isoDay(type === 'fair' ? 7 : type === 'challenge' ? 0 : 3);
   const publishesNow = type === 'community' && isHost;
+  // An approved host's ตี้ goes live at once, so it needs no time for the team's check
+  const minDate = isoDay(type === 'fair' ? 7 : type === 'challenge' ? 0 : publishesNow ? 1 : 3);
   const price = form.priceMode === 'free' ? 'ฟรี' : form.priceText.trim();
   const venue = VENUES.find((item) => item.id === form.venueId) ?? VENUES[0];
   const fairLocation = form.venueId === 'other' ? form.locationName.trim() : [venue.label, form.locationName.trim()].filter(Boolean).join(' · ');
@@ -410,7 +413,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
 
   const goNext = () => {
     if (!type) return;
-    const found = validate(type, step, form, minDate);
+    const found = validate(type, step, form, minDate, publishesNow);
     setErrors(found);
     if (Object.values(found).some(Boolean)) {
       requestAnimationFrame(() => bodyRef.current?.querySelector('[data-field-error]')?.scrollIntoView({ block: 'center', behavior: 'smooth' }));
@@ -628,6 +631,9 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
                       onClick={() => {
                         set('lifestyleCategory', item.id);
                         set('category', mood.id);
+                        // While the cover is still the first sample, show one that fits the mood (a run gets the running photo)
+                        const fitting = PRESET_IMAGES.community[MOOD_PRESET[mood.id] ?? 0];
+                        if (form.image === PRESET_IMAGES.community[0].url && fitting) set('image', fitting.url);
                       }}
                       className={pillClass(selected)}>
                       {selected && <Check className="w-3.5 h-3.5" aria-hidden="true" />}
@@ -1191,7 +1197,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
           {isLoaded && !canCreate && (
             <div role="alert" className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-sm font-medium text-amber-900 leading-relaxed">
               {member ? 'ยืนยันอีเมลและรับคำมั่นของคอมมูนิตี้ก่อน จึงจะสร้างได้ ' : 'เข้าสู่ระบบก่อน จึงจะสร้างได้ '}
-              <a href={member ? '/profile' : '/login'} className="font-bold underline whitespace-nowrap">{member ? 'ไปที่โปรไฟล์' : 'เข้าสู่ระบบ'}</a>
+              <a href={member ? '/profile/settings#trust' : '/login'} className="font-bold underline whitespace-nowrap">{member ? 'ไปที่ตั้งค่าบัญชี' : 'เข้าสู่ระบบ'}</a>
             </div>
           )}
           {options.map((option) => {
@@ -1215,8 +1221,8 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
           })}
           {canCreate && (!isHost || !canCreateFair) && (
             <p className="pt-2 text-sm font-medium text-slate-500 leading-relaxed">
-              {!isHost && !canCreateFair ? 'อยากให้ตี้เผยแพร่ทันที หรืออยากลงงานแฟร์ ' : 'อยากลงงานแฟร์ '}
-              <a href="/profile#host" className="font-bold text-[#2563EB] hover:underline whitespace-nowrap">ส่งคำขอที่หน้าโปรไฟล์</a>
+              {!isHost && !canCreateFair ? 'อยากให้ตี้เผยแพร่ทันที หรืออยากลงอีเวนต์ ' : 'อยากลงอีเวนต์ '}
+              <a href="/profile/settings#host" className="font-bold text-[#2563EB] hover:underline whitespace-nowrap">ส่งคำขอที่ตั้งค่าบัญชี</a>
             </p>
           )}
         </div>

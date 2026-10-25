@@ -22,7 +22,7 @@ type Props = {
   className?: string;
 };
 
-const SHORT_PLACEHOLDER: Record<DiscoverKind, string> = { meetups: 'ค้นหาตี้', fairs: 'ค้นหางานแฟร์', spots: 'ค้นหาที่เที่ยว' };
+const SHORT_PLACEHOLDER: Record<DiscoverKind, string> = { meetups: 'ค้นหาตี้', fairs: 'ค้นหาอีเวนต์', spots: 'ค้นหาที่เที่ยว' };
 
 /**
  * The ค้นพบ search: word | province | search button, one rounded box. In the top bar on wide screens and
@@ -47,7 +47,7 @@ export function DiscoverSearch({ kind, query, onQueryChange, province, onProvinc
         type="search"
         value={query}
         onChange={(e) => onQueryChange(e.target.value)}
-        placeholder={compact ? SHORT_PLACEHOLDER[kind] : 'ค้นหาตี้ งานแฟร์ ที่เที่ยว'}
+        placeholder={compact ? SHORT_PLACEHOLDER[kind] : 'ค้นหาตี้ อีเวนต์ ที่เที่ยว'}
         className="flex-1 min-w-0 bg-transparent text-sm font-semibold text-slate-900 placeholder:font-medium placeholder:text-slate-400 focus:outline-none [&::-webkit-search-cancel-button]:hidden"
       />
       {query && (

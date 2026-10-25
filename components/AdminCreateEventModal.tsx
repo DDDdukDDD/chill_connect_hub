@@ -374,7 +374,7 @@ export const AdminCreateEventModal: React.FC<AdminCreateEventModalProps> = ({
               }`}
             >
               <Building2 className="w-4 h-4" />
-              <span>🏛️ อีเวนต์ & งานแฟร์ (Public Venue)</span>
+              <span>🏛️ อีเวนต์ (Public Venue)</span>
             </button>
 
             <button

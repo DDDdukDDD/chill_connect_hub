@@ -447,6 +447,13 @@ function MyHubContent() {
   // For a member with an empty schedule: a few real meetups that are open now, the soonest first
   const [suggestedEvents, setSuggestedEvents] = useState<EventItem[]>([]);
   const needsSuggestions = activity.isLoaded && guestEvents.length === 0;
+  // A host with nothing to go to as a guest but a ตี้ of their own coming up opens on "งานที่จัด" (once, without ?tab)
+  const hasUpcomingHosted = activity.hosted.some((ev) => !isEventEnded(ev));
+  const [openedOnHosting, setOpenedOnHosting] = useState(false);
+  if (needsSuggestions && hasUpcomingHosted && !openedOnHosting && !searchParams.get('tab')) {
+    setOpenedOnHosting(true);
+    setHubMainMode('hosting');
+  }
   useEffect(() => {
     if (!needsSuggestions) return;
     let isActive = true;
@@ -469,12 +476,11 @@ function MyHubContent() {
   useEffect(() => {
     if (!savedEventKey) return;
     let isActive = true;
-    fetch('/api/events?type=all&limit=100')
+    fetch(`/api/events?ids=${encodeURIComponent(savedEventKey)}`)
       .then((res) => res.json())
       .then((json: { events?: EventItem[] }) => {
         if (!isActive) return;
-        const ids = new Set(savedEventKey.split(','));
-        setSavedEventItems((json.events ?? []).filter((e) => ids.has(e.id) && !isEventEnded(e)).sort((a, b) => parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date)));
+        setSavedEventItems((json.events ?? []).filter((e) => !isEventEnded(e)).sort((a, b) => parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date)));
       })
       .catch(() => undefined);
     return () => {
@@ -677,7 +683,7 @@ function MyHubContent() {
     if (ev.eventType === 'public_venue') {
       return {
         pillar: 'fairs' as const,
-        label: 'งานแฟร์ & นิทรรศการ',
+        label: 'อีเวนต์',
         dotColor: 'bg-[#2B527A]',
         badgeBg: 'bg-[#EEF4FA]',
         badgeText: 'text-[#2B527A]',
@@ -727,7 +733,7 @@ function MyHubContent() {
     }
     return {
       pillar: 'community' as const,
-      label: 'ตี้คอมมูนิตี้',
+      label: 'ตี้',
       dotColor: 'bg-[#2D5A3C]',
       badgeBg: 'bg-[#EBF3ED]',
       badgeText: 'text-[#2D5A3C]',
@@ -1083,7 +1089,7 @@ function MyHubContent() {
   const renderFirstSteps = () => {
     const steps = [
       { href: '/community', Icon: Users, tint: 'bg-[#EBF3ED] text-[#2D5A3C]', title: 'ไปตี้กับเพื่อนใหม่', text: 'วิ่ง บอร์ดเกม เวิร์กช็อป หรือจิบกาแฟ กลุ่มเล็กๆ ไม่กดดัน', cta: 'หาตี้' },
-      { href: '/fairs', Icon: Calendar, tint: 'bg-[#EEF4FA] text-[#2B527A]', title: 'ปักหมุดงานแฟร์', text: 'งานหนังสือ งานกาแฟ นิทรรศการที่กำลังจะมา', cta: 'ดูงานแฟร์' },
+      { href: '/fairs', Icon: Calendar, tint: 'bg-[#EEF4FA] text-[#2B527A]', title: 'ปักหมุดอีเวนต์', text: 'งานหนังสือ งานกาแฟ นิทรรศการที่กำลังจะมา', cta: 'ดูอีเวนต์' },
       { href: '/challenges', Icon: Trophy, tint: 'bg-[#F5F3FF] text-[#7C3AED]', title: 'เริ่มชาเลนจ์แรก', text: 'ไปให้ครบตามเป้า แล้วรับ XP กับของรางวัล', cta: 'ดูชาเลนจ์' },
     ];
     return (
@@ -1301,7 +1307,7 @@ function MyHubContent() {
                   }`}
                 >
                   <span className="w-2 h-2 rounded-full bg-[#2D5A3C]" />
-                  <span>คอมมูนิตี้ ({chipCounts.community})</span>
+                  <span>ตี้ ({chipCounts.community})</span>
                 </button>
                 )}
 
@@ -1316,7 +1322,7 @@ function MyHubContent() {
                   }`}
                 >
                   <span className="w-2 h-2 rounded-full bg-[#2B527A]" />
-                  <span>งานแฟร์ ({chipCounts.fairs})</span>
+                  <span>อีเวนต์ ({chipCounts.fairs})</span>
                 </button>
                 )}
 
@@ -1476,8 +1482,8 @@ function MyHubContent() {
 
                       {/* Multi-category Dots */}
                       <div className="flex items-center gap-1">
-                        {hasCommunity && <span className="w-1.5 h-1.5 rounded-full bg-[#2D5A3C]" title="ตี้คอมมูนิตี้" />}
-                        {hasFairs && <span className="w-1.5 h-1.5 rounded-full bg-[#2B527A]" title="งานแฟร์" />}
+                        {hasCommunity && <span className="w-1.5 h-1.5 rounded-full bg-[#2D5A3C]" title="ตี้" />}
+                        {hasFairs && <span className="w-1.5 h-1.5 rounded-full bg-[#2B527A]" title="อีเวนต์" />}
                         {hasSpots && <span className="w-1.5 h-1.5 rounded-full bg-[#F26430]" title="ทริปชวนเพื่อน" />}
                         {hasQuests && (
                           <span
@@ -1613,7 +1619,7 @@ function MyHubContent() {
                       ? 'งานที่ไปร่วมแล้วจะมาอยู่ตรงนี้ พร้อมปุ่มแชร์โมเมนต์และรีวิว'
                       : calendarCategoryFilter === 'quests' && hasJoinedQuests
                       ? 'แต่ละชาเลนจ์จะมาอยู่ในกำหนดการในวันเริ่ม และช่วง 7 วันสุดท้ายก่อนปิด'
-                      : 'ลองหาตี้ที่ชอบ หรืองานแฟร์ที่อยากไป แล้วนัดจะมาอยู่ตรงนี้'}
+                      : 'ลองหาตี้ที่ชอบ หรืออีเวนต์ที่อยากไป แล้วนัดจะมาอยู่ตรงนี้'}
                   </p>
                 </div>
                 <div className={`flex items-center justify-center gap-2 pt-1 ${calendarCategoryFilter === 'quests' ? 'hidden' : ''}`}>
@@ -1629,7 +1635,7 @@ function MyHubContent() {
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold border border-slate-200 transition-all"
                   >
                     <Calendar className="w-3.5 h-3.5" />
-                    <span>ดูงานแฟร์</span>
+                    <span>ดูอีเวนต์</span>
                   </Link>
                 </div>
               </div>
@@ -1688,7 +1694,7 @@ function MyHubContent() {
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold ${meta.badgeText}`}>
                               <span className={`w-1.5 h-1.5 rounded-full ${meta.dotColor}`} aria-hidden="true" />
-                              {meta.pillar === 'fairs' ? 'งานแฟร์' : meta.label}
+                              {meta.pillar === 'fairs' ? 'อีเวนต์' : meta.label}
                             </span>
                             {!isQuest && isCancelled && <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">ยกเลิก</span>}
                             {!isQuest && isMissed && <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">ไม่ได้ไป</span>}
@@ -2060,7 +2066,7 @@ function MyHubContent() {
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={ev.image} alt="" className="w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0" />
                           <Link href={href} className="min-w-0 flex-1 group">
-                            <span className="inline-block text-[11px] font-bold px-2 py-0.5 rounded-full border bg-[#EBF3ED] text-[#2D5A3C] border-[#A3CEB0]">ตี้คอมมูนิตี้</span>
+                            <span className="inline-block text-[11px] font-bold px-2 py-0.5 rounded-full border bg-[#EBF3ED] text-[#2D5A3C] border-[#A3CEB0]">ตี้</span>
                             <span className="mt-1 block text-sm font-bold text-slate-900 truncate group-hover:underline">{ev.title}</span>
                             <span className="block text-xs font-medium text-slate-600 truncate tabular-nums">{[ev.time, ev.location].filter(Boolean).join(' · ')}</span>
                           </Link>
@@ -2075,7 +2081,7 @@ function MyHubContent() {
                           <span className="block text-[11px] font-semibold text-slate-500">XP</span>
                         </div>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={liveQuest.badgeCoverImg} alt="" className="w-14 h-14 rounded-xl object-cover bg-[#F5F3FF] shrink-0" />
+                        <img src={liveQuest.image || liveQuest.badgeCoverImg} alt="" className="w-14 h-14 rounded-xl object-cover bg-[#F5F3FF] shrink-0" />
                         <Link href={`/challenges/${encodeURIComponent(liveQuest.id)}`} className="min-w-0 flex-1 group">
                           <span className="inline-block text-[11px] font-bold px-2 py-0.5 rounded-full border bg-purple-50 text-purple-700 border-purple-200">ชาเลนจ์</span>
                           <span className="mt-1 block text-sm font-bold text-slate-900 truncate group-hover:underline">{liveQuest.title}</span>

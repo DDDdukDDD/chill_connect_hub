@@ -267,7 +267,7 @@ export default function AboutPage() {
                         02
                       </span>
                       <h3 className="text-base font-bold text-slate-900 group-hover:text-[#2B527A] transition-colors">
-                        งานแฟร์ นิทรรศการ & เทศกาลสดใหม่
+                        อีเวนต์ & เทศกาลสดใหม่
                       </h3>
                     </div>
                     <p className="text-xs text-slate-600 leading-relaxed font-normal">
@@ -295,7 +295,7 @@ export default function AboutPage() {
                     href="/fairs"
                     className="inline-flex items-center gap-1.5 text-xs font-bold text-[#2B527A] hover:text-[#1F3D5C] group/btn cursor-pointer transition-all hover:gap-2.5"
                   >
-                    <span>ค้นหากิจกรรมและงานแฟร์</span>
+                    <span>ค้นหากิจกรรมและอีเวนต์</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
                   </Link>
                 </div>

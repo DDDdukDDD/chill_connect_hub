@@ -63,6 +63,8 @@ export function VisitReviews({ targetType, targetId, isLoggedIn }: { targetType:
   };
 
   const canReview = Boolean(marked) && !marked?.rating && !sent;
+  // No reviews yet and nothing to write: the section stays out instead of saying "ยังไม่มีรีวิว"
+  if (!data || (data.count === 0 && !canReview)) return null;
 
   return (
     <section className="space-y-3" aria-labelledby={`reviews-${targetId}`}>
@@ -119,7 +121,6 @@ export function VisitReviews({ targetType, targetId, isLoggedIn }: { targetType:
           ))}
         </ul>
       )}
-      {data && data.count === 0 && !canReview && <p className="text-sm text-slate-500">ยังไม่มีรีวิว</p>}
     </section>
   );
 }

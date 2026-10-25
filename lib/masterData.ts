@@ -151,7 +151,7 @@ export const COLLECTION_LABELS: Record<MasterCollection, string> = {
   provinces: '77 จังหวัด',
   zones: 'โซน / ย่าน',
   communityClubs: 'ชมรมแนะนำ (rail คอมมูนิตี้)',
-  venueGroups: 'กลุ่มสถานที่แนะนำ (rail งานแฟร์)',
+  venueGroups: 'กลุ่มสถานที่แนะนำ (rail อีเวนต์)',
 };
 
 // ── Seed from the code constants ──

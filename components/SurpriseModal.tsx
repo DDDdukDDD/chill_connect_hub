@@ -163,12 +163,12 @@ export const SurpriseModal: React.FC<SurpriseModalProps> = ({
       case 'fairs':
         return {
           gradient: 'from-slate-900 via-[#2B527A] to-blue-900',
-          title: 'สุ่มงานแฟร์ & เอ็กซ์โป (Surprise Fair)',
-          subtitle: isSpinning ? 'กำลังเสี่ยงทายงานแฟร์น่าไปให้คุณ...' : 'วันหยุดนี้ ลองไปเดินงานนี้ดูสิ!',
+          title: 'สุ่มอีเวนต์',
+          subtitle: isSpinning ? 'กำลังเสี่ยงทายอีเวนต์น่าไปให้คุณ...' : 'วันหยุดนี้ ลองไปเดินงานนี้ดูสิ!',
           spinningText: 'กำลังคัดสรรงานมหกรรมและนิทรรศการน่าเดิน...',
-          countText: `คัดสรรจาก ${itemsPool.length} งานแฟร์ทั่วประเทศ`,
+          countText: `คัดสรรจาก ${itemsPool.length} อีเวนต์ทั่วประเทศ`,
           btnColor: 'bg-[#2B527A] hover:bg-[#1E3B59] shadow-[#2B527A]/25',
-          btnLabel: 'ดูงานแฟร์',
+          btnLabel: 'ดูอีเวนต์',
         };
       default:
         return {
@@ -381,7 +381,7 @@ export const SurpriseModal: React.FC<SurpriseModalProps> = ({
                   {pickedItem.kind === 'spot'
                     ? 'ดูพิกัดสถานที่'
                     : pickedItem.kind === 'fair'
-                    ? 'ดูงานแฟร์'
+                    ? 'ดูอีเวนต์'
                     : 'ดูกิจกรรม'}
                 </span>
                 <ArrowRight className="w-4 h-4" />

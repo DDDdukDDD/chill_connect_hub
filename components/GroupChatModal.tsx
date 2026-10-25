@@ -192,7 +192,7 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
         {notice && (
           <p role="alert" className="shrink-0 mx-4 sm:mx-5 mt-2 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-sm font-bold">
             {notice}
-            {/ยืนยันอีเมล|รับคำมั่น/.test(notice) && <Link href="/profile#trust" className="ml-2 underline whitespace-nowrap">ไปที่โปรไฟล์</Link>}
+            {/ยืนยันอีเมล|รับคำมั่น/.test(notice) && <Link href="/profile/settings#trust" className="ml-2 underline whitespace-nowrap">ไปที่ตั้งค่าบัญชี</Link>}
           </p>
         )}
 

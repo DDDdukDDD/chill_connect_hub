@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Camera, Check, MessageCircle, Star } from 'lucide-react';
+import { Check, MessageCircle, Star } from 'lucide-react';
 import type { EventItem } from '@/data/mockData';
-import { isEventEnded } from '@/lib/dateUtils';
+import { isEventEnded, parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { activityActions, useMyActivity } from '@/lib/useMyActivity';
 import { useMemberSession } from '@/lib/useMemberSession';
 
@@ -22,7 +22,7 @@ interface Person {
 
 /**
  * The end of a ตี้ on its own page (the "จบ" phase): rate and review it, pick who you would like to meet again,
- * and share a moment. Proof of going comes from the host's check-in: a ตี้ run by a member can be reviewed, and
+ * (sharing a moment lives in the moments box beside it, VisitPanel). Proof of going comes from the host's check-in: a ตี้ run by a member can be reviewed, and
  * people picked, only after the host confirmed the member came (server rules in lib/members/activity.ts and
  * lib/social/meetAgain.ts; this panel only follows them).
  */
@@ -33,7 +33,10 @@ export function AfterTeePanel({ event, isHost, onOpenPairChat }: { event: EventI
   const hostRun = isHost || Boolean(joined?.hasHostCheckIn);
   const checkedIn = Boolean(joined?.checkedInAt);
   const ended = isEventEnded(event);
-  const met = isHost || (hostRun ? checkedIn : ended);
+  // The host's panel opens on the day of the ตี้: before it there is no one to meet again and no moment to share
+  const [now] = useState(() => Date.now());
+  const started = ended || parseEventDateToTimestamp(event.date ?? '') <= now;
+  const met = (isHost && started) || (!isHost && (hostRun ? checkedIn : ended));
 
   const [rating, setRating] = useState(0);
   const [tags, setTags] = useState<string[]>([]);
@@ -108,8 +111,6 @@ export function AfterTeePanel({ event, isHost, onOpenPairChat }: { event: EventI
       setBusyId('');
     }
   };
-
-  const shareHref = `/?share=${encodeURIComponent(`community:${event.id}`)}&title=${encodeURIComponent(event.title)}&location=${encodeURIComponent(event.location ?? '')}`;
 
   return (
     <section id="meet-again" className="scroll-mt-24 rounded-3xl border border-slate-200 p-5 sm:p-6 space-y-6">
@@ -231,15 +232,6 @@ export function AfterTeePanel({ event, isHost, onOpenPairChat }: { event: EventI
         </div>
       )}
 
-      {met && (
-        <div className="flex flex-wrap items-center gap-3 pt-1">
-          <Link href={shareHref} className="h-11 px-5 rounded-full border border-slate-200 hover:bg-slate-50 text-slate-900 text-sm font-semibold inline-flex items-center gap-2">
-            <Camera className="w-4 h-4 text-rose-500" aria-hidden="true" />
-            แชร์โมเมนต์จากตี้นี้
-          </Link>
-          <span className="text-xs text-slate-500">เพื่อนๆ จะเห็นในฟีด และนับในชาเลนจ์ที่ตี้นี้นับ</span>
-        </div>
-      )}
     </section>
   );
 }

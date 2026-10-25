@@ -48,7 +48,7 @@ export interface MomentComposerProps {
   initial?: MomentComposerInitial | null;
 }
 
-const LINK_TYPE_LABELS: Record<MomentLinkTarget['type'], string> = { community: 'ตี้', fair: 'งานแฟร์', spot: 'ที่เที่ยว' };
+const LINK_TYPE_LABELS: Record<MomentLinkTarget['type'], string> = { community: 'ตี้', fair: 'อีเวนต์', spot: 'ที่เที่ยว' };
 const MINE_SHOWN = 4;
 const isVisitTarget = (type?: string): type is 'spot' | 'community' | 'fair' => type === 'spot' || type === 'community' || type === 'fair';
 
@@ -460,7 +460,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
                       type="search"
                       value={linkQuery}
                       onChange={(e) => setLinkQuery(e.target.value)}
-                      placeholder="ค้นหาที่เที่ยว ตี้ หรืองานแฟร์"
+                      placeholder="ค้นหาที่เที่ยว ตี้ หรืออีเวนต์"
                       autoComplete="off"
                       className="w-full bg-white border border-slate-300 rounded-2xl pl-10 pr-3.5 py-3 text-base sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] placeholder:text-slate-400 placeholder:font-normal"
                     />

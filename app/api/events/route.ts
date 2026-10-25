@@ -10,6 +10,9 @@ import { prepareSpotTrip } from '@/lib/social/spotTrips';
 import type { EventItem } from '@/data/mockData';
 import { checkedEventCategories } from '@/lib/eventCategories';
 
+/** At most this many events per ?ids= request */
+const MAX_IDS = 60;
+
 function parsePositiveInteger(value: string | null, fallback: number, max?: number): number {
   if (!value) return fallback;
   const parsed = Number.parseInt(value, 10);
@@ -44,6 +47,15 @@ export async function GET(request: Request) {
       'Cache-Control': blocked.size ? 'private, no-store' : 'public, s-maxage=30, stale-while-revalidate=120',
       Vary: 'Cookie',
     };
+
+    // ?ids=a,b,c → those approved events (ended ones included), in the order asked; for lists of saved events
+    const ids = searchParams.get('ids');
+    if (ids !== null) {
+      const wanted = ids.split(',').map((id) => id.trim()).filter(Boolean).slice(0, MAX_IDS);
+      const byId = new Map((await db.listAllEvents()).filter((ev) => ev.approvalStatus === 'approved').map((ev) => [ev.id, ev]));
+      const events = withoutBlocked(wanted.map((id) => byId.get(id)).filter((ev): ev is NonNullable<typeof ev> => Boolean(ev)));
+      return NextResponse.json({ success: true, events, total: events.length }, { headers: listHeaders });
+    }
 
     const hasFilterParams = [
       'page', 'limit', 'province', 'type', 'category', 'q', 'zone',
@@ -188,7 +200,7 @@ export async function POST(req: Request) {
       }
       // Fairs come from approved organizers and venues only
       if (isPublicVenue && !(member.hostApplication?.status === 'approved' && ['organizer', 'venue'].includes(member.hostApplication.kind))) {
-        return NextResponse.json({ success: false, message: 'งานแฟร์สร้างได้เฉพาะผู้จัดงานหรือเจ้าของพื้นที่ที่ทีมงานอนุมัติแล้ว' }, { status: 403 });
+        return NextResponse.json({ success: false, message: 'อีเวนต์สร้างได้เฉพาะผู้จัดงานหรือเจ้าของพื้นที่ที่ทีมงานอนุมัติแล้ว' }, { status: 403 });
       }
     }
     const isApprovedHost = member?.hostApplication?.status === 'approved' && member.status === 'active';

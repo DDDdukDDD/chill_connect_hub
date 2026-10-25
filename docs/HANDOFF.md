@@ -1658,3 +1658,88 @@ New placeholder content in a page must be behind `eventOrigin(...) === 'sample'`
 - ตี้ order: รายละเอียด → กำหนดการ (the host's `itinerary`, which no page showed before) → ก่อนไป (with a กติกา row from `/safety`) → จุดนัดพบ → ถามคนจัด → ใครจะไปบ้าง. Fairs show `itinerary` too, reviews only once the fair has started, and no "0 กลุ่ม". Places lose only the travel-perks box (sample partner deals); Smart Plan and nearby dining stay.
 - Spot Buddy trips (`lib/social/spotTrips.ts`) store the date as "12 ต.ค. 2569" like other ตี้, not the `YYYY-MM-DD` the form sends (docs/API.md updated).
 - Next (owner, tonight): finish the remaining sub-page design and link the journey together.
+
+### BE-112 · Journey walk fixes, one related-card row on every detail page (owner 2026-10-24)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-24 · `claude`
+- Walked the member journey with the demo account (join a ตี้ → My Hub → ticket → past ตี้ review / อยากเจออีก / moment → challenge → rewards). Two bugs fixed:
+  - A ตี้ or fair page said "นับในชาเลนจ์" for challenges whose period does not include the event's date (a 26 ต.ค. ตี้ offered a challenge that starts 5 ม.ค.). `rewardsForTargets` in `lib/social/questProgress.ts` now keeps only challenges whose period overlaps the event; places are unchanged. docs/API.md updated.
+  - Challenge `quest-1792000872542` had its `targetGoal` saved as "????" in `data/discovery_content.json`; replaced with Thai text.
+- New `components/detail/RelatedCards.tsx` (with `teeCard` / `fairCard`): the quiet card of "ชาเลนจ์อื่นที่น่าลอง" (photo, date, title, one bottom row) is now the related row on ตี้, งานแฟร์ and ชาเลนจ์ pages, 2 per row on phones instead of one full-width card each. ตี้ show seats left and price; fairs show province and price (no head count). `EventGrid` is no longer used on detail pages.
+- `components/VisitPanel.tsx`: the challenge lines sit in their own block "นับในชาเลนจ์" above the moments box, instead of inside it; the line says "ไปครบ N ตี้ / งาน / แห่ง" by page type.
+- Challenge page: the targets heading names the kind ("ตี้ที่นับในชาเลนจ์นี้", "งานแฟร์ที่นับในชาเลนจ์นี้", else "ที่ที่นับในชาเลนจ์นี้").
+- Owner 2026-10-24: the grey line above the title ("หมวด · โดย …") is gone on all four detail pages; the category did not help a decision and the host / organizer repeated the card below. `DetailHero` takes `highlight` instead of `kicker`: one bold coloured line under the title — ตี้ "7/8 คน · เหลือ 1 ที่" (orange when 2 or fewer, grey when full or ended), place "เปิดอยู่ / ปิดให้บริการแล้ว", fair "กำลังจัดอยู่ตอนนี้ / งานจบแล้ว" (no head count). The people fact left the grey row on ตี้.
+- Owner decision: `/moments/[id]` stays a page you open and go back from; no onward sections.
+- Next: drafts for `/rewards` and `/profile` (old boxed style), then `/safety` copy.
+
+### BE-113 · The งานแฟร์ pillar is now "อีเวนต์" (owner 2026-10-24)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-24 · `claude`
+- The pillar holds fairs, expos, runs, concerts and sports, so the owner renamed it from "งานแฟร์" to **อีเวนต์** on every screen: discover tab, back links, photo label, related row, list page buttons and toasts, My Hub, moments, tickets, challenge rule labels, onboarding, admin console, API messages and legal text. "งานแฟร์" stays only where it names one kind among others ("งานแฟร์ งานวิ่ง งานคอน", the /fairs h1, home section heading, seed and scraper text).
+- `/fairs` metadata title: "อีเวนต์ช่วงนี้: งานแฟร์ งานวิ่ง คอนเสิร์ต" (in a province: "อีเวนต์ใน… ช่วงนี้: …"), so searches for the kinds still find the page.
+- URL `/fairs` and data `eventType: 'public_venue'` are unchanged; moving to `/events` would need redirects and is deferred.
+- Not changed yet: `components/home/JourneyBand.tsx` and `MemberLiveHome.tsx`, which hold the paused band work; rename their labels when that work resumes.
+- AGENTS.md (pillar facts), DESIGN_SYSTEM.md and docs/PRODUCT_DIRECTION.md updated.
+
+### BE-114 · /rewards drawn like the challenge page (owner 2026-10-24)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-24 · `claude`
+- `app/rewards/page.tsx` rewritten in the open style of `/challenges/[id]`: h1 "แลกของรางวัล", the member's XP in one line with how to earn more (ไปตี้ +50 · แชร์โมเมนต์ +30 · ทำชาเลนจ์ครบ), category chips and "แลกได้ตอนนี้", then quiet cards (partner · title · สิทธิ์ · XP pill and "ขาดอีก N XP" / "แลกได้เลย" / "แลกแล้ว"), 2 per row on phones.
+- Removed: breadcrumbs, the hard-coded "Level 2: Active Explorer" badge (it was the same for everyone), the search box (8 items), the catalog/vouchers tab bar, the decorative gradients, the fake "SCAN TO REDEEM" QR picture and the page's own footer.
+- One dialog per reward (`DialogShell`): details, conditions, then "แลกด้วย N XP" which asks once to confirm; once redeemed it shows the code with a copy button. "คูปองของฉัน" is a second view opened from the top (`?tab=my_vouchers` still works): a list of codes to show at the shop.
+- Same data and API as before (`useMyRewards`, `POST /api/rewards`); the catalog is still sample data in `data/rewardsData.ts`.
+
+### BE-115 · /safety in a friendly voice, place page tidy, heart hidden once joined (owner 2026-10-24)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-24 · `claude`
+- `app/safety/page.tsx`: open layout like the challenge page, no English in brackets and no "Trust & Safety Architecture" badge. Order: ก่อนออกไป (4 numbered tips) → กติกาของทุกตี้ (grey `DetailTable`: where to meet, where not, Spot Buddy trip rules, host scans the ticket) → สิ่งที่เราไม่ยอมให้เกิด → เจอปัญหา บอกเราได้เลย (report, block from the profile, call 191) → เราเป็นพื้นที่กลาง (with a link to /legal for the binding terms). Metadata unchanged.
+- Place page: the related row uses `RelatedCards` (new `spotCard`: district and province, entry price; "ไม่ระบุ" leaves the corner empty), heading without the decorative emoji. `VisitReviews` now renders nothing when there are no reviews and the member cannot write one (no more "รีวิว · ยังไม่มีรีวิว").
+- ตี้ page: the heart (save) button is hidden for a member who joined or hosts the ตี้; it is already on their schedule. The action row fits one line again.
+
+### BE-116 · /profile open and people first (owner 2026-10-24)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-24 · `claude`
+- `app/profile/ProfileScreen.tsx`: the seven boxes are now open sections divided by a line on white, like the challenge page. Order: header → ตี้ที่จัด → รีวิวจากคนที่ไป → เหรียญจากชาเลนจ์ → โมเมนต์ → เกี่ยวกับ (grey rows) → owner only: อยากเป็นคนชวน, บัญชีของฉัน.
+- Header adds the facts a visitor decides on: "★ 4.9 จาก 12 รีวิว · จัดมาแล้ว N ตี้" (links to the reviews). Follow is the one button; report and block are quiet text buttons.
+- ตี้ที่จัด uses `RelatedCards` (now with optional `allHref`, `allLabel`, `className`, and cards without a link for ตี้ still waiting for review). The owner sees "จัดการในมายฮับ" (was "จัดการใน My Hub").
+- The trust checklist shows only until the account is trusted; after that the badges say it. "อยากเป็นคนชวน" is one line with "ส่งคำขอ"; the form opens in a dialog. A visitor sees the moments section only when there are moments.
+- Seen on the way: one Spot Buddy trip in the data still has the date "2026-10-12" (saved before BE-111 fixed the format); it shows as is.
+
+### BE-117 · Profile menu tidy, no "เมนู" button on wide screens (owner 2026-10-25)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-25 · `claude`
+- `components/Navbar.tsx` profile menu: the name card opens my profile ("ดูโปรไฟล์ของฉัน ›", replacing the row "โปรไฟล์ส่วนตัวของฉัน" and the role label "สมาชิกทั่วไป"); rows มายฮับ · สร้างกิจกรรม (kept: it offers all four kinds) · แลกของรางวัล with the member's XP (read from `GET /api/rewards` when the menu opens) · ตั้งค่าบัญชี (→ `/profile?id=me#account`, was the privacy policy) · ออกจากระบบ. Grey icons, 14px text, 40px rows, slate border. The green "online" dot on the avatar is gone (there is no online status).
+- The "เมนู" drawer button now shows only between lg and xl (where the top bar has no section links); from xl the top bar has ค้นพบ / โมเมนต์ / ชาเลนจ์ and the profile menu has มายฮับ. Phones keep the bottom bar.
+- `app/profile/ProfileScreen.tsx`: "บัญชีของฉัน" has `id="account"`.
+
+### BE-118 · My profile, a designed page (owner 2026-10-25: "ขึ้นมาระดับ 9++")
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-25 · `claude`
+- `app/profile/ProfileScreen.tsx` hero: a soft cover in the pillar colours (no image needed), a large avatar over its edge (gradient initial when there is no photo), name, province and member since, a larger bio line (owner sees "+ เล่าเกี่ยวกับตัวเอง…" when empty), quiet green ticks for the checked badges, then a row of big numbers that each jump to their section: ตี้ที่ไปมาแล้ว (own only, from host check-ins in `GET /api/visits?mine=1`) · ตี้ที่จัด · ★ รีวิว · โมเมนต์ · เหรียญ · ผู้ติดตาม · XP (own only, from `GET /api/rewards`, links to /rewards).
+- Owner tools: "ดูแบบที่คนอื่นเห็น" shows the page exactly as a visitor sees it (public fields only, owner parts hidden) under a dark bar with "กลับไปแก้ไข"; "โปรไฟล์ครบ N%" ring with the missing steps as chips (photo, bio, interests, about, email, pledge), gone at 100%; owner-only parts sit under a small "เห็นแค่คุณ" label at the end.
+- Layout like the detail pages (max-w-6xl): hero full width (numbers beside the name from lg), then two columns from lg — main: โปรไฟล์ครบ N% → ตี้ที่จัด (3 across) → รีวิว → โมเมนต์; side: สายที่ชอบ → เกี่ยวกับ → เหรียญ → the "เห็นแค่คุณ" tray (อยากเป็นคนชวน, บัญชีของฉัน as settings rows). Phones stack main then side.
+- Sections: สายที่ชอบ (chips in each pillar's colour) → ตี้ที่จัด → รีวิว → เหรียญ (round violet medals) → โมเมนต์ (4:5 grid; empty: one dashed "แชร์โมเมนต์แรกของคุณ") → เกี่ยวกับ (two columns, label over value; hidden fields carry a small "ซ่อนอยู่" tag for the owner). The trust checklist shows only for a new account (email or pledge missing).
+
+### BE-119 · Profile shows only who I am; settings page; edit in three tabs (owner 2026-10-25)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-25 · `claude`
+- New `/profile/settings` (`app/profile/settings/`, noindex): the trust checklist, "อยากเป็นคนชวน" and "บัญชีของฉัน" moved here from the end of the profile. Reached from a gear beside "แก้ไขโปรไฟล์" and from "ตั้งค่าบัญชี" in the profile menu (was `/profile#account`). `TrustCard`, `HostCard`, `AccountCard` are exported from `ProfileScreen.tsx`.
+- Profile: checked badges are one quiet grey line; numbers that are 0 are left out; side column = เกี่ยวกับ → สายที่ชอบ → เหรียญ → a small "โปรไฟล์ครบ N%" card whose steps open the right tab (email → settings). "แก้ไข" links on เกี่ยวกับ and สายที่ชอบ open the dialog on that tab.
+- `EditProfileDialog` has tabs ตัวฉัน (photo, name, intro, อยากเจอคนแบบไหน) · เกี่ยวกับ (province from master data, facts, show/hide age and gender) · สายที่ชอบ (the same สาย cards as onboarding's "บอกสิ่งที่ชอบ"). Saving สาย calls `savePreferences` and adds the places and events that go with them (`SAI_SPOTS` / `SAI_FAIRS`, now exported from `app/onboarding/OnboardingFlow.tsx`), as onboarding does. The show/hide control is a quiet eye.
+- The profile's สายที่ชอบ shows only the สาย the member picked, with each สาย's icon and colour; inferred places and events are no longer listed as if the member had said them.
+
+### BE-120 · Profile laid out like an Airbnb profile (owner 2026-10-25: "เข้าใจง่าย minimal")
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-25 · `claude`
+- `app/profile/ProfileScreen.tsx`: no cover. Left: an identity card (sticky from lg) with the photo, name, province / age / gender, member since, the numbers one per line (zeros left out), the checked badges as a list, and one action (แก้ไขโปรไฟล์ for the owner, ติดตาม for a visitor); report and block sit as quiet links under the card. Right: owner-only one-line "โปรไฟล์ครบ N%" bar with the next step → "เกี่ยวกับ …" heading, the intro, facts as short lines with icons ("ทำงานเป็น นักออกแบบ", "อยู่ย่าน ลาดพร้าว") → สายที่ชอบ chips → ตี้ที่จัด → รีวิว (two columns) → เหรียญ → โมเมนต์ (empty: one line for the owner, nothing for visitors). Phones stack the card on top.
+- The gear and the "ดูแบบที่คนอื่นเห็น" button left the profile: settings are in the profile menu, and the preview link is in the edit dialog's header (`EditProfileDialog` `onPreview`).
+
+### BE-121 · Profile at scale; /rewards laid out like the profile, no purple (owner 2026-10-25)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-25 · `claude`
+- Profile lists that can grow: ตี้ที่จัด sorted (waiting for review first for the owner, then coming up soonest first, then ended newest first), 6 shown with "ดูเพิ่ม (N)" for everyone; โมเมนต์ shows the real total (`pagination.totalCount`), 9 first, then 12 more per "ดูเพิ่ม" (reads the next page of `/api/moments?author=` or `?tab=mine`); the link to everyone's feed is gone; รีวิว shows the latest 4 with "ดูรีวิวทั้งหมด N" opening a dialog; เหรียญ shows 10 then "ดูอีก N เหรียญ".
+- New `GET /api/members/[id]/reviews` (up to 200) and `hostReviewSummary` now returns the latest 4 (docs/API.md updated).
+- `app/rewards/page.tsx`: a wallet card on the left (sticky from lg): XP ของคุณ in large type, "ได้ XP จาก" (ไปตี้ +50, แชร์โมเมนต์ +30, ทำชาเลนจ์ครบ), "ดูชาเลนจ์ที่เปิดอยู่", and "คูปองของฉัน (N)". Right: h1, outlined category chips, cards with a grey category icon, partner, title, สิทธิ์, "150 XP" and a thin bar of how close the member is ("ขาดอีก 100" / "แลกได้เลย" / "แลกแล้ว"). Purple is gone here, in the profile XP number and in the profile menu.
+
+### BE-122 · Rewards that feel like a gift; E2E walk of every journey, fixes (owner 2026-10-25)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-25 · `claude`
+- `app/rewards/page.tsx`: the wallet is a sunny yellow ticket (flat `#FFD84D`, a tear line with notches, a few still confetti bits), "ตอนนี้แลกได้ N ชิ้น" or "อีก N XP แลก <next reward> ได้" with an orange bar; category tiles in light colours (cafe amber, board games sky, sports emerald, workshops rose, merch orange); affordable cards get a yellow ring and a yellow "แลกได้เลย" pill. Redeeming opens a celebration (confetti burst, gift pops in, "แลกสำเร็จแล้ว!", the code on a dashed coupon, "ดูคูปองของฉัน"). Coupons are dashed yellow tickets; on a phone the coupons view hides the "ได้ XP จาก" half. New keyframes `animate-confetti` and `animate-pop-in` in `app/globals.css` (hidden with reduced motion). Flat colours only; the one blue action stays blue.
+- Walked end to end in headless Chrome: visitor pages, sign-up form → onboarding → pledge → email link, joining a ตี้, My Hub, a host applying, being approved, creating a ตี้ with the form, checking a member in with the ticket code, review, moment with a photo, finishing a challenge (+XP, medal, notification), redeeming a reward, saving an event, like, comment, follow, desktop and phone. Fixed:
+  - Profile menu "สร้างกิจกรรม" (`components/Navbar.tsx`) now always opens the chooser of all four kinds from the Navbar itself, on every page (it was missing on pages that passed no handler and skipped the chooser on home). `onOpenCreateEvent` is deprecated and ignored.
+  - Links to the trust and host cards pointed at `/profile#trust` / `/profile#host`, which moved to `/profile/settings` (create dialog, event detail, group chat, verify-email). The settings page scrolls to the hash once loaded.
+  - Create dialog: an approved host's ตี้ (published at once) can start from tomorrow instead of 3 days ahead; picking a ตี้ category swaps the first sample cover for one that fits its mood.
+  - `components/detail/AfterTeePanel.tsx`: the host's panel opens on the day of the ตี้, not before; its "แชร์โมเมนต์จากตี้นี้" is gone (the moments box beside it has the same button).
+  - My Hub: a host with no plans as a guest but an upcoming ตี้ opens on "งานที่จัด"; "ตี้คอมมูนิตี้"/"คอมมูนิตี้" labels now say ตี้; the visitor preview's challenge row shows its image. Saved events load with the new `GET /api/events?ids=` (they were looked up in the first 100 events only).
+  - Verify-email success without a pending action offers "หาตี้แรกของคุณ" first.
+- Test data: 80 test accounts (`@example.com`, from this and earlier walks) were deleted with the admin delete, which removes their joins, visits, reviews, moments and the rest; the test ตี้ and its photo too. Data files were backed up first.
+- Open: the paused journey band (`components/home/JourneyBand.tsx`) still says งานแฟร์ and shows XP in purple; it changes when that work resumes.

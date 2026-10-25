@@ -28,12 +28,14 @@ interface RuleTarget {
   province?: string;
   /** A place's vibe as grouped on /spots */
   vibe?: string;
+  /** An event's date text, to tell whether it falls inside a challenge's period */
+  date?: string;
 }
 
 export const eventTargetType = (event: EventItem): VisitTargetType => (event.eventType === 'public_venue' ? 'fair' : 'community');
 
 const spotTarget = (spot: LifestyleSpotItem): RuleTarget => ({ targetType: 'spot', id: spot.id, title: spot.title, category: spot.category, province: spot.province, vibe: getSpotVibeCategory(spot) });
-const eventTarget = (event: EventItem): RuleTarget => ({ targetType: eventTargetType(event), id: event.id, title: event.title, category: event.category, province: event.province });
+const eventTarget = (event: EventItem): RuleTarget => ({ targetType: eventTargetType(event), id: event.id, title: event.title, category: event.category, province: event.province, date: event.date });
 
 export async function loadRuleTarget(targetType: VisitTargetType, targetId: string): Promise<RuleTarget | null> {
   if (targetType === 'spot') {
@@ -107,6 +109,14 @@ export interface TargetReward {
   minEvidence: VisitEvidence;
 }
 
+/** Whether an event's dates overlap the challenge's period; places have no date and always can */
+function inQuestPeriod(quest: ChallengeQuest, target: RuleTarget): boolean {
+  if (!target.date) return true;
+  const start = parseQuestDate(quest.startDate, false);
+  const end = parseQuestDate(quest.endDate, true);
+  return (start === null || parseEventEndDateToTimestamp(target.date) >= start) && (end === null || parseEventDateToTimestamp(target.date) <= end);
+}
+
 /** The running challenges a visit to each target counts toward */
 export async function rewardsForTargets(targets: { targetType: VisitTargetType; targetId: string }[]): Promise<Record<string, TargetReward[]>> {
   const quests = (await questsWithRules()).filter((q) => q.status === 'active');
@@ -115,7 +125,7 @@ export async function rewardsForTargets(targets: { targetType: VisitTargetType; 
     const target = quests.length ? await loadRuleTarget(targetType, targetId) : null;
     result[targetKey(targetType, targetId)] = target
       ? quests
-          .filter((q) => ruleMatchesTarget(q.rule, target))
+          .filter((q) => ruleMatchesTarget(q.rule, target) && inQuestPeriod(q, target))
           .map((q) => ({
             questId: q.id,
             title: q.title,

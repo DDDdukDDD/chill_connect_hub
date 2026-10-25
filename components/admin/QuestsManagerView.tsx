@@ -47,7 +47,7 @@ interface QuestDraft {
   ruleVibes: string;
 }
 
-const RULE_TYPE_LABELS = { spot: 'ไปสถานที่', community: 'ร่วมตี้', fair: 'ไปงานแฟร์' } as const;
+const RULE_TYPE_LABELS = { spot: 'ไปสถานที่', community: 'ร่วมตี้', fair: 'ไปอีเวนต์' } as const;
 // The categories a rule can name, by their names: places use the data categories, events the four moods
 const EVENT_CATEGORY_OPTIONS = [
   { id: 'chill', label: 'จิบกาแฟ & ชิลล์' },

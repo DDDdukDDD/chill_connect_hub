@@ -64,7 +64,7 @@ Filters in one section never affect another section.
 
 - **Allowed on:** cards, category chips and rails, badges, icons inside a card, and section headings of that pillar.
 - **Never on:** action buttons, links, or screens that belong to no pillar (login, onboarding, account, dialogs shared across pillars).
-- **One exception (owner, 2026-10-19):** the create button at the top of a pillar page (ตั้งตี้เอง, เพิ่มงานแฟร์, แนะนำที่ใหม่, เสนอชาเลนจ์) is filled with its pillar colour, flat (no gradient), white text: meetups `bg-[#F26430] hover:bg-[#E2551F]` (the plain pillar orange, like สมัครฟรี; owner chose it over the darker `#D04A1B` although white on it is 3.2:1), fairs `bg-[#2B527A] hover:bg-[#1F3D5C]`, spots `bg-[#4A7C59] hover:bg-[#2D5A3C]`, challenges `bg-[#7C3AED] hover:bg-[#6D28D9]`. Every other button keeps the rules below.
+- **One exception (owner, 2026-10-19):** the create button at the top of a pillar page (ตั้งตี้เอง, เพิ่มอีเวนต์, แนะนำที่ใหม่, เสนอชาเลนจ์) is filled with its pillar colour, flat (no gradient), white text: meetups `bg-[#F26430] hover:bg-[#E2551F]` (the plain pillar orange, like สมัครฟรี; owner chose it over the darker `#D04A1B` although white on it is 3.2:1), fairs `bg-[#2B527A] hover:bg-[#1F3D5C]`, spots `bg-[#4A7C59] hover:bg-[#2D5A3C]`, challenges `bg-[#7C3AED] hover:bg-[#6D28D9]`. Every other button keeps the rules below.
 - Forest Green is the Spots color and the logo color. It is **not** a general brand color for buttons.
 
 ### Status colors

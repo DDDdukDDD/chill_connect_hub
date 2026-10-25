@@ -10,7 +10,7 @@ import { DiscoverSearch } from '@/components/discover/DiscoverSearch';
 /** The three ค้นพบ pages, in tab order, with their pillar colors (DESIGN_SYSTEM.md) */
 const KINDS: { kind: DiscoverKind; label: string; dot: string; marker: string }[] = [
   { kind: 'meetups', label: 'ตี้', dot: 'bg-[#F26430]', marker: 'bg-[#F26430]/30' },
-  { kind: 'fairs', label: 'งานแฟร์', dot: 'bg-[#2B527A]', marker: 'bg-[#2B527A]/20' },
+  { kind: 'fairs', label: 'อีเวนต์', dot: 'bg-[#2B527A]', marker: 'bg-[#2B527A]/20' },
   { kind: 'spots', label: 'ที่เที่ยว', dot: 'bg-[#4A7C59]', marker: 'bg-[#4A7C59]/25' },
 ];
 

@@ -255,7 +255,7 @@ export async function POST(request: Request) {
 
   const verb = action === 'approve' ? 'อนุมัติ' : 'ปฏิเสธ';
   for (const event of events) {
-    recordAudit(actor, `event.${action}`, `${verb}${event.eventType === 'community' ? 'ตี้' : 'งานแฟร์'} "${event.title}"${reason && action === 'reject' ? ` · เหตุผล: ${reason}` : ''}`, { type: 'event', id: event.id });
+    recordAudit(actor, `event.${action}`, `${verb}${event.eventType === 'community' ? 'ตี้' : 'อีเวนต์'} "${event.title}"${reason && action === 'reject' ? ` · เหตุผล: ${reason}` : ''}`, { type: 'event', id: event.id });
   }
   for (const spot of spots) {
     recordAudit(actor, `spot.${action}`, `${verb}สถานที่ "${spot.title}"${reason && action === 'reject' ? ` · เหตุผล: ${reason}` : ''}`, { type: 'spot', id: spot.id });

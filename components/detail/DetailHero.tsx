@@ -2,10 +2,20 @@ import React from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { Camera } from 'lucide-react';
 
+/** The one live fact a visitor decides on, as a bold coloured line under the title: seats on a ตี้, open now on a place */
+export interface DetailHighlight {
+  icon: LucideIcon;
+  text: string;
+  /** open = go ahead (green), urgent = few left (orange), closed = full, ended or shut (grey) */
+  tone: 'open' | 'urgent' | 'closed';
+}
+
+const HIGHLIGHT_TONE: Record<DetailHighlight['tone'], string> = { open: 'text-emerald-700', urgent: 'text-orange-600', closed: 'text-slate-500' };
+
 /** Pillar colours from DESIGN_SYSTEM.md section 2 (colour on tags and icons only, never on buttons) */
 export const PILLAR_STYLE = {
   community: { name: 'ตี้', color: '#F26430', dark: '#B93F12', tint: '#FFF4EE' },
-  fair: { name: 'งานแฟร์', color: '#2B527A', dark: '#1F3D5C', tint: '#EEF4FA' },
+  fair: { name: 'อีเวนต์', color: '#2B527A', dark: '#1F3D5C', tint: '#EEF4FA' },
   spot: { name: 'ที่เที่ยว', color: '#4A7C59', dark: '#2D5A3C', tint: '#EBF3ED' },
   challenge: { name: 'ชาเลนจ์', color: '#7C3AED', dark: '#6D28D9', tint: '#F5F3FF' },
   moment: { name: 'โมเมนต์', color: '#F43F5E', dark: '#BE123C', tint: '#FFF1F2' },
@@ -26,8 +36,7 @@ interface DetailHeroProps {
   /** More than one photo shows "รูปทั้งหมด (n)" on the photo */
   photoCount?: number;
   onOpenPhotos?: () => void;
-  /** One quiet grey line above the title: the category and who runs it */
-  kicker?: React.ReactNode;
+  highlight?: DetailHighlight;
   title: string;
   subtitle?: React.ReactNode;
   facts: DetailFact[];
@@ -40,12 +49,12 @@ interface DetailHeroProps {
 const STICKER = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 border border-slate-200 shadow-2xs text-[11px] sm:text-xs font-bold text-slate-800';
 
 /**
- * The top of the ตี้, งานแฟร์ and ที่เที่ยว pages, drawn like the challenge page's (owner 2026-10-24: clean and simple):
- * the photo with one small label, then a grey line, the title, one row of grey facts and the main action.
+ * The top of the ตี้, อีเวนต์ and ที่เที่ยว pages, drawn like the challenge page's (owner 2026-10-24: clean and simple):
+ * the photo with one small label, then the title, one bold live line (seats, open now), one row of grey facts and the main action.
  * Every fact is said here once; the rest of the page does not repeat it. Server-renderable, so the title and facts
  * are in the HTML that search engines and AI crawlers read.
  */
-export function DetailHero({ pillar, image, imageAlt, photoCount = 1, onOpenPhotos, kicker, title, subtitle, facts, actions, note }: DetailHeroProps) {
+export function DetailHero({ pillar, image, imageAlt, photoCount = 1, onOpenPhotos, highlight, title, subtitle, facts, actions, note }: DetailHeroProps) {
   const style = PILLAR_STYLE[pillar];
   return (
     <section className="mt-2 grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:gap-10 lg:items-center">
@@ -71,8 +80,13 @@ export function DetailHero({ pillar, image, imageAlt, photoCount = 1, onOpenPhot
       </figure>
 
       <div className="space-y-4 min-w-0">
-        {kicker && <p className="text-xs sm:text-sm font-semibold text-slate-500">{kicker}</p>}
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 leading-tight tracking-tight break-words">{title}</h1>
+        {highlight && (
+          <p className={`inline-flex items-center gap-2 text-base sm:text-lg font-bold tabular-nums ${HIGHLIGHT_TONE[highlight.tone]}`}>
+            <highlight.icon className="w-5 h-5 shrink-0" aria-hidden="true" />
+            {highlight.text}
+          </p>
+        )}
         {subtitle && <p className="text-sm font-medium text-slate-600 leading-relaxed max-w-prose">{subtitle}</p>}
         {facts.length > 0 && (
           <ul className="flex flex-wrap gap-x-5 gap-y-2">
@@ -103,7 +117,7 @@ export const heroButton = {
   icon: 'inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer transition-colors',
 };
 
-/** The host's schedule ("กำหนดการ" in the ตั้งตี้ / งานแฟร์ form), times down the left; nothing when there is none */
+/** The host's schedule ("กำหนดการ" in the ตั้งตี้ / อีเวนต์ form), times down the left; nothing when there is none */
 export function ItineraryList({ items }: { items?: { time: string; title: string }[] }) {
   const rows = (items ?? []).filter((row) => row.title?.trim());
   if (rows.length === 0) return null;

@@ -68,7 +68,7 @@ const EVIDENCE_REASON: Record<string, string> = {
   too_far: 'ตำแหน่งตอนโพสต์อยู่ไกลจากที่นั่น',
 };
 
-const TARGET_LABELS: Record<string, string> = { spot: 'พิกัดเที่ยว', community: 'คอมมูนิตี้', fair: 'งานแฟร์', challenge: 'ชาเลนจ์', general: 'ทั่วไป' };
+const TARGET_LABELS: Record<string, string> = { spot: 'พิกัดเที่ยว', community: 'คอมมูนิตี้', fair: 'อีเวนต์', challenge: 'ชาเลนจ์', general: 'ทั่วไป' };
 const statusOf = (moment: AdminMoment): AdminStatus => (moment.status === 'hidden' ? 'rejected' : 'published');
 
 function MomentDrawer({ moment, canModerate, onClose, onDone }: { moment: AdminMoment; canModerate: boolean; onClose: () => void; onDone: (message: string) => void }) {

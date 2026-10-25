@@ -68,7 +68,7 @@ export async function createFairGroup(member: Member, fairId: string, input: Rec
   if (!meetupPoint) throw new MemberAuthError('บอกจุดนัดพบในงานด้วยนะ');
   if (!time) throw new MemberAuthError('บอกเวลานัดด้วยนะ');
   const maxMembers = Math.min(15, Math.max(2, Math.round(Number(input.maxMembers)) || 4));
-  await guardMemberText(member, `${title} ${meetupPoint} ${note}`, 'กลุ่มในงานแฟร์');
+  await guardMemberText(member, `${title} ${meetupPoint} ${note}`, 'กลุ่มในอีเวนต์');
   if (store.read().filter((g) => g.fairId === fairId && g.creatorId === member.id).length >= MAX_GROUPS_PER_MEMBER_PER_FAIR) {
     throw new MemberAuthError(`เปิดได้ ${MAX_GROUPS_PER_MEMBER_PER_FAIR} กลุ่มต่องาน ลบกลุ่มเก่าก่อนนะ`, 429);
   }
@@ -81,7 +81,7 @@ export async function joinFairGroup(member: Member, groupId: string): Promise<Fa
   const found = fairGroupById(groupId);
   if (!found) throw new MemberAuthError('ไม่พบกลุ่มนี้', 404);
   await requireOpenFair(found.fairId);
-  await guardMemberText(member, '', 'กลุ่มในงานแฟร์');
+  await guardMemberText(member, '', 'กลุ่มในอีเวนต์');
   let result: FairGroup | null = null;
   let full = false;
   // The seat check and the write happen under the store's lock

@@ -341,7 +341,7 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
                   { value: 'all', label: 'ทุกแบบ' },
                   { value: 'spot', label: 'ไปที่เที่ยว' },
                   { value: 'community', label: 'ร่วมตี้' },
-                  { value: 'fair', label: 'ไปงานแฟร์' },
+                  { value: 'fair', label: 'ไปอีเวนต์' },
                 ]}
                 openId={openMenu}
                 setOpenId={setOpenMenu}
