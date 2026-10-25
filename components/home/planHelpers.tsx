@@ -13,7 +13,7 @@ const WEEKDAY_NAMES = ['อาทิตย์', 'จันทร์', 'อัง
 export const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80';
 const FACE_COLORS = ['bg-amber-500', 'bg-pink-500', 'bg-sky-500'];
 
-const startTime = (event: EventItem) => event.time.split('-')[0].trim().replace(/\s*น\.$/, '');
+const startTime = (event: EventItem) => (event.time ?? '').split('-')[0].trim().replace(/\s*น\.$/, '');
 
 /** When the event starts, from its date and the first time in "06:30 - 08:00" */
 export function startsAt(event: EventItem) {
@@ -24,7 +24,7 @@ export function startsAt(event: EventItem) {
 
 /** When the event is over: the second time in "06:30 - 08:00", else three hours after it starts */
 export function endsAt(event: EventItem) {
-  const end = (event.time.split('-')[1] ?? '').trim().match(/^(\d{1,2})[:.](\d{2})/);
+  const end = ((event.time ?? '').split('-')[1] ?? '').trim().match(/^(\d{1,2})[:.](\d{2})/);
   if (!end) return startsAt(event) + 3 * 3_600_000;
   const at = parseEventDateToTimestamp(event.date) + (Number(end[1]) * 60 + Number(end[2])) * 60_000;
   // An end time earlier than the start (a night that runs past midnight) is on the next day

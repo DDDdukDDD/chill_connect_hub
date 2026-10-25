@@ -120,7 +120,7 @@ export function OpenMeetupTiles({
   return (
     <ScrollRow className={row}>
       {events.map((event) => {
-        const startTime = event.time.split('-')[0].trim().replace(/\s*น\.$/, '');
+        const startTime = (event.time ?? '').split('-')[0].trim().replace(/\s*น\.$/, '');
         const reason = reasons?.[event.id];
         const isSaved = savedIds?.includes(event.id) ?? false;
         return (

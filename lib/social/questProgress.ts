@@ -4,7 +4,9 @@ import { db } from '../db';
 import { parseQuestDate } from '../questLifecycle';
 import { isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp } from '../dateUtils';
 import { momentRepository } from '../moments';
+import { memberRepository } from '../members';
 import { joinedQuestIdsOf } from './questJoins';
+import { checkedInTogether, friendIdsOf } from './friends';
 import { type Visit, type VisitEvidence, type VisitTargetType, isVisitTargetType, targetKey, visitsOf } from './visits';
 
 /**
@@ -18,6 +20,7 @@ export const VISIT_POINTS: Record<VisitEvidence, number> = { checkin: 50, moment
 const EVIDENCE_RANK: Record<VisitEvidence, number> = { checkin: 3, moment: 2, marked: 1 };
 const EVIDENCES = Object.keys(EVIDENCE_RANK) as VisitEvidence[];
 const MAX_RULE_LIST = 50;
+const DAY = 24 * 60 * 60 * 1000;
 
 /** A place or event in the few fields a rule can test */
 interface RuleTarget {
@@ -68,7 +71,77 @@ export function parseQuestRule(input: unknown): QuestRule | null {
     vibes: stringList(raw.vibes),
     targetIds: stringList(raw.targetIds),
     minEvidence: EVIDENCES.includes(raw.minEvidence as VisitEvidence) ? (raw.minEvidence as VisitEvidence) : undefined,
+    newMemberDays: wholeNumberIn(raw.newMemberDays, 1, 90),
+    asHost: targetTypes.includes('community') ? wholeNumberIn(raw.asHost, 1, 15) : undefined,
+    withFriends: targetTypes.includes('community') ? wholeNumberIn(raw.withFriends, 1, 15) : undefined,
+    friendsVia: raw.friendsVia === 'invite' ? 'invite' : raw.friendsVia === 'any' ? 'any' : undefined,
+    perWeekend: raw.perWeekend === true || undefined,
   };
+}
+
+/** The Saturday (YYYY-MM-DD, Bangkok) of the weekend a moment falls in; null on a weekday */
+export function weekendOf(at: string): string | null {
+  const local = new Date(Date.parse(at) + 7 * 3600 * 1000);
+  const day = local.getUTCDay();
+  if (day !== 6 && day !== 0) return null;
+  if (day === 0) local.setUTCDate(local.getUTCDate() - 1);
+  return local.toISOString().slice(0, 10);
+}
+
+/** How far a member got: different targets, or different weekends for a weekend challenge */
+function progressCount(rule: QuestRule, counted: Visit[]): number {
+  if (!rule.perWeekend) return counted.length;
+  return new Set(counted.map((visit) => weekendOf(visit.at)).filter(Boolean)).size;
+}
+
+/** ตี้ the member was checked in at together with at least `minFriends` friends, as check-in visits */
+async function friendVisitsOf(memberId: string, minFriends: number, via: 'invite' | 'any'): Promise<Visit[]> {
+  const member = await memberRepository.findById(memberId);
+  if (!member) return [];
+  const friends = await friendIdsOf(member, via);
+  if (friends.size < minFriends) return [];
+  return (await checkedInTogether(memberId))
+    .filter((entry) => entry.others.filter((id) => friends.has(id)).length >= minFriends)
+    .map((entry) => ({ targetType: 'community' as const, targetId: entry.eventId, evidence: 'checkin' as const, at: entry.at }));
+}
+
+function wholeNumberIn(value: unknown, min: number, max: number): number | undefined {
+  if (value === undefined || value === null || value === '') return undefined;
+  const n = Math.round(Number(value));
+  return n >= min && n <= max ? n : undefined;
+}
+
+/**
+ * A member's own ตี้ that count for a host challenge: ones they hosted where at least `minGuests` guests were
+ * checked in. Each counts as a check-in visit at the time the last needed guest arrived.
+ */
+async function hostedVisitsOf(memberId: string, minGuests: number): Promise<Visit[]> {
+  const events = await allPages((page) => db.findEvents({ eventType: 'community', page, limit: 100 }));
+  const visits: Visit[] = [];
+  for (const event of events) {
+    if ((event as { createdByMemberId?: string }).createdByMemberId !== memberId) continue;
+    const arrivals = (await db.listParticipants(event.id))
+      .filter((guest) => guest.userId !== memberId && guest.checkedInAt)
+      .map((guest) => guest.checkedInAt as string)
+      .sort();
+    if (arrivals.length >= minGuests) visits.push({ targetType: 'community', targetId: event.id, evidence: 'checkin', at: arrivals[minGuests - 1] });
+  }
+  return visits;
+}
+
+/** What a challenge counts for one member: their own visits, or for a host challenge the ตี้ they hosted */
+const visitsForQuest = (quest: ChallengeQuest & { rule: QuestRule }, memberId: string) =>
+  quest.rule.asHost
+    ? hostedVisitsOf(memberId, quest.rule.asHost)
+    : quest.rule.withFriends
+      ? friendVisitsOf(memberId, quest.rule.withFriends, quest.rule.friendsVia ?? 'any')
+      : visitsOf(memberId);
+
+/** When the member signed up (ms), for welcome challenges; undefined when the rule does not need it */
+async function memberSince(quest: ChallengeQuest & { rule: QuestRule }, memberId: string): Promise<number | undefined> {
+  if (!quest.rule.newMemberDays) return undefined;
+  const member = await memberRepository.findById(memberId);
+  return member ? Date.parse(member.createdAt) : undefined;
 }
 
 /**
@@ -119,7 +192,8 @@ function inQuestPeriod(quest: ChallengeQuest, target: RuleTarget): boolean {
 
 /** The running challenges a visit to each target counts toward */
 export async function rewardsForTargets(targets: { targetType: VisitTargetType; targetId: string }[]): Promise<Record<string, TargetReward[]>> {
-  const quests = (await questsWithRules()).filter((q) => q.status === 'active');
+  // Going somewhere never counts toward a host challenge
+  const quests = (await questsWithRules()).filter((q) => q.status === 'active' && !q.rule.asHost);
   const result: Record<string, TargetReward[]> = {};
   for (const { targetType, targetId } of targets) {
     const target = quests.length ? await loadRuleTarget(targetType, targetId) : null;
@@ -151,13 +225,18 @@ export interface QuestProgress {
   rewardPoints: number;
 }
 
-/** Whether one visit counts toward a challenge: the target matches the rule, the evidence is strong enough, and it happened while the challenge runs */
-function visitCounts(quest: ChallengeQuest & { rule: QuestRule }, visit: Visit, target: RuleTarget | null | undefined): boolean {
+/**
+ * Whether one visit counts toward a challenge: the target matches the rule, the evidence is strong enough, and it
+ * happened while the challenge runs (and, for a welcome challenge, within its days of `since`, the member's sign-up)
+ */
+function visitCounts(quest: ChallengeQuest & { rule: QuestRule }, visit: Visit, target: RuleTarget | null | undefined, since?: number): boolean {
   if (!target || !ruleMatchesTarget(quest.rule, target)) return false;
   if (EVIDENCE_RANK[visit.evidence] < EVIDENCE_RANK[minEvidenceOf(quest)]) return false;
   // A photo still waiting for staff review counts once it passes
   if (visit.pending) return false;
   const at = Date.parse(visit.at);
+  if (quest.rule.newMemberDays && (since === undefined || at > since + quest.rule.newMemberDays * DAY)) return false;
+  if (quest.rule.perWeekend && !weekendOf(visit.at)) return false;
   const start = parseQuestDate(quest.startDate, false);
   const end = parseQuestDate(quest.endDate, true);
   return (start === null || at >= start) && (end === null || at <= end);
@@ -192,7 +271,8 @@ async function allPages<T>(load: (page: number) => Promise<{ items: T[]; totalPa
  */
 export async function targetsOfQuest(quest: ChallengeQuest, memberId: string | null, limit = 6, near: string[] = []): Promise<{ targets: QuestTarget[]; total: number; browseHref: string } | null> {
   const rule = quest.rule;
-  if (!rule) return null;
+  // A host challenge is done by hosting, so there is no list of places to go
+  if (!rule || rule.asHost) return null;
   const ruled = quest as ChallengeQuest & { rule: QuestRule };
   const found: (Omit<QuestTarget, 'visited'> & { province?: string })[] = [];
 
@@ -220,9 +300,10 @@ export async function targetsOfQuest(quest: ChallengeQuest, memberId: string | n
 
   const visited = new Set<string>();
   if (memberId) {
+    const since = await memberSince(ruled, memberId);
     for (const visit of await visitsOf(memberId)) {
       const target = await loadRuleTarget(visit.targetType, visit.targetId);
-      if (visitCounts(ruled, visit, target)) visited.add(targetKey(visit.targetType, visit.targetId));
+      if (visitCounts(ruled, visit, target, since)) visited.add(targetKey(visit.targetType, visit.targetId));
     }
   }
   // A place named by the rule keeps the rule's order; places already counted come first
@@ -264,8 +345,9 @@ export async function memoriesOfQuest(quest: ChallengeQuest, memberId: string): 
   }
 
   const memories: QuestMemory[] = [];
-  for (const visit of await visitsOf(memberId)) {
-    if (!visitCounts(ruled, visit, await loadRuleTarget(visit.targetType, visit.targetId))) continue;
+  const since = await memberSince(ruled, memberId);
+  for (const visit of await visitsForQuest(ruled, memberId)) {
+    if (!visitCounts(ruled, visit, await loadRuleTarget(visit.targetType, visit.targetId), since)) continue;
     const place = visit.targetType === 'spot' ? await db.findSpotById(visit.targetId) : await db.findEventById(visit.targetId);
     if (!place) continue;
     const ownPhoto = photos.get(targetKey(visit.targetType, visit.targetId));
@@ -290,16 +372,33 @@ export async function progressOf(memberId: string) {
     targets.set(targetKey(visit.targetType, visit.targetId), await loadRuleTarget(visit.targetType, visit.targetId));
   }
 
-  const counts = (quest: ChallengeQuest & { rule: QuestRule }, visit: Visit) =>
-    visitCounts(quest, visit, targets.get(targetKey(visit.targetType, visit.targetId)));
+  const member = await memberRepository.findById(memberId);
+  const since = member ? Date.parse(member.createdAt) : undefined;
+  // Hosted ตี้ and ตี้ with friends are looked up only when a challenge needs them, once per kind
+  const special = new Map<string, Visit[]>();
+  const visitsFor = async (rule: QuestRule): Promise<Visit[]> => {
+    if (!rule.asHost && !rule.withFriends) return visits;
+    const key = rule.asHost ? `host:${rule.asHost}` : `friends:${rule.withFriends}:${rule.friendsVia ?? 'any'}`;
+    if (!special.has(key)) {
+      special.set(key, rule.asHost ? await hostedVisitsOf(memberId, rule.asHost) : await friendVisitsOf(memberId, rule.withFriends as number, rule.friendsVia ?? 'any'));
+    }
+    return special.get(key) as Visit[];
+  };
 
   const joined = new Set(joinedQuestIdsOf(memberId));
-  const quests: QuestProgress[] = (await questsWithRules()).map((quest) => {
-    const current = Math.min(quest.rule.count, visits.filter((visit) => counts(quest, visit)).length);
-    return { questId: quest.id, title: quest.title, current, total: quest.rule.count, completed: current >= quest.rule.count, joined: joined.has(quest.id), rewardPoints: quest.rewardPoints ?? 0 };
-  });
+  const quests: QuestProgress[] = [];
+  for (const quest of await questsWithRules()) {
+    const counted: Visit[] = [];
+    for (const visit of await visitsFor(quest.rule)) {
+      const key = targetKey(visit.targetType, visit.targetId);
+      if (!targets.has(key)) targets.set(key, await loadRuleTarget(visit.targetType, visit.targetId));
+      if (visitCounts(quest, visit, targets.get(key), since)) counted.push(visit);
+    }
+    const current = Math.min(quest.rule.count, progressCount(quest.rule, counted));
+    quests.push({ questId: quest.id, title: quest.title, current, total: quest.rule.count, completed: current >= quest.rule.count, joined: joined.has(quest.id), rewardPoints: quest.rewardPoints ?? 0 });
+  }
 
-  // A visit to something that no longer exists earns nothing
+  // A visit to something that no longer exists earns nothing; hosting earns through its challenge only
   const visitPoints = visits.reduce((sum, visit) => sum + (targets.get(targetKey(visit.targetType, visit.targetId)) ? VISIT_POINTS[visit.evidence] : 0), 0);
   const questPoints = quests.reduce((sum, quest) => sum + (quest.completed && quest.joined ? quest.rewardPoints : 0), 0);
 
@@ -335,10 +434,11 @@ export async function checklistOf(quest: ChallengeQuest, memberId: string): Prom
     return place ? { title: place.title, image: place.image, href: `${TARGET_PATHS[targetType]}/${encodeURIComponent(targetId)}` } : null;
   };
 
-  for (const visit of await visitsOf(memberId)) {
+  const since = await memberSince(ruled, memberId);
+  for (const visit of await visitsForQuest(ruled, memberId)) {
     const target = await loadRuleTarget(visit.targetType, visit.targetId);
     if (!target || !ruleMatchesTarget(ruled.rule, target)) continue;
-    const inPeriod = visitCounts(ruled, { ...visit, pending: false }, target);
+    const inPeriod = visitCounts(ruled, { ...visit, pending: false }, target, since);
     if (!inPeriod) continue;
     const place = await describe(visit.targetType, visit.targetId);
     if (!place) continue;
@@ -349,7 +449,11 @@ export async function checklistOf(quest: ChallengeQuest, memberId: string): Prom
       ...place,
       at: visit.at,
       status: visit.pending ? 'pending' : 'counted',
-      note: visit.evidence === 'checkin' ? 'คนจัดยืนยันว่ามาแล้ว' : visit.pending ? 'รอทีมงานตรวจรูป' : 'ยืนยันจากรูปที่ถ่ายที่นั่น',
+      note: ruled.rule.asHost
+        ? `มีเพื่อนมาเช็กอินครบ ${ruled.rule.asHost} คนแล้ว`
+        : ruled.rule.withFriends
+          ? 'ไปพร้อมเพื่อน โฮสต์เช็กอินให้ทั้งคู่แล้ว'
+          : visit.evidence === 'checkin' ? 'คนจัดยืนยันว่ามาแล้ว' : visit.pending ? 'รอทีมงานตรวจรูป' : 'ยืนยันจากรูปที่ถ่ายที่นั่น',
     });
   }
 
@@ -368,5 +472,6 @@ export async function checklistOf(quest: ChallengeQuest, memberId: string): Prom
   }
 
   items.sort((a, b) => a.at.localeCompare(b.at));
-  return { items, current: Math.min(ruled.rule.count, items.filter((i) => i.status === 'counted').length), total: ruled.rule.count };
+  const counted = items.filter((i) => i.status === 'counted').map((i) => ({ targetType: i.targetType, targetId: i.id, evidence: 'checkin' as const, at: i.at }));
+  return { items, current: Math.min(ruled.rule.count, progressCount(ruled.rule, counted)), total: ruled.rule.count };
 }

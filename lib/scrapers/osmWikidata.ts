@@ -129,15 +129,36 @@ out center tags;`;
   throw new Error(`Overpass query failed: ${lastError instanceof Error ? lastError.message : 'unknown error'}`);
 }
 
-async function fetchEntities(context: SiteAdapterContext, ids: string[], props: string): Promise<Map<string, WikidataEntity>> {
+/** `allSites` keeps every Wikipedia sitelink, so the number of languages can rank how known a place is */
+async function fetchEntities(context: SiteAdapterContext, ids: string[], props: string, allSites = false): Promise<Map<string, WikidataEntity>> {
   const entities = new Map<string, WikidataEntity>();
   for (let index = 0; index < ids.length; index += WIKIDATA_BATCH) {
     const batch = ids.slice(index, index + WIKIDATA_BATCH);
-    const url = `${WIKIDATA_API}?action=wbgetentities&format=json&ids=${batch.join('|')}&props=${props}&languages=th|en&sitefilter=thwiki|enwiki`;
+    const url = `${WIKIDATA_API}?action=wbgetentities&format=json&ids=${batch.join('|')}&props=${props}&languages=th|en${allSites ? '' : '&sitefilter=thwiki|enwiki'}`;
     const response = JSON.parse((await context.fetchText(url, ['application/json'])).text) as { entities?: Record<string, WikidataEntity> };
     for (const [id, entity] of Object.entries(response.entities || {})) entities.set(id, entity);
   }
   return entities;
+}
+
+/** Average monthly views of a Wikipedia article over the last three full months (Wikimedia pageviews API); 0 when unknown */
+async function fetchMonthlyViews(context: SiteAdapterContext, lang: 'th' | 'en', title: string): Promise<number> {
+  const month = (offset: number) => {
+    const d = new Date();
+    d.setUTCDate(1);
+    d.setUTCMonth(d.getUTCMonth() - offset);
+    return `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}0100`;
+  };
+  // Wikimedia rate-limits fast callers (HTTP 429); one request a second stays well inside
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  try {
+    const url = `https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/${lang}.wikipedia/all-access/user/${encodeURIComponent(title.replace(/ /g, '_'))}/monthly/${month(3)}/${month(1)}`;
+    const data = JSON.parse((await context.fetchText(url, ['application/json'])).text) as { items?: Array<{ views?: number }> };
+    const views = (data.items || []).map((item) => item.views || 0);
+    return views.length ? Math.round(views.reduce((a, b) => a + b, 0) / views.length) : 0;
+  } catch {
+    return 0;
+  }
 }
 
 async function fetchSummary(context: SiteAdapterContext, lang: 'th' | 'en', title: string): Promise<WikiSummary | null> {
@@ -158,10 +179,15 @@ export const osmWikidataAdapter: SiteSpotAdapter = {
 
     const elements = (await queryOverpass(context, isoCode)).filter((element) => /^Q\d+$/.test(element.tags?.wikidata || ''));
     const qids = [...new Set(elements.map((element) => element.tags!.wikidata))];
-    const entities = await fetchEntities(context, qids, 'labels|descriptions|sitelinks|claims');
+    const entities = await fetchEntities(context, qids, 'labels|descriptions|sitelinks|claims', true);
 
-    // Places with a Thai Wikipedia page first, then English, then the rest
-    const rank = (entity?: WikidataEntity) => (entity?.sitelinks?.thwiki ? 2 : 0) + (entity?.sitelinks?.enwiki ? 1 : 0);
+    // Better known first: the number of Wikipedia languages, with a Thai or English page required (and weighted)
+    const rank = (entity?: WikidataEntity) => {
+      const links = entity?.sitelinks ?? {};
+      if (!links.thwiki && !links.enwiki) return 0;
+      const languages = Object.keys(links).filter((key) => /wiki$/.test(key) && key !== 'commonswiki').length;
+      return languages + (links.thwiki ? 5 : 0) + (links.enwiki ? 3 : 0);
+    };
     const seen = new Set<string>();
     const candidates = elements
       .filter((element) => {
@@ -198,8 +224,12 @@ export const osmWikidataAdapter: SiteSpotAdapter = {
       const enTitle = entity.sitelinks?.enwiki?.title;
       // A sitelink can redirect to a broader article (Sea Life → Siam Paragon); keep only articles about this place
       const isAboutPlace = (candidate: WikiSummary | null) => Boolean(candidate?.extract && candidate.title && namesMatch(osmNames, [candidate.title]));
+      let summaryLang: 'th' | 'en' = 'th';
       let summary: WikiSummary | null = thTitle ? await fetchSummary(context, 'th', thTitle) : null;
-      if (!isAboutPlace(summary)) summary = enTitle ? await fetchSummary(context, 'en', enTitle) : null;
+      if (!isAboutPlace(summary)) {
+        summaryLang = 'en';
+        summary = enTitle ? await fetchSummary(context, 'en', enTitle) : null;
+      }
       if (!isAboutPlace(summary)) summary = null;
       const description = (summary?.extract || entity.descriptions?.th?.value || '').replace(/\s+/g, ' ').trim().slice(0, 700);
       const p18 = claimString(entity, 'P18');
@@ -213,6 +243,8 @@ export const osmWikidataAdapter: SiteSpotAdapter = {
       const website = tags.website || tags['contact:website'] || claimString(entity, 'P856');
       const phone = tags.phone || tags['contact:phone'];
       const label = kind.label || 'แลนด์มาร์ก & สถานที่สำคัญ';
+      // Interest signal for the automatic curation (views are counts, free to store)
+      const wikiMonthlyViews = summary?.title ? await fetchMonthlyViews(context, summaryLang, summary.title) : 0;
 
       items.push({
         id: `osm-${element.type[0]}${element.id}`,
@@ -237,6 +269,7 @@ export const osmWikidataAdapter: SiteSpotAdapter = {
         latitude,
         longitude,
         publicationStatus: 'draft',
+        ...(wikiMonthlyViews > 0 && { wikiMonthlyViews }),
         sourceName: SOURCE_NAME,
         sourceUrl: summary?.content_urls?.desktop?.page || `https://www.openstreetmap.org/${element.type}/${element.id}`,
         contact: website || phone ? { website: website && /^https?:\/\//.test(website) ? website : undefined, phone } : undefined,

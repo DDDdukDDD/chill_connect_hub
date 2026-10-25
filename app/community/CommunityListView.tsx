@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, Suspense } from 'react';
+import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Users, Heart, X, Calendar, LocateFixed, Loader2, CheckCircle2, Plus } from 'lucide-react';
 import { isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp } from '@/lib/dateUtils';
@@ -374,6 +374,15 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
       setIsCreateEventModalOpen(true);
     }
   };
+
+  // /community?create=1 (from the host challenge) opens the create dialog once sign-in is known
+  const createFromLink = useRef(searchParams.get('create') === '1');
+  useEffect(() => {
+    if (!createFromLink.current || !isAuthReady) return;
+    createFromLink.current = false;
+    openCreate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthReady]);
 
   const handleResetAll = () => {
     setSearchQuery('');

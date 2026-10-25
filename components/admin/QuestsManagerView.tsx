@@ -36,7 +36,8 @@ interface QuestDraft {
   hubRewardNote: string;
   terms: string;
   /** What the server counts toward the challenge; '' = it is not counted automatically */
-  ruleType: '' | 'spot' | 'community' | 'fair';
+  /** 'all' = places, ตี้ and อีเวนต์ together (e.g. the weekend passport) */
+  ruleType: '' | 'spot' | 'community' | 'fair' | 'all';
   ruleEvidence: 'marked' | 'moment' | 'checkin';
   // Comma-separated lists, as typed
   ruleCategories: string;
@@ -45,9 +46,18 @@ interface QuestDraft {
   ruleTargetIds: string;
   /** spotVibes ids, as grouped on /spots */
   ruleVibes: string;
+  /** Days after sign-up that count (welcome challenge); empty = everyone */
+  ruleNewMemberDays: string;
+  /** Guests checked in for a hosted ตี้ to count (host challenge); empty = going, not hosting */
+  ruleAsHost: string;
+  /** Friends checked in at the same ตี้ for it to count; empty = going alone counts */
+  ruleWithFriends: string;
+  ruleFriendsVia: 'invite' | 'any';
+  /** Count weekends instead of places */
+  rulePerWeekend: boolean;
 }
 
-const RULE_TYPE_LABELS = { spot: 'ไปสถานที่', community: 'ร่วมตี้', fair: 'ไปอีเวนต์' } as const;
+const RULE_TYPE_LABELS = { spot: 'ไปสถานที่', community: 'ร่วมตี้', fair: 'ไปอีเวนต์', all: 'ทุกอย่าง (สถานที่ ตี้ และอีเวนต์)' } as const;
 // The categories a rule can name, by their names: places use the data categories, events the four moods
 const EVENT_CATEGORY_OPTIONS = [
   { id: 'chill', label: 'จิบกาแฟ & ชิลล์' },
@@ -114,6 +124,11 @@ const EMPTY_DRAFT: QuestDraft = {
   ruleProvinces: '',
   ruleTargetIds: '',
   ruleVibes: '',
+  ruleNewMemberDays: '',
+  ruleAsHost: '',
+  ruleWithFriends: '',
+  ruleFriendsVia: 'any',
+  rulePerWeekend: false,
 };
 
 // Stored dates may be Thai ("31 ธ.ค. 2569") or ISO; the date input needs ISO
@@ -150,14 +165,19 @@ function toPayload(draft: QuestDraft) {
     // The target number above is how many different places or events must be visited; null removes the rule
     rule: draft.ruleType
       ? {
-          targetTypes: [draft.ruleType],
+          targetTypes: draft.ruleType === 'all' ? (['spot', 'community', 'fair'] as const).slice() : [draft.ruleType],
           count: Math.max(1, Math.floor(Number(draft.total)) || 1),
           minEvidence: draft.ruleEvidence,
-          categories: splitList(draft.ruleCategories),
+          categories: draft.ruleType === 'all' ? [] : splitList(draft.ruleCategories),
           keywords: splitList(draft.ruleKeywords),
           provinces: splitList(draft.ruleProvinces),
           targetIds: splitList(draft.ruleTargetIds),
           vibes: draft.ruleType === 'spot' ? splitList(draft.ruleVibes) : [],
+          newMemberDays: Number(draft.ruleNewMemberDays) || undefined,
+          asHost: draft.ruleType === 'community' ? Number(draft.ruleAsHost) || undefined : undefined,
+          withFriends: draft.ruleType === 'community' ? Number(draft.ruleWithFriends) || undefined : undefined,
+          friendsVia: draft.ruleType === 'community' && Number(draft.ruleWithFriends) ? draft.ruleFriendsVia : undefined,
+          perWeekend: draft.rulePerWeekend || undefined,
         }
       : null,
   };
@@ -202,6 +222,25 @@ const STATUS_STYLES: Record<QuestStatus, string> = {
   ended: 'bg-slate-100 text-slate-600 border-slate-200',
 };
 
+type CampaignGroup = { id: string; name: string; questIds: string[]; extraQuestIds: string[] };
+
+/** Campaigns, to group the list by them (names and challenge ids only) */
+async function fetchCampaignGroups(): Promise<CampaignGroup[]> {
+  const response = await fetch('/api/admin/campaigns?lite=1', { cache: 'no-store' });
+  const data = await response.json().catch(() => null);
+  return response.ok && data?.success ? data.campaigns : [];
+}
+
+/** What kind of campaign challenge a rule makes, in a few words for the list */
+function ruleKind(rule: ChallengeQuest['rule']): string | null {
+  if (!rule) return null;
+  if (rule.asHost) return `โฮสต์ มีคนเช็กอิน ≥${rule.asHost}`;
+  if (rule.withFriends) return rule.friendsVia === 'invite' ? 'ชวนเพื่อนผ่านลิงก์' : `ไปกับเพื่อน ≥${rule.withFriends} คน`;
+  if (rule.perWeekend) return `นับสุดสัปดาห์ ${rule.count} ครั้ง`;
+  if (rule.newMemberDays) return `สมาชิกใหม่ ${rule.newMemberDays} วัน`;
+  return null;
+}
+
 async function fetchQuests(): Promise<ChallengeQuest[]> {
   const response = await fetch('/api/admin/quests?limit=100', { cache: 'no-store' });
   if (handleAdminUnauthorized(response)) {
@@ -221,6 +260,16 @@ export function QuestsManagerView() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | QuestStatus>('all');
+  // Campaign groups (กลุ่มชาเลนจ์เปิดตัว and later ones): '' = every challenge, 'none' = not in a campaign
+  const [campaigns, setCampaigns] = useState<CampaignGroup[]>([]);
+  const [campaignFilter, setCampaignFilter] = useState('');
+  useEffect(() => {
+    void fetchCampaignGroups().then(setCampaigns);
+  }, []);
+  const campaignOf = (questId: string) => {
+    const campaign = campaigns.find((c) => c.questIds.includes(questId) || c.extraQuestIds.includes(questId));
+    return campaign ? { campaign, isStep: campaign.questIds.includes(questId) } : null;
+  };
   const [searchQuery, setSearchQuery] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -313,7 +362,9 @@ export function QuestsManagerView() {
     const matchesStatus = filter === 'all' || getStatus(quest) === filter;
     const query = searchQuery.trim().toLowerCase();
     const matchesSearch = !query || `${quest.title} ${quest.badgeLabel} ${quest.targetGoal || ''}`.toLowerCase().includes(query);
-    return matchesStatus && matchesSearch;
+    const group = campaignOf(quest.id);
+    const matchesCampaign = !campaignFilter || (campaignFilter === 'none' ? !group : group?.campaign.id === campaignFilter);
+    return matchesStatus && matchesSearch && matchesCampaign;
   });
 
   const openCreate = () => {
@@ -344,10 +395,15 @@ export function QuestsManagerView() {
       exclusiveNotice: quest.brandReward?.exclusiveNotice || '',
       hubRewardNote: quest.brandReward?.hubRewardNote || '',
       terms: quest.brandReward?.terms || '',
-      ruleType: quest.rule?.targetTypes[0] || '',
+      ruleType: (quest.rule?.targetTypes.length ?? 0) > 1 ? 'all' : quest.rule?.targetTypes[0] || '',
       ruleEvidence: quest.rule?.minEvidence || 'marked',
       ruleCategories: quest.rule?.categories?.join(', ') || '',
       ruleVibes: quest.rule?.vibes?.join(', ') || '',
+      ruleNewMemberDays: quest.rule?.newMemberDays ? String(quest.rule.newMemberDays) : '',
+      ruleAsHost: quest.rule?.asHost ? String(quest.rule.asHost) : '',
+      ruleWithFriends: quest.rule?.withFriends ? String(quest.rule.withFriends) : '',
+      ruleFriendsVia: quest.rule?.friendsVia ?? 'any',
+      rulePerWeekend: Boolean(quest.rule?.perWeekend),
       ruleKeywords: quest.rule?.keywords?.join(', ') || '',
       ruleProvinces: quest.rule?.provinces?.join(', ') || '',
       ruleTargetIds: quest.rule?.targetIds?.join(', ') || '',
@@ -502,6 +558,15 @@ export function QuestsManagerView() {
               </button>
             ))}
           </div>
+          {campaigns.length > 0 && (
+            <select value={campaignFilter} onChange={(event) => setCampaignFilter(event.target.value)} aria-label="กรองตามแคมเปญ" className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800">
+              <option value="">ทุกแคมเปญ</option>
+              {campaigns.map((c) => (
+                <option key={c.id} value={c.id}>{c.name} ({c.questIds.length + c.extraQuestIds.length})</option>
+              ))}
+              <option value="none">ไม่อยู่ในแคมเปญ</option>
+            </select>
+          )}
           <label className="relative block w-full sm:w-72">
             <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="ค้นหาภารกิจหรือเหรียญตรา" className="h-10 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
@@ -542,6 +607,15 @@ export function QuestsManagerView() {
                     ) : (
                       <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-500">ยังไม่ระบุประเภทรางวัล</span>
                     )}
+                    {(() => {
+                      const group = campaignOf(quest.id);
+                      return group && (
+                        <span className="rounded-full border border-amber-300 bg-[#FFF4C7] px-2 py-0.5 text-[10px] font-bold text-amber-900">
+                          {group.campaign.name} · {group.isStep ? 'ขั้นตอนหลัก' : 'สะสมเพิ่ม'}
+                        </span>
+                      );
+                    })()}
+                    {ruleKind(quest.rule) && <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-600">{ruleKind(quest.rule)}</span>}
                     {describeTimeLeft(quest) && <span className="text-[11px] font-semibold text-slate-500">{describeTimeLeft(quest)}</span>}
                   </div>
                 </div>
@@ -642,6 +716,33 @@ export function QuestsManagerView() {
                       </select>
                     </label>
                   )}
+                  {draft.ruleType && (
+                    <label className="block space-y-1.5 text-sm font-medium text-slate-800">เฉพาะสมาชิกใหม่ (วันแรกหลังสมัคร)
+                      <input type="number" min={1} max={90} value={draft.ruleNewMemberDays} onChange={(event) => setDraft({ ...draft, ruleNewMemberDays: event.target.value })} placeholder="เว้นว่าง = ทุกคน" className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                    </label>
+                  )}
+                  {draft.ruleType === 'community' && (
+                    <label className="block space-y-1.5 text-sm font-medium text-slate-800">นับตี้ที่สมาชิกเป็นโฮสต์ (เพื่อนเช็กอินขั้นต่ำ)
+                      <input type="number" min={1} max={15} value={draft.ruleAsHost} onChange={(event) => setDraft({ ...draft, ruleAsHost: event.target.value })} placeholder="เว้นว่าง = นับตี้ที่ไปร่วม" className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                    </label>
+                  )}
+                  {draft.ruleType === 'community' && (
+                    <label className="block space-y-1.5 text-sm font-medium text-slate-800">ต้องไปพร้อมเพื่อน (จำนวนเพื่อนที่เช็กอินด้วย)
+                      <div className="flex gap-2">
+                        <input type="number" min={1} max={15} value={draft.ruleWithFriends} onChange={(event) => setDraft({ ...draft, ruleWithFriends: event.target.value })} placeholder="เว้นว่าง = ไปคนเดียวก็นับ" className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                        <select value={draft.ruleFriendsVia} onChange={(event) => setDraft({ ...draft, ruleFriendsVia: event.target.value as QuestDraft['ruleFriendsVia'] })} aria-label="นับใครเป็นเพื่อน" className="h-10 rounded-md border border-slate-300 px-2 text-sm">
+                          <option value="any">เพื่อนทุกแบบ</option>
+                          <option value="invite">เฉพาะชวนผ่านลิงก์</option>
+                        </select>
+                      </div>
+                    </label>
+                  )}
+                  {draft.ruleType && (
+                    <label className="flex items-center gap-2 text-sm font-medium text-slate-800">
+                      <input type="checkbox" checked={draft.rulePerWeekend} onChange={(event) => setDraft({ ...draft, rulePerWeekend: event.target.checked })} />
+                      นับเป็นสุดสัปดาห์ (เป้าหมาย = จำนวนสุดสัปดาห์ที่ออกไป)
+                    </label>
+                  )}
                 </div>
                 {draft.ruleType ? (
                   <>
@@ -656,14 +757,15 @@ export function QuestsManagerView() {
                         </div>
                       </div>
                     )}
-                    <div className="space-y-1.5">
+                    {/* Categories differ between places and events, so a rule over all kinds has none */}
+                    {draft.ruleType !== 'all' && <div className="space-y-1.5">
                       <p className="text-sm font-medium text-slate-800">{draft.ruleType === 'spot' ? 'ประเภทสถานที่' : 'หมวดตี้'}</p>
                       <div className="flex flex-wrap gap-1.5">
                         {(draft.ruleType === 'spot' ? SPOT_CATEGORY_OPTIONS : EVENT_CATEGORY_OPTIONS).map((option) => (
                           <RuleChip key={option.id} label={option.label} isOn={splitList(draft.ruleCategories).includes(option.id)} onToggle={() => setDraft({ ...draft, ruleCategories: toggleInList(draft.ruleCategories, option.id) })} />
                         ))}
                       </div>
-                    </div>
+                    </div>}
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <label className="block space-y-1.5 text-sm font-medium text-slate-800">จังหวัด
                         <input value={draft.ruleProvinces} onChange={(event) => setDraft({ ...draft, ruleProvinces: event.target.value })} placeholder="เช่น กรุงเทพฯ (คั่นด้วยจุลภาค)" className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
@@ -675,7 +777,11 @@ export function QuestsManagerView() {
                         <input value={draft.ruleTargetIds} onChange={(event) => setDraft({ ...draft, ruleTargetIds: event.target.value })} placeholder="รหัสสถานที่หรือกิจกรรม (ไม่บังคับ)" className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
                       </label>
                     </div>
-                    {/* What the rule counts right now, so a rule nobody can finish shows before it is saved */}
+                    {/* What the rule counts right now, so a rule nobody can finish shows before it is saved;
+                        a host challenge counts ตี้ members open themselves, so there is nothing to list */}
+                    {Number(draft.ruleAsHost) > 0 && draft.ruleType === 'community' ? (
+                      <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700">นับตี้ที่สมาชิกเปิดเองและมีเพื่อนมาเช็กอินอย่างน้อย {draft.ruleAsHost} คน</p>
+                    ) : (
                     <div role="status" className={`rounded-md border px-3 py-2.5 text-sm ${rulePreview && rulePreview.total < Math.max(1, Number(draft.total) || 1) ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-slate-200 bg-slate-50 text-slate-700'}`}>
                       {!rulePreview ? (
                         'กำลังนับว่ามีกี่แห่งที่ตรงเงื่อนไข…'
@@ -691,6 +797,7 @@ export function QuestsManagerView() {
                         </>
                       )}
                     </div>
+                    )}
                   </>
                 ) : (
                   <p className="text-[11px] sm:text-xs font-semibold text-slate-500">ทุกชาเลนจ์ต้องมีวิธีที่ระบบตรวจได้ สมาชิกจึงจะได้ XP และรางวัลเมื่อทำครบ</p>

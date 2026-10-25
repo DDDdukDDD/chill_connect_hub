@@ -152,11 +152,38 @@ export interface QuestRulesText {
   onceEach: string;
   /** The step that says where to go and how many, with {n} for the number */
   goStep: string;
+  /** Who may take part, when the rule narrows it (a welcome challenge for new members) */
+  eligible?: string;
 }
 
 /** The rule of a counted challenge in words; null for a challenge the server does not count */
 export function describeQuestRule(rule: QuestRule | undefined, evidence: Evidence | null): QuestRulesText | null {
   if (!rule) return null;
+  const eligible = rule.newMemberDays
+    ? `สมาชิกใหม่ นับเฉพาะการไปภายใน ${rule.newMemberDays} วันแรกหลังสมัคร`
+    : undefined;
+  if (rule.asHost) {
+    return {
+      unit: 'ตี้',
+      scope: `ตี้ที่คุณเปิดเองเป็นโฮสต์ และมีเพื่อนมาเช็กอินอย่างน้อย ${rule.asHost} คน`,
+      proof: `คุณเช็กอินเพื่อนที่มาถึงจุดนัดในหน้าตี้ของคุณ ครบ ${rule.asHost} คน`,
+      onceEach: 'ตี้เดียวกันนับได้ 1 ครั้ง',
+      goStep: `เปิดตี้ของคุณเอง แล้วมีเพื่อนมาเช็กอินอย่างน้อย ${rule.asHost} คน ให้ครบ {n} ตี้`,
+      eligible,
+    };
+  }
+  if (rule.withFriends) {
+    const friend = rule.friendsVia === 'invite' ? 'เพื่อนที่คุณชวนมา หรือเพื่อนที่ชวนคุณมา' : 'เพื่อน (คนที่ชวนกันมา หรือติดตามกันและกัน)';
+    const who = rule.withFriends > 1 ? `${friend} อย่างน้อย ${rule.withFriends} คน` : friend;
+    return {
+      unit: 'ตี้',
+      scope: `ตี้ที่คุณไปพร้อม${who}`,
+      proof: 'โฮสต์เช็กอินให้ทั้งคุณและเพื่อนที่จุดนัดพบ',
+      onceEach: 'ตี้เดียวกันนับได้ 1 ครั้ง',
+      goStep: `ชวน${rule.friendsVia === 'invite' ? 'เพื่อนสมัครผ่านลิงก์ชวนเพื่อนของคุณ' : 'เพื่อน'} แล้วไปตี้เดียวกัน ให้ครบ {n} ตี้`,
+      eligible,
+    };
+  }
   const kind = KINDS[rule.targetTypes[0]] ?? KINDS.spot;
   const isEvent = rule.targetTypes[0] !== 'spot';
   const categories = (rule.categories ?? []).map((id) => CATEGORY_WORDS[id] ?? id);
@@ -178,6 +205,14 @@ export function describeQuestRule(rule: QuestRule | undefined, evidence: Evidenc
     proof: PROOF_LINES[evidence ?? rule.minEvidence ?? 'marked'],
     onceEach: `${kind.noun}เดียวกันนับได้ 1 ครั้ง ไปซ้ำที่เดิมไม่นับเพิ่ม`,
     goStep: goStep || `ไป${scope} ให้ครบ {n} ${kind.unit}`,
+    eligible,
+    // A weekend challenge counts weekends, not places
+    ...(rule.perWeekend && {
+      unit: 'สุดสัปดาห์',
+      scope: `${scope} ในวันเสาร์หรืออาทิตย์`,
+      onceEach: 'สุดสัปดาห์เดียวกันนับ 1 ครั้ง ไม่ว่าจะไปกี่ที่',
+      goStep: `ออกไป${scope} ทุกสุดสัปดาห์ ให้ครบ {n} สุดสัปดาห์`,
+    }),
   };
 }
 

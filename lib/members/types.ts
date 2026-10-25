@@ -137,13 +137,17 @@ export interface Member {
   riskFlags?: RiskFlag[];
   /** Flags and reports older than this have been looked at by staff */
   riskReviewedAt?: string;
-  /** One-way fingerprint of the sign-up IP (see trust.hashIp) */
+  /** One-way fingerprint of the sign-up IP; no longer written since 2026-10-25, kept on older accounts */
   signupIpHash?: string;
   reportsReceived?: { byId: string; reason: string; at: string }[];
   /** Members this member does not want to see */
   blockedIds?: string[];
   /** Members whose moments this member follows */
   followingIds?: string[];
+  /** This member's invite code for "ตั๋วเพื่อนซี้" links (/?ref=CODE); made on first ask */
+  inviteCode?: string;
+  /** The member whose invite link this account signed up through (set once at sign-up) */
+  invitedBy?: string;
   /** Places and events the member saved for later (My Hub) */
   savedSpotIds?: string[];
   savedEventIds?: string[];

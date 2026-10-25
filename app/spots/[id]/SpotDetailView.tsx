@@ -9,7 +9,7 @@ import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { useAuth } from '@/lib/useAuth';
 import { useMyActivity } from '@/lib/useMyActivity';
-import { CreateEventModal } from '@/components/CreateEventModal';
+import { CreateEventModal, type PlacePick } from '@/components/CreateEventModal';
 import { MOCK_EVENTS, EventItem } from '@/data/mockData';
 import {
   getSpotById,
@@ -18,8 +18,9 @@ import {
   LifestyleSpotItem,
   MOCK_SPOTS
 } from '@/data/spotsData';
-import { RelatedCards, spotCard } from '@/components/detail/RelatedCards';
+import { RelatedCards, spotCard, teeCard } from '@/components/detail/RelatedCards';
 import { spotOrigin } from '@/lib/contentOrigin';
+import { travelModes, visitorFacilities } from '@/lib/spotFacilities';
 import { resolveSpotGallery, resolveSpotImage } from '@/lib/spotImageResolver';
 import { usePublishedSpots } from '@/lib/usePublishedSpots';
 import { renderDescriptionContent } from '@/components/RichTextEditor';
@@ -190,6 +191,8 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
   const [membershipActionTitle, setMembershipActionTitle] = useState('เพื่อดำเนินการต่อ');
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
+  // The Smart Plan schedule carried into the create dialog; empty when opened from other buttons
+  const [teeItinerary, setTeeItinerary] = useState<Array<{ time: string; title: string }> | undefined>(undefined);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
@@ -232,6 +235,10 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
   }, [spot]);
 
   // Real-time open/closed status parsing
+  const initialPlace: PlacePick | undefined = useMemo(
+    () => spot ? { placeId: spot.id, name: spot.title, province: spot.province, district: spot.district, pin: spot.latitude && spot.longitude ? { latitude: spot.latitude, longitude: spot.longitude } : undefined } : undefined,
+    [spot]
+  );
   const openStatus = useMemo(() => parseSpotOpenStatus(spot?.openHours), [spot?.openHours]);
 
   // Nearby spots recommendation info (smart zonal & distance proximity)
@@ -242,31 +249,26 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
 
   const nearbySpots = recommendation.spots;
 
-  // Separate Public Transit & Private Car Info for real-world clarity (with clean text)
-  const { publicTransitText, parkingText } = useMemo(() => {
-    if (!spot?.transitInfo) {
-      // Placeholder lines are for seed places only
-      if (spot && spotOrigin(spot) !== 'sample') return { publicTransitText: '', parkingText: '' };
-      return {
-        publicTransitText: 'เดินทางด้วยรถไฟฟ้าหรือรถประจำทางที่ผ่านบริเวณใกล้เคียง',
-        parkingText: 'มีพื้นที่จอดรถสำหรับผู้มาติดต่อ หรือจุดจอดรถบริเวณใกล้เคียง'
-      };
-    }
-
-    const raw = cleanText(spot.transitInfo);
-    const parts = raw.split(/,|และ|พร้อม/).map((s) => s.trim()).filter(Boolean);
-    const publicParts = parts.filter((p) =>
-      /bts|mrt|รถไฟฟ้า|เรือ|แอร์พอร์ต|รถเมล์|รถสองแถว|สถานี|เดินต่อ|สาย/i.test(p)
-    );
-    const parkingParts = parts.filter((p) =>
-      /จอด|รถยนต์|ลานจอด|ถนน|ทางหลวง|ขับรถ|อาคารจอด/i.test(p)
-    );
-
-    return {
-      publicTransitText: publicParts.length > 0 ? publicParts.join(', ') : raw,
-      parkingText: parkingParts.length > 0 ? parkingParts.join(', ') : 'มีจุดจอดรถยนต์บริเวณสถานที่ หรือเดินทางตามพิกัด GPS'
+  // ตี้ whose host picked this place when setting them up (placeId), still open: the place leads to people (owner 2026-10-25)
+  const [placeTees, setPlaceTees] = useState<EventItem[]>([]);
+  const placeKey = spot?.id;
+  useEffect(() => {
+    if (!placeKey) return;
+    let active = true;
+    fetch(`/api/events?type=community&placeId=${encodeURIComponent(placeKey)}&limit=8`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (active && Array.isArray(data?.events)) setPlaceTees(data.events);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
     };
-  }, [spot]);
+  }, [placeKey]);
+
+  // Separate Public Transit & Private Car Info for real-world clarity (with clean text)
+  // A seed place without transit info keeps a placeholder line; everything else shows what the source says
+  const publicTransitText = !spot?.transitInfo && spot && spotOrigin(spot) === 'sample' ? 'เดินทางด้วยรถไฟฟ้าหรือรถประจำทางที่ผ่านบริเวณใกล้เคียง' : '';
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -388,7 +390,7 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
           setIsLoggedIn={handleSetIsLoggedIn}
           onOpenLogin={() => setIsAuthModalOpen(true)}
           onOpenLogout={() => setIsLogoutModalOpen(true)}
-          onOpenCreateEvent={() => setIsCreateEventModalOpen(true)}
+          onOpenCreateEvent={() => { setTeeItinerary(undefined); setIsCreateEventModalOpen(true); }}
         />
         <main className="flex-1 max-w-4xl mx-auto px-4 py-20 text-center space-y-4">
           <div className="w-16 h-16 bg-slate-100 text-slate-700 rounded-2xl flex items-center justify-center mx-auto">
@@ -430,7 +432,7 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
         setIsLoggedIn={handleSetIsLoggedIn}
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}
-        onOpenCreateEvent={() => setIsCreateEventModalOpen(true)}
+        onOpenCreateEvent={() => { setTeeItinerary(undefined); setIsCreateEventModalOpen(true); }}
       />
 
       <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-28 lg:pb-16">
@@ -453,8 +455,9 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
           title={cleanText(spot.title)}
           facts={[
             { icon: Clock, text: cleanText(spot.openHours) || 'เปิดทุกวัน' },
-            { icon: MapPin, text: [spot.district, spot.province ? `จังหวัด${spot.province}` : ''].filter(Boolean).join(', ') },
-            { icon: Ticket, text: cleanText(spot.price) || 'เข้าฟรี' },
+            { icon: MapPin, text: [spot.district, spot.province].filter(Boolean).join(', ') },
+            // "ไม่ระบุ" is not a fact: leave it out rather than print it (as on the อีเวนต์ page)
+            ...(cleanText(spot.price).startsWith('ไม่ระบุ') ? [] : [{ icon: Ticket, text: cleanText(spot.price) || 'เข้าฟรี' }]),
             ...(spot.rating > 0 ? [{ icon: Star, text: `${spot.rating}${spot.reviewsCount > 0 ? ` (${spot.reviewsCount} รีวิว)` : ''}` }] : []),
           ]}
           actions={
@@ -552,7 +555,19 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
               onShowToast={showToast}
             />
 
-            <SmartSpotPlanCard currentSpot={spot} onShowToast={showToast} />
+            <SmartSpotPlanCard
+              key={spot.id}
+              currentSpot={spot}
+              onStartTee={(plan) => {
+                if (!isLoggedIn) {
+                  setMembershipActionTitle('เพื่อชวนเพื่อนไปตามแผนนี้');
+                  setIsRequireMembershipOpen(true);
+                  return;
+                }
+                setTeeItinerary(plan.itinerary);
+                setIsCreateEventModalOpen(true);
+              }}
+            />
           </aside>
 
           <div className="lg:order-1 min-w-0 space-y-10">
@@ -569,9 +584,9 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
                   label: 'จุดเด่น',
                   value: (spot.highlights ?? []).map((h) => cleanText(h)).filter((h) => h && h !== cleanText(spot.categoryLabel)).join(' · '),
                 },
-                { label: 'รถสาธารณะ', value: publicTransitText ? cleanText(publicTransitText) : '' },
-                { label: 'ที่จอดรถ', value: parkingText ? cleanText(parkingText) : '' },
-                { label: 'สิ่งอำนวยความสะดวก', value: (spot.facilities ?? []).map((fac) => cleanText(fac)).join(' · ') },
+                // The Tourism Directory lists ways to get there, not public transport, and no parking detail
+                { label: 'การเดินทาง', value: spot.transitInfo ? travelModes(cleanText(spot.transitInfo)) : publicTransitText ? cleanText(publicTransitText) : '' },
+                { label: 'สิ่งอำนวยความสะดวก', value: visitorFacilities((spot.facilities ?? []).map((fac) => cleanText(fac))).join(' · ') },
               ]}
             />
 
@@ -596,6 +611,8 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
             <NearbyDiningSection spot={spot} />
           </div>
         </div>
+
+        {placeTees.length > 0 && <RelatedCards title="ตี้ที่นัดที่นี่" allHref="/community" items={placeTees.slice(0, 4).map(teeCard)} />}
 
         <RelatedCards title={recommendation.sectionTitle.replace(/\s*\p{Extended_Pictographic}️?/gu, '').trim()} allHref={`/spots?province=${encodeURIComponent(spot.province)}`} items={nearbySpots.slice(0, 4).map(spotCard)} />
 
@@ -722,9 +739,12 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
       <CreateEventModal
         isOpen={isCreateEventModalOpen}
         onClose={() => setIsCreateEventModalOpen(false)}
-        initialLocation={spot ? `${spot.title}, ${spot.district}, จังหวัด${spot.province}` : undefined}
+        initialLocation={spot ? `${spot.title}, ${[spot.district, spot.province].filter(Boolean).join(', ')}` : undefined}
         initialTitle={spot ? `ชวนไปเที่ยว ${spot.title}` : undefined}
         initialImage={spot?.image}
+        initialPlace={initialPlace}
+        initialItinerary={teeItinerary}
+        initialType={teeItinerary ? 'community' : undefined}
         onCreateSuccess={(newEvent: EventItem) => {
           if (newEvent.approvalStatus === 'pending') {
             showToast(`ส่งข้อมูล "${newEvent.title}" เรียบร้อยแล้ว (รอตรวจสอบและอนุมัติโดยทีมงาน)`);

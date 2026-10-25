@@ -78,7 +78,10 @@ export async function runSpotScraper(targetSource?: string, options?: SpotScrape
         continue;
       }
 
-      toImport.push({ ...spot, publicationStatus: 'draft' });
+      // No team reviews imports one by one (owner 2026-10-25): a place with a real photo and real text goes live and the
+      // automatic curation decides how prominent it is; anything thinner waits as a draft
+      const ready = Boolean(spot.image) && !/unsplash|placeholder/i.test(spot.image) && (spot.description || '').replace(/<[^>]+>/g, '').trim().length >= 60;
+      toImport.push({ ...spot, publicationStatus: ready ? 'published' : 'draft' });
       knownIds.add(spot.id);
       if (spot.sourceUrl) knownSourceUrls.add(spot.sourceUrl);
       knownPlaces.add(normalizedPlace);

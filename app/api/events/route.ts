@@ -59,7 +59,7 @@ export async function GET(request: Request) {
 
     const hasFilterParams = [
       'page', 'limit', 'province', 'type', 'category', 'q', 'zone',
-      'venueTag', 'status', 'includeEnded', 'sortBy', 'spotId', 'lifestyleCategory', 'fairCategory',
+      'venueTag', 'status', 'includeEnded', 'sortBy', 'spotId', 'placeId', 'lifestyleCategory', 'fairCategory',
     ].some((param) => searchParams.has(param));
 
     if (hasFilterParams) {
@@ -86,6 +86,7 @@ export async function GET(request: Request) {
         lifestyleCategory: searchParams.get('lifestyleCategory'),
         fairCategory: searchParams.get('fairCategory'),
         spotId: searchParams.get('spotId'),
+        placeId: searchParams.get('placeId'),
         searchQuery,
         status: status || 'all',
         sortBy: sortBy || 'newest',
@@ -172,6 +173,13 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+    // Every screen reads `time` ("14:00 - 17:00 น."); a ตี้ without it broke the member home (E2E walk 2026-10-25)
+    if (typeof eventData.time !== 'string' || !eventData.time.trim()) {
+      if (eventData.eventType !== 'public_venue') {
+        return NextResponse.json({ success: false, message: 'กรุณาระบุเวลาเริ่มและเวลาจบของตี้' }, { status: 400 });
+      }
+      eventData.time = 'ดูเวลาที่หน้างาน';
+    }
 
     // Safety Content Screening
     const contentToCheck = `${eventData.title} ${eventData.description || ''} ${eventData.location || ''}`.toLowerCase();
@@ -242,6 +250,10 @@ export async function POST(req: Request) {
       // Server-verified creator, for staff reviewing the queue (the client cannot set this)
       // The count starts empty: the creator is added just below, and the client's number is not trusted
       ...(member && { createdByMemberId: member.id, participantsCount: 0 }),
+      // Every screen shows the host's name and face; a request without them gets the member's own (a ตี้ without
+      // hostName crashed the member home, 2026-10-25)
+      ...(member && !(typeof eventData.hostName === 'string' && eventData.hostName.trim()) && { hostName: member.displayName }),
+      ...(member && !eventData.hostAvatar && member.avatarUrl && { hostAvatar: member.avatarUrl }),
       createdAt: new Date().toISOString(),
     });
 

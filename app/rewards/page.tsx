@@ -70,18 +70,27 @@ export default function RewardsPage() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const celebrateTitleId = useId();
 
-  // ?tab=my_vouchers and ?category=cafe open the page where a link points
+  // ?tab=my_vouchers, ?category=cafe and ?reward=ID open the page where a link points
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('tab') === 'my_vouchers') setViewTab('my_vouchers');
     const category = params.get('category');
     if (category) setSelectedCategory(category);
+    // ?reward=ID opens that reward (the launch campaign links to its prize)
+    const reward = REWARD_SHOP_ITEMS.find((item) => item.id === params.get('reward'));
+    if (reward) setDetailItem(reward);
   }, []);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
   };
+
+  /** A draw entry has the member's own code; a voucher has the partner's code */
+  const codeOf = (item: RewardShopItem) => myRewards.codes[item.id] ?? item.voucherCode;
+  const amountOf = (item: RewardShopItem) =>
+    item.drawEntry ? `${item.discountValue} · จับรางวัล ${item.drawEntry.drawLabel}` : `${item.discountValue} · เหลือ ${item.stockCount} สิทธิ์`;
+  const untilOf = (item: RewardShopItem) => (item.drawEntry ? `ประกาศผล ${item.drawEntry.drawLabel}` : `ใช้ได้ถึง ${item.validUntil}`);
 
   const handleCopyVoucher = (code: string) => {
     if (!navigator.clipboard) return;
@@ -301,7 +310,7 @@ export default function RewardsPage() {
                             </span>
                             <span className="mt-4 text-base font-bold text-slate-900 leading-snug line-clamp-2 min-h-[2.75rem]">{item.title}</span>
                             <span className="mt-1 text-sm font-medium text-slate-500 tabular-nums">
-                              {item.discountValue} · เหลือ {item.stockCount} สิทธิ์
+                              {amountOf(item)}
                             </span>
 
                             <span className="mt-auto pt-5">
@@ -365,14 +374,14 @@ export default function RewardsPage() {
                             <span className="min-w-0">
                               <span className="block text-xs font-semibold text-slate-500 truncate">{item.partner}</span>
                               <span className="block text-base font-bold text-slate-900 group-hover:underline">{item.title}</span>
-                              <span className="block text-xs font-medium text-slate-500 tabular-nums">ใช้ได้ถึง {item.validUntil}</span>
+                              <span className="block text-xs font-medium text-slate-500 tabular-nums">{untilOf(item)}</span>
                             </span>
                           </button>
                           <span className="flex items-center justify-between sm:justify-end gap-2 shrink-0 rounded-xl border-2 border-dashed border-[#FFC83D] bg-amber-50 pl-3 pr-1 py-1">
-                            <span className="font-mono text-base font-bold text-slate-900 tracking-wider">{item.voucherCode}</span>
-                            <button type="button" onClick={() => handleCopyVoucher(item.voucherCode)} className="inline-flex items-center gap-1.5 min-h-9 px-3 rounded-full bg-white hover:bg-amber-100 text-slate-800 text-sm font-bold cursor-pointer">
-                              {copiedCode === item.voucherCode ? <Check className="w-4 h-4" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
-                              {copiedCode === item.voucherCode ? 'คัดลอกแล้ว' : 'คัดลอก'}
+                            <span className="font-mono text-base font-bold text-slate-900 tracking-wider">{codeOf(item)}</span>
+                            <button type="button" onClick={() => handleCopyVoucher(codeOf(item))} className="inline-flex items-center gap-1.5 min-h-9 px-3 rounded-full bg-white hover:bg-amber-100 text-slate-800 text-sm font-bold cursor-pointer">
+                              {copiedCode === codeOf(item) ? <Check className="w-4 h-4" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
+                              {copiedCode === codeOf(item) ? 'คัดลอกแล้ว' : 'คัดลอก'}
                             </button>
                           </span>
                         </li>
@@ -410,13 +419,13 @@ export default function RewardsPage() {
             </p>
 
             <div className="mt-6 rounded-2xl border-2 border-dashed border-[#FFC83D] bg-amber-50 p-4">
-              <p className="text-xs font-bold text-slate-500">รหัสคูปอง · โชว์ให้พนักงานดูก่อนจ่ายเงิน</p>
-              <p className="mt-1 font-mono text-2xl font-bold text-slate-900 tracking-wider">{detailItem.voucherCode}</p>
-              <button type="button" onClick={() => handleCopyVoucher(detailItem.voucherCode)} className="mt-3 inline-flex items-center gap-1.5 min-h-9 px-3.5 rounded-full bg-white hover:bg-amber-100 text-slate-800 text-sm font-bold cursor-pointer">
-                {copiedCode === detailItem.voucherCode ? <Check className="w-4 h-4" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
-                {copiedCode === detailItem.voucherCode ? 'คัดลอกแล้ว' : 'คัดลอกรหัส'}
+              <p className="text-xs font-bold text-slate-500">{detailItem.drawEntry ? 'รหัสสิทธิ์ลุ้นของคุณ · เก็บไว้ดูตอนประกาศผล' : 'รหัสคูปอง · โชว์ให้พนักงานดูก่อนจ่ายเงิน'}</p>
+              <p className="mt-1 font-mono text-2xl font-bold text-slate-900 tracking-wider">{codeOf(detailItem)}</p>
+              <button type="button" onClick={() => handleCopyVoucher(codeOf(detailItem))} className="mt-3 inline-flex items-center gap-1.5 min-h-9 px-3.5 rounded-full bg-white hover:bg-amber-100 text-slate-800 text-sm font-bold cursor-pointer">
+                {copiedCode === codeOf(detailItem) ? <Check className="w-4 h-4" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
+                {copiedCode === codeOf(detailItem) ? 'คัดลอกแล้ว' : 'คัดลอกรหัส'}
               </button>
-              <p className="mt-3 text-xs font-medium text-slate-500 tabular-nums">ใช้ได้ถึง {detailItem.validUntil} · เหลือ {userXp.toLocaleString()} XP</p>
+              <p className="mt-3 text-xs font-medium text-slate-500 tabular-nums">{untilOf(detailItem)} · เหลือ {userXp.toLocaleString()} XP</p>
             </div>
 
             <div className="mt-5 grid gap-2">
@@ -444,7 +453,7 @@ export default function RewardsPage() {
           <p className="text-sm font-medium text-slate-600 leading-relaxed">{detailItem.description}</p>
           <dl className="mt-4 divide-y divide-slate-200 border-y border-slate-200 text-sm">
             {[
-              ['สิทธิ์', `${detailItem.discountValue} · เหลือ ${detailItem.stockCount} สิทธิ์`],
+              ['สิทธิ์', amountOf(detailItem)],
               ['ใช้ที่', detailItem.partnerLocation],
               ['ใช้ได้ถึง', detailItem.validUntil],
               ['ใช้', `${detailItem.costXp} XP`],
@@ -465,10 +474,10 @@ export default function RewardsPage() {
 
           {detailRedeemed ? (
             <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl border-2 border-dashed border-[#FFC83D] bg-amber-50 p-3">
-              <span className="font-mono text-lg font-bold text-slate-900 tracking-wider">{detailItem.voucherCode}</span>
-              <button type="button" onClick={() => handleCopyVoucher(detailItem.voucherCode)} className="inline-flex items-center gap-1.5 min-h-10 px-3.5 rounded-full bg-white hover:bg-amber-100 text-slate-800 text-sm font-bold cursor-pointer">
-                {copiedCode === detailItem.voucherCode ? <Check className="w-4 h-4" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
-                {copiedCode === detailItem.voucherCode ? 'คัดลอกแล้ว' : 'คัดลอก'}
+              <span className="font-mono text-lg font-bold text-slate-900 tracking-wider">{codeOf(detailItem)}</span>
+              <button type="button" onClick={() => handleCopyVoucher(codeOf(detailItem))} className="inline-flex items-center gap-1.5 min-h-10 px-3.5 rounded-full bg-white hover:bg-amber-100 text-slate-800 text-sm font-bold cursor-pointer">
+                {copiedCode === codeOf(detailItem) ? <Check className="w-4 h-4" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
+                {copiedCode === codeOf(detailItem) ? 'คัดลอกแล้ว' : 'คัดลอก'}
               </button>
             </div>
           ) : (

@@ -5,6 +5,7 @@ import { recordAudit } from '@/lib/auditLog';
 import { runSpotScraper } from '@/lib/spotScraper';
 import { MASTER_77_PROVINCES } from '@/data/masterHub';
 import type { SpotScrapeOptions } from '@/lib/scrapers/types';
+import { recomputeCuration } from '@/lib/spotCurationStore';
 
 const DEFAULT_SPOT_LIMIT = 30;
 const MAX_SPOT_LIMIT = 100;
@@ -55,6 +56,8 @@ export async function POST(req: Request) {
 
     if (targetType === 'spots') {
       const result = await runSpotScraper(targetSource, spotOptions);
+      // New places get their tier right away (imported spots start as drafts; published ones are scored)
+      if (result.newCount > 0) await recomputeCuration();
       recordAudit(actor, 'scrape.spots', `ดึงสถานที่${spotOptions ? ` จังหวัด${spotOptions.province}` : ''}: พบ ${result.totalScanned} นำเข้า ${result.newCount} ซ้ำ ${result.duplicateCount}`, { type: 'source', id: targetSource });
       return NextResponse.json({ ...toSummary(result), spots: result.spots });
     }

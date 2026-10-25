@@ -37,6 +37,8 @@ import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { getQuestBrandReward } from '@/lib/questDisplay';
 import { matchesQuery, questSearchText } from '@/lib/discoverMatch';
 import { ChallengeCard } from '@/components/ChallengeCard';
+import { LaunchCampaignBanner } from '@/components/LaunchCampaignBanner';
+import type { Campaign } from '@/lib/campaigns/types';
 import { ChallengeList } from '@/components/ChallengeList';
 import { FilterMenu, challengePillClass } from '@/components/ChallengeFilters';
 import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
@@ -80,7 +82,7 @@ const toListQuest = (quest: ChallengeQuest): QuestWithDuration => ({
 });
 
 /** `initialQuests` comes from the server page, so the list is in the HTML search engines read; the browser refreshes it. */
-export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = '' }: { initialQuests?: ChallengeQuest[]; initialQuery?: string }) {
+export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = '', campaign = null }: { initialQuests?: ChallengeQuest[]; initialQuery?: string; campaign?: Campaign | null }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('challenges');
   // Filters folded into pills: when it runs, how it is done, what it gives, and only the member's own
@@ -307,6 +309,17 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
             </button>}
           </div>
         </header>
+
+        {/* The running campaign (admin ?m=campaigns): its challenges toward the prize draw */}
+        <LaunchCampaignBanner
+          campaign={campaign}
+          quests={questList}
+          isLoggedIn={isLoggedIn}
+          balance={userXp}
+          progress={myRewards.quests}
+          redeemedRewardIds={myRewards.redeemedRewardIds}
+          onSignUp={() => setIsAuthModalOpen(true)}
+        />
 
         {/* 2. Choosing, laid out like the ค้นพบ pages: filters on the left, what is mine and how to view on the right,
             then the category tabs right above the list (owner 2026-10-19) */}

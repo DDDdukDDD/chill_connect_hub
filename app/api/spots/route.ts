@@ -3,6 +3,12 @@ import { db } from '@/lib/db';
 import { MemberAuthError } from '@/lib/members/accounts';
 import { getSessionMember } from '@/lib/members/session';
 import { spotsSuggestedBy, suggestSpot } from '@/lib/members/submissions';
+import type { LifestyleSpotItem } from '@/data/spotsData';
+import { effectiveTier } from '@/lib/spotCuration';
+
+/** The public list carries the tier and score only; the reasons and staff notes stay in the admin console */
+const publicSpot = (spot: LifestyleSpotItem): LifestyleSpotItem =>
+  spot.curation ? { ...spot, curation: { score: spot.curation.score, tier: effectiveTier(spot), reasons: [], computedAt: spot.curation.computedAt } } : spot;
 
 export async function GET(request: Request) {
   try {
@@ -20,7 +26,7 @@ export async function GET(request: Request) {
       const wanted = Array.from(new Set(ids.split(',').map((id) => id.trim()).filter(Boolean))).slice(0, 30);
       const found = await Promise.all(wanted.map((id) => db.findSpotById(id)));
       return NextResponse.json(
-        { success: true, spots: found.filter((spot) => spot && spot.publicationStatus !== 'draft') },
+        { success: true, spots: found.filter((spot): spot is LifestyleSpotItem => Boolean(spot) && spot!.publicationStatus !== 'draft').map(publicSpot) },
         { headers: { 'Cache-Control': 'private, no-store' } }
       );
     }
@@ -46,7 +52,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         success: true,
-        spots: result.items,
+        spots: result.items.map(publicSpot),
         pagination: {
           totalCount: result.totalCount,
           page: result.page,
