@@ -292,6 +292,27 @@ The data is small and mostly sample, so we go **straight to the normalised schem
 
 ---
 
+## 8a. Built so far (2026-10-25)
+
+The schema is live in Supabase (57 tables in `app`), from `db/migrations/0001…0008`. It is not used by the website yet: the import and the repository switch come next.
+
+| Command | What it does |
+| :--- | :--- |
+| `npm run db:migrate` | Applies new files in `db/migrations/` once each, in a transaction. Refuses to run if an applied file was edited: always add a new numbered file instead. `-- --status` lists them. |
+| `npm run db:runtime-login` | Sets a new random password for `app_runtime` and writes `DATABASE_URL` (pooler, port 6543) into `.env.local`. Never prints it. Use it to rotate; copy the value to Vercel. |
+| `npm run db:verify` | Checks the lock-down: RLS on every table, `anon`/`authenticated` locked out, website cannot change structure or rewrite `audit_log`/`xp_ledger`, 5 s statement timeout. |
+
+Connections: `POSTGRES_URL_NON_POOLING` (admin, CLI only) and `DATABASE_URL` (website, `app_runtime`). `POSTGRES_URL` is only used to build `DATABASE_URL`.
+
+Choices made while writing the SQL (refining §4):
+- **Text + `CHECK` instead of Postgres enum types** for statuses and kinds: same safety, and adding a value is a one-line migration.
+- **Category columns hold codes, not foreign keys.** Today's data mixes codes across lists (places use `beach`/`cafe`…, challenges mix two lists), and staff must be able to retire a category without breaking old rows. The app checks codes on new writes. Provinces, venues and zones are real foreign keys keyed by today's ids.
+- **`legacy_id`** on members, staff, series, fair groups and chat rooms; **`slug`** on events, places, quests, moments, rewards, campaigns. Both hold today's ids so the import can link rows and URLs stay the same.
+- **Seed data is exempt from the ตี้ rules:** 61 of 62 seed ตี้ have no member host and 8 have more than 15 seats, so the host + 2–15 check applies when `is_sample` is false.
+- **อีเวนต์ have no participant cap** (`max_participants` null); today's values (500, 9999…) are not shown anywhere and are dropped.
+- Places keep `vibe_tags` as a text array (GIN index) rather than a join table.
+- `content_reports.target_type` uses the code's names (`review`, `chat_message`) plus `moment`, `comment`, `story`, `member`, `question`.
+
 ## 9. Owner decisions (approved 2026-10-25)
 
 | # | Question | Decision |

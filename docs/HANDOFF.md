@@ -1888,3 +1888,9 @@ New placeholder content in a page must be behind `eventOrigin(...) === 'sample'`
 - Every link in pages, components and `lib/` (sitemap, canonical, breadcrumb JSON-LD, notifications/visit links, admin "open" links) now points at `/events`. Data is unchanged: `eventType: 'public_venue'`, visit target `fair`, discover kind `fairs`.
 - Docs updated: AGENTS.md, ARCHITECTURE.md, DESIGN_SYSTEM.md, docs/API.md, docs/LAUNCH_CHECKLIST.md.
 - Checked on the dev server: `/events` and a detail page 200 with canonical `/events/…` and Event JSON-LD; `/fairs` and `/fairs/<id>?x=1` 308 to the new address; a ตี้ id under `/events` 308 to `/community`; unknown id 404; sitemap and the home, /events, /community, /spots, /about pages contain no `/fairs` link.
+
+### BE-143 · Database schema created in Supabase (owner 2026-10-25)
+- **From → To:** Backend (Claude) → Frontend (informational, no action) · 2026-10-25 · `claude`
+- The approved design (`docs/DATABASE_DESIGN.md`) is now 57 tables in a private `app` schema, from `db/migrations/0001…0008`, applied with `npm run db:migrate`. The website does **not** use it yet; pages and APIs still read the JSON files. Next: import today's data, then switch the repositories one at a time (API shapes stay the same).
+- Security: RLS on every table, Supabase's public roles locked out, the website connects as `app_runtime` (data only; cannot change structure or rewrite `audit_log` / `xp_ledger`). `npm run db:verify` checks all of it (11/11 pass).
+- New env var `DATABASE_URL` (website login) in `.env.local`, made by `npm run db:runtime-login`; needs copying to Vercel before the switch.

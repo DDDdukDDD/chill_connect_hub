@@ -14,7 +14,9 @@
 - [ ] **ย้ายข้อมูลไปฐานข้อมูลจริง** ตอนนี้เก็บเป็นไฟล์ JSON ในเครื่อง ซึ่งบน Vercel ข้อมูลจะหายเมื่อระบบรีสตาร์ต และรองรับได้ราวหลักสิบถึงหลักร้อยคน
   - ไฟล์ที่ต้องย้าย: `data/members.json`, `data/moments.json`, `data/stories.json`, `data/notifications.json`, `data/chill_database.json` (กิจกรรม), `data/discovery_content.json`, ข้อมูลหลัก (master data) และบันทึกการทำงานของแอดมิน (audit log)
   - โค้ดแยกชั้นเก็บข้อมูลไว้แล้ว (`memberRepository`, `momentRepository`, `lib/social/jsonStore.ts`) จึงสลับได้โดยไม่ต้องแก้หน้าจอ
-  - ต้องเลือกผู้ให้บริการฐานข้อมูลก่อน (แนะนำ Postgres)
+  - เลือกแล้ว: Supabase Postgres (สิงคโปร์) ออกแบบใน `docs/DATABASE_DESIGN.md` ตารางสร้างแล้ว 2026-10-25 เหลือนำเข้าข้อมูลและสลับโค้ด
+  - ใส่ `DATABASE_URL` (ล็อกอินของเว็บ `app_runtime` สร้างด้วย `npm run db:runtime-login`) ใน Vercel ห้ามใส่ `POSTGRES_URL_NON_POOLING` หรือ service role key บน Vercel
+  - เปิด Point-in-Time Recovery ของ Supabase (แผนเสียเงิน) และลองกู้ข้อมูลจากแบ็กอัปหนึ่งครั้ง
 - [ ] **ย้ายรูปไปที่เก็บไฟล์ถาวร** ระบบอัปโหลดรองรับ Vercel Blob แล้ว แต่ยังไม่ได้ทดสอบบนระบบจริง ต้องตั้งค่า token และทดสอบอัปโหลด แสดงผล และลบ
   - ถ้ารูปอยู่บน Blob ต้องเพิ่มโดเมนใน `next.config` (`images.remotePatterns`) เพื่อให้ระบบย่อรูปหลายขนาดทำงานกับรูปเหล่านั้น ตอนนี้ย่อเฉพาะรูปใน `/uploads/`
 - [ ] **ตั้งค่าตัวแปรบน Vercel:** `AUTH_SECRET`, `ADMIN_PASSWORD` และค่าของ OAuth ทุกผู้ให้บริการที่จะเปิดใช้
