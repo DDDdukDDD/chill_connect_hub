@@ -38,6 +38,7 @@ Returns **approved** events only (pending/rejected are never returned).
 Two modes:
 - **No query params** → every approved event, *including ended ones*, in one response (legacy; pagination block reports a single page).
 - **Any of the params below** → filtered and paginated. Ended events are hidden unless `includeEnded=true` or `status=ended`.
+- **`ids=a,b,c`** (added 2026-10-25, BE-122) → those approved events in the order asked, ended ones included, at most 60; unknown, pending and blocked-host ids are left out. `{ success, events, total }`, no pagination. My Hub uses it for saved events.
 
 | Param | Values | Default | Notes |
 |---|---|---|---|
@@ -216,6 +217,7 @@ The server decides who is signed in through an httpOnly cookie (`cch_member_sess
 | `GET /api/auth/member/host-application` | — | `{ application: HostApplication \| null }` |
 | `POST /api/auth/member/host-application` | `{ kind: host\|venue\|organizer, about (30–600), link? (https) }` | `{ application, member }` · `403` until verified · `400` when one is pending or approved |
 | `GET /api/members/[id]` | — | Public profile: `{ profile: { id, displayName, avatarUrl?, memberSince, about: {visible fields}, gender?, ageBand?, province?, interests?, badges: { emailVerified, pledged, trusted, approvedHost, hostKind? }, isMe, viewer?: { hasBlocked, hasReported } } }` · `404` for suspended, banned or unknown members |
+| `GET /api/members/[id]/reviews` | — | Every review of the ตี้ this member hosted (up to 200): `{ reviews: { count, average, latest: [{ id, rating, text, eventTitle, authorId, authorName, timeAgo }] } }`; the profile itself (`hostReviews`) carries the latest 4 (added 2026-10-25, BE-121) |
 | `GET /api/members/[id]/actions` | — | `{ reasons: string[] }` for the report dialog |
 | `POST /api/members/[id]/actions` | `{ action: 'report', reason }` (once per member) · `{ action: 'block' }` · `{ action: 'unblock' }` | `{ success }` · `403` reporter not verified · `409` already reported |
 | `POST /api/auth/member/password` | `{ currentPassword?, newPassword }` | Other sessions end; this browser stays signed in |
