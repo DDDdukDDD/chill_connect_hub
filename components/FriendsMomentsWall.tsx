@@ -13,7 +13,7 @@ const targetHref = (m: WallMoment) => {
   const id = encodeURIComponent(m.targetId);
   if (m.targetType === 'spot') return `/spots/${id}`;
   if (m.targetType === 'community') return `/community/${id}`;
-  if (m.targetType === 'fair') return `/fairs/${id}`;
+  if (m.targetType === 'fair') return `/events/${id}`;
   if (m.targetType === 'challenge') return `/challenges/${id}`;
   return null;
 };

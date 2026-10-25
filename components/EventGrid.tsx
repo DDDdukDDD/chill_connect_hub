@@ -103,7 +103,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
     const catStyle = CATEGORY_COLORS[event.category] || CATEGORY_COLORS.heal;
 
     const detailHref = event.eventType === 'public_venue'
-      ? `/fairs/${encodeURIComponent(event.id)}`
+      ? `/events/${encodeURIComponent(event.id)}`
       : `/community/${encodeURIComponent(event.id)}`;
 
     return (
@@ -312,7 +312,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
     const isAlmostFull = !isFull && fillRatio >= 0.8;
 
     const detailHref = event.eventType === 'public_venue'
-      ? `/fairs/${encodeURIComponent(event.id)}`
+      ? `/events/${encodeURIComponent(event.id)}`
       : `/community/${encodeURIComponent(event.id)}`;
 
     return (

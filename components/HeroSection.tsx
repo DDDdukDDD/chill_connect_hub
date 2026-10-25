@@ -226,7 +226,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           tabKey === 'community'
             ? '/community'
             : tabKey === 'fairs'
-            ? '/fairs'
+            ? '/events'
             : tabKey === 'spots'
             ? '/spots'
             : tabKey === 'challenges'
@@ -684,7 +684,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       {matchedFairs.map((fair) => (
                         <Link
                           key={`matched-fair-${fair.id}`}
-                          href={`/fairs/${fair.id}`}
+                          href={`/events/${fair.id}`}
                           onMouseDown={() => setIsFocused(false)}
                           className="flex items-center gap-3 p-2 rounded-xl hover:bg-blue-50/70 transition-colors group cursor-pointer"
                         >

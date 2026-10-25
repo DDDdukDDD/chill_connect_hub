@@ -106,7 +106,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   }, []);
 
   const navItems = [
-    // ค้นพบ = meetups, fairs and places (/community, /fairs, /spots); the logo goes home
+    // ค้นพบ = meetups, fairs and places (/community, /events, /spots); the logo goes home
     { id: 'explore', label: 'ค้นพบ', href: '/community', icon: Compass },
     { id: 'moments', label: 'โมเมนต์', href: '/moments', icon: Camera },
     { id: 'challenges', label: 'ชาเลนจ์', href: '/challenges', icon: Zap },
@@ -118,7 +118,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   // Not below xl: at 1024px they squeeze the search box's word field away.
   const pathname = usePathname() ?? '';
   const topLinks = [
-    { label: 'ค้นพบ', href: '/community', match: ['/community', '/fairs', '/spots'] },
+    { label: 'ค้นพบ', href: '/community', match: ['/community', '/events', '/spots'] },
     { label: 'โมเมนต์', href: '/moments', match: ['/moments'] },
     { label: 'ชาเลนจ์', href: '/challenges', match: ['/challenges'] },
   ];
@@ -443,7 +443,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       <CreateEventModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
-        onCreateSuccess={(created) => router.push(`/${created.eventType === 'public_venue' ? 'fairs' : 'community'}/${encodeURIComponent(created.id)}`)}
+        onCreateSuccess={(created) => router.push(`/${created.eventType === 'public_venue' ? 'events' : 'community'}/${encodeURIComponent(created.id)}`)}
       />
 
       {/* Pages that do not pass onOpenSignup still get the sign-up screen, not the log-in one */}

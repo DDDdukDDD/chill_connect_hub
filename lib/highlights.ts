@@ -32,7 +32,7 @@ interface PickHighlightsInput {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-// Trade shows and congresses are listed on /fairs, but are not what a visitor planning a day off looks for
+// Trade shows and congresses are listed on /events, but are not what a visitor planning a day off looks for
 const TRADE_EVENT = /congress|annual meetings?|awards|conference|summit|symposium|\boil\b|\bgas\b|metal|marine|offshore|powerex|ประชุมวิชาการ|สัมมนา/i;
 
 export const isTradeEvent = (event: { title: string }) => TRADE_EVENT.test(event.title);

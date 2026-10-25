@@ -201,7 +201,7 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
                     const targetPath = (event.eventType as any) === 'spots'
                       ? `/spots/${encodeURIComponent(event.id)}`
                       : event.eventType === 'public_venue'
-                      ? `/fairs/${encodeURIComponent(event.id)}`
+                      ? `/events/${encodeURIComponent(event.id)}`
                       : `/community/${encodeURIComponent(event.id)}`;
                     router.push(targetPath);
                     onSelectEvent(event);

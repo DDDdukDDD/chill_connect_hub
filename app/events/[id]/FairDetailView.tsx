@@ -509,7 +509,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
           <h1 className="text-2xl font-bold text-slate-900">ไม่พบข้อมูลงานอีเวนต์หรือนิทรรศการนี้</h1>
           <p className="text-sm text-slate-600">งานนี้อาจสิ้นสุดลงแล้วหรือถูกย้ายออกจากระบบ</p>
           <Link
-            href="/fairs"
+            href="/events"
             className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-full font-bold text-xs sm:text-sm shadow-sm transition-all cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -542,7 +542,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
       />
 
       <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-28 lg:pb-16">
-        <Link href="/fairs" className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
+        <Link href="/events" className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
           อีเวนต์ทั้งหมด
         </Link>
@@ -815,7 +815,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
           </div>
         </div>
 
-        <RelatedCards title="อีเวนต์อื่นที่น่าไป" allHref="/fairs" items={relatedFairs.map(fairCard)} />
+        <RelatedCards title="อีเวนต์อื่นที่น่าไป" allHref="/events" items={relatedFairs.map(fairCard)} />
 
       </main>
 

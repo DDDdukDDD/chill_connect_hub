@@ -4,7 +4,7 @@ import { getQuestBrandReward } from '@/lib/questDisplay';
 import { matchSearchQuery } from '@/lib/searchUtils';
 
 /**
- * How the ค้นพบ pages (/community, /fairs, /spots) match a search word and a province.
+ * How the ค้นพบ pages (/community, /events, /spots) match a search word and a province.
  * The pages filter with these and GET /api/discover/counts counts with them, so the number on a tab
  * is the number of cards that tab shows for the same search.
  */
@@ -77,7 +77,7 @@ export type DiscoverCounts = { meetups: number; fairs: number; spots: number; ch
 
 /** The ค้นพบ page of each kind, carrying the search word and province along. */
 export function discoverHref(kind: DiscoverKind, query: string, province: string): string {
-  const path = kind === 'meetups' ? '/community' : kind === 'fairs' ? '/fairs' : '/spots';
+  const path = kind === 'meetups' ? '/community' : kind === 'fairs' ? '/events' : '/spots';
   const params = new URLSearchParams();
   if (query.trim()) params.set('q', query.trim());
   if (province && province !== ALL_PROVINCES && !(province === ONLINE && kind !== 'meetups')) params.set('province', province);

@@ -248,7 +248,7 @@ function JourneyContent() {
   const doors = [
     { href: '/spots', label: 'ที่เที่ยว', count: isSpotsLoaded ? `${spotsList.length.toLocaleString()} แห่ง` : '', Icon: Compass, color: 'text-[#4A7C59]', tint: 'bg-[#EBF3ED]' },
     { href: '/community', label: 'กิจกรรม', count: isEventsLoaded ? `${communityEvents.length.toLocaleString()} กิจกรรม` : '', Icon: Users, color: 'text-[#F26430]', tint: 'bg-[#FFF4EE]' },
-    { href: '/fairs', label: 'งานแฟร์', count: isEventsLoaded ? `${fairEvents.length.toLocaleString()} งาน` : '', Icon: Building2, color: 'text-[#2B527A]', tint: 'bg-[#EEF4FA]' },
+    { href: '/events', label: 'งานแฟร์', count: isEventsLoaded ? `${fairEvents.length.toLocaleString()} งาน` : '', Icon: Building2, color: 'text-[#2B527A]', tint: 'bg-[#EEF4FA]' },
   ];
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -496,13 +496,13 @@ function JourneyContent() {
               <JourneySectionCarousel
                 title="งานแฟร์ช่วงนี้"
                 subtitle="งานมหกรรมและเอ็กซ์โปที่ใกล้ถึง"
-                moreLink={withQuery('/fairs')}
+                moreLink={withQuery('/events')}
                 moreText="ดูทั้งหมด"
               >
                 {!isEventsLoaded ? (
                   <RowSkeleton />
                 ) : fairRow.length === 0 ? (
-                  <RowEmpty text="ไม่พบงานแฟร์ที่ตรงกับคำค้นหา" href="/fairs" />
+                  <RowEmpty text="ไม่พบงานแฟร์ที่ตรงกับคำค้นหา" href="/events" />
                 ) : (
                   fairRow.map((event) => (
                     <div key={event.id} className={CARD_SLOT}>
@@ -517,7 +517,7 @@ function JourneyContent() {
                         metricBadge={isFree(event.price) ? <span>เข้าฟรี</span> : undefined}
                         isFavorite={favorites.includes(event.id)}
                         onToggleFavorite={toggleFavoriteEvent}
-                        href={`/fairs/${event.id}`}
+                        href={`/events/${event.id}`}
                       />
                     </div>
                   ))
@@ -625,14 +625,14 @@ function JourneyContent() {
         mode={mood === 'connect' ? 'community' : 'all'}
         onSelectEvent={(ev) => {
           setIsSurpriseModalOpen(false);
-          router.push(ev.eventType === 'public_venue' ? `/fairs/${ev.id}` : `/community/${ev.id}`);
+          router.push(ev.eventType === 'public_venue' ? `/events/${ev.id}` : `/community/${ev.id}`);
         }}
         onSelectTarget={(target) => {
           setIsSurpriseModalOpen(false);
           if (target.type === 'spot') {
             router.push(`/spots/${target.id}`);
           } else if (target.type === 'fair') {
-            router.push(`/fairs/${target.id}`);
+            router.push(`/events/${target.id}`);
           } else {
             router.push(`/community/${target.id}`);
           }

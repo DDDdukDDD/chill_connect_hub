@@ -147,7 +147,7 @@ const heading = (title: string, count: number) => (
 );
 
 /**
- * The list view of /community and /fairs, like the /challenges list: what is soon on top as a strip of small cards
+ * The list view of /community and /events, like the /challenges list: what is soon on top as a strip of small cards
  * ("สัปดาห์นี้" for meetups, "กำลังจัดอยู่ตอนนี้" for fairs), then the rest by date under month headings, then
  * the ended ones (latest first) when the filter shows them. Open layout: headings and rows, no boxes.
  */

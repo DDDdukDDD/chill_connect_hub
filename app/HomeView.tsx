@@ -287,7 +287,7 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
 
   const fairRow = useMemo(() => {
     const matched = [...fairEvents]
-      // Trade shows stay listed on /fairs but go last here (the sort keeps the date order within each group)
+      // Trade shows stay listed on /events but go last here (the sort keeps the date order within each group)
       .sort((a, b) => Number(isTradeEvent(a)) - Number(isTradeEvent(b)));
     // The heading promises "เอ็กซ์โป งานวิ่ง คอนเสิร์ต", so the row starts with the soonest of each kind, then fills by date
     const firsts = FAIR_ROW_KINDS.map((kind) => matched.find((e) => fairKind(e) === kind)).filter((e): e is EventItem => !!e);
@@ -624,13 +624,13 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
               {/* 7. Fairs, runs and concerts as a dated list, soonest first (trade shows last) */}
               {isEventsLoaded && fairRow.length > 0 && (
                 <section className="space-y-4">
-                  {sectionHead('เอ็กซ์โป งานวิ่ง คอนเสิร์ต ช่วงนี้', '/fairs', undefined, <>ดูทั้งหมด<span className="hidden sm:inline"> {fairEvents.length.toLocaleString()} งาน</span></>)}
+                  {sectionHead('เอ็กซ์โป งานวิ่ง คอนเสิร์ต ช่วงนี้', '/events', undefined, <>ดูทั้งหมด<span className="hidden sm:inline"> {fairEvents.length.toLocaleString()} งาน</span></>)}
                   <div className="grid lg:grid-cols-2 lg:gap-x-10">
                     {fairRow.slice(0, FAIR_ROW_SHOWN).map((fair) => {
                       const start = new Date(parseEventDateToTimestamp(fair.date));
                       const isOn = start.getTime() <= now;
                       return (
-                        <Link key={fair.id} href={`/fairs/${encodeURIComponent(fair.id)}`} className="group flex items-center gap-3.5 py-3 border-t border-slate-200">
+                        <Link key={fair.id} href={`/events/${encodeURIComponent(fair.id)}`} className="group flex items-center gap-3.5 py-3 border-t border-slate-200">
                           <span className="w-12 shrink-0 text-center leading-tight text-[#2B527A]">
                             <span className="block text-[22px] font-bold">{start.getDate()}</span>
                             <span className="text-xs font-semibold">{THAI_MONTHS[start.getMonth()]}</span>

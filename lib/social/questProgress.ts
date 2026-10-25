@@ -260,7 +260,7 @@ export interface QuestTarget {
   visited: boolean;
 }
 
-const TARGET_PATHS: Record<VisitTargetType, string> = { spot: '/spots', community: '/community', fair: '/fairs' };
+const TARGET_PATHS: Record<VisitTargetType, string> = { spot: '/spots', community: '/community', fair: '/events' };
 
 async function allPages<T>(load: (page: number) => Promise<{ items: T[]; totalPages: number }>): Promise<T[]> {
   const first = await load(1);

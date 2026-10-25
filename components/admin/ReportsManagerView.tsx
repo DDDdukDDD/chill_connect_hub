@@ -28,7 +28,7 @@ interface Report {
 
 const TYPE_LABELS = { community: 'ตี้', fair: 'อีเวนต์', spot: 'สถานที่', review: 'รีวิว', chat_message: 'ข้อความแชตกลุ่ม' };
 // Reviews and chat messages have no page of their own; staff read the reported words in the report
-const PUBLIC_PATHS: Partial<Record<Report['targetType'], string>> = { community: '/community/', fair: '/fairs/', spot: '/spots/' };
+const PUBLIC_PATHS: Partial<Record<Report['targetType'], string>> = { community: '/community/', fair: '/events/', spot: '/spots/' };
 const MODULES: Partial<Record<Report['targetType'], AdminModuleId>> = { community: 'community', fair: 'fairs', spot: 'spots' };
 const isWords = (report: Report) => report.targetType === 'review' || report.targetType === 'chat_message';
 interface RoomMessage {

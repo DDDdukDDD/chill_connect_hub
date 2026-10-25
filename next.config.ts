@@ -20,7 +20,9 @@ const nextConfig: NextConfig = {
       { source: '/event', destination: '/', permanent: true },
       // The /journey homepage draft became the home page (2026-10-16)
       { source: '/journey', destination: '/', permanent: false },
-      { source: '/events', destination: '/', permanent: true },
+      // อีเวนต์ moved from /fairs to /events (owner 2026-10-25)
+      { source: '/fairs', destination: '/events', permanent: true },
+      { source: '/fairs/:id', destination: '/events/:id', permanent: true },
 
       // 4. มายฮับ & E-Ticket (User personal hub & ticket aliases)
       { source: '/hub', destination: '/myhub', permanent: true },

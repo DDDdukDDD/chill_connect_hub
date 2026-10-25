@@ -102,7 +102,7 @@ export function teeCard(event: EventItem): RelatedCard {
 
 /** A fair as a related card: no attendee count on fairs, so the province sits on the left */
 export function fairCard(event: EventItem): RelatedCard {
-  return { id: event.id, href: `/fairs/${encodeURIComponent(event.id)}`, image: event.image, dateText: event.date, title: event.title, note: event.province || event.location || '', tail: shortPrice(event) };
+  return { id: event.id, href: `/events/${encodeURIComponent(event.id)}`, image: event.image, dateText: event.date, title: event.title, note: event.province || event.location || '', tail: shortPrice(event) };
 }
 
 // "ไม่ระบุ" is not a price: the card leaves the corner empty instead

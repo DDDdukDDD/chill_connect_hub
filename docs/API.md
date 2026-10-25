@@ -42,7 +42,7 @@ Two modes:
 
 | Param | Values | Default | Notes |
 |---|---|---|---|
-| `type` | `community` \| `public_venue` \| `all` | `all` | Pillar: `/community` = `community`, `/fairs` = `public_venue` |
+| `type` | `community` \| `public_venue` \| `all` | `all` | Pillar: `/community` = `community`, `/events` = `public_venue` |
 | `category` | `heal` \| `move` \| `chill` \| `learn` \| `all` | — | |
 | `province` | Thai province name, `online` / `ออนไลน์`, `ทั่วไทย` | — | Fuzzy; Bangkok spellings (กทม/กรุงเทพ/bangkok) are equivalent |
 | `zone` | zone id, e.g. `ari`, `siam` | — | Matches `zone` or `location` text |
@@ -331,7 +331,7 @@ Query: `q` (search word, optional), `province` (`all` or a province name; `อ�
 Response: `{ success: true, counts: { meetups, fairs, spots, challenges } }`.
 
 - `meetups`, `fairs`: approved and not over; `spots`: published places; `challenges`: open challenges, counted only when `q` is given (it ignores `province`).
-- Matching is `lib/discoverMatch.ts`, the same code `/community`, `/fairs`, `/spots` and `/challenges` filter with, so a tab's number equals the cards that page shows for the same word and province with its other filters at their defaults.
+- Matching is `lib/discoverMatch.ts`, the same code `/community`, `/events`, `/spots` and `/challenges` filter with, so a tab's number equals the cards that page shows for the same word and province with its other filters at their defaults.
 - Cached for 60 seconds (`s-maxage=60`).
 
 ### `POST /api/upload` — image upload
@@ -668,7 +668,7 @@ The server decides from its own session which shape to send.
 
 `LiveItem` (`lib/social/liveActivity.ts`): `{ id, kind, at, timeAgo, person: { name, avatar? }, target: { type, id?, title } }`.
 - `kind`: `meetup_join` | `meetup_host` | `quest_join` | `quest_finish` | `moment`
-- `target.type`: `community` | `challenge` | `spot` | `fair` | `general` (a moment tied to nothing; `id` is then the moment id). Links: `/community/ID`, `/challenges/ID`, `/spots/ID`, `/fairs/ID`, `/moments?momentId=ID` (`liveHref` in `components/home/LiveActivity.tsx`).
+- `target.type`: `community` | `challenge` | `spot` | `fair` | `general` (a moment tied to nothing; `id` is then the moment id). Links: `/community/ID`, `/challenges/ID`, `/spots/ID`, `/events/ID`, `/moments?momentId=ID` (`liveHref` in `components/home/LiveActivity.tsx`).
 
 Only actions already public elsewhere are named: meetup attendees, "ใครทำอยู่บ้าง" on challenges, posted moments. Meetup lines cover open, approved community events only. Check-ins and "I have been here" marks are never named, the same rule as `SocialProof` in `/api/visits`.
 

@@ -29,7 +29,7 @@ The product has five content areas. Each has one color, used only as described i
 | Pillar | Route | Data rule | Color | Soft tint | Main components |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | Community meetups | `/community` | `eventType: 'community'`. Shows attendee count (`4/10 คน`) and recruitment status (`เปิดรับสมัคร` / `เต็มแล้ว`) | Sunset Amber `#F26430` (dark `#D04A1B`) | `#FFF4EE` | `EventGrid`, `CommunityCategoryRail` |
-| Fairs and expos | `/fairs` | `eventType: 'public_venue'`. **No** attendee count, **no** recruitment status, **no** bottom attendee bar. Shows venue, organizer and date range | Slate Blue `#2B527A` (dark `#1F3D5C`) | `#EEF4FA` | `EventGrid`, `FairCategoryRail` |
+| Fairs and expos | `/events` | `eventType: 'public_venue'`. **No** attendee count, **no** recruitment status, **no** bottom attendee bar. Shows venue, organizer and date range | Slate Blue `#2B527A` (dark `#1F3D5C`) | `#EEF4FA` | `EventGrid`, `FairCategoryRail` |
 | Lifestyle spots | `/spots` | `LifestyleSpotItem` plus the published catalog, 7 vibe categories, 77 provinces | Forest Green `#4A7C59` (dark `#2D5A3C`) | `#EBF3ED` | `SpotCard`, `SpotCategoryRail` |
 | Challenges | `/challenges` | Quests that give XP and badges | Royal Violet `#7C3AED` | `#F5F3FF` | quest cards |
 | Moments | `/moments` | Member photo posts | Rose Pink `#F43F5E` | `#FFF1F2` | `CommunityMomentsStrip`, `MomentsStoriesRail`, `JourneyMomentCard` |

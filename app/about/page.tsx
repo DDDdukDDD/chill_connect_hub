@@ -293,7 +293,7 @@ export default function AboutPage() {
                 {/* Editorial Action Link */}
                 <div className="pt-3 border-t border-slate-100">
                   <Link
-                    href="/fairs"
+                    href="/events"
                     className="inline-flex items-center gap-1.5 text-xs font-bold text-[#2B527A] hover:text-[#1F3D5C] group/btn cursor-pointer transition-all hover:gap-2.5"
                   >
                     <span>ค้นหากิจกรรมและอีเวนต์</span>

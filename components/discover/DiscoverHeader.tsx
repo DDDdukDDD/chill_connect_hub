@@ -88,7 +88,7 @@ type Props = {
 };
 
 /**
- * The top of the ค้นพบ pages (/community, /fairs, /spots): the search on phones, the three kinds as pills with
+ * The top of the ค้นพบ pages (/community, /events, /spots): the search on phones, the three kinds as pills with
  * how many the search finds, the title, the search word, matching challenges, then the page's filters.
  * Wide screens get the search in the top bar instead (Navbar `searchSlot`).
  */
