@@ -296,14 +296,15 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
                 ดูของรางวัล
               </Link>
             )}
-            <button
+            {/* Members only (owner 2026-10-25) */}
+            {isLoggedIn && <button
               type="button"
-              onClick={() => (isLoggedIn ? setIsProposeOpen(true) : setIsRequireMembershipOpen(true))}
+              onClick={() => setIsProposeOpen(true)}
               className="inline-flex items-center justify-center gap-1.5 min-h-10 px-4 rounded-full bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-sm font-bold cursor-pointer whitespace-nowrap"
             >
               <Plus className="w-4 h-4" aria-hidden="true" />
               เสนอชาเลนจ์
-            </button>
+            </button>}
           </div>
         </header>
 

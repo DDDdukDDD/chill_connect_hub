@@ -1,6 +1,6 @@
 import { EventItem, ChallengeQuest } from '@/data/mockData';
 import { LifestyleSpotItem } from '@/data/spotsData';
-import { getCommunityEventCategory } from '@/data/masterHub';
+import { getCommunityEventCategory, getFairEventCategory } from '@/data/masterHub';
 import {
   EventQueryParams,
   SpotQueryParams,
@@ -86,6 +86,7 @@ export function filterEvents(
     zone,
     venueTag,
     lifestyleCategory,
+    fairCategory,
     spotId,
     searchQuery,
     status,
@@ -164,6 +165,11 @@ export function filterEvents(
 
     // 5. Venue Tag (For Major Fairs e.g. 'qsncc', 'bitec', 'impact')
     if (venueTag && venueTag !== 'all' && ev.venueTag !== venueTag) {
+      return false;
+    }
+
+    // 5.06 อีเวนต์ group, as the ค้นพบ tabs group them (meetups never match)
+    if (fairCategory && (ev.eventType !== 'public_venue' || getFairEventCategory(ev) !== fairCategory)) {
       return false;
     }
 

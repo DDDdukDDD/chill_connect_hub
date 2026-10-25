@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Building, Check, ChevronRight, Loader2, Lock, MapPin, Plus, Target, Trash2, Upload, Users } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Building, Calendar, Check, ChevronRight, Loader2, Lock, MapPin, Plus, Target, Trash2, Upload, Users } from 'lucide-react';
 import { DayOfWeek, EventItem } from '@/data/mockData';
 import { ALL_THAI_PROVINCES } from '@/data/spotsData';
 import { formatThaiDateBE } from '@/lib/dateUtils';
@@ -42,8 +42,8 @@ const PLATFORMS = [
 ];
 
 const VENUES = [
-  { id: 'qsncc', label: 'ศูนย์การประชุมแห่งชาติสิริกิติ์', tag: 'qsncc' as const, province: 'กรุงเทพมหานคร' },
-  { id: 'bitec', label: 'ไบเทค บางนา', tag: 'bitec' as const, province: 'กรุงเทพมหานคร' },
+  { id: 'qsncc', label: 'ศูนย์การประชุมแห่งชาติสิริกิติ์', tag: 'qsncc' as const, province: 'กรุงเทพฯ' },
+  { id: 'bitec', label: 'ไบเทค บางนา', tag: 'bitec' as const, province: 'กรุงเทพฯ' },
   { id: 'impact', label: 'อิมแพ็ค เมืองทองธานี', tag: 'impact' as const, province: 'นนทบุรี' },
   { id: 'other', label: 'สถานที่อื่น', tag: 'park' as const, province: '' },
 ];
@@ -107,7 +107,7 @@ const initialForm = (type: CreationEntityType, seed: { title?: string; location?
   category: seed.category ?? ('chill' as Category),
   image: seed.image || PRESET_IMAGES[type][0].url,
   description: '',
-  province: 'กรุงเทพมหานคร',
+  province: 'กรุงเทพฯ',
   district: '',
   locationName: seed.location ?? '',
   priceMode: 'free' as 'free' | 'paid',
@@ -123,6 +123,8 @@ const initialForm = (type: CreationEntityType, seed: { title?: string; location?
   repeatUntil: '',
   locationType: 'physical' as 'physical' | 'online',
   meetingPoint: '',
+  // A place picked from the suggestions (our catalog); typing the name again unlinks it
+  placeId: '',
   onlinePlatform: 'zoom',
   onlineJoinUrl: '',
   maxParticipants: 8,
@@ -133,6 +135,10 @@ const initialForm = (type: CreationEntityType, seed: { title?: string; location?
   isSoloFriendly: true,
   isBeginnerFriendly: true,
   isPetFriendly: false,
+  isIntrovertFriendly: false,
+  canBringFriend: false,
+  isEnglishFriendly: false,
+  isKidFriendly: false,
   cancellationPolicy: 'free_24h' as (typeof CANCEL_OPTIONS)[number]['id'],
   // fair
   organizer: '',
@@ -274,6 +280,172 @@ function Field({ label, optional, hint, error, children, htmlFor }: { label: str
   );
 }
 
+const isoToDmy = (iso: string) => (/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : '');
+function dmyToIso(text: string): string {
+  const m = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return '';
+  const [, dd, mm, yyyy] = m;
+  const date = new Date(Date.UTC(Number(yyyy), Number(mm) - 1, Number(dd)));
+  return date.getUTCDate() === Number(dd) && date.getUTCMonth() === Number(mm) - 1 ? `${yyyy}-${mm}-${dd}` : '';
+}
+
+/**
+ * A date typed as DD/MM/YYYY whatever the browser's language (the browser's own date box follows the device and showed
+ * MM/DD/YYYY; owner 2026-10-25). The calendar button opens the browser's picker. The value stays YYYY-MM-DD.
+ */
+function DateInput({ id, value, min, bad, onChange }: { id: string; value: string; min?: string; bad?: boolean; onChange: (iso: string) => void }) {
+  // What is being typed, until it is a whole date; otherwise the box shows the value (also one set by the picker or a draft)
+  const [typed, setTyped] = useState<string | null>(null);
+  const text = typed ?? isoToDmy(value);
+  const pickerRef = useRef<HTMLInputElement>(null);
+  const type = (raw: string) => {
+    const digits = raw.replace(/\D/g, '').slice(0, 8);
+    const next = [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4, 8)].filter(Boolean).join('/');
+    const iso = dmyToIso(next);
+    setTyped(iso ? null : next);
+    onChange(iso);
+  };
+  return (
+    <div className="relative">
+      <input id={id} type="text" inputMode="numeric" autoComplete="off" placeholder="วว/ดด/ปปปป (ค.ศ.)" value={text} onChange={(e) => type(e.target.value)} className={`${inputClass(bad)} pr-12 tabular-nums`} />
+      <input ref={pickerRef} type="date" tabIndex={-1} aria-hidden="true" min={min} value={value} onChange={(e) => { setTyped(null); onChange(e.target.value); }} className="absolute right-3 bottom-0 w-8 h-0 opacity-0 pointer-events-none" />
+      <button
+        type="button"
+        aria-label="เลือกจากปฏิทิน"
+        onClick={() => {
+          const picker = pickerRef.current;
+          if (!picker) return;
+          if (typeof picker.showPicker === 'function') picker.showPicker();
+          else picker.click();
+        }}
+        className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 inline-flex items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100 cursor-pointer"
+      >
+        <Calendar className="w-5 h-5" aria-hidden="true" />
+      </button>
+    </div>
+  );
+}
+
+/**
+ * A time typed as 24-hour HH:MM (the browser's own time box showed 06:00 AM on English devices; owner 2026-10-25).
+ * Digits only, the colon comes by itself; the value stays HH:MM, or '' until it is a whole time.
+ */
+function TimeInput({ id, value, bad, ariaLabel, onChange }: { id?: string; value: string; bad?: boolean; ariaLabel?: string; onChange: (hhmm: string) => void }) {
+  const [typed, setTyped] = useState<string | null>(null);
+  const text = typed ?? value;
+  const type = (raw: string) => {
+    const digits = raw.replace(/\D/g, '').slice(0, 4);
+    const next = digits.length > 2 ? `${digits.slice(0, 2)}:${digits.slice(2)}` : digits;
+    const whole = /^([01]\d|2[0-3]):[0-5]\d$/.test(next) ? next : '';
+    setTyped(whole ? null : next);
+    onChange(whole);
+  };
+  return (
+    <input id={id} type="text" inputMode="numeric" autoComplete="off" aria-label={ariaLabel} placeholder="ชช:นน" value={text} onChange={(e) => type(e.target.value)}
+      className={`${inputClass(bad)} tabular-nums`} />
+  );
+}
+
+type PlaceSpot = { id: string; title: string; province: string; district?: string; latitude?: number; longitude?: number };
+type PlaceVenue = { id: string; label: string; province: string };
+export type PlacePick = { placeId?: string; name: string; province?: string; district?: string; pin?: Pin };
+
+/**
+ * The place of a ตี้: typing suggests places from our catalog and the event venues, so a ตี้ can link to the place's
+ * page and fill the province, area and map pin; anything else can still be typed (owner 2026-10-25).
+ */
+function PlaceSuggest({ id, value, linked, bad, venues, province, onType, onPick }: {
+  id: string; value: string; linked: boolean; bad?: boolean; venues: PlaceVenue[]; province: string;
+  onType: (text: string) => void; onPick: (pick: PlacePick) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [spots, setSpots] = useState<PlaceSpot[]>([]);
+  const [active, setActive] = useState(-1);
+  const word = value.trim();
+  useEffect(() => {
+    if (!open || linked || word.length < 2) return;
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      fetch(`/api/spots?q=${encodeURIComponent(word)}&limit=40`, { signal: controller.signal })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((json: { spots?: PlaceSpot[] } | null) => setSpots(json?.spots ?? []))
+        .catch(() => {});
+    }, 250);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [word, open, linked]);
+  const lower = word.toLowerCase();
+  // The search also reads descriptions; only names that hold the word are offered, the chosen province first
+  const rank = (title: string, place: string) => (place === province ? 0 : 2) + (title.toLowerCase().startsWith(lower) ? 0 : 1);
+  const spotHits = spots
+    .filter((s) => s.title.toLowerCase().includes(lower))
+    .sort((a, b) => rank(a.title, a.province) - rank(b.title, b.province))
+    .slice(0, 5);
+  const venueHits = word.length < 2 ? [] : venues.filter((v) => v.label.toLowerCase().includes(lower)).slice(0, 3);
+  const options: Array<{ key: string; title: string; detail: string; pick: PlacePick }> = word.length < 2 || linked ? [] : [
+    ...spotHits.map((s) => ({
+      key: `spot-${s.id}`, title: s.title, detail: [s.district, s.province].filter(Boolean).join(' · '),
+      pick: { placeId: s.id, name: s.title, province: s.province, district: s.district, pin: s.latitude && s.longitude ? { latitude: s.latitude, longitude: s.longitude } : undefined },
+    })),
+    ...venueHits.map((v) => ({ key: `venue-${v.id}`, title: v.label, detail: `${v.province} · สถานที่จัดงาน`, pick: { name: v.label, province: v.province } })),
+  ];
+  const choose = (pick: PlacePick) => {
+    onPick(pick);
+    setOpen(false);
+    setActive(-1);
+  };
+  const listId = `${id}-list`;
+  return (
+    <div className="relative">
+      <input
+        id={id}
+        role="combobox"
+        aria-expanded={open && options.length > 0}
+        aria-controls={listId}
+        aria-autocomplete="list"
+        autoComplete="off"
+        value={value}
+        maxLength={100}
+        placeholder="พิมพ์ชื่อสถานที่ เช่น สวนเบญจกิติ"
+        onChange={(e) => {
+          onType(e.target.value);
+          setOpen(true);
+          setActive(-1);
+        }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        onKeyDown={(e) => {
+          if (!open || options.length === 0) return;
+          if (e.key === 'ArrowDown') { e.preventDefault(); setActive((i) => (i + 1) % options.length); }
+          else if (e.key === 'ArrowUp') { e.preventDefault(); setActive((i) => (i <= 0 ? options.length - 1 : i - 1)); }
+          else if (e.key === 'Enter' && active >= 0) { e.preventDefault(); choose(options[active].pick); }
+          else if (e.key === 'Escape') setOpen(false);
+        }}
+        className={inputClass(bad)}
+      />
+      {open && options.length > 0 && (
+        <ul id={listId} role="listbox" className="absolute z-20 left-0 right-0 mt-1 max-h-72 overflow-auto bg-white border border-slate-200 rounded-2xl shadow-lg py-1">
+          {options.map((option, i) => (
+            <li key={option.key} role="option" aria-selected={i === active}>
+              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => choose(option.pick)}
+                className={`w-full flex items-start gap-2.5 px-4 py-2.5 text-left cursor-pointer ${i === active ? 'bg-slate-100' : 'hover:bg-slate-50'}`}>
+                <MapPin className="w-4 h-4 mt-0.5 text-slate-500 shrink-0" aria-hidden="true" />
+                <span className="min-w-0">
+                  <span className="block text-sm font-bold text-slate-900 truncate">{option.title}</span>
+                  {option.detail && <span className="block text-xs font-medium text-slate-500 truncate">{option.detail}</span>}
+                </span>
+              </button>
+            </li>
+          ))}
+          <li className="px-4 py-2 text-xs font-medium text-slate-500 border-t border-slate-100">ไม่มีในรายการ พิมพ์ชื่อเองได้เลย</li>
+        </ul>
+      )}
+    </div>
+  );
+}
+
 /** Two or three options side by side */
 function Segmented<T extends string>({ value, options, onChange, label }: { value: T; options: Array<{ id: T; label: string }>; onChange: (id: T) => void; label: string }) {
   return (
@@ -402,6 +574,17 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
   // An approved host's ตี้ goes live at once, so it needs no time for the team's check
   const minDate = isoDay(type === 'fair' ? 7 : type === 'challenge' ? 0 : publishesNow ? 1 : 3);
   const price = form.priceMode === 'free' ? 'ฟรี' : form.priceText.trim();
+  // The "เหมาะกับ" chips as the detail page lists them, for the review step
+  const inPerson = form.locationType === 'physical';
+  const suits = [
+    inPerson && form.isSoloFriendly && 'มาคนเดียวได้',
+    form.isBeginnerFriendly && 'มือใหม่มาได้',
+    form.isIntrovertFriendly && 'สายอินโทรเวิร์ตมาได้',
+    form.canBringFriend && 'พาเพื่อนมาได้',
+    form.isEnglishFriendly && 'ใช้ภาษาอังกฤษได้',
+    inPerson && form.isPetFriendly && 'พาสัตว์เลี้ยงมาได้',
+    inPerson && form.isKidFriendly && 'พาเด็กมาได้',
+  ].filter((text): text is string => Boolean(text));
   const venue = VENUES.find((item) => item.id === form.venueId) ?? VENUES[0];
   const fairLocation = form.venueId === 'other' ? form.locationName.trim() : [venue.label, form.locationName.trim()].filter(Boolean).join(' · ');
   const dateText = type === 'community'
@@ -514,6 +697,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
       zone: online ? 'online' : form.district.trim() || undefined,
       location: online ? `ออนไลน์ (${PLATFORMS.find((item) => item.id === form.onlinePlatform)?.label})` : `${form.locationName.trim()} (จุดนัดพบ: ${form.meetingPoint.trim()})`,
       meetingPoint: online ? undefined : form.meetingPoint.trim(),
+      placeId: online ? undefined : form.placeId || undefined,
       venueTag: 'park',
       scheduleType: form.scheduleType,
       recurrence: recurring ? {
@@ -536,6 +720,10 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
       transportation: form.transportation.trim() || undefined,
       isSoloFriendly: form.isSoloFriendly,
       isBeginnerFriendly: form.isBeginnerFriendly,
+      isIntrovertFriendly: form.isIntrovertFriendly,
+      canBringFriend: form.canBringFriend,
+      isEnglishFriendly: form.isEnglishFriendly,
+      isKidFriendly: online ? false : form.isKidFriendly,
       isPetFriendly: online ? false : form.isPetFriendly,
       cancellationPolicy: form.cancellationPolicy,
     };
@@ -593,7 +781,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
     </Field>
   );
 
-  const { communityCategories: questCategories, fairCategories } = useMasterData();
+  const { communityCategories: questCategories, fairCategories, venues } = useMasterData();
   const pillClass = (selected: boolean) =>
     `inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border text-[13px] font-semibold cursor-pointer transition-colors ${selected ? 'border-[#2563EB] bg-[#EFF6FF] text-[#1D4ED8]' : 'border-slate-300 text-slate-700 hover:border-slate-400'}`;
   const questCategoryField = (
@@ -613,36 +801,26 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
       </div>
     </Field>
   );
-  // A meetup picks one of the categories, shown under its mood; the mood is set from it
+  // A meetup picks one of the categories, most popular first; the mood behind it is set from it but not shown
+  // (owner 2026-10-25: kept for grouping later, not a choice members make)
   const categoryField = (
     <Field label="หมวดตี้" error={errors.lifestyleCategory}>
-      <div className="space-y-3">
-        {CATEGORIES.map((mood) => {
-          const items = questCategories.filter((item) => item.coreMood === mood.id);
-          if (items.length === 0) return null;
+      <div className="flex flex-wrap gap-2">
+        {questCategories.map((item) => {
+          const selected = form.lifestyleCategory === item.id;
           return (
-            <div key={mood.id} role="group" aria-label={mood.label}>
-              <p className="text-xs font-semibold text-slate-500 mb-1.5">{mood.label}</p>
-              <div className="flex flex-wrap gap-2">
-                {items.map((item) => {
-                  const selected = form.lifestyleCategory === item.id;
-                  return (
-                    <button key={item.id} type="button" aria-pressed={selected} title={item.desc}
-                      onClick={() => {
-                        set('lifestyleCategory', item.id);
-                        set('category', mood.id);
-                        // While the cover is still the first sample, show one that fits the mood (a run gets the running photo)
-                        const fitting = PRESET_IMAGES.community[MOOD_PRESET[mood.id] ?? 0];
-                        if (form.image === PRESET_IMAGES.community[0].url && fitting) set('image', fitting.url);
-                      }}
-                      className={pillClass(selected)}>
-                      {selected && <Check className="w-3.5 h-3.5" aria-hidden="true" />}
-                      {item.name}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <button key={item.id} type="button" aria-pressed={selected} title={item.desc}
+              onClick={() => {
+                set('lifestyleCategory', item.id);
+                set('category', item.coreMood);
+                // While the cover is still the first sample, show one that fits the mood (a run gets the running photo)
+                const fitting = PRESET_IMAGES.community[MOOD_PRESET[item.coreMood] ?? 0];
+                if (form.image === PRESET_IMAGES.community[0].url && fitting) set('image', fitting.url);
+              }}
+              className={pillClass(selected)}>
+              {selected && <Check className="w-3.5 h-3.5" aria-hidden="true" />}
+              {item.name}
+            </button>
           );
         })}
       </div>
@@ -757,7 +935,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
       <div className="space-y-2">
         {form.itinerary.map((row, index) => (
           <div key={index} className="flex gap-2">
-            <input type="time" aria-label={`เวลาของช่วงที่ ${index + 1}`} value={row.time} onChange={(e) => set('itinerary', form.itinerary.map((item, i) => (i === index ? { ...item, time: e.target.value } : item)))} className={`${inputClass()} !w-32 shrink-0`} />
+            <div className="w-32 shrink-0"><TimeInput ariaLabel={`เวลาของช่วงที่ ${index + 1}`} value={row.time} onChange={(hhmm) => set('itinerary', form.itinerary.map((item, i) => (i === index ? { ...item, time: hhmm } : item)))} /></div>
             <input aria-label={`สิ่งที่ทำในช่วงที่ ${index + 1}`} value={row.title} maxLength={80} onChange={(e) => set('itinerary', form.itinerary.map((item, i) => (i === index ? { ...item, title: e.target.value } : item)))} placeholder="ทำอะไร" className={inputClass()} />
             <button type="button" aria-label={`ลบช่วงที่ ${index + 1}`} onClick={() => set('itinerary', form.itinerary.filter((_, i) => i !== index))} className="w-12 shrink-0 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer">
               <Trash2 className="w-4 h-4" aria-hidden="true" />
@@ -775,12 +953,12 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
 
   const dateInput = (key: 'date' | 'startDate' | 'endDate' | 'repeatUntil', label: string, min: string, optional = false) => (
     <Field label={label} htmlFor={id(key)} error={errors[key]} optional={optional} hint={form[key] ? formatThaiDateBE(form[key]) : undefined}>
-      <input id={id(key)} type="date" min={min} value={form[key]} onChange={(e) => set(key, e.target.value)} className={inputClass(Boolean(errors[key]))} />
+      <DateInput id={id(key)} min={min} value={form[key]} bad={Boolean(errors[key])} onChange={(iso) => set(key, iso)} />
     </Field>
   );
   const timeInput = (key: 'startTime' | 'endTime', label: string, optional = false) => (
     <Field label={label} htmlFor={id(key)} error={errors[key]} optional={optional}>
-      <input id={id(key)} type="time" value={form[key]} onChange={(e) => set(key, e.target.value)} className={inputClass(Boolean(errors[key]))} />
+      <TimeInput id={id(key)} value={form[key]} bad={Boolean(errors[key])} onChange={(hhmm) => set(key, hhmm)} />
     </Field>
   );
 
@@ -856,7 +1034,26 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
                 </Field>
               </div>
               <Field label="สถานที่" htmlFor={id('locationName')} error={errors.locationName} hint="นัดในที่สาธารณะที่มีคนอื่นอยู่ด้วยเสมอ">
-                <input id={id('locationName')} value={form.locationName} maxLength={100} onChange={(e) => set('locationName', e.target.value)} placeholder="เช่น สวนเบญจกิติ" className={inputClass(Boolean(errors.locationName))} />
+                <PlaceSuggest
+                  id={id('locationName')}
+                  value={form.locationName}
+                  linked={Boolean(form.placeId)}
+                  bad={Boolean(errors.locationName)}
+                  venues={venues}
+                  province={form.province}
+                  onType={(text) => {
+                    set('locationName', text);
+                    if (form.placeId) set('placeId', '');
+                  }}
+                  onPick={(pick) => {
+                    set('locationName', pick.name);
+                    set('placeId', pick.placeId ?? '');
+                    if (pick.province && ALL_THAI_PROVINCES.includes(pick.province)) set('province', pick.province);
+                    if (pick.district) set('district', pick.district);
+                    if (pick.pin) set('pin', pick.pin);
+                  }}
+                />
+                {form.placeId && <p className="mt-1.5 text-xs font-semibold text-[#4A7C59]">เชื่อมกับหน้าสถานที่นี้แล้ว คนที่เปิดตี้จะกดไปดูที่นี่ได้</p>}
               </Field>
               <Field label="จุดนัดพบ" htmlFor={id('meetingPoint')} error={errors.meetingPoint}>
                 <input id={id('meetingPoint')} value={form.meetingPoint} maxLength={100} onChange={(e) => set('meetingPoint', e.target.value)} placeholder="เช่น หน้าร้านกาแฟทางเข้าฝั่งศูนย์สิริกิติ์" className={inputClass(Boolean(errors.meetingPoint))} />
@@ -988,7 +1185,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
             <summary className="flex items-center justify-between gap-3 px-4 py-3.5 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
               <span>
                 <span className="block text-sm font-bold text-slate-900">ตัวเลือกเพิ่มเติม</span>
-                <span className="block text-xs font-medium text-slate-500">ใครเข้าร่วมได้ ของที่ควรเตรียม กำหนดการ การยกเลิก</span>
+                <span className="block text-xs font-medium text-slate-500">ใครเข้าร่วมได้ ของที่ต้องเตรียม กำหนดการ การยกเลิก</span>
               </span>
               <ChevronRight className="w-5 h-5 text-slate-500 transition-transform group-open:rotate-90" aria-hidden="true" />
             </summary>
@@ -1002,11 +1199,15 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
               <Field label="เหมาะกับ">
                 <div className="flex flex-wrap gap-2">
                   <Chip selected={form.isSoloFriendly} onClick={() => set('isSoloFriendly', !form.isSoloFriendly)}>มาคนเดียวได้</Chip>
-                  <Chip selected={form.isBeginnerFriendly} onClick={() => set('isBeginnerFriendly', !form.isBeginnerFriendly)}>มือใหม่ร่วมได้</Chip>
+                  <Chip selected={form.isBeginnerFriendly} onClick={() => set('isBeginnerFriendly', !form.isBeginnerFriendly)}>มือใหม่มาได้</Chip>
                   {form.locationType === 'physical' && <Chip selected={form.isPetFriendly} onClick={() => set('isPetFriendly', !form.isPetFriendly)}>พาสัตว์เลี้ยงมาได้</Chip>}
+                  <Chip selected={form.isIntrovertFriendly} onClick={() => set('isIntrovertFriendly', !form.isIntrovertFriendly)}>สายอินโทรเวิร์ตมาได้</Chip>
+                  <Chip selected={form.canBringFriend} onClick={() => set('canBringFriend', !form.canBringFriend)}>พาเพื่อนมาได้</Chip>
+                  <Chip selected={form.isEnglishFriendly} onClick={() => set('isEnglishFriendly', !form.isEnglishFriendly)}>ใช้ภาษาอังกฤษได้</Chip>
+                  {form.locationType === 'physical' && <Chip selected={form.isKidFriendly} onClick={() => set('isKidFriendly', !form.isKidFriendly)}>พาเด็กมาได้</Chip>}
                 </div>
               </Field>
-              {form.locationType === 'physical' && listField('whatToBring', 'ของที่ควรเตรียม', 'พิมพ์แล้วกดเพิ่ม', 8, BRING_OPTIONS)}
+              {form.locationType === 'physical' && listField('whatToBring', 'ของที่ต้องเตรียม', 'พิมพ์แล้วกดเพิ่ม', 8, BRING_OPTIONS)}
               {form.locationType === 'physical' && (
                 <Field label="การเดินทาง" htmlFor={id('transport')} optional>
                   <input id={id('transport')} value={form.transportation} maxLength={120} onChange={(e) => set('transportation', e.target.value)} placeholder="เช่น MRT ศูนย์สิริกิติ์ ทางออก 3" className={inputClass()} />
@@ -1148,7 +1349,10 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
             <SummaryRow label="รายละเอียด"><div className="font-medium text-slate-700 text-sm max-h-40 overflow-y-auto">{renderDescriptionContent(form.description)}</div></SummaryRow>
             {type === 'community' && <SummaryRow label="รับ">{form.maxParticipants} คน · {form.targetGender === 'all' ? 'ทุกเพศ' : form.targetGender === 'female_only' ? 'เฉพาะผู้หญิง' : 'เฉพาะผู้ชาย'}{form.targetAge.trim() ? ` · ${form.targetAge.trim()}` : ''}</SummaryRow>}
             {type !== 'spot' && <SummaryRow label="ค่าใช้จ่าย">{price}</SummaryRow>}
-            {type === 'community' && form.locationType === 'physical' && form.whatToBring.length > 0 && <SummaryRow label="ของที่เตรียม">{form.whatToBring.join(' · ')}</SummaryRow>}
+            {type === 'fair' && form.ticketUrl.trim() && <SummaryRow label="ลิงก์เว็บไซต์หรือจองบัตร"><span className="break-all">{form.ticketUrl.trim()}</span></SummaryRow>}
+            {type === 'community' && form.locationType === 'physical' && form.whatToBring.length > 0 && <SummaryRow label="ของที่ต้องเตรียม">{form.whatToBring.join(' · ')}</SummaryRow>}
+            {type === 'community' && suits.length > 0 && <SummaryRow label="เหมาะกับ">{suits.join(' · ')}</SummaryRow>}
+            {type === 'community' && form.locationType === 'physical' && form.transportation.trim() && <SummaryRow label="การเดินทาง">{form.transportation.trim()}</SummaryRow>}
             {type === 'spot' && form.highlights.length > 0 && <SummaryRow label="จุดเด่น">{form.highlights.join(' · ')}</SummaryRow>}
             {type !== 'spot' && form.itinerary.some((row) => row.title.trim()) && (
               <SummaryRow label="กำหนดการ">{form.itinerary.filter((row) => row.title.trim()).map((row, index) => <span key={index} className="block">{row.time ? `${row.time} น. ` : ''}{row.title.trim()}</span>)}</SummaryRow>
@@ -1162,7 +1366,9 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
           <span className="text-sm font-medium text-slate-700 leading-relaxed">
             {type === 'spot'
               ? 'ข้อมูลนี้เป็นความจริงเท่าที่ฉันทราบ รูปที่ใช้เป็นรูปของฉันหรือรูปที่ใช้ได้ และไม่ใช่การโฆษณาแอบแฝง'
-              : 'ข้อมูลนี้เป็นความจริง ตี้นัดในที่สาธารณะ ไม่ขายของ ไม่ชวนลงทุน และเป็นไปตามคำมั่นของคอมมูนิตี้'}
+              : type === 'fair'
+                ? 'ข้อมูลนี้เป็นความจริง ฉันเป็นผู้จัดงานหรือได้รับอนุญาตให้ลงประกาศ และราคากับลิงก์ตรงกับของผู้จัดงาน'
+                : 'ข้อมูลนี้เป็นความจริง ตี้นัดในที่สาธารณะ ไม่ขายของ ไม่ชวนลงทุน และเป็นไปตามคำมั่นของคอมมูนิตี้'}
           </span>
         </label>
       </>

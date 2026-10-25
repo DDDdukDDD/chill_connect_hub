@@ -1,6 +1,7 @@
 import type { EventItem } from '@/data/mockData';
 import type { LifestyleSpotItem } from '@/data/spotsData';
 import { THAI_MONTHS_MAP, isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp } from '@/lib/dateUtils';
+import { placeName } from '@/lib/placeName';
 import { isPriceFree } from '@/lib/priceUtils';
 import { SITE_NAME, absoluteUrl, metaDescription } from '@/lib/site';
 
@@ -55,7 +56,7 @@ export function eventJsonLd(event: EventItem, path: string): JsonLd | null {
       ? { '@type': 'VirtualLocation', url: absoluteUrl(path) }
       : {
           '@type': 'Place',
-          name: event.location,
+          name: placeName(event.location),
           address: { '@type': 'PostalAddress', addressLocality: event.province, addressCountry: 'TH' },
           ...(event.latitude != null && event.longitude != null && { geo: { '@type': 'GeoCoordinates', latitude: event.latitude, longitude: event.longitude } }),
         },

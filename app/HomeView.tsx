@@ -83,7 +83,7 @@ const photoFaces = (size: string, ring: string) => (
 );
 
 const THAI_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-const FAIR_KIND_LABEL = { fair: 'งานแฟร์', run: 'งานวิ่ง', concert: 'คอนเสิร์ต' } as const;
+const FAIR_KIND_LABEL = { fair: 'เอ็กซ์โป', run: 'งานวิ่ง', concert: 'คอนเสิร์ต' } as const;
 
 // Provinces shown in "สายเที่ยว สายชิล ไปไหนดี?"
 const DESTINATION_IDS = ['bkk', 'chiangmai', 'chonburi', 'khaoyai', 'krabi', 'nan'];
@@ -286,7 +286,7 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
     const matched = [...fairEvents]
       // Trade shows stay listed on /fairs but go last here (the sort keeps the date order within each group)
       .sort((a, b) => Number(isTradeEvent(a)) - Number(isTradeEvent(b)));
-    // The heading promises "งานแฟร์ งานวิ่ง งานคอน", so the row starts with the soonest of each kind, then fills by date
+    // The heading promises "เอ็กซ์โป งานวิ่ง คอนเสิร์ต", so the row starts with the soonest of each kind, then fills by date
     const firsts = FAIR_ROW_KINDS.map((kind) => matched.find((e) => fairKind(e) === kind)).filter((e): e is EventItem => !!e);
     const picked = [...firsts, ...matched.filter((e) => !firsts.includes(e))].slice(0, FAIR_ROW_SHOWN);
     return matched.filter((e) => picked.includes(e));
@@ -610,7 +610,7 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
               {/* 7. Fairs, runs and concerts as a dated list, soonest first (trade shows last) */}
               {isEventsLoaded && fairRow.length > 0 && (
                 <section className="space-y-4">
-                  {sectionHead('งานแฟร์ งานวิ่ง งานคอน ช่วงนี้', '/fairs', undefined, <>ดูทั้งหมด<span className="hidden sm:inline"> {fairEvents.length.toLocaleString()} งาน</span></>)}
+                  {sectionHead('เอ็กซ์โป งานวิ่ง คอนเสิร์ต ช่วงนี้', '/fairs', undefined, <>ดูทั้งหมด<span className="hidden sm:inline"> {fairEvents.length.toLocaleString()} งาน</span></>)}
                   <div className="grid lg:grid-cols-2 lg:gap-x-10">
                     {fairRow.slice(0, FAIR_ROW_SHOWN).map((fair) => {
                       const start = new Date(parseEventDateToTimestamp(fair.date));

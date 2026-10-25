@@ -59,7 +59,7 @@ export async function GET(request: Request) {
 
     const hasFilterParams = [
       'page', 'limit', 'province', 'type', 'category', 'q', 'zone',
-      'venueTag', 'status', 'includeEnded', 'sortBy', 'spotId', 'lifestyleCategory',
+      'venueTag', 'status', 'includeEnded', 'sortBy', 'spotId', 'lifestyleCategory', 'fairCategory',
     ].some((param) => searchParams.has(param));
 
     if (hasFilterParams) {
@@ -84,6 +84,7 @@ export async function GET(request: Request) {
         zone,
         venueTag,
         lifestyleCategory: searchParams.get('lifestyleCategory'),
+        fairCategory: searchParams.get('fairCategory'),
         spotId: searchParams.get('spotId'),
         searchQuery,
         status: status || 'all',
@@ -222,9 +223,17 @@ export async function POST(req: Request) {
       }
     }
 
+    // A ตี้'s place from our catalog (not a trip): kept only when it is a published spot; the title comes from the record
+    let placeFields: Partial<EventItem> = { placeId: undefined, placeTitle: undefined };
+    if (!eventData.spotId && typeof eventData.placeId === 'string' && eventData.placeId) {
+      const place = await db.findSpotById(eventData.placeId);
+      if (place && place.publicationStatus !== 'draft') placeFields = { placeId: place.id, placeTitle: place.title };
+    }
+
     const savedEvent = await createAdminEvent({
       ...eventData,
       ...tripFields,
+      ...placeFields,
       // Only a real, active group is kept; a meetup's mood follows its category
       ...checkedEventCategories(eventData),
       id: eventData.id || `user-event-${Date.now()}`,

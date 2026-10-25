@@ -562,7 +562,7 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
             </section>
 
             <DetailTable
-              title="ก่อนไป"
+              title="สิ่งที่ควรทราบ"
               rows={[
                 { label: 'ช่วงที่ดีที่สุด', value: spot.bestTime ? cleanText(spot.bestTime) : '' },
                 {

@@ -652,12 +652,12 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                         ? 'ผู้จัดงานทางการ'
                         : 'โฮสต์คอมมูนิตี้'}
                     </span>
-                    {!isPublicVenue && (
+                    {!isPublicVenue && Boolean(event.hostRating || event.rating) && (
                       <>
                         <span>•</span>
                         <span className="text-amber-600 font-bold flex items-center gap-0.5">
                           <Star className="w-3 h-3 fill-amber-400 text-amber-500" />
-                          <span>{event.hostRating || event.rating || 4.9}</span>
+                          <span>{event.hostRating || event.rating}</span>
                         </span>
                         <span className="text-slate-400">
                           ({event.hostReviewsCount || event.reviewsCount || (event.reviews?.length || 8)} รีวิว)

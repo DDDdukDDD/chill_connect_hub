@@ -14,6 +14,9 @@ import { DiscoverCategoryTabs } from '@/components/discover/DiscoverCategoryTabs
 import { EventDateList } from '@/components/discover/EventDateList';
 import { TOP_COMMUNITY_CLUBS } from '@/components/TopCommunityRail';
 import { getCommunityEventCategory } from '@/data/masterHub';
+
+/** Categories easy to join alone or as a beginner, when the host did not say: sit-down, talk-and-try ตี้ (not bars, not sport) */
+const EASY_START_CATEGORIES = new Set(['cafe_social', 'food_hunt', 'boardgames_party', 'gaming_anime', 'movies_music', 'pets_family', 'arts_crafts', 'photo_content', 'cooking_baking', 'books_language', 'tech_skills']);
 import { CustomDatePickerModal } from '@/components/CustomDatePickerModal';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
@@ -234,8 +237,7 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
               eventText.includes('คาเฟ่') ||
               eventText.includes('introvert') ||
               eventText.includes('หนังสือ') ||
-              ev.category === 'chill' ||
-              ev.category === 'learn';
+              EASY_START_CATEGORIES.has(getCommunityEventCategory(ev));
         if (!isSolo) return false;
       } else if (activeVibeFilter === 'free') {
         if (!ev.price || !ev.price.includes('ฟรี')) return false;
@@ -252,8 +254,7 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
             : ['มือใหม่', 'beginner', 'เวิร์กช็อป', 'workshop', 'ปั้นดิน', 'บอร์ดเกม', 'ชิลล์', 'วิ่งเบาๆ', 'jogging', 'โยคะ', 'yoga'].some((k) =>
                 eventText.includes(k),
               ) ||
-              ev.category === 'learn' ||
-              ev.category === 'chill';
+              EASY_START_CATEGORIES.has(getCommunityEventCategory(ev));
         if (!isBeginner) return false;
       } else if (activeVibeFilter === 'soon') {
         // eslint-disable-next-line react-hooks/purity
@@ -434,8 +435,9 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
             setCurrentPage(1);
           }}
           initialCounts={initialCounts}
+          // Shown to members only: a visitor's job here is to find something to join (owner 2026-10-25)
           action={
-            <button
+            isLoggedIn && <button
               type="button"
               onClick={openCreate}
               aria-label="ตั้งตี้เอง"

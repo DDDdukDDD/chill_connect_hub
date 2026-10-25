@@ -89,7 +89,7 @@ interface Goal {
 const MEMBER_GOALS: Goal[] = [
   { id: 'earn_xp', group: 'chill', title: 'หาชาเลนจ์ สนุกๆ', desc: 'สะสม XP รับของรางวัล', image: '/images/onboarding/challenge-cheer.jpg', pillar: 'challenges', role: 'member' },
   { id: 'explore_spots', group: 'chill', title: 'ออกไปใช้ชีวิต ที่ใหม่ๆ', desc: 'คาเฟ่ วิวสวย ทริปสั้นๆ', image: '/images/onboarding/chill-cafe.jpg', pillar: 'spots', role: 'member' },
-  { id: 'explore_fairs', group: 'chill', title: 'เดินงานสนุก สุดสัปดาห์', desc: 'งานแฟร์ งานวิ่ง งานคอน', image: '/images/onboarding/fair-festival.jpg', pillar: 'fairs', role: 'member' },
+  { id: 'explore_fairs', group: 'chill', title: 'เดินงานสนุก สุดสัปดาห์', desc: 'เอ็กซ์โป งานวิ่ง คอนเสิร์ต', image: '/images/onboarding/fair-festival.jpg', pillar: 'fairs', role: 'member' },
   { id: 'join_community', group: 'connect', title: 'เข้าตี้ เจอเพื่อนใหม่', desc: 'กิจกรรมกลุ่มคอเดียวกัน', image: '/event-board-games.png', pillar: 'community', role: 'member' },
   { id: 'share_moments', group: 'connect', title: 'แชร์ความประทับใจ', desc: 'ไปไหนมา เก็บไว้ให้เพื่อนเห็น', image: '/images/onboarding/share-moment.jpg', pillar: 'moments', role: 'member' },
   { id: 'browse_moments', group: 'connect', title: 'ส่องโมเมนต์ เพื่อนๆ', desc: 'กดใจ คอมเมนต์ ติดตามเพื่อน', image: '/images/onboarding/browse-moments.jpg', pillar: 'moments', role: 'member' },

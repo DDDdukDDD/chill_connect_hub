@@ -15,6 +15,7 @@ const LIST_EVENTS_QUERY = `query listEvents($filter: FilterFindManyEventInput, $
   listEvents(filter: $filter, limit: $limit, sort: $sort) {
     slug name { en th } coverUrl thumbnailUrl startDate endDate hideDate location provinces
     hidden testMode isVirtual regClosed organizer { name }
+    races { distance ticketTypes { price } }
   }
 }`;
 
@@ -33,6 +34,24 @@ interface ThaiRunEvent {
   isVirtual?: boolean;
   regClosed?: boolean;
   organizer?: { name?: string } | null;
+  /** One per distance; each ticket type (early bird, with shirt…) has its own price in baht */
+  races?: Array<{ distance?: number; ticketTypes?: Array<{ price?: number }> }> | null;
+}
+
+const baht = (n: number) => `฿${n.toLocaleString('en-US')}`;
+
+/** The distances in km from the race list, shortest first (field names found by probing the API, 2026-10-25) */
+function distances(event: ThaiRunEvent): number[] {
+  return [...new Set((event.races || []).map((race) => race.distance).filter((d): d is number => typeof d === 'number' && d > 0))].sort((a, b) => a - b);
+}
+
+/** The fee range over every distance and ticket type, e.g. "฿499 - ฿1,199"; '' when the API gives none */
+function feeText(event: ThaiRunEvent): string {
+  const prices = (event.races || []).flatMap((race) => (race.ticketTypes || []).map((t) => t.price)).filter((p): p is number => typeof p === 'number' && p > 0);
+  if (!prices.length) return '';
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  return min === max ? baht(min) : `${baht(min)} - ${baht(max)}`;
 }
 
 /** Start times at Bangkok midnight are date-only placeholders, not real gun times. */
@@ -58,6 +77,8 @@ export function mapThaiRunEvents(events: ThaiRunEvent[], now: number = Date.now(
     const rawDate = toThaiDisplayDate(start);
     const rawEndDate = toThaiDisplayDate(end);
     const organizer = event.organizer?.name?.trim();
+    const km = distances(event);
+    const fee = feeText(event);
     return [{
       source: 'ThaiRun',
       sourceUrl: `https://race.thai.run/events/${encodeURIComponent(slug)}`,
@@ -67,11 +88,11 @@ export function mapThaiRunEvents(events: ThaiRunEvent[], now: number = Date.now(
       rawTime: startTime(start),
       rawLocation: event.location?.trim() || `${province} (จุดปล่อยตัวตามประกาศผู้จัด)`,
       rawProvince: province,
-      rawDescription: [
-        'งานวิ่งจากปฏิทิน ThaiRun',
-        organizer && `จัดโดย ${organizer}`,
-        event.regClosed ? 'ปิดรับสมัครแล้ว' : 'เปิดรับสมัคร',
-      ].filter(Boolean).join(' · '),
+      ...(fee && { rawPrice: fee }),
+      // Distances, fee and sign-up show as rows of the page's "สิ่งที่ควรทราบ"; the text only says whose run it is
+      ...(km.length && { rawDistances: km }),
+      rawRegistrationOpen: !event.regClosed,
+      rawDescription: `งานวิ่ง${organizer ? `ที่จัดโดย ${organizer}` : ''} ดูรายละเอียดเส้นทาง เสื้อ และเหรียญได้ที่เว็บไซต์ ThaiRun`,
       rawImage: event.coverUrl || event.thumbnailUrl || '',
     }];
   });

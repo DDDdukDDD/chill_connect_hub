@@ -30,6 +30,8 @@ import {
   EventItem,
   MOCK_EVENTS
 } from '@/data/mockData';
+import { getCommunityEventCategory } from '@/data/masterHub';
+import { placeName } from '@/lib/placeName';
 import { eventOrigin } from '@/lib/contentOrigin';
 import { isEventEnded } from '@/lib/dateUtils';
 import { resolveEventGallery } from '@/lib/eventImageResolver';
@@ -391,7 +393,7 @@ export default function CommunityDetailPage({
   // Transit details
   const { publicTransitText, parkingText } = useMemo(() => {
     if (!eventData) return { publicTransitText: '', parkingText: '' };
-    if (!isSample) return { publicTransitText: eventData.transportation || '', parkingText: '' };
+    if (!isSample || eventData.transportation) return { publicTransitText: eventData.transportation || '', parkingText: '' };
     const loc = eventData.location || '';
     if (loc.includes('สวน') || loc.includes('เบญจกิติ') || loc.includes('ลุมพินี')) {
       return {
@@ -405,7 +407,7 @@ export default function CommunityDetailPage({
     };
   }, [eventData, isSample]);
 
-  const checklist = isSample
+  const checklist = isSample && !eventData?.whatToBring?.length
     ? [
       'แต่งกายสุภาพและสวมใส่ชุดที่เคลื่อนไหวสะดวก',
       'พกสมาร์ตโฟนที่มีแบตเตอรี่พร้อมเปิดตั๋ว E-Ticket และเข้าห้องแชต',
@@ -578,7 +580,7 @@ export default function CommunityDetailPage({
             },
             {
               icon: isOnline ? Globe : MapPin,
-              text: isOnline ? `ออนไลน์ผ่าน ${eventData.onlinePlatform ? eventData.onlinePlatform.replace('_', ' ') : 'วิดีโอคอล'}` : cleanText(eventData.location),
+              text: isOnline ? `ออนไลน์ผ่าน ${eventData.onlinePlatform ? eventData.onlinePlatform.replace('_', ' ') : 'วิดีโอคอล'}` : cleanText(placeName(eventData.location)),
             },
             { icon: Ticket, text: parsedPrice.displayPrice },
           ]}
@@ -654,6 +656,8 @@ export default function CommunityDetailPage({
             ...(eventData.seriesId ? [{ pillar: 'community' as const, label: 'ตี้ประจำ', text: 'ดูวันอื่นของตี้นี้', href: `/community/${encodeURIComponent(eventData.seriesId)}` }] : []),
             ...((eventData as { spotId?: string }).spotId
               ? [{ pillar: 'spot' as const, label: 'ที่นัดเจอ', text: (eventData as { spotTitle?: string }).spotTitle || cleanText(eventData.location), href: `/spots/${encodeURIComponent((eventData as { spotId?: string }).spotId as string)}` }]
+              : eventData.placeId
+              ? [{ pillar: 'spot' as const, label: 'ที่นัดเจอ', text: eventData.placeTitle || cleanText(eventData.location), href: `/spots/${encodeURIComponent(eventData.placeId)}` }]
               : []),
           ]}
         />
@@ -729,14 +733,21 @@ export default function CommunityDetailPage({
             <ItineraryList items={eventData.itinerary} />
 
             <DetailTable
-              title="ก่อนไป"
+              title="สิ่งที่ควรทราบ"
               rows={[
                 {
                   label: 'เหมาะกับ',
+                  // Who may come first (gender and age from the form; unset means open to all), then what makes it easy
                   value: [
+                    eventData.targetGender === 'female_only' ? 'เฉพาะผู้หญิง' : eventData.targetGender === 'male_only' ? 'เฉพาะผู้ชาย' : 'ทุกเพศ',
+                    !eventData.targetAge || eventData.targetAge === 'ไม่จำกัดอายุ' ? 'ทุกวัย' : eventData.targetAge.includes('อายุ') ? eventData.targetAge : `อายุ ${eventData.targetAge}`,
                     !isOnline && eventData.isSoloFriendly !== false ? 'มาคนเดียวได้' : '',
                     eventData.isBeginnerFriendly ? 'มือใหม่มาได้' : '',
+                    eventData.isIntrovertFriendly ? 'สายอินโทรเวิร์ตมาได้' : '',
+                    eventData.canBringFriend ? 'พาเพื่อนมาได้' : '',
+                    eventData.isEnglishFriendly ? 'ใช้ภาษาอังกฤษได้' : '',
                     !isOnline && eventData.isPetFriendly ? 'พาสัตว์เลี้ยงมาได้' : '',
+                    !isOnline && eventData.isKidFriendly ? 'พาเด็กมาได้' : '',
                   ]
                     .filter(Boolean)
                     .join(' · '),
@@ -754,12 +765,14 @@ export default function CommunityDetailPage({
                   value: parsedPrice.hasMultipleTiers ? parsedPrice.tiers.map((t) => `${t.label ? `${t.label}: ` : ''}${t.price}`).join(' · ') : '',
                 },
                 { label: 'การยกเลิก', value: isEnded ? '' : cancellationText },
-                { label: 'สิ่งที่ควรเตรียม', value: isSample ? '' : checklist.map((rule) => cleanText(rule)).join(' · ') },
+                { label: 'ของที่ต้องเตรียม', value: isSample && !eventData.whatToBring?.length ? '' : checklist.map((rule) => cleanText(rule)).join(' · ') },
                 {
                   label: 'กติกา',
                   value: (
                     <>
                       นัดเจอที่สาธารณะเท่านั้น เดินทางเอง ไม่สบายใจขอตัวกลับได้ทุกเมื่อ{' '}
+                      {/* A night out: Thai law sets 20+, and the usual night-out care (owner 2026-10-25) */}
+                      {getCommunityEventCategory(eventData) === 'bars_nightlife' && 'ตี้นี้สำหรับอายุ 20 ปีขึ้นไป นัดเจอกันที่ร้าน กลับบ้านเอง และดูแลแก้วของตัวเองตลอด '}
                       <Link href="/safety" className="font-semibold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">อ่านคู่มือความปลอดภัย</Link>
                     </>
                   ),
@@ -812,7 +825,7 @@ export default function CommunityDetailPage({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {publicTransitText && (
                         <div className="space-y-1">
-                          <p className="text-xs sm:text-sm font-medium text-slate-500">{isSample ? 'รถสาธารณะ & รถไฟฟ้า' : 'การเดินทาง'}</p>
+                          <p className="text-xs sm:text-sm font-medium text-slate-500">{isSample && !eventData.transportation ? 'รถสาธารณะ & รถไฟฟ้า' : 'การเดินทาง'}</p>
                           <p className="text-sm font-medium text-slate-800 leading-relaxed">{cleanText(publicTransitText)}</p>
                         </div>
                       )}

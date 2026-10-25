@@ -66,7 +66,8 @@ export function RelatedCards({
                     {item.dateText}
                   </p>
                 )}
-                <p className="text-sm sm:text-base font-bold text-slate-900 line-clamp-2 min-h-[2.5rem]">{item.title}</p>
+                {/* Same title size as the cards on the ค้นพบ pages (EventGrid, SpotCard) */}
+                <p className="text-[13px] sm:text-sm font-bold text-slate-900 leading-[1.3] tracking-tight line-clamp-2 min-h-[2.5rem] sm:min-h-[2.6rem]">{item.title}</p>
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[11px] sm:text-xs font-semibold text-slate-500 tabular-nums truncate">{item.note}</span>
                   {item.pill && <span className="shrink-0 px-2 py-0.5 rounded-full bg-[#7C3AED] text-white text-[11px] font-bold tabular-nums">{item.pill}</span>}

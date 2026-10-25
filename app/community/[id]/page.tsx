@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getPublicEvent, isBundledEvent } from '@/lib/publicContent';
+import { placeName } from '@/lib/placeName';
 import { metaDescription, pageMetadata } from '@/lib/site';
 import { breadcrumbJsonLd, eventJsonLd, jsonLdHtml } from '@/lib/structuredData';
 import CommunityDetailView from './CommunityDetailView';
@@ -15,7 +16,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!event) return { title: 'ตี้' };
   return pageMetadata({
     title: titleOf(event.title),
-    description: metaDescription(`${event.date} · ${event.location} · ${metaDescription(event.description, 300)}`),
+    description: metaDescription(`${event.date} · ${placeName(event.location)} · ${metaDescription(event.description, 300)}`),
     // One date of a recurring ตี้ points search engines at the series page
     path: `/community/${encodeURIComponent(event.seriesId ?? event.id)}`,
     image: event.image,

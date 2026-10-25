@@ -74,6 +74,12 @@ export interface EventItem {
   /** Spot Buddy trip: the place it is tied to, set by the server from the spot record */
   spotId?: string;
   spotTitle?: string;
+  /** A ตี้'s place picked from our catalog (not a Spot Buddy trip, so no trip rules); placeTitle is set by the server */
+  placeId?: string;
+  placeTitle?: string;
+  /** Runs (ThaiRun): the distances in km and whether sign-up is open, shown as rows on the อีเวนต์ page */
+  raceDistances?: number[];
+  registrationOpen?: boolean;
   /** Spot Buddy trip: people needed (host included) before the trip counts as confirmed */
   minParticipants?: number;
   distanceKm?: number;
@@ -88,6 +94,10 @@ export interface EventItem {
   isSoloFriendly?: boolean;
   isPetFriendly?: boolean;
   isBeginnerFriendly?: boolean;
+  isIntrovertFriendly?: boolean;
+  canBringFriend?: boolean;
+  isEnglishFriendly?: boolean;
+  isKidFriendly?: boolean;
   cancellationPolicy?: 'free_anytime' | 'free_24h' | 'free_48h' | 'chat_notice' | string;
   instructions?: string[];
   subActivities?: Array<{ title: string; time?: string; description?: string; location?: string }>;

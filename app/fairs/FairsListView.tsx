@@ -34,7 +34,7 @@ type ServerProps = { initialEvents?: EventItem[]; initialCounts?: { query: strin
 function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
+  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn, isOrganizer, isVenueOwner } = useAuth();
   // The member's own categories from onboarding come first on the tabs, marked (owner 2026-10-23)
   const myInterests = useMyInterests(isLoggedIn);
   const itemsPerPage = useResponsiveItemsPerPage();
@@ -379,18 +379,11 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
               }}
             />
           }
+          // Only approved organizers and venue owners may add an อีเวนต์ (the server checks the same), so only they see it
           action={
-            <button
+            isLoggedIn && (isOrganizer || isVenueOwner) && <button
               type="button"
-              onClick={() => {
-                if (!isLoggedIn) {
-                  setMembershipActionTitle('เพื่อสร้างอีเวนต์');
-                  setPendingAction('create_fair');
-                  setIsRequireMembershipOpen(true);
-                } else {
-                  setIsCreateEventModalOpen(true);
-                }
-              }}
+              onClick={() => setIsCreateEventModalOpen(true)}
               aria-label="เพิ่มอีเวนต์"
               title="เพิ่มอีเวนต์"
               className="inline-flex items-center justify-center gap-1.5 h-9 w-9 sm:w-auto sm:px-4 rounded-full bg-[#2B527A] hover:bg-[#1F3D5C] text-white text-[13px] font-semibold whitespace-nowrap cursor-pointer active:scale-95 transition-all"
