@@ -32,6 +32,7 @@ import { LifestyleSpotItem } from '@/data/spotsData';
 import { useSpotCatalog, getCachedSpotVibeCategory } from '@/lib/usePublishedSpots';
 import { resolveSpotImage } from '@/lib/spotImageResolver';
 import { SpotCard } from '@/components/SpotCard';
+import { Toast } from '@/components/Toast';
 import {
   Users,
   Trophy,
@@ -2004,12 +2005,7 @@ function MyHubContent() {
         {countedQuest && <CountedQuestNotice counted={countedQuest} onClose={() => setCountedQuest(null)} />}
 
         {/* Toast Notification */}
-        {toastMessage && (
-          <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 text-white text-xs sm:text-sm font-bold px-5 py-2.5 rounded-full shadow-2xl backdrop-blur-md animate-bounce-short border border-white/20 flex items-center gap-2 max-w-[90vw] text-center">
-            <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-            <span>{toastMessage}</span>
-          </div>
-        )}
+        <Toast message={toastMessage} />
 
         {/* Guest Guard: Requires Login (Global Showcase Teaser) */}
         {!isLoggedIn ? (

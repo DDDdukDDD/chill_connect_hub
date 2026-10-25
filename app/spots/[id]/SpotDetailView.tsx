@@ -31,6 +31,7 @@ import { VisitPanel } from '@/components/VisitPanel';
 import { NearbyDiningSection } from '@/components/NearbyDiningSection';
 import { DetailHero, DetailTable, heroButton } from '@/components/detail/DetailHero';
 import { VisitReviews } from '@/components/detail/VisitReviews';
+import { Toast } from '@/components/Toast';
 import {
   MapPin,
   Clock,
@@ -40,8 +41,6 @@ import {
   Star,
   Share2,
   Check,
-  CheckCircle2,
-  Sparkles,
   Compass,
   ArrowLeft,
   ArrowRight,
@@ -86,8 +85,7 @@ export function parseSpotOpenStatus(openHours?: string): SpotOpenStatus {
       isOpen: false,
       statusText: 'เวลาทำการตามประกาศ',
       subText: 'โปรดตรวจสอบก่อนเดินทาง',
-      badgeVariant: 'unspecified',
-    };
+      badgeVariant: 'unspecified' };
   }
 
   const clean = openHours.trim();
@@ -97,8 +95,7 @@ export function parseSpotOpenStatus(openHours?: string): SpotOpenStatus {
     return {
       isOpen: true,
       statusText: 'เปิดตลอด 24 ชั่วโมง',
-      badgeVariant: 'open',
-    };
+      badgeVariant: 'open' };
   }
 
   // Check current Thailand time (UTC+7)
@@ -771,12 +768,7 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
       />
 
       {/* Toast */}
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#1E293B] text-white px-5 py-3 rounded-2xl shadow-xl border border-slate-700 text-sm font-medium flex items-center gap-2.5 animate-slide-up">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
+      <Toast message={toastMessage} />
 
     </div>
   );

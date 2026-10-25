@@ -6,6 +6,7 @@ import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { useAuth } from '@/lib/useAuth';
+import { Toast } from '@/components/Toast';
 
 export interface MomentsChromeContext {
   isLoggedIn: boolean;
@@ -41,11 +42,7 @@ export function MomentsChrome({ children }: { children: (context: MomentsChromeC
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}
       />
-      {toastMessage && (
-        <div role="status" className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-full shadow-2xl text-sm font-bold max-w-[90vw] text-center">
-          {toastMessage}
-        </div>
-      )}
+      <Toast message={toastMessage} />
       {children({ isLoggedIn, isAuthReady, requireLogin, showToast })}
       <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />
       <RequireMembershipModal

@@ -539,23 +539,23 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
   );
 }
 
-/** After posting: the moment counted toward a challenge the member is doing */
+/** After posting: the moment counted toward a challenge the member is doing; good news, so warm and light (never black) */
 export function CountedQuestNotice({ counted, onClose }: { counted: CountedQuest; onClose: () => void }) {
   return (
-    <div role="status" className="fixed bottom-24 sm:bottom-6 left-4 right-4 sm:left-auto sm:right-6 sm:w-[360px] z-50 bg-[#1E293B] text-white p-4 rounded-2xl shadow-xl border border-slate-700 animate-slide-up">
+    <div role="status" className="fixed bottom-24 sm:bottom-6 left-4 right-4 sm:left-auto sm:right-6 sm:w-[360px] z-50 bg-[#FFF4C7] text-slate-900 p-4 rounded-2xl shadow-[0_12px_32px_rgba(15,23,42,0.16)] border border-amber-200 animate-toast-in">
       <div className="flex items-start gap-2.5">
-        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" aria-hidden="true" />
+        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" aria-hidden="true" />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold">แชร์โมเมนต์แล้ว</p>
-          <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">
+          <p className="text-xs text-slate-700 mt-0.5 leading-relaxed">
             {counted.completed ? `ทำชาเลนจ์ ${counted.title} ครบแล้ว` : `นับในชาเลนจ์ ${counted.title} แล้ว ${counted.current} จาก ${counted.total}`}
           </p>
         </div>
-        <button type="button" onClick={onClose} className="w-8 h-8 -mt-1.5 -mr-1.5 flex items-center justify-center rounded-lg text-slate-400 hover:text-white cursor-pointer shrink-0" aria-label="ปิด">
+        <button type="button" onClick={onClose} className="w-8 h-8 -mt-1.5 -mr-1.5 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-900 cursor-pointer shrink-0" aria-label="ปิด">
           <X className="w-4 h-4" />
         </button>
       </div>
-      <Link href={`/challenges/${encodeURIComponent(counted.questId)}`} className="mt-3 flex items-center justify-center h-10 rounded-xl bg-white text-slate-900 text-sm font-bold hover:bg-slate-100 transition-colors">
+      <Link href={`/challenges/${encodeURIComponent(counted.questId)}`} className="mt-3 flex items-center justify-center h-10 rounded-xl bg-[#F26430] text-white text-sm font-bold hover:bg-[#E2551F] transition-colors">
         {counted.completed ? 'ดูรางวัล' : 'ดูชาเลนจ์'}
       </Link>
     </div>

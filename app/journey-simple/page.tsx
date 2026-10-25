@@ -26,6 +26,7 @@ import type { SpotVibeId } from '@/data/masterHub';
 import { matchSearchQuery } from '@/lib/searchUtils';
 import { JourneyHolidayPlans } from '@/components/JourneyHolidayPlans';
 import { buildHolidayPlans, type Mood } from '@/lib/holidayPlans';
+import { Toast } from '@/components/Toast';
 
 const ROW_SIZE = 10;
 const CARD_SLOT = 'w-[46%] sm:w-[calc((100%-2*14px)/3)] md:w-[calc((100%-3*14px)/4)] lg:w-[calc((100%-4*14px)/5)] shrink-0 snap-start';
@@ -273,11 +274,7 @@ function JourneyContent() {
       />
 
       {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed top-20 right-4 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-2xl shadow-xl text-xs font-bold border border-slate-700 animate-slide-in flex items-center gap-2">
-          <span>{toastMessage}</span>
-        </div>
-      )}
+      <Toast message={toastMessage} />
 
       <main className="flex-1 pb-28 sm:pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 sm:pt-4 space-y-10 sm:space-y-14">

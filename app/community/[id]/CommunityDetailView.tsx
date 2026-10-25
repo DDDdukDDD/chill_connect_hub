@@ -38,6 +38,7 @@ import { resolveEventGallery } from '@/lib/eventImageResolver';
 import { parseEventPrice } from '@/lib/priceUtils';
 import { renderDescriptionContent } from '@/components/RichTextEditor';
 import { RelatedCards, teeCard } from '@/components/detail/RelatedCards';
+import { Toast } from '@/components/Toast';
 import {
   MapPin,
   Clock,
@@ -48,7 +49,6 @@ import {
   Star,
   Share2,
   Check,
-  Sparkles,
   ArrowLeft,
   ArrowRight,
   ExternalLink,
@@ -81,8 +81,7 @@ const cleanText = (str?: string): string => {
 /** The page itself: `initialEvent` comes from the server page, so the content is in the HTML search engines read. */
 export default function CommunityDetailPage({
   initialEvent = null,
-  initialQuestions = null,
-}: {
+  initialQuestions = null }: {
   initialEvent?: EventItem | null;
   /** "ถามผู้จัดก่อนไป" read on the server, so questions and answers are in the HTML */
   initialQuestions?: { canAnswer: boolean; hostName?: string; questions: QuestionItem[] } | null;
@@ -942,11 +941,7 @@ export default function CommunityDetailPage({
       )}
 
       {/* Floating Bottom Toast */}
-      {toastMessage && (
-        <div className="fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 backdrop-blur-md text-white text-xs sm:text-sm font-bold px-5 py-3 rounded-full shadow-2xl border border-white/20 animate-in fade-in slide-in-from-bottom-4 duration-300 flex items-center gap-2">
-          <span>{toastMessage}</span>
-        </div>
-      )}
+      <Toast message={toastMessage} />
 
       {/* Modals */}
       <AuthModal

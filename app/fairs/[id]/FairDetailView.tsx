@@ -30,6 +30,7 @@ import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { RelatedCards, fairCard } from '@/components/detail/RelatedCards';
 import { DetailHero, DetailTable, ItineraryList, heroButton } from '@/components/detail/DetailHero';
 import { VisitReviews } from '@/components/detail/VisitReviews';
+import { Toast } from '@/components/Toast';
 
 export interface FairSubActivityItem {
   id: string;
@@ -52,7 +53,6 @@ import {
   Star,
   Share2,
   Check,
-  Sparkles,
   ArrowLeft,
   ArrowRight,
   CalendarCheck,
@@ -256,8 +256,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
     const shareData = {
       title: `${eventData.title} | Chill & Connect Hub`,
       text: `ชวนไปอีเวนต์นี้: ${eventData.title} (${formatEventDateRange(eventData)} @ ${eventData.location})`,
-      url: url,
-    };
+      url: url };
 
     if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
       try {
@@ -888,11 +887,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
       )}
 
       {/* Floating Bottom Toast */}
-      {toastMessage && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 backdrop-blur-md text-white text-xs sm:text-sm font-bold px-5 py-3 rounded-full shadow-2xl border border-white/20 animate-in fade-in slide-in-from-bottom-4 duration-300 flex items-center gap-2">
-          <span>{toastMessage}</span>
-        </div>
-      )}
+      <Toast message={toastMessage} />
 
       {/* Modals */}
       <RequireMembershipModal

@@ -202,6 +202,11 @@ A slim horizontal strip, never a large box: `bg-slate-50/80 rounded-2xl p-4 sm:p
 - Account dialogs (login, sign-up, log out, terms and privacy, join prompts) use `DialogShell` and `dialogButton` from `components/auth/DialogShell.tsx`, which implement all of the above. Reuse them for new dialogs.
 - A confirmation has a quiet "ยกเลิก" on the left and the action on the right. Focus starts on the safe choice.
 
+### Short messages (toasts)
+- Use `<Toast message={…} />` from `components/Toast.tsx` on every member-facing page; never draw a new one. Light: white, thin slate border, soft shadow, top centre under the top bar (clear of the phone's bottom bar). Never black (owner 2026-10-25).
+- An icon only when it fits: a green check for something done, a rose alert for a failure, none for plain information (signing out, hints). The tone is read from the words; pass `tone` when the words do not say it.
+- Good news with a next step (a moment that counted toward a challenge) is a warm yellow card with an orange button, not a toast. Admin screens keep their own white toast.
+
 ### Scrollbars
 
 Slim 6px scrollbars with a transparent track and a soft slate thumb are set globally in `app/globals.css`. Do not hide scrollbars on content that scrolls vertically.
