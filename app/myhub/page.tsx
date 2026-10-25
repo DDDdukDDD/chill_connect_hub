@@ -447,6 +447,13 @@ function MyHubContent() {
   // For a member with an empty schedule: a few real meetups that are open now, the soonest first
   const [suggestedEvents, setSuggestedEvents] = useState<EventItem[]>([]);
   const needsSuggestions = activity.isLoaded && guestEvents.length === 0;
+  // A host with nothing to go to as a guest but a ตี้ of their own coming up opens on "งานที่จัด" (once, without ?tab)
+  const hasUpcomingHosted = activity.hosted.some((ev) => !isEventEnded(ev));
+  const [openedOnHosting, setOpenedOnHosting] = useState(false);
+  if (needsSuggestions && hasUpcomingHosted && !openedOnHosting && !searchParams.get('tab')) {
+    setOpenedOnHosting(true);
+    setHubMainMode('hosting');
+  }
   useEffect(() => {
     if (!needsSuggestions) return;
     let isActive = true;
@@ -469,12 +476,11 @@ function MyHubContent() {
   useEffect(() => {
     if (!savedEventKey) return;
     let isActive = true;
-    fetch('/api/events?type=all&limit=100')
+    fetch(`/api/events?ids=${encodeURIComponent(savedEventKey)}`)
       .then((res) => res.json())
       .then((json: { events?: EventItem[] }) => {
         if (!isActive) return;
-        const ids = new Set(savedEventKey.split(','));
-        setSavedEventItems((json.events ?? []).filter((e) => ids.has(e.id) && !isEventEnded(e)).sort((a, b) => parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date)));
+        setSavedEventItems((json.events ?? []).filter((e) => !isEventEnded(e)).sort((a, b) => parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date)));
       })
       .catch(() => undefined);
     return () => {
@@ -727,7 +733,7 @@ function MyHubContent() {
     }
     return {
       pillar: 'community' as const,
-      label: 'ตี้คอมมูนิตี้',
+      label: 'ตี้',
       dotColor: 'bg-[#2D5A3C]',
       badgeBg: 'bg-[#EBF3ED]',
       badgeText: 'text-[#2D5A3C]',
@@ -1301,7 +1307,7 @@ function MyHubContent() {
                   }`}
                 >
                   <span className="w-2 h-2 rounded-full bg-[#2D5A3C]" />
-                  <span>คอมมูนิตี้ ({chipCounts.community})</span>
+                  <span>ตี้ ({chipCounts.community})</span>
                 </button>
                 )}
 
@@ -1476,7 +1482,7 @@ function MyHubContent() {
 
                       {/* Multi-category Dots */}
                       <div className="flex items-center gap-1">
-                        {hasCommunity && <span className="w-1.5 h-1.5 rounded-full bg-[#2D5A3C]" title="ตี้คอมมูนิตี้" />}
+                        {hasCommunity && <span className="w-1.5 h-1.5 rounded-full bg-[#2D5A3C]" title="ตี้" />}
                         {hasFairs && <span className="w-1.5 h-1.5 rounded-full bg-[#2B527A]" title="อีเวนต์" />}
                         {hasSpots && <span className="w-1.5 h-1.5 rounded-full bg-[#F26430]" title="ทริปชวนเพื่อน" />}
                         {hasQuests && (
@@ -2060,7 +2066,7 @@ function MyHubContent() {
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={ev.image} alt="" className="w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0" />
                           <Link href={href} className="min-w-0 flex-1 group">
-                            <span className="inline-block text-[11px] font-bold px-2 py-0.5 rounded-full border bg-[#EBF3ED] text-[#2D5A3C] border-[#A3CEB0]">ตี้คอมมูนิตี้</span>
+                            <span className="inline-block text-[11px] font-bold px-2 py-0.5 rounded-full border bg-[#EBF3ED] text-[#2D5A3C] border-[#A3CEB0]">ตี้</span>
                             <span className="mt-1 block text-sm font-bold text-slate-900 truncate group-hover:underline">{ev.title}</span>
                             <span className="block text-xs font-medium text-slate-600 truncate tabular-nums">{[ev.time, ev.location].filter(Boolean).join(' · ')}</span>
                           </Link>
@@ -2075,7 +2081,7 @@ function MyHubContent() {
                           <span className="block text-[11px] font-semibold text-slate-500">XP</span>
                         </div>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={liveQuest.badgeCoverImg} alt="" className="w-14 h-14 rounded-xl object-cover bg-[#F5F3FF] shrink-0" />
+                        <img src={liveQuest.image || liveQuest.badgeCoverImg} alt="" className="w-14 h-14 rounded-xl object-cover bg-[#F5F3FF] shrink-0" />
                         <Link href={`/challenges/${encodeURIComponent(liveQuest.id)}`} className="min-w-0 flex-1 group">
                           <span className="inline-block text-[11px] font-bold px-2 py-0.5 rounded-full border bg-purple-50 text-purple-700 border-purple-200">ชาเลนจ์</span>
                           <span className="mt-1 block text-sm font-bold text-slate-900 truncate group-hover:underline">{liveQuest.title}</span>

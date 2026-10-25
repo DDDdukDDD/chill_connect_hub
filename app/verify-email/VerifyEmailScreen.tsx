@@ -69,9 +69,15 @@ export function VerifyEmailScreen({ token, next = '' }: { token: string; next?: 
                   </Link>
                 </>
               ) : (
-                <Link href="/profile" className="inline-flex items-center justify-center w-full px-6 py-3.5 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm sm:text-base font-bold shadow-sm">
-                  ไปที่โปรไฟล์ของฉัน
-                </Link>
+                <>
+                  {/* Nothing waiting: the next good step is finding a first ตี้ */}
+                  <Link href="/community" className="inline-flex items-center justify-center w-full px-6 py-3.5 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm sm:text-base font-bold shadow-sm">
+                    หาตี้แรกของคุณ
+                  </Link>
+                  <Link href="/profile" className="inline-block mt-4 text-sm font-bold text-slate-600 hover:text-slate-900">
+                    ไปที่โปรไฟล์ของฉัน
+                  </Link>
+                </>
               )}
             </>
           )}
@@ -84,8 +90,8 @@ export function VerifyEmailScreen({ token, next = '' }: { token: string; next?: 
               <p className="text-sm text-slate-600 font-medium mt-2 mb-6" role="alert">
                 <PhraseText text={state.message} />
               </p>
-              <Link href="/profile#trust" className="inline-flex items-center justify-center w-full px-6 py-3.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm sm:text-base font-bold">
-                ขอลิงก์ใหม่ที่หน้าโปรไฟล์
+              <Link href="/profile/settings#trust" className="inline-flex items-center justify-center w-full px-6 py-3.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm sm:text-base font-bold">
+                ขอลิงก์ใหม่ที่ตั้งค่าบัญชี
               </Link>
             </>
           )}

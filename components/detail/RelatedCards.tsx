@@ -33,6 +33,7 @@ export function RelatedCards({
   items,
   titleClassName = 'text-lg sm:text-xl font-bold text-slate-900 tracking-tight',
   className = 'mt-12 sm:mt-16',
+  gridClassName = 'grid-cols-2 lg:grid-cols-4',
 }: {
   title: string;
   allHref?: string;
@@ -40,6 +41,8 @@ export function RelatedCards({
   items: RelatedCard[];
   titleClassName?: string;
   className?: string;
+  /** Columns of the card grid (a narrow column wants fewer) */
+  gridClassName?: string;
 }) {
   if (items.length === 0) return null;
   return (
@@ -48,7 +51,7 @@ export function RelatedCards({
         <h2 id="related-title" className={titleClassName}>{title}</h2>
         {allHref && <Link href={allHref} className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline shrink-0">{allLabel}</Link>}
       </div>
-      <ul className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <ul className={`grid ${gridClassName} gap-3 sm:gap-4`}>
         {items.map((item) => {
           const body = (
             <>

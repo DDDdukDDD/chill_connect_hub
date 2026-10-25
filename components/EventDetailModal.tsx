@@ -1309,7 +1309,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               <div role="alert" className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-sm font-bold">
                 {joinError}
                 {/ยืนยันอีเมล|รับคำมั่น/.test(joinError) && (
-                  <Link href="/profile#trust" className="ml-2 underline text-rose-800 whitespace-nowrap">ไปที่โปรไฟล์</Link>
+                  <Link href="/profile/settings#trust" className="ml-2 underline text-rose-800 whitespace-nowrap">ไปที่ตั้งค่าบัญชี</Link>
                 )}
               </div>
             )}

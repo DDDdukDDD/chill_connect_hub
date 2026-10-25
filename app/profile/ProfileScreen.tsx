@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   AlertCircle, BadgeCheck, Ban, CalendarPlus, Check, CircleCheck, Clock, Flag, HandHeart, KeyRound, Loader2, LogOut, MailCheck, MapPin, Pencil, ShieldCheck, UserRound,
-  type LucideIcon, Award
+  Award, Briefcase, Building2, Camera, ChevronRight, GraduationCap, Heart, Home, Users, type LucideIcon
 } from 'lucide-react';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { Navbar } from '@/components/Navbar';
@@ -19,7 +19,8 @@ import { useAuth } from '@/lib/useAuth';
 import { useMasterData } from '@/lib/useMasterData';
 import { memberActions } from '@/lib/useMemberSession';
 import { RelatedCards } from '@/components/detail/RelatedCards';
-import { EditProfileDialog, FIELD_LABELS } from './EditProfileDialog';
+import { parseEventDateToTimestamp } from '@/lib/dateUtils';
+import { EditProfileDialog, FIELD_LABELS, type EditTab } from './EditProfileDialog';
 
 /**
  * Member profile.
@@ -81,7 +82,23 @@ const GENDER_LABELS: Record<NonNullable<MemberPreferences['gender']>, string> = 
 const HOST_KIND_LABELS: Record<HostApplication['kind'], string> = { host: 'เปิดตี้', venue: 'ร้านหรือพื้นที่', organizer: 'ผู้จัดงานหรือแบรนด์' };
 const ABOUT_ORDER: ProfileFieldKey[] = ['connectGoal', 'occupation', 'workplace', 'education', 'livingArea', 'hometown', 'relationshipStatus'];
 // Open sections divided by a line, not boxes (owner 2026-10-24: drawn like the challenge page, people first)
-const card = 'py-7 sm:py-8';
+const card = 'mt-10 pt-10 border-t border-slate-200';
+// How much of a long list shows at first, and per "ดูเพิ่ม"
+const PAGE_HOSTED = 6;
+const FIRST_MOMENTS = 9;
+const PAGE_MOMENTS = 12;
+const FIRST_BADGES = 10;
+const MORE_BUTTON = 'mt-5 inline-flex items-center gap-1.5 min-h-10 px-4 rounded-full border border-slate-300 hover:border-slate-900 text-sm font-bold text-slate-800 cursor-pointer disabled:opacity-60';
+/** About facts as short lines: an icon, a lead-in and the value ("ทำงานเป็น นักออกแบบ") */
+const ABOUT_ICONS: Partial<Record<ProfileFieldKey, LucideIcon>> = {
+  connectGoal: Users, occupation: Briefcase, workplace: Building2, education: GraduationCap, livingArea: Home, hometown: MapPin, relationshipStatus: Heart,
+};
+const ABOUT_LEADS: Partial<Record<ProfileFieldKey, string>> = {
+  connectGoal: 'อยากเจอ', occupation: 'ทำงานเป็น', workplace: 'ทำงานที่', education: 'เรียนที่', livingArea: 'อยู่ย่าน', hometown: 'บ้านเกิด', relationshipStatus: 'สถานะ',
+};
+// The owner-only tray at the end: two columns from sm, so private settings stay one short block
+const trayCard = 'min-w-0 scroll-mt-24';
+const ACCOUNT_ROW = 'w-full flex items-center gap-3 min-h-11 text-left text-sm font-semibold text-slate-700 hover:text-slate-900 cursor-pointer';
 const inputClass =
   'w-full px-4 py-3 bg-white border border-slate-300 rounded-2xl text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20';
 
@@ -114,28 +131,6 @@ function sampleProfile(id: string): PublicProfile | null {
 
 /* ---------- Pieces ---------- */
 
-function Avatar({ name, url, size }: { name: string; url?: string; size: string }) {
-  return (
-    <span className={`${size} rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-[#2563EB] text-white font-bold ring-4 ring-white shadow-sm`}>
-      {url ? (
-        // eslint-disable-next-line @next/next/no-img-element -- member photo from uploads or a provider
-        <img src={url} alt="" className="w-full h-full object-cover" />
-      ) : (
-        nameInitial(name, 'C')
-      )}
-    </span>
-  );
-}
-
-function Badge({ icon: Icon, children }: { icon: LucideIcon; children: React.ReactNode }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] sm:text-xs font-bold whitespace-nowrap">
-      <Icon className="w-3.5 h-3.5" aria-hidden="true" />
-      {children}
-    </span>
-  );
-}
-
 function SectionTitle({ children, action }: { children: string; action?: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3 mb-4">
@@ -156,7 +151,7 @@ function ErrorLine({ message }: { message: string }) {
 }
 
 /** My standing, and what each step unlocks. Every row is a fact from the server. */
-function TrustCard({ member, onChanged }: { member: PublicMember; onChanged: () => void }) {
+export function TrustCard({ member, onChanged }: { member: PublicMember; onChanged: () => void }) {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
   const [devUrl, setDevUrl] = useState<string | undefined>(() => {
@@ -239,7 +234,7 @@ function TrustCard({ member, onChanged }: { member: PublicMember; onChanged: () 
 }
 
 /** Ask to become a host, venue or organizer; staff approve it before events publish without review */
-function HostCard({ member, application, onChanged }: { member: PublicMember; application: HostApplication | null; onChanged: () => void }) {
+export function HostCard({ member, application, onChanged }: { member: PublicMember; application: HostApplication | null; onChanged: () => void }) {
   const [kind, setKind] = useState<HostApplication['kind']>('host');
   const [about, setAbout] = useState('');
   const [link, setLink] = useState('');
@@ -267,12 +262,12 @@ function HostCard({ member, application, onChanged }: { member: PublicMember; ap
   // Not applied yet (or trying again): one line here, the form opens in a dialog
   const showOffer = !status || (status === 'rejected' && again);
   return (
-    <section id="host" className={`${card} scroll-mt-24`}>
+    <section id="host" className={trayCard}>
       <SectionTitle>อยากเป็นคนชวน</SectionTitle>
       {showOffer && !isFormOpen && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex flex-col items-start gap-3">
           <p className="text-sm font-medium text-slate-600"><PhraseText text="อยากเปิดตี้ให้คนอื่นมาร่วม? เมื่อทีมงานอนุมัติ ตี้ของคุณจะเผยแพร่ได้ทันที" /></p>
-          <button type="button" onClick={() => setIsFormOpen(true)} className={`${dialogButton.quiet} self-start sm:self-auto`}>
+          <button type="button" onClick={() => setIsFormOpen(true)} className={dialogButton.quiet}>
             <CalendarPlus className="w-4 h-4" aria-hidden="true" />
             ส่งคำขอ
           </button>
@@ -336,7 +331,7 @@ function HostCard({ member, application, onChanged }: { member: PublicMember; ap
   );
 }
 
-function AccountCard({ member, onLogout }: { member: PublicMember; onLogout: () => void }) {
+export function AccountCard({ member, onLogout }: { member: PublicMember; onLogout: () => void }) {
   const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
@@ -365,7 +360,7 @@ function AccountCard({ member, onLogout }: { member: PublicMember; onLogout: () 
   };
 
   return (
-    <section className={card}>
+    <section id="account" className={trayCard}>
       <SectionTitle>บัญชีของฉัน</SectionTitle>
       <dl className="space-y-2 text-sm">
         <div className="flex flex-wrap gap-x-2">
@@ -403,20 +398,23 @@ function AccountCard({ member, onLogout }: { member: PublicMember; onLogout: () 
         </form>
       )}
 
-      <div className="mt-5 pt-4 border-t border-slate-100 flex flex-wrap gap-2">
+      {/* Settings as quiet rows, like a phone's settings list */}
+      <div className="mt-4 divide-y divide-slate-100 border-y border-slate-100">
         {!open && member.email && (
-          <button type="button" onClick={() => { setOpen(true); setDone(false); }} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold cursor-pointer whitespace-nowrap">
-            <KeyRound className="w-4 h-4" aria-hidden="true" />
-            {hasPassword ? 'เปลี่ยนรหัสผ่าน' : 'ตั้งรหัสผ่าน'}
+          <button type="button" onClick={() => { setOpen(true); setDone(false); }} className={ACCOUNT_ROW}>
+            <KeyRound className="w-4 h-4 text-slate-500" aria-hidden="true" />
+            <span className="flex-1">{hasPassword ? 'เปลี่ยนรหัสผ่าน' : 'ตั้งรหัสผ่าน'}</span>
+            <ChevronRight className="w-4 h-4 text-slate-400" aria-hidden="true" />
           </button>
         )}
-        <Link href="/legal?tab=privacy" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold whitespace-nowrap">
-          <ShieldCheck className="w-4 h-4" aria-hidden="true" />
-          ข้อมูลและความเป็นส่วนตัว
+        <Link href="/legal?tab=privacy" className={ACCOUNT_ROW}>
+          <ShieldCheck className="w-4 h-4 text-slate-500" aria-hidden="true" />
+          <span className="flex-1">ข้อมูลและความเป็นส่วนตัว</span>
+          <ChevronRight className="w-4 h-4 text-slate-400" aria-hidden="true" />
         </Link>
-        <button type="button" onClick={onLogout} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold cursor-pointer whitespace-nowrap">
-          <LogOut className="w-4 h-4" aria-hidden="true" />
-          ออกจากระบบ
+        <button type="button" onClick={onLogout} className={ACCOUNT_ROW}>
+          <LogOut className="w-4 h-4 text-slate-500" aria-hidden="true" />
+          <span className="flex-1">ออกจากระบบ</span>
         </button>
       </div>
     </section>
@@ -483,13 +481,30 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
   const master = useMasterData();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [editTab, setEditTab] = useState<EditTab | null>(null);
   const [isReporting, setIsReporting] = useState(false);
   const [reportingReview, setReportingReview] = useState<{ id: string; eventTitle: string } | null>(null);
   const [reload, setReload] = useState(0);
-  const [state, setState] = useState<{ status: 'loading' | 'ready' | 'missing' | 'signin'; profile?: PublicProfile; own?: OwnData; moments: MomentThumb[] }>({ status: 'loading', moments: [] });
+  const [state, setState] = useState<{
+    status: 'loading' | 'ready' | 'missing' | 'signin';
+    profile?: PublicProfile;
+    own?: OwnData;
+    moments: MomentThumb[];
+    /** All of this member's moments, and where to read more of them */
+    momentsTotal?: number;
+    momentsSource?: string;
+  }>({ status: 'loading', moments: [] });
+  // Long lists open a little at a time
+  const [hostedShown, setHostedShown] = useState(PAGE_HOSTED);
+  const [momentsShown, setMomentsShown] = useState(FIRST_MOMENTS);
+  const [isLoadingMoments, setIsLoadingMoments] = useState(false);
+  const [showAllBadges, setShowAllBadges] = useState(false);
+  const [allReviews, setAllReviews] = useState<NonNullable<PublicProfile['hostReviews']>['latest'] | null>(null);
+  const [isReviewsOpen, setIsReviewsOpen] = useState(false);
   const [notice, setNotice] = useState('');
   const [hosted, setHosted] = useState<HostedEvent[]>([]);
+  const [previewPublic, setPreviewPublic] = useState(false);
+  const [myStats, setMyStats] = useState<{ tee: number; xp: number | null } | null>(null);
 
   const wantsOwn = profileId === 'me' || (member !== null && profileId === member.id);
   const memberId = member?.id;
@@ -512,16 +527,17 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
     if (!isAuthReady) return;
     let active = true;
     const load = async () => {
+      type MomentsAnswer = { moments: { id: string; images: string[]; caption: string }[]; pagination?: { totalCount: number } };
       const toThumbs = (json: { moments?: { id: string; images: string[]; caption: string }[] } | null) =>
         (json?.moments ?? []).filter((m) => m.images?.[0]).map((m) => ({ id: m.id, image: m.images[0], caption: m.caption }));
       if (wantsOwn) {
         if (!memberId) return { status: 'signin' as const, moments: [] };
         const [own, mine] = await Promise.all([
           getJson<OwnData & { publicView: PublicProfile }>('/api/auth/member/profile'),
-          getJson<{ moments: { id: string; images: string[]; caption: string }[] }>('/api/moments?tab=mine&limit=12'),
+          getJson<MomentsAnswer>(`/api/moments?tab=mine&limit=${PAGE_MOMENTS}`),
         ]);
         if (!own.ok || !own.json) return { status: 'signin' as const, moments: [] };
-        return { status: 'ready' as const, profile: own.json.publicView, own: own.json, moments: toThumbs(mine.json) };
+        return { status: 'ready' as const, profile: own.json.publicView, own: own.json, moments: toThumbs(mine.json), momentsTotal: mine.json?.pagination?.totalCount, momentsSource: '/api/moments?tab=mine' };
       }
       if (!profileId.startsWith('mem_')) {
         const sample = sampleProfile(profileId);
@@ -529,10 +545,10 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
       }
       const [pub, posts] = await Promise.all([
         getJson<{ profile: PublicProfile }>(`/api/members/${encodeURIComponent(profileId)}`),
-        getJson<{ moments: { id: string; images: string[]; caption: string }[] }>(`/api/moments?author=${encodeURIComponent(profileId)}&limit=12`),
+        getJson<MomentsAnswer>(`/api/moments?author=${encodeURIComponent(profileId)}&limit=${PAGE_MOMENTS}`),
       ]);
       if (!pub.ok || !pub.json?.profile) return { status: 'missing' as const, moments: [] };
-      return { status: 'ready' as const, profile: pub.json.profile, moments: toThumbs(posts.json) };
+      return { status: 'ready' as const, profile: pub.json.profile, moments: toThumbs(posts.json), momentsTotal: posts.json?.pagination?.totalCount, momentsSource: `/api/moments?author=${encodeURIComponent(profileId)}` };
     };
     load().then((next) => {
       if (active) setState(next);
@@ -542,13 +558,58 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
     };
   }, [isAuthReady, wantsOwn, memberId, profileId, reload]);
 
+  // My own numbers: ตี้ I went to (host check-ins) and my XP
+  useEffect(() => {
+    if (!isAuthReady || !wantsOwn || !memberId) return;
+    let active = true;
+    Promise.all([
+      getJson<{ visits: { targetType: string; targetId: string }[] }>('/api/visits?mine=1'),
+      getJson<{ points?: { balance: number } }>('/api/rewards'),
+    ]).then(([visits, rewards]) => {
+      if (!active) return;
+      const tee = new Set((visits.json?.visits ?? []).filter((v) => v.targetType === 'community').map((v) => v.targetId)).size;
+      setMyStats({ tee, xp: rewards.json?.points?.balance ?? null });
+    });
+    return () => {
+      active = false;
+    };
+  }, [isAuthReady, wantsOwn, memberId, reload]);
+
   const refresh = () => setReload((n) => n + 1);
+
+  // "ดูเพิ่ม" on moments: show what is loaded, then read the next page
+  const showMoreMoments = async () => {
+    const next = momentsShown + PAGE_MOMENTS;
+    setMomentsShown(next);
+    const total = state.momentsTotal ?? state.moments.length;
+    if (next <= state.moments.length || state.moments.length >= total || !state.momentsSource) return;
+    setIsLoadingMoments(true);
+    const page = Math.floor(state.moments.length / PAGE_MOMENTS) + 1;
+    const res = await getJson<{ moments: { id: string; images: string[]; caption: string }[] }>(`${state.momentsSource}&limit=${PAGE_MOMENTS}&page=${page}`);
+    const more = (res.json?.moments ?? []).filter((m) => m.images?.[0]).map((m) => ({ id: m.id, image: m.images[0], caption: m.caption }));
+    setState((now) => ({ ...now, moments: [...now.moments, ...more.filter((m) => !now.moments.some((had) => had.id === m.id))] }));
+    setIsLoadingMoments(false);
+  };
+
+  const openAllReviews = async () => {
+    setIsReviewsOpen(true);
+    if (allReviews || !state.profile) return;
+    const res = await getJson<{ reviews: { latest: NonNullable<PublicProfile['hostReviews']>['latest'] } }>(`/api/members/${encodeURIComponent(state.profile.id)}/reviews`);
+    setAllReviews(res.json?.reviews.latest ?? []);
+  };
   const { profile, own } = state;
-  const nameOf = (id: string) => [...master.communityCategories, ...master.spotVibes, ...master.fairCategories].find((c) => c.id === id)?.name ?? id;
-  const interestNames = profile?.interests ? [...profile.interests.communityCategories, ...profile.interests.spotVibes, ...profile.interests.fairCategories].map(nameOf) : profile?.sampleInterests ?? [];
+  // The owner's view of their own page; null for visitors and while previewing as others
+  const viewOwn = own && !previewPublic ? own : null;
   const provinceName = profile?.province ? master.provinces.find((p) => p.id === profile.province)?.displayName ?? profile.province : undefined;
   const hiddenKeys = own?.details.hidden ?? [];
   const liveHosted = hosted.filter((ev) => ev.approvalStatus === 'approved').length;
+  const hostedRank = (ev: HostedEvent) => (ev.approvalStatus !== 'approved' ? 0 : ev.status === 'ended' ? 2 : 1);
+  const hostedSorted = [...hosted].sort((a, b) => {
+    const rank = hostedRank(a) - hostedRank(b);
+    if (rank !== 0) return rank;
+    const when = parseEventDateToTimestamp(a.date ?? '') - parseEventDateToTimestamp(b.date ?? '');
+    return hostedRank(a) === 2 ? -when : when;
+  });
 
   const toggleFollow = async () => {
     if (!profile) return;
@@ -573,9 +634,49 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
 
   // Own profile shows every filled field (hidden ones are marked); a public profile shows only visible ones
   const aboutRows = profile
-    ? ABOUT_ORDER.map((key) => ({ key, value: own ? own.details[key as keyof MemberProfile] as string | undefined : profile.about[key] })).filter((row) => row.value)
+    ? ABOUT_ORDER.map((key) => ({ key, value: viewOwn ? viewOwn.details[key as keyof MemberProfile] as string | undefined : profile.about[key] })).filter((row) => row.value)
     : [];
-  const bio = own ? own.details.bio : profile?.about.bio;
+  const bio = viewOwn ? viewOwn.details.bio : profile?.about.bio;
+
+  // สายที่ชอบ: only the สาย the member picked (as in onboarding), with the สาย's own icon and colour; the places and
+  // events inferred from them are for suggestions, not something the member said (the owner sees hidden ones too)
+  const interestSource = viewOwn ? viewOwn.preferences?.interests : profile?.interests;
+  const interestChips: { name: string; icon?: LucideIcon; tone: string }[] = interestSource
+    ? interestSource.communityCategories.flatMap((id) => {
+        const cat = master.communityCategories.find((c) => c.id === id);
+        return cat ? [{ name: cat.name, icon: cat.icon, tone: `${cat.colorScheme.iconBg} ${cat.colorScheme.iconColor}` }] : [];
+      })
+    : (profile?.sampleInterests ?? []).map((name) => ({ name, tone: 'bg-slate-100 text-slate-700' }));
+
+  // The numbers under the name; each one appears only when it says something
+  const hostedVisible = viewOwn ? hostedSorted : hostedSorted.filter((ev) => ev.approvalStatus === 'approved');
+  const momentsCount = String(state.momentsTotal ?? state.moments.length);
+  const stats: { label: string; value: string; href?: string; tone?: string }[] = (profile
+    ? [
+        ...(viewOwn && myStats ? [{ label: 'ตี้ที่ไปมาแล้ว', value: String(myStats.tee) }] : []),
+        ...(liveHosted > 0 ? [{ label: 'ตี้ที่จัด', value: String(liveHosted), href: '#hosted' }] : []),
+        ...(profile.hostReviews && profile.hostReviews.count > 0 ? [{ label: `จาก ${profile.hostReviews.count} รีวิว`, value: `★ ${profile.hostReviews.average.toFixed(1)}`, href: '#reviews' }] : []),
+        ...(state.moments.length > 0 || viewOwn ? [{ label: 'โมเมนต์', value: momentsCount, href: '#moments' }] : []),
+        ...(profile.challengeBadges && profile.challengeBadges.length > 0 ? [{ label: 'เหรียญ', value: String(profile.challengeBadges.length), href: '#badges' }] : []),
+        ...(profile.followerCount !== undefined ? [{ label: 'ผู้ติดตาม', value: String(profile.followerCount) }] : []),
+        ...(viewOwn && myStats?.xp != null ? [{ label: 'XP', value: myStats.xp.toLocaleString(), href: '/rewards' }] : []),
+      ]
+    : []
+  ).filter((stat) => stat.value !== '0');
+
+  // How complete my profile is: what a new friend looks at before joining my ตี้
+  const strengthSteps = viewOwn
+    ? [
+        { done: Boolean(profile?.avatarUrl), label: 'ใส่รูปโปรไฟล์', tab: 'me' as EditTab },
+        { done: Boolean(viewOwn.details.bio), label: 'แนะนำตัวสั้นๆ', tab: 'me' as EditTab },
+        { done: interestChips.length > 0, label: 'บอกสายที่ชอบ', tab: 'interests' as EditTab },
+        { done: aboutRows.length >= 2, label: 'เล่าเกี่ยวกับตัวเอง', tab: 'about' as EditTab },
+        { done: viewOwn.member.trust.emailVerified, label: 'ยืนยันอีเมล', href: '/profile/settings' },
+        { done: viewOwn.member.trust.pledged, label: 'รับคำมั่นของคอมมูนิตี้', href: '/onboarding?step=pledge&returnTo=%2Fprofile' },
+      ]
+    : [];
+  const strengthLeft = strengthSteps.filter((step) => !step.done) as { done: boolean; label: string; href?: string; tab?: EditTab }[];
+  const strengthPercent = strengthSteps.length ? Math.round(((strengthSteps.length - strengthLeft.length) / strengthSteps.length) * 100) : 100;
 
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans flex flex-col">
@@ -590,7 +691,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
         onOpenLogout={() => setIsLogoutOpen(true)}
       />
 
-      <main className="flex-1 w-full max-w-3xl mx-auto px-4 pt-2 pb-28 lg:pb-16 divide-y divide-slate-200">
+      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 pb-28 lg:pb-16">
         {state.status === 'loading' && (
           <div className={`${card} flex items-center gap-2 text-sm font-bold text-slate-500`} role="status">
             <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
@@ -619,240 +720,340 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
 
         {state.status === 'ready' && profile && (
           <>
-            {notice && <p role="status" className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-bold">{notice}</p>}
+            {notice && <p role="status" className="mt-4 p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-bold">{notice}</p>}
 
-            {/* Header */}
-            <section className={card}>
-              <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
-                <Avatar name={profile.displayName} url={profile.avatarUrl} size="w-24 h-24 sm:w-28 sm:h-28 text-4xl" />
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight break-words min-w-0">{profile.displayName}</h1>
-                    {profile.isMe ? (
-                      <button type="button" onClick={() => setIsEditing(true)} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold cursor-pointer whitespace-nowrap">
-                        <Pencil className="w-4 h-4" aria-hidden="true" />
-                        แก้ไขโปรไฟล์
-                      </button>
-                    ) : (
-                      (profile.isSample || profile.isSampleAccount) && <span className="text-[11px] sm:text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full whitespace-nowrap">โปรไฟล์ตัวอย่าง</span>
-                    )}
+            {/* Seeing my page as others do: one bar, one way back */}
+            {own && previewPublic && (
+              <div className="sticky top-16 z-20 mt-4 flex items-center justify-between gap-3 rounded-2xl bg-slate-900 text-white px-4 py-3">
+                <p className="text-sm font-bold">นี่คือโปรไฟล์ที่คนอื่นเห็น</p>
+                <button type="button" onClick={() => setPreviewPublic(false)} className="inline-flex items-center min-h-9 px-3.5 rounded-full bg-white/15 hover:bg-white/25 text-sm font-bold cursor-pointer whitespace-nowrap">
+                  กลับไปแก้ไข
+                </button>
+              </div>
+            )}
+
+            {/* Identity card on the left (sticky from lg), the person's story on the right: Airbnb-like, no cover (owner 2026-10-25) */}
+            <div className="mt-6 grid gap-10 lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-16 lg:items-start">
+              <aside className="lg:sticky lg:top-24">
+                <section className="rounded-3xl border border-slate-200 shadow-[0_6px_24px_rgba(15,23,42,0.06)] p-6 sm:p-7">
+                  <div className="flex flex-col items-center text-center">
+                    <span className="w-28 h-28 rounded-full overflow-hidden bg-gradient-to-br from-[#F26430] to-[#7C3AED] text-white text-5xl font-bold flex items-center justify-center">
+                      {profile.avatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- member photo from uploads or a provider
+                        <img src={profile.avatarUrl} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        nameInitial(profile.displayName, 'C')
+                      )}
+                    </span>
+                    <h1 className="mt-4 text-2xl sm:text-3xl font-bold tracking-tight break-words">{profile.displayName}</h1>
+                    <p className="mt-1 text-sm font-medium text-slate-500">
+                      {[provinceName, profile.ageBand ? `อายุ ${profile.ageBand}` : '', profile.gender ? GENDER_LABELS[profile.gender] : ''].filter(Boolean).join(' · ')}
+                    </p>
+                    <p className="mt-0.5 text-xs font-medium text-slate-400">
+                      {profile.memberSince ? `สมาชิกตั้งแต่ ${monthYear(profile.memberSince)}` : ''}
+                    </p>
+                    {(profile.isSample || profile.isSampleAccount) && !profile.isMe && <span className="mt-2 text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full">โปรไฟล์ตัวอย่าง</span>}
                   </div>
 
-                  <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm font-semibold text-slate-500">
-                    {profile.memberSince && <span className="whitespace-nowrap">สมาชิกตั้งแต่ {monthYear(profile.memberSince)}</span>}
-                    {profile.followerCount !== undefined && <span className="whitespace-nowrap">ผู้ติดตาม {profile.followerCount} · กำลังติดตาม {profile.followingCount ?? 0}</span>}
-                    {provinceName && (
-                      <span className="inline-flex items-center gap-1 whitespace-nowrap">
-                        <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
-                        {provinceName}
-                      </span>
-                    )}
-                    {profile.ageBand && <span className="whitespace-nowrap">อายุ {profile.ageBand}</span>}
-                    {profile.gender && <span className="whitespace-nowrap">{GENDER_LABELS[profile.gender]}</span>}
-                  </p>
-
-                  {(liveHosted > 0 || (profile.hostReviews?.count ?? 0) > 0) && (
-                    <p className="mt-2 flex flex-wrap items-center gap-x-2 text-sm sm:text-base font-bold text-slate-900 tabular-nums">
-                      {profile.hostReviews && profile.hostReviews.count > 0 && (
-                        <a href="#reviews" className="hover:underline">
-                          <span className="text-amber-500">★</span> {profile.hostReviews.average.toFixed(1)} <span className="font-semibold text-slate-600">จาก {profile.hostReviews.count} รีวิว</span>
-                        </a>
-                      )}
-                      {profile.hostReviews && profile.hostReviews.count > 0 && liveHosted > 0 && <span className="text-slate-300">·</span>}
-                      {liveHosted > 0 && <span>จัดมาแล้ว {liveHosted} ตี้</span>}
-                    </p>
+                  {/* The numbers, one per line; zeros are left out */}
+                  {stats.length > 0 && (
+                    <dl className="mt-6 pt-5 border-t border-slate-200 space-y-3">
+                      {stats.map((stat) => {
+                        const row = (
+                          <>
+                            <dd className={`w-16 shrink-0 text-2xl font-bold tabular-nums ${stat.tone ?? 'text-slate-900'}`}>{stat.value}</dd>
+                            <dt className="text-sm font-medium text-slate-600">{stat.label}</dt>
+                          </>
+                        );
+                        return stat.href ? (
+                          <a key={stat.label} href={stat.href} className="flex items-baseline hover:opacity-80">{row}</a>
+                        ) : (
+                          <div key={stat.label} className="flex items-baseline">{row}</div>
+                        );
+                      })}
+                    </dl>
                   )}
 
+                  {/* What the server checked */}
                   {(profile.badges.emailVerified || profile.badges.pledged || profile.badges.trusted || profile.badges.approvedHost) && (
-                    <p className="mt-3 flex flex-wrap gap-1.5">
-                      {profile.badges.approvedHost && <Badge icon={BadgeCheck}>โฮสต์ที่ทีมงานตรวจแล้ว</Badge>}
-                      {profile.badges.trusted && !profile.badges.approvedHost && <Badge icon={ShieldCheck}>สมาชิกที่เชื่อถือได้</Badge>}
-                      {profile.badges.emailVerified && <Badge icon={MailCheck}>ยืนยันอีเมลแล้ว</Badge>}
-                      {profile.badges.pledged && <Badge icon={HandHeart}>รับคำมั่นแล้ว</Badge>}
-                    </p>
+                    <ul className="mt-5 pt-5 border-t border-slate-200 space-y-2 text-sm font-medium text-slate-700">
+                      {profile.badges.approvedHost && <li className="flex items-center gap-2.5"><BadgeCheck className="w-4 h-4 text-emerald-600" aria-hidden="true" />โฮสต์ที่ทีมงานตรวจแล้ว</li>}
+                      {profile.badges.trusted && !profile.badges.approvedHost && <li className="flex items-center gap-2.5"><ShieldCheck className="w-4 h-4 text-emerald-600" aria-hidden="true" />สมาชิกที่เชื่อถือได้</li>}
+                      {profile.badges.emailVerified && <li className="flex items-center gap-2.5"><MailCheck className="w-4 h-4 text-emerald-600" aria-hidden="true" />ยืนยันอีเมลแล้ว</li>}
+                      {profile.badges.pledged && <li className="flex items-center gap-2.5"><HandHeart className="w-4 h-4 text-emerald-600" aria-hidden="true" />รับคำมั่นของคอมมูนิตี้แล้ว</li>}
+                    </ul>
                   )}
 
-                  {bio ? (
-                    <p className="mt-4 text-sm sm:text-base font-medium text-slate-700 leading-relaxed whitespace-pre-line break-words">
-                      {bio}
-                      {own && hiddenKeys.includes('bio') && <span className="ml-2 text-xs font-bold text-slate-400 whitespace-nowrap">(ซ่อนอยู่)</span>}
-                    </p>
-                  ) : (
-                    profile.isMe && <p className="mt-4 text-sm font-medium text-slate-400"><PhraseText text="ยังไม่ได้แนะนำตัว กดแก้ไขโปรไฟล์ เพื่อเล่าเกี่ยวกับตัวเองสั้นๆ" /></p>
+                  {/* One action: edit for the owner, follow for a visitor */}
+                  {viewOwn && (
+                    <button type="button" onClick={() => setEditTab('me')} className="mt-6 w-full inline-flex items-center justify-center gap-2 min-h-11 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold cursor-pointer">
+                      <Pencil className="w-4 h-4" aria-hidden="true" />
+                      แก้ไขโปรไฟล์
+                    </button>
                   )}
-                </div>
-              </div>
-
-              {!profile.isMe && !profile.isSample && isLoggedIn && (
-                <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
-                  {!profile.viewer?.hasBlocked && (
+                  {!profile.isMe && !profile.isSample && isLoggedIn && !profile.viewer?.hasBlocked && (
                     <button
                       type="button"
                       onClick={toggleFollow}
                       aria-pressed={Boolean(profile.viewer?.isFollowing)}
-                      className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold cursor-pointer whitespace-nowrap ${profile.viewer?.isFollowing ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm'}`}
+                      className={`mt-6 w-full inline-flex items-center justify-center min-h-11 rounded-full text-sm font-bold cursor-pointer ${profile.viewer?.isFollowing ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm'}`}
                     >
                       {profile.viewer?.isFollowing ? 'กำลังติดตาม' : 'ติดตาม'}
                     </button>
                   )}
-                  <button type="button" onClick={() => setIsReporting(true)} disabled={profile.viewer?.hasReported} className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-500 hover:text-slate-800 cursor-pointer whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed">
-                    <Flag className="w-4 h-4" aria-hidden="true" />
-                    {profile.viewer?.hasReported ? 'รายงานแล้ว' : 'รายงาน'}
-                  </button>
-                  <button type="button" onClick={toggleBlock} className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-500 hover:text-slate-800 cursor-pointer whitespace-nowrap">
-                    <Ban className="w-4 h-4" aria-hidden="true" />
-                    {profile.viewer?.hasBlocked ? 'เลิกบล็อก' : 'บล็อก'}
-                  </button>
-                </div>
-              )}
-            </section>
+                </section>
 
-            {/* The checklist matters only until the account is trusted; after that the badges say it */}
-            {own && own.member.trust.level !== 'trusted' && <TrustCard member={own.member} onChanged={() => { handleSetIsLoggedIn(true); refresh(); }} />}
+                {!profile.isMe && !profile.isSample && isLoggedIn && (
+                  <div className="mt-3 flex justify-center gap-x-5">
+                    <button type="button" onClick={() => setIsReporting(true)} disabled={profile.viewer?.hasReported} className="inline-flex items-center gap-1.5 min-h-10 text-sm font-semibold text-slate-500 hover:text-slate-800 underline-offset-4 hover:underline cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">
+                      <Flag className="w-4 h-4" aria-hidden="true" />
+                      {profile.viewer?.hasReported ? 'รายงานแล้ว' : 'รายงานโปรไฟล์นี้'}
+                    </button>
+                    <button type="button" onClick={toggleBlock} className="inline-flex items-center gap-1.5 min-h-10 text-sm font-semibold text-slate-500 hover:text-slate-800 underline-offset-4 hover:underline cursor-pointer">
+                      <Ban className="w-4 h-4" aria-hidden="true" />
+                      {profile.viewer?.hasBlocked ? 'เลิกบล็อก' : 'บล็อก'}
+                    </button>
+                  </div>
+                )}
+              </aside>
 
-            {/* ตี้ this member hosts: a visitor's best signal of who they are. Managing them happens in My Hub. */}
-            {hosted.length > 0 && (
-              <div className={card}>
-                <RelatedCards
-                  className=""
-                  title="ตี้ที่จัด"
-                  allHref={profile.isMe ? '/myhub' : undefined}
-                  allLabel="จัดการในมายฮับ"
-                  items={hosted.slice(0, 8).map((ev) => {
-                    const isLive = ev.approvalStatus === 'approved';
-                    return {
-                      id: ev.id,
-                      href: isLive ? `${ev.eventType === 'public_venue' ? '/fairs' : '/community'}/${encodeURIComponent(ev.id)}` : undefined,
-                      image: ev.image,
-                      dateText: ev.date,
-                      title: ev.title,
-                      note: !isLive ? (ev.approvalStatus === 'rejected' ? 'ไม่ผ่านการตรวจ' : 'รอทีมงานตรวจ') : ev.status === 'ended' ? 'จบแล้ว' : ev.location || '',
-                    };
-                  })}
-                />
-              </div>
-            )}
-
-            {/* Reviews from people who joined this member's ตี้ */}
-            {profile.hostReviews && profile.hostReviews.count > 0 && (
-              <section id="reviews" className={`${card} scroll-mt-24`}>
-                <SectionTitle>รีวิวจากคนที่ไป</SectionTitle>
-                <p className="-mt-2 mb-2 text-sm font-semibold text-slate-600 tabular-nums">
-                  <span className="text-amber-500">★</span> <span className="text-lg font-bold text-slate-900">{profile.hostReviews.average.toFixed(1)}</span> จาก 5 · {profile.hostReviews.count} รีวิว
-                </p>
-                <ul className="divide-y divide-slate-200">
-                  {profile.hostReviews.latest.map((r) => (
-                    <li key={r.id} className="py-4">
-                      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-slate-500">
-                        <span className="text-amber-600 font-bold whitespace-nowrap" aria-label={`${r.rating} จาก 5 ดาว`}>{'★'.repeat(r.rating)}<span className="text-slate-300">{'★'.repeat(5 - r.rating)}</span></span>
-                        <span className="text-slate-800 font-bold">{r.authorName}</span>
-                        <span>{r.timeAgo}</span>
-                        {isLoggedIn && r.authorId !== member?.id && (
-                          <button type="button" onClick={() => setReportingReview({ id: r.id, eventTitle: r.eventTitle })} className="ml-auto inline-flex items-center gap-1 text-slate-500 hover:text-rose-600 cursor-pointer" aria-label={`รายงานรีวิวของ ${r.authorName}`}>
-                            <Flag className="w-3.5 h-3.5" aria-hidden="true" /> รายงาน
-                          </button>
-                        )}
-                      </p>
-                      {r.text && <p className="mt-1.5 text-sm text-slate-700 leading-relaxed">{r.text}</p>}
-                      <p className="mt-1 text-xs text-slate-500 truncate">ตี้: {r.eventTitle}</p>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-
-            {/* Badges of the challenges this member finished: proof of going out and doing */}
-            {profile.challengeBadges && profile.challengeBadges.length > 0 && (
-              <section className={card}>
-                <SectionTitle>{`เหรียญจากชาเลนจ์ (${profile.challengeBadges.length})`}</SectionTitle>
-                <ul className="flex flex-wrap gap-2">
-                  {profile.challengeBadges.map((badge) => (
-                    <li key={badge.questId}>
-                      <Link href={`/challenges/${encodeURIComponent(badge.questId)}`} title={badge.title} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F5F3FF] border border-slate-200 text-xs sm:text-sm font-bold text-[#5B21B6] hover:border-[#7C3AED] transition-colors cursor-pointer">
-                        <Award className="w-4 h-4" aria-hidden="true" />
-                        {badge.badgeLabel}
+              <div className="min-w-0">
+                {/* Owner only: how complete the profile is, as one line with the next step */}
+                {viewOwn && strengthLeft.length > 0 && (
+                  <div className="mb-8 flex items-center gap-4 rounded-2xl bg-slate-50 px-4 py-3">
+                    <span className="text-sm font-bold text-slate-900 tabular-nums whitespace-nowrap">โปรไฟล์ครบ {strengthPercent}%</span>
+                    <span className="hidden sm:block flex-1 h-1.5 rounded-full bg-slate-200 overflow-hidden" aria-hidden="true">
+                      <span className="block h-full rounded-full bg-[#2563EB]" style={{ width: `${strengthPercent}%` }} />
+                    </span>
+                    {strengthLeft[0].href ? (
+                      <Link href={strengthLeft[0].href} className="ml-auto sm:ml-0 inline-flex items-center gap-0.5 text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] whitespace-nowrap">
+                        {strengthLeft[0].label}
+                        <ChevronRight className="w-4 h-4" aria-hidden="true" />
                       </Link>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-
-            {/* Moments; a visitor sees the section only when there are some */}
-            {(state.moments.length > 0 || profile.isMe) && (
-              <section className={card}>
-                <SectionTitle action={state.moments.length > 0 ? <Link href="/moments" className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">ไปหน้าโมเมนต์</Link> : undefined}>โมเมนต์</SectionTitle>
-                {state.moments.length > 0 ? (
-                  <ul className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                    {state.moments.map((m) => (
-                      <li key={m.id} className="aspect-square rounded-2xl overflow-hidden bg-slate-100">
-                        <Link href={`/moments/${encodeURIComponent(m.id)}`} className="block w-full h-full">
-                          {/* eslint-disable-next-line @next/next/no-img-element -- remote content images */}
-                          <img src={m.image} alt={m.caption.slice(0, 60)} loading="lazy" className="w-full h-full object-cover" />
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className="bg-slate-50/80 rounded-2xl p-4 border border-dashed border-slate-200 flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-sm font-semibold text-slate-600"><PhraseText text="ยังไม่มีโมเมนต์ ไปกิจกรรมแล้ว กลับมาแชร์ภาพกันนะ" /></p>
-                    <Link href="/?share=new" className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">แชร์โมเมนต์</Link>
+                    ) : (
+                      <button type="button" onClick={() => setEditTab(strengthLeft[0].tab ?? 'me')} className="ml-auto sm:ml-0 inline-flex items-center gap-0.5 text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] whitespace-nowrap cursor-pointer">
+                        {strengthLeft[0].label}
+                        <ChevronRight className="w-4 h-4" aria-hidden="true" />
+                      </button>
+                    )}
                   </div>
                 )}
-              </section>
-            )}
 
-            {/* About and interests, as grey rows */}
-            {(aboutRows.length > 0 || interestNames.length > 0) && (
-              <section className={card}>
-                <SectionTitle>{profile.isMe ? 'เกี่ยวกับฉัน' : `เกี่ยวกับ ${profile.displayName}`}</SectionTitle>
-                {aboutRows.length > 0 && (
-                  <dl className="divide-y divide-slate-200 border-y border-slate-200">
-                    {aboutRows.map((row) => (
-                      <div key={row.key} className="grid grid-cols-[7rem_1fr] sm:grid-cols-[10rem_1fr] gap-3 py-3">
-                        <dt className="text-xs sm:text-sm font-medium text-slate-500">
-                          {FIELD_LABELS[row.key]}
-                          {own && hiddenKeys.includes(row.key) && <span className="block font-bold text-slate-400">(ซ่อนอยู่)</span>}
-                        </dt>
-                        <dd className="text-sm font-medium text-slate-800 break-words">{row.value}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                )}
-                {interestNames.length > 0 && (
-                  <div className={aboutRows.length > 0 ? 'mt-5' : ''}>
-                    <h3 className="text-xs sm:text-sm font-medium text-slate-500 mb-2">
-                      ความสนใจ
-                      {own && hiddenKeys.includes('interests') && <span className="ml-1.5 font-bold text-slate-400">(ซ่อนอยู่)</span>}
-                    </h3>
-                    <p className="flex flex-wrap gap-1.5">
-                      {interestNames.map((name) => (
-                        <span key={name} className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-800 text-xs font-bold whitespace-nowrap">{name}</span>
-                      ))}
+                {/* About: a short story with icons, not a form */}
+                <section>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">{profile.isMe ? 'เกี่ยวกับฉัน' : `เกี่ยวกับ ${profile.displayName}`}</h2>
+                    {viewOwn && (
+                      <button type="button" onClick={() => setEditTab('about')} className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer">แก้ไข</button>
+                    )}
+                  </div>
+                  {bio ? (
+                    <p className="mt-4 text-base sm:text-lg font-medium text-slate-800 leading-relaxed whitespace-pre-line break-words max-w-prose">
+                      {bio}
+                      {viewOwn && hiddenKeys.includes('bio') && <span className="ml-2 text-xs font-bold text-slate-400 whitespace-nowrap">(ซ่อนอยู่)</span>}
                     </p>
+                  ) : (
+                    viewOwn && (
+                      <button type="button" onClick={() => setEditTab('me')} className="mt-4 text-base font-medium text-slate-400 hover:text-slate-600 cursor-pointer text-left">
+                        + เล่าเกี่ยวกับตัวเองสักประโยค ให้เพื่อนใหม่รู้จักคุณ
+                      </button>
+                    )
+                  )}
+                  {aboutRows.length > 0 && (
+                    <ul className="mt-5 grid sm:grid-cols-2 gap-x-8 gap-y-3.5">
+                      {aboutRows.map((row) => {
+                        const Icon = ABOUT_ICONS[row.key] ?? UserRound;
+                        return (
+                          <li key={row.key} className="flex items-start gap-3 text-sm sm:text-base text-slate-800">
+                            <Icon className="w-5 h-5 mt-0.5 shrink-0 text-slate-500" aria-hidden="true" />
+                            <span className="min-w-0 break-words">
+                              <span className="text-slate-500">{ABOUT_LEADS[row.key] ?? FIELD_LABELS[row.key]}</span> <span className="font-semibold">{row.value}</span>
+                              {viewOwn && hiddenKeys.includes(row.key) && <span className="ml-1.5 px-1.5 py-0.5 rounded-md bg-slate-100 text-[11px] font-bold text-slate-500 whitespace-nowrap">ซ่อนอยู่</span>}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+
+                  {/* สายที่ชอบ under the story, in each สาย's colour */}
+                  {interestChips.length > 0 && (
+                    <div className="mt-6">
+                      <div className="flex items-baseline gap-3">
+                        <h3 className="text-sm font-bold text-slate-900">{viewOwn && hiddenKeys.includes('interests') ? 'สายที่ชอบ (ซ่อนอยู่)' : 'สายที่ชอบ'}</h3>
+                        {viewOwn && (
+                          <button type="button" onClick={() => setEditTab('interests')} className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer">แก้ไข</button>
+                        )}
+                      </div>
+                      <ul className="mt-2.5 flex flex-wrap gap-2">
+                        {interestChips.map((chip) => (
+                          <li key={chip.name} className={`inline-flex items-center gap-2 min-h-9 px-3.5 rounded-full text-sm font-bold ${chip.tone}`}>
+                            {chip.icon && <chip.icon className="w-4 h-4" aria-hidden="true" />}
+                            {chip.name}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {viewOwn && interestChips.length === 0 && (
+                    <button type="button" onClick={() => setEditTab('interests')} className="mt-6 block text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] cursor-pointer">+ บอกสายที่ชอบ</button>
+                  )}
+                </section>
+
+                {/* ตี้ this member hosts: a visitor's best signal of who they are. Managing them happens in My Hub. */}
+                {hostedVisible.length > 0 && (
+                  <div id="hosted" className={`${card} scroll-mt-24`}>
+                    <RelatedCards
+                      className=""
+                      gridClassName="grid-cols-2 sm:grid-cols-3"
+                      title="ตี้ที่จัด"
+                      allHref={viewOwn ? '/myhub' : undefined}
+                      allLabel="จัดการในมายฮับ"
+                      items={hostedVisible.slice(0, hostedShown).map((ev) => {
+                        const isLive = ev.approvalStatus === 'approved';
+                        return {
+                          id: ev.id,
+                          href: isLive ? `${ev.eventType === 'public_venue' ? '/fairs' : '/community'}/${encodeURIComponent(ev.id)}` : undefined,
+                          image: ev.image,
+                          dateText: ev.date,
+                          title: ev.title,
+                          note: !isLive ? (ev.approvalStatus === 'rejected' ? 'ไม่ผ่านการตรวจ' : 'รอทีมงานตรวจ') : ev.status === 'ended' ? 'จบแล้ว' : ev.location || '',
+                        };
+                      })}
+                    />
+                    {hostedVisible.length > hostedShown && (
+                      <button type="button" onClick={() => setHostedShown((n) => n + PAGE_HOSTED)} className={MORE_BUTTON}>
+                        ดูเพิ่ม <span className="tabular-nums">({(hostedVisible.length - hostedShown).toLocaleString()})</span>
+                      </button>
+                    )}
                   </div>
                 )}
-              </section>
-            )}
 
-            {own && <HostCard member={own.member} application={own.hostApplication} onChanged={() => { handleSetIsLoggedIn(true); refresh(); }} />}
-            {own && <AccountCard member={own.member} onLogout={() => setIsLogoutOpen(true)} />}
+                {/* Reviews from people who joined this member's ตี้ */}
+                {profile.hostReviews && profile.hostReviews.count > 0 && (
+                  <section id="reviews" className={`${card} scroll-mt-24`}>
+                    <SectionTitle>{`★ ${profile.hostReviews.average.toFixed(1)} · ${profile.hostReviews.count} รีวิวจากคนที่ไป`}</SectionTitle>
+                    <ul className="grid sm:grid-cols-2 gap-x-8 gap-y-6">
+                      {profile.hostReviews.latest.map((r) => (
+                        <li key={r.id}>
+                          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                            <span className="font-bold text-slate-900">{r.authorName}</span>
+                            <span className="text-slate-500">{r.timeAgo}</span>
+                            {isLoggedIn && r.authorId !== member?.id && (
+                              <button type="button" onClick={() => setReportingReview({ id: r.id, eventTitle: r.eventTitle })} className="ml-auto inline-flex items-center gap-1 text-xs text-slate-400 hover:text-rose-600 cursor-pointer" aria-label={`รายงานรีวิวของ ${r.authorName}`}>
+                                <Flag className="w-3.5 h-3.5" aria-hidden="true" />
+                              </button>
+                            )}
+                          </p>
+                          <p className="text-amber-500 text-sm" aria-label={`${r.rating} จาก 5 ดาว`}>{'★'.repeat(r.rating)}<span className="text-slate-300">{'★'.repeat(5 - r.rating)}</span></p>
+                          {r.text && <p className="mt-1 text-sm sm:text-base text-slate-700 leading-relaxed">{r.text}</p>}
+                          <p className="mt-1 text-xs text-slate-500 truncate">ตี้: {r.eventTitle}</p>
+                        </li>
+                      ))}
+                    </ul>
+                    {profile.hostReviews.count > profile.hostReviews.latest.length && (
+                      <button type="button" onClick={openAllReviews} className={MORE_BUTTON}>
+                        ดูรีวิวทั้งหมด <span className="tabular-nums">{profile.hostReviews.count.toLocaleString()}</span>
+                      </button>
+                    )}
+                  </section>
+                )}
+
+                {/* Medals from finished challenges: proof of going out and doing */}
+                {profile.challengeBadges && profile.challengeBadges.length > 0 && (
+                  <section id="badges" className={`${card} scroll-mt-24`}>
+                    <SectionTitle>เหรียญจากชาเลนจ์</SectionTitle>
+                    <ul className="grid grid-cols-3 sm:grid-cols-5 gap-4">
+                      {(showAllBadges ? profile.challengeBadges : profile.challengeBadges.slice(0, FIRST_BADGES)).map((badge) => (
+                        <li key={badge.questId}>
+                          <Link href={`/challenges/${encodeURIComponent(badge.questId)}`} title={badge.title} className="group flex flex-col items-center text-center gap-2 cursor-pointer">
+                            <span className="w-16 h-16 rounded-full bg-gradient-to-br from-[#A78BFA] to-[#6D28D9] text-white flex items-center justify-center ring-4 ring-[#F5F3FF] transition-transform group-hover:scale-105">
+                              <Award className="w-8 h-8" aria-hidden="true" />
+                            </span>
+                            <span className="text-xs sm:text-sm font-bold text-slate-800 line-clamp-2">{badge.badgeLabel}</span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                    {!showAllBadges && profile.challengeBadges.length > FIRST_BADGES && (
+                      <button type="button" onClick={() => setShowAllBadges(true)} className={MORE_BUTTON}>
+                        ดูอีก <span className="tabular-nums">{profile.challengeBadges.length - FIRST_BADGES}</span> เหรียญ
+                      </button>
+                    )}
+                  </section>
+                )}
+
+                {/* Moments; an empty list is one quiet line, only for the owner */}
+                {state.moments.length > 0 ? (
+                  <section id="moments" className={`${card} scroll-mt-24`}>
+                    <SectionTitle>{`โมเมนต์ (${momentsCount})`}</SectionTitle>
+                    <ul className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                      {state.moments.slice(0, momentsShown).map((m) => (
+                        <li key={m.id} className="aspect-[4/5] rounded-2xl overflow-hidden bg-slate-100">
+                          <Link href={`/moments/${encodeURIComponent(m.id)}`} className="block w-full h-full group">
+                            {/* eslint-disable-next-line @next/next/no-img-element -- remote content images */}
+                            <img src={m.image} alt={m.caption.slice(0, 60)} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                    {(state.momentsTotal ?? state.moments.length) > momentsShown && (
+                      <button type="button" onClick={showMoreMoments} disabled={isLoadingMoments} className={MORE_BUTTON}>
+                        {isLoadingMoments && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
+                        ดูเพิ่ม
+                      </button>
+                    )}
+                  </section>
+                ) : (
+                  viewOwn && (
+                    <p className={`${card} flex items-center gap-2 text-sm font-medium text-slate-500`}>
+                      <Camera className="w-4 h-4" aria-hidden="true" />
+                      ยังไม่มีโมเมนต์
+                      <Link href="/?share=new" className="font-bold text-[#2563EB] hover:text-[#1D4ED8]">แชร์โมเมนต์แรก ›</Link>
+                    </p>
+                  )
+                )}
+              </div>
+            </div>
           </>
         )}
       </main>
 
-      {isEditing && own && (
+      {editTab && own && (
         <EditProfileDialog
+          initialTab={editTab}
+          onPreview={() => {
+            setEditTab(null);
+            setPreviewPublic(true);
+          }}
           member={own.member}
           details={own.details}
           preferences={own.preferences}
-          onClose={() => setIsEditing(false)}
+          onClose={() => setEditTab(null)}
           onSaved={() => {
-            setIsEditing(false);
+            setEditTab(null);
             setNotice('บันทึกโปรไฟล์แล้ว');
             refresh();
           }}
         />
+      )}
+      {isReviewsOpen && profile?.hostReviews && (
+        <DialogShell onClose={() => setIsReviewsOpen(false)} size="md" title={`★ ${profile.hostReviews.average.toFixed(1)} · ${profile.hostReviews.count} รีวิว`} subtitle={`จากคนที่ไปตี้ของ ${profile.displayName}`}>
+          {allReviews === null ? (
+            <p className="flex items-center gap-2 text-sm font-bold text-slate-500" role="status"><Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />กำลังโหลด…</p>
+          ) : (
+            <ul className="divide-y divide-slate-100 max-h-[60vh] overflow-y-auto -mx-1 px-1">
+              {allReviews.map((r) => (
+                <li key={r.id} className="py-4 first:pt-0">
+                  <p className="flex flex-wrap items-center gap-x-2 text-sm"><span className="font-bold text-slate-900">{r.authorName}</span><span className="text-slate-500">{r.timeAgo}</span></p>
+                  <p className="text-amber-500 text-sm" aria-label={`${r.rating} จาก 5 ดาว`}>{'★'.repeat(r.rating)}<span className="text-slate-300">{'★'.repeat(5 - r.rating)}</span></p>
+                  {r.text && <p className="mt-1 text-sm text-slate-700 leading-relaxed">{r.text}</p>}
+                  <p className="mt-1 text-xs text-slate-500 truncate">ตี้: {r.eventTitle}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </DialogShell>
       )}
       {reportingReview && (
         <ReportSafetyModal isOpen onClose={() => setReportingReview(null)} targetType="review" targetId={reportingReview.id} targetTitle={`รีวิวของตี้ "${reportingReview.eventTitle}"`} />

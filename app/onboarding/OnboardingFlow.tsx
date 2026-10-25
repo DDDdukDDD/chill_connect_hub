@@ -145,7 +145,7 @@ const GOAL_INTERESTS: Record<string, { community?: string[]; spots?: string[]; f
 const POPULAR_INTERESTS = { community: ['cafe_social', 'food_hunt', 'boardgames_party', 'running_fitness'], spots: ['cafe_slowbar', 'city_parks', 'sea_island'], fairs: ['music_festivals', 'food_drinks'] };
 
 /** The kinds of places and fairs that go with each สาย (ตี้ category), so suggestions still fit without asking */
-const SAI_SPOTS: Record<string, string[]> = {
+export const SAI_SPOTS: Record<string, string[]> = {
   cafe_social: ['cafe_slowbar'], food_hunt: ['food_street', 'market_walking'], boardgames_party: ['fun_activities'],
   gaming_anime: ['fun_activities', 'shopping_mall'], movies_music: ['nightlife_bars'], pets_family: ['city_parks'],
   running_fitness: ['city_parks'], sports_club: ['fun_activities'], dance_move: ['nightlife_bars'],
@@ -154,7 +154,7 @@ const SAI_SPOTS: Record<string, string[]> = {
   photo_content: ['views_rooftop', 'oldtown_culture'], cooking_baking: ['food_street'], books_language: ['museum_learning'],
   tech_skills: ['museum_learning'],
 };
-const SAI_FAIRS: Record<string, string[]> = {
+export const SAI_FAIRS: Record<string, string[]> = {
   cafe_social: ['food_drinks'], food_hunt: ['food_drinks'], boardgames_party: ['pop_culture'], gaming_anime: ['pop_culture', 'sports_esports'],
   movies_music: ['music_festivals', 'parks_openair'], pets_family: ['pets'], running_fitness: ['marathon_sports'], sports_club: ['sports_esports'],
   dance_move: ['music_festivals'], travel_outdoor: ['travel_outdoor'], wellness_mind: ['wellness'], beauty_selfcare: ['wellness'],

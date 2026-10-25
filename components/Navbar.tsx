@@ -2,11 +2,10 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import dynamic from 'next/dynamic';
+import { usePathname, useRouter } from 'next/navigation';
 import {
-  Sprout, 
   LogIn, 
-  User, 
   LogOut, 
   PlusCircle, 
   Menu, 
@@ -16,13 +15,9 @@ import {
   Ticket, 
   Zap,
   ChevronRight,
-  ChevronDown,
-  ShieldCheck,
-  Sparkles,
-  Heart,
-  Bot,
   Gift,
-  Search
+  Search,
+  Settings
 } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
 import { AuthModal } from './AuthModal';
@@ -31,6 +26,11 @@ import { SiteSearch } from './discover/SiteSearch';
 import { NotificationBell } from './NotificationBell';
 import { useActivitySync } from '@/lib/useMyActivity';
 
+// The create dialog loads only when someone opens it from the profile menu
+const CreateEventModal = dynamic(() => import('./CreateEventModal').then((m) => m.CreateEventModal), { ssr: false });
+
+const MENU_ROW = 'flex items-center gap-2.5 min-h-10 px-3 rounded-xl hover:bg-slate-100 hover:text-slate-900 transition-colors';
+
 interface NavbarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
@@ -38,6 +38,7 @@ interface NavbarProps {
   setIsLoggedIn?: (status: boolean) => void;
   onOpenLogin?: () => void;
   onOpenLogout?: () => void;
+  /** @deprecated The profile menu's สร้างกิจกรรม opens its own type chooser on every page; pages keep their own create buttons */
   onOpenCreateEvent?: () => void;
   /** Sign-up button for visitors; without it the button opens the login window */
   onOpenSignup?: () => void;
@@ -56,7 +57,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   setIsLoggedIn,
   onOpenLogin,
   onOpenLogout,
-  onOpenCreateEvent,
   onOpenSignup,
   searchSlot,
   showMenuOnMobile = false,
@@ -67,6 +67,19 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isOwnSignupOpen, setIsOwnSignupOpen] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const router = useRouter();
+  // XP for the "แลกของรางวัล" row, read when the menu opens (not on every page load)
+  const [menuXp, setMenuXp] = useState<number | null>(null);
+  const toggleProfileMenu = () => {
+    const opening = !isProfileDropdownOpen;
+    setIsProfileDropdownOpen(opening);
+    if (!opening) return;
+    fetch('/api/rewards', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setMenuXp(typeof data?.points?.balance === 'number' ? data.points.balance : null))
+      .catch(() => undefined);
+  };
   // Joined events and saved places come from the account (see lib/useMyActivity.ts)
   useActivitySync();
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -180,103 +193,93 @@ export const Navbar: React.FC<NavbarProps> = ({
               </>
             ) : isLoggedIn ? (
               <div className="relative" ref={dropdownRef}>
-                {/* Profile Trigger Button (Clean Avatar Only - No Text) */}
                 <button
                   type="button"
-                  onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                  className={`relative w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden border-2 transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center justify-center shrink-0 ${
-                    isProfileDropdownOpen
-                      ? 'border-[#4A7C59] ring-2 ring-[#4A7C59]/20 scale-105'
-                      : 'border-[#4A7C59]/80 hover:border-[#4A7C59] hover:ring-2 hover:ring-[#4A7C59]/10'
+                  onClick={toggleProfileMenu}
+                  aria-expanded={isProfileDropdownOpen}
+                  aria-label="เมนูโปรไฟล์"
+                  className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden border-2 transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center justify-center shrink-0 ${
+                    isProfileDropdownOpen ? 'border-slate-900 ring-2 ring-slate-900/10' : 'border-white ring-1 ring-slate-200 hover:ring-slate-300'
                   }`}
-                  title="คลิกเพื่อเปิดเมนูโปรไฟล์"
                 >
                   <img
                     src={userProfile.avatar}
-                    alt={userProfile.name || userName}
+                    alt=""
                     className="w-full h-full object-cover"
                   />
-                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-1.5 ring-white" />
                 </button>
 
-                {/* Profile Dropdown Menu (Floating Card) */}
+                {/* Profile menu: who I am (opens my profile), then my places, then log out (owner 2026-10-25) */}
                 {isProfileDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-[#E8E2D8] py-2.5 z-50 animate-scale-up origin-top-right">
-                    
-                    {/* User Profile Header Card */}
-                    <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-3 bg-slate-50/70 mx-2 rounded-xl">
-                      <div className="relative w-11 h-11 rounded-full overflow-hidden bg-[#EBF3ED] border-2 border-[#4A7C59] shrink-0 shadow-xs">
-                        <img
-                          src={userProfile.avatar}
-                          alt={userProfile.name || userName}
-                          className="w-full h-full object-cover"
-                        />
-                        <span className="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h4 className="font-bold text-sm text-[#1E293B] truncate" title={userProfile.name || userName}>
-                          {userProfile.name || userName}
-                        </h4>
-                        <div className="flex items-center gap-1 text-[11px] text-[#4A7C59] font-bold">
-                          <Sparkles className="w-3 h-3" />
-                          <span>{userProfile.badgeLabel || 'สมาชิก Chill & Connect'}</span>
-                        </div>
-                      </div>
-                    </div>
+                  <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-scale-up origin-top-right">
+                    <Link
+                      href="/profile?id=me"
+                      onClick={() => {
+                        setActiveTab('profile');
+                        setIsProfileDropdownOpen(false);
+                      }}
+                      className="mx-2 px-3 py-2.5 flex items-center gap-3 rounded-xl hover:bg-slate-100 transition-colors"
+                    >
+                      <img src={userProfile.avatar} alt="" className="w-11 h-11 rounded-full object-cover bg-slate-100 shrink-0" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-bold text-sm text-slate-900 truncate">{userProfile.name || userName}</span>
+                        <span className="flex items-center gap-0.5 text-xs font-semibold text-slate-500">
+                          ดูโปรไฟล์ของฉัน
+                          <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
+                        </span>
+                      </span>
+                    </Link>
 
-                    {/* Quick Menu Links */}
-                    <div className="py-1.5 px-2 space-y-0.5 text-xs font-semibold text-[#334155]">
-                      {/* Creating lives here, not in the top bar, so the bar stays calm */}
-                      {onOpenCreateEvent && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsProfileDropdownOpen(false);
-                            onOpenCreateEvent();
-                          }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 hover:text-[#1E293B] transition-colors cursor-pointer"
-                        >
-                          <PlusCircle className="w-4 h-4 text-[#2563EB]" />
-                          <span>สร้างกิจกรรม</span>
-                        </button>
-                      )}
+                    <div className="mt-1 pt-1 border-t border-slate-100 px-2 text-sm font-semibold text-slate-700">
                       <Link
-                        href="/profile?id=me"
+                        href="/myhub"
                         onClick={() => {
-                          setActiveTab('profile');
+                          setActiveTab('myhub');
                           setIsProfileDropdownOpen(false);
                         }}
-                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 hover:text-[#1E293B] transition-colors"
+                        className={MENU_ROW}
                       >
-                        <User className="w-4 h-4 text-[#4A7C59]" />
-                        <span>โปรไฟล์ส่วนตัวของฉัน</span>
+                        <Ticket className="w-4 h-4 text-slate-500" aria-hidden="true" />
+                        มายฮับ
                       </Link>
-
+                      {/* Creating lives here, not in the top bar, so the bar stays calm; it offers all four kinds */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProfileDropdownOpen(false);
+                          setIsCreateOpen(true);
+                        }}
+                        className={`${MENU_ROW} w-full cursor-pointer`}
+                      >
+                        <PlusCircle className="w-4 h-4 text-slate-500" aria-hidden="true" />
+                        สร้างกิจกรรม
+                      </button>
                       <Link
                         href="/rewards"
                         onClick={() => {
                           setActiveTab('rewards');
                           setIsProfileDropdownOpen(false);
                         }}
-                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 hover:text-[#1E293B] transition-colors"
+                        className={MENU_ROW}
                       >
-                        <Gift className="w-4 h-4 text-[#F26430]" />
-                        <span>ของรางวัล & สิทธิพิเศษ</span>
+                        <Gift className="w-4 h-4 text-slate-500" aria-hidden="true" />
+                        <span className="flex-1">แลกของรางวัล</span>
+                        {menuXp !== null && <span className="text-xs font-bold text-slate-500 tabular-nums">{menuXp.toLocaleString()} XP</span>}
                       </Link>
-
                       <Link
-                        href="/legal?tab=privacy"
-                        onClick={() => setIsProfileDropdownOpen(false)}
-                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 hover:text-[#1E293B] transition-colors"
+                        href="/profile/settings"
+                        onClick={() => {
+                          setActiveTab('profile');
+                          setIsProfileDropdownOpen(false);
+                        }}
+                        className={MENU_ROW}
                       >
-                        <ShieldCheck className="w-4 h-4 text-slate-500" />
-                        <span>ข้อมูลและความเป็นส่วนตัว</span>
+                        <Settings className="w-4 h-4 text-slate-500" aria-hidden="true" />
+                        ตั้งค่าบัญชี
                       </Link>
-
                     </div>
 
-                    {/* Divider, Logout Button & Dev Role Switcher */}
-                    <div className="pt-1.5 mt-1 border-t border-slate-100 px-2 space-y-2">
+                    <div className="mt-1 pt-1 border-t border-slate-100 px-2">
                       <button
                         type="button"
                         onClick={() => {
@@ -287,13 +290,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                             setIsLoggedIn(false);
                           }
                         }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-bold text-xs transition-colors cursor-pointer"
+                        className={`${MENU_ROW} w-full cursor-pointer text-sm font-semibold text-slate-600`}
                       >
-                        <LogOut className="w-4 h-4 text-slate-400" />
-                        <span>ออกจากระบบ</span>
+                        <LogOut className="w-4 h-4 text-slate-400" aria-hidden="true" />
+                        ออกจากระบบ
                       </button>
                     </div>
-
                   </div>
                 )}
               </div>
@@ -319,12 +321,13 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Universal Luxury Hamburger / Menu Button (Active on Mobile, iPad, and Desktop).
                 Members only (owner 2026-10-19): for visitors, log in and sign up are the top bar's only actions, on every page.
-                Below desktop width the floating bottom bar does its job, so it shows there only when a page has no bar. */}
+                Below desktop width the floating bottom bar does its job, so it shows there only when a page has no bar; from xl the
+                top bar holds ค้นพบ / โมเมนต์ / ชาเลนจ์ and the profile menu holds มายฮับ, so the button goes (owner 2026-10-25). */}
             {isLoggedIn && (
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(true)}
-              className={`${showMenuOnMobile ? 'flex' : 'hidden lg:flex'} items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-200/90 shadow-2xs transition-all duration-200 active:scale-95 cursor-pointer select-none group shrink-0`}
+              className={`${showMenuOnMobile ? 'flex xl:hidden' : 'hidden lg:flex xl:hidden'} items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-200/90 shadow-2xs transition-all duration-200 active:scale-95 cursor-pointer select-none group shrink-0`}
               title="เปิดเมนูนำทาง"
               aria-label="Toggle Navigation Menu"
             >
@@ -435,6 +438,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
       )}
+
+      {/* สร้างกิจกรรม: the chooser of all four kinds, then the new page once it is live */}
+      <CreateEventModal
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        onCreateSuccess={(created) => router.push(`/${created.eventType === 'public_venue' ? 'fairs' : 'community'}/${encodeURIComponent(created.id)}`)}
+      />
 
       {/* Pages that do not pass onOpenSignup still get the sign-up screen, not the log-in one */}
       <AuthModal isOpen={isOwnSignupOpen} onClose={() => setIsOwnSignupOpen(false)} onLoginSuccess={() => setIsLoggedIn?.(true)} initialMode="signup" />

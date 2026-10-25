@@ -30,7 +30,7 @@ export async function addReview(review: Omit<EventReview, 'id' | 'createdAt'>): 
 }
 
 /** Average and latest reviews of the events a member hosted */
-export async function hostReviewSummary(hostId: string, latestCount = 3) {
+export async function hostReviewSummary(hostId: string, latestCount = 4) {
   const mine = store.read().filter((r) => r.hostId === hostId);
   if (mine.length === 0) return { count: 0, average: 0, latest: [] };
   const latest = [];
