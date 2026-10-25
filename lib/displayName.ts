@@ -21,7 +21,8 @@ export const NEW_MEMBER_NAME = 'สมาชิกใหม่';
  * Safe to run on every keystroke: it never removes a mark that follows a Thai consonant.
  */
 export function tidyDisplayName(input: string): string {
-  return input
+  // Stored records can lack a name (e.g. an old ตี้ without hostName); never crash a screen over it
+  return (input ?? '')
     .normalize('NFC')
     .replace(INVISIBLE, '')
     .replace(STRAY_THAI_MARK, '')

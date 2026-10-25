@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MemberAuthError, signInWithOAuth } from '@/lib/members/accounts';
 import { fetchOAuthProfile, isOAuthProvider } from '@/lib/members/oauth';
-import { applySignupChecks, hashIp } from '@/lib/members/safety';
-import { getSessionSecret, readSignedPayload, setMemberSessionCookie } from '@/lib/members/session';
-import { clientIp } from '@/lib/rateLimit';
+import { applySignupChecks } from '@/lib/members/safety';
+import { readSignedPayload, setMemberSessionCookie } from '@/lib/members/session';
 import { readCookie } from '@/lib/adminSession';
+import { INVITE_COOKIE, attachInviter } from '@/lib/social/friends';
 import { loginErrorPath, oauthCallbackUrl, OAUTH_STATE_COOKIE, safeReturnTo } from '../../shared';
 
 interface StatePayload {
@@ -45,12 +45,16 @@ async function handleCallback(request: NextRequest, provider: string, params: UR
       appleUser: params.get('user'),
     });
     const { member, created } = await signInWithOAuth(profile, { consented: Boolean(stored.consented) });
-    if (created) await applySignupChecks(member, hashIp(clientIp(request), getSessionSecret() ?? ''));
+    if (created) {
+      await applySignupChecks(member);
+      await attachInviter(member, readCookie(request, INVITE_COOKIE));
+    }
     // New members pick their interests first, then continue to where they were heading
     const response = redirect(created
       ? `/onboarding?returnTo=${encodeURIComponent(returnTo)}`
       : `${returnTo}${returnTo.includes('?') ? '&' : '?'}auth=success`);
     setMemberSessionCookie(response, member);
+    if (created) response.cookies.delete(INVITE_COOKIE);
     return response;
   } catch (error) {
     console.error(`[member oauth ${provider}]`, error);

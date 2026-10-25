@@ -14,6 +14,7 @@ import { EventAttendees } from '@/components/EventAttendees';
 import { useAuth } from '@/lib/useAuth';
 import { useMyRewards } from '@/lib/useMyRewards';
 import { ChallengeChecklist } from '@/components/detail/ChallengeChecklist';
+import { InviteFriendsCard } from '@/components/InviteFriendsCard';
 import { RelatedCards } from '@/components/detail/RelatedCards';
 
 /**
@@ -179,7 +180,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
         { label: 'สิ่งที่นับ', text: rules.scope },
         { label: 'การยืนยัน', text: rules.proof },
         { label: 'การนับ', text: rules.onceEach },
-        { label: 'ผู้มีสิทธิ์ร่วม', text: 'สมาชิก Chill & Connect Hub ทุกคน ไม่มีค่าใช้จ่าย' },
+        { label: 'ผู้มีสิทธิ์ร่วม', text: rules.eligible ?? 'สมาชิก Chill & Connect Hub ทุกคน ไม่มีค่าใช้จ่าย' },
         { label: 'การรับรางวัล', text: `ต้องกดร่วมชาเลนจ์ก่อนหมดเขต การไปก่อนกดร่วมที่อยู่ในช่วงเวลานับให้ด้วย${isPartner ? ' รับสิทธิ์ได้ 1 ครั้งต่อ 1 บัญชี' : ''}` },
         { label: 'ผู้จัด', text: reward.partnerName },
       ]
@@ -193,6 +194,8 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
   // Where to go shows while deciding too, so a visitor sees where before joining (owner 2026-10-16);
   // with nothing in the period yet it says so instead of leaving the question open
   const showPlaces = tracked && !earned && !isEnded;
+  // A host challenge is done by hosting: it offers to open a ตี้ instead of places to go
+  const isHostQuest = Boolean(quest.rule?.asHost);
   const memories = earned ? detail.mine?.memories ?? [] : [];
   const finishedDate = earned ? shortDate(detail.mine?.finishedAt) : '';
   const next = earned ? detail.next : null;
@@ -326,9 +329,22 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
   const onlyKind = quest.rule?.targetTypes.length === 1 ? quest.rule.targetTypes[0] : 'spot';
   const kindWords = { community: { heading: 'ตี้ที่นับในชาเลนจ์นี้', unit: 'ตี้', none: 'ยังไม่มีตี้เปิด' }, fair: { heading: 'อีเวนต์ที่นับในชาเลนจ์นี้', unit: 'งาน', none: 'ยังไม่มีอีเวนต์' }, spot: { heading: 'ที่ที่นับในชาเลนจ์นี้', unit: 'แห่ง', none: 'ยังไม่มีที่ไหนเปิด' } }[onlyKind];
 
-  // Where to go for the challenge; shown in the right column on a desktop and after the rules on phones and tablets
-  const placesSection = (anchorId: string) => (
+  const hostSection = (anchorId: string) => (
     <section id={anchorId} className="space-y-4 scroll-mt-24">
+      {joined && <ChallengeChecklist questId={questId} />}
+      <h2 className={SECTION_TITLE}>เปิดตี้ของคุณ</h2>
+      <p className={BODY}>ตั้งตี้เรื่องที่คุณชอบ ชวนเพื่อนมาเจอกัน แล้วเช็กอินเพื่อนที่มาถึงจุดนัดในหน้าตี้ของคุณ ครบ {quest.rule?.asHost} คนชาเลนจ์นี้ก็สำเร็จ</p>
+      <Link href="/community?create=1" className="inline-flex items-center justify-center gap-2 min-h-11 px-5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold cursor-pointer">
+        ตั้งตี้ของฉัน
+        <ArrowRight className="w-4 h-4" aria-hidden="true" />
+      </Link>
+    </section>
+  );
+
+  // Where to go for the challenge; shown in the right column on a desktop and after the rules on phones and tablets
+  const placesSection = (anchorId: string) => isHostQuest ? hostSection(anchorId) : (
+    <section id={anchorId} className="space-y-4 scroll-mt-24">
+      {quest.rule?.withFriends && isLoggedIn && <InviteFriendsCard questHref={`/challenges/${questId}`} />}
       {/* The member's checklist: counted, waiting for review, not counted (owner 2026-10-23) */}
       {joined && <ChallengeChecklist questId={questId} />}
       <div className="flex items-end justify-between gap-3">

@@ -15,7 +15,7 @@ import type { Member, MemberTrust, RiskFlag, RiskFlagCode, TrustLevel } from './
 export const PLEDGE_VERSION = '2026-10';
 export const NEW_ACCOUNT_DAYS = 7;
 /** Daily limits while an account is not yet trusted */
-export const NEW_ACCOUNT_LIMITS = { momentsPerDay: 3, commentsPerDay: 20 };
+export const NEW_ACCOUNT_LIMITS = { commentsPerDay: 20 };
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -25,7 +25,8 @@ export function accountAgeDays(member: Member): number {
 
 export function hasOpenRisk(member: Member): boolean {
   const reviewed = member.riskReviewedAt ? new Date(member.riskReviewedAt).getTime() : 0;
-  const newFlag = (member.riskFlags ?? []).some((f) => new Date(f.at).getTime() > reviewed);
+  // shared_ip is no longer raised (owner 2026-10-25), and old ones no longer hold an account back
+  const newFlag = (member.riskFlags ?? []).some((f) => f.code !== 'shared_ip' && new Date(f.at).getTime() > reviewed);
   const newReport = (member.reportsReceived ?? []).some((r) => new Date(r.at).getTime() > reviewed);
   return newFlag || newReport;
 }

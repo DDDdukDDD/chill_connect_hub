@@ -213,12 +213,12 @@ export const VisitPanel: React.FC<VisitPanelProps> = ({ targetType, targetId, ti
               <div className="flex items-center gap-2.5">
                 {proof.people.length > 0 && (
                   <span className="flex -space-x-2">
-                    {proof.people.map((person) =>
+                    {proof.people.map((person, index) =>
                       person.avatar ? (
                         // eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers
-                        <img key={person.name} src={person.avatar} alt="" className="w-7 h-7 rounded-full object-cover border-2 border-white bg-slate-100" />
+                        <img key={`${index}-${person.name}`} src={person.avatar} alt="" className="w-7 h-7 rounded-full object-cover border-2 border-white bg-slate-100" />
                       ) : (
-                        <span key={person.name} className="w-7 h-7 rounded-full border-2 border-white bg-slate-200 text-[11px] font-bold text-slate-700 flex items-center justify-center">
+                        <span key={`${index}-${person.name}`} className="w-7 h-7 rounded-full border-2 border-white bg-slate-200 text-[11px] font-bold text-slate-700 flex items-center justify-center">
                           {person.name.slice(0, 1)}
                         </span>
                       )

@@ -26,7 +26,14 @@ export class RewardError extends Error {
 
 const store = createJsonStore<Redemption>('redemptions');
 
+/** A draw entry gets its own code from the redemption id; a voucher keeps the partner's code (null here) */
+const entryCodeOf = (redemptionId: string, rewardId: string): string | null =>
+  REWARD_SHOP_ITEMS.find((item) => item.id === rewardId)?.drawEntry ? `CC-${redemptionId.replace(/[^a-z0-9]/gi, '').slice(-6).toUpperCase()}` : null;
+
 const redemptionsOf = (memberId: string) => store.read().filter((r) => r.memberId === memberId);
+
+/** How many times a reward was redeemed (prize entries, for campaign stats) */
+export const redemptionCountOf = (rewardId: string) => store.read().filter((r) => r.rewardId === rewardId).length;
 
 /** Points, challenge progress and redeemed rewards of one member */
 export async function rewardsOf(memberId: string) {
@@ -42,7 +49,7 @@ export async function rewardsOf(memberId: string) {
     /** Challenges the member finished: the badge, and the code when a partner gives the reward */
     finished: await finishesOf(memberId),
     redeemedRewardIds: redemptions.map((r) => r.rewardId),
-    redemptions: redemptions.map(({ rewardId, cost, createdAt }) => ({ rewardId, cost, createdAt })),
+    redemptions: redemptions.map(({ id, rewardId, cost, createdAt }) => ({ rewardId, cost, createdAt, code: entryCodeOf(id, rewardId) })),
   };
 }
 

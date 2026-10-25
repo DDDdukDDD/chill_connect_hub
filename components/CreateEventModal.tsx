@@ -102,17 +102,19 @@ function recurrenceText(days: DayOfWeek[], frequency: 'weekly' | 'biweekly' | 'm
   return `${names}${frequency === 'biweekly' ? ' (เว้นสัปดาห์)' : frequency === 'monthly' ? ' (เดือนละครั้ง)' : ''}`;
 }
 
-const initialForm = (type: CreationEntityType, seed: { title?: string; location?: string; category?: Category; image?: string }) => ({
+type Seed = { title?: string; location?: string; category?: Category; image?: string; place?: PlacePick; itinerary?: Array<{ time: string; title: string }> };
+
+const initialForm = (type: CreationEntityType, seed: Seed) => ({
   title: seed.title ?? '',
   category: seed.category ?? ('chill' as Category),
   image: seed.image || PRESET_IMAGES[type][0].url,
   description: '',
-  province: 'กรุงเทพฯ',
-  district: '',
-  locationName: seed.location ?? '',
+  province: seed.place?.province && ALL_THAI_PROVINCES.includes(seed.place.province) ? seed.place.province : 'กรุงเทพฯ',
+  district: seed.place?.district ?? '',
+  locationName: seed.location ?? seed.place?.name ?? '',
   priceMode: 'free' as 'free' | 'paid',
   priceText: '',
-  itinerary: [] as Array<{ time: string; title: string }>,
+  itinerary: seed.itinerary ?? ([] as Array<{ time: string; title: string }>),
   // community
   scheduleType: 'single' as 'single' | 'recurring',
   date: '',
@@ -124,7 +126,7 @@ const initialForm = (type: CreationEntityType, seed: { title?: string; location?
   locationType: 'physical' as 'physical' | 'online',
   meetingPoint: '',
   // A place picked from the suggestions (our catalog); typing the name again unlinks it
-  placeId: '',
+  placeId: seed.place?.placeId ?? '',
   onlinePlatform: 'zoom',
   onlineJoinUrl: '',
   maxParticipants: 8,
@@ -154,7 +156,7 @@ const initialForm = (type: CreationEntityType, seed: { title?: string; location?
   openHours: '',
   bestTime: '',
   googleMapsUrl: '',
-  pin: null as Pin | null,
+  pin: (seed.place?.pin ?? null) as Pin | null,
   highlights: [] as string[],
   // challenge
   objective: '',
@@ -487,18 +489,25 @@ interface CreateEventModalProps {
   initialLocation?: string;
   initialTitle?: string;
   initialImage?: string;
+  /** A catalog place the ตี้ meets at (linked by placeId) */
+  initialPlace?: PlacePick;
+  /** A schedule to start from, e.g. the Smart Plan's stops */
+  initialItinerary?: Array<{ time: string; title: string }>;
   onCreateSuccess: (newEvent: EventItem) => void;
 }
 
 export const CreateEventModal: React.FC<CreateEventModalProps> = (props) => (props.isOpen ? <CreateDialog {...props} /> : null);
 
-function CreateDialog({ onClose, initialType, initialCategory, initialLocation, initialTitle, initialImage, onCreateSuccess }: CreateEventModalProps) {
+function CreateDialog({ onClose, initialType, initialCategory, initialLocation, initialTitle, initialImage, initialPlace, initialItinerary, onCreateSuccess }: CreateEventModalProps) {
   const { userProfile, isOrganizer, isVenueOwner, isHost } = useAuth();
   const { member, isLoaded } = useMemberSession();
   const titleId = useId();
   const uid = useId();
   const bodyRef = useRef<HTMLDivElement>(null);
-  const seed = useMemo(() => ({ title: initialTitle, location: initialLocation, category: initialCategory, image: initialImage }), [initialTitle, initialLocation, initialCategory, initialImage]);
+  const seed = useMemo<Seed>(
+    () => ({ title: initialTitle, location: initialLocation, category: initialCategory, image: initialImage, place: initialPlace, itinerary: initialItinerary }),
+    [initialTitle, initialLocation, initialCategory, initialImage, initialPlace, initialItinerary],
+  );
 
   const canCreate = Boolean(member) && member?.trust?.level !== 'new';
   const canCreateFair = isOrganizer || isVenueOwner;
@@ -531,6 +540,8 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
       const saved = sessionStorage.getItem(draftKey(next));
       if (saved) {
         nextForm = { ...nextForm, ...(JSON.parse(saved) as Partial<Form>) };
+        // A plan the page hands over wins over an older draft's schedule
+        if (seed.itinerary?.length) nextForm.itinerary = seed.itinerary;
         fromDraft = true;
       }
     } catch {
@@ -1181,7 +1192,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
             </Field>
             {priceField('ฟรี', 'มีค่าใช้จ่าย')}
           </div>
-          <details className="group rounded-2xl border border-slate-200">
+          <details open={initialItinerary?.length ? true : undefined} className="group rounded-2xl border border-slate-200">
             <summary className="flex items-center justify-between gap-3 px-4 py-3.5 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
               <span>
                 <span className="block text-sm font-bold text-slate-900">ตัวเลือกเพิ่มเติม</span>

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { InviteFriendsCard } from '@/components/InviteFriendsCard';
 import {
   AlertCircle, BadgeCheck, Ban, CalendarPlus, Check, CircleCheck, Clock, Flag, HandHeart, KeyRound, Loader2, LogOut, MailCheck, MapPin, Pencil, ShieldCheck, UserRound,
   Award, Briefcase, Building2, Camera, ChevronRight, GraduationCap, Heart, Home, Users, type LucideIcon
@@ -201,7 +202,7 @@ export function TrustCard({ member, onChanged }: { member: PublicMember; onChang
     {
       done: t.level === 'trusted',
       title: `เป็นสมาชิกครบ ${NEW_ACCOUNT_DAYS} วัน`,
-      desc: t.level === 'trusted' ? 'โพสต์ได้ตามปกติ และใส่ช่องทางติดต่อได้' : `อีก ${daysLeft} วัน ระหว่างนี้โพสต์ได้วันละ 3 โมเมนต์ และยังใส่ลิงก์หรือเบอร์โทรไม่ได้`,
+      desc: t.level === 'trusted' ? 'ใส่ช่องทางติดต่อได้แล้ว' : `อีก ${daysLeft} วัน ระหว่างนี้ยังใส่ลิงก์หรือเบอร์โทรไม่ได้`,
     },
   ];
 
@@ -980,6 +981,13 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                         ดูอีก <span className="tabular-nums">{profile.challengeBadges.length - FIRST_BADGES}</span> เหรียญ
                       </button>
                     )}
+                  </section>
+                )}
+
+                {/* Owner only: the invite link (ตั๋วเพื่อนซี้) and friends who signed up with it */}
+                {profile.isMe && (
+                  <section id="invite" className={`${card} scroll-mt-24`}>
+                    <InviteFriendsCard />
                   </section>
                 )}
 

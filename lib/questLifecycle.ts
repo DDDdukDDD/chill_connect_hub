@@ -110,7 +110,8 @@ export function addNewSeedQuests(
 }
 
 /** Raise this when the texts or rule wording of the seed quests change, so stores pick the change up once */
-export const SEED_QUEST_TEXT_VERSION = 6;
+// v7 (2026-10-25): campaign challenges move to community category ids
+export const SEED_QUEST_TEXT_VERSION = 7;
 
 /** Seed quests whose title changed: id -> the title stores may still hold */
 const RENAMED_SEED_QUESTS: Record<string, string> = { '1': 'Cafe Hunter 5: ตามรอย 5 คาเฟ่ Specialty ย่านอารีย์-ทองหล่อ' };

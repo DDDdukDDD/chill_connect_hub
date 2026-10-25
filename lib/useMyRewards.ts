@@ -39,9 +39,13 @@ interface RewardsState {
   joinedQuestIds: string[];
   finished: FinishedQuest[];
   redeemedRewardIds: string[];
+  /** Own codes by reward id (draw entries); other rewards use the catalog code */
+  codes: Record<string, string>;
+  /** When each reward was redeemed, by reward id */
+  redeemedAt: Record<string, string>;
 }
 
-const EMPTY: RewardsState = { isLoaded: false, balance: 0, earned: 0, spent: 0, quests: [], joinedQuestIds: [], finished: [], redeemedRewardIds: [] };
+const EMPTY: RewardsState = { isLoaded: false, balance: 0, earned: 0, spent: 0, quests: [], joinedQuestIds: [], finished: [], redeemedRewardIds: [], codes: {}, redeemedAt: {} };
 
 interface RewardsAnswer {
   success: boolean;
@@ -51,6 +55,7 @@ interface RewardsAnswer {
   joinedQuestIds?: string[];
   finished?: FinishedQuest[];
   redeemedRewardIds: string[];
+  redemptions?: Array<{ rewardId: string; code?: string | null; createdAt?: string }>;
 }
 
 const toState = (data: RewardsAnswer): RewardsState => ({
@@ -62,6 +67,8 @@ const toState = (data: RewardsAnswer): RewardsState => ({
   joinedQuestIds: data.joinedQuestIds ?? [],
   finished: data.finished ?? [],
   redeemedRewardIds: data.redeemedRewardIds,
+  codes: Object.fromEntries((data.redemptions ?? []).filter((r) => r.code).map((r) => [r.rewardId, r.code as string])),
+  redeemedAt: Object.fromEntries((data.redemptions ?? []).filter((r) => r.createdAt).map((r) => [r.rewardId, r.createdAt as string])),
 });
 
 export function useMyRewards(isLoggedIn: boolean) {

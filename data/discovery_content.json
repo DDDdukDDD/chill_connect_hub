@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-25T05:59:26.596Z",
+  "lastUpdated": "2026-10-25T08:21:04.204Z",
   "spots": [
     {
       "id": "ttd-2164",
@@ -114927,6 +114927,682 @@
         "hubRewardNote": "ภารกิจสิ้นสุดระยะเวลาแล้ว",
         "terms": "กิจกรรมสิ้นสุดแล้ว"
       }
+    },
+    {
+      "id": "launch-tee",
+      "brandReward": {
+        "type": "hub_central",
+        "title": "XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว",
+        "shortTitle": "สะสม XP ลุ้น iPhone Duo",
+        "partnerName": "Chill & Connect"
+      },
+      "rule": {
+        "targetTypes": [
+          "community"
+        ],
+        "count": 1,
+        "minEvidence": "checkin"
+      },
+      "title": "ตี้แรกของฉัน: ไปเจอเพื่อนใหม่ 1 ตี้",
+      "badgeCoverImg": "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=600&q=80",
+      "image": "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=80",
+      "iconName": "Users",
+      "category": "cafe_social",
+      "badgeLabel": "First Tee",
+      "badgeIcon": "🤝",
+      "completedCountInfo": "0/1 ตี้",
+      "progressPercent": 0,
+      "current": "0",
+      "total": "1",
+      "visibility": "public",
+      "creatorName": "ทีมงาน Chill & Connect",
+      "participantsCount": 0,
+      "rewardPoints": 150,
+      "isOfficial": true,
+      "targetGoal": "ไปตี้ไหนก็ได้ 1 ตี้ แล้วให้คนตั้งตี้เช็กอินให้ที่หน้างาน",
+      "objective": "ก้าวแรกของกิจกรรมเปิดตัว เลือกตี้ที่ชอบ ไปเจอกันตามนัด แล้วรับ XP ไปสะสมลุ้น iPhone Duo",
+      "steps": [
+        "เลือกตี้ที่อยากไปแล้วกดขอเข้าร่วม",
+        "ไปถึงจุดนัดตามเวลา",
+        "ให้คนตั้งตี้เช็กอินให้ แล้ว XP จะเข้าบัญชีเอง"
+      ],
+      "verificationMethod": "คนตั้งตี้เช็กอินให้ที่หน้างาน",
+      "rewardsText": "เหรียญ \"First Tee\" + 150 XP",
+      "startDate": "2026-10-25",
+      "endDate": "2026-12-31"
+    },
+    {
+      "id": "launch-spots",
+      "brandReward": {
+        "type": "hub_central",
+        "title": "XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว",
+        "shortTitle": "สะสม XP ลุ้น iPhone Duo",
+        "partnerName": "Chill & Connect"
+      },
+      "rule": {
+        "targetTypes": [
+          "spot"
+        ],
+        "count": 3,
+        "minEvidence": "moment"
+      },
+      "title": "เปิดแผนที่: แชร์โมเมนต์จาก 3 ที่เที่ยว",
+      "badgeCoverImg": "https://images.unsplash.com/photo-1501555088652-021faa106b9b?auto=format&fit=crop&w=600&q=80",
+      "image": "https://images.unsplash.com/photo-1501555088652-021faa106b9b?auto=format&fit=crop&w=1200&q=80",
+      "iconName": "MapPin",
+      "category": "travel_outdoor",
+      "badgeLabel": "Map Opener",
+      "badgeIcon": "🗺️",
+      "completedCountInfo": "0/3 ที่",
+      "progressPercent": 0,
+      "current": "0",
+      "total": "3",
+      "visibility": "public",
+      "creatorName": "ทีมงาน Chill & Connect",
+      "participantsCount": 0,
+      "rewardPoints": 150,
+      "isOfficial": true,
+      "targetGoal": "ไปที่เที่ยว 3 ที่ แล้วแชร์โมเมนต์พร้อมรูปจากแต่ละที่",
+      "objective": "คาเฟ่ สวน หรือพิพิธภัณฑ์ก็ได้ ถ่ายรูปที่นั่นแล้วแชร์เป็นโมเมนต์ ครบ 3 ที่รับ XP ไปสะสมลุ้น iPhone Duo",
+      "steps": [
+        "เปิดหน้าที่เที่ยวที่อยากไป",
+        "ไปถึงแล้วกด \"ร่วมแชร์โมเมนต์\" พร้อมรูปจากที่นั่น",
+        "ครบ 3 ที่ XP จะเข้าบัญชีเอง"
+      ],
+      "verificationMethod": "โมเมนต์พร้อมรูป แชร์ตอนอยู่ที่นั่น",
+      "rewardsText": "เหรียญ \"Map Opener\" + 150 XP",
+      "startDate": "2026-10-25",
+      "endDate": "2026-12-31"
+    },
+    {
+      "id": "launch-fair",
+      "brandReward": {
+        "type": "hub_central",
+        "title": "XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว",
+        "shortTitle": "สะสม XP ลุ้น iPhone Duo",
+        "partnerName": "Chill & Connect"
+      },
+      "rule": {
+        "targetTypes": [
+          "fair"
+        ],
+        "count": 1,
+        "minEvidence": "moment"
+      },
+      "title": "อีเวนต์แรก: ไปงานกับเพื่อนแล้วแชร์โมเมนต์",
+      "badgeCoverImg": "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=600&q=80",
+      "image": "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=1200&q=80",
+      "iconName": "Ticket",
+      "category": "arts_crafts",
+      "badgeLabel": "Event Goer",
+      "badgeIcon": "🎟️",
+      "completedCountInfo": "0/1 งาน",
+      "progressPercent": 0,
+      "current": "0",
+      "total": "1",
+      "visibility": "public",
+      "creatorName": "ทีมงาน Chill & Connect",
+      "participantsCount": 0,
+      "rewardPoints": 100,
+      "isOfficial": true,
+      "targetGoal": "ไปอีเวนต์ 1 งาน แล้วแชร์โมเมนต์พร้อมรูปจากในงาน",
+      "objective": "งานแฟร์ คอนเสิร์ต หรืองานวิ่งก็นับ ชวนเพื่อนไปด้วยกันแล้วแชร์โมเมนต์จากในงาน",
+      "steps": [
+        "เลือกอีเวนต์ที่อยากไปในหน้าอีเวนต์",
+        "ไปงานแล้วกด \"ร่วมแชร์โมเมนต์\" พร้อมรูปในงาน",
+        "XP จะเข้าบัญชีเอง"
+      ],
+      "verificationMethod": "โมเมนต์พร้อมรูป แชร์ตอนอยู่ในงาน",
+      "rewardsText": "เหรียญ \"Event Goer\" + 100 XP",
+      "startDate": "2026-10-25",
+      "endDate": "2026-12-31"
+    },
+    {
+      "id": "welcome-first-tee",
+      "brandReward": {
+        "type": "brand_partner",
+        "title": "ฟรีเครื่องดื่ม 1 แก้ว สำหรับตี้แรกของคุณ",
+        "shortTitle": "ฟรีเครื่องดื่ม 1 แก้ว",
+        "partnerName": "Ari Specialty Coffee Club",
+        "voucherCodePrefix": "FIRST-TEE-",
+        "exclusiveNotice": "ตัวอย่างร้านพาร์ทเนอร์ ใช้ได้ที่หน้าร้านเท่านั้น",
+        "terms": "แสดงรหัสหน้าร้านก่อนสั่ง จำกัด 1 สิทธิ์ต่อบัญชี ใช้ได้ภายใน 30 วันหลังทำชาเลนจ์สำเร็จ"
+      },
+      "rule": {
+        "targetTypes": [
+          "community"
+        ],
+        "count": 1,
+        "minEvidence": "checkin",
+        "newMemberDays": 14
+      },
+      "title": "ตี้แรก มีของ: ไปตี้แรกภายใน 14 วันหลังสมัคร",
+      "badgeCoverImg": "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=600&q=80",
+      "image": "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80",
+      "iconName": "Gift",
+      "category": "cafe_social",
+      "badgeLabel": "Welcome Tee",
+      "badgeIcon": "🎁",
+      "completedCountInfo": "0/1 ตี้",
+      "progressPercent": 0,
+      "current": "0",
+      "total": "1",
+      "visibility": "public",
+      "creatorName": "ทีมงาน Chill & Connect",
+      "participantsCount": 0,
+      "rewardPoints": 150,
+      "isOfficial": true,
+      "targetGoal": "ไปตี้ไหนก็ได้ 1 ตี้ภายใน 14 วันแรกหลังสมัคร แล้วให้โฮสต์เช็กอินให้",
+      "objective": "ตี้แรกของคุณ เราเลี้ยงเอง ไปตี้แรกภายใน 14 วันหลังสมัคร รับเครื่องดื่มฟรี 1 แก้ว และนับในชาเลนจ์ \"ตี้แรกของฉัน\" ด้วย ได้ XP สองต่อ",
+      "steps": [
+        "กดร่วมชาเลนจ์นี้และชาเลนจ์ \"ตี้แรกของฉัน\"",
+        "เลือกตี้ที่ชอบแล้วไปถึงจุดนัดตามเวลา",
+        "ให้โฮสต์เช็กอินให้ รับ XP และรหัสเครื่องดื่มฟรีในหน้านี้"
+      ],
+      "verificationMethod": "โฮสต์เช็กอินให้ที่หน้างาน",
+      "rewardsText": "เหรียญ \"Welcome Tee\" + 150 XP + เครื่องดื่มฟรี 1 แก้ว",
+      "startDate": "2026-10-25",
+      "endDate": "2026-12-31"
+    },
+    {
+      "id": "theme-hidden-cafe",
+      "brandReward": {
+        "type": "hub_central",
+        "title": "XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว",
+        "shortTitle": "สะสม XP ลุ้น iPhone Duo",
+        "partnerName": "Chill & Connect Hub"
+      },
+      "rule": {
+        "targetTypes": [
+          "spot"
+        ],
+        "count": 1,
+        "categories": [
+          "cafe"
+        ],
+        "minEvidence": "moment"
+      },
+      "title": "โมเมนต์ประจำสัปดาห์ #คาเฟ่ลับ: แชร์คาเฟ่ที่เพื่อนยังไม่รู้จัก",
+      "badgeCoverImg": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=600&q=80",
+      "image": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80",
+      "iconName": "Camera",
+      "category": "cafe_social",
+      "badgeLabel": "Hidden Cafe",
+      "badgeIcon": "☕",
+      "completedCountInfo": "0/1 ที่",
+      "progressPercent": 0,
+      "current": "0",
+      "total": "1",
+      "visibility": "public",
+      "creatorName": "ทีมงาน Chill & Connect",
+      "participantsCount": 0,
+      "rewardPoints": 80,
+      "isOfficial": true,
+      "targetGoal": "แชร์โมเมนต์พร้อมรูปจากคาเฟ่ 1 ที่ ภายในสัปดาห์นี้",
+      "objective": "ร้านเล็กในซอย ร้านเปิดใหม่ หรือร้านประจำที่อยากบอกต่อ ถ่ายรูปมุมโปรดแล้วแชร์เป็นโมเมนต์",
+      "steps": [
+        "ไปคาเฟ่ที่อยากไปในช่วงสัปดาห์นี้",
+        "ถ่ายรูปที่นั่นแล้วกด \"ร่วมแชร์โมเมนต์\" ตอนอยู่ที่นั่น",
+        "รูปผ่านแล้ว XP จะเข้าบัญชีเอง"
+      ],
+      "verificationMethod": "โมเมนต์พร้อมรูป แชร์ตอนอยู่ที่นั่น",
+      "rewardsText": "เหรียญ \"Hidden Cafe\" + 80 XP",
+      "startDate": "2026-10-26",
+      "endDate": "2026-11-01"
+    },
+    {
+      "id": "theme-green-park",
+      "brandReward": {
+        "type": "hub_central",
+        "title": "XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว",
+        "shortTitle": "สะสม XP ลุ้น iPhone Duo",
+        "partnerName": "Chill & Connect"
+      },
+      "rule": {
+        "targetTypes": [
+          "spot"
+        ],
+        "count": 1,
+        "categories": [
+          "park"
+        ],
+        "minEvidence": "moment"
+      },
+      "title": "โมเมนต์ประจำสัปดาห์ #สวนเขียวกลางเมือง: พักใจที่สวนใกล้บ้าน",
+      "badgeCoverImg": "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=600&q=80",
+      "image": "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=1200&q=80",
+      "iconName": "Camera",
+      "category": "travel_outdoor",
+      "badgeLabel": "Green Break",
+      "badgeIcon": "🌳",
+      "completedCountInfo": "0/1 ที่",
+      "progressPercent": 0,
+      "current": "0",
+      "total": "1",
+      "visibility": "public",
+      "creatorName": "ทีมงาน Chill & Connect",
+      "participantsCount": 0,
+      "rewardPoints": 80,
+      "isOfficial": true,
+      "targetGoal": "แชร์โมเมนต์พร้อมรูปจากสวนสาธารณะ 1 ที่ ภายในสัปดาห์นี้",
+      "objective": "เดินเล่น วิ่ง หรือปิกนิกที่สวน แล้วแชร์มุมเขียวๆ ให้เพื่อนอยากออกไปด้วย",
+      "steps": [
+        "ไปสวนสาธารณะที่อยากไปในช่วงสัปดาห์นี้",
+        "ถ่ายรูปที่นั่นแล้วกด \"ร่วมแชร์โมเมนต์\" ตอนอยู่ที่นั่น",
+        "รูปผ่านแล้ว XP จะเข้าบัญชีเอง"
+      ],
+      "verificationMethod": "โมเมนต์พร้อมรูป แชร์ตอนอยู่ที่นั่น",
+      "rewardsText": "เหรียญ \"Green Break\" + 80 XP",
+      "startDate": "2026-11-02",
+      "endDate": "2026-11-08"
+    },
+    {
+      "id": "theme-art-day",
+      "brandReward": {
+        "type": "hub_central",
+        "title": "XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว",
+        "shortTitle": "สะสม XP ลุ้น iPhone Duo",
+        "partnerName": "Chill & Connect"
+      },
+      "rule": {
+        "targetTypes": [
+          "spot"
+        ],
+        "count": 1,
+        "categories": [
+          "art",
+          "museum"
+        ],
+        "minEvidence": "moment"
+      },
+      "title": "โมเมนต์ประจำสัปดาห์ #วันหยุดสายอาร์ต: เดินแกลเลอรีหรือพิพิธภัณฑ์",
+      "badgeCoverImg": "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=600&q=80",
+      "image": "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80",
+      "iconName": "Camera",
+      "category": "arts_crafts",
+      "badgeLabel": "Art Day",
+      "badgeIcon": "🎨",
+      "completedCountInfo": "0/1 ที่",
+      "progressPercent": 0,
+      "current": "0",
+      "total": "1",
+      "visibility": "public",
+      "creatorName": "ทีมงาน Chill & Connect",
+      "participantsCount": 0,
+      "rewardPoints": 80,
+      "isOfficial": true,
+      "targetGoal": "แชร์โมเมนต์พร้อมรูปจากแกลเลอรีหรือพิพิธภัณฑ์ 1 ที่ ภายในสัปดาห์นี้",
+      "objective": "นิทรรศการใหม่ หรือพิพิธภัณฑ์ที่ไม่ได้ไปนาน ถ่ายรูปชิ้นงานที่ชอบแล้วเล่าให้เพื่อนฟัง",
+      "steps": [
+        "ไปแกลเลอรีหรือพิพิธภัณฑ์ที่อยากไปในช่วงสัปดาห์นี้",
+        "ถ่ายรูปที่นั่นแล้วกด \"ร่วมแชร์โมเมนต์\" ตอนอยู่ที่นั่น",
+        "รูปผ่านแล้ว XP จะเข้าบัญชีเอง"
+      ],
+      "verificationMethod": "โมเมนต์พร้อมรูป แชร์ตอนอยู่ที่นั่น",
+      "rewardsText": "เหรียญ \"Art Day\" + 80 XP",
+      "startDate": "2026-11-09",
+      "endDate": "2026-11-15"
+    },
+    {
+      "id": "theme-market",
+      "brandReward": {
+        "type": "hub_central",
+        "title": "XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว",
+        "shortTitle": "สะสม XP ลุ้น iPhone Duo",
+        "partnerName": "Chill & Connect"
+      },
+      "rule": {
+        "targetTypes": [
+          "spot"
+        ],
+        "count": 1,
+        "categories": [
+          "market"
+        ],
+        "minEvidence": "moment"
+      },
+      "title": "โมเมนต์ประจำสัปดาห์ #ตลาดสุดสัปดาห์: ตะลุยตลาดกับเพื่อน",
+      "badgeCoverImg": "https://images.unsplash.com/photo-1488459716781-31db52582fe9?auto=format&fit=crop&w=600&q=80",
+      "image": "https://images.unsplash.com/photo-1488459716781-31db52582fe9?auto=format&fit=crop&w=1200&q=80",
+      "iconName": "Camera",
+      "category": "food_hunt",
+      "badgeLabel": "Market Walker",
+      "badgeIcon": "🛍️",
+      "completedCountInfo": "0/1 ที่",
+      "progressPercent": 0,
+      "current": "0",
+      "total": "1",
+      "visibility": "public",
+      "creatorName": "ทีมงาน Chill & Connect",
+      "participantsCount": 0,
+      "rewardPoints": 80,
+      "isOfficial": true,
+      "targetGoal": "แชร์โมเมนต์พร้อมรูปจากตลาด 1 ที่ ภายในสัปดาห์นี้",
+      "objective": "ตลาดนัด ตลาดน้ำ หรือตลาดกลางคืน ของกินเด็ดหรือร้านน่ารัก แชร์เป็นโมเมนต์ให้เพื่อนตามไป",
+      "steps": [
+        "ไปตลาดที่อยากไปในช่วงสัปดาห์นี้",
+        "ถ่ายรูปที่นั่นแล้วกด \"ร่วมแชร์โมเมนต์\" ตอนอยู่ที่นั่น",
+        "รูปผ่านแล้ว XP จะเข้าบัญชีเอง"
+      ],
+      "verificationMethod": "โมเมนต์พร้อมรูป แชร์ตอนอยู่ที่นั่น",
+      "rewardsText": "เหรียญ \"Market Walker\" + 80 XP",
+      "startDate": "2026-11-16",
+      "endDate": "2026-11-22"
+    },
+    {
+      "id": "theme-sunset-view",
+      "brandReward": {
+        "type": "hub_central",
+        "title": "XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว",
+        "shortTitle": "สะสม XP ลุ้น iPhone Duo",
+        "partnerName": "Chill & Connect"
+      },
+      "rule": {
+        "targetTypes": [
+          "spot"
+        ],
+        "count": 1,
+        "categories": [
+          "viewpoint"
+        ],
+        "minEvidence": "moment"
+      },
+      "title": "โมเมนต์ประจำสัปดาห์ #จุดชมวิวยามเย็น: ไล่ตามแสงสุดท้ายของวัน",
+      "badgeCoverImg": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=600&q=80",
+      "image": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=80",
+      "iconName": "Camera",
+      "category": "photo_content",
+      "badgeLabel": "Sunset Chaser",
+      "badgeIcon": "🌅",
+      "completedCountInfo": "0/1 ที่",
+      "progressPercent": 0,
+      "current": "0",
+      "total": "1",
+      "visibility": "public",
+      "creatorName": "ทีมงาน Chill & Connect",
+      "participantsCount": 0,
+      "rewardPoints": 80,
+      "isOfficial": true,
+      "targetGoal": "แชร์โมเมนต์พร้อมรูปจากจุดชมวิว 1 ที่ ภายในสัปดาห์นี้",
+      "objective": "ขึ้นไปดูวิวตอนเย็นกับเพื่อน ถ่ายฟ้าช่วงที่สวยที่สุดแล้วแชร์เป็นโมเมนต์",
+      "steps": [
+        "ไปจุดชมวิวที่อยากไปในช่วงสัปดาห์นี้",
+        "ถ่ายรูปที่นั่นแล้วกด \"ร่วมแชร์โมเมนต์\" ตอนอยู่ที่นั่น",
+        "รูปผ่านแล้ว XP จะเข้าบัญชีเอง"
+      ],
+      "verificationMethod": "โมเมนต์พร้อมรูป แชร์ตอนอยู่ที่นั่น",
+      "rewardsText": "เหรียญ \"Sunset Chaser\" + 80 XP",
+      "startDate": "2026-11-23",
+      "endDate": "2026-11-29"
+    },
+    {
+      "id": "theme-year-end-tee",
+      "brandReward": {
+        "type": "hub_central",
+        "title": "XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว",
+        "shortTitle": "สะสม XP ลุ้น iPhone Duo",
+        "partnerName": "Chill & Connect"
+      },
+      "rule": {
+        "targetTypes": [
+          "community"
+        ],
+        "count": 1,
+        "minEvidence": "checkin"
+      },
+      "title": "ธีมเดือนธันวาคม #ตี้ส่งท้ายปี: ไปตี้กับเพื่อนใหม่ก่อนสิ้นปี",
+      "badgeCoverImg": "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=600&q=80",
+      "image": "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=1200&q=80",
+      "iconName": "PartyPopper",
+      "category": "boardgames_party",
+      "badgeLabel": "Year-End Tee",
+      "badgeIcon": "🎉",
+      "completedCountInfo": "0/1 ตี้",
+      "progressPercent": 0,
+      "current": "0",
+      "total": "1",
+      "visibility": "public",
+      "creatorName": "ทีมงาน Chill & Connect",
+      "participantsCount": 0,
+      "rewardPoints": 100,
+      "isOfficial": true,
+      "targetGoal": "ไปตี้ไหนก็ได้ 1 ตี้ในเดือนธันวาคม แล้วให้โฮสต์เช็กอินให้",
+      "objective": "ปิดปีด้วยเพื่อนใหม่ ไปตี้ไหนก็ได้ในเดือนธันวาคม เก็บ XP ช่วงสุดท้ายก่อนจับรางวัล iPhone Duo",
+      "steps": [
+        "เลือกตี้ในเดือนธันวาคมแล้วกดขอเข้าร่วม",
+        "ไปถึงจุดนัดตามเวลา",
+        "ให้โฮสต์เช็กอินให้ แล้ว XP จะเข้าบัญชีเอง"
+      ],
+      "verificationMethod": "โฮสต์เช็กอินให้ที่หน้างาน",
+      "rewardsText": "เหรียญ \"Year-End Tee\" + 100 XP",
+      "startDate": "2026-12-01",
+      "endDate": "2026-12-31"
+    },
+    {
+      "id": "host-starter",
+      "brandReward": {
+        "type": "hub_central",
+        "title": "XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว",
+        "shortTitle": "สะสม XP ลุ้น iPhone Duo",
+        "partnerName": "Chill & Connect Hub"
+      },
+      "rule": {
+        "targetTypes": [
+          "community"
+        ],
+        "count": 1,
+        "minEvidence": "checkin",
+        "asHost": 3
+      },
+      "title": "โฮสต์มือใหม่: เปิดตี้แรก มีเพื่อนมาครบ 3 คน",
+      "badgeCoverImg": "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=600&q=80",
+      "image": "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=80",
+      "iconName": "Megaphone",
+      "category": "cafe_social",
+      "badgeLabel": "Host Pioneer",
+      "badgeIcon": "📣",
+      "completedCountInfo": "0/1 ตี้",
+      "progressPercent": 0,
+      "current": "0",
+      "total": "1",
+      "visibility": "public",
+      "creatorName": "ทีมงาน Chill & Connect",
+      "participantsCount": 0,
+      "rewardPoints": 300,
+      "isOfficial": true,
+      "targetGoal": "เปิดตี้ของคุณเอง แล้วมีเพื่อนมาเช็กอินที่จุดนัดอย่างน้อย 3 คน",
+      "objective": "ชอบอะไรก็ชวนเพื่อนมาทำด้วยกัน วิ่ง บอร์ดเกม คาเฟ่ หรือเดินตลาด เปิดตี้แรกของคุณ มีเพื่อนมาครบ 3 คน รับตราโฮสต์ผู้บุกเบิกและ XP ก้อนใหญ่",
+      "steps": [
+        "ยื่นขอเป็นโฮสต์ในหน้าโปรไฟล์ (ทีมงานตรวจก่อน)",
+        "ตั้งตี้ของคุณ เลือกวัน เวลา และจุดนัด",
+        "วันนัดเช็กอินเพื่อนที่มาถึงในหน้าตี้ ครบ 3 คน XP เข้าบัญชีเอง"
+      ],
+      "verificationMethod": "คุณเช็กอินเพื่อนที่มาถึงจุดนัดในหน้าตี้ของคุณ",
+      "rewardsText": "เหรียญ \"Host Pioneer\" + 300 XP",
+      "startDate": "2026-10-25",
+      "endDate": "2026-12-31"
+    },
+    {
+      "id": "friend-ticket",
+      "brandReward": {
+        "type": "hub_central",
+        "title": "XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว",
+        "shortTitle": "สะสม XP ลุ้น iPhone Duo",
+        "partnerName": "Chill & Connect Hub"
+      },
+      "rule": {
+        "targetTypes": [
+          "community"
+        ],
+        "count": 1,
+        "minEvidence": "checkin",
+        "withFriends": 1,
+        "friendsVia": "invite"
+      },
+      "title": "ตั๋วเพื่อนซี้: ชวนเพื่อนมาสมัคร แล้วไปตี้ด้วยกัน",
+      "badgeCoverImg": "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=600&q=80",
+      "image": "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80",
+      "iconName": "Ticket",
+      "category": "cafe_social",
+      "badgeLabel": "Best Buddy",
+      "badgeIcon": "🎫",
+      "completedCountInfo": "0/1 ตี้",
+      "progressPercent": 0,
+      "current": "0",
+      "total": "1",
+      "visibility": "public",
+      "creatorName": "ทีมงาน Chill & Connect",
+      "participantsCount": 0,
+      "rewardPoints": 150,
+      "isOfficial": true,
+      "targetGoal": "ชวนเพื่อนสมัครผ่านลิงก์ของคุณ แล้วไปตี้เดียวกัน 1 ตี้",
+      "objective": "ชวนเพื่อนมา ไปด้วยกัน ได้ทั้งคู่ ส่งลิงก์ชวนเพื่อนจากหน้าโปรไฟล์ เพื่อนสมัครแล้วไปตี้เดียวกับคุณ โฮสต์เช็กอินให้ทั้งคู่ ได้ XP คนละ 150",
+      "steps": [
+        "ส่งลิงก์ชวนเพื่อนจากหน้าโปรไฟล์ หรือจากหน้านี้",
+        "เพื่อนสมัครผ่านลิงก์ แล้วกดร่วมชาเลนจ์นี้ทั้งคู่",
+        "ไปตี้เดียวกัน ให้โฮสต์เช็กอินให้ทั้งคู่ XP เข้าบัญชีเอง"
+      ],
+      "verificationMethod": "โฮสต์เช็กอินให้ทั้งคุณและเพื่อนที่จุดนัดพบ",
+      "rewardsText": "เหรียญ \"Best Buddy\" + 150 XP",
+      "startDate": "2026-10-25",
+      "endDate": "2026-12-31"
+    },
+    {
+      "id": "squad-tee",
+      "brandReward": {
+        "type": "hub_central",
+        "title": "XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว",
+        "shortTitle": "สะสม XP ลุ้น iPhone Duo",
+        "partnerName": "Chill & Connect Hub"
+      },
+      "rule": {
+        "targetTypes": [
+          "community"
+        ],
+        "count": 1,
+        "minEvidence": "checkin",
+        "withFriends": 2,
+        "friendsVia": "any"
+      },
+      "title": "ยกแก๊งไปตี้: ไปตี้เดียวกับเพื่อนอย่างน้อย 2 คน",
+      "badgeCoverImg": "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=600&q=80",
+      "image": "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=1200&q=80",
+      "iconName": "Users",
+      "category": "boardgames_party",
+      "badgeLabel": "Squad Up",
+      "badgeIcon": "👯",
+      "completedCountInfo": "0/1 ตี้",
+      "progressPercent": 0,
+      "current": "0",
+      "total": "1",
+      "visibility": "public",
+      "creatorName": "ทีมงาน Chill & Connect",
+      "participantsCount": 0,
+      "rewardPoints": 100,
+      "isOfficial": true,
+      "targetGoal": "ไปตี้เดียวกันกับเพื่อนอย่างน้อย 2 คน และโฮสต์เช็กอินให้ทุกคน",
+      "objective": "มาเป็นแก๊งอุ่นใจกว่า เพื่อนคือคนที่ชวนกันมาผ่านลิงก์ หรือคนที่ติดตามกันและกัน ไปตี้เดียวกันตั้งแต่ 3 คนขึ้นไป ได้โบนัสแก๊ง",
+      "steps": [
+        "ชวนเพื่อนผ่านลิงก์ หรือกดติดตามกันในแอป",
+        "เลือกตี้เดียวกัน แล้วไปพร้อมกันตั้งแต่ 3 คน",
+        "โฮสต์เช็กอินให้ทุกคน XP เข้าบัญชีเอง"
+      ],
+      "verificationMethod": "โฮสต์เช็กอินให้คุณและเพื่อนอย่างน้อย 2 คนในตี้เดียวกัน",
+      "rewardsText": "เหรียญ \"Squad Up\" + 100 XP",
+      "startDate": "2026-10-25",
+      "endDate": "2026-12-31"
+    },
+    {
+      "id": "weekend-passport-nov",
+      "brandReward": {
+        "type": "hub_central",
+        "title": "XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว",
+        "shortTitle": "สะสม XP ลุ้น iPhone Duo",
+        "partnerName": "Chill & Connect Hub"
+      },
+      "rule": {
+        "targetTypes": [
+          "spot",
+          "community",
+          "fair"
+        ],
+        "count": 4,
+        "minEvidence": "moment",
+        "perWeekend": true
+      },
+      "title": "พาสปอร์ตสุดสัปดาห์ พฤศจิกายน: ออกไปใช้ชีวิตครบ 4 สุดสัปดาห์",
+      "badgeCoverImg": "https://images.unsplash.com/photo-1501555088652-021faa106b9b?auto=format&fit=crop&w=600&q=80",
+      "image": "https://images.unsplash.com/photo-1501555088652-021faa106b9b?auto=format&fit=crop&w=1200&q=80",
+      "iconName": "Stamp",
+      "category": "travel_outdoor",
+      "badgeLabel": "Weekend Passport พฤศจิกายน",
+      "badgeIcon": "🛂",
+      "completedCountInfo": "0/4 สุดสัปดาห์",
+      "progressPercent": 0,
+      "current": "0",
+      "total": "4",
+      "visibility": "public",
+      "creatorName": "ทีมงาน Chill & Connect",
+      "participantsCount": 0,
+      "rewardPoints": 200,
+      "isOfficial": true,
+      "targetGoal": "ออกไปตี้ ที่เที่ยว หรืออีเวนต์ในวันเสาร์หรืออาทิตย์ ให้ครบ 4 สุดสัปดาห์ในเดือนพฤศจิกายน",
+      "objective": "สุดสัปดาห์ละครั้งก็พอ ไปตี้ แวะคาเฟ่ หรือเดินงานอีเวนต์ แชร์โมเมนต์พร้อมรูปหรือให้โฮสต์เช็กอินให้ ครบ 4 สุดสัปดาห์รับตราพาสปอร์ต",
+      "steps": [
+        "กดร่วมชาเลนจ์นี้",
+        "ทุกเสาร์หรืออาทิตย์ ออกไปที่ไหนก็ได้ แล้วแชร์โมเมนต์พร้อมรูปหรือให้โฮสต์เช็กอินให้",
+        "ครบ 4 สุดสัปดาห์ XP เข้าบัญชีเอง"
+      ],
+      "verificationMethod": "โมเมนต์พร้อมรูป หรือโฮสต์เช็กอินให้ ในวันเสาร์หรืออาทิตย์",
+      "rewardsText": "เหรียญ \"Weekend Passport พฤศจิกายน\" + 200 XP",
+      "startDate": "2026-11-01",
+      "endDate": "2026-11-30"
+    },
+    {
+      "id": "weekend-passport-dec",
+      "brandReward": {
+        "type": "hub_central",
+        "title": "XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว",
+        "shortTitle": "สะสม XP ลุ้น iPhone Duo",
+        "partnerName": "Chill & Connect"
+      },
+      "rule": {
+        "targetTypes": [
+          "spot",
+          "community",
+          "fair"
+        ],
+        "count": 4,
+        "minEvidence": "moment",
+        "perWeekend": true
+      },
+      "title": "พาสปอร์ตสุดสัปดาห์ ธันวาคม: ออกไปใช้ชีวิตครบ 4 สุดสัปดาห์",
+      "badgeCoverImg": "https://images.unsplash.com/photo-1501555088652-021faa106b9b?auto=format&fit=crop&w=600&q=80",
+      "image": "https://images.unsplash.com/photo-1501555088652-021faa106b9b?auto=format&fit=crop&w=1200&q=80",
+      "iconName": "Stamp",
+      "category": "travel_outdoor",
+      "badgeLabel": "Weekend Passport ธันวาคม",
+      "badgeIcon": "🛂",
+      "completedCountInfo": "0/4 สุดสัปดาห์",
+      "progressPercent": 0,
+      "current": "0",
+      "total": "4",
+      "visibility": "public",
+      "creatorName": "ทีมงาน Chill & Connect",
+      "participantsCount": 0,
+      "rewardPoints": 200,
+      "isOfficial": true,
+      "targetGoal": "ออกไปตี้ ที่เที่ยว หรืออีเวนต์ในวันเสาร์หรืออาทิตย์ ให้ครบ 4 สุดสัปดาห์ในเดือนธันวาคม",
+      "objective": "สุดสัปดาห์ละครั้งก็พอ ไปตี้ แวะคาเฟ่ หรือเดินงานอีเวนต์ แชร์โมเมนต์พร้อมรูปหรือให้โฮสต์เช็กอินให้ ครบ 4 สุดสัปดาห์รับตราพาสปอร์ต",
+      "steps": [
+        "กดร่วมชาเลนจ์นี้",
+        "ทุกเสาร์หรืออาทิตย์ ออกไปที่ไหนก็ได้ แล้วแชร์โมเมนต์พร้อมรูปหรือให้โฮสต์เช็กอินให้",
+        "ครบ 4 สุดสัปดาห์ XP เข้าบัญชีเอง"
+      ],
+      "verificationMethod": "โมเมนต์พร้อมรูป หรือโฮสต์เช็กอินให้ ในวันเสาร์หรืออาทิตย์",
+      "rewardsText": "เหรียญ \"Weekend Passport ธันวาคม\" + 200 XP",
+      "startDate": "2026-12-01",
+      "endDate": "2026-12-31"
     }
   ],
   "userQuests": {},
@@ -114945,7 +115621,22 @@
     "quest-off-3",
     "quest-off-4",
     "quest-ended-1",
-    "quest-ended-2"
+    "quest-ended-2",
+    "launch-tee",
+    "launch-spots",
+    "launch-fair",
+    "welcome-first-tee",
+    "theme-hidden-cafe",
+    "theme-green-park",
+    "theme-art-day",
+    "theme-market",
+    "theme-sunset-view",
+    "theme-year-end-tee",
+    "host-starter",
+    "friend-ticket",
+    "squad-tee",
+    "weekend-passport-nov",
+    "weekend-passport-dec"
   ],
-  "questSeedTextVersion": 6
+  "questSeedTextVersion": 7
 }

@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
+import { CampaignStrip, type CampaignMemberState } from '@/components/CampaignStrip';
+import type { Campaign } from '@/lib/campaigns/types';
 import Link from 'next/link';
 import { Bookmark, CalendarDays, Gift, Stamp, Zap } from 'lucide-react';
 import type { ChallengeQuest, EventItem } from '@/data/mockData';
@@ -18,6 +20,10 @@ const MY_MONTH_HREF = '/myhub#my-month';
 
 export interface MemberLiveHomeProps {
   name: string;
+  /** The running campaign (server, liveCampaign({ home: true })); shown again with the member's own progress */
+  campaign?: Campaign | null;
+  /** Where the member stands in it (null until their rewards load) */
+  campaignMember?: CampaignMemberState | null;
   avatar?: string;
   now: number;
   xp: number;
@@ -117,6 +123,13 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
         onFollowDone={finishFollow}
         returning={returning}
       />
+    )}
+    {/* The campaign slot, under the band: what you do next first, then what it earns you. Loud only when there is a
+        decision (start, enter), a slim progress line while collecting (owner 2026-10-25; CampaignStrip has the states) */}
+    {props.campaign && props.campaignMember && (
+      <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 pt-1 sm:pt-2 empty:hidden">
+        <CampaignStrip campaign={props.campaign} member={props.campaignMember} className={props.campaignMember.started ? 'mt-4 sm:mt-5' : ''} />
+      </div>
     )}
     <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 pt-5 sm:pt-7">
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[260px_minmax(0,1fr)_320px] 2xl:grid-cols-[300px_minmax(0,1fr)_360px] lg:gap-10">

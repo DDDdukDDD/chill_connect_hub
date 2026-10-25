@@ -23,6 +23,7 @@ import {
   ShieldCheck,
   History,
   UserRound,
+  Megaphone,
 } from 'lucide-react';
 import type { AdminPermission } from '@/lib/permissions';
 import { AdminSessionStatus } from './AdminSessionStatus';
@@ -35,6 +36,7 @@ export type AdminModuleId =
   | 'fairs'
   | 'spots'
   | 'quests'
+  | 'campaigns'
   | 'moments'
   | 'reports'
   | 'scraper'
@@ -79,6 +81,7 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
       { id: 'fairs', label: 'งานมหกรรม & เอ็กซ์โป', icon: Trophy, pillarColor: '#2B527A' },
       { id: 'spots', label: 'พิกัดเที่ยว 77 จังหวัด', icon: Leaf, pillarColor: '#4A7C59' },
       { id: 'quests', label: 'ชาเลนจ์ & ภารกิจ', icon: Zap, pillarColor: '#7C3AED' },
+      { id: 'campaigns', label: 'แคมเปญ', icon: Megaphone },
       { id: 'moments', label: 'โมเมนต์', icon: Camera },
     ],
   },
@@ -123,6 +126,7 @@ export const MODULE_PERMISSIONS: Record<AdminModuleId, AdminPermission> = {
   fairs: 'content.view',
   spots: 'content.view',
   quests: 'content.view',
+  campaigns: 'content.view',
   moments: 'content.view',
   reports: 'content.view',
   scraper: 'content.view',

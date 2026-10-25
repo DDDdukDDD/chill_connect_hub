@@ -1,5 +1,6 @@
 import { connection } from 'next/server';
 import { listPublicQuests } from '@/lib/publicContent';
+import { liveCampaign } from '@/lib/campaigns/store';
 import ChallengesListView from './ChallengesListView';
 
 type Props = { searchParams: Promise<{ q?: string }> };
@@ -9,5 +10,5 @@ type Props = { searchParams: Promise<{ q?: string }> };
 export default async function ChallengesPage({ searchParams }: Props) {
   await connection();
   const { q } = await searchParams;
-  return <ChallengesListView initialQuests={await listPublicQuests()} initialQuery={typeof q === 'string' ? q : ''} />;
+  return <ChallengesListView initialQuests={await listPublicQuests()} initialQuery={typeof q === 'string' ? q : ''} campaign={liveCampaign()} />;
 }

@@ -13,6 +13,8 @@ import { ScrollRow } from '@/components/ScrollRow';
 import { CategoryStickerCards, communityCategoryCards } from '@/components/CategoryStickerCards';
 import { MemberLiveHome } from '@/components/home/MemberLiveHome';
 import { LiveJoinsLine } from '@/components/home/LiveActivity';
+import { CampaignStrip } from '@/components/CampaignStrip';
+import type { Campaign } from '@/lib/campaigns/types';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
@@ -125,9 +127,9 @@ const upcomingByDate = (events: EventItem[], type: 'community' | 'public_venue')
 const allowsMeetups = (spot: LifestyleSpotItem) =>
   spot.meetupAllowed === true && spot.category !== 'bar' && spot.publicationStatus !== 'draft';
 
-type InitialContent = { initialEvents?: EventItem[]; initialQuests?: ChallengeQuest[] };
+type InitialContent = { initialEvents?: EventItem[]; initialQuests?: ChallengeQuest[]; campaign?: Campaign | null };
 
-function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
+function JourneyContent({ initialEvents, initialQuests, campaign = null }: InitialContent) {
   // The home page is not one of the menu items (ค้นพบ is /community); the logo leads here
   const [activeNavTab, setActiveNavTab] = useState('home');
   const [eventsList, setEventsList] = useState<EventItem[]>(initialEvents ?? []);
@@ -406,6 +408,17 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
       <main className="flex-1 pb-28 sm:pb-16">
         {isMember ? (
           <MemberLiveHome
+            campaign={campaign}
+            campaignMember={
+              campaign && myRewards.isLoaded
+                ? {
+                    xp: myRewards.balance,
+                    started: [...campaign.questIds, ...campaign.extraQuestIds].some((id) => myRewards.joinedQuestIds.includes(id)),
+                    enteredAt: campaign.rewardId ? myRewards.redeemedAt[campaign.rewardId] : undefined,
+                    now,
+                  }
+                : null
+            }
             name={sessionMember?.displayName ?? 'เพื่อน'}
             avatar={sessionMember?.avatarUrl}
             now={now}
@@ -505,6 +518,10 @@ function JourneyContent({ initialEvents, initialQuests }: InitialContent) {
             A search from the header window opens the ค้นพบ pages. */}
         {!isMember && (
           <>
+            {/* The running campaign, one slim line under the hero; gone outside its dates (owner 2026-10-25) */}
+            <div className={`${CONTAINER} pt-4 sm:pt-6`}>
+              <CampaignStrip campaign={campaign} />
+            </div>
             <div id="journey-top" className={`${CONTAINER} pt-8 sm:pt-12 space-y-12 sm:space-y-16 scroll-mt-20`}>
               {/* 2. Proof of the community the hero names ("คอมมูนิตี้ของคนชอบออกไปใช้ชีวิต"): people and their moments
                   first, then how to start (owner 2026-10-23) */}

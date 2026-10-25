@@ -18,6 +18,8 @@ export interface RewardShopItem {
   validUntil: string;
   terms: string[];
   featured?: boolean;
+  /** A prize draw entry instead of a voucher: each member gets their own entry code, and no stock runs out */
+  drawEntry?: { drawLabel: string; prizeCount: number };
 }
 
 export const REWARD_CATEGORIES = [
@@ -30,6 +32,31 @@ export const REWARD_CATEGORIES = [
 ] as const;
 
 export const REWARD_SHOP_ITEMS: RewardShopItem[] = [
+  {
+    // SAMPLE launch prize (data/launchCampaign.ts); remove or replace before launch
+    id: 'reward-launch-iphone',
+    title: 'สิทธิ์ลุ้น iPhone Duo ฟรี กิจกรรมเปิดตัว',
+    category: 'merch',
+    categoryLabel: 'ของรางวัลพิเศษ',
+    costXp: 500,
+    iconName: 'Gift',
+    emoji: '🎁',
+    description: 'ฉลองเปิดตัว Chill & Connect ใช้ 500 XP แลกสิทธิ์ลุ้น iPhone Duo 1 เครื่อง สะสม XP ได้จากชาเลนจ์เปิดตัวทั้งสาม ไปตี้ แชร์โมเมนต์ และไปอีเวนต์',
+    partner: 'Chill & Connect',
+    partnerLocation: 'ประกาศผลบนเว็บไซต์และแจ้งเตือนในแอป',
+    voucherCode: 'LAUNCH-DRAW',
+    stockCount: 1,
+    discountValue: 'iPhone Duo 1 รางวัล',
+    validUntil: '31 ธ.ค. 2569',
+    terms: [
+      'แลกสิทธิ์ได้ 1 ครั้งต่อบัญชี ภายใน 31 ธ.ค. 2569',
+      'จับรางวัล 15 ม.ค. 2570 จากรหัสสิทธิ์ของสมาชิกทุกคนที่แลกไว้',
+      'ผู้โชคดีต้องยืนยันตัวตนกับทีมงานภายใน 7 วัน ไม่เช่นนั้นจะจับรางวัลใหม่',
+      'ของรางวัลเปลี่ยนเป็นเงินสดหรือโอนสิทธิ์ให้ผู้อื่นไม่ได้',
+    ],
+    featured: true,
+    drawEntry: { drawLabel: '15 ม.ค. 2570', prizeCount: 1 },
+  },
   {
     id: 'reward-1',
     title: 'คูปองส่วนลด ฿50 Specialty Coffee',
@@ -205,58 +232,3 @@ export const REWARD_SHOP_ITEMS: RewardShopItem[] = [
   },
 ];
 
-// Helper functions for localStorage persistence
-const USER_XP_STORAGE_KEY = 'cch_user_xp';
-const REDEEMED_REWARDS_STORAGE_KEY = 'cch_redeemed_reward_ids';
-const DEFAULT_STARTING_XP = 650;
-
-export const getStoredUserXp = (): number => {
-  if (typeof window === 'undefined') return DEFAULT_STARTING_XP;
-  try {
-    const raw = localStorage.getItem(USER_XP_STORAGE_KEY);
-    if (raw !== null) {
-      const parsed = parseInt(raw, 10);
-      if (!isNaN(parsed)) return parsed;
-    }
-    // Fallback: initialize
-    localStorage.setItem(USER_XP_STORAGE_KEY, DEFAULT_STARTING_XP.toString());
-    return DEFAULT_STARTING_XP;
-  } catch {
-    return DEFAULT_STARTING_XP;
-  }
-};
-
-export const setStoredUserXp = (xp: number): void => {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(USER_XP_STORAGE_KEY, xp.toString());
-  } catch (e) {
-    console.error('Error saving XP to localStorage:', e);
-  }
-};
-
-export const getStoredRedeemedRewardIds = (): string[] => {
-  if (typeof window === 'undefined') return ['reward-1'];
-  try {
-    const raw = localStorage.getItem(REDEEMED_REWARDS_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
-    }
-    // Default initial mock redeemed item
-    const initial = ['reward-1'];
-    localStorage.setItem(REDEEMED_REWARDS_STORAGE_KEY, JSON.stringify(initial));
-    return initial;
-  } catch {
-    return ['reward-1'];
-  }
-};
-
-export const setStoredRedeemedRewardIds = (ids: string[]): void => {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(REDEEMED_REWARDS_STORAGE_KEY, JSON.stringify(ids));
-  } catch (e) {
-    console.error('Error saving redeemed reward IDs to localStorage:', e);
-  }
-};

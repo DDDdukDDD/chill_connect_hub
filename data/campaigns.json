@@ -1,0 +1,38 @@
+[
+  {
+    "id": "launch-2569",
+    "name": "กิจกรรมเปิดตัว ลุ้น iPhone Duo",
+    "eyebrow": "กิจกรรมเปิดตัว Chill & Connect",
+    "headline": "แค่ออกไปใช้ชีวิต ก็ลุ้น iPhone Duo ฟรี",
+    "text": "ไปตี้แรก แชร์โมเมนต์จากที่เที่ยว และไปอีเวนต์กับเพื่อนๆ ครบสามชาเลนจ์ก็ได้ XP 500 พอแลกสิทธิ์ลุ้นแล้ว",
+    "stripText": "ไปตี้ แชร์โมเมนต์ ไปอีเวนต์ ครบ 3 ชาเลนจ์ รับสิทธิ์ลุ้นทันที",
+    "cta": "เริ่มสะสมสิทธิ์",
+    "startDate": "2026-10-25",
+    "endDate": "2026-12-31",
+    "prizeImage": "/campaign/iphone-duo.png",
+    "rewardId": "reward-launch-iphone",
+    "questIds": [
+      "launch-tee",
+      "launch-spots",
+      "launch-fair"
+    ],
+    "extraQuestIds": [
+      "welcome-first-tee",
+      "host-starter",
+      "friend-ticket",
+      "squad-tee",
+      "weekend-passport-nov",
+      "weekend-passport-dec",
+      "theme-hidden-cafe",
+      "theme-green-park",
+      "theme-art-day",
+      "theme-market",
+      "theme-sunset-view",
+      "theme-year-end-tee"
+    ],
+    "showOnHome": true,
+    "published": true,
+    "createdAt": "2026-10-25T07:59:20.246Z",
+    "updatedAt": "2026-10-25T08:16:17.642Z"
+  }
+]

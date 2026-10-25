@@ -20,11 +20,6 @@ export const EMAIL_VERIFY_HOURS = 48;
 const DAY = 24 * 60 * 60 * 1000;
 const hashToken = (secret: string) => createHash('sha256').update(secret).digest('hex');
 
-/** One-way fingerprint of an IP address: lets staff see "several accounts from one place" without storing the address */
-export function hashIp(ip: string, secret: string): string {
-  return createHash('sha256').update(`${secret}:${ip}`).digest('hex').slice(0, 16);
-}
-
 export async function addRiskFlags(memberId: string, flags: RiskFlag[]): Promise<void> {
   if (!flags.length) return;
   const member = await memberRepository.findById(memberId);
@@ -36,17 +31,14 @@ export async function addRiskFlags(memberId: string, flags: RiskFlag[]): Promise
 }
 
 /** Run once right after an account is created */
-export async function applySignupChecks(member: Member, ipHash: string | null): Promise<Member> {
+export async function applySignupChecks(member: Member): Promise<Member> {
   const flags: RiskFlag[] = [];
   if (isDisposableEmail(member.email)) flags.push(makeFlag('disposable_email', member.email?.split('@')[1] ?? ''));
   const nameTerms = riskTermsIn(member.displayName);
   if (nameTerms.length || containsContactInfo(member.displayName)) flags.push(makeFlag('risky_name', nameTerms.join(', ') || 'มีช่องทางติดต่อในชื่อ'));
-  if (ipHash) {
-    const { items } = await memberRepository.query({ status: 'all', page: 1, limit: 100_000 });
-    const sameDay = items.filter((m) => m.id !== member.id && m.signupIpHash === ipHash && Date.now() - new Date(m.createdAt).getTime() < DAY);
-    if (sameDay.length >= 2) flags.push(makeFlag('shared_ip', `${sameDay.length + 1} บัญชีใน 24 ชั่วโมง`));
-  }
-  return memberRepository.update(member.id, { signupIpHash: ipHash ?? undefined, riskFlags: flags.length ? flags : undefined });
+  // Several accounts from one place are allowed (owner 2026-10-25): the rule is one account per email
+  if (!flags.length) return member;
+  return memberRepository.update(member.id, { riskFlags: flags });
 }
 
 /* ---------- Pledge ---------- */
@@ -99,7 +91,7 @@ export async function verifyEmailWithToken(tokenInput: unknown): Promise<Member>
 /**
  * Called before a member posts a moment or a comment.
  * - Must be at least "verified" (email confirmed and pledge accepted).
- * - Until trusted: a daily limit, and no contact details (links, phone numbers, LINE ids).
+ * - Until trusted: a daily comment limit, and no contact details (links, phone numbers, LINE ids). Moments have no daily limit.
  * - Sales, investment and loan words are allowed through but flag the account for staff.
  */
 export async function guardPosting(member: Member, kind: 'moment' | 'comment', text: string): Promise<void> {
@@ -113,14 +105,11 @@ export async function guardPosting(member: Member, kind: 'moment' | 'comment', t
       await addRiskFlags(member.id, [makeFlag('contact_info', text.slice(0, 80))]);
       throw new MemberAuthError(`บัญชีใหม่ยังใส่ลิงก์ เบอร์โทร หรือไอดีไลน์ไม่ได้ในช่วง ${NEW_ACCOUNT_DAYS} วันแรก`, 400);
     }
-    const since = Date.now() - DAY;
-    const { items } = await momentRepository.query({ statuses: ['published', 'hidden'], sort: 'newest', page: 1, limit: 10_000 });
-    const used = kind === 'moment'
-      ? items.filter((m) => m.authorId === member.id && new Date(m.createdAt).getTime() > since).length
-      : items.reduce((n, m) => n + m.comments.filter((c) => c.authorId === member.id && new Date(c.createdAt).getTime() > since).length, 0);
-    const limit = kind === 'moment' ? NEW_ACCOUNT_LIMITS.momentsPerDay : NEW_ACCOUNT_LIMITS.commentsPerDay;
-    if (used >= limit) {
-      throw new MemberAuthError(kind === 'moment' ? `บัญชีใหม่โพสต์ได้วันละ ${limit} โมเมนต์ พรุ่งนี้โพสต์ต่อได้เลย` : `บัญชีใหม่คอมเมนต์ได้วันละ ${limit} ครั้ง`, 429);
+    if (kind === 'comment') {
+      const since = Date.now() - DAY;
+      const { items } = await momentRepository.query({ statuses: ['published', 'hidden'], sort: 'newest', page: 1, limit: 10_000 });
+      const used = items.reduce((n, m) => n + m.comments.filter((c) => c.authorId === member.id && new Date(c.createdAt).getTime() > since).length, 0);
+      if (used >= NEW_ACCOUNT_LIMITS.commentsPerDay) throw new MemberAuthError(`บัญชีใหม่คอมเมนต์ได้วันละ ${NEW_ACCOUNT_LIMITS.commentsPerDay} ครั้ง`, 429);
     }
   }
   const terms = riskTermsIn(text);

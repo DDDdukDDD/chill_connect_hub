@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import { toPublicMember } from '@/lib/members';
 import { MemberAuthError, registerWithEmail } from '@/lib/members/accounts';
-import { applySignupChecks, autoVerifyEmail, hashIp, isEmailVerificationSkipped } from '@/lib/members/safety';
+import { applySignupChecks, autoVerifyEmail, isEmailVerificationSkipped } from '@/lib/members/safety';
 import { getSessionSecret, isSameOrigin, setMemberSessionCookie } from '@/lib/members/session';
 import { sendVerification } from '../verify-email/send';
 import { clientIp, isRateLimited } from '@/lib/rateLimit';
+import { readCookie } from '@/lib/adminSession';
+import { INVITE_COOKIE, attachInviter } from '@/lib/social/friends';
 
 // { email, password, consent: true, ageConfirmed: true, displayName? } (no name → "สมาชิกใหม่" until onboarding) → creates the account, signs it in and emails a verification link
 export async function POST(request: Request) {
@@ -17,8 +19,10 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const created = await registerWithEmail(body);
-    // Warning signs for staff (throwaway email, many accounts from one place, risky name); never blocks sign-up
-    const checked = await applySignupChecks(created, hashIp(clientIp(request), getSessionSecret() ?? ''));
+    // Warning signs for staff (throwaway email, risky name); never blocks sign-up
+    const checked = await applySignupChecks(created);
+    // Came through a friend's invite link (ตั๋วเพื่อนซี้): the code rides in a cookie, or in the body
+    await attachInviter(checked, typeof body?.ref === 'string' ? body.ref : readCookie(request, INVITE_COOKIE));
     // Prototype deployments without a mailer skip the email link (SKIP_EMAIL_VERIFICATION)
     const member = isEmailVerificationSkipped() ? await autoVerifyEmail(checked) : checked;
     // The link brings the member back to what they were doing (e.g. the ตี้ they came to join); checked as a same-site path
@@ -26,6 +30,7 @@ export async function POST(request: Request) {
     const verification = member.emailVerified ? { sent: false } : await sendVerification(request, member, returnTo);
     const response = NextResponse.json({ success: true, member: toPublicMember(member), verification });
     setMemberSessionCookie(response, member);
+    response.cookies.delete(INVITE_COOKIE);
     return response;
   } catch (error) {
     if (error instanceof MemberAuthError) return NextResponse.json({ success: false, message: error.message }, { status: error.status });

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { SITE_URL } from "@/lib/site";
 import { IBM_Plex_Sans_Thai, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import { InviteRefCapture } from "@/components/InviteRefCapture";
 
 const ibmPlexSansThai = IBM_Plex_Sans_Thai({
   weight: ["300", "400", "500", "600", "700"],
@@ -166,6 +167,7 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans">
+        <InviteRefCapture />
         {children}
       </body>
     </html>

@@ -8,6 +8,7 @@ import { TaxonomyManagerView } from '@/components/admin/TaxonomyManagerView';
 import { ProvincesManagerView } from '@/components/admin/ProvincesManagerView';
 import { VenuesManagerView } from '@/components/admin/VenuesManagerView';
 import { QuestsManagerView } from '@/components/admin/QuestsManagerView';
+import { CampaignsManagerView } from '@/components/admin/CampaignsManagerView';
 import { ScraperEngineView } from '@/components/admin/ScraperEngineView';
 import { EventsModerationView } from '@/components/admin/EventsModerationView';
 import { MediaManagerView } from '@/components/admin/MediaManagerView';
@@ -124,6 +125,8 @@ function AdminConsole() {
         return <EventsModerationView key="fairs" type="fairs" />;
       case 'quests':
         return <QuestsManagerView />;
+      case 'campaigns':
+        return <CampaignsManagerView />;
       case 'moments':
         return <MomentsManagerView />;
       case 'reports':
