@@ -243,7 +243,7 @@ export const SmartSpotPlanModal: React.FC<SmartSpotPlanModalProps> = ({
                       {cleanText(item.spot.title)}
                     </div>
                     <div className="text-[10.5px] text-slate-500 font-medium truncate pt-0.5">
-                      {item.spot.district}, จังหวัด{item.spot.province}
+                      {[item.spot.district, item.spot.province].filter(Boolean).join(', ')}
                     </div>
 
                     {/* Transit Distance Pill */}

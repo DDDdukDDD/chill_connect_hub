@@ -22,7 +22,7 @@ import { CreateEventModal } from '@/components/CreateEventModal';
 import { useAuth } from '@/lib/useAuth';
 import { useMyActivity } from '@/lib/useMyActivity';
 import { usePublishedSpots, getCachedSpotVibeCategory, getCachedSpotSearchText } from '@/lib/usePublishedSpots';
-import { compareSpotsByRank } from '@/lib/spotRanking';
+import { compareSpotsByRank, shownWhenBrowsing } from '@/lib/spotRanking';
 import { MOCK_SPOTS, LifestyleSpotItem } from '@/data/spotsData';
 import { NATIONWIDE_SPOT_CATEGORIES } from '@/components/SpotCategoryRail';
 import { DiscoverCategoryTabs } from '@/components/discover/DiscoverCategoryTabs';
@@ -47,6 +47,8 @@ function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: num
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return Math.round(R * c * 10) / 10;
 }
+
+const MIN_SPOTS_PER_GROUP = 10;
 
 type ServerProps = { initialSpots?: LifestyleSpotItem[]; initialCounts?: { query: string; province: string; counts: DiscoverCounts } };
 
@@ -214,6 +216,8 @@ function SpotsPageContent({ initialSpots, initialCounts }: ServerProps) {
 
       // Smart Search Query using cached text index with multi-token and synonyms
       if (!matchesQuery(fullText, searchQuery)) return false;
+      // Places curated as hidden show only when searched for (saved ones still show in the saved list)
+      if (!searchQuery.trim() && sortBy !== 'favorites' && !shownWhenBrowsing(spot)) return false;
       return true;
     });
 
@@ -243,6 +247,7 @@ function SpotsPageContent({ initialSpots, initialCounts }: ServerProps) {
     for (let i = 0; i < spotsList.length; i++) {
       const spot = spotsList[i];
       if (!spotInProvince(spot, selectedProvince, getCachedSpotSearchText(spot))) continue;
+      if (!shownWhenBrowsing(spot)) continue;
 
       counts['all'] += 1;
       const vibe = getCachedSpotVibeCategory(spot);
@@ -251,6 +256,19 @@ function SpotsPageContent({ initialSpots, initialCounts }: ServerProps) {
 
     return counts;
   }, [spotsList, selectedProvince]);
+
+  // Groups with only a handful of places nationwide (bars, galleries, rooftops for now) stay off the rail until the
+  // catalog has enough of them; one picked from a link still shows (owner 2026-10-25)
+  const railCategories = useMemo(() => {
+    const nationwide: Record<string, number> = {};
+    for (const spot of spotsList) {
+      if (!shownWhenBrowsing(spot)) continue;
+      const vibe = getCachedSpotVibeCategory(spot);
+      nationwide[vibe] = (nationwide[vibe] || 0) + 1;
+    }
+    if (spotsList.length === 0) return NATIONWIDE_SPOT_CATEGORIES;
+    return NATIONWIDE_SPOT_CATEGORIES.filter((cat) => (nationwide[cat.id] || 0) >= MIN_SPOTS_PER_GROUP || cat.id === selectedCategory);
+  }, [spotsList, selectedCategory]);
 
   const totalPages = Math.ceil(filteredSpots.length / itemsPerPage) || 1;
 
@@ -407,7 +425,7 @@ function SpotsPageContent({ initialSpots, initialCounts }: ServerProps) {
         {/* Categories as icon tabs, right above the list */}
         <DiscoverCategoryTabs
           kind="spots"
-          categories={NATIONWIDE_SPOT_CATEGORIES}
+          categories={railCategories}
           counts={spotCounts}
           mineIds={myInterests.spotVibes}
           selectedId={selectedCategory === 'all' ? null : selectedCategory}

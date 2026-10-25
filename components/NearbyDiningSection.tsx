@@ -82,7 +82,7 @@ export const NearbyDiningSection: React.FC<NearbyDiningSectionProps> = ({ spot }
             </h3>
           </div>
           <p className="text-[11px] sm:text-xs text-slate-500 font-medium">
-            คัดสรร 6 ร้านกาแฟและร้านอร่อยใกล้ {spot.title} ในระยะ 5-10 นาที
+            คัดสรร 6 ร้านกาแฟและร้านอร่อยใกล้ {spot.title}
           </p>
         </div>
 

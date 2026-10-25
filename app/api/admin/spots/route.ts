@@ -7,6 +7,8 @@ import { LifestyleSpotItem, getSpotVibeCategory } from '@/data/spotsData';
 import { isThaiCoordinate } from '@/lib/contentQuality';
 import { coordinatesMapUrl, defaultSpotCategoryLabel } from '@/lib/spotCategories';
 import { autoEnrichSpotImages } from '@/lib/spotImageResolver';
+import { recomputeCuration, setCurationOverride } from '@/lib/spotCurationStore';
+import { CURATION_TIER_LABEL, type CurationTier } from '@/lib/spotCuration';
 
 const SPOT_CATEGORY_IDS = new Set<LifestyleSpotItem['category']>([
   'park', 'art', 'cafe', 'oldtown', 'workspace', 'viewpoint', 'nature',
@@ -17,7 +19,7 @@ const MUTABLE_SPOT_FIELDS = new Set<keyof LifestyleSpotItem>([
   'image', 'galleryImages', 'openHours', 'price', 'bestTime', 'vibeTags',
   'description', 'highlights', 'facilities', 'googleMapsUrl', 'rating',
   'reviewsCount', 'latitude', 'longitude', 'publicationStatus', 'sourceName',
-  'sourceUrl', 'zone', 'contact', 'entryFee', 'meetupAllowed',
+  'sourceUrl', 'zone', 'contact', 'entryFee', 'meetupAllowed', 'wikiMonthlyViews',
 ]);
 
 async function getAllSpots(): Promise<LifestyleSpotItem[]> {
@@ -282,6 +284,8 @@ export async function POST(request: Request) {
         (!idSet || idSet.has(spot.id)) && inScope(spot.id) && spot.publicationStatus !== status
       );
       const updated = await db.bulkUpdateSpots(targets.map((spot) => ({ id: spot.id, publicationStatus: status })));
+      // Newly published places are scored with the rest
+      if (status === 'published' && updated > 0) await recomputeCuration();
       recordAudit(
         actor,
         status === 'published' ? 'spot.publish' : 'spot.unpublish',
@@ -295,6 +299,26 @@ export async function POST(request: Request) {
         updated,
         message: `${status === 'published' ? 'เผยแพร่' : 'ซ่อนเป็นร่าง'} ${updated} สถานที่`,
       });
+    }
+
+    // Automatic curation (lib/spotCuration.ts): score every published place again; staff overrides stay
+    if (action === 'recompute_curation') {
+      const result = await recomputeCuration();
+      recordAudit(actor, 'spot.curation_recompute', `คัดสถานที่อัตโนมัติ ${result.total} แห่ง: แนะนำ ${result.featured}, ซ่อนจากหน้ารวม ${result.hidden}`);
+      return NextResponse.json({ success: true, ...result, message: `คัดใหม่ ${result.total} แห่ง: แนะนำ ${result.featured} · ซ่อนจากหน้ารวม ${result.hidden}` });
+    }
+
+    // Staff's own tier for one place: featured | standard | hidden, or null to go back to the automatic one
+    if (action === 'set_curation') {
+      const { spotId, tier, note } = body as { spotId?: unknown; tier?: unknown; note?: unknown };
+      const spot = typeof spotId === 'string' ? await db.findSpotById(spotId) : null;
+      if (!spot) return NextResponse.json({ success: false, error: 'ไม่พบสถานที่' }, { status: 404 });
+      if (tier !== null && tier !== 'featured' && tier !== 'standard' && tier !== 'hidden') {
+        return NextResponse.json({ success: false, error: 'tier must be featured, standard, hidden or null' }, { status: 400 });
+      }
+      const updated = await setCurationOverride(spot, tier as CurationTier | null, typeof note === 'string' ? note.trim().slice(0, 200) : '', actor?.name);
+      recordAudit(actor, 'spot.curation_set', tier ? `ตั้ง "${spot.title}" เป็น${CURATION_TIER_LABEL[tier as CurationTier]}` : `คืน "${spot.title}" ให้ระบบคัดเอง`, { type: 'spot', id: spot.id });
+      return NextResponse.json({ success: true, spot: updated });
     }
 
     if (action === 'delete') {

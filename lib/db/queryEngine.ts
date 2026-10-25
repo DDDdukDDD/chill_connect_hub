@@ -88,6 +88,7 @@ export function filterEvents(
     lifestyleCategory,
     fairCategory,
     spotId,
+    placeId,
     searchQuery,
     status,
     includeEnded = false,
@@ -179,6 +180,9 @@ export function filterEvents(
     }
 
     // 5.1 Spot Buddy trips of one place
+    if (placeId && ev.placeId !== placeId) {
+      return false;
+    }
     if (spotId && ev.spotId !== spotId) {
       return false;
     }

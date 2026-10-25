@@ -37,6 +37,8 @@ export interface EventQueryParams extends PaginationParams {
   fairCategory?: string | null;
   /** Spot Buddy trips tied to one place */
   spotId?: string | null;
+  /** ตี้ that meet at this catalog place (EventItem.placeId) */
+  placeId?: string | null;
   searchQuery?: string | null;
   status?: 'recruiting' | 'full' | 'ended' | 'all';
   includeEnded?: boolean;

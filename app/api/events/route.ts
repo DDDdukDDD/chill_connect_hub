@@ -59,7 +59,7 @@ export async function GET(request: Request) {
 
     const hasFilterParams = [
       'page', 'limit', 'province', 'type', 'category', 'q', 'zone',
-      'venueTag', 'status', 'includeEnded', 'sortBy', 'spotId', 'lifestyleCategory', 'fairCategory',
+      'venueTag', 'status', 'includeEnded', 'sortBy', 'spotId', 'placeId', 'lifestyleCategory', 'fairCategory',
     ].some((param) => searchParams.has(param));
 
     if (hasFilterParams) {
@@ -86,6 +86,7 @@ export async function GET(request: Request) {
         lifestyleCategory: searchParams.get('lifestyleCategory'),
         fairCategory: searchParams.get('fairCategory'),
         spotId: searchParams.get('spotId'),
+        placeId: searchParams.get('placeId'),
         searchQuery,
         status: status || 'all',
         sortBy: sortBy || 'newest',

@@ -67,6 +67,10 @@ export interface LifestyleSpotItem {
   entryFee?: string;
   /** Source popularity signal (page views on the source site); higher = more visited */
   popularity?: number;
+  /** OSM places: average monthly views of the linked Wikipedia article (a storable, free interest signal) */
+  wikiMonthlyViews?: number;
+  /** Automatic curation and staff's override (lib/spotCuration.ts) */
+  curation?: SpotCuration;
   zone?: string;
   isTrending?: boolean;
   isNew?: boolean;
@@ -80,6 +84,7 @@ export interface LifestyleSpotItem {
 
 export type Spot = LifestyleSpotItem;
 
+import type { SpotCuration } from '@/lib/spotCuration';
 import {
   MASTER_SPOT_CATEGORIES,
   MASTER_77_PROVINCES,

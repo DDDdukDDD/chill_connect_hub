@@ -16,7 +16,7 @@ import {
   type DiscoverCounts,
 } from '@/lib/discoverMatch';
 import { joinCounts } from '@/lib/social/questJoins';
-import { compareSpotsByRank } from '@/lib/spotRanking';
+import { compareSpotsByRank, shownWhenBrowsing } from '@/lib/spotRanking';
 
 /**
  * What a public detail page shows, read on the server so the content is in the HTML search engines get.
@@ -65,7 +65,7 @@ export const listPublicQuests = async () => {
 
 /** The first places of the /spots list in its default order. The full catalog (8 MB) still loads in the browser. */
 export const listTopSpots = async (count: number) =>
-  (await allPages((page) => db.findSpots({ page, limit: 100 }))).sort(compareSpotsByRank(Date.now())).slice(0, count);
+  (await allPages((page) => db.findSpots({ page, limit: 100 }))).filter(shownWhenBrowsing).sort(compareSpotsByRank(Date.now())).slice(0, count);
 
 /** True when the pages' bundled sample data has this id (or, for old links, this title); those pages still show it. */
 export const isBundledEvent = (id: string) => Boolean(getEventById(id) || MOCK_EVENTS.some((event) => event.title === id));

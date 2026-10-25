@@ -8,6 +8,7 @@ import {
   getDistanceKm,
 } from '@/data/spotsData';
 import { resolveSpotImage } from '@/lib/spotImageResolver';
+import { useSpotCatalog } from '@/lib/usePublishedSpots';
 import { SmartSpotPlanModal, ItineraryStopItem } from '@/components/SmartSpotPlanModal';
 
 interface SmartSpotPlanCardProps {
@@ -25,6 +26,9 @@ const cleanText = (str?: string): string => {
     .trim();
 };
 
+/** A day plan stays within driving reach of the place (owner 2026-10-25) */
+const PLAN_RADIUS_KM = 30;
+
 export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({
   currentSpot,
   onOpenFullModal,
@@ -35,14 +39,23 @@ export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({
   const [isCopied, setIsCopied] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Discover nearby spots
-  const nearbyCandidates = useMemo(() => {
-    return getNearbySpots(currentSpot, 14);
-  }, [currentSpot]);
-
+  // Places for a day around here, from the published catalog (it used the bundled samples, so a stop could be
+  // 120 km away or the same park twice): within a day's reach, never the same place under another name
+  const catalog = useSpotCatalog();
   const otherSpots = useMemo(() => {
-    return nearbyCandidates.filter((s) => s.id !== currentSpot.id);
-  }, [nearbyCandidates, currentSpot]);
+    const baseName = (title: string) => title.replace(/s*(.*?)s*/g, '').trim().toLowerCase();
+    const here = baseName(currentSpot.title);
+    return getNearbySpots(currentSpot, 60, catalog.length ? catalog : undefined)
+      .filter((s) => {
+        if (s.id === currentSpot.id) return false;
+        const km = getDistanceKm(currentSpot.latitude, currentSpot.longitude, s.latitude, s.longitude);
+        const name = baseName(s.title);
+        return km <= PLAN_RADIUS_KM && km >= 0.2 && name !== here && !name.includes(here) && !here.includes(name);
+      })
+      .slice(0, 14);
+  }, [catalog, currentSpot]);
+  // Fewer places near by make a shorter plan instead of filling it with far ones
+  const maxStops = Math.min(6, otherSpots.length + 1);
 
   // Rotate based on shuffleSeed
   const shuffledOthers = useMemo(() => {
@@ -60,6 +73,7 @@ export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({
 
   // Human-friendly time slot definitions based on total stops count
   const getSlotDetails = (index: number, total: number) => {
+    if (total <= 2) return index === 0 ? { label: 'ช่วงเช้า', time: '09:00 - 12:00 น.' } : { label: 'ช่วงบ่าย', time: '13:00 - 17:00 น.' };
     if (total === 3) {
       if (index === 0) return { label: 'ช่วงเช้า', time: '09:00 - 11:30 น.' };
       if (index === 1) return { label: 'ช่วงกลางวัน', time: '12:00 - 15:30 น.' };
@@ -90,15 +104,16 @@ export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({
   // Build the dynamic stops
   const stops: ItineraryStopItem[] = useMemo(() => {
     const list: ItineraryStopItem[] = [];
-    const neededOthers = stopCount - 1;
+    const neededOthers = Math.min(stopCount, maxStops) - 1;
     const selectedOthers = shuffledOthers.slice(0, neededOthers);
 
     // Keep currentSpot nicely anchored in the midday slot
-    const currentSpotIndex = stopCount <= 4 ? 1 : 2;
+    const total = neededOthers + 1;
+    const currentSpotIndex = total <= 2 ? 0 : total <= 4 ? 1 : 2;
 
     const allSpots: LifestyleSpotItem[] = [];
     let otherIdx = 0;
-    for (let i = 0; i < stopCount; i++) {
+    for (let i = 0; i < total; i++) {
       if (i === currentSpotIndex) {
         allSpots.push(currentSpot);
       } else {
@@ -130,7 +145,7 @@ export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({
     }
 
     return list;
-  }, [stopCount, shuffledOthers, currentSpot]);
+  }, [stopCount, maxStops, shuffledOthers, currentSpot]);
 
   // Google Maps URL with multi-stop waypoints
   const multiStopMapsUrl = useMemo(() => {
@@ -153,7 +168,7 @@ export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({
   };
 
   const handleAddStop = () => {
-    if (stopCount < 6) {
+    if (stopCount < maxStops) {
       const next = stopCount + 1;
       setStopCount(next);
       if (onShowToast) onShowToast(`เพิ่มจุดที่ ${next} ในเส้นทางแล้ว`);
@@ -204,6 +219,9 @@ export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({
     setIsModalOpen(true);
     if (onOpenFullModal) onOpenFullModal();
   };
+
+  // Nothing worth pairing within reach: no plan rather than a plan of one
+  if (otherSpots.length === 0) return null;
 
   return (
     <>
@@ -346,7 +364,7 @@ export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({
                       </Link>
                     )}
                     <div className="text-[10.5px] text-slate-500 font-medium truncate pt-0.5">
-                      {item.spot.district}, จังหวัด{item.spot.province}
+                      {[item.spot.district, item.spot.province].filter(Boolean).join(', ')}
                     </div>
                   </div>
                 </div>
@@ -385,13 +403,13 @@ export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({
           </a>
 
           <div className="flex items-center gap-2">
-            {stopCount < 6 ? (
+            {stopCount < maxStops ? (
               <button
                 type="button"
                 onClick={handleAddStop}
                 className="flex-1 py-2 px-2.5 rounded-lg font-bold text-[11px] bg-[#EBF3ED] hover:bg-[#DDF0E1] text-[#20442D] border border-[#BBDDC3] transition-all cursor-pointer text-center shadow-2xs active:scale-95 truncate"
               >
-                + เพิ่มสถานที่ ({stopCount}/6)
+                + เพิ่มสถานที่ ({stopCount}/{maxStops})
               </button>
             ) : (
               <button
@@ -430,7 +448,7 @@ export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({
         stops={stops}
         multiStopMapsUrl={multiStopMapsUrl}
         onShuffle={handleShuffle}
-        stopCount={stopCount}
+        stopCount={Math.min(stopCount, maxStops)}
         onAddStop={handleAddStop}
         onResetStops={handleResetStops}
       />
