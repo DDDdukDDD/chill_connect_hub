@@ -45,6 +45,11 @@ const EVENT_CATEGORY_GALLERIES: Record<string, string[]> = {
   ]
 };
 
+/** A cover for an event sent without one (the create form always sets a preset; an API call may not) */
+export function defaultEventImage(category: string | undefined, isFair = false): string {
+  return (isFair ? EVENT_CATEGORY_GALLERIES.expo : EVENT_CATEGORY_GALLERIES[category ?? ''] ?? EVENT_CATEGORY_GALLERIES.chill)[0];
+}
+
 export function resolveEventGallery(event: EventItem): string[] {
   // Real events show only their own photos; stock photos of other events would mislead
   if (eventOrigin(event) !== 'sample') {

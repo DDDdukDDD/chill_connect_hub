@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { defaultEventImage } from '@/lib/eventImageResolver';
 import { createAdminEvent } from '@/lib/eventsStore';
 import { db } from '@/lib/db';
 import { hasAdminCredentials } from '@/lib/adminApiAuth';
@@ -254,6 +255,8 @@ export async function POST(req: Request) {
       // hostName crashed the member home, 2026-10-25)
       ...(member && !(typeof eventData.hostName === 'string' && eventData.hostName.trim()) && { hostName: member.displayName }),
       ...(member && !eventData.hostAvatar && member.avatarUrl && { hostAvatar: member.avatarUrl }),
+      // Every card and page shows a cover; without one the ตี้ page showed a broken image (E2E walk 2026-10-25)
+      ...(!(typeof eventData.image === 'string' && eventData.image.trim()) && { image: defaultEventImage(eventData.category, isPublicVenue) }),
       createdAt: new Date().toISOString(),
     });
 
