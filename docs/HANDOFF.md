@@ -1743,3 +1743,48 @@ New placeholder content in a page must be behind `eventOrigin(...) === 'sample'`
   - Verify-email success without a pending action offers "หาตี้แรกของคุณ" first.
 - Test data: 80 test accounts (`@example.com`, from this and earlier walks) were deleted with the admin delete, which removes their joins, visits, reviews, moments and the rest; the test ตี้ and its photo too. Data files were backed up first.
 - Open: the paused journey band (`components/home/JourneyBand.tsx`) still says งานแฟร์ and shows XP in purple; it changes when that work resumes.
+
+### BE-123 · ตี้ categories: popular first, บาร์ & ไนท์ไลฟ์ added, clearer names, moods hidden (owner 2026-10-25)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-25 · `claude`
+- Order (`data/masterHub.ts` list and `sortOrder` in `data/master_data.json`, now the same): คาเฟ่, ตะลุยกิน, ดนตรี, วิ่ง, บาร์, บอร์ดเกม, ท่องเที่ยว, กีฬาทีม, ถ่ายรูป, วิดีโอเกม, ศิลปะ, ฮีลใจ, เต้น, ทำอาหาร, สัตว์เลี้ยง, บิวตี้, หนังสือ, อาชีพ, จิตอาสา. The public rails read the static list's order; the forms and admin read `sortOrder`, so a drag in admin does not reorder the public rails yet.
+- New built-in `bars_nightlife` "บาร์ & ไนท์ไลฟ์" (mood chill, slate, Martini). Its text describes the night out, not the drink (Thai alcohol advertising law), and says 20+. Keyword matching puts it after board games (a pub quiz stays a game night) and before music (a jazz bar is a night out); "party/ปาร์ตี้" moved here from board games.
+- Renamed (ids unchanged): คาเฟ่ & นั่งชิล, ชวนวิ่ง & ฟิตเนส ("งานวิ่ง" is an อีเวนต์), วิดีโอเกม อนิเมะ & ป๊อปคัลเจอร์, บอร์ดเกม & เกมกลุ่ม, บิวตี้ & แฟชั่น, สัตว์เลี้ยง & คนรักสัตว์; ดนตรีสด left the music description.
+- Moods (chill/move/heal/learn) are no longer shown: the create dialog and the admin create form list the categories flat, the admin event editor picks a ตี้ category / อีเวนต์ type instead of a mood. The server still sets `category` (mood) from the category; kept for grouping later. The taxonomy page still edits each category's mood.
+- `/community` "ไปคนเดียวได้" / "มือใหม่" guesses (when the host did not say) use a set of categories instead of the moods; bars are not in it.
+- `/community/[id]` กติกา row adds the 20+ and night-out care line for a bars ตี้.
+
+### BE-124 · Sample ตี้ carry every detail field, so the detail page can be judged in full (owner 2026-10-25)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-25 · `claude`
+- `data/chill_database.json`: the 58 sample ตี้ got their empty fields filled by category and area (กำหนดการ 4 rows from the start time, สิ่งที่ควรเตรียม, การยกเลิก, เหมาะกับ, ขั้นต่ำ 3 คน, จุดนัด, การเดินทาง by nearest BTS/MRT); nothing already set was changed. Up to 4 made-up people per ตี้ in `participants` (`userId` `sample-guest-*`, `note: sample`), never more than its count. Listed for removal in docs/LAUNCH_CHECKLIST.md.
+- `app/community/[id]/CommunityDetailView.tsx`: a sample ตี้ shows its own สิ่งที่ควรเตรียม and การเดินทาง when it has them (it hid the first and showed canned transit text); the canned text stays only for samples without them.
+- Not filled: questions to the host (they must come from real members), the day-of and after-ตี้ panels (they follow the viewer and the date), price tiers.
+
+### BE-125 · Create dialog: DD/MM/YYYY dates, 24-hour times, place suggestions, more "เหมาะกับ" (owner 2026-10-25)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-25 · `claude`
+- `components/CreateEventModal.tsx`: dates are typed as DD/MM/YYYY (ค.ศ.) with a calendar button that opens the browser's picker (`DateInput`); times are typed as 24-hour HH:MM (`TimeInput`), also in the กำหนดการ rows. The browser's own boxes followed the device language and showed 10/31/2026 and 06:00 AM. Values sent are unchanged (YYYY-MM-DD, HH:MM).
+- The สถานที่ field of a ตี้ suggests places while typing (`PlaceSuggest`): published spots whose name holds the word (from `GET /api/spots?q=`, the chosen province first) and the event venues from master data. Picking a spot fills the province, area and map pin and sends `placeId`; typing again unlinks it. Anything else can still be typed.
+- `app/api/events/route.ts`: `placeId` is checked against published spots and `placeTitle` set from the record (see docs/API.md). Kept apart from `spotId` so a ตี้ at a place does not get the Spot Buddy trip rules.
+- `/community/[id]`: a ตี้ with `placeId` links to the place ("ที่นัดเจอ"); the "เหมาะกับ" row starts with who may come (ทุกเพศ / เฉพาะผู้หญิง / เฉพาะผู้ชาย, ทุกวัย or the age range; these form fields were never shown before), then the chips.
+- New chips (`EventItem` booleans): สายอินโทรเวิร์ตมาได้, พาเพื่อนมาได้, ใช้ภาษาอังกฤษได้, พาเด็กมาได้ (in-person only).
+- Not done, for the owner to decide: linking a ตี้ to an อีเวนต์ ("ไปงานด้วยกัน"), because fair pages already have walk-together groups (`lib/social/fairGroups.ts`); and a "ตี้ที่นัดที่นี่" list on the place page.
+
+### BE-126 · Fixes from an E2E walk of creating a ตี้; create buttons for members only (owner 2026-10-25)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-25 · `claude`
+- Create buttons on `/community` (ตั้งตี้เอง), `/spots` (แนะนำที่ใหม่) and `/challenges` (เสนอชาเลนจ์) show to signed-in members only; `/fairs` (เพิ่มอีเวนต์) only to approved organizers and venue owners, the people the server lets add one.
+- Walked in headless Chrome (en-US): sign-up → create a ตี้ through all four steps (DD/MM/YYYY date, 24-hour times, place picked from the suggestions) → approve → detail page on desktop and 390px. Stored fields and the page matched. Test member and ตี้ deleted afterwards.
+- Fixes: the card and the event modal no longer show a made-up host score of 4.9 when the host has no rating (`components/EventGrid.tsx`, `components/EventDetailModal.tsx`); the review step lists เหมาะกับ and การเดินทาง; "ของที่ต้องเตรียม" and "มือใหม่มาได้" are the same words in the form, the review and the page; the header and cards show the place without the "(จุดนัดพบ: …)" the form appends (`lib/placeName.ts`), also in the page description and the JSON-LD `Place.name`.
+- Not checked: the embedded Google map stayed blank in headless Chrome.
+
+### BE-127 · อีเวนต์ review: related events, venue-first places, run details, organizer E2E (owner 2026-10-25)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-25 · `claude`
+- `/fairs/[id]`: "อีเวนต์อื่นที่น่าไป" reads live data (the same group asked for with the new `fairCategory` query, then a wider list, same province first); it read the bundled samples only, matched by the old meetup mood. The header shows the venue before the hall (`fairPlace` in `lib/placeName.ts`, also on cards). The organizer link says สมัครวิ่ง for runs, ดูรายละเอียดงาน when the price is unknown. Imported อีเวนต์ head their box "ข้อมูลจาก" (the venue or calendar we read), not "ผู้จัดงาน". Web addresses in อีเวนต์ descriptions are links (`renderDescriptionContent(text, { linkify: true })`; ตี้ keep plain text). Runs say "นัดไปวิ่งด้วยกัน" / "ตั้งกลุ่มไปวิ่ง" for the walk-together groups (kept, owner).
+- `GET /api/events` takes `fairCategory` (docs/API.md).
+- ThaiRun scraper (`lib/scrapers/thairun.ts`) also reads `races { distance ticketTypes { price } }` (found by probing; introspection is off): the description lists organizer, distances, fee range and sign-up status, and `price` is the fee range. The 34 stored races still on ThaiRun were refreshed through the admin API; 16 no longer listed kept their text.
+- Words: "งานแฟร์ งานวิ่ง งานคอน" became "เอ็กซ์โป งานวิ่ง คอนเสิร์ต" (/fairs heading, home rows, onboarding); the home kind label fair → เอ็กซ์โป.
+- Create dialog for อีเวนต์ (walked as an approved organizer in headless Chrome, then the test account and event were deleted): the review lists the website/ticket link; the pledge for อีเวนต์ speaks of the organizer, not a ตี้; the default province is กรุงเทพฯ (it was กรุงเทพมหานคร, not an option of the select, so the select looked right but sent another spelling).
+- Note: the db adapter is a server-wide singleton, so changes to `lib/db/queryEngine.ts` need a dev-server restart.
+
+### BE-128 · Runs: distances, fee and sign-up as rows (owner 2026-10-25)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-25 · `claude`
+- ThaiRun's API has no event text (description fields are empty; the details are on the poster), so the run facts are now fields: `raceDistances`, `registrationOpen` (`EventItem`, scraper, admin `update_fields`), with `price` as the fee range. `/fairs/[id]` shows them as rows ระยะ / ค่าสมัคร / การรับสมัคร in "สิ่งที่ควรทราบ"; "เกี่ยวกับงาน" is one line pointing to ThaiRun for route, shirt and medal.
+- 44 of the 50 stored races were refreshed by slug (closed sign-ups included); 6 the API no longer returns by slug keep their earlier multi-line text.

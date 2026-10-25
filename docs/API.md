@@ -48,6 +48,7 @@ Two modes:
 | `zone` | zone id, e.g. `ari`, `siam` | — | Matches `zone` or `location` text |
 | `venueTag` | `qsncc` \| `bitec` \| `impact` \| `marathon` \| `park` | — | Fairs |
 | `lifestyleCategory` | a `communityCategories` id, e.g. `boardgames_party` | — | Meetups in that group: their own `lifestyleCategory`, or the group their title maps to (as on the ค้นพบ tabs). Added 2026-10-23 |
+| `fairCategory` | a `fairCategories` id, e.g. `pop_culture` | — | อีเวนต์ in that group: their own `fairCategory`, or the group their title maps to (`getFairEventCategory`). Added 2026-10-25 |
 | `status` | `recruiting` \| `full` \| `ended` \| `all` | `all` | Capacity-based |
 | `includeEnded` | `true` | `false` | |
 | `q` | text | — | Searches title, description, location, host, tag, category |
@@ -77,6 +78,9 @@ Body:
 - **Approval:** community events (`eventType: 'community'`) are published immediately (`approved`). Fairs (`eventType: 'public_venue'`) are `pending` until an admin approves them — unless the request carries an admin session.
 - If `eventData.id` is missing or already taken, the server assigns a new id. **Always use the returned `event.id`.**
 - **Group on the ค้นพบ tabs** (optional): a meetup sends `lifestyleCategory` (a `communityCategories` id from `/api/master`), a fair sends `fairCategory` (a `fairCategories` id). The server keeps it only when it is an active group of the right kind (otherwise it is dropped), and sets a meetup's `category` (mood) from the category's mood. Without a group, the lists sort the event by its title (`getCommunityEventCategory` / `getFairEventCategory` in `data/masterHub.ts`).
+- **Place from our catalog** (optional, meetups, added 2026-10-25): `placeId` (a published spot id, picked from the place suggestions in the create dialog). The server keeps it only when that spot exists and is published, and sets `placeTitle` from the spot; otherwise both are dropped. It is not a Spot Buddy trip (`spotId`): no trip rules and no extra review. The detail page links it as "ที่นัดเจอ".
+- **Who it suits** (optional booleans, meetups): `isSoloFriendly`, `isBeginnerFriendly`, `isPetFriendly`, and since 2026-10-25 `isIntrovertFriendly`, `canBringFriend`, `isEnglishFriendly`, `isKidFriendly`. `targetGender` (`all` | `female_only` | `male_only`) and `targetAge` (text, `ไม่จำกัดอายุ` when empty) are shown on the detail page's "เหมาะกับ" row.
+- **Runs** (`public_venue` from ThaiRun, added 2026-10-25): `raceDistances?: number[]` (km, shortest first) and `registrationOpen?: boolean`; `price` is the fee range over distances and ticket types. The อีเวนต์ page shows them as the rows ระยะ / ค่าสมัคร / การรับสมัคร.
 - Server-set fields: `approvalStatus`, `source`, `createdAt`; defaults: `participantsCount` (1), `maxParticipants` (10 community / 500 fair), `status` (`recruiting`), `createdAtTimestamp`.
 
 Response `200`:
