@@ -102,10 +102,9 @@ export async function fileContentReport(reporter: Member, input: Record<string, 
 /** For the admin console: reports with the names staff need to act */
 export async function listContentReports(status: 'open' | 'closed' | 'all') {
   const reports = store.read().filter((report) => status === 'all' || report.status === status);
-  const names = new Map<string, string>();
-  for (const id of new Set(reports.flatMap((report) => [report.reporterId, report.hostMemberId].filter((value): value is string => Boolean(value))))) {
-    names.set(id, (await memberRepository.findById(id))?.displayName ?? 'บัญชีที่ลบแล้ว');
-  }
+  const ids = [...new Set(reports.flatMap((report) => [report.reporterId, report.hostMemberId].filter((value): value is string => Boolean(value))))];
+  const people = await memberRepository.findByIds(ids);
+  const names = new Map(ids.map((id) => [id, people.get(id)?.displayName ?? 'บัญชีที่ลบแล้ว']));
   return reports.map((report) => ({
     ...report,
     reasonLabel: CONTENT_REPORT_REASONS.find((reason) => reason.id === report.reason)?.label ?? report.reason,

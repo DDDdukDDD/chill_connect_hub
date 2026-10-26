@@ -53,8 +53,7 @@ export async function chatMessages(member: Member, roomId: string, after?: strin
   const room = await roomOf(member, roomId);
   const blocked = new Set(member.blockedIds ?? []);
   const all = store.read().filter((m) => m.roomId === roomId && !blocked.has(m.authorId) && (!after || m.createdAt > after));
-  const authors = new Map<string, Member | null>();
-  for (const id of new Set(all.map((m) => m.authorId))) authors.set(id, await memberRepository.findById(id));
+  const authors = await memberRepository.findByIds(all.map((m) => m.authorId));
   const messages = all.slice(-PAGE).map((m) => {
     const author = authors.get(m.authorId);
     const active = author?.status === 'active';
@@ -107,9 +106,10 @@ export async function chatMessageForReport(member: Member, messageId: string): P
  */
 export async function chatRoomForStaff(roomId: string) {
   const all = store.read().filter((m) => m.roomId === roomId).slice(-KEEP_PER_ROOM);
+  const authors = await memberRepository.findByIds(all.map((m) => m.authorId));
   const names = new Map<string, string>();
   for (const id of new Set(all.map((m) => m.authorId))) {
-    const author = await memberRepository.findById(id);
+    const author = authors.get(id);
     names.set(id, author ? tidyDisplayName(author.displayName).trim() || author.displayName : 'บัญชีที่ลบแล้ว');
   }
   return all.map((m) => ({ id: m.id, authorId: m.authorId, authorName: names.get(m.authorId) ?? '', text: m.text, createdAt: m.createdAt }));

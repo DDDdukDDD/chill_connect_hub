@@ -44,9 +44,8 @@ export async function questionsOf(eventId: string, viewer: Member | null) {
   const blocked = new Set(viewer?.blockedIds ?? []);
   const list = store.read().filter((q) => q.eventId === eventId && !q.hidden && !blocked.has(q.authorId)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const host = hostOf(event as { createdByMemberId?: string });
-  const people = new Map<string, Member | null>();
-  for (const id of new Set(list.map((q) => q.authorId))) people.set(id, await memberRepository.findById(id));
-  const hostMember = host ? await memberRepository.findById(host) : null;
+  const people = await memberRepository.findByIds([...list.map((q) => q.authorId), ...(host ? [host] : [])]);
+  const hostMember = host ? people.get(host) ?? null : null;
   return {
     canAnswer: Boolean(viewer && host === viewer.id),
     hostName: hostMember ? tidyDisplayName(hostMember.displayName).trim() || hostMember.displayName : event.hostName,

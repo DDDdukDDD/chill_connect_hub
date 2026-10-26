@@ -34,8 +34,9 @@ export async function hostReviewSummary(hostId: string, latestCount = 4) {
   const mine = store.read().filter((r) => r.hostId === hostId);
   if (mine.length === 0) return { count: 0, average: 0, latest: [] };
   const latest = [];
+  const authors = await memberRepository.findByIds(mine.slice(0, latestCount).map((r) => r.authorId));
   for (const r of mine.slice(0, latestCount)) {
-    const author = await memberRepository.findById(r.authorId);
+    const author = authors.get(r.authorId);
     latest.push({
       id: r.id,
       rating: r.rating,

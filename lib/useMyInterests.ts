@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { recall, remember } from './clientMemory';
 
 export interface MyInterests {
   /** ตี้ สาย (also the challenge categories) */
@@ -17,7 +18,7 @@ const NONE: MyInterests = { communityCategories: [], spotVibes: [], fairCategori
  * categories first on ค้นพบ and /challenges. Empty while signed out or loading.
  */
 export function useMyInterests(isLoggedIn: boolean): MyInterests {
-  const [interests, setInterests] = useState<MyInterests>(NONE);
+  const [interests, setInterests] = useState<MyInterests>(() => recall<MyInterests>('my-interests') ?? NONE);
   useEffect(() => {
     if (!isLoggedIn) return;
     let alive = true;
@@ -25,7 +26,7 @@ export function useMyInterests(isLoggedIn: boolean): MyInterests {
       .then((res) => res.json())
       .then((json) => {
         const found = json?.preferences?.interests;
-        if (alive && found) setInterests({ ...NONE, ...found });
+        if (alive && found) setInterests(remember('my-interests', { ...NONE, ...found }));
       })
       .catch(() => undefined);
     return () => {

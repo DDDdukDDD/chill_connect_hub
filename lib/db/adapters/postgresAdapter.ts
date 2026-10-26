@@ -39,6 +39,8 @@ const str = (value: unknown) => (typeof value === 'string' && value ? value : un
 // Columns an upsert never changes on an existing row
 const KEEP_ON_UPDATE = new Set(['id', 'slug', 'sort_key', 'created_at']);
 const JSON_COLUMNS = new Set(['details', 'contact', 'steps', 'rule', 'brand_reward', 'recurrence']);
+/** After a cached list runs out, keep serving it for this long while a fresh copy loads (writes clear it at once) */
+const STALE_MS = 10 * 60 * 1000;
 
 const TICKET_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 function newTicketCode(taken: Set<string>): string {
@@ -129,7 +131,7 @@ export class PostgresAdapter implements IDataRepository {
     return cacheManager.getOrSet(
       'pg:events',
       async () => (await sql()`select * from app.events order by sort_key desc, created_at desc`).map((row) => rowToEvent(row) as EventItem),
-      { ttlMs: 15 * 1000, tags: ['events'] },
+      { staleMs: STALE_MS, ttlMs: 15 * 1000, tags: ['events'] },
     );
   }
 
@@ -137,7 +139,7 @@ export class PostgresAdapter implements IDataRepository {
     return cacheManager.getOrSet(
       'pg:spots',
       async () => (await sql()`select * from app.places order by sort_key desc`).map((row) => rowToPlace(row) as LifestyleSpotItem),
-      { ttlMs: 60 * 1000, tags: ['spots'] },
+      { staleMs: STALE_MS, ttlMs: 60 * 1000, tags: ['spots'] },
     );
   }
 
@@ -145,7 +147,7 @@ export class PostgresAdapter implements IDataRepository {
     return cacheManager.getOrSet(
       'pg:quests',
       async () => (await sql()`select * from app.quests order by sort_key desc`).map((row) => rowToQuest(row) as ChallengeQuest),
-      { ttlMs: 60 * 1000, tags: ['quests'] },
+      { staleMs: STALE_MS, ttlMs: 60 * 1000, tags: ['quests'] },
     );
   }
 
@@ -246,7 +248,7 @@ export class PostgresAdapter implements IDataRepository {
         const filtered = filterEvents(shownEvents(await this.loadEvents()), params);
         return paginateArray(filtered, params?.page || 1, params?.limit || 12);
       },
-      { ttlMs: 30 * 1000, tags: ['events'] },
+      { staleMs: STALE_MS, ttlMs: 30 * 1000, tags: ['events'] },
     );
   }
 
@@ -255,10 +257,11 @@ export class PostgresAdapter implements IDataRepository {
       `event:${id}`,
       async () => {
         await this.ensureInitialized();
-        const event = await this.rawEvent(sql(), id);
+        // The whole list is usually cached already; read the row only when it is not
+        const event = cacheManager.get<EventItem[]>('pg:events')?.find((e) => e.id === id) ?? await this.rawEvent(sql(), id);
         return event ? shownEvent(event) : null;
       },
-      { ttlMs: 60 * 1000, tags: ['events', `event:${id}`] },
+      { staleMs: STALE_MS, ttlMs: 60 * 1000, tags: ['events', `event:${id}`] },
     );
   }
 
@@ -375,7 +378,7 @@ export class PostgresAdapter implements IDataRepository {
         maxParticipants: maxAllowed,
       };
     });
-    if (result.success) cacheManager.invalidateTags(['events', `event:${eventId}`]);
+    if (result.success) cacheManager.invalidateTags(['events', `event:${eventId}`, `member:${participant.userId}`]);
     return result;
   }
 
@@ -401,7 +404,7 @@ export class PostgresAdapter implements IDataRepository {
       await this.releaseSeat(tx, event.id);
       return { success: true, message: 'ยกเลิกการเข้าร่วมเรียบร้อย' };
     });
-    if (result.success) cacheManager.invalidateTags(['events', `event:${eventId}`]);
+    if (result.success) cacheManager.invalidateTags(['events', `event:${eventId}`, `member:${userId}`]);
     return result;
   }
 
@@ -426,13 +429,18 @@ export class PostgresAdapter implements IDataRepository {
     return row ? toParticipant(row) : null;
   }
 
-  public async listParticipations(userId: string): Promise<{ eventId: string; joinedAt?: string; note?: string }[]> {
+  public async listParticipations(userId: string): Promise<{ eventId: string; joinedAt?: string; note?: string; checkedInAt?: string }[]> {
     const rows = await sql()`
-      select e.slug, p.joined_at, p.note
+      select e.slug, p.joined_at, p.note, p.checked_in_at
       from app.event_participants p join app.events e on e.id = p.event_id join app.members m on m.id = p.member_id
       where m.legacy_id = ${userId} and p.status = 'joined'
       order by p.joined_at desc`;
-    return rows.map((r) => ({ eventId: r.slug, joinedAt: (r.joined_at as Date).toISOString(), ...(r.note ? { note: r.note } : {}) }));
+    return rows.map((r) => ({
+      eventId: r.slug,
+      joinedAt: (r.joined_at as Date).toISOString(),
+      ...(r.note ? { note: r.note } : {}),
+      ...(r.checked_in_at ? { checkedInAt: (r.checked_in_at as Date).toISOString() } : {}),
+    }));
   }
 
   public async listParticipants(eventId: string): Promise<ParticipantInfo[]> {
@@ -465,7 +473,7 @@ export class PostgresAdapter implements IDataRepository {
       for (const row of rows) await this.releaseSeat(tx, row.event_id);
       return rows.length;
     });
-    if (removed) cacheManager.invalidateTag('events');
+    if (removed) cacheManager.invalidateTags(['events', `member:${userId}`]);
     return removed;
   }
 
@@ -475,7 +483,7 @@ export class PostgresAdapter implements IDataRepository {
     return cacheManager.getOrSet(
       `spots:${JSON.stringify(params || {})}`,
       async () => paginateArray(filterSpots(await this.loadSpots(), params), params?.page || 1, params?.limit || 12),
-      { ttlMs: 60 * 1000, tags: ['spots'] },
+      { staleMs: STALE_MS, ttlMs: 60 * 1000, tags: ['spots'] },
     );
   }
 
@@ -483,10 +491,12 @@ export class PostgresAdapter implements IDataRepository {
     return cacheManager.getOrSet(
       `spot:${id}`,
       async () => {
+        const listed = cacheManager.get<LifestyleSpotItem[]>('pg:spots')?.find((s) => s.id === id);
+        if (listed) return listed;
         const [row] = await sql()`select * from app.places where slug = ${id}`;
         return row ? (rowToPlace(row) as LifestyleSpotItem) : null;
       },
-      { ttlMs: 120 * 1000, tags: ['spots', `spot:${id}`] },
+      { staleMs: STALE_MS, ttlMs: 120 * 1000, tags: ['spots', `spot:${id}`] },
     );
   }
 
@@ -554,7 +564,7 @@ export class PostgresAdapter implements IDataRepository {
         const filtered = filterQuests((await this.loadQuests()).map(shownQuest), params);
         return paginateArray(filtered, params?.page || 1, params?.limit || 12);
       },
-      { ttlMs: 60 * 1000, tags: ['quests'] },
+      { staleMs: STALE_MS, ttlMs: 60 * 1000, tags: ['quests'] },
     );
   }
 
@@ -563,10 +573,12 @@ export class PostgresAdapter implements IDataRepository {
       `quest:${id}`,
       async () => {
         await this.ensureInitialized();
+        const listed = cacheManager.get<ChallengeQuest[]>('pg:quests')?.find((q) => q.id === id);
+        if (listed) return shownQuest(listed);
         const [row] = await sql()`select * from app.quests where slug = ${id}`;
         return row ? shownQuest(rowToQuest(row) as ChallengeQuest) : null;
       },
-      { ttlMs: 120 * 1000, tags: ['quests', `quest:${id}`] },
+      { staleMs: STALE_MS, ttlMs: 120 * 1000, tags: ['quests', `quest:${id}`] },
     );
   }
 

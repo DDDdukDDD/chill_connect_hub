@@ -135,7 +135,14 @@ export const activityActions = {
 
   leave: async (eventId: string): Promise<{ ok: boolean; message: string; event?: EventItem }> => {
     const res = await post({ action: 'leave', eventId });
-    if (!res.ok) return { ok: false, message: res.json?.message || 'ยกเลิกไม่สำเร็จ ลองอีกครั้งนะ' };
+    if (!res.ok) {
+      // Already not on the list (left in another tab or device): show what the account says instead of a stuck button
+      if (res.status === 404) {
+        await activityActions.refresh();
+        return { ok: true, message: 'ยกเลิกการเข้าร่วมแล้ว' };
+      }
+      return { ok: false, message: res.json?.message || 'ยกเลิกไม่สำเร็จ ลองอีกครั้งนะ' };
+    }
     await activityActions.refresh();
     return { ok: true, message: 'ยกเลิกการเข้าร่วมแล้ว', event: res.json.event ?? undefined };
   },

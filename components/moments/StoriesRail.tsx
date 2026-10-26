@@ -8,6 +8,7 @@ import { VerifyToPostDialog } from '@/components/moments/VerifyToPostDialog';
 import { compressImage } from '@/lib/media/compressor';
 import { nameInitial } from '@/lib/displayName';
 import { useMemberSession } from '@/lib/useMemberSession';
+import { recall, remember } from '@/lib/clientMemory';
 
 /**
  * Stories: one photo, gone after 24 hours. The row of circles, the full-screen viewer, the "เพิ่มสตอรี่" form
@@ -50,7 +51,7 @@ export interface StoriesRailProps {
 
 export function StoriesRail({ isLoggedIn, onNeedLogin, onToast, after, size = 'md', hideWhenEmpty = false, addSignal = 0 }: StoriesRailProps) {
   const session = useMemberSession();
-  const [groups, setGroups] = useState<StoryGroup[]>([]);
+  const [groups, setGroups] = useState<StoryGroup[]>(() => recall<StoryGroup[]>('stories') ?? []);
   const [reload, setReload] = useState(0);
   const [view, setView] = useState<{ group: number; index: number } | null>(null);
   const [draft, setDraft] = useState<{ file: File | null; preview: string; caption: string } | null>(null);
@@ -62,7 +63,7 @@ export function StoriesRail({ isLoggedIn, onNeedLogin, onToast, after, size = 'm
     let active = true;
     fetch('/api/stories', { cache: 'no-store' })
       .then((res) => res.json())
-      .then((json) => active && setGroups(json.groups ?? []))
+      .then((json) => active && setGroups(remember('stories', json.groups ?? [])))
       .catch(() => undefined);
     return () => {
       active = false;

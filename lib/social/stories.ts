@@ -68,8 +68,9 @@ export async function activeStories(viewer: Member | null): Promise<StoryGroup[]
     groups.set(story.authorId, [...(groups.get(story.authorId) ?? []), story]);
   }
   const result: StoryGroup[] = [];
+  const authors = await memberRepository.findByIds([...groups.keys()]);
   for (const [authorId, stories] of groups) {
-    const author = await memberRepository.findById(authorId);
+    const author = authors.get(authorId);
     if (!author || author.status !== 'active') continue;
     const items = stories
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
@@ -130,8 +131,7 @@ export async function deleteStory(member: Member, id: string): Promise<void> {
 export async function storiesForStaff() {
   const now = Date.now();
   const active = store.read().filter((s) => isActive(s, now));
-  const authors = new Map<string, Member | null>();
-  for (const id of new Set(active.map((s) => s.authorId))) authors.set(id, await memberRepository.findById(id));
+  const authors = await memberRepository.findByIds(active.map((s) => s.authorId));
   return active
     .map((s) => {
       const author = authors.get(s.authorId);

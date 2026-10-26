@@ -32,8 +32,10 @@ export const fairGroupById = (groupId: string) => store.read().find((g) => g.id 
 export async function fairGroupsOf(fairId: string, viewer: Member | null) {
   const blocked = new Set(viewer?.blockedIds ?? []);
   const result = [];
-  for (const group of store.read().filter((g) => g.fairId === fairId && !blocked.has(g.creatorId))) {
-    const creator = await memberRepository.findById(group.creatorId);
+  const groups = store.read().filter((g) => g.fairId === fairId && !blocked.has(g.creatorId));
+  const creators = await memberRepository.findByIds(groups.map((g) => g.creatorId));
+  for (const group of groups) {
+    const creator = creators.get(group.creatorId);
     if (!creator || creator.status !== 'active') continue;
     result.push({
       id: group.id,

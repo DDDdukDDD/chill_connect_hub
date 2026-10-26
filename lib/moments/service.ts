@@ -40,12 +40,7 @@ export async function loadPeople(moments: Moment[]): Promise<Map<string, Member>
     if (moment.authorId) ids.add(moment.authorId);
     for (const comment of moment.comments) if (comment.authorId) ids.add(comment.authorId);
   }
-  const people = new Map<string, Member>();
-  for (const id of ids) {
-    const member = await memberRepository.findById(id);
-    if (member) people.set(id, member);
-  }
-  return people;
+  return memberRepository.findByIds([...ids]);
 }
 
 /** Hidden from the public: moderated content, banned authors */

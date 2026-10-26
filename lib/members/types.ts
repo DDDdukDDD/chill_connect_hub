@@ -182,6 +182,8 @@ export interface MemberQuery {
 
 export interface MemberRepository {
   findById(id: string): Promise<Member | null>;
+  /** Many members in one read (feeds, chat, notifications); ids not found are left out */
+  findByIds(ids: string[]): Promise<Map<string, Member>>;
   findByEmail(email: string): Promise<Member | null>;
   findByProvider(provider: OAuthProvider, subject: string): Promise<Member | null>;
   create(member: Member): Promise<Member>;

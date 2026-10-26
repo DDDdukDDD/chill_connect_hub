@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Camera, ChevronDown, Flag, MapPin, Tent, Trophy, Users } from 'lucide-react';
 import type { LiveCounts, LiveItem, LiveKind } from '@/lib/social/liveActivity';
 import { nameInitial } from '@/lib/displayName';
+import { recall, remember } from '@/lib/clientMemory';
 
 const POLL_MS = 30_000;
 const TICK_MS = 4_500;
@@ -13,8 +14,8 @@ type LiveState = { items: LiveItem[]; counts: LiveCounts | null; isLoaded: boole
 
 /** "ตอนนี้ในชิลล์": named lines for members, last week's counts for visitors (the server decides which) */
 export function useLiveActivity(): LiveState {
-  const [state, setState] = useState<LiveState>({ items: [], counts: null, isLoaded: false, freshIds: new Set() });
-  const seen = useRef<Set<string> | null>(null);
+  const [state, setState] = useState<LiveState>(() => recall<LiveState>('live-activity') ?? { items: [], counts: null, isLoaded: false, freshIds: new Set() });
+  const seen = useRef<Set<string> | null>(state.isLoaded ? new Set(state.items.map((i) => i.id)) : null);
 
   useEffect(() => {
     let isActive = true;
@@ -28,6 +29,7 @@ export function useLiveActivity(): LiveState {
           const freshIds = seen.current ? new Set(items.filter((i) => !seen.current!.has(i.id)).map((i) => i.id)) : new Set<string>();
           seen.current = new Set(items.map((i) => i.id));
           setState({ items, counts: result.counts ?? null, isLoaded: true, freshIds });
+          remember('live-activity', { items, counts: result.counts ?? null, isLoaded: true, freshIds: new Set<string>() });
         })
         .catch((error) => {
           console.warn('Live activity:', error);

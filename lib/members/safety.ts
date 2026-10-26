@@ -263,12 +263,10 @@ export async function followerCount(memberId: string): Promise<number> {
  * Leaves out the viewer, members they already follow or blocked, and members with open risk flags.
  */
 export async function suggestedMembers(viewer: Member | null, limit = 5) {
-  const [{ items: members }, { items: moments }] = await Promise.all([
-    memberRepository.query({ status: 'active', page: 1, limit: 100_000 }),
-    momentRepository.query({ statuses: ['published'], sort: 'newest', page: 1, limit: 300 }),
-  ]);
+  const { items: moments } = await momentRepository.query({ statuses: ['published'], sort: 'newest', page: 1, limit: 300 });
   const skip = new Set([viewer?.id, ...(viewer?.followingIds ?? []), ...(viewer?.blockedIds ?? [])]);
-  const byId = new Map(members.map((m) => [m.id, m]));
+  // Only the people who posted, in one read
+  const byId = await memberRepository.findByIds(moments.map((m) => m.authorId).filter((id): id is string => Boolean(id)));
   const posts = new Map<string, { count: number; image?: string }>();
   for (const moment of moments) {
     if (!moment.authorId) continue;
@@ -279,7 +277,7 @@ export async function suggestedMembers(viewer: Member | null, limit = 5) {
   const picks = [];
   for (const [id, entry] of posts) {
     const member = byId.get(id);
-    if (!member || skip.has(id) || trustLevel(member) === 'new' || hasOpenRisk(member)) continue;
+    if (!member || member.status !== 'active' || skip.has(id) || trustLevel(member) === 'new' || hasOpenRisk(member)) continue;
     const trust = trustOf(member);
     picks.push({
       id,

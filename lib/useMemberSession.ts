@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useSyncExternalStore } from 'react';
+import { forgetAll } from './clientMemory';
 import type { HostApplication, LoginMethod, MemberPreferences, MemberProfile, OAuthProvider, PublicMember } from './members/types';
 
 /**
@@ -25,7 +26,10 @@ let inflight: Promise<void> | null = null;
 const listeners = new Set<() => void>();
 
 function setState(next: Partial<SessionState>) {
+  const before = state.member?.id;
   state = { ...state, ...next };
+  // Signed out or another member signed in: what the pages remember was loaded for someone else
+  if (state.isLoaded && (state.member?.id ?? null) !== (before ?? null)) forgetAll();
   // Legacy pages still read this flag directly; keep it in step with the real session
   try {
     if (state.isLoaded) localStorage.setItem('isLoggedIn', state.member ? 'true' : 'false');

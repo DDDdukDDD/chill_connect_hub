@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import type { PendingQuery, Row as PgRow } from 'postgres';
+import { cacheManager } from '../cache';
 import { sql, type Sql } from '../db/postgres/client';
 import { memberToRows, rowToMember, toDate, uuidV7 } from '../db/postgres/rows.mjs';
 import type { Member, MemberQuery, MemberRepository, MemberStatus, OAuthProvider } from './types';
@@ -197,9 +198,40 @@ async function writeParts(tx: Sql, member: Member, dbId: string, groups: Set<str
   }
 }
 
+/**
+ * Members read by id are kept for a few seconds: every signed-in request looks up its member, and feeds look up many.
+ * Writes here, and ตี้ joins/leaves (lib/db/adapters/postgresAdapter.ts), clear them. Callers get their own copy,
+ * so changing a returned member never changes the cached one.
+ */
+const MEMBER_TTL_MS = 10 * 1000;
+const memberTags = (id: string) => ['members', `member:${id}`];
+const copy = (member: Member | null) => (member ? structuredClone(member) : null);
+const forget = (id: string) => cacheManager.invalidateTags([`member:${id}`, 'member-lists']);
+
 export const pgMemberRepository: MemberRepository = {
   async findById(id) {
-    return findOne(sql(), sql()`m.legacy_id = ${id}`);
+    const member = await cacheManager.getOrSet(`member:${id}`, () => findOne(sql(), sql()`m.legacy_id = ${id}`), { ttlMs: MEMBER_TTL_MS, tags: memberTags(id) });
+    return copy(member);
+  },
+  async findByIds(ids) {
+    const wanted = [...new Set(ids.filter(Boolean))];
+    const found = new Map<string, Member>();
+    const missing: string[] = [];
+    for (const id of wanted) {
+      if (!cacheManager.has(`member:${id}`)) missing.push(id);
+      else {
+        const cached = cacheManager.get<Member | null>(`member:${id}`);
+        if (cached) found.set(id, structuredClone(cached));
+      }
+    }
+    if (missing.length > 0) {
+      for (const row of await hydrate(sql(), sql()`m.legacy_id in ${sql()(missing)}`)) {
+        const member = rowToMember(row) as Member;
+        cacheManager.set(`member:${member.id}`, member, { ttlMs: MEMBER_TTL_MS, tags: memberTags(member.id) });
+        found.set(member.id, structuredClone(member));
+      }
+    }
+    return found;
   },
   async findByEmail(email) {
     return findOne(sql(), sql()`m.email = ${email.trim().toLowerCase()}`);
@@ -217,6 +249,7 @@ export const pgMemberRepository: MemberRepository = {
       await writeParts(tx, member, dbId, new Set(['*']), true);
       return findOne(tx, sql()`m.id = ${dbId}`);
     });
+    forget(created!.id);
     return created!;
   },
   async update(id, changes) {
@@ -229,6 +262,7 @@ export const pgMemberRepository: MemberRepository = {
       await writeParts(tx, merged, row.id, groups, false);
       return findOne(tx, sql()`m.id = ${row.id}`);
     });
+    forget(id);
     return updated!;
   },
   async remove(id) {
@@ -236,9 +270,18 @@ export const pgMemberRepository: MemberRepository = {
       await tx`delete from app.content_reports where target_type = 'member' and target_id = ${id}`;
       return (await tx`delete from app.members where legacy_id = ${id}`).count > 0;
     });
+    forget(id);
     return removed;
   },
-  async query({ q, status = 'all', page, limit }: MemberQuery) {
+  async query(params: MemberQuery) {
+    // Feeds and counts read every member (limit 100 000); keep those lists briefly, like the event lists
+    if (params.limit < 1000) return queryMembers(params);
+    const list = await cacheManager.getOrSet(`members:${JSON.stringify(params)}`, () => queryMembers(params), { ttlMs: 30 * 1000, staleMs: 5 * 60 * 1000, tags: ['member-lists'] });
+    return structuredClone(list);
+  },
+};
+
+async function queryMembers({ q, status = 'all', page, limit }: MemberQuery) {
     const text = q?.trim().toLowerCase();
     const where = sql()`(${status === 'all'} or m.status = ${status})
       and (${!text} or m.display_name ilike ${'%' + (text ?? '') + '%'} or m.email::text ilike ${'%' + (text ?? '') + '%'} or m.legacy_id = ${text ?? ''})`;
@@ -256,5 +299,4 @@ export const pgMemberRepository: MemberRepository = {
     const rows = ids.length ? await hydrate(sql(), sql()`m.id in ${sql()(ids)}`) : [];
     const byId = new Map(rows.map((r) => [r.id as string, rowToMember(r) as Member]));
     return { items: ids.map((i) => byId.get(i)!).filter(Boolean), totalCount: total, counts };
-  },
-};
+}

@@ -58,9 +58,8 @@ export async function friendIdsOf(member: Member, via: 'invite' | 'any'): Promis
   if (member.invitedBy) friends.add(member.invitedBy);
   for (const invitee of await inviteesOf(member.id)) friends.add(invitee.id);
   if (via === 'any') {
-    for (const id of member.followingIds ?? []) {
-      const other = await memberRepository.findById(id);
-      if (other?.followingIds?.includes(member.id)) friends.add(id);
+    for (const other of (await memberRepository.findByIds(member.followingIds ?? [])).values()) {
+      if (other.followingIds?.includes(member.id)) friends.add(other.id);
     }
   }
   return friends;
@@ -69,8 +68,10 @@ export async function friendIdsOf(member: Member, via: 'invite' | 'any'): Promis
 /** ตี้ the member was checked in at, with the other members checked in there too */
 export async function checkedInTogether(memberId: string): Promise<{ eventId: string; at: string; others: string[] }[]> {
   const result: { eventId: string; at: string; others: string[] }[] = [];
-  for (const { eventId } of await db.listParticipations(memberId)) {
-    const people = await db.listParticipants(eventId);
+  const attended = (await db.listParticipations(memberId)).filter((p) => p.checkedInAt).map((p) => p.eventId);
+  const byEvent = await db.listParticipantsByEvent(attended);
+  for (const eventId of attended) {
+    const people = byEvent.get(eventId) ?? [];
     const mine = people.find((p) => p.userId === memberId);
     if (!mine?.checkedInAt) continue;
     result.push({ eventId, at: mine.checkedInAt, others: people.filter((p) => p.userId !== memberId && p.checkedInAt).map((p) => p.userId) });

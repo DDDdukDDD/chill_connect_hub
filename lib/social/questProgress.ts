@@ -118,9 +118,10 @@ function wholeNumberIn(value: unknown, min: number, max: number): number | undef
 async function hostedVisitsOf(memberId: string, minGuests: number): Promise<Visit[]> {
   const events = await allPages((page) => db.findEvents({ eventType: 'community', page, limit: 100 }));
   const visits: Visit[] = [];
-  for (const event of events) {
-    if ((event as { createdByMemberId?: string }).createdByMemberId !== memberId) continue;
-    const arrivals = (await db.listParticipants(event.id))
+  const hosted = events.filter((event) => (event as { createdByMemberId?: string }).createdByMemberId === memberId);
+  const byEvent = await db.listParticipantsByEvent(hosted.map((event) => event.id));
+  for (const event of hosted) {
+    const arrivals = (byEvent.get(event.id) ?? [])
       .filter((guest) => guest.userId !== memberId && guest.checkedInAt)
       .map((guest) => guest.checkedInAt as string)
       .sort();

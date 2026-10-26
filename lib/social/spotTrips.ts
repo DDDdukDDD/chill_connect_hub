@@ -40,7 +40,7 @@ async function hasAttendedBefore(member: Member): Promise<boolean> {
       if (isEventEnded(event)) return true;
       continue;
     }
-    if ((await db.getParticipant(p.eventId, member.id))?.checkedInAt) return true;
+    if (p.checkedInAt) return true;
   }
   for (const group of await myFairGroups(member.id)) {
     const fair = await db.findEventById(group.fairId);
