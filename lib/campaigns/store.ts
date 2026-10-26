@@ -105,9 +105,8 @@ export async function campaignStats(campaign: Campaign): Promise<CampaignStats> 
   let firstTeeWithin14Days = 0;
   for (const member of joined) {
     const signedUp = Date.parse(member.createdAt);
-    for (const { eventId } of await db.listParticipations(member.id)) {
-      const record = await db.getParticipant(eventId, member.id);
-      if (record?.checkedInAt && Date.parse(record.checkedInAt) - signedUp <= 14 * DAY) {
+    for (const { checkedInAt } of await db.listParticipations(member.id)) {
+      if (checkedInAt && Date.parse(checkedInAt) - signedUp <= 14 * DAY) {
         firstTeeWithin14Days += 1;
         break;
       }

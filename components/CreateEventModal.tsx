@@ -771,7 +771,12 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
       } catch {
         // Nothing stored
       }
-      if (data.event) {
+      // Waiting for staff: its page is not public yet, so the form says so instead of handing the page a link that 404s
+      if (data.event && (data.event as EventItem).approvalStatus === 'pending') {
+        void activityActions.refresh();
+        window.dispatchEvent(new Event(SUBMISSION_SENT_EVENT));
+        setSent({ title: form.title.trim() });
+      } else if (data.event) {
         const saved = data.event as EventItem;
         try {
           // Older pages still look here to recognise events this browser created

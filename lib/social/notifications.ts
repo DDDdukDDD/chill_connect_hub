@@ -92,8 +92,7 @@ const MESSAGES: Record<NotificationType, string> = { seat: 'มีที่ว�
 export async function notificationsFor(member: Member) {
   const mine = store.read().filter((n) => n.memberId === member.id);
   const blocked = new Set(member.blockedIds ?? []);
-  const actors = new Map<string, Member | null>();
-  for (const id of new Set(mine.map((n) => n.actorId))) actors.set(id, await memberRepository.findById(id));
+  const actors = await memberRepository.findByIds(mine.map((n) => n.actorId));
   const items = mine
     .filter((n) => n.type === 'challenge' || n.type === 'evidence' || n.type === 'seat' || (!blocked.has(n.actorId) && actors.get(n.actorId)?.status === 'active'))
     .map((n) => {

@@ -4,6 +4,11 @@ const nextConfig: NextConfig = {
   images: {
     formats: ['image/avif', 'image/webp'],
   },
+  experimental: {
+    // A page seen in the last 30 s opens again from the browser's router cache instead of a new server render
+    // (Next 15+ default is 0); members' own data still refreshes on the page itself
+    staleTimes: { dynamic: 30 },
+  },
   async redirects() {
     return [
       // 1. ชาเลนจ์ & ภารกิจ (Singular & Quest aliases)

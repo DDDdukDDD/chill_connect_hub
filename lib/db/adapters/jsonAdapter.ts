@@ -455,12 +455,12 @@ export class JsonFileAdapter implements IDataRepository {
     });
   }
 
-  public async listParticipations(userId: string): Promise<{ eventId: string; joinedAt?: string; note?: string }[]> {
+  public async listParticipations(userId: string): Promise<{ eventId: string; joinedAt?: string; note?: string; checkedInAt?: string }[]> {
     await this.ensureInitialized();
-    const found: { eventId: string; joinedAt?: string; note?: string }[] = [];
+    const found: { eventId: string; joinedAt?: string; note?: string; checkedInAt?: string }[] = [];
     for (const [eventId, list] of Object.entries(this.participants)) {
       const mine = list.find((p) => p.userId === userId);
-      if (mine) found.push({ eventId, joinedAt: mine.joinedAt, note: mine.note });
+      if (mine) found.push({ eventId, joinedAt: mine.joinedAt, note: mine.note, ...(mine.checkedInAt ? { checkedInAt: mine.checkedInAt } : {}) });
     }
     return found.sort((a, b) => (b.joinedAt ?? '').localeCompare(a.joinedAt ?? ''));
   }

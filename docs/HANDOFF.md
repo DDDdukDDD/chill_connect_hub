@@ -1925,3 +1925,24 @@ New placeholder content in a page must be behind `eventOrigin(...) === 'sample'`
 ### BE-148 · Overnight ตี้ have no cut-off hour (owner 2026-10-26)
 - `isValidTimeRange` in `lib/dateUtils.ts` now only refuses an end time equal to the start. An earlier end means the ตี้ runs into the next day at any hour (BE-146's "ends by 06:00" is gone); social proof and the community sort out late ตี้. The create form and `POST /api/events` now say "เวลาเลิกต้องไม่ตรงกับเวลาเริ่ม".
 - Spot Buddy trips keep their daytime rule (`lib/spotTripRules.ts`), unchanged.
+
+### BE-149 · Speed after the database move (2026-10-26)
+- Members are read many at once: new `memberRepository.findByIds(ids)` (one query) replaces one-by-one loops in moments, chat, notifications, stories, ตี้ questions, fair groups, reviews, friends, suggested members and the live ticker. One round trip to Supabase is ~30 ms, so 40 people went from 1.2 s to 0.07 s.
+- `memberRepository.findById` keeps a member for 10 s; member writes and ตี้ join/leave clear it. Whole-member lists (feeds, counts) are kept 30 s. Callers always get their own copy.
+- `cacheManager.getOrSet` now serves an expired value while a fresh one loads (`staleMs`) and lets requests arriving together share one read. Writes still clear the cache at once.
+- Single ตี้/place/challenge lookups use the cached list when it is there. `db.listParticipations` now carries `checkedInAt`, so visits, attendance, Spot Buddy and campaigns no longer read each participation again.
+- Browser: `lib/clientMemory.ts` remembers the last rewards, month, interests, live ticker, Home feed first page and stories while the member moves between pages (wiped when the member changes); `next.config.ts` keeps pages seen in the last 30 s (`experimental.staleTimes.dynamic`).
+- `vercel.json` pins functions to Singapore (`sin1`), next to the database (ap-southeast-1). Without it Vercel's default is the US, ~200 ms per query.
+- Measured on the dev server, warm: /api/moments 850 → 23 ms, /moments 1.9 s → 0.12 s, /api/members/suggested 260 → 14 ms, /api/rewards 320 → 80 ms, /api/moments/journey 107 → 10 ms, /api/activity 120 → 40 ms.
+
+### BE-150 · Sitemap and canonical check (2026-10-26)
+- Walked every sitemap URL on the local server: all 200, each with its own canonical, none noindex, one h1 each. Private pages (/myhub, /profile, /onboarding, auth pages) are noindex; filtered lists (?q=, ?type=, ?page=) point their canonical at the plain list.
+- Fixed: the home page had no canonical (`app/page.tsx` now sets `/`, so /?invite= and /?share= links fold into it).
+- Added: province pages that show something (/community, /events, /spots `?province=`), which already had their own title and canonical but were not in the sitemap (96 URLs).
+- `lastModified` is now only set where a real date is known (ตี้/อีเวนต์ created date, moments); it was "now" for every URL.
+
+### BE-151 · Bug tracker, part 3: BUG-13, 14, 15 (2026-10-26)
+- BUG-13: a member's new ตี้ that waits for staff no longer goes back to the page (which put a card linking to a page that 404s until approval). The form shows the "ส่งให้ทีมงานแล้ว" popup, like challenges. Hosts whose ตี้ publish at once are unchanged.
+- BUG-14: joining is saved on the account and My Hub reads it from there (checked through the API on Supabase). XP for a ตี้ comes from the host's check-in, not from joining, on purpose. Likely cause on the tester's side: the Vercel site kept data in each server's own temp file before DATA_STORE=postgres, so a join and the next page could land on different copies.
+- BUG-15: leaving a ตี้ the account is already off (another tab, another server copy) now reloads the account's list and shows the join button again, instead of the "คุณยังไม่ได้เข้าร่วมตี้นี้" message.
+- BUG-03 stays as BE-148 (owner 2026-10-26): an earlier end time means an overnight ตี้. BUG-09 (red * on required fields) waits for the owner: the form marks optional fields "(ไม่บังคับ)" instead.

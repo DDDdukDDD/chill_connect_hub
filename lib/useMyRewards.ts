@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { recall, remember } from './clientMemory';
 import type { ChallengeQuest } from '@/data/mockData';
 
 /**
@@ -72,7 +73,10 @@ const toState = (data: RewardsAnswer): RewardsState => ({
 });
 
 export function useMyRewards(isLoggedIn: boolean) {
-  const [state, setState] = useState<RewardsState>(EMPTY);
+  const [state, setState] = useState<RewardsState>(() => recall<RewardsState>('rewards') ?? EMPTY);
+  useEffect(() => {
+    if (isLoggedIn && state.isLoaded) remember('rewards', state);
+  }, [isLoggedIn, state]);
 
   const refresh = useCallback(async () => {
     try {

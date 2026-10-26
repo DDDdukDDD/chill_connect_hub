@@ -109,10 +109,10 @@ export async function socialProofFor(targets: { targetType: VisitTargetType; tar
     if (mark.rating) ratings.set(key, [...(ratings.get(key) ?? []), mark.rating]);
   }
 
-  for (const target of targets) {
-    if (target.targetType !== 'community') continue;
-    const key = targetKey('community', target.targetId);
-    for (const participant of await db.listParticipants(target.targetId)) {
+  const meetupIds = targets.filter((target) => target.targetType === 'community').map((target) => target.targetId);
+  for (const [eventId, participants] of await db.listParticipantsByEvent(meetupIds)) {
+    const key = targetKey('community', eventId);
+    for (const participant of participants) {
       if (participant.checkedInAt) visitors.get(key)!.add(participant.userId);
     }
   }
@@ -148,8 +148,7 @@ export async function visitsOf(memberId: string): Promise<Visit[]> {
   }
 
   for (const participation of await db.listParticipations(memberId)) {
-    const record = await db.getParticipant(participation.eventId, memberId);
-    if (record?.checkedInAt) add({ targetType: 'community', targetId: participation.eventId, evidence: 'checkin', at: record.checkedInAt });
+    if (participation.checkedInAt) add({ targetType: 'community', targetId: participation.eventId, evidence: 'checkin', at: participation.checkedInAt });
   }
 
   return [...best.values()].sort((a, b) => b.at.localeCompare(a.at));

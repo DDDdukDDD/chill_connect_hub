@@ -96,9 +96,8 @@ export async function activityOf(member: Member) {
   for (const p of participations) {
     const event = byId.get(p.eventId);
     if (!event) continue;
-    const record = await db.getParticipant(p.eventId, member.id);
     // hasHostCheckIn: the event is run by a member, so attendance is confirmed by their check-in
-    joined.push({ ...event, joinedAt: p.joinedAt, isHost: hostOf(event) === member.id, checkedInAt: record?.checkedInAt, hasHostCheckIn: Boolean(hostOf(event)) });
+    joined.push({ ...event, joinedAt: p.joinedAt, isHost: hostOf(event) === member.id, checkedInAt: p.checkedInAt, hasHostCheckIn: Boolean(hostOf(event)) });
   }
   const joinedIds = new Set(joined.map((e) => e.id));
   // Events the member created that are still waiting for review are theirs too, even before anyone can join

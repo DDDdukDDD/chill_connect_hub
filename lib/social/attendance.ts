@@ -20,8 +20,7 @@ export async function attendanceOf(memberId: string): Promise<AttendanceRecord> 
     const host = (event as { createdByMemberId?: string } | null)?.createdByMemberId;
     if (!event || !host || host === memberId || !isEventEnded(event)) continue;
     total += 1;
-    const record = await db.getParticipant(p.eventId, memberId);
-    if (record?.checkedInAt) attended += 1;
+    if (p.checkedInAt) attended += 1;
   }
   return { attended, total };
 }

@@ -1,4 +1,5 @@
 import { db } from '../db';
+import { cacheManager } from '../cache';
 import { isEventEnded } from '../dateUtils';
 import { tidyDisplayName } from '../displayName';
 import { memberRepository, type Member } from '../members';
@@ -48,7 +49,12 @@ const COUNT_WINDOW_DAYS = 7;
 const LINES_PER_PERSON = 2;
 const MOMENTS_READ = 30;
 
-async function collect(): Promise<RawItem[]> {
+/** Every visitor and member reads the same lines, so one read serves them for a few seconds; a ตี้ join clears it */
+function collect(): Promise<RawItem[]> {
+  return cacheManager.getOrSet('live-activity', collectFresh, { ttlMs: 15 * 1000, staleMs: 60 * 1000, tags: ['events'] });
+}
+
+async function collectFresh(): Promise<RawItem[]> {
   const items: RawItem[] = [];
 
   // Meetups: open, approved community events only, so every line leads somewhere a member can still go
@@ -108,7 +114,11 @@ export async function recentActivity(viewer: Member, limit = 12): Promise<LiveIt
   const result: LiveItem[] = [];
   const now = Date.now();
 
-  for (const item of await collect()) {
+  const items = await collect();
+  // The people behind the first lines in one read; the rest only if many lines get skipped
+  const firstIds = items.slice(0, limit * 4).map((item) => item.memberId).filter((id): id is string => Boolean(id));
+  for (const [id, member] of await memberRepository.findByIds(firstIds)) people.set(id, member);
+  for (const item of items) {
     if (result.length >= limit) break;
     if (item.memberId && (item.memberId === viewer.id || blocked.has(item.memberId))) continue;
     let person = item.fallback;

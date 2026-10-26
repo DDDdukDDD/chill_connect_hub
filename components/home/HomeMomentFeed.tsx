@@ -12,6 +12,7 @@ import { MomentComposer, CountedQuestNotice, type CountedQuest, type MomentCompo
 import { liveHref } from '@/components/home/LiveActivity';
 import { MOMENT_TARGETS } from '@/components/moments/momentTargets';
 import { Toast } from '@/components/Toast';
+import { recall, remember } from '@/lib/clientMemory';
 
 const PAGE_SIZE = 8;
 const NEW_CHECK_MS = 60_000;
@@ -373,11 +374,12 @@ function shareInitial(type: string, id: string, title: string, location: string)
  */
 export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: setSort, inserts = {}, shareRequest, onPosted }: HomeMomentFeedProps) {
   const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
-  const [moments, setMoments] = useState<FeedItem[]>([]);
+  // Back on Home, the first page seen last time shows at once while it refreshes
+  const [moments, setMoments] = useState<FeedItem[]>(() => recall<{ items: FeedItem[] }>(`home-feed:${sort}`)?.items ?? []);
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
+  const [hasMore, setHasMore] = useState(() => recall<{ hasNext: boolean }>(`home-feed:${sort}`)?.hasNext ?? false);
   // The view whose list is on screen; until it matches the chosen view, placeholders show
-  const [loadedView, setLoadedView] = useState<FeedView | null>(null);
+  const [loadedView, setLoadedView] = useState<FeedView | null>(() => (recall(`home-feed:${sort}`) ? sort : null));
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [newCount, setNewCount] = useState(0);
   const [isComposerOpen, setIsComposerOpen] = useState(false);
@@ -430,6 +432,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       // The current list stays on screen until the new one arrives
       fetchPage(which, 1)
         .then(({ items, hasNext }) => {
+          remember(`home-feed:${which}`, { items, hasNext });
           setMoments(items);
           setHasMore(hasNext);
           setPage(1);

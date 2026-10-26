@@ -9,6 +9,8 @@ import { CacheEntry, CacheOptions, CacheStats } from './types';
 export class MemoryCacheManager {
   private store = new Map<string, CacheEntry<unknown>>();
   private tagIndex = new Map<string, Set<string>>(); // tag -> Set of cache keys
+  /** Loads in progress, so requests arriving together share one database read */
+  private inflight = new Map<string, Promise<unknown>>();
   private hits = 0;
   private misses = 0;
   private defaultTtlMs = 60 * 1000; // 60 seconds default
@@ -42,6 +44,12 @@ export class MemoryCacheManager {
     return entry.value;
   }
 
+  /** True when a value (even null) is cached and not expired */
+  public has(key: string): boolean {
+    const entry = this.store.get(key);
+    return Boolean(entry && Date.now() <= entry.expiresAt);
+  }
+
   /**
    * Set a cached value with TTL and optional invalidation tags.
    */
@@ -58,6 +66,7 @@ export class MemoryCacheManager {
     const entry: CacheEntry<T> = {
       value,
       expiresAt: now + ttlMs,
+      staleUntil: now + ttlMs + (options.staleMs ?? 0),
       createdAt: now,
       tags,
     };
@@ -83,20 +92,47 @@ export class MemoryCacheManager {
     factory: () => Promise<T>,
     options: CacheOptions = {}
   ): Promise<T> {
-    const cached = this.get<T>(key);
-    if (cached !== null) {
-      return cached;
+    const now = Date.now();
+    const entry = this.store.get(key) as CacheEntry<T> | undefined;
+    if (entry && now <= entry.expiresAt) {
+      this.hits++;
+      return entry.value;
     }
+    if (entry && now <= entry.staleUntil) {
+      // Serve the old value now and refresh behind it
+      this.hits++;
+      this.load(key, factory, options).catch(() => {});
+      return entry.value;
+    }
+    this.misses++;
+    return this.load(key, factory, options);
+  }
 
-    const fresh = await factory();
-    this.set(key, fresh, options);
-    return fresh;
+  /** Bumped on every invalidation, so a load that started before a write does not cache what it read */
+  private generation = 0;
+
+  /** Runs the factory once per key at a time: requests arriving together share one read */
+  private load<T>(key: string, factory: () => Promise<T>, options: CacheOptions): Promise<T> {
+    const running = this.inflight.get(key) as Promise<T> | undefined;
+    if (running) return running;
+    const generation = this.generation;
+    const promise = factory()
+      .then((fresh) => {
+        if (generation === this.generation) this.set(key, fresh, options);
+        return fresh;
+      })
+      .finally(() => {
+        if (this.inflight.get(key) === promise) this.inflight.delete(key);
+      });
+    this.inflight.set(key, promise);
+    return promise;
   }
 
   /**
    * Delete specific cache key
    */
   public delete(key: string): boolean {
+    this.inflight.delete(key);
     const entry = this.store.get(key);
     if (!entry) return false;
 
@@ -118,6 +154,7 @@ export class MemoryCacheManager {
    * Invalidate all cache entries matching a tag (e.g. 'events', 'spots')
    */
   public invalidateTag(tag: string): number {
+    this.generation++;
     const keySet = this.tagIndex.get(tag);
     if (!keySet || keySet.size === 0) return 0;
 
@@ -149,6 +186,8 @@ export class MemoryCacheManager {
    * Clear all cache and index
    */
   public clear(): void {
+    this.generation++;
+    this.inflight.clear();
     this.store.clear();
     this.tagIndex.clear();
     this.hits = 0;
