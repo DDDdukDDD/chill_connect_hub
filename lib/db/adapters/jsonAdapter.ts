@@ -30,15 +30,15 @@ import type { AdminEventItem } from '../../eventsStore';
 import { cacheManager } from '../../cache';
 
 /** How an event is read: sample meetups rolled forward (lib/sampleEventDates.ts) and dates in the Buddhist Era */
-function shownEvent<T extends EventItem>(event: T): T {
+export function shownEvent<T extends EventItem>(event: T): T {
   const rolled = rollSampleEventDate(event);
   const date = toBuddhistEra(rolled.date);
   const endDate = toBuddhistEra(rolled.endDate);
   return date === rolled.date && endDate === rolled.endDate ? rolled : { ...rolled, date, endDate };
 }
-const shownEvents = <T extends EventItem>(events: T[]): T[] => events.map(shownEvent);
+export const shownEvents = <T extends EventItem>(events: T[]): T[] => events.map(shownEvent);
 
-function shownQuest(quest: ChallengeQuest): ChallengeQuest {
+export function shownQuest(quest: ChallengeQuest): ChallengeQuest {
   const withLifecycle = applyQuestLifecycle(quest);
   // A quest saved with a category id of an earlier version is shown under today's
   return { ...withLifecycle, category: questCategoryId(withLifecycle.category), startDate: toBuddhistEra(withLifecycle.startDate), endDate: toBuddhistEra(withLifecycle.endDate) };
@@ -468,6 +468,11 @@ export class JsonFileAdapter implements IDataRepository {
   public async listParticipants(eventId: string): Promise<ParticipantInfo[]> {
     await this.ensureInitialized();
     return [...(this.participants[eventId] ?? [])];
+  }
+
+  public async listParticipantsByEvent(eventIds: string[]): Promise<Map<string, ParticipantInfo[]>> {
+    await this.ensureInitialized();
+    return new Map(eventIds.map((id) => [id, [...(this.participants[id] ?? [])]]));
   }
 
   public async removeParticipantEverywhere(userId: string): Promise<number> {

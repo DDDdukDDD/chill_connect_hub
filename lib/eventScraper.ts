@@ -1016,7 +1016,7 @@ export const REAL_BANGKOK_EVENT_SEEDS: ScrapedRawEvent[] = [
     rawLocation: 'อิมแพ็ค เมืองทองธานี (IMPACT Hall 7-8)',
     rawPrice: 'ฟรี!',
     rawDescription: 'งานแสดงธุรกิจแฟรนไชส์ที่ใหญ่ที่สุดในอาเซียน รวมแฟรนไชส์ร้านอาหาร คาเฟ่ ขนส่ง และธุรกิจบริการกว่า 300 แบรนด์',
-    rawImage: 'https://images.unsplash.com/photo-1556742049-0a67e557b6f6?auto=format&fit=crop&w=800&q=80',
+    rawImage: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80',
     sourceUrl: 'https://www.thailandfranchising.com',
   },
   {

@@ -4,7 +4,7 @@ import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Building, Calendar, Check, ChevronRight, Loader2, Lock, MapPin, Plus, Target, Trash2, Upload, Users } from 'lucide-react';
 import { DayOfWeek, EventItem } from '@/data/mockData';
 import { ALL_THAI_PROVINCES } from '@/data/spotsData';
-import { formatThaiDateBE } from '@/lib/dateUtils';
+import { formatThaiDateBE, isValidTimeRange } from '@/lib/dateUtils';
 import { compressImage } from '@/lib/media/compressor';
 import { SPOT_CATEGORY_OPTIONS } from '@/lib/spotCategories';
 import { useAuth } from '@/lib/useAuth';
@@ -225,6 +225,7 @@ function validate(type: CreationEntityType, step: number, f: Form, minDate: stri
     }
     need('startTime', Boolean(f.startTime), 'ใส่เวลาเริ่ม');
     need('endTime', Boolean(f.endTime), 'ใส่เวลาเลิก');
+    need('endTime', !f.startTime || !f.endTime || isValidTimeRange(f.startTime, f.endTime), 'เวลาเลิกต้องไม่ตรงกับเวลาเริ่ม');
     if (f.locationType === 'physical') {
       need('province', Boolean(f.province), 'เลือกจังหวัด');
       need('locationName', f.locationName.trim().length >= 2, 'ใส่ชื่อสถานที่');
@@ -252,7 +253,7 @@ function validate(type: CreationEntityType, step: number, f: Form, minDate: stri
   }
   if (step === 2 && type !== 'challenge') {
     need('description', stripHtmlToPlainText(f.description).length >= 15, 'เล่ารายละเอียดอย่างน้อย 15 ตัวอักษร');
-    need('description', !hasTemplatePrompt(f.description), 'แก้ข้อความในวงเล็บ [ ] ให้เป็นรายละเอียดจริงก่อน');
+    need('description', !hasTemplatePrompt(f.description), 'แตะข้อความในวงเล็บ [ ] แล้วพิมพ์รายละเอียดจริงทับได้เลย');
     if (type !== 'spot' && f.priceMode === 'paid') need('priceText', f.priceText.trim().length >= 1, 'ใส่ราคา เช่น 150 บาท');
     if (type === 'community') need('maxParticipants', f.maxParticipants >= 2 && f.maxParticipants <= 15, 'รับได้ 2 ถึง 15 คน');
     if (type === 'fair') need('ticketUrl', !f.ticketUrl.trim() || f.ticketUrl.trim().startsWith('https://'), 'ลิงก์ต้องขึ้นต้นด้วย https://');
@@ -520,6 +521,8 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
   const [restored, setRestored] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  /** Set when ส่ง was pressed without the agreement ticked; the box turns red and scrolls into view */
+  const [agreeMissed, setAgreeMissed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -554,6 +557,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
     setErrors({});
     setServerError(null);
     setAccepted(false);
+    setAgreeMissed(false);
   };
 
   // A type given by the page opens with its saved draft, like one picked in the chooser
@@ -742,7 +746,12 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
 
   const submit = async () => {
     if (!type || isSubmitting) return;
-    if (!accepted) return setServerError('ติ๊กยอมรับข้อตกลงด้านล่างก่อนส่ง');
+    if (!accepted) {
+      setAgreeMissed(true);
+      // After the warning line renders, so the box and the line under it both come into view
+      requestAnimationFrame(() => bodyRef.current?.querySelector('[data-agreement]')?.scrollIntoView({ block: 'end', behavior: 'smooth' }));
+      return;
+    }
     setServerError(null);
     setIsSubmitting(true);
     try {
@@ -1207,7 +1216,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
               <Field label="ช่วงอายุ" htmlFor={id('age')} optional>
                 <input id={id('age')} value={form.targetAge} maxLength={40} onChange={(e) => set('targetAge', e.target.value)} placeholder="เช่น 20-35 ปี" className={inputClass()} />
               </Field>
-              <Field label="เหมาะกับ">
+              <Field label="เหมาะกับ" optional>
                 <div className="flex flex-wrap gap-2">
                   <Chip selected={form.isSoloFriendly} onClick={() => set('isSoloFriendly', !form.isSoloFriendly)}>มาคนเดียวได้</Chip>
                   <Chip selected={form.isBeginnerFriendly} onClick={() => set('isBeginnerFriendly', !form.isBeginnerFriendly)}>มือใหม่มาได้</Chip>
@@ -1372,16 +1381,21 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
           </>
         ))}
 
-        <label className="flex items-start gap-3 p-4 rounded-2xl border border-slate-200 cursor-pointer">
-          <input type="checkbox" checked={accepted} onChange={(e) => { setAccepted(e.target.checked); setServerError(null); }} className="mt-0.5 w-5 h-5 shrink-0 accent-[#2563EB]" />
-          <span className="text-sm font-medium text-slate-700 leading-relaxed">
-            {type === 'spot'
-              ? 'ข้อมูลนี้เป็นความจริงเท่าที่ฉันทราบ รูปที่ใช้เป็นรูปของฉันหรือรูปที่ใช้ได้ และไม่ใช่การโฆษณาแอบแฝง'
-              : type === 'fair'
-                ? 'ข้อมูลนี้เป็นความจริง ฉันเป็นผู้จัดงานหรือได้รับอนุญาตให้ลงประกาศ และราคากับลิงก์ตรงกับของผู้จัดงาน'
-                : 'ข้อมูลนี้เป็นความจริง ตี้นัดในที่สาธารณะ ไม่ขายของ ไม่ชวนลงทุน และเป็นไปตามคำมั่นของคอมมูนิตี้'}
-          </span>
-        </label>
+        <div data-agreement>
+          <label className={`flex items-start gap-3 p-4 rounded-2xl border cursor-pointer ${agreeMissed ? 'border-rose-400 bg-rose-50/40' : 'border-slate-200'}`}>
+            <input type="checkbox" checked={accepted} onChange={(e) => { setAccepted(e.target.checked); setAgreeMissed(false); setServerError(null); }} className="mt-0.5 w-5 h-5 shrink-0 accent-[#2563EB]" />
+            <span className="text-sm font-medium text-slate-700 leading-relaxed">
+              {type === 'spot'
+                ? 'ข้อมูลนี้เป็นความจริงเท่าที่ฉันทราบ รูปที่ใช้เป็นรูปของฉันหรือรูปที่ใช้ได้ และไม่ใช่การโฆษณาแอบแฝง'
+                : type === 'fair'
+                  ? 'ข้อมูลนี้เป็นความจริง ฉันเป็นผู้จัดงานหรือได้รับอนุญาตให้ลงประกาศ และราคากับลิงก์ตรงกับของผู้จัดงาน'
+                  : type === 'challenge'
+                    ? 'ชาเลนจ์นี้ทำได้จริงและปลอดภัย ไม่ขายของ ไม่ชวนลงทุน และเป็นไปตามคำมั่นของคอมมูนิตี้'
+                    : 'ข้อมูลนี้เป็นความจริง ตี้นัดในที่สาธารณะ ไม่ขายของ ไม่ชวนลงทุน และเป็นไปตามคำมั่นของคอมมูนิตี้'}
+            </span>
+          </label>
+          {agreeMissed && <p role="alert" className="mt-2 text-sm font-bold text-rose-600">ติ๊กยอมรับข้อตกลงก่อนส่งนะ</p>}
+        </div>
       </>
     );
   };

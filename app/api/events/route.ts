@@ -10,6 +10,7 @@ import { guardCreator } from '@/lib/members/submissions';
 import { prepareSpotTrip } from '@/lib/social/spotTrips';
 import type { EventItem } from '@/data/mockData';
 import { checkedEventCategories } from '@/lib/eventCategories';
+import { isValidTimeRange } from '@/lib/dateUtils';
 
 /** At most this many events per ?ids= request */
 const MAX_IDS = 60;
@@ -180,6 +181,10 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: false, message: 'กรุณาระบุเวลาเริ่มและเวลาจบของตี้' }, { status: 400 });
       }
       eventData.time = 'ดูเวลาที่หน้างาน';
+    }
+    const [startTime, endTime] = eventData.time.split(/\s*-\s*/);
+    if (eventData.eventType !== 'public_venue' && startTime && endTime && !isValidTimeRange(startTime, endTime)) {
+      return NextResponse.json({ success: false, message: 'เวลาเลิกต้องไม่ตรงกับเวลาเริ่ม' }, { status: 400 });
     }
 
     // Safety Content Screening

@@ -7,7 +7,6 @@ import {
   PaginatedResult,
   ParticipantInfo,
   AtomicJoinResult,
-  AtomicQuestResult,
   CreateEventDTO,
   UpdateEventDTO,
   CreateSpotDTO,
@@ -48,6 +47,8 @@ export interface IDataRepository {
   listParticipations(userId: string): Promise<{ eventId: string; joinedAt?: string; note?: string }[]>;
   /** People who joined an event (for its host and for staff) */
   listParticipants(eventId: string): Promise<ParticipantInfo[]>;
+  /** People who joined each of these events, read in one go (keyed by event id) */
+  listParticipantsByEvent(eventIds: string[]): Promise<Map<string, ParticipantInfo[]>>;
   /** A member's own record for one event; gives older records a ticket code the first time */
   getParticipant(eventId: string, userId: string): Promise<ParticipantInfo | null>;
   /** Host check-in by ticket code or by member; `checkedIn: false` undoes it */
@@ -72,9 +73,4 @@ export interface IDataRepository {
   createQuest(data: CreateQuestDTO): Promise<ChallengeQuest>;
   updateQuest(id: string, data: UpdateQuestDTO): Promise<ChallengeQuest | null>;
   deleteQuest(id: string): Promise<boolean>;
-
-  /**
-   * Atomic quest progress / completion
-   */
-  atomicProgressQuest(questId: string, userId: string, increment?: number): Promise<AtomicQuestResult>;
 }

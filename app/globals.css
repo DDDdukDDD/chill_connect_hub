@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* `font-sans` (used on most page wrappers) must be the Thai webfont, not Tailwind's system stack */
+@theme inline {
+  --font-sans: var(--font-ibm-plex-thai), var(--font-plus-jakarta), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
 @theme {
   --color-cream: #FAF7F2;
   --color-warm-beige: #FAF7F2;

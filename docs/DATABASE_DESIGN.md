@@ -294,13 +294,14 @@ The data is small and mostly sample, so we go **straight to the normalised schem
 
 ## 8a. Built so far (2026-10-25)
 
-The schema is live in Supabase (57 tables in `app`), from `db/migrations/0001…0008`. It is not used by the website yet: the import and the repository switch come next.
+The schema is live in Supabase (57 tables in `app`), from `db/migrations/0001…0011`. Today's data was imported on 2026-10-25 with `npm run db:import`.
 
 | Command | What it does |
 | :--- | :--- |
 | `npm run db:migrate` | Applies new files in `db/migrations/` once each, in a transaction. Refuses to run if an applied file was edited: always add a new numbered file instead. `-- --status` lists them. |
 | `npm run db:runtime-login` | Sets a new random password for `app_runtime` and writes `DATABASE_URL` (pooler, port 6543) into `.env.local`. Never prints it. Use it to rotate; copy the value to Vercel. |
 | `npm run db:verify` | Checks the lock-down: RLS on every table, `anon`/`authenticated` locked out, website cannot change structure or rewrite `audit_log`/`xp_ledger`, 5 s statement timeout. |
+| `npm run db:import` | Loads today's JSON files (and `data/rewardsData.ts`) into the database in one transaction; the JSON files are only read. `-- --dry-run` checks every row and rolls back; `-- --replace` empties the imported tables first. Stops if a store that is empty today has rows it does not know yet. |
 
 Connections: `POSTGRES_URL_NON_POOLING` (admin, CLI only) and `DATABASE_URL` (website, `app_runtime`). `POSTGRES_URL` is only used to build `DATABASE_URL`.
 
@@ -311,7 +312,22 @@ Choices made while writing the SQL (refining §4):
 - **Seed data is exempt from the ตี้ rules:** 61 of 62 seed ตี้ have no member host and 8 have more than 15 seats, so the host + 2–15 check applies when `is_sample` is false.
 - **อีเวนต์ have no participant cap** (`max_participants` null); today's values (500, 9999…) are not shown anywhere and are dropped.
 - Places keep `vibe_tags` as a text array (GIN index) rather than a join table.
+- Import (0009): online ตี้ / อีเวนต์ have no province (`province_code` null only when `location_type = 'online'`); rewards keep the partner's voucher code in `partner_code`.
+- Import: the 205 seed guests who only existed inside ตี้ lists (`sample-guest-…`) became sample members, so every participant is a real row. Text dates ("23 ต.ค. 2569", "5 - 9 พ.ย. 2026", "20:00 - 23:00 น.") became Bangkok-time `starts_at`/`ends_at`; no time = whole day. The original texts stay in `events.details` until the UI formats the new columns. Not imported: the XP ledger and `member_stats` (rebuilt from the rule engine when rewards move) and 78 chat messages of ตี้ that no longer exist.
 - `content_reports.target_type` uses the code's names (`review`, `chat_message`) plus `moment`, `comment`, `story`, `member`, `question`.
+
+## 8b. Switch, step 1: core data (2026-10-26)
+
+With `DATA_STORE=postgres` the website reads and writes **members, ตี้ / อีเวนต์, participants, places and challenges** in the database (`lib/members/pgMemberRepository.ts`, `lib/db/adapters/postgresAdapter.ts`). Without it, the JSON files as before: switching back is one env line. Every other store (moments, visits, chat, notifications, campaigns, rewards, staff, sources, audit log…) still uses its JSON file and moves next.
+
+- **One mapping for import and website:** `lib/db/postgres/rows.mjs` (plain JS so the import script runs it without a build). A row's `details` holds the original object minus fields a typed column gives back unchanged; typed columns are copies used for filters, links and constraints. Reading = columns, then `details`.
+- **App ids stay today's ids** (`members.legacy_id`, `slug`) until every store has moved, so JSON stores that point at members, ตี้ or places keep working.
+- **Lists** load the rows and reuse today's filters (`lib/db/queryEngine.ts`) behind the same 15–60 s caches. **Join, leave, check-in** are single transactions that lock the ตี้ row, so the last seat cannot be taken twice on two servers.
+- **Order:** `sort_key` (0011) keeps the JSON list order; new items come first.
+- **Connection:** the session pooler (port 5432). Measured: the transaction pooler (6543) moved large results 40–70× slower (all places 59 s vs 0.3–0.7 s). `max: 3` connections per server.
+- **Checked:** 17 public API reads identical to JSON mode; walks for sign-up, log-in, onboarding, profile, join/leave/ticket/My Hub, save, follow/block, account deletion, host check-in, staff create/approve/edit/delete of ตี้, places and challenges, curation recompute (2,179 places in ~4 s).
+- **Behaviour change:** deleting a host's account now deletes their own ตี้ (and its joins) through the foreign key. The JSON store left the ตี้ in place with no host.
+- **Re-import:** `db:import -- --replace` now refuses when members signed up after the last import (the database is live); `--force` overrides.
 
 ## 9. Owner decisions (approved 2026-10-25)
 

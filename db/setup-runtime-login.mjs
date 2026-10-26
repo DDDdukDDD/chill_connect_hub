@@ -16,8 +16,11 @@ try {
   await sql.end();
 }
 
-// Same pooler host and port, different user: Supabase's pooler expects "<role>.<project ref>"
+// Same pooler host, different user: Supabase's pooler expects "<role>.<project ref>".
+// Session mode (5432), not transaction mode (6543): measured 2026-10-25, the transaction pooler moved large results
+// 40-70x slower (all places: 59 s vs 0.3-0.7 s).
 const url = new URL(pooled);
+url.port = '5432';
 const projectRef = decodeURIComponent(url.username).split('.')[1];
 url.username = projectRef ? `app_runtime.${projectRef}` : 'app_runtime';
 url.password = password;

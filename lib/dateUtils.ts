@@ -268,3 +268,19 @@ export function nearDayLabel(dateStr: string, now: number = Date.now()): 'วั
   if (day === new Date(now + 86_400_000).toDateString()) return 'พรุ่งนี้';
   return null;
 }
+
+/**
+ * True when "HH:MM" `end` differs from `start`. An earlier end means the ตี้ runs overnight into
+ * the next day; there is no cut-off hour (owner 2026-10-26: social proof and the community sort
+ * out late ตี้).
+ */
+export function isValidTimeRange(start: string, end: string): boolean {
+  const toMinutes = (value: string) => {
+    const match = /^(\d{1,2}):(\d{2})/.exec(value.trim());
+    return match ? Number(match[1]) * 60 + Number(match[2]) : NaN;
+  };
+  const from = toMinutes(start);
+  const to = toMinutes(end);
+  if (Number.isNaN(from) || Number.isNaN(to)) return true;
+  return to !== from;
+}

@@ -1894,3 +1894,34 @@ New placeholder content in a page must be behind `eventOrigin(...) === 'sample'`
 - The approved design (`docs/DATABASE_DESIGN.md`) is now 57 tables in a private `app` schema, from `db/migrations/0001…0008`, applied with `npm run db:migrate`. The website does **not** use it yet; pages and APIs still read the JSON files. Next: import today's data, then switch the repositories one at a time (API shapes stay the same).
 - Security: RLS on every table, Supabase's public roles locked out, the website connects as `app_runtime` (data only; cannot change structure or rewrite `audit_log` / `xp_ledger`). `npm run db:verify` checks all of it (11/11 pass).
 - New env var `DATABASE_URL` (website login) in `.env.local`, made by `npm run db:runtime-login`; needs copying to Vercel before the switch.
+
+### BE-144 · Today's data imported into Supabase (2026-10-25)
+- **From → To:** Backend (Claude) → Frontend (informational, no action) · 2026-10-25 · `claude`
+- `npm run db:import` (`db/import-from-json.mjs`) loaded the JSON files into the database in one transaction: 245 members (incl. 205 seed guests made into sample members), 257 ตี้/อีเวนต์, 2,179 places, 35 challenges, 9 rewards, 24 moments, 228 participants, 724 audit rows and the rest. Text dates became real times (Bangkok). The website still reads the JSON files; nothing changes on screen.
+- Migration 0009: online events may have no province; rewards get `partner_code`.
+- Next: switch repositories one at a time, then rerun the E2E walks. The JSON files keep being the live data until each switch, so run `npm run db:import -- --replace` right before switching.
+
+### BE-145 · Core data runs on the database (2026-10-26)
+- **From → To:** Backend (Claude) → Frontend (informational, no action) · 2026-10-26 · `claude`
+- With `DATA_STORE=postgres` (now in `.env.local`), members, ตี้ / อีเวนต์, participants, places and challenges are read and written in Supabase. API shapes are unchanged: 17 public reads were compared with JSON mode and match field for field. Other stores stay on JSON for now.
+- Joining is now safe across servers (one transaction per join, row lock on the ตี้).
+- Behaviour change: deleting a host's account removes the ตี้ they host. Before, the ตี้ stayed without a host.
+- Vercel needs `DATA_STORE=postgres` and `DATABASE_URL` with port **5432** (session pooler) before it uses the database; until then it keeps the JSON files.
+
+### BE-146 · Bug tracker check: Thai font and ตี้ time range (2026-10-26)
+- BUG-01: `font-sans` (on most page wrappers) was Tailwind's system font stack, so pages did not use IBM Plex Sans Thai. `app/globals.css` now points `--font-sans` at the webfont.
+- BUG-03: a ตี้ ending before it starts (18:00 to 17:00) is refused on step 2 of the create form and by `POST /api/events`. Past midnight is still allowed if it ends by 06:00. New shared helper: `isValidTimeRange` in `lib/dateUtils.ts`.
+- BUG-02 and BUG-04 are not bugs in the current code: the share button stays grey with "เลือกรูปก่อนนะ" until a photo is added; the profile menu's สร้างกิจกรรม opens the four-kind chooser (แนะนำสถานที่ included), and page buttons like ตั้งตี้เอง open their own form on purpose.
+
+### BE-147 · Bug tracker check, part 2: landing hero line, create form, dead images (2026-10-26)
+- Landing hero: "สัปดาห์นี้ไปตี้กันแล้ว N ครั้ง" waited ~5 s because `/api/activity` read participants one ตี้ at a time from the database. New `db.listParticipantsByEvent(ids)` reads them in one query; visitor counts are kept on the server for 60 s.
+- BUG-05/10: pressing ส่ง without the agreement ticked now turns the box red, shows a line under it and scrolls it into view. Challenges get their own agreement wording.
+- BUG-06: three dead Unsplash images replaced (Art & Collectibles Expo, TFBO, Watercolor ตี้) in the JSON files and Supabase, and in the default image list. The landing อีเวนต์ row falls back to a default photo when an image fails.
+- BUG-08: tapping a template prompt "[...]" in the description editor selects the whole prompt, so typing replaces it.
+- BUG-09: the form marks optional fields "(ไม่บังคับ)"; "เหมาะกับ" was missing the mark.
+- Not bugs: BUG-07 (shared trial account is on purpose, removal on the launch checklist), BUG-11 (the chooser already links to the host request in account settings), BUG-12 (social login waits for OAuth keys, on the launch checklist).
+- Walked in headless Chrome on 2026-10-26 with a throwaway member (deleted afterwards, nothing submitted): BUG-01, 03, 05/10, 06, 08 pass on the local server. The walk caught the agreement warning line being cut off below the fold; the scroll now waits a frame and aligns the box's bottom.
+
+### BE-148 · Overnight ตี้ have no cut-off hour (owner 2026-10-26)
+- `isValidTimeRange` in `lib/dateUtils.ts` now only refuses an end time equal to the start. An earlier end means the ตี้ runs into the next day at any hour (BE-146's "ends by 06:00" is gone); social proof and the community sort out late ตี้. The create form and `POST /api/events` now say "เวลาเลิกต้องไม่ตรงกับเวลาเริ่ม".
+- Spot Buddy trips keep their daytime rule (`lib/spotTripRules.ts`), unchanged.

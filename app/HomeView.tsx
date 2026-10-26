@@ -34,6 +34,7 @@ import { isTradeEvent } from '@/lib/highlights';
 import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
 import { TOP_DESTINATIONS } from '@/components/TopDestinationsRail';
 import { Toast } from '@/components/Toast';
+import { defaultEventImage } from '@/lib/eventImageResolver';
 
 const ROW_SIZE = 5;
 /** The landing meetup row: six tiles fill one desktop row; a picked category slides through up to twelve */
@@ -635,7 +636,8 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
                             <span className="block text-[22px] font-bold">{start.getDate()}</span>
                             <span className="text-xs font-semibold">{THAI_MONTHS[start.getMonth()]}</span>
                           </span>
-                          <img src={fair.image} alt="" loading="lazy" className="w-14 h-14 sm:w-32 sm:h-[88px] shrink-0 rounded-xl object-cover bg-slate-200" />
+                          {/* A dead image link falls back to the default อีเวนต์ photo, never a broken-image icon */}
+                          <img src={fair.image} alt="" loading="lazy" onError={(ev) => { const fallback = defaultEventImage(undefined, true); if (!ev.currentTarget.src.endsWith(fallback)) ev.currentTarget.src = fallback; }} className="w-14 h-14 sm:w-32 sm:h-[88px] shrink-0 rounded-xl object-cover bg-slate-200" />
                           <span className="flex-1 min-w-0 grid">
                             <span className="font-semibold text-slate-900 leading-snug line-clamp-2 sm:truncate group-hover:underline">{fair.title}</span>
                             <span className="text-[13px] text-slate-500 truncate">

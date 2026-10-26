@@ -14,7 +14,10 @@
 - [ ] **ย้ายข้อมูลไปฐานข้อมูลจริง** ตอนนี้เก็บเป็นไฟล์ JSON ในเครื่อง ซึ่งบน Vercel ข้อมูลจะหายเมื่อระบบรีสตาร์ต และรองรับได้ราวหลักสิบถึงหลักร้อยคน
   - ไฟล์ที่ต้องย้าย: `data/members.json`, `data/moments.json`, `data/stories.json`, `data/notifications.json`, `data/chill_database.json` (กิจกรรม), `data/discovery_content.json`, ข้อมูลหลัก (master data) และบันทึกการทำงานของแอดมิน (audit log)
   - โค้ดแยกชั้นเก็บข้อมูลไว้แล้ว (`memberRepository`, `momentRepository`, `lib/social/jsonStore.ts`) จึงสลับได้โดยไม่ต้องแก้หน้าจอ
-  - เลือกแล้ว: Supabase Postgres (สิงคโปร์) ออกแบบใน `docs/DATABASE_DESIGN.md` ตารางสร้างแล้ว 2026-10-25 เหลือนำเข้าข้อมูลและสลับโค้ด
+  - เลือกแล้ว: Supabase Postgres (สิงคโปร์) ออกแบบใน `docs/DATABASE_DESIGN.md` ตารางสร้างแล้ว 2026-10-25 นำเข้าข้อมูลแล้ว และสมาชิก ตี้/อีเวนต์ คนเข้าร่วม สถานที่ ชาเลนจ์ ใช้ฐานข้อมูลแล้ว 2026-10-26 (`DATA_STORE=postgres`) ที่เหลือยังเป็นไฟล์ JSON
+  - Vercel: ตั้ง `DATA_STORE=postgres` และ `DATABASE_URL` พอร์ต 5432 (session pooler) ก่อนเปิดใช้ฐานข้อมูลบนเว็บจริง
+  - Session pooler ของ Supabase รับการเชื่อมต่อได้จำกัด (เว็บใช้ 3 ต่อเซิร์ฟเวอร์): ดูจำนวนเซิร์ฟเวอร์ Vercel ที่รันพร้อมกันตอนคนเข้าเยอะ ถ้าเต็มให้ขยาย pool ใน Supabase หรือย้ายการอ่านรายการใหญ่ไปเป็นคำสั่ง SQL ที่กรองในฐานข้อมูล
+  - ตัดสินใจ: ลบบัญชีโฮสต์แล้วตี้ที่โฮสต์จัดจะถูกลบไปด้วย (คนที่เข้าร่วมหายไปด้วย) หรือควรเก็บตี้ไว้/แจ้งคนที่เข้าร่วม
   - ใส่ `DATABASE_URL` (ล็อกอินของเว็บ `app_runtime` สร้างด้วย `npm run db:runtime-login`) ใน Vercel ห้ามใส่ `POSTGRES_URL_NON_POOLING` หรือ service role key บน Vercel
   - เปิด Point-in-Time Recovery ของ Supabase (แผนเสียเงิน) และลองกู้ข้อมูลจากแบ็กอัปหนึ่งครั้ง
 - [ ] **ย้ายรูปไปที่เก็บไฟล์ถาวร** ระบบอัปโหลดรองรับ Vercel Blob แล้ว แต่ยังไม่ได้ทดสอบบนระบบจริง ต้องตั้งค่า token และทดสอบอัปโหลด แสดงผล และลบ
