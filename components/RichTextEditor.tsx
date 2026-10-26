@@ -11,6 +11,7 @@ import {
   Trash2,
   Undo
 } from 'lucide-react';
+import { sanitizeRichHtml } from '@/lib/safeHtml';
 
 interface RichTextEditorProps {
   value: string; // Accepts HTML string or plain/markdown string
@@ -111,7 +112,7 @@ export const renderDescriptionContent = (content: string, { linkify = false }: {
     return (
       <div
         className="space-y-2.5 leading-relaxed font-normal text-slate-700 [&_strong]:font-bold [&_strong]:text-slate-900 [&_strong]:block [&_strong]:mt-3.5 [&_strong]:mb-1 [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_li]:leading-relaxed"
-        dangerouslySetInnerHTML={{ __html: linkify ? linkifyHtml(content) : content }}
+        dangerouslySetInnerHTML={{ __html: linkify ? linkifyHtml(sanitizeRichHtml(content)) : sanitizeRichHtml(content) }}
       />
     );
   }
@@ -162,6 +163,8 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const [characterCount, setCharacterCount] = useState(0);
+  // The editor's own last output: echoed back as `value`, it must not be reloaded (that would move the caret)
+  const lastEmittedRef = useRef<string | null>(null);
 
   const calculateCount = React.useCallback(() => {
     if (editorRef.current) {
@@ -172,8 +175,9 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   // Sync initial value into contentEditable
   useEffect(() => {
-    if (editorRef.current) {
-      const formattedHtml = markdownToHtml(value || '');
+    if (editorRef.current && value !== lastEmittedRef.current) {
+      // Content from outside (a saved event, a template) is cleaned before it goes into the live editor
+      const formattedHtml = sanitizeRichHtml(markdownToHtml(value || ''));
       if (editorRef.current.innerHTML !== formattedHtml) {
         editorRef.current.innerHTML = formattedHtml;
         calculateCount();
@@ -184,6 +188,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const handleInput = () => {
     if (editorRef.current) {
       const html = editorRef.current.innerHTML;
+      lastEmittedRef.current = html;
       onChange(html);
       calculateCount();
     }

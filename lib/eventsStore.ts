@@ -6,6 +6,7 @@ import { db, readDatabase, updateDatabase, paginateArray } from './db';
 import { getCoreCommunityEvents } from './eventNormalization';
 import { getAllDataSources, recordSourceScrape } from './sourcesStore';
 import { scrapeEventSource } from './structuredDataScraper';
+import { sanitizeRichHtml } from './safeHtml';
 
 export { getCoreCommunityEvents };
 
@@ -167,6 +168,7 @@ export async function updateAdminEvent(id: string, updatedFields: Partial<AdminE
   // The id is the record key and cannot be changed through a field update
   const { id: _ignoredId, ...fields } = updatedFields;
   void _ignoredId;
+  if (typeof fields.description === 'string') fields.description = sanitizeRichHtml(fields.description);
   await db.updateEvent(id, fields);
   return listAdminEvents();
 }
@@ -174,6 +176,8 @@ export async function updateAdminEvent(id: string, updatedFields: Partial<AdminE
 export async function createAdminEvent(eventData: Omit<AdminEventItem, 'id'> & { id?: string }): Promise<AdminEventItem> {
   const created = await db.createEvent({
     ...eventData,
+    // Descriptions come from the rich text editor as HTML; only plain formatting is stored
+    ...(typeof eventData.description === 'string' && { description: sanitizeRichHtml(eventData.description) }),
     id: eventData.id || `admin-event-${Date.now()}`,
     approvalStatus: eventData.approvalStatus || 'approved',
     source: eventData.source || (eventData.eventType === 'public_venue' ? 'Admin Official' : 'Chill & Connect Community'),

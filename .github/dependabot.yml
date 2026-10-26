@@ -1,0 +1,18 @@
+# Dependency scanning (the Black Duck side): weekly update pull requests against main.
+# Security fixes come as their own pull requests as soon as an advisory is published.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # Routine minor and patch bumps arrive as one pull request instead of many
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
