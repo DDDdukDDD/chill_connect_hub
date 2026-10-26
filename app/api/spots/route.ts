@@ -5,6 +5,7 @@ import { getSessionMember } from '@/lib/members/session';
 import { spotsSuggestedBy, suggestSpot } from '@/lib/members/submissions';
 import type { LifestyleSpotItem } from '@/data/spotsData';
 import { effectiveTier } from '@/lib/spotCuration';
+import { homeSpotsFor } from '@/lib/homeSpots';
 
 /** The public list carries the tier and score only; the reasons and staff notes stay in the admin console */
 const publicSpot = (spot: LifestyleSpotItem): LifestyleSpotItem =>
@@ -19,6 +20,11 @@ export async function GET(request: Request) {
       const viewer = await getSessionMember(request);
       const spots = viewer ? await spotsSuggestedBy(viewer.id) : [];
       return NextResponse.json({ success: true, spots }, { headers: { 'Cache-Control': 'no-store' } });
+    }
+    // ?home=1 → the places the member home shows (best-ranked, best of each vibe, the member's saved and visited ones)
+    if (searchParams.get('home') === '1') {
+      const viewer = await getSessionMember(request);
+      return NextResponse.json({ success: true, spots: (await homeSpotsFor(viewer)).map(publicSpot) }, { headers: { 'Cache-Control': 'private, no-store' } });
     }
     // ?ids=a,b,c (≤ 30) → those published places, in the order asked; unknown and draft ids are left out
     const ids = searchParams.get('ids');

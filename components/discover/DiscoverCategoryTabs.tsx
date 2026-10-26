@@ -63,7 +63,8 @@ export function DiscoverCategoryTabs({ kind, categories, counts, selectedId, onS
 
   return (
     <div className="relative border-b border-slate-200">
-      <div ref={rowRef} onScroll={measure} role="tablist" aria-label="หมวด" className="flex gap-1 sm:gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+      {/* relative: the sr-only "สายของคุณ" labels are absolute; without it they escape the scroll row and widen the page on phones */}
+      <div ref={rowRef} onScroll={measure} role="tablist" aria-label="หมวด" className="relative flex gap-1 sm:gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
         {tabs.map(({ id, name, Icon, iconColor, count }) => {
           const isPicked = id === selectedId;
           const isMine = id !== null && mineIds.includes(id);

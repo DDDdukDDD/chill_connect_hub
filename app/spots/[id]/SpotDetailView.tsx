@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
+import { SiteFooter } from '@/components/SiteFooter';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
@@ -693,19 +694,7 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
       )}
 
       {/* Footer */}
-      <footer className="bg-white border-t border-slate-200/90 py-6 text-center text-xs text-slate-500 space-y-2 mt-10">
-        <p className="font-medium text-slate-600 text-xs">Lifestyle Discovery & Community Engagement Platform ระดับประเทศ</p>
-        <div className="flex items-center justify-center gap-2.5 sm:gap-3 text-xs text-slate-500 pt-0.5 flex-wrap">
-          <Link href="/about" className="hover:text-slate-800 hover:underline">เกี่ยวกับเรา</Link>
-          <span className="text-slate-300">•</span>
-          <Link href="/safety" className="hover:text-slate-800 hover:underline">คู่มือความปลอดภัย</Link>
-          <span className="text-slate-300">•</span>
-          <Link href="/legal" className="hover:text-slate-800 hover:underline">ข้อตกลงการใช้งาน</Link>
-          <span className="text-slate-300">•</span>
-          <Link href="/legal?tab=privacy" className="hover:text-slate-800 hover:underline">นโยบายความเป็นส่วนตัว</Link>
-        </div>
-        <p className="text-[11px] text-slate-400">© 2026 Chill & Connect Hub. All rights reserved.</p>
-      </footer>
+      <SiteFooter className="bg-white mt-10" />
 
       {/* Auth Modals */}
       <AuthModal

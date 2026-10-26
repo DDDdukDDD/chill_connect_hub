@@ -6,6 +6,8 @@ import { db, readDatabase, updateDatabase, paginateArray } from './db';
 import { getCoreCommunityEvents } from './eventNormalization';
 import { getAllDataSources, recordSourceScrape } from './sourcesStore';
 import { scrapeEventSource } from './structuredDataScraper';
+import { sanitizeRichHtml } from './safeHtml';
+import { notifyReview } from './social/notifications';
 
 export { getCoreCommunityEvents };
 
@@ -145,14 +147,24 @@ export async function resetAndSeedAllEvents(): Promise<{ totalCount: number; eve
 }
 
 export async function updateEventApproval(id: string, status: 'approved' | 'rejected' | 'pending'): Promise<AdminEventItem[]> {
+  const before = await db.findEventById(id);
   await db.updateEvent(id, { approvalStatus: status, moderatedAt: Date.now() });
+  if (before && before.approvalStatus !== status) await tellHost(before, status);
   return listAdminEvents();
+}
+
+/** The member who made a ตี้ hears when staff publish or turn it down */
+async function tellHost(event: EventItem, status: 'approved' | 'rejected' | 'pending') {
+  const host = (event as { createdByMemberId?: string }).createdByMemberId;
+  const path = `/${event.eventType === 'public_venue' ? 'events' : 'community'}/${encodeURIComponent(event.id)}`;
+  if (host && status !== 'pending') await notifyReview(host, event.id, event.title, status, path);
 }
 
 export async function approveAllPendingEvents(): Promise<AdminEventItem[]> {
   const moderatedAt = Date.now();
   const pending = (await listAdminEvents()).filter((ev) => ev.approvalStatus === 'pending');
   await db.bulkUpdateEvents(pending.map((ev) => ({ id: ev.id, data: { approvalStatus: 'approved', moderatedAt } })));
+  for (const ev of pending) await tellHost(ev, 'approved');
   return listAdminEvents();
 }
 
@@ -167,6 +179,7 @@ export async function updateAdminEvent(id: string, updatedFields: Partial<AdminE
   // The id is the record key and cannot be changed through a field update
   const { id: _ignoredId, ...fields } = updatedFields;
   void _ignoredId;
+  if (typeof fields.description === 'string') fields.description = sanitizeRichHtml(fields.description);
   await db.updateEvent(id, fields);
   return listAdminEvents();
 }
@@ -174,6 +187,8 @@ export async function updateAdminEvent(id: string, updatedFields: Partial<AdminE
 export async function createAdminEvent(eventData: Omit<AdminEventItem, 'id'> & { id?: string }): Promise<AdminEventItem> {
   const created = await db.createEvent({
     ...eventData,
+    // Descriptions come from the rich text editor as HTML; only plain formatting is stored
+    ...(typeof eventData.description === 'string' && { description: sanitizeRichHtml(eventData.description) }),
     id: eventData.id || `admin-event-${Date.now()}`,
     approvalStatus: eventData.approvalStatus || 'approved',
     source: eventData.source || (eventData.eventType === 'public_venue' ? 'Admin Official' : 'Chill & Connect Community'),

@@ -57,6 +57,10 @@ export const bangkokToday = () => new Date(Date.now() + 7 * 3600 * 1000).toISOSt
 export const isCampaignLive = (campaign: Campaign, today = bangkokToday()) =>
   campaign.published && campaign.startDate <= today && today <= campaign.endDate;
 
+/** The one campaign the home strip shows: live, marked for the home page, the latest start wins (the admin list warns about the others) */
+export const homeCampaignOf = <T extends Campaign>(campaigns: T[], today = bangkokToday()): T | null =>
+  [...campaigns].sort((a, b) => b.startDate.localeCompare(a.startDate)).find((c) => isCampaignLive(c, today) && c.showOnHome) ?? null;
+
 const THAI_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 
 /** "2026-12-31" → "31 ธ.ค. 2569" */

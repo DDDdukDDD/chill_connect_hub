@@ -436,7 +436,7 @@ All writes are `POST` with an `action` field unless noted.
 - `GET /api/stories` → `{ success, groups: [{ author: { id, displayName, avatarUrl }, isMine, isFollowing, allSeen, stories: [{ id, image, caption, createdAt, hoursLeft, seen, views? }] }] }`. Only stories younger than 24 hours; `views` is sent to the author only. Order: own, followed, unseen, seen.
 - `POST /api/stories` `{ image (from /api/upload), caption? (≤120) }` → `201 { story }`. Same trust rules as a moment (verified account, no contact details for new accounts); at most 5 active stories per member.
 - `POST /api/stories/{id}` with `{}` marks it seen by the signed-in member; with `{ action: 'report', reason }` reports it (once per member, 3 distinct reports hide it, staff get a risk flag). Story items include `hasReported`. `DELETE /api/stories/{id}` removes one's own story.
-- `GET /api/notifications` → `{ success, items: [{ id, type: 'follow' | 'like' | 'comment', actorId, actorName, actorAvatar, momentId?, message, preview?, timeAgo, read }], unread }`. `POST /api/notifications` marks all as read.
+- `GET /api/notifications` → `{ success, items: [{ id, type, actorId, actorName, actorAvatar, momentId?, href?, message, preview?, timeAgo, read }], unread }`. `POST /api/notifications` marks all as read. Types: `follow`, `like`, `comment`, `challenge`, `evidence`, `match`, `seat`, `question`, `answer`, and since 2026-10-26 (BE-154) for hosts: `approved` (staff published their ตี้ or อีเวนต์; `href` is its page), `rejected` (`href` is `/myhub`), `joined` (someone joined their ตี้; the actor is that person, `href` is the ตี้). The preview of these three is the ตี้'s title. Site notices (`challenge`, `evidence`, `seat`, `approved`, `rejected`) carry `actorName: 'Chill & Connect Hub'`.
   - _2026-10-23 (BE-105):_ `type` may also be `match` (someone picked the member back after a ตี้; `href` points to that ตี้ `#meet-again`).
 - Created by the server on follow, like and comment (never for one's own action; a repeated like or follow is one item). Deleted with the account.
 - Feed items of sample posts (`isSample`) are returned without decorative emoji.
@@ -473,6 +473,7 @@ All writes are `POST` with an `action` field unless noted.
 - `GET /api/auth/member/activity` adds `fairGroups: [{ id, fairId, fairTitle, title, time, meetupPoint, isMine }]`.
 - **Development only:** `POST /api/dev/demo` fills the signed-in account with sample activity (verified and trusted, upcoming events, a hosted event with participants and chat, an attended past event); `DELETE /api/dev/demo` removes the two sample events. Both return 404 in production.
 - **Check-in link (2026-10-11):** a ticket's QR encodes `/checkin?event={id}&code={ticketCode}`. The page calls `POST /api/events/{id}/participants { action: 'check_in', code }` with the visitor's session, so only the event's host can complete it.
+  - _2026-10-26 (BE-153):_ `check_in` returns `409 "เช็กอินได้ตั้งแต่วันที่ตี้เริ่ม"` before the event's start date (opens 12 hours before that date's midnight, to cover the server time zone). Dates without a day number (a series) are not limited; `undo` is never limited.
 
 ---
 
@@ -683,3 +684,4 @@ A moment tied to a place or event is a visit, and a visit counts toward challeng
 - **Composer:** the share form no longer offers a challenge as what a moment is about. `POST /api/moments` still accepts `targetType: 'challenge'`, but such a moment was never a visit and counts toward nothing.
 - **Stories:** `/api/admin/stories` (table above) is the staff view of stories, including the ones hidden by three reports.
 - **Places by id:** `GET /api/spots?ids=a,b,c` (at most 30) → `{ success, spots }`: those published places in the order asked; unknown and draft ids are left out. The share form uses it for the member's saved places.
+- **Places for the member home** (added 2026-10-26, BE-154): `GET /api/spots?home=1` → `{ success, spots }`, not cached by the browser: the 30 best-ranked places, the best two of each vibe that are open for meet-ups and two that are not, and, signed in, the member's saved and visited places (≤ 200). ~50 places in one request instead of the whole catalog. The member home and My Hub use it (`useHomeSpots`, `useSpotCatalog('home')` in `lib/usePublishedSpots.ts`).

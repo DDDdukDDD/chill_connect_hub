@@ -136,7 +136,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="flex items-center gap-2 sm:gap-3 cursor-pointer group py-1 min-w-0"
           >
             <BrandLogo size="md" className="group-hover:scale-105 group-hover:shadow-md transition-all duration-300" />
-            <div className="flex flex-col justify-center min-w-0">
+            {/* Guests on small phones need the room for เข้าสู่ระบบ and สมัครฟรี: the logo stands alone, the name stays for screen readers */}
+            <div className={`flex flex-col justify-center min-w-0 ${isLoggedIn ? '' : 'max-[429px]:sr-only'}`}>
               <span className="font-bold text-sm min-[400px]:text-lg sm:text-[19px] tracking-tight text-[#0F172A] font-sans leading-none truncate">
                 Chill & Connect Hub
               </span>

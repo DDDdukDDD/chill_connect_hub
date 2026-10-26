@@ -77,6 +77,8 @@ export const ETicketModal: React.FC<ETicketModalProps> = ({ isOpen, onClose, eve
   const isFair = event.eventType === 'public_venue';
   const code = ticket?.code || (state === 'loading' ? '······' : '—');
   const needsCheckIn = Boolean(ticket && !ticket.isHost && !isFair);
+  // Same rule as isOnlineEvent (lib/eventsStore.ts, server-only): no meeting point and no map for these
+  const isOnline = event.locationType === 'online' || event.province === 'ออนไลน์' || Boolean(event.onlineJoinUrl);
   const hint =
     state === 'none'
       ? 'ไม่พบบัตรของคุณสำหรับตี้นี้ ลองเข้าร่วมตี้อีกครั้ง'
@@ -84,6 +86,8 @@ export const ETicketModal: React.FC<ETicketModalProps> = ({ isOpen, onClose, eve
       ? 'คุณเป็นคนจัดตี้นี้ เช็กอินผู้เข้าร่วมได้ที่มายฮับ'
       : ticket?.checkedInAt
       ? 'คนจัดเช็กอินให้คุณแล้ว ขอให้สนุกกับตี้นะ'
+      : needsCheckIn && isOnline
+      ? 'ตี้ออนไลน์: เข้าห้องตามลิงก์ที่คนจัดส่งในแชตกลุ่ม แล้วบอกรหัสนี้ให้คนจัดเช็กอิน'
       : needsCheckIn
       ? 'ให้คนจัดสแกน QR นี้ที่จุดนัดพบ หรือบอกรหัสด้านล่าง'
       : 'งานนี้ไม่ต้องเช็กอิน เก็บรหัสไว้เป็นหลักฐานการลงทะเบียน';
@@ -211,15 +215,17 @@ export const ETicketModal: React.FC<ETicketModalProps> = ({ isOpen, onClose, eve
         </div>
 
         <div className="px-5 sm:px-6 py-3.5 border-t border-slate-100 flex flex-wrap items-center gap-2 pb-[max(0.875rem,env(safe-area-inset-bottom))]">
-          <a
-            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`${action} bg-slate-100 hover:bg-slate-200 text-slate-700`}
-          >
-            <MapPin className="w-4 h-4" aria-hidden="true" />
-            แผนที่
-          </a>
+          {!isOnline && (
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${action} bg-slate-100 hover:bg-slate-200 text-slate-700`}
+            >
+              <MapPin className="w-4 h-4" aria-hidden="true" />
+              แผนที่
+            </a>
+          )}
           {onOpenChat && !isFair && state === 'ready' && (
             <button
               type="button"

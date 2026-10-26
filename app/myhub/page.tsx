@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
+import { SiteFooter } from '@/components/SiteFooter';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { CreateEventModal } from '@/components/CreateEventModal';
@@ -27,7 +28,6 @@ import { fetchAllContentPages } from '@/lib/contentClient';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { nameInitial, tidyDisplayName } from '@/lib/displayName';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
-import { BrandLogo } from '@/components/BrandLogo';
 import { LifestyleSpotItem } from '@/data/spotsData';
 import { useSpotCatalog, getCachedSpotVibeCategory } from '@/lib/usePublishedSpots';
 import { resolveSpotImage } from '@/lib/spotImageResolver';
@@ -512,7 +512,7 @@ function MyHubContent() {
   );
 
   // Live catalog (published spots + bundled ones saved earlier)
-  const spotCatalog = useSpotCatalog();
+  const spotCatalog = useSpotCatalog('home');
 
   // Saved Lifestyle Spots for Scrapbook (Filterable by search and vibe)
   const savedSpotsList: LifestyleSpotItem[] = useMemo(() => {
@@ -867,10 +867,13 @@ function MyHubContent() {
     if (!ev.date || !/[0-9]/.test(ev.date)) return false;
     return parseEventDateToTimestamp(ev.date) <= end && parseEventEndDateToTimestamp(ev.date) >= start;
   };
-  const weekItems = weekDays.map((day) => guestEvents.filter((ev) => isOnDate(ev, day)));
+  // A plan the member dropped is history (month view, past list), not part of this week's schedule
+  const weekItems = weekDays.map((day) => guestEvents.filter((ev) => getEventAttendanceStatus(ev) !== 'cancelled' && isOnDate(ev, day)));
   // Opens on the first day with something on it (today when the week is empty)
   const shownWeekDay = weekDayIdx ?? Math.max(0, weekItems.findIndex((items) => items.length > 0));
   const weekPool = weekItems[shownWeekDay];
+  // A free week with a plan later on: the empty state points at that plan instead of "find a ตี้" (E2E 2026-10-26)
+  const laterPlan = scheduleView === 'week' && weekItems.every((items) => items.length === 0) ? nextEvent : undefined;
   // Under the month grid and the week strip the rows run in date order, like the list
   const scheduleRows =
     scheduleView === 'month'
@@ -1612,7 +1615,7 @@ function MyHubContent() {
                     {scheduleView === 'list'
                       ? scheduleWhen === 'past' ? 'ยังไม่มีรายการที่ผ่านมา' : calendarCategoryFilter === 'quests' && hasJoinedQuests ? 'ชาเลนจ์ที่ทำอยู่แสดงอยู่ใน "กำลังทำอยู่" ด้านบน' : nextEvent && calendarCategoryFilter === 'all' ? 'ยังไม่มีนัดอื่นหลังจากนี้' : 'ยังไม่มีนัดที่กำลังจะมาถึง'
                       : scheduleView === 'week'
-                      ? shownWeekDay === 0 ? 'วันนี้ยังว่างอยู่' : 'วันนี้ยังไม่มีนัด'
+                      ? laterPlan ? 'สัปดาห์นี้ยังว่างอยู่' : shownWeekDay === 0 ? 'วันนี้ยังว่างอยู่' : 'วันนี้ยังไม่มีนัด'
                       : selectedCalDay !== null ? 'ไม่มีกำหนดการในวันที่เลือก' : 'ยังไม่มีกำหนดการในเดือนนี้'}
                   </p>
                   <p className="text-[11px] sm:text-xs text-slate-500">
@@ -1620,10 +1623,22 @@ function MyHubContent() {
                       ? 'งานที่ไปร่วมแล้วจะมาอยู่ตรงนี้ พร้อมปุ่มแชร์โมเมนต์และรีวิว'
                       : calendarCategoryFilter === 'quests' && hasJoinedQuests
                       ? 'แต่ละชาเลนจ์จะมาอยู่ในกำหนดการในวันเริ่ม และช่วง 7 วันสุดท้ายก่อนปิด'
+                      : laterPlan
+                      ? `นัดถัดไปของคุณคือ ${laterPlan.date}`
                       : 'ลองหาตี้ที่ชอบ หรืออีเวนต์ที่อยากไป แล้วนัดจะมาอยู่ตรงนี้'}
                   </p>
                 </div>
-                <div className={`flex items-center justify-center gap-2 pt-1 ${calendarCategoryFilter === 'quests' ? 'hidden' : ''}`}>
+                {laterPlan && calendarCategoryFilter !== 'quests' && (
+                  <button
+                    type="button"
+                    onClick={() => setScheduleView('list')}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all cursor-pointer"
+                  >
+                    <span>ดูนัดทั้งหมด</span>
+                    <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+                  </button>
+                )}
+                <div className={`flex items-center justify-center gap-2 pt-1 ${calendarCategoryFilter === 'quests' || laterPlan ? 'hidden' : ''}`}>
                   <Link
                     href="/community"
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all"
@@ -2678,25 +2693,7 @@ function MyHubContent() {
       </div>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-slate-200/80 py-8 text-center text-xs text-slate-500 space-y-2 mt-12">
-        <div className="flex items-center justify-center gap-2 text-sm font-bold text-slate-900">
-          <BrandLogo size="xs" />
-          <span>Chill & Connect Hub</span>
-        </div>
-        <p className="font-medium text-slate-600">
-          Lifestyle Discovery & Community Platform ที่เปลี่ยนทุกการไปเที่ยวให้เป็นเรื่องสนุกและต่อยอดมิตรภาพ
-        </p>
-        <div className="flex items-center justify-center gap-2.5 sm:gap-3 text-xs text-slate-500 pt-1 flex-wrap">
-          <Link href="/about" className="hover:text-slate-800 hover:underline">เกี่ยวกับเรา</Link>
-          <span className="text-slate-300">•</span>
-          <Link href="/safety" className="hover:text-slate-800 hover:underline">คู่มือความปลอดภัย</Link>
-          <span className="text-slate-300">•</span>
-          <Link href="/legal" className="hover:text-slate-800 hover:underline">ข้อตกลงการใช้งาน</Link>
-          <span className="text-slate-300">•</span>
-          <Link href="/legal?tab=privacy" className="hover:text-slate-800 hover:underline">นโยบายความเป็นส่วนตัว</Link>
-        </div>
-        <p className="text-[11px] text-slate-400">© 2026 Chill & Connect Hub. All rights reserved.</p>
-      </footer>
+      <SiteFooter className="bg-white mt-12" />
 
       {/* Mobile Floating Nav Bar */}
       <MobileNav

@@ -125,7 +125,7 @@ const STEP_ABOUT = 2;
 const QUESTION_STEPS = 3;
 
 /**
- * Step 3 is the landing's "เลือกกิจกรรมตามสายที่ชอบ" cards (owner 2026-10-23): one set, the ตี้ categories, with the
+ * Step 3 is the landing's "ดูตี้ตามสายที่ชอบ" cards (owner 2026-10-23): one set, the ตี้ categories, with the
  * สาย that fit the step-1 goals first (`community`). Places and fairs are no longer asked: `spots` / `fairs` here, and
  * SAI_SPOTS / SAI_FAIRS below, stand in for them in suggestions. Ids are master data ids.
  */

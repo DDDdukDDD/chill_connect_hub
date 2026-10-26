@@ -1,8 +1,47 @@
 import type { NextConfig } from "next";
+import { OPTIMIZED_REMOTE_IMAGES } from './lib/optimizedImage';
+
+const isDev = process.env.NODE_ENV === 'development';
+
+// A static policy, not per-request nonces: nonces would force every page to render on each request (no caching).
+// Scripts and API calls stay on this site; images may come from any https host (organizers' and scraped images);
+// frames only for Google Maps.
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "media-src 'self' blob: https:",
+  "font-src 'self' data:",
+  // data:/blob: are photos already in the browser (the upload compressor fetches its own data: URL)
+  "connect-src 'self' data: blob:",
+  // Map embeds on detail pages (maps.google.com redirects to www.google.com/maps)
+  'frame-src https://maps.google.com https://www.google.com',
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  ...(isDev ? [] : ['upgrade-insecure-requests']),
+].join('; ');
+
+const securityHeaders = [
+  { key: 'Content-Security-Policy', value: contentSecurityPolicy },
+  { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains' },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'X-Frame-Options', value: 'DENY' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  // Location is used on this site (nearby places); camera and microphone are not
+  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(self)' },
+];
 
 const nextConfig: NextConfig = {
+  async headers() {
+    return [{ source: '/:path*', headers: securityHeaders }];
+  },
   images: {
     formats: ['image/avif', 'image/webp'],
+    // Organisers' posters resized for cards (lib/optimizedImage.ts); only these hosts, never any URL
+    remotePatterns: OPTIMIZED_REMOTE_IMAGES.map((p) => ({ protocol: 'https' as const, hostname: p.hostname, pathname: p.pathname })),
   },
   experimental: {
     // A page seen in the last 30 s opens again from the browser's router cache instead of a new server render

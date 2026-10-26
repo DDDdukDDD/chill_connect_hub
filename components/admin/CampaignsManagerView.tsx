@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Loader2, Megaphone, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Megaphone, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { CampaignStrip } from '@/components/CampaignStrip';
-import { type Campaign, type CampaignStats, bangkokToday, campaignDay } from '@/lib/campaigns/types';
+import { type Campaign, type CampaignStats, bangkokToday, campaignDay, homeCampaignOf } from '@/lib/campaigns/types';
 import { AdminDrawer, Field, FormSection, fieldInputClass } from './AdminDrawer';
 import { AdminEmptyState, AdminPageHeader, adminButton } from './AdminUI';
 import { useAdminSession } from './AdminAuthGate';
@@ -40,7 +40,7 @@ function Kpi({ label, value, note }: { label: string; value: React.ReactNode; no
   );
 }
 
-function CampaignEditor({ entry, quests, rewards, onClose, onSaved }: { entry: AdminCampaign | null; quests: QuestOption[]; rewards: RewardOption[]; onClose: () => void; onSaved: (message: string) => void }) {
+function CampaignEditor({ entry, quests, rewards, homeNow, onClose, onSaved }: { entry: AdminCampaign | null; quests: QuestOption[]; rewards: RewardOption[]; homeNow: AdminCampaign | null; onClose: () => void; onSaved: (message: string) => void }) {
   const [form, setForm] = useState(() => (entry ? { ...entry, prizeImage: entry.prizeImage ?? '', rewardId: entry.rewardId ?? '' } : { ...EMPTY }));
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -135,6 +135,11 @@ function CampaignEditor({ entry, quests, rewards, onClose, onSaved }: { entry: A
             <input type="checkbox" checked={form.showOnHome} onChange={(e) => set('showOnHome', e.target.checked)} /> แสดงแถบบนหน้าแรก
           </label>
         </div>
+        {form.showOnHome && homeNow && homeNow.id !== form.id && (
+          <p className="sm:col-span-2 rounded-xl bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900">
+            หน้าแรกแสดงได้ทีละแคมเปญ ตอนนี้แสดง “{homeNow.name}” อยู่ ถ้าเปิดพร้อมกัน แคมเปญที่เริ่มทีหลังจะแสดงแทน
+          </p>
+        )}
       </FormSection>
 
       <FormSection title="ของรางวัล" hint="รูปพื้นขาวหรือพื้นใส สัดส่วนประมาณ 3:2 ต้องเป็นรูปที่เรามีสิทธิ์ใช้">
@@ -182,6 +187,8 @@ export function CampaignsManagerView() {
   const { can } = useAdminSession();
   const canEdit = can('content.edit');
   const [data, setData] = useState<{ campaigns: AdminCampaign[]; quests: QuestOption[]; rewards: RewardOption[] } | null>(null);
+  // The campaign guests see on the home strip today (same rule as the server), to warn about others marked for it
+  const homeNow = data ? homeCampaignOf(data.campaigns) : null;
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [editing, setEditing] = useState<AdminCampaign | null | undefined>(undefined);
@@ -205,6 +212,16 @@ export function CampaignsManagerView() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // One tap shows or hides the home-page strip, without opening the editor
+  const toggleHome = async (campaign: AdminCampaign) => {
+    const showOnHome = !campaign.showOnHome;
+    const res = await fetch('/api/admin/campaigns', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'save', campaign: { ...campaign, showOnHome } }) });
+    const json = await res.json();
+    if (!json.success) setError(json.error || 'บันทึกไม่สำเร็จ');
+    else setNotice(showOnHome ? `แสดงแถบ ${campaign.name} บนหน้าแรกแล้ว` : `ซ่อนแถบ ${campaign.name} จากหน้าแรกแล้ว`);
+    void load();
+  };
 
   const remove = async (campaign: AdminCampaign) => {
     if (!window.confirm(`ลบแคมเปญ "${campaign.name}"? ชาเลนจ์และของรางวัลยังอยู่ ลบเฉพาะแคมเปญ`)) return;
@@ -252,13 +269,21 @@ export function CampaignsManagerView() {
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="text-base sm:text-lg font-bold text-slate-900">{campaign.name}</h2>
                     <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${phase.tone}`}>{phase.label}</span>
-                    {campaign.showOnHome && <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-800">แถบหน้าแรก</span>}
+                    {campaign.showOnHome &&
+                      (homeNow && campaign.live && homeNow.id !== campaign.id ? (
+                        <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-rose-700">ไม่ได้แสดงบนหน้าแรก: “{homeNow.name}” แสดงอยู่</span>
+                      ) : (
+                        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-800">{homeNow?.id === campaign.id ? 'แสดงบนหน้าแรกอยู่' : 'แถบหน้าแรก'}</span>
+                      ))}
                   </div>
                   <p className="mt-0.5 text-sm text-slate-600">{campaign.headline}</p>
                   <p className="text-xs text-slate-500">{campaignDay(campaign.startDate)} – {campaignDay(campaign.endDate)}</p>
                 </div>
                 {canEdit && (
                   <div className="flex gap-2">
+                    <button type="button" onClick={() => void toggleHome(campaign)} aria-pressed={campaign.showOnHome} className={adminButton.secondarySm}>
+                      {campaign.showOnHome ? <EyeOff size={13} /> : <Eye size={13} />} {campaign.showOnHome ? 'ซ่อนแถบหน้าแรก' : 'แสดงบนหน้าแรก'}
+                    </button>
                     <button type="button" onClick={() => setEditing(campaign)} className={adminButton.secondarySm}><Pencil size={13} /> แก้ไข</button>
                     <button type="button" onClick={() => void remove(campaign)} className={adminButton.dangerSm}><Trash2 size={13} /> ลบ</button>
                   </div>
@@ -304,6 +329,7 @@ export function CampaignsManagerView() {
       {editing !== undefined && data && (
         <CampaignEditor
           entry={editing}
+          homeNow={homeNow}
           quests={data.quests}
           rewards={data.rewards}
           onClose={() => setEditing(undefined)}

@@ -758,18 +758,19 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
 
                   {/* The numbers, one per line; zeros are left out */}
                   {stats.length > 0 && (
-                    <dl className="mt-6 pt-5 border-t border-slate-200 space-y-3">
+                    <dl className="mt-6 pt-5 border-t border-slate-200 space-y-2">
                       {stats.map((stat) => {
+                        // The number sits right next to its label, one size up, so the pair reads as one line
                         const row = (
                           <>
-                            <dd className={`w-16 shrink-0 text-2xl font-bold tabular-nums ${stat.tone ?? 'text-slate-900'}`}>{stat.value}</dd>
-                            <dt className="text-sm font-medium text-slate-600">{stat.label}</dt>
+                            <dd className={`text-lg leading-7 font-bold tabular-nums ${stat.tone ?? 'text-slate-900'}`}>{stat.value}</dd>
+                            <dt className="text-sm leading-7 font-medium text-slate-600">{stat.label}</dt>
                           </>
                         );
                         return stat.href ? (
-                          <a key={stat.label} href={stat.href} className="flex items-baseline hover:opacity-80">{row}</a>
+                          <a key={stat.label} href={stat.href} className="flex items-baseline gap-2 hover:opacity-80">{row}</a>
                         ) : (
-                          <div key={stat.label} className="flex items-baseline">{row}</div>
+                          <div key={stat.label} className="flex items-baseline gap-2">{row}</div>
                         );
                       })}
                     </dl>

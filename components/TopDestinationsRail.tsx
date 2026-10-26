@@ -9,6 +9,8 @@ export interface TopDestinationItem {
   nameEn: string;
   nameTh: string;
   provinceKey: string;
+  /** For a card named after one place in the province ("พัทยา • ชลบุรี"): the word /spots searches for, so the list is that place, not the whole province */
+  searchTerm?: string;
   imageUrl: string;
   tagline: string;
   isUserFavorite?: boolean;
@@ -21,15 +23,16 @@ export const TOP_DESTINATIONS: TopDestinationItem[] = [
     nameTh: 'กรุงเทพมหานคร',
     provinceKey: 'กรุงเทพฯ',
     imageUrl: '/images/destinations/bkk.jpg',
-    tagline: 'เมืองหลวงแห่งคาเฟ่และพื้นที่สีเขียว',
+    tagline: 'คาเฟ่ และพื้นที่สีเขียวกลางเมือง',
   },
   {
     id: 'chonburi',
     nameEn: 'Pattaya / Chonburi',
     nameTh: 'พัทยา • ชลบุรี',
     provinceKey: 'ชลบุรี',
+    searchTerm: 'พัทยา',
     imageUrl: '/images/destinations/chonburi.jpg',
-    tagline: 'ทะเลใกล้กรุง คาเฟ่ริมหาด และเกาะสีชัง',
+    tagline: 'ทะเลใกล้กรุง และคาเฟ่ริมหาด',
     isUserFavorite: true,
   },
   {
@@ -38,7 +41,7 @@ export const TOP_DESTINATIONS: TopDestinationItem[] = [
     nameTh: 'เชียงใหม่',
     provinceKey: 'เชียงใหม่',
     imageUrl: '/images/destinations/chiangmai.jpg',
-    tagline: 'ดินแดนสโลว์บาร์ ธรรมชาติ และดอยสูง',
+    tagline: 'สโลว์บาร์ ธรรมชาติ และดอยสูง',
   },
   {
     id: 'phuket',
@@ -63,7 +66,7 @@ export const TOP_DESTINATIONS: TopDestinationItem[] = [
     nameTh: 'กระบี่',
     provinceKey: 'กระบี่',
     imageUrl: '/images/destinations/krabi.jpg',
-    tagline: 'สระมรกต หินผาอ่าวไร่เลย์ และน้ำทะเลใส',
+    tagline: 'สระมรกต และหินผาอ่าวไร่เลย์',
     isUserFavorite: true,
   },
   {
@@ -88,8 +91,9 @@ export const TOP_DESTINATIONS: TopDestinationItem[] = [
     nameEn: 'Khao Yai / Korat',
     nameTh: 'เขาใหญ่ • นครราชสีมา',
     provinceKey: 'นครราชสีมา',
+    searchTerm: 'เขาใหญ่',
     imageUrl: '/images/destinations/khaoyai.jpg',
-    tagline: 'โอโซนบริสุทธิ์ ฟาร์ม และขุนเขาอันเงียบสงบ',
+    tagline: 'โอโซนบริสุทธิ์ ฟาร์ม และขุนเขา',
   },
   {
     id: 'nan',
@@ -97,7 +101,7 @@ export const TOP_DESTINATIONS: TopDestinationItem[] = [
     nameTh: 'น่าน',
     provinceKey: 'น่าน',
     imageUrl: '/images/destinations/nan.jpg',
-    tagline: 'ทุ่งนาปัว วิถีชีวิตเนิบช้า และขุนเขาเขียวขจี',
+    tagline: 'ทุ่งนาปัว และวิถีชีวิตเนิบช้า',
   },
   {
     id: 'samui',

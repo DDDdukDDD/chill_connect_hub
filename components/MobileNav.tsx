@@ -28,7 +28,8 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   ];
 
   return (
-    <div className="fixed bottom-3 left-4 right-4 z-50 lg:hidden">
+    // z-40, under dialogs and sheets (z-50): at z-50 it covered the moment composer's โพสต์ button on phones
+    <div className="fixed bottom-3 left-4 right-4 z-40 lg:hidden">
       <div className="bg-slate-900/90 backdrop-blur-2xl text-white rounded-3xl p-1.5 border border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.35)] flex items-center justify-around max-w-md mx-auto">
         {navItems.map((item) => {
           const Icon = item.icon;

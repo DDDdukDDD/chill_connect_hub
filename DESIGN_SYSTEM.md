@@ -238,7 +238,7 @@ Bright, sharp photos of real Thai places. A dark overlay is allowed for text con
 - **Speak from the visitor's side.** Ask what they feel like doing (`ช่วงนี้ อยากทำอะไรบ้าง`), not which module they want (`เลือกหมวดหมู่กิจกรรมคอมมูนิตี้`).
 - **No claims about things that do not exist.** Do not mention AI matching, chat rooms, identity checks, rewards or points unless the feature works today.
 - **One name per thing.** Points are **XP**. Do not also call them Points, Connect Points or เหรียญ.
-- **A meetup is a ตี้ (owner's decision, 2026-10-19),** on member screens and in the admin console: the tab, titles, buttons, messages (`ตั้งตี้เอง`, `เข้าร่วมตี้`, `ตี้เปิดรับ`, `ไม่พบตี้นี้`). Do not write มีตอัป or กิจกรรมคอมมูนิตี้. **กิจกรรม** is only the umbrella for everything people can go and do (meetups, fairs, places, challenges): `กิจกรรมออกไปใช้ชีวิต`, `เลือกกิจกรรมตามสายที่ชอบ`. Search keywords and page descriptions may still use กิจกรรม next to ตี้ (`ตี้หาเพื่อนไปทำกิจกรรมด้วยกัน`).
+- **A meetup is a ตี้ (owner's decision, 2026-10-19),** on member screens and in the admin console: the tab, titles, buttons, messages (`ตั้งตี้เอง`, `เข้าร่วมตี้`, `ตี้เปิดรับ`, `ไม่พบตี้นี้`). Do not write มีตอัป or กิจกรรมคอมมูนิตี้. **กิจกรรม** is only the umbrella for everything people can go and do (meetups, fairs, places, challenges): `กิจกรรมออกไปใช้ชีวิต`. Search keywords and page descriptions may still use กิจกรรม next to ตี้ (`ตี้หาเพื่อนไปทำกิจกรรมด้วยกัน`).
 - **Short and plain.** One idea per sentence. No marketing filler.
 - **Errors say what to do next,** in a friendly tone: `เลือกสักข้อก่อนนะ`.
 - **No fake people or data** presented as real: no sample member names as the signed-in user, no stock photos as a member's avatar.

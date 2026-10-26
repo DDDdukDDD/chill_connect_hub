@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
+import { SiteFooter } from '@/components/SiteFooter';
 import { DetailTable } from '@/components/detail/DetailHero';
 import { useAuth } from '@/lib/useAuth';
 
@@ -19,6 +20,26 @@ const TIPS = [
   { title: 'เก็บเรื่องเงินและข้อมูลส่วนตัวไว้', text: 'ไม่โอนเงินให้สมาชิกด้วยกัน และไม่ต้องบอกที่อยู่บ้านหรือเลขบัญชีกับใคร' },
 ];
 
+/** ตี้ may run past midnight (BE-148) and some meet online (BE-153): what changes for each */
+const SITUATIONS = [
+  {
+    title: 'ตี้ตอนดึก',
+    points: [
+      'วางแผนทางกลับก่อนไป ดูรถเที่ยวสุดท้าย หรือเรียกรถเองจากจุดที่มีแสงสว่าง',
+      'ส่งตำแหน่งให้คนใกล้ตัว และบอกเมื่อถึงบ้านแล้ว',
+      'ดื่มเท่าที่ดูแลตัวเองได้ และไม่ปล่อยแก้วไว้กับคนที่เพิ่งรู้จัก',
+    ],
+  },
+  {
+    title: 'ตี้ออนไลน์',
+    points: [
+      'เข้าร่วมผ่านลิงก์ในแชตกลุ่มของตี้เท่านั้น ไม่กดลิงก์ที่ส่งมาทางอื่น',
+      'ไม่ต้องเปิดกล้องถ้าไม่สบายใจ และไม่บอกข้อมูลส่วนตัวในห้อง',
+      'ถ้ามีคนชวนคุยต่อนอกตี้ หรือชวนโอนเงิน ให้รายงานได้เลย',
+    ],
+  },
+];
+
 /**
  * คู่มือความปลอดภัย, drawn like the challenge page (owner 2026-10-24): open sections in a friendly voice, the rules
  * as grey rows, no English in brackets. The binding terms live on /legal; this page says them in plain words.
@@ -31,7 +52,7 @@ export default function SafetyPage() {
     <div className="min-h-screen bg-white text-slate-900 flex flex-col font-sans">
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} isLoggedIn={isLoggedIn} setIsLoggedIn={handleSetIsLoggedIn} isAuthReady={isAuthReady} />
 
-      <main className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 pt-4 pb-28 lg:pb-16">
+      <main className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 pt-4 pb-12 lg:pb-16">
         <Link href="/" className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
           หน้าแรก
@@ -68,6 +89,20 @@ export default function SafetyPage() {
             ]}
           />
 
+          {SITUATIONS.map((situation) => (
+            <section key={situation.title} className="space-y-3">
+              <h2 className={SECTION_TITLE}>{situation.title}</h2>
+              <ul className="space-y-2">
+                {situation.points.map((point) => (
+                  <li key={point} className={`${BODY} flex gap-2.5`}>
+                    <span className="mt-2.5 w-1.5 h-1.5 shrink-0 rounded-full bg-slate-400" aria-hidden="true" />
+                    {point}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+
           <section className="space-y-3">
             <h2 className={SECTION_TITLE}>สิ่งที่เราไม่ยอมให้เกิด</h2>
             <p className={BODY}>
@@ -95,6 +130,7 @@ export default function SafetyPage() {
         </div>
       </main>
 
+      <SiteFooter className="mb-16 lg:mb-0" />
       <MobileNav activeTab="safety" setActiveTab={() => {}} />
     </div>
   );

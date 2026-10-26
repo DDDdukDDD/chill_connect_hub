@@ -178,16 +178,16 @@ const PROVINCE_REGION_LISTS: Record<Region, string[]> = {
 
 // Featured destinations as the homepage rail shows them today (components/TopDestinationsRail.tsx)
 const FEATURED_PROVINCES: Record<string, { displayName: string; nameEn: string; tagline: string; image: string }> = {
-  'กรุงเทพฯ': { displayName: 'กรุงเทพมหานคร', nameEn: 'Bangkok', tagline: 'เมืองหลวงแห่งคาเฟ่และพื้นที่สีเขียว', image: '/images/destinations/bkk.jpg' },
-  'ชลบุรี': { displayName: 'พัทยา • ชลบุรี', nameEn: 'Pattaya / Chonburi', tagline: 'ทะเลใกล้กรุง คาเฟ่ริมหาด และเกาะสีชัง', image: '/images/destinations/chonburi.jpg' },
-  'เชียงใหม่': { displayName: 'เชียงใหม่', nameEn: 'Chiang Mai', tagline: 'ดินแดนสโลว์บาร์ ธรรมชาติ และดอยสูง', image: '/images/destinations/chiangmai.jpg' },
+  'กรุงเทพฯ': { displayName: 'กรุงเทพมหานคร', nameEn: 'Bangkok', tagline: 'คาเฟ่ และพื้นที่สีเขียวกลางเมือง', image: '/images/destinations/bkk.jpg' },
+  'ชลบุรี': { displayName: 'พัทยา • ชลบุรี', nameEn: 'Pattaya / Chonburi', tagline: 'ทะเลใกล้กรุง และคาเฟ่ริมหาด', image: '/images/destinations/chonburi.jpg' },
+  'เชียงใหม่': { displayName: 'เชียงใหม่', nameEn: 'Chiang Mai', tagline: 'สโลว์บาร์ ธรรมชาติ และดอยสูง', image: '/images/destinations/chiangmai.jpg' },
   'ภูเก็ต': { displayName: 'ภูเก็ต', nameEn: 'Phuket', tagline: 'ไข่มุกอันดามัน ย่านเมืองเก่าชิโนโปรตุกีส', image: '/images/destinations/phuket.jpg' },
   'ประจวบคีรีขันธ์': { displayName: 'หัวหิน • ประจวบฯ', nameEn: 'Hua Hin / Cha-am', tagline: 'หาดทรายขาว ลมทะเล และอ่างเก็บน้ำเขาเต่า', image: '/images/destinations/huahin.jpg' },
-  'กระบี่': { displayName: 'กระบี่', nameEn: 'Krabi', tagline: 'สระมรกต หินผาอ่าวไร่เลย์ และน้ำทะเลใส', image: '/images/destinations/krabi.jpg' },
+  'กระบี่': { displayName: 'กระบี่', nameEn: 'Krabi', tagline: 'สระมรกต และหินผาอ่าวไร่เลย์', image: '/images/destinations/krabi.jpg' },
   'สงขลา': { displayName: 'หาดใหญ่ • สงขลา', nameEn: 'Hat Yai / Songkhla', tagline: 'เมืองเก่าถนนนางงาม วิวเขาคอหงส์ และคาเฟ่ธรรมชาติ', image: '/images/destinations/hatyai.jpg' },
   'กาญจนบุรี': { displayName: 'กาญจนบุรี', nameEn: 'Kanchanaburi', tagline: 'แม่น้ำแคว ป่าเขียวขจี และน้ำตกเอราวัณ', image: '/images/destinations/kanchanaburi.jpg' },
-  'นครราชสีมา': { displayName: 'เขาใหญ่ • นครราชสีมา', nameEn: 'Khao Yai / Korat', tagline: 'โอโซนบริสุทธิ์ ฟาร์ม และขุนเขาอันเงียบสงบ', image: '/images/destinations/khaoyai.jpg' },
-  'น่าน': { displayName: 'น่าน', nameEn: 'Nan', tagline: 'ทุ่งนาปัว วิถีชีวิตเนิบช้า และขุนเขาเขียวขจี', image: '/images/destinations/nan.jpg' },
+  'นครราชสีมา': { displayName: 'เขาใหญ่ • นครราชสีมา', nameEn: 'Khao Yai / Korat', tagline: 'โอโซนบริสุทธิ์ ฟาร์ม และขุนเขา', image: '/images/destinations/khaoyai.jpg' },
+  'น่าน': { displayName: 'น่าน', nameEn: 'Nan', tagline: 'ทุ่งนาปัว และวิถีชีวิตเนิบช้า', image: '/images/destinations/nan.jpg' },
   'สุราษฎร์ธานี': { displayName: 'เกาะสมุย • สุราษฎร์ฯ', nameEn: 'Koh Samui / Surat', tagline: 'ทะเลอ่าวไทย เขื่อนเชี่ยวหลาน และเกาะในฝัน', image: '/images/destinations/samui.jpg' },
   'พระนครศรีอยุธยา': { displayName: 'พระนครศรีอยุธยา', nameEn: 'Ayutthaya', tagline: 'เมืองเก่ามรดกโลก คาเฟ่ริมน้ำ และเสน่ห์สยาม', image: '/images/destinations/ayutthaya.jpg' },
 };

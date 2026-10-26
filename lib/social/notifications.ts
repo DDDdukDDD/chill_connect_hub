@@ -5,7 +5,7 @@ import type { Member } from '../members/types';
 import { thaiTimeAgo } from '../moments/service';
 import { createJsonStore } from './jsonStore';
 
-export type NotificationType = 'follow' | 'like' | 'comment' | 'challenge' | 'evidence' | 'match' | 'seat' | 'question' | 'answer';
+export type NotificationType = 'follow' | 'like' | 'comment' | 'challenge' | 'evidence' | 'match' | 'seat' | 'question' | 'answer' | 'approved' | 'rejected' | 'joined';
 
 interface StoredNotification {
   id: string;
@@ -20,6 +20,8 @@ interface StoredNotification {
   questId?: string;
   /** For 'match': the ตี้ where the two met */
   eventId?: string;
+  /** For 'approved': the published page (/community/… or /events/…) */
+  path?: string;
   createdAt: string;
   read: boolean;
 }
@@ -87,16 +89,40 @@ export async function notifyQuestion(memberId: string, actor: Member, eventId: s
   });
 }
 
-const MESSAGES: Record<NotificationType, string> = { seat: 'มีที่ว่างในตี้ที่คุณต่อคิวไว้ กันที่ไว้ให้ 2 ชั่วโมง', question: 'ถามคำถามในตี้ของคุณ', answer: 'ตอบคำถามของคุณแล้ว', match: 'อยากเจอคุณอีกเหมือนกัน คุยต่อกันได้แล้ว', evidence: 'ทีมงานตรวจรูปแล้ว โมเมนต์นี้ยังไม่นับในชาเลนจ์', follow: 'เริ่มติดตามคุณ', like: 'ส่งหัวใจให้โมเมนต์ของคุณ', comment: 'แสดงความคิดเห็นในโมเมนต์ของคุณ', challenge: 'คุณทำชาเลนจ์ครบแล้ว กดดูรางวัลได้เลย' };
+/** Tells a host that staff published or turned down their ตี้ (the preview is its title) */
+export async function notifyReview(memberId: string, eventId: string, eventTitle: string, type: 'approved' | 'rejected', path: string): Promise<void> {
+  await store.update((items) => {
+    const rest = items.filter((n) => !(n.memberId === memberId && n.eventId === eventId && (n.type === 'approved' || n.type === 'rejected')));
+    const next = [{ id: `ntf_${randomUUID()}`, memberId, type, actorId: memberId, eventId, path, preview: eventTitle.slice(0, 80), createdAt: new Date().toISOString(), read: false }, ...rest];
+    let kept = 0;
+    return next.filter((n) => n.memberId !== memberId || ++kept <= KEEP_PER_MEMBER);
+  });
+}
+
+/** Tells a host that someone joined their ตี้; joining again after leaving stays one notification */
+export async function notifyJoined(hostId: string, actor: Member, eventId: string, eventTitle: string): Promise<void> {
+  if (hostId === actor.id) return;
+  await store.update((items) => {
+    const rest = items.filter((n) => !(n.memberId === hostId && n.type === 'joined' && n.actorId === actor.id && n.eventId === eventId));
+    const next = [{ id: `ntf_${randomUUID()}`, memberId: hostId, type: 'joined' as const, actorId: actor.id, eventId, preview: eventTitle.slice(0, 80), createdAt: new Date().toISOString(), read: false }, ...rest];
+    let kept = 0;
+    return next.filter((n) => n.memberId !== hostId || ++kept <= KEEP_PER_MEMBER);
+  });
+}
+
+/** Sent by the site itself, not by a person */
+const SYSTEM_TYPES = new Set<NotificationType>(['challenge', 'evidence', 'seat', 'approved', 'rejected']);
+
+const MESSAGES: Record<NotificationType, string> = { approved: 'ทีมงานตรวจแล้ว ตี้ของคุณขึ้นบนเว็บแล้ว ชวนเพื่อนๆ มาได้เลย', rejected: 'ทีมงานยังเผยแพร่ตี้นี้ไม่ได้ ดูตี้ของคุณได้ที่มายฮับ', joined: 'เข้าร่วมตี้ของคุณแล้ว',seat: 'มีที่ว่างในตี้ที่คุณต่อคิวไว้ กันที่ไว้ให้ 2 ชั่วโมง', question: 'ถามคำถามในตี้ของคุณ', answer: 'ตอบคำถามของคุณแล้ว', match: 'อยากเจอคุณอีกเหมือนกัน คุยต่อกันได้แล้ว', evidence: 'ทีมงานตรวจรูปแล้ว โมเมนต์นี้ยังไม่นับในชาเลนจ์', follow: 'เริ่มติดตามคุณ', like: 'ส่งหัวใจให้โมเมนต์ของคุณ', comment: 'แสดงความคิดเห็นในโมเมนต์ของคุณ', challenge: 'คุณทำชาเลนจ์ครบแล้ว กดดูรางวัลได้เลย' };
 
 export async function notificationsFor(member: Member) {
   const mine = store.read().filter((n) => n.memberId === member.id);
   const blocked = new Set(member.blockedIds ?? []);
   const actors = await memberRepository.findByIds(mine.map((n) => n.actorId));
   const items = mine
-    .filter((n) => n.type === 'challenge' || n.type === 'evidence' || n.type === 'seat' || (!blocked.has(n.actorId) && actors.get(n.actorId)?.status === 'active'))
+    .filter((n) => SYSTEM_TYPES.has(n.type) || (!blocked.has(n.actorId) && actors.get(n.actorId)?.status === 'active'))
     .map((n) => {
-      if (n.type === 'challenge' || n.type === 'evidence' || n.type === 'seat') {
+      if (SYSTEM_TYPES.has(n.type)) {
         return {
           id: n.id,
           type: n.type,
@@ -104,7 +130,7 @@ export async function notificationsFor(member: Member) {
           actorName: 'Chill & Connect Hub',
           actorAvatar: '',
           momentId: n.type === 'evidence' ? n.momentId : undefined,
-          href: n.type === 'evidence' ? undefined : n.type === 'seat' ? `/community/${encodeURIComponent(n.eventId ?? '')}` : `/challenges/${encodeURIComponent(n.questId ?? '')}`,
+          href: n.type === 'evidence' ? undefined : n.type === 'rejected' ? '/myhub' : n.type === 'approved' ? n.path : n.type === 'seat' ? `/community/${encodeURIComponent(n.eventId ?? '')}` : `/challenges/${encodeURIComponent(n.questId ?? '')}`,
           message: MESSAGES[n.type],
           preview: n.preview,
           timeAgo: thaiTimeAgo(n.createdAt),
@@ -119,7 +145,7 @@ export async function notificationsFor(member: Member) {
         actorName: tidyDisplayName(actor.displayName).trim() || actor.displayName,
         actorAvatar: actor.avatarUrl ?? '',
         momentId: n.momentId,
-        href: n.type === 'match' && n.eventId ? `/community/${encodeURIComponent(n.eventId)}#meet-again` : (n.type === 'question' || n.type === 'answer') && n.eventId ? `/community/${encodeURIComponent(n.eventId)}#questions` : (undefined as string | undefined),
+        href: n.type === 'match' && n.eventId ? `/community/${encodeURIComponent(n.eventId)}#meet-again` : (n.type === 'question' || n.type === 'answer') && n.eventId ? `/community/${encodeURIComponent(n.eventId)}#questions` : n.type === 'joined' && n.eventId ? `/community/${encodeURIComponent(n.eventId)}` : (undefined as string | undefined),
         message: MESSAGES[n.type],
         preview: n.preview,
         timeAgo: thaiTimeAgo(n.createdAt),

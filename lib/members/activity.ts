@@ -1,6 +1,6 @@
 import type { EventItem } from '@/data/mockData';
 import { db } from '../db';
-import { isEventEnded } from '../dateUtils';
+import { isEventEnded, parseEventDateToTimestamp } from '../dateUtils';
 import { myFairGroups } from '../social/fairGroups';
 import { addReview, hasReviewed, MAX_REVIEW_LENGTH, reviewedEventIdsOf } from '../social/reviews';
 import { MemberAuthError } from './accounts';
@@ -13,6 +13,7 @@ import type { Member } from './types';
 import { ensureInstance, isSeries, nextDatesOf } from '../social/recurring';
 import { heldSeats, leftLineByJoining, moveQueue } from '../social/waitlist';
 import { attendanceOf } from '../social/attendance';
+import { notifyJoined } from '../social/notifications';
 
 /**
  * What a member does with events and places: join, cancel, save for later.
@@ -58,6 +59,8 @@ export async function joinEvent(member: Member, eventId: string, date?: string):
       await memberRepository.update(member.id, { cancelledEvents: member.cancelledEvents.filter((c) => c.eventId !== eventId) });
     }
   }
+  const host = hostOf(event);
+  if (result.success && result.status !== 'already_joined' && host) await notifyJoined(host, member, eventId, event.title);
   return { status: (result.status ?? (result.success ? 'joined' : 'not_found')) as JoinStatus, message: result.message, event: result.updatedEvent ?? event };
 }
 
@@ -193,8 +196,16 @@ export async function participantsForHost(member: Member, eventId: string) {
   };
 }
 
+/** Hours before the start date's midnight that check-in opens: covers the server's time zone (UTC on Vercel) */
+const CHECK_IN_EARLY_HOURS = 12;
+
 export async function checkInByHost(member: Member, eventId: string, target: { code?: string; userId?: string }, checkedIn: boolean) {
-  await requireHost(member, eventId);
+  const event = await requireHost(member, eventId);
+  // A check-in means "was there": it gives XP and counts for challenges with real rewards, so it cannot happen weeks
+  // before the ตี้ (E2E 2026-10-26). Dates without a day number (a series) are left to their dated sessions.
+  if (checkedIn && /\d/.test(event.date ?? '') && parseEventDateToTimestamp(event.date) - CHECK_IN_EARLY_HOURS * 3_600_000 > Date.now()) {
+    throw new MemberAuthError('เช็กอินได้ตั้งแต่วันที่ตี้เริ่ม', 409);
+  }
   const record = await db.setCheckIn(eventId, target, checkedIn);
   if (!record) throw new MemberAuthError(target.code ? 'ไม่พบรหัสบัตรนี้ในตี้ ลองตรวจตัวอักษรอีกครั้ง' : 'ไม่พบผู้เข้าร่วมคนนี้', 404);
   return { userId: record.userId, userName: record.userName, checkedInAt: record.checkedInAt };

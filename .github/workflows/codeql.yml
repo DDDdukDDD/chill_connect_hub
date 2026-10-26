@@ -1,0 +1,26 @@
+# Code scanning (the Coverity side): CodeQL reads our own TypeScript for injection, XSS, unsafe redirects and
+# similar flaws. Results show under the repository's Security → Code scanning tab.
+name: CodeQL
+
+on:
+  push:
+    branches: [main, claude]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 2 * * 1' # Mondays 09:00 Bangkok, so new rules also run on unchanged code
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+      - uses: github/codeql-action/analyze@v3
