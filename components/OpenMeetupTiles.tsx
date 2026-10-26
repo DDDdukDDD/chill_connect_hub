@@ -6,6 +6,7 @@ import { ScrollRow } from '@/components/ScrollRow';
 import { Plus, MapPin, Heart } from 'lucide-react';
 import type { EventItem } from '@/data/mockData';
 import { parseEventDateToTimestamp } from '@/lib/dateUtils';
+import { optimizedImage } from '@/lib/optimizedImage';
 
 type Face = { id: string; name: string; avatar: string };
 
@@ -126,9 +127,14 @@ export function OpenMeetupTiles({
         return (
           <Link key={event.id} href={`/community/${encodeURIComponent(event.id)}`} className={`${TILE} group block`}>
             <span data-row-photo className="relative block aspect-square overflow-hidden rounded-3xl bg-slate-200 shadow-md">
-              <img src={event.image} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-              <span className="absolute left-2.5 top-2.5 rounded-full bg-white px-2.5 py-1 text-xs font-bold text-slate-900 shadow-sm">
-                {dayLabel(event, now)} · {startTime}
+              <img src={optimizedImage(event.image, 384)} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+              {/* On a phone tile the day and time stack, so the chip stays clear of the heart */}
+              <span className={`absolute left-2.5 top-2.5 flex flex-col sm:flex-row sm:gap-1 rounded-xl sm:rounded-full bg-white px-2.5 py-1 text-xs leading-snug font-bold text-slate-900 shadow-sm ${onToggleSave ? 'max-sm:max-w-[calc(100%-3.75rem)]' : ''}`}>
+                <span className="max-sm:truncate whitespace-nowrap">{dayLabel(event, now)}</span>
+                <span className="whitespace-nowrap">
+                  <span className="hidden sm:inline">· </span>
+                  {startTime}
+                </span>
               </span>
               <span className="absolute right-2.5 bottom-2.5 rounded-full bg-[#F26430] px-2.5 py-1 text-[11px] font-bold text-white whitespace-nowrap shadow-sm">
                 {seatsLine(event)}

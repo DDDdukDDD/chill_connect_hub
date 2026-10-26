@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, Suspense } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Camera } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
+import { SiteFooter } from '@/components/SiteFooter';
 import { MobileNav } from '@/components/MobileNav';
-import { BrandLogo } from '@/components/BrandLogo';
 import { ChallengePicks } from '@/components/ChallengePicks';
 import { FriendsMomentsWall } from '@/components/FriendsMomentsWall';
 import { OpenMeetupTiles } from '@/components/OpenMeetupTiles';
@@ -28,13 +29,14 @@ import { useMyMonth } from '@/lib/useMyMonth';
 import { useMyActivity } from '@/lib/useMyActivity';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { REWARD_SHOP_ITEMS } from '@/data/rewardsData';
-import { usePublishedSpots, getCachedSpotVibeCategory } from '@/lib/usePublishedSpots';
+import { useHomeSpots, getCachedSpotVibeCategory } from '@/lib/usePublishedSpots';
 import { getCommunityEventCategory, type SpotVibeId } from '@/data/masterHub';
 import { isTradeEvent } from '@/lib/highlights';
 import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
 import { TOP_DESTINATIONS } from '@/components/TopDestinationsRail';
 import { Toast } from '@/components/Toast';
 import { defaultEventImage } from '@/lib/eventImageResolver';
+import { optimizedImage } from '@/lib/optimizedImage';
 
 const ROW_SIZE = 5;
 /** The landing meetup row: six tiles fill one desktop row; a picked category slides through up to twelve */
@@ -81,27 +83,31 @@ const HERO_STEPS = ['เลือกกิจกรรมที่ใช่', '�
 const photoFaces = (size: string, ring: string) => (
   <span className="flex -space-x-2 shrink-0" aria-hidden="true">
     {HERO_PHOTOS.map((src) => (
-      <img key={src} src={src} alt="" className={`${size} rounded-full object-cover border-2 ${ring}`} />
+      <Image key={src} src={src} alt="" width={48} height={48} className={`${size} rounded-full object-cover border-2 ${ring}`} />
     ))}
   </span>
 );
 
 const THAI_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-const FAIR_KIND_LABEL = { fair: 'เอ็กซ์โป', run: 'งานวิ่ง', concert: 'คอนเสิร์ต' } as const;
+const FAIR_KIND_LABEL = { fair: 'เอ็กซ์โป', run: 'งานวิ่ง', concert: 'คอนเสิร์ต', other: '' } as const;
 
 // Provinces shown in "สายเที่ยว สายชิล ไปไหนดี?"
 const DESTINATION_IDS = ['bkk', 'chiangmai', 'chonburi', 'khaoyai', 'krabi', 'nan'];
 
 // The kinds named in the home page fair heading, and how many fairs that row shows
 const FAIR_ROW_KINDS = ['fair', 'run', 'concert'] as const;
-const FAIR_ROW_SHOWN = 4;
+const FAIR_ROW_SHOWN = 6;
+/** The member home's อีเวนต์ block is narrower and keeps four */
+const MEMBER_FAIRS_SHOWN = 4;
 /** Places and fairs the member home's journey band picks from, three at a time ("สุ่มใหม่") */
 const BAND_PICK_POOL = 30;
-const fairKind = (e: EventItem): (typeof FAIR_ROW_KINDS)[number] => {
+/** 'other' (a ceremony, a festival, a workshop…) gets no kind word, rather than a wrong "เอ็กซ์โป" */
+const fairKind = (e: EventItem): (typeof FAIR_ROW_KINDS)[number] | 'other' => {
   const text = `${e.title} ${e.tag}`;
   if (/วิ่ง|มาราธอน|เทรล|marathon|\brun\b|trail/i.test(text)) return 'run';
   if (/คอนเสิร์ต|ดนตรีสด|concert|live music/i.test(text)) return 'concert';
-  return 'fair';
+  if (/เอ็กซ์โป|expo|แฟร์|\bfair\b|มหกรรม|แสดงสินค้า|นิทรรศการ|exhibition|trade show|convention|congress/i.test(text)) return 'fair';
+  return 'other';
 };
 
 // "12 ต.ค. – 18 ต.ค." for a fair, years left out
@@ -138,8 +144,6 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
   const [isEventsLoaded, setIsEventsLoaded] = useState(Boolean(initialEvents));
   const [questList, setQuestList] = useState<ChallengeQuest[]>(initialQuests ?? []);
   const [isQuestsLoaded, setIsQuestsLoaded] = useState(Boolean(initialQuests));
-  const { spots: liveSpots, isLoaded: isSpotsLoaded } = usePublishedSpots();
-  const spotsList = useMemo(() => (liveSpots.length > 0 ? liveSpots : isSpotsLoaded ? MOCK_SPOTS : []), [liveSpots, isSpotsLoaded]);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [favoriteSpots, setFavoriteSpots] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -165,6 +169,17 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
   const myRewards = useMyRewards(isLoggedIn);
   // Signed in, the page is the member's own home (greeting, what is next, picks for them) instead of the landing page
   const isMember = isAuthReady && isLoggedIn;
+  // Only the member home picks places from the catalog; the visitor landing needs just the number of places
+  const { spots: liveSpots, isLoaded: isSpotsLoaded } = useHomeSpots(isMember);
+  const spotsList = useMemo(() => (liveSpots.length > 0 ? liveSpots : isSpotsLoaded ? MOCK_SPOTS : []), [liveSpots, isSpotsLoaded]);
+  const [spotTotal, setSpotTotal] = useState<number | null>(null);
+  useEffect(() => {
+    if (!isAuthReady || isMember) return;
+    fetch('/api/discover/counts')
+      .then((res) => res.json())
+      .then((json) => typeof json?.counts?.spots === 'number' && setSpotTotal(json.counts.spots))
+      .catch(() => undefined);
+  }, [isAuthReady, isMember]);
   const sessionMember = useMemberSession().member;
   const activity = useMyActivity();
   const [now] = useState(() => Date.now());
@@ -290,9 +305,10 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
     const matched = [...fairEvents]
       // Trade shows stay listed on /events but go last here (the sort keeps the date order within each group)
       .sort((a, b) => Number(isTradeEvent(a)) - Number(isTradeEvent(b)));
-    // The heading promises "เอ็กซ์โป งานวิ่ง คอนเสิร์ต", so the row starts with the soonest of each kind, then fills by date
-    const firsts = FAIR_ROW_KINDS.map((kind) => matched.find((e) => fairKind(e) === kind)).filter((e): e is EventItem => !!e);
-    const picked = [...firsts, ...matched.filter((e) => !firsts.includes(e))].slice(0, FAIR_ROW_SHOWN);
+    // The heading promises "เอ็กซ์โป งานวิ่ง คอนเสิร์ต": the soonest of each kind in turn (two rounds), then the rest by date
+    const byKind = FAIR_ROW_KINDS.map((kind) => matched.filter((e) => fairKind(e) === kind));
+    const turns = [0, 1].flatMap((round) => byKind.map((list) => list[round])).filter((e): e is EventItem => !!e);
+    const picked = [...turns, ...matched.filter((e) => !turns.includes(e))].slice(0, FAIR_ROW_SHOWN);
     return matched.filter((e) => picked.includes(e));
   }, [fairEvents]);
 
@@ -341,10 +357,11 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
 
   // Landing page: open meetups (seats left), counted per category card, and the row the cards filter
   const openMeetups = useMemo(() => communityEvents.filter((e) => e.participantsCount < e.maxParticipants), [communityEvents]);
-  const categoryCards = useMemo(
-    () => communityCategoryCards(openMeetups.length, (id) => openMeetups.filter((e) => getCommunityEventCategory(e) === id).length),
-    [openMeetups]
-  );
+  // สาย with no open ตี้ go to the end (and fade), so a guest's first taps find something
+  const categoryCards = useMemo(() => {
+    const [all, ...cards] = communityCategoryCards(openMeetups.length, (id) => openMeetups.filter((e) => getCommunityEventCategory(e) === id).length);
+    return [all, ...cards.filter((c) => c.count > 0), ...cards.filter((c) => c.count === 0)];
+  }, [openMeetups]);
   const landingMatches = useMemo(
     () => openMeetups.filter((e) => meetupCategory === 'all' || getCommunityEventCategory(e) === meetupCategory),
     [openMeetups, meetupCategory]
@@ -444,7 +461,7 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
             reasons={memberMeetups.reasons}
             isEventsLoaded={isEventsLoaded}
             quests={othersQuests}
-            fairs={fairRow}
+            fairs={fairRow.slice(0, MEMBER_FAIRS_SHOWN)}
             fairWhen={(fair) => fairDates(fair, true)}
             spots={featuredSpots}
             isSpotsLoaded={isSpotsLoaded}
@@ -459,15 +476,15 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
             <div className={`relative ${CONTAINER} pt-5 pb-8 md:py-10 grid md:grid-cols-[1fr_1.05fr] gap-6 md:gap-10 items-center`}>
               <div className="relative h-[170px] sm:h-[200px] md:h-[240px] lg:h-[270px] w-full max-w-[320px] md:max-w-[440px] mx-auto" aria-hidden="true">
                 <figure className="absolute left-[3%] top-[6%] w-[46%] h-[80%]">
-                  <img src={HERO_PHOTOS[0]} alt="" className="-rotate-3 w-full h-full object-cover rounded-[1.75rem] lg:rounded-[2rem] shadow-lg border-4 border-white" />
+                  <Image src={HERO_PHOTOS[0]} alt="" fill priority sizes="(min-width: 768px) 220px, 160px" className="-rotate-3 object-cover rounded-[1.75rem] lg:rounded-[2rem] shadow-lg border-4 border-white" />
                   <span className={`${HERO_LABEL} -bottom-3 left-1/2 -translate-x-1/2`}>{heroStep(0)}</span>
                 </figure>
                 <figure className="absolute right-[8%] top-0 w-[36%] aspect-square">
-                  <img src={HERO_PHOTOS[1]} alt="" className="w-full h-full object-cover rounded-full shadow-lg border-4 border-white" />
+                  <Image src={HERO_PHOTOS[1]} alt="" fill priority sizes="(min-width: 768px) 220px, 160px" className="object-cover rounded-full shadow-lg border-4 border-white" />
                   <span className={`${HERO_LABEL} top-[10%] -left-[40%]`}>{heroStep(1)}</span>
                 </figure>
                 <figure className="absolute right-0 bottom-[2%] w-[44%] h-[44%]">
-                  <img src={HERO_PHOTOS[2]} alt="" className="rotate-3 w-full h-full object-cover rounded-[1.75rem] lg:rounded-[2rem] shadow-lg border-4 border-white" />
+                  <Image src={HERO_PHOTOS[2]} alt="" fill priority sizes="(min-width: 768px) 220px, 160px" className="rotate-3 object-cover rounded-[1.75rem] lg:rounded-[2rem] shadow-lg border-4 border-white" />
                   <span className={`${HERO_LABEL} -bottom-3 right-3.5`}>{heroStep(2)}</span>
                 </figure>
                 {/* Phones: the live line rides on the photos as a sticker, so the hero keeps the /moments height */}
@@ -492,7 +509,7 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
                     onClick={() => scrollToId('journey-meetups')}
                     className="flex-1 sm:flex-none h-13 px-4 sm:px-8 rounded-full bg-[#F26430] hover:bg-[#E2551F] text-white text-[15px] sm:text-base lg:text-[17px] font-semibold shadow-[0_8px_20px_rgba(242,100,48,0.28)] whitespace-nowrap cursor-pointer transition-colors"
                   >
-                    ดูตี้ที่เปิดรับอยู่
+                    หากิจกรรมที่ใช่
                   </button>
                   <button
                     type="button"
@@ -532,19 +549,19 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
               <section id="journey-meetups" className="space-y-4 scroll-mt-24">
                 {/* A picked category with more than the row holds names the full count on its link */}
                 {sectionHead(
-                  'เลือกกิจกรรมตามสายที่ชอบ',
+                  'ดูตี้ตามสายที่ชอบ',
                   meetupsHref,
                   undefined,
                   meetupCategory !== 'all' && landingMatches.length > landingMeetups.length ? `ดูทั้งหมด ${landingMatches.length} ตี้` : undefined
                 )}
 
                 {/* The category cards filter the row right below; one row that slides (phones swipe, iPad and up get arrows) */}
-                <CategoryStickerCards cards={categoryCards} selectedId={meetupCategory} onSelect={setMeetupCategory} label="เลือกสาย" countUnit="ตี้เปิดรับ" />
+                <CategoryStickerCards cards={categoryCards} selectedId={meetupCategory} onSelect={setMeetupCategory} label="เลือกสาย" countUnit="ตี้เปิดรับ" fadeEmpty />
 
                 {isEventsLoaded && landingMeetups.length === 0 && (
                   <p className="text-sm text-slate-500">ยังไม่มีตี้แบบนี้ เปิดตี้แรกเองเลยไหม?</p>
                 )}
-                {/* The hero's "ดูตี้ที่เปิดรับอยู่" lands on the section heading, so "เลือกกิจกรรมตามสายที่ชอบ" and the สาย cards show too (owner 2026-10-23) */}
+                {/* The hero's "หากิจกรรมที่ใช่" lands on the section heading, so "ดูตี้ตามสายที่ชอบ" and the สาย cards show too (owner 2026-10-23) */}
                 <div id="journey-meetup-tiles" className="scroll-mt-24">
                   <OpenMeetupTiles
                     events={landingMeetups}
@@ -557,7 +574,7 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
 
               {/* 4. A reason to go */}
               <section id="journey-challenges" className="space-y-4 scroll-mt-24">
-                {sectionHead('ชาเลนจ์สนุก แนะนำสำหรับคุณ', '/challenges')}
+                {sectionHead('ชาเลนจ์สนุก ลองทำดูไหม?', '/challenges')}
                 <ChallengePicks
                   quests={questList}
                   joinedIds={isLoggedIn ? myRewards.joinedQuestIds : []}
@@ -574,8 +591,8 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
                   <div className="flex items-center justify-center md:justify-start gap-4">
                     <span className="hidden sm:block shrink-0">{photoFaces('w-10 h-10', 'border-[#FFF8F1]')}</span>
                     <div>
-                      <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">สุดสัปดาห์นี้ ออกไปด้วยกันไหม?</h2>
-                      <p className="mt-1 text-sm sm:text-[15px] text-slate-700">สมัครฟรี เข้าร่วมตี้ เก็บ XP แลกของรางวัล และแบ่งปันเรื่องราวของคุณ</p>
+                      <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">มาออกไปด้วยกันนะ เพื่อนๆ รอคุณอยู่</h2>
+                      <p className="mt-1 text-sm sm:text-[15px] text-slate-700">สมัครฟรี แล้วเริ่มออกไปใช้ชีวิต ติดตามเรื่องราวจากเพื่อนๆ และแบ่งปันเรื่องราวของคุณ</p>
                     </div>
                   </div>
                   <div className="flex flex-col md:flex-row-reverse items-center gap-2 md:gap-5">
@@ -601,17 +618,17 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
               {/* 6. Support: provinces to explore */}
               <section className="space-y-4">
                 {/* The count sits in the head link, the same way as the fairs below */}
-                {sectionHead('สายเที่ยว สายชิล ไปไหนดี?', '/spots', undefined, <>ดูทั้งหมด{isSpotsLoaded && <span className="hidden sm:inline"> {spotsList.length.toLocaleString()} แห่ง</span>}</>)}
+                {sectionHead('สายเที่ยว สายชิล ไปไหนดี?', '/spots', undefined, <>ดูทั้งหมด{spotTotal !== null && <span className="hidden sm:inline"> {spotTotal.toLocaleString()} แห่ง</span>}</>)}
                 {/* Same size and row as the challenge picks: square photos, scrolling sideways until all six fit */}
                 <ScrollRow className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar snap-x -mx-4 px-4 scroll-px-4 sm:mx-0 sm:px-0 sm:scroll-px-0">
                   {destinations.map((d) => (
                     <Link
                       key={d.id}
                       data-row-photo
-                      href={`/spots?province=${encodeURIComponent(d.provinceKey)}`}
+                      href={`/spots?province=${encodeURIComponent(d.provinceKey)}${d.searchTerm ? `&q=${encodeURIComponent(d.searchTerm)}` : ''}`}
                       className="group relative w-[44%] sm:w-[30%] md:w-[23%] lg:w-[calc((100%-5*24px)/6)] shrink-0 snap-start aspect-square rounded-3xl overflow-hidden bg-slate-200"
                     >
-                      <img src={d.imageUrl} alt={d.nameTh} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <img src={optimizedImage(d.imageUrl, 384)} alt={d.nameTh} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                       <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/75 to-transparent" aria-hidden="true" />
                       <div className="absolute inset-x-0 bottom-0 p-3">
                         <p className="text-white text-sm sm:text-base font-bold leading-tight">{d.nameTh}</p>
@@ -637,19 +654,14 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
                             <span className="text-xs font-semibold">{THAI_MONTHS[start.getMonth()]}</span>
                           </span>
                           {/* A dead image link falls back to the default อีเวนต์ photo, never a broken-image icon */}
-                          <img src={fair.image} alt="" loading="lazy" onError={(ev) => { const fallback = defaultEventImage(undefined, true); if (!ev.currentTarget.src.endsWith(fallback)) ev.currentTarget.src = fallback; }} className="w-14 h-14 sm:w-32 sm:h-[88px] shrink-0 rounded-xl object-cover bg-slate-200" />
+                          <img src={optimizedImage(fair.image, 256)} alt="" loading="lazy" onError={(ev) => { const fallback = defaultEventImage(undefined, true); if (!ev.currentTarget.src.endsWith(fallback)) ev.currentTarget.src = fallback; }} className="w-14 h-14 sm:w-32 sm:h-[88px] shrink-0 rounded-xl object-cover bg-slate-200" />
                           <span className="flex-1 min-w-0 grid">
                             <span className="font-semibold text-slate-900 leading-snug line-clamp-2 sm:truncate group-hover:underline">{fair.title}</span>
                             <span className="text-[13px] text-slate-500 truncate">
-                              {/* Phones: the status leads the second line, so the title keeps the full width */}
-                              <span className={`sm:hidden font-semibold ${isOn ? 'text-rose-600' : 'text-[#2B527A]'}`}>{isOn ? 'กำลังจัดอยู่' : 'เร็วๆ นี้'} · </span>
-                              {FAIR_KIND_LABEL[fairKind(fair)]} · {fairDates(fair)} · {fair.location}
+                              {/* The status leads the second line, so the title keeps the full width */}
+                              <span className={`font-semibold ${isOn ? 'text-rose-600' : 'text-[#2B527A]'}`}>{isOn ? 'กำลังจัดอยู่' : 'เร็วๆ นี้'} · </span>
+                              {[FAIR_KIND_LABEL[fairKind(fair)], fairDates(fair), fair.location].filter(Boolean).join(' · ')}
                             </span>
-                          </span>
-                          {/* A quiet status: a small dot and words, not a filled chip */}
-                          <span className={`hidden sm:inline-flex shrink-0 items-center gap-1.5 text-xs font-semibold whitespace-nowrap ${isOn ? 'text-rose-600' : 'text-[#2B527A]'}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${isOn ? 'bg-rose-500' : 'bg-[#2B527A]/50'}`} aria-hidden="true" />
-                            {isOn ? 'กำลังจัดอยู่' : 'เร็วๆ นี้'}
                           </span>
                         </Link>
                       );
@@ -662,21 +674,7 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
         )}
 
         <div className={CONTAINER}>
-          <footer className="border-t border-slate-200 pt-8 pb-4 text-center text-xs text-slate-500 space-y-2 mt-12 sm:mt-16 mb-16 md:mb-0">
-            <div className="flex items-center justify-center gap-2 text-sm font-bold text-slate-900">
-              <BrandLogo size="xs" />
-              <span>Chill & Connect Hub</span>
-            </div>
-            <p className="font-medium text-slate-600">ทำให้ทุกการออกไปใช้ชีวิตมีความหมาย</p>
-            <div className="flex items-center justify-center gap-2.5 sm:gap-3 text-xs text-slate-500 pt-1 flex-wrap">
-              <Link href="/about" className="hover:text-slate-800 hover:underline">เกี่ยวกับเรา</Link>
-              <span className="text-slate-300">•</span>
-              <Link href="/safety" className="hover:text-slate-800 hover:underline">คู่มือความปลอดภัย</Link>
-              <span className="text-slate-300">•</span>
-              <Link href="/legal" className="hover:text-slate-800 hover:underline">ข้อตกลงการใช้งาน</Link>
-              <span className="text-slate-300">•</span>
-              <Link href="/legal?tab=privacy" className="hover:text-slate-800 hover:underline">นโยบายความเป็นส่วนตัว</Link>
-            </div>
+          <SiteFooter className="pb-4 mt-12 sm:mt-16 mb-16 md:mb-0">
             {isAuthReady && !isLoggedIn && (
               <p className="text-[13px] text-slate-500">
                 พร้อมออกไปเมื่อไหร่{' '}
@@ -685,8 +683,7 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
                 </button>
               </p>
             )}
-            <p className="text-[11px] text-slate-400">© 2026 Chill & Connect Hub. All rights reserved.</p>
-          </footer>
+          </SiteFooter>
         </div>
       </main>
 

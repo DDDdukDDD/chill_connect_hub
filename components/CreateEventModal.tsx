@@ -527,7 +527,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [extraInput, setExtraInput] = useState('');
-  const [sent, setSent] = useState<{ title: string } | null>(null);
+  const [sent, setSent] = useState<{ title: string; notifies?: boolean } | null>(null);
 
   const set = <K extends keyof Form>(key: K, value: Form[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -775,7 +775,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
       if (data.event && (data.event as EventItem).approvalStatus === 'pending') {
         void activityActions.refresh();
         window.dispatchEvent(new Event(SUBMISSION_SENT_EVENT));
-        setSent({ title: form.title.trim() });
+        setSent({ title: form.title.trim(), notifies: true });
       } else if (data.event) {
         const saved = data.event as EventItem;
         try {
@@ -1408,7 +1408,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
   /* ---------- screens ---------- */
   if (sent) {
     return (
-      <DialogShell onClose={onClose} size="sm" title="ส่งให้ทีมงานแล้ว" subtitle={`"${sent.title}" จะขึ้นบนเว็บเมื่อทีมงานตรวจผ่าน โดยปกติใช้เวลา 1-3 วัน`}>
+      <DialogShell onClose={onClose} size="sm" title="ส่งให้ทีมงานแล้ว" subtitle={`"${sent.title}" จะขึ้นบนเว็บเมื่อทีมงานตรวจผ่าน โดยปกติใช้เวลา 1-3 วัน${sent.notifies ? ' ตรวจเสร็จแล้วจะแจ้งที่กระดิ่งนะ' : ''}`}>
         <div className="flex justify-center">
           <button type="button" data-autofocus onClick={onClose} className={dialogButton.primary}>เข้าใจแล้ว</button>
         </div>

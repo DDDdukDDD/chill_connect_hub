@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { MapPin, Heart, MessageCircle, ArrowRight } from 'lucide-react';
 import { LANDING_MOMENTS_SAMPLE, type WallMoment } from '@/data/landingMomentsSample';
+import { optimizedImage } from '@/lib/optimizedImage';
 
 // "คุณกี้ (Kee_Explorer)" reads as "คุณกี้"
 const shortName = (name: string) => name.split(' (')[0];
@@ -53,7 +54,7 @@ export function FriendsMomentsWall() {
             >
               <span className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-full p-[3px] transition-colors ${selected ? 'bg-[#F26430]' : 'bg-slate-200 group-hover:bg-slate-300'}`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={m.images[0]} alt="" className="w-full h-full rounded-full object-cover border-2 border-white" />
+                <img src={optimizedImage(m.images[0], 256)} alt="" className="w-full h-full rounded-full object-cover border-2 border-white" />
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={m.userAvatar} alt="" className="absolute -bottom-0.5 -right-0.5 w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover border-2 border-white" />
               </span>
@@ -76,7 +77,7 @@ export function FriendsMomentsWall() {
             // eslint-disable-next-line @next/next/no-img-element
             <img
               key={src}
-              src={src}
+              src={optimizedImage(src, 828)}
               alt=""
               loading="lazy"
               className={`w-full h-full min-h-0 object-cover rounded-3xl hover:opacity-95 transition-opacity ${

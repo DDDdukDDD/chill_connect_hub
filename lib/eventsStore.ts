@@ -7,6 +7,7 @@ import { getCoreCommunityEvents } from './eventNormalization';
 import { getAllDataSources, recordSourceScrape } from './sourcesStore';
 import { scrapeEventSource } from './structuredDataScraper';
 import { sanitizeRichHtml } from './safeHtml';
+import { notifyReview } from './social/notifications';
 
 export { getCoreCommunityEvents };
 
@@ -146,14 +147,24 @@ export async function resetAndSeedAllEvents(): Promise<{ totalCount: number; eve
 }
 
 export async function updateEventApproval(id: string, status: 'approved' | 'rejected' | 'pending'): Promise<AdminEventItem[]> {
+  const before = await db.findEventById(id);
   await db.updateEvent(id, { approvalStatus: status, moderatedAt: Date.now() });
+  if (before && before.approvalStatus !== status) await tellHost(before, status);
   return listAdminEvents();
+}
+
+/** The member who made a ตี้ hears when staff publish or turn it down */
+async function tellHost(event: EventItem, status: 'approved' | 'rejected' | 'pending') {
+  const host = (event as { createdByMemberId?: string }).createdByMemberId;
+  const path = `/${event.eventType === 'public_venue' ? 'events' : 'community'}/${encodeURIComponent(event.id)}`;
+  if (host && status !== 'pending') await notifyReview(host, event.id, event.title, status, path);
 }
 
 export async function approveAllPendingEvents(): Promise<AdminEventItem[]> {
   const moderatedAt = Date.now();
   const pending = (await listAdminEvents()).filter((ev) => ev.approvalStatus === 'pending');
   await db.bulkUpdateEvents(pending.map((ev) => ({ id: ev.id, data: { approvalStatus: 'approved', moderatedAt } })));
+  for (const ev of pending) await tellHost(ev, 'approved');
   return listAdminEvents();
 }
 

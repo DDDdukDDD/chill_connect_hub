@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { OPTIMIZED_REMOTE_IMAGES } from './lib/optimizedImage';
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -39,6 +40,8 @@ const nextConfig: NextConfig = {
   },
   images: {
     formats: ['image/avif', 'image/webp'],
+    // Organisers' posters resized for cards (lib/optimizedImage.ts); only these hosts, never any URL
+    remotePatterns: OPTIMIZED_REMOTE_IMAGES.map((p) => ({ protocol: 'https' as const, hostname: p.hostname, pathname: p.pathname })),
   },
   experimental: {
     // A page seen in the last 30 s opens again from the browser's router cache instead of a new server render

@@ -8,7 +8,7 @@ import { progressOf } from '../social/questProgress';
 import { allQuestJoins } from '../social/questJoins';
 import { redemptionCountOf } from '../social/rewardsLedger';
 import { wentTogether } from '../social/friends';
-import { type Campaign, type CampaignStats, bangkokToday, isCampaignLive } from './types';
+import { type Campaign, type CampaignStats, bangkokToday, homeCampaignOf, isCampaignLive } from './types';
 
 /**
  * Campaigns (data/campaigns.json). An empty store starts from the launch campaign seed (data/launchCampaign.ts),
@@ -31,7 +31,7 @@ export const findCampaign = (id: string) => campaigns().find((c) => c.id === id)
 /** The campaign public pages show today: published, inside its dates, the latest start wins; `home` asks for the strip */
 export function liveCampaign({ home = false } = {}): Campaign | null {
   const today = bangkokToday();
-  return listCampaigns().find((c) => isCampaignLive(c, today) && (!home || c.showOnHome)) ?? null;
+  return home ? homeCampaignOf(listCampaigns(), today) : (listCampaigns().find((c) => isCampaignLive(c, today)) ?? null);
 }
 
 export class CampaignError extends Error {}

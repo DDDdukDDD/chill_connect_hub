@@ -202,12 +202,17 @@ function withSampleCounts<T extends typeof SAMPLE_COUNTS>(counts: T): T {
   };
 }
 
-/** Visitor hero: one line, how many times people joined a meetup last week. `faces` sits before the words; `short` drops "สัปดาห์นี้" for the sticker on phones. */
+/** Below this many real joins a week the hero shows a warm line instead of a number (owner 2026-10-26: no padded numbers) */
+const HERO_JOINS_MIN = 1000;
+
+/**
+ * Visitor hero: one line, how many times people joined a meetup last week, from real joins only (no sample padding).
+ * Under HERO_JOINS_MIN it says "เพื่อนๆ กำลังรอคุณอยู่". `faces` sits before the words; `short` is the sticker on phones.
+ */
 export function LiveJoinsLine({ faces, short = false }: { faces?: React.ReactNode; short?: boolean }) {
   const live = useLiveActivity();
   if (!live.counts) return null;
-  const joins = withSampleCounts(live.counts).meetupJoins;
-  if (joins <= 0) return null;
+  const joins = live.counts.meetupJoins;
   return (
     <span className="inline-flex items-center gap-2">
       <span className="relative flex w-2 h-2 shrink-0" aria-hidden="true">
@@ -215,7 +220,13 @@ export function LiveJoinsLine({ faces, short = false }: { faces?: React.ReactNod
         <span className="relative inline-flex w-2 h-2 rounded-full bg-red-500" />
       </span>
       {faces}
-      {short ? 'ไปตี้กันแล้ว' : 'สัปดาห์นี้ไปตี้กันแล้ว'} <strong className="font-semibold text-slate-900">{joins.toLocaleString()} ครั้ง</strong>
+      {joins < HERO_JOINS_MIN ? (
+        short ? 'เพื่อนๆ รอคุณอยู่' : 'เพื่อนๆ กำลังรอคุณอยู่'
+      ) : (
+        <>
+          {short ? 'ไปตี้กันแล้ว' : 'สัปดาห์นี้ไปตี้กันแล้ว'} <strong className="font-semibold text-slate-900">{joins.toLocaleString()} ครั้ง</strong>
+        </>
+      )}
     </span>
   );
 }

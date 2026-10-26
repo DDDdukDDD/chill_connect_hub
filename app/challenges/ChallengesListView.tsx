@@ -28,6 +28,7 @@ import {
   Gift } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
 import { Navbar } from '@/components/Navbar';
+import { SiteFooter } from '@/components/SiteFooter';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
@@ -43,7 +44,6 @@ import { DiscoverCategoryTabs } from '@/components/discover/DiscoverCategoryTabs
 import { ViewModeToggle } from '@/components/ViewModeToggle';
 import { ChallengeSearch } from '@/components/ChallengeSearch';
 import { CreateEventModal } from '@/components/CreateEventModal';
-import { BrandLogo } from '@/components/BrandLogo';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { Pagination } from '@/components/Pagination';
 import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
@@ -490,23 +490,7 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-slate-200/80 py-8 text-center text-xs text-[#64748B] space-y-2 mt-12 mb-16 md:mb-0">
-        <div className="flex items-center justify-center gap-2 text-sm font-bold text-[#1E293B]">
-          <BrandLogo size="xs" />
-          <span>Chill & Connect Hub</span>
-        </div>
-        <p className="font-medium text-slate-600">Hub กิจกรรมและคอมมูนิตี้สำหรับคนชอบออกไปใช้ชีวิต ที่เปลี่ยนทุกการไปเที่ยวให้เป็นเรื่องสนุกและต่อยอดมิตรภาพ</p>
-        <div className="flex items-center justify-center gap-2.5 sm:gap-3 text-xs text-slate-500 pt-1 flex-wrap">
-          <Link href="/about" className="hover:text-slate-800 hover:underline">เกี่ยวกับเรา</Link>
-          <span className="text-slate-300">•</span>
-          <Link href="/safety" className="hover:text-slate-800 hover:underline">คู่มือความปลอดภัย</Link>
-          <span className="text-slate-300">•</span>
-          <Link href="/legal" className="hover:text-slate-800 hover:underline">ข้อตกลงการใช้งาน</Link>
-          <span className="text-slate-300">•</span>
-          <Link href="/legal?tab=privacy" className="hover:text-slate-800 hover:underline">นโยบายความเป็นส่วนตัว</Link>
-        </div>
-        <p className="text-[11px] text-slate-400">© 2026 Chill & Connect Hub. All rights reserved.</p>
-      </footer>
+      <SiteFooter className="bg-white mt-12 mb-16 md:mb-0" />
 
 
       {/* 4. POPUP 2: Confirm Cancel Quest Modal (Double Confirm) */}

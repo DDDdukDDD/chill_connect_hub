@@ -7,6 +7,7 @@ import { Zap, Gift, Clock, Flame, CalendarClock, Footprints } from 'lucide-react
 import type { ChallengeQuest } from '@/data/mockData';
 import { getQuestBrandReward } from '@/lib/questDisplay';
 import type { QuestProgress } from '@/lib/useMyRewards';
+import { optimizedImage } from '@/lib/optimizedImage';
 
 const PICK_LIMIT = 6;
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80';
@@ -124,7 +125,7 @@ export function ChallengePicks({ quests, joinedIds, isLoaded, progress }: { ques
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   data-row-photo
-                  src={quest.image || quest.badgeCoverImg || FALLBACK_IMAGE}
+                  src={optimizedImage(quest.image || quest.badgeCoverImg || FALLBACK_IMAGE, 384)}
                   alt=""
                   loading="lazy"
                   className="w-full aspect-square object-cover rounded-3xl bg-slate-100 shadow-md"

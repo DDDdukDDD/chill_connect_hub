@@ -38,9 +38,10 @@ export function communityCategoryCards(allCount: number, countOf: (categoryId: s
 }
 
 /**
- * The playful category cards from the landing ("เลือกกิจกรรมตามสายที่ชอบ"): a tilted icon tile, the name,
+ * The playful category cards from the landing ("ดูตี้ตามสายที่ชอบ"): a tilted icon tile, the name,
  * and the count as a sticker on the corner. One row that slides (phones swipe, iPad and up get arrows).
  * `countUnit` finishes the label read aloud, e.g. "ตี้เปิดรับ" or "ชาเลนจ์".
+ * `fadeEmpty` fades cards with nothing behind them (the landing; onboarding shows every card the same).
  */
 export function CategoryStickerCards({
   cards,
@@ -48,18 +49,20 @@ export function CategoryStickerCards({
   onSelect,
   label,
   countUnit,
+  fadeEmpty = false,
 }: {
   cards: CategoryCard[];
   selectedId: string;
   onSelect: (id: string) => void;
   label: string;
   countUnit: string;
+  fadeEmpty?: boolean;
 }) {
   return (
     <ScrollRow label={label} className="flex gap-2.5 md:gap-3 overflow-x-auto no-scrollbar snap-x -mx-4 px-4 scroll-px-4 pt-3 pb-2 md:mx-0 md:px-1 md:scroll-px-1">
       {cards.map(({ id, name, Icon, iconBg, iconColor, borderBottom, sticker, count }, i) => {
         const isPicked = selectedId === id;
-        const isDimmed = selectedId !== 'all' && !isPicked;
+        const isDimmed = !isPicked && (selectedId !== 'all' || (fadeEmpty && id !== 'all' && count === 0));
         return (
           <button
             key={id}
