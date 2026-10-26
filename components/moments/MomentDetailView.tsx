@@ -12,6 +12,7 @@ import { PhotoViewer, REPORT_REASONS, call } from '@/components/home/HomeMomentF
 import { MomentsChrome, type MomentsChromeContext } from '@/components/moments/MomentsChrome';
 
 import { MOMENT_TARGETS, isMomentTarget, momentTargetHref, momentTitle } from '@/components/moments/momentTargets';
+import { markReturning, showcaseUrlFor, updateSavedMoment } from '@/components/moments/momentsReturn';
 
 function Avatar({ name, src, className }: { name: string; src?: string; className: string }) {
   return src ? (
@@ -39,6 +40,8 @@ function DetailBody({ initialMoment, isLoggedIn, requireLogin, showToast }: Deta
   const [reportReason, setReportReason] = useState<string | null>(null);
   // Long threads open on the newest few; every comment is still in the server HTML
   const [showAllComments, setShowAllComments] = useState(false);
+  /** Own comment waiting for "ลบเลย": deleting cannot be undone, so it takes a second tap */
+  const [confirmCommentId, setConfirmCommentId] = useState<string | null>(null);
   const commentInput = useRef<HTMLInputElement>(null);
 
   // The server page is the same for everyone; the signed-in member's likes, saves and own comments are read here
@@ -53,6 +56,21 @@ function DetailBody({ initialMoment, isLoggedIn, requireLogin, showToast }: Deta
       active = false;
     };
   }, [isLoggedIn, initialMoment.id]);
+
+  // Back to the grid where the reader left it: the link goes to the tab it was opened from, and the browser's Back works the same
+  const [savedGrid, setSavedGrid] = useState<string | null>(null);
+  const backHref = savedGrid ?? '/moments';
+  useEffect(() => {
+    setSavedGrid(showcaseUrlFor(initialMoment.id));
+    const onBack = () => markReturning(initialMoment.id);
+    window.addEventListener('popstate', onBack);
+    return () => window.removeEventListener('popstate', onBack);
+  }, [initialMoment.id]);
+
+  // Hearts, saves and comments given here show on the card when the reader goes back
+  useEffect(() => {
+    updateSavedMoment(moment.id, { isLiked: moment.isLiked, likesCount: moment.likesCount, commentsCount: moment.commentsCount, isSaved: moment.isSaved });
+  }, [moment.id, moment.isLiked, moment.likesCount, moment.commentsCount, moment.isSaved]);
 
   const url = `/api/moments/${encodeURIComponent(moment.id)}`;
   const title = momentTitle(moment.caption);
@@ -90,6 +108,7 @@ function DetailBody({ initialMoment, isLoggedIn, requireLogin, showToast }: Deta
   };
 
   const deleteComment = async (commentId: string) => {
+    setConfirmCommentId(null);
     const result = await call(`${url}/actions`, 'POST', { action: 'delete_comment', commentId });
     if (!result.ok || !result.moment) return showToast(result.message);
     setMoment(result.moment);
@@ -114,7 +133,9 @@ function DetailBody({ initialMoment, isLoggedIn, requireLogin, showToast }: Deta
     setIsBusy(false);
     setConfirmDelete(false);
     if (!result.ok) return showToast(result.message);
-    router.push('/moments');
+    updateSavedMoment(moment.id, null);
+    markReturning(moment.id);
+    router.push(backHref, { scroll: !savedGrid });
   };
 
   const sendReport = async () => {
@@ -130,7 +151,7 @@ function DetailBody({ initialMoment, isLoggedIn, requireLogin, showToast }: Deta
 
   return (
     <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-28 lg:pb-16">
-      <Link href="/moments" className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-600 hover:text-slate-900">
+      <Link href={backHref} scroll={!savedGrid} onClick={() => markReturning(moment.id)} className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-600 hover:text-slate-900">
         <ArrowLeft className="w-4 h-4" aria-hidden="true" />
         โมเมนต์ทั้งหมด
       </Link>
@@ -274,11 +295,22 @@ function DetailBody({ initialMoment, isLoggedIn, requireLogin, showToast }: Deta
                         </p>
                         <p className="mt-0.5 flex items-center gap-3 text-xs font-medium text-slate-500">
                           {c.timeAgo}
-                          {c.isMine && (
-                            <button type="button" onClick={() => deleteComment(c.id)} className="font-bold hover:text-slate-800 hover:underline cursor-pointer">
-                              ลบ
-                            </button>
-                          )}
+                          {c.isMine &&
+                            (confirmCommentId === c.id ? (
+                              <span className="inline-flex items-center gap-3">
+                                <span className="text-slate-700">ลบความคิดเห็นนี้ไหม</span>
+                                <button type="button" onClick={() => deleteComment(c.id)} className="font-bold text-rose-600 hover:underline cursor-pointer">
+                                  ลบเลย
+                                </button>
+                                <button type="button" onClick={() => setConfirmCommentId(null)} className="font-bold hover:text-slate-800 hover:underline cursor-pointer">
+                                  ยกเลิก
+                                </button>
+                              </span>
+                            ) : (
+                              <button type="button" onClick={() => setConfirmCommentId(c.id)} className="font-bold hover:text-slate-800 hover:underline cursor-pointer">
+                                ลบ
+                              </button>
+                            ))}
                         </p>
                       </div>
                     </li>

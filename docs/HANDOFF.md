@@ -2004,3 +2004,17 @@ Walked as a guest and as members at phone (390) and desktop (1366) size in headl
 - อีเวนต์ row: the "กำลังจัดอยู่ / เร็วๆ นี้" status leads the second line on every screen, so desktop titles show in full.
 - Place cards: shorter taglines for กรุงเทพฯ, เชียงใหม่, กระบี่, น่าน (also in `lib/masterData.ts`), one line each at 1366 px.
 - Images: new `lib/optimizedImage.ts` sends /public photos and organisers' posters through the Next.js optimizer at card size. Hero collage and faces use `next/image`. Remote resizing only for ThaiRun, IMPACT, QSNCC (Prismic) and visit.bangkok (`images.remotePatterns` in `next.config.ts`, same list); any other host gets 400. Landing images measured on a throttled phone (1.6 Mbps): about 8 MB before (four ~1 MB hero/wall photos, two ~1 MB ThaiRun posters as 64 px thumbnails) → 1.6 MB after; the largest left are sample Unsplash photos.
+
+### BE-162 · /moments: back to where you left off, tab links, lighter page, shorter phone header (2026-10-26)
+- Back from a moment returns to the same tab, the cards loaded so far and the scroll position, by the browser's Back or the "โมเมนต์ทั้งหมด" link (`components/moments/momentsReturn.ts`, this tab's sessionStorage; hearts, saves and comments given on the moment's page carry over; a deleted moment drops out). A moment opened from anywhere else still links to plain `/moments`.
+- Tabs are real `<a href="/moments?type=…">` links (crawlable, open in a new tab); a plain click switches in place and adds a history entry, so Back steps through the tabs.
+- Tab counts come from one read (`countMomentsByType` in `lib/moments/service.ts`) instead of five; the page now reads moments twice instead of six times.
+- `/moments` has `CollectionPage` + `ItemList` JSON-LD for the first 24 moments (`momentCollectionJsonLd` in `lib/structuredData.ts`).
+- Phone header shorter (smaller collage, heading and gaps): the first row of photos is fully on screen at 390×844 (photo top 455 px, was about 600). Tablet and desktop unchanged.
+- Walked in headless Chrome on a production build: tab switch, Back through tabs, return by Back and by the link at shallow and deep scroll, fresh visit starts at the top, no sideways scroll.
+- Follow-up the same day: a toast that comes right after another gets its full three seconds (`MomentsChrome`); deleting your own comment asks "ลบความคิดเห็นนี้ไหม · ลบเลย · ยกเลิก" first; signing in on the grid fills the member's hearts into the cards already loaded instead of reloading page 1, so a reader scrolled down stays put. Signed-in walk (dev server, throwaway member, deleted after): sign in from a heart while scrolled down (position and cards kept, own hearts shown), like from the grid, unlike on the moment's page and see it on the card after Back, comment, cancel and confirm delete, no sideways scroll.
+
+### BE-163 · Brand logo from `public/brand-logo.jpg` (owner 2026-10-26)
+- `components/BrandLogo.tsx` now shows `public/brand-logo.jpg` (through the Next.js image optimizer, the source is 2048 px / 1.1 MB) in the same rounded white frame; sizes and props unchanged, so every caller (top bar, menu, footer, login, onboarding, legal, verify, reset) picks it up. The `variant` prop is kept but ignored, so `/preview-logo` now shows the same logo for every option.
+- Browser and app icons rebuilt from the same file: `app/icon.png` (512), `app/apple-icon.png` (180), `app/favicon.ico` (16/32/48, PNG inside, RGBA as Next requires) and `public/brand-logo.png` (512, used in the page metadata).
+- `public/brand-logo-2.jpg` is in the folder but unused.

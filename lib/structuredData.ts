@@ -118,6 +118,27 @@ export function momentJsonLd(
   };
 }
 
+/** /moments: a collection page listing the moments shown first, each pointing to its own page. */
+export function momentCollectionJsonLd(moments: { id: string; caption: string; images: string[] }[], path: string, name: string, description: string): JsonLd {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name,
+    description,
+    url: absoluteUrl(path),
+    mainEntity: {
+      '@type': 'ItemList',
+      itemListElement: moments.map((moment, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        url: absoluteUrl(`/moments/${encodeURIComponent(moment.id)}`),
+        name: metaDescription(moment.caption, 110),
+        image: imageUrl(moment.images[0]),
+      })),
+    },
+  };
+}
+
 /** Home › list › this page, for the path shown under the title in search results. */
 export function breadcrumbJsonLd(items: { name: string; path: string }[]): JsonLd {
   return {

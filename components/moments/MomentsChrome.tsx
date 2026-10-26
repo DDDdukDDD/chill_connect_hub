@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
@@ -23,12 +23,16 @@ export function MomentsChrome({ children }: { children: (context: MomentsChromeC
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [membershipAction, setMembershipAction] = useState<string | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; at: number } | null>(null);
+  const toastMessage = toast?.message ?? null;
 
-  const showToast = useCallback((message: string) => {
-    setToastMessage(message);
-    setTimeout(() => setToastMessage(null), 3000);
-  }, []);
+  const showToast = useCallback((message: string) => setToast({ message, at: Date.now() }), []);
+  // Each new message gets its own full three seconds, even when one comes right after another
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(timer);
+  }, [toast]);
   const requireLogin = useCallback((actionTitle?: string) => setMembershipAction(actionTitle ?? 'เพื่อกดใจ คอมเมนต์ และบันทึกโมเมนต์'), []);
 
   return (

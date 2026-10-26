@@ -1,13 +1,15 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Camera, Heart, Loader2, MessageCircle, X } from 'lucide-react';
 import type { FeedItem } from '@/lib/moments/service';
 import { nameInitial } from '@/lib/displayName';
 import { MomentsChrome } from '@/components/moments/MomentsChrome';
 import { call } from '@/components/home/HomeMomentFeed';
 import { MOMENT_TARGETS, isMomentTarget, momentImageSrc, momentTargetHref, momentTitle, type MomentTargetKey } from '@/components/moments/momentTargets';
+import { saveShowcase, takeShowcase } from '@/components/moments/momentsReturn';
 
 const PAGE_SIZE = 24;
 /** The moments pillar colour (rose) */
@@ -181,7 +183,7 @@ function Collage() {
   const { a, b, c } = COLLAGE;
   const print = 'w-full h-full object-cover shadow-lg border-4 border-white';
   return (
-    <div className="relative h-[170px] sm:h-[200px] md:h-[240px] lg:h-[270px] w-full max-w-[320px] md:max-w-[440px] mx-auto" aria-hidden="true">
+    <div className="relative h-[120px] sm:h-[200px] md:h-[240px] lg:h-[270px] w-full max-w-[240px] sm:max-w-[320px] md:max-w-[440px] mx-auto" aria-hidden="true">
       <figure className="absolute left-[2%] top-[8%] w-[44%] h-[78%]">
         {/* eslint-disable-next-line @next/next/no-img-element -- remote and local photos */}
         <img src={momentImageSrc(a.image)} alt="" className={`${print} -rotate-6 rounded-[1.5rem] lg:rounded-[1.75rem]`} />
@@ -206,6 +208,8 @@ function Collage() {
     </div>
   );
 }
+
+const tabHref = (chip: Chip) => (chip === 'all' ? '/moments' : `/moments?type=${chip}`);
 
 const listUrl = (chip: Chip, place: ShowcasePlace | null, page: number) => {
   const params = new URLSearchParams({ limit: String(PAGE_SIZE), page: String(page) });
@@ -253,11 +257,48 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialChip, pl
     [place]
   );
 
+  /** The tab shown, read by the URL sync below without re-running it on every tab click */
+  const chipRef = useRef(chip);
+  // Each tab is its own history entry, so the browser's Back steps through the tabs the reader looked at
   const pickChip = (next: Chip) => {
     if (next === chip) return;
     setChip(next);
-    window.history.replaceState(null, '', next === 'all' ? '/moments' : `/moments?type=${next}`);
+    chipRef.current = next;
+    window.history.pushState(null, '', tabHref(next));
     void load(next, 1);
+  };
+  const searchParams = useSearchParams();
+  const urlChip: Chip = isMomentTarget(searchParams.get('type') ?? undefined) ? (searchParams.get('type') as MomentTargetKey) : 'all';
+  useEffect(() => {
+    if (place || urlChip === chipRef.current) return;
+    setChip(urlChip);
+    chipRef.current = urlChip;
+    void load(urlChip, 1);
+  }, [place, urlChip, load]);
+
+  // Back from a moment: the tab, the cards loaded so far and the scroll position come back as they were.
+  // A layout effect, so it runs before the signed-in reload below and the reader never sees the top of the page.
+  const restoredRef = useRef(false);
+  useLayoutEffect(() => {
+    const snapshot = takeShowcase(window.location.pathname + window.location.search);
+    if (!snapshot) return;
+    restoredRef.current = true;
+    chipRef.current = urlChip;
+    setChip(urlChip);
+    setMoments(snapshot.moments);
+    setPage(snapshot.page);
+    setHasMore(snapshot.hasMore);
+    requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo(0, snapshot.scrollY)));
+    // once, on arriving at the page
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /** Remembers where the reader is when a card opens its moment */
+  const rememberPlace = (e: React.MouseEvent) => {
+    const href = (e.target as HTMLElement).closest('a')?.getAttribute('href');
+    const momentId = href?.startsWith('/moments/') ? decodeURIComponent(href.slice('/moments/'.length)) : null;
+    if (!momentId) return;
+    saveShowcase({ url: window.location.pathname + window.location.search, momentId, moments, page, hasMore, scrollY: window.scrollY });
   };
 
   // More cards as the reader nears the end
@@ -269,7 +310,21 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialChip, pl
     return () => observer.disconnect();
   }, [chip, hasMore, isLoading, load, page]);
 
-  const reloadFirstPage = useCallback(() => void load(chip, 1), [load, chip]);
+  // After signing in, the member's own hearts are filled into the cards already on screen, so the grid stays where
+  // the reader is; a restored grid already carries them
+  const refreshHearts = useCallback(() => {
+    if (restoredRef.current) return;
+    const pages = Array.from({ length: page }, (_, i) => i + 1);
+    void Promise.all(pages.map((p) => fetch(listUrl(chip, place, p), { cache: 'no-store' }).then((res) => res.json()).catch(() => null))).then((results) => {
+      const fresh = new Map(results.flatMap((json) => (json?.moments ?? []) as FeedItem[]).map((m) => [m.id, m]));
+      setMoments((prev) =>
+        prev.map((m) => {
+          const f = fresh.get(m.id);
+          return f ? { ...m, isLiked: f.isLiked, isSaved: f.isSaved, likesCount: f.likesCount, commentsCount: f.commentsCount } : m;
+        })
+      );
+    });
+  }, [chip, place, page]);
 
   // Optimistic heart, put back with a message if the server says no (same as the moment's own page)
   const toggleLike = (moment: FeedItem, showToast: (message: string) => void) => {
@@ -291,14 +346,14 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialChip, pl
     <MomentsChrome>
       {({ isLoggedIn, requireLogin, showToast }) => (
         <main className="flex-1 pb-28 lg:pb-16">
-          <WhenSignedIn isLoggedIn={isLoggedIn} run={reloadFirstPage} />
+          <WhenSignedIn isLoggedIn={isLoggedIn} run={refreshHearts} />
           {/* Header band: the landing page's cream with soft circles, tilted prints on one side and the words on the other */}
           <section className="relative overflow-hidden bg-[#FFF8F1]">
             <div className="pointer-events-none absolute -top-20 -left-20 w-56 h-56 rounded-full bg-[#FFE4E8]" aria-hidden="true" />
             <div className="pointer-events-none absolute -bottom-40 -right-28 w-80 h-80 rounded-full bg-[#E3EDFF]" aria-hidden="true" />
-            <div className="relative w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-5 pb-8 md:py-10 grid md:grid-cols-[1.05fr_1fr] gap-6 md:gap-10 items-center">
+            <div className="relative w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-5 sm:pt-5 sm:pb-8 md:py-10 grid md:grid-cols-[1.05fr_1fr] gap-4 sm:gap-6 md:gap-10 items-center">
               <div className="text-center md:text-left order-2 md:order-1">
-                <h1 className="text-[28px] leading-[1.3] sm:text-[34px] lg:text-[42px] lg:leading-[1.22] font-bold text-slate-900 tracking-tight">
+                <h1 className="text-[24px] leading-[1.3] sm:text-[34px] lg:text-[42px] lg:leading-[1.22] font-bold text-slate-900 tracking-tight">
                   {placeName ? (
                     <>
                       โมเมนต์จาก
@@ -313,10 +368,10 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialChip, pl
                     </>
                   )}
                 </h1>
-                <p className="mt-3 text-[15px] sm:text-lg font-semibold text-slate-700">
+                <p className="mt-2 sm:mt-3 text-sm sm:text-lg font-semibold text-slate-700">
                   เห็นที่ไหนน่าไป <span className="whitespace-nowrap">แตะดูแล้วไปต่อได้เลย</span>
                 </p>
-                <div className="mt-5 flex flex-wrap items-center justify-center md:justify-start gap-3">
+                <div className="mt-4 sm:mt-5 flex flex-wrap items-center justify-center md:justify-start gap-3">
                   <Link
                     href="/?share=new"
                     onClick={(e) => {
@@ -325,7 +380,7 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialChip, pl
                         requireLogin('เพื่อแชร์โมเมนต์ของคุณ');
                       }
                     }}
-                    className="inline-flex items-center justify-center gap-2 h-12 px-7 rounded-full bg-[#F43F5E] hover:bg-[#E11D48] text-white text-base font-semibold shadow-[0_8px_20px_rgba(244,63,94,0.28)] whitespace-nowrap transition-colors"
+                    className="inline-flex items-center justify-center gap-2 h-11 sm:h-12 px-7 rounded-full bg-[#F43F5E] hover:bg-[#E11D48] text-white text-base font-semibold shadow-[0_8px_20px_rgba(244,63,94,0.28)] whitespace-nowrap transition-colors"
                   >
                     <Camera className="w-5 h-5" aria-hidden="true" />
                     แชร์โมเมนต์ของคุณ
@@ -346,15 +401,20 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialChip, pl
 
           <div className="w-full max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8">
             {!placeName && (
-              <nav aria-label="ประเภทโมเมนต์" className="mt-5 sm:mt-7 flex gap-5 sm:gap-7 overflow-x-auto no-scrollbar -mx-3 px-4 sm:mx-0 sm:px-0">
+              <nav aria-label="ประเภทโมเมนต์" className="mt-3 sm:mt-7 flex gap-5 sm:gap-7 overflow-x-auto no-scrollbar -mx-3 px-4 sm:mx-0 sm:px-0">
                 {TABS.map((tab) => {
                   const isHere = tab.chip === chip;
                   return (
-                    <button
+                    // A real link, so search engines reach each tab and a new tab can be opened; a plain click switches in place
+                    <a
                       key={tab.chip}
-                      type="button"
-                      aria-pressed={isHere}
-                      onClick={() => pickChip(tab.chip)}
+                      href={tabHref(tab.chip)}
+                      aria-current={isHere ? 'page' : undefined}
+                      onClick={(e) => {
+                        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                        e.preventDefault();
+                        pickChip(tab.chip);
+                      }}
                       className={`group relative isolate inline-flex items-center gap-1.5 h-10 text-[15px] sm:text-base whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
                         isHere ? 'font-bold text-slate-900' : 'font-medium text-slate-500 hover:text-slate-900'
                       }`}
@@ -367,13 +427,13 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialChip, pl
                       <span className={`w-1.5 h-1.5 rounded-full ${tab.dot}`} aria-hidden="true" />
                       <span>{tab.label}</span>
                       {counts && <span className="text-xs sm:text-[13px] font-medium text-slate-400 tabular-nums">{counts[tab.chip].toLocaleString()}</span>}
-                    </button>
+                    </a>
                   );
                 })}
               </nav>
             )}
 
-            <div className={`mt-5 sm:mt-7 transition-opacity duration-200 ${isLoading && page === 1 ? 'opacity-50' : ''}`} aria-busy={isLoading}>
+            <div className={`mt-4 sm:mt-7 transition-opacity duration-200 ${isLoading && page === 1 ? 'opacity-50' : ''}`} aria-busy={isLoading} onClickCapture={rememberPlace}>
               {moments.length === 0 && !isLoading ? (
                 <p className="py-16 text-center text-sm font-medium text-slate-500">ยังไม่มีโมเมนต์ในหมวดนี้ ไปที่ไหนมาแล้ว มาแชร์เป็นคนแรกกัน</p>
               ) : (

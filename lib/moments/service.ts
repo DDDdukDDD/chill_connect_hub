@@ -168,6 +168,19 @@ export async function listMoments(viewer: Member | null, options: MomentListOpti
   };
 }
 
+/** How many public moments each /moments tab holds, from one read instead of one per tab */
+export async function countMomentsByType(): Promise<{ all: number; spot: number; community: number; fair: number; challenge: number }> {
+  const result = await momentRepository.query({ statuses: ['published'], sort: 'newest', page: 1, limit: 10_000 });
+  const people = await loadPeople(result.items);
+  const counts = { all: 0, spot: 0, community: 0, fair: 0, challenge: 0 };
+  for (const moment of result.items) {
+    if (!isPubliclyVisible(moment, people)) continue;
+    counts.all++;
+    if (moment.targetType in counts) counts[moment.targetType as keyof typeof counts]++;
+  }
+  return counts;
+}
+
 /**
  * How far a member is on the moments path of the home journey band: people followed, whether they have
  * liked or commented on someone else's moment, and whether they have posted one themselves
