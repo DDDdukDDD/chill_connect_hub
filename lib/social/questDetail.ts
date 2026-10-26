@@ -43,11 +43,12 @@ export async function buildQuestDetail(quest: ChallengeQuest, member: Member) {
     };
 
     if (earned) {
-      // One challenge to go on with: still running, countable, not done or joined yet; the same topic first
+      // One challenge to go on with: running now (started, not one that opens in weeks; E2E walk 2026-10-25),
+      // countable, not done or joined yet; the same topic first
       const { items } = await db.findQuests({ page: 1, limit: 200, status: 'active' });
       const taken = new Set(all.filter((entry) => entry.completed || entry.joined).map((entry) => entry.questId));
       const open = items
-        .filter((entry) => entry.rule && entry.id !== quest.id && !taken.has(entry.id))
+        .filter((entry) => entry.rule && entry.id !== quest.id && !taken.has(entry.id) && !entry.startsInDays && !entry.rule.asHost)
         .sort((a, b) => Number(b.category === quest.category) - Number(a.category === quest.category) || (b.participantsCount ?? 0) - (a.participantsCount ?? 0));
       if (open[0]) {
         next = { id: open[0].id, title: open[0].title, image: open[0].image ?? open[0].badgeCoverImg ?? null, rewardPoints: open[0].rewardPoints ?? 0, rewardTitle: open[0].brandReward?.title ?? null };

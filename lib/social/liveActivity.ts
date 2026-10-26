@@ -55,8 +55,9 @@ async function collect(): Promise<RawItem[]> {
   const events = (await db.listAllEvents()).filter(
     (e) => e.eventType === 'community' && (e.approvalStatus ?? 'approved') === 'approved' && !isEventEnded(e)
   );
+  const participants = await db.listParticipantsByEvent(events.map((e) => e.id));
   for (const event of events) {
-    for (const p of await db.listParticipants(event.id)) {
+    for (const p of participants.get(event.id) ?? []) {
       if (!p.joinedAt) continue;
       items.push({
         id: `ev:${event.id}:${p.userId}`,
@@ -127,8 +128,20 @@ export async function recentActivity(viewer: Member, limit = 12): Promise<LiveIt
   return result;
 }
 
+/** Counts are the same for every visitor, so one read serves them all for a minute (like the API's s-maxage) */
+const COUNTS_TTL_MS = 60_000;
+let cachedCounts: { at: number; value: Promise<LiveCounts> } | null = null;
+
 /** Counts for visitors: how much happened in the last week, with no names */
-export async function activityCounts(): Promise<LiveCounts> {
+export function activityCounts(): Promise<LiveCounts> {
+  if (cachedCounts && Date.now() - cachedCounts.at < COUNTS_TTL_MS) return cachedCounts.value;
+  const value = countActivity();
+  cachedCounts = { at: Date.now(), value };
+  value.catch(() => { cachedCounts = null; });
+  return value;
+}
+
+async function countActivity(): Promise<LiveCounts> {
   const since = new Date(Date.now() - COUNT_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const counts: LiveCounts = { since, meetupJoins: 0, questJoins: 0, moments: 0 };
   for (const item of await collect()) {

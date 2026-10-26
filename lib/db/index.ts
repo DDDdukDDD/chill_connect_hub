@@ -1,5 +1,7 @@
 import { IDataRepository } from './repository';
 import { JsonFileAdapter } from './adapters/jsonAdapter';
+import { PostgresAdapter } from './adapters/postgresAdapter';
+import { USE_POSTGRES } from './postgres/client';
 
 // Global singleton instance across Next.js re-evaluations
 const globalForDb = globalThis as unknown as {
@@ -8,12 +10,11 @@ const globalForDb = globalThis as unknown as {
 
 /**
  * Factory to retrieve the singleton database repository instance
- * Enables switching between in-memory/JSON and PostgreSQL/Supabase seamlessly.
+ * DATA_STORE=postgres uses the Supabase database; otherwise the JSON files in data/.
  */
 export function getDatabase(): IDataRepository {
   if (!globalForDb._chillDbInstance) {
-    // In future production rollout, if DATABASE_PROVIDER === 'postgres', load PostgresAdapter
-    globalForDb._chillDbInstance = new JsonFileAdapter();
+    globalForDb._chillDbInstance = USE_POSTGRES ? new PostgresAdapter() : new JsonFileAdapter();
   }
   return globalForDb._chillDbInstance;
 }

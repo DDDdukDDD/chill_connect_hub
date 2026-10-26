@@ -192,8 +192,13 @@ function inQuestPeriod(quest: ChallengeQuest, target: RuleTarget): boolean {
 
 /** The running challenges a visit to each target counts toward */
 export async function rewardsForTargets(targets: { targetType: VisitTargetType; targetId: string }[]): Promise<Record<string, TargetReward[]>> {
-  // Going somewhere never counts toward a host challenge
-  const quests = (await questsWithRules()).filter((q) => q.status === 'active' && !q.rule.asHost);
+  // Going somewhere never counts toward a host challenge, nor toward one that has not started (a visit today would
+  // not count, so a place page must not say it does; E2E walk 2026-10-25)
+  const now = Date.now();
+  const quests = (await questsWithRules()).filter((q) => {
+    const start = parseQuestDate(q.startDate, false);
+    return q.status === 'active' && !q.rule.asHost && (start === null || start <= now);
+  });
   const result: Record<string, TargetReward[]> = {};
   for (const { targetType, targetId } of targets) {
     const target = quests.length ? await loadRuleTarget(targetType, targetId) : null;
@@ -255,7 +260,7 @@ export interface QuestTarget {
   visited: boolean;
 }
 
-const TARGET_PATHS: Record<VisitTargetType, string> = { spot: '/spots', community: '/community', fair: '/fairs' };
+const TARGET_PATHS: Record<VisitTargetType, string> = { spot: '/spots', community: '/community', fair: '/events' };
 
 async function allPages<T>(load: (page: number) => Promise<{ items: T[]; totalPages: number }>): Promise<T[]> {
   const first = await load(1);

@@ -16,6 +16,7 @@ import { useMyRewards } from '@/lib/useMyRewards';
 import { ChallengeChecklist } from '@/components/detail/ChallengeChecklist';
 import { InviteFriendsCard } from '@/components/InviteFriendsCard';
 import { RelatedCards } from '@/components/detail/RelatedCards';
+import { Toast } from '@/components/Toast';
 
 /**
  * One challenge on its own page. It answers one question for the state the visitor is in:
@@ -95,11 +96,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}
       />
-      {toastMessage && (
-        <div role="status" className="fixed top-20 right-4 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-2xl shadow-2xl text-sm font-bold">
-          {toastMessage}
-        </div>
-      )}
+      <Toast message={toastMessage} />
       <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-28 lg:pb-16">
         <Link href="/challenges" className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />

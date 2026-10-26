@@ -10,6 +10,7 @@ import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { RewardShopItem, REWARD_CATEGORIES, REWARD_SHOP_ITEMS } from '@/data/rewardsData';
 import { useMyRewards } from '@/lib/useMyRewards';
+import { Toast } from '@/components/Toast';
 
 const CHIP = 'shrink-0 inline-flex items-center min-h-9 px-3.5 rounded-full text-sm font-bold transition-colors cursor-pointer';
 const QUIET_BUTTON = 'inline-flex items-center justify-center gap-1.5 min-h-10 px-4 rounded-full border border-slate-300 hover:border-slate-900 text-slate-800 text-sm font-bold whitespace-nowrap cursor-pointer';
@@ -157,11 +158,7 @@ export default function RewardsPage() {
         userName={userProfile?.name}
         isAuthReady={isAuthReady}
       />
-      {toastMessage && (
-        <div role="status" className="fixed top-20 right-4 z-[80] bg-slate-900 text-white px-4 py-2.5 rounded-2xl shadow-2xl text-sm font-bold">
-          {toastMessage}
-        </div>
-      )}
+      <Toast message={toastMessage} />
 
       <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-28 lg:pb-16">
         <div className="grid gap-10 lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-16 lg:items-start">

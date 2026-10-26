@@ -22,7 +22,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     page('/', 'daily', 1),
     page('/community', 'daily', 0.9),
     page('/challenges', 'daily', 0.9),
-    page('/fairs', 'daily', 0.85),
+    page('/events', 'daily', 0.85),
     page('/spots', 'weekly', 0.85),
     page('/moments', 'daily', 0.7),
     page('/about', 'monthly', 0.5),
@@ -34,7 +34,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const eventPages = events
     .filter((e) => !isEventEnded(e))
-    .map((e) => page(`/${e.eventType === 'public_venue' ? 'fairs' : 'community'}/${encodeURIComponent(e.id)}`, 'daily', 0.8));
+    .map((e) => page(`/${e.eventType === 'public_venue' ? 'events' : 'community'}/${encodeURIComponent(e.id)}`, 'daily', 0.8));
   const questPages = quests.items
     .filter((q) => q.status !== 'draft' && q.status !== 'ended')
     .map((q) => page(`/challenges/${encodeURIComponent(q.id)}`, 'weekly', 0.7));

@@ -914,7 +914,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                         const isLive = ev.approvalStatus === 'approved';
                         return {
                           id: ev.id,
-                          href: isLive ? `${ev.eventType === 'public_venue' ? '/fairs' : '/community'}/${encodeURIComponent(ev.id)}` : undefined,
+                          href: isLive ? `${ev.eventType === 'public_venue' ? '/events' : '/community'}/${encodeURIComponent(ev.id)}` : undefined,
                           image: ev.image,
                           dateText: ev.date,
                           title: ev.title,

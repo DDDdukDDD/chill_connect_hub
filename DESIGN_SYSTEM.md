@@ -29,7 +29,7 @@ The product has five content areas. Each has one color, used only as described i
 | Pillar | Route | Data rule | Color | Soft tint | Main components |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | Community meetups | `/community` | `eventType: 'community'`. Shows attendee count (`4/10 คน`) and recruitment status (`เปิดรับสมัคร` / `เต็มแล้ว`) | Sunset Amber `#F26430` (dark `#D04A1B`) | `#FFF4EE` | `EventGrid`, `CommunityCategoryRail` |
-| Fairs and expos | `/fairs` | `eventType: 'public_venue'`. **No** attendee count, **no** recruitment status, **no** bottom attendee bar. Shows venue, organizer and date range | Slate Blue `#2B527A` (dark `#1F3D5C`) | `#EEF4FA` | `EventGrid`, `FairCategoryRail` |
+| Fairs and expos | `/events` | `eventType: 'public_venue'`. **No** attendee count, **no** recruitment status, **no** bottom attendee bar. Shows venue, organizer and date range | Slate Blue `#2B527A` (dark `#1F3D5C`) | `#EEF4FA` | `EventGrid`, `FairCategoryRail` |
 | Lifestyle spots | `/spots` | `LifestyleSpotItem` plus the published catalog, 7 vibe categories, 77 provinces | Forest Green `#4A7C59` (dark `#2D5A3C`) | `#EBF3ED` | `SpotCard`, `SpotCategoryRail` |
 | Challenges | `/challenges` | Quests that give XP and badges | Royal Violet `#7C3AED` | `#F5F3FF` | quest cards |
 | Moments | `/moments` | Member photo posts | Rose Pink `#F43F5E` | `#FFF1F2` | `CommunityMomentsStrip`, `MomentsStoriesRail`, `JourneyMomentCard` |
@@ -201,6 +201,11 @@ A slim horizontal strip, never a large box: `bg-slate-50/80 rounded-2xl p-4 sm:p
 - The close button is a quiet round button in the top-right corner.
 - Account dialogs (login, sign-up, log out, terms and privacy, join prompts) use `DialogShell` and `dialogButton` from `components/auth/DialogShell.tsx`, which implement all of the above. Reuse them for new dialogs.
 - A confirmation has a quiet "ยกเลิก" on the left and the action on the right. Focus starts on the safe choice.
+
+### Short messages (toasts)
+- Use `<Toast message={…} />` from `components/Toast.tsx` on every member-facing page; never draw a new one. Light: white, thin slate border, soft shadow, top centre under the top bar (clear of the phone's bottom bar). Never black (owner 2026-10-25).
+- An icon only when it fits: a green check for something done, a rose alert for a failure, none for plain information (signing out, hints). The tone is read from the words; pass `tone` when the words do not say it.
+- Good news with a next step (a moment that counted toward a challenge) is a warm yellow card with an orange button, not a toast. Admin screens keep their own white toast.
 
 ### Scrollbars
 

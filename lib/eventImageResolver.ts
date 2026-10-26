@@ -23,7 +23,7 @@ const EVENT_CATEGORY_GALLERIES: Record<string, string[]> = {
     'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?auto=format&fit=crop&w=1200&q=80',
     'https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=1200&q=80',
     'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1531058020387-3be344556be6?auto=format&fit=crop&w=1200&q=80',
     'https://images.unsplash.com/photo-1518998053901-5348d3961a04?auto=format&fit=crop&w=1200&q=80',
     'https://images.unsplash.com/photo-1565008447742-97f6f38c985c?auto=format&fit=crop&w=1200&q=80'
   ],
@@ -44,6 +44,11 @@ const EVENT_CATEGORY_GALLERIES: Record<string, string[]> = {
     'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80'
   ]
 };
+
+/** A cover for an event sent without one (the create form always sets a preset; an API call may not) */
+export function defaultEventImage(category: string | undefined, isFair = false): string {
+  return (isFair ? EVENT_CATEGORY_GALLERIES.expo : EVENT_CATEGORY_GALLERIES[category ?? ''] ?? EVENT_CATEGORY_GALLERIES.chill)[0];
+}
 
 export function resolveEventGallery(event: EventItem): string[] {
   // Real events show only their own photos; stock photos of other events would mislead

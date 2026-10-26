@@ -58,7 +58,7 @@ The mandatory visual rules — button hierarchy, pillar colors, UI hygiene, typo
 
 Pillar facts every agent needs (data side):
 - `/community` = `eventType: 'community'` — shows attendee count and recruitment status.
-- `/fairs` = `eventType: 'public_venue'`, called **อีเวนต์** on every screen (owner 2026-10-24; it holds fairs, runs, concerts and sports, so not "งานแฟร์") — **no** attendee count, **no** recruitment status.
+- `/events` (was `/fairs`, moved 2026-10-25; old links redirect) = `eventType: 'public_venue'`, called **อีเวนต์** on every screen (owner 2026-10-24; it holds fairs, runs, concerts and sports, so not "งานแฟร์") — **no** attendee count, **no** recruitment status.
 - `/spots` = `LifestyleSpotItem` from `data/spotsData.ts` + the published catalog (7 vibe categories).
 - `/challenges` = quests (XP and badges).
 - No decorative emojis in titles stored in data files; no emojis in `<option>` text.

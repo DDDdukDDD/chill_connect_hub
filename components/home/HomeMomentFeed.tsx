@@ -11,6 +11,7 @@ import { MomentPhotos } from '@/components/moments/MomentPhotos';
 import { MomentComposer, CountedQuestNotice, type CountedQuest, type MomentComposerInitial } from '@/components/moments/MomentComposer';
 import { liveHref } from '@/components/home/LiveActivity';
 import { MOMENT_TARGETS } from '@/components/moments/momentTargets';
+import { Toast } from '@/components/Toast';
 
 const PAGE_SIZE = 8;
 const NEW_CHECK_MS = 60_000;
@@ -793,11 +794,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
         </DialogShell>
       )}
 
-      {toast && (
-        <div role="status" className="fixed bottom-24 sm:bottom-6 left-4 right-4 sm:left-auto sm:right-6 z-50 bg-[#1E293B] text-white px-5 py-3 rounded-2xl shadow-xl text-sm font-medium animate-slide-up">
-          {toast}
-        </div>
-      )}
+      <Toast message={toast} />
     </div>
   );
 }

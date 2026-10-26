@@ -86,7 +86,7 @@ export function useGoingWith(eventId: string, enabled: boolean) {
   return people;
 }
 
-export const eventHref = (event: EventItem) => `/${event.eventType === 'public_venue' ? 'fairs' : 'community'}/${encodeURIComponent(event.id)}`;
+export const eventHref = (event: EventItem) => `/${event.eventType === 'public_venue' ? 'events' : 'community'}/${encodeURIComponent(event.id)}`;
 
 export function Faces({ people, ring = 'ring-white', size = 'w-5 h-5' }: { people: { name: string; avatar?: string }[]; ring?: string; size?: string }) {
   return (

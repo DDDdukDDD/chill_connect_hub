@@ -94,7 +94,7 @@ function toAnchor(event: EventItem, todayStart: number): Anchor | null {
 const eventStop = ({ event, pillar }: Anchor): PlanStop => ({
   pillar,
   id: event.id,
-  href: `/${pillar === 'fairs' ? 'fairs' : 'community'}/${encodeURIComponent(event.id)}`,
+  href: `/${pillar === 'fairs' ? 'events' : 'community'}/${encodeURIComponent(event.id)}`,
   title: event.title,
   image: event.image,
   meta: pillar === 'fairs' ? event.location : [event.time, event.location].filter(Boolean).join(' · '),

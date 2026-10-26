@@ -17,7 +17,7 @@ const shortDate = (iso: string) => {
   return `${d.getDate()} ${THAI_MONTHS_SHORT[d.getMonth()]}`;
 };
 const hrefOf = (item: MonthItem) =>
-  `/${item.targetType === 'spot' ? 'spots' : item.targetType === 'fair' ? 'fairs' : 'community'}/${encodeURIComponent(item.targetId)}`;
+  `/${item.targetType === 'spot' ? 'spots' : item.targetType === 'fair' ? 'events' : 'community'}/${encodeURIComponent(item.targetId)}`;
 
 /**
  * "เดือนนี้ของฉัน": what "Chill · Connect" on the home page counts. Meetups the member went to with the people

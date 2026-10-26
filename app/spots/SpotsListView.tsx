@@ -7,9 +7,7 @@ import {
   Search,
   LocateFixed,
   Loader2,
-  CheckCircle2,
-  Plus,
-} from 'lucide-react';
+  Plus } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { SpotCard, SpotCardSkeleton } from '@/components/SpotCard';
@@ -33,6 +31,7 @@ import { matchesQuery, spotInProvince, type DiscoverCounts } from '@/lib/discove
 import { DiscoverHeader, filterPillClass } from '@/components/discover/DiscoverHeader';
 import { DiscoverSearch } from '@/components/discover/DiscoverSearch';
 import { useMyInterests } from '@/lib/useMyInterests';
+import { Toast } from '@/components/Toast';
 
 function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
@@ -557,12 +556,7 @@ function SpotsPageContent({ initialSpots, initialCounts }: ServerProps) {
         favoritesCount={favoriteSpots.length}
       />
 
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#1E293B] text-white px-5 py-3 rounded-2xl shadow-xl border border-slate-700 text-sm font-medium flex items-center gap-2.5 animate-slide-up">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
+      <Toast message={toastMessage} />
 
     </div>
   );

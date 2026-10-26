@@ -11,7 +11,6 @@ import {
   Star,
   Share2,
   Check,
-  CheckCircle2,
   Sparkles,
   Compass,
   ChevronDown,
@@ -31,6 +30,7 @@ import {
 } from 'lucide-react';
 import { LifestyleSpotItem, SpotSubActivity, SpotRelatedQuest } from '@/data/spotsData';
 import { ChallengeQuest } from '@/data/mockData';
+import { Toast } from '@/components/Toast';
 
 interface SpotDetailModalProps {
   spot: LifestyleSpotItem | null;
@@ -56,8 +56,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
   isFavorite,
   onToggleFavorite,
   isLoggedIn = false,
-  onRequireLogin,
-}) => {
+  onRequireLogin }) => {
   const [mounted, setMounted] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isCopied, setIsCopied] = useState(false);
@@ -221,12 +220,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Toast Notification inside modal */}
-        {toastMessage && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-[#1E293B] text-white px-4 py-2.5 rounded-2xl shadow-2xl border border-slate-700 text-xs font-bold flex items-center gap-2 animate-slide-down">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span>{toastMessage}</span>
-          </div>
-        )}
+        <Toast message={toastMessage} className="absolute top-4 left-1/2 -translate-x-1/2 z-50" />
 
         {/* Modal Top Header Image & Controls (Compact Cinematic Banner h-36 sm:h-40) */}
         <div className="relative h-36 sm:h-38 md:h-40 w-full bg-slate-900 shrink-0 overflow-hidden">

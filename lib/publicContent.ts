@@ -52,7 +52,7 @@ async function allPages<T>(find: (page: number) => Promise<{ items: T[]; hasNext
 export const listPublicMeetups = () =>
   allPages((page) => db.findEvents({ page, limit: 100, eventType: 'community', status: 'all', sortBy: 'newest', approvalStatus: 'approved' }));
 
-/** The /fairs list: approved fairs, ended ones included (the page has its own "ended" filter), like `GET /api/events`. */
+/** The /events list: approved fairs, ended ones included (the page has its own "ended" filter), like `GET /api/events`. */
 export const listPublicFairs = async () =>
   (await db.listAllEvents()).filter((event) => event.approvalStatus === 'approved' && event.eventType === 'public_venue');
 

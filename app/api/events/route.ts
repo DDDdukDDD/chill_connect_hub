@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { defaultEventImage } from '@/lib/eventImageResolver';
 import { createAdminEvent } from '@/lib/eventsStore';
 import { db } from '@/lib/db';
 import { hasAdminCredentials } from '@/lib/adminApiAuth';
@@ -9,6 +10,7 @@ import { guardCreator } from '@/lib/members/submissions';
 import { prepareSpotTrip } from '@/lib/social/spotTrips';
 import type { EventItem } from '@/data/mockData';
 import { checkedEventCategories } from '@/lib/eventCategories';
+import { isValidTimeRange } from '@/lib/dateUtils';
 
 /** At most this many events per ?ids= request */
 const MAX_IDS = 60;
@@ -180,6 +182,10 @@ export async function POST(req: Request) {
       }
       eventData.time = 'ดูเวลาที่หน้างาน';
     }
+    const [startTime, endTime] = eventData.time.split(/\s*-\s*/);
+    if (eventData.eventType !== 'public_venue' && startTime && endTime && !isValidTimeRange(startTime, endTime)) {
+      return NextResponse.json({ success: false, message: 'เวลาเลิกต้องไม่ตรงกับเวลาเริ่ม' }, { status: 400 });
+    }
 
     // Safety Content Screening
     const contentToCheck = `${eventData.title} ${eventData.description || ''} ${eventData.location || ''}`.toLowerCase();
@@ -254,6 +260,8 @@ export async function POST(req: Request) {
       // hostName crashed the member home, 2026-10-25)
       ...(member && !(typeof eventData.hostName === 'string' && eventData.hostName.trim()) && { hostName: member.displayName }),
       ...(member && !eventData.hostAvatar && member.avatarUrl && { hostAvatar: member.avatarUrl }),
+      // Every card and page shows a cover; without one the ตี้ page showed a broken image (E2E walk 2026-10-25)
+      ...(!(typeof eventData.image === 'string' && eventData.image.trim()) && { image: defaultEventImage(eventData.category, isPublicVenue) }),
       createdAt: new Date().toISOString(),
     });
 

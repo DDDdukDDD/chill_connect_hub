@@ -4,7 +4,7 @@ import React from 'react';
 import { TOP_VENUES } from '@/components/TopVenuesRail';
 
 /**
- * Popular venues as round photos under the /fairs heading: the tabs below say what kind of event, these say where.
+ * Popular venues as round photos under the /events heading: the tabs below say what kind of event, these say where.
  * A tap narrows the list to that venue (a blue ring marks it); a second tap clears it. Scrolls sideways.
  */
 export function VenueCircles({ selected, onSelect }: { selected: string; onSelect: (venue: string | null) => void }) {

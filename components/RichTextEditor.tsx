@@ -197,6 +197,23 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     }
   };
 
+  /** A tap inside a template prompt "[...]" selects the whole prompt, so typing replaces it brackets and all */
+  const selectPrompt = () => {
+    const selection = window.getSelection();
+    const node = selection?.anchorNode;
+    if (!selection || !selection.isCollapsed || !node || node.nodeType !== Node.TEXT_NODE) return;
+    const text = node.textContent ?? '';
+    const at = selection.anchorOffset;
+    const open = text.lastIndexOf('[', at);
+    const close = open === -1 ? -1 : text.indexOf(']', open);
+    if (close === -1 || close + 1 < at) return;
+    const range = document.createRange();
+    range.setStart(node, open);
+    range.setEnd(node, close + 1);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  };
+
   const insertCustomNode = (htmlSnippet: string) => {
     if (editorRef.current) {
       editorRef.current.focus();
@@ -292,6 +309,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         contentEditable
         onInput={handleInput}
         onBlur={handleInput}
+        onClick={selectPrompt}
         style={{ minHeight: minHeight || '240px' }}
         data-placeholder={placeholder}
         className="w-full px-3.5 py-3 rounded-b-xl border border-slate-200 text-base sm:text-sm leading-relaxed outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]/30 bg-white text-slate-800 overflow-y-auto max-h-[380px] empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400 [&_strong]:font-bold [&_strong]:text-slate-950 [&_ul]:list-disc [&_ul]:pl-5 [&_p]:mb-1.5"

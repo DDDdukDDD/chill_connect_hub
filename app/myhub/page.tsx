@@ -32,6 +32,7 @@ import { LifestyleSpotItem } from '@/data/spotsData';
 import { useSpotCatalog, getCachedSpotVibeCategory } from '@/lib/usePublishedSpots';
 import { resolveSpotImage } from '@/lib/spotImageResolver';
 import { SpotCard } from '@/components/SpotCard';
+import { Toast } from '@/components/Toast';
 import {
   Users,
   Trophy,
@@ -1066,7 +1067,7 @@ function MyHubContent() {
             <ul className="mt-3 space-y-3">
               {savedNotJoined.slice(0, 3).map((ev) => (
                 <li key={ev.id}>
-                  <Link href={`${ev.eventType === 'public_venue' ? '/fairs' : '/community'}/${encodeURIComponent(ev.id)}`} className="flex items-start gap-3 group">
+                  <Link href={`${ev.eventType === 'public_venue' ? '/events' : '/community'}/${encodeURIComponent(ev.id)}`} className="flex items-start gap-3 group">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={ev.image} alt="" className="w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0" />
                     <span className="min-w-0">
@@ -1089,7 +1090,7 @@ function MyHubContent() {
   const renderFirstSteps = () => {
     const steps = [
       { href: '/community', Icon: Users, tint: 'bg-[#EBF3ED] text-[#2D5A3C]', title: 'ไปตี้กับเพื่อนใหม่', text: 'วิ่ง บอร์ดเกม เวิร์กช็อป หรือจิบกาแฟ กลุ่มเล็กๆ ไม่กดดัน', cta: 'หาตี้' },
-      { href: '/fairs', Icon: Calendar, tint: 'bg-[#EEF4FA] text-[#2B527A]', title: 'ปักหมุดอีเวนต์', text: 'งานหนังสือ งานกาแฟ นิทรรศการที่กำลังจะมา', cta: 'ดูอีเวนต์' },
+      { href: '/events', Icon: Calendar, tint: 'bg-[#EEF4FA] text-[#2B527A]', title: 'ปักหมุดอีเวนต์', text: 'งานหนังสือ งานกาแฟ นิทรรศการที่กำลังจะมา', cta: 'ดูอีเวนต์' },
       { href: '/challenges', Icon: Trophy, tint: 'bg-[#F5F3FF] text-[#7C3AED]', title: 'เริ่มชาเลนจ์แรก', text: 'ไปให้ครบตามเป้า แล้วรับ XP กับของรางวัล', cta: 'ดูชาเลนจ์' },
     ];
     return (
@@ -1631,7 +1632,7 @@ function MyHubContent() {
                     <span>หากิจกรรม</span>
                   </Link>
                   <Link
-                    href="/fairs"
+                    href="/events"
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold border border-slate-200 transition-all"
                   >
                     <Calendar className="w-3.5 h-3.5" />
@@ -1669,7 +1670,7 @@ function MyHubContent() {
                   const detailHref = isQuest
                     ? `/challenges/${encodeURIComponent(ev.id.replace('quest-', ''))}`
                     : ev.eventType === 'public_venue' || meta.pillar === 'fairs'
-                    ? `/fairs/${encodeURIComponent(ev.id)}`
+                    ? `/events/${encodeURIComponent(ev.id)}`
                     : `/community/${encodeURIComponent(ev.id)}`;
                   const isDeadlineToday = isQuest && scheduleView === 'month' && selectedCalDay !== null && questSpanInMonth(ev, calMonth, calYear)?.deadline === selectedCalDay;
 
@@ -1786,7 +1787,7 @@ function MyHubContent() {
                                   <Link
                                     href={
                                       ev.eventType === 'public_venue' || meta.pillar === 'fairs'
-                                        ? `/fairs/${encodeURIComponent(ev.id)}`
+                                        ? `/events/${encodeURIComponent(ev.id)}`
                                         : `/community/${encodeURIComponent(ev.id)}`
                                     }
                                     onClick={() => setActiveMenuId(null)}
@@ -2004,12 +2005,7 @@ function MyHubContent() {
         {countedQuest && <CountedQuestNotice counted={countedQuest} onClose={() => setCountedQuest(null)} />}
 
         {/* Toast Notification */}
-        {toastMessage && (
-          <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 text-white text-xs sm:text-sm font-bold px-5 py-2.5 rounded-full shadow-2xl backdrop-blur-md animate-bounce-short border border-white/20 flex items-center gap-2 max-w-[90vw] text-center">
-            <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-            <span>{toastMessage}</span>
-          </div>
-        )}
+        <Toast message={toastMessage} />
 
         {/* Guest Guard: Requires Login (Global Showcase Teaser) */}
         {!isLoggedIn ? (
@@ -2202,7 +2198,7 @@ function MyHubContent() {
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={nextEvent.image} alt="" className="w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0" />
                             <div className="min-w-0 flex-1 basis-44">
-                              <Link href={`${isFair ? '/fairs' : '/community'}/${encodeURIComponent(nextEvent.id)}`} className="block text-sm sm:text-base font-bold text-slate-900 truncate hover:underline">
+                              <Link href={`${isFair ? '/events' : '/community'}/${encodeURIComponent(nextEvent.id)}`} className="block text-sm sm:text-base font-bold text-slate-900 truncate hover:underline">
                                 {nextEvent.title}
                               </Link>
                               <p className="text-xs font-medium text-slate-600 truncate tabular-nums mt-0.5">
@@ -2235,7 +2231,7 @@ function MyHubContent() {
                                 </a>
                               ) : isFair ? (
                                 <Link
-                                  href={`/fairs/${encodeURIComponent(nextEvent.id)}`}
+                                  href={`/events/${encodeURIComponent(nextEvent.id)}`}
                                   className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 h-9 px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold cursor-pointer whitespace-nowrap"
                                 >
                                   ดูรายละเอียด

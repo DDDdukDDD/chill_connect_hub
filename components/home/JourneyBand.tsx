@@ -389,7 +389,7 @@ function useShuffled<T extends { id: string }>(pool: T[]) {
   return { current, shuffle, canShuffle: pool.length > 3 };
 }
 
-const ALL_HREF: Record<Kind, string> = { meetup: '/community?seats=open', challenge: '/challenges', place: '/spots', fair: '/fairs' };
+const ALL_HREF: Record<Kind, string> = { meetup: '/community?seats=open', challenge: '/challenges', place: '/spots', fair: '/events' };
 
 function Picks({ kind, setKind, meetups, reasons, quests, spots, fairs, returning, onWant }: {
   kind: Kind; setKind: (k: Kind) => void; meetups: EventItem[]; reasons: Record<string, string>; quests: ChallengeQuest[];

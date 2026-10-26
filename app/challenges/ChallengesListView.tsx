@@ -7,7 +7,6 @@ import {
   Plus,
   Trophy, 
   Flame, 
-  Sparkles, 
   Award, 
   Users, 
   Target, 
@@ -16,7 +15,6 @@ import {
   Compass, 
   ChevronRight, 
   Search, 
-  CheckCircle2, 
   Zap, 
   MapPin, 
   Camera, 
@@ -27,8 +25,7 @@ import {
   ShieldCheck,
   Check,
   Sprout,
-  Gift,
-} from 'lucide-react';
+  Gift } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
@@ -54,6 +51,7 @@ import { ChallengeQuest } from '@/data/mockData';
 import { syncMyChallenges, useMyRewards, withRealProgress } from '@/lib/useMyRewards';
 import { fetchAllContentPages } from '@/lib/contentClient';
 import { useMyInterests } from '@/lib/useMyInterests';
+import { Toast } from '@/components/Toast';
 
 // Extended Quest Interface with Date, Duration & Image
 export interface QuestWithDuration extends ChallengeQuest {
@@ -78,8 +76,7 @@ const toListQuest = (quest: ChallengeQuest): QuestWithDuration => ({
   startDate: quest.startDate || '',
   endDate: quest.endDate || '',
   daysRemaining: quest.daysRemaining ?? 0,
-  image: quest.badgeCoverImg || quest.image,
-});
+  image: quest.badgeCoverImg || quest.image });
 
 /** `initialQuests` comes from the server page, so the list is in the HTML search engines read; the browser refreshes it. */
 export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = '', campaign = null }: { initialQuests?: ChallengeQuest[]; initialQuery?: string; campaign?: Campaign | null }) {
@@ -265,12 +262,7 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
       />
 
       {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed top-20 right-4 z-50 bg-[#1E293B] text-white px-4 py-2.5 rounded-2xl shadow-xl border border-slate-700 text-xs font-bold flex items-center gap-2 animate-fade-in">
-          <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
+      <Toast message={toastMessage} />
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] mx-auto px-3.5 sm:px-6 lg:px-8 pt-3 pb-28 sm:pt-4 sm:pb-12 space-y-4 sm:space-y-5 w-full">

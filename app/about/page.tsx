@@ -10,6 +10,7 @@ import { CreateEventModal } from '@/components/CreateEventModal';
 import { EventItem } from '@/data/mockData';
 import { BrandLogo } from '@/components/BrandLogo';
 import { LifestyleJourneyCards } from '@/components/LifestyleJourneyCards';
+import { Toast } from '@/components/Toast';
 import {
   Sprout,
   Heart,
@@ -292,7 +293,7 @@ export default function AboutPage() {
                 {/* Editorial Action Link */}
                 <div className="pt-3 border-t border-slate-100">
                   <Link
-                    href="/fairs"
+                    href="/events"
                     className="inline-flex items-center gap-1.5 text-xs font-bold text-[#2B527A] hover:text-[#1F3D5C] group/btn cursor-pointer transition-all hover:gap-2.5"
                   >
                     <span>ค้นหากิจกรรมและอีเวนต์</span>
@@ -632,12 +633,7 @@ export default function AboutPage() {
       />
 
       {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#1E293B] text-white px-5 py-3 rounded-2xl shadow-xl border border-slate-700 text-sm font-medium flex items-center gap-2.5 animate-slide-up">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
+      <Toast message={toastMessage} />
 
     </div>
   );

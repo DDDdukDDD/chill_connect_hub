@@ -33,6 +33,8 @@ import { getCommunityEventCategory, type SpotVibeId } from '@/data/masterHub';
 import { isTradeEvent } from '@/lib/highlights';
 import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
 import { TOP_DESTINATIONS } from '@/components/TopDestinationsRail';
+import { Toast } from '@/components/Toast';
+import { defaultEventImage } from '@/lib/eventImageResolver';
 
 const ROW_SIZE = 5;
 /** The landing meetup row: six tiles fill one desktop row; a picked category slides through up to twelve */
@@ -286,7 +288,7 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
 
   const fairRow = useMemo(() => {
     const matched = [...fairEvents]
-      // Trade shows stay listed on /fairs but go last here (the sort keeps the date order within each group)
+      // Trade shows stay listed on /events but go last here (the sort keeps the date order within each group)
       .sort((a, b) => Number(isTradeEvent(a)) - Number(isTradeEvent(b)));
     // The heading promises "เอ็กซ์โป งานวิ่ง คอนเสิร์ต", so the row starts with the soonest of each kind, then fills by date
     const firsts = FAIR_ROW_KINDS.map((kind) => matched.find((e) => fairKind(e) === kind)).filter((e): e is EventItem => !!e);
@@ -399,11 +401,7 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
       />
 
       {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed top-20 right-4 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-2xl shadow-xl text-xs font-bold border border-slate-700 animate-slide-in flex items-center gap-2">
-          <span>{toastMessage}</span>
-        </div>
-      )}
+      <Toast message={toastMessage} />
 
       <main className="flex-1 pb-28 sm:pb-16">
         {isMember ? (
@@ -627,18 +625,19 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
               {/* 7. Fairs, runs and concerts as a dated list, soonest first (trade shows last) */}
               {isEventsLoaded && fairRow.length > 0 && (
                 <section className="space-y-4">
-                  {sectionHead('เอ็กซ์โป งานวิ่ง คอนเสิร์ต ช่วงนี้', '/fairs', undefined, <>ดูทั้งหมด<span className="hidden sm:inline"> {fairEvents.length.toLocaleString()} งาน</span></>)}
+                  {sectionHead('เอ็กซ์โป งานวิ่ง คอนเสิร์ต ช่วงนี้', '/events', undefined, <>ดูทั้งหมด<span className="hidden sm:inline"> {fairEvents.length.toLocaleString()} งาน</span></>)}
                   <div className="grid lg:grid-cols-2 lg:gap-x-10">
                     {fairRow.slice(0, FAIR_ROW_SHOWN).map((fair) => {
                       const start = new Date(parseEventDateToTimestamp(fair.date));
                       const isOn = start.getTime() <= now;
                       return (
-                        <Link key={fair.id} href={`/fairs/${encodeURIComponent(fair.id)}`} className="group flex items-center gap-3.5 py-3 border-t border-slate-200">
+                        <Link key={fair.id} href={`/events/${encodeURIComponent(fair.id)}`} className="group flex items-center gap-3.5 py-3 border-t border-slate-200">
                           <span className="w-12 shrink-0 text-center leading-tight text-[#2B527A]">
                             <span className="block text-[22px] font-bold">{start.getDate()}</span>
                             <span className="text-xs font-semibold">{THAI_MONTHS[start.getMonth()]}</span>
                           </span>
-                          <img src={fair.image} alt="" loading="lazy" className="w-14 h-14 sm:w-32 sm:h-[88px] shrink-0 rounded-xl object-cover bg-slate-200" />
+                          {/* A dead image link falls back to the default อีเวนต์ photo, never a broken-image icon */}
+                          <img src={fair.image} alt="" loading="lazy" onError={(ev) => { const fallback = defaultEventImage(undefined, true); if (!ev.currentTarget.src.endsWith(fallback)) ev.currentTarget.src = fallback; }} className="w-14 h-14 sm:w-32 sm:h-[88px] shrink-0 rounded-xl object-cover bg-slate-200" />
                           <span className="flex-1 min-w-0 grid">
                             <span className="font-semibold text-slate-900 leading-snug line-clamp-2 sm:truncate group-hover:underline">{fair.title}</span>
                             <span className="text-[13px] text-slate-500 truncate">

@@ -26,6 +26,7 @@ import type { SpotVibeId } from '@/data/masterHub';
 import { matchSearchQuery } from '@/lib/searchUtils';
 import { JourneyHolidayPlans } from '@/components/JourneyHolidayPlans';
 import { buildHolidayPlans, type Mood } from '@/lib/holidayPlans';
+import { Toast } from '@/components/Toast';
 
 const ROW_SIZE = 10;
 const CARD_SLOT = 'w-[46%] sm:w-[calc((100%-2*14px)/3)] md:w-[calc((100%-3*14px)/4)] lg:w-[calc((100%-4*14px)/5)] shrink-0 snap-start';
@@ -247,7 +248,7 @@ function JourneyContent() {
   const doors = [
     { href: '/spots', label: 'ที่เที่ยว', count: isSpotsLoaded ? `${spotsList.length.toLocaleString()} แห่ง` : '', Icon: Compass, color: 'text-[#4A7C59]', tint: 'bg-[#EBF3ED]' },
     { href: '/community', label: 'กิจกรรม', count: isEventsLoaded ? `${communityEvents.length.toLocaleString()} กิจกรรม` : '', Icon: Users, color: 'text-[#F26430]', tint: 'bg-[#FFF4EE]' },
-    { href: '/fairs', label: 'งานแฟร์', count: isEventsLoaded ? `${fairEvents.length.toLocaleString()} งาน` : '', Icon: Building2, color: 'text-[#2B527A]', tint: 'bg-[#EEF4FA]' },
+    { href: '/events', label: 'งานแฟร์', count: isEventsLoaded ? `${fairEvents.length.toLocaleString()} งาน` : '', Icon: Building2, color: 'text-[#2B527A]', tint: 'bg-[#EEF4FA]' },
   ];
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -273,11 +274,7 @@ function JourneyContent() {
       />
 
       {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed top-20 right-4 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-2xl shadow-xl text-xs font-bold border border-slate-700 animate-slide-in flex items-center gap-2">
-          <span>{toastMessage}</span>
-        </div>
-      )}
+      <Toast message={toastMessage} />
 
       <main className="flex-1 pb-28 sm:pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 sm:pt-4 space-y-10 sm:space-y-14">
@@ -499,13 +496,13 @@ function JourneyContent() {
               <JourneySectionCarousel
                 title="งานแฟร์ช่วงนี้"
                 subtitle="งานมหกรรมและเอ็กซ์โปที่ใกล้ถึง"
-                moreLink={withQuery('/fairs')}
+                moreLink={withQuery('/events')}
                 moreText="ดูทั้งหมด"
               >
                 {!isEventsLoaded ? (
                   <RowSkeleton />
                 ) : fairRow.length === 0 ? (
-                  <RowEmpty text="ไม่พบงานแฟร์ที่ตรงกับคำค้นหา" href="/fairs" />
+                  <RowEmpty text="ไม่พบงานแฟร์ที่ตรงกับคำค้นหา" href="/events" />
                 ) : (
                   fairRow.map((event) => (
                     <div key={event.id} className={CARD_SLOT}>
@@ -520,7 +517,7 @@ function JourneyContent() {
                         metricBadge={isFree(event.price) ? <span>เข้าฟรี</span> : undefined}
                         isFavorite={favorites.includes(event.id)}
                         onToggleFavorite={toggleFavoriteEvent}
-                        href={`/fairs/${event.id}`}
+                        href={`/events/${event.id}`}
                       />
                     </div>
                   ))
@@ -628,14 +625,14 @@ function JourneyContent() {
         mode={mood === 'connect' ? 'community' : 'all'}
         onSelectEvent={(ev) => {
           setIsSurpriseModalOpen(false);
-          router.push(ev.eventType === 'public_venue' ? `/fairs/${ev.id}` : `/community/${ev.id}`);
+          router.push(ev.eventType === 'public_venue' ? `/events/${ev.id}` : `/community/${ev.id}`);
         }}
         onSelectTarget={(target) => {
           setIsSurpriseModalOpen(false);
           if (target.type === 'spot') {
             router.push(`/spots/${target.id}`);
           } else if (target.type === 'fair') {
-            router.push(`/fairs/${target.id}`);
+            router.push(`/events/${target.id}`);
           } else {
             router.push(`/community/${target.id}`);
           }

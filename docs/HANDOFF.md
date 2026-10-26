@@ -1864,3 +1864,64 @@ New placeholder content in a page must be behind `eventOrigin(...) === 'sample'`
 - Admin → ชาเลนจ์ & ภารกิจ groups challenges by campaign: a campaign filter next to the status tabs ("ทุกแคมเปญ", each campaign with its count, "ไม่อยู่ในแคมเปญ") and on each row a yellow badge "<campaign> · ขั้นตอนหลัก/สะสมเพิ่ม" plus the rule kind (สมาชิกใหม่ 14 วัน, โฮสต์ มีคนเช็กอิน ≥3, ชวนเพื่อนผ่านลิงก์, ไปกับเพื่อน ≥2 คน, นับสุดสัปดาห์ 4 ครั้ง). Reads `GET /api/admin/campaigns?lite=1`. The launch group holds 15 challenges; the six kinds were not created again (they already exist as seed challenges).
 - **Fixed:** the admin form counted one kind only, so saving the weekend passport cut its rule to places. The "นับจาก" choice now has "ทุกอย่าง (สถานที่ ตี้ และอีเวนต์)" (no category chips for it); `weekend-passport-nov` was set back. Seed hub rewards now name "Chill & Connect Hub", as the form writes.
 - Checked in a headless browser: each of the six kinds (welcome-first-tee, theme-hidden-cafe, host-starter, friend-ticket, squad-tee, weekend-passport-nov) opened in the form and saved, with rule, dates, XP, category, badge and reward unchanged afterwards.
+
+### BE-140 · E2E walk: the four sections linked through moments (owner 2026-10-25)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-25 · `claude` (uncommitted)
+- Walked with throwaway accounts (host, member A, member B who signed up through A's invite link), real uploads and real pages; 35/35 checks pass, and the spot, อีเวนต์, ตี้, challenge, profile and moment pages were seen in a headless browser (1280 px; ตี้ page also at 390 px) with no script errors. Everything created was deleted afterwards.
+  - **ที่เที่ยว:** moments with a GPS fix at 3 places → on each place's feed, in "who has been", `launch-spots` 3/3 with A's own photos as the challenge's memories.
+  - **อีเวนต์:** a moment at today's run (no map pin) waits for staff, shows in the evidence queue, counts after `accept_evidence`.
+  - **ตี้:** host check-in finishes `launch-tee`, `welcome-first-tee` (partner code) and `friend-ticket` for both friends; the ตี้'s moment is on its page.
+  - **XP and rewards:** 870 XP (170 from visits, 700 from challenges), prize entry `CC-…`; notifications of type `challenge`; profile shows 5 medals and 5 moments; B's "following" feed shows A's moments; a moment page links its place.
+- **Fixed on the way:** (1) place, ตี้ and อีเวนต์ pages listed challenges that had not started under "นับในชาเลนจ์" (a visit today would not count): `rewardsForTargets` now leaves them out; (2) "ลองชาเลนจ์ถัดไปไหม" after finishing suggested a challenge starting in 68 days: it now picks a running one (not a host challenge); (3) a ตี้ created without a picture showed a broken cover: `POST /api/events` gives it a category cover (`defaultEventImage` in `lib/eventImageResolver.ts`; the create form already always sends one).
+- **Seen, by design, not changed:** the moment page keeps only its place link at the top (owner 2026-10-24); stored seed challenges made before BE-139 still name the organiser "Chill & Connect" (the form writes "Chill & Connect Hub"); medals all use the same icon.
+
+### BE-141 · One light toast on every member page (owner 2026-10-25)
+- **From → To:** Backend (Claude) → Frontend (informational) · 2026-10-25 · `claude` (uncommitted)
+- The owner found the short messages black, with icons that did not fit (signing out showed a green check or sparkles). There were 15 hand-drawn copies in four positions. Now every member page uses `components/Toast.tsx`: white, thin border, soft shadow, top centre under the top bar, a slight slide-in (`animate-toast-in`, `app/globals.css`); a green check only for something done, a rose alert for a failure, no icon for information. `showToast(message)` calls are unchanged: the tone is read from the words (`toastToneOf`).
+- Swapped in: about, /challenges and its detail, /community and detail, /fairs and detail, home (`HomeView`, `HomeMomentFeed`), /journey-simple, /myhub, /rewards, /spots and detail, moments (`MomentsChrome`), the place dialog (`SpotDetailModal`, kept inside the dialog). The "counted toward a challenge" notice after posting (`CountedQuestNotice`) is now a warm yellow card with an orange button. Admin toasts are unchanged (already white). Rule added to DESIGN_SYSTEM.md (Components → Short messages).
+- Seen in a headless browser at 1280 and 390 px with the demo account: saving a place (check icon) and signing out (no icon); the place was unsaved again afterwards.
+
+### BE-142 · อีเวนต์ moved from /fairs to /events (owner 2026-10-25)
+- **From → To:** Backend (Claude) → Frontend (action: pull before editing these pages) · 2026-10-25 · `claude`
+- The owner wanted the อีเวนต์ pillar at `/events`. `app/fairs/**` is now `app/events/**` (list `/events`, detail `/events/[id]`); file names inside (`FairsListView.tsx`, `FairDetailView.tsx`) are unchanged. The old client-side "smart router" at `app/events/[id]` (forwarded to `/community` or `/fairs`) is gone: the detail page now sends a ตี้ id with a 308 to `/community/[id]` and returns 404 for unknown ids.
+- `next.config.ts`: `/fairs` → `/events` and `/fairs/:id` → `/events/:id`, both permanent (308, query kept); the old `/events` → `/` redirect is removed.
+- Every link in pages, components and `lib/` (sitemap, canonical, breadcrumb JSON-LD, notifications/visit links, admin "open" links) now points at `/events`. Data is unchanged: `eventType: 'public_venue'`, visit target `fair`, discover kind `fairs`.
+- Docs updated: AGENTS.md, ARCHITECTURE.md, DESIGN_SYSTEM.md, docs/API.md, docs/LAUNCH_CHECKLIST.md.
+- Checked on the dev server: `/events` and a detail page 200 with canonical `/events/…` and Event JSON-LD; `/fairs` and `/fairs/<id>?x=1` 308 to the new address; a ตี้ id under `/events` 308 to `/community`; unknown id 404; sitemap and the home, /events, /community, /spots, /about pages contain no `/fairs` link.
+
+### BE-143 · Database schema created in Supabase (owner 2026-10-25)
+- **From → To:** Backend (Claude) → Frontend (informational, no action) · 2026-10-25 · `claude`
+- The approved design (`docs/DATABASE_DESIGN.md`) is now 57 tables in a private `app` schema, from `db/migrations/0001…0008`, applied with `npm run db:migrate`. The website does **not** use it yet; pages and APIs still read the JSON files. Next: import today's data, then switch the repositories one at a time (API shapes stay the same).
+- Security: RLS on every table, Supabase's public roles locked out, the website connects as `app_runtime` (data only; cannot change structure or rewrite `audit_log` / `xp_ledger`). `npm run db:verify` checks all of it (11/11 pass).
+- New env var `DATABASE_URL` (website login) in `.env.local`, made by `npm run db:runtime-login`; needs copying to Vercel before the switch.
+
+### BE-144 · Today's data imported into Supabase (2026-10-25)
+- **From → To:** Backend (Claude) → Frontend (informational, no action) · 2026-10-25 · `claude`
+- `npm run db:import` (`db/import-from-json.mjs`) loaded the JSON files into the database in one transaction: 245 members (incl. 205 seed guests made into sample members), 257 ตี้/อีเวนต์, 2,179 places, 35 challenges, 9 rewards, 24 moments, 228 participants, 724 audit rows and the rest. Text dates became real times (Bangkok). The website still reads the JSON files; nothing changes on screen.
+- Migration 0009: online events may have no province; rewards get `partner_code`.
+- Next: switch repositories one at a time, then rerun the E2E walks. The JSON files keep being the live data until each switch, so run `npm run db:import -- --replace` right before switching.
+
+### BE-145 · Core data runs on the database (2026-10-26)
+- **From → To:** Backend (Claude) → Frontend (informational, no action) · 2026-10-26 · `claude`
+- With `DATA_STORE=postgres` (now in `.env.local`), members, ตี้ / อีเวนต์, participants, places and challenges are read and written in Supabase. API shapes are unchanged: 17 public reads were compared with JSON mode and match field for field. Other stores stay on JSON for now.
+- Joining is now safe across servers (one transaction per join, row lock on the ตี้).
+- Behaviour change: deleting a host's account removes the ตี้ they host. Before, the ตี้ stayed without a host.
+- Vercel needs `DATA_STORE=postgres` and `DATABASE_URL` with port **5432** (session pooler) before it uses the database; until then it keeps the JSON files.
+
+### BE-146 · Bug tracker check: Thai font and ตี้ time range (2026-10-26)
+- BUG-01: `font-sans` (on most page wrappers) was Tailwind's system font stack, so pages did not use IBM Plex Sans Thai. `app/globals.css` now points `--font-sans` at the webfont.
+- BUG-03: a ตี้ ending before it starts (18:00 to 17:00) is refused on step 2 of the create form and by `POST /api/events`. Past midnight is still allowed if it ends by 06:00. New shared helper: `isValidTimeRange` in `lib/dateUtils.ts`.
+- BUG-02 and BUG-04 are not bugs in the current code: the share button stays grey with "เลือกรูปก่อนนะ" until a photo is added; the profile menu's สร้างกิจกรรม opens the four-kind chooser (แนะนำสถานที่ included), and page buttons like ตั้งตี้เอง open their own form on purpose.
+
+### BE-147 · Bug tracker check, part 2: landing hero line, create form, dead images (2026-10-26)
+- Landing hero: "สัปดาห์นี้ไปตี้กันแล้ว N ครั้ง" waited ~5 s because `/api/activity` read participants one ตี้ at a time from the database. New `db.listParticipantsByEvent(ids)` reads them in one query; visitor counts are kept on the server for 60 s.
+- BUG-05/10: pressing ส่ง without the agreement ticked now turns the box red, shows a line under it and scrolls it into view. Challenges get their own agreement wording.
+- BUG-06: three dead Unsplash images replaced (Art & Collectibles Expo, TFBO, Watercolor ตี้) in the JSON files and Supabase, and in the default image list. The landing อีเวนต์ row falls back to a default photo when an image fails.
+- BUG-08: tapping a template prompt "[...]" in the description editor selects the whole prompt, so typing replaces it.
+- BUG-09: the form marks optional fields "(ไม่บังคับ)"; "เหมาะกับ" was missing the mark.
+- Not bugs: BUG-07 (shared trial account is on purpose, removal on the launch checklist), BUG-11 (the chooser already links to the host request in account settings), BUG-12 (social login waits for OAuth keys, on the launch checklist).
+- Walked in headless Chrome on 2026-10-26 with a throwaway member (deleted afterwards, nothing submitted): BUG-01, 03, 05/10, 06, 08 pass on the local server. The walk caught the agreement warning line being cut off below the fold; the scroll now waits a frame and aligns the box's bottom.
+
+### BE-148 · Overnight ตี้ have no cut-off hour (owner 2026-10-26)
+- `isValidTimeRange` in `lib/dateUtils.ts` now only refuses an end time equal to the start. An earlier end means the ตี้ runs into the next day at any hour (BE-146's "ends by 06:00" is gone); social proof and the community sort out late ตี้. The create form and `POST /api/events` now say "เวลาเลิกต้องไม่ตรงกับเวลาเริ่ม".
+- Spot Buddy trips keep their daytime rule (`lib/spotTripRules.ts`), unchanged.

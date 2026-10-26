@@ -481,7 +481,7 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
                       </button>
                     )}
                     <Link
-                      href={isCommunity ? `/community/${ev.id}` : `/fairs/${ev.id}`}
+                      href={isCommunity ? `/community/${ev.id}` : `/events/${ev.id}`}
                       target="_blank"
                       className={adminButton.icon}
                       title="ดูหน้าเว็บจริง"
