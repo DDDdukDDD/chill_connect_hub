@@ -64,16 +64,9 @@ export async function buildQuestDetail(quest: ChallengeQuest, member: Member) {
     .filter((entry) => entry.id !== quest.id && !joinedIds.has(entry.id) && entry.status !== 'ended' && (entry.daysRemaining ?? 1) > 0)
     .map((entry) => ({ entry, people: (entry.participantsCount ?? 0) + (joins.get(entry.id) ?? 0) }))
     .sort((a, b) => Number(b.entry.category === quest.category) - Number(a.entry.category === quest.category) || b.people - a.people)
-    .slice(0, 4)
-    .map(({ entry, people }) => ({
-      id: entry.id,
-      title: entry.title,
-      image: entry.badgeCoverImg || entry.image || null,
-      rewardPoints: entry.rewardPoints ?? 0,
-      period: questDateRange(entry),
-      startsInDays: entry.startsInDays ?? 0,
-      participantsCount: people,
-    }));
+    .slice(0, 6)
+    // The whole challenge, so the page draws the /challenges tile; `period` stays for older readers
+    .map(({ entry, people }) => ({ ...entry, participantsCount: people, period: questDateRange(entry) }));
 
   return {
     success: true,

@@ -229,6 +229,8 @@ function validate(type: CreationEntityType, step: number, f: Form, minDate: stri
     if (f.locationType === 'physical') {
       need('province', Boolean(f.province), 'เลือกจังหวัด');
       need('locationName', f.locationName.trim().length >= 2, 'ใส่ชื่อสถานที่');
+      // The tile shows the day and this area in one line, so every ตี้ names one (owner 2026-10-27)
+      need('district', f.district.trim().length >= 2, 'บอกย่านหรือเขต เช่น อารีย์ หรือ คลองเตย');
       need('meetingPoint', f.meetingPoint.trim().length >= 2, 'บอกจุดนัดพบที่หาง่าย');
     } else {
       need('onlineJoinUrl', !f.onlineJoinUrl.trim() || f.onlineJoinUrl.trim().startsWith('https://'), 'ลิงก์ต้องขึ้นต้นด้วย https://');
@@ -1054,8 +1056,8 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {provinceField}
-                <Field label="ย่านหรือเขต" htmlFor={id('district')} optional>
-                  <input id={id('district')} value={form.district} maxLength={60} onChange={(e) => set('district', e.target.value)} placeholder="เช่น คลองเตย" className={inputClass()} />
+                <Field label="ย่านหรือเขต" htmlFor={id('district')} error={errors.district} hint="ขึ้นบนการ์ดตี้คู่กับวันที่ ใช้ชื่อสั้นๆ ที่คนรู้จัก">
+                  <input id={id('district')} value={form.district} maxLength={40} onChange={(e) => set('district', e.target.value)} placeholder="เช่น อารีย์ คลองเตย นิมมาน" className={inputClass(Boolean(errors.district))} />
                 </Field>
               </div>
               <Field label="สถานที่" htmlFor={id('locationName')} error={errors.locationName} hint="นัดในที่สาธารณะที่มีคนอื่นอยู่ด้วยเสมอ">

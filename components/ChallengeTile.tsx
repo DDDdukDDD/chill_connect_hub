@@ -71,7 +71,7 @@ const isEndedQuest = (quest: ChallengeQuest) => quest.status === 'ended' || (que
  * doing it, otherwise one friendly reason to try. No frame; the whole tile is one link.
  * `showDates` adds the period under that line (on /challenges, where the dates decide whether to join).
  */
-export function ChallengeTile({ quest, index, reason, mine, isJoined = false, showDates = false }: {
+export function ChallengeTile({ quest, index, reason, mine, isJoined = false, showDates = false, tilt = false }: {
   quest: ChallengeQuest;
   index: number;
   reason?: ChallengeReason;
@@ -80,13 +80,16 @@ export function ChallengeTile({ quest, index, reason, mine, isJoined = false, sh
   /** Rings the photo and says "ร่วมอยู่" when there is no progress to show (the /challenges grid) */
   isJoined?: boolean;
   showDates?: boolean;
+  /** Tilts the photo like a collectible card: only the landing's single row (ChallengePicks). Grids stand straight so rows
+   *  read cleanly; the XP sticker keeps its tilt everywhere (owner 2026-10-27). */
+  tilt?: boolean;
 }) {
   const isEnded = isEndedQuest(quest);
   const range = showDates ? questDateRange(quest) : '';
   return (
     <Link href={`/challenges/${encodeURIComponent(quest.id)}`} className="group block">
       <span
-        className={`relative block transition-transform duration-300 ${isEnded ? '' : `${TILTS[index % TILTS.length]} group-hover:rotate-0 group-hover:-translate-y-1`}`}
+        className={`relative block transition-transform duration-300 ${isEnded ? '' : `${tilt ? `${TILTS[index % TILTS.length]} group-hover:rotate-0 ` : ''}group-hover:-translate-y-1`}`}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img

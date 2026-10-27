@@ -19,7 +19,8 @@ import { NEW_ACCOUNT_DAYS } from '@/lib/members/trust';
 import { useAuth } from '@/lib/useAuth';
 import { useMasterData } from '@/lib/useMasterData';
 import { memberActions } from '@/lib/useMemberSession';
-import { RelatedCards } from '@/components/detail/RelatedCards';
+import { RelatedMeetupTiles } from '@/components/detail/RelatedTiles';
+import type { EventItem } from '@/data/mockData';
 import { parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { EditProfileDialog, FIELD_LABELS, type EditTab } from './EditProfileDialog';
 
@@ -61,17 +62,8 @@ interface OwnData {
   hostApplication: HostApplication | null;
 }
 
-/** An event this member created; the owner also sees the ones still waiting for review */
-interface HostedEvent {
-  id: string;
-  title: string;
-  date?: string;
-  location?: string;
-  image?: string;
-  eventType?: string;
-  status?: string;
-  approvalStatus?: string;
-}
+/** An event this member created (whole, from /api/events): the owner also sees the ones still waiting for review */
+type HostedEvent = EventItem;
 
 interface MomentThumb {
   id: string;
@@ -905,23 +897,20 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                 {/* ตี้ this member hosts: a visitor's best signal of who they are. Managing them happens in My Hub. */}
                 {hostedVisible.length > 0 && (
                   <div id="hosted" className={`${card} scroll-mt-24`}>
-                    <RelatedCards
+                    <RelatedMeetupTiles
                       className=""
-                      gridClassName="grid-cols-2 sm:grid-cols-3"
+                      // The profile column is narrower than the page: four across keeps the /community tile size
+                      gridClassName="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
                       title="ตี้ที่จัด"
                       allHref={viewOwn ? '/myhub' : undefined}
                       allLabel="จัดการในมายฮับ"
-                      items={hostedVisible.slice(0, hostedShown).map((ev) => {
-                        const isLive = ev.approvalStatus === 'approved';
-                        return {
-                          id: ev.id,
-                          href: isLive ? `${ev.eventType === 'public_venue' ? '/events' : '/community'}/${encodeURIComponent(ev.id)}` : undefined,
-                          image: ev.image,
-                          dateText: ev.date,
-                          title: ev.title,
-                          note: !isLive ? (ev.approvalStatus === 'rejected' ? 'ไม่ผ่านการตรวจ' : 'รอทีมงานตรวจ') : ev.status === 'ended' ? 'จบแล้ว' : ev.location || '',
-                        };
-                      })}
+                      events={hostedVisible.slice(0, hostedShown)}
+                      // A ตี้ still in review has no page yet: no link, and the tile says where it stands
+                      tileProps={(ev) =>
+                        ev.approvalStatus === 'approved'
+                          ? { href: `${ev.eventType === 'public_venue' ? '/events' : '/community'}/${encodeURIComponent(ev.id)}` }
+                          : { href: null, badge: ev.approvalStatus === 'rejected' ? 'ไม่ผ่านการตรวจ' : 'รอทีมงานตรวจ' }
+                      }
                     />
                     {hostedVisible.length > hostedShown && (
                       <button type="button" onClick={() => setHostedShown((n) => n + PAGE_HOSTED)} className={MORE_BUTTON}>

@@ -25,7 +25,7 @@ export interface RelatedCard {
   tail?: string;
 }
 
-/** "More like this" row at the end of every detail page: the same quiet card on ตี้, อีเวนต์, ที่เที่ยว and ชาเลนจ์ */
+/** "More like this" row at the end of the อีเวนต์ and ที่เที่ยว pages. ตี้ and ชาเลนจ์ use their own tiles (components/detail/RelatedTiles.tsx). */
 export function RelatedCards({
   title,
   allHref,
@@ -92,13 +92,6 @@ export function RelatedCards({
 }
 
 const shortPrice = (event: EventItem) => (hasKnownPrice(event.price) ? formatEventBadgePrice(event.price) : undefined);
-
-/** A ตี้ as a related card: seats left on the left, price on the right */
-export function teeCard(event: EventItem): RelatedCard {
-  const left = event.maxParticipants - event.participantsCount;
-  const seats = event.maxParticipants > 0 ? (left <= 0 || event.status === 'full' ? 'เต็มแล้ว' : `เหลือ ${left} ที่`) : event.province || '';
-  return { id: event.id, href: `/community/${encodeURIComponent(event.id)}`, image: event.image, dateText: event.date, title: event.title, note: seats, tail: shortPrice(event) };
-}
 
 /** A fair as a related card: no attendee count on fairs, so the province sits on the left */
 export function fairCard(event: EventItem): RelatedCard {

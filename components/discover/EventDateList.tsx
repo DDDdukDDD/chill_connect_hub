@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { EventItem } from '@/data/mockData';
+import { areaLabel } from '@/components/MeetupTile';
 import { isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp } from '@/lib/dateUtils';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -53,7 +54,8 @@ function statusOf(kind: Kind, e: EventItem): { text: string; tone: string } | nu
   return { text: `${free ? 'ฟรี · ' : ''}เหลือ ${left} ที่`, tone: left <= 2 ? 'text-[#D04A1B]' : 'text-emerald-700' };
 }
 
-const placeOf = (e: EventItem) => [e.province, e.location].filter(Boolean).join(' · ');
+// A ตี้ names its short area ("สุขุมวิท"), as its tile does; an อีเวนต์ its province and venue
+const placeOf = (kind: Kind, e: EventItem) => (kind === 'meetups' ? areaLabel(e) : [e.province, e.location].filter(Boolean).join(' · '));
 const hrefOf = (kind: Kind, e: EventItem) => `/${kind === 'meetups' ? 'community' : 'fairs'}/${encodeURIComponent(e.id)}`;
 
 function Row({ kind, event }: { kind: Kind; event: EventItem }) {
@@ -75,7 +77,7 @@ function Row({ kind, event }: { kind: Kind; event: EventItem }) {
           <span className={`block text-xs font-semibold tabular-nums truncate ${WHEN_COLOR[kind]}`}>{whenLine(kind, event)}</span>
           <span className="mt-0.5 block text-sm sm:text-[15px] font-bold text-slate-900 leading-snug line-clamp-2 group-hover:underline">{event.title}</span>
           <span className="mt-0.5 block text-xs text-slate-500 truncate">
-            {placeOf(event)}
+            {placeOf(kind, event)}
             {status && <span className={`font-semibold ${status.tone}`}> · {status.text}</span>}
           </span>
         </span>
@@ -150,8 +152,9 @@ const heading = (title: string, count: number) => (
  * The list view of /community and /events, like the /challenges list: what is soon on top as a strip of small cards
  * ("สัปดาห์นี้" for meetups, "กำลังจัดอยู่ตอนนี้" for fairs), then the rest by date under month headings, then
  * the ended ones (latest first) when the filter shows them. Open layout: headings and rows, no boxes.
+ * `renderTile` draws the strip with the page's own tile (/community: the ตี้ tile of the card view, owner 2026-10-27).
  */
-export function EventDateList({ kind, events }: { kind: Kind; events: EventItem[] }) {
+export function EventDateList({ kind, events, renderTile }: { kind: Kind; events: EventItem[]; renderTile?: (event: EventItem) => React.ReactNode }) {
   const [shown, setShown] = useState(PAGE);
   // The clock is read once when the list opens; what counts as "this week" does not shift while scrolling
   const [now] = useState(() => Date.now());
@@ -191,9 +194,15 @@ export function EventDateList({ kind, events }: { kind: Kind; events: EventItem[
         <section aria-label={kind === 'meetups' ? 'สัปดาห์นี้' : 'กำลังจัดอยู่ตอนนี้'}>
           {heading(kind === 'meetups' ? 'สัปดาห์นี้' : 'กำลังจัดอยู่ตอนนี้', strip.length)}
           <div className="mt-3 flex gap-4 overflow-x-auto no-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
-            {strip.map((e) => (
-              <StripCard key={e.id} kind={kind} event={e} />
-            ))}
+            {strip.map((e) =>
+              renderTile ? (
+                <div key={e.id} className="snap-start shrink-0 w-44 sm:w-52">
+                  {renderTile(e)}
+                </div>
+              ) : (
+                <StripCard key={e.id} kind={kind} event={e} />
+              )
+            )}
           </div>
         </section>
       )}

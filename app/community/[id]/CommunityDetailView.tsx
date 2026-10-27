@@ -37,7 +37,7 @@ import { isEventEnded } from '@/lib/dateUtils';
 import { resolveEventGallery } from '@/lib/eventImageResolver';
 import { parseEventPrice } from '@/lib/priceUtils';
 import { renderDescriptionContent } from '@/components/RichTextEditor';
-import { RelatedCards, teeCard } from '@/components/detail/RelatedCards';
+import { RelatedMeetupTiles } from '@/components/detail/RelatedTiles';
 import { Toast } from '@/components/Toast';
 import {
   MapPin,
@@ -432,7 +432,7 @@ export default function CommunityDetailPage({
     ? liveMeetups
         .filter((e) => e.id !== eventData.id && e.eventType !== 'public_venue' && !isEventEnded(e))
         .sort((x, y) => sameSai(x) - sameSai(y))
-        .slice(0, 4)
+        .slice(0, 6)
     : [];
 
   if (isLoading) {
@@ -869,7 +869,7 @@ export default function CommunityDetailPage({
           </div>
         </div>
 
-        <RelatedCards title="ตี้ที่คุณอาจสนใจ" allHref="/community" items={relatedActivities.map(teeCard)} />
+        <RelatedMeetupTiles title="ตี้ที่คุณอาจสนใจ" allHref="/community" events={relatedActivities} />
 
       </main>
 

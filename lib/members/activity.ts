@@ -153,6 +153,26 @@ export async function attendeesOf(eventId: string, viewer: Member | null) {
   return { total: Math.max(event.participantsCount ?? 0, attendees.length), attendees };
 }
 
+/**
+ * The first few faces of many ตี้ at once, for the tiles on list pages: two database reads whatever the number of tiles
+ * (one request per tile made a page of 24 tiles cost 24 requests and ~100 reads). People the viewer blocked are left out.
+ */
+export async function faceStacksOf(eventIds: string[], viewer: Member | null, perEvent = 3) {
+  const byEvent = await db.listParticipantsByEvent(eventIds);
+  const records = eventIds.map((id) => (byEvent.get(id) ?? []).filter((r) => !viewer?.blockedIds?.includes(r.userId)));
+  const members = await memberRepository.findByIds([...new Set(records.flat().map((r) => r.userId))]);
+  return Object.fromEntries(
+    eventIds.map((id, i) => {
+      const people = records[i].filter((r) => members.has(r.userId) || r.userName).sort((a, b) => (a.joinedAt ?? '').localeCompare(b.joinedAt ?? ''));
+      const faces = people.slice(0, perEvent).map((r) => {
+        const member = members.get(r.userId);
+        return { id: r.userId, name: tidyDisplayName(member?.displayName ?? r.userName ?? '').trim() || r.userName || 'สมาชิก', avatar: member?.avatarUrl ?? r.userAvatar ?? '' };
+      });
+      return [id, { faces, listed: people.length }];
+    })
+  );
+}
+
 /** The same open list for a challenge: who joined it (owner 2026-10-16) */
 export async function questMembersOf(questId: string, viewer: Member | null) {
   const quest = await db.findQuestById(questId);

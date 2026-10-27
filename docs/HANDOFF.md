@@ -2061,3 +2061,34 @@ Walked as a guest and as members at phone (390) and desktop (1366) size in headl
 
 ### BE-169 · Image links limited to safe schemes (CodeQL, 2026-10-27)
 CodeQL flagged "DOM text reinterpreted as HTML" on the `<img src>` in `components/MeetupTile.tsx` and `components/ChallengeTile.tsx`. `optimizedImage()` (`lib/optimizedImage.ts`) passed unknown strings straight through; it now returns `''` unless the link starts with `https://`, `http://`, a site path `/…`, `data:image/` or `blob:`. Passed-through links also go through `encodeURI` (escapes already in the link are kept), the sanitizer CodeQL recognizes. All current data matches, so no visible change. Frontend: keep sending image links through `optimizedImage()`.
+
+### BE-170 · /community toward 9.5: date order, saves on the account, one request for faces (2026-10-27)
+Owner asked for /community at 9.5. Changes (`app/community/CommunityListView.tsx`, `app/community/page.tsx`, `components/MeetupTile.tsx`):
+- **Soonest first.** The list ran by creation date, so 26 Dec sat above 6 Dec. It now runs by date (full ตี้ still last; "ที่ผ่านมาแล้ว" shows the latest first). Server HTML uses the same order.
+- **Hearts save to the account.** /community wrote hearts to a browser-only key (`favorite_events`) that never reached the account or My Hub. Hearts now use `activityActions.setSaved` and read `savedEventIds`, as the detail page does; "ที่บันทึกไว้ (n)" counts the account's list. Toasts reworded without emoji. **`/events` (FairsListView) has the same old browser-only hearts — not changed yet.**
+- **One request for the faces under the tiles.** Each tile fetched `/api/events/{id}/attendees` (24 requests and ~100 reads per screen). New `GET /api/events/faces?ids=` (`faceStacksOf` in `lib/members/activity.ts`, two reads per batch); the tile batches the ids on screen. Also used by the landing's `OpenMeetupTiles`. Avatars go through `optimizedImage`.
+- **Day moved off the photo (owner 2026-10-27).** The tile photo keeps only the heart and the seats badge; the day and time lead the place line in orange, followed by the short area ("พฤ. 29 ต.ค. 06:00 · สุขุมวิท"): zone label from `BANGKOK_ZONES`, else the province, "ออนไลน์" for online. Same line count as before, nothing cut on a phone. Full place stays on the detail page. Applies wherever `MeetupTile` is used (landing ตี้ row too); with `reason` (member home) the reason line follows it.
+- **Search data:** `CollectionPage` + `ItemList` JSON-LD of the next 30 ตี้ (`meetupCollectionJsonLd` in `lib/structuredData.ts`).
+- **Sample photos:** 13 sample ตี้ shared a photo with another (barbell ×4, running shoes ×3…); each now has its own Unsplash photo (data change through the admin API, no code).
+- Removed dead code: unused club, vibe and time filters, the `user_created_events` browser merge, unused imports.
+Walked signed in on a production build (desktop 1440 and phone 390): heart saves to the account and fills, saved filter lists it, joined ตี้ shows ring + "ร่วมแล้ว", no sideways scroll.
+
+### BE-171 · Every ตี้ names its area (owner 2026-10-27)
+The ตี้ tile now shows "day time · area" (BE-170), so the area is required. `components/CreateEventModal.tsx`: "ย่านหรือเขต" is required for in-person ตี้ (≥ 2 characters, ≤ 40, hint says it shows on the tile; picking a catalog place still fills it). `POST /api/events` answers `400` for a ตี้ without `zone` (online ตี้ send `online`). `components/SpotBuddyGatheringModal.tsx` sends the place's district, else its province. `MeetupTile` shows a typed area as it is ("คลองเตย"); sample ids map to the zone list, unknown sample ids fall back to the province. Existing ตี้ without a zone are not changed (the tile shows their province). Admin create (`/api/admin/events`) is unchanged.
+
+### BE-172 · List view of /community uses the ตี้ tile (owner 2026-10-27)
+- The "สัปดาห์นี้" strip now uses the same `MeetupTile` as the card view (heart, seats, host line, day · area, faces) through a new optional `renderTile` prop on `components/discover/EventDateList.tsx`; /events keeps its strip cards. The dated rows show the ตี้'s short area (`areaLabel`, exported from `MeetupTile`) instead of province · full place.
+- (Colourful 3D category icons were tried and reverted the same day: the owner prefers the line icons.)
+
+### BE-173 · One ตี้ tile and one challenge tile everywhere (owner 2026-10-27)
+The boxed related cards for ตี้ and challenges are replaced by the tiles of /community and /challenges, at the same grid (2 / 3 / 4 / 6 columns) and six per row:
+- New `components/detail/RelatedTiles.tsx`: `RelatedMeetupTiles` (MeetupTile with host line, joined ring) and `RelatedChallengeTiles` (ChallengeTile with reason + dates).
+- Used under the ตี้ detail page ("ตี้ที่คุณอาจสนใจ"), on place pages ("ตี้ที่นัดที่นี่"), on profiles ("ตี้ที่จัด": a ตี้ in review shows "รอทีมงานตรวจ" / "ไม่ผ่านการตรวจ" and no link) and under the challenge page ("ชาเลนจ์อื่นที่น่าลอง").
+- `MeetupTile` gains optional `badge` and `href` (null = no link). `teeCard` removed from RelatedCards, which now serves อีเวนต์ and ที่เที่ยว only.
+- `lib/social/questDetail.ts` `related` now returns whole challenges (up to 6); see docs/API.md.
+- Measured at 1440px: /community tile 183px, detail pages 161px (their column is narrower), before 255px.
+- Left as they are on purpose: My Hub schedule rows, badge lists, the member home's progress rows, and the single "ลองชาเลนจ์ถัดไปไหม" card — rows and prompts, not tile grids.
+- _Follow-up (owner 2026-10-27):_ challenge tiles stand straight in grids (/challenges, under the challenge page, My Hub); only the landing's single row (`ChallengePicks`) keeps the tilted photo via the new `tilt` prop on `ChallengeTile`. The XP sticker keeps its tilt everywhere.
+
+### BE-174 · Nav tab ค้นพบ renamed กิจกรรม (owner 2026-10-27)
+The top bar (`components/Navbar.tsx`, both entries) and the phone bottom bar (`components/MobileNav.tsx`) now say **กิจกรรม** for the tab that opens /community, /events and /spots. The word ค้นพบ stays where it is a verb in a sentence, and in code comments. Tab id stays `explore`.

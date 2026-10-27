@@ -107,7 +107,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const navItems = [
     // ค้นพบ = meetups, fairs and places (/community, /events, /spots); the logo goes home
-    { id: 'explore', label: 'ค้นพบ', href: '/community', icon: Compass },
+    { id: 'explore', label: 'กิจกรรม', href: '/community', icon: Compass },
     { id: 'moments', label: 'โมเมนต์', href: '/moments', icon: Camera },
     { id: 'challenges', label: 'ชาเลนจ์', href: '/challenges', icon: Zap },
     // About sits in the footer of this menu
@@ -118,7 +118,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   // Not below xl: at 1024px they squeeze the search box's word field away.
   const pathname = usePathname() ?? '';
   const topLinks = [
-    { label: 'ค้นพบ', href: '/community', match: ['/community', '/events', '/spots'] },
+    { label: 'กิจกรรม', href: '/community', match: ['/community', '/events', '/spots'] },
     { label: 'โมเมนต์', href: '/moments', match: ['/moments'] },
     { label: 'ชาเลนจ์', href: '/challenges', match: ['/challenges'] },
   ];

@@ -19,7 +19,8 @@ import {
   LifestyleSpotItem,
   MOCK_SPOTS
 } from '@/data/spotsData';
-import { RelatedCards, spotCard, teeCard } from '@/components/detail/RelatedCards';
+import { RelatedCards, spotCard } from '@/components/detail/RelatedCards';
+import { RelatedMeetupTiles } from '@/components/detail/RelatedTiles';
 import { spotOrigin } from '@/lib/contentOrigin';
 import { travelModes, visitorFacilities } from '@/lib/spotFacilities';
 import { resolveSpotGallery, resolveSpotImage } from '@/lib/spotImageResolver';
@@ -610,7 +611,7 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
           </div>
         </div>
 
-        {placeTees.length > 0 && <RelatedCards title="ตี้ที่นัดที่นี่" allHref="/community" items={placeTees.slice(0, 4).map(teeCard)} />}
+        <RelatedMeetupTiles title="ตี้ที่นัดที่นี่" allHref="/community" events={placeTees.slice(0, 6)} />
 
         <RelatedCards title={recommendation.sectionTitle.replace(/\s*\p{Extended_Pictographic}️?/gu, '').trim()} allHref={`/spots?province=${encodeURIComponent(spot.province)}`} items={nearbySpots.slice(0, 4).map(spotCard)} />
 

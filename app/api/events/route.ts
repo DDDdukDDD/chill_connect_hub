@@ -187,6 +187,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: 'เวลาเลิกต้องไม่ตรงกับเวลาเริ่ม' }, { status: 400 });
     }
 
+    // Every ตี้ names its area: list tiles show it next to the day (owner 2026-10-27). Online ตี้ send 'online'.
+    if (eventData.eventType !== 'public_venue') {
+      eventData.zone = typeof eventData.zone === 'string' ? eventData.zone.trim().slice(0, 40) : '';
+      if (eventData.zone.length < 2) {
+        return NextResponse.json({ success: false, message: 'กรุณาระบุย่านหรือเขตของตี้ เช่น อารีย์ หรือ คลองเตย' }, { status: 400 });
+      }
+    }
+
     // Safety Content Screening
     const contentToCheck = `${eventData.title} ${eventData.description || ''} ${eventData.location || ''}`.toLowerCase();
     const hasBannedKeyword = BANNED_KEYWORDS.some((word) => contentToCheck.includes(word));
