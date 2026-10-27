@@ -28,7 +28,7 @@ export const listCampaigns = (): Campaign[] => [...campaigns()].sort((a, b) => b
 
 export const findCampaign = (id: string) => campaigns().find((c) => c.id === id) ?? null;
 
-/** The campaign public pages show today: published, inside its dates, the latest start wins; `home` asks for the strip */
+/** The campaign public pages show today: published, inside its dates, the latest start wins; `home` asks for the strip (home page and /challenges, staff turn it off together) */
 export function liveCampaign({ home = false } = {}): Campaign | null {
   const today = bangkokToday();
   return home ? homeCampaignOf(listCampaigns(), today) : (listCampaigns().find((c) => isCampaignLive(c, today)) ?? null);

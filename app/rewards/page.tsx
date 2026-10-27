@@ -160,7 +160,7 @@ export default function RewardsPage() {
       />
       <Toast message={toastMessage} />
 
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-28 lg:pb-16">
+      <main className="flex-1 w-full max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-28 lg:pb-16">
         <div className="grid gap-10 lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-16 lg:items-start">
           {/* Wallet, shaped like a ticket: what I have and the next reward on top, how to get more below the tear line */}
           <aside className="lg:sticky lg:top-24">
@@ -208,7 +208,7 @@ export default function RewardsPage() {
               </div>
 
               <div className={`relative p-6 sm:p-7 ${viewTab === 'my_vouchers' ? 'hidden lg:block' : ''}`}>
-                <p className="text-sm font-bold text-slate-900">ได้ XP จาก</p>
+                <p className="text-base font-bold text-slate-900">ได้ XP จาก</p>
                 <ul className="mt-3 space-y-3">
                   {EARN.map((row) => (
                     <li key={row.text} className="flex items-center gap-3 text-sm">
@@ -220,7 +220,7 @@ export default function RewardsPage() {
                     </li>
                   ))}
                 </ul>
-                <Link href="/challenges" className="mt-4 inline-flex items-center gap-0.5 text-sm font-bold text-slate-900 underline-offset-4 hover:underline">
+                <Link href="/challenges" className="mt-4 inline-flex items-center gap-0.5 text-sm font-medium text-slate-900 underline-offset-4 hover:underline">
                   ดูชาเลนจ์ที่เปิดอยู่
                   <ChevronRight className="w-4 h-4" aria-hidden="true" />
                 </Link>
@@ -286,7 +286,7 @@ export default function RewardsPage() {
                     </button>
                   </div>
                 ) : (
-                  <ul className="mt-6 grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  <ul className="mt-6 grid sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
                     {filteredRewards.map((item) => {
                       const redeemed = redeemedRewardIds.includes(item.id);
                       const short = item.costXp - userXp;
@@ -299,20 +299,21 @@ export default function RewardsPage() {
                             onClick={() => openItem(item)}
                             className={`w-full h-full text-left flex flex-col rounded-2xl border bg-white p-5 hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(15,23,42,0.10)] transition cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB] ${ready ? 'border-[#FFC83D] ring-1 ring-[#FFC83D]' : 'border-slate-200'}`}
                           >
-                            <span className="flex items-center gap-3">
-                              <span className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${look.tile}`}>
-                                <look.icon className="w-5 h-5" aria-hidden="true" />
+                            {/* A small category tile so the partner's name has room (owner 2026-10-27) */}
+                            <span className="flex items-center gap-2 min-w-0">
+                              <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${look.tile}`}>
+                                <look.icon className="w-4 h-4" aria-hidden="true" />
                               </span>
-                              <span className="text-xs sm:text-sm font-semibold text-slate-500 line-clamp-1">{item.partner}</span>
+                              <span title={item.partner} className="min-w-0 text-xs text-slate-500 truncate">{item.partner}</span>
                             </span>
-                            <span className="mt-4 text-base font-bold text-slate-900 leading-snug line-clamp-2 min-h-[2.75rem]">{item.title}</span>
-                            <span className="mt-1 text-sm font-medium text-slate-500 tabular-nums">
+                            <span className="mt-3 text-sm sm:text-base font-bold text-slate-900 leading-snug line-clamp-2 min-h-[2.5rem]">{item.title}</span>
+                            <span className="mt-1 text-xs text-slate-500 tabular-nums">
                               {amountOf(item)}
                             </span>
 
                             <span className="mt-auto pt-5">
                               <span className="flex items-center justify-between gap-2">
-                                <span className="text-lg font-bold text-slate-900 tabular-nums">{item.costXp} XP</span>
+                                <span className="text-sm sm:text-base font-semibold text-slate-900 tabular-nums">{item.costXp} XP</span>
                                 {redeemed ? (
                                   <span className="inline-flex items-center gap-1 text-sm font-bold text-emerald-700">
                                     <Check className="w-4 h-4" aria-hidden="true" />
@@ -324,7 +325,7 @@ export default function RewardsPage() {
                                     แลกได้เลย
                                   </span>
                                 ) : isLoggedIn ? (
-                                  <span className="text-sm font-bold text-slate-500 tabular-nums">ขาดอีก {short}</span>
+                                  <span className="text-xs text-slate-500 tabular-nums">ขาดอีก {short}</span>
                                 ) : null}
                               </span>
                               {/* How close I am: a warm bar while XP is short */}

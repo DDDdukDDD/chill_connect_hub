@@ -17,6 +17,7 @@ import { ChallengeChecklist } from '@/components/detail/ChallengeChecklist';
 import { InviteFriendsCard } from '@/components/InviteFriendsCard';
 import { RelatedCards } from '@/components/detail/RelatedCards';
 import { Toast } from '@/components/Toast';
+import { optimizedImage } from '@/lib/optimizedImage';
 
 /**
  * One challenge on its own page. It answers one question for the state the visitor is in:
@@ -368,7 +369,8 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
           <li key={`${target.targetType}:${target.id}`}>
             <Link href={target.href} className="group block rounded-2xl cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]">
               <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100">
-                {target.image && <img src={target.image} alt="" loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />}
+                {/* A photo that fails to load leaves the plain frame, not a broken-image icon (the ref catches one that failed before the page came alive) */}
+                {target.image && <img src={target.image} alt="" loading="lazy" ref={(el) => { if (el?.complete && el.naturalWidth === 0) el.style.display = 'none'; }} onError={(e) => { e.currentTarget.style.display = 'none'; }} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />}
                 {target.visited && (
                   <span className="absolute top-2 left-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/95 border border-emerald-200 text-[11px] sm:text-xs font-bold text-emerald-800">
                     <Check className="w-3 h-3" aria-hidden="true" />
@@ -390,7 +392,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
       {/* Hero: the photo carries the feeling; the facts and the one action sit beside it */}
       <section className="mt-2 grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:gap-10 lg:items-center">
         <div className="relative aspect-[16/10] rounded-3xl overflow-hidden bg-slate-100">
-          <img src={quest.badgeCoverImg || quest.image || FALLBACK_PHOTO} alt="" className="w-full h-full object-cover" />
+          <img src={optimizedImage(quest.badgeCoverImg || quest.image, 1080) || FALLBACK_PHOTO} alt={quest.title} className="w-full h-full object-cover" />
           <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 border border-slate-200 shadow-2xs text-[11px] sm:text-xs font-bold text-slate-800">
             <span className="w-1.5 h-1.5 rounded-full bg-[#7C3AED]" aria-hidden="true" />
             ชาเลนจ์

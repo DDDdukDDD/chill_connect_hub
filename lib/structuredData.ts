@@ -120,6 +120,25 @@ export function momentJsonLd(
 
 /** /moments: a collection page listing the moments shown first, each pointing to its own page. */
 export function momentCollectionJsonLd(moments: { id: string; caption: string; images: string[] }[], path: string, name: string, description: string): JsonLd {
+  return collectionJsonLd(
+    moments.map((moment) => ({ path: `/moments/${encodeURIComponent(moment.id)}`, name: metaDescription(moment.caption, 110), image: moment.images[0] })),
+    path,
+    name,
+    description
+  );
+}
+
+/** /challenges: a collection page listing the open challenges, each pointing to its own page. */
+export function challengeCollectionJsonLd(quests: { id: string; title: string; image?: string; badgeCoverImg?: string }[], path: string, name: string, description: string): JsonLd {
+  return collectionJsonLd(
+    quests.map((quest) => ({ path: `/challenges/${encodeURIComponent(quest.id)}`, name: quest.title, image: quest.badgeCoverImg || quest.image })),
+    path,
+    name,
+    description
+  );
+}
+
+function collectionJsonLd(items: { path: string; name: string; image?: string }[], path: string, name: string, description: string): JsonLd {
   return {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
@@ -128,12 +147,12 @@ export function momentCollectionJsonLd(moments: { id: string; caption: string; i
     url: absoluteUrl(path),
     mainEntity: {
       '@type': 'ItemList',
-      itemListElement: moments.map((moment, index) => ({
+      itemListElement: items.map((item, index) => ({
         '@type': 'ListItem',
         position: index + 1,
-        url: absoluteUrl(`/moments/${encodeURIComponent(moment.id)}`),
-        name: metaDescription(moment.caption, 110),
-        image: imageUrl(moment.images[0]),
+        url: absoluteUrl(item.path),
+        name: item.name,
+        image: imageUrl(item.image),
       })),
     },
   };

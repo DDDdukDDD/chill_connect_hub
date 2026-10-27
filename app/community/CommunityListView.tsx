@@ -7,6 +7,7 @@ import { isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp }
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { EventGrid } from '@/components/EventGrid';
+import { MeetupTile } from '@/components/MeetupTile';
 import { ViewModeToggle, ViewMode } from '@/components/ViewModeToggle';
 import { ShowMoreButton } from '@/components/discover/ShowMoreButton';
 import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
@@ -33,6 +34,9 @@ import { DiscoverSearch } from '@/components/discover/DiscoverSearch';
 import { useMyInterests } from '@/lib/useMyInterests';
 import { Toast } from '@/components/Toast';
 
+// Whole rows of the landing's tiles per "แสดงเพิ่มเติม" (2 / 3 / 4 / 6 columns), as on /challenges
+const TILE_BATCH = { mobile: 12, sm: 12, md: 16, lg: 24, xl2: 24, defaultItems: 24 };
+
 type SortOption = 'newest' | 'popular' | 'soonest' | 'favorites';
 type VibeFilter = 'all' | 'solo' | 'free' | 'pets' | 'beginners' | 'soon';
 
@@ -44,7 +48,7 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
   // The member's own categories from onboarding come first on the tabs, marked (owner 2026-10-23)
   const myInterests = useMyInterests(isLoggedIn);
-  const itemsPerPage = useResponsiveItemsPerPage();
+  const itemsPerPage = useResponsiveItemsPerPage(TILE_BATCH);
 
   const [activeNavTab, setActiveNavTab] = useState('explore');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
@@ -68,6 +72,9 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
     if (myActivity.isLoaded) setJoinedEventIds(myActivity.joinedIds);
   }, [myActivity.isLoaded, myActivity.joinedIds]);
   const [eventsList, setEventsList] = useState<EventItem[]>(initialEvents ?? MOCK_EVENTS);
+  // Set after mount, so the server HTML and the first browser render show the same day labels
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => setNow(new Date()), []);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Sync viewMode from localStorage
@@ -588,6 +595,22 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
         {/* The list view is dated, like /challenges: this week on top, then by month */}
         {viewMode === 'list' && filteredEvents.length > 0 ? (
           <EventDateList kind="meetups" events={filteredEvents} />
+        ) : paginatedEvents.length > 0 ? (
+          // The landing's tiles at the landing's widths, plus a line for host, rating and price (owner 2026-10-27)
+          <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 sm:gap-x-6 gap-y-8 pt-1">
+            {paginatedEvents.map((event) => (
+              <li key={event.id}>
+                <MeetupTile
+                  event={event}
+                  now={now}
+                  showHost
+                  isSaved={isLoggedIn && favorites.includes(event.id)}
+                  onToggleSave={toggleFavorite}
+                  isJoined={isLoggedIn && joinedEventIds.includes(event.id)}
+                />
+              </li>
+            ))}
+          </ul>
         ) : (
           <EventGrid
             events={paginatedEvents}
