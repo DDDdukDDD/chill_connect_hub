@@ -2058,3 +2058,6 @@ Walked as a guest and as members at phone (390) and desktop (1366) size in headl
 - `EventGrid` is unchanged and still serves /events, admin, the /community empty state and the list view is still `EventDateList`.
 - Each tile fetches its attendees for the faces (as on the landing), so a /community batch makes up to 24 small requests. Fine for the prototype; on the launch list if it shows up as slow.
 - Checked in headless Chrome on the dev server at 1440 and 390, signed out: no sideways scroll; landing row looks as before.
+
+### BE-169 · Image links limited to safe schemes (CodeQL, 2026-10-27)
+CodeQL flagged "DOM text reinterpreted as HTML" on the `<img src>` in `components/MeetupTile.tsx` and `components/ChallengeTile.tsx`. `optimizedImage()` (`lib/optimizedImage.ts`) passed unknown strings straight through; it now returns `''` unless the link starts with `https://`, `http://`, a site path `/…`, `data:image/` or `blob:`. All current data matches, so no visible change. Frontend: keep sending image links through `optimizedImage()`.

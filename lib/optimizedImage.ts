@@ -21,8 +21,11 @@ function isOptimizedRemote(src: string): boolean {
   }
 }
 
+/** Only web, site-local, inline-image and blob links reach an `src`; anything else (`javascript:`, odd schemes) is dropped. */
+const SAFE_IMAGE_SRC = /^(?:https?:\/\/|\/(?!\/)|data:image\/|blob:)/i;
+
 export function optimizedImage(src: string | undefined, width: number): string {
-  if (!src) return '';
+  if (!src || !SAFE_IMAGE_SRC.test(src)) return '';
   const local = src.startsWith('/') && !src.startsWith('/_next/') && !src.startsWith('//');
   return local || isOptimizedRemote(src) ? `/_next/image?url=${encodeURIComponent(src)}&w=${width}&q=75` : src;
 }
