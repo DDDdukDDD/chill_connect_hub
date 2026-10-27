@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { CalendarDays, ChevronRight } from 'lucide-react';
 import type { ChallengeQuest } from '@/data/mockData';
 import { getQuestBrandReward, questDateRange } from '@/lib/questDisplay';
 import { parseQuestDate } from '@/lib/questLifecycle';
+import { optimizedImage } from '@/lib/optimizedImage';
 import type { QuestProgress } from '@/lib/useMyRewards';
+import { ChallengeTile, prizeReasons } from '@/components/ChallengeTile';
 
 const THAI_MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80';
@@ -43,7 +45,7 @@ function ChallengeRow({ quest, on, isJoined, mine }: RowProps) {
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={quest.image || quest.badgeCoverImg || FALLBACK_IMAGE}
+        src={optimizedImage(quest.image || quest.badgeCoverImg, 384) || FALLBACK_IMAGE}
         alt=""
         loading="lazy"
         className={`w-[72px] h-[72px] sm:w-44 sm:h-[99px] rounded-xl sm:rounded-2xl object-cover bg-slate-100 shrink-0 ${isEnded ? 'grayscale opacity-80' : ''}`}
@@ -92,12 +94,13 @@ function ChallengeRow({ quest, on, isJoined, mine }: RowProps) {
   );
 }
 
-function MonthRows({ quests, on, joinedIds, progress }: { quests: ChallengeQuest[]; on: (q: ChallengeQuest) => 'start' | 'end'; joinedIds: string[]; progress: QuestProgress[] }) {
-  // Each row's day and month; a month is named once, above its first row
+function MonthRows({ quests, on, monthWord, joinedIds, progress }: { quests: ChallengeQuest[]; on: (q: ChallengeQuest) => 'start' | 'end'; monthWord: string; joinedIds: string[]; progress: QuestProgress[] }) {
+  // Each row's day and month; a month is named once, above its first row, with what happens in it ("ปิดเดือน…"),
+  // since the row shows the whole period and may start in the month before
   const rows = quests.map((quest) => {
     const side = on(quest);
     const ts = side === 'start' ? startTs(quest) : parseQuestDate(quest.endDate, true);
-    const month = ts ? `${THAI_MONTHS[new Date(ts).getMonth()]} ${new Date(ts).getFullYear() + 543}` : 'ไม่มีวันปิด';
+    const month = ts ? `${monthWord}เดือน${THAI_MONTHS[new Date(ts).getMonth()]} ${new Date(ts).getFullYear() + 543}` : 'ไม่มีวันปิด';
     return { quest, side, month };
   });
   return (
@@ -125,8 +128,9 @@ const groupBox = 'bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 sha
  * Challenges that start soon, as one row of small cards that scrolls sideways. It sits above the long list so a new
  * challenge is seen before its start, not after ten running ones.
  */
-function StartingSoonStrip({ quests, joinedIds, onBrowseAll }: { quests: ChallengeQuest[]; joinedIds: string[]; onBrowseAll?: () => void }) {
+function StartingSoonStrip({ quests, joinedIds, progress, onBrowseAll }: { quests: ChallengeQuest[]; joinedIds: string[]; progress: QuestProgress[]; onBrowseAll?: () => void }) {
   const stripRef = useRef<HTMLDivElement>(null);
+  const reasons = useMemo(() => prizeReasons(quests), [quests]);
   return (
     <section aria-label="เริ่มเร็วๆ นี้" className={groupBox}>
       <div className="flex items-start justify-between gap-3">
@@ -143,38 +147,14 @@ function StartingSoonStrip({ quests, joinedIds, onBrowseAll }: { quests: Challen
         )}
       </div>
       <div className="relative">
-      <div ref={stripRef} className="mt-3 -mx-1 px-1 pb-1 flex gap-3 overflow-x-auto no-scrollbar snap-x">
-        {quests.map((quest) => {
-          const reward = getQuestBrandReward(quest);
-          const isPartner = reward.type === 'brand_partner';
-          const range = questDateRange(quest);
+      {/* The same tiles as the card view and the landing (owner 2026-10-27); the padding leaves room for the tilt and the XP sticker */}
+      <div ref={stripRef} className="mt-1 -mx-2 px-3 pt-4 pb-2 flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar snap-x scroll-px-3">
+        {quests.map((quest, index) => {
+          const isJoined = joinedIds.includes(quest.id);
           return (
-            <Link
-              key={quest.id}
-              href={`/challenges/${encodeURIComponent(quest.id)}`}
-              className="group snap-start shrink-0 w-60 sm:w-64 rounded-2xl border border-slate-200 hover:border-slate-300 hover:shadow-sm bg-white overflow-hidden transition-shadow"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={quest.image || quest.badgeCoverImg || FALLBACK_IMAGE} alt="" loading="lazy" className="w-full aspect-video object-cover bg-slate-100" />
-              <div className="p-3 space-y-1.5">
-                {range && (
-                  <p className="inline-flex items-center gap-1.5 text-sm font-bold text-slate-900 tabular-nums">
-                    <CalendarDays className="w-4 h-4 text-slate-500" aria-hidden="true" />
-                    {range}
-                  </p>
-                )}
-                <h3 className="text-sm font-bold text-slate-900 leading-snug line-clamp-2 min-h-[2.5rem] group-hover:underline" title={quest.title}>{quest.title}</h3>
-                <p className="flex items-center justify-between gap-2 text-xs">
-                  <span className="font-bold text-[#5B21B6] tabular-nums">{quest.startsInDays ? `เริ่มในอีก ${quest.startsInDays} วัน` : ''}</span>
-                  {joinedIds.includes(quest.id) ? (
-                    <span className="px-2 py-px rounded-full bg-[#F5F3FF] border border-purple-200 text-[#5B21B6] font-bold">ร่วมแล้ว</span>
-                  ) : quest.rule ? (
-                    <span className="px-2 py-px rounded-full bg-[#7C3AED] text-white font-bold tabular-nums">+{(quest.rewardPoints ?? 0).toLocaleString()} XP</span>
-                  ) : null}
-                </p>
-                <p className={`text-xs font-semibold truncate ${isPartner ? 'text-amber-900' : 'text-[#5B21B6]'}`} title={reward.title}>{reward.title}</p>
-              </div>
-            </Link>
+            <div key={quest.id} className="snap-start shrink-0 w-40 sm:w-44 lg:w-48">
+              <ChallengeTile quest={quest} index={index} reason={reasons.get(quest.id)} mine={isJoined ? progress.find((p) => p.questId === quest.id) : undefined} isJoined={isJoined} showDates />
+            </div>
           );
         })}
       </div>
@@ -197,32 +177,56 @@ function StartingSoonStrip({ quests, joinedIds, onBrowseAll }: { quests: Challen
  * ("เริ่มเร็วๆ นี้", by starting day); then "ทำได้เลยตอนนี้", by closing day (soonest first). Empty groups are left out.
  * Ended challenges are one group, latest first. Used on /challenges and in My Hub ("ชาเลนจ์ของฉัน").
  */
-export function ChallengeList({ quests, joinedIds, progress, onBrowseAllSoon }: { quests: ChallengeQuest[]; joinedIds: string[]; progress: QuestProgress[]; onBrowseAllSoon?: () => void }) {
+export function ChallengeList({ quests, joinedIds, progress, onBrowseAllSoon, pageSize }: {
+  quests: ChallengeQuest[];
+  joinedIds: string[];
+  progress: QuestProgress[];
+  onBrowseAllSoon?: () => void;
+  /** Rows shown at first and per "ดูเพิ่ม", across the groups in order; leave out to show every row */
+  pageSize?: number;
+}) {
+  const [shown, setShown] = useState(pageSize ?? Infinity);
   const ended = quests.filter(isEndedQuest).sort((a, b) => endTs(b) - endTs(a));
   const open = quests.filter((q) => !isEndedQuest(q));
   const upcoming = open.filter((q) => q.startsInDays).sort((a, b) => startTs(a) - startTs(b));
   const running = open.filter((q) => !q.startsInDays).sort((a, b) => endTs(a) - endTs(b));
   const groups = [
-    { key: 'running', title: 'ทำได้เลยตอนนี้', note: 'เรียงตามวันปิด อันที่ใกล้ปิดอยู่บนสุด', items: running, on: () => 'end' as const },
+    { key: 'running', title: 'ทำได้เลยตอนนี้', note: 'เรียงตามวันปิด อันที่ใกล้ปิดอยู่บนสุด', items: running, on: () => 'end' as const, monthWord: 'ปิด' },
     // Shown as a full list only when nothing else runs, such as after "ดูทั้งหมด"; otherwise they are the strip on top
-    { key: 'upcoming', title: 'เริ่มเร็วๆ นี้', note: 'เรียงตามวันเริ่ม ร่วมล่วงหน้าได้ แต่จะนับตั้งแต่วันเริ่ม', items: running.length === 0 ? upcoming : [], on: () => 'start' as const },
-    { key: 'ended', title: 'จบไปแล้ว', note: 'ล่าสุดอยู่บนสุด', items: ended, on: () => 'end' as const },
+    { key: 'upcoming', title: 'เริ่มเร็วๆ นี้', note: 'เรียงตามวันเริ่ม ร่วมล่วงหน้าได้ แต่จะนับตั้งแต่วันเริ่ม', items: running.length === 0 ? upcoming : [], on: () => 'start' as const, monthWord: 'เริ่ม' },
+    { key: 'ended', title: 'จบไปแล้ว', note: 'ล่าสุดอยู่บนสุด', items: ended, on: () => 'end' as const, monthWord: 'จบ' },
   ].filter((group) => group.items.length > 0);
+  // Each group shows what is left of the budget, like the ค้นพบ lists
+  const total = groups.reduce((n, group) => n + group.items.length, 0);
+  const visibleGroups = groups
+    .map((group, i) => ({ ...group, visible: group.items.slice(0, Math.max(0, shown - groups.slice(0, i).reduce((n, g) => n + g.items.length, 0))) }))
+    .filter((group) => group.visible.length > 0);
 
   return (
     <div className="space-y-4">
-      {upcoming.length > 0 && running.length > 0 && <StartingSoonStrip quests={upcoming} joinedIds={joinedIds} onBrowseAll={onBrowseAllSoon} />}
-      {groups.map((group) => (
+      {upcoming.length > 0 && running.length > 0 && <StartingSoonStrip quests={upcoming} joinedIds={joinedIds} progress={progress} onBrowseAll={onBrowseAllSoon} />}
+      {visibleGroups.map((group) => (
         <section key={group.key} aria-label={group.title} className={groupBox}>
           <h2 className="text-base font-bold text-slate-900">
             {group.title} <span className="text-xs font-bold text-slate-500 tabular-nums">{group.items.length}</span>
           </h2>
           <p className="text-xs text-slate-500">{group.note}</p>
           <div className="mt-1">
-            <MonthRows quests={group.items} on={group.on} joinedIds={joinedIds} progress={progress} />
+            <MonthRows quests={group.visible} on={group.on} monthWord={group.monthWord} joinedIds={joinedIds} progress={progress} />
           </div>
         </section>
       ))}
+      {pageSize && shown < total && (
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => setShown((n) => n + pageSize)}
+            className="h-10 px-6 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold cursor-pointer transition-colors"
+          >
+            ดูเพิ่ม ({(total - shown).toLocaleString()})
+          </button>
+        </div>
+      )}
     </div>
   );
 }

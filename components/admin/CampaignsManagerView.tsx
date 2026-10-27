@@ -132,7 +132,7 @@ function CampaignEditor({ entry, quests, rewards, homeNow, onClose, onSaved }: {
             <input type="checkbox" checked={form.published} onChange={(e) => set('published', e.target.checked)} /> เผยแพร่ (ไม่ติ๊ก = ฉบับร่าง)
           </label>
           <label className="inline-flex items-center gap-2">
-            <input type="checkbox" checked={form.showOnHome} onChange={(e) => set('showOnHome', e.target.checked)} /> แสดงแถบบนหน้าแรก
+            <input type="checkbox" checked={form.showOnHome} onChange={(e) => set('showOnHome', e.target.checked)} /> แสดงแถบบนหน้าแรกและหน้าชาเลนจ์
           </label>
         </div>
         {form.showOnHome && homeNow && homeNow.id !== form.id && (
@@ -213,13 +213,13 @@ export function CampaignsManagerView() {
     void load();
   }, [load]);
 
-  // One tap shows or hides the home-page strip, without opening the editor
+  // One tap shows or hides the strip on the home page and /challenges, without opening the editor
   const toggleHome = async (campaign: AdminCampaign) => {
     const showOnHome = !campaign.showOnHome;
     const res = await fetch('/api/admin/campaigns', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'save', campaign: { ...campaign, showOnHome } }) });
     const json = await res.json();
     if (!json.success) setError(json.error || 'บันทึกไม่สำเร็จ');
-    else setNotice(showOnHome ? `แสดงแถบ ${campaign.name} บนหน้าแรกแล้ว` : `ซ่อนแถบ ${campaign.name} จากหน้าแรกแล้ว`);
+    else setNotice(showOnHome ? `แสดงแถบ ${campaign.name} บนหน้าแรกและหน้าชาเลนจ์แล้ว` : `ซ่อนแถบ ${campaign.name} จากหน้าแรกและหน้าชาเลนจ์แล้ว`);
     void load();
   };
 
@@ -282,7 +282,7 @@ export function CampaignsManagerView() {
                 {canEdit && (
                   <div className="flex gap-2">
                     <button type="button" onClick={() => void toggleHome(campaign)} aria-pressed={campaign.showOnHome} className={adminButton.secondarySm}>
-                      {campaign.showOnHome ? <EyeOff size={13} /> : <Eye size={13} />} {campaign.showOnHome ? 'ซ่อนแถบหน้าแรก' : 'แสดงบนหน้าแรก'}
+                      {campaign.showOnHome ? <EyeOff size={13} /> : <Eye size={13} />} {campaign.showOnHome ? 'ซ่อนแถบ' : 'แสดงแถบ'}
                     </button>
                     <button type="button" onClick={() => setEditing(campaign)} className={adminButton.secondarySm}><Pencil size={13} /> แก้ไข</button>
                     <button type="button" onClick={() => void remove(campaign)} className={adminButton.dangerSm}><Trash2 size={13} /> ลบ</button>

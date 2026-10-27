@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { ensureSampleMembers } from '@/lib/members/sampleMembers';
-import { listMoments } from '@/lib/moments/service';
+import { countMomentsByType, listMoments } from '@/lib/moments/service';
+import { jsonLdHtml, momentCollectionJsonLd } from '@/lib/structuredData';
 import { MomentShowcase, type ShowcasePlace } from '@/components/moments/MomentShowcase';
 import { isMomentTarget } from '@/components/moments/momentTargets';
 
@@ -41,20 +42,21 @@ export default async function MomentsPage({ searchParams }: Props) {
   });
 
   // A count beside each tab (not on one place's moments, which has no tabs)
-  const total = async (targetType?: string) => (await listMoments(null, { targetType, limit: 1 })).pagination.totalCount;
-  const counts = place
-    ? undefined
-    : await Promise.all([total(), total('spot'), total('community'), total('fair'), total('challenge')]).then(
-        ([all, spot, community, fair, challenge]) => ({ all, spot, community, fair, challenge })
-      );
+  const counts = place ? undefined : await countMomentsByType();
+  const moments = list.moments.filter((moment) => moment.images[0]);
 
   return (
-    <MomentShowcase
-      initialMoments={list.moments.filter((moment) => moment.images[0])}
-      initialHasMore={list.pagination.hasNextPage}
-      initialChip={chip}
-      place={place}
-      counts={counts}
-    />
+    <>
+      {/* The moments shown first, as a list search engines can read */}
+      {!place && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={jsonLdHtml(
+            momentCollectionJsonLd(moments, '/moments', 'โมเมนต์จากเพื่อนๆ', 'ภาพจริงจากคนที่ไปมาแล้ว ทั้งที่เที่ยว ตี้ อีเวนต์ และชาเลนจ์ทั่วประเทศ')
+          )}
+        />
+      )}
+      <MomentShowcase initialMoments={moments} initialHasMore={list.pagination.hasNextPage} initialChip={chip} place={place} counts={counts} />
+    </>
   );
 }

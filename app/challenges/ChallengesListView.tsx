@@ -3,38 +3,16 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { 
-  Plus,
-  Trophy, 
-  Flame, 
-  Award, 
-  Users, 
-  Target, 
-  ArrowRight,
-  Crown, 
-  Compass, 
-  ChevronRight, 
-  Search, 
-  Zap, 
-  MapPin, 
-  Camera, 
-  Filter,
-  Medal,
-  Clock,
-  AlertCircle,
-  ShieldCheck,
-  Check,
-  Sprout,
-  Gift } from 'lucide-react';
+import { ChevronRight, Plus, Search, Zap } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
 import { Navbar } from '@/components/Navbar';
 import { SiteFooter } from '@/components/SiteFooter';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
-import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { getQuestBrandReward } from '@/lib/questDisplay';
 import { matchesQuery, questSearchText } from '@/lib/discoverMatch';
-import { ChallengeCard } from '@/components/ChallengeCard';
+import { ChallengeTile, prizeReasons } from '@/components/ChallengeTile';
+import { ShowMoreButton } from '@/components/discover/ShowMoreButton';
 import { LaunchCampaignBanner } from '@/components/LaunchCampaignBanner';
 import type { Campaign } from '@/lib/campaigns/types';
 import { ChallengeList } from '@/components/ChallengeList';
@@ -44,8 +22,6 @@ import { DiscoverCategoryTabs } from '@/components/discover/DiscoverCategoryTabs
 import { ViewModeToggle } from '@/components/ViewModeToggle';
 import { ChallengeSearch } from '@/components/ChallengeSearch';
 import { CreateEventModal } from '@/components/CreateEventModal';
-import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
-import { Pagination } from '@/components/Pagination';
 import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
 import { ChallengeQuest } from '@/data/mockData';
 import { syncMyChallenges, useMyRewards, withRealProgress } from '@/lib/useMyRewards';
@@ -65,10 +41,16 @@ export interface QuestWithDuration extends ChallengeQuest {
 
 
 
-type WhenFilter = 'open' | 'running' | 'upcoming' | 'ended';
+// Tiles per "แสดงเพิ่มเติม": whole rows of the 2 / 3 / 4 / 6 column grid
+// (4 rows on a wide screen, owner 2026-10-27)
+const TILE_BATCH = { mobile: 12, sm: 12, md: 16, lg: 24, xl2: 24, defaultItems: 24 };
+
+type WhenFilter ='open' | 'running' | 'upcoming' | 'ended';
 // A challenge has ended, has not started yet (visits before its start do not count), or runs now
 const whenOf = (quest: ChallengeQuest): Exclude<WhenFilter, 'open'> =>
   quest.status === 'ended' || (quest.daysRemaining !== undefined && quest.daysRemaining <= 0) ? 'ended' : quest.startsInDays ? 'upcoming' : 'running';
+
+const WHEN_ORDER = { running: 0, upcoming: 1, ended: 2 } as const;
 
 /** A catalog challenge as this page lists it */
 const toListQuest = (quest: ChallengeQuest): QuestWithDuration => ({
@@ -118,10 +100,9 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
   const myInterests = useMyInterests(isLoggedIn);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  // Whole rows at every width (4 columns: 24, 5 columns: 25), like the ค้นพบ pages
-  const itemsPerPage = useResponsiveItemsPerPage();
+  // Whole rows at every width of the tile grid (2, 3, 4 and 6 columns)
+  const itemsPerPage = useResponsiveItemsPerPage(TILE_BATCH);
   const [storedQuestList, setQuestList] = useState<QuestWithDuration[]>(() => (initialQuests ?? []).map(toListQuest));
   // Points and the progress of challenges that count visits come from the account (GET /api/rewards)
   const myRewards = useMyRewards(isLoggedIn);
@@ -152,14 +133,18 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
     if (quest && ((quest.startsInDays ?? 0) > 0 || quest.status === 'ended' || quest.daysRemaining <= 0)) return false;
     return !myRewards.quests.some((progress) => progress.questId === id && progress.completed);
   }).length;
+  // "ที่ฉันทำอยู่" only when the member joined something (or the filter is on), so it never leads to an empty list
+  const hasMine = isLoggedIn && (joinedQuestIds.length > 0 || mineOnly);
+  const toggleMine = () => {
+    setMineOnly(!mineOnly);
+    setCurrentPage(1);
+  };
 
   useEffect(() => {
     if (isLoggedIn && myRewards.isLoaded && storedQuestList.length > 0) syncMyChallenges(myRewards.joinedQuestIds, storedQuestList);
   }, [isLoggedIn, myRewards.isLoaded, myRewards.joinedQuestIds, storedQuestList]);
 
-  // Confirmation Modal states
-  const [questToCancel, setQuestToCancel] = useState<QuestWithDuration | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; at: number } | null>(null);
   const [isProposeOpen, setIsProposeOpen] = useState(false);
 
   // Links from before the challenge page existed (/challenges?quest=id) go to that page
@@ -169,31 +154,13 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
   }, [router]);
 
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
-
-  const handleConfirmJoin = async (quest: QuestWithDuration | ChallengeQuest) => {
-    if (!isLoggedIn) {
-      setIsRequireMembershipOpen(true);
-      return;
-    }
-    const result = await myRewards.joinQuest(quest.id);
-    showToast(result.ok ? `ร่วม "${quest.title}" แล้ว กดการ์ดเพื่อดูว่าไปที่ไหนได้บ้าง` : result.message || 'ร่วมไม่สำเร็จ ลองใหม่อีกครั้งนะ');
-  };
-
-  const handleConfirmCancel = async (targetQuest?: QuestWithDuration | ChallengeQuest | null) => {
-    const quest = targetQuest || questToCancel;
-    if (!quest) return;
-    const result = await myRewards.leaveQuest(quest.id);
-    if (!result.ok) {
-      showToast(result.message || 'ยกเลิกไม่สำเร็จ กรุณาลองใหม่');
-      return;
-    }
-    showToast(`ยกเลิกชาเลนจ์ "${quest.title}" เรียบร้อยแล้ว`);
-    setQuestToCancel(null);
-  };
+  const showToast = (message: string) => setToast({ message, at: Date.now() });
+  // Each new message gets its own full three seconds, even when one comes right after another
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   // How many challenges each choice of "ช่วงเวลา" holds
   const whenCounts = useMemo(() => {
@@ -218,15 +185,23 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
     });
   }, [questList, whenFilter, byFilter, rewardFilter, mineOnly, joinedQuestIds]);
 
-  // Filtered Quests
+  // Filtered Quests, in the list view's order so the card view starts with what can be done today (owner 2026-10-27):
+  // running ones by closing day, then those starting soon by starting day, then ended ones
   const filteredQuests = useMemo(() => {
-    return relevantQuests.filter((quest) => {
-      if (selectedCategory && quest.category !== selectedCategory) return false;
-      // Search query match
-      // The same match as the ค้นพบ search, so its "ชาเลนจ์ที่ตรงกับ…" count is what this list shows
-      if (!matchesQuery(questSearchText(quest), searchQuery)) return false;
-      return true;
-    });
+    return relevantQuests
+      .filter((quest) => {
+        if (selectedCategory && quest.category !== selectedCategory) return false;
+        // The same match as the ค้นพบ search, so its "ชาเลนจ์ที่ตรงกับ…" count is what this list shows
+        return matchesQuery(questSearchText(quest), searchQuery);
+      })
+      .sort((a, b) => {
+        const wa = WHEN_ORDER[whenOf(a)];
+        const wb = WHEN_ORDER[whenOf(b)];
+        if (wa !== wb) return wa - wb;
+        if (wa === 0) return (a.daysRemaining ?? Infinity) - (b.daysRemaining ?? Infinity);
+        if (wa === 1) return (a.startsInDays ?? 0) - (b.startsInDays ?? 0);
+        return 0;
+      });
   }, [relevantQuests, selectedCategory, searchQuery]);
   const isFiltered = whenFilter !== 'open' || byFilter !== 'all' || rewardFilter !== 'all' || mineOnly || selectedCategory !== null;
   const clearFilters = () => {
@@ -239,12 +214,9 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
     setCurrentPage(1);
   };
 
-  // Pagination calculation
-  const totalPages = Math.ceil(filteredQuests.length / itemsPerPage);
-  const paginatedQuests = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredQuests.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredQuests, currentPage, itemsPerPage]);
+  // "แสดงเพิ่มเติม" grows the grid: currentPage = how many batches are on screen
+  const shownQuests = useMemo(() => filteredQuests.slice(0, currentPage * itemsPerPage), [filteredQuests, currentPage, itemsPerPage]);
+  const tileReasons = useMemo(() => prizeReasons(filteredQuests), [filteredQuests]);
 
   return (
     <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans selection:bg-purple-600 selection:text-white">
@@ -262,44 +234,56 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
       />
 
       {/* Toast Notification */}
-      <Toast message={toastMessage} />
+      <Toast message={toast?.message ?? null} />
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] mx-auto px-3.5 sm:px-6 lg:px-8 pt-3 pb-28 sm:pt-4 sm:pb-12 space-y-4 sm:space-y-5 w-full">
         
 
         {/* 1. What this page is, with the side actions. No box: the cards below carry the weight */}
-        <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 pt-1 sm:pt-3">
+        {/* The side actions stay on the title's row at every width, so nothing takes a row of its own on a phone (owner 2026-10-27) */}
+        <header className="flex items-end justify-between gap-3 pt-1 sm:pt-3">
           <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight leading-tight">ชาเลนจ์ชวนออกไปใช้ชีวิต</h1>
-            <p className="mt-1 text-sm font-medium text-slate-600">ไปให้ครบ แล้วรับ XP กับของรางวัลกลับมา</p>
+            <p className="mt-1 text-sm font-medium text-slate-600">
+              ไปให้ครบ แล้วรับ XP กับของรางวัลกลับมา
+              {/* Guests: the rewards are a link in the sentence that promises them */}
+              {!isLoggedIn && (
+                <Link href="/rewards" className="ml-1.5 inline-flex items-center gap-0.5 font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">
+                  ดูของรางวัล
+                  <ChevronRight className="w-4 h-4" aria-hidden="true" />
+                </Link>
+              )}
+            </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {isLoggedIn && (
+          {isLoggedIn && (
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Phone: "ที่ฉันทำอยู่" takes the XP pill's place, since the filter row has no room for it (XP is in มายฮับ on the bottom bar) */}
+              {hasMine && (
+                <button type="button" aria-pressed={mineOnly} onClick={toggleMine} className={`sm:hidden ${challengePillClass(mineOnly)}`}>
+                  ที่ฉันทำอยู่
+                </button>
+              )}
               <Link
                 href={joinedQuestIds.length > 0 ? '/myhub?tab=quests_rewards' : '/rewards'}
-                className="inline-flex items-center gap-1.5 min-h-10 px-4 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold whitespace-nowrap transition-colors cursor-pointer"
+                className={`${hasMine ? 'hidden sm:inline-flex' : 'inline-flex'} items-center gap-1.5 min-h-10 px-3.5 sm:px-4 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold whitespace-nowrap transition-colors cursor-pointer`}
               >
                 <Zap className="w-4 h-4 text-[#7C3AED]" aria-hidden="true" />
                 <span className="tabular-nums">{userXp.toLocaleString()} XP</span>
-                {doingCount > 0 && <span className="text-slate-500 tabular-nums">· กำลังทำ {doingCount}</span>}
+                {doingCount > 0 && <span className="hidden sm:inline text-slate-500 tabular-nums">· กำลังทำ {doingCount}</span>}
               </Link>
-            )}
-            {!isLoggedIn && (
-              <Link href="/rewards" className="inline-flex items-center min-h-10 px-4 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold whitespace-nowrap transition-colors cursor-pointer">
-                ดูของรางวัล
-              </Link>
-            )}
-            {/* Members only (owner 2026-10-25) */}
-            {isLoggedIn && <button
-              type="button"
-              onClick={() => setIsProposeOpen(true)}
-              className="inline-flex items-center justify-center gap-1.5 min-h-10 px-4 rounded-full bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-sm font-bold cursor-pointer whitespace-nowrap"
-            >
-              <Plus className="w-4 h-4" aria-hidden="true" />
-              เสนอชาเลนจ์
-            </button>}
-          </div>
+              {/* Members only (owner 2026-10-25); just the + on a phone */}
+              <button
+                type="button"
+                onClick={() => setIsProposeOpen(true)}
+                aria-label="เสนอชาเลนจ์"
+                className="inline-flex items-center justify-center gap-1.5 min-h-10 min-w-10 sm:px-4 rounded-full bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-sm font-bold cursor-pointer whitespace-nowrap"
+              >
+                <Plus className="w-4 h-4" aria-hidden="true" />
+                <span className="hidden sm:inline">เสนอชาเลนจ์</span>
+              </button>
+            </div>
+          )}
         </header>
 
         {/* The running campaign (admin ?m=campaigns): its challenges toward the prize draw */}
@@ -318,7 +302,11 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
         <section className="space-y-4 sm:space-y-5">
           <div className="space-y-3">
             {/* Searches challenges in place; computers have the same box in the top bar */}
-            <ChallengeSearch idPrefix="challenge-phone" query={searchQuery} onQueryChange={changeSearch} className="md:hidden" />
+            {/* Below md the view switch sits beside the box, so it does not take a row of its own (owner 2026-10-27) */}
+            <div className="flex items-center gap-2 md:hidden">
+              <ChallengeSearch idPrefix="challenge-phone" query={searchQuery} onQueryChange={changeSearch} className="flex-1 min-w-0" />
+              <ViewModeToggle viewMode={viewMode === 'cards' ? 'grid' : 'list'} onChange={(mode) => chooseView(mode === 'grid' ? 'cards' : 'list')} />
+            </div>
             <div className="flex flex-wrap items-center gap-2">
               <FilterMenu
                 id="when"
@@ -381,20 +369,17 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
 
               <div className="flex items-center gap-2 ml-auto">
                 {/* What I am doing sits with the view, like ♡ ที่บันทึกไว้ on the ค้นพบ pages */}
-                {isLoggedIn && (
-                  <button
-                    type="button"
-                    aria-pressed={mineOnly}
-                    onClick={() => {
-                      setMineOnly(!mineOnly);
-                      setCurrentPage(1);
-                    }}
-                    className={challengePillClass(mineOnly)}
-                  >
-                    ที่ฉันทำอยู่
-                  </button>
+                {/* Only when there is something of mine to show; on a phone it sits in the header */}
+                {hasMine && (
+                  <span className="hidden sm:block">
+                    <button type="button" aria-pressed={mineOnly} onClick={toggleMine} className={challengePillClass(mineOnly)}>
+                      ที่ฉันทำอยู่
+                    </button>
+                  </span>
                 )}
-                <ViewModeToggle viewMode={viewMode === 'cards' ? 'grid' : 'list'} onChange={(mode) => chooseView(mode === 'grid' ? 'cards' : 'list')} />
+                <div className="hidden md:flex">
+                  <ViewModeToggle viewMode={viewMode === 'cards' ? 'grid' : 'list'} onChange={(mode) => chooseView(mode === 'grid' ? 'cards' : 'list')} />
+                </div>
               </div>
             </div>
 
@@ -434,10 +419,8 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
 
                   <button
                     type="button"
-                    onClick={() => {
-                      setSelectedCategory(null);
-                      setSearchQuery('');
-                    }}
+                    // Every filter, so the button always brings challenges back (a filter pill alone can empty the list)
+                    onClick={clearFilters}
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold shadow-2xs transition-all cursor-pointer shrink-0 self-end sm:self-center active:scale-95"
                   >
                     <span>ดูชาเลนจ์ทั้งหมด</span>
@@ -446,6 +429,9 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
               ) : (
                 viewMode === 'list' ? (
                   <ChallengeList
+                    // A new choice starts again from the first rows
+                    key={`${whenFilter}|${byFilter}|${rewardFilter}|${mineOnly}|${selectedCategory}|${searchQuery}`}
+                    pageSize={10}
                     quests={filteredQuests}
                     joinedIds={joinedQuestIds}
                     progress={myRewards.quests}
@@ -457,29 +443,21 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
                   />
                 ) : (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-x-5 gap-y-9 pt-3">
-                  {paginatedQuests.map((quest, i) => {
-                    const isEnded = quest.status === 'ended' || (quest.daysRemaining !== undefined && quest.daysRemaining <= 0);
+                  {/* The landing's tiles at the landing's widths, so moving between the pages feels the same (owner 2026-10-27) */}
+                  <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 sm:gap-x-6 gap-y-8 pt-4">
+                  {shownQuests.map((quest, i) => {
                     const isJoined = joinedQuestIds.includes(quest.id);
-                    const mine = isJoined && !isEnded ? myRewards.quests.find((progress) => progress.questId === quest.id) : undefined;
-                    return <ChallengeCard key={quest.id} quest={quest} isJoined={isJoined} mine={mine} index={i} />;
+                    const mine = isJoined ? myRewards.quests.find((progress) => progress.questId === quest.id) : undefined;
+                    return (
+                      <li key={quest.id}>
+                        <ChallengeTile quest={quest} index={i} reason={tileReasons.get(quest.id)} mine={mine} isJoined={isJoined} showDates />
+                      </li>
+                    );
                   })}
-                </div>
+                </ul>
 
-                {/* Pagination */}
-                {filteredQuests.length > itemsPerPage && (
-                  <div className="pt-4">
-                    <Pagination
-                      currentPage={currentPage}
-                      totalPages={totalPages}
-                      onPageChange={(page) => setCurrentPage(page)}
-                      totalItems={filteredQuests.length}
-                      itemsPerPage={itemsPerPage}
-                      itemUnit="ชาเลนจ์"
-                      scrollTargetId="catalog-section"
-                    />
-                  </div>
-                )}
+                {/* The grid grows in place, like the other ค้นพบ pages */}
+                <ShowMoreButton shown={shownQuests.length} total={filteredQuests.length} onClick={() => setCurrentPage(currentPage + 1)} />
               </>
                 )
             )}
@@ -493,44 +471,15 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
       <SiteFooter className="bg-white mt-12 mb-16 md:mb-0" />
 
 
-      {/* 4. POPUP 2: Confirm Cancel Quest Modal (Double Confirm) */}
-      {questToCancel && (
-        <DialogShell
-          onClose={() => setQuestToCancel(null)}
-          size="sm"
-          title="เลิกทำชาเลนจ์นี้ใช่ไหม"
-          subtitle={`"${questToCancel.title}" กลับมาร่วมใหม่ได้ทุกเมื่อก่อนหมดเขต`}
-        >
-          <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-2">
-            <button type="button" data-autofocus onClick={() => setQuestToCancel(null)} className={dialogButton.quiet}>
-              ทำต่อ
-            </button>
-            <button type="button" onClick={() => handleConfirmCancel()} className={dialogButton.secondary}>
-              เลิกทำ
-            </button>
-          </div>
-        </DialogShell>
-      )}
-
-      {/* 5. Mobile Bottom Navigation */}
+      {/* Mobile Bottom Navigation */}
       <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      {/* Free Membership Required Modal */}
+      {/* A member proposes a challenge */}
       <CreateEventModal
         isOpen={isProposeOpen}
         onClose={() => setIsProposeOpen(false)}
         initialType="challenge"
         onCreateSuccess={() => undefined}
-      />
-
-      <RequireMembershipModal
-        isOpen={isRequireMembershipOpen}
-        onClose={() => setIsRequireMembershipOpen(false)}
-        onOpenLogin={() => {
-          setIsRequireMembershipOpen(false);
-          setIsAuthModalOpen(true);
-        }}
-        actionTitle="เพื่อร่วมชาเลนจ์และสะสม XP"
       />
 
       {/* Auth Modal */}
