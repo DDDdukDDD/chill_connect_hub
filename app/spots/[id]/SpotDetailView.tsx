@@ -14,8 +14,8 @@ import { CreateEventModal, type PlacePick } from '@/components/LazyCreateEventMo
 import type { EventItem } from '@/data/mockData';
 import type { LifestyleSpotItem } from '@/data/spotsData';
 import { getNearbyRecommendationInfo } from '@/lib/nearbySpots';
-import { RelatedCards, spotCard } from '@/components/detail/RelatedCards';
-import { RelatedMeetupTiles } from '@/components/detail/RelatedTiles';
+import { tidyOpenHours } from '@/lib/openHours';
+import { RelatedMeetupTiles, RelatedSpotTiles } from '@/components/detail/RelatedTiles';
 import { spotOrigin } from '@/lib/contentOrigin';
 import { travelModes, visitorFacilities } from '@/lib/spotFacilities';
 import { resolveSpotGallery, resolveSpotImage } from '@/lib/spotImageResolver';
@@ -229,12 +229,12 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
     () => spot ? { placeId: spot.id, name: spot.title, province: spot.province, district: spot.district, pin: spot.latitude && spot.longitude ? { latitude: spot.latitude, longitude: spot.longitude } : undefined } : undefined,
     [spot]
   );
-  const openStatus = useMemo(() => parseSpotOpenStatus(spot?.openHours), [spot?.openHours]);
+  const openStatus = useMemo(() => parseSpotOpenStatus(tidyOpenHours(spot?.openHours)), [spot?.openHours]);
 
   // Nearby spots recommendation info (smart zonal & distance proximity)
   const recommendation = useMemo(() => {
     if (!spot) return { spots: [], sectionTitle: '', sectionSubtitle: '', zoneName: '' };
-    return getNearbyRecommendationInfo(spot, 5, publishedSpots);
+    return getNearbyRecommendationInfo(spot, 6, publishedSpots);
   }, [spot, publishedSpots]);
 
   const nearbySpots = recommendation.spots;
@@ -444,7 +444,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
           highlight={openStatus.badgeVariant === 'unspecified' ? undefined : { icon: Clock, text: [openStatus.statusText, openStatus.subText].filter(Boolean).join(' · '), tone: openStatus.isOpen ? 'open' : 'closed' }}
           title={cleanText(spot.title)}
           facts={[
-            { icon: Clock, text: cleanText(spot.openHours) || 'เปิดทุกวัน' },
+            { icon: Clock, text: cleanText(tidyOpenHours(spot.openHours)) || 'เปิดทุกวัน' },
             { icon: MapPin, text: [spot.district, spot.province].filter(Boolean).join(', ') },
             // "ไม่ระบุ" is not a fact: leave it out rather than print it (as on the อีเวนต์ page)
             ...(cleanText(spot.price).startsWith('ไม่ระบุ') ? [] : [{ icon: Ticket, text: cleanText(spot.price) || 'เข้าฟรี' }]),
@@ -605,7 +605,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
 
         <RelatedMeetupTiles title="ตี้ที่นัดที่นี่" allHref="/community" events={placeTees.slice(0, 6)} />
 
-        <RelatedCards title={recommendation.sectionTitle.replace(/\s*\p{Extended_Pictographic}️?/gu, '').trim()} allHref={`/spots?province=${encodeURIComponent(spot.province)}`} items={nearbySpots.slice(0, 4).map(spotCard)} />
+        <RelatedSpotTiles title={recommendation.sectionTitle.replace(/\s*\p{Extended_Pictographic}️?/gu, '').trim()} allHref={`/spots?province=${encodeURIComponent(spot.province)}`} spots={nearbySpots.slice(0, 6)} />
 
       </main>
 

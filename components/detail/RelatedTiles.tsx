@@ -5,6 +5,8 @@ import Link from 'next/link';
 import type { ChallengeQuest, EventItem } from '@/data/mockData';
 import { MeetupTile } from '@/components/MeetupTile';
 import { FairTile } from '@/components/FairTile';
+import { SpotTile } from '@/components/SpotTile';
+import type { LifestyleSpotItem } from '@/data/spotsData';
 import { ChallengeTile, assignReasons } from '@/components/ChallengeTile';
 import { useMyActivity } from '@/lib/useMyActivity';
 
@@ -75,6 +77,20 @@ export function RelatedFairTiles({ events, ...section }: SectionProps & { events
       {events.map((event) => (
         <li key={event.id}>
           <FairTile event={event} now={now} />
+        </li>
+      ))}
+    </Section>
+  );
+}
+
+/** Places under a place page as the /spots tiles, at the same grid as the ตี้ and อีเวนต์ under theirs */
+export function RelatedSpotTiles({ spots, ...section }: SectionProps & { spots: LifestyleSpotItem[] }) {
+  if (spots.length === 0) return null;
+  return (
+    <Section {...section}>
+      {spots.map((spot) => (
+        <li key={spot.id}>
+          <SpotTile spot={spot} />
         </li>
       ))}
     </Section>

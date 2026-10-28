@@ -12,6 +12,8 @@ import { effectiveTier } from '@/lib/spotCuration';
 /** Within driving reach (owner 2026-10-25); closer places score higher inside it */
 export const PLAN_RADIUS_KM = 30;
 const MAX_OTHERS = 2;
+/** One hop of the plan: "ไปต่อ" means close by, not another long drive */
+const MAX_LEG_KM = 15;
 const DAY_START = 9 * 60;
 
 export interface PlanStop {
@@ -56,6 +58,7 @@ function schedule(order: LifestyleSpotItem[]): PlanStop[] | null {
     const spot = order[i];
     const hours = openWindow(spot.openHours);
     const travel = i > 0 ? travelBetween(order[i - 1], spot) : undefined;
+    if (travel && travel.km > MAX_LEG_KM) return null;
     let arrive = i === 0 ? Math.max(DAY_START, hours?.open ?? DAY_START) : clock + (travel?.minutes ?? 0);
     if (hours && arrive < hours.open) arrive = hours.open;
     const leave = arrive + stayOf(spot);

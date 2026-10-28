@@ -11,7 +11,7 @@ import {
   Plus } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
-import { SpotCard, SpotCardSkeleton } from '@/components/SpotCard';
+import { SpotTile, SpotTileSkeleton } from '@/components/SpotTile';
 import { ViewModeToggle, ViewMode } from '@/components/ViewModeToggle';
 import { ShowMoreButton } from '@/components/discover/ShowMoreButton';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
@@ -29,6 +29,7 @@ import { type DiscoverCounts } from '@/lib/discoverMatch';
 import { DiscoverHeader, filterPillClass } from '@/components/discover/DiscoverHeader';
 import { DiscoverSearch } from '@/components/discover/DiscoverSearch';
 import { useMyInterests } from '@/lib/useMyInterests';
+import { useFiltersInUrl } from '@/lib/useFiltersInUrl';
 import { Toast } from '@/components/Toast';
 
 // The list view's rows use an animation library (~120 KB); it loads only when someone picks the list view (2026-10-28)
@@ -37,12 +38,15 @@ const SpotListItemSkeleton = dynamic(() => import('@/components/SpotListItem').t
 
 type ServerProps = { initial?: SpotBrowseResult; openedAt?: number; initialCounts?: { query: string; province: string; counts: DiscoverCounts } };
 
+// Whole rows of the 2 / 3 / 4 / 6 tile grid, as on /events and /community
+const TILE_BATCH = { mobile: 12, sm: 12, md: 16, lg: 24, xl2: 24, defaultItems: 24 };
+
 function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts }: ServerProps) {
   const searchParams = useSearchParams();
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
   // The member's own categories from onboarding come first on the tabs, marked (owner 2026-10-23)
   const myInterests = useMyInterests(isLoggedIn);
-  const itemsPerPage = useResponsiveItemsPerPage();
+  const itemsPerPage = useResponsiveItemsPerPage(TILE_BATCH);
 
   const [activeNavTab, setActiveNavTab] = useState('explore');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
@@ -50,6 +54,7 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts }: 
   const [selectedProvince, setSelectedProvince] = useState<string>(searchParams.get('province') || 'all');
   const [priceFilter, setPriceFilter] = useState<'all' | 'free'>((searchParams.get('price') as any) || 'all');
   const [sortBy, setSortBy] = useState<'newest' | 'favorites'>('newest');
+  useFiltersInUrl({ q: searchQuery.trim(), category: selectedCategory, province: selectedProvince, price: priceFilter });
   const [sortByNearMe, setSortByNearMe] = useState(false);
   const [openedAt] = useState(() => serverOpenedAt ?? Date.now());
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -349,11 +354,11 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts }: 
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4">
-              {Array.from({ length: 10 }).map((_, i) => (
-                <SpotCardSkeleton key={i} />
+            <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 sm:gap-x-6 gap-y-8 pt-1">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <li key={i}><SpotTileSkeleton /></li>
               ))}
-            </div>
+            </ul>
           )
         ) : paginatedSpots.length > 0 ? (
           <>
@@ -371,17 +376,14 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts }: 
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4">
+              // The ตี้ / อีเวนต์ grid and tile, so the three tabs feel like one page
+              <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 sm:gap-x-6 gap-y-8 pt-1">
                 {paginatedSpots.map((spot) => (
-                  <SpotCard
-                    key={spot.id}
-                    spot={spot}
-                    isFavorite={isLoggedIn && favoriteSpots.includes(spot.id)}
-                    isJoined={isLoggedIn && joinedEventIds.includes(spot.id)}
-                    onToggleFavorite={(id) => toggleFavoriteSpot(id)}
-                  />
+                  <li key={spot.id}>
+                    <SpotTile spot={spot} isSaved={isLoggedIn && favoriteSpots.includes(spot.id)} onToggleSave={(id) => toggleFavoriteSpot(id)} />
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
 
             {/* Show more, Meetup-style */}

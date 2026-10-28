@@ -3,7 +3,6 @@
 import React from 'react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
-import { SpotCardSkeleton } from '@/components/SpotCard';
 import { useAuth } from '@/lib/useAuth';
 import type { DiscoverKind } from '@/lib/discoverMatch';
 
@@ -59,24 +58,16 @@ export function DiscoverLoading({ kind }: { kind: DiscoverKind }) {
           ))}
         </div>
 
-        {kind === 'spots' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <SpotCardSkeleton key={i} />
-            ))}
-          </div>
-        ) : (
-          // The ตี้ and อีเวนต์ tiles: a square photo and two short lines, in the 2 / 3 / 4 / 6 grid
-          <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 sm:gap-x-6 gap-y-8 pt-1">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <li key={i}>
-                <div className="aspect-square rounded-3xl bg-slate-100 animate-pulse" />
-                <div className={`mt-3 h-4 w-4/5 ${bar}`} />
-                <div className={`mt-2 h-3 w-3/5 ${bar}`} />
-              </li>
-            ))}
-          </ul>
-        )}
+        {/* The ตี้, อีเวนต์ and place tiles: a square photo and two short lines, in the 2 / 3 / 4 / 6 grid */}
+        <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 sm:gap-x-6 gap-y-8 pt-1">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <li key={i}>
+              <div className="aspect-square rounded-3xl bg-slate-100 animate-pulse" />
+              <div className={`mt-3 h-4 w-4/5 ${bar}`} />
+              <div className={`mt-2 h-3 w-3/5 ${bar}`} />
+            </li>
+          ))}
+        </ul>
       </main>
 
       <MobileNav activeTab="explore" setActiveTab={noop} />

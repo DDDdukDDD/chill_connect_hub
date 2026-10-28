@@ -27,6 +27,7 @@ import { eventInProvince, fairSearchText, matchesQuery, type DiscoverCounts } fr
 import { DiscoverHeader, FilterSelect, filterPillClass } from '@/components/discover/DiscoverHeader';
 import { DiscoverSearch } from '@/components/discover/DiscoverSearch';
 import { useMyInterests } from '@/lib/useMyInterests';
+import { useFiltersInUrl } from '@/lib/useFiltersInUrl';
 import { Toast } from '@/components/Toast';
 
 // Whole rows of tiles per "แสดงเพิ่มเติม" (2 / 3 / 4 / 6 columns), as on /community
@@ -49,7 +50,10 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(searchParams.get('category'));
   const [selectedProvince, setSelectedProvince] = useState<string>(searchParams.get('province') || 'all');
   const [selectedVenue, setSelectedVenue] = useState<string>(searchParams.get('venue') || 'all');
-  const [statusFilter, setStatusFilter] = useState<'upcoming' | 'ended' | 'all'>('upcoming');
+  const [statusFilter, setStatusFilter] = useState<'upcoming' | 'ended' | 'all'>(() => {
+    const status = searchParams.get('status');
+    return status === 'ended' || status === 'all' ? status : 'upcoming';
+  });
   const [priceFilter, setPriceFilter] = useState<'all' | 'free'>((searchParams.get('price') as any) || 'all');
   const [sortBy, setSortBy] = useState<SortOption>('soonest');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -82,8 +86,18 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
 
   // Date Filter State
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const [customStartDate, setCustomStartDate] = useState<string>('');
-  const [customEndDate, setCustomEndDate] = useState<string>('');
+  const [customStartDate, setCustomStartDate] = useState<string>(searchParams.get('from') || '');
+  const [customEndDate, setCustomEndDate] = useState<string>(searchParams.get('to') || '');
+  useFiltersInUrl({
+    q: searchQuery.trim(),
+    category: selectedCategory,
+    province: selectedProvince,
+    venue: selectedVenue,
+    price: priceFilter,
+    status: statusFilter === 'upcoming' ? null : statusFilter,
+    from: customStartDate,
+    to: customEndDate,
+  });
 
   // Signing out leaves the saved list for the plain list
   useEffect(() => {
