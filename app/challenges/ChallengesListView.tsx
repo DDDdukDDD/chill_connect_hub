@@ -21,7 +21,7 @@ import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRa
 import { DiscoverCategoryTabs } from '@/components/discover/DiscoverCategoryTabs';
 import { ViewModeToggle } from '@/components/ViewModeToggle';
 import { ChallengeSearch } from '@/components/ChallengeSearch';
-import { CreateEventModal } from '@/components/CreateEventModal';
+import { CreateEventModal } from '@/components/LazyCreateEventModal';
 import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
 import { ChallengeQuest } from '@/data/mockData';
 import { syncMyChallenges, useMyRewards, withRealProgress } from '@/lib/useMyRewards';

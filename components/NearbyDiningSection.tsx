@@ -3,21 +3,21 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Star, ExternalLink } from 'lucide-react';
-import { LifestyleSpotItem, MOCK_SPOTS } from '@/data/spotsData';
+import type { LifestyleSpotItem } from '@/data/spotsData';
 import { NearbyDiningItem, getNearbyDining, getNearbyDiningSync } from '@/lib/nearbyDiningService';
-import { usePublishedSpots } from '@/lib/usePublishedSpots';
 
 interface NearbyDiningSectionProps {
   spot: LifestyleSpotItem;
+  /** Places near this one, picked by the server page (lib/spotBrowse.ts nearbyPool) */
+  pool?: LifestyleSpotItem[];
 }
 
 /** "Near" for cafés around a place: a short ride (the Google search radius is 3 km too) */
 const NEAR_KM = 3;
 
-export const NearbyDiningSection: React.FC<NearbyDiningSectionProps> = ({ spot }) => {
+export const NearbyDiningSection: React.FC<NearbyDiningSectionProps> = ({ spot, pool: nearbyPool }) => {
   // Nearby cafes come from the live catalog (imported places carry real coordinates)
-  const { spots: publishedSpots } = usePublishedSpots();
-  const pool = publishedSpots.length > 0 ? publishedSpots : MOCK_SPOTS;
+  const pool = useMemo(() => nearbyPool ?? [], [nearbyPool]);
   const localItems = useMemo(() => getNearbyDiningSync(spot, 6, pool), [spot, pool]);
   const [liveItems, setLiveItems] = useState<NearbyDiningItem[] | null>(null);
   const diningItems = liveItems ?? localItems;

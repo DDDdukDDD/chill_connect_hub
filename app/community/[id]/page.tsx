@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getPublicEvent, isBundledEvent } from '@/lib/publicContent';
+import { bundledEvent, getPublicEvent, isBundledEvent } from '@/lib/publicContent';
 import { placeName } from '@/lib/placeName';
 import { metaDescription, pageMetadata } from '@/lib/site';
 import { breadcrumbJsonLd, eventJsonLd, jsonLdHtml } from '@/lib/structuredData';
@@ -41,7 +41,7 @@ export default async function CommunityDetailPage({ params }: Props) {
           dangerouslySetInnerHTML={jsonLdHtml(breadcrumbJsonLd([{ name: 'ตี้', path: '/community' }, { name: titleOf(event.title), path }]))}
         />
       )}
-      <CommunityDetailView initialEvent={event} initialQuestions={event ? await questionsOf(event.id, null) : null} />
+      <CommunityDetailView initialEvent={event ?? bundledEvent(id)} initialQuestions={event ? await questionsOf(event.id, null) : null} />
     </>
   );
 }

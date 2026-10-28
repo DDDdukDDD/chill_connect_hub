@@ -56,7 +56,7 @@ function statusOf(kind: Kind, e: EventItem): { text: string; tone: string } | nu
 
 // A ตี้ names its short area ("สุขุมวิท"), as its tile does; an อีเวนต์ its province and venue
 const placeOf = (kind: Kind, e: EventItem) => (kind === 'meetups' ? areaLabel(e) : [e.province, e.location].filter(Boolean).join(' · '));
-const hrefOf = (kind: Kind, e: EventItem) => `/${kind === 'meetups' ? 'community' : 'fairs'}/${encodeURIComponent(e.id)}`;
+const hrefOf = (kind: Kind, e: EventItem) => `/${kind === 'meetups' ? 'community' : 'events'}/${encodeURIComponent(e.id)}`;
 
 function Row({ kind, event }: { kind: Kind; event: EventItem }) {
   const status = statusOf(kind, event);

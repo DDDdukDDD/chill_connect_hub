@@ -11,7 +11,7 @@ import {
   MasterCommunityLifestyleCategory, MasterCommunityMood, MasterFairCategory, MasterSpotCategory, MasterVenueOption,
   CommunityMoodId, SpotVibeId,
 } from '@/data/masterHub';
-import { BANGKOK_ZONES } from '@/data/mockData';
+import { BANGKOK_ZONES } from '@/data/zones';
 
 /**
  * Editable master data (admin "ข้อมูลหลัก"), stored in data/master_data.json and served by /api/master.
@@ -362,7 +362,7 @@ export const resolveCommunityClubs = (entries: MasterFeaturedGroup[]) => activeO
   imageUrl: entry.image ?? '', membersCount: '', badgeLabel: entry.badgeLabel ?? '', keywords: entry.keywords,
 }));
 
-/** Same shape as TOP_VENUES in components/TopVenuesRail.tsx */
+/** Same shape as TOP_VENUES in data/topVenues.ts */
 export const resolveVenueGroups = (entries: MasterFeaturedGroup[]) => activeOnly(entries).map((entry) => ({
   id: entry.id, nameEn: entry.nameEn, nameTh: entry.name, subtitle: entry.subtitle, venueKey: entry.id,
   imageUrl: entry.image ?? '', keywords: entry.keywords,

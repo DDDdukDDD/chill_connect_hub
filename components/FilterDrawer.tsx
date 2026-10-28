@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { X, RotateCcw, Check, MapPin, Users, Tag, Building2, SlidersHorizontal, Sparkles, Search, Compass, ShieldCheck } from 'lucide-react';
 import { PUBLIC_VENUES } from '@/components/MoodFilterChips';
-import { BANGKOK_ZONES } from '@/data/mockData';
+import { BANGKOK_ZONES } from '@/data/zones';
 import { SPOT_CATEGORIES, SPOT_PROVINCES } from '@/data/spotsData';
 
 const ALL_THAI_PROVINCES = [

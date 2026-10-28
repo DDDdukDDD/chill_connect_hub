@@ -3,7 +3,8 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Building, Calendar, Check, ChevronRight, Loader2, Lock, MapPin, Plus, Target, Trash2, Upload, Users } from 'lucide-react';
 import { DayOfWeek, EventItem } from '@/data/mockData';
-import { ALL_THAI_PROVINCES } from '@/data/spotsData';
+// From masterHub, not spotsData: importing spotsData ships its ~400 KB of sample places to the browser
+import { MASTER_77_PROVINCES as ALL_THAI_PROVINCES } from '@/data/masterHub';
 import { formatThaiDateBE, isValidTimeRange } from '@/lib/dateUtils';
 import { compressImage } from '@/lib/media/compressor';
 import { SPOT_CATEGORY_OPTIONS } from '@/lib/spotCategories';

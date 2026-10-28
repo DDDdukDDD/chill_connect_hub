@@ -1,10 +1,8 @@
 import Link from 'next/link';
 import { Calendar } from 'lucide-react';
-import type { EventItem } from '@/data/mockData';
 import type { LifestyleSpotItem } from '@/data/spotsData';
 import { formatSpotBadgePrice } from '@/components/SpotCard';
 import { resolveSpotImage } from '@/lib/spotImageResolver';
-import { formatEventBadgePrice, hasKnownPrice } from '@/lib/priceUtils';
 
 const CARD = 'group block h-full rounded-2xl border border-slate-200 bg-white overflow-hidden';
 const FALLBACK_PHOTO = 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1200&q=80';
@@ -89,13 +87,6 @@ export function RelatedCards({
       </ul>
     </section>
   );
-}
-
-const shortPrice = (event: EventItem) => (hasKnownPrice(event.price) ? formatEventBadgePrice(event.price) : undefined);
-
-/** A fair as a related card: no attendee count on fairs, so the province sits on the left */
-export function fairCard(event: EventItem): RelatedCard {
-  return { id: event.id, href: `/events/${encodeURIComponent(event.id)}`, image: event.image, dateText: event.date, title: event.title, note: event.province || event.location || '', tail: shortPrice(event) };
 }
 
 // "ไม่ระบุ" is not a price: the card leaves the corner empty instead

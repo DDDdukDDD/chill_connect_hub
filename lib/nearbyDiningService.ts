@@ -1,4 +1,5 @@
-import { LifestyleSpotItem, MOCK_SPOTS, getDistanceKm } from '@/data/spotsData';
+import type { LifestyleSpotItem } from '@/data/spotsData';
+import { getDistanceKm } from '@/lib/nearbySpots';
 
 export interface NearbyDiningItem {
   id: string;
@@ -28,7 +29,7 @@ export interface NearbyDiningItem {
 export async function getNearbyDining(
   spot: LifestyleSpotItem,
   limit: number = 6,
-  pool: LifestyleSpotItem[] = MOCK_SPOTS
+  pool: LifestyleSpotItem[]
 ): Promise<NearbyDiningItem[]> {
   if (typeof window !== 'undefined') {
     try {
@@ -54,7 +55,7 @@ const NEARBY_RADIUS_KM = 15;
 export function getNearbyDiningSync(
   spot: LifestyleSpotItem,
   limit: number = 6,
-  pool: LifestyleSpotItem[] = MOCK_SPOTS
+  pool: LifestyleSpotItem[]
 ): NearbyDiningItem[] {
   // pool = the live published catalog when available (imported cafes carry real coordinates)
   const internalCafes = pool.filter(

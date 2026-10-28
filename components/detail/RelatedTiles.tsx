@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { ChallengeQuest, EventItem } from '@/data/mockData';
 import { MeetupTile } from '@/components/MeetupTile';
+import { FairTile } from '@/components/FairTile';
 import { ChallengeTile, assignReasons } from '@/components/ChallengeTile';
 import { useMyActivity } from '@/lib/useMyActivity';
 
@@ -57,6 +58,23 @@ export function RelatedMeetupTiles({
       {events.map((event) => (
         <li key={event.id}>
           <MeetupTile event={event} now={now} showHost isJoined={joinedIds.includes(event.id)} {...tileProps?.(event)} />
+        </li>
+      ))}
+    </Section>
+  );
+}
+
+/** อีเวนต์ under an อีเวนต์ page as the /events tiles, at the same grid as the ตี้ under a ตี้ page */
+export function RelatedFairTiles({ events, ...section }: SectionProps & { events: EventItem[] }) {
+  // "กำลังจัด" needs the browser's clock; the server HTML shows the plain dates
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => setNow(new Date()), []);
+  if (events.length === 0) return null;
+  return (
+    <Section {...section}>
+      {events.map((event) => (
+        <li key={event.id}>
+          <FairTile event={event} now={now} />
         </li>
       ))}
     </Section>

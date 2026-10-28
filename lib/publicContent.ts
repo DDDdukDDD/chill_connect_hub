@@ -10,13 +10,11 @@ import {
   matchesQuery,
   meetupSearchText,
   questSearchText,
-  spotInProvince,
-  spotSearchText,
   ALL_PROVINCES,
   type DiscoverCounts,
 } from '@/lib/discoverMatch';
 import { joinCounts } from '@/lib/social/questJoins';
-import { compareSpotsByRank, shownWhenBrowsing } from '@/lib/spotRanking';
+import { browseSpots } from '@/lib/spotBrowse';
 
 /**
  * What a public detail page shows, read on the server so the content is in the HTML search engines get.
@@ -63,12 +61,10 @@ export const listPublicQuests = async () => {
   return quests.map((quest) => ({ ...quest, participantsCount: (quest.participantsCount ?? 0) + (joins.get(quest.id) ?? 0) }));
 };
 
-/** The first places of the /spots list in its default order. The full catalog (8 MB) still loads in the browser. */
-export const listTopSpots = async (count: number) =>
-  (await allPages((page) => db.findSpots({ page, limit: 100 }))).filter(shownWhenBrowsing).sort(compareSpotsByRank(Date.now())).slice(0, count);
-
 /** True when the pages' bundled sample data has this id (or, for old links, this title); those pages still show it. */
-export const isBundledEvent = (id: string) => Boolean(getEventById(id) || MOCK_EVENTS.some((event) => event.title === id));
+export const isBundledEvent = (id: string) => Boolean(bundledEvent(id));
+/** A bundled sample event by id (or, for old links, title), so detail pages send it and the browser needs no sample data */
+export const bundledEvent = (id: string): EventItem | null => getEventById(id) ?? MOCK_EVENTS.find((event) => event.title === id) ?? null;
 export const isBundledSpot = (id: string) => Boolean(getSpotById(id) || MOCK_SPOTS.some((spot) => spot.title === id));
 
 /** The landing page's events: approved meetups and fairs that are not over (about a third of the full list). */
@@ -83,16 +79,14 @@ export async function discoverCounts(query: string, province: string): Promise<D
   const [meetups, fairs, spots, quests] = await Promise.all([
     listPublicMeetups(),
     listPublicFairs(),
-    allPages((page) => db.findSpots({ page, limit: 100 })),
+    // The same count /spots shows (hidden places only when searched for), from its cached index
+    browseSpots({ q: query, province, limit: 1 }),
     query.trim() ? listPublicQuests() : Promise.resolve([]),
   ]);
   return {
     meetups: meetups.filter((event) => !isEventEnded(event) && eventInProvince(event, province) && matchesQuery(meetupSearchText(event), query)).length,
     fairs: fairs.filter((event) => !isEventEnded(event) && eventInProvince(event, province) && matchesQuery(fairSearchText(event), query)).length,
-    spots: spots.filter((spot) => {
-      const text = spotSearchText(spot);
-      return spotInProvince(spot, province, text) && matchesQuery(text, query);
-    }).length,
+    spots: spots.total,
     challenges: quests.filter((quest) => isQuestOpen(quest) && matchesQuery(questSearchText(quest), query)).length,
   };
 }

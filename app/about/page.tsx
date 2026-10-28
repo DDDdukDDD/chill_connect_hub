@@ -9,7 +9,7 @@ import { SiteFooter } from '@/components/SiteFooter';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { useAuth } from '@/lib/useAuth';
-import { CreateEventModal } from '@/components/CreateEventModal';
+import { CreateEventModal } from '@/components/LazyCreateEventModal';
 import { EventItem } from '@/data/mockData';
 import { Toast } from '@/components/Toast';
 

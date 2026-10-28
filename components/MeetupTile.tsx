@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { MapPin, Heart, Star, Globe } from 'lucide-react';
-import { BANGKOK_ZONES, type EventItem } from '@/data/mockData';
+import type { EventItem } from '@/data/mockData';
+import { BANGKOK_ZONES } from '@/data/zones';
 import { isEventEnded, parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { formatEventBadgePrice, hasKnownPrice, isPriceFree } from '@/lib/priceUtils';
 import { placeName } from '@/lib/placeName';

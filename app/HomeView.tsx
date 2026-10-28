@@ -18,9 +18,10 @@ import { CampaignStrip } from '@/components/CampaignStrip';
 import type { Campaign } from '@/lib/campaigns/types';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
-import { CreateEventModal } from '@/components/CreateEventModal';
-import { MOCK_EVENTS, EventItem, ChallengeQuest } from '@/data/mockData';
-import { MOCK_SPOTS, LifestyleSpotItem } from '@/data/spotsData';
+import { CreateEventModal } from '@/components/LazyCreateEventModal';
+// Types only: the bundled sample data (~900 KB) is not shipped to the browser (2026-10-28)
+import type { EventItem, ChallengeQuest } from '@/data/mockData';
+import type { LifestyleSpotItem } from '@/data/spotsData';
 import { formatEventDateRange, isEventEnded, nearDayLabel, parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { useAuth } from '@/lib/useAuth';
 import { fetchAllContentPages } from '@/lib/contentClient';
@@ -33,7 +34,7 @@ import { useHomeSpots, getCachedSpotVibeCategory } from '@/lib/usePublishedSpots
 import { getCommunityEventCategory, type SpotVibeId } from '@/data/masterHub';
 import { isTradeEvent } from '@/lib/highlights';
 import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
-import { TOP_DESTINATIONS } from '@/components/TopDestinationsRail';
+import { TOP_DESTINATIONS } from '@/data/topDestinations';
 import { Toast } from '@/components/Toast';
 import { defaultEventImage } from '@/lib/eventImageResolver';
 import { optimizedImage } from '@/lib/optimizedImage';
@@ -171,7 +172,7 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
   const isMember = isAuthReady && isLoggedIn;
   // Only the member home picks places from the catalog; the visitor landing needs just the number of places
   const { spots: liveSpots, isLoaded: isSpotsLoaded } = useHomeSpots(isMember);
-  const spotsList = useMemo(() => (liveSpots.length > 0 ? liveSpots : isSpotsLoaded ? MOCK_SPOTS : []), [liveSpots, isSpotsLoaded]);
+  const spotsList = liveSpots;
   const [spotTotal, setSpotTotal] = useState<number | null>(null);
   useEffect(() => {
     if (!isAuthReady || isMember) return;
@@ -230,11 +231,10 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
 
     if (!initialEvents || isMember) fetchAllContentPages<EventItem>('/api/events', 'events')
       .then((events) => {
-        if (isActive) setEventsList(events.length > 0 ? events : MOCK_EVENTS);
+        if (isActive && events.length > 0) setEventsList(events);
       })
       .catch((err) => {
-        console.warn('Journey events fallback:', err);
-        if (isActive) setEventsList(MOCK_EVENTS);
+        console.warn('Journey events:', err);
       })
       .finally(() => {
         if (isActive) setIsEventsLoaded(true);

@@ -6,17 +6,14 @@ import { useParams, useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
-import { CreateEventModal } from '@/components/CreateEventModal';
+import { CreateEventModal } from '@/components/LazyCreateEventModal';
 import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import { useAuth } from '@/lib/useAuth';
 import { VisitPanel } from '@/components/VisitPanel';
 import { activityActions, useMyActivity } from '@/lib/useMyActivity';
 import { GroupChatModal } from '@/components/GroupChatModal';
-import {
-  getEventById,
-  EventItem,
-  MOCK_EVENTS
-} from '@/data/mockData';
+// Type only: the server page sends bundled sample events too, so the ~200 KB of them stay off the browser (2026-10-28)
+import type { EventItem } from '@/data/mockData';
 import { getFairEventCategory } from '@/data/masterHub';
 import { eventOrigin } from '@/lib/contentOrigin';
 import { fairPlace } from '@/lib/placeName';
@@ -27,7 +24,7 @@ import { renderDescriptionContent, stripHtmlToPlainText } from '@/components/Ric
 import { SpotBuddyGatheringModal, SpotBuddyPostItem } from '@/components/SpotBuddyGatheringModal';
 import { ExpoMeetupPassModal, ExpoMeetupPassData } from '@/components/ExpoMeetupPassModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
-import { RelatedCards, fairCard } from '@/components/detail/RelatedCards';
+import { RelatedFairTiles } from '@/components/detail/RelatedTiles';
 import { DetailHero, DetailTable, ItineraryList, heroButton } from '@/components/detail/DetailHero';
 import { VisitReviews } from '@/components/detail/VisitReviews';
 import { Toast } from '@/components/Toast';
@@ -111,14 +108,10 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
 
   // Dynamic Event State (Immediate sync for SSR & mock events)
   const [eventData, setEventData] = useState<EventItem | null>(() => {
-    if (initialEvent) return initialEvent;
-    if (!decodedId) return null;
-    return getEventById(decodedId) || MOCK_EVENTS.find((e) => e.id === decodedId || e.title === decodedId) || null;
+    return initialEvent ?? null;
   });
   const [isLoading, setIsLoading] = useState(() => {
-    if (initialEvent || !decodedId) return false;
-    const found = getEventById(decodedId) || MOCK_EVENTS.find((e) => e.id === decodedId || e.title === decodedId);
-    return !found;
+    return !initialEvent && Boolean(decodedId);
   });
 
   // Fair Expo Buddy Gathering Modal
@@ -170,12 +163,6 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
     if (!decodedId) {
       setIsLoading(false);
       return;
-    }
-
-    const localFound = getEventById(decodedId) || MOCK_EVENTS.find((e) => e.id === decodedId || e.title === decodedId);
-    if (localFound) {
-      setEventData(localFound);
-      setIsLoading(false);
     }
 
     fetch('/api/events')
@@ -465,7 +452,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
     return liveFairs
       .filter((e) => e.id !== eventData.id && e.eventType === 'public_venue' && !isEventEnded(e))
       .sort((x, y) => near(x) - near(y))
-      .slice(0, 4);
+      .slice(0, 6);
   }, [eventData, liveFairs]);
 
   if (isLoading) {
@@ -815,7 +802,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
           </div>
         </div>
 
-        <RelatedCards title="อีเวนต์อื่นที่น่าไป" allHref="/events" items={relatedFairs.map(fairCard)} />
+        <RelatedFairTiles title="อีเวนต์อื่นที่น่าไป" allHref="/events" events={relatedFairs} />
 
       </main>
 

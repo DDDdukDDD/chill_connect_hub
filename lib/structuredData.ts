@@ -148,6 +148,16 @@ export function meetupCollectionJsonLd(events: { id: string; title: string; imag
   );
 }
 
+/** /events: a collection page listing the upcoming อีเวนต์, each pointing to its own page (where the full Event data is). */
+export function fairCollectionJsonLd(events: { id: string; title: string; image?: string }[], path: string, name: string, description: string): JsonLd {
+  return collectionJsonLd(
+    events.map((event) => ({ path: `/events/${encodeURIComponent(event.id)}`, name: event.title.replace(/^\[ตัวอย่าง\]\s*/, ''), image: event.image })),
+    path,
+    name,
+    description
+  );
+}
+
 function collectionJsonLd(items: { path: string; name: string; image?: string }[], path: string, name: string, description: string): JsonLd {
   return {
     '@context': 'https://schema.org',

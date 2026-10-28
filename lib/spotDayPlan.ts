@@ -1,4 +1,6 @@
-import { getDistanceKm, getSpotVibeCategory, type LifestyleSpotItem } from '@/data/spotsData';
+import type { LifestyleSpotItem } from '@/data/spotsData';
+import { getSpotVibeCategory } from '@/lib/spotVibe';
+import { getDistanceKm } from '@/lib/nearbySpots';
 import { effectiveTier } from '@/lib/spotCuration';
 
 /**

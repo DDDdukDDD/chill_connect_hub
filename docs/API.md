@@ -134,6 +134,23 @@ Province names follow `MASTER_77_PROVINCES` (Bangkok is `"กรุงเทพ�
 - `sourceName` / `sourceUrl`: where the record came from. Imported spots should show a credit, e.g. "ข้อมูล: กรมการท่องเที่ยว". Spots with `sourceName: "OpenStreetMap · Wikipedia"` (ids `osm-…`) **must** show it (ODbL / CC BY-SA).
 - `latitude` / `longitude` are validated for imported spots (inside Thailand), so they are safe for maps and nearby searches.
 
+### `GET /api/spots/browse` — the /spots list, worked out on the server (added 2026-10-28, BE-176)
+
+What `/spots` shows: published places filtered, ranked and counted with the page's own rules (`lib/spotBrowse.ts`), so the browser no longer downloads the whole catalog (~7 MB). Hidden-tier places show only when searched for or saved.
+
+| Param | Values | Default |
+|---|---|---|
+| `q` | search words (same matching as the ค้นพบ search) | — |
+| `province` | Thai province name (aliases like "เชียงใหม่" work as on the page) | all |
+| `category` | a vibe group id (`MASTER_SPOT_CATEGORIES`) or a plain spot category | all |
+| `price` | `free` | — |
+| `ids` | comma-separated place ids (the member's saved places; ≤ 500) | — |
+| `lat`, `lng` | a position: nearest first, each place gets `distanceKm` | ranked order |
+| `t` | ms timestamp the list was opened (keeps "new" places in place across "แสดงเพิ่มเติม") | now |
+| `limit` | 1–200 | `24` |
+
+Response `200`: `{ success: true, spots: LifestyleSpotItem[], total, counts: Record<vibeId | 'all', number>, railIds: string[], openedAt }`. `spots` are list items: no gallery, contact or source fields, description cut to 280 characters, `curation` reduced to tier and score. Open `/spots/[id]` (or `GET /api/spots/[id]`) for the full place. `counts` are per vibe group in the picked province (for the category tabs); `railIds` are the groups with enough places to show on the rail.
+
 ### `GET /api/spots/[id]` — one spot
 
 Returns one **published** spot (`404` for drafts and unknown ids). The id is URL-encoded.

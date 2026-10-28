@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Heart, X, Calendar, Plus } from 'lucide-react';
 import { isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp } from '@/lib/dateUtils';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
-import { EventGrid } from '@/components/EventGrid';
+import { EmptyResults } from '@/components/discover/EmptyResults';
 import { MeetupTile } from '@/components/MeetupTile';
 import { ViewModeToggle, ViewMode } from '@/components/ViewModeToggle';
 import { ShowMoreButton } from '@/components/discover/ShowMoreButton';
@@ -17,12 +17,12 @@ import { getCommunityEventCategory } from '@/data/masterHub';
 import { CustomDatePickerModal } from '@/components/CustomDatePickerModal';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
-import { CreateEventModal } from '@/components/CreateEventModal';
+import { CreateEventModal } from '@/components/LazyCreateEventModal';
 import { useAuth } from '@/lib/useAuth';
 import { activityActions, useMyActivity } from '@/lib/useMyActivity';
 import { fetchAllContentPages } from '@/lib/contentClient';
 import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
-import { MOCK_EVENTS, EventItem } from '@/data/mockData';
+import type { EventItem } from '@/data/mockData';
 import { ONLINE, eventInProvince, matchesQuery, meetupSearchText, type DiscoverCounts } from '@/lib/discoverMatch';
 import { DiscoverHeader, FilterSelect, filterPillClass } from '@/components/discover/DiscoverHeader';
 import { DiscoverSearch } from '@/components/discover/DiscoverSearch';
@@ -38,7 +38,6 @@ type SortOption = 'soonest' | 'favorites';
 type ServerProps = { initialEvents?: EventItem[]; initialCounts?: { query: string; province: string; counts: DiscoverCounts } };
 
 function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
   // The member's own categories from onboarding come first on the tabs, marked (owner 2026-10-23)
@@ -60,7 +59,7 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
   const myActivity = useMyActivity();
   const favorites = isLoggedIn ? myActivity.savedEventIds : [];
   const joinedEventIds = isLoggedIn ? myActivity.joinedIds : [];
-  const [eventsList, setEventsList] = useState<EventItem[]>(initialEvents ?? MOCK_EVENTS);
+  const [eventsList, setEventsList] = useState<EventItem[]>(initialEvents ?? []);
   // Set after mount, so the server HTML and the first browser render show the same day labels
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => setNow(new Date()), []);
@@ -88,21 +87,17 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
   const [customStartDate, setCustomStartDate] = useState<string>('');
   const [customEndDate, setCustomEndDate] = useState<string>('');
 
-  // Refresh the server's list in the browser (new ตี้ and seat counts since the page was rendered)
+  // The page sends only the ตี้ still to come (fresh per request); the ones that are over load once someone asks for them
+  const endedLoaded = React.useRef(false);
   React.useEffect(() => {
-    const loadLiveEvents = async () => {
-      let baseList = MOCK_EVENTS;
-      try {
-        const communityEvents = await fetchAllContentPages<EventItem>('/api/events?type=community', 'events');
-        if (communityEvents.length > 0) baseList = communityEvents;
-      } catch (err) {
-        console.log('Using default mock events fallback:', err);
-      }
-
-      setEventsList(baseList);
-    };
-    loadLiveEvents();
-  }, []);
+    if (statusFilter === 'upcoming' || endedLoaded.current) return;
+    endedLoaded.current = true;
+    fetchAllContentPages<EventItem>('/api/events?type=community&includeEnded=true', 'events')
+      .then((all) => all.length > 0 && setEventsList(all))
+      .catch(() => {
+        endedLoaded.current = false;
+      });
+  }, [statusFilter]);
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -465,16 +460,7 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
             ))}
           </ul>
         ) : (
-          <EventGrid
-            events={paginatedEvents}
-            onSelectEvent={() => {}}
-            favorites={isLoggedIn ? favorites : []}
-            toggleFavorite={toggleFavorite}
-            joinedEventIds={isLoggedIn ? joinedEventIds : []}
-            onResetFilters={handleResetAll}
-            isFavoritesOnly={sortBy === 'favorites'}
-            viewMode={viewMode}
-          />
+          <EmptyResults isFavoritesOnly={sortBy === 'favorites'} onReset={handleResetAll} />
         )}
 
         {viewMode === 'grid' && filteredEvents.length > itemsPerPage && (
