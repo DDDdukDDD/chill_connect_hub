@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Compass, type LucideIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Compass } from 'lucide-react';
+import { fairCategoryIcon, meetupCategoryIcon, spotCategoryIcon, type CategoryIconComponent } from '@/components/icons/CategoryIcons';
 import type { DiscoverKind } from '@/lib/discoverMatch';
 
-type Category = { id: string; name: string; icon: LucideIcon; colorScheme: { iconColor: string } };
+type Category = { id: string; name: string; icon: CategoryIconComponent; colorScheme: { iconColor: string } };
 
 type Props = {
   /** The ค้นพบ pages, and /challenges (same tabs, violet) */
@@ -51,12 +52,16 @@ export function DiscoverCategoryTabs({ kind, categories, counts, selectedId, onS
 
   const scrollBy = (direction: 1 | -1) => rowRef.current?.scrollBy({ left: direction * 320, behavior: 'smooth' });
 
+  // Every pillar's categories use the drawn icon pack, in its own colors and larger, 36 px (owner 2026-10-28).
+  // Some ids repeat across pillars (travel_outdoor), hence one map per kind; /challenges uses the ตี้ categories
+  const drawn = (id: string) =>
+    kind === 'spots' ? spotCategoryIcon(id) : kind === 'fairs' ? fairCategoryIcon(id) : meetupCategoryIcon(id);
   const tabs = [
-    { id: null, name: 'ทั้งหมด', Icon: Compass, iconColor: 'text-slate-700', count: counts.all },
+    { id: null, name: 'ทั้งหมด', Icon: drawn('all') ?? Compass, iconColor: 'text-slate-700', count: counts.all, isDrawn: Boolean(drawn('all')) },
     ...categories
       .filter((cat) => (counts[cat.id] ?? 0) > 0 || cat.id === selectedId)
       .sort((a, b) => Number(mineIds.includes(b.id)) - Number(mineIds.includes(a.id)))
-      .map((cat) => ({ id: cat.id, name: cat.name, Icon: cat.icon, iconColor: cat.colorScheme.iconColor, count: counts[cat.id] ?? 0 })),
+      .map((cat) => ({ id: cat.id, name: cat.name, Icon: drawn(cat.id) ?? cat.icon, iconColor: cat.colorScheme.iconColor, count: counts[cat.id] ?? 0, isDrawn: Boolean(drawn(cat.id)) })),
   ];
 
   const arrow = 'hidden sm:flex absolute top-1/2 -translate-y-1/2 z-10 w-9 h-9 items-center justify-center rounded-full bg-white border border-slate-200 shadow-sm text-slate-700 hover:bg-slate-50 cursor-pointer';
@@ -65,7 +70,7 @@ export function DiscoverCategoryTabs({ kind, categories, counts, selectedId, onS
     <div className="relative border-b border-slate-200">
       {/* relative: the sr-only "สายของคุณ" labels are absolute; without it they escape the scroll row and widen the page on phones */}
       <div ref={rowRef} onScroll={measure} role="tablist" aria-label="หมวด" className="relative flex gap-1 sm:gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
-        {tabs.map(({ id, name, Icon, iconColor, count }) => {
+        {tabs.map(({ id, name, Icon, iconColor, count, isDrawn }) => {
           const isPicked = id === selectedId;
           const isMine = id !== null && mineIds.includes(id);
           return (
@@ -81,7 +86,7 @@ export function DiscoverCategoryTabs({ kind, categories, counts, selectedId, onS
               }`}
             >
               <span className="relative">
-                <Icon className={`w-6 h-6 transition-transform group-hover:-translate-y-0.5 ${iconColor}`} strokeWidth={1.75} aria-hidden="true" />
+                <Icon className={`${isDrawn ? 'w-9 h-9' : 'w-6 h-6'} transition-transform group-hover:-translate-y-0.5 ${iconColor}`} strokeWidth={1.75} aria-hidden="true" />
                 {isMine && <span className="absolute -top-0.5 -right-1.5 w-2 h-2 rounded-full bg-[#F26430] ring-2 ring-white" aria-hidden="true" />}
               </span>
               <span>{name}{isMine && <span className="sr-only"> สายของคุณ</span>}</span>

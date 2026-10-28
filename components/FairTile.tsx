@@ -50,12 +50,13 @@ function onNowLine(event: EventItem) {
   return new Date(end).toDateString() === new Date().toDateString() ? 'วันนี้' : `กำลังจัด · ถึง ${shortDate(end)}`;
 }
 
-// The badge price, short: "เข้าชมฟรี", "฿800", "เริ่ม ฿1,200" when the organizer lists tiers, "ราคาตามผู้จัด" when not given
-function entryPrice(price: string | undefined) {
+// The badge price, short: "เข้าชมฟรี", "฿800", "เริ่ม ฿1,200" when the organizer lists tiers; null when not given,
+// so the tile shows no badge rather than a guess (owner 2026-10-28: never "free" unless the source says so)
+function entryPrice(price: string | undefined): string | null {
   if (isPriceFree(price)) return 'เข้าชมฟรี';
-  if (!hasKnownPrice(price) || /ไม่ระบุ/.test(price!)) return 'ราคาตามผู้จัด';
+  if (!hasKnownPrice(price) || /ไม่ระบุ/.test(price!)) return null;
   const amounts = (formatEventBadgePrice(price).match(/\d[\d,]*/g) || []).map((n) => parseInt(n.replace(/,/g, ''), 10)).filter((n) => n >= 20);
-  if (amounts.length === 0) return 'ราคาตามผู้จัด';
+  if (amounts.length === 0) return null;
   const min = Math.min(...amounts);
   return `${amounts.length > 1 ? 'เริ่ม ' : ''}฿${min.toLocaleString()}`;
 }
@@ -88,15 +89,16 @@ export function FairTile({
 }) {
   const isEnded = isEventEnded(event);
   const onNow = !isEnded && isOnNow(event, now);
-  // Every tile has one badge, as every ตี้ shows its seats: what it costs to get in (the fact that decides a click), "จบแล้ว" once over
-  const badge = isEnded ? { text: 'จบแล้ว', tone: 'bg-slate-200 text-slate-700' } : { text: entryPrice(event.price), tone: 'bg-[#2B527A] text-white' };
+  // One badge: what it costs to get in (the fact that decides a click), "จบแล้ว" once over, none when the price is unknown
+  const price = entryPrice(event.price);
+  const badge = isEnded ? { text: 'จบแล้ว', tone: 'bg-slate-200 text-slate-700' } : price ? { text: price, tone: 'bg-[#2B527A] text-white' } : null;
 
   return (
     <Link href={`/events/${encodeURIComponent(event.id)}`} className="group block">
       <span className="relative block aspect-square overflow-hidden rounded-3xl bg-slate-200 shadow-md">
         {/* A tall poster shows whole over a blurred copy of itself; a plain photo fills the square as on a ตี้ tile */}
         <PosterPhoto src={optimizedImage(event.image, 384)} dim={isEnded} zoom />
-        <span className={`absolute right-2.5 bottom-2.5 rounded-full px-2.5 py-1 text-[11px] font-bold whitespace-nowrap shadow-sm ${badge.tone}`}>{badge.text}</span>
+        {badge && <span className={`absolute right-2.5 bottom-2.5 rounded-full px-2.5 py-1 text-[11px] font-bold whitespace-nowrap shadow-sm ${badge.tone}`}>{badge.text}</span>}
         {onToggleSave && !isEnded && (
           <button
             type="button"
