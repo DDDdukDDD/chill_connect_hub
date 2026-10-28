@@ -20,7 +20,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   const navItems = [
     // Home is the member's live feed (and the visitor's landing), so it stays one tap away
     { id: 'home', label: 'หน้าแรก', href: '/', icon: Home },
-    { id: 'explore', label: 'ค้นพบ', href: '/community', icon: Compass },
+    { id: 'explore', label: 'กิจกรรม', href: '/community', icon: Compass },
     { id: 'moments', label: 'โมเมนต์', href: '/moments', icon: Camera },
     { id: 'challenges', label: 'ชาเลนจ์', href: '/challenges', icon: Zap },
     // My Hub is personal: a visitor who is not signed in has nothing there

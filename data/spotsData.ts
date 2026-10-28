@@ -104,81 +104,9 @@ export const SPOT_CATEGORIES = [
   })),
 ];
 
-/**
- * Maps any LifestyleSpotItem to exactly one of the Master Spot Vibe categories, so rail totals sum to 100% of spots.
- * The stored category decides first and the title refines it (a temple-type ruin is an old town, a park with a
- * waterfall is nature). Descriptions are unreliable (temple texts mention "ศิลปะล้านนา", viewpoints "ทะเลหมอก"),
- * so they only count for nature spots and as a last resort.
- */
-export function getSpotVibeCategory(spot: LifestyleSpotItem): SpotVibeId {
-  // string (not the union) so stored values older than the union still compile
-  const cat: string = spot.category;
-  const title = (spot.title || '').toLowerCase();
-  const label = spot.categoryLabel || '';
-  const text = `${title} ${label.toLowerCase()} ${spot.description || ''} ${(spot.vibeTags || []).join(' ')}`.toLowerCase();
-  // A café that also serves drinks or food ("Cafe & Bar", "Cafe & Restaurant") stays a café
-  const isCafe = /สโลว์บาร์|กาแฟ|coffee|คาเฟ่|\bcaf[eé]\b/.test(title);
+import { getSpotVibeCategory } from '@/lib/spotVibe';
 
-  if (cat === 'mall' || /ห้างสรรพสินค้า|มอลล์/.test(label)) return 'shopping_mall';
-  if ((cat === 'bar' || /บาร์|ผับ|\bpub\b|\bbar\b|speakeasy|ค็อกเทล|cocktail|ไนท์คลับ|nightclub/.test(title)) && !isCafe) return 'nightlife_bars';
-  if (cat === 'attraction' || /สวนสนุก|สวนน้ำ|water ?park|theme ?park|สวนสัตว์|\bzoo\b|ซาฟารี|safari|โกคาร์ท|go-?kart|โบว์ลิ่ง|bowling|escape room|ห้องปริศนา/.test(title)) return 'fun_activities';
-  if (cat === 'restaurant' || (!isCafe && /ร้านอาหาร|ภัตตาคาร|restaurant|สตรีทฟู้ด|street food|ก๋วยเตี๋ยว|ร้านข้าว|โอมากาเสะ/.test(title))) return 'food_street';
-
-  const isMuseum = /พิพิธภัณฑ์|museum|มิวเซียม|อควาเรียม|aquarium|ศูนย์วิทยาศาสตร์|ท้องฟ้าจำลอง/.test(title);
-  const isShrine = /^วัด|ศาลเจ้า|พระธาตุ|เจดีย์|shrine/.test(title);
-  const isMountain = /ดอย|ม่อน|ยอดเขา|ภูเขา|ทะเลหมอก|^ภู(?!เก็ต)/.test(title);
-
-  switch (cat) {
-    case 'beach':
-      return 'sea_island';
-    case 'cafe':
-    case 'bar':
-    case 'workspace':
-    case 'coworking':
-      return 'cafe_slowbar';
-    case 'art':
-      return 'art_creative';
-    case 'museum':
-      return /หอศิลป์|แกลเลอรี|gallery|\bart\b|อาร์ต/.test(title) ? 'art_creative' : 'museum_learning';
-    case 'temple':
-      if (isShrine) return 'temple_mu';
-      if (isMuseum) return 'museum_learning';
-      return /อุทยานประวัติศาสตร์|โบราณสถาน|เมืองเก่า|ปราสาท/.test(title) ? 'oldtown_culture' : 'temple_mu';
-    case 'oldtown':
-      if (isShrine) return 'temple_mu';
-      if (isMuseum) return 'museum_learning';
-      return 'oldtown_culture';
-    case 'market':
-      return 'market_walking';
-    case 'viewpoint':
-      return isMountain || /ภูเขา/.test(label) ? 'mountain_mist' : 'views_rooftop';
-    case 'park':
-      if (/น้ำตก|อุทยานแห่งชาติ|ป่า|ถ้ำ/.test(title)) return 'nature_camping';
-      if (isMuseum) return 'museum_learning';
-      return 'city_parks';
-    case 'nature':
-      if (/น้ำพุร้อน|บ่อน้ำร้อน|สปา|บำบัด|ฮีลใจ|ออนเซ็น/.test(text)) return 'wellness_retreat';
-      if (/ทะเล(?!หมอก)|หาด|เกาะ|อ่าว/.test(title)) return 'sea_island';
-      if (isMountain) return 'mountain_mist';
-      if (/จุดชมวิว/.test(title)) return 'views_rooftop';
-      if (/สวนสาธารณะ|สวนรถไฟ|สวนลุม|สวนเบญ/.test(title)) return 'city_parks';
-      if (isMuseum) return 'museum_learning';
-      return 'nature_camping';
-  }
-
-  // A stored category this code does not know: the words decide
-  if (/สปา|บำบัด|ฮีลใจ|น้ำพุร้อน|ออนเซ็น/.test(text)) return 'wellness_retreat';
-  if (/คาเฟ่|สโลว์บาร์|coffee|roaster/.test(text)) return 'cafe_slowbar';
-  if (/หอศิลป์|แกลเลอรี|gallery/.test(text)) return 'art_creative';
-  if (isMuseum) return 'museum_learning';
-  if (isShrine) return 'temple_mu';
-  if (/ตลาด|ถนนคนเดิน|market/.test(title)) return 'market_walking';
-  if (/เมืองเก่า|ชุมชน|โบราณ|ประวัติศาสตร์/.test(text)) return 'oldtown_culture';
-  if (/ทะเล(?!หมอก)|หาด|เกาะ|beach|island/.test(text)) return 'sea_island';
-  if (/ดอย|หมอก|ม่อน|ยอดเขา/.test(text)) return 'mountain_mist';
-  if (/จุดชมวิว|viewpoint|rooftop|รูฟท็อป/.test(text)) return 'views_rooftop';
-  return 'nature_camping';
-}
+export { getSpotVibeCategory };
 
 import { PROVINCES_77_TOP_SPOTS } from './allProvincesSpots';
 
@@ -1666,91 +1594,14 @@ export function getSpotById(id: string): LifestyleSpotItem | undefined {
   return MOCK_SPOTS.find((s) => s.id === id || encodeURIComponent(s.id) === id);
 }
 
-export function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  if (!lat1 || !lon1 || !lat2 || !lon2) return 999999;
-  const R = 6371; // Earth radius in km
-  const dLat = (lat2 - lat1) * (Math.PI / 180);
-  const dLon = (lon2 - lon1) * (Math.PI / 180);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return Math.round(R * c * 10) / 10;
-}
+import { getDistanceKm, getNearbySpots as nearbySpotsIn, getNearbyRecommendationInfo as nearbyInfoIn } from '@/lib/nearbySpots';
 
-/**
- * Retrieve nearby or similar spots prioritizing same zone, district, GPS proximity, and province
- */
+export { getDistanceKm };
+
 /** `pool` is the catalog to search; pass the published spots from the API (defaults to the bundled data). */
-export function getNearbySpots(currentSpot: LifestyleSpotItem, limit = 4, pool: LifestyleSpotItem[] = MOCK_SPOTS): LifestyleSpotItem[] {
-  const others = pool.filter((s) => s.id !== currentSpot.id);
+export const getNearbySpots = (currentSpot: LifestyleSpotItem, limit = 4, pool: LifestyleSpotItem[] = MOCK_SPOTS) => nearbySpotsIn(currentSpot, limit, pool);
 
-  // Score each spot based on proximity factors:
-  // 1. Same Zone (if specified) -> top priority
-  // 2. Same District -> very high priority
-  // 3. GPS Distance (within 15km)
-  // 4. Same Province
-  // 5. Same Category
-  const scored = others.map((s) => {
-    let score = 0;
-    const distanceKm = getDistanceKm(currentSpot.latitude, currentSpot.longitude, s.latitude, s.longitude);
-
-    if (currentSpot.zone && s.zone && currentSpot.zone === s.zone) {
-      score += 100;
-    }
-    if (currentSpot.district && s.district && currentSpot.district === s.district) {
-      score += 80;
-    }
-    if (currentSpot.province === s.province) {
-      score += 50;
-    }
-    if (distanceKm <= 5) {
-      score += 40;
-    } else if (distanceKm <= 15) {
-      score += 25;
-    } else if (distanceKm <= 35) {
-      score += 10;
-    }
-    if (currentSpot.category === s.category) {
-      score += 15;
-    }
-
-    return { spot: s, score, distanceKm };
-  });
-
-  scored.sort((a, b) => {
-    if (b.score !== a.score) {
-      return b.score - a.score;
-    }
-    return a.distanceKm - b.distanceKm;
-  });
-
-  return scored.slice(0, limit).map((item) => item.spot);
-}
-
-/**
- * Recommendation info package with smart zonal title and subtitle
- */
-export function getNearbyRecommendationInfo(currentSpot: LifestyleSpotItem, limit = 4, pool: LifestyleSpotItem[] = MOCK_SPOTS) {
-  const spots = getNearbySpots(currentSpot, limit, pool);
-  const zoneName = currentSpot.zone || currentSpot.district;
-  const isZonal = Boolean(zoneName && zoneName !== currentSpot.province);
-
-  const sectionTitle = isZonal
-    ? `สถานที่แนะนำในย่าน ${zoneName} และใกล้เคียง 🌿`
-    : `สถานที่แนะนำอื่นๆ ในจังหวัด ${currentSpot.province} 🌿`;
-
-  const sectionSubtitle = isZonal
-    ? `จุดเช็คอินและที่เที่ยวยอดฮิตในย่าน ${zoneName} ที่เดินทางไปต่อได้สะดวกในทริปเดียวกัน`
-    : `จุดเช็คอินและที่เที่ยวยอดฮิตที่น่าแวะไปต่อในจังหวัด ${currentSpot.province}`;
-
-  return {
-    spots,
-    sectionTitle,
-    sectionSubtitle,
-    zoneName: isZonal ? zoneName : currentSpot.province,
-  };
-}
+/** Recommendation info package with smart zonal title and subtitle */
+export const getNearbyRecommendationInfo = (currentSpot: LifestyleSpotItem, limit = 4, pool: LifestyleSpotItem[] = MOCK_SPOTS) => nearbyInfoIn(currentSpot, limit, pool);
 
 

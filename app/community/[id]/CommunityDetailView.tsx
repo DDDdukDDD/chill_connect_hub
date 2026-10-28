@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
-import { CreateEventModal } from '@/components/CreateEventModal';
+import { CreateEventModal } from '@/components/LazyCreateEventModal';
 import { ETicketModal } from '@/components/ETicketModal';
 import { GroupChatModal } from '@/components/GroupChatModal';
 import { CancelTicketModal } from '@/components/CancelTicketModal';
@@ -25,11 +25,8 @@ import { WaitlistAction } from '@/components/detail/WaitlistAction';
 import { EventQuestions, type QuestionItem } from '@/components/detail/EventQuestions';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { activityActions, useMyActivity } from '@/lib/useMyActivity';
-import {
-  getEventById,
-  EventItem,
-  MOCK_EVENTS
-} from '@/data/mockData';
+// Type only: the server page sends bundled sample events too, so the ~200 KB of them stay off the browser (2026-10-28)
+import type { EventItem } from '@/data/mockData';
 import { getCommunityEventCategory } from '@/data/masterHub';
 import { placeName } from '@/lib/placeName';
 import { eventOrigin } from '@/lib/contentOrigin';
@@ -37,7 +34,7 @@ import { isEventEnded } from '@/lib/dateUtils';
 import { resolveEventGallery } from '@/lib/eventImageResolver';
 import { parseEventPrice } from '@/lib/priceUtils';
 import { renderDescriptionContent } from '@/components/RichTextEditor';
-import { RelatedCards, teeCard } from '@/components/detail/RelatedCards';
+import { RelatedMeetupTiles } from '@/components/detail/RelatedTiles';
 import { Toast } from '@/components/Toast';
 import {
   MapPin,
@@ -131,14 +128,10 @@ export default function CommunityDetailPage({
 
   // Dynamic Event State (Immediate sync for SSR & instant load)
   const [eventData, setEventData] = useState<EventItem | null>(() => {
-    if (initialEvent) return initialEvent;
-    if (!decodedId) return null;
-    return getEventById(decodedId) || MOCK_EVENTS.find((e) => e.id === decodedId || e.title === decodedId) || null;
+    return initialEvent ?? null;
   });
   const [isLoading, setIsLoading] = useState(() => {
-    if (initialEvent || !decodedId) return false;
-    const found = getEventById(decodedId) || MOCK_EVENTS.find((e) => e.id === decodedId || e.title === decodedId);
-    return !found;
+    return !initialEvent && Boolean(decodedId);
   });
 
   // Retrieve event from both local mock and live API database
@@ -148,12 +141,6 @@ export default function CommunityDetailPage({
     if (!decodedId) {
       setIsLoading(false);
       return;
-    }
-
-    const localFound = getEventById(decodedId) || MOCK_EVENTS.find((e) => e.id === decodedId || e.title === decodedId);
-    if (localFound) {
-      setEventData(localFound);
-      setIsLoading(false);
     }
 
     fetch('/api/events')
@@ -432,7 +419,7 @@ export default function CommunityDetailPage({
     ? liveMeetups
         .filter((e) => e.id !== eventData.id && e.eventType !== 'public_venue' && !isEventEnded(e))
         .sort((x, y) => sameSai(x) - sameSai(y))
-        .slice(0, 4)
+        .slice(0, 6)
     : [];
 
   if (isLoading) {
@@ -869,7 +856,7 @@ export default function CommunityDetailPage({
           </div>
         </div>
 
-        <RelatedCards title="ตี้ที่คุณอาจสนใจ" allHref="/community" items={relatedActivities.map(teeCard)} />
+        <RelatedMeetupTiles title="ตี้ที่คุณอาจสนใจ" allHref="/community" events={relatedActivities} />
 
       </main>
 

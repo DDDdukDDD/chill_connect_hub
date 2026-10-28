@@ -4,7 +4,6 @@ import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { LifestyleSpotItem } from '@/data/spotsData';
 import { resolveSpotImage } from '@/lib/spotImageResolver';
-import { useSpotCatalog } from '@/lib/usePublishedSpots';
 import { buildPlan, clockText, planCandidates, planMapsUrl, replacementFor, type PlanStop } from '@/lib/spotDayPlan';
 
 export interface SmartPlanForTee {
@@ -13,6 +12,8 @@ export interface SmartPlanForTee {
 
 interface SmartSpotPlanCardProps {
   currentSpot: LifestyleSpotItem;
+  /** Places near this one to plan with, picked by the server page (lib/spotBrowse.ts nearbyPool) */
+  catalog: LifestyleSpotItem[];
   /** "ชวนเพื่อนตั้งตี้": the page opens the create dialog with this schedule (and asks guests to log in) */
   onStartTee: (plan: SmartPlanForTee) => void;
 }
@@ -28,8 +29,7 @@ const travelText = (travel: NonNullable<PlanStop['travel']>) =>
  * near by in route order, with times from their opening hours. Each added stop can be swapped; the plan leads to
  * going with friends (a ตี้ with the schedule filled in) or to the route on Google Maps.
  */
-export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({ currentSpot, onStartTee }) => {
-  const catalog = useSpotCatalog();
+export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({ currentSpot, catalog, onStartTee }) => {
   const candidates = useMemo(() => planCandidates(currentSpot, catalog), [currentSpot, catalog]);
   // null = the automatic pick; a swap pins the places shown
   const [chosen, setChosen] = useState<LifestyleSpotItem[] | null>(null);

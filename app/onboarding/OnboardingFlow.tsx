@@ -35,6 +35,7 @@ import { DialogShell } from '@/components/auth/DialogShell';
 import { PhraseText } from '@/components/auth/PhraseText';
 import type { EventItem } from '@/data/mockData';
 import { MASTER_COMMUNITY_LIFESTYLE_CATEGORIES } from '@/data/masterHub';
+import { meetupCategoryIcon } from '@/components/icons/CategoryIcons';
 import type { LifestyleSpotItem } from '@/data/spotsData';
 import { NEW_MEMBER_NAME, nameInitial, tidyDisplayName } from '@/lib/displayName';
 import { compressImage } from '@/lib/media/compressor';
@@ -1394,7 +1395,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-2.5 gap-y-4 pt-2">
                     {saiCards.map((cat, i) => {
                       const look = SAI_LOOK.get(cat.id);
-                      const Icon = cat.icon;
+                      const Icon = meetupCategoryIcon(cat.id) ?? cat.icon;
                       const selected = communityInterests.includes(cat.id);
                       return (
                         <button
@@ -1412,7 +1413,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
                             </span>
                           )}
                           <span className={`w-11 h-11 md:w-[54px] md:h-[54px] rounded-2xl flex items-center justify-center ${look?.iconBg ?? 'bg-slate-100'} ${look?.iconColor ?? 'text-slate-600'} ${selected ? 'scale-110' : i % 2 ? 'rotate-6' : '-rotate-6'} group-hover:rotate-0 group-hover:scale-110 transition-transform`}>
-                            <Icon className="w-5 h-5 md:w-7 md:h-7" aria-hidden="true" />
+                            <Icon className="w-7 h-7 md:w-9 md:h-9" aria-hidden="true" />
                           </span>
                           {/* Break only at the ampersand, never inside a Thai word */}
                           <span className="text-[11px] sm:text-xs font-bold text-slate-800 text-center leading-tight">

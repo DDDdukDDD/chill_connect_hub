@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { TOP_DESTINATIONS } from '@/components/TopDestinationsRail';
+import { TOP_DESTINATIONS } from '@/data/topDestinations';
 
 /** The name people say ("เขาใหญ่", "หัวหิน"), not the province's full name */
 const shortName = (nameTh: string, provinceKey: string) => (nameTh.includes('•') ? nameTh.split('•')[0].trim() : provinceKey);

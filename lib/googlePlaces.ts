@@ -1,7 +1,8 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { getDistanceKm, LifestyleSpotItem } from '@/data/spotsData';
+import type { LifestyleSpotItem } from '@/data/spotsData';
+import { getDistanceKm } from '@/lib/nearbySpots';
 import { IS_SERVERLESS } from './db/databaseFile';
 import type { NearbyDiningItem } from './nearbyDiningService';
 

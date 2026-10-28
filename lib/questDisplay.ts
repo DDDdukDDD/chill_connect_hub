@@ -98,7 +98,8 @@ export interface QuestDetail {
   /** After finishing: one running challenge the member has not joined */
   next?: { id: string; title: string; image: string | null; rewardPoints: number; rewardTitle: string | null } | null;
   /** A few more open challenges, the same category first */
-  related?: { id: string; title: string; image: string | null; rewardPoints: number; period: string; startsInDays: number; participantsCount: number }[];
+  /** Open challenges to go on to, whole (drawn as /challenges tiles); `period` is the date range text */
+  related?: (ChallengeQuest & { period: string })[];
 }
 
 /** Said beside the places, to a member who is doing the challenge */

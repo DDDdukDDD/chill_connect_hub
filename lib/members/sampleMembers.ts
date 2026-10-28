@@ -19,61 +19,72 @@ export const sampleMemberId = (handle: string) => `mem_sample_${handle.toLowerCa
 
 async function seed(): Promise<void> {
   const { items } = await momentRepository.query({ statuses: ['published', 'hidden', 'removed'], sort: 'newest', page: 1, limit: 10_000 });
-  const samples = items.filter((m) => m.isSample);
-  const now = Date.now();
-  let index = 0;
-  for (const moment of samples) {
-    const handle = handleOf(moment.authorName);
-    const details = SAMPLE_MEMBER_PROFILES[handle];
-    if (!details) continue;
-    const id = sampleMemberId(handle);
-    const existing = await memberRepository.findById(id);
-    // Keep sample accounts in step with data/sampleMembers.ts
-    if (existing?.isSample && existing.preferences) {
-      await memberRepository.update(id, { preferences: { ...existing.preferences, province: 'กรุงเทพฯ', interests: { communityCategories: [...new Set(details.interests)], spotVibes: [], fairCategories: [] } } });
-    }
-    if (!existing) {
-      // Joined one to three months ago, so the account reads as an established member
-      const joined = new Date(now - (30 + (index++ % 60)) * DAY).toISOString();
-      const member: Member = {
-        id,
-        displayName: moment.authorName,
-        email: `${handle.toLowerCase()}@sample.invalid`,
-        emailVerified: true,
-        avatarUrl: moment.authorAvatar,
-        providers: [],
-        status: 'active',
-        sessionVersion: 0,
-        consentAt: joined,
-        consent: { termsVersion: TERMS_VERSION, acceptedAt: joined, ageConfirmedAt: joined, source: 'signup_form' } as Member['consent'],
-        preferences: {
-          intent: 'member',
-          goals: [],
-          birthYear: details.birthYear,
-          gender: details.gender,
-          interests: { communityCategories: [...new Set(details.interests)], spotVibes: [], fairCategories: [] },
-          province: 'กรุงเทพฯ',
-          updatedAt: joined,
-        },
-        onboardedAt: joined,
-        profile: {
-          bio: details.bio,
-          occupation: details.occupation,
-          education: details.education,
-          hometown: details.hometown,
-          livingArea: details.livingArea,
-          connectGoal: details.connectGoal,
-          hidden: ['workplace', 'relationshipStatus', 'age'],
-        },
-        pledgeAcceptedAt: joined,
-        pledgeVersion: PLEDGE_VERSION,
-        isSample: true,
-        createdAt: joined,
-      };
-      await memberRepository.create(member);
-    }
-    if (moment.authorId !== id) await momentRepository.mutate(moment.id, (m) => ({ ...m, authorId: id }));
+  // One pass per author, not per moment, and the authors side by side: done one moment at a time with a write
+  // each, the first page after a server start waited ~11 s for it (2026-10-28)
+  const byHandle = new Map<string, typeof items>();
+  for (const moment of items) {
+    const handle = moment.isSample ? handleOf(moment.authorName) : '';
+    if (!handle || !SAMPLE_MEMBER_PROFILES[handle]) continue;
+    byHandle.set(handle, [...(byHandle.get(handle) ?? []), moment]);
   }
+  const now = Date.now();
+  await Promise.all([...byHandle].map(([handle, moments], index) => seedAuthor(handle, moments, now - (30 + (index % 60)) * DAY)));
+}
+
+const sameSet = (a: string[] = [], b: string[] = []) => a.length === b.length && a.every((x) => b.includes(x));
+
+async function seedAuthor(handle: string, moments: Awaited<ReturnType<typeof momentRepository.query>>['items'], joinedAt: number): Promise<void> {
+  const details = SAMPLE_MEMBER_PROFILES[handle];
+  const moment = moments[0];
+  const id = sampleMemberId(handle);
+  const interests = [...new Set(details.interests)];
+  const existing = await memberRepository.findById(id);
+  // Keep sample accounts in step with data/sampleMembers.ts (written only when they differ)
+  const prefs = existing?.preferences;
+  if (existing?.isSample && prefs && (prefs.province !== 'กรุงเทพฯ' || !sameSet(prefs.interests?.communityCategories, interests) || prefs.interests?.spotVibes?.length || prefs.interests?.fairCategories?.length)) {
+    await memberRepository.update(id, { preferences: { ...prefs, province: 'กรุงเทพฯ', interests: { communityCategories: interests, spotVibes: [], fairCategories: [] } } });
+  }
+  if (!existing) {
+    // Joined one to three months ago, so the account reads as an established member
+    const joined = new Date(joinedAt).toISOString();
+    const member: Member = {
+      id,
+      displayName: moment.authorName,
+      email: `${handle.toLowerCase()}@sample.invalid`,
+      emailVerified: true,
+      avatarUrl: moment.authorAvatar,
+      providers: [],
+      status: 'active',
+      sessionVersion: 0,
+      consentAt: joined,
+      consent: { termsVersion: TERMS_VERSION, acceptedAt: joined, ageConfirmedAt: joined, source: 'signup_form' } as Member['consent'],
+      preferences: {
+        intent: 'member',
+        goals: [],
+        birthYear: details.birthYear,
+        gender: details.gender,
+        interests: { communityCategories: interests, spotVibes: [], fairCategories: [] },
+        province: 'กรุงเทพฯ',
+        updatedAt: joined,
+      },
+      onboardedAt: joined,
+      profile: {
+        bio: details.bio,
+        occupation: details.occupation,
+        education: details.education,
+        hometown: details.hometown,
+        livingArea: details.livingArea,
+        connectGoal: details.connectGoal,
+        hidden: ['workplace', 'relationshipStatus', 'age'],
+      },
+      pledgeAcceptedAt: joined,
+      pledgeVersion: PLEDGE_VERSION,
+      isSample: true,
+      createdAt: joined,
+    };
+    await memberRepository.create(member);
+  }
+  for (const m of moments) if (m.authorId !== id) await momentRepository.mutate(m.id, (current) => ({ ...current, authorId: id }));
 }
 
 /** Runs once per server process; safe to call from any route that shows sample authors */

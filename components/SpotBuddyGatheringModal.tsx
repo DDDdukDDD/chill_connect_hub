@@ -347,6 +347,8 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                 eventType: 'community',
                 category: 'chill',
                 province: spotProvince || 'กรุงเทพฯ',
+                // Every ตี้ names its area (the tile shows it next to the day); the place's district, else its province
+                zone: spotDistrict?.trim() || spotProvince || 'กรุงเทพฯ',
                 location: locationName.trim() || spotLocation,
                 spotId: spotId,
                 spotTitle: spotTitle,
@@ -388,6 +390,8 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
               eventType: 'community',
               category: 'chill',
               province: spotProvince || 'กรุงเทพฯ',
+              // Every ตี้ names its area (the tile shows it next to the day); the place's district, else its province
+              zone: spotDistrict?.trim() || spotProvince || 'กรุงเทพฯ',
               location: locationName.trim() || spotLocation,
               spotId: spotId,
               spotTitle: spotTitle,

@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { Search, X } from 'lucide-react';
-import { ALL_THAI_PROVINCES } from '@/data/spotsData';
+// From masterHub, not spotsData: importing spotsData ships its ~400 KB of sample places to the browser
+import { MASTER_77_PROVINCES as ALL_THAI_PROVINCES } from '@/data/masterHub';
 import { ALL_PROVINCES, ONLINE, type DiscoverKind } from '@/lib/discoverMatch';
 
 const POPULAR_PROVINCES = ['กรุงเทพฯ', 'นนทบุรี', 'เชียงใหม่', 'ชลบุรี', 'ภูเก็ต'];

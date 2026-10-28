@@ -10,20 +10,15 @@ import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { useAuth } from '@/lib/useAuth';
 import { useMyActivity } from '@/lib/useMyActivity';
-import { CreateEventModal, type PlacePick } from '@/components/CreateEventModal';
-import { MOCK_EVENTS, EventItem } from '@/data/mockData';
-import {
-  getSpotById,
-  getNearbySpots,
-  getNearbyRecommendationInfo,
-  LifestyleSpotItem,
-  MOCK_SPOTS
-} from '@/data/spotsData';
-import { RelatedCards, spotCard, teeCard } from '@/components/detail/RelatedCards';
+import { CreateEventModal, type PlacePick } from '@/components/LazyCreateEventModal';
+import type { EventItem } from '@/data/mockData';
+import type { LifestyleSpotItem } from '@/data/spotsData';
+import { getNearbyRecommendationInfo } from '@/lib/nearbySpots';
+import { tidyOpenHours } from '@/lib/openHours';
+import { RelatedMeetupTiles, RelatedSpotTiles } from '@/components/detail/RelatedTiles';
 import { spotOrigin } from '@/lib/contentOrigin';
 import { travelModes, visitorFacilities } from '@/lib/spotFacilities';
 import { resolveSpotGallery, resolveSpotImage } from '@/lib/spotImageResolver';
-import { usePublishedSpots } from '@/lib/usePublishedSpots';
 import { renderDescriptionContent } from '@/components/RichTextEditor';
 import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import { SmartSpotPlanCard } from '@/components/SmartSpotPlanCard';
@@ -169,7 +164,7 @@ export function parseSpotOpenStatus(openHours?: string): SpotOpenStatus {
 }
 
 /** The page itself: `initialSpot` comes from the server page, so the content is in the HTML search engines read. */
-export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: LifestyleSpotItem | null }) {
+export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { initialSpot?: LifestyleSpotItem | null; nearbyPool?: LifestyleSpotItem[] }) {
   const params = useParams();
   const router = useRouter();
   const rawId = params?.id as string;
@@ -199,11 +194,6 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
 
-  // Retrieve spot: the API holds the live catalog (incl. imported spots); bundled data renders instantly as a fallback
-  const staticSpot: LifestyleSpotItem | undefined = useMemo(() => {
-    if (!decodedId) return undefined;
-    return getSpotById(decodedId) || MOCK_SPOTS.find((s) => s.id === decodedId || s.title === decodedId);
-  }, [decodedId]);
   const [apiSpot, setApiSpot] = useState<LifestyleSpotItem | null>(initialSpot);
   const [isSpotLoading, setIsSpotLoading] = useState(!initialSpot);
   useEffect(() => {
@@ -223,8 +213,10 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
       active = false;
     };
   }, [decodedId, initialSpot]);
-  const spot: LifestyleSpotItem | undefined = apiSpot || staticSpot;
-  const { spots: publishedSpots } = usePublishedSpots();
+  // The server sends the place (a bundled sample place too); the API is asked only when it did not
+  const spot: LifestyleSpotItem | undefined = apiSpot ?? undefined;
+  // The nearby candidates the server picked from the catalog (sample places fall back to the bundled ones)
+  const publishedSpots = useMemo(() => nearbyPool ?? [], [nearbyPool]);
 
   // Gallery Photos (Adaptive resolution)
   const galleryImages: string[] = useMemo(() => {
@@ -237,12 +229,12 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
     () => spot ? { placeId: spot.id, name: spot.title, province: spot.province, district: spot.district, pin: spot.latitude && spot.longitude ? { latitude: spot.latitude, longitude: spot.longitude } : undefined } : undefined,
     [spot]
   );
-  const openStatus = useMemo(() => parseSpotOpenStatus(spot?.openHours), [spot?.openHours]);
+  const openStatus = useMemo(() => parseSpotOpenStatus(tidyOpenHours(spot?.openHours)), [spot?.openHours]);
 
   // Nearby spots recommendation info (smart zonal & distance proximity)
   const recommendation = useMemo(() => {
     if (!spot) return { spots: [], sectionTitle: '', sectionSubtitle: '', zoneName: '' };
-    return getNearbyRecommendationInfo(spot, 5, publishedSpots.length > 0 ? publishedSpots : MOCK_SPOTS);
+    return getNearbyRecommendationInfo(spot, 6, publishedSpots);
   }, [spot, publishedSpots]);
 
   const nearbySpots = recommendation.spots;
@@ -452,7 +444,7 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
           highlight={openStatus.badgeVariant === 'unspecified' ? undefined : { icon: Clock, text: [openStatus.statusText, openStatus.subText].filter(Boolean).join(' · '), tone: openStatus.isOpen ? 'open' : 'closed' }}
           title={cleanText(spot.title)}
           facts={[
-            { icon: Clock, text: cleanText(spot.openHours) || 'เปิดทุกวัน' },
+            { icon: Clock, text: cleanText(tidyOpenHours(spot.openHours)) || 'เปิดทุกวัน' },
             { icon: MapPin, text: [spot.district, spot.province].filter(Boolean).join(', ') },
             // "ไม่ระบุ" is not a fact: leave it out rather than print it (as on the อีเวนต์ page)
             ...(cleanText(spot.price).startsWith('ไม่ระบุ') ? [] : [{ icon: Ticket, text: cleanText(spot.price) || 'เข้าฟรี' }]),
@@ -556,6 +548,7 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
             <SmartSpotPlanCard
               key={spot.id}
               currentSpot={spot}
+              catalog={publishedSpots}
               onStartTee={(plan) => {
                 if (!isLoggedIn) {
                   setMembershipActionTitle('เพื่อชวนเพื่อนไปตามแผนนี้');
@@ -606,13 +599,13 @@ export default function SpotDetailPage({ initialSpot = null }: { initialSpot?: L
             <VisitReviews targetType="spot" targetId={spot.id} isLoggedIn={isLoggedIn} />
 
             {/* Cafés and restaurants close by */}
-            <NearbyDiningSection spot={spot} />
+            <NearbyDiningSection spot={spot} pool={publishedSpots} />
           </div>
         </div>
 
-        {placeTees.length > 0 && <RelatedCards title="ตี้ที่นัดที่นี่" allHref="/community" items={placeTees.slice(0, 4).map(teeCard)} />}
+        <RelatedMeetupTiles title="ตี้ที่นัดที่นี่" allHref="/community" events={placeTees.slice(0, 6)} />
 
-        <RelatedCards title={recommendation.sectionTitle.replace(/\s*\p{Extended_Pictographic}️?/gu, '').trim()} allHref={`/spots?province=${encodeURIComponent(spot.province)}`} items={nearbySpots.slice(0, 4).map(spotCard)} />
+        <RelatedSpotTiles title={recommendation.sectionTitle.replace(/\s*\p{Extended_Pictographic}️?/gu, '').trim()} allHref={`/spots?province=${encodeURIComponent(spot.province)}`} spots={nearbySpots.slice(0, 6)} />
 
       </main>
 

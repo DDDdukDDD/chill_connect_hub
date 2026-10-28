@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { requireAdminApiAccess } from '@/lib/adminApiAuth';
 import { db } from '@/lib/db';
 import { isThaiCoordinate } from '@/lib/contentQuality';
-import { getSpotVibeCategory, LifestyleSpotItem } from '@/data/spotsData';
+import type { LifestyleSpotItem } from '@/data/spotsData';
+import { getSpotVibeCategory } from '@/lib/spotVibe';
 import { MASTER_77_PROVINCES, MASTER_SPOT_CATEGORIES, SpotVibeId } from '@/data/masterHub';
 
 async function getAllSpots(): Promise<LifestyleSpotItem[]> {

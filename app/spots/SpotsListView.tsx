@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import {
   Heart,
   Search,
@@ -10,54 +11,42 @@ import {
   Plus } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
-import { SpotCard, SpotCardSkeleton } from '@/components/SpotCard';
-import { SpotListItem, SpotListItemSkeleton } from '@/components/SpotListItem';
+import { SpotTile, SpotTileSkeleton } from '@/components/SpotTile';
 import { ViewModeToggle, ViewMode } from '@/components/ViewModeToggle';
 import { ShowMoreButton } from '@/components/discover/ShowMoreButton';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
-import { CreateEventModal } from '@/components/CreateEventModal';
+import { CreateEventModal } from '@/components/LazyCreateEventModal';
 import { useAuth } from '@/lib/useAuth';
-import { useMyActivity } from '@/lib/useMyActivity';
-import { usePublishedSpots, getCachedSpotVibeCategory, getCachedSpotSearchText } from '@/lib/usePublishedSpots';
-import { compareSpotsByRank, shownWhenBrowsing } from '@/lib/spotRanking';
-import { MOCK_SPOTS, LifestyleSpotItem } from '@/data/spotsData';
+import { activityActions, useMyActivity } from '@/lib/useMyActivity';
+import type { SpotBrowseResult } from '@/lib/spotBrowse';
 import { NATIONWIDE_SPOT_CATEGORIES } from '@/components/SpotCategoryRail';
 import { DiscoverCategoryTabs } from '@/components/discover/DiscoverCategoryTabs';
 import { DestinationCircles } from '@/components/discover/DestinationCircles';
-import { EventItem } from '@/data/mockData';
+import type { EventItem } from '@/data/mockData';
 import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
-import { matchesQuery, spotInProvince, type DiscoverCounts } from '@/lib/discoverMatch';
+import { type DiscoverCounts } from '@/lib/discoverMatch';
 import { DiscoverHeader, filterPillClass } from '@/components/discover/DiscoverHeader';
 import { DiscoverSearch } from '@/components/discover/DiscoverSearch';
 import { useMyInterests } from '@/lib/useMyInterests';
+import { useFiltersInUrl } from '@/lib/useFiltersInUrl';
 import { Toast } from '@/components/Toast';
 
-function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return Math.round(R * c * 10) / 10;
-}
+// The list view's rows use an animation library (~120 KB); it loads only when someone picks the list view (2026-10-28)
+const SpotListItem = dynamic(() => import('@/components/SpotListItem').then((m) => m.SpotListItem));
+const SpotListItemSkeleton = dynamic(() => import('@/components/SpotListItem').then((m) => m.SpotListItemSkeleton));
 
-const MIN_SPOTS_PER_GROUP = 10;
+type ServerProps = { initial?: SpotBrowseResult; openedAt?: number; initialCounts?: { query: string; province: string; counts: DiscoverCounts } };
 
-type ServerProps = { initialSpots?: LifestyleSpotItem[]; initialCounts?: { query: string; province: string; counts: DiscoverCounts } };
+// Whole rows of the 2 / 3 / 4 / 6 tile grid, as on /events and /community
+const TILE_BATCH = { mobile: 12, sm: 12, md: 16, lg: 24, xl2: 24, defaultItems: 24 };
 
-function SpotsPageContent({ initialSpots, initialCounts }: ServerProps) {
-  const router = useRouter();
+function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts }: ServerProps) {
   const searchParams = useSearchParams();
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
   // The member's own categories from onboarding come first on the tabs, marked (owner 2026-10-23)
   const myInterests = useMyInterests(isLoggedIn);
-  const itemsPerPage = useResponsiveItemsPerPage();
+  const itemsPerPage = useResponsiveItemsPerPage(TILE_BATCH);
 
   const [activeNavTab, setActiveNavTab] = useState('explore');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
@@ -65,21 +54,17 @@ function SpotsPageContent({ initialSpots, initialCounts }: ServerProps) {
   const [selectedProvince, setSelectedProvince] = useState<string>(searchParams.get('province') || 'all');
   const [priceFilter, setPriceFilter] = useState<'all' | 'free'>((searchParams.get('price') as any) || 'all');
   const [sortBy, setSortBy] = useState<'newest' | 'favorites'>('newest');
+  useFiltersInUrl({ q: searchQuery.trim(), category: selectedCategory, province: selectedProvince, price: priceFilter });
   const [sortByNearMe, setSortByNearMe] = useState(false);
-  const [openedAt] = useState(() => Date.now());
+  const [openedAt] = useState(() => serverOpenedAt ?? Date.now());
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [currentPage, setCurrentPage] = useState(1);
-  const { spots: liveSpots, isLoaded } = usePublishedSpots();
-  const spotsList = liveSpots.length > 0 ? liveSpots : initialSpots ?? MOCK_SPOTS;
-  const [favoriteSpots, setFavoriteSpots] = useState<string[]>([]);
-  const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
-  // What the member joined comes from the account; this keeps the page in step with it
+  // Saved and joined come from the account, so a heart here shows in My Hub and on every device
   const myActivity = useMyActivity();
-  useEffect(() => {
-    if (myActivity.isLoaded) setJoinedEventIds(myActivity.joinedIds);
-  }, [myActivity.isLoaded, myActivity.joinedIds]);
+  const favoriteSpots = isLoggedIn ? myActivity.savedSpotIds : [];
+  const joinedEventIds = isLoggedIn ? myActivity.joinedIds : [];
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Sync viewMode from localStorage
@@ -99,30 +84,6 @@ function SpotsPageContent({ initialSpots, initialCounts }: ServerProps) {
     } catch {}
   };
 
-  // Load favorite spots and joined events from localStorage (Only active when user is logged in)
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    if (!isLoggedIn) {
-      setFavoriteSpots([]);
-      setJoinedEventIds([]);
-      return;
-    }
-
-    try {
-      const saved = localStorage.getItem('favorite_spots');
-      if (saved) {
-        setFavoriteSpots(JSON.parse(saved));
-      }
-      const savedJoined = localStorage.getItem('joined_event_ids');
-      if (savedJoined) {
-        setJoinedEventIds(JSON.parse(savedJoined));
-      }
-    } catch {
-      // ignore
-    }
-  }, [isLoggedIn]);
-
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
@@ -140,20 +101,10 @@ function SpotsPageContent({ initialSpots, initialCounts }: ServerProps) {
       setIsRequireMembershipOpen(true);
       return;
     }
-    setFavoriteSpots((prev) => {
-      const isFav = prev.includes(spotId);
-      let updated: string[];
-      if (isFav) {
-        showToast('ลบออกจากรายการบันทึกแล้ว');
-        updated = prev.filter((id) => id !== spotId);
-      } else {
-        showToast('บันทึกสถานที่เรียบร้อยแล้ว');
-        updated = [...prev, spotId];
-      }
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('favorite_spots', JSON.stringify(updated));
-      }
-      return updated;
+    const save = !favoriteSpots.includes(spotId);
+    void activityActions.setSaved('spot', spotId, save).then((ok) => {
+      if (!ok) showToast('บันทึกไม่สำเร็จ ลองอีกครั้งนะ');
+      else showToast(save ? 'บันทึกไว้แล้ว ดูได้ที่ "ที่บันทึกไว้"' : 'เอาออกจากที่บันทึกไว้แล้ว');
     });
   };
 
@@ -193,95 +144,54 @@ function SpotsPageContent({ initialSpots, initialCounts }: ServerProps) {
     }
   };
 
-  const filteredSpots = useMemo(() => {
-    const isCategoryFiltered = selectedCategory && selectedCategory !== 'all';
-    const isCatDef = isCategoryFiltered && NATIONWIDE_SPOT_CATEGORIES.some((c) => c.id === selectedCategory);
-    let result = spotsList.filter((spot) => {
-      // Unified Category Filter (Synchronized with Category Rail and Dropdown)
-      if (isCategoryFiltered) {
-        if (isCatDef) {
-          if (getCachedSpotVibeCategory(spot) !== selectedCategory) return false;
-        } else if (spot.category !== selectedCategory) {
-          return false;
-        }
-      }
-
-      // Province, with the city names people use for it (shared with the ค้นพบ tab counts)
-      const fullText = getCachedSpotSearchText(spot);
-      if (!spotInProvince(spot, selectedProvince, fullText)) return false;
-
-      if (sortBy === 'favorites' && !favoriteSpots.includes(spot.id)) return false;
-      if (priceFilter === 'free' && !spot.price.includes('ฟรี')) return false;
-
-      // Smart Search Query using cached text index with multi-token and synonyms
-      if (!matchesQuery(fullText, searchQuery)) return false;
-      // Places curated as hidden show only when searched for (saved ones still show in the saved list)
-      if (!searchQuery.trim() && sortBy !== 'favorites' && !shownWhenBrowsing(spot)) return false;
-      return true;
-    });
-
+  // The list comes from the server (GET /api/spots/browse): the same filters, order and counts, only the places on screen.
+  // It used to download all ~2,000 places (7 MB) and filter them here, which made phones slow (2026-10-28).
+  const [result, setResult] = useState<SpotBrowseResult>(() => initial ?? { spots: [], total: 0, counts: {}, railIds: NATIONWIDE_SPOT_CATEGORIES.map((c) => c.id), openedAt });
+  const [isFetching, setIsFetching] = useState(!initial);
+  const wanted = currentPage * itemsPerPage;
+  const browseQuery = useMemo(() => {
+    const params = new URLSearchParams({ t: String(openedAt) });
+    if (searchQuery.trim()) params.set('q', searchQuery.trim());
+    if (selectedProvince !== 'all') params.set('province', selectedProvince);
+    if (selectedCategory !== 'all') params.set('category', selectedCategory);
+    if (priceFilter === 'free') params.set('price', 'free');
+    if (sortBy === 'favorites') params.set('ids', favoriteSpots.join(','));
     if (sortByNearMe && userLocation) {
-      result = result.map((spot) => ({
-        ...spot,
-        distanceKm: spot.latitude && spot.longitude
-          ? calculateDistanceKm(userLocation.lat, userLocation.lng, spot.latitude, spot.longitude)
-          : undefined,
-      }));
-      result.sort((a, b) => ((a as any).distanceKm ?? 999) - ((b as any).distanceKm ?? 999));
-    } else {
-      // Smart Popularity Ranking (fresh suggestions first, then views and rating)
-      result.sort(compareSpotsByRank(openedAt));
+      params.set('lat', String(userLocation.lat));
+      params.set('lng', String(userLocation.lng));
     }
+    return params.toString();
+  }, [openedAt, searchQuery, selectedProvince, selectedCategory, priceFilter, sortBy, favoriteSpots, sortByNearMe, userLocation]);
 
-    return result;
-  }, [spotsList, selectedCategory, selectedProvince, priceFilter, sortBy, sortByNearMe, userLocation, favoriteSpots, searchQuery, openedAt]);
-
-  // Dynamic spot counts per vibe category: Single-Pass O(N) calculation (< 1ms)
-  const spotCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: 0 };
-    NATIONWIDE_SPOT_CATEGORIES.forEach((cat) => {
-      counts[cat.id] = 0;
-    });
-
-    for (let i = 0; i < spotsList.length; i++) {
-      const spot = spotsList[i];
-      if (!spotInProvince(spot, selectedProvince, getCachedSpotSearchText(spot))) continue;
-      if (!shownWhenBrowsing(spot)) continue;
-
-      counts['all'] += 1;
-      const vibe = getCachedSpotVibeCategory(spot);
-      counts[vibe] = (counts[vibe] || 0) + 1;
-    }
-
-    return counts;
-  }, [spotsList, selectedProvince]);
-
-  // Groups with only a handful of places nationwide (bars, galleries, rooftops for now) stay off the rail until the
-  // catalog has enough of them; one picked from a link still shows (owner 2026-10-25)
-  const railCategories = useMemo(() => {
-    const nationwide: Record<string, number> = {};
-    for (const spot of spotsList) {
-      if (!shownWhenBrowsing(spot)) continue;
-      const vibe = getCachedSpotVibeCategory(spot);
-      nationwide[vibe] = (nationwide[vibe] || 0) + 1;
-    }
-    if (spotsList.length === 0) return NATIONWIDE_SPOT_CATEGORIES;
-    return NATIONWIDE_SPOT_CATEGORIES.filter((cat) => (nationwide[cat.id] || 0) >= MIN_SPOTS_PER_GROUP || cat.id === selectedCategory);
-  }, [spotsList, selectedCategory]);
-
-  const totalPages = Math.ceil(filteredSpots.length / itemsPerPage) || 1;
-
-  // Pagination clamp: reset to page 1 if filter changes reduce totalPages below currentPage
+  // The server page already answered the address's own filters for the first batch
+  const answered = useRef(initial ? { query: browseQuery, count: initial.spots.length, total: initial.total } : null);
   useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(1);
-    }
-  }, [currentPage, totalPages]);
+    const done = answered.current;
+    if (done && done.query === browseQuery && (done.count >= wanted || done.count >= done.total)) return;
+    const controller = new AbortController();
+    // Typing waits a moment so each letter is not its own request
+    const timer = setTimeout(() => {
+      setIsFetching(true);
+      fetch(`/api/spots/browse?${browseQuery}&limit=${wanted}`, { signal: controller.signal })
+        .then((res) => res.json())
+        .then((json) => {
+          if (!json?.success) return;
+          answered.current = { query: browseQuery, count: json.spots.length, total: json.total };
+          setResult({ spots: json.spots, total: json.total, counts: json.counts, railIds: json.railIds, openedAt });
+        })
+        .catch(() => {})
+        .finally(() => !controller.signal.aborted && setIsFetching(false));
+    }, done && done.query === browseQuery ? 0 : 200);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [browseQuery, wanted]);
 
-  const paginatedSpots = useMemo(() => {
-    // "Show more" grows the list: currentPage = how many batches are on screen
-    return filteredSpots.slice(0, currentPage * itemsPerPage);
-  }, [filteredSpots, currentPage, itemsPerPage]);
+  const spotCounts = result.counts;
+  const railCategories = useMemo(() => NATIONWIDE_SPOT_CATEGORIES.filter((cat) => result.railIds.includes(cat.id)), [result.railIds]);
+  const paginatedSpots = result.spots;
+  const totalSpots = result.total;
 
   const handleResetAll = () => {
     setSearchQuery('');
@@ -436,7 +346,7 @@ function SpotsPageContent({ initialSpots, initialCounts }: ServerProps) {
 
         {/* High-Density Spots Grid / List */}
         {/* The server's first places show at once; a filter they do not answer waits for the full catalog */}
-        {!isLoaded && liveSpots.length === 0 && (!initialSpots?.length || filteredSpots.length === 0) ? (
+        {isFetching && paginatedSpots.length === 0 ? (
           viewMode === 'list' ? (
             <div className="space-y-3">
               {Array.from({ length: 8 }).map((_, i) => (
@@ -444,13 +354,13 @@ function SpotsPageContent({ initialSpots, initialCounts }: ServerProps) {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4">
-              {Array.from({ length: 10 }).map((_, i) => (
-                <SpotCardSkeleton key={i} />
+            <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 sm:gap-x-6 gap-y-8 pt-1">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <li key={i}><SpotTileSkeleton /></li>
               ))}
-            </div>
+            </ul>
           )
-        ) : filteredSpots.length > 0 ? (
+        ) : paginatedSpots.length > 0 ? (
           <>
             {viewMode === 'list' ? (
               <div className="space-y-3">
@@ -466,21 +376,20 @@ function SpotsPageContent({ initialSpots, initialCounts }: ServerProps) {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4">
+              // The ตี้ / อีเวนต์ grid and tile, so the three tabs feel like one page
+              <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 sm:gap-x-6 gap-y-8 pt-1">
                 {paginatedSpots.map((spot) => (
-                  <SpotCard
-                    key={spot.id}
-                    spot={spot}
-                    isFavorite={isLoggedIn && favoriteSpots.includes(spot.id)}
-                    isJoined={isLoggedIn && joinedEventIds.includes(spot.id)}
-                    onToggleFavorite={(id) => toggleFavoriteSpot(id)}
-                  />
+                  <li key={spot.id}>
+                    <SpotTile spot={spot} isSaved={isLoggedIn && favoriteSpots.includes(spot.id)} onToggleSave={(id) => toggleFavoriteSpot(id)} />
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
 
             {/* Show more, Meetup-style */}
-            <ShowMoreButton shown={paginatedSpots.length} total={filteredSpots.length} onClick={() => setCurrentPage(currentPage + 1)} />
+            {totalSpots > paginatedSpots.length && (
+              <ShowMoreButton shown={paginatedSpots.length} total={totalSpots} onClick={() => setCurrentPage(currentPage + 1)} />
+            )}
           </>
         ) : (
           <div className="w-full bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200/90 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
@@ -562,7 +471,7 @@ function SpotsPageContent({ initialSpots, initialCounts }: ServerProps) {
   );
 }
 
-/** `initialSpots` (the first places, from the server page) is in the HTML search engines read until the full catalog loads. */
+/** `initial` (the first places, from the server page) is in the HTML search engines read; the browser asks for the rest. */
 export default function SpotsPage(props: ServerProps) {
   return (
     <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center text-slate-400 text-sm">กำลังโหลดข้อมูลสถานที่...</div>}>

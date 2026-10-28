@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { fetchAllContentPages } from '@/lib/contentClient';
-import { LifestyleSpotItem, MOCK_SPOTS, getSpotVibeCategory } from '@/data/spotsData';
+import type { LifestyleSpotItem } from '@/data/spotsData';
+import { getSpotVibeCategory } from '@/lib/spotVibe';
 import { SpotVibeId } from '@/data/masterHub';
 import { spotSearchText } from '@/lib/discoverMatch';
 
@@ -50,7 +51,7 @@ export function loadPublishedSpots(): Promise<LifestyleSpotItem[]> {
 
   cache.pending ??= fetchAllContentPages<LifestyleSpotItem>('/api/spots', 'spots')
     .then((spots) => {
-      const finalSpots = spots.length > 0 ? spots : MOCK_SPOTS;
+      const finalSpots = spots;
       cache.spots = finalSpots;
 
       // Pre-warm the cache for all spots in single synchronous pass (< 5ms)
@@ -62,10 +63,10 @@ export function loadPublishedSpots(): Promise<LifestyleSpotItem[]> {
       return finalSpots;
     })
     .catch((error) => {
-      console.warn('Using bundled spots fallback:', error);
-      // Show the bundled spots for now but do not cache them, so the next mount retries the API
+      console.warn('Could not load places:', error);
+      // Nothing cached, so the next mount retries the API
       cache.pending = null;
-      return MOCK_SPOTS;
+      return [] as LifestyleSpotItem[];
     });
   return cache.pending;
 }
@@ -130,18 +131,3 @@ export function useHomeSpots(enabled = true): { spots: LifestyleSpotItem[]; isLo
 
   return { spots, isLoaded };
 }
-
-/**
- * Published spots plus the bundled ones that are no longer published, for resolving ids a member
- * saved earlier (saved lists must not silently lose places when the catalog changes).
- */
-export function useSpotCatalog(scope: 'all' | 'home' = 'all'): LifestyleSpotItem[] {
-  const all = usePublishedSpots(scope === 'all');
-  const home = useHomeSpots(scope === 'home');
-  const { spots } = scope === 'home' ? home : all;
-  return useMemo(() => {
-    const ids = new Set(spots.map((spot) => spot.id));
-    return [...spots, ...MOCK_SPOTS.filter((spot) => !ids.has(spot.id))];
-  }, [spots]);
-}
-

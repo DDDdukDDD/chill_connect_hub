@@ -6,17 +6,13 @@ import { useParams, useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
-import { CreateEventModal } from '@/components/CreateEventModal';
+import { CreateEventModal } from '@/components/LazyCreateEventModal';
 import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import { useAuth } from '@/lib/useAuth';
 import { VisitPanel } from '@/components/VisitPanel';
 import { activityActions, useMyActivity } from '@/lib/useMyActivity';
-import { GroupChatModal } from '@/components/GroupChatModal';
-import {
-  getEventById,
-  EventItem,
-  MOCK_EVENTS
-} from '@/data/mockData';
+// Type only: the server page sends bundled sample events too, so the ~200 KB of them stay off the browser (2026-10-28)
+import type { EventItem } from '@/data/mockData';
 import { getFairEventCategory } from '@/data/masterHub';
 import { eventOrigin } from '@/lib/contentOrigin';
 import { fairPlace } from '@/lib/placeName';
@@ -24,13 +20,19 @@ import { formatEventDateRange, isEventEnded, parseEventDateToTimestamp } from '@
 import { resolveEventGallery } from '@/lib/eventImageResolver';
 import { parseEventPrice } from '@/lib/priceUtils';
 import { renderDescriptionContent, stripHtmlToPlainText } from '@/components/RichTextEditor';
-import { SpotBuddyGatheringModal, SpotBuddyPostItem } from '@/components/SpotBuddyGatheringModal';
-import { ExpoMeetupPassModal, ExpoMeetupPassData } from '@/components/ExpoMeetupPassModal';
+import type { SpotBuddyPostItem } from '@/components/SpotBuddyGatheringModal';
+import type { ExpoMeetupPassData } from '@/components/ExpoMeetupPassModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
-import { RelatedCards, fairCard } from '@/components/detail/RelatedCards';
+import { RelatedFairTiles } from '@/components/detail/RelatedTiles';
 import { DetailHero, DetailTable, ItineraryList, heroButton } from '@/components/detail/DetailHero';
 import { VisitReviews } from '@/components/detail/VisitReviews';
 import { Toast } from '@/components/Toast';
+import dynamic from 'next/dynamic';
+
+// Dialogs most visits never open: their code loads on the first open, not with the page (2026-10-28)
+const SpotBuddyGatheringModal = dynamic(() => import('@/components/SpotBuddyGatheringModal').then((m) => m.SpotBuddyGatheringModal), { ssr: false });
+const ExpoMeetupPassModal = dynamic(() => import('@/components/ExpoMeetupPassModal').then((m) => m.ExpoMeetupPassModal), { ssr: false });
+const GroupChatModal = dynamic(() => import('@/components/GroupChatModal').then((m) => m.GroupChatModal), { ssr: false });
 
 export interface FairSubActivityItem {
   id: string;
@@ -111,14 +113,10 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
 
   // Dynamic Event State (Immediate sync for SSR & mock events)
   const [eventData, setEventData] = useState<EventItem | null>(() => {
-    if (initialEvent) return initialEvent;
-    if (!decodedId) return null;
-    return getEventById(decodedId) || MOCK_EVENTS.find((e) => e.id === decodedId || e.title === decodedId) || null;
+    return initialEvent ?? null;
   });
   const [isLoading, setIsLoading] = useState(() => {
-    if (initialEvent || !decodedId) return false;
-    const found = getEventById(decodedId) || MOCK_EVENTS.find((e) => e.id === decodedId || e.title === decodedId);
-    return !found;
+    return !initialEvent && Boolean(decodedId);
   });
 
   // Fair Expo Buddy Gathering Modal
@@ -170,12 +168,6 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
     if (!decodedId) {
       setIsLoading(false);
       return;
-    }
-
-    const localFound = getEventById(decodedId) || MOCK_EVENTS.find((e) => e.id === decodedId || e.title === decodedId);
-    if (localFound) {
-      setEventData(localFound);
-      setIsLoading(false);
     }
 
     fetch('/api/events')
@@ -465,7 +457,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
     return liveFairs
       .filter((e) => e.id !== eventData.id && e.eventType === 'public_venue' && !isEventEnded(e))
       .sort((x, y) => near(x) - near(y))
-      .slice(0, 4);
+      .slice(0, 6);
   }, [eventData, liveFairs]);
 
   if (isLoading) {
@@ -563,7 +555,8 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
             // "ไม่ระบุ…" is not a fact: leave it out rather than print it
             { icon: Calendar, text: [cleanText(formatEventDateRange(eventData)), cleanText(eventData.time)].filter((part) => part && !part.startsWith('ไม่ระบุ')).join(' · ') },
             { icon: MapPin, text: cleanText(fairPlace(eventData.location)) },
-            ...(parsedPrice.displayPrice && !parsedPrice.displayPrice.startsWith('ไม่ระบุ') ? [{ icon: Ticket, text: parsedPrice.displayPrice }] : []),
+            // Always said, as the tile says it: an unknown price is "ราคาตามผู้จัด", which the organizer's link answers
+            { icon: Ticket, text: priceUnknown ? 'ราคาตามผู้จัด' : parsedPrice.displayPrice },
           ]}
           actions={
             <>
@@ -815,7 +808,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
           </div>
         </div>
 
-        <RelatedCards title="อีเวนต์อื่นที่น่าไป" allHref="/events" items={relatedFairs.map(fairCard)} />
+        <RelatedFairTiles title="อีเวนต์อื่นที่น่าไป" allHref="/events" events={relatedFairs} />
 
       </main>
 
@@ -953,7 +946,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
       />
       {eventData && (
         <>
-          <SpotBuddyGatheringModal
+          {isFairBuddyModalOpen && <SpotBuddyGatheringModal
             isOpen={isFairBuddyModalOpen}
             onClose={() => setIsFairBuddyModalOpen(false)}
             spotTitle={cleanText(eventData.title)}
@@ -963,7 +956,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
             spotProvince={eventData.province}
             mode="fair"
             onSuccess={handleBuddyModalSuccess}
-          />
+          />}
           <ReportSafetyModal
             isOpen={isReportModalOpen}
             onClose={() => setIsReportModalOpen(false)}
@@ -971,7 +964,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
             targetId={eventData.id}
             targetTitle={eventData.title}
           />
-          {selectedPassData && (
+          {selectedPassData && isPassModalOpen && (
             <ExpoMeetupPassModal
               isOpen={isPassModalOpen}
               onClose={() => setIsPassModalOpen(false)}
@@ -983,7 +976,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
         </>
       )}
 
-      <GroupChatModal isOpen={Boolean(chatGroup)} onClose={() => setChatGroup(null)} event={eventData} roomId={chatGroup?.id} roomTitle={chatGroup?.title} />
+      {chatGroup && <GroupChatModal isOpen onClose={() => setChatGroup(null)} event={eventData} roomId={chatGroup.id} roomTitle={chatGroup.title} />}
 
       <MobileNav activeTab={activeNavTab} setActiveTab={setActiveNavTab} favoritesCount={favorites.length} />
     </div>

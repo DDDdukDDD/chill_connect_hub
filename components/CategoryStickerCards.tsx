@@ -4,6 +4,7 @@ import React from 'react';
 import { LayoutGrid } from 'lucide-react';
 import { ScrollRow } from '@/components/ScrollRow';
 import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
+import { meetupCategoryIcon } from '@/components/icons/CategoryIcons';
 
 type CategoryCard = {
   id: string;
@@ -24,7 +25,8 @@ export function communityCategoryCards(allCount: number, countOf: (categoryId: s
   const categories = COMMUNITY_LIFESTYLE_CATEGORIES.map((cat) => ({
     id: cat.id,
     name: cat.name,
-    Icon: cat.icon,
+    // The drawn icon pack (owner 2026-10-28); a category added in admin without a drawing keeps its line icon
+    Icon: meetupCategoryIcon(cat.id) ?? cat.icon,
     iconBg: cat.colorScheme.iconBg,
     iconColor: cat.colorScheme.iconColor,
     borderBottom: cat.colorScheme.borderBottom,
@@ -32,7 +34,7 @@ export function communityCategoryCards(allCount: number, countOf: (categoryId: s
     count: countOf(cat.id),
   }));
   return [
-    { id: 'all', name: 'ทั้งหมด', Icon: LayoutGrid, iconBg: 'bg-slate-100', iconColor: 'text-slate-600', borderBottom: 'border-b-slate-300', sticker: 'bg-slate-500 text-white', count: allCount },
+    { id: 'all', name: 'ทั้งหมด', Icon: meetupCategoryIcon('all') ?? LayoutGrid, iconBg: 'bg-slate-100', iconColor: 'text-slate-600', borderBottom: 'border-b-slate-300', sticker: 'bg-slate-500 text-white', count: allCount },
     ...(hideEmpty ? categories.filter((c) => c.count > 0) : categories),
   ];
 }
@@ -80,7 +82,7 @@ export function CategoryStickerCards({
               </span>
             )}
             <span className={`w-11 h-11 md:w-[54px] md:h-[54px] rounded-2xl flex items-center justify-center ${iconBg} ${iconColor} ${isPicked ? 'scale-110' : i % 2 ? 'rotate-6' : '-rotate-6'} group-hover:rotate-0 group-hover:scale-110 transition-transform`}>
-              <Icon className="w-5 h-5 md:w-7 md:h-7" aria-hidden="true" />
+              <Icon className="w-7 h-7 md:w-9 md:h-9" aria-hidden="true" />
             </span>
             {/* Break only at the ampersand, never inside a Thai word */}
             <span className="text-[11px] sm:text-xs font-bold text-slate-800 text-center leading-tight">

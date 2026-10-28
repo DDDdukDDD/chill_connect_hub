@@ -80,7 +80,7 @@ export function ChallengePicks({ quests, joinedIds, isLoaded, progress }: { ques
         const doing = mine.get(quest.id);
         return (
           <li key={quest.id} className={`${itemWidth} shrink-0 snap-start`}>
-            <ChallengeTile quest={quest} index={i} reason={reasons.get(quest.id)} mine={doing} />
+            <ChallengeTile quest={quest} index={i} reason={reasons.get(quest.id)} mine={doing} tilt />
           </li>
         );
       })}

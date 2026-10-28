@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { TOP_VENUES } from '@/components/TopVenuesRail';
+import { TOP_VENUES } from '@/data/topVenues';
 
 /**
  * Popular venues as round photos under the /events heading: the tabs below say what kind of event, these say where.

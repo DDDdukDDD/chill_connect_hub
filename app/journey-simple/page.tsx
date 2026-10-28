@@ -15,7 +15,7 @@ import { CommunityMomentsStrip } from '@/components/CommunityMomentsStrip';
 import { SurpriseModal } from '@/components/SurpriseModal';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
-import { CreateEventModal } from '@/components/CreateEventModal';
+import { CreateEventModal } from '@/components/LazyCreateEventModal';
 import { MOCK_EVENTS, EventItem } from '@/data/mockData';
 import { MOCK_SPOTS, LifestyleSpotItem } from '@/data/spotsData';
 import { isEventEnded, parseEventDateToTimestamp, toBuddhistEra } from '@/lib/dateUtils';

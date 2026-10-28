@@ -1,63 +1,70 @@
 'use client';
 
-import React, { useState, useMemo, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Building2, Heart, X, Calendar, Plus } from 'lucide-react';
+import React, { useState, useMemo, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Heart, X, Calendar, Plus } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
-import { EventGrid } from '@/components/EventGrid';
+import { FairTile } from '@/components/FairTile';
 import { ViewModeToggle, ViewMode } from '@/components/ViewModeToggle';
 import { ShowMoreButton } from '@/components/discover/ShowMoreButton';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
-import { CreateEventModal } from '@/components/CreateEventModal';
+import { CreateEventModal } from '@/components/LazyCreateEventModal';
 import { CustomDatePickerModal } from '@/components/CustomDatePickerModal';
 import { useAuth } from '@/lib/useAuth';
-import { useMyActivity } from '@/lib/useMyActivity';
-import { MOCK_EVENTS, EventItem } from '@/data/mockData';
+import { activityActions, useMyActivity } from '@/lib/useMyActivity';
+import { fetchAllContentPages } from '@/lib/contentClient';
+import type { EventItem } from '@/data/mockData';
 import { isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp } from '@/lib/dateUtils';
 import { NATIONWIDE_FAIR_CATEGORIES } from '@/components/FairCategoryRail';
 import { DiscoverCategoryTabs } from '@/components/discover/DiscoverCategoryTabs';
 import { EventDateList } from '@/components/discover/EventDateList';
 import { getFairEventCategory } from '@/data/masterHub';
 import { VenueCircles } from '@/components/discover/VenueCircles';
-import {} from '@/data/spotsData';
-
 import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
 import { eventInProvince, fairSearchText, matchesQuery, type DiscoverCounts } from '@/lib/discoverMatch';
 import { DiscoverHeader, FilterSelect, filterPillClass } from '@/components/discover/DiscoverHeader';
 import { DiscoverSearch } from '@/components/discover/DiscoverSearch';
 import { useMyInterests } from '@/lib/useMyInterests';
+import { useFiltersInUrl } from '@/lib/useFiltersInUrl';
 import { Toast } from '@/components/Toast';
+
+// Whole rows of tiles per "แสดงเพิ่มเติม" (2 / 3 / 4 / 6 columns), as on /community
+const TILE_BATCH = { mobile: 12, sm: 12, md: 16, lg: 24, xl2: 24, defaultItems: 24 };
+
+// The list runs by date, soonest first: people pick an อีเวนต์ by when they are free; "favorites" narrows it to the saved ones
+type SortOption = 'soonest' | 'favorites';
 
 type ServerProps = { initialEvents?: EventItem[]; initialCounts?: { query: string; province: string; counts: DiscoverCounts } };
 
 function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn, isOrganizer, isVenueOwner } = useAuth();
   // The member's own categories from onboarding come first on the tabs, marked (owner 2026-10-23)
   const myInterests = useMyInterests(isLoggedIn);
-  const itemsPerPage = useResponsiveItemsPerPage();
+  const itemsPerPage = useResponsiveItemsPerPage(TILE_BATCH);
 
   const [activeNavTab, setActiveNavTab] = useState('explore');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(searchParams.get('category'));
   const [selectedProvince, setSelectedProvince] = useState<string>(searchParams.get('province') || 'all');
   const [selectedVenue, setSelectedVenue] = useState<string>(searchParams.get('venue') || 'all');
-  const [statusFilter, setStatusFilter] = useState<'upcoming' | 'ended' | 'all'>('upcoming');
+  const [statusFilter, setStatusFilter] = useState<'upcoming' | 'ended' | 'all'>(() => {
+    const status = searchParams.get('status');
+    return status === 'ended' || status === 'all' ? status : 'upcoming';
+  });
   const [priceFilter, setPriceFilter] = useState<'all' | 'free'>((searchParams.get('price') as any) || 'all');
-  const [sortBy, setSortBy] = useState<'newest' | 'favorites'>('newest');
+  const [sortBy, setSortBy] = useState<SortOption>('soonest');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [currentPage, setCurrentPage] = useState(1);
-  const [favorites, setFavorites] = useState<string[]>([]);
-  const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
-  // What the member joined comes from the account; this keeps the page in step with it
+  // Saved อีเวนต์ come from the account, so a heart here shows on the detail page, in My Hub and on every device
   const myActivity = useMyActivity();
-  React.useEffect(() => {
-    if (myActivity.isLoaded) setJoinedEventIds(myActivity.joinedIds);
-  }, [myActivity.isLoaded, myActivity.joinedIds]);
-  const [eventsList, setEventsList] = useState<EventItem[]>(initialEvents ?? MOCK_EVENTS);
+  const favorites = isLoggedIn ? myActivity.savedEventIds : [];
+  const [eventsList, setEventsList] = useState<EventItem[]>(initialEvents ?? []);
+  // Set after mount, so the server HTML and the first browser render show the same tiles
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => setNow(new Date()), []);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Sync viewMode from localStorage
@@ -79,48 +86,35 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
 
   // Date Filter State
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const [customStartDate, setCustomStartDate] = useState<string>('');
-  const [customEndDate, setCustomEndDate] = useState<string>('');
+  const [customStartDate, setCustomStartDate] = useState<string>(searchParams.get('from') || '');
+  const [customEndDate, setCustomEndDate] = useState<string>(searchParams.get('to') || '');
+  useFiltersInUrl({
+    q: searchQuery.trim(),
+    category: selectedCategory,
+    province: selectedProvince,
+    venue: selectedVenue,
+    price: priceFilter,
+    status: statusFilter === 'upcoming' ? null : statusFilter,
+    from: customStartDate,
+    to: customEndDate,
+  });
 
-  // Sync favorites & joined events from localStorage (Only active when user is logged in)
-  React.useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    if (!isLoggedIn) {
-      setFavorites([]);
-      setJoinedEventIds([]);
-      setSortBy((prev) => (prev === 'favorites' ? 'newest' : prev));
-      return;
-    }
-
-    try {
-      const savedFavs = localStorage.getItem('favorite_events');
-      if (savedFavs) {
-        setFavorites(JSON.parse(savedFavs));
-      }
-      const savedJoined = localStorage.getItem('joined_fair_sub_ids') || localStorage.getItem('joined_event_ids');
-      if (savedJoined) {
-        setJoinedEventIds(JSON.parse(savedJoined));
-      }
-    } catch {}
+  // Signing out leaves the saved list for the plain list
+  useEffect(() => {
+    if (!isLoggedIn) setSortBy((prev) => (prev === 'favorites' ? 'soonest' : prev));
   }, [isLoggedIn]);
 
-  // Fetch live approved events from server (unless the server page already sent them)
+  // The page sends only the อีเวนต์ still to come; the ones that are over load once someone asks for them
+  const endedLoaded = React.useRef(false);
   React.useEffect(() => {
-    if (initialEvents) return;
-    const loadLiveEvents = async () => {
-      try {
-        const res = await fetch('/api/events');
-        const data = await res.json();
-        if (data.success && Array.isArray(data.events) && data.events.length > 0) {
-          setEventsList(data.events);
-        }
-      } catch (err) {
-        console.log('Using default mock events fallback:', err);
-      }
-    };
-    loadLiveEvents();
-  }, [initialEvents]);
+    if (statusFilter === 'upcoming' || endedLoaded.current) return;
+    endedLoaded.current = true;
+    fetchAllContentPages<EventItem>('/api/events?type=public_venue&includeEnded=true', 'events')
+      .then((all) => all.length > 0 && setEventsList(all))
+      .catch(() => {
+        endedLoaded.current = false;
+      });
+  }, [statusFilter]);
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -141,25 +135,15 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
       setIsRequireMembershipOpen(true);
       return;
     }
-    setFavorites((prev) => {
-      const isFav = prev.includes(eventId);
-      let updated: string[];
-      if (isFav) {
-        updated = prev.filter((id) => id !== eventId);
-        showToast('ลบออกจากรายการโปรดแล้ว');
-      } else {
-        updated = [...prev, eventId];
-        showToast('บันทึกเข้าในรายการโปรดเรียบร้อย');
-      }
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('favorite_events', JSON.stringify(updated));
-      }
-      return updated;
+    const save = !favorites.includes(eventId);
+    void activityActions.setSaved('event', eventId, save).then((ok) => {
+      if (!ok) showToast('บันทึกไม่สำเร็จ ลองอีกครั้งนะ');
+      else showToast(save ? 'บันทึกไว้แล้ว ดูได้ที่ "ที่บันทึกไว้"' : 'เอาออกจากที่บันทึกไว้แล้ว');
     });
   };
 
   const filteredEvents = useMemo(() => {
-    return eventsList.filter((ev) => {
+    const list = eventsList.filter((ev) => {
       if (ev.eventType !== 'public_venue') return false;
 
       // Status Filter (Upcoming / Ended / All)
@@ -220,13 +204,17 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
         const filterEndTs = new Date(ey, em - 1, ed, 23, 59, 59).getTime();
 
         const evStart = parseEventDateToTimestamp(ev.date);
-        const evEnd = parseEventEndDateToTimestamp(ev.date);
+        const evEnd = parseEventEndDateToTimestamp(ev.endDate || ev.date);
         if (evEnd < filterStartTs || evStart > filterEndTs) return false;
       }
 
       if (!matchesQuery(fairSearchText(ev), searchQuery)) return false;
       return true;
     });
+
+    // By date: what is on now and soonest first; for ended อีเวนต์ the latest first
+    if (statusFilter === 'ended') return [...list].sort((a, b) => parseEventEndDateToTimestamp(b.endDate || b.date) - parseEventEndDateToTimestamp(a.endDate || a.date));
+    return [...list].sort((a, b) => parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date));
   }, [
     eventsList,
     statusFilter,
@@ -307,6 +295,11 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
     return filteredEvents.slice(0, currentPage * itemsPerPage);
   }, [filteredEvents, currentPage, itemsPerPage]);
 
+  // One อีเวนต์ tile for the card grid and the list view's "กำลังจัดอยู่ตอนนี้" strip, so both views look the same
+  const tileFor = (event: EventItem) => (
+    <FairTile event={event} now={now} isSaved={isLoggedIn && favorites.includes(event.id)} onToggleSave={toggleFavorite} />
+  );
+
   const handleResetAll = () => {
     setSearchQuery('');
     setSelectedCategory(null);
@@ -316,7 +309,7 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
     setCustomEndDate('');
     setStatusFilter('upcoming');
     setPriceFilter('all');
-    setSortBy('newest');
+    setSortBy('soonest');
     setCurrentPage(1);
     showToast('ล้างตัวกรองทั้งหมดแล้ว');
   };
@@ -419,7 +412,7 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
                     setIsRequireMembershipOpen(true);
                     return;
                   }
-                  setSortBy(sortBy === 'favorites' ? 'newest' : 'favorites');
+                  setSortBy(sortBy === 'favorites' ? 'soonest' : 'favorites');
                   setCurrentPage(1);
                 }}
                 aria-pressed={sortBy === 'favorites'}
@@ -500,17 +493,14 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
           <>
             {/* The list view is dated, like /challenges: on now on top, then by month */}
             {viewMode === 'list' ? (
-              <EventDateList kind="fairs" events={filteredEvents} />
+              <EventDateList kind="fairs" events={filteredEvents} renderTile={tileFor} />
             ) : (
-              <EventGrid
-                events={paginatedEvents}
-                onSelectEvent={() => {}}
-                favorites={isLoggedIn ? favorites : []}
-                toggleFavorite={toggleFavorite}
-                joinedEventIds={isLoggedIn ? joinedEventIds : []}
-                onResetFilters={handleResetAll}
-                viewMode={viewMode}
-              />
+              // The ตี้ grid and tile shape, so switching tabs feels like one page; posters show whole (owner 2026-10-27)
+              <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 sm:gap-x-6 gap-y-8 pt-1">
+                {paginatedEvents.map((event) => (
+                  <li key={event.id}>{tileFor(event)}</li>
+                ))}
+              </ul>
             )}
 
             {/* Show more, Meetup-style */}
@@ -609,7 +599,7 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
           handleSetIsLoggedIn(false);
           setIsLogoutModalOpen(false);
           setIsCreateEventModalOpen(false);
-          setSortBy('newest');
+          setSortBy('soonest');
           showToast('ออกจากระบบเรียบร้อยแล้ว');
         }}
       />

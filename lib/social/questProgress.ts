@@ -1,5 +1,6 @@
 import type { ChallengeQuest, EventItem, QuestRule } from '@/data/mockData';
-import { getSpotVibeCategory, type LifestyleSpotItem } from '@/data/spotsData';
+import type { LifestyleSpotItem } from '@/data/spotsData';
+import { getSpotVibeCategory } from '@/lib/spotVibe';
 import { db } from '../db';
 import { parseQuestDate } from '../questLifecycle';
 import { isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp } from '../dateUtils';

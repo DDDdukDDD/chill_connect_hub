@@ -15,7 +15,7 @@ import { useAuth } from '@/lib/useAuth';
 import { useMyRewards } from '@/lib/useMyRewards';
 import { ChallengeChecklist } from '@/components/detail/ChallengeChecklist';
 import { InviteFriendsCard } from '@/components/InviteFriendsCard';
-import { RelatedCards } from '@/components/detail/RelatedCards';
+import { RelatedChallengeTiles } from '@/components/detail/RelatedTiles';
 import { Toast } from '@/components/Toast';
 import { optimizedImage } from '@/lib/optimizedImage';
 
@@ -656,20 +656,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
         </div>
       </div>
 
-      <RelatedCards
-        title="ชาเลนจ์อื่นที่น่าลอง"
-        allHref="/challenges"
-        titleClassName={SECTION_TITLE}
-        items={(detail.related ?? []).map((item) => ({
-          id: item.id,
-          href: `/challenges/${encodeURIComponent(item.id)}`,
-          image: item.image,
-          dateText: item.period,
-          title: item.title,
-          note: item.startsInDays > 0 ? `เริ่มในอีก ${item.startsInDays} วัน` : item.participantsCount > 0 ? `${item.participantsCount.toLocaleString()} คนร่วมทำ` : 'เปิดอยู่',
-          pill: item.rewardPoints > 0 ? `+${item.rewardPoints} XP` : undefined,
-        }))}
-      />
+      <RelatedChallengeTiles title="ชาเลนจ์อื่นที่น่าลอง" allHref="/challenges" titleClassName={SECTION_TITLE} quests={detail.related ?? []} />
 
       {isLeaveOpen && (
         <DialogShell onClose={() => setIsLeaveOpen(false)} size="sm" title="ยกเลิกชาเลนจ์นี้ใช่ไหม" subtitle={tracked ? 'ที่ที่คุณไปมาแล้วยังนับอยู่ กลับมาร่วมใหม่ได้ทุกเมื่อก่อนหมดเขต' : 'กลับมาร่วมใหม่ได้ทุกเมื่อก่อนหมดเขต'}>

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { MapPin, Heart, Star, Globe } from 'lucide-react';
 import type { EventItem } from '@/data/mockData';
+import { BANGKOK_ZONES } from '@/data/zones';
 import { isEventEnded, parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { formatEventBadgePrice, hasKnownPrice, isPriceFree } from '@/lib/priceUtils';
 import { placeName } from '@/lib/placeName';
@@ -33,6 +34,19 @@ function dayLabel(event: EventItem, now?: Date | null) {
   return short;
 }
 
+// The area a tile names next to the day: "สุขุมวิท" from the zone, else the province, "ออนไลน์" for online ตี้.
+// Short on purpose so the line never cuts; the full place and meeting point are on the detail page (owner 2026-10-27).
+export function areaLabel(event: EventItem, isOnline = event.province === 'ออนไลน์' || event.locationType === 'online') {
+  if (isOnline) return 'ออนไลน์';
+  const zone = (event.zone ?? '').toLowerCase();
+  const known = BANGKOK_ZONES.find((z) => zone === z.id || zone.startsWith(`${z.id}_`));
+  if (known) return known.label.split(' / ')[0];
+  // Hosts type the area themselves ("คลองเตย"); only sample ids like "chiangmai_city" fall back to the province
+  if (event.zone?.trim() && !/^[a-z0-9_]+$/.test(zone)) return event.zone.trim();
+  if (event.province) return event.province === 'กรุงเทพมหานคร' ? 'กรุงเทพฯ' : event.province;
+  return placeName(event.location).split(/,\s*/)[0];
+}
+
 // Test-login meetups carry a "[ตัวอย่าง]" tag in the title; the tile shows the title alone
 const cleanTitle = (title: string) => title.replace(/^\[ตัวอย่าง\]\s*/, '');
 
@@ -46,30 +60,64 @@ function seatsLine(event: EventItem) {
   return `ว่าง ${left} ที่`;
 }
 
+// Tiles on screen ask together: one request for a whole page of tiles (GET /api/events/faces), kept for the visit
+type Stack = { faces: Face[]; listed: number };
+const NO_STACK: Stack = { faces: [], listed: 0 };
+const BATCH_MAX = 60;
+const stackCache = new Map<string, Promise<Stack>>();
+let waiting: { id: string; resolve: (stack: Stack) => void }[] = [];
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+
+function flushStacks() {
+  const batch = waiting;
+  waiting = [];
+  flushTimer = null;
+  for (let i = 0; i < batch.length; i += BATCH_MAX) {
+    const chunk = batch.slice(i, i + BATCH_MAX);
+    fetch(`/api/events/faces?ids=${chunk.map((w) => encodeURIComponent(w.id)).join(',')}`, { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((json) => chunk.forEach((w) => w.resolve(json?.stacks?.[w.id] ?? NO_STACK)))
+      .catch(() =>
+        chunk.forEach((w) => {
+          stackCache.delete(w.id);
+          w.resolve(NO_STACK);
+        })
+      );
+  }
+}
+
+function loadStack(id: string): Promise<Stack> {
+  const known = stackCache.get(id);
+  if (known) return known;
+  const promise = new Promise<Stack>((resolve) => {
+    waiting.push({ id, resolve });
+    flushTimer ??= setTimeout(flushStacks, 30);
+  });
+  stackCache.set(id, promise);
+  return promise;
+}
+
 function FaceStack({ event }: { event: EventItem }) {
-  const [faces, setFaces] = useState<Face[] | null>(null);
+  const [stack, setStack] = useState<Stack | null>(null);
 
   useEffect(() => {
     let alive = true;
-    fetch(`/api/events/${encodeURIComponent(event.id)}/attendees`, { cache: 'no-store' })
-      .then((res) => res.json())
-      .then((json) => { if (alive) setFaces(json?.success ? json.attendees : []); })
-      .catch(() => { if (alive) setFaces([]); });
+    loadStack(event.id).then((loaded) => alive && setStack(loaded));
     return () => { alive = false; };
   }, [event.id]);
 
-  const listed: Face[] = faces ?? [];
+  const listed = stack ?? NO_STACK;
   // Sample events count more people than they list; the host stands in for them
-  const people = listed.length === 0 && event.hostName ? [{ id: 'host', name: event.hostName, avatar: event.hostAvatar ?? '' }] : listed;
+  const people = listed.listed === 0 && event.hostName ? [{ id: 'host', name: event.hostName, avatar: event.hostAvatar ?? '' }] : listed.faces;
   const shown = people.slice(0, FACES_SHOWN);
-  const more = Math.max(event.participantsCount, people.length) - shown.length;
+  const more = Math.max(event.participantsCount, listed.listed, people.length) - shown.length;
   const box = 'w-6 h-6 rounded-full border-2 border-white';
 
   return (
     <span className="flex -space-x-2 shrink-0" aria-hidden="true">
       {shown.map((p) =>
         p.avatar ? (
-          <img key={p.id} src={p.avatar} alt="" className={`${box} object-cover bg-slate-100`} />
+          <img key={p.id} src={optimizedImage(p.avatar, 96)} alt="" loading="lazy" className={`${box} object-cover bg-slate-100`} />
         ) : (
           <span
             key={p.id}
@@ -88,8 +136,8 @@ function FaceStack({ event }: { event: EventItem }) {
 
 /**
  * A ตี้ as the landing shows it ("ตี้แนะนำ เปิดรับอยู่") and /community lists it, so both pages feel the same:
- * a square photo with the day and the seats left on it, then the title, the place and who is going. No frame;
- * the whole tile is one link. `reason` (signed-in home) puts why it is suggested in place of the place.
+ * a square photo with the seats left on it, then the title, the day and area in one line, and who is going. No frame;
+ * the whole tile is one link. `reason` (signed-in home) adds a line saying why it is suggested.
  * `showHost` adds one quiet line for host, rating and price (/community: trust and cost decide whether to join).
  */
 export function MeetupTile({
@@ -100,6 +148,8 @@ export function MeetupTile({
   onToggleSave,
   isJoined = false,
   showHost = false,
+  badge,
+  href,
   className = '',
 }: {
   event: EventItem;
@@ -111,6 +161,10 @@ export function MeetupTile({
   /** Rings the photo and says "ร่วมแล้ว" in place of the seats */
   isJoined?: boolean;
   showHost?: boolean;
+  /** Replaces the seats on the photo (a host's own ตี้ on their profile: "รอทีมงานตรวจ") */
+  badge?: string;
+  /** Where the tile goes; null when there is no page yet (a ตี้ waiting for review). Defaults to the ตี้ page. */
+  href?: string | null;
   className?: string;
 }) {
   const isEnded = isEventEnded(event);
@@ -119,8 +173,9 @@ export function MeetupTile({
   const isOnline = event.province === 'ออนไลน์' || event.locationType === 'online';
   const showSave = onToggleSave && !isEnded;
 
-  return (
-    <Link href={`/community/${encodeURIComponent(event.id)}`} className={`group block ${className}`}>
+  const target = href === undefined ? `/community/${encodeURIComponent(event.id)}` : href;
+  const body = (
+    <>
       <span
         data-row-photo
         className={`relative block aspect-square overflow-hidden rounded-3xl bg-slate-200 shadow-md ${isJoined && !isEnded ? 'ring-2 ring-[#F26430] ring-offset-2' : ''}`}
@@ -131,15 +186,9 @@ export function MeetupTile({
           loading="lazy"
           className={`absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 ${isEnded ? 'grayscale opacity-80' : ''}`}
         />
-        {/* On a phone tile the day and time stack, so the chip stays clear of the heart */}
-        <span className={`absolute left-2.5 top-2.5 flex flex-col sm:flex-row sm:gap-1 rounded-xl sm:rounded-full bg-white px-2.5 py-1 text-xs leading-snug font-bold text-slate-900 shadow-sm ${showSave ? 'max-sm:max-w-[calc(100%-3.75rem)]' : ''}`}>
-          <span className="max-sm:truncate whitespace-nowrap">{dayLabel(event, now)}</span>
-          <span className="whitespace-nowrap">
-            <span className="hidden sm:inline">· </span>
-            {startTime}
-          </span>
-        </span>
-        {isEnded ? (
+        {badge ? (
+          <span className="absolute right-2.5 bottom-2.5 rounded-full bg-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-700 whitespace-nowrap shadow-sm">{badge}</span>
+        ) : isEnded ? (
           <span className="absolute right-2.5 bottom-2.5 rounded-full bg-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-700 whitespace-nowrap shadow-sm">จบแล้ว</span>
         ) : isJoined ? (
           <span className="absolute right-2.5 bottom-2.5 rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-[#C2410C] whitespace-nowrap shadow-sm">ร่วมแล้ว</span>
@@ -168,7 +217,7 @@ export function MeetupTile({
       </span>
       {showHost && event.hostName && (
         <span className="mt-1 flex items-center gap-1 text-xs text-slate-500 min-w-0">
-          {event.hostAvatar && <img src={event.hostAvatar} alt="" className="w-4 h-4 rounded-full object-cover shrink-0 bg-slate-100" />}
+          {event.hostAvatar && <img src={optimizedImage(event.hostAvatar, 96)} alt="" loading="lazy" className="w-4 h-4 rounded-full object-cover shrink-0 bg-slate-100" />}
           <span className="truncate">{event.hostName}</span>
           {Boolean(rating) && (
             <span className="inline-flex items-center gap-0.5 shrink-0 tabular-nums" title={`คะแนนโฮสต์ ${(rating ?? 0).toFixed(1)} / 5`}>
@@ -183,20 +232,31 @@ export function MeetupTile({
           )}
         </span>
       )}
-      {reason ? (
+      {/* When and where in one line: the day leads in orange, the area after it (the photo keeps only the heart and the seats) */}
+      <span className="mt-1 flex items-center gap-1 text-xs text-slate-500 min-w-0">
+        {isOnline ? <Globe className="w-3.5 h-3.5 shrink-0" aria-hidden="true" /> : <MapPin className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />}
+        <span className={`shrink-0 whitespace-nowrap font-semibold ${isEnded ? 'text-slate-500' : 'text-[#C2410C]'}`}>
+          {dayLabel(event, now)}
+          {startTime && ` ${startTime}`}
+        </span>
+        <span className="truncate">· {areaLabel(event, isOnline)}</span>
+      </span>
+      {reason && (
         <span className="mt-1 flex items-center gap-1 text-xs font-bold text-orange-700 min-w-0">
           <Heart className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
           <span className="truncate">{reason}</span>
-        </span>
-      ) : (
-        <span className={`mt-1 flex items-center gap-1 text-xs min-w-0 ${showHost ? 'text-slate-500' : 'font-bold text-slate-500'}`}>
-          {isOnline ? <Globe className="w-3.5 h-3.5 shrink-0" aria-hidden="true" /> : <MapPin className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />}
-          <span className="truncate">{isOnline ? (event.location.includes('ออนไลน์') ? event.location : `ออนไลน์ · ${event.location}`) :showHost ? placeName(event.location) : event.location}</span>
         </span>
       )}
       <span className="mt-2 block">
         <FaceStack event={event} />
       </span>
+    </>
+  );
+  return target ? (
+    <Link href={target} className={`group block ${className}`}>
+      {body}
     </Link>
+  ) : (
+    <div className={`group block ${className}`}>{body}</div>
   );
 }

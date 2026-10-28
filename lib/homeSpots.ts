@@ -1,4 +1,5 @@
-import { getSpotVibeCategory, type LifestyleSpotItem } from '@/data/spotsData';
+import type { LifestyleSpotItem } from '@/data/spotsData';
+import { getSpotVibeCategory } from '@/lib/spotVibe';
 import type { SpotVibeId } from '@/data/masterHub';
 import { cacheManager } from './cache';
 import { db } from './db';

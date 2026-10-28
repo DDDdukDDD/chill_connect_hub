@@ -1,6 +1,7 @@
 import React from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { Camera } from 'lucide-react';
+import { PosterPhoto } from '@/components/PosterPhoto';
 
 /** The one live fact a visitor decides on, as a bold coloured line under the title: seats on a ตี้, open now on a place */
 export interface DetailHighlight {
@@ -59,11 +60,11 @@ export function DetailHero({ pillar, image, imageAlt, photoCount = 1, onOpenPhot
   return (
     <section className="mt-2 grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:gap-10 lg:items-center">
       <figure className="relative m-0 aspect-[16/10] rounded-3xl overflow-hidden bg-slate-100">
-        {/* eslint-disable-next-line @next/next/no-img-element -- content images come from many hosts */}
-        <img
+        {/* A tall poster shows whole over a blurred copy of itself, so its text is not cut; photos fill the frame (owner 2026-10-28) */}
+        <PosterPhoto
           src={image}
           alt={imageAlt}
-          className={`w-full h-full object-cover ${onOpenPhotos ? 'cursor-zoom-in' : ''}`}
+          className={onOpenPhotos ? 'cursor-zoom-in' : ''}
           onClick={onOpenPhotos}
           fetchPriority="high"
         />

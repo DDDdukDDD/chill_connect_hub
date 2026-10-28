@@ -74,6 +74,7 @@ Body:
 { eventData: Partial<EventItem> & { title: string; location: string } }
 ```
 - `title` and `location` are required (`400` otherwise). _2026-10-25 (BE-132):_ `time` ("14:00 - 17:00 น.") is required for a ตี้ (`400`); an อีเวนต์ without it is stored as "ดูเวลาที่หน้างาน".
+- _2026-10-27 (BE-171):_ `zone` (the area, e.g. "อารีย์", "คลองเตย"; ≤ 40 characters, trimmed) is required for a ตี้ (`400` "กรุณาระบุย่านหรือเขตของตี้…"); online ตี้ send `"online"`, Spot Buddy trips send the place's district (else its province). List tiles show it next to the day.
 - Content is screened against a banned-keyword list (`400`).
 - **Approval:** community events (`eventType: 'community'`) are published immediately (`approved`). Fairs (`eventType: 'public_venue'`) are `pending` until an admin approves them — unless the request carries an admin session.
 - If `eventData.id` is missing or already taken, the server assigns a new id. **Always use the returned `event.id`.**
@@ -132,6 +133,23 @@ Province names follow `MASTER_77_PROVINCES` (Bangkok is `"กรุงเทพ�
 - Imported spots have `rating: 0` and `reviewsCount: 0` (the source has no reliable reviews). Hide ratings when they are 0.
 - `sourceName` / `sourceUrl`: where the record came from. Imported spots should show a credit, e.g. "ข้อมูล: กรมการท่องเที่ยว". Spots with `sourceName: "OpenStreetMap · Wikipedia"` (ids `osm-…`) **must** show it (ODbL / CC BY-SA).
 - `latitude` / `longitude` are validated for imported spots (inside Thailand), so they are safe for maps and nearby searches.
+
+### `GET /api/spots/browse` — the /spots list, worked out on the server (added 2026-10-28, BE-176)
+
+What `/spots` shows: published places filtered, ranked and counted with the page's own rules (`lib/spotBrowse.ts`), so the browser no longer downloads the whole catalog (~7 MB). Hidden-tier places show only when searched for or saved.
+
+| Param | Values | Default |
+|---|---|---|
+| `q` | search words (same matching as the ค้นพบ search) | — |
+| `province` | Thai province name (aliases like "เชียงใหม่" work as on the page) | all |
+| `category` | a vibe group id (`MASTER_SPOT_CATEGORIES`) or a plain spot category | all |
+| `price` | `free` | — |
+| `ids` | comma-separated place ids (the member's saved places; ≤ 500) | — |
+| `lat`, `lng` | a position: nearest first, each place gets `distanceKm` | ranked order |
+| `t` | ms timestamp the list was opened (keeps "new" places in place across "แสดงเพิ่มเติม") | now |
+| `limit` | 1–200 | `24` |
+
+Response `200`: `{ success: true, spots: LifestyleSpotItem[], total, counts: Record<vibeId | 'all', number>, railIds: string[], openedAt }`. `spots` are list items: no gallery, contact or source fields, description cut to 280 characters, `curation` reduced to tier and score. Open `/spots/[id]` (or `GET /api/spots/[id]`) for the full place. `counts` are per vibe group in the picked province (for the category tabs); `railIds` are the groups with enough places to show on the rail.
 
 ### `GET /api/spots/[id]` — one spot
 
@@ -457,6 +475,7 @@ All writes are `POST` with an `action` field unless noted.
 - `GET /api/events/{id}/ticket` → `{ ticket: { code, joinedAt, checkedInAt, isHost, hasHostCheckIn } }` for the signed-in participant (404 otherwise). `code` is 6 characters (A–Z without I/O, 2–9), unique within the event and created when the member joins. `hasHostCheckIn` is false for official and sample events, which nobody checks in.
 - `GET /api/events/{id}/participants` → `{ event, participants: [{ userId, userName, userAvatar, joinedAt, checkedInAt, isHost }] }` for the member who created the event only (403 otherwise). Ticket codes are never listed.
 - `GET /api/quests/{id}/members` → the same shape as attendees below, for a challenge: who joined it, in join order (added 2026-10-16). `total` is `participantsCount` (sample starting count) plus the listed joins. 404 for an unknown id.
+- `GET /api/events/faces?ids=a,b,c` → `{ stacks: { [eventId]: { faces: [{ id, name, avatar }], listed } } }` for anyone (added 2026-10-27, BE-170): the first 3 people of up to 60 ตี้ in one request, for list tiles (`components/MeetupTile.tsx` batches the tiles on screen). In join order; people the viewer blocked are left out; `listed` is how many people the ตี้ lists. Unknown ids come back with no faces. Use `/attendees` below for the full list.
 - `GET /api/events/{id}/attendees` → `{ total, attendees: [{ id, name, avatar, verified, isHost, isMe }] }` for anyone, signed in or not (added 2026-10-16; the owner decided the list is open and members cannot hide from it). Host first, then in join order; people the viewer blocked are left out. `verified` = email verified and pledge accepted. `total` is the event's `participantsCount`, which can be larger than the list for sample events. 404 for fairs (`public_venue`) and unknown ids.
 - `POST /api/events/{id}/participants` `{ action: 'check_in', code }` or `{ action: 'check_in' | 'undo', userId }` → `{ participant }`. Host only; a wrong code is 404.
 - `POST /api/events/{id}/review` `{ rating: 1-5, text? (≤300) }` → 201. One per participant per event. Events with a member host need the host's check-in; other events can be reviewed after they end. The host cannot review their own event. Text follows the same trust rules as a comment.
@@ -641,7 +660,7 @@ Public; `404` for an unknown or draft challenge. Answer:
   mine: null | { joined, current, total, completed, voucherCode,        // the signed-in member
                  finishedAt, memories },                                // finished challenges only (BE-058)
   next: null | { id, title, image, rewardPoints, rewardTitle },          // finished challenges only (BE-058)
-  related: [{ id, title, image, rewardPoints, period, startsInDays, participantsCount }] }  // up to 4 open challenges not joined, same category first (2026-10-16)
+  related: (ChallengeQuest & { period })[] }  // up to 6 open challenges not joined, same category first (2026-10-16); since 2026-10-27 (BE-173) each is the whole challenge (participantsCount includes joins) so the page draws the /challenges tile; id, title, image, rewardPoints, period, startsInDays still there
 ```
 - `visited` marks a place the member already has a counting visit at; those come first. A rule with `targetIds` keeps its order.
 - **Near the member first (BE-058):** after the counted places, places in the province the member gave at sign-up (`preferences.province`) come before the rest.
