@@ -95,6 +95,13 @@ type Props = {
 export function DiscoverHeader({ kind, query, onQueryChange, province, onProvinceChange, initialCounts, action, tools, lead, summary, children }: Props) {
   const counts = useDiscoverCounts(initialCounts, query, province);
   const word = query.trim();
+  // The other two tabs are fetched whole ahead of the tap, so switching opens the page at once instead of the grey
+  // loading screen and a slow first render (2026-10-29). Only once typing pauses: every key would be a server render.
+  const [settledQuery, setSettledQuery] = React.useState(query);
+  React.useEffect(() => {
+    const timer = setTimeout(() => setSettledQuery(query), 800);
+    return () => clearTimeout(timer);
+  }, [query]);
 
   return (
     <div className="space-y-4">
@@ -118,6 +125,7 @@ export function DiscoverHeader({ kind, query, onQueryChange, province, onProvinc
               <Link
                 key={item.kind}
                 href={discoverHref(item.kind, query, province)}
+                prefetch={isHere ? false : settledQuery === query ? true : undefined}
                 aria-current={isHere ? 'page' : undefined}
                 className={`group relative isolate inline-flex items-center gap-1.5 h-10 text-[15px] sm:text-base whitespace-nowrap shrink-0 transition-colors ${
                   isHere ? 'font-bold text-slate-900' : 'font-medium text-slate-500 hover:text-slate-900'

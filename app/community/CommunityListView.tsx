@@ -102,7 +102,7 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
-  const [membershipActionTitle, setMembershipActionTitle] = useState('เพื่อดำเนินการต่อ');
+  const [membershipActionTitle, setMembershipActionTitle] = useState('อีกนิดเดียว ก็ไปต่อได้แล้ว');
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
 
@@ -113,7 +113,7 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
 
   const toggleFavorite = (eventId: string) => {
     if (!isLoggedIn) {
-      setMembershipActionTitle('เพื่อบันทึกตี้ที่ชอบ');
+      setMembershipActionTitle('เก็บตี้นี้ไว้ ไม่ให้พลาด');
       setPendingAction(`favorite:${eventId}`);
       setIsRequireMembershipOpen(true);
       return;
@@ -224,7 +224,7 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
 
   const openCreate = () => {
     if (!isLoggedIn) {
-      setMembershipActionTitle('เพื่อตั้งตี้ใหม่');
+      setMembershipActionTitle('ชวนคนมาออกไปด้วยกัน ตั้งตี้ของคุณเลย');
       setPendingAction('create');
       setIsRequireMembershipOpen(true);
     } else {
@@ -344,7 +344,7 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
                 type="button"
                 onClick={() => {
                   if (!isLoggedIn) {
-                    setMembershipActionTitle('เพื่อดูตี้ที่บันทึกไว้');
+                    setMembershipActionTitle('ทุกตี้ที่คุณเก็บไว้ รออยู่ตรงนี้');
                     setPendingAction('favorites');
                     setIsRequireMembershipOpen(true);
                     return;

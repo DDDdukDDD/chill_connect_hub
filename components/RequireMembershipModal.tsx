@@ -13,7 +13,7 @@ interface RequireMembershipModalProps {
   onOpenLogin: () => void;
   /** Opens the sign-up form in place; without it the button goes to /login?mode=signup */
   onOpenSignup?: () => void;
-  /** Completes "เข้าสู่ระบบ …", e.g. "เพื่อเข้าร่วมกิจกรรม" */
+  /** The title, said for the button that opened this, in a friend's voice: "เก็บตี้นี้ไว้ ไม่ให้พลาด" (owner 2026-10-29) */
   actionTitle?: string;
   /** Where sign-up comes back to (default: this page), e.g. "/community/<id>?join=1" to finish the join */
   returnTo?: string;
@@ -32,7 +32,7 @@ export const RequireMembershipModal: React.FC<RequireMembershipModalProps> = ({
   onClose,
   onOpenLogin,
   onOpenSignup,
-  actionTitle = 'เพื่อดำเนินการต่อ',
+  actionTitle = 'อีกนิดเดียว ก็ไปต่อได้แล้ว',
   returnTo,
 }) => {
   const pathname = usePathname();
@@ -40,7 +40,7 @@ export const RequireMembershipModal: React.FC<RequireMembershipModalProps> = ({
   const signupHref = `/login?mode=signup&returnTo=${encodeURIComponent(returnTo || pathname || '/')}`;
 
   return (
-    <DialogShell onClose={onClose} title={`เข้าสู่ระบบ ${actionTitle}`} subtitle="สมัครฟรี ใช้เวลาไม่ถึง 1 นาที">
+    <DialogShell onClose={onClose} title={actionTitle} subtitle="สมัครฟรี แป๊บเดียวก็เสร็จ">
       <ul className="space-y-2.5 mb-6">
         {PERKS.map((perk) => {
           const Icon = perk.icon;
@@ -70,12 +70,12 @@ export const RequireMembershipModal: React.FC<RequireMembershipModalProps> = ({
         }}
         className={`${dialogButton.primary} w-full`}
       >
-        สมัครสมาชิกฟรี
+        เริ่มเลย ฟรี
         <ArrowRight className="w-4 h-4" aria-hidden="true" />
       </Link>
 
       <p className="pt-5 mt-6 border-t border-slate-100 text-center text-sm text-slate-600 font-medium">
-        มีบัญชีอยู่แล้ว?{' '}
+        เป็นสมาชิกอยู่แล้ว?{' '}
         <button
           type="button"
           onClick={() => {

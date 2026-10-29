@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound, permanentRedirect } from 'next/navigation';
-import { bundledEvent, getPublicEvent, isBundledEvent } from '@/lib/publicContent';
+import { bundledEvent, getPublicEvent, isBundledEvent, relatedFairs } from '@/lib/publicContent';
 import { formatEventDateRange } from '@/lib/dateUtils';
 import { metaDescription, pageMetadata } from '@/lib/site';
 import { breadcrumbJsonLd, eventJsonLd, jsonLdHtml } from '@/lib/structuredData';
@@ -39,7 +39,7 @@ export default async function FairDetailPage({ params }: Props) {
           dangerouslySetInnerHTML={jsonLdHtml(breadcrumbJsonLd([{ name: 'อีเวนต์', path: '/events' }, { name: event.title, path }]))}
         />
       )}
-      <FairDetailView initialEvent={event ?? bundledEvent(id)} />
+      <FairDetailView initialEvent={event ?? bundledEvent(id)} initialRelated={event ? await relatedFairs(event) : null} />
     </>
   );
 }

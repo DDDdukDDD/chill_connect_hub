@@ -98,7 +98,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
         onOpenLogout={() => setIsLogoutModalOpen(true)}
       />
       <Toast message={toastMessage} />
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-28 lg:pb-16">
+      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-48 lg:pb-16">
         <Link href="/challenges" className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
           ชาเลนจ์ทั้งหมด
@@ -113,7 +113,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
           setIsRequireMembershipOpen(false);
           setIsAuthModalOpen(true);
         }}
-        actionTitle="เพื่อร่วมชาเลนจ์และสะสม XP"
+        actionTitle="เริ่มชาเลนจ์นี้ ยิ่งไปยิ่งได้ของ"
       />
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onLoginSuccess={() => handleSetIsLoggedIn(true)} />
       <LogoutConfirmModal
@@ -285,8 +285,8 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
     : '';
   const barButton = 'px-4 py-2.5 rounded-full text-xs sm:text-sm font-bold shrink-0 cursor-pointer active:scale-95 inline-flex items-center gap-1.5';
   const bottomBar = (
-    <div className="lg:hidden fixed inset-x-0 bottom-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-6px_18px_rgba(15,23,42,0.06)] px-4 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-      <div className="max-w-3xl mx-auto flex items-center gap-2.5">
+    <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} actionBar={(
+      <div className="flex items-center gap-2.5">
         <div className="min-w-0 flex-1">
           <p className="text-xs sm:text-sm font-bold text-slate-900 truncate tabular-nums">
             {[tracked ? `+${points.toLocaleString()} XP` : 'บันทึกเอง', period].join(' · ')}
@@ -320,7 +320,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
           </button>
         )}
       </div>
-    </div>
+    )} />
   );
 
   // A challenge that counts only ตี้ or only fairs names them; anything else is a place

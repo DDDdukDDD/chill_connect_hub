@@ -9,12 +9,15 @@ interface MobileNavProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   favoritesCount?: number;
+  /** A detail page's own bar (when, save, share, the main button), stacked above the menu so both stay in reach */
+  actionBar?: React.ReactNode;
 }
 
 export const MobileNav: React.FC<MobileNavProps> = ({
   activeTab,
   setActiveTab,
   favoritesCount = 0,
+  actionBar,
 }) => {
   const { isLoggedIn } = useMemberSession();
   const navItems = [
@@ -30,6 +33,11 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   return (
     // z-40, under dialogs and sheets (z-50): at z-50 it covered the moment composer's โพสต์ button on phones
     <div className="fixed bottom-3 left-4 right-4 z-40 lg:hidden">
+      {actionBar && (
+        <div className="max-w-md mx-auto mb-2 px-3 py-2.5 rounded-2xl bg-white/95 backdrop-blur-md border border-slate-200 shadow-[0_8px_24px_rgba(15,23,42,0.12)]">
+          {actionBar}
+        </div>
+      )}
       <div className="bg-slate-900/90 backdrop-blur-2xl text-white rounded-3xl p-1.5 border border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.35)] flex items-center justify-around max-w-md mx-auto">
         {navItems.map((item) => {
           const Icon = item.icon;

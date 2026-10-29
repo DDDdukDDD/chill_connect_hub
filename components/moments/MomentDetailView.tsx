@@ -190,7 +190,7 @@ function DetailBody({ initialMoment, isLoggedIn, requireLogin, showToast }: Deta
                 </button>
               ) : (
                 !moment.hasReported && (
-                  <button type="button" onClick={() => (isLoggedIn ? setReportReason('') : requireLogin('เพื่อรายงานโพสต์'))} className={`${iconButton} text-slate-500`}>
+                  <button type="button" onClick={() => (isLoggedIn ? setReportReason('') : requireLogin('ช่วยกันดูแล รายงานโพสต์นี้ได้เลย'))} className={`${iconButton} text-slate-500`}>
                     <Flag className="w-4 h-4" aria-hidden="true" />
                     <span className="sr-only sm:not-sr-only">รายงาน</span>
                   </button>
@@ -232,7 +232,7 @@ function DetailBody({ initialMoment, isLoggedIn, requireLogin, showToast }: Deta
               {moment.likesCount.toLocaleString()}
               <span className="sr-only">ถูกใจ</span>
             </button>
-            <button type="button" onClick={() => (isLoggedIn ? commentInput.current?.focus() : requireLogin('เพื่อร่วมคอมเมนต์'))} className={iconButton}>
+            <button type="button" onClick={() => (isLoggedIn ? commentInput.current?.focus() : requireLogin('มาคุยกันใต้โมเมนต์นี้'))} className={iconButton}>
               <MessageCircle className="w-5 h-5" aria-hidden="true" />
               {moment.commentsCount.toLocaleString()}
               <span className="sr-only">ความคิดเห็น</span>
@@ -268,7 +268,7 @@ function DetailBody({ initialMoment, isLoggedIn, requireLogin, showToast }: Deta
                 </button>
               </form>
             ) : (
-              <button type="button" onClick={() => requireLogin('เพื่อร่วมคอมเมนต์')} className="block h-11 px-5 rounded-full bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-700 cursor-pointer">
+              <button type="button" onClick={() => requireLogin('มาคุยกันใต้โมเมนต์นี้')} className="block h-11 px-5 rounded-full bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-700 cursor-pointer">
                 เข้าสู่ระบบเพื่อคอมเมนต์
               </button>
             )}

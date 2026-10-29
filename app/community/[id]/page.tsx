@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { bundledEvent, getPublicEvent, isBundledEvent } from '@/lib/publicContent';
+import { bundledEvent, getPublicEvent, isBundledEvent, relatedMeetups } from '@/lib/publicContent';
 import { placeName } from '@/lib/placeName';
 import { metaDescription, pageMetadata } from '@/lib/site';
 import { breadcrumbJsonLd, eventJsonLd, jsonLdHtml } from '@/lib/structuredData';
@@ -32,6 +32,8 @@ export default async function CommunityDetailPage({ params }: Props) {
   if (!event && !isBundledEvent(id)) notFound();
   const path = event ? `/community/${encodeURIComponent(event.id)}` : '';
   const structured = event ? eventJsonLd(event, path) : null;
+  // Both read together: the questions and the ตี้ under the page come with the HTML
+  const [questions, related] = event ? await Promise.all([questionsOf(event.id, null), relatedMeetups(event)]) : [null, null];
   return (
     <>
       {structured && <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdHtml(structured)} />}
@@ -41,7 +43,7 @@ export default async function CommunityDetailPage({ params }: Props) {
           dangerouslySetInnerHTML={jsonLdHtml(breadcrumbJsonLd([{ name: 'ตี้', path: '/community' }, { name: titleOf(event.title), path }]))}
         />
       )}
-      <CommunityDetailView initialEvent={event ?? bundledEvent(id)} initialQuestions={event ? await questionsOf(event.id, null) : null} />
+      <CommunityDetailView initialEvent={event ?? bundledEvent(id)} initialQuestions={questions} initialRelated={related} />
     </>
   );
 }

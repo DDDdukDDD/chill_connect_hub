@@ -15,6 +15,8 @@ import {
 } from '@/lib/discoverMatch';
 import { joinCounts } from '@/lib/social/questJoins';
 import { browseSpots } from '@/lib/spotBrowse';
+import { eventListItem } from '@/lib/listItems';
+import { getFairEventCategory } from '@/data/masterHub';
 
 /**
  * What a public detail page shows, read on the server so the content is in the HTML search engines get.
@@ -70,6 +72,30 @@ export const isBundledSpot = (id: string) => Boolean(getSpotById(id) || MOCK_SPO
 /** The landing page's events: approved meetups and fairs that are not over (about a third of the full list). */
 export const listUpcomingEvents = async () =>
   (await db.listAllEvents()).filter((event) => event.approvalStatus === 'approved' && !isEventEnded(event));
+
+/**
+ * "ตี้ที่คุณอาจสนใจ" under a ตี้ page: other ตี้ with seats left and not over, the same สาย first, then the same
+ * category. Read on the server (the list is cached there) so the tiles come with the page, not from a fetch after it.
+ */
+export async function relatedMeetups(event: EventItem, count = 6): Promise<EventItem[]> {
+  const rank = (e: EventItem) => (event.lifestyleCategory && e.lifestyleCategory === event.lifestyleCategory ? 0 : e.category === event.category ? 1 : 2);
+  return (await listUpcomingEvents())
+    .filter((e) => e.id !== event.id && e.eventType === 'community' && (e.participantsCount ?? 0) < (e.maxParticipants ?? 10))
+    .sort((x, y) => rank(x) - rank(y))
+    .slice(0, count)
+    .map(eventListItem);
+}
+
+/** "อีเวนต์อื่นที่น่าไป" under an อีเวนต์ page: still to come, the same group first, then the same province */
+export async function relatedFairs(event: EventItem, count = 6): Promise<EventItem[]> {
+  const group = getFairEventCategory(event);
+  const rank = (e: EventItem) => (getFairEventCategory(e) === group ? 0 : 2) + (e.province === event.province ? 0 : 1);
+  return (await listUpcomingEvents())
+    .filter((e) => e.id !== event.id && e.eventType === 'public_venue')
+    .sort((x, y) => rank(x) - rank(y))
+    .slice(0, count)
+    .map(eventListItem);
+}
 
 /**
  * How many meetups, fairs and places the ค้นพบ search finds, for the numbers on its tabs (only what is not over,
