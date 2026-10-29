@@ -3,7 +3,7 @@ import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
 import { LifestyleSpotItem } from '@/data/spotsData';
 import { ScrapedRawEvent } from '@/lib/aiTagger';
-import { bangkokTime, toThaiDisplayDate } from '@/lib/scrapers/dates';
+import { extractRecords, firstImage, hasEnded, isEventNode, mapJsonLdEvent, safeExternalUrl, textValue, typeNames } from '@/lib/scrapers/jsonLd';
 import { findSiteEventAdapter } from '@/lib/scrapers/siteAdapters';
 import { getBlockedSourceReason } from '@/lib/scrapers/sourcePolicy';
 import { osmWikidataAdapter } from '@/lib/scrapers/osmWikidata';
@@ -114,16 +114,27 @@ async function getRobotsRules(url: URL): Promise<string | null> {
   const cached = robotsCache.get(url.hostname);
   if (cached && cached.expiresAt > Date.now()) return cached.rules;
 
-  const robotsUrl = new URL('/robots.txt', url.origin);
-  await validateSourceUrl(robotsUrl.toString());
-  const response = await fetch(robotsUrl, {
-    headers: { 'User-Agent': 'ChillConnectHubBot/1.0' },
-    redirect: 'error',
-    signal: AbortSignal.timeout(4000),
-  });
+  // RFC 9309: follow up to five redirects (each hop revalidated); a missing file, or a redirect to an
+  // ordinary page instead of a text file (e.g. ICONSIAM sends robots.txt to its homepage), means no rules
+  let robotsUrl = new URL('/robots.txt', url.origin);
+  let response: Response | null = null;
+  for (let hop = 0; hop <= 5; hop++) {
+    await validateSourceUrl(robotsUrl.toString());
+    response = await fetch(robotsUrl, {
+      headers: { 'User-Agent': 'ChillConnectHubBot/1.0' },
+      redirect: 'manual',
+      signal: AbortSignal.timeout(4000),
+    });
+    const location = response.status >= 300 && response.status < 400 ? response.headers.get('location') : null;
+    if (!location) break;
+    robotsUrl = new URL(location, robotsUrl);
+    response = null;
+  }
 
+  if (!response) throw new Error('robots.txt redirected too many times');
   if (response.status >= 500) throw new Error(`robots.txt returned ${response.status}`);
-  const rules = response.ok ? await response.text() : null;
+  const isTextFile = (response.headers.get('content-type') || 'text/plain').includes('text/plain');
+  const rules = response.ok && isTextFile ? await response.text() : null;
   robotsCache.set(url.hostname, { expiresAt: Date.now() + ROBOTS_CACHE_MS, rules });
   return rules;
 }
@@ -223,115 +234,6 @@ const adapterContext = (): SiteAdapterContext => ({
   now: Date.now(),
 });
 
-function parseJsonLdDocuments(text: string, contentType: string): unknown[] {
-  if (contentType.includes('application/ld+json')) {
-    try {
-      return [JSON.parse(text)];
-    } catch {
-      return [];
-    }
-  }
-
-  const documents: unknown[] = [];
-  const scriptPattern = /<script\b[^>]*type\s*=\s*(["'])application\/ld\+json\1[^>]*>([\s\S]*?)<\/script\s*>/gi;
-  for (const match of text.matchAll(scriptPattern)) {
-    try {
-      documents.push(JSON.parse(match[2].replace(/^\uFEFF/, '').trim()));
-    } catch {
-      // Ignore malformed JSON-LD blocks but continue processing the page.
-    }
-  }
-  return documents;
-}
-
-function collectJsonLdNodes(value: unknown, output: Record<string, unknown>[] = []): Record<string, unknown>[] {
-  if (Array.isArray(value)) {
-    for (const item of value) collectJsonLdNodes(item, output);
-    return output;
-  }
-  if (!value || typeof value !== 'object') return output;
-
-  const node = value as Record<string, unknown>;
-  output.push(node);
-  for (const key of ['@graph', 'itemListElement', 'item', 'mainEntity', 'mainEntityOfPage']) {
-    if (key in node) collectJsonLdNodes(node[key], output);
-  }
-  return output;
-}
-
-function typeNames(node: Record<string, unknown>): string[] {
-  const values = Array.isArray(node['@type']) ? node['@type'] : [node['@type']];
-  return values.filter((value): value is string => typeof value === 'string')
-    .map((value) => value.split(/[\/#]/).pop()?.toLowerCase() || '');
-}
-
-function textValue(value: unknown): string {
-  if (typeof value === 'string') return value.trim();
-  if (typeof value === 'number') return String(value);
-  if (Array.isArray(value)) return value.map(textValue).filter(Boolean).join(', ');
-  if (value && typeof value === 'object') {
-    const node = value as Record<string, unknown>;
-    return textValue(node.name || node['@id'] || node.url);
-  }
-  return '';
-}
-
-function firstImage(value: unknown): string {
-  if (Array.isArray(value)) return firstImage(value[0]);
-  if (value && typeof value === 'object') {
-    const node = value as Record<string, unknown>;
-    return textValue(node.url || node.contentUrl);
-  }
-  return typeof value === 'string' ? value.trim() : '';
-}
-
-function eventLocation(value: unknown): string {
-  if (typeof value === 'string') return value.trim();
-  if (!value || typeof value !== 'object') return '';
-  const location = value as Record<string, unknown>;
-  const address = location.address as Record<string, unknown> | string | undefined;
-  if (typeof address === 'string') return [textValue(location.name), address.trim()].filter(Boolean).join(', ');
-  const addressParts = address && typeof address === 'object'
-    ? [address.streetAddress, address.addressLocality, address.addressRegion, address.addressCountry].map(textValue).filter(Boolean)
-    : [];
-  return [textValue(location.name), ...addressParts].filter(Boolean).join(', ');
-}
-
-function safeExternalUrl(value: unknown): string | undefined {
-  const raw = textValue(value);
-  if (!raw) return undefined;
-  try {
-    const url = new URL(raw);
-    return url.protocol === 'https:' || url.protocol === 'http:' ? url.toString() : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-function offerPrice(value: unknown): string | undefined {
-  const offer = Array.isArray(value) ? value[0] : value;
-  if (!offer || typeof offer !== 'object') return undefined;
-  const node = offer as Record<string, unknown>;
-  const price = textValue(node.price || (node.priceSpecification as Record<string, unknown> | undefined)?.price);
-  const currency = textValue(node.priceCurrency || (node.priceSpecification as Record<string, unknown> | undefined)?.priceCurrency);
-  return price ? `${currency} ${price}`.trim() : undefined;
-}
-
-function extractRecords(text: string, contentType: string): Record<string, unknown>[] {
-  const unique = new Map<string, Record<string, unknown>>();
-  for (const document of parseJsonLdDocuments(text, contentType)) {
-    for (const node of collectJsonLdNodes(document)) {
-      const key = textValue(node.url || node['@id']) || `${textValue(node.name)}:${typeNames(node).join(',')}`;
-      if (key && typeNames(node).length) unique.set(key, node);
-    }
-  }
-  return [...unique.values()];
-}
-
-function isEventNode(node: Record<string, unknown>): boolean {
-  return typeNames(node).some((type) => type === 'event' || type.endsWith('event') || type === 'eventseries');
-}
-
 const PLACE_TYPES = new Set([
   'place', 'localbusiness', 'touristattraction', 'park', 'cafeorcoffeeshop',
   'restaurant', 'foodestablishment', 'museum', 'artgallery', 'barorpub', 'store',
@@ -362,38 +264,10 @@ export async function scrapeEventSource(source: ScrapeSource): Promise<SourceScr
     const contentType = text.trimStart().startsWith('{') ? 'application/ld+json' : 'text/html';
     const records = extractRecords(text, contentType).filter(isEventNode);
     if (records.length === 0) throw new Error('No Schema.org Event JSON-LD found on this page');
-    const items = records.flatMap((record) => {
-      const rawTitle = textValue(record.name);
-      const rawDate = textValue(record.startDate);
-      const rawLocation = eventLocation(record.location);
-      if (rawTitle.length < 5 || !rawDate || !rawLocation) return [];
-
-      const organizer = textValue(record.organizer);
-      const image = firstImage(record.image);
-      const location = record.location && typeof record.location === 'object' ? record.location as Record<string, unknown> : {};
-      const address = location.address && typeof location.address === 'object' ? location.address as Record<string, unknown> : {};
-      const geo = location.geo && typeof location.geo === 'object' ? location.geo as Record<string, unknown> : {};
-      const latitude = Number(geo.latitude);
-      const longitude = Number(geo.longitude);
-      const sourceUrl = safeExternalUrl(record.url) || url.toString();
-      if (getBlockedSourceReason(sourceUrl)) return []; // a listing that re-publishes Meetup/Facebook events
-      const rawEndDate = textValue(record.endDate) || undefined;
-      return [{
-        source: organizer || source.name,
-        sourceUrl,
-        rawTitle,
-        rawDate: toThaiDisplayDate(rawDate),
-        rawEndDate: toThaiDisplayDate(rawEndDate),
-        rawTime: [bangkokTime(rawDate), bangkokTime(rawEndDate)].filter(Boolean).join(' - '),
-        rawLocation,
-        rawProvince: textValue(address.addressRegion || address.addressLocality) || undefined,
-        rawPrice: offerPrice(record.offers),
-        rawDescription: textValue(record.description),
-        rawImage: image,
-        rawLatitude: Number.isFinite(latitude) ? latitude : undefined,
-        rawLongitude: Number.isFinite(longitude) ? longitude : undefined,
-      }];
-    });
+    const now = Date.now();
+    const current = records.filter((record) => !hasEnded(record, now));
+    const items = current.flatMap((record) => mapJsonLdEvent(record, url, source.name) ?? []);
+    if (current.length === 0) return { sourceId: source.id, sourceName: source.name, targetType: 'events', scannedCount: records.length, items: [] };
     if (items.length === 0) throw new Error(`Found ${records.length} Event records, but none had a title, start date, and location`);
     return { sourceId: source.id, sourceName: source.name, targetType: 'events', scannedCount: records.length, items };
   } catch (error) {

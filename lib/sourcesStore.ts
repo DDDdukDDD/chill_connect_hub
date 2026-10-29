@@ -44,15 +44,15 @@ export interface EventDataSource {
 export const DEFAULT_DATA_SOURCES: EventDataSource[] = [
   {
     id: 'thaiticketmajor',
-    name: 'ThaiTicketMajor Sports & Stadiums',
-    url: 'https://www.thaiticketmajor.com/sport/',
+    name: 'ThaiTicketMajor คอนเสิร์ต & กีฬา',
+    url: 'https://www.thaiticketmajor.com/concert/',
     targetType: 'events',
-    category: 'sports',
-    categoryLabel: '⚽ กีฬา & บอลไทยราชมังฯ',
-    icon: '⚽',
+    category: 'music',
+    categoryLabel: '🎤 คอนเสิร์ต T-POP/K-POP & กีฬา',
+    icon: '🎤',
     status: 'active',
     eventsCount: 0,
-    description: 'ดึงแมตช์ฟุตบอลทีมชาติไทย, ฟุตบอลไทยลีก, และอีเวนต์กีฬาใหญ่ระดับประเทศ',
+    description: 'คอนเสิร์ตศิลปินไทยและต่างประเทศ แฟนมีตติ้ง มวย และฟุตบอล จากหน้าคอนเสิร์ตและกีฬา อ่านรายละเอียดจากหน้าของแต่ละงาน (สูงสุด 60 งานต่อรอบ)',
   },
   {
     id: 'eventpop',
@@ -62,21 +62,21 @@ export const DEFAULT_DATA_SOURCES: EventDataSource[] = [
     category: 'lifestyle',
     categoryLabel: '🎟️ เวิร์กช็อป & ไลฟ์สไตล์',
     icon: '🎟️',
-    status: 'active',
+    status: 'inactive',
     eventsCount: 0,
-    description: 'ฮับเวิร์กช็อปศิลปะ คลาสทำอาหาร สัมมนา และปาร์ตี้คอมมูนิตี้กรุงเทพฯ',
+    description: 'ยังดึงไม่ได้: หน้าเว็บโหลดรายการงานด้วย JavaScript จาก API ภายใน ไม่มีข้อมูลในหน้า HTML และ sitemap ไม่มีหน้างาน ต้องขอ feed หรือ API จาก Eventpop (partner)',
   },
   {
     id: 'ticketmelon',
-    name: 'Ticketmelon Hub',
+    name: 'Ticketmelon',
     url: 'https://www.ticketmelon.com',
     targetType: 'events',
     category: 'music',
-    categoryLabel: '🎫 มิวสิคเฟส & งานสร้างสรรค์',
+    categoryLabel: '🎫 มิวสิคเฟส ไลฟ์เฮาส์ & ปาร์ตี้',
     icon: '🎫',
     status: 'active',
     eventsCount: 0,
-    description: 'เทศกาลดนตรีอินดี้ระดับสากล นิทรรศการศิลปะ และงานดีเจสุดล้ำ',
+    description: 'เทศกาลดนตรี ไลฟ์เฮาส์ ปาร์ตี้ มวย และงานสร้างสรรค์ อ่านจาก sitemap ของงานที่อัปเดตล่าสุด 60 หน้า เฉพาะงานในประเทศไทยที่ยังไม่จบ',
   },
   {
     id: 'theconcert',
@@ -86,9 +86,21 @@ export const DEFAULT_DATA_SOURCES: EventDataSource[] = [
     category: 'music',
     categoryLabel: '🎵 คอนเสิร์ต & การแสดงสด',
     icon: '🎵',
+    status: 'inactive',
+    eventsCount: 0,
+    description: 'ยังดึงไม่ได้: หน้าเว็บโหลดรายการคอนเสิร์ตด้วย JavaScript จาก API ภายใน (api.theconcert.com) ไม่มีข้อมูลในหน้า HTML ต้องขอ feed หรือ API จาก The Concert (partner)',
+  },
+  {
+    id: 'iconsiam',
+    name: 'ไอคอนสยาม (ICONSIAM)',
+    url: 'https://www.iconsiam.com/th',
+    targetType: 'events',
+    category: 'lifestyle',
+    categoryLabel: '🛍️ นิทรรศการ ป็อปอัป & อีเวนต์ในห้าง',
+    icon: '🛍️',
     status: 'active',
     eventsCount: 0,
-    description: 'คอนเสิร์ตศิลปิน T-POP / K-POP และ Live House ทั่วกรุงเทพฯ',
+    description: 'นิทรรศการคาแรกเตอร์ ป็อปอัปคาเฟ่ อนิเมะ และกิจกรรมครอบครัวที่ไอคอนสยาม จาก JSON-LD Event บนหน้าแรก (งานที่กำลังจัด)',
   },
   {
     id: 'qsncc',
@@ -146,9 +158,9 @@ export const DEFAULT_DATA_SOURCES: EventDataSource[] = [
     category: 'finance',
     categoryLabel: '📈 สัมมนาการเงิน & การลงทุน',
     icon: '📈',
-    status: 'active',
+    status: 'inactive',
     eventsCount: 0,
-    description: 'งานสัมมนาวางแผนการเงิน เวิร์กช็อปหุ้น กองทุน และพัฒนาทักษะธุรกิจ',
+    description: 'ยังดึงไม่ได้: หน้าแรกไม่มีปฏิทินงานในรูปแบบที่อ่านได้ และสัมมนาการเงินไม่ใช่กลุ่มหลักของ Gen Y/Z ถ้าต้องการให้ชี้ไปที่หน้าปฏิทินสัมมนาที่มี JSON-LD Event',
   },
   {
     id: 'tourism-directory',
@@ -196,9 +208,9 @@ export const DEFAULT_DATA_SOURCES: EventDataSource[] = [
     category: 'lifestyle',
     categoryLabel: '🌿 ดนตรีในสวน & เทศกาล กทม.',
     icon: '🌿',
-    status: 'active',
+    status: 'inactive',
     eventsCount: 0,
-    description: 'กิจกรรมดนตรีในสวนสาธารณะ เทศกาลภาพยนตร์กรุงเทพฯ และตลาดนัดชุมชน',
+    description: 'ยังดึงไม่ได้: pr-bangkok.com เป็นเว็บข่าวประชาสัมพันธ์ ไม่มีปฏิทินงานแบบมีโครงสร้าง ใช้แหล่ง "Visit Bangkok ปฏิทินเทศกาล" แทน',
   },
 ];
 
@@ -220,14 +232,19 @@ export async function getAllDataSources(): Promise<EventDataSource[]> {
         spotsCount: storedSrc.lastRunAt ? storedSrc.spotsCount || 0 : 0,
         lastScraped: storedSrc.lastRunAt ? storedSrc.lastScraped : undefined,
       };
+      // Built-in sources take their address, labels and text from code; the stored status (on/off) stays the admin's
       if (def) {
-        if (storedSrc.url !== def.url || storedSrc.category !== def.category || storedSrc.categoryLabel !== def.categoryLabel) {
+        if (
+          storedSrc.url !== def.url || storedSrc.category !== def.category || storedSrc.categoryLabel !== def.categoryLabel ||
+          storedSrc.name !== def.name || storedSrc.description !== def.description || storedSrc.icon !== def.icon
+        ) {
           hasChanges = true;
           return {
             ...normalized,
             url: def.url,
             category: def.category,
             categoryLabel: def.categoryLabel,
+            icon: def.icon,
             name: def.name,
             description: def.description,
           };
