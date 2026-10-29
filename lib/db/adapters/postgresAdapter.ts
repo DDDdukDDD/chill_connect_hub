@@ -16,6 +16,7 @@ import {
   UpdateQuestDTO,
 } from '../types';
 import { filterEvents, filterSpots, filterQuests, paginateArray, isEventEnded } from '../queryEngine';
+import { hasMeetupStarted } from '../../dateUtils';
 import { normalizeStoredEvents } from '../../eventNormalization';
 import { rollSampleEventDate } from '../../sampleEventDates';
 import { SEED_QUEST_TEXT_VERSION, addNewSeedQuests, applyQuestLifecycle, copySeedQuestRules, refreshSeedQuestTexts, upgradeLegacySeedQuests } from '../../questLifecycle';
@@ -346,6 +347,8 @@ export class PostgresAdapter implements IDataRepository {
       const event = rowToEvent(row) as EventItem;
       // Sample meetups are shown with a rolled-forward date; judge "ended" by the date people see
       if (isEventEnded(rollSampleEventDate(event))) return { success: false, message: 'ตี้นี้สิ้นสุดแล้ว', status: 'event_ended' };
+      // Joining closes when the ตี้ starts (owner 2026-10-29)
+      if (hasMeetupStarted(rollSampleEventDate(event))) return { success: false, message: 'ตี้นี้เริ่มไปแล้ว ปิดรับคนเพิ่มแล้ว', status: 'event_ended' };
 
       const [member] = await tx`select id from app.members where legacy_id = ${participant.userId}`;
       if (!member) throw new Error(`member ${participant.userId} is not in the database`);

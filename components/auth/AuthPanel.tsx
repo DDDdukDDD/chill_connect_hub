@@ -23,6 +23,8 @@ interface AuthPanelProps {
   /** Error to show on open (e.g. ?auth_error= from a failed social sign-in) */
   initialError?: string;
   titleId?: string;
+  /** /login: the title is the page's one h1 (elsewhere the page or dialog has its own) */
+  isPage?: boolean;
 }
 
 const MIN_PASSWORD = 8;
@@ -169,7 +171,7 @@ function Checkbox({ id, checked, onChange, children }: { id: string; checked: bo
 
 /* ---------- The panel ---------- */
 
-export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, onClose, initialError = '', titleId }: AuthPanelProps) {
+export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, onClose, initialError = '', titleId, isPage = false }: AuthPanelProps) {
   const session = useMemberSession();
   const uid = useId();
   const [view, setView] = useState<AuthView>(initialView);
@@ -291,6 +293,7 @@ export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, on
     </div>
   );
 
+  const Heading = isPage ? 'h1' : 'h2';
   const header = (title: string, subtitle?: string, onBack?: () => void) => (
     <div className="relative text-center pb-6">
       {onBack && (
@@ -303,7 +306,7 @@ export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, on
           <X className="w-5 h-5" />
         </button>
       )}
-      <h2 id={titleId} className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 px-8"><PhraseText text={title} /></h2>
+      <Heading id={titleId} className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 px-8"><PhraseText text={title} /></Heading>
       {subtitle && <p className="text-sm text-slate-500 font-medium mt-2 max-w-sm mx-auto leading-relaxed"><PhraseText text={subtitle} /></p>}
     </div>
   );

@@ -87,7 +87,7 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts }: 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
-  const [membershipActionTitle, setMembershipActionTitle] = useState('อีกนิดเดียว ก็ไปต่อได้แล้ว');
+  const [membershipActionTitle, setMembershipActionTitle] = useState('เพื่อดำเนินการต่อ');
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
 
   const showToast = (msg: string) => {
@@ -97,7 +97,7 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts }: 
 
   const toggleFavoriteSpot = (spotId: string) => {
     if (!isLoggedIn) {
-      setMembershipActionTitle('เก็บที่นี่ไว้ ไว้หาวันไป');
+      setMembershipActionTitle('เพื่อบันทึกสถานที่โปรด');
       setIsRequireMembershipOpen(true);
       return;
     }
@@ -292,7 +292,7 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts }: 
                 type="button"
                 onClick={() => {
                   if (!isLoggedIn) {
-                    setMembershipActionTitle('ทุกที่ที่คุณเก็บไว้ รออยู่ตรงนี้');
+                    setMembershipActionTitle('เพื่อดูสถานที่ที่บันทึกไว้ใน Bucket List');
                     setIsRequireMembershipOpen(true);
                     return;
                   }

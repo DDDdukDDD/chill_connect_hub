@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Compass, Camera, Home, Ticket, Zap } from 'lucide-react';
 import { useMemberSession } from '@/lib/useMemberSession';
@@ -9,7 +9,8 @@ interface MobileNavProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   favoritesCount?: number;
-  /** A detail page's own bar (when, save, share, the main button), stacked above the menu so both stay in reach */
+  /** A detail page's own bar (when, save, share, the main button), stacked above the menu so both stay in reach.
+   *  It shows once the page's own buttons ([data-hero-actions]) have scrolled away, so the two never sit on one screen. Pages with a bar mark their buttons; without the mark the bar stays hidden */
   actionBar?: React.ReactNode;
 }
 
@@ -20,6 +21,16 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   actionBar,
 }) => {
   const { isLoggedIn } = useMemberSession();
+  const [heroActionsGone, setHeroActionsGone] = useState(false);
+  useEffect(() => {
+    if (!actionBar) return;
+    const target = document.querySelector('[data-hero-actions]');
+    if (!target) return;
+    const observer = new IntersectionObserver(([entry]) => setHeroActionsGone(!entry.isIntersecting && entry.boundingClientRect.top < 0));
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [Boolean(actionBar)]); // eslint-disable-line react-hooks/exhaustive-deps -- only whether there is a bar matters
+
   const navItems = [
     // Home is the member's live feed (and the visitor's landing), so it stays one tap away
     { id: 'home', label: 'หน้าแรก', href: '/', icon: Home },
@@ -34,7 +45,13 @@ export const MobileNav: React.FC<MobileNavProps> = ({
     // z-40, under dialogs and sheets (z-50): at z-50 it covered the moment composer's โพสต์ button on phones
     <div className="fixed bottom-3 left-4 right-4 z-40 lg:hidden">
       {actionBar && (
-        <div className="max-w-md mx-auto mb-2 px-3 py-2.5 rounded-2xl bg-white/95 backdrop-blur-md border border-slate-200 shadow-[0_8px_24px_rgba(15,23,42,0.12)]">
+        <div
+          aria-hidden={!heroActionsGone}
+          inert={!heroActionsGone}
+          className={`max-w-md mx-auto mb-2 px-3 py-2.5 rounded-2xl bg-white/95 backdrop-blur-md border border-slate-200 shadow-[0_8px_24px_rgba(15,23,42,0.12)] transition-all duration-200 ${
+            heroActionsGone ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'
+          }`}
+        >
           {actionBar}
         </div>
       )}

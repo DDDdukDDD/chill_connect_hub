@@ -119,7 +119,7 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
-  const [membershipActionTitle, setMembershipActionTitle] = useState('อีกนิดเดียว ก็ไปต่อได้แล้ว');
+  const [membershipActionTitle, setMembershipActionTitle] = useState('เพื่อดำเนินการต่อ');
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
 
@@ -130,7 +130,7 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
 
   const toggleFavorite = (eventId: string) => {
     if (!isLoggedIn) {
-      setMembershipActionTitle('เก็บอีเวนต์นี้ไว้ ไม่ให้พลาด');
+      setMembershipActionTitle('เพื่อบันทึกอีเวนต์โปรด');
       setPendingAction(`favorite:${eventId}`);
       setIsRequireMembershipOpen(true);
       return;
@@ -407,7 +407,7 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
                 type="button"
                 onClick={() => {
                   if (!isLoggedIn) {
-                    setMembershipActionTitle('ทุกอีเวนต์ที่คุณเก็บไว้ รออยู่ตรงนี้');
+                    setMembershipActionTitle('เพื่อดูรายการอีเวนต์ที่บันทึกไว้');
                     setPendingAction('favorites_filter');
                     setIsRequireMembershipOpen(true);
                     return;

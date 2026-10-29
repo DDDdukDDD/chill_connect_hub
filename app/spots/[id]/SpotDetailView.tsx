@@ -75,6 +75,11 @@ export interface SpotOpenStatus {
   badgeVariant: 'open' | 'closed' | 'unspecified';
 }
 
+// Thai day short forms in opening hours; longer ones first so "พฤ." is not read as "พ." and "อา." not as "อ."
+const THAI_DAY_INDEX: Record<string, number> = { 'อา': 0, 'จ': 1, 'อ': 2, 'พ': 3, 'พฤ': 4, 'ศ': 5, 'ส': 6 };
+const THAI_DAY_NAME = ['วันอาทิตย์', 'วันจันทร์', 'วันอังคาร', 'วันพุธ', 'วันพฤหัสฯ', 'วันศุกร์', 'วันเสาร์'];
+const DAY_SPEC = /(อา|พฤ|จ|อ|พ|ศ|ส)\.(?:\s*[-–]\s*(อา|พฤ|จ|อ|พ|ศ|ส)\.)?/;
+
 export function parseSpotOpenStatus(openHours?: string): SpotOpenStatus {
   if (!openHours || /ไม่ระบุ/i.test(openHours)) {
     return {
@@ -94,31 +99,11 @@ export function parseSpotOpenStatus(openHours?: string): SpotOpenStatus {
       badgeVariant: 'open' };
   }
 
-  // Check current Thailand time (UTC+7)
-  const now = new Date();
-  const utcHours = now.getUTCHours();
-  const utcMinutes = now.getUTCMinutes();
-  const thaiHours = (utcHours + 7) % 24;
-  const currentMinutes = thaiHours * 60 + utcMinutes;
-  const currentDay = (now.getUTCDay() + (utcHours + 7 >= 24 ? 1 : 0)) % 7; // 0=Sun, 1=Mon, ..., 6=Sat
+  // Thailand time (UTC+7)
+  const thaiNow = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  const currentMinutes = thaiNow.getUTCHours() * 60 + thaiNow.getUTCMinutes();
+  const currentDay = thaiNow.getUTCDay(); // 0=Sun, 1=Mon, ..., 6=Sat
 
-  // Check day restrictions
-  if (/จ\.-ศ\./.test(clean) && (currentDay === 0 || currentDay === 6)) {
-    return {
-      isOpen: false,
-      statusText: 'ปิดทำการวันนี้',
-      subText: 'เปิดวันจันทร์ - ศุกร์',
-      badgeVariant: 'closed',
-    };
-  }
-  if (/ส\.-อา\./.test(clean) && currentDay >= 1 && currentDay <= 5) {
-    return {
-      isOpen: false,
-      statusText: 'ปิดทำการวันนี้',
-      subText: 'เปิดเฉพาะ เสาร์ - อาทิตย์',
-      badgeVariant: 'closed',
-    };
-  }
   if (/ปิดวันจันทร์/.test(clean) && currentDay === 1) {
     return {
       isOpen: false,
@@ -128,31 +113,38 @@ export function parseSpotOpenStatus(openHours?: string): SpotOpenStatus {
     };
   }
 
-  // Parse time range: e.g. 08:00 - 17:00
-  const match = clean.match(/(\d{1,2})[:.](\d{2})\s*[-–]\s*(\d{1,2})[:.](\d{2})/);
-  if (match) {
-    const openH = parseInt(match[1], 10);
-    const openM = parseInt(match[2], 10);
-    const closeH = parseInt(match[3], 10);
-    const closeM = parseInt(match[4], 10);
-
-    const openMinutes = openH * 60 + openM;
-    const closeMinutes = closeH * 60 + closeM;
-
-    if (currentMinutes >= openMinutes && currentMinutes < closeMinutes) {
-      return {
-        isOpen: true,
-        statusText: 'เปิดให้บริการอยู่',
-        subText: `ปิด ${match[3]}:${match[4]} น.`,
-        badgeVariant: 'open',
-      };
-    } else {
-      return {
-        isOpen: false,
-        statusText: 'ปิดให้บริการแล้ว',
-        subText: `เปิด ${match[1]}:${match[2]} น.`,
-        badgeVariant: 'closed',
-      };
+  // Hours come in parts, each with its own days: "จ.-ศ. 08:00-17:00 · ส.-อา. 09:00-18:00 น." A part without days is every day
+  const shifts = clean.split('·').flatMap((part) => {
+    const time = part.match(/(\d{1,2})[:.](\d{2})\s*[-–]\s*(\d{1,2})[:.](\d{2})/);
+    if (!time) return [];
+    const days = part.match(DAY_SPEC);
+    const from = days ? THAI_DAY_INDEX[days[1]] : 0;
+    const to = days ? THAI_DAY_INDEX[days[2] ?? days[1]] : 6;
+    const onDays = new Set<number>();
+    for (let d = from; ; d = (d + 1) % 7) {
+      onDays.add(d);
+      if (d === to) break;
+    }
+    return [{ onDays, open: Number(time[1]) * 60 + Number(time[2]), close: Number(time[3]) * 60 + Number(time[4]), opens: `${time[1]}:${time[2]}`, closes: `${time[3]}:${time[4]}` }];
+  });
+  if (shifts.length > 0) {
+    const today = shifts.filter((shift) => shift.onDays.has(currentDay)).sort((x, y) => x.open - y.open);
+    // A close earlier than the open runs past midnight
+    const openNow = today.find((shift) => (shift.close > shift.open ? currentMinutes >= shift.open && currentMinutes < shift.close : currentMinutes >= shift.open || currentMinutes < shift.close));
+    if (openNow) return { isOpen: true, statusText: 'เปิดให้บริการอยู่', subText: `ปิด ${openNow.closes} น.`, badgeVariant: 'open' };
+    const laterToday = today.find((shift) => shift.open > currentMinutes);
+    if (laterToday) return { isOpen: false, statusText: 'ปิดให้บริการแล้ว', subText: `เปิด ${laterToday.opens} น.`, badgeVariant: 'closed' };
+    for (let ahead = 1; ahead <= 7; ahead++) {
+      const day = (currentDay + ahead) % 7;
+      const next = shifts.filter((shift) => shift.onDays.has(day)).sort((x, y) => x.open - y.open)[0];
+      if (next) {
+        return {
+          isOpen: false,
+          statusText: today.length > 0 ? 'ปิดให้บริการแล้ว' : 'ปิดทำการวันนี้',
+          subText: ahead === 1 ? `เปิดพรุ่งนี้ ${next.opens} น.` : `เปิด${THAI_DAY_NAME[day]} ${next.opens} น.`,
+          badgeVariant: 'closed',
+        };
+      }
     }
   }
 
@@ -170,7 +162,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
   const rawId = params?.id as string;
   const decodedId = rawId ? decodeURIComponent(rawId) : '';
 
-  const [activeNavTab, setActiveNavTab] = useState('spots');
+  const [activeNavTab, setActiveNavTab] = useState('explore');
   const [favorites, setFavorites] = useState<string[]>([]);
   const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
   // What the member joined comes from the account; this keeps the page in step with it
@@ -182,7 +174,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
-  const [membershipActionTitle, setMembershipActionTitle] = useState('อีกนิดเดียว ก็ไปต่อได้แล้ว');
+  const [membershipActionTitle, setMembershipActionTitle] = useState('เพื่อดำเนินการต่อ');
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
   // The Smart Plan schedule carried into the create dialog; empty when opened from other buttons
   const [teeItinerary, setTeeItinerary] = useState<Array<{ time: string; title: string }> | undefined>(undefined);
@@ -294,7 +286,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
 
   const toggleFavorite = (spotId: string) => {
     if (!isLoggedIn) {
-      setMembershipActionTitle('เก็บที่นี่ไว้ ไว้หาวันไป');
+      setMembershipActionTitle('เพื่อบันทึกสถานที่ลงในสมุดบันทึกการเดินทาง (Travel Scrapbook)');
       setIsRequireMembershipOpen(true);
       return;
     }
@@ -530,7 +522,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
                 location={spot.title}
                 isLoggedIn={isLoggedIn}
                 onRequireLogin={() => {
-                  setMembershipActionTitle('มาแล้ว? เก็บไว้เป็นความทรงจำ');
+                  setMembershipActionTitle('เพื่อบันทึกว่าคุณไปที่นี่มาแล้ว');
                   setIsRequireMembershipOpen(true);
                 }}
                 onShowToast={showToast}
@@ -542,7 +534,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
               spot={spot}
               isLoggedIn={isLoggedIn}
               onRequireLogin={() => {
-                setMembershipActionTitle('ชวนคนมาไปที่นี่ด้วยกัน');
+                setMembershipActionTitle('เพื่อชวนเพื่อนไปที่นี่');
                 setIsRequireMembershipOpen(true);
               }}
               onShowToast={showToast}
@@ -554,7 +546,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
               catalog={publishedSpots}
               onStartTee={(plan) => {
                 if (!isLoggedIn) {
-                  setMembershipActionTitle('ชวนคนมาไปตามแผนนี้');
+                  setMembershipActionTitle('เพื่อชวนเพื่อนไปตามแผนนี้');
                   setIsRequireMembershipOpen(true);
                   return;
                 }

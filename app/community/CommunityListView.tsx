@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Heart, X, Calendar, Plus } from 'lucide-react';
-import { isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp } from '@/lib/dateUtils';
+import { isClosedToJoin, isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp } from '@/lib/dateUtils';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { EmptyResults } from '@/components/discover/EmptyResults';
@@ -102,7 +102,7 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
-  const [membershipActionTitle, setMembershipActionTitle] = useState('อีกนิดเดียว ก็ไปต่อได้แล้ว');
+  const [membershipActionTitle, setMembershipActionTitle] = useState('เพื่อดำเนินการต่อ');
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
 
@@ -113,7 +113,7 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
 
   const toggleFavorite = (eventId: string) => {
     if (!isLoggedIn) {
-      setMembershipActionTitle('เก็บตี้นี้ไว้ ไม่ให้พลาด');
+      setMembershipActionTitle('เพื่อบันทึกตี้ที่ชอบ');
       setPendingAction(`favorite:${eventId}`);
       setIsRequireMembershipOpen(true);
       return;
@@ -131,7 +131,7 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
 
       // Status Filter (Upcoming / Ended / All)
       const ended = isEventEnded(ev);
-      if (statusFilter === 'upcoming' && ended) return false;
+      if (statusFilter === 'upcoming' && isClosedToJoin(ev)) return false;
       if (statusFilter === 'ended' && !ended) return false;
       if (openOnly && ev.participantsCount >= ev.maxParticipants) return false;
 
@@ -193,7 +193,7 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
     const counts: Record<string, number> = {};
     const communityEvents = eventsList.filter((event) => {
       if ((event.eventType || 'community') !== 'community') return false;
-      if (statusFilter === 'upcoming' && isEventEnded(event)) return false;
+      if (statusFilter === 'upcoming' && isClosedToJoin(event)) return false;
       if (statusFilter === 'ended' && !isEventEnded(event)) return false;
       if (openOnly && event.participantsCount >= event.maxParticipants) return false;
 
@@ -224,7 +224,7 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
 
   const openCreate = () => {
     if (!isLoggedIn) {
-      setMembershipActionTitle('ชวนคนมาออกไปด้วยกัน ตั้งตี้ของคุณเลย');
+      setMembershipActionTitle('เพื่อตั้งตี้ใหม่');
       setPendingAction('create');
       setIsRequireMembershipOpen(true);
     } else {
@@ -344,7 +344,7 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
                 type="button"
                 onClick={() => {
                   if (!isLoggedIn) {
-                    setMembershipActionTitle('ทุกตี้ที่คุณเก็บไว้ รออยู่ตรงนี้');
+                    setMembershipActionTitle('เพื่อดูตี้ที่บันทึกไว้');
                     setPendingAction('favorites');
                     setIsRequireMembershipOpen(true);
                     return;

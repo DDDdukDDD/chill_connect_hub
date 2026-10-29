@@ -110,7 +110,7 @@ function JourneyContent() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
-  const [membershipActionTitle, setMembershipActionTitle] = useState('อีกนิดเดียว ก็ไปต่อได้แล้ว');
+  const [membershipActionTitle, setMembershipActionTitle] = useState('เพื่อดำเนินการต่อ');
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
   const [isSurpriseModalOpen, setIsSurpriseModalOpen] = useState(false);
 
@@ -155,7 +155,7 @@ function JourneyContent() {
 
   const toggleFavoriteEvent = (eventId: string) => {
     if (!isLoggedIn) {
-      triggerMembershipPrompt('เก็บกิจกรรมนี้ไว้ ไม่ให้พลาด');
+      triggerMembershipPrompt('เพื่อบันทึกกิจกรรมนี้ไว้ในรายการโปรด');
       return;
     }
     setFavorites((prev) => {
@@ -171,7 +171,7 @@ function JourneyContent() {
 
   const toggleFavoriteSpot = (spotId: string) => {
     if (!isLoggedIn) {
-      triggerMembershipPrompt('เก็บที่นี่ไว้ ไว้หาวันไป');
+      triggerMembershipPrompt('เพื่อบันทึกสถานที่โปรด');
       return;
     }
     setFavoriteSpots((prev) => {
@@ -268,7 +268,7 @@ function JourneyContent() {
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}
         onOpenCreateEvent={() => {
-          if (!isLoggedIn) triggerMembershipPrompt('ชวนคนมาออกไปด้วยกัน ตั้งตี้ของคุณเลย');
+          if (!isLoggedIn) triggerMembershipPrompt('เพื่อสร้างกิจกรรมใหม่');
           else setIsCreateEventModalOpen(true);
         }}
       />

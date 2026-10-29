@@ -23,7 +23,7 @@ import { CreateEventModal } from '@/components/LazyCreateEventModal';
 // Types only: the bundled sample data (~900 KB) is not shipped to the browser (2026-10-28)
 import type { EventItem, ChallengeQuest } from '@/data/mockData';
 import type { LifestyleSpotItem } from '@/data/spotsData';
-import { formatEventDateRange, isEventEnded, nearDayLabel, parseEventDateToTimestamp } from '@/lib/dateUtils';
+import { formatEventDateRange, isClosedToJoin, isEventEnded, nearDayLabel, parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { useAuth } from '@/lib/useAuth';
 import { fetchAllContentPages } from '@/lib/contentClient';
 import { useMyRewards } from '@/lib/useMyRewards';
@@ -32,8 +32,9 @@ import { useMyActivity } from '@/lib/useMyActivity';
 import { seedMemberSession, useMemberSession, type SessionSeed } from '@/lib/useMemberSession';
 import { REWARD_SHOP_ITEMS } from '@/data/rewardsData';
 import { useHomeSpots, getCachedSpotVibeCategory } from '@/lib/usePublishedSpots';
-import { getCommunityEventCategory, type SpotVibeId } from '@/data/masterHub';
-import { BAND_PICK_POOL, FAIR_ROW_SHOWN, fairKind, pickFairRow } from '@/lib/homeFairs';
+import { getCommunityEventCategory, getFairEventCategory, type SpotVibeId } from '@/data/masterHub';
+import { feedInterests, rankByInterest } from '@/lib/homeInterests';
+import { FAIR_ROW_SHOWN, fairKind, pickFairRow } from '@/lib/homeFairs';
 import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
 import { TOP_DESTINATIONS } from '@/data/topDestinations';
 import { Toast } from '@/components/Toast';
@@ -45,7 +46,6 @@ import { optimizedImage } from '@/lib/optimizedImage';
 const loadMemberHome = () => import('@/components/home/MemberLiveHome').then((m) => m.MemberLiveHome);
 const MemberLiveHome = dynamic(loadMemberHome, { ssr: false, loading: () => <MemberHomeSkeleton /> });
 
-const ROW_SIZE = 5;
 /** The landing meetup row: six tiles fill one desktop row; a picked category slides through up to twelve */
 const MEETUP_ROW_SIZE = 6;
 const MEETUP_ROW_PICKED = 12;
@@ -101,8 +101,8 @@ const FAIR_KIND_LABEL = { fair: 'เอ็กซ์โป', run: 'งานว�
 // Provinces shown in "สายเที่ยว สายชิล ไปไหนดี?"
 const DESTINATION_IDS = ['bkk', 'chiangmai', 'chonburi', 'khaoyai', 'krabi', 'nan'];
 
-/** The member home's อีเวนต์ block is narrower and keeps four */
-const MEMBER_FAIRS_SHOWN = 4;
+// How many of each the member home's feed cards can draw on: the first cards, then more as the feed goes on
+const FEED_POOL = 15;
 
 // "12 ต.ค. – 18 ต.ค." for a fair, years left out
 // "23 ต.ค. – 25 ต.ค."; with `near` (member home, rendered in the browser only, so server and phone clocks never disagree)
@@ -122,7 +122,7 @@ const fairDates = (e: EventItem, near = false) => {
 // Each kind, soonest first; ended events never show on the homepage
 const upcomingByDate = (events: EventItem[], type: 'community' | 'public_venue') =>
   events
-    .filter((e) => (e.eventType || 'community') === type && !isEventEnded(e))
+    .filter((e) => (e.eventType || 'community') === type && !isClosedToJoin(e))
     .sort((a, b) => parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date));
 
 // Same test the server applies in lib/social/spotTrips.ts (spotAllowsMeetups)
@@ -172,7 +172,7 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
   };
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
-  const [membershipActionTitle, setMembershipActionTitle] = useState('อีกนิดเดียว ก็ไปต่อได้แล้ว');
+  const [membershipActionTitle, setMembershipActionTitle] = useState('เพื่อดำเนินการต่อ');
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
 
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
@@ -203,6 +203,9 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
   const [likedCategories, setLikedCategories] = useState<string[]>(memberData?.likedCategories ?? []);
   // Onboarding goals pick the journey band's first tab (a ตี้ or a challenge)
   const [goals, setGoals] = useState<string[]>(memberData?.goals ?? []);
+  // The place and อีเวนต์ kinds saved with the onboarding answers (from the สาย picked there)
+  const [likedSpotVibes, setLikedSpotVibes] = useState<string[]>(memberData?.spotVibes ?? []);
+  const [likedFairCategories, setLikedFairCategories] = useState<string[]>(memberData?.fairCategories ?? []);
   useEffect(() => {
     if (!isMember || serverMemberData) return;
     let alive = true;
@@ -212,6 +215,8 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
         if (!alive) return;
         setLikedCategories(json?.preferences?.interests?.communityCategories ?? []);
         setGoals(json?.preferences?.goals ?? []);
+        setLikedSpotVibes(json?.preferences?.interests?.spotVibes ?? []);
+        setLikedFairCategories(json?.preferences?.interests?.fairCategories ?? []);
       })
       .catch(() => undefined);
     return () => {
@@ -267,13 +272,13 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
   };
 
   const openCreateMeetup = () => {
-    if (!isLoggedIn) triggerMembershipPrompt('ชวนคนมาออกไปด้วยกัน ตั้งตี้ของคุณเลย');
+    if (!isLoggedIn) triggerMembershipPrompt('เพื่อสร้างกิจกรรมใหม่');
     else setIsCreateEventModalOpen(true);
   };
 
   const toggleFavoriteEvent = (eventId: string) => {
     if (!isLoggedIn) {
-      triggerMembershipPrompt('เก็บกิจกรรมนี้ไว้ ไม่ให้พลาด');
+      triggerMembershipPrompt('เพื่อบันทึกกิจกรรมนี้ไว้ในรายการโปรด');
       return;
     }
     setFavorites((prev) => {
@@ -309,9 +314,9 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
       return [...list.filter(allowsMeetups), ...list.filter((s) => !allowsMeetups(s))];
     });
     const picked: LifestyleSpotItem[] = [];
-    for (let round = 0; picked.length < ROW_SIZE && queues.some((q) => q.length > round); round++) {
+    for (let round = 0; picked.length < FEED_POOL && queues.some((q) => q.length > round); round++) {
       for (const queue of queues) {
-        if (queue[round] && picked.length < ROW_SIZE) picked.push(queue[round]);
+        if (queue[round] && picked.length < FEED_POOL) picked.push(queue[round]);
       }
     }
     return picked;
@@ -342,28 +347,58 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
   const monthCounts = myMonth.month ? { chill: myMonth.month.chill.length, connect: myMonth.month.connect.length } : null;
   const redeemable = REWARD_SHOP_ITEMS.filter((item) => !myRewards.redeemedRewardIds.includes(item.id) && item.costXp <= myRewards.balance).length;
 
-  // Member home: open meetups they have not joined, the categories they picked at onboarding first, each with its reason
+  // Member home feed cards (owner 2026-10-29): what the member picked at onboarding, then what they joined, saved
+  // and took part in since, decide which ตี้, challenges, อีเวนต์ and places come first and which kind of card leads
+  const interests = useMemo(
+    () =>
+      feedInterests({
+        goals,
+        sai: likedCategories,
+        spotVibes: likedSpotVibes,
+        fairCategories: likedFairCategories,
+        joined: activity.joined,
+        hosted: activity.hosted,
+        savedEvents: eventsList.filter((e) => activity.savedEventIds.includes(e.id)),
+        joinedQuests: questList.filter((q) => myRewards.joinedQuestIds.includes(q.id)),
+        savedSpots: spotsList.filter((spot) => activity.savedSpotIds.includes(spot.id)),
+      }),
+    [goals, likedCategories, likedSpotVibes, likedFairCategories, activity.joined, activity.hosted, activity.savedEventIds, activity.savedSpotIds, eventsList, questList, myRewards.joinedQuestIds, spotsList]
+  );
+
+  // Open meetups they have not joined, soonest first within each level of interest, each with its reason
   const memberMeetups = useMemo(() => {
     const mine = new Set([...activity.joinedIds, ...activity.hosted.map((e) => e.id)]);
     const open = communityEvents.filter((e) => e.participantsCount < e.maxParticipants && !mine.has(e.id));
-    const liked = open.filter((e) => likedCategories.includes(getCommunityEventCategory(e)));
-    const row = [...liked, ...open.filter((e) => !liked.includes(e))].slice(0, ROW_SIZE);
+    const row = rankByInterest(open, (e) => interests.sai.get(getCommunityEventCategory(e)) ?? 0).slice(0, FEED_POOL);
     const reasons: Record<string, string> = {};
     for (const event of row) {
       const cat = COMMUNITY_LIFESTYLE_CATEGORIES.find((c) => c.id === getCommunityEventCategory(event));
-      if (cat && likedCategories.includes(cat.id)) reasons[event.id] = `เพราะคุณชอบ${CATEGORY_SHORT[cat.id] ?? cat.name}`;
+      if (!cat || !interests.sai.get(cat.id)) continue;
+      // Picked at onboarding: "ชอบ"; learned from what they joined or saved: "สนใจ"
+      reasons[event.id] = `เพราะคุณ${likedCategories.includes(cat.id) ? 'ชอบ' : 'สนใจ'}${CATEGORY_SHORT[cat.id] ?? cat.name}`;
     }
     return { row, reasons };
-  }, [communityEvents, activity.joinedIds, activity.hosted, likedCategories]);
+  }, [communityEvents, activity.joinedIds, activity.hosted, interests, likedCategories]);
 
-  // Member home: running challenges the member has not joined; the ones in the สาย they picked in onboarding first,
-  // then the ones most people are doing
+  // Running challenges the member has not joined: their สาย first, then the ones most people are doing
   const othersQuests = useMemo(
     () =>
-      questList
-        .filter((q) => q.status !== 'ended' && (q.daysRemaining === undefined || q.daysRemaining > 0) && !myRewards.joinedQuestIds.includes(q.id))
-        .sort((a, b) => Number(likedCategories.includes(b.category ?? '')) - Number(likedCategories.includes(a.category ?? '')) || (b.participantsCount ?? 0) - (a.participantsCount ?? 0)),
-    [questList, myRewards.joinedQuestIds, likedCategories]
+      rankByInterest(
+        questList
+          .filter((q) => q.status !== 'ended' && (q.daysRemaining === undefined || q.daysRemaining > 0) && !myRewards.joinedQuestIds.includes(q.id))
+          .sort((a, b) => (b.participantsCount ?? 0) - (a.participantsCount ?? 0)),
+        (q) => interests.sai.get(q.category ?? '') ?? 0
+      ),
+    [questList, myRewards.joinedQuestIds, interests]
+  );
+  // อีเวนต์ of the kinds they like first (soonest within each), then the home row's mix; places the same way
+  const memberFairs = useMemo(
+    () => rankByInterest([...fairRow, ...fairEvents.filter((e) => !fairRow.includes(e))], (e) => interests.fairCategories.get(getFairEventCategory(e)) ?? 0).slice(0, FEED_POOL),
+    [fairRow, fairEvents, interests]
+  );
+  const memberSpots = useMemo(
+    () => rankByInterest(featuredSpots, (spot) => interests.spotVibes.get(getCachedSpotVibeCategory(spot)) ?? 0),
+    [featuredSpots, interests]
   );
 
   // Landing page: open meetups (seats left), counted per category card, and the row the cards filter
@@ -452,18 +487,9 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
             badges={myRewards.finished.length}
             redeemable={redeemable}
             plans={plans}
-            memberId={sessionMember?.id ?? null}
-            goals={goals}
             mine={myEvents}
-            questProgress={myRewards.quests}
-            allQuests={questList}
             hostedIds={activity.hosted.map((e) => e.id)}
             savedIds={activity.savedEventIds}
-            savedSpotIds={activity.savedSpotIds}
-            allSpots={spotsList}
-            allEvents={eventsList}
-            bandSpots={rankedSpots.slice(0, BAND_PICK_POOL)}
-            bandFairs={fairEvents.slice(0, BAND_PICK_POOL)}
             month={monthCounts}
             savedCount={favorites.length + favoriteSpots.length}
             likedCategories={likedCategories}
@@ -472,9 +498,10 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
             reasons={memberMeetups.reasons}
             isEventsLoaded={isEventsLoaded}
             quests={othersQuests}
-            fairs={fairRow.slice(0, MEMBER_FAIRS_SHOWN)}
+            fairs={memberFairs}
             fairWhen={(fair) => fairDates(fair, true)}
-            spots={featuredSpots}
+            spots={memberSpots}
+            cardKinds={interests.kinds}
             isSpotsLoaded={isSpotsLoaded}
             stampCount={myRewards.finished.length}
           />

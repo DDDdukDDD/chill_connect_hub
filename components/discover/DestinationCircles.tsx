@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { TOP_DESTINATIONS } from '@/data/topDestinations';
+import { optimizedImage } from '@/lib/optimizedImage';
 
 /** The name people say ("เขาใหญ่", "หัวหิน"), not the province's full name */
 const shortName = (nameTh: string, provinceKey: string) => (nameTh.includes('•') ? nameTh.split('•')[0].trim() : provinceKey);
@@ -32,7 +33,7 @@ export function DestinationCircles({ selected, onSelect }: { selected: string; o
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={dest.imageUrl}
+                src={optimizedImage(dest.imageUrl, 128)}
                 alt=""
                 loading="lazy"
                 className="w-full h-full rounded-full object-cover bg-slate-100 transition-transform duration-300 group-hover:scale-105"

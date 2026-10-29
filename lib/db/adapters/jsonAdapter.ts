@@ -24,7 +24,7 @@ import { AsyncMutex } from '../mutex';
 import { readDatabase, updateDatabase } from '../databaseFile';
 import { normalizeStoredEvents } from '../../eventNormalization';
 import { rollSampleEventDate } from '../../sampleEventDates';
-import { toBuddhistEra } from '../../dateUtils';
+import { hasMeetupStarted, toBuddhistEra } from '../../dateUtils';
 import { SEED_QUEST_TEXT_VERSION, addNewSeedQuests, applyQuestLifecycle, copySeedQuestRules, refreshSeedQuestTexts, upgradeLegacySeedQuests } from '../../questLifecycle';
 import type { AdminEventItem } from '../../eventsStore';
 import { cacheManager } from '../../cache';
@@ -344,6 +344,10 @@ export class JsonFileAdapter implements IDataRepository {
       // Sample meetups are shown with a rolled-forward date; judge "ended" by the date people see
       if (isEventEnded(rollSampleEventDate(event))) {
         return { success: false, message: 'ตี้นี้สิ้นสุดแล้ว', status: 'event_ended' };
+      }
+      // Joining closes when the ตี้ starts (owner 2026-10-29)
+      if (hasMeetupStarted(rollSampleEventDate(event))) {
+        return { success: false, message: 'ตี้นี้เริ่มไปแล้ว ปิดรับคนเพิ่มแล้ว', status: 'event_ended' };
       }
 
       const list = this.participants[eventId] || [];

@@ -19,6 +19,7 @@ interface TargetReward {
 type Evidence = 'checkin' | 'moment' | 'marked';
 /** What one counted visit is called in a challenge line */
 const COUNT_UNIT: Record<TargetType, string> = { spot: 'แห่ง', community: 'ตี้', fair: 'งาน' };
+const QUESTS_SHOWN = 2;
 
 const EVIDENCE_RANK: Record<Evidence, number> = { checkin: 3, moment: 2, marked: 1 };
 /** The signed-in member's part: how far they are in each challenge, and the evidence they have for this place */
@@ -65,6 +66,7 @@ export const VisitPanel: React.FC<VisitPanelProps> = ({ targetType, targetId, ti
   const [myPart, setMyPart] = useState<MyPart | null>(null);
   // The share form opens right here, already tied to this place or event
   const [isComposerOpen, setIsComposerOpen] = useState(false);
+  const [showAllQuests, setShowAllQuests] = useState(false);
   const [counted, setCounted] = useState<CountedQuest | null>(null);
   // Bumped after a post so the photos and the member's progress are read again
   const [reloadCount, setReloadCount] = useState(0);
@@ -163,7 +165,11 @@ export const VisitPanel: React.FC<VisitPanelProps> = ({ targetType, targetId, ti
       {quests.length > 0 && (
         <section className="space-y-2" aria-labelledby="counts-in-title">
         <h3 id="counts-in-title" className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">นับในชาเลนจ์</h3>
-          {quests.map((quest) => {
+          {/* Two at first, the ones the member is doing on top: several offers read nearly the same (2026-10-29) */}
+          {[...quests]
+            .sort((a, b) => Number(Boolean(myPart?.quests[b.questId]?.joined)) - Number(Boolean(myPart?.quests[a.questId]?.joined)))
+            .slice(0, showAllQuests ? undefined : QUESTS_SHOWN)
+            .map((quest) => {
             // A member who joined sees how far they are and whether this place already counted; everyone else sees the offer
             const mine = myPart?.quests[quest.questId];
             const doing = Boolean(mine?.joined);
@@ -192,6 +198,11 @@ export const VisitPanel: React.FC<VisitPanelProps> = ({ targetType, targetId, ti
               </Link>
             );
             })}
+          {!showAllQuests && quests.length > QUESTS_SHOWN && (
+            <button type="button" onClick={() => setShowAllQuests(true)} className="text-xs font-bold text-slate-600 hover:text-slate-900 hover:underline underline-offset-4 cursor-pointer">
+              ดูอีก {quests.length - QUESTS_SHOWN} ชาเลนจ์
+            </button>
+          )}
         </section>
       )}
       <div data-visit-panel className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4">

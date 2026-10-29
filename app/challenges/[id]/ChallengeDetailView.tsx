@@ -113,7 +113,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
           setIsRequireMembershipOpen(false);
           setIsAuthModalOpen(true);
         }}
-        actionTitle="เริ่มชาเลนจ์นี้ ยิ่งไปยิ่งได้ของ"
+        actionTitle="เพื่อร่วมชาเลนจ์และสะสม XP"
       />
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onLoginSuccess={() => handleSetIsLoggedIn(true)} />
       <LogoutConfirmModal
@@ -370,7 +370,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
             <Link href={target.href} className="group block rounded-2xl cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]">
               <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100">
                 {/* A photo that fails to load leaves the plain frame, not a broken-image icon (the ref catches one that failed before the page came alive) */}
-                {target.image && <img src={target.image} alt="" loading="lazy" ref={(el) => { if (el?.complete && el.naturalWidth === 0) el.style.display = 'none'; }} onError={(e) => { e.currentTarget.style.display = 'none'; }} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />}
+                {target.image && <img src={optimizedImage(target.image, 384)} alt="" loading="lazy" ref={(el) => { if (el?.complete && el.naturalWidth === 0) el.style.display = 'none'; }} onError={(e) => { e.currentTarget.style.display = 'none'; }} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />}
                 {target.visited && (
                   <span className="absolute top-2 left-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/95 border border-emerald-200 text-[11px] sm:text-xs font-bold text-emerald-800">
                     <Check className="w-3 h-3" aria-hidden="true" />
@@ -465,7 +465,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
             </div>
           )}
 
-          <div className="flex flex-wrap items-center gap-2 pt-1">
+          <div data-hero-actions className="flex flex-wrap items-center gap-2 pt-1">
             {mainAction}
             {isDoing && (
               <button type="button" onClick={() => setIsLeaveOpen(true)} className={dialogButton.quiet}>
@@ -567,7 +567,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
                   <li key={`${memory.targetType}:${memory.id}`}>
                     <Link href={memory.href} className="group block rounded-2xl cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]">
                       <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100">
-                        {memory.image && <img src={memory.image} alt="" loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />}
+                        {memory.image && <img src={optimizedImage(memory.image, 384)} alt="" loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />}
                         <span className="absolute top-2 left-2 w-7 h-7 rounded-full bg-white/95 border border-slate-200 text-xs font-bold text-slate-800 flex items-center justify-center tabular-nums" aria-hidden="true">
                           {index + 1}
                         </span>

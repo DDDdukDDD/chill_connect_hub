@@ -15,7 +15,11 @@ export function metaDescription(text: string | undefined, max = 160): string {
   return `${(space > max * 0.6 ? cut.slice(0, space) : cut).trim()}…`;
 }
 
-/** Title, description, canonical address and share preview for one public page. */
+/** The site's share picture (also in app/layout.tsx), for pages without a picture of their own */
+const DEFAULT_SHARE_IMAGE = '/hero-bg-70.png';
+
+/** Title, description, canonical address and share preview for one public page. Without an image the site's own is
+ *  used: setting openGraph here replaces the root layout's, picture included, so list pages shared as a bare link. */
 export function pageMetadata({ title, description, path, image, type = 'website' }: {
   title: string;
   description: string;
@@ -35,9 +39,9 @@ export function pageMetadata({ title, description, path, image, type = 'website'
       siteName: SITE_NAME,
       locale: 'th_TH',
       type,
-      ...(image ? { images: [image] } : {}),
+      images: [image || DEFAULT_SHARE_IMAGE],
     },
-    twitter: { card: 'summary_large_image', title: `${title} | ${SITE_NAME}`, description, ...(image ? { images: [image] } : {}) },
+    twitter: { card: 'summary_large_image', title: `${title} | ${SITE_NAME}`, description, images: [image || DEFAULT_SHARE_IMAGE] },
   };
 }
 

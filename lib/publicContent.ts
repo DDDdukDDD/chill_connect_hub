@@ -2,7 +2,7 @@ import { cache } from 'react';
 import { MOCK_EVENTS, getEventById, type EventItem } from '@/data/mockData';
 import { MOCK_SPOTS, getSpotById, type LifestyleSpotItem } from '@/data/spotsData';
 import { db } from '@/lib/db';
-import { isEventEnded } from '@/lib/dateUtils';
+import { isClosedToJoin, isEventEnded } from '@/lib/dateUtils';
 import {
   eventInProvince,
   fairSearchText,
@@ -69,9 +69,9 @@ export const isBundledEvent = (id: string) => Boolean(bundledEvent(id));
 export const bundledEvent = (id: string): EventItem | null => getEventById(id) ?? MOCK_EVENTS.find((event) => event.title === id) ?? null;
 export const isBundledSpot = (id: string) => Boolean(getSpotById(id) || MOCK_SPOTS.some((spot) => spot.title === id));
 
-/** The landing page's events: approved meetups and fairs that are not over (about a third of the full list). */
+/** The landing page's events: approved meetups and fairs that are not over (a ตี้ that has started is over for joining) (about a third of the full list). */
 export const listUpcomingEvents = async () =>
-  (await db.listAllEvents()).filter((event) => event.approvalStatus === 'approved' && !isEventEnded(event));
+  (await db.listAllEvents()).filter((event) => event.approvalStatus === 'approved' && !isClosedToJoin(event));
 
 /**
  * "ตี้ที่คุณอาจสนใจ" under a ตี้ page: other ตี้ with seats left and not over, the same สาย first, then the same
@@ -110,7 +110,7 @@ export async function discoverCounts(query: string, province: string): Promise<D
     query.trim() ? listPublicQuests() : Promise.resolve([]),
   ]);
   return {
-    meetups: meetups.filter((event) => !isEventEnded(event) && eventInProvince(event, province) && matchesQuery(meetupSearchText(event), query)).length,
+    meetups: meetups.filter((event) => !isClosedToJoin(event) && eventInProvince(event, province) && matchesQuery(meetupSearchText(event), query)).length,
     fairs: fairs.filter((event) => !isEventEnded(event) && eventInProvince(event, province) && matchesQuery(fairSearchText(event), query)).length,
     spots: spots.total,
     challenges: quests.filter((quest) => isQuestOpen(quest) && matchesQuery(questSearchText(quest), query)).length,
