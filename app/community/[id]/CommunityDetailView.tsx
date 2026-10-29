@@ -3,12 +3,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
+import { MobileNav } from '@/components/MobileNav';
 import { Navbar } from '@/components/Navbar';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/LazyCreateEventModal';
-import { ETicketModal } from '@/components/ETicketModal';
-import { GroupChatModal } from '@/components/GroupChatModal';
 import { CancelTicketModal } from '@/components/CancelTicketModal';
 import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import { useAuth } from '@/lib/useAuth';
@@ -65,6 +64,11 @@ import {
   CheckCircle2,
   Ticket
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+// The ticket and the chat open on a tap, so their code loads then, not with the page
+const ETicketModal = dynamic(() => import('@/components/ETicketModal').then((m) => m.ETicketModal), { ssr: false });
+const GroupChatModal = dynamic(() => import('@/components/GroupChatModal').then((m) => m.GroupChatModal), { ssr: false });
 
 // Helper to strip rogue emojis for clean typography
 const cleanText = (str?: string): string => {
@@ -78,10 +82,13 @@ const cleanText = (str?: string): string => {
 /** The page itself: `initialEvent` comes from the server page, so the content is in the HTML search engines read. */
 export default function CommunityDetailPage({
   initialEvent = null,
-  initialQuestions = null }: {
+  initialQuestions = null,
+  initialRelated = null }: {
   initialEvent?: EventItem | null;
   /** "ถามผู้จัดก่อนไป" read on the server, so questions and answers are in the HTML */
   initialQuestions?: { canAnswer: boolean; hostName?: string; questions: QuestionItem[] } | null;
+  /** "ตี้ที่คุณอาจสนใจ" picked on the server, so the tiles come with the page (no fetch of 24 ตี้ after it) */
+  initialRelated?: EventItem[] | null;
 }) {
   const params = useParams();
   const router = useRouter();
@@ -94,7 +101,7 @@ export default function CommunityDetailPage({
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
-  const [membershipActionTitle, setMembershipActionTitle] = useState('เพื่อดำเนินการต่อ');
+  const [membershipActionTitle, setMembershipActionTitle] = useState('อีกนิดเดียว ก็ไปต่อได้แล้ว');
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -165,6 +172,7 @@ export default function CommunityDetailPage({
 
   const [liveMeetups, setLiveMeetups] = useState<EventItem[]>([]);
   useEffect(() => {
+    if (initialRelated) return;
     let active = true;
     fetch('/api/events?type=community&status=recruiting&limit=24')
       .then((res) => (res.ok ? res.json() : null))
@@ -177,7 +185,7 @@ export default function CommunityDetailPage({
     return () => {
       active = false;
     };
-  }, []);
+  }, [initialRelated]);
 
   // Gallery Photos
   const galleryImages: string[] = useMemo(() => {
@@ -212,7 +220,7 @@ export default function CommunityDetailPage({
 
   const toggleFavorite = (eventId: string) => {
     if (!isLoggedIn) {
-      setMembershipActionTitle('เพื่อบันทึกตี้ที่ชอบ');
+      setMembershipActionTitle('เก็บตี้นี้ไว้ ไม่ให้พลาด');
       setPendingAction(`favorite:${eventId}`);
       setIsRequireMembershipOpen(true);
       return;
@@ -242,7 +250,7 @@ export default function CommunityDetailPage({
       return;
     }
     if (!isLoggedIn) {
-      setMembershipActionTitle('เพื่อลงทะเบียนเข้าร่วมตี้');
+      setMembershipActionTitle('อีกนิดเดียว ก็ได้ไปตี้นี้แล้ว');
       setPendingAction('join');
       setIsRequireMembershipOpen(true);
       return;
@@ -415,7 +423,9 @@ export default function CommunityDetailPage({
 
   // Other ตี้ open now, same สาย first (live data; the old sample list mixed in ticketed fairs)
   const sameSai = (e: EventItem) => (eventData?.lifestyleCategory && e.lifestyleCategory === eventData.lifestyleCategory ? 0 : e.category === eventData?.category ? 1 : 2);
-  const relatedActivities = eventData
+  const relatedActivities = initialRelated
+    ? initialRelated.filter((e) => !isEventEnded(e))
+    : eventData
     ? liveMeetups
         .filter((e) => e.id !== eventData.id && e.eventType !== 'public_venue' && !isEventEnded(e))
         .sort((x, y) => sameSai(x) - sameSai(y))
@@ -520,7 +530,7 @@ export default function CommunityDetailPage({
         onOpenLogout={() => setIsLogoutModalOpen(true)}
         onOpenCreateEvent={() => {
           if (!isLoggedIn) {
-            setMembershipActionTitle('เพื่อตั้งตี้ใหม่');
+            setMembershipActionTitle('ชวนคนมาออกไปด้วยกัน ตั้งตี้ของคุณเลย');
             setPendingAction('create');
             setIsRequireMembershipOpen(true);
           } else {
@@ -530,7 +540,7 @@ export default function CommunityDetailPage({
       />
 
       {/* Main Container */}
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-28 lg:pb-16">
+      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-48 lg:pb-16">
         <Link href="/community" className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
           ตี้ทั้งหมด
@@ -606,7 +616,7 @@ export default function CommunityDetailPage({
                 <WaitlistAction
                   eventId={eventData.id}
                   isLoggedIn={isLoggedIn}
-                  onRequireLogin={() => askToJoin('เพื่อต่อคิวรายชื่อสำรอง', `/community/${encodeURIComponent(eventData.id)}`)}
+                  onRequireLogin={() => askToJoin('ต่อคิวไว้ มีที่ว่างเมื่อไรได้ไปเลย', `/community/${encodeURIComponent(eventData.id)}`)}
                   onJoin={handleJoinEvent}
                 />
               ) : (
@@ -648,7 +658,7 @@ export default function CommunityDetailPage({
           ]}
         />
 
-        {isSeriesPage && <SeriesDates series={eventData} onRequireLogin={(returnTo) => askToJoin('เพื่อลงทะเบียนเข้าร่วมตี้', returnTo)} />}
+        {isSeriesPage && <SeriesDates series={eventData} onRequireLogin={(returnTo) => askToJoin('อีกนิดเดียว ก็ได้ไปตี้นี้แล้ว', returnTo)} />}
 
         {/* The day itself: ticket, way there, chat, who has arrived (participant) and the check-in (host) */}
         {isJoined && !isHost && isToday(eventData) && (
@@ -663,7 +673,7 @@ export default function CommunityDetailPage({
         {/* Like the challenge page: the story, the rules as a plain table and the way there on the left; on the right
             the one thing the header does not say, who runs it, then moments and the challenge it counts toward */}
         <div className="mt-10 sm:mt-14 grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:gap-10 lg:items-start">
-          <aside className="lg:order-2 space-y-6 lg:sticky lg:top-24">
+          <aside className="lg:order-2 max-lg:contents lg:space-y-6 lg:sticky lg:top-24">
             <section className="p-5 sm:p-6 rounded-3xl bg-[#FFF4EE] border border-slate-200 space-y-4">
               <h2 className="text-sm sm:text-base font-bold text-slate-900">คนจัดตี้นี้</h2>
               <Link href={profileHref} className="flex items-center gap-3 min-w-0 group">
@@ -694,19 +704,22 @@ export default function CommunityDetailPage({
               </div>
             </section>
 
-            {/* Moments from members here, and the challenge this counts toward (said once, here) */}
-            <VisitPanel
-              targetType="community"
-              targetId={eventData.id}
-              title={eventData.title}
-              location={eventData.location}
-              isLoggedIn={isLoggedIn}
-              onRequireLogin={() => {
-                setMembershipActionTitle('เพื่อโพสต์โมเมนต์จากตี้นี้');
-                setIsRequireMembershipOpen(true);
-              }}
-              onShowToast={showToast}
-            />
+            {/* Moments from members here, and the challenge this counts toward (said once, here). On phones and
+                tablets the aside opens up into the grid and this goes after the details, just above the related tiles */}
+            <div className="max-lg:order-1 empty:hidden">
+              <VisitPanel
+                targetType="community"
+                targetId={eventData.id}
+                title={eventData.title}
+                location={eventData.location}
+                isLoggedIn={isLoggedIn}
+                onRequireLogin={() => {
+                  setMembershipActionTitle('เก็บโมเมนต์จากตี้นี้ไว้');
+                  setIsRequireMembershipOpen(true);
+                }}
+                onShowToast={showToast}
+              />
+            </div>
           </aside>
 
           <div className="lg:order-1 min-w-0 space-y-10">
@@ -842,7 +855,7 @@ export default function CommunityDetailPage({
               eventId={eventData.id}
               initial={initialQuestions}
               isLoggedIn={isLoggedIn}
-              onRequireLogin={() => askToJoin('เพื่อถามคนจัด', `/community/${encodeURIComponent(eventData.id)}#questions`)}
+              onRequireLogin={() => askToJoin('ถามคนจัดได้เลย ก่อนไปตี้นี้', `/community/${encodeURIComponent(eventData.id)}#questions`)}
             />
 
             <EventAttendees
@@ -1148,7 +1161,7 @@ export default function CommunityDetailPage({
 
       {eventData && (
         <>
-          <ETicketModal
+          {isETicketOpen && <ETicketModal
             isOpen={isETicketOpen}
             onClose={() => setIsETicketOpen(false)}
             event={eventData}
@@ -1160,8 +1173,8 @@ export default function CommunityDetailPage({
               showToast(nextCheckedIn ? 'เช็คอินหน้างานเรียบร้อย ยินดีต้อนรับค่ะ! 🎉' : 'ยกเลิกการจำลองเช็คอินเรียบร้อย');
             }}
             onOpenChat={() => setIsChatOpen(true)}
-          />
-          <GroupChatModal isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} event={eventData} />
+          />}
+          {isChatOpen && <GroupChatModal isOpen onClose={() => setIsChatOpen(false)} event={eventData} />}
           {pairChat && <GroupChatModal isOpen onClose={() => setPairChat(null)} event={eventData} roomId={pairChat.roomId} roomTitle={pairChat.title} />}
           <CancelTicketModal
             isOpen={isCancelModalOpen}
@@ -1180,9 +1193,9 @@ export default function CommunityDetailPage({
         </>
       )}
 
-      {/* Phones and tablets: when, seats, save, share and the one main button stay in reach */}
-      <div className="lg:hidden fixed inset-x-0 bottom-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-6px_18px_rgba(15,23,42,0.06)] px-4 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        <div className="max-w-3xl mx-auto flex items-center gap-2.5">
+      {/* Phones and tablets: when, seats, save, share and the one main button stay in reach, above the menu */}
+      <MobileNav activeTab="explore" setActiveTab={setActiveNavTab} actionBar={(
+        <div className="flex items-center gap-2.5">
           <div className="min-w-0 flex-1">
             <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
               {eventData.scheduleType === 'recurring' && eventData.recurrence?.customSummary
@@ -1239,7 +1252,7 @@ export default function CommunityDetailPage({
             </button>
           )}
         </div>
-      </div>
+      )} />
     </div>
   );
 }

@@ -182,7 +182,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
-  const [membershipActionTitle, setMembershipActionTitle] = useState('เพื่อดำเนินการต่อ');
+  const [membershipActionTitle, setMembershipActionTitle] = useState('อีกนิดเดียว ก็ไปต่อได้แล้ว');
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
   // The Smart Plan schedule carried into the create dialog; empty when opened from other buttons
   const [teeItinerary, setTeeItinerary] = useState<Array<{ time: string; title: string }> | undefined>(undefined);
@@ -294,7 +294,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
 
   const toggleFavorite = (spotId: string) => {
     if (!isLoggedIn) {
-      setMembershipActionTitle('เพื่อบันทึกสถานที่ลงในสมุดบันทึกการเดินทาง (Travel Scrapbook)');
+      setMembershipActionTitle('เก็บที่นี่ไว้ ไว้หาวันไป');
       setIsRequireMembershipOpen(true);
       return;
     }
@@ -482,7 +482,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
         {/* Like the challenge page: the story, the details as a plain table and the map on the left; on the right
             how to reach the place, then moments and the challenge it counts toward, going together and a day plan */}
         <div className="mt-10 sm:mt-14 grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:gap-10 lg:items-start">
-          <aside className="lg:order-2 space-y-6">
+          <aside className="lg:order-2 max-lg:contents lg:space-y-6">
             {(spot.contact?.phone || spot.contact?.website || spot.contact?.facebook || (spot.sourceName && spot.sourceUrl)) && (
               <section className="p-5 sm:p-6 rounded-3xl bg-[#EBF3ED] border border-slate-200 space-y-3">
                 <h2 className="text-sm sm:text-base font-bold text-slate-900">ติดต่อที่นี่</h2>
@@ -520,26 +520,29 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
               </section>
             )}
 
-            {/* Moments from members here, and the challenge this counts toward (said once, here) */}
-            <VisitPanel
-              targetType="spot"
-              targetId={spot.id}
-              title={spot.title}
-              location={spot.title}
-              isLoggedIn={isLoggedIn}
-              onRequireLogin={() => {
-                setMembershipActionTitle('เพื่อบันทึกว่าคุณไปที่นี่มาแล้ว');
-                setIsRequireMembershipOpen(true);
-              }}
-              onShowToast={showToast}
-            />
+            {/* Moments from members here, and the challenge this counts toward (said once, here). On phones and
+                tablets the aside opens up into the grid and this goes after the details, just above the related tiles */}
+            <div className="max-lg:order-1 empty:hidden">
+              <VisitPanel
+                targetType="spot"
+                targetId={spot.id}
+                title={spot.title}
+                location={spot.title}
+                isLoggedIn={isLoggedIn}
+                onRequireLogin={() => {
+                  setMembershipActionTitle('มาแล้ว? เก็บไว้เป็นความทรงจำ');
+                  setIsRequireMembershipOpen(true);
+                }}
+                onShowToast={showToast}
+              />
+            </div>
 
             {/* Spot Buddy: shown only for places staff opened for meet-ups */}
             <SpotBuddyTrips
               spot={spot}
               isLoggedIn={isLoggedIn}
               onRequireLogin={() => {
-                setMembershipActionTitle('เพื่อชวนเพื่อนไปที่นี่');
+                setMembershipActionTitle('ชวนคนมาไปที่นี่ด้วยกัน');
                 setIsRequireMembershipOpen(true);
               }}
               onShowToast={showToast}
@@ -551,7 +554,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
               catalog={publishedSpots}
               onStartTee={(plan) => {
                 if (!isLoggedIn) {
-                  setMembershipActionTitle('เพื่อชวนเพื่อนไปตามแผนนี้');
+                  setMembershipActionTitle('ชวนคนมาไปตามแผนนี้');
                   setIsRequireMembershipOpen(true);
                   return;
                 }

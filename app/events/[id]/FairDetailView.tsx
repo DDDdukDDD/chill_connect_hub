@@ -86,7 +86,14 @@ const cleanText = (str?: string): string => {
 };
 
 /** The page itself: `initialEvent` comes from the server page, so the content is in the HTML search engines read. */
-export default function FairDetailPage({ initialEvent = null }: { initialEvent?: EventItem | null }) {
+export default function FairDetailPage({
+  initialEvent = null,
+  initialRelated = null,
+}: {
+  initialEvent?: EventItem | null;
+  /** "อีเวนต์อื่นที่น่าไป" picked on the server, so the tiles come with the page (no fetch of 60 อีเวนต์ after it) */
+  initialRelated?: EventItem[] | null;
+}) {
   const params = useParams();
   const router = useRouter();
   const rawId = params?.id as string;
@@ -100,7 +107,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
-  const [membershipActionTitle, setMembershipActionTitle] = useState('เพื่อดำเนินการต่อ');
+  const [membershipActionTitle, setMembershipActionTitle] = useState('อีกนิดเดียว ก็ไปต่อได้แล้ว');
   const [pendingAction, setPendingAction] = useState<string | null>(null);
 
   // Favorites state
@@ -209,7 +216,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
 
   const toggleFavorite = (eventId: string) => {
     if (!isLoggedIn) {
-      setMembershipActionTitle('เพื่อบันทึกงานนี้ลง MyHub');
+      setMembershipActionTitle('เก็บอีเวนต์นี้ไว้ ไม่ให้พลาด');
       setPendingAction(`favorite:${eventId}`);
       setIsRequireMembershipOpen(true);
       return;
@@ -228,7 +235,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
   const toggleInHub = () => {
     if (!eventData) return;
     if (!isLoggedIn) {
-      setMembershipActionTitle('เพื่อบันทึกงานนี้ลง MyHub');
+      setMembershipActionTitle('เก็บอีเวนต์นี้ไว้ ไม่ให้พลาด');
       setPendingAction(`hub:${eventData.id}`);
       setIsRequireMembershipOpen(true);
       return;
@@ -283,7 +290,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
 
   const handleJoinSubActivity = async (sub: FairSubActivityItem) => {
     if (!isLoggedIn) {
-      setMembershipActionTitle('เพื่อขอร่วมกลุ่มเดินชมงานนี้');
+      setMembershipActionTitle('ไปงานนี้กับกลุ่มนี้');
       setPendingAction(`join_sub:${sub.id}`);
       setIsRequireMembershipOpen(true);
       return;
@@ -433,7 +440,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
   const [liveFairs, setLiveFairs] = useState<EventItem[]>([]);
   const fairGroup = eventData ? getFairEventCategory(eventData) : '';
   useEffect(() => {
-    if (!fairGroup) return;
+    if (!fairGroup || initialRelated) return;
     let active = true;
     const read = (url: string) => fetch(url).then((res) => (res.ok ? res.json() : null)).then((data) => (Array.isArray(data?.events) ? (data.events as EventItem[]) : [])).catch(() => [] as EventItem[]);
     // The same group asked for by name (it may be a small one), then a wider list to fill up with
@@ -443,7 +450,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
     return () => {
       active = false;
     };
-  }, [fairGroup]);
+  }, [fairGroup, initialRelated]);
   // What the organizer's site is for: a run takes sign-ups, a ticketed show sells tickets, the rest is just the site
   const isRun = eventData ? getFairEventCategory(eventData) === 'marathon_sports' : false;
   const priceUnknown = !parsedPrice.displayPrice || parsedPrice.displayPrice.startsWith('ไม่ระบุ');
@@ -451,6 +458,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
   const groupWord = isRun ? 'ไปวิ่ง' : 'เดินงาน';
   const officialLinkLabel = isRun ? 'สมัครวิ่ง' : parsedPrice.isFree ? 'เว็บไซต์งาน' : priceUnknown ? 'ดูรายละเอียดงาน' : 'ซื้อบัตร';
   const relatedFairs = useMemo(() => {
+    if (initialRelated) return initialRelated.filter((e) => !isEventEnded(e));
     if (!eventData) return [];
     const group = getFairEventCategory(eventData);
     const near = (e: EventItem) => (getFairEventCategory(e) === group ? 0 : 2) + (e.province === eventData.province ? 0 : 1);
@@ -458,7 +466,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
       .filter((e) => e.id !== eventData.id && e.eventType === 'public_venue' && !isEventEnded(e))
       .sort((x, y) => near(x) - near(y))
       .slice(0, 6);
-  }, [eventData, liveFairs]);
+  }, [eventData, liveFairs, initialRelated]);
 
   if (isLoading) {
     return (
@@ -582,7 +590,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
         {/* Like the challenge page: the story, the details as a plain table and the way there on the left; on the
             right the one thing the header does not say, who runs it, then moments and the challenge it counts toward */}
         <div className="mt-10 sm:mt-14 grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:gap-10 lg:items-start">
-          <aside className="lg:order-2 space-y-6 lg:sticky lg:top-24">
+          <aside className="lg:order-2 max-lg:contents lg:space-y-6 lg:sticky lg:top-24">
             <section className="p-5 sm:p-6 rounded-3xl bg-[#EEF4FA] border border-slate-200 space-y-3">
               {/* An imported อีเวนต์ names the site we read it from (a venue or a calendar such as ThaiRun), not its organizer */}
               <h2 className="text-sm sm:text-base font-bold text-slate-900">{origin === 'source' ? 'ข้อมูลจาก' : 'ผู้จัดงาน'}</h2>
@@ -610,20 +618,23 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
               </div>
             </section>
 
-            {/* Moments from members here, and the challenge this counts toward (said once, here) */}
-            <VisitPanel
-              targetType="fair"
-              markOpensAt={parseEventDateToTimestamp(eventData.date)}
-              targetId={eventData.id}
-              title={eventData.title}
-              location={eventData.location}
-              isLoggedIn={isLoggedIn}
-              onRequireLogin={() => {
-                setMembershipActionTitle('เพื่อบันทึกว่าคุณไปงานนี้มาแล้ว');
-                setIsRequireMembershipOpen(true);
-              }}
-              onShowToast={showToast}
-            />
+            {/* Moments from members here, and the challenge this counts toward (said once, here). On phones and
+                tablets the aside opens up into the grid and this goes after the details, just above the related tiles */}
+            <div className="max-lg:order-1 empty:hidden">
+              <VisitPanel
+                targetType="fair"
+                markOpensAt={parseEventDateToTimestamp(eventData.date)}
+                targetId={eventData.id}
+                title={eventData.title}
+                location={eventData.location}
+                isLoggedIn={isLoggedIn}
+                onRequireLogin={() => {
+                  setMembershipActionTitle('ไปงานนี้มาแล้ว? เก็บไว้เป็นความทรงจำ');
+                  setIsRequireMembershipOpen(true);
+                }}
+                onShowToast={showToast}
+              />
+            </div>
           </aside>
 
           <div className="lg:order-1 min-w-0 space-y-10">
@@ -697,7 +708,7 @@ export default function FairDetailPage({ initialEvent = null }: { initialEvent?:
                     type="button"
                     onClick={() => {
                       if (!isLoggedIn) {
-                        setMembershipActionTitle(`เพื่อสร้างกลุ่มนัด${groupWord}`);
+                        setMembershipActionTitle(`เปิดกลุ่ม${groupWord}ด้วยกัน`);
                         setPendingAction('create_sub_trip');
                         setIsRequireMembershipOpen(true);
                       } else {

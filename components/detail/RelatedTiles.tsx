@@ -20,6 +20,24 @@ type SectionProps = {
   gridClassName?: string;
 };
 
+// The default grid's columns at phone, sm, md and lg, and the classes that show or hide a tile from that width up
+const DEFAULT_GRID = 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6';
+const COLUMNS = [2, 3, 4, 6];
+const SHOW = ['block', 'sm:block', 'md:block', 'lg:block'];
+const HIDE = ['hidden', 'sm:hidden', 'md:hidden', 'lg:hidden'];
+
+/** Only whole rows at every width (six tiles on an iPad's four columns showed 4 + 2); fewer tiles than one row all show */
+function fitRowsClass(index: number, total: number) {
+  let last: boolean | null = null;
+  const classes: string[] = [];
+  COLUMNS.forEach((cols, step) => {
+    const shown = index < (total < cols ? total : total - (total % cols));
+    if (shown !== last) classes.push(shown ? SHOW[step] : HIDE[step]);
+    last = shown;
+  });
+  return classes.join(' ');
+}
+
 function Section({
   title,
   allHref,
@@ -27,16 +45,21 @@ function Section({
   titleClassName = 'text-lg sm:text-xl font-bold text-slate-900 tracking-tight',
   className = 'mt-12 sm:mt-16',
   // The /community and /challenges grid, so a tile is the same size on every page (owner 2026-10-27)
-  gridClassName = 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6',
+  gridClassName = DEFAULT_GRID,
   children,
 }: SectionProps & { children: React.ReactNode }) {
+  // A page with its own grid (the profile) pages with show-more, so all its tiles show
+  const items = React.Children.toArray(children) as React.ReactElement<{ className?: string }>[];
+  const tiles = gridClassName === DEFAULT_GRID
+    ? items.map((item, index) => React.cloneElement(item, { className: fitRowsClass(index, items.length) }))
+    : items;
   return (
     <section className={`${className} space-y-4`} aria-label={title}>
       <div className="flex items-end justify-between gap-3">
         <h2 className={titleClassName}>{title}</h2>
         {allHref && <Link href={allHref} className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline shrink-0">{allLabel}</Link>}
       </div>
-      <ul className={`grid ${gridClassName} gap-x-4 sm:gap-x-6 gap-y-8 pt-1`}>{children}</ul>
+      <ul className={`grid ${gridClassName} gap-x-4 sm:gap-x-6 gap-y-8 pt-1`}>{tiles}</ul>
     </section>
   );
 }

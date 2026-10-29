@@ -27,7 +27,25 @@ const SAFE_IMAGE_SRC = /^(?:https?:\/\/|\/(?!\/)|data:image\/|blob:)/i;
 export function optimizedImage(src: string | undefined, width: number): string {
   if (!src || !SAFE_IMAGE_SRC.test(src)) return '';
   const local = src.startsWith('/') && !src.startsWith('/_next/') && !src.startsWith('//');
-  return local || isOptimizedRemote(src) ? `/_next/image?url=${encodeURIComponent(src)}&w=${width}&q=75` : encodeImageLink(src);
+  if (local || isOptimizedRemote(src)) return `/_next/image?url=${encodeURIComponent(src)}&w=${width}&q=75`;
+  return encodeImageLink(unsplashAtWidth(src, width));
+}
+
+/**
+ * Unsplash resizes by its own link parameters: ask for the card's width in WebP/AVIF instead of the 800–1200 px JPEG
+ * the sample data names (the landing's sample photos were ~220 KB each on a phone, 2026-10-29).
+ */
+function unsplashAtWidth(src: string, width: number): string {
+  if (!src.startsWith('https://images.unsplash.com/')) return src;
+  try {
+    const url = new URL(src);
+    url.searchParams.set('w', String(width));
+    url.searchParams.set('q', '70');
+    url.searchParams.set('auto', 'format');
+    return url.toString();
+  } catch {
+    return src;
+  }
 }
 
 /** Escapes spaces, quotes and angle brackets in a passed-through link; escapes already in it (`%20`, `%2F`) stay as they are. */

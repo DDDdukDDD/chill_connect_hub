@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Camera, ChevronDown, Flag, MapPin, Tent, Trophy, Users } from 'lucide-react';
 import type { LiveCounts, LiveItem, LiveKind } from '@/lib/social/liveActivity';
@@ -12,37 +12,60 @@ const TICK_MS = 4_500;
 
 type LiveState = { items: LiveItem[]; counts: LiveCounts | null; isLoaded: boolean; freshIds: Set<string> };
 
+// One fetch and one poll for every line on the page: the landing mounts two (phone and wide) and the member home
+// a third, and each used to fetch and poll on its own (2026-10-29)
+const listeners = new Set<(state: LiveState) => void>();
+let shared: LiveState | null = null;
+let seen: Set<string> | null = null;
+let timer: ReturnType<typeof setInterval> | null = null;
+
+function publish(state: LiveState) {
+  shared = state;
+  listeners.forEach((listener) => listener(state));
+}
+
+function load() {
+  fetch('/api/activity', { cache: 'no-store' })
+    .then((response) => response.json())
+    .then((result) => {
+      if (!result?.success) return;
+      const items: LiveItem[] = Array.isArray(result.items) ? result.items : [];
+      // Lines that arrived since the last poll slide in; the first load shows everything at rest
+      const freshIds = seen ? new Set(items.filter((i) => !seen!.has(i.id)).map((i) => i.id)) : new Set<string>();
+      seen = new Set(items.map((i) => i.id));
+      publish({ items, counts: result.counts ?? null, isLoaded: true, freshIds });
+      remember('live-activity', { items, counts: result.counts ?? null, isLoaded: true, freshIds: new Set<string>() });
+    })
+    .catch((error) => {
+      console.warn('Live activity:', error);
+      publish({ ...(shared ?? { items: [], counts: null, freshIds: new Set<string>() }), isLoaded: true });
+    });
+}
+
 /** "ตอนนี้ในชิลล์": named lines for members, last week's counts for visitors (the server decides which) */
 export function useLiveActivity(): LiveState {
-  const [state, setState] = useState<LiveState>(() => recall<LiveState>('live-activity') ?? { items: [], counts: null, isLoaded: false, freshIds: new Set() });
-  const seen = useRef<Set<string> | null>(state.isLoaded ? new Set(state.items.map((i) => i.id)) : null);
+  const [state, setState] = useState<LiveState>(() => shared ?? recall<LiveState>('live-activity') ?? { items: [], counts: null, isLoaded: false, freshIds: new Set() });
 
   useEffect(() => {
-    let isActive = true;
-    const load = () =>
-      fetch('/api/activity', { cache: 'no-store' })
-        .then((response) => response.json())
-        .then((result) => {
-          if (!isActive || !result?.success) return;
-          const items: LiveItem[] = Array.isArray(result.items) ? result.items : [];
-          // Lines that arrived since the last poll slide in; the first load shows everything at rest
-          const freshIds = seen.current ? new Set(items.filter((i) => !seen.current!.has(i.id)).map((i) => i.id)) : new Set<string>();
-          seen.current = new Set(items.map((i) => i.id));
-          setState({ items, counts: result.counts ?? null, isLoaded: true, freshIds });
-          remember('live-activity', { items, counts: result.counts ?? null, isLoaded: true, freshIds: new Set<string>() });
-        })
-        .catch((error) => {
-          console.warn('Live activity:', error);
-          if (isActive) setState((s) => ({ ...s, isLoaded: true }));
-        });
-    load();
-    const timer = setInterval(() => {
-      if (document.visibilityState === 'visible') load();
-    }, POLL_MS);
+    if (!shared) {
+      shared = state;
+      if (state.isLoaded) seen = new Set(state.items.map((i) => i.id));
+    }
+    listeners.add(setState);
+    if (listeners.size === 1) {
+      load();
+      timer = setInterval(() => {
+        if (document.visibilityState === 'visible') load();
+      }, POLL_MS);
+    }
     return () => {
-      isActive = false;
-      clearInterval(timer);
+      listeners.delete(setState);
+      if (listeners.size === 0 && timer) {
+        clearInterval(timer);
+        timer = null;
+      }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- joins the shared poll once; its state arrives through setState
   }, []);
 
   return state;

@@ -46,6 +46,23 @@ function subscribe(listener: () => void) {
   };
 }
 
+export type SessionSeed = Pick<SessionState, 'member' | 'providers' | 'demoLogin'>;
+
+/**
+ * The session a server page already read (the home page), given before the first render: the page knows the member
+ * the moment it hydrates and skips GET /api/auth/member. Fills an empty store only; a later login or logout wins.
+ * No listeners are told: components still hydrate with the server snapshot and pick this up right after.
+ */
+export function seedMemberSession(seed: SessionSeed) {
+  if (state.isLoaded || inflight) return;
+  state = { ...state, ...seed, isLoaded: true };
+  try {
+    localStorage.setItem('isLoggedIn', seed.member ? 'true' : 'false');
+  } catch {
+    /* storage unavailable */
+  }
+}
+
 /** Re-reads the session from the server (deduplicated while a request is in flight) */
 export function refreshMemberSession(): Promise<void> {
   if (!inflight) {
