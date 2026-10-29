@@ -2171,3 +2171,31 @@ Measured on a production build with phone throttling (4× CPU, ~6 Mbps, 150 ms),
   - The campaign prize PNG (200 KB) is sent at 384 px.
 - **Walked and working:** hero buttons, สาย cards (60–100 ms), save heart → sign-up dialog (~45 ms), sign-up and login dialogs, demo login from the dialog, band tabs, feed tabs (~300 ms), like/unlike, comments, composer open/close, and links to ตี้ / ชาเลนจ์ / อีเวนต์ / ที่เที่ยว / มายฮับ (0.5–0.9 s; back to home ~160 ms). No overflow at 390 / 820 / 1280.
 - **Left as is:** the member home still shifts 0.074 (CLS, under the 0.1 "good" line) when the journey band's data arrives. That is inside `JourneyBand.tsx` / `MemberLiveHome.tsx`, which hold the paused band work and were not touched.
+
+### BE-181 · Scraper: failing event sources fixed or explained, two new readers, ICONSIAM (owner 2026-10-29)
+Backend only; no API shape change, no frontend action. Of 13 sources, 8 failed on their last run (2026-10-04).
+
+| Source | Before | Now (dry run 2026-10-29) |
+|---|---|---|
+| ThaiTicketMajor | failed (no JSON-LD on the list page) | new reader `lib/scrapers/thaiTicketMajor.ts`: links from `/concert/` and `/sport/`, then each show page's Event JSON-LD. 52 shows read, 12 not ended. Venue name only (the JSON-LD street address is TTM's office); province from a list of known venues |
+| Ticketmelon | failed (no JSON-LD) | new reader `lib/scrapers/ticketmelon.ts`: the 60 most recently changed pages in `sitemap-event{n}.xml`, event from `__NEXT_DATA__`. Thailand only (it also sells in MY/PH). 38 events, all with province and coordinates |
+| ICONSIAM (new) | — | generic JSON-LD reader on `https://www.iconsiam.com/th`: 5 current events (character exhibitions, pop-up cafés) |
+| BITEC | failed (layout) | the existing reader works again: 12 events |
+| Eventpop, The Concert | failed | **not readable**: the lists come from the sites' private APIs, the HTML has no events. Defaults now `inactive` with the reason in the description. Needs a partner feed |
+| SET, BMA (pr-bangkok.com) | failed | not an event calendar (SET home page; a PR news site). Defaults `inactive`; Visit Bangkok covers BMA festivals |
+| OSM + Wikipedia (spots) | failed (Overpass 504) | unchanged: every Overpass server timed out from the office network today; Wikidata answered. Retry from another network |
+
+- **Shared JSON-LD reading** moved to `lib/scrapers/jsonLd.ts` (`extractRecords`, `mapJsonLdEvent`, `hasEnded`…), used by the generic reader and site readers. Changes for every JSON-LD source: ended events are skipped; HTML entities and tags are removed from titles and descriptions; a midnight time (`T00:00:00Z`) counts as a date only; an end time of 23:59 is dropped; the price is the range over all offers (`฿1,200 - ฿7,900`, was the first offer as `TH 6900`); English province names become Thai (`thaiProvinceName`, which now also reads "Chang Wat …" and "Krung Thep Maha Nakhon").
+- **robots.txt follows redirects** (RFC 9309, up to 5 hops, each checked against private addresses). A redirect to an ordinary page (ICONSIAM sends `/robots.txt` to its home page) means no rules; before, any redirect failed the whole source.
+- **Built-in sources take name, description and icon from code** (`getAllDataSources`), not only when the URL changed. The stored on/off status is still the admin's, so the four unreadable sources stay on until switched off in "การดึงข้อมูล".
+
+### BE-182 · Bangkok places: 38 hand-picked places for Gen Y/Z (owner 2026-10-29)
+Data only, no code change; no frontend action. Owner decisions: Bangkok first, open data only, Claude picks and writes (no AI API), photos from the place's own website allowed, publish when the score is high enough, nearby food comes live from Google.
+
+- **How:** Claude picked ~140 known Bangkok places in the thin vibes. Each was matched to an Overture Maps place (release 2026-10-21), so it is confirmed open and has coordinates. Photo and text come from the place's own site (og:image, robots.txt respected) or Wikimedia Commons via Wikidata. The district comes from Nominatim. Places without a usable photo were dropped (logos, icons, stock, promo banners, a hacked site), as were places whose Overture point was wrong.
+- **Result:** 38 places created through `POST /api/admin/spots` (`create`, then `update` for credit), ids `spot-custom-1793253…`, published. Counts: 4 cafés, 7 bars/rooftops, 8 art and shows, Lhong 1919, 7 markets, Yaowarat and Jay Fai, 6 museums/library, 3 activities. `sourceName` credits "คัดโดย Chill & Connect · พิกัด Overture Maps · รูป …"; Commons photos name the author and licence, and `sourceUrl` is the photo's page.
+- **Interest signal:** monthly Wikipedia views (Jul–Sep 2026, en + th) are stored as `wikiMonthlyViews` on the 18 places that have an article. Without it, Museum Siam and the National Museum fell into "hidden". After recompute: 1 featured, 33 standard, 4 hidden (Total VR, Madame Tussauds, Neilson Hays, Kamthieng).
+- **Bangkok on /spots:** 82 → 112 browsable. Art 2 → 10, cafés 5 → 9, bars 0 → 7, markets 6 → 13, museums 6 → 9, street food 0 → 2.
+- **Limits found:** most cafés and bars only list Facebook/Instagram, which give no photo without login. Overture has no opening hours or popularity, so `openHours` says to check the place's site. Rooftop bars count as nightlife (title has "Bar"), so the rooftop vibe is still empty.
+- **Duplicates already in the catalog** (not touched): BACC ×3, Lumphini ×2, Suan Rot Fai ×2, Suan Luang Rama IX ×2, Wat Phra Kaew ×2.
+- **Production:** written to the local JSON store; run `npm run db:import` to copy it to Supabase.

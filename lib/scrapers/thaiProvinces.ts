@@ -18,11 +18,11 @@ const PROVINCES: Array<[string, string]> = [
   ['Si Sa Ket', 'ศรีสะเกษ'], ['Sing Buri', 'สิงห์บุรี'], ['Songkhla', 'สงขลา'], ['Sukhothai', 'สุโขทัย'],
   ['Suphan Buri', 'สุพรรณบุรี'], ['Surat Thani', 'สุราษฎร์ธานี'], ['Surin', 'สุรินทร์'], ['Tak', 'ตาก'], ['Trang', 'ตรัง'],
   ['Trat', 'ตราด'], ['Ubon Ratchathani', 'อุบลราชธานี'], ['Udon Thani', 'อุดรธานี'], ['Uthai Thani', 'อุทัยธานี'],
-  ['Uttaradit', 'อุตรดิตถ์'], ['Yala', 'ยะลา'], ['Yasothon', 'ยโสธร'],
+  ['Uttaradit', 'อุตรดิตถ์'], ['Yala', 'ยะลา'], ['Yasothon', 'ยโสธร'], ['Krung Thep Maha Nakhon', 'กรุงเทพมหานคร'],
 ];
 
-// Spacing and hyphens vary between sources ("Chon Buri" / "Chonburi", "Phang-nga")
-const normalize = (name: string) => name.toLowerCase().replace(/[^a-z]/g, '');
+// Spacing and hyphens vary between sources ("Chon Buri" / "Chonburi", "Phang-nga"); Google adds "Chang Wat"
+const normalize = (name: string) => name.toLowerCase().replace(/^\s*chang wat\s+/, '').replace(/[^a-z]/g, '');
 const BY_ENGLISH = new Map(PROVINCES.map(([english, thai]) => [normalize(english), thai]));
 
 export function thaiProvinceName(english: string | undefined): string | undefined {
