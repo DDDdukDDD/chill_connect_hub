@@ -2142,3 +2142,32 @@ Checked on `next dev` (server HTML: one h1, tiles render; phone screenshots of /
 - **กิจกรรม tabs switch without the grey screen:** `DiscoverHeader` fully prefetches the other two tabs (`prefetch={true}`) once the search box has been still for 0.8 s. Prefetch runs only in a production build, so `next dev` still shows the loading screen.
 - **Detail speed:** "ตี้ที่คุณอาจสนใจ" and "อีเวนต์อื่นที่น่าไป" are picked on the server (`relatedMeetups` / `relatedFairs` in `lib/publicContent.ts`) and sent with the page, in place of browser fetches of 24 ตี้ / 60 อีเวนต์ after load. The tiles are now in the server HTML. The ตี้ page loads the ticket and chat dialogs only when they open.
 - **Sign-up dialog copy (owner 2026-10-29):** `RequireMembershipModal` shows the `actionTitle` alone as its title (no "เข้าสู่ระบบ" in front), written in a friend's voice for the button that opened it, e.g. "เก็บตี้นี้ไว้ ไม่ให้พลาด", "อีกนิดเดียว ก็ได้ไปตี้นี้แล้ว", "มาแล้ว? เก็บไว้เป็นความทรงจำ". Subtitle "สมัครฟรี แป๊บเดียวก็เสร็จ", button "เริ่มเลย ฟรี", footer "เป็นสมาชิกอยู่แล้ว? เข้าสู่ระบบ". The three perks stay as they were for now. Old words in titles (MyHub, Bucket List, Travel Scrapbook, XP) are gone. New callers pass a whole sentence, not "เพื่อ…".
+
+### BE-180 · Landing and member home: speed walk, work moved to the server (owner 2026-10-29)
+Measured on a production build with phone throttling (4× CPU, ~6 Mbps, 150 ms), every action on both pages walked.
+
+| | Before | After |
+|---|---|---|
+| Visitor page HTML | 550 KB (77 KB gz) | 349 KB (54 KB gz) |
+| Visitor JS / images | 304 KB / 1,020 KB | 270 KB / ~700 KB |
+| Visitor main-thread blocking | 515–665 ms | 430–500 ms |
+| Visitor requests after load | 5 | 2 |
+| Member requests after load | 17, last at ~6 s | 9, last at ~2.2–2.5 s |
+| Member main-thread blocking | ~700 ms | 135–230 ms |
+| Member images | ~5.3 MB (five ~1 MB originals) | ~1.2 MB (largest 193 KB) |
+
+- **The server reads the member** (`getPageMember` in `lib/members/session.ts`). A member's page comes with their home data (`lib/homeData.ts`: place picks plus their saved and visited places, saved or marked อีเวนต์ no longer upcoming, onboarding สาย and goals). Before, it fetched the whole event list (2 pages, 244 KB), the place picks (195 KB) and the preferences after load. Signing in on the page itself still loads them in the browser.
+- **Session seed:** `seedMemberSession` (`lib/useMemberSession.ts`) gives the server's answer to the shared store before the first render, so the home page skips `GET /api/auth/member`. A signed-in member sees a grey placeholder (`MemberHomeSkeleton`) instead of the visitor landing flashing first.
+- **Smaller page data:** events go as list items. Of the อีเวนต์, only the row goes, plus the soonest 30 for a member's band (`homeEvents` / `pickFairRow` in `lib/homeFairs.ts`, shared with the browser). The อีเวนต์ count and the place count come with the page (was `/api/discover/counts`).
+- **สาย worked out on the server:** each ตี้ is sent with `lifestyleCategory` set, so the สาย cards no longer run keyword matching about 900 times in the browser (~120 ms on a phone).
+- **Member home code loads for members only** (`next/dynamic` in `HomeView`, preloaded when the server says signed in).
+- **Live activity line:** one shared fetch and poll (`components/home/LiveActivity.tsx`). The landing mounted it twice and the member home once, each polling every 30 s.
+- **No bundled sample places in the browser:** `useSpotCatalog` no longer ships `MOCK_SPOTS` (~90 KB gz). My Hub had it, and every page linking to My Hub prefetched it. `homeSpotsFor` resolves a saved sample place on the server instead.
+- **Photos:**
+  - `optimizedImage` sizes Unsplash links by their own parameters (`w`, `q=70`, `auto=format`).
+  - The server sends member-home event, challenge and place photos already resized to 640 px, because `MemberLiveHome` and `JourneyBand` show `image` as it comes.
+  - `HomeView` does the same for the member's own joined ตี้.
+  - `MomentPhotos` resizes photos that are not uploads.
+  - The campaign prize PNG (200 KB) is sent at 384 px.
+- **Walked and working:** hero buttons, สาย cards (60–100 ms), save heart → sign-up dialog (~45 ms), sign-up and login dialogs, demo login from the dialog, band tabs, feed tabs (~300 ms), like/unlike, comments, composer open/close, and links to ตี้ / ชาเลนจ์ / อีเวนต์ / ที่เที่ยว / มายฮับ (0.5–0.9 s; back to home ~160 ms). No overflow at 390 / 820 / 1280.
+- **Left as is:** the member home still shifts 0.074 (CLS, under the 0.1 "good" line) when the journey band's data arrives. That is inside `JourneyBand.tsx` / `MemberLiveHome.tsx`, which hold the paused band work and were not touched.

@@ -12,10 +12,11 @@ import { FriendsMomentsWall } from '@/components/FriendsMomentsWall';
 import { OpenMeetupTiles } from '@/components/OpenMeetupTiles';
 import { ScrollRow } from '@/components/ScrollRow';
 import { CategoryStickerCards, communityCategoryCards } from '@/components/CategoryStickerCards';
-import { MemberLiveHome } from '@/components/home/MemberLiveHome';
+import dynamic from 'next/dynamic';
 import { LiveJoinsLine } from '@/components/home/LiveActivity';
 import { CampaignStrip } from '@/components/CampaignStrip';
 import type { Campaign } from '@/lib/campaigns/types';
+import type { MemberHomeData } from '@/lib/homeData';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/LazyCreateEventModal';
@@ -28,16 +29,21 @@ import { fetchAllContentPages } from '@/lib/contentClient';
 import { useMyRewards } from '@/lib/useMyRewards';
 import { useMyMonth } from '@/lib/useMyMonth';
 import { useMyActivity } from '@/lib/useMyActivity';
-import { useMemberSession } from '@/lib/useMemberSession';
+import { seedMemberSession, useMemberSession, type SessionSeed } from '@/lib/useMemberSession';
 import { REWARD_SHOP_ITEMS } from '@/data/rewardsData';
 import { useHomeSpots, getCachedSpotVibeCategory } from '@/lib/usePublishedSpots';
 import { getCommunityEventCategory, type SpotVibeId } from '@/data/masterHub';
-import { isTradeEvent } from '@/lib/highlights';
+import { BAND_PICK_POOL, FAIR_ROW_SHOWN, fairKind, pickFairRow } from '@/lib/homeFairs';
 import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
 import { TOP_DESTINATIONS } from '@/data/topDestinations';
 import { Toast } from '@/components/Toast';
 import { defaultEventImage } from '@/lib/eventImageResolver';
 import { optimizedImage } from '@/lib/optimizedImage';
+
+// The member home (its band, feed and plans) loads only for members: visitors used to download and parse it too.
+// A member's page starts the download as it hydrates (`signedIn` from the server), so it is not left waiting.
+const loadMemberHome = () => import('@/components/home/MemberLiveHome').then((m) => m.MemberLiveHome);
+const MemberLiveHome = dynamic(loadMemberHome, { ssr: false, loading: () => <MemberHomeSkeleton /> });
 
 const ROW_SIZE = 5;
 /** The landing meetup row: six tiles fill one desktop row; a picked category slides through up to twelve */
@@ -95,21 +101,8 @@ const FAIR_KIND_LABEL = { fair: 'เอ็กซ์โป', run: 'งานว�
 // Provinces shown in "สายเที่ยว สายชิล ไปไหนดี?"
 const DESTINATION_IDS = ['bkk', 'chiangmai', 'chonburi', 'khaoyai', 'krabi', 'nan'];
 
-// The kinds named in the home page fair heading, and how many fairs that row shows
-const FAIR_ROW_KINDS = ['fair', 'run', 'concert'] as const;
-const FAIR_ROW_SHOWN = 6;
 /** The member home's อีเวนต์ block is narrower and keeps four */
 const MEMBER_FAIRS_SHOWN = 4;
-/** Places and fairs the member home's journey band picks from, three at a time ("สุ่มใหม่") */
-const BAND_PICK_POOL = 30;
-/** 'other' (a ceremony, a festival, a workshop…) gets no kind word, rather than a wrong "เอ็กซ์โป" */
-const fairKind = (e: EventItem): (typeof FAIR_ROW_KINDS)[number] | 'other' => {
-  const text = `${e.title} ${e.tag}`;
-  if (/วิ่ง|มาราธอน|เทรล|marathon|\brun\b|trail/i.test(text)) return 'run';
-  if (/คอนเสิร์ต|ดนตรีสด|concert|live music/i.test(text)) return 'concert';
-  if (/เอ็กซ์โป|expo|แฟร์|\bfair\b|มหกรรม|แสดงสินค้า|นิทรรศการ|exhibition|trade show|convention|congress/i.test(text)) return 'fair';
-  return 'other';
-};
 
 // "12 ต.ค. – 18 ต.ค." for a fair, years left out
 // "23 ต.ค. – 25 ต.ค."; with `near` (member home, rendered in the browser only, so server and phone clocks never disagree)
@@ -136,9 +129,26 @@ const upcomingByDate = (events: EventItem[], type: 'community' | 'public_venue')
 const allowsMeetups = (spot: LifestyleSpotItem) =>
   spot.meetupAllowed === true && spot.category !== 'bar' && spot.publicationStatus !== 'draft';
 
-type InitialContent = { initialEvents?: EventItem[]; initialQuests?: ChallengeQuest[]; campaign?: Campaign | null };
+type InitialContent = {
+  initialEvents?: EventItem[];
+  initialQuests?: ChallengeQuest[];
+  campaign?: Campaign | null;
+  /** The server read a member session: the page waits for the member home instead of showing the landing first */
+  signedIn?: boolean;
+  /** The member home's places, extra อีเวนต์ and onboarding picks, read on the server with the page */
+  memberData?: MemberHomeData | null;
+  /** How many places /spots has, for the visitor landing's "ดูทั้งหมด … แห่ง" */
+  spotTotal?: number | null;
+  /** The session the server read, given to the shared session store before the first render */
+  session?: SessionSeed;
+  /** How many อีเวนต์ are coming up (the page gets only the ones it shows) */
+  fairTotal?: number;
+};
 
-function JourneyContent({ initialEvents, initialQuests, campaign = null }: InitialContent) {
+function JourneyContent({ initialEvents, initialQuests, campaign = null, signedIn = false, memberData = null, spotTotal: serverSpotTotal = null, session, fairTotal }: InitialContent) {
+  // Before useAuth below reads the store: no wait for GET /api/auth/member after hydration
+  useState(() => session && seedMemberSession(session));
+  useState(() => signedIn && typeof window !== 'undefined' && void loadMemberHome());
   // The home page is not one of the menu items (ค้นพบ is /community); the logo leads here
   const [activeNavTab, setActiveNavTab] = useState('home');
   const [eventsList, setEventsList] = useState<EventItem[]>(initialEvents ?? []);
@@ -162,7 +172,7 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
   };
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
-  const [membershipActionTitle, setMembershipActionTitle] = useState('เพื่อดำเนินการต่อ');
+  const [membershipActionTitle, setMembershipActionTitle] = useState('อีกนิดเดียว ก็ไปต่อได้แล้ว');
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
 
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
@@ -170,25 +180,31 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
   const myRewards = useMyRewards(isLoggedIn);
   // Signed in, the page is the member's own home (greeting, what is next, picks for them) instead of the landing page
   const isMember = isAuthReady && isLoggedIn;
+  // The server saw a member session: until the browser confirms it, a quiet placeholder instead of the landing,
+  // which used to show first and then jump to the member home
+  const isMemberPending = !isAuthReady && signedIn;
+  // A member's home data came with the page; signing in here (the auth dialog) still loads it in the browser
+  const serverMemberData = isMember ? memberData : null;
   // Only the member home picks places from the catalog; the visitor landing needs just the number of places
-  const { spots: liveSpots, isLoaded: isSpotsLoaded } = useHomeSpots(isMember);
-  const spotsList = liveSpots;
-  const [spotTotal, setSpotTotal] = useState<number | null>(null);
+  const { spots: liveSpots, isLoaded: isLiveSpotsLoaded } = useHomeSpots(isMember && !serverMemberData);
+  const spotsList = serverMemberData?.spots ?? liveSpots;
+  const isSpotsLoaded = Boolean(serverMemberData) || isLiveSpotsLoaded;
+  const [spotTotal, setSpotTotal] = useState<number | null>(serverSpotTotal);
   useEffect(() => {
-    if (!isAuthReady || isMember) return;
+    if (!isAuthReady || isMember || serverSpotTotal !== null) return;
     fetch('/api/discover/counts')
       .then((res) => res.json())
       .then((json) => typeof json?.counts?.spots === 'number' && setSpotTotal(json.counts.spots))
       .catch(() => undefined);
-  }, [isAuthReady, isMember]);
+  }, [isAuthReady, isMember, serverSpotTotal]);
   const sessionMember = useMemberSession().member;
   const activity = useMyActivity();
   const [now] = useState(() => Date.now());
-  const [likedCategories, setLikedCategories] = useState<string[]>([]);
+  const [likedCategories, setLikedCategories] = useState<string[]>(memberData?.likedCategories ?? []);
   // Onboarding goals pick the journey band's first tab (a ตี้ or a challenge)
-  const [goals, setGoals] = useState<string[]>([]);
+  const [goals, setGoals] = useState<string[]>(memberData?.goals ?? []);
   useEffect(() => {
-    if (!isMember) return;
+    if (!isMember || serverMemberData) return;
     let alive = true;
     fetch('/api/auth/member/preferences', { cache: 'no-store' })
       .then((res) => res.json())
@@ -201,7 +217,7 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
     return () => {
       alive = false;
     };
-  }, [isMember]);
+  }, [isMember, serverMemberData]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -218,8 +234,8 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
     } catch {}
 
     let isActive = true;
-    // The server page sends the challenges and the events that are not over (enough for the landing page);
-    // a signed-in member's home still loads the full list, as before
+    // The server page sends the challenges and the events that are not over, plus a member's own saved and visited
+    // อีเวนต์; only a member who signed in on this page (no server data) loads the full list
     if (!initialQuests) fetchAllContentPages<ChallengeQuest>('/api/quests', 'quests')
       .then((quests) => {
         if (isActive) setQuestList(quests);
@@ -229,7 +245,7 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
         if (isActive) setIsQuestsLoaded(true);
       });
 
-    if (!initialEvents || isMember) fetchAllContentPages<EventItem>('/api/events', 'events')
+    if (!initialEvents || (isMember && !serverMemberData)) fetchAllContentPages<EventItem>('/api/events', 'events')
       .then((events) => {
         if (isActive && events.length > 0) setEventsList(events);
       })
@@ -243,7 +259,7 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
     return () => {
       isActive = false;
     };
-  }, [initialEvents, initialQuests, isMember]);
+  }, [initialEvents, initialQuests, isMember, serverMemberData]);
 
   const triggerMembershipPrompt = (actionTitle: string) => {
     setMembershipActionTitle(actionTitle);
@@ -251,13 +267,13 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
   };
 
   const openCreateMeetup = () => {
-    if (!isLoggedIn) triggerMembershipPrompt('เพื่อตั้งตี้ใหม่');
+    if (!isLoggedIn) triggerMembershipPrompt('ชวนคนมาออกไปด้วยกัน ตั้งตี้ของคุณเลย');
     else setIsCreateEventModalOpen(true);
   };
 
   const toggleFavoriteEvent = (eventId: string) => {
     if (!isLoggedIn) {
-      triggerMembershipPrompt('เพื่อบันทึกกิจกรรมนี้ไว้ในรายการโปรด');
+      triggerMembershipPrompt('เก็บกิจกรรมนี้ไว้ ไม่ให้พลาด');
       return;
     }
     setFavorites((prev) => {
@@ -301,20 +317,15 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
     return picked;
   }, [rankedSpots]);
 
-  const fairRow = useMemo(() => {
-    const matched = [...fairEvents]
-      // Trade shows stay listed on /events but go last here (the sort keeps the date order within each group)
-      .sort((a, b) => Number(isTradeEvent(a)) - Number(isTradeEvent(b)));
-    // The heading promises "เอ็กซ์โป งานวิ่ง คอนเสิร์ต": the soonest of each kind in turn (two rounds), then the rest by date
-    const byKind = FAIR_ROW_KINDS.map((kind) => matched.filter((e) => fairKind(e) === kind));
-    const turns = [0, 1].flatMap((round) => byKind.map((list) => list[round])).filter((e): e is EventItem => !!e);
-    const picked = [...turns, ...matched.filter((e) => !turns.includes(e))].slice(0, FAIR_ROW_SHOWN);
-    return matched.filter((e) => picked.includes(e));
-  }, [fairEvents]);
+  const fairRow = useMemo(() => pickFairRow(fairEvents), [fairEvents]);
 
   // Member home: the next three things they go to: meetups and fairs they joined or host, then fairs they saved
+  // The member's own ตี้ come from the browser with their original photos (~1 MB sample PNGs); the band and plan
+  // cards show `image` as it is, so it is resized here like the server does for the rest (lib/homeData.ts)
+  const joined = useMemo(() => activity.joined.map(withCardImage), [activity.joined]);
+  const hosted = useMemo(() => activity.hosted.map(withCardImage), [activity.hosted]);
   const plans = useMemo(() => {
-    const going = [...activity.joined, ...activity.hosted];
+    const going = [...joined, ...hosted];
     const goingIds = new Set(going.map((e) => e.id));
     const saved = fairEvents.filter((e) => activity.savedEventIds.includes(e.id) && !goingIds.has(e.id));
     const seen = new Set<string>();
@@ -322,10 +333,10 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
       .filter((e) => !isEventEnded(e) && !seen.has(e.id) && seen.add(e.id))
       .sort((a, b) => parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date))
       .slice(0, 3);
-  }, [activity.joined, activity.hosted, activity.savedEventIds, fairEvents]);
+  }, [joined, hosted, activity.savedEventIds, fairEvents]);
   // Everything the member joined or hosts, ended ones too: the journey band asks for a moment from a ตี้ they went to
   // A host is also among the joined, so their own ตี้ comes once
-  const myEvents = useMemo(() => [...new Map([...activity.joined, ...activity.hosted].map((e) => [e.id, e])).values()], [activity.joined, activity.hosted]);
+  const myEvents = useMemo(() => [...new Map([...joined, ...hosted].map((e) => [e.id, e])).values()], [joined, hosted]);
   // This month's Chill (places) and Connect (meetups) behind the greeting
   const myMonth = useMyMonth(isMember);
   const monthCounts = myMonth.month ? { chill: myMonth.month.chill.length, connect: myMonth.month.connect.length } : null;
@@ -467,6 +478,8 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
             isSpotsLoaded={isSpotsLoaded}
             stampCount={myRewards.finished.length}
           />
+        ) : isMemberPending ? (
+          <MemberHomeSkeleton />
         ) : (
           /* 1. Hero: the collage tells the loop in three numbered steps, the words say what the site is, one orange button */
           <section className="relative overflow-hidden bg-[#FFF8F1]">
@@ -531,7 +544,7 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
 
         {/* Members get their own home above (MemberLiveHome); the rest is the landing page for visitors.
             A search from the header window opens the ค้นพบ pages. */}
-        {!isMember && (
+        {!isMember && !isMemberPending && (
           <>
             {/* The running campaign, one slim line under the hero; gone outside its dates (owner 2026-10-25) */}
             <div className={`${CONTAINER} pt-4 sm:pt-6`}>
@@ -642,7 +655,7 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
               {/* 7. Fairs, runs and concerts as a dated list, soonest first (trade shows last) */}
               {isEventsLoaded && fairRow.length > 0 && (
                 <section className="space-y-4">
-                  {sectionHead('เอ็กซ์โป งานวิ่ง คอนเสิร์ต ช่วงนี้', '/events', undefined, <>ดูทั้งหมด<span className="hidden sm:inline"> {fairEvents.length.toLocaleString()} งาน</span></>)}
+                  {sectionHead('เอ็กซ์โป งานวิ่ง คอนเสิร์ต ช่วงนี้', '/events', undefined, <>ดูทั้งหมด<span className="hidden sm:inline"> {Math.max(fairTotal ?? 0, fairEvents.length).toLocaleString()} งาน</span></>)}
                   <div className="grid lg:grid-cols-2 lg:gap-x-10">
                     {fairRow.slice(0, FAIR_ROW_SHOWN).map((fair) => {
                       const start = new Date(parseEventDateToTimestamp(fair.date));
@@ -734,6 +747,24 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null }: Initi
         }}
         initialType="community"
       />
+    </div>
+  );
+}
+
+/** A card-sized photo link (640 px, as lib/homeData.ts HOME_CARD_WIDTH); a resized link passes through as it is */
+const withCardImage = (event: EventItem): EventItem => (event.image ? { ...event, image: optimizedImage(event.image, 640) } : event);
+
+/** The member home's first blocks in grey, until the browser has confirmed the session and loaded the member home */
+function MemberHomeSkeleton() {
+  return (
+    <div className={`${CONTAINER} pt-6 space-y-6 min-h-[100svh]`} aria-busy="true">
+      <div className="h-10 w-2/3 max-w-sm rounded-full bg-slate-100 animate-pulse" />
+      <div className="h-40 rounded-3xl bg-slate-100 animate-pulse" />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className={`aspect-square rounded-3xl bg-slate-100 animate-pulse ${i > 1 ? 'hidden sm:block' : ''}`} />
+        ))}
+      </div>
     </div>
   );
 }

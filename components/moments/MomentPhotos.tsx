@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Heart } from 'lucide-react';
+import { optimizedImage } from '@/lib/optimizedImage';
 
 /**
  * A moment's photos the way Instagram and Lemon8 show them: one photo at a time, swiped sideways on a phone,
@@ -22,11 +23,11 @@ interface MomentPhotosProps {
   onDoubleTap?: () => void;
 }
 
-/** Uploads are served through the image optimizer in three widths; other sources are used as they are */
+/** Uploads are served through the image optimizer in three widths; others at one width (Unsplash samples were full JPEGs) */
 const FRAME_WIDTHS = [640, 828, 1200];
 const sized = (src: string, width: number) => `/_next/image?url=${encodeURIComponent(src)}&w=${width}&q=75`;
 const responsive = (src: string) =>
-  src.startsWith('/uploads/') ? { src: sized(src, 828), srcSet: FRAME_WIDTHS.map((w) => `${sized(src, w)} ${w}w`).join(', '), sizes: '(min-width: 640px) 560px, 100vw' } : { src };
+  src.startsWith('/uploads/') ? { src: sized(src, 828), srcSet: FRAME_WIDTHS.map((w) => `${sized(src, w)} ${w}w`).join(', '), sizes: '(min-width: 640px) 560px, 100vw' } : { src: optimizedImage(src, 828) };
 
 /** A second tap within this time is a double tap */
 const DOUBLE_TAP_MS = 260;

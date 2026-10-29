@@ -97,7 +97,17 @@ export async function refreshMemberStatus(member: Member): Promise<Member> {
 
 /** The signed-in, active member for this request, or null */
 export async function getSessionMember(request: Request): Promise<Member | null> {
-  const payload = readSignedPayload<SessionPayload>(readCookie(request, MEMBER_SESSION_COOKIE));
+  return memberFromSessionToken(readCookie(request, MEMBER_SESSION_COOKIE));
+}
+
+/** The same for a server page, which has the cookie jar instead of a request (the home page reads its member there) */
+export async function getPageMember(): Promise<Member | null> {
+  const { cookies } = await import('next/headers');
+  return memberFromSessionToken((await cookies()).get(MEMBER_SESSION_COOKIE)?.value);
+}
+
+async function memberFromSessionToken(token: string | null | undefined): Promise<Member | null> {
+  const payload = readSignedPayload<SessionPayload>(token);
   if (!payload || typeof payload.sub !== 'string' || payload.exp <= Math.floor(Date.now() / 1000)) return null;
   // The shared test account is rebuilt on an instance that does not have it, so its session never drops
   const stored =

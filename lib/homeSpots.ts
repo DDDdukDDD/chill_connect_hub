@@ -1,4 +1,4 @@
-import type { LifestyleSpotItem } from '@/data/spotsData';
+import { getSpotById, type LifestyleSpotItem } from '@/data/spotsData';
 import { getSpotVibeCategory } from '@/lib/spotVibe';
 import type { SpotVibeId } from '@/data/masterHub';
 import { cacheManager } from './cache';
@@ -56,6 +56,8 @@ export async function homeSpotsFor(member: Member | null): Promise<LifestyleSpot
   const have = new Set(featured.map((spot) => spot.id));
   const visited = (await visitsOf(member.id)).filter((v) => v.targetType === 'spot').map((v) => v.targetId);
   const ownIds = [...new Set([...(member.savedSpotIds ?? []), ...visited])].filter((id) => !have.has(id)).slice(0, 200);
-  const own = await Promise.all(ownIds.map((id) => db.findSpotById(id)));
+  // A saved place that left the catalog still resolves from the bundled samples, here on the server rather than by
+  // shipping all of them (~90 KB compressed) to My Hub and to every page that links there (2026-10-29)
+  const own = await Promise.all(ownIds.map(async (id) => (await db.findSpotById(id)) ?? getSpotById(id) ?? null));
   return [...featured, ...own.filter((spot): spot is LifestyleSpotItem => Boolean(spot) && spot!.publicationStatus !== 'draft')];
 }
