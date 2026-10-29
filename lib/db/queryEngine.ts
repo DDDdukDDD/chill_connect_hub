@@ -1,6 +1,7 @@
 import { EventItem, ChallengeQuest } from '@/data/mockData';
 import { LifestyleSpotItem } from '@/data/spotsData';
 import { getCommunityEventCategory, getFairEventCategory } from '@/data/masterHub';
+import { hasMeetupStarted, meetupTimes } from '@/lib/dateUtils';
 import {
   EventQueryParams,
   SpotQueryParams,
@@ -46,6 +47,9 @@ export function paginateArray<T>(
 export function isEventEnded(event: EventItem): boolean {
   if (event.status === 'ended') return true;
   if (!event.date) return false;
+  // A ตี้ ends at its end time, not at midnight
+  const times = meetupTimes(event);
+  if (times) return Date.now() > times.end;
 
   const currentYear = 2026;
   // Match DD Month YYYY (e.g. 23 ส.ค. 2026 or 2026-08-23)
@@ -108,7 +112,7 @@ export function filterEvents(
     }
 
     // 1. Ended Events auto-hide unless explicitly requested
-    if (!includeEnded && isEventEnded(ev)) {
+    if (!includeEnded && (isEventEnded(ev) || hasMeetupStarted(ev))) {
       return false;
     }
 

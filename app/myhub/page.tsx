@@ -120,6 +120,9 @@ function directionsUrl(ev: EventItem): string | null {
   return `https://www.google.com/maps/search/?api=1&query=${ev.latitude},${ev.longitude}`;
 }
 
+/** A section reached from a home page link lights up for a moment, so it is clear where you landed */
+const SECTION_ARRIVED = ['ring-2', 'ring-[#2563EB]/40', 'ring-offset-4', 'rounded-2xl', 'transition-shadow'];
+
 function MyHubContent() {
   const searchParams = useSearchParams();
   const [activeNavTab, setActiveNavTab] = useState('myhub');
@@ -340,6 +343,38 @@ function MyHubContent() {
       }, 350);
     }
   }, [searchParams]);
+
+  // The home page's "ของฉัน" links name a section (#my-schedule, #my-passport, #my-saved). Those sections arrive after
+  // the member's data, so the browser's own jump misses them: wait for the section, scroll to it and light it up briefly
+  useEffect(() => {
+    let frame = 0;
+    let timer = 0;
+    const goToHash = () => {
+      const id = window.location.hash.slice(1);
+      if (!id.startsWith('my-')) return;
+      const started = Date.now();
+      cancelAnimationFrame(frame);
+      const look = () => {
+        const section = document.getElementById(id);
+        if (!section) {
+          if (Date.now() - started < 6000) frame = requestAnimationFrame(look);
+          return;
+        }
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        section.classList.add(...SECTION_ARRIVED);
+        window.clearTimeout(timer);
+        timer = window.setTimeout(() => section.classList.remove(...SECTION_ARRIVED), 1600);
+      };
+      look();
+    };
+    goToHash();
+    window.addEventListener('hashchange', goToHash);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+      window.removeEventListener('hashchange', goToHash);
+    };
+  }, []);
 
   // Close context menu on outside click
   useEffect(() => {
@@ -2167,7 +2202,7 @@ function MyHubContent() {
                     <StampPassport {...buildPassport(myRewards.finished, myRewards.quests, questCatalog)} />
                   </div>
                 )}
-                <div className="order-5 lg:order-none">{renderSummaryCards()}</div>
+                <div id="my-saved" className="order-5 lg:order-none scroll-mt-24">{renderSummaryCards()}</div>
                 <div className="order-6 lg:order-none">
                 {/* Places and challenge ideas sent to staff */}
                 <MySubmissions />
@@ -2273,7 +2308,7 @@ function MyHubContent() {
                     })()}
 
                 </div>
-                <div className={`${hubMainMode === 'calendar' ? 'order-4' : 'order-2'} lg:order-none min-w-0 space-y-6`}>
+                <div id="my-schedule" className={`${hubMainMode === 'calendar' ? 'order-4' : 'order-2'} lg:order-none min-w-0 space-y-6 scroll-mt-24`}>
               {hubMainMode === 'calendar' ? (
                 renderMasterCalendarView()
               ) : hubMainMode === 'hosting' ? (

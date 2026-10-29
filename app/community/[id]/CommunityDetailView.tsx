@@ -29,7 +29,7 @@ import type { EventItem } from '@/data/mockData';
 import { getCommunityEventCategory } from '@/data/masterHub';
 import { placeName } from '@/lib/placeName';
 import { eventOrigin } from '@/lib/contentOrigin';
-import { isEventEnded } from '@/lib/dateUtils';
+import { hasMeetupStarted, isClosedToJoin, isEventEnded } from '@/lib/dateUtils';
 import { resolveEventGallery } from '@/lib/eventImageResolver';
 import { parseEventPrice } from '@/lib/priceUtils';
 import { renderDescriptionContent } from '@/components/RichTextEditor';
@@ -101,7 +101,7 @@ export default function CommunityDetailPage({
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
-  const [membershipActionTitle, setMembershipActionTitle] = useState('อีกนิดเดียว ก็ไปต่อได้แล้ว');
+  const [membershipActionTitle, setMembershipActionTitle] = useState('เพื่อดำเนินการต่อ');
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -220,7 +220,7 @@ export default function CommunityDetailPage({
 
   const toggleFavorite = (eventId: string) => {
     if (!isLoggedIn) {
-      setMembershipActionTitle('เก็บตี้นี้ไว้ ไม่ให้พลาด');
+      setMembershipActionTitle('เพื่อบันทึกตี้ที่ชอบ');
       setPendingAction(`favorite:${eventId}`);
       setIsRequireMembershipOpen(true);
       return;
@@ -250,7 +250,7 @@ export default function CommunityDetailPage({
       return;
     }
     if (!isLoggedIn) {
-      setMembershipActionTitle('อีกนิดเดียว ก็ได้ไปตี้นี้แล้ว');
+      setMembershipActionTitle('เพื่อลงทะเบียนเข้าร่วมตี้');
       setPendingAction('join');
       setIsRequireMembershipOpen(true);
       return;
@@ -418,16 +418,16 @@ export default function CommunityDetailPage({
     if (url.searchParams.get('join') !== '1') return;
     url.searchParams.delete('join');
     window.history.replaceState(null, '', url.pathname + url.search + url.hash);
-    if (!joinedEventIds.includes(eventData.id) && !isEventEnded(eventData)) setIsConfirmJoinModalOpen(true);
+    if (!joinedEventIds.includes(eventData.id) && !isClosedToJoin(eventData)) setIsConfirmJoinModalOpen(true);
   }, [isAuthReady, isLoggedIn, eventData, joinedEventIds]);
 
   // Other ตี้ open now, same สาย first (live data; the old sample list mixed in ticketed fairs)
   const sameSai = (e: EventItem) => (eventData?.lifestyleCategory && e.lifestyleCategory === eventData.lifestyleCategory ? 0 : e.category === eventData?.category ? 1 : 2);
   const relatedActivities = initialRelated
-    ? initialRelated.filter((e) => !isEventEnded(e))
+    ? initialRelated.filter((e) => !isClosedToJoin(e))
     : eventData
     ? liveMeetups
-        .filter((e) => e.id !== eventData.id && e.eventType !== 'public_venue' && !isEventEnded(e))
+        .filter((e) => e.id !== eventData.id && e.eventType !== 'public_venue' && !isClosedToJoin(e))
         .sort((x, y) => sameSai(x) - sameSai(y))
         .slice(0, 6)
     : [];
@@ -492,6 +492,8 @@ export default function CommunityDetailPage({
   // A recurring ตี้ (the series, not one of its dates) goes on: seats and dates come from its dates
   const isSeriesEvent = eventData.scheduleType === 'recurring' && Boolean(eventData.recurrence?.daysOfWeek?.length) && !eventData.seriesId;
   const isEnded = !isSeriesEvent && isEventEnded(eventData);
+  // Joining closes when the ตี้ starts (owner 2026-10-29); people already in keep their ticket and chat
+  const isStarted = !isSeriesEvent && !isEnded && hasMeetupStarted(eventData);
   const fillRatio = eventData.participantsCount / eventData.maxParticipants;
   const isAlmostFull = fillRatio >= 0.8;
   const seatsLeft = Math.max(eventData.maxParticipants - eventData.participantsCount, 0);
@@ -530,7 +532,7 @@ export default function CommunityDetailPage({
         onOpenLogout={() => setIsLogoutModalOpen(true)}
         onOpenCreateEvent={() => {
           if (!isLoggedIn) {
-            setMembershipActionTitle('ชวนคนมาออกไปด้วยกัน ตั้งตี้ของคุณเลย');
+            setMembershipActionTitle('เพื่อตั้งตี้ใหม่');
             setPendingAction('create');
             setIsRequireMembershipOpen(true);
           } else {
@@ -561,6 +563,8 @@ export default function CommunityDetailPage({
               ? { icon: Users, text: `จัดประจำ · รับวันละ ${eventData.maxParticipants} คน`, tone: 'open' }
               : isEnded
               ? { icon: Users, text: `ตี้นี้จบแล้ว · ไป ${eventData.participantsCount} คน`, tone: 'closed' }
+              : isStarted
+              ? { icon: Users, text: `ตี้กำลังเริ่มแล้ว · ไป ${eventData.participantsCount} คน`, tone: 'closed' }
               : isFull
               ? { icon: Users, text: `เต็มแล้ว · ${eventData.participantsCount}/${eventData.maxParticipants} คน`, tone: 'closed' }
               : { icon: Users, text: `${eventData.participantsCount}/${eventData.maxParticipants} คน · เหลือ ${seatsLeft} ที่`, tone: seatsLeft <= 2 ? 'urgent' : 'open' }
@@ -608,15 +612,15 @@ export default function CommunityDetailPage({
                     แชตกลุ่ม
                   </button>
                 </>
-              ) : isEnded ? (
-                <button type="button" disabled className={heroButton.primary}>ตี้นี้จบแล้ว</button>
+              ) : isEnded || isStarted ? (
+                <button type="button" disabled className={heroButton.primary}>{isEnded ? 'ตี้นี้จบแล้ว' : 'ปิดรับแล้ว ตี้เริ่มไปแล้ว'}</button>
               ) : isSeriesPage ? (
                 <a href="#dates" className={heroButton.primary}>เลือกวันที่จะไป</a>
               ) : isFull ? (
                 <WaitlistAction
                   eventId={eventData.id}
                   isLoggedIn={isLoggedIn}
-                  onRequireLogin={() => askToJoin('ต่อคิวไว้ มีที่ว่างเมื่อไรได้ไปเลย', `/community/${encodeURIComponent(eventData.id)}`)}
+                  onRequireLogin={() => askToJoin('เพื่อต่อคิวรายชื่อสำรอง', `/community/${encodeURIComponent(eventData.id)}`)}
                   onJoin={handleJoinEvent}
                 />
               ) : (
@@ -624,9 +628,10 @@ export default function CommunityDetailPage({
                   ลงทะเบียนเข้าร่วม
                 </button>
               )}
-              <button type="button" onClick={handleShare} className={heroButton.quiet}>
+              {/* Icon only on phones, so it stays on the row with the main button */}
+              <button type="button" onClick={handleShare} aria-label={isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'} className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0`}>
                 {isCopied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Share2 className="w-4 h-4" aria-hidden="true" />}
-                {isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'}
+                <span className="max-sm:sr-only">{isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'}</span>
               </button>
               {/* A ตี้ you joined or run is already on your schedule, so saving it says nothing more */}
               {!isJoined && !isHost && (
@@ -658,7 +663,7 @@ export default function CommunityDetailPage({
           ]}
         />
 
-        {isSeriesPage && <SeriesDates series={eventData} onRequireLogin={(returnTo) => askToJoin('อีกนิดเดียว ก็ได้ไปตี้นี้แล้ว', returnTo)} />}
+        {isSeriesPage && <SeriesDates series={eventData} onRequireLogin={(returnTo) => askToJoin('เพื่อลงทะเบียนเข้าร่วมตี้', returnTo)} />}
 
         {/* The day itself: ticket, way there, chat, who has arrived (participant) and the check-in (host) */}
         {isJoined && !isHost && isToday(eventData) && (
@@ -714,7 +719,7 @@ export default function CommunityDetailPage({
                 location={eventData.location}
                 isLoggedIn={isLoggedIn}
                 onRequireLogin={() => {
-                  setMembershipActionTitle('เก็บโมเมนต์จากตี้นี้ไว้');
+                  setMembershipActionTitle('เพื่อโพสต์โมเมนต์จากตี้นี้');
                   setIsRequireMembershipOpen(true);
                 }}
                 onShowToast={showToast}
@@ -855,7 +860,7 @@ export default function CommunityDetailPage({
               eventId={eventData.id}
               initial={initialQuestions}
               isLoggedIn={isLoggedIn}
-              onRequireLogin={() => askToJoin('ถามคนจัดได้เลย ก่อนไปตี้นี้', `/community/${encodeURIComponent(eventData.id)}#questions`)}
+              onRequireLogin={() => askToJoin('เพื่อถามคนจัด', `/community/${encodeURIComponent(eventData.id)}#questions`)}
             />
 
             <EventAttendees
@@ -1203,10 +1208,12 @@ export default function CommunityDetailPage({
                 : `${cleanText(eventData.date)} · ${cleanText(eventData.time).split(/\s*[-–]\s*/)[0]}`}
             </p>
             <p className={`text-[11px] sm:text-xs font-bold truncate ${
-              isEnded ? 'text-slate-500' : isJoined ? 'text-emerald-700' : fillRatio >= 1 ? 'text-rose-600' : isAlmostFull ? 'text-amber-700' : 'text-emerald-700'
+              isEnded || (isStarted && !isJoined) ? 'text-slate-500' : isJoined ? 'text-emerald-700' : fillRatio >= 1 ? 'text-rose-600' : isAlmostFull ? 'text-amber-700' : 'text-emerald-700'
             }`}>
               {isEnded
                 ? 'ตี้นี้จบแล้ว'
+                : isStarted && !isJoined
+                ? 'ตี้เริ่มไปแล้ว'
                 : isHost
                 ? 'คุณเป็นผู้จัดตี้นี้'
                 : isJoined
@@ -1232,9 +1239,9 @@ export default function CommunityDetailPage({
           >
             {isCopied ? <Check className="w-4 h-4 text-emerald-600" /> : <Share2 className="w-4 h-4 text-slate-600" />}
           </button>
-          {isEnded ? (
+          {isEnded || (isStarted && !isJoined) ? (
             <button type="button" disabled className="px-4 py-2.5 rounded-full bg-slate-100 text-slate-500 text-xs sm:text-sm font-bold shrink-0 cursor-not-allowed">
-              สิ้นสุดแล้ว
+              {isEnded ? 'สิ้นสุดแล้ว' : 'ปิดรับแล้ว'}
             </button>
           ) : fillRatio >= 1 && !isJoined ? (
             <button type="button" disabled className="px-4 py-2.5 rounded-full bg-slate-100 text-slate-500 text-xs sm:text-sm font-bold shrink-0 cursor-not-allowed">

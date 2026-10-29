@@ -1,3 +1,5 @@
+import { parseThaiDateRange } from './scrapers/dates';
+
 export const THAI_MONTHS_MAP: Record<string, number> = {
   'ม.ค.': 0, 'มกราคม': 0, 'jan': 0,
   'ก.พ.': 1, 'กุมภาพันธ์': 1, 'feb': 1,
@@ -175,9 +177,48 @@ export function isEventMatchingTimeFilter(
   return true;
 }
 
-export function isEventEnded(event: { status?: string; date?: string; title?: string; description?: string }): boolean {
+const BANGKOK_MS = 7 * 60 * 60 * 1000;
+
+type TimedEvent = { eventType?: string; date?: string; time?: string };
+
+/**
+ * When a one-day ตี้ starts and ends, read from its date ("29 ต.ค. 2569") and time ("06:00 - 08:00 น.") on the
+ * Bangkok clock. An end earlier than the start runs into the next day (BE-148); no end time means the end of
+ * that day. Null for อีเวนต์, ตี้ spanning several days, and dates or times that name no clock time.
+ */
+export function meetupTimes(event: TimedEvent): { start: number; end: number } | null {
+  if (!event || event.eventType === 'public_venue' || !event.date || !event.time) return null;
+  const range = parseThaiDateRange(event.date);
+  if (!range) return null;
+  const { start: s, end: e } = range;
+  if (s.year !== e.year || s.month !== e.month || s.day !== e.day) return null;
+  const clocks = [...event.time.matchAll(/(\d{1,2})[:.](\d{2})/g)].map((m) => Number(m[1]) * 60 + Number(m[2]));
+  if (clocks.length === 0) return null;
+  const dayStart = Date.UTC(s.year, s.month, s.day) - BANGKOK_MS;
+  const start = dayStart + clocks[0] * 60000;
+  if (clocks.length < 2) return { start, end: dayStart + 24 * 60 * 60 * 1000 - 1000 };
+  let end = dayStart + clocks[1] * 60000;
+  if (end <= start) end += 24 * 60 * 60 * 1000;
+  return { start, end };
+}
+
+/** A ตี้ takes no new people once it has started (owner 2026-10-29) */
+export function hasMeetupStarted(event: TimedEvent, now: number = Date.now()): boolean {
+  const times = meetupTimes(event);
+  return Boolean(times && now >= times.start);
+}
+
+/** Ended, or a ตี้ that has started: not offered to people looking for something to join */
+export function isClosedToJoin(event: Parameters<typeof isEventEnded>[0], now: number = Date.now()): boolean {
+  return isEventEnded(event) || hasMeetupStarted(event, now);
+}
+
+export function isEventEnded(event: { status?: string; date?: string; title?: string; description?: string; eventType?: string; time?: string }): boolean {
   if (!event) return false;
   if (event.status === 'ended') return true;
+  // A ตี้ ends at its end time, not at midnight
+  const times = meetupTimes(event);
+  if (times) return Date.now() > times.end;
   if (event.date && isEventEndedByDate(event.date)) return true;
   const t = (event.title || '').toLowerCase();
   const d = (event.description || '').toLowerCase();

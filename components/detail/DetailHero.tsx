@@ -2,6 +2,7 @@ import React from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { Camera } from 'lucide-react';
 import { PosterPhoto } from '@/components/PosterPhoto';
+import { optimizedImage } from '@/lib/optimizedImage';
 
 /** The one live fact a visitor decides on, as a bold coloured line under the title: seats on a ตี้, open now on a place */
 export interface DetailHighlight {
@@ -60,9 +61,12 @@ export function DetailHero({ pillar, image, imageAlt, photoCount = 1, onOpenPhot
   return (
     <section className="mt-2 grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:gap-10 lg:items-center">
       <figure className="relative m-0 aspect-[16/10] rounded-3xl overflow-hidden bg-slate-100">
-        {/* A tall poster shows whole over a blurred copy of itself, so its text is not cut; photos fill the frame (owner 2026-10-28) */}
+        {/* A tall poster shows whole over a blurred copy of itself, so its text is not cut; photos fill the frame (owner 2026-10-28).
+            An อีเวนต์ picture is nearly always a poster with words to the edges, so anything taller than the 16:10 frame shows whole */}
+        {/* Resized by the image optimizer: the sample photos in /public are ~1 MB originals (2026-10-29) */}
         <PosterPhoto
-          src={image}
+          src={optimizedImage(image, 1080) || image}
+          posterFrom={pillar === 'fair' ? 0.66 : undefined}
           alt={imageAlt}
           className={onOpenPhotos ? 'cursor-zoom-in' : ''}
           onClick={onOpenPhotos}
@@ -89,8 +93,9 @@ export function DetailHero({ pillar, image, imageAlt, photoCount = 1, onOpenPhot
           </p>
         )}
         {subtitle && <p className="text-sm font-medium text-slate-600 leading-relaxed max-w-prose">{subtitle}</p>}
+        {/* One fact per line on phones: wrapped in a row, the last one sat alone on its own line */}
         {facts.length > 0 && (
-          <ul className="flex flex-wrap gap-x-5 gap-y-2">
+          <ul className="flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:gap-x-5 sm:gap-y-2">
             {facts.map((fact, i) => {
               const Icon = fact.icon;
               return (
@@ -102,7 +107,8 @@ export function DetailHero({ pillar, image, imageAlt, photoCount = 1, onOpenPhot
             })}
           </ul>
         )}
-        <div className="flex flex-wrap items-center gap-2 pt-1">{actions}</div>
+        {/* data-hero-actions: the phone action bar (MobileNav) waits until these scroll away */}
+        <div data-hero-actions className="flex flex-wrap items-center gap-2 pt-1">{actions}</div>
         {note && <p className="-mt-1 text-xs sm:text-[13px] font-medium text-slate-500">{note}</p>}
       </div>
     </section>
@@ -111,10 +117,10 @@ export function DetailHero({ pillar, image, imageAlt, photoCount = 1, onOpenPhot
 
 /** The blue main action and its quiet neighbours share one height (as on the challenge page) */
 export const heroButton = {
-  primary: 'inline-flex items-center justify-center gap-2 h-12 px-7 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[15px] sm:text-base font-bold cursor-pointer whitespace-nowrap transition-colors disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed',
+  primary: 'inline-flex items-center justify-center gap-2 h-12 px-5 sm:px-7 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[15px] sm:text-base font-bold cursor-pointer whitespace-nowrap transition-colors disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed',
   done: 'inline-flex items-center justify-center gap-2 h-12 px-6 rounded-full border-[1.5px] border-[#2563EB] bg-white text-[#1D4ED8] text-[15px] sm:text-base font-bold cursor-pointer whitespace-nowrap',
   /** Share, chat, cancel: grey, never competing with the blue one */
-  quiet: 'inline-flex items-center justify-center gap-2 h-12 px-5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-[15px] sm:text-base font-bold cursor-pointer whitespace-nowrap transition-colors',
+  quiet: 'inline-flex items-center justify-center gap-2 h-12 px-4 sm:px-5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-[15px] sm:text-base font-bold cursor-pointer whitespace-nowrap transition-colors',
   icon: 'inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer transition-colors',
 };
 

@@ -377,7 +377,7 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialChip, pl
                     onClick={(e) => {
                       if (!isLoggedIn) {
                         e.preventDefault();
-                        requireLogin('แชร์โมเมนต์ของคุณ ให้คนที่ชอบเหมือนกันได้ดู');
+                        requireLogin('เพื่อแชร์โมเมนต์ของคุณ');
                       }
                     }}
                     className="inline-flex items-center justify-center gap-2 h-11 sm:h-12 px-7 rounded-full bg-[#F43F5E] hover:bg-[#E11D48] text-white text-base font-semibold shadow-[0_8px_20px_rgba(244,63,94,0.28)] whitespace-nowrap transition-colors"

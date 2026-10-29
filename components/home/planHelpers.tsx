@@ -46,6 +46,8 @@ export function awayLabel(event: EventItem, now: number) {
   }
   const days = Math.floor(left / DAY_MS);
   const hours = Math.floor((left % DAY_MS) / 3_600_000);
+  // Hours matter only in the last few days: "อีก 40 วัน 14 ชม." reads like a timer, not a plan
+  if (days >= 3) return `อีก ${days} วัน`;
   return hours > 0 ? `อีก ${days} วัน ${hours} ชม.` : `อีก ${days} วัน`;
 }
 

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { MapPin, Heart, MessageCircle, ArrowRight } from 'lucide-react';
+import { MapPin, Heart, MessageCircle } from 'lucide-react';
 import { LANDING_MOMENTS_SAMPLE, type WallMoment } from '@/data/landingMomentsSample';
 import { optimizedImage } from '@/lib/optimizedImage';
 
@@ -21,13 +21,13 @@ const targetHref = (m: WallMoment) => {
 
 /**
  * "เพื่อน & โมเมนต์" on the homepage: a row of friends (tap one to read their story), and the chosen
- * moment told openly: photos, their words, a friend's reply, and a way to go there too. No card frames.
+ * moment told openly: photos, their words, a friend's reply. A mood piece, not a way out (owner 2026-10-29):
+ * only the place line links on, "ดูทั้งหมด" in the section head goes to /moments. No card frames.
  */
 export function FriendsMomentsWall() {
   // Always the fixed example set (owner 2026-10-23): the landing should not show whatever was posted last,
-  // test posts included. Being static, it is also in the server HTML. The example has no pages of its own: links go to /moments
+  // test posts included. Being static, it is also in the server HTML
   const moments: WallMoment[] = LANDING_MOMENTS_SAMPLE;
-  const isSample = true;
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const active = moments.find((m) => m.id === activeId) ?? moments[0];
@@ -35,7 +35,6 @@ export function FriendsMomentsWall() {
   const placeHref = targetHref(active);
   const placeName = active.targetTitle || active.location;
   const photos = active.images.slice(0, 3);
-  const momentHref = isSample ? '/moments' : `/moments/${encodeURIComponent(active.id)}`;
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -68,10 +67,8 @@ export function FriendsMomentsWall() {
 
       {/* The chosen moment, told openly */}
       <div key={active.id} className="grid lg:grid-cols-[1.2fr_1fr] gap-4 lg:gap-10 items-center animate-fade-in">
-        <Link
-          href={momentHref}
+        <div
           className={`grid gap-2 sm:gap-3 h-52 sm:h-[300px] overflow-hidden ${photos.length > 1 ? 'grid-cols-3 grid-rows-2' : 'grid-cols-1 grid-rows-1'}`}
-          aria-label={`ดูโมเมนต์ของ ${shortName(active.userName)}`}
         >
           {photos.map((src, i) => (
             // eslint-disable-next-line @next/next/no-img-element
@@ -80,27 +77,32 @@ export function FriendsMomentsWall() {
               src={optimizedImage(src, 828)}
               alt=""
               loading="lazy"
-              className={`w-full h-full min-h-0 object-cover rounded-3xl hover:opacity-95 transition-opacity ${
+              className={`w-full h-full min-h-0 object-cover rounded-3xl ${
                 photos.length > 1 && i === 0 ? 'col-span-2 row-span-2' : ''
               } ${photos.length === 2 && i === 1 ? 'row-span-2' : ''}`}
             />
           ))}
-        </Link>
+        </div>
 
         <div className="min-w-0">
-          <Link href={!isSample && active.authorId ? `/profile?id=${encodeURIComponent(active.authorId)}` : momentHref} className="inline-flex items-center gap-2.5 group">
+          <div className="flex items-center gap-2.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={active.userAvatar} alt="" className="w-10 h-10 rounded-full object-cover" />
             <span>
-              <span className="block text-sm font-bold text-slate-900 group-hover:underline">{shortName(active.userName)}</span>
+              <span className="block text-sm font-bold text-slate-900">{shortName(active.userName)}</span>
               <span className="block text-xs font-medium text-slate-500">{active.timeAgo}</span>
             </span>
-          </Link>
+          </div>
 
+          {/* The one way on from here: the place itself, quiet (owner 2026-10-29) */}
           {placeName && (
             <p className="mt-3 flex items-center gap-1.5 text-sm font-bold text-[#F26430] min-w-0">
               <MapPin className="w-4 h-4 shrink-0" aria-hidden="true" />
-              <span className="truncate">ไปที่ {placeName}</span>
+              {placeHref ? (
+                <Link href={placeHref} className="truncate underline-offset-4 hover:underline">ไปที่ {placeName}</Link>
+              ) : (
+                <span className="truncate">ไปที่ {placeName}</span>
+              )}
             </p>
           )}
 
@@ -124,20 +126,6 @@ export function FriendsMomentsWall() {
             </div>
           )}
 
-          <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-3">
-            {placeHref && (
-              <Link
-                href={placeHref}
-                className="inline-flex items-center gap-1.5 h-10 px-5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold whitespace-nowrap transition-colors"
-              >
-                ไปที่นี่บ้าง
-                <ArrowRight className="w-4 h-4" aria-hidden="true" />
-              </Link>
-            )}
-            <Link href={momentHref} className="text-sm font-semibold text-slate-900 underline decoration-slate-300 underline-offset-4 hover:decoration-slate-900 whitespace-nowrap">
-              อ่านต่อและคุยกัน
-            </Link>
-          </div>
         </div>
       </div>
 

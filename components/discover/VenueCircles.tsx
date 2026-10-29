@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { TOP_VENUES } from '@/data/topVenues';
+import { optimizedImage } from '@/lib/optimizedImage';
 
 /**
  * Popular venues as round photos under the /events heading: the tabs below say what kind of event, these say where.
@@ -28,7 +29,7 @@ export function VenueCircles({ selected, onSelect }: { selected: string; onSelec
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={venue.imageUrl}
+                src={optimizedImage(venue.imageUrl, 128)}
                 alt=""
                 loading="lazy"
                 className="w-full h-full rounded-full object-cover bg-slate-100 transition-transform duration-300 group-hover:scale-105"

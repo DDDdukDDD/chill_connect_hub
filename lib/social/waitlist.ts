@@ -1,5 +1,5 @@
 import { db } from '../db';
-import { isEventEnded } from '../dateUtils';
+import { hasMeetupStarted, isEventEnded } from '../dateUtils';
 import { MemberAuthError } from '../members/accounts';
 import type { Member } from '../members/types';
 import { createJsonStore } from './jsonStore';
@@ -62,6 +62,7 @@ export async function joinWaitlist(member: Member, eventId: string) {
   const event = await db.findEventById(eventId);
   if (!event || event.eventType === 'public_venue' || event.approvalStatus !== 'approved') throw new MemberAuthError('ไม่พบตี้นี้', 404);
   if (isEventEnded(event)) throw new MemberAuthError('ตี้นี้จบแล้ว', 400);
+  if (hasMeetupStarted(event)) throw new MemberAuthError('ตี้นี้เริ่มไปแล้ว ปิดรับคนเพิ่มแล้ว', 400);
   if (await db.getParticipant(eventId, member.id)) throw new MemberAuthError('คุณเข้าร่วมตี้นี้อยู่แล้ว', 409);
   const mine = store.read().filter((e) => e.eventId === eventId);
   if (!mine.some((e) => e.memberId === member.id)) {

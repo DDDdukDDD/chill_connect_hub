@@ -44,6 +44,7 @@ export function LoginScreen({ initialView, returnTo, initialError }: { initialVi
             </div>
           ) : (
             <AuthPanel
+              isPage
               initialView={initialView}
               returnTo={returnTo}
               initialError={initialError}

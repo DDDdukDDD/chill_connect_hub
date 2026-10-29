@@ -117,7 +117,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   // Wide screens: the three public sections sit in the top bar for everyone (the drawer keeps them too).
   // Not below xl: at 1024px they squeeze the search box's word field away.
   const pathname = usePathname() ?? '';
+  // Members get หน้าแรก first: their home is a live feed they come back to, and the phone bar has it too (owner 2026-10-29).
+  // A visitor's home is the landing, reached by the logo
   const topLinks = [
+    ...(isAuthReady && isLoggedIn ? [{ label: 'หน้าแรก', href: '/', match: ['/'] }] : []),
     { label: 'กิจกรรม', href: '/community', match: ['/community', '/events', '/spots'] },
     { label: 'โมเมนต์', href: '/moments', match: ['/moments'] },
     { label: 'ชาเลนจ์', href: '/challenges', match: ['/challenges'] },

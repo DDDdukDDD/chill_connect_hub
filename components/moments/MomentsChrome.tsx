@@ -33,7 +33,7 @@ export function MomentsChrome({ children }: { children: (context: MomentsChromeC
     const timer = setTimeout(() => setToast(null), 3000);
     return () => clearTimeout(timer);
   }, [toast]);
-  const requireLogin = useCallback((actionTitle?: string) => setMembershipAction(actionTitle ?? 'กดใจ คุยกัน และเก็บโมเมนต์ที่ชอบไว้'), []);
+  const requireLogin = useCallback((actionTitle?: string) => setMembershipAction(actionTitle ?? 'เพื่อกดใจ คอมเมนต์ และบันทึกโมเมนต์'), []);
 
   return (
     <div className="min-h-screen bg-white text-slate-900 flex flex-col font-sans">

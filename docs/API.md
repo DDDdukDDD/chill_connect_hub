@@ -101,7 +101,7 @@ Responses:
 | 200 | `joined` | Joined; `participantsCount`, `maxParticipants`, `updatedEvent` included |
 | 409 | `already_joined` | This `userId` already joined |
 | 409 | `event_full` | No seats left (community events only: a fair, `public_venue`, has no seat limit and is never marked `full`) |
-| 409 | `event_ended` | Event is over |
+| 409 | `event_ended` | Event is over, or a one-day ตี้ has passed its start time (joining closes at the start, owner 2026-10-29; message "ตี้นี้เริ่มไปแล้ว ปิดรับคนเพิ่มแล้ว") |
 | 409 | `not_found` | Unknown `eventId` |
 | 400 | — | Missing `eventId` / `participant.userId` |
 

@@ -99,7 +99,7 @@ export default function FairDetailPage({
   const rawId = params?.id as string;
   const decodedId = rawId ? decodeURIComponent(rawId) : '';
 
-  const [activeNavTab, setActiveNavTab] = useState('events');
+  const [activeNavTab, setActiveNavTab] = useState('explore');
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -107,7 +107,7 @@ export default function FairDetailPage({
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
-  const [membershipActionTitle, setMembershipActionTitle] = useState('อีกนิดเดียว ก็ไปต่อได้แล้ว');
+  const [membershipActionTitle, setMembershipActionTitle] = useState('เพื่อดำเนินการต่อ');
   const [pendingAction, setPendingAction] = useState<string | null>(null);
 
   // Favorites state
@@ -216,7 +216,7 @@ export default function FairDetailPage({
 
   const toggleFavorite = (eventId: string) => {
     if (!isLoggedIn) {
-      setMembershipActionTitle('เก็บอีเวนต์นี้ไว้ ไม่ให้พลาด');
+      setMembershipActionTitle('เพื่อบันทึกงานนี้ลง MyHub');
       setPendingAction(`favorite:${eventId}`);
       setIsRequireMembershipOpen(true);
       return;
@@ -235,7 +235,7 @@ export default function FairDetailPage({
   const toggleInHub = () => {
     if (!eventData) return;
     if (!isLoggedIn) {
-      setMembershipActionTitle('เก็บอีเวนต์นี้ไว้ ไม่ให้พลาด');
+      setMembershipActionTitle('เพื่อบันทึกงานนี้ลง MyHub');
       setPendingAction(`hub:${eventData.id}`);
       setIsRequireMembershipOpen(true);
       return;
@@ -290,7 +290,7 @@ export default function FairDetailPage({
 
   const handleJoinSubActivity = async (sub: FairSubActivityItem) => {
     if (!isLoggedIn) {
-      setMembershipActionTitle('ไปงานนี้กับกลุ่มนี้');
+      setMembershipActionTitle('เพื่อขอร่วมกลุ่มเดินชมงานนี้');
       setPendingAction(`join_sub:${sub.id}`);
       setIsRequireMembershipOpen(true);
       return;
@@ -575,16 +575,18 @@ export default function FairDetailPage({
               {officialWebsiteUrl && (
                 <a href={officialWebsiteUrl} target="_blank" rel="noopener noreferrer" className={heroButton.quiet}>
                   {officialLinkLabel}
-                  <ExternalLink className="w-4 h-4" aria-hidden="true" />
+                  <ExternalLink className="w-4 h-4 max-sm:hidden" aria-hidden="true" />
                 </a>
               )}
-              <button type="button" onClick={handleShare} className={heroButton.quiet}>
+              {/* Icon only on phones, so it stays on the row with the main button */}
+              <button type="button" onClick={handleShare} aria-label={isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'} className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0`}>
                 {isCopied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Share2 className="w-4 h-4" aria-hidden="true" />}
-                {isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'}
+                <span className="max-sm:sr-only">{isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'}</span>
               </button>
             </>
           }
-          note={!isEnded && !isFav ? 'บันทึกไว้ แล้วเราจะเตือนก่อนวันงาน' : undefined}
+          // No reminder to promise once the งาน has begun
+          note={!isEnded && !isFav ? (isOngoing ? 'บันทึกไว้ กลับมาเปิดดูได้ตลอดช่วงงาน' : 'บันทึกไว้ แล้วเราจะเตือนก่อนวันงาน') : undefined}
         />
 
         {/* Like the challenge page: the story, the details as a plain table and the way there on the left; on the
@@ -629,7 +631,7 @@ export default function FairDetailPage({
                 location={eventData.location}
                 isLoggedIn={isLoggedIn}
                 onRequireLogin={() => {
-                  setMembershipActionTitle('ไปงานนี้มาแล้ว? เก็บไว้เป็นความทรงจำ');
+                  setMembershipActionTitle('เพื่อบันทึกว่าคุณไปงานนี้มาแล้ว');
                   setIsRequireMembershipOpen(true);
                 }}
                 onShowToast={showToast}
@@ -708,7 +710,7 @@ export default function FairDetailPage({
                     type="button"
                     onClick={() => {
                       if (!isLoggedIn) {
-                        setMembershipActionTitle(`เปิดกลุ่ม${groupWord}ด้วยกัน`);
+                        setMembershipActionTitle(`เพื่อสร้างกลุ่มนัด${groupWord}`);
                         setPendingAction('create_sub_trip');
                         setIsRequireMembershipOpen(true);
                       } else {

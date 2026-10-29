@@ -1,7 +1,7 @@
 import { connection } from 'next/server';
 import { discoverMetadata } from '@/lib/discoverMetadata';
 import { discoverStart, listPublicMeetups } from '@/lib/publicContent';
-import { isEventEnded, parseEventDateToTimestamp } from '@/lib/dateUtils';
+import { isClosedToJoin, parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { eventListItem } from '@/lib/listItems';
 import { jsonLdHtml, meetupCollectionJsonLd } from '@/lib/structuredData';
 import CommunityListView from './CommunityListView';
@@ -18,7 +18,7 @@ export default async function CommunityPage({ searchParams }: Props) {
   await connection();
   const [events, initialCounts] = await Promise.all([listPublicMeetups(), discoverStart(searchParams)]);
   // Only what is still to come, as list items: the page's data was most of its weight (past ones load when asked for)
-  const live = events.filter((event) => (event.eventType || 'community') === 'community' && !isEventEnded(event)).map(eventListItem);
+  const live = events.filter((event) => (event.eventType || 'community') === 'community' && !isClosedToJoin(event)).map(eventListItem);
   const upcoming = [...live]
     .sort((a, b) => parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date))
     .slice(0, LISTED_IN_DATA);

@@ -163,19 +163,15 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         </p>
       )}
 
+      {/* Where it was, in one slim line (owner 2026-10-29): the place, then what to do there */}
       {target && (
         <Link
           href={liveHref({ type: moment.targetType as keyof typeof TARGETS, id: moment.targetId, title: moment.targetTitle ?? '' })}
-          className={`flex items-center gap-2.5 rounded-2xl ${target.box} pl-2 pr-3 py-2 hover:opacity-90`}
+          className="group flex items-center gap-1.5 min-w-0 text-[13px] font-semibold"
         >
-          <span className={`w-8 h-8 rounded-xl bg-white ${target.icon} flex items-center justify-center shrink-0`} aria-hidden="true">
-            <target.Icon className="w-4 h-4" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-[11px] font-medium opacity-80">{target.label}</span>
-            <span className="block text-[13px] font-semibold truncate">{moment.targetTitle || moment.location}</span>
-          </span>
-          <span className="text-xs font-semibold whitespace-nowrap">{target.go} →</span>
+          <target.Icon className={`w-4 h-4 shrink-0 ${target.icon}`} aria-hidden="true" />
+          <span className="min-w-0 truncate text-slate-800 group-hover:underline underline-offset-4">{moment.targetTitle || moment.location}</span>
+          <span className={`shrink-0 whitespace-nowrap ${target.ink}`}>· {target.go} →</span>
         </Link>
       )}
 
@@ -343,6 +339,8 @@ export interface HomeMomentFeedProps {
   onViewChange: (view: FeedView) => void;
   /** Rendered after a given post (0 = the first). Each insert sets its own screen sizes */
   inserts?: Record<number, React.ReactNode>;
+  /** Inserts up to this index that a short feed never reaches go at its end, once every post has loaded */
+  tailUpTo?: number;
   /** Opens the share form tied to a place or event (the journey band's "แชร์โมเมนต์แรก"); a new `key` opens it again */
   shareRequest?: ShareRequest | null;
   /** Told after the member posts a moment */
@@ -372,7 +370,7 @@ function shareInitial(type: string, id: string, title: string, location: string)
  * Posting, comments, likes, saves, editing, deleting and reporting all happen here; /moments is the
  * photo showcase for browsing (no posting there).
  */
-export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: setSort, inserts = {}, shareRequest, onPosted }: HomeMomentFeedProps) {
+export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: setSort, inserts = {}, tailUpTo = -1, shareRequest, onPosted }: HomeMomentFeedProps) {
   const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
   // Back on Home, the first page seen last time shows at once while it refreshes
   const [moments, setMoments] = useState<FeedItem[]>(() => recall<{ items: FeedItem[] }>(`home-feed:${sort}`)?.items ?? []);
@@ -574,10 +572,19 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
     topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  // The inserts from `from` up to `tailUpTo`, one after another (the feed ended before their posts)
+  const tailOf = (from: number) =>
+    Object.keys(inserts)
+      .map(Number)
+      .filter((at) => at >= from && at <= Math.max(tailUpTo, 0))
+      .sort((x, y) => x - y)
+      .map((at) => <React.Fragment key={`tail-${at}`}>{inserts[at]}</React.Fragment>);
+
   return (
     <div ref={topRef} className="scroll-mt-24">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">โมเมนต์จากเพื่อนๆ</h2>
+      {/* The title keeps one line: on phones the tabs go under it */}
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <h2 className="shrink-0 whitespace-nowrap text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">โมเมนต์จากเพื่อนๆ</h2>
         {PERSONAL[sort] ? (
           <button
             type="button"
@@ -698,8 +705,8 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       ) : moments.length === 0 ? (
         <>
           <p className="py-10 text-center text-sm font-medium text-slate-500">{EMPTY[sort]}</p>
-          {/* What would follow the first post still shows on an empty feed */}
-          {inserts[0]}
+          {/* What would follow the first posts still shows on an empty feed */}
+          {tailOf(0)}
         </>
       ) : (
         <>
@@ -709,6 +716,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
               {inserts[i]}
             </React.Fragment>
           ))}
+          {!hasMore && tailOf(moments.length)}
           <div ref={sentinelRef} aria-hidden="true" />
           {isLoadingMore && (
             <div className="py-6 flex justify-center" role="status" aria-label="กำลังโหลดโมเมนต์">

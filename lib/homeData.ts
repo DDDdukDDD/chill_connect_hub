@@ -18,6 +18,9 @@ export type MemberHomeData = {
   extraEvents: EventItem[];
   likedCategories: string[];
   goals: string[];
+  /** Place and อีเวนต์ kinds saved with the onboarding answers: the feed cards lead with them */
+  spotVibes: string[];
+  fairCategories: string[];
 };
 
 /**
@@ -41,5 +44,7 @@ export async function memberHomeData(member: Member, upcoming: EventItem[]): Pro
     extraEvents: extra.filter((event): event is EventItem => Boolean(event) && event!.approvalStatus === 'approved').map(eventListItem),
     likedCategories: member.preferences?.interests?.communityCategories ?? [],
     goals: member.preferences?.goals ?? [],
+    spotVibes: member.preferences?.interests?.spotVibes ?? [],
+    fairCategories: member.preferences?.interests?.fairCategories ?? [],
   };
 }
