@@ -30,17 +30,18 @@ const DRAWN_ICON: Partial<Record<CategoryCollection, (id: string) => ReturnType<
 const drawnIconFor = (collection: CategoryCollection, id: string | undefined) => (id ? DRAWN_ICON[collection]?.(id) : undefined);
 
 function CategoryChip({ collection, entry }: { collection: CategoryCollection; entry: Pick<MasterCategory, 'iconKey' | 'colorKey' | 'name'> & { id?: string } }) {
+  const color = COLOR_PRESETS[entry.colorKey] ?? COLOR_PRESETS.slate;
   // The pack caches one component per drawing, so this is the same component on every render
   const drawn = drawnIconFor(collection, entry.id);
   if (drawn) {
+    // Same tile as the landing's category cards (CategoryStickerCards): the drawing on the category's soft color
     return (
-      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center" title={entry.name}>
-        {React.createElement(drawn, { className: 'h-9 w-9' })}
+      <span className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${color.iconBg}`} title={entry.name}>
+        {React.createElement(drawn, { className: 'h-7 w-7' })}
       </span>
     );
   }
   const Icon = ICON_OPTIONS[entry.iconKey] ?? ICON_OPTIONS.Sparkles;
-  const color = COLOR_PRESETS[entry.colorKey] ?? COLOR_PRESETS.slate;
   return (
     <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${color.iconBg}`} title={entry.name}>
       <Icon size={16} className={color.iconColor} />
