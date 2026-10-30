@@ -84,6 +84,8 @@ export interface MasterVenue extends MasterBase {
   longitude?: number;
   website?: string;
   image?: string;
+  /** Who took the photo, its licence and source (Wikimedia Commons photos need it) */
+  imageCredit?: string;
 }
 
 /** id = the province name stored on content (e.g. "กรุงเทพฯ") */
@@ -251,6 +253,7 @@ export function buildSeedMasterData(now: string = new Date().toISOString()): Mas
     venues: MASTER_VENUE_OPTIONS.map((v, i) => ({
       ...base(v.id, i), name: v.label, venueTag: v.tag, province: v.province ?? VENUE_PROVINCES[v.id] ?? 'กรุงเทพฯ',
       location: v.location, transitHint: v.transitHint, image: v.image ?? VENUE_IMAGES[v.id],
+      ...(v.imageCredit && { imageCredit: v.imageCredit }),
       ...(v.latitude !== undefined && v.longitude !== undefined && { latitude: v.latitude, longitude: v.longitude }),
     })),
     provinces: MASTER_77_PROVINCES.map((name, i) => {

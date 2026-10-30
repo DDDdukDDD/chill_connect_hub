@@ -147,6 +147,7 @@ function cleanVenue(input: Record<string, unknown>): Omit<MasterVenue, 'id' | 'a
     longitude,
     website: website || undefined,
     image: imageUrl(input.image),
+    imageCredit: str(input.imageCredit, 300) || undefined,
   };
 }
 
