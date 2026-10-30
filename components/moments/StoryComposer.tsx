@@ -20,8 +20,12 @@ export type StoryDraft = { file: File; caption: string; captionLayout: CaptionLa
 const MAX_CAPTION = 120;
 const ACCEPT = 'image/jpeg,image/png,image/webp,image/avif';
 
+// Only the photo's own kinds of address reach <img>: the local preview (blob:), an upload (/uploads/...) or https storage
+const SAFE_PHOTO_SRC = /^(?:blob:https?:\/\/[\w.:-]+\/[\w-]+|\/uploads\/[\w\-./]+|https:\/\/[^\s"'<>\\]+)$/;
+
 /** The photo whole, on a blurred copy of itself so a wide photo does not float in black (composer and viewer) */
 export function StoryPhoto({ src, alt }: { src: string; alt: string }) {
+  if (!SAFE_PHOTO_SRC.test(src)) return null;
   return (
     <>
       {/* eslint-disable-next-line @next/next/no-img-element -- member upload or local preview */}
