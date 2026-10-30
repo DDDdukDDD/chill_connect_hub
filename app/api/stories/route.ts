@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   return NextResponse.json({ success: true, groups: await activeStories(viewer) }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
-// { image (from /api/upload), caption? } → a story that disappears after 24 hours. Same trust rules as a moment.
+// { image (from /api/upload), caption?, target?: { type: community|fair|spot, id, title } } → a story that disappears after 24 hours. Same trust rules as a moment.
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
   const member = await getSessionMember(request);

@@ -6,6 +6,7 @@ import { addRiskFlags } from '../members/safety';
 import { makeFlag, trustLevel } from '../members/trust';
 import type { Member } from '../members/types';
 import { createJsonStore } from './jsonStore';
+import { isStoryTextColor, type StoryTextColor } from '../storyTextColors';
 
 /** A story is one photo that disappears 24 hours after it is posted */
 export interface Story {
@@ -16,10 +17,20 @@ export interface Story {
   createdAt: string;
   expiresAt: string;
   viewedBy: string[];
+  /** The "อยู่ที่ไหน" sticker: the ตี้, อีเวนต์ or place the photo is from; viewers tap it to open that page */
+  target?: StoryTarget;
+  /** Where the author dragged and turned the text: centre as a share of the photo's width and height, degrees */
+  captionLayout?: CaptionLayout;
+  /** The text colour, one of lib/storyTextColors.ts; white when unset */
+  captionColor?: StoryTextColor;
   reports?: { memberId: string; reason: string; at: string }[];
   /** Hidden after enough distinct reports, until it expires */
   hidden?: boolean;
 }
+
+export type StoryTarget = { type: 'community' | 'fair' | 'spot'; id: string; title: string };
+const TARGET_TYPES = new Set(['community', 'fair', 'spot']);
+export type CaptionLayout = { x: number; y: number; rotate: number };
 
 const store = createJsonStore<Story>('stories');
 export const STORY_HOURS = 24;
@@ -35,23 +46,49 @@ export interface StoryGroup {
   isFollowing: boolean;
   allSeen: boolean;
   latest: string;
-  stories: { id: string; image: string; caption: string; createdAt: string; hoursLeft: number; seen: boolean; hasReported: boolean; views?: number }[];
+  stories: { id: string; image: string; caption: string; captionLayout?: CaptionLayout; captionColor?: StoryTextColor; target?: StoryTarget; createdAt: string; hoursLeft: number; seen: boolean; hasReported: boolean; views?: number }[];
 }
 
 const isActive = (story: Story, now = Date.now()) => new Date(story.expiresAt).getTime() > now;
 /** Only files that went through /api/upload (local uploads folder or the blob store) */
 const isUploadedImage = (url: string) => /^\/uploads\/[\w\-./]+$/.test(url) || /^https:\/\/[\w-]+\.public\.blob\.vercel-storage\.com\//.test(url);
 
+const oneLine = (value: unknown, max: number) => (typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, max) : '');
+
+/** The sticker as sent, or nothing when any part is missing (the id goes into a link, so it stays a plain slug) */
+function storyTarget(input: unknown): StoryTarget | undefined {
+  if (!input || typeof input !== 'object') return undefined;
+  const { type, id, title } = input as Record<string, unknown>;
+  const cleanId = oneLine(id, 120);
+  const cleanTitle = oneLine(title, 120);
+  if (typeof type !== 'string' || !TARGET_TYPES.has(type) || !/^[\w-]+$/.test(cleanId) || !cleanTitle) return undefined;
+  return { type: type as StoryTarget['type'], id: cleanId, title: cleanTitle };
+}
+
+/** The text's place on the photo, kept inside it; nothing when it is not three numbers */
+function captionLayout(input: unknown): CaptionLayout | undefined {
+  if (!input || typeof input !== 'object') return undefined;
+  const { x, y, rotate } = input as Record<string, unknown>;
+  if (![x, y, rotate].every((n) => typeof n === 'number' && Number.isFinite(n))) return undefined;
+  const share = (n: number) => Math.round(Math.min(1, Math.max(0, n)) * 1000) / 1000;
+  // Any angle comes back as -180..180
+  const turn = Math.round(((((rotate as number) % 360) + 540) % 360) - 180);
+  return { x: share(x as number), y: share(y as number), rotate: turn };
+}
+
 export async function createStory(member: Member, input: Record<string, unknown>): Promise<Story> {
   const image = typeof input.image === 'string' ? input.image : '';
   if (!image) throw new MemberAuthError('เลือกรูปก่อนนะ');
   if (!isUploadedImage(image)) throw new MemberAuthError('รูปต้องอัปโหลดผ่านระบบ (/api/upload) ก่อน');
-  const caption = typeof input.caption === 'string' ? input.caption.replace(/\s+/g, ' ').trim().slice(0, MAX_STORY_CAPTION) : '';
+  const caption = oneLine(input.caption, MAX_STORY_CAPTION);
+  const target = storyTarget(input.target);
+  const layout = caption ? captionLayout(input.captionLayout) : undefined;
+  const color = caption && isStoryTextColor(input.captionColor) && input.captionColor !== 'white' ? input.captionColor : undefined;
   if (store.read().filter((s) => s.authorId === member.id && isActive(s)).length >= MAX_ACTIVE_STORIES) {
     throw new MemberAuthError(`มีสตอรี่ได้พร้อมกัน ${MAX_ACTIVE_STORIES} รูป ลบรูปเก่าก่อน หรือรอให้หมดเวลา`, 429);
   }
   const now = Date.now();
-  const story: Story = { id: `sty_${randomUUID()}`, authorId: member.id, image, caption, createdAt: new Date(now).toISOString(), expiresAt: new Date(now + STORY_HOURS * HOUR).toISOString(), viewedBy: [] };
+  const story: Story = { id: `sty_${randomUUID()}`, authorId: member.id, image, caption, createdAt: new Date(now).toISOString(), expiresAt: new Date(now + STORY_HOURS * HOUR).toISOString(), viewedBy: [], ...(target && { target }), ...(layout && { captionLayout: layout }), ...(color && { captionColor: color }) };
   // Expired stories are dropped whenever a new one is saved, so the file does not grow
   await store.update((items) => [story, ...items.filter((s) => isActive(s, now))]);
   return story;
@@ -78,6 +115,9 @@ export async function activeStories(viewer: Member | null): Promise<StoryGroup[]
         id: s.id,
         image: s.image,
         caption: s.caption,
+        captionLayout: s.captionLayout,
+        captionColor: s.captionColor,
+        target: s.target,
         createdAt: s.createdAt,
         hoursLeft: Math.max(1, Math.ceil((new Date(s.expiresAt).getTime() - now) / HOUR)),
         seen: Boolean(viewer && (s.viewedBy.includes(viewer.id) || s.authorId === viewer.id)),
