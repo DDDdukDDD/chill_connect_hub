@@ -20,18 +20,49 @@ export type StoryDraft = { file: File; caption: string; captionLayout: CaptionLa
 const MAX_CAPTION = 120;
 const ACCEPT = 'image/jpeg,image/png,image/webp,image/avif';
 
-// Only the photo's own kinds of address reach <img>: the local preview (blob:), an upload (/uploads/...) or https storage
-const SAFE_PHOTO_SRC = /^(?:blob:https?:\/\/[\w.:-]+\/[\w-]+|\/uploads\/[\w\-./]+|https:\/\/[^\s"'<>\\]+)$/;
+const PHOTO_BACK = 'absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60';
+const PHOTO_FRONT = 'absolute inset-0 w-full h-full object-contain';
 
-/** The photo whole, on a blurred copy of itself so a wide photo does not float in black (composer and viewer) */
+/** The photo whole, on a blurred copy of itself so a wide photo does not float in black (viewer) */
 export function StoryPhoto({ src, alt }: { src: string; alt: string }) {
-  if (!SAFE_PHOTO_SRC.test(src)) return null;
   return (
     <>
-      {/* eslint-disable-next-line @next/next/no-img-element -- member upload or local preview */}
-      <img src={src} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60" />
-      {/* eslint-disable-next-line @next/next/no-img-element -- member upload or local preview */}
-      <img src={src} alt={alt} className="absolute inset-0 w-full h-full object-contain" />
+      {/* eslint-disable-next-line @next/next/no-img-element -- member upload */}
+      <img src={src} alt="" aria-hidden="true" className={PHOTO_BACK} />
+      {/* eslint-disable-next-line @next/next/no-img-element -- member upload */}
+      <img src={src} alt={alt} className={PHOTO_FRONT} />
+    </>
+  );
+}
+
+/**
+ * The picked photo in the composer, laid out like StoryPhoto but drawn on canvases: the file never becomes an
+ * address in the page (CodeQL js/xss-through-dom flagged the object URL in <img src>)
+ */
+function PickedPhoto({ file, alt }: { file: File; alt: string }) {
+  const backRef = useRef<HTMLCanvasElement>(null);
+  const frontRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    let cancelled = false;
+    createImageBitmap(file).then((bitmap) => {
+      if (!cancelled) {
+        for (const canvas of [backRef.current, frontRef.current]) {
+          if (!canvas) continue;
+          canvas.width = bitmap.width;
+          canvas.height = bitmap.height;
+          canvas.getContext('2d')?.drawImage(bitmap, 0, 0);
+        }
+      }
+      bitmap.close();
+    }).catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [file]);
+  return (
+    <>
+      <canvas ref={backRef} aria-hidden="true" className={PHOTO_BACK} />
+      <canvas ref={frontRef} role="img" aria-label={alt} className={PHOTO_FRONT} />
     </>
   );
 }
@@ -189,7 +220,6 @@ export function StoryComposer({
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState('');
   const [caption, setCaption] = useState('');
   const [color, setColor] = useState<StoryTextColor>('white');
   const [layout, setLayout] = useState<CaptionLayout>(CENTRE);
@@ -199,9 +229,6 @@ export function StoryComposer({
 
   // Opened by a tap, so the photo picker opens at once; a browser that refuses leaves the "เลือกรูป" screen
   useEffect(() => fileRef.current?.click(), []);
-  useEffect(() => () => {
-    if (preview) URL.revokeObjectURL(preview);
-  }, [preview]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || isBusy) return;
@@ -219,7 +246,6 @@ export function StoryComposer({
     try {
       const compressed = await compressImage(picked, { maxWidth: 1080, maxHeight: 1920, quality: 0.85, targetMimeType: 'image/webp' });
       setFile(compressed);
-      setPreview(URL.createObjectURL(compressed));
     } catch {
       onToast('ใช้รูปนี้ไม่ได้ ลองเลือกรูปอื่น (JPG, PNG หรือ WebP)');
     }
@@ -231,8 +257,8 @@ export function StoryComposer({
     <div role="dialog" aria-modal="true" aria-label="เพิ่มสตอรี่" className="fixed inset-0 z-[70] bg-black flex items-center justify-center">
       <input ref={fileRef} type="file" accept={ACCEPT} onChange={pick} className="hidden" aria-hidden="true" tabIndex={-1} />
       <div ref={frameRef} className="relative w-full h-full sm:h-[92vh] sm:max-w-md sm:rounded-3xl overflow-hidden bg-slate-950">
-        {preview ? (
-          <StoryPhoto src={preview} alt="รูปที่เลือก" />
+        {file ? (
+          <PickedPhoto file={file} alt="รูปที่เลือก" />
         ) : (
           <button type="button" onClick={() => fileRef.current?.click()} className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white cursor-pointer">
             <span className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center">
@@ -244,12 +270,12 @@ export function StoryComposer({
         )}
 
         {/* What viewers will see on the photo: the sticker in its spot, the text wherever it was dragged */}
-        {preview && mode === 'view' && target && (
+        {file && mode === 'view' && target && (
           <button type="button" onClick={() => setMode('sticker')} className={`${STICKER_SPOT} cursor-pointer`} aria-label={`สติกเกอร์ ${target.title} แตะเพื่อเปลี่ยน`}>
             <StorySticker target={target} />
           </button>
         )}
-        {preview && mode === 'view' && caption && (
+        {file && mode === 'view' && caption && (
           <DraggableCaption text={caption} color={color} layout={layout} onChange={setLayout} onEdit={() => setMode('text')} frame={frameRef} />
         )}
 
@@ -257,7 +283,7 @@ export function StoryComposer({
           <button type="button" onClick={onClose} disabled={isBusy} className={tool} aria-label="ปิด">
             <X className="w-5 h-5" />
           </button>
-          {preview && mode === 'view' && (
+          {file && mode === 'view' && (
             <div className="flex flex-col gap-2">
               <button type="button" onClick={() => setMode('text')} className={tool} aria-label="เขียนข้อความบนรูป" title="ข้อความ">
                 <Type className="w-5 h-5" />
@@ -272,7 +298,7 @@ export function StoryComposer({
           )}
         </div>
 
-        {preview && mode === 'view' && (
+        {file && mode === 'view' && (
           <div className="absolute bottom-0 inset-x-0 flex justify-end p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pointer-events-none [&>*]:pointer-events-auto">
             <button
               type="button"
