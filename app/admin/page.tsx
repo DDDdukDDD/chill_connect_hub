@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { AdminSidebar, AdminModuleId, MODULE_PERMISSIONS } from '@/components/admin/AdminSidebar';
+import { AdminSidebar, AdminModuleId, MODULE_PERMISSIONS, ADMIN_FILTER_PARAMS, type AdminModuleFilters } from '@/components/admin/AdminSidebar';
+import { AdminCommandPalette } from '@/components/admin/AdminCommandPalette';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { AdminDashboardView } from '@/components/admin/AdminDashboardView';
 import { TaxonomyManagerView } from '@/components/admin/TaxonomyManagerView';
@@ -37,28 +38,28 @@ function readModuleFromUrl(): AdminModuleId {
   return ADMIN_MODULE_IDS.find((id) => id === requested) ?? 'dashboard';
 }
 
-// Filters handed from one module to another (e.g. coverage cell → spots list), kept in the URL
-const FILTER_PARAMS = ['province', 'vibe'] as const;
-type ModuleFilters = Partial<Record<(typeof FILTER_PARAMS)[number], string>>;
-
-function readFiltersFromUrl(): ModuleFilters {
+function readFiltersFromUrl(): AdminModuleFilters {
   if (typeof window === 'undefined') return {};
   const params = new URLSearchParams(window.location.search);
-  return Object.fromEntries(FILTER_PARAMS.flatMap((key) => (params.get(key) ? [[key, params.get(key)!]] : [])));
+  return Object.fromEntries(ADMIN_FILTER_PARAMS.flatMap((key) => (params.get(key) ? [[key, params.get(key)!]] : [])));
 }
 
 function AdminConsole() {
   // Rendered only on the client after AdminAuthGate has verified the session
   const [activeModule, setActiveModuleState] = useState<AdminModuleId>(readModuleFromUrl);
-  const [moduleFilters, setModuleFilters] = useState<ModuleFilters>(readFiltersFromUrl);
+  const [moduleFilters, setModuleFilters] = useState<AdminModuleFilters>(readFiltersFromUrl);
+  // Bumped on every navigation so picking a filter for the module already open still re-applies it
+  const [navigationId, setNavigationId] = useState(0);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-  const setActiveModule = useCallback((module: AdminModuleId, filters: ModuleFilters = {}) => {
+  const setActiveModule = useCallback((module: AdminModuleId, filters: AdminModuleFilters = {}) => {
+    setNavigationId((id) => id + 1);
     setActiveModuleState(module);
     setModuleFilters(filters);
     const params = new URLSearchParams(window.location.search);
     if (module === 'dashboard') params.delete('m');
     else params.set('m', module);
-    for (const key of FILTER_PARAMS) {
+    for (const key of ADMIN_FILTER_PARAMS) {
       if (filters[key]) params.set(key, filters[key]!);
       else params.delete(key);
     }
@@ -70,9 +71,22 @@ function AdminConsole() {
     const syncFromUrl = () => {
       setActiveModuleState(readModuleFromUrl());
       setModuleFilters(readFiltersFromUrl());
+      setNavigationId((id) => id + 1);
     };
     window.addEventListener('popstate', syncFromUrl);
     return () => window.removeEventListener('popstate', syncFromUrl);
+  }, []);
+
+  // Ctrl/⌘ + K opens the global search from anywhere in the console
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setIsSearchOpen((open) => !open);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, []);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
@@ -91,13 +105,15 @@ function AdminConsole() {
     if (!can(MODULE_PERMISSIONS[activeModule])) {
       return <AdminEmptyState>บัญชีของคุณไม่มีสิทธิ์เปิดหน้านี้</AdminEmptyState>;
     }
+    // Remount on each navigation so a view starts from the filters it was handed
+    const key = `${activeModule}-${navigationId}`;
     switch (activeModule) {
       case 'dashboard':
         return <AdminDashboardView onNavigate={setActiveModule} />;
       case 'review':
-        return <ReviewQueueView onNavigate={setActiveModule} />;
+        return <ReviewQueueView key={key} onNavigate={setActiveModule} initialPillar={moduleFilters.pillar} />;
       case 'members':
-        return <MembersManagerView />;
+        return <MembersManagerView key={key} initialQuery={moduleFilters.q} initialQueue={moduleFilters.queue} />;
       case 'staff':
         return <StaffManagerView />;
       case 'audit':
@@ -113,26 +129,28 @@ function AdminConsole() {
       case 'spots':
         return (
           <SpotsManagerView
-            key={`spots-${moduleFilters.province ?? ''}-${moduleFilters.vibe ?? ''}`}
+            key={key}
             showToast={showToast}
             initialProvince={moduleFilters.province}
             initialCategory={moduleFilters.vibe}
+            initialQuery={moduleFilters.q}
+            initialImage={moduleFilters.image}
           />
         );
       case 'community':
-        return <EventsModerationView key="community" type="community" />;
+        return <EventsModerationView key={key} type="community" initialQuery={moduleFilters.q} />;
       case 'fairs':
-        return <EventsModerationView key="fairs" type="fairs" />;
+        return <EventsModerationView key={key} type="fairs" initialQuery={moduleFilters.q} />;
       case 'quests':
-        return <QuestsManagerView />;
+        return <QuestsManagerView key={key} initialQuery={moduleFilters.q} />;
       case 'campaigns':
         return <CampaignsManagerView />;
       case 'moments':
-        return <MomentsManagerView />;
+        return <MomentsManagerView key={key} initialFilter={moduleFilters.filter} />;
       case 'reports':
         return <ReportsManagerView onNavigate={setActiveModule} />;
       case 'scraper':
-        return <ScraperEngineView key={`scraper-${moduleFilters.province ?? ''}`} initialProvince={moduleFilters.province} />;
+        return <ScraperEngineView key={key} initialProvince={moduleFilters.province} />;
       case 'coverage':
         return (
           <CoverageView
@@ -174,6 +192,7 @@ function AdminConsole() {
         <div className="flex min-h-screen min-w-0 flex-1 flex-col">
           <AdminHeader
             activeModule={activeModule}
+            onOpenSearch={() => setIsSearchOpen(true)}
             onOpenNavigation={() => setIsMobileSidebarOpen(true)}
           />
 
@@ -184,6 +203,8 @@ function AdminConsole() {
           </main>
         </div>
       </div>
+
+      {isSearchOpen && <AdminCommandPalette onClose={() => setIsSearchOpen(false)} onNavigate={setActiveModule} />}
 
       {/* Toast Notification */}
       {toastMessage && (

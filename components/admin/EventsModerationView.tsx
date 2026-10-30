@@ -33,6 +33,8 @@ import { stripHtmlToPlainText } from '@/components/RichTextEditor';
 
 interface EventsModerationViewProps {
   type: 'community' | 'fairs' | 'all';
+  /** Start with this search (e.g. a result picked in the global search) */
+  initialQuery?: string;
 }
 
 type StatusFilter = 'all' | 'pending' | 'approved' | 'rejected';
@@ -71,7 +73,7 @@ function verifyOnlineLink(url?: string, platform?: string) {
     : { isSafe: false, label: 'ลิงก์ภายนอก ควรตรวจก่อนอนุมัติ' };
 }
 
-export function EventsModerationView({ type }: EventsModerationViewProps) {
+export function EventsModerationView({ type, initialQuery = '' }: EventsModerationViewProps) {
   const apiType = type === 'fairs' ? 'public_venue' : type;
   const isCommunity = type === 'community';
   const { can } = useAdminSession();
@@ -86,10 +88,10 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  const [searchInput, setSearchInput] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  // Opens on the review queue; switches to "all" after the first load if nothing is pending
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending');
+  const [searchInput, setSearchInput] = useState(initialQuery);
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
+  // Opens on the review queue (or on everything when searching); switches to "all" after the first load if nothing is pending
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialQuery ? 'all' : 'pending');
   const [formatFilter, setFormatFilter] = useState<FormatFilter>('all');
   const [page, setPage] = useState(1);
   const hasAutoSelectedStatus = useRef(false);
@@ -229,7 +231,7 @@ export function EventsModerationView({ type }: EventsModerationViewProps) {
 
       <AdminPageHeader
         icon={isCommunity ? Users : Trophy}
-        title={isCommunity ? 'ตี้' : 'งานมหกรรม & เอ็กซ์โป'}
+        title={isCommunity ? 'ตี้' : 'อีเวนต์'}
         description={
           isCommunity
             ? 'ตรวจตี้ นัดประจำ และความปลอดภัยของลิงก์ห้องประชุมออนไลน์'

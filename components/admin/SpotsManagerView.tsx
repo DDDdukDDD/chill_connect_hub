@@ -50,9 +50,13 @@ interface SpotsManagerViewProps {
   /** Start filtered (e.g. a cell clicked in the coverage table) */
   initialProvince?: string;
   initialCategory?: string;
+  initialQuery?: string;
+  initialImage?: string;
 }
 
-export function SpotsManagerView({ showToast, initialProvince, initialCategory }: SpotsManagerViewProps) {
+const IMAGE_FILTERS = new Set<ImageFilter>(['all', 'problem', 'missing', 'broken']);
+
+export function SpotsManagerView({ showToast, initialProvince, initialCategory, initialQuery = '', initialImage }: SpotsManagerViewProps) {
   // undefined = closed, null = creating, spot = editing
   const [editing, setEditing] = useState<LifestyleSpotItem | null | undefined>(undefined);
   const [reloadToken, setReloadToken] = useState(0);
@@ -63,12 +67,14 @@ export function SpotsManagerView({ showToast, initialProvince, initialCategory }
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
 
-  const [searchInput, setSearchInput] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState(initialQuery);
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [province, setProvince] = useState(initialProvince || 'all');
   const [category, setCategory] = useState(initialCategory || 'all');
   const [publication, setPublication] = useState<PublicationFilter>('all');
-  const [imageFilter, setImageFilter] = useState<ImageFilter>('all');
+  const [imageFilter, setImageFilter] = useState<ImageFilter>(
+    IMAGE_FILTERS.has(initialImage as ImageFilter) ? (initialImage as ImageFilter) : 'all'
+  );
   const [page, setPage] = useState(1);
   // Thumbnails that failed to load in this browser (shown immediately, before a server check)
   const [failedThumbs, setFailedThumbs] = useState<Set<string>>(new Set());

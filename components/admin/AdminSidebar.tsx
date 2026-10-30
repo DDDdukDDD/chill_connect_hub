@@ -51,6 +51,11 @@ export type AdminModuleId =
   | 'media'
   | 'cache';
 
+/** Filters handed from one module to another (dashboard row, global search, coverage cell), kept in the URL */
+export const ADMIN_FILTER_PARAMS = ['province', 'vibe', 'q', 'pillar', 'image', 'queue', 'filter'] as const;
+export type AdminModuleFilters = Partial<Record<(typeof ADMIN_FILTER_PARAMS)[number], string>>;
+export type AdminNavigate = (module: AdminModuleId, filters?: AdminModuleFilters) => void;
+
 interface SidebarModule {
   id: AdminModuleId;
   label: string;
@@ -78,7 +83,7 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
     groupLabel: 'เนื้อหา',
     modules: [
       { id: 'community', label: 'ตี้', icon: Users, pillarColor: '#F26430' },
-      { id: 'fairs', label: 'งานมหกรรม & เอ็กซ์โป', icon: Trophy, pillarColor: '#2B527A' },
+      { id: 'fairs', label: 'อีเวนต์', icon: Trophy, pillarColor: '#2B527A' },
       { id: 'spots', label: 'พิกัดเที่ยว 77 จังหวัด', icon: Leaf, pillarColor: '#4A7C59' },
       { id: 'quests', label: 'ชาเลนจ์ & ภารกิจ', icon: Zap, pillarColor: '#7C3AED' },
       { id: 'campaigns', label: 'แคมเปญ', icon: Megaphone },

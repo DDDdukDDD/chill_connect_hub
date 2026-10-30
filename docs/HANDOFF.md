@@ -2246,3 +2246,10 @@ Walked signed in (test account, phone 390 px and laptop 1366 px) before and afte
 - **"ที่สนใจ" → "กิจกรรมที่บันทึก"**, the name of the home page link that lands there; its cards are "ที่เที่ยว" and "ตี้และอีเวนต์" (was "งานที่บันทึกไว้").
 - **"[ตัวอย่าง]" left out of titles in เดือนนี้ของฉัน** (`MyMonthSection`), as on other screens.
 - **Next rounds (not done):** the boxed white cards against the open member home; the phone schedule header has two stacked switches (when, and how to view); walk a brand-new member, the host side ("งานที่จัด") and the month view.
+
+### BE-187 · Admin: global search, dashboard links that land filtered, naming (owner 2026-10-30)
+Admin console only; no frontend action.
+- **Global search (Ctrl/⌘ + K, or the search box in the header):** jumps to any admin page, and finds ตี้, อีเวนต์, places, challenges and (for roles that manage members) members by name. Picking a result opens that list already searched for it (`components/admin/AdminCommandPalette.tsx`, using the existing admin list APIs).
+- **Filters ride in the URL** (`?m=…&q=…&pillar=…&image=…&queue=…&filter=…`, `ADMIN_FILTER_PARAMS` in `AdminSidebar.tsx`), so the views open where they were sent and back/forward restores them.
+- **Dashboard:** each pillar count opens the review queue on that tab; "สถานที่ไม่มีรูป" opens places filtered to missing photos; thin provinces and bad coordinates open ความครอบคลุม & แผนที่. A new "ความปลอดภัย & ชุมชน" row shows open safety reports, reported moments, host applications and members with risk signals, each opening its filtered list.
+- **Naming (DESIGN_SYSTEM.md):** the admin says ตี้ (was คอมมูนิตี้) and อีเวนต์ (was งานมหกรรม & เอ็กซ์โป) in the menu, badges, tabs and hints; no emojis in the scraper's category `<option>` text.

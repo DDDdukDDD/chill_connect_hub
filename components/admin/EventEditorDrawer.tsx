@@ -179,7 +179,7 @@ export function EventEditorDrawer({ event, type, onClose, onSaved }: EventEditor
     }
   };
 
-  const pillarLabel = isCommunity ? 'ตี้' : 'งานมหกรรม & เอ็กซ์โป';
+  const pillarLabel = isCommunity ? 'ตี้' : 'อีเวนต์';
   const isRecurring = event?.scheduleType === 'recurring' || Boolean(event?.recurrence);
 
   return (

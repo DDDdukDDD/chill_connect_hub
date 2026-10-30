@@ -69,7 +69,7 @@ export function AdminBadge({ tone = 'slate', children }: { tone?: 'slate' | 'amb
 
 /** Pillar identity for badges only (AGENTS.md: section colors never go on buttons). */
 export const PILLAR_STYLES = {
-  community: { label: 'คอมมูนิตี้', className: 'bg-[#FFF4EE] text-[#D04A1B] border-[#F26430]/30' },
+  community: { label: 'ตี้', className: 'bg-[#FFF4EE] text-[#D04A1B] border-[#F26430]/30' },
   fairs: { label: 'อีเวนต์', className: 'bg-[#EEF4FA] text-[#1F3D5C] border-[#2B527A]/30' },
   spots: { label: 'พิกัดเที่ยว', className: 'bg-[#EBF3ED] text-[#2D5A3C] border-[#4A7C59]/30' },
   quests: { label: 'ชาเลนจ์', className: 'bg-[#F5F3FF] text-[#6D28D9] border-[#7C3AED]/30' },

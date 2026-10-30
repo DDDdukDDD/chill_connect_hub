@@ -13,9 +13,9 @@ import { ImageField, MasterList, MasterNotices, useMasterAdmin } from './masterA
 const COLLECTION_HINTS: Record<CategoryCollection, string> = {
   spotVibes: '7 vibe ที่หน้าเว็บใช้จัดกลุ่มพิกัดเที่ยว (เพิ่ม/ลบไม่ได้ เพราะระบบคำนวณ vibe จาก id เหล่านี้)',
   communityMoods: '4 อารมณ์หลักของตี้ (เพิ่ม/ลบไม่ได้)',
-  communityCategories: 'หมวดใน rail ของหน้าคอมมูนิตี้และหน้าชาเลนจ์ แต่ละหมวดผูกกับอารมณ์หลัก 1 แบบ',
-  fairCategories: 'หมวดใน rail ของหน้างานมหกรรม & เอ็กซ์โป',
-  questCategories: 'ไม่ใช้แล้ว: ชาเลนจ์ใช้หมวดของคอมมูนิตี้',
+  communityCategories: 'หมวดใน rail ของหน้าตี้และหน้าชาเลนจ์ แต่ละหมวดผูกกับอารมณ์หลัก 1 แบบ',
+  fairCategories: 'หมวดใน rail ของหน้าอีเวนต์',
+  questCategories: 'ไม่ใช้แล้ว: ชาเลนจ์ใช้หมวดของตี้',
 };
 
 function CategoryChip({ entry }: { entry: Pick<MasterCategory, 'iconKey' | 'colorKey' | 'name'> }) {
