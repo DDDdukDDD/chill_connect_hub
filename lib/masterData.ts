@@ -249,8 +249,9 @@ export function buildSeedMasterData(now: string = new Date().toISOString()): Mas
       ...base(c.id, i), name: c.name, nameEn: c.id, description: c.desc, keywords: [], iconKey: c.iconKey, colorKey: 'purple' as ColorKey,
     })),
     venues: MASTER_VENUE_OPTIONS.map((v, i) => ({
-      ...base(v.id, i), name: v.label, venueTag: v.tag, province: VENUE_PROVINCES[v.id] ?? 'กรุงเทพฯ',
-      location: v.location, transitHint: v.transitHint, image: VENUE_IMAGES[v.id],
+      ...base(v.id, i), name: v.label, venueTag: v.tag, province: v.province ?? VENUE_PROVINCES[v.id] ?? 'กรุงเทพฯ',
+      location: v.location, transitHint: v.transitHint, image: v.image ?? VENUE_IMAGES[v.id],
+      ...(v.latitude !== undefined && v.longitude !== undefined && { latitude: v.latitude, longitude: v.longitude }),
     })),
     provinces: MASTER_77_PROVINCES.map((name, i) => {
       const featured = FEATURED_PROVINCES[name];
