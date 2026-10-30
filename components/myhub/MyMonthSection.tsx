@@ -11,6 +11,8 @@ const THAI_MONTHS = ['มกราคม', 'กุมภาพันธ์', '�
 const THAI_MONTHS_SHORT = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=300&q=80';
 const FACE_COLORS = ['bg-amber-500', 'bg-pink-500', 'bg-sky-500'];
+// Test-login ตี้ carry a "[ตัวอย่าง]" tag in the title (as MeetupTile)
+const cleanTitle = (title: string) => title.replace(/^\[ตัวอย่าง\]\s*/, '');
 
 const shortDate = (iso: string) => {
   const d = new Date(iso);
@@ -75,7 +77,7 @@ export function MyMonthSection({ isLoggedIn, onToast }: { isLoggedIn: boolean; o
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={item.image || FALLBACK_IMAGE} alt="" className="w-12 h-12 shrink-0 rounded-xl object-cover bg-slate-100" />
                     <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-semibold text-slate-900 truncate group-hover:underline">{item.title}</span>
+                      <span className="block text-sm font-semibold text-slate-900 truncate group-hover:underline">{cleanTitle(item.title)}</span>
                       <span className="mt-0.5 flex items-center gap-1.5">
                         {(item.people ?? []).length > 0 && (
                           <span className="flex -space-x-1.5 shrink-0" aria-hidden="true">
@@ -121,14 +123,14 @@ export function MyMonthSection({ isLoggedIn, onToast }: { isLoggedIn: boolean; o
                       <button
                         type="button"
                         onClick={() => share(item)}
-                        aria-label={`แชร์โมเมนต์จาก ${item.title}`}
+                        aria-label={`แชร์โมเมนต์จาก ${cleanTitle(item.title)}`}
                         className="absolute right-1.5 bottom-1.5 w-8 h-8 rounded-full bg-white/95 backdrop-blur text-[#F43F5E] flex items-center justify-center shadow-sm cursor-pointer"
                       >
                         <Camera className="w-4 h-4" aria-hidden="true" />
                       </button>
                     )}
                   </div>
-                  <Link href={hrefOf(item)} className="mt-1 block text-xs font-semibold text-slate-900 leading-tight truncate hover:underline">{item.title}</Link>
+                  <Link href={hrefOf(item)} className="mt-1 block text-xs font-semibold text-slate-900 leading-tight truncate hover:underline">{cleanTitle(item.title)}</Link>
                   <p className="text-[11px] text-slate-500 tabular-nums">{shortDate(item.at)}</p>
                 </li>
               ))}
