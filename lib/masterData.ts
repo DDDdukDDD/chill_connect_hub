@@ -145,12 +145,12 @@ export const COLLECTION_LABELS: Record<MasterCollection, string> = {
   spotVibes: 'vibe ของพิกัดเที่ยว',
   communityMoods: 'อารมณ์ของตี้',
   communityCategories: 'หมวดตี้',
-  fairCategories: 'หมวดงานมหกรรม & เอ็กซ์โป',
+  fairCategories: 'หมวดอีเวนต์',
   questCategories: 'หมวดชาเลนจ์',
   venues: 'สถานที่จัดงาน',
   provinces: '77 จังหวัด',
   zones: 'โซน / ย่าน',
-  communityClubs: 'ชมรมแนะนำ (rail คอมมูนิตี้)',
+  communityClubs: 'ชมรมแนะนำ (rail ตี้)',
   venueGroups: 'กลุ่มสถานที่แนะนำ (rail อีเวนต์)',
 };
 
