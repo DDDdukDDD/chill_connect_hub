@@ -796,27 +796,27 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
                     onChange={(e) => {
                       const cat = e.target.value as EventDataSource['category'];
                       const labels: Record<string, string> = {
-                        sports: '⚽ กีฬา & แมตช์การแข่งขัน',
-                        music: '🎵 คอนเสิร์ต & ดนตรีสด',
-                        exhibition: '🏛️ มหกรรมเอ็กซ์โป & นิทรรศการ',
-                        running: '🏃 งานวิ่ง & มาราธอน',
-                        lifestyle: '🎟️ เวิร์กช็อป & ไลฟ์สไตล์',
-                        finance: '📈 สัมมนา & การลงทุน',
+                        sports: 'กีฬา & แมตช์การแข่งขัน',
+                        music: 'คอนเสิร์ต & ดนตรีสด',
+                        exhibition: 'เอ็กซ์โป & นิทรรศการ',
+                        running: 'งานวิ่ง & มาราธอน',
+                        lifestyle: 'เวิร์กช็อป & ไลฟ์สไตล์',
+                        finance: 'สัมมนา & การลงทุน',
                       };
                       setNewSource({
                         ...newSource,
                         category: cat,
-                        categoryLabel: labels[cat] || '🌐 เว็บไซต์อีเวนต์',
+                        categoryLabel: labels[cat] || 'เว็บไซต์อีเวนต์',
                       });
                     }}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-xs focus:outline-none focus:border-[#4A7C59]/50"
                   >
-                    <option value="lifestyle">🎟️ ไลฟ์สไตล์ & เวิร์กช็อป</option>
-                    <option value="music">🎵 ดนตรี & คอนเสิร์ต</option>
-                    <option value="exhibition">🏛️ เอ็กซ์โป & นิทรรศการ</option>
-                    <option value="running">🏃 งานวิ่ง & สปอร์ต</option>
-                    <option value="sports">⚽ กีฬา & บอลไทย</option>
-                    <option value="finance">📈 การเงิน & สัมมนา</option>
+                    <option value="lifestyle">ไลฟ์สไตล์ & เวิร์กช็อป</option>
+                    <option value="music">ดนตรี & คอนเสิร์ต</option>
+                    <option value="exhibition">เอ็กซ์โป & นิทรรศการ</option>
+                    <option value="running">งานวิ่ง & สปอร์ต</option>
+                    <option value="sports">กีฬา & บอลไทย</option>
+                    <option value="finance">การเงิน & สัมมนา</option>
                   </select>
                 </div>
                 )}

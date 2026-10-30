@@ -68,7 +68,7 @@ const EVIDENCE_REASON: Record<string, string> = {
   too_far: 'ตำแหน่งตอนโพสต์อยู่ไกลจากที่นั่น',
 };
 
-const TARGET_LABELS: Record<string, string> = { spot: 'พิกัดเที่ยว', community: 'คอมมูนิตี้', fair: 'อีเวนต์', challenge: 'ชาเลนจ์', general: 'ทั่วไป' };
+const TARGET_LABELS: Record<string, string> = { spot: 'พิกัดเที่ยว', community: 'ตี้', fair: 'อีเวนต์', challenge: 'ชาเลนจ์', general: 'ทั่วไป' };
 const statusOf = (moment: AdminMoment): AdminStatus => (moment.status === 'hidden' ? 'rejected' : 'published');
 
 function MomentDrawer({ moment, canModerate, onClose, onDone }: { moment: AdminMoment; canModerate: boolean; onClose: () => void; onDone: (message: string) => void }) {
@@ -354,11 +354,11 @@ function StoriesPanel({ canModerate, reloadToken, onLoading }: { canModerate: bo
   );
 }
 
-export function MomentsManagerView() {
+export function MomentsManagerView({ initialFilter }: { initialFilter?: string }) {
   const { can } = useAdminSession();
   const canModerate = can('community.review');
   const [view, setView] = useState<'moments' | 'stories'>('moments');
-  const [filter, setFilter] = useState<Filter>('all');
+  const [filter, setFilter] = useState<Filter>(FILTERS.find((f) => f.id === initialFilter)?.id ?? 'all');
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [page, setPage] = useState(1);

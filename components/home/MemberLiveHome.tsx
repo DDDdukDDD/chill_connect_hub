@@ -82,14 +82,6 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
   };
 
   return (
-    <>
-    {/* The campaign slot, on top: what you do next first, then what it earns you. Loud only when there is a
-        decision (start, enter), a slim progress line while collecting (owner 2026-10-25; CampaignStrip has the states) */}
-    {props.campaign && props.campaignMember && (
-      <div className="max-w-[1040px] mx-auto px-4 sm:px-6 lg:px-8 pt-1 sm:pt-2 empty:hidden">
-        <CampaignStrip campaign={props.campaign} member={props.campaignMember} className={props.campaignMember.started ? 'mt-4 sm:mt-5' : ''} />
-      </div>
-    )}
     <div className="max-w-[1040px] mx-auto px-4 sm:px-6 lg:px-8 pt-5 sm:pt-7">
       {/* Two columns on laptops (owner 2026-10-29): the feed, and "ของฉัน" pinned beside it. Where to go next (ตี้,
           ชาเลนจ์, อีเวนต์, ที่เที่ยว) comes as cards between the posts on every screen, as on phones, instead of a third column */}
@@ -113,15 +105,22 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
           />
         </main>
 
-        {/* Laptops: me, my next plans and shortcuts, pinned beside the feed (short, so it always fits the screen) */}
-        <aside className="hidden lg:block sticky top-24 self-start space-y-8 pb-4">
+        {/* Laptops: me, my next plans, shortcuts and the campaign, pinned beside the feed. With three plans and the
+            campaign it is taller than a 768-900px screen, so it scrolls on its own instead of hiding its bottom */}
+        <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100dvh-7rem)] overflow-y-auto overscroll-contain no-scrollbar space-y-8 pb-4">
           <Greeting {...props} layout="column" />
           <NextUp {...props} />
           <Shortcuts {...props} />
+          {/* The campaign sits beside the feed, not above it (owner 2026-10-30): you and your plans come first.
+              Loud only when there is a decision (start, enter); CampaignStrip has the states */}
+          {props.campaign && props.campaignMember && (
+            <div className="empty:hidden">
+              <CampaignStrip campaign={props.campaign} member={props.campaignMember} layout="side" />
+            </div>
+          )}
         </aside>
       </div>
     </div>
-    </>
   );
 }
 
@@ -129,7 +128,7 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
  * "สวัสดี Duke" with this month's Chill (places) and Connect (meetups), which open the month in My Hub.
  * The words keep their brand colours even at 0; before anything counts, one line says how the first one comes.
  */
-function Greeting({ name, now, xp, redeemable, month, plans, layout }: MemberLiveHomeProps & { layout: 'row' | 'column' }) {
+function Greeting({ name, now, xp, month, plans, layout }: MemberLiveHomeProps & { layout: 'row' | 'column' }) {
   const isNew = month !== null && month.chill + month.connect === 0;
   const counter = month && (
     <Link href={MY_MONTH_HREF} className={`font-bold whitespace-nowrap text-slate-900 hover:opacity-80 ${layout === 'row' ? 'text-sm' : 'text-xl'}`} aria-label={`เดือนนี้ ไปที่เที่ยว ${month.chill} แห่ง ไปตี้ ${month.connect} ครั้ง ดูในมายฮับ`}>
@@ -165,13 +164,10 @@ function Greeting({ name, now, xp, redeemable, month, plans, layout }: MemberLiv
       <p role="heading" aria-level={1} className="text-2xl font-bold text-slate-900 tracking-tight truncate">สวัสดี {name}</p>
       <div className="mt-2">{counter}</div>
       {nudge || (
+        // XP only: the way to the rewards is "ของรางวัล" in ของฉัน below
         <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500 whitespace-nowrap">
           <Zap className="w-3.5 h-3.5 text-[#7C3AED] fill-current" aria-hidden="true" />
           <span className="font-semibold text-[#7C3AED] tabular-nums">{xp.toLocaleString()} XP</span>
-          <span className="text-slate-300" aria-hidden="true">·</span>
-          <Link href="/rewards" className="font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline">
-            {redeemable > 0 ? `แลกของรางวัลได้ ${redeemable} อย่าง` : 'ดูของรางวัล'}
-          </Link>
         </p>
       )}
     </div>
@@ -263,8 +259,8 @@ function NextUp(props: MemberLiveHomeProps) {
   return (
     <section aria-label="ถัดไปของคุณ">
       <div className="flex items-end justify-between gap-3 mb-3">
+        {/* The whole schedule is "ตารางของฉัน" in ของฉัน below, so no second link here */}
         <h2 className="text-base font-bold text-slate-900">ถัดไปของคุณ</h2>
-        <Link href="/myhub" className="text-[13px] font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">ดูตารางทั้งหมด</Link>
       </div>
       <ul className="space-y-3.5">
         {plans.map((event, i) => (
@@ -333,6 +329,7 @@ const seatsLeft = (event: EventItem) => Math.max(0, event.maxParticipants - even
 const FIRST_SLOTS = [1, 4, 7, 10];
 const LATER_EVERY = 6;
 const LATER_UNTIL = 70;
+const PHONE_CAMPAIGN_SLOT = FIRST_SLOTS[1];
 // How many items one card shows, and the fewest worth a card
 const TAKE: Record<FeedCardKind, number> = { meetup: 1, challenge: 3, fair: 4, spot: 5 };
 const FEWEST: Record<FeedCardKind, number> = { meetup: 1, challenge: 2, fair: 2, spot: 2 };
@@ -378,6 +375,17 @@ function feedCards(props: MemberLiveHomeProps, showPicks: boolean): Record<numbe
           <SpotsBlock {...props} spots={props.spots.slice(from, from + TAKE.spot)} layout="tiles" heading={again ? 'ที่เที่ยวอื่นน่าไป' : undefined} />
         )}
       </section>
+    );
+  }
+  // Phones have no side column: the campaign comes between the posts, after the first cards, never on top
+  if (props.campaign && props.campaignMember) {
+    cards[PHONE_CAMPAIGN_SLOT] = (
+      <>
+        {cards[PHONE_CAMPAIGN_SLOT]}
+        <section className="lg:hidden py-5 border-b border-slate-200 empty:hidden">
+          <CampaignStrip campaign={props.campaign} member={props.campaignMember} />
+        </section>
+      </>
     );
   }
   return cards;
@@ -474,7 +482,7 @@ function Shortcuts({ savedCount, redeemable, stampCount }: MemberLiveHomeProps) 
     // Each lands on its own section of My Hub, which scrolls there once the section has loaded
     { href: '/myhub#my-schedule', label: 'ตารางของฉัน', Icon: CalendarDays, box: 'bg-slate-100 text-slate-700' },
     { href: PASSPORT_HREF, label: 'พาสปอร์ตของฉัน', Icon: Stamp, box: 'bg-[#F5F3FF] text-[#7C3AED]', count: stampCount },
-    { href: '/myhub#my-saved', label: 'ตี้และที่เที่ยวที่บันทึก', Icon: Bookmark, box: 'bg-slate-100 text-slate-700', count: savedCount },
+    { href: '/myhub#my-saved', label: 'กิจกรรมที่บันทึก', Icon: Bookmark, box: 'bg-slate-100 text-slate-700', count: savedCount },
     { href: '/rewards', label: 'ของรางวัล', Icon: Gift, box: 'bg-amber-50 text-amber-600', count: redeemable },
   ];
   return (

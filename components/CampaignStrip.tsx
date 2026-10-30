@@ -73,14 +73,14 @@ function PrizeTile({ campaign, size }: { campaign: Campaign; size: 'full' | 'sli
  * (liveCampaign({ home: true })), so it goes away outside the dates or when staff turn the strip off.
  *
  * Visitors (no `member`): the full card under the hero; its job is to make them want the prize and sign up.
- * Members (on the member home, under the journey band): loud only when there is a decision to make.
+ * Members (on the member home, beside the feed on laptops and between posts on phones): loud only when there is a decision to make.
  *   ① not started (joined none of its challenges) → full card, "เริ่มสะสมสิทธิ์"
  *   ② collecting → one slim line with the XP bar
  *   ③ enough XP → full card again, "แลกสิทธิ์ลุ้นเลย"
  *   ④ entered → a slim confirmation for 3 days, then nothing
  * The next campaign uses the same slot and states.
  */
-export function CampaignStrip({ campaign, member, className = '' }: { campaign: Campaign | null; member?: CampaignMemberState; className?: string }) {
+export function CampaignStrip({ campaign, member, className = '', layout = 'strip' }: { campaign: Campaign | null; member?: CampaignMemberState; className?: string; layout?: 'strip' | 'side' }) {
   if (!campaign) return null;
   const prize = REWARD_SHOP_ITEMS.find((item) => item.id === campaign.rewardId);
   const cost = prize?.costXp ?? 0;
@@ -130,6 +130,27 @@ export function CampaignStrip({ campaign, member, className = '' }: { campaign: 
   // Full card: visitors, members who have not started, and members with enough XP to enter
   const ready = tracked && short === 0;
   const href = ready ? `/rewards?reward=${prize?.id}` : '/challenges#launch-campaign';
+  // Beside the member feed (owner 2026-10-30): the same card stacked, prize on top, for a 300px column
+  if (layout === 'side') {
+    return (
+      <Link href={href} className={`group block rounded-3xl bg-[#FFD84D] hover:bg-[#FFCF26] text-slate-900 p-4 transition-colors ${className}`}>
+        <span className="flex items-start justify-between gap-3">
+          <span className="inline-flex items-center rounded-full bg-white/80 px-2.5 py-0.5 text-[11px] font-bold text-[#C2410C]">
+            {ready ? `XP ของคุณ ${xp.toLocaleString()} ครบแล้ว!` : `ถึง ${campaignDay(campaign.endDate)}`}
+          </span>
+          <PrizeTile campaign={campaign} size="slim" />
+        </span>
+        <span className="mt-2 block text-base font-bold leading-snug">{ready ? 'สะสมครบแล้ว แลกสิทธิ์ลุ้นได้เลย' : campaign.headline}</span>
+        <span className="mt-0.5 block text-xs text-slate-800">
+          {ready ? `${prize?.title ?? ''}${prize?.drawEntry ? ` · ประกาศผล ${prize.drawEntry.drawLabel}` : ''}` : campaign.stripText}
+        </span>
+        <span className="mt-3 flex items-center justify-center gap-1 h-10 rounded-full bg-[#F26430] group-hover:bg-[#E2551F] text-white text-sm font-semibold transition-colors">
+          {ready ? 'แลกสิทธิ์ลุ้นเลย' : campaign.cta}
+          <ChevronRight className="w-4 h-4" aria-hidden="true" />
+        </span>
+      </Link>
+    );
+  }
   return (
     <Link
       href={href}

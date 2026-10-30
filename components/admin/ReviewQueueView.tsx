@@ -39,7 +39,7 @@ interface Counts {
 
 const TABS: Array<{ id: Pillar | 'all'; label: string }> = [
   { id: 'all', label: 'ทั้งหมด' },
-  { id: 'community', label: 'คอมมูนิตี้' },
+  { id: 'community', label: 'ตี้' },
   { id: 'fairs', label: 'อีเวนต์' },
   { id: 'spots', label: 'พิกัดเที่ยว' },
   { id: 'quests', label: 'ชาเลนจ์' },
@@ -106,9 +106,9 @@ function FrontendPreview({ item, mode }: { item: ReviewItem; mode: 'card' | 'lis
   );
 }
 
-export function ReviewQueueView({ onNavigate }: { onNavigate: (module: AdminModuleId) => void }) {
+export function ReviewQueueView({ onNavigate, initialPillar }: { onNavigate: (module: AdminModuleId) => void; initialPillar?: string }) {
   const { can } = useAdminSession();
-  const [tab, setTab] = useState<Pillar | 'all'>('all');
+  const [tab, setTab] = useState<Pillar | 'all'>(TABS.find((t) => t.id === initialPillar)?.id ?? 'all');
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [page, setPage] = useState(1);

@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Activity, AlertCircle, ArrowRight, CheckCircle2, History, Inbox, LayoutDashboard, RefreshCw } from 'lucide-react';
+import { Activity, AlertCircle, ArrowRight, CheckCircle2, History, Inbox, LayoutDashboard, RefreshCw, ShieldAlert } from 'lucide-react';
 import type { AuditEntry } from '@/lib/auditLog';
 import { AdminPageHeader, PillarBadge, adminButton } from './AdminUI';
-import type { AdminModuleId } from './AdminSidebar';
+import type { AdminModuleFilters, AdminModuleId, AdminNavigate } from './AdminSidebar';
 import { useAdminSession } from './AdminAuthGate';
 import { handleAdminUnauthorized } from './adminAuthUtils';
 
@@ -26,10 +26,19 @@ interface Health {
   failedSources: Array<{ id: string; name: string; lastRunAt: string | null }>;
 }
 
+interface Safety {
+  openReports: number | null;
+  reportedMoments: number | null;
+  /** null when the role cannot manage members */
+  hostApplications: number | null;
+  flaggedMembers: number | null;
+}
+
 interface OverviewData {
   counts: { all: number; community: number; fairs: number; spots: number; quests: number };
   items: QueueItem[];
   health: Health;
+  safety: Safety;
   activity: AuditEntry[] | null;
 }
 
@@ -41,21 +50,37 @@ async function fetchJson(url: string) {
   return data;
 }
 
+// Safety numbers are extras: one failing source shows "—" instead of breaking the overview
+type CountResponse = { counts?: Record<string, number>; pagination?: { totalCount?: number } };
+const optionalCount = (url: string, pick: (data: CountResponse) => number | undefined) =>
+  fetchJson(url).then((data) => pick(data) ?? null).catch(() => null);
+
 // "Today" for the admin: what needs a decision, what is unhealthy, and what the team did recently
-export function AdminDashboardView({ onNavigate }: { onNavigate: (module: AdminModuleId) => void }) {
+export function AdminDashboardView({ onNavigate }: { onNavigate: AdminNavigate }) {
   const { can } = useAdminSession();
   const canViewAudit = can('audit.view');
+  const canMembers = can('members.manage');
   const [data, setData] = useState<OverviewData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchOverview = useCallback(async (): Promise<OverviewData> => {
-    const [queue, audit] = await Promise.all([
+    const [queue, audit, openReports, reportedMoments, hostApplications, flaggedMembers] = await Promise.all([
       fetchJson('/api/admin/review?limit=5&health=1'),
       canViewAudit ? fetchJson('/api/admin/audit?limit=6') : Promise.resolve(null),
+      optionalCount('/api/admin/reports', (d) => d.counts?.open),
+      optionalCount('/api/admin/moments?filter=reported&limit=1', (d) => d.counts?.reported),
+      canMembers ? optionalCount('/api/admin/members?queue=hosts&limit=1', (d) => d.pagination?.totalCount) : Promise.resolve(null),
+      canMembers ? optionalCount('/api/admin/members?queue=flagged&limit=1', (d) => d.pagination?.totalCount) : Promise.resolve(null),
     ]);
-    return { counts: queue.counts, items: queue.items, health: queue.health, activity: audit?.entries ?? null };
-  }, [canViewAudit]);
+    return {
+      counts: queue.counts,
+      items: queue.items,
+      health: queue.health,
+      safety: { openReports, reportedMoments, hostApplications, flaggedMembers },
+      activity: audit?.entries ?? null,
+    };
+  }, [canViewAudit, canMembers]);
 
   const [reloadToken, setReloadToken] = useState(0);
   const load = () => {
@@ -73,16 +98,16 @@ export function AdminDashboardView({ onNavigate }: { onNavigate: (module: AdminM
   }, [fetchOverview, reloadToken]);
 
   const health = data?.health;
-  const healthRows: Array<{ label: string; value: string; problem: boolean; detail?: string; module: AdminModuleId }> = health ? [
+  const healthRows: Array<{ label: string; value: string; problem: boolean; detail?: string; module: AdminModuleId; filters?: AdminModuleFilters }> = health ? [
     { label: 'สถานที่ที่เผยแพร่', value: health.publishedSpots.toLocaleString('th-TH'), problem: false, module: 'spots' },
-    { label: 'สถานที่ไม่มีรูป', value: String(health.spotsMissingImage), problem: health.spotsMissingImage > 0, module: 'spots' },
-    { label: 'สถานที่พิกัดผิด', value: String(health.spotsBadCoordinates), problem: health.spotsBadCoordinates > 0, module: 'spots' },
+    { label: 'สถานที่ไม่มีรูป', value: String(health.spotsMissingImage), problem: health.spotsMissingImage > 0, module: 'spots', filters: { image: 'missing' } },
+    { label: 'สถานที่พิกัดผิด', value: String(health.spotsBadCoordinates), problem: health.spotsBadCoordinates > 0, module: 'coverage' },
     {
       label: 'จังหวัดที่ข้อมูลบาง (ต่ำกว่า 10 แห่ง)',
       value: String(health.thinProvinces.length),
       problem: health.thinProvinces.length > 0,
       detail: health.thinProvinces.slice(0, 6).map((p) => `${p.province} ${p.count}`).join(' · '),
-      module: 'scraper',
+      module: 'coverage',
     },
     {
       label: 'อีเวนต์ที่จะจบภายใน 7 วัน',
@@ -100,6 +125,18 @@ export function AdminDashboardView({ onNavigate }: { onNavigate: (module: AdminM
       module: 'scraper',
     },
   ] : [];
+
+  const safety = data?.safety;
+  const safetyTiles: Array<{ label: string; value: number | null; module: AdminModuleId; filters?: AdminModuleFilters }> = [
+    { label: 'รายงานความปลอดภัยที่เปิดอยู่', value: safety?.openReports ?? null, module: 'reports' },
+    { label: 'โมเมนต์ที่ถูกรายงาน', value: safety?.reportedMoments ?? null, module: 'moments', filters: { filter: 'reported' } },
+    ...(canMembers
+      ? [
+          { label: 'คำขอเป็นโฮสต์รออนุมัติ', value: safety?.hostApplications ?? null, module: 'members' as const, filters: { queue: 'hosts' } },
+          { label: 'สมาชิกที่มีสัญญาณเสี่ยง', value: safety?.flaggedMembers ?? null, module: 'members' as const, filters: { queue: 'flagged' } },
+        ]
+      : []),
+  ];
 
   return (
     <div className="space-y-6">
@@ -130,7 +167,7 @@ export function AdminDashboardView({ onNavigate }: { onNavigate: (module: AdminM
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-slate-100 border-b border-slate-100">
             {(['community', 'fairs', 'spots', 'quests'] as const).map((pillar) => (
-              <button key={pillar} type="button" onClick={() => onNavigate('review')} className="px-4 py-3 text-left hover:bg-slate-50">
+              <button key={pillar} type="button" onClick={() => onNavigate('review', { pillar })} className="px-4 py-3 text-left hover:bg-slate-50">
                 <PillarBadge pillar={pillar} />
                 <p className="mt-2 text-2xl font-bold tabular-nums text-slate-900">{isLoading && !data ? '—' : data?.counts[pillar] ?? 0}</p>
                 <p className="text-[11px] text-slate-500">รอตรวจ</p>
@@ -145,7 +182,7 @@ export function AdminDashboardView({ onNavigate }: { onNavigate: (module: AdminM
             <ul className="divide-y divide-slate-100">
               {data?.items.map((item) => (
                 <li key={item.id}>
-                  <button type="button" onClick={() => onNavigate('review')} className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-slate-50">
+                  <button type="button" onClick={() => onNavigate('review', { pillar: item.pillar })} className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-slate-50">
                     <PillarBadge pillar={item.pillar} />
                     <span className="flex-1 min-w-0 truncate text-sm font-semibold text-slate-800">{item.title}</span>
                     <span className="text-[11px] text-slate-500 shrink-0">{item.province}</span>
@@ -166,7 +203,7 @@ export function AdminDashboardView({ onNavigate }: { onNavigate: (module: AdminM
           <ul className="space-y-0.5">
             {(isLoading && !health ? [] : healthRows).map((row) => (
               <li key={row.label}>
-                <button type="button" onClick={() => onNavigate(row.module)} className="flex w-full items-start justify-between gap-3 rounded-lg px-2 py-2 text-left hover:bg-slate-50">
+                <button type="button" onClick={() => onNavigate(row.module, row.filters)} className="flex w-full items-start justify-between gap-3 rounded-lg px-2 py-2 text-left hover:bg-slate-50">
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-slate-700">{row.label}</p>
                     {row.detail && <p className="mt-0.5 text-[11px] text-slate-500 line-clamp-2">{row.detail}</p>}
@@ -177,6 +214,22 @@ export function AdminDashboardView({ onNavigate }: { onNavigate: (module: AdminM
             ))}
             {isLoading && !health && [1, 2, 3, 4].map((n) => <li key={n} className="h-9 animate-pulse rounded-lg bg-slate-50" />)}
           </ul>
+        </div>
+      </section>
+
+      {/* Safety & community: people-side work that does not go through the content review queue */}
+      <section className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+        <div className="flex items-center gap-2 border-b border-slate-200 px-4 py-3">
+          <ShieldAlert size={16} className="text-slate-500" />
+          <h2 className="text-sm font-bold text-slate-900">ความปลอดภัย & ชุมชน</h2>
+        </div>
+        <div className={`grid grid-cols-2 divide-x divide-y divide-slate-100 sm:divide-y-0 ${safetyTiles.length > 2 ? 'sm:grid-cols-4' : ''}`}>
+          {safetyTiles.map((tile) => (
+            <button key={tile.label} type="button" onClick={() => onNavigate(tile.module, tile.filters)} className="px-4 py-3 text-left hover:bg-slate-50">
+              <p className={`text-2xl font-bold tabular-nums ${tile.value ? 'text-rose-600' : 'text-slate-900'}`}>{tile.value ?? '—'}</p>
+              <p className="text-[11px] text-slate-500">{tile.label}</p>
+            </button>
+          ))}
         </div>
       </section>
 

@@ -7,9 +7,7 @@ import { AdminSessionStatus } from './AdminSessionStatus';
 
 interface AdminHeaderProps {
   activeModule: AdminModuleId;
-  searchQuery?: string;
-  onSearchChange?: (q: string) => void;
-  showSearch?: boolean;
+  onOpenSearch?: () => void;
   onOpenNavigation?: () => void;
 }
 
@@ -18,13 +16,7 @@ const MODULE_BREADCRUMBS = Object.fromEntries(
   SIDEBAR_GROUPS.flatMap((group) => group.modules.map((mod) => [mod.id, { parent: group.groupLabel ?? 'Admin', label: mod.label }]))
 ) as Record<AdminModuleId, { parent: string; label: string }>;
 
-export function AdminHeader({
-  activeModule,
-  searchQuery = '',
-  onSearchChange,
-  showSearch = false,
-  onOpenNavigation,
-}: AdminHeaderProps) {
+export function AdminHeader({ activeModule, onOpenSearch, onOpenNavigation }: AdminHeaderProps) {
   const crumb = MODULE_BREADCRUMBS[activeModule];
 
   return (
@@ -44,18 +36,18 @@ export function AdminHeader({
         <span className="text-slate-700 text-sm font-semibold truncate">{crumb.label}</span>
       </div>
 
-      {/* Search */}
-      {showSearch && (
-        <div className="relative hidden md:flex items-center">
-          <Search size={13} className="absolute left-3 text-slate-400 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="ค้นหา..."
-            value={searchQuery}
-            onChange={(e) => onSearchChange?.(e.target.value)}
-            className="pl-8 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-xs placeholder-slate-400 focus:outline-none focus:border-[#4A7C59]/50 focus:ring-1 focus:ring-[#4A7C59]/20 w-52 transition-all"
-          />
-        </div>
+      {/* Global search (also Ctrl/⌘ + K) */}
+      {onOpenSearch && (
+        <button
+          type="button"
+          onClick={onOpenSearch}
+          aria-label="ค้นหาในระบบผู้ดูแล"
+          className="inline-flex h-9 shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-2.5 text-xs text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 md:w-64"
+        >
+          <Search size={14} className="shrink-0" />
+          <span className="hidden flex-1 text-left md:block">ค้นหา...</span>
+          <kbd className="hidden rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-semibold md:block">Ctrl K</kbd>
+        </button>
       )}
 
       {/* Environment Badge */}

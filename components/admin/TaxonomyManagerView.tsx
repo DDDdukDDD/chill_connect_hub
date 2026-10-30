@@ -6,21 +6,42 @@ import {
   CATEGORY_COLLECTIONS, CategoryCollection, COLLECTION_LABELS, COLOR_KEYS, COLOR_PRESETS, ColorKey, FIXED_COLLECTIONS,
   ICON_OPTIONS, MasterCategory,
 } from '@/lib/masterData';
+import { fairCategoryIcon, meetupCategoryIcon, spotCategoryIcon } from '@/components/icons/CategoryIcons';
 import { AdminDrawer, Field, FormSection, fieldInputClass } from './AdminDrawer';
 import { AdminPageHeader, adminButton } from './AdminUI';
 import { ImageField, MasterList, MasterNotices, useMasterAdmin } from './masterAdmin';
 
 const COLLECTION_HINTS: Record<CategoryCollection, string> = {
-  spotVibes: '7 vibe ที่หน้าเว็บใช้จัดกลุ่มพิกัดเที่ยว (เพิ่ม/ลบไม่ได้ เพราะระบบคำนวณ vibe จาก id เหล่านี้)',
+  spotVibes: 'หมวดที่หน้าเว็บใช้จัดกลุ่มพิกัดเที่ยว (เพิ่ม/ลบไม่ได้ เพราะระบบคำนวณหมวดจาก id เหล่านี้)',
   communityMoods: '4 อารมณ์หลักของตี้ (เพิ่ม/ลบไม่ได้)',
-  communityCategories: 'หมวดใน rail ของหน้าคอมมูนิตี้และหน้าชาเลนจ์ แต่ละหมวดผูกกับอารมณ์หลัก 1 แบบ',
-  fairCategories: 'หมวดใน rail ของหน้างานมหกรรม & เอ็กซ์โป',
-  questCategories: 'ไม่ใช้แล้ว: ชาเลนจ์ใช้หมวดของคอมมูนิตี้',
+  communityCategories: 'หมวดใน rail ของหน้าตี้และหน้าชาเลนจ์ แต่ละหมวดผูกกับอารมณ์หลัก 1 แบบ',
+  fairCategories: 'หมวดใน rail ของหน้าอีเวนต์',
+  questCategories: 'ไม่ใช้แล้ว: ชาเลนจ์ใช้หมวดของตี้',
 };
 
-function CategoryChip({ entry }: { entry: Pick<MasterCategory, 'iconKey' | 'colorKey' | 'name'> }) {
-  const Icon = ICON_OPTIONS[entry.iconKey] ?? ICON_OPTIONS.Sparkles;
+// The public site draws these categories with the owner's icon pack (components/icons/CategoryIcons.tsx),
+// so the admin shows the same drawing; the line icon below is only the fallback for an id the pack has no drawing for
+const DRAWN_ICON: Partial<Record<CategoryCollection, (id: string) => ReturnType<typeof spotCategoryIcon>>> = {
+  spotVibes: spotCategoryIcon,
+  communityCategories: meetupCategoryIcon,
+  fairCategories: fairCategoryIcon,
+};
+
+const drawnIconFor = (collection: CategoryCollection, id: string | undefined) => (id ? DRAWN_ICON[collection]?.(id) : undefined);
+
+function CategoryChip({ collection, entry }: { collection: CategoryCollection; entry: Pick<MasterCategory, 'iconKey' | 'colorKey' | 'name'> & { id?: string } }) {
   const color = COLOR_PRESETS[entry.colorKey] ?? COLOR_PRESETS.slate;
+  // The pack caches one component per drawing, so this is the same component on every render
+  const drawn = drawnIconFor(collection, entry.id);
+  if (drawn) {
+    // Same tile as the landing's category cards (CategoryStickerCards): the drawing on the category's soft color
+    return (
+      <span className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${color.iconBg}`} title={entry.name}>
+        {React.createElement(drawn, { className: 'h-7 w-7' })}
+      </span>
+    );
+  }
+  const Icon = ICON_OPTIONS[entry.iconKey] ?? ICON_OPTIONS.Sparkles;
   return (
     <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${color.iconBg}`} title={entry.name}>
       <Icon size={16} className={color.iconColor} />
@@ -58,6 +79,7 @@ function CategoryEditor({
   });
   const set = <K extends keyof CategoryForm>(key: K, value: CategoryForm[K]) => setForm((current) => ({ ...current, [key]: value }));
   const color = COLOR_PRESETS[form.colorKey];
+  const hasDrawing = Boolean(drawnIconFor(collection, form.id));
 
   return (
     <AdminDrawer
@@ -68,7 +90,7 @@ function CategoryEditor({
         <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
           <p className="text-[11px] sm:text-xs font-semibold text-slate-500">ตัวอย่าง</p>
           <div className={`flex items-center gap-3 rounded-2xl border bg-white p-3 ${color.border}`}>
-            <CategoryChip entry={form} />
+            <CategoryChip collection={collection} entry={form} />
             <div className="min-w-0">
               <p className="truncate text-sm font-bold text-slate-900">{form.name || 'ชื่อหมวด'}</p>
               {form.nameEn && <p className="truncate text-[11px] text-slate-500">{form.nameEn}</p>}
@@ -115,9 +137,12 @@ function CategoryEditor({
         )}
       </FormSection>
 
-      <FormSection title="ไอคอน & สี">
+      <FormSection
+        title="ไอคอน & สี"
+        hint={hasDrawing ? 'หน้าเว็บแสดงหมวดนี้ด้วยไอคอนวาดของชุดไอคอน Chill & Connect (ตามตัวอย่าง) ไอคอนเส้นด้านล่างใช้เมื่อไม่มีภาพวาดเท่านั้น' : undefined}
+      >
         <div className="sm:col-span-2">
-          <p className="mb-1.5 text-[11px] sm:text-xs font-semibold text-slate-500">ไอคอน:</p>
+          <p className="mb-1.5 text-[11px] sm:text-xs font-semibold text-slate-500">{hasDrawing ? 'ไอคอนสำรอง:' : 'ไอคอน:'}</p>
           <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="ไอคอน">
             {Object.entries(ICON_OPTIONS).map(([key, Icon]) => (
               <button
@@ -217,7 +242,7 @@ export function TaxonomyManagerView() {
               entry.keywords.length ? `คำค้น ${entry.keywords.length} คำ` : null,
               entry.image ? 'มีรูปปก' : null,
             ].filter(Boolean).join(' · '),
-            leading: <CategoryChip entry={entry} />,
+            leading: <CategoryChip collection={tab} entry={entry} />,
           }))}
         />
       )}

@@ -10,7 +10,7 @@ import { ImageField, MasterList, MasterNotices, useMasterAdmin } from './masterA
 type RailCollection = (typeof FEATURED_GROUP_COLLECTIONS)[number];
 
 const RAIL_HINTS: Record<RailCollection, string> = {
-  communityClubs: 'การ์ดรูปใน rail "ชมรมยอดนิยม" ของหน้าคอมมูนิตี้และหน้าแรก กดแล้วกรองกิจกรรมด้วยคำค้นของการ์ด',
+  communityClubs: 'การ์ดรูปใน rail "ชมรมยอดนิยม" ของหน้าตี้และหน้าแรก กดแล้วกรองกิจกรรมด้วยคำค้นของการ์ด',
   venueGroups: 'การ์ดรูปใน rail "สถานที่จัดงานยอดนิยม" ของหน้าอีเวนต์ กดแล้วกรองงานด้วยคำค้นของการ์ด',
 };
 

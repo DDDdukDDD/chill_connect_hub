@@ -253,7 +253,7 @@ async function fetchQuests(): Promise<ChallengeQuest[]> {
   return data.quests;
 }
 
-export function QuestsManagerView() {
+export function QuestsManagerView({ initialQuery = '' }: { initialQuery?: string }) {
   const [quests, setQuests] = useState<ChallengeQuest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -270,7 +270,7 @@ export function QuestsManagerView() {
     const campaign = campaigns.find((c) => c.questIds.includes(questId) || c.extraQuestIds.includes(questId));
     return campaign ? { campaign, isStep: campaign.questIds.includes(questId) } : null;
   };
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<QuestDraft>(EMPTY_DRAFT);

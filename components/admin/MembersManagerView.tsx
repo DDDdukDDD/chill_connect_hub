@@ -361,13 +361,13 @@ function ModerationDrawer({ member, onClose, onDone }: { member: AdminMember; on
   );
 }
 
-export function MembersManagerView() {
+export function MembersManagerView({ initialQuery = '', initialQueue }: { initialQuery?: string; initialQueue?: string }) {
   const [members, setMembers] = useState<AdminMember[]>([]);
   const [counts, setCounts] = useState<Record<MemberStatus | 'all', number> | null>(null);
   const [pagination, setPagination] = useState<AdminPaginationState | null>(null);
   const [status, setStatus] = useState<MemberStatus | 'all'>('all');
-  const [query, setQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
+  const [debouncedQuery, setDebouncedQuery] = useState(initialQuery);
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -375,7 +375,7 @@ export function MembersManagerView() {
   const [selected, setSelected] = useState<AdminMember | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
   const [overview, setOverview] = useState<Overview | null>(null);
-  const [queue, setQueue] = useState<Queue>('none');
+  const [queue, setQueue] = useState<Queue>(initialQueue === 'flagged' || initialQueue === 'hosts' ? initialQueue : 'none');
   const refetch = (apply: () => void) => {
     setIsLoading(true);
     apply();
