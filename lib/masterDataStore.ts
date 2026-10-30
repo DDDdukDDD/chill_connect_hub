@@ -19,7 +19,18 @@ const FIRST_QUEST_CATEGORY_IDS = new Set(['heal', 'move', 'learn', 'chill', 'gen
 const BUNDLED_FILE = path.join(process.cwd(), 'data', 'master_data.json');
 const WRITE_FILE = IS_SERVERLESS ? path.join(os.tmpdir(), 'master_data.json') : BUNDLED_FILE;
 
-const globalForMaster = globalThis as unknown as { _cchMasterData?: MasterData };
+const globalForMaster = globalThis as unknown as { _cchMasterData?: MasterData; _cchMasterChangedAt?: number };
+
+// The cache is kept only while its file is unchanged, so an edit made outside the admin (git pull, a data script)
+// is picked up instead of being overwritten by the next save
+const sourceFile = () => (IS_SERVERLESS && fs.existsSync(WRITE_FILE) ? WRITE_FILE : BUNDLED_FILE);
+const changedAt = (file: string) => {
+  try {
+    return fs.statSync(file).mtimeMs;
+  } catch {
+    return 0;
+  }
+};
 
 // Built-in entries added to code later are merged in; stored edits win for entries that exist
 function withSeedDefaults(stored: Partial<MasterData>): MasterData {
@@ -46,10 +57,13 @@ function readFile(file: string): Partial<MasterData> | null {
 }
 
 export function getMasterData(): MasterData {
-  if (globalForMaster._cchMasterData) return globalForMaster._cchMasterData;
-  const stored = (IS_SERVERLESS ? readFile(WRITE_FILE) : null) ?? readFile(BUNDLED_FILE);
+  const file = sourceFile();
+  const fileChangedAt = changedAt(file);
+  if (globalForMaster._cchMasterData && globalForMaster._cchMasterChangedAt === fileChangedAt) return globalForMaster._cchMasterData;
+  const stored = readFile(file);
   const data = withSeedDefaults(stored ?? {});
   globalForMaster._cchMasterData = data;
+  globalForMaster._cchMasterChangedAt = fileChangedAt;
   const storedQuestCategories = (stored?.questCategories ?? []).map((entry) => entry.id).join();
   // first run, or the built-in challenge categories changed: write the file so it can be committed
   if (!stored || storedQuestCategories !== data.questCategories.map((entry) => entry.id).join()) save(data);
@@ -62,6 +76,7 @@ function save(data: MasterData) {
   try {
     fs.mkdirSync(path.dirname(WRITE_FILE), { recursive: true });
     fs.writeFileSync(WRITE_FILE, JSON.stringify(data, null, 2), 'utf-8');
+    globalForMaster._cchMasterChangedAt = changedAt(WRITE_FILE);
   } catch (error) {
     console.error('MASTER DATA WRITE FAILED:', error);
   }
