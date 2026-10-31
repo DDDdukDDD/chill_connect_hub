@@ -140,8 +140,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="flex items-center gap-2 sm:gap-3 cursor-pointer group py-1 min-w-0"
           >
             <BrandLogo size="md" className="group-hover:scale-105 transition-transform duration-300" />
-            {/* Guests on small phones need the room for เข้าสู่ระบบ and สมัครฟรี: the logo stands alone, the name stays for screen readers */}
-            <BrandWordmark sizeClass="text-base min-[400px]:text-xl sm:text-[22px]" tagline taglineClass="hidden sm:block" className={isLoggedIn ? '' : 'max-[429px]:sr-only'} />
+            {/* Guests see the name too, so a first visit learns it (owner 2026-10-31); only below 360px does the logo stand alone,
+                leaving room for เข้าสู่ระบบ and สมัครฟรี, the name staying for screen readers */}
+            <BrandWordmark sizeClass="text-base min-[400px]:text-xl sm:text-[22px]" tagline taglineClass="hidden sm:block" className={isLoggedIn ? '' : 'max-[359px]:sr-only'} />
           </Link>
 
           {/* Search: the same box in the same place on every page. The ค้นพบ pages bring theirs (it filters while typing);

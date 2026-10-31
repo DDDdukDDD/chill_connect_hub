@@ -47,7 +47,7 @@ export const BrandWordmark: React.FC<BrandWordmarkProps> = ({ sizeClass = 'text-
         aria-hidden="true"
         className={`text-[11px] font-medium tracking-normal leading-snug mt-1 ${onDark ? 'text-white/80' : 'text-slate-500'} ${taglineClass}`}
       >
-        ชวนเพื่อน ออกไปใช้ชีวิต
+        คอมมูนิตี้คนชอบออกไปใช้ชีวิต
       </span>
     )}
   </span>

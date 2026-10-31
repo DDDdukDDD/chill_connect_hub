@@ -17,6 +17,8 @@ export interface RewardShopItem {
   discountValue: string;
   validUntil: string;
   terms: string[];
+  /** The photo on the reward's tile: the partner's own picture once they send one (SAMPLE photos from Unsplash for now) */
+  image?: string;
   featured?: boolean;
   /** A prize draw entry instead of a voucher: each member gets their own entry code, and no stock runs out */
   drawEntry?: { drawLabel: string; prizeCount: number };
@@ -35,6 +37,7 @@ export const REWARD_SHOP_ITEMS: RewardShopItem[] = [
   {
     // SAMPLE launch prize (data/launchCampaign.ts); remove or replace before launch
     id: 'reward-launch-iphone',
+    image: '/campaign/iphone-duo.png',
     title: 'สิทธิ์ลุ้น iPhone Duo ฟรี กิจกรรมเปิดตัว',
     category: 'merch',
     categoryLabel: 'ของรางวัลพิเศษ',
@@ -59,6 +62,7 @@ export const REWARD_SHOP_ITEMS: RewardShopItem[] = [
   },
   {
     id: 'reward-1',
+    image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80',
     title: 'คูปองส่วนลด ฿50 Specialty Coffee',
     category: 'cafe',
     categoryLabel: 'คาเฟ่ & สโลว์บาร์',
@@ -81,6 +85,7 @@ export const REWARD_SHOP_ITEMS: RewardShopItem[] = [
   },
   {
     id: 'reward-2',
+    image: 'https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?auto=format&fit=crop&w=800&q=80',
     title: 'ตั๋วทดลองเล่นบอร์ดเกมฟรี 1 วัน (มูลค่า ฿150)',
     category: 'boardgame',
     categoryLabel: 'บอร์ดเกม & คอมมูนิตี้',
@@ -103,6 +108,7 @@ export const REWARD_SHOP_ITEMS: RewardShopItem[] = [
   },
   {
     id: 'reward-3',
+    image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=800&q=80',
     title: 'เสื้อยืดลิมิเต็ด Chillwaa Edition',
     category: 'merch',
     categoryLabel: 'ของที่ระลึกพิเศษ',
@@ -125,6 +131,7 @@ export const REWARD_SHOP_ITEMS: RewardShopItem[] = [
   },
   {
     id: 'reward-4',
+    image: 'https://images.unsplash.com/photo-1486218119243-13883505764c?auto=format&fit=crop&w=800&q=80',
     title: 'คูปองส่วนลด ฿100 บัตรวิ่งมาราธอน & City Run',
     category: 'sports',
     categoryLabel: 'วิ่ง & ฟิตเนส',
@@ -147,6 +154,7 @@ export const REWARD_SHOP_ITEMS: RewardShopItem[] = [
   },
   {
     id: 'reward-5',
+    image: 'https://images.unsplash.com/photo-1442512595331-e89e73853f31?auto=format&fit=crop&w=800&q=80',
     title: 'เซ็ตกาแฟดริปพรีเมียม ดอยปางขอน & แม่จันใต้',
     category: 'cafe',
     categoryLabel: 'คาเฟ่ & สโลว์บาร์',
@@ -168,6 +176,7 @@ export const REWARD_SHOP_ITEMS: RewardShopItem[] = [
   },
   {
     id: 'reward-6',
+    image: 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=800&q=80',
     title: 'ส่วนลด ฿200 เวิร์กช็อปปั้นเซรามิก & เพ้นท์แก้ว',
     category: 'workshop',
     categoryLabel: 'เวิร์กช็อป & งานคราฟต์',
@@ -190,6 +199,7 @@ export const REWARD_SHOP_ITEMS: RewardShopItem[] = [
   },
   {
     id: 'reward-7',
+    image: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80',
     title: 'กระเป๋าผ้าแคนวาส Chill Explorer Eco Tote',
     category: 'merch',
     categoryLabel: 'ของที่ระลึกพิเศษ',
@@ -211,6 +221,7 @@ export const REWARD_SHOP_ITEMS: RewardShopItem[] = [
   },
   {
     id: 'reward-8',
+    image: 'https://images.unsplash.com/photo-1563227812-0ea4c22e6cc8?auto=format&fit=crop&w=800&q=80',
     title: 'บัตรกำนัล ฿100 คอมบูชะ & เครื่องดื่มโฮมเมด',
     category: 'cafe',
     categoryLabel: 'คาเฟ่ & สโลว์บาร์',
