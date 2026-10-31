@@ -35,3 +35,23 @@ export function nameInitial(name: string, fallback = '?'): string {
   const letters = tidyDisplayName(name).match(/[\p{L}\p{N}]/gu) ?? [];
   return (letters.find((ch) => !THAI_LEADING_VOWEL.test(ch)) ?? letters[0] ?? fallback).toUpperCase();
 }
+
+// Names that read as the site or its staff (owner 2026-10-31): nobody may pass as the team. Duplicate names are fine,
+// as on IG or LINE (Thai nicknames repeat a lot); a unique @handle would be a separate field if it is ever needed
+const RESERVED_NAMES = [
+  /chill\W*waa/i,
+  /chill\W*(&|and)\W*connect/i,
+  /\badmin\b/i,
+  /\bofficial\b/i,
+  /\bstaff\b/i,
+  /แอดมิ[นน้]/,
+  /ทีมงาน/,
+  /เจ้าหน้าที่/,
+  /ชิลล?์?วา/,
+];
+
+/** Why a name cannot be used, or '' when it can */
+export function reservedNameProblem(name: string): string {
+  const value = tidyDisplayName(name);
+  return RESERVED_NAMES.some((re) => re.test(value)) ? 'ชื่อนี้อ่านแล้วเหมือนทีมงาน Chillwaa ลองตั้งชื่ออื่นนะ' : '';
+}

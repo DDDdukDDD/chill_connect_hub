@@ -332,7 +332,7 @@ export function AccountCard({ member, onLogout }: { member: PublicMember; onLogo
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
   const hasPassword = member.loginMethods.includes('email');
-  const methods = member.loginMethods.map((m) => ({ email: 'อีเมลและรหัสผ่าน', google: 'Google', facebook: 'Facebook', apple: 'Apple' })[m]).join(', ');
+  const methods = member.loginMethods.map((m) => ({ email: 'อีเมลและรหัสผ่าน', google: 'Google', facebook: 'Facebook', apple: 'Apple', line: 'LINE' })[m]).join(', ');
 
   const change = async (e: React.FormEvent) => {
     e.preventDefault();

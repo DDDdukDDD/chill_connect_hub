@@ -4093,7 +4093,7 @@ export const MOCK_EVENTS: EventItem[] = [
     "location": "ทองหล่อ Soi 10",
     "tag": "#CoffeeLover",
     "category": "chill",
-    "image": "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=800&q=80",
+    "image": "/images/challenges/cafe-hunter.jpg",
     "participantsCount": 15,
     "maxParticipants": 20,
     "hostName": "Bean & Melody",

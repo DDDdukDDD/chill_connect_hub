@@ -156,7 +156,6 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
   const [questList, setQuestList] = useState<ChallengeQuest[]>(initialQuests ?? []);
   const [isQuestsLoaded, setIsQuestsLoaded] = useState(Boolean(initialQuests));
   const [favorites, setFavorites] = useState<string[]>([]);
-  const [favoriteSpots, setFavoriteSpots] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
 
@@ -234,8 +233,6 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
     try {
       const storedFavs = localStorage.getItem('favorite_events');
       if (storedFavs) setFavorites(JSON.parse(storedFavs));
-      const storedSpotFavs = localStorage.getItem('favorite_spots');
-      if (storedSpotFavs) setFavoriteSpots(JSON.parse(storedSpotFavs));
     } catch {}
 
     let isActive = true;
@@ -491,7 +488,7 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
             hostedIds={activity.hosted.map((e) => e.id)}
             savedIds={activity.savedEventIds}
             month={monthCounts}
-            savedCount={favorites.length + favoriteSpots.length}
+            savedCount={activity.savedEventIds.length + activity.savedSpotIds.length}
             likedCategories={likedCategories}
             isLoaded={activity.isLoaded && myRewards.isLoaded && isQuestsLoaded}
             meetups={memberMeetups.row}
@@ -728,7 +725,7 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
       </main>
 
       {/* Mobile Sticky Navigation */}
-      <MobileNav activeTab={activeNavTab} setActiveTab={setActiveNavTab} favoritesCount={favorites.length} />
+      <MobileNav activeTab={activeNavTab} setActiveTab={setActiveNavTab} favoritesCount={activity.savedEventIds.length + activity.savedSpotIds.length} />
 
       {/* Global Modals */}
 

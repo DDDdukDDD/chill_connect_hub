@@ -8,10 +8,9 @@ import { optimizedImage } from '@/lib/optimizedImage';
 import { homeEvents } from '@/lib/homeFairs';
 import { eventListItem } from '@/lib/listItems';
 import { getCommunityEventCategory } from '@/data/masterHub';
-import { getPageMember, getSessionSecret } from '@/lib/members/session';
+import { getPageMember } from '@/lib/members/session';
 import { toPublicMember } from '@/lib/members';
 import { providerStatus } from '@/lib/members/oauth';
-import { isDemoLoginEnabled } from '@/lib/members/demoLogin';
 import HomeView from './HomeView';
 
 // The home page's own address: invite and share links (/?invite=…, /?share=…) point search engines here
@@ -50,7 +49,7 @@ export default async function HomePage() {
       campaign={shownCampaign}
       signedIn={Boolean(member)}
       // What GET /api/auth/member would answer, so the page knows who is here as it hydrates
-      session={{ member: member ? toPublicMember(member) : null, providers: providerStatus(), demoLogin: isDemoLoginEnabled() && Boolean(getSessionSecret()) }}
+      session={{ member: member ? toPublicMember(member) : null, providers: providerStatus() }}
       memberData={memberData}
       spotTotal={spotTotal}
       fairTotal={fairTotal}

@@ -3,6 +3,7 @@ import { SITE_URL } from "@/lib/site";
 import { IBM_Plex_Sans_Thai, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { InviteRefCapture } from "@/components/InviteRefCapture";
+import { OnboardingResume } from "@/components/OnboardingResume";
 
 const ibmPlexSansThai = IBM_Plex_Sans_Thai({
   weight: ["300", "400", "500", "600", "700"],
@@ -179,6 +180,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans">
         <InviteRefCapture />
+        <OnboardingResume />
         {children}
       </body>
     </html>

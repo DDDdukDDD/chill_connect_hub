@@ -3,25 +3,27 @@ import type { OAuthProfile } from './accounts';
 import type { OAuthProvider } from './types';
 
 /**
- * OAuth 2.0 / OpenID Connect sign-in for Google, Facebook and Apple (authorization code flow).
+ * OAuth 2.0 / OpenID Connect sign-in for Google, Facebook, Apple and LINE (authorization code flow).
  * A provider is enabled only when its credentials are in the environment:
  *   Google:   GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET
  *   Facebook: FACEBOOK_APP_ID, FACEBOOK_APP_SECRET
  *   Apple:    APPLE_CLIENT_ID (Services ID), APPLE_TEAM_ID, APPLE_KEY_ID, APPLE_PRIVATE_KEY (.p8 contents)
+ *   LINE:     LINE_CHANNEL_ID, LINE_CHANNEL_SECRET (a LINE Login channel; email needs LINE's email permission)
  * Redirect URI to register with each provider: <site>/api/auth/member/oauth/<provider>/callback
  */
-export const OAUTH_PROVIDERS: OAuthProvider[] = ['google', 'facebook', 'apple'];
-const FB_VERSION = 'v19.0';
+export const OAUTH_PROVIDERS: OAuthProvider[] = ['google', 'facebook', 'apple', 'line'];
+const FB_VERSION = 'v23.0';
 
 export function isProviderConfigured(provider: OAuthProvider): boolean {
   const env = process.env;
   if (provider === 'google') return Boolean(env.GOOGLE_OAUTH_CLIENT_ID && env.GOOGLE_OAUTH_CLIENT_SECRET);
   if (provider === 'facebook') return Boolean(env.FACEBOOK_APP_ID && env.FACEBOOK_APP_SECRET);
+  if (provider === 'line') return Boolean(env.LINE_CHANNEL_ID && env.LINE_CHANNEL_SECRET);
   return Boolean(env.APPLE_CLIENT_ID && env.APPLE_TEAM_ID && env.APPLE_KEY_ID && env.APPLE_PRIVATE_KEY);
 }
 
 export function providerStatus(): Record<OAuthProvider | 'email', boolean> {
-  return { email: true, google: isProviderConfigured('google'), facebook: isProviderConfigured('facebook'), apple: isProviderConfigured('apple') };
+  return { email: true, google: isProviderConfigured('google'), facebook: isProviderConfigured('facebook'), apple: isProviderConfigured('apple'), line: isProviderConfigured('line') };
 }
 
 export function isOAuthProvider(value: unknown): value is OAuthProvider {
@@ -58,6 +60,19 @@ export function buildAuthorizeUrl(provider: OAuthProvider, redirectUri: string, 
       code_challenge_method: 'S256',
     });
     return `https://www.facebook.com/${FB_VERSION}/dialog/oauth?${params}`;
+  }
+  if (provider === 'line') {
+    const params = new URLSearchParams({
+      client_id: process.env.LINE_CHANNEL_ID!,
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      scope: 'openid profile email',
+      state,
+      nonce,
+      code_challenge: challengeOf(verifier),
+      code_challenge_method: 'S256',
+    });
+    return `https://access.line.me/oauth2/v2.1/authorize?${params}`;
   }
   // Apple returns name/email only with response_mode=form_post (a POST to the callback)
   const params = new URLSearchParams({
@@ -156,6 +171,29 @@ export async function fetchOAuthProfile(
       emailVerified: Boolean(me.email), // Facebook only returns confirmed emails
       displayName: me.name,
       avatarUrl: me.picture?.data?.url,
+    };
+  }
+
+  if (provider === 'line') {
+    const tokens = await postForm('https://api.line.me/oauth2/v2.1/token', {
+      code: input.code,
+      client_id: process.env.LINE_CHANNEL_ID!,
+      client_secret: process.env.LINE_CHANNEL_SECRET!,
+      redirect_uri: input.redirectUri,
+      grant_type: 'authorization_code',
+      code_verifier: input.verifier,
+    });
+    const claims = decodeJwtPayload(tokens.id_token);
+    if (claims.aud !== process.env.LINE_CHANNEL_ID || claims.iss !== 'https://access.line.me') throw new Error('unexpected LINE id_token');
+    if (claims.nonce !== input.nonce) throw new Error('nonce mismatch');
+    return {
+      provider,
+      subject: String(claims.sub),
+      // Present only when the channel has LINE's email permission; LINE accounts confirm their email
+      email: typeof claims.email === 'string' ? claims.email : undefined,
+      emailVerified: typeof claims.email === 'string',
+      displayName: typeof claims.name === 'string' ? claims.name : undefined,
+      avatarUrl: typeof claims.picture === 'string' ? claims.picture : undefined,
     };
   }
 

@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { toPublicMember } from '@/lib/members';
 import { providerStatus } from '@/lib/members/oauth';
 import { clearMemberSessionCookie, getSessionMember, getSessionSecret } from '@/lib/members/session';
-import { isDemoLoginEnabled } from '@/lib/members/demoLogin';
 
 // Current member session and which login methods are available
 export async function GET(request: Request) {
@@ -14,8 +13,6 @@ export async function GET(request: Request) {
       member: member ? toPublicMember(member) : null,
       providers: providerStatus(),
       available: Boolean(getSessionSecret()),
-      // Prototype: the login screen offers "ลองใช้เลย ไม่ต้องสมัคร" (POST /api/auth/member/demo)
-      demoLogin: isDemoLoginEnabled() && Boolean(getSessionSecret()),
     },
     { headers: { 'Cache-Control': 'no-store' } }
   );

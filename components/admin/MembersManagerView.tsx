@@ -123,6 +123,7 @@ function OverviewPanel({ overview }: { overview: Overview }) {
           <ReadinessRow ok={r.providers.google} label="Google" detail="ยังไม่ได้ใส่ GOOGLE_OAUTH_CLIENT_ID / SECRET ปุ่มจะขึ้นว่า เร็วๆ นี้" />
           <ReadinessRow ok={r.providers.facebook} label="Facebook" detail="ยังไม่ได้ใส่ FACEBOOK_APP_ID / SECRET" />
           <ReadinessRow ok={r.providers.apple} label="Apple" detail="ยังไม่ได้ใส่ APPLE_CLIENT_ID, TEAM_ID, KEY_ID, PRIVATE_KEY" />
+          <ReadinessRow ok={r.providers.line} label="LINE" detail="ยังไม่ได้ใส่ LINE_CHANNEL_ID / SECRET" />
           <ReadinessRow ok={r.mailer} label="อีเมลลืมรหัสผ่าน" detail="ยังไม่ได้ใส่ RESEND_API_KEY และ MAIL_FROM ลิงก์ตั้งรหัสใหม่จะไม่ถูกส่ง" />
           <ReadinessRow ok={r.durableStorage} label="ที่เก็บข้อมูลถาวร" detail="บนเซิร์ฟเวอร์นี้บัญชีสมาชิกเก็บเป็นไฟล์ชั่วคราว จะหายเมื่อ deploy ใหม่ ต้องย้ายไปฐานข้อมูลก่อนเปิดจริง" />
         </ul>
@@ -137,7 +138,7 @@ const STATUS_META: Record<MemberStatus, { label: string; className: string }> = 
   suspended: { label: 'ระงับชั่วคราว', className: 'border-amber-200 bg-amber-50 text-amber-700' },
   banned: { label: 'แบน', className: 'border-rose-200 bg-rose-50 text-rose-700' },
 };
-const METHOD_LABELS: Record<LoginMethod, string> = { email: 'อีเมล', google: 'Google', facebook: 'Facebook', apple: 'Apple' };
+const METHOD_LABELS: Record<LoginMethod, string> = { email: 'อีเมล', google: 'Google', facebook: 'Facebook', apple: 'Apple', line: 'LINE' };
 
 const formatDate = (iso?: string) => (iso ? new Date(iso).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) : '–');
 

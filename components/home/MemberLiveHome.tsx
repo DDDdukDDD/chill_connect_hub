@@ -34,7 +34,7 @@ export interface MemberLiveHomeProps {
   /** Ids among the plans the member hosts, and fairs they only saved */
   hostedIds: string[];
   savedIds: string[];
-  /** This month's count behind "Chill · Connect"; null until it loads */
+  /** This month's count behind "ตี้ · ที่เที่ยว"; null until it loads */
   month: { chill: number; connect: number } | null;
   savedCount: number;
   likedCategories: string[];
@@ -125,23 +125,23 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
 }
 
 /**
- * "สวัสดี Duke" with this month's Chill (places) and Connect (meetups), which open the month in My Hub.
- * The words keep their brand colours even at 0; before anything counts, one line says how the first one comes.
+ * "สวัสดี Duke" with this month's ตี้ and places, which open the month in My Hub. Plain Thai words since the name
+ * became Chillwaa (they were "Chill · Connect", owner 2026-10-31); before anything counts, one line says how the first one comes.
  */
 function Greeting({ name, now, xp, month, plans, layout }: MemberLiveHomeProps & { layout: 'row' | 'column' }) {
   const isNew = month !== null && month.chill + month.connect === 0;
   const counter = month && (
-    <Link href={MY_MONTH_HREF} className={`font-bold whitespace-nowrap text-slate-900 hover:opacity-80 ${layout === 'row' ? 'text-sm' : 'text-xl'}`} aria-label={`เดือนนี้ ไปที่เที่ยว ${month.chill} แห่ง ไปตี้ ${month.connect} ครั้ง ดูในมายฮับ`}>
-      {/* The two words are the brand's: Latin, heavier than the Thai around them */}
-      <span className="font-extrabold text-[#2D5A3C]">Chill</span> <span className="tabular-nums">{month.chill}</span>
+    <Link href={MY_MONTH_HREF} className={`font-bold whitespace-nowrap text-slate-900 hover:opacity-80 ${layout === 'row' ? 'text-sm' : 'text-xl'}`} aria-label={`เดือนนี้ ไปตี้ ${month.connect} ครั้ง ไปที่เที่ยว ${month.chill} แห่ง ดูในมายฮับ`}>
+      {/* People first: ตี้ leads */}
+      <span className="font-medium text-slate-500">ตี้</span> <span className="tabular-nums">{month.connect}</span>
       <span className="mx-1.5 font-normal text-slate-300" aria-hidden="true">·</span>
-      <span className="font-extrabold text-[#D04A1B]">Connect</span> <span className="tabular-nums">{month.connect}</span>
+      <span className="font-medium text-slate-500">ที่เที่ยว</span> <span className="tabular-nums">{month.chill}</span>
       {layout === 'row' && <span className="ml-1 font-normal text-slate-400" aria-hidden="true">›</span>}
     </Link>
   );
   const nudge = isNew && plans.length === 0 && (
     <p className="mt-1 text-[13px] text-slate-600">
-      ไปตี้แรก = <span className="font-extrabold text-[#D04A1B]">Connect</span> แรกของคุณ รับ <span className="font-semibold text-[#7C3AED]">+50 XP</span>
+      ไปตี้แรกกับเพื่อนๆ รับ <span className="font-semibold text-[#7C3AED]">+50 XP</span>
     </p>
   );
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -38,7 +38,7 @@ import type { EventItem } from '@/data/mockData';
 import { MASTER_COMMUNITY_LIFESTYLE_CATEGORIES } from '@/data/masterHub';
 import { meetupCategoryIcon } from '@/components/icons/CategoryIcons';
 import type { LifestyleSpotItem } from '@/data/spotsData';
-import { NEW_MEMBER_NAME, nameInitial, tidyDisplayName } from '@/lib/displayName';
+import { NEW_MEMBER_NAME, nameInitial, reservedNameProblem, tidyDisplayName } from '@/lib/displayName';
 import { compressImage } from '@/lib/media/compressor';
 import { resolveSpotImage } from '@/lib/spotImageResolver';
 import { useMasterData } from '@/lib/useMasterData';
@@ -73,7 +73,6 @@ const PILLAR_ORDER: PillarId[] = ['community', 'challenges', 'moments', 'spots',
 
 interface Goal {
   id: string;
-  group: 'chill' | 'connect' | 'host';
   title: string;
   desc: string;
   image: string;
@@ -83,33 +82,28 @@ interface Goal {
 }
 
 // Spaces mark where a line may wrap (see PhraseText)
-// Chill = go out at your own pace, no one to arrange; Connect = people, in a ตี้ or through moments (owner 2026-10-23:
-// moments are a core pillar, so members who come only to share and follow friends are a target too).
+// One set of six, no Chill / Connect groups since the name became Chillwaa (owner 2026-10-31). The first row is what
+// anyone would tick (look at friends' moments, find something fun, join for rewards); the second row is the bigger
+// steps (a ตี้ with new people, new places, posting). Moments has two cards because browsing and sharing are different
+// reasons to come (owner 2026-10-23: members who only follow friends are a target too).
 // Ids kept where the meaning stayed, so answers saved before still read right; `find_friends` is no longer offered
-// (folded into the ตี้ card) but still counts for older accounts. Order (owner 2026-10-23): the core pillar leads each
-// group, challenges for Chill and ตี้ for Connect.
+// (folded into the ตี้ card) but still counts for older accounts.
 const MEMBER_GOALS: Goal[] = [
-  { id: 'earn_xp', group: 'chill', title: 'หาชาเลนจ์ สนุกๆ', desc: 'สะสม XP รับของรางวัล', image: '/images/onboarding/challenge-cheer.jpg', pillar: 'challenges', role: 'member' },
-  { id: 'explore_spots', group: 'chill', title: 'ออกไปใช้ชีวิต ที่ใหม่ๆ', desc: 'คาเฟ่ วิวสวย ทริปสั้นๆ', image: '/images/onboarding/chill-cafe.jpg', pillar: 'spots', role: 'member' },
-  { id: 'explore_fairs', group: 'chill', title: 'เดินงานสนุก สุดสัปดาห์', desc: 'เอ็กซ์โป งานวิ่ง คอนเสิร์ต', image: '/images/onboarding/fair-festival.jpg', pillar: 'fairs', role: 'member' },
-  { id: 'join_community', group: 'connect', title: 'เข้าตี้ เจอเพื่อนใหม่', desc: 'กิจกรรมกลุ่มคอเดียวกัน', image: '/event-board-games.png', pillar: 'community', role: 'member' },
-  { id: 'share_moments', group: 'connect', title: 'แชร์ความประทับใจ', desc: 'ไปไหนมา เก็บไว้ให้เพื่อนเห็น', image: '/images/onboarding/share-moment.jpg', pillar: 'moments', role: 'member' },
-  { id: 'browse_moments', group: 'connect', title: 'ส่องโมเมนต์ เพื่อนๆ', desc: 'กดใจ คอมเมนต์ ติดตามเพื่อน', image: '/images/onboarding/browse-moments.jpg', pillar: 'moments', role: 'member' },
+  { id: 'browse_moments', title: 'ส่องโมเมนต์ เพื่อนๆ', desc: 'กดใจ คอมเมนต์ ติดตามเพื่อน', image: '/images/onboarding/browse-moments.jpg', pillar: 'moments', role: 'member' },
+  { id: 'explore_fairs', title: 'หากิจกรรม สนุกๆ', desc: 'อีเวนต์ งานวิ่ง คอนเสิร์ต', image: '/images/onboarding/fair-festival.jpg', pillar: 'fairs', role: 'member' },
+  { id: 'earn_xp', title: 'ร่วมกิจกรรม รับรางวัล', desc: 'ชาเลนจ์ สะสม XP แลกของรางวัล', image: '/images/onboarding/challenge-cheer.jpg', pillar: 'challenges', role: 'member' },
+  { id: 'join_community', title: 'เข้าตี้ เจอเพื่อนใหม่', desc: 'กิจกรรมกลุ่มคอเดียวกัน', image: '/event-board-games.png', pillar: 'community', role: 'member' },
+  { id: 'explore_spots', title: 'ไปที่ใหม่ๆ', desc: 'คาเฟ่ วิวสวย ทริปสั้นๆ', image: '/images/onboarding/chill-cafe.jpg', pillar: 'spots', role: 'member' },
+  { id: 'share_moments', title: 'แชร์ความประทับใจ', desc: 'ไปไหนมา เก็บไว้ให้เพื่อนเห็น', image: '/images/onboarding/share-moment.jpg', pillar: 'moments', role: 'member' },
 ];
 
 const ALL_GOALS = () => [...MEMBER_GOALS, ...HOST_GOALS];
 
 const HOST_GOALS: Goal[] = [
-  { id: 'community_host', group: 'host', title: 'ชวนคน มาเปิดตี้ด้วยกัน', desc: 'นำวิ่ง เปิดวงบอร์ดเกม สอนเวิร์กช็อป', image: '/event-city-run.png', pillar: 'community', role: 'host', icon: CalendarPlus },
-  { id: 'venue_space', group: 'host', title: 'มีร้านหรือพื้นที่ อยากให้คนรู้จัก', desc: 'คาเฟ่ สตูดิโอ แกลเลอรี', image: '/images/venues/bacc.jpg', pillar: 'spots', role: 'venue', icon: Store },
-  { id: 'event_organizer', group: 'host', title: 'จัดงานอยู่ อยากให้คนมาเยอะขึ้น', desc: 'งานแฟร์ นิทรรศการ งานวิ่ง', image: '/images/venues/bitec.jpg', pillar: 'fairs', role: 'organizer', icon: Ticket },
-  { id: 'brand_org', group: 'host', title: 'ทำกิจกรรม ในนามแบรนด์ หรือองค์กร', desc: 'กิจกรรมพนักงาน แคมเปญ ชาเลนจ์', image: '/images/venues/paragon.jpg', pillar: 'challenges', role: 'organizer', icon: Building2 },
-];
-
-// The brand's two words in their own colors, as on the member home (components/home/MemberLiveHome.tsx)
-const GOAL_GROUPS: { id: Goal['group']; word: string; line: string; color: string }[] = [
-  { id: 'chill', word: 'Chill', line: 'ให้เวลากับตัวเอง', color: 'text-[#2D5A3C]' },
-  { id: 'connect', word: 'Connect', line: 'เจอเพื่อนสายเดียวกัน', color: 'text-[#D04A1B]' },
+  { id: 'community_host', title: 'ชวนคน มาเปิดตี้ด้วยกัน', desc: 'นำวิ่ง เปิดวงบอร์ดเกม สอนเวิร์กช็อป', image: '/event-city-run.png', pillar: 'community', role: 'host', icon: CalendarPlus },
+  { id: 'venue_space', title: 'มีร้านหรือพื้นที่ อยากให้คนรู้จัก', desc: 'คาเฟ่ สตูดิโอ แกลเลอรี', image: '/images/venues/bacc.jpg', pillar: 'spots', role: 'venue', icon: Store },
+  { id: 'event_organizer', title: 'จัดงานอยู่ อยากให้คนมาเยอะขึ้น', desc: 'งานแฟร์ นิทรรศการ งานวิ่ง', image: '/images/venues/bitec.jpg', pillar: 'fairs', role: 'organizer', icon: Ticket },
+  { id: 'brand_org', title: 'ทำกิจกรรม ในนามแบรนด์ หรือองค์กร', desc: 'กิจกรรมพนักงาน แคมเปญ ชาเลนจ์', image: '/images/venues/paragon.jpg', pillar: 'challenges', role: 'organizer', icon: Building2 },
 ];
 
 const GENDERS = [
@@ -283,7 +277,7 @@ function SelectCard({ selected, onClick, children, className = '', hideCheck = f
   );
 }
 
-/** How the summary button names a card tapped before the pledge ("รับคำมั่น แล้วไปดูตี้นี้") */
+/** How the summary button names a card tapped before the pledge ("ตกลงตามนี้ ไปดูตี้นี้") */
 const PICK_WORD: Record<PillarId, string> = { community: 'ตี้นี้', challenges: 'ชาเลนจ์นี้', spots: 'ที่นี่', fairs: 'งานนี้', moments: 'โมเมนต์นี้' };
 
 /** The summary's heading over the one first step, by what it is */
@@ -342,7 +336,7 @@ function GoalCard({ goal, selected, onClick }: { goal: Goal; selected: boolean; 
           </span>
         </span>
       </span>
-      <span className="hidden sm:block relative aspect-[4/3]">
+      <span className="hidden sm:block relative aspect-[4/3] lg:aspect-[4/5]">
         <Image src={goal.image} alt="" fill sizes="(min-width: 1024px) 220px, 33vw" className="object-cover" />
         {/* Dark overlay keeps the text on the photo readable */}
         <span className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" aria-hidden="true" />
@@ -447,8 +441,12 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
     setPrefilledFrom(session.member.id);
     const accountName = tidyDisplayName(session.member.displayName);
     const isPlaceholder = accountName === NEW_MEMBER_NAME || accountName === session.member.email?.split('@')[0];
-    if (!displayName && !isPlaceholder) setDisplayName(accountName);
+    // LINE, Google and Facebook bring the full name: suggest the first name only, so the surname is not shown to strangers
+    const suggested = session.member.loginMethods.includes('email') ? accountName : accountName.split(/\s+/)[0];
+    if (!displayName && !isPlaceholder) setDisplayName(suggested);
   }
+  // A picked photo wins; otherwise show the picture the account already has (from LINE, Google or Facebook)
+  const shownPhoto = photo?.preview ?? (preview ? null : session.member?.avatarUrl ?? null);
 
   // Free the preview image when it is replaced, unless a finished run still shows it
   useEffect(() => () => {
@@ -490,7 +488,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
   // "บอกเราเกี่ยวกับคุณ": the first-moment example, and which required answers are in (ticks and "อีก N ข้อ")
   const firstMomentBase = FIRST_MOMENT_BY_SAI[communityInterests.find((id) => FIRST_MOMENT_BY_SAI[id]) ?? ''] ?? FIRST_MOMENT_DEFAULT;
   const firstMoment = { image: firstMomentBase.image, caption: province ? `${firstMomentBase.caption} ที่${province}` : firstMomentBase.caption };
-  const nameOk = displayName.trim().length >= 2;
+  const nameOk = displayName.trim().length >= 2 && !reservedNameProblem(displayName);
   const aboutLeft = [!nameOk, !birthYear, !province].filter(Boolean).length;
   // The province's own name (the landing tiles' "หาดใหญ่ • สงขลา" style is for travel picks, not where someone lives)
   const provinceName = province;
@@ -529,7 +527,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
     // Name, birth year and area are required (owner 2026-10-23): matching ตี้ by age and distance depends on them
     if (step === STEP_ABOUT) {
       const name = displayName.trim();
-      const nameProblem = name.length < 2 ? 'ใส่ชื่อก่อนนะ อย่างน้อย 2 ตัวอักษร' : name.length > 40 ? 'ชื่อยาวได้ไม่เกิน 40 ตัวอักษร' : '';
+      const nameProblem = name.length < 2 ? 'ใส่ชื่อก่อนนะ อย่างน้อย 2 ตัวอักษร' : name.length > 40 ? 'ชื่อยาวได้ไม่เกิน 40 ตัวอักษร' : reservedNameProblem(name);
       setNameError(nameProblem);
       setBirthYearMissing(!birthYear);
       setProvinceMissing(!province);
@@ -665,6 +663,8 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
   const finish = async () => {
     if (isFinishing) return;
     setIsFinishing(true);
+    // The summary's picks need only the answers on screen: look them up while the answers save, not after
+    const picksLoading = loadPicks();
     try {
       if (!preview) {
         const changes: { displayName?: string; avatarUrl?: string } = {};
@@ -678,9 +678,12 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
           if (!upload?.success || !upload.url) throw new Error(upload?.error || 'อัปโหลดรูปไม่สำเร็จ ลองใหม่หรือข้ามรูปไปก่อน');
           changes.avatarUrl = upload.url;
         }
-        if (Object.keys(changes).length) await memberActions.updateProfile(changes);
-        // Answers are saved on the account, so they follow the member to any device
-        if (session.member) await memberActions.savePreferences(preferences());
+        // Name/photo and answers are separate records: save both at once. Answers are saved on the account, so they
+        // follow the member to any device
+        await Promise.all([
+          Object.keys(changes).length ? memberActions.updateProfile(changes) : null,
+          session.member ? memberActions.savePreferences(preferences()) : null,
+        ]);
         try {
           localStorage.removeItem('cch_member_preferences'); // older builds kept a copy in the browser
         } catch {
@@ -689,7 +692,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
       }
       setDone(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      void loadPicks();
+      void picksLoading;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'บันทึกไม่สำเร็จ ลองอีกครั้งนะ');
     } finally {
@@ -738,6 +741,24 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // The browser's back button works like "ย้อนกลับ". Without this it leaves the flow, and after LINE, Google or
+  // Facebook sign-in the page behind is the provider's used-up consent screen ("Something went wrong").
+  // On the first step it stays put: onboarding has no skip (owner 2026-10-23)
+  const browserBack = useRef(back);
+  useEffect(() => {
+    browserBack.current = done ? backFromSummary : back;
+  });
+  useEffect(() => {
+    if (preview || pledgeOnly) return;
+    window.history.pushState({ onboarding: true }, '');
+    const onPop = () => {
+      window.history.pushState({ onboarding: true }, '');
+      browserBack.current();
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [preview, pledgeOnly]);
+
   /** A link on the summary tapped before the pledge: show the pledge first, then go there (option ข) */
   const openFromSummary = (e: React.MouseEvent, href: string, label: string) => {
     if (preview || alreadyPledged) {
@@ -750,6 +771,14 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
   };
 
   const destination = preview ? '/login?mode=signup' : returnTo || (role !== 'member' ? '/myhub?welcome=true' : '/?welcome=true');
+
+  // The summary leads to home (or the card tapped): fetch those pages while the member reads, so the button opens them
+  // at once instead of starting a server render on tap
+  useEffect(() => {
+    if (!done || preview || pledgeOnly) return;
+    router.prefetch(destination);
+    for (const pick of picks ?? []) router.prefetch(pick.href);
+  }, [done, preview, pledgeOnly, destination, picks, router]);
 
   const restartPreview = () => {
     clearFinishedRun();
@@ -853,7 +882,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
     ? 'กำลังบันทึก…'
     : alreadyPledged || preview
       ? pendingOpen ? `ไปดู${pendingOpen.label}` : 'ออกไปใช้ชีวิตกัน'
-      : pendingOpen ? `รับคำมั่น แล้วไปดู${pendingOpen.label}` : 'รับคำมั่น แล้วออกไปใช้ชีวิตกัน';
+      : pendingOpen ? `ตกลงตามนี้ ไปดู${pendingOpen.label}` : 'ตกลงตามนี้ ไปกันเลย';
 
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
@@ -866,10 +895,18 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/30" aria-hidden="true" />
         <div className="relative h-full flex flex-col justify-between p-4 sm:p-6 lg:p-10">
           {/* Same size and subtitle as the landing top bar (components/Navbar.tsx), in white on the photo */}
-          <Link href="/" className="group inline-flex items-center gap-2 sm:gap-3 self-start min-w-0">
-            <BrandLogo size="md" />
-            <BrandWordmark sizeClass="text-base min-[400px]:text-xl sm:text-[22px]" tagline taglineClass="hidden sm:block" onDark />
-          </Link>
+          {/* A link home only in preview: real onboarding has no skip, and an unfinished member would be sent back */}
+          {preview ? (
+            <Link href="/" className="group inline-flex items-center gap-2 sm:gap-3 self-start min-w-0">
+              <BrandLogo size="md" />
+              <BrandWordmark sizeClass="text-base min-[400px]:text-xl sm:text-[22px]" tagline taglineClass="hidden sm:block" onDark />
+            </Link>
+          ) : (
+            <span className="inline-flex items-center gap-2 sm:gap-3 self-start min-w-0">
+              <BrandLogo size="md" />
+              <BrandWordmark sizeClass="text-base min-[400px]:text-xl sm:text-[22px]" tagline taglineClass="hidden sm:block" onDark />
+            </span>
+          )}
           <div className={done && !pledgeOnly ? 'lg:my-auto' : undefined}>
             {/* The landing hero's words, one line per screen; the accent in the landing orange */}
             <p key={scene.image} className="cch-rise text-xl sm:text-2xl lg:text-4xl font-bold leading-tight tracking-tight max-w-md">
@@ -899,9 +936,9 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
                   <span className="absolute -top-3 -right-3 rotate-6 rounded-full bg-[#F26430] px-3 py-1 text-xs font-bold text-white shadow-md">ยินดีต้อนรับ!</span>
                   <div className="flex items-center gap-3.5">
                     <span className="w-16 h-16 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-[#2563EB] text-white text-2xl font-bold ring-4 ring-blue-50">
-                      {photo ? (
+                      {shownPhoto ? (
                         // eslint-disable-next-line @next/next/no-img-element -- local object URL preview
-                        <img src={photo.preview} alt="" className="w-full h-full object-cover" />
+                        <img src={shownPhoto} alt="" className="w-full h-full object-cover" />
                       ) : (
                         nameInitial(firstName, 'C')
                       )}
@@ -957,9 +994,9 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
                     <div className="bg-white text-slate-900 rounded-3xl p-3.5 shadow-2xl -rotate-2 max-w-sm">
                       <div className="flex items-center gap-2.5 px-1">
                         <span className="w-9 h-9 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-[#2563EB] text-white text-sm font-bold">
-                          {photo ? (
+                          {shownPhoto ? (
                             // eslint-disable-next-line @next/next/no-img-element -- local object URL preview
-                            <img src={photo.preview} alt="" className="w-full h-full object-cover" />
+                            <img src={shownPhoto} alt="" className="w-full h-full object-cover" />
                           ) : (
                             nameInitial(firstName, '?')
                           )}
@@ -1071,7 +1108,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
               <div className="flex justify-end">
                 <button type="button" onClick={acceptAndGo} disabled={isFinishing} className="inline-flex items-center gap-2 px-5 sm:px-8 py-3 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] disabled:bg-slate-200 disabled:text-slate-400 text-white text-sm sm:text-base font-bold shadow-sm cursor-pointer disabled:cursor-not-allowed whitespace-nowrap">
                   {isFinishing && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
-                  <span>{isFinishing ? 'กำลังบันทึก…' : 'ฉันรับคำมั่นนี้'}</span>
+                  <span>{isFinishing ? 'กำลังบันทึก…' : 'ตกลงตามนี้'}</span>
                 </button>
               </div>
             </div>
@@ -1084,9 +1121,9 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
                 {/* Welcome (owner 2026-10-23: the summary has one job, "you are in", then the pledge and one first step) */}
                 <div className="flex items-center gap-4 mb-5">
                   <span className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-[#2563EB] text-white text-xl sm:text-2xl font-bold ring-4 ring-blue-50">
-                    {photo ? (
+                    {shownPhoto ? (
                       // eslint-disable-next-line @next/next/no-img-element -- local object URL preview
-                      <img src={photo.preview} alt="" className="w-full h-full object-cover" />
+                      <img src={shownPhoto} alt="" className="w-full h-full object-cover" />
                     ) : (
                       nameInitial(firstName, 'C')
                     )}
@@ -1128,20 +1165,6 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
                       </div>
                     )}
                     {picks?.[0] && <FirstStepCard item={picks[0]} onOpen={openFromSummary} />}
-                    {picks && picks.length > 1 && (
-                      <p className="mt-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm text-slate-500">
-                        <span>หรือ</span>
-                        {picks.slice(1, 3).map((item, i) => (
-                          <span key={`${item.pillar}-${item.id}`} className="min-w-0">
-                            {i > 0 && <span className="mr-2" aria-hidden="true">·</span>}
-                            <span className="font-medium">{PILLARS[item.pillar].short}</span>{' '}
-                            <Link href={item.href} onClick={(e) => openFromSummary(e, item.href, PICK_WORD[item.pillar])} className="font-semibold text-slate-900 hover:underline">
-                              {item.title}
-                            </Link>
-                          </span>
-                        ))}
-                      </p>
-                    )}
                     {picks?.length === 0 && (
                       <div className="bg-slate-50/80 rounded-2xl p-4 border border-dashed border-slate-200 text-sm font-semibold text-slate-600">
                         <PhraseText text="ยังไม่มีรายการที่ตรงพอดี แต่มีอีกเยอะให้ดู ในหน้าแรก" />
@@ -1202,34 +1225,28 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
               {/* Step 1 */}
               {step === 0 && (
                 <section>
-                  {/* No big title: the progress bar already says "เลือกสิ่งที่ใช่" and the cards speak (owner 2026-10-22) */}
-                  <h1 className="sr-only">เลือกสิ่งที่ใช่</h1>
-                  {GOAL_GROUPS.map((group) => (
-                    <div key={group.id} className="mb-6">
-                      <h2 className="flex items-baseline gap-2 mb-3">
-                        <span className={`text-lg sm:text-xl font-bold ${group.color}`}>{group.word}</span>
-                        <span className="text-xs sm:text-sm font-semibold text-slate-500">{group.line}</span>
-                      </h2>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
-                        {MEMBER_GOALS.filter((g) => g.group === group.id).map((goal) => (
-                          <GoalCard
-                            key={goal.id}
-                            goal={goal}
-                            selected={goals.includes(goal.id)}
-                            onClick={() => {
-                              setGoals((g) => toggle(g, goal.id));
-                              setError('');
-                            }}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* With no title, say that several cards may be picked (owner's words, 2026-10-23) */}
-                  <p className="-mt-2 mb-4 text-xs sm:text-sm font-medium text-slate-500">
-                    <PhraseText text="เลือกได้มากกว่า 1 ข้อ เลือกสิ่งที่ใช่ เพื่อสัมผัสทุกประสบการณ์ การใช้ชีวิตกับเรา" />
-                  </p>
+                  {/* The question in words: without the Chill / Connect headings the cards needed one (owner 2026-10-31) */}
+                  <div className="mb-5">
+                    <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
+                      <PhraseText text="มาที่นี่ อยากทำอะไรบ้าง?" />
+                    </h1>
+                    <p className="mt-1 text-sm font-medium text-slate-500">
+                      <PhraseText text="เลือกได้หลายข้อ เราจะหาสิ่งที่ใช่ ให้คุณ" />
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 mb-5">
+                    {MEMBER_GOALS.map((goal) => (
+                      <GoalCard
+                        key={goal.id}
+                        goal={goal}
+                        selected={goals.includes(goal.id)}
+                        onClick={() => {
+                          setGoals((g) => toggle(g, goal.id));
+                          setError('');
+                        }}
+                      />
+                    ))}
+                  </div>
 
                   {/* Small screens have no side panel: say what the choices lead to here */}
                   {litPillars.size > 0 && (
@@ -1264,9 +1281,9 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
                   <div className="flex flex-col sm:flex-row gap-6">
                     <div className="flex sm:flex-col items-center gap-4 sm:w-40 shrink-0">
                       <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
-                        {photo ? (
-                          // eslint-disable-next-line @next/next/no-img-element -- local object URL preview
-                          <img src={photo.preview} alt="รูปที่เลือก" className="w-full h-full object-cover" />
+                        {shownPhoto ? (
+                          // eslint-disable-next-line @next/next/no-img-element -- picked photo, or the account picture from LINE, Google or Facebook
+                          <img src={shownPhoto} alt="รูปที่เลือก" className="w-full h-full object-cover" />
                         ) : isCompressing ? (
                           <Loader2 className="w-6 h-6 text-slate-400 animate-spin" aria-hidden="true" />
                         ) : (
@@ -1275,7 +1292,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
                       </div>
                       <div className="flex flex-col items-start sm:items-center gap-1.5 sm:text-center">
                         <label className="text-xs sm:text-sm font-bold text-slate-800 px-3.5 py-2 rounded-full bg-slate-100 hover:bg-slate-200 cursor-pointer whitespace-nowrap">
-                          {photo ? 'เปลี่ยนรูป' : 'เพิ่มรูปของคุณ'}
+                          {shownPhoto ? 'เปลี่ยนรูป' : 'เพิ่มรูปของคุณ'}
                           <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" className="sr-only" onChange={pickPhoto} disabled={isCompressing} />
                         </label>
                         {photo ? (
@@ -1293,9 +1310,14 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
 
                     <div className="flex-1 space-y-5 min-w-0">
                       <div className="space-y-1.5">
-                        <label htmlFor="onb-name" className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-800">ชื่อที่อยากให้เรียก {nameOk && <Check className="w-4 h-4 text-emerald-600 stroke-[3]" aria-label="กรอกแล้ว" />}</label>
-                        <input id="onb-name" type="text" autoComplete="nickname" maxLength={40} value={displayName} onChange={(e) => { setDisplayName(tidyDisplayName(e.target.value)); setNameError(''); setError(''); }} placeholder="เช่น ส้ม หรือ Som" aria-invalid={Boolean(nameError) || undefined} aria-describedby={nameError ? 'onb-name-error' : undefined} className={`${inputClass} aria-[invalid=true]:border-rose-400`} />
-                        {nameError && <p id="onb-name-error" className="text-xs font-bold text-rose-600">{nameError}</p>}
+                        <label htmlFor="onb-name" className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-800">ชื่อที่เพื่อนๆ จะเห็น {nameOk && <Check className="w-4 h-4 text-emerald-600 stroke-[3]" aria-label="กรอกแล้ว" />}</label>
+                        <input id="onb-name" type="text" autoComplete="nickname" maxLength={40} value={displayName} onChange={(e) => { setDisplayName(tidyDisplayName(e.target.value)); setNameError(''); setError(''); }} placeholder="เช่น ส้ม หรือ Som" aria-invalid={Boolean(nameError) || undefined} aria-describedby={nameError ? 'onb-name-error' : 'onb-name-hint'} className={`${inputClass} aria-[invalid=true]:border-rose-400`} />
+                        {/* Says where the name shows: it is the profile name everyone sees (owner 2026-10-31) */}
+                        {nameError ? (
+                          <p id="onb-name-error" className="text-xs font-bold text-rose-600">{nameError}</p>
+                        ) : (
+                          <p id="onb-name-hint" className="text-xs font-medium text-slate-500">แสดงบนโปรไฟล์ โมเมนต์ และในตี้ เปลี่ยนได้ทีหลัง</p>
+                        )}
                       </div>
 
                       <div className="grid grid-cols-1 gap-5">
@@ -1448,6 +1470,11 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
               {step === STEP_ABOUT && (
                 <span className={`text-xs sm:text-sm font-bold whitespace-nowrap ${aboutLeft ? 'text-slate-500' : 'text-[#2563EB]'}`} aria-live="polite">
                   {aboutLeft ? `อีก ${aboutLeft} ข้อ` : 'ครบแล้ว'}
+                </span>
+              )}
+              {step === 0 && goals.length > 0 && (
+                <span className="text-xs sm:text-sm font-bold whitespace-nowrap text-[#2563EB]" aria-live="polite">
+                  เลือกแล้ว {goals.length}
                 </span>
               )}
               {step === STEP_LIKES && (

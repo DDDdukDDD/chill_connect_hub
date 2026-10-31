@@ -68,6 +68,7 @@ async function overview() {
       google: count((m) => m.providers.some((p) => p.provider === 'google')),
       facebook: count((m) => m.providers.some((p) => p.provider === 'facebook')),
       apple: count((m) => m.providers.some((p) => p.provider === 'apple')),
+      line: count((m) => m.providers.some((p) => p.provider === 'line')),
     },
     topInterests: Object.entries(interestTotals).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([id, members]) => ({ id, members })),
     readiness: {

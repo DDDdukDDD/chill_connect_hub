@@ -4,7 +4,6 @@ import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { readCookie } from '../adminSession';
 import { memberRepository } from './index';
-import { DEMO_MEMBER_ID, ensureDemoMember, isDemoLoginEnabled } from './demoLogin';
 import type { Member } from './types';
 
 /**
@@ -109,9 +108,7 @@ export async function getPageMember(): Promise<Member | null> {
 async function memberFromSessionToken(token: string | null | undefined): Promise<Member | null> {
   const payload = readSignedPayload<SessionPayload>(token);
   if (!payload || typeof payload.sub !== 'string' || payload.exp <= Math.floor(Date.now() / 1000)) return null;
-  // The shared test account is rebuilt on an instance that does not have it, so its session never drops
-  const stored =
-    payload.sub === DEMO_MEMBER_ID && isDemoLoginEnabled() ? await ensureDemoMember() : await memberRepository.findById(payload.sub);
+  const stored = await memberRepository.findById(payload.sub);
   if (!stored || stored.sessionVersion !== payload.ver) return null;
   const member = await refreshMemberStatus(stored);
   return member.status === 'active' ? member : null;
