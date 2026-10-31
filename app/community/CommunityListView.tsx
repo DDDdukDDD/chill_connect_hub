@@ -8,6 +8,8 @@ import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { EmptyResults } from '@/components/discover/EmptyResults';
 import { MeetupTile } from '@/components/MeetupTile';
+import { SponsoredBadge } from '@/components/SponsoredBadge';
+import { withSponsored } from '@/lib/sponsored/types';
 import { ViewModeToggle, ViewMode } from '@/components/ViewModeToggle';
 import { ShowMoreButton } from '@/components/discover/ShowMoreButton';
 import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
@@ -35,9 +37,9 @@ const TILE_BATCH = { mobile: 12, sm: 12, md: 16, lg: 24, xl2: 24, defaultItems: 
 // The list runs by date, soonest first: people pick a ตี้ by when they are free; "favorites" narrows it to the saved ones
 type SortOption = 'soonest' | 'favorites';
 
-type ServerProps = { initialEvents?: EventItem[]; initialCounts?: { query: string; province: string; counts: DiscoverCounts } };
+type ServerProps = { initialEvents?: EventItem[]; initialCounts?: { query: string; province: string; counts: DiscoverCounts }; sponsoredId?: string | null };
 
-function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
+function CommunityPageContent({ initialEvents, initialCounts, sponsoredId = null }: ServerProps) {
   const searchParams = useSearchParams();
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
   // The member's own categories from onboarding come first on the tabs, marked (owner 2026-10-23)
@@ -219,8 +221,9 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
 
   const paginatedEvents = useMemo(() => {
     // "Show more" grows the list: currentPage = how many batches are on screen
-    return filteredEvents.slice(0, currentPage * itemsPerPage);
-  }, [filteredEvents, currentPage, itemsPerPage]);
+    // A sponsored ตี้ that fits the filters takes the third card (lib/sponsored)
+    return withSponsored(filteredEvents, filteredEvents.find((event) => event.id === sponsoredId)).slice(0, currentPage * itemsPerPage);
+  }, [filteredEvents, sponsoredId, currentPage, itemsPerPage]);
 
   const openCreate = () => {
     if (!isLoggedIn) {
@@ -242,9 +245,10 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
   }, [isAuthReady]);
 
   // One ตี้ tile for the card grid and the list view's "สัปดาห์นี้" strip, so both views look the same
-  const tileFor = (event: EventItem) => (
+  const tileFor = (event: EventItem, sponsored = false) => (
     <MeetupTile
       event={event}
+      sponsored={sponsored}
       now={now}
       showHost
       isSaved={isLoggedIn && favorites.includes(event.id)}
@@ -456,7 +460,7 @@ function CommunityPageContent({ initialEvents, initialCounts }: ServerProps) {
           // The landing's tiles at the landing's widths, plus a line for host, rating and price (owner 2026-10-27)
           <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 sm:gap-x-6 gap-y-8 pt-1">
             {paginatedEvents.map((event) => (
-              <li key={event.id}>{tileFor(event)}</li>
+              <li key={event.id}>{tileFor(event, event.id === sponsoredId)}</li>
             ))}
           </ul>
         ) : (

@@ -22,7 +22,7 @@ const hrefOf = (item: MonthItem) =>
   `/${item.targetType === 'spot' ? 'spots' : item.targetType === 'fair' ? 'events' : 'community'}/${encodeURIComponent(item.targetId)}`;
 
 /**
- * "เดือนนี้ของฉัน": what "Chill · Connect" on the home page counts. Meetups the member went to with the people
+ * "เดือนนี้ของฉัน": what "ตี้ · ที่เที่ยว" on the home page counts. Meetups the member went to with the people
  * who came, places and fairs they visited, and a way to share a moment from any of them that has none yet.
  */
 export function MyMonthSection({ isLoggedIn, onToast }: { isLoggedIn: boolean; onToast: (message: string) => void }) {
@@ -66,8 +66,7 @@ export function MyMonthSection({ isLoggedIn, onToast }: { isLoggedIn: boolean; o
       ) : (
         <>
           <p className="mt-3 text-sm font-bold">
-            <span className="font-extrabold text-[#D04A1B]">Connect</span> <span className="tabular-nums">{month.connect.length}</span>
-            <span className="ml-1.5 text-xs font-normal text-slate-500">ตี้ที่ไปมา</span>
+            ตี้ที่ไปมา <span className="tabular-nums">{month.connect.length}</span>
           </p>
           {month.connect.length > 0 && (
             <ul className="mt-2 space-y-3">
@@ -107,8 +106,7 @@ export function MyMonthSection({ isLoggedIn, onToast }: { isLoggedIn: boolean; o
           )}
 
           <p className="mt-5 text-sm font-bold">
-            <span className="font-extrabold text-[#2D5A3C]">Chill</span> <span className="tabular-nums">{month.chill.length}</span>
-            <span className="ml-1.5 text-xs font-normal text-slate-500">ที่ที่ไปมา</span>
+            ที่เที่ยวที่ไปมา <span className="tabular-nums">{month.chill.length}</span>
           </p>
           {month.chill.length > 0 && (
             <ul className="mt-2 flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4 lg:mx-0 lg:px-0 lg:grid lg:grid-cols-3">

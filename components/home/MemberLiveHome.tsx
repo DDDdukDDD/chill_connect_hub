@@ -34,7 +34,7 @@ export interface MemberLiveHomeProps {
   /** Ids among the plans the member hosts, and fairs they only saved */
   hostedIds: string[];
   savedIds: string[];
-  /** This month's count behind "Chill · Connect"; null until it loads */
+  /** This month's count behind "ตี้ · ที่เที่ยว"; null until it loads */
   month: { chill: number; connect: number } | null;
   savedCount: number;
   likedCategories: string[];
@@ -82,11 +82,11 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
   };
 
   return (
-    <div className="max-w-[1040px] mx-auto px-4 sm:px-6 lg:px-8 pt-5 sm:pt-7">
-      {/* Two columns on laptops (owner 2026-10-29): the feed, and "ของฉัน" pinned beside it. Where to go next (ตี้,
+    <div className="max-w-7xl 2xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-5 sm:pt-7">
+      {/* Two columns on laptops (owner 2026-10-29): "ของฉัน" pinned on the left under the logo as in My Hub (owner 2026-10-31), the feed centred in the rest. Where to go next (ตี้,
           ชาเลนจ์, อีเวนต์, ที่เที่ยว) comes as cards between the posts on every screen, as on phones, instead of a third column */}
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-14">
-        <main id="home-feed" className="min-w-0 w-full max-w-[600px] mx-auto lg:mx-0 scroll-mt-24">
+      <div className="grid gap-8 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-14">
+        <main id="home-feed" className="min-w-0 w-full max-w-[600px] mx-auto scroll-mt-24">
           {/* The top of home (owner 2026-10-30): no band, only what nothing else on the page says. Phones: hello with
               this month's counts, then one slim line when there is something to do next. Laptops have both beside the feed */}
           <div className="lg:hidden mb-6">
@@ -107,10 +107,11 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
 
         {/* Laptops: me, my next plans, shortcuts and the campaign, pinned beside the feed. With three plans and the
             campaign it is taller than a 768-900px screen, so it scrolls on its own instead of hiding its bottom */}
-        <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100dvh-7rem)] overflow-y-auto overscroll-contain no-scrollbar space-y-8 pb-4">
+        <aside className="hidden lg:block lg:order-first sticky top-24 self-start max-h-[calc(100dvh-7rem)] overflow-y-auto overscroll-contain no-scrollbar space-y-8 pb-4">
           <Greeting {...props} layout="column" />
-          <NextUp {...props} />
+          {/* ของฉัน before the plans (owner 2026-10-31): the shortcuts keep one place however many plans there are */}
           <Shortcuts {...props} />
+          <NextUp {...props} />
           {/* The campaign sits beside the feed, not above it (owner 2026-10-30): you and your plans come first.
               Loud only when there is a decision (start, enter); CampaignStrip has the states */}
           {props.campaign && props.campaignMember && (
@@ -125,23 +126,23 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
 }
 
 /**
- * "สวัสดี Duke" with this month's Chill (places) and Connect (meetups), which open the month in My Hub.
- * The words keep their brand colours even at 0; before anything counts, one line says how the first one comes.
+ * "สวัสดี Duke" with this month's ตี้ and places, which open the month in My Hub. Plain Thai words since the name
+ * became Chillwaa (they were "Chill · Connect", owner 2026-10-31); before anything counts, one line says how the first one comes.
  */
 function Greeting({ name, now, xp, month, plans, layout }: MemberLiveHomeProps & { layout: 'row' | 'column' }) {
   const isNew = month !== null && month.chill + month.connect === 0;
   const counter = month && (
-    <Link href={MY_MONTH_HREF} className={`font-bold whitespace-nowrap text-slate-900 hover:opacity-80 ${layout === 'row' ? 'text-sm' : 'text-xl'}`} aria-label={`เดือนนี้ ไปที่เที่ยว ${month.chill} แห่ง ไปตี้ ${month.connect} ครั้ง ดูในมายฮับ`}>
-      {/* The two words are the brand's: Latin, heavier than the Thai around them */}
-      <span className="font-extrabold text-[#2D5A3C]">Chill</span> <span className="tabular-nums">{month.chill}</span>
+    <Link href={MY_MONTH_HREF} className={`font-bold whitespace-nowrap text-slate-900 hover:opacity-80 ${layout === 'row' ? 'text-sm' : 'text-xl'}`} aria-label={`เดือนนี้ ไปตี้ ${month.connect} ครั้ง ไปที่เที่ยว ${month.chill} แห่ง ดูในมายฮับ`}>
+      {/* People first: ตี้ leads */}
+      <span className="font-medium text-slate-500">ตี้</span> <span className="tabular-nums">{month.connect}</span>
       <span className="mx-1.5 font-normal text-slate-300" aria-hidden="true">·</span>
-      <span className="font-extrabold text-[#D04A1B]">Connect</span> <span className="tabular-nums">{month.connect}</span>
+      <span className="font-medium text-slate-500">ที่เที่ยว</span> <span className="tabular-nums">{month.chill}</span>
       {layout === 'row' && <span className="ml-1 font-normal text-slate-400" aria-hidden="true">›</span>}
     </Link>
   );
   const nudge = isNew && plans.length === 0 && (
     <p className="mt-1 text-[13px] text-slate-600">
-      ไปตี้แรก = <span className="font-extrabold text-[#D04A1B]">Connect</span> แรกของคุณ รับ <span className="font-semibold text-[#7C3AED]">+50 XP</span>
+      ไปตี้แรกกับเพื่อนๆ รับ <span className="font-semibold text-[#7C3AED]">+50 XP</span>
     </p>
   );
 

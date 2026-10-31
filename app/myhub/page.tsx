@@ -2125,7 +2125,7 @@ function MyHubContent() {
                 </div>
 
                 </div>
-                {/* What "Chill · Connect" on the home page opens: the month behind the numbers */}
+                {/* What "ตี้ · ที่เที่ยว" on the home page opens: the month behind the numbers */}
                 {isLoggedIn && (
                   <div className="order-4 lg:order-none empty:hidden border-t border-slate-200/70 pt-5">
                     <MyMonthSection isLoggedIn={isLoggedIn} onToast={showToast} />

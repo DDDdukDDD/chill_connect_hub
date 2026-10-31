@@ -10,6 +10,7 @@ import { ProvincesManagerView } from '@/components/admin/ProvincesManagerView';
 import { VenuesManagerView } from '@/components/admin/VenuesManagerView';
 import { QuestsManagerView } from '@/components/admin/QuestsManagerView';
 import { CampaignsManagerView } from '@/components/admin/CampaignsManagerView';
+import { SponsoredSlotsView } from '@/components/admin/SponsoredSlotsView';
 import { ScraperEngineView } from '@/components/admin/ScraperEngineView';
 import { EventsModerationView } from '@/components/admin/EventsModerationView';
 import { MediaManagerView } from '@/components/admin/MediaManagerView';
@@ -145,6 +146,8 @@ function AdminConsole() {
         return <QuestsManagerView key={key} initialQuery={moduleFilters.q} />;
       case 'campaigns':
         return <CampaignsManagerView />;
+      case 'sponsored':
+        return <SponsoredSlotsView />;
       case 'moments':
         return <MomentsManagerView key={key} initialFilter={moduleFilters.filter} />;
       case 'reports':

@@ -12,6 +12,8 @@ import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { getQuestBrandReward } from '@/lib/questDisplay';
 import { matchesQuery, questSearchText } from '@/lib/discoverMatch';
 import { ChallengeTile, prizeReasons } from '@/components/ChallengeTile';
+import { SponsoredBadge } from '@/components/SponsoredBadge';
+import { withSponsored } from '@/lib/sponsored/types';
 import { ShowMoreButton } from '@/components/discover/ShowMoreButton';
 import { LaunchCampaignBanner } from '@/components/LaunchCampaignBanner';
 import type { Campaign } from '@/lib/campaigns/types';
@@ -61,7 +63,7 @@ const toListQuest = (quest: ChallengeQuest): QuestWithDuration => ({
   image: quest.badgeCoverImg || quest.image });
 
 /** `initialQuests` comes from the server page, so the list is in the HTML search engines read; the browser refreshes it. */
-export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = '', campaign = null }: { initialQuests?: ChallengeQuest[]; initialQuery?: string; campaign?: Campaign | null }) {
+export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = '', campaign = null, sponsoredId = null }: { initialQuests?: ChallengeQuest[]; initialQuery?: string; campaign?: Campaign | null; sponsoredId?: string | null }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('challenges');
   // Filters folded into pills: when it runs, how it is done, what it gives, and only the member's own
@@ -215,7 +217,11 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
   };
 
   // "แสดงเพิ่มเติม" grows the grid: currentPage = how many batches are on screen
-  const shownQuests = useMemo(() => filteredQuests.slice(0, currentPage * itemsPerPage), [filteredQuests, currentPage, itemsPerPage]);
+  // A sponsored challenge that fits the filters takes the third card (lib/sponsored)
+  const shownQuests = useMemo(
+    () => withSponsored(filteredQuests, filteredQuests.find((quest) => quest.id === sponsoredId)).slice(0, currentPage * itemsPerPage),
+    [filteredQuests, sponsoredId, currentPage, itemsPerPage]
+  );
   const tileReasons = useMemo(() => prizeReasons(filteredQuests), [filteredQuests]);
 
   return (
@@ -450,7 +456,7 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
                     const mine = isJoined ? myRewards.quests.find((progress) => progress.questId === quest.id) : undefined;
                     return (
                       <li key={quest.id}>
-                        <ChallengeTile quest={quest} index={i} reason={tileReasons.get(quest.id)} mine={mine} isJoined={isJoined} showDates />
+                        <ChallengeTile quest={quest} index={i} reason={tileReasons.get(quest.id)} mine={mine} isJoined={isJoined} showDates sponsored={quest.id === sponsoredId} />
                       </li>
                     );
                   })}

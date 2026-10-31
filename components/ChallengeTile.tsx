@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { SponsoredBadge } from './SponsoredBadge';
 import Link from 'next/link';
 import { CalendarClock, CalendarDays, Clock, Flame, Footprints, Gift, Medal, Zap } from 'lucide-react';
 import type { ChallengeQuest } from '@/data/mockData';
@@ -71,7 +72,7 @@ const isEndedQuest = (quest: ChallengeQuest) => quest.status === 'ended' || (que
  * doing it, otherwise one friendly reason to try. No frame; the whole tile is one link.
  * `showDates` adds the period under that line (on /challenges, where the dates decide whether to join).
  */
-export function ChallengeTile({ quest, index, reason, mine, isJoined = false, showDates = false, tilt = false }: {
+export function ChallengeTile({ quest, index, reason, mine, isJoined = false, showDates = false, tilt = false, sponsored = false }: {
   quest: ChallengeQuest;
   index: number;
   reason?: ChallengeReason;
@@ -83,6 +84,8 @@ export function ChallengeTile({ quest, index, reason, mine, isJoined = false, sh
   /** Tilts the photo like a collectible card: only the landing's single row (ChallengePicks). Grids stand straight so rows
    *  read cleanly; the XP sticker keeps its tilt everywhere (owner 2026-10-27). */
   tilt?: boolean;
+  /** A paid-for place in a list (lib/sponsored): "สนับสนุน" on the photo */
+  sponsored?: boolean;
 }) {
   const isEnded = isEndedQuest(quest);
   const range = showDates ? questDateRange(quest) : '';
@@ -101,6 +104,7 @@ export function ChallengeTile({ quest, index, reason, mine, isJoined = false, sh
             isJoined && !isEnded ? 'ring-2 ring-[#7C3AED] ring-offset-2' : ''
           }`}
         />
+        {sponsored && <SponsoredBadge className="right-2.5 top-2.5" />}
         {isEnded ? (
           <span className="absolute -top-2.5 -left-1.5 inline-flex items-center rounded-full bg-slate-200 text-slate-700 px-2.5 py-1 text-xs font-bold shadow-md">จบแล้ว</span>
         ) : (

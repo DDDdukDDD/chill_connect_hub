@@ -14,12 +14,10 @@ interface SessionState {
   member: PublicMember | null;
   /** Which login buttons work right now (social ones need provider credentials on the server) */
   providers: Record<LoginMethod, boolean>;
-  /** Prototype: "ลองใช้เลย ไม่ต้องสมัคร" is offered (server has DEMO_LOGIN=on) */
-  demoLogin: boolean;
 }
 
-const EMPTY_PROVIDERS: Record<LoginMethod, boolean> = { email: true, google: false, facebook: false, apple: false };
-const INITIAL: SessionState = { isLoaded: false, member: null, providers: EMPTY_PROVIDERS, demoLogin: false };
+const EMPTY_PROVIDERS: Record<LoginMethod, boolean> = { email: true, google: false, facebook: false, apple: false, line: false };
+const INITIAL: SessionState = { isLoaded: false, member: null, providers: EMPTY_PROVIDERS };
 
 let state: SessionState = INITIAL;
 let inflight: Promise<void> | null = null;
@@ -46,7 +44,7 @@ function subscribe(listener: () => void) {
   };
 }
 
-export type SessionSeed = Pick<SessionState, 'member' | 'providers' | 'demoLogin'>;
+export type SessionSeed = Pick<SessionState, 'member' | 'providers'>;
 
 /**
  * The session a server page already read (the home page), given before the first render: the page knows the member
@@ -68,7 +66,7 @@ export function refreshMemberSession(): Promise<void> {
   if (!inflight) {
     inflight = fetch('/api/auth/member', { cache: 'no-store' })
       .then((res) => res.json())
-      .then((json) => setState({ isLoaded: true, member: json.member ?? null, providers: json.providers ?? EMPTY_PROVIDERS, demoLogin: Boolean(json.demoLogin) }))
+      .then((json) => setState({ isLoaded: true, member: json.member ?? null, providers: json.providers ?? EMPTY_PROVIDERS }))
       .catch(() => setState({ isLoaded: true }))
       .finally(() => {
         inflight = null;
@@ -99,12 +97,6 @@ export const memberActions = {
   },
   login: async (email: string, password: string) => {
     const json = await postJson('/api/auth/member/login', { email, password });
-    setState({ isLoaded: true, member: json.member });
-    return json.member as PublicMember;
-  },
-  /** Prototype only: signs in as the shared test account (POST /api/auth/member/demo) */
-  loginDemo: async () => {
-    const json = await postJson('/api/auth/member/demo', {});
     setState({ isLoaded: true, member: json.member });
     return json.member as PublicMember;
   },

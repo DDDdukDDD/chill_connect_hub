@@ -1,6 +1,6 @@
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { burnPasswordCheck, hashPassword, verifyPasswordHash } from '../passwordHash';
-import { NEW_MEMBER_NAME, tidyDisplayName } from '../displayName';
+import { NEW_MEMBER_NAME, reservedNameProblem, tidyDisplayName } from '../displayName';
 import { memberRepository } from './index';
 import { MIN_MEMBER_AGE, cleanPreferences, newConsent } from './preferences';
 import { refreshMemberStatus } from './session';
@@ -20,6 +20,8 @@ const isEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 export function cleanDisplayName(name: unknown): string {
   const value = typeof name === 'string' ? tidyDisplayName(name).trim().slice(0, 40) : '';
   if (value.length < 2) throw new MemberAuthError('กรุณาตั้งชื่อที่แสดงอย่างน้อย 2 ตัวอักษร');
+  const reserved = reservedNameProblem(value);
+  if (reserved) throw new MemberAuthError(reserved);
   return value;
 }
 
@@ -113,9 +115,11 @@ export async function signInWithOAuth(profile: OAuthProfile, options: { consente
   if (!member) {
     const now = new Date().toISOString();
     const emailTaken = email ? Boolean(await memberRepository.findByEmail(email)) : false;
+    // A provider name that reads as staff is not carried over; onboarding asks for a name anyway
+    const providerName = profile.displayName ? tidyDisplayName(profile.displayName).trim().slice(0, 40) : '';
     member = await memberRepository.create({
       id: `mem_${randomUUID()}`,
-      displayName: (profile.displayName ? tidyDisplayName(profile.displayName).trim().slice(0, 40) : '') || (email ? email.split('@')[0] : 'สมาชิกใหม่'),
+      displayName: (reservedNameProblem(providerName) ? '' : providerName) || (email ? email.split('@')[0] : NEW_MEMBER_NAME),
       // An unverified email that already belongs to someone else is not attached
       email: email && !emailTaken ? email : undefined,
       emailVerified: Boolean(email && !emailTaken && profile.emailVerified),

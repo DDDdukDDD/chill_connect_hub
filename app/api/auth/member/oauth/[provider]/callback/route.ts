@@ -49,8 +49,8 @@ async function handleCallback(request: NextRequest, provider: string, params: UR
       await applySignupChecks(member);
       await attachInviter(member, readCookie(request, INVITE_COOKIE));
     }
-    // New members pick their interests first, then continue to where they were heading
-    const response = redirect(created
+    // New members, and members who left onboarding part way, finish it first, then continue to where they were heading
+    const response = redirect(created || !member.onboardedAt
       ? `/onboarding?returnTo=${encodeURIComponent(returnTo)}`
       : `${returnTo}${returnTo.includes('?') ? '&' : '?'}auth=success`);
     setMemberSessionCookie(response, member);

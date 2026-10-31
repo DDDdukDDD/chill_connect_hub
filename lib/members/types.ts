@@ -6,7 +6,7 @@ import { trustOf } from './trust';
  * Storage goes through MemberRepository so the JSON prototype store can be replaced by a database
  * (e.g. Postgres) without touching the API routes.
  */
-export type OAuthProvider = 'google' | 'facebook' | 'apple';
+export type OAuthProvider = 'google' | 'facebook' | 'apple' | 'line';
 export type LoginMethod = OAuthProvider | 'email';
 export type MemberStatus = 'active' | 'suspended' | 'banned';
 

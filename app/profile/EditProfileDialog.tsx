@@ -8,6 +8,7 @@ import { SAI_FAIRS, SAI_SPOTS } from '@/app/onboarding/OnboardingFlow';
 import { nameInitial, tidyDisplayName } from '@/lib/displayName';
 import { compressImage } from '@/lib/media/compressor';
 import type { MemberPreferences, MemberProfile, ProfileFieldKey, PublicMember } from '@/lib/members/types';
+import { safeImageSrc } from '@/lib/optimizedImage';
 import { useMasterData } from '@/lib/useMasterData';
 import { memberActions } from '@/lib/useMemberSession';
 
@@ -224,7 +225,7 @@ export function EditProfileDialog({
                 <span className="w-20 h-20 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-gradient-to-br from-[#F26430] to-[#7C3AED] text-white text-2xl font-bold">
                   {photo || member.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element -- member photo (local preview or uploaded file)
-                    <img src={photo?.preview ?? member.avatarUrl} alt="" className="w-full h-full object-cover" />
+                    <img src={safeImageSrc(photo?.preview ?? member.avatarUrl)} alt="" className="w-full h-full object-cover" />
                   ) : (
                     nameInitial(name, 'C')
                   )}
