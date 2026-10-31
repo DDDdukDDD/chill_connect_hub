@@ -10,6 +10,7 @@ import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { RewardShopItem, REWARD_CATEGORIES, REWARD_SHOP_ITEMS } from '@/data/rewardsData';
 import { useMyRewards } from '@/lib/useMyRewards';
+import { optimizedImage } from '@/lib/optimizedImage';
 import { Toast } from '@/components/Toast';
 
 const CHIP = 'shrink-0 inline-flex items-center min-h-9 px-3.5 rounded-full text-sm font-bold transition-colors cursor-pointer';
@@ -28,6 +29,8 @@ const EARN: { icon: LucideIcon; text: string; xp: string }[] = [
   { icon: Camera, text: 'แชร์โมเมนต์จากที่เที่ยวหรืออีเวนต์', xp: '+30' },
   { icon: Trophy, text: 'ทำชาเลนจ์ครบ', xp: 'รับเพิ่ม' },
 ];
+/** The XP tickets lean a little, each its own way, like the challenge stickers */
+const TICKET_TILTS = ['-rotate-6', 'rotate-3', '-rotate-3', 'rotate-6'];
 /** Confetti pieces for the redeemed moment: where each flies, its colour and shape */
 const CONFETTI = Array.from({ length: 22 }, (_, i) => {
   const angle = (i / 22) * Math.PI * 2;
@@ -137,6 +140,9 @@ export default function RewardsPage() {
       ),
     [selectedCategory, onlyAffordable, userXp]
   );
+  // The prize draw shows as one big card above the tiles when it is in the list
+  const featured = filteredRewards.find((item) => item.drawEntry);
+  const tiles = filteredRewards.filter((item) => item !== featured);
   const myRedeemedItems = useMemo(() => REWARD_SHOP_ITEMS.filter((item) => redeemedRewardIds.includes(item.id)), [redeemedRewardIds]);
   // What the wallet cheers about: how many I can take now, or how far the next one is
   const openRewards = REWARD_SHOP_ITEMS.filter((item) => !redeemedRewardIds.includes(item.id));
@@ -286,60 +292,89 @@ export default function RewardsPage() {
                     </button>
                   </div>
                 ) : (
-                  <ul className="mt-6 grid sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
-                    {filteredRewards.map((item) => {
-                      const redeemed = redeemedRewardIds.includes(item.id);
-                      const short = item.costXp - userXp;
-                      const ready = isLoggedIn && !redeemed && short <= 0;
-                      const look = CATEGORY_LOOK[item.category] ?? { icon: Gift, tile: 'bg-slate-100 text-slate-700' };
-                      return (
-                        <li key={item.id}>
-                          <button
-                            type="button"
-                            onClick={() => openItem(item)}
-                            className={`w-full h-full text-left flex flex-col rounded-2xl border bg-white p-5 hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(15,23,42,0.10)] transition cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB] ${ready ? 'border-[#FFC83D] ring-1 ring-[#FFC83D]' : 'border-slate-200'}`}
-                          >
-                            {/* A small category tile so the partner's name has room (owner 2026-10-27) */}
-                            <span className="flex items-center gap-2 min-w-0">
-                              <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${look.tile}`}>
-                                <look.icon className="w-4 h-4" aria-hidden="true" />
-                              </span>
-                              <span title={item.partner} className="min-w-0 text-xs text-slate-500 truncate">{item.partner}</span>
-                            </span>
-                            <span className="mt-3 text-sm sm:text-base font-bold text-slate-900 leading-snug line-clamp-2 min-h-[2.5rem]">{item.title}</span>
-                            <span className="mt-1 text-xs text-slate-500 tabular-nums">
-                              {amountOf(item)}
-                            </span>
+                  <>
+                    {/* The prize draw leads, big, with its whole product photo; vouchers follow as photo tiles */}
+                    {featured && (
+                      <button
+                        type="button"
+                        onClick={() => openItem(featured)}
+                        className="mt-6 w-full text-left grid grid-cols-[7.5rem_minmax(0,1fr)] sm:grid-cols-[13rem_minmax(0,1fr)] items-center gap-4 sm:gap-6 rounded-3xl bg-[#FFF4D6] p-4 sm:p-6 hover:-translate-y-0.5 transition-transform cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element -- sized by the image optimizer link */}
+                        <img src={optimizedImage(featured.image, 384)} alt="" className="w-full aspect-square object-contain mix-blend-multiply" />
+                        <span className="min-w-0">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-[#FFD84D] px-2.5 py-1 text-xs font-bold text-slate-900">
+                            <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
+                            จับรางวัล {featured.drawEntry?.drawLabel}
+                          </span>
+                          <span className="mt-2 block text-lg sm:text-2xl font-bold text-slate-900 leading-snug">{featured.title}</span>
+                          <span className="mt-1 block text-sm text-slate-600">{featured.discountValue}</span>
+                          <span className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <span className="text-base font-bold text-slate-900 tabular-nums">{featured.costXp.toLocaleString()} XP</span>
+                            <RewardState item={featured} redeemed={redeemedRewardIds.includes(featured.id)} isLoggedIn={isLoggedIn} userXp={userXp} />
+                          </span>
+                        </span>
+                      </button>
+                    )}
 
-                            <span className="mt-auto pt-5">
-                              <span className="flex items-center justify-between gap-2">
-                                <span className="text-sm sm:text-base font-semibold text-slate-900 tabular-nums">{item.costXp} XP</span>
-                                {redeemed ? (
-                                  <span className="inline-flex items-center gap-1 text-sm font-bold text-emerald-700">
-                                    <Check className="w-4 h-4" aria-hidden="true" />
-                                    แลกแล้ว
+                    {/* The site's tile: a square photo, the XP on a yellow ticket, the name and the partner below (owner 2026-10-31) */}
+                    <ul className="mt-8 grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-8">
+                      {tiles.map((item, i) => {
+                        const redeemed = redeemedRewardIds.includes(item.id);
+                        const ready = isLoggedIn && !redeemed && userXp >= item.costXp;
+                        const look = CATEGORY_LOOK[item.category] ?? { icon: Gift, tile: 'bg-slate-100 text-slate-700' };
+                        return (
+                          <li key={item.id}>
+                            <button
+                              type="button"
+                              onClick={() => openItem(item)}
+                              className="group w-full text-left cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB] rounded-3xl"
+                            >
+                              <span className="relative block transition-transform duration-300 group-hover:-translate-y-1">
+                                {item.image ? (
+                                  // eslint-disable-next-line @next/next/no-img-element -- sized by the image optimizer link
+                                  <img
+                                    src={optimizedImage(item.image, 384)}
+                                    alt=""
+                                    loading="lazy"
+                                    className={`w-full aspect-square object-cover rounded-3xl bg-slate-100 shadow-md ${redeemed ? 'opacity-70' : ''} ${ready ? 'ring-2 ring-[#FFC83D] ring-offset-2' : ''}`}
+                                  />
+                                ) : (
+                                  <span className={`w-full aspect-square rounded-3xl shadow-md flex items-center justify-center ${look.tile}`}>
+                                    <look.icon className="w-10 h-10" aria-hidden="true" />
                                   </span>
-                                ) : ready ? (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-[#FFD84D] px-2.5 py-1 text-xs sm:text-sm font-bold text-slate-900">
-                                    <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
-                                    แลกได้เลย
-                                  </span>
-                                ) : isLoggedIn ? (
-                                  <span className="text-xs text-slate-500 tabular-nums">ขาดอีก {short}</span>
-                                ) : null}
-                              </span>
-                              {/* How close I am: a warm bar while XP is short */}
-                              {isLoggedIn && !redeemed && short > 0 && (
-                                <span className="mt-2 block h-1.5 rounded-full bg-amber-100 overflow-hidden" aria-hidden="true">
-                                  <span className="block h-full rounded-full bg-[#F26430]" style={{ width: `${Math.min(100, Math.round((userXp / item.costXp) * 100))}%` }} />
+                                )}
+                                {/* XP on a yellow ticket, tilted like the challenge stickers */}
+                                <span className={`absolute -top-2.5 -left-1.5 ${TICKET_TILTS[i % TICKET_TILTS.length]} inline-flex items-center gap-1 rounded-full bg-[#FFD84D] text-slate-900 px-2.5 py-1 text-xs font-bold shadow-md tabular-nums`}>
+                                  <Ticket className="w-3.5 h-3.5" aria-hidden="true" />
+                                  {item.costXp.toLocaleString()} XP
                                 </span>
+                                {(redeemed || ready) && (
+                                  <span className={`absolute right-2.5 bottom-2.5 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold whitespace-nowrap shadow-sm ${redeemed ? 'bg-white text-emerald-700' : 'bg-[#FFD84D] text-slate-900'}`}>
+                                    {redeemed ? <Check className="w-3.5 h-3.5" aria-hidden="true" /> : <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />}
+                                    {redeemed ? 'แลกแล้ว' : 'แลกได้เลย'}
+                                  </span>
+                                )}
+                              </span>
+                              <span className="mt-3 block text-sm sm:text-[15px] font-bold text-slate-900 leading-snug line-clamp-2">{item.title}</span>
+                              <span title={item.partner} className="mt-1 block text-xs text-slate-500 truncate">{item.partner}</span>
+                              {/* How close I am: a warm bar while XP is short */}
+                              {isLoggedIn && !redeemed && !ready ? (
+                                <span className="mt-2 flex items-center gap-2">
+                                  <span className="h-1.5 flex-1 rounded-full bg-amber-100 overflow-hidden" aria-hidden="true">
+                                    <span className="block h-full rounded-full bg-[#F26430]" style={{ width: `${Math.min(100, Math.round((userXp / item.costXp) * 100))}%` }} />
+                                  </span>
+                                  <span className="text-[11px] text-slate-500 tabular-nums whitespace-nowrap">ขาด {(item.costXp - userXp).toLocaleString()}</span>
+                                </span>
+                              ) : (
+                                <span className="mt-0.5 block text-xs text-slate-500 tabular-nums truncate">{item.drawEntry ? item.discountValue : `เหลือ ${item.stockCount} สิทธิ์`}</span>
                               )}
-                            </span>
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </>
                 )}
               </>
             ) : (
@@ -448,6 +483,10 @@ export default function RewardsPage() {
       {/* One dialog per reward: details and conditions, then redeem (asks once to confirm), or the code once redeemed */}
       {detailItem && !celebrating && (
         <DialogShell onClose={() => setDetailItem(null)} size="sm" title={detailItem.title} subtitle={detailItem.partner}>
+          {detailItem.image && (
+            // eslint-disable-next-line @next/next/no-img-element -- sized by the image optimizer link
+            <img src={optimizedImage(detailItem.image, 640)} alt="" className={`mb-4 w-full aspect-[16/9] rounded-2xl bg-amber-50 ${detailItem.drawEntry ? 'object-contain p-3 mix-blend-multiply' : 'object-cover'}`} />
+          )}
           <p className="text-sm font-medium text-slate-600 leading-relaxed">{detailItem.description}</p>
           <dl className="mt-4 divide-y divide-slate-200 border-y border-slate-200 text-sm">
             {[
@@ -516,6 +555,28 @@ export default function RewardsPage() {
 }
 
 /** A few still confetti bits in the wallet's top corner: the card should look like good news */
+/** "แลกได้เลย", "แลกแล้ว" or how much is missing, after the XP on the prize-draw card */
+function RewardState({ item, redeemed, isLoggedIn, userXp }: { item: RewardShopItem; redeemed: boolean; isLoggedIn: boolean; userXp: number }) {
+  if (redeemed) {
+    return (
+      <span className="inline-flex items-center gap-1 text-sm font-bold text-emerald-700">
+        <Check className="w-4 h-4" aria-hidden="true" />
+        แลกแล้ว
+      </span>
+    );
+  }
+  if (!isLoggedIn) return null;
+  if (userXp >= item.costXp) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-[#FFD84D] px-2.5 py-1 text-xs sm:text-sm font-bold text-slate-900">
+        <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
+        แลกได้เลย
+      </span>
+    );
+  }
+  return <span className="text-sm text-slate-600 tabular-nums">ขาดอีก {(item.costXp - userXp).toLocaleString()} XP</span>;
+}
+
 function WalletConfetti() {
   return (
     <svg className="pointer-events-none absolute right-4 top-4 w-28 h-20" viewBox="0 0 112 80" aria-hidden="true">

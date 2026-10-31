@@ -2313,3 +2313,8 @@ No frontend action; all user-facing text changed in this commit.
 - **Log-in and sign-up:** only the social ways that work are shown (Apple "เร็วๆ นี้" was a greyed button on the first screen); the hint under the email form names only those (`components/auth/AuthPanel.tsx`).
 - **Tab titles:** /rewards "ของรางวัล", /myhub "มายฮับ" (both showed the site title).
 - **Removed test pages:** /journey-simple, /preview-hero, /preview-logo (reachable from outside; /preview-hero had two h1).
+
+### BE-195 · /rewards toward 9.5: photo tiles, XP tickets, the prize draw on top (owner 2026-10-31)
+- **Reward tiles are the site tile** (`app/rewards/page.tsx`): square photo, 2 / 3 / 4 a row (was one text card a row on phones), the XP on a tilted yellow ticket like the challenge stickers, name and partner below. Signed in: a yellow ring and "แลกได้เลย" on the photo when there is enough XP, "แลกแล้ว" when taken, otherwise a warm bar with "ขาด N". The reward dialog shows the photo too.
+- **The prize draw** (an item with `drawEntry`) is one big card above the tiles, its product photo blended into the card.
+- **Data:** `RewardShopItem.image` (optional; tiles without one show the category icon). SAMPLE photos from Unsplash for the 8 vouchers, `/campaign/iphone-duo.png` for the draw; on the launch checklist to swap for partners' own photos.
